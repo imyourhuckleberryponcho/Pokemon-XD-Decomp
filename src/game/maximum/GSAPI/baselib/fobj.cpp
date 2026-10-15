@@ -1,0 +1,552 @@
+// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
+// source order. Ported from the Melee decomp's fobj.c (headers: include/hsd_ref).
+// The original file name, used by the asserts.
+#define HSD_FILE_NAME "fobj.c"
+
+#include <sysdolphin/baselib/fobj.h>
+
+#include <string.h>
+
+#include <sysdolphin/baselib/debug.h>
+#include <sysdolphin/baselib/spline.h>
+
+#pragma pool_strings off
+
+HSD_ObjAllocData alloc_data;
+
+static void dumpObjAlloc(HSD_ObjAllocData* data, char* msg);
+
+// XD's GSmem pool allocator.
+void* GSmemGetSysdolAllocator(s32 size);
+s32 GSmemGetFreePool(void* pool);
+void* GSmemAllocPool(void* pool);
+u8 GSmemIsRegistrationPool(void* pool, void* ptr);
+void GSmemFreePool(void* pool, void* ptr);
+
+union parseFloat_u {
+    f32 f;
+    u32 d;
+};
+
+inline u32 HSD_FObjSetState(HSD_FObj* fobj, u32 state);
+inline u32 HSD_FObjGetState(HSD_FObj* fobj);
+static inline void HSD_FObjReqAnim(HSD_FObj* fobj, f32 startframe);
+static inline void FObj_FlushKeyData(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_update, f32 rate);
+inline void HSD_FObjStopAnim(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_update, f32 rate);
+inline static f32 parseFloat(u8** pos, u8 frac);
+inline static u8 parseOpCode(u8** curr_parse);
+inline static u32 parsePackInfo(u8** adp);
+inline static void FObjLaunchKeyData(HSD_FObj* fobj);
+inline static s32 parseWait(u8** adp);
+inline static u32 FObjLoadWait(HSD_FObj* fobj);
+inline static u32 FObjAnimCON(HSD_FObj* fobj);
+inline static u32 FObjAnimLinear(HSD_FObj* fobj);
+inline static u32 FObjAnimSPL0(HSD_FObj* fobj);
+inline static u32 FObjAnimSPL(HSD_FObj* fobj);
+inline static u32 FObjAnimSLP(HSD_FObj* fobj);
+inline static u32 FObjAnimKey(HSD_FObj* fobj);
+inline void FObjUpdateAnim(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_update);
+HSD_ObjAllocData* HSD_FObjGetAllocData(void);
+void HSD_FObjInitAllocData(void);
+void HSD_FObjRemove(HSD_FObj* fobj);
+void HSD_FObjRemoveAll(HSD_FObj* fobj);
+void HSD_FObjReqAnimAll(HSD_FObj* fobj, f32 startframe);
+void HSD_FObjStopAnimAll(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_update, f32 rate);
+static inline u32 FObjLoadData(HSD_FObj* fobj);
+void HSD_FObjInterpretAnim(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_update, f32 rate);
+void HSD_FObjInterpretAnimAll(void* fobj, void* obj, HSD_ObjUpdateFunc obj_update, f32 rate);
+HSD_FObj* HSD_FObjLoadDesc(HSD_FObjDesc* desc);
+HSD_FObj* HSD_FObjAlloc(void);
+void HSD_FObjFree(HSD_FObj* fobj);
+
+inline u32 HSD_FObjSetState(HSD_FObj* fobj, u32 state)
+{
+    if (fobj) {
+        fobj->flags = (fobj->flags & 0xF0) | (state & 0xF);
+    }
+    return state;
+}
+
+inline u32 HSD_FObjGetState(HSD_FObj* fobj)
+{
+    return fobj == NULL ? 0 : fobj->flags & 0xF;
+}
+
+static inline void HSD_FObjReqAnim(HSD_FObj* fobj, f32 startframe)
+{
+    if (fobj == NULL) {
+        return;
+    }
+
+    fobj->ad = fobj->ad_head;
+    fobj->time = (f32) fobj->startframe + startframe;
+    fobj->op = 0;
+    fobj->op_intrp = 0;
+    fobj->flags &= ~0x40;
+    fobj->nb_pack = 0;
+    fobj->fterm = 0;
+    fobj->p0 = 0.f;
+    fobj->p1 = 0.f;
+    fobj->d0 = 0.f;
+    fobj->d1 = 0.f;
+    HSD_FObjSetState(fobj, 1);
+}
+
+static inline void FObj_FlushKeyData(HSD_FObj* fobj, void* obj,
+                                     HSD_ObjUpdateFunc obj_update, f32 rate)
+{
+    if (fobj->op_intrp == HSD_A_OP_KEY) {
+        HSD_FObjInterpretAnim(fobj, obj, obj_update, rate);
+    }
+}
+
+inline void HSD_FObjStopAnim(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_update,
+                      f32 rate)
+{
+    if (fobj == NULL) {
+        return;
+    }
+
+    FObj_FlushKeyData(fobj, obj, obj_update, rate);
+    HSD_FObjSetState(fobj, 0);
+}
+
+inline static f32 parseFloat(u8** pos, u8 frac)
+{
+    union parseFloat_u u;
+    f32 numer;
+    s32 denom;
+
+    if (frac == HSD_A_FRAC_FLOAT) {
+        u.d = (s32) ((*pos)++)[0];
+        u.d |= ((*pos)++)[0] << 8;
+        u.d |= ((*pos)++)[0] << 16;
+        u.d |= ((*pos)++)[0] << 24;
+        return u.f;
+    }
+
+    denom = (1 << (frac & 0x1F));
+    switch (frac & 0xE0) {
+    case HSD_A_FRAC_S8:
+        numer = (s8) (*pos)[0];
+        *pos += 1;
+        break;
+    case HSD_A_FRAC_U8:
+        numer = (*pos)[0];
+        *pos += 1;
+        break;
+    case HSD_A_FRAC_S16:
+        numer = ((s8) (*pos)[1] << 8) | (*pos)[0];
+        *pos += 2;
+        break;
+    case HSD_A_FRAC_U16:
+        numer = ((*pos)[1] << 8) | (*pos)[0];
+        *pos += 2;
+        break;
+    default:
+        return 0.0f;
+    }
+    return numer / denom;
+}
+
+inline static u8 parseOpCode(u8** curr_parse)
+{
+    return (**curr_parse) & 0xF;
+}
+
+inline static u32 parsePackInfo(u8** adp)
+{
+    u8 d;
+    u32 nb_pack;
+    s32 shift;
+
+    d = *(*adp)++;
+    nb_pack = ((d >> 4) & 7) + 1;
+    shift = 3;
+    if (!(d & 0x80)) {
+        return nb_pack;
+    }
+    do {
+        d = *(*adp)++;
+        nb_pack += (d & 0x7F) << shift;
+        shift += 7;
+    } while (d & 0x80);
+    return nb_pack;
+}
+
+inline static void FObjLaunchKeyData(HSD_FObj* fobj)
+{
+    if ((fobj->flags & 0x40) != 0) {
+        fobj->op_intrp = fobj->op;
+        fobj->flags &= ~0x40;
+        fobj->flags |= 0x80;
+        fobj->p0 = fobj->p1;
+    }
+}
+
+inline static s32 parseWait(u8** adp)
+{
+    u8 d;
+    s32 wait = 0;
+    s32 shift = 0;
+
+    do {
+        d = *(*adp)++;
+        wait |= (d & 0x7f) << shift;
+        shift += 7;
+    } while (d & 0x80);
+
+    return wait;
+}
+
+inline static u32 FObjLoadWait(HSD_FObj* fobj)
+{
+    u32 st = HSD_FObjGetState(fobj);
+    HSD_ASSERT(0x171, st == FOBJ_LOAD_WAIT);
+
+    if ((unsigned) (fobj->ad - fobj->ad_head) >= fobj->length) {
+        return 6;
+    } else {
+        fobj->fterm = parseWait(&fobj->ad);
+        fobj->flags |= 0x20;
+        return HSD_FObjSetState(fobj, 2);
+    }
+}
+
+inline static u32 FObjAnimCON(HSD_FObj* fobj)
+{
+    u32 st = HSD_FObjGetState(fobj);
+    HSD_ASSERT(0x184, st == FOBJ_LOAD_DATA0 || st == FOBJ_LOAD_DATA);
+
+    fobj->p0 = fobj->p1;
+    fobj->p1 = parseFloat(&fobj->ad, fobj->frac_value);
+    if (fobj->op_intrp != 5) {
+        fobj->d0 = fobj->d1;
+        fobj->d1 = 0.0F;
+    }
+
+    return HSD_FObjSetState(fobj, st == FOBJ_LOAD_DATA0 ? 3 : 4);
+}
+
+inline static u32 FObjAnimLinear(HSD_FObj* fobj)
+{
+    u32 st = HSD_FObjGetState(fobj);
+    HSD_ASSERT(0x198, st == FOBJ_LOAD_DATA0 || st == FOBJ_LOAD_DATA);
+
+    fobj->p0 = fobj->p1;
+    fobj->p1 = parseFloat(&fobj->ad, fobj->frac_value);
+    if (fobj->op_intrp != 5) {
+        fobj->d0 = fobj->d1;
+        fobj->d1 = 0.0F;
+    }
+
+    return HSD_FObjSetState(fobj, st == FOBJ_LOAD_DATA0 ? 3 : 4);
+}
+
+inline static u32 FObjAnimSPL0(HSD_FObj* fobj)
+{
+    u32 st = HSD_FObjGetState(fobj);
+    HSD_ASSERT(0x1AC, st == FOBJ_LOAD_DATA0 || st == FOBJ_LOAD_DATA);
+
+    fobj->p0 = fobj->p1;
+    fobj->d0 = fobj->d1;
+    fobj->p1 = parseFloat(&fobj->ad, fobj->frac_value);
+    fobj->d1 = 0.0F;
+
+    return HSD_FObjSetState(fobj, st == FOBJ_LOAD_DATA0 ? 3 : 4);
+}
+
+inline static u32 FObjAnimSPL(HSD_FObj* fobj)
+{
+    u32 st = HSD_FObjGetState(fobj);
+    HSD_ASSERT(0x1BE, st == FOBJ_LOAD_DATA0 || st == FOBJ_LOAD_DATA);
+
+    fobj->p0 = fobj->p1;
+    fobj->p1 = parseFloat(&fobj->ad, fobj->frac_value);
+    fobj->d0 = fobj->d1;
+    fobj->d1 = parseFloat(&fobj->ad, fobj->frac_slope);
+
+    return HSD_FObjSetState(fobj, st == FOBJ_LOAD_DATA0 ? 3 : 4);
+}
+
+inline static u32 FObjAnimSLP(HSD_FObj* fobj)
+{
+    u32 st = HSD_FObjGetState(fobj);
+    HSD_ASSERT(0x1D1, st == FOBJ_LOAD_DATA0 || st == FOBJ_LOAD_DATA);
+
+    fobj->d0 = fobj->d1;
+    fobj->d1 = parseFloat(&fobj->ad, fobj->frac_slope);
+
+    return HSD_FObjGetState(fobj);
+}
+
+inline static u32 FObjAnimKey(HSD_FObj* fobj)
+{
+    u32 st = HSD_FObjGetState(fobj);
+    HSD_ASSERT(0x1EE, st == FOBJ_LOAD_DATA0 || st == FOBJ_LOAD_DATA);
+
+    FObjLaunchKeyData(fobj);
+    fobj->p1 = parseFloat(&fobj->ad, fobj->frac_value);
+    fobj->flags |= 0x40;
+
+    return HSD_FObjSetState(fobj, st == FOBJ_LOAD_DATA0 ? 3 : 4);
+}
+
+inline void FObjUpdateAnim(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_update)
+{
+    f32 phi_f0;
+    HSD_ObjData fobjdata;
+
+    if (obj_update == NULL) {
+        return;
+    }
+    switch (fobj->op_intrp) {
+    case HSD_A_OP_KEY:
+        if (fobj->flags & 0x80) {
+            fobjdata.fv = fobj->p0;
+            fobj->flags &= 0xFFFFFF7F;
+        } else {
+            return;
+        }
+        break;
+    case HSD_A_OP_CON:
+        if (fobj->time >= fobj->fterm) {
+            phi_f0 = fobj->p1;
+        } else {
+            phi_f0 = fobj->p0;
+        }
+        fobjdata.fv = phi_f0;
+        break;
+    case HSD_A_OP_LIN:
+        if (fobj->flags & 0x20) {
+            fobj->flags = fobj->flags & 0xFFFFFFDF;
+            if (fobj->fterm != 0) {
+                fobj->d0 = (fobj->p1 - fobj->p0) / fobj->fterm;
+            } else {
+                fobj->d0 = 0;
+                fobj->p0 = fobj->p1;
+            }
+        }
+        fobjdata.fv = fobj->d0 * fobj->time + fobj->p0;
+        break;
+    case HSD_A_OP_SPL0:
+    case HSD_A_OP_SPL:
+    case HSD_A_OP_SLP:
+        if (fobj->fterm != 0) {
+            fobjdata.fv =
+                splGetHelmite(1.0 / fobj->fterm, fobj->time, fobj->p0,
+                              fobj->p1, fobj->d0, fobj->d1);
+        } else {
+            fobjdata.fv = fobj->p1;
+        }
+        break;
+    default:
+ // XD ignores unsupported modes instead of calling back with unset data.
+        return;
+    }
+    obj_update(obj, fobj->obj_type, &fobjdata);
+}
+
+HSD_ObjAllocData* HSD_FObjGetAllocData(void)
+{
+    return &alloc_data;
+}
+
+void HSD_FObjInitAllocData(void)
+{
+    HSD_ObjAllocInit(HSD_FObjGetAllocData(), sizeof(HSD_FObj), 4);
+}
+
+void HSD_FObjRemove(HSD_FObj* fobj)
+{
+    if (!fobj) {
+        return;
+    }
+
+    HSD_FObjFree(fobj);
+}
+
+void HSD_FObjRemoveAll(HSD_FObj* fobj)
+{
+    if (fobj == NULL) {
+        return;
+    }
+    HSD_FObjRemoveAll(fobj->next);
+    HSD_FObjRemove(fobj);
+}
+
+void HSD_FObjReqAnimAll(HSD_FObj* fobj, f32 startframe)
+{
+    HSD_FObj* fp;
+
+    if (fobj == NULL) {
+        return;
+    }
+
+    for (fp = fobj; fp != NULL; fp = fp->next) {
+        HSD_FObjReqAnim(fp, startframe);
+    }
+}
+
+void HSD_FObjStopAnimAll(HSD_FObj* fobj, void* obj,
+                         HSD_ObjUpdateFunc obj_update, f32 rate)
+{
+    for (; fobj != NULL; fobj = fobj->next) {
+        HSD_FObjStopAnim(fobj, obj, obj_update, rate);
+    }
+}
+
+static inline u32 FObjLoadData(HSD_FObj* fobj)
+{
+    if ((unsigned) (fobj->ad - fobj->ad_head) >= fobj->length) {
+        return 6;
+    } else {
+        fobj->op_intrp = fobj->op;
+        if (fobj->nb_pack == 0) {
+            fobj->op = parseOpCode(&fobj->ad);
+            fobj->nb_pack = parsePackInfo(&fobj->ad);
+        }
+
+        fobj->nb_pack -= 1;
+
+        switch (fobj->op) {
+        case HSD_A_OP_CON:
+            return FObjAnimCON(fobj);
+
+        case HSD_A_OP_LIN:
+            return FObjAnimLinear(fobj);
+
+        case HSD_A_OP_SPL0:
+            return FObjAnimSPL0(fobj);
+
+        case HSD_A_OP_SPL:
+            return FObjAnimSPL(fobj);
+
+        case HSD_A_OP_SLP:
+            return FObjAnimSLP(fobj);
+
+        case HSD_A_OP_KEY:
+            return FObjAnimKey(fobj);
+
+        default:
+            return 0;
+        }
+    }
+}
+
+// Keep calls to the interpreter out of the small stop/flush helpers. Without
+// this, deferred inlining changes HSD_FObjStopAnimAll's generated call sequence.
+#pragma dont_inline on
+void HSD_FObjInterpretAnim(HSD_FObj* fobj, void* obj,
+                           HSD_ObjUpdateFunc obj_update, f32 rate)
+{
+    f32 fterm = 0.0F;
+    u32 state = fobj != NULL ? HSD_FObjGetState(fobj) : 0;
+
+    if (state != 0 && !(fobj->time += rate, (fobj->time < 0.0))) {
+        for (;;) {
+            switch (state) {
+            case 6: {
+                fobj->time += fterm;
+                FObjLaunchKeyData(fobj);
+                FObjUpdateAnim(fobj, obj, obj_update);
+                return;
+            }
+            case 1:
+            case 2: {
+                state = FObjLoadData(fobj);
+                break;
+            }
+            case 3: {
+                if ((fobj->flags & 0x80) != 0) {
+                    FObjUpdateAnim(fobj, obj, obj_update);
+                }
+                state = FObjLoadWait(fobj);
+                break;
+            }
+            case 4: {
+                if (fobj->fterm <= fobj->time) {
+                    u8 _[8];
+                    fterm = fobj->fterm;
+                    fobj->time -= fobj->fterm;
+                    HSD_FObjSetState(fobj, state = 3);
+                    break;
+                }
+                FObjUpdateAnim(fobj, obj, obj_update);
+                state =
+#ifdef MUST_MATCH
+                    state =
+#endif
+                        5;
+                HSD_FObjSetState(fobj, state);
+                return;
+            }
+            case 5: {
+                HSD_FObjSetState(fobj, state = 4);
+                break;
+            }
+            case 0:
+                return;
+            }
+        }
+    }
+}
+
+#pragma dont_inline reset
+void HSD_FObjInterpretAnimAll(void* fobj, void* obj,
+                              HSD_ObjUpdateFunc obj_update, f32 rate)
+{
+    HSD_FObj* fobjNew = (HSD_FObj*) fobj;
+    while (fobjNew != NULL) {
+        HSD_FObjInterpretAnim(fobjNew, obj, obj_update, rate);
+        fobjNew = fobjNew->next;
+    }
+}
+
+// XD: debug hook for the allocator statistics (empty in this build).
+static void dumpObjAlloc(HSD_ObjAllocData* data, char* msg) {}
+
+HSD_FObj* HSD_FObjLoadDesc(HSD_FObjDesc* desc)
+{
+    if (desc != NULL) {
+        HSD_FObj* fobj = HSD_FObjAlloc();
+        fobj->next = HSD_FObjLoadDesc(desc->next);
+        fobj->startframe = desc->startframe;
+        fobj->obj_type = desc->type;
+        fobj->frac_value = desc->frac_value;
+        fobj->frac_slope = desc->frac_slope;
+        fobj->ad_head = desc->ad;
+        fobj->length = desc->length;
+        fobj->flags = 0;
+        return fobj;
+    }
+    return NULL;
+}
+
+// XD: FObjs come from GSmem's fixed-size pool when one is set up (not cleared there).
+HSD_FObj* HSD_FObjAlloc(void)
+{
+    HSD_FObj* new;
+    void* pool = GSmemGetSysdolAllocator(sizeof(HSD_FObj));
+    if (pool != NULL && GSmemGetFreePool(pool) != 0) {
+        new = GSmemAllocPool(pool);
+        HSD_ASSERT(767, new);
+        return new;
+    }
+    new = HSD_ObjAlloc(&alloc_data);
+    dumpObjAlloc(&alloc_data, "fobj: alloc");
+    HSD_ASSERT(774, new);
+    memset(new, 0, sizeof(HSD_FObj));
+    return new;
+}
+
+void HSD_FObjFree(HSD_FObj* fobj)
+{
+    void* pool = GSmemGetSysdolAllocator(sizeof(HSD_FObj));
+    if (pool != NULL && GSmemIsRegistrationPool(pool, fobj)) {
+        GSmemFreePool(pool, fobj);
+    } else {
+        HSD_ObjFree(&alloc_data, fobj);
+        dumpObjAlloc(&alloc_data, "fobj: free");
+    }
+}

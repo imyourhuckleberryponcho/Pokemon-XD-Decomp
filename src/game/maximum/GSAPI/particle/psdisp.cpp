@@ -1,0 +1,1804 @@
+// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
+// source order. Ported from the Melee decomp's psdisp.c (headers: include/hsd_ref).
+// The original file name, used by the asserts.
+#define HSD_FILE_NAME "psdisp.c"
+
+#include <sysdolphin/baselib/psdisp.h>
+
+#include <string.h>
+
+/* XD's MSL <math.h> inlines (sqrtf with its NaN checks), not include/libc's. */
+#define _MATH_H_
+extern f32 __float_nan[];
+extern f32 __float_min[];
+#define NAN (__float_nan[0])
+double sin(double x);
+double cos(double x);
+double tan(double x);
+double atan2(double y, double x);
+double __fabs(double x);
+#define fabs(x) __fabs(x)
+
+inline int __fpclassifyf(float x)
+{
+    switch ((*(s32*) &x) & 0x7F800000) {
+    case 0x7F800000:
+        if ((*(s32*) &x) & 0x007FFFFF) {
+            return 1;
+        } else {
+            return 2;
+        }
+    case 0:
+        if ((*(s32*) &x) & 0x007FFFFF) {
+            return 5;
+        } else {
+            return 3;
+        }
+    }
+    return 4;
+}
+
+inline float sqrtf(float x)
+{
+    if (x > 0.0f) {
+        double guess = __frsqrte((double) x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        return (float) (x * guess);
+    } else if (x < 0.0) {
+        return NAN;
+    } else if (__fpclassifyf(x) == 1) {
+        return NAN;
+    }
+    return x;
+}
+
+#include <sysdolphin/baselib/cobj.h>
+#include <sysdolphin/baselib/fog.h>
+#include <sysdolphin/baselib/forward.h>
+#include <sysdolphin/baselib/lobj.h>
+#include <sysdolphin/baselib/mtx.h>
+#include <sysdolphin/baselib/object.h>
+#include <sysdolphin/baselib/particle.h>
+#include <sysdolphin/baselib/psdisptev.h>
+#include <sysdolphin/baselib/psstructs.h>
+#include <sysdolphin/baselib/state.h>
+#include <sysdolphin/baselib/tobj.h>
+#include <sysdolphin/baselib/util.h>
+#include <dolphin/gx.h>
+
+#pragma pool_strings off
+
+/* Fast float -> s16 conversion (GQR6), as in the SDK's OSFastCast.h. */
+static inline void __OSf32tos16(register f32 arg, volatile register s16* out)
+{
+    asm { psq_st arg, 0(out), 1, 6 }
+}
+
+static inline s16 OSf32tos16(f32 in)
+{
+    s32 out;
+    __OSf32tos16(in, (s16*) &out);
+    return *(s16*) &out;
+}
+
+#define psPosition3(x, y, z)     GXPosition3s16(OSf32tos16(x), OSf32tos16(y), OSf32tos16(z))
+
+/* RGBA4 vertex colour. */
+#define psColorRGBA4(r, g, b, a)     GXColor1u16((((r) << 8) & 0xF000) | (((g) << 4) & 0xF00) | ((b) & 0xF0) | (((a) >> 4) & 0xF))
+void HSD_MtxGetRotationMtx(Mtx m, Mtx out, char a, char b);
+extern int __float_epsilon[];
+#undef FLT_MIN
+#define FLT_MIN (__float_min[0])
+#undef FLT_EPSILON
+#define FLT_EPSILON (*(f32*) __float_epsilon)
+
+typedef struct { f32 x, y; } Vec2;
+
+
+/* Orphaned static data of the original (kept so .data/.rodata/.sbss match). */
+static u8 billboard_tex0_u8[] ATTRIBUTE_ALIGN(32) = {
+    0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+    0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+};
+u8 psFrameNum = 123;
+static Mtx vmtx;
+static Mtx rvmtx;
+static f32 prj[GX_PROJECTION_SZ];
+static Mtx pvmtx;
+static Mtx rvmtxRot;
+static s32 prevPointSize;
+static s32 prevLineWidth;
+static f32 rx0;
+static f32 rx1;
+static f32 ry0;
+static f32 ry1;
+static f32 rz0;
+static f32 rz1;
+static s32 prevBlendMode;
+static s32 prevChanCtrl;
+static GXColor prevChanMat;
+static GXColor prevChanAmb;
+static GXColor prevColorPrim;
+static GXColor prevColorEnv;
+static GXColor prevColorMat;
+static GXPosNrmMtx currentMtx;
+static HSD_Fog* particleFog;
+
+#ifdef MUST_MATCH
+#pragma push
+#pragma inline_depth(3)
+#endif
+
+#ifdef MUST_MATCH
+#pragma pop
+#endif
+
+static inline void setVtxDesc(s32 fmt);
+inline static void calcTornadoLastPos(HSD_Particle* pp, f32* x, f32* y, f32* z);
+inline static void getColorPrimEnv(HSD_Particle* pp, GXColor* primCol, GXColor* envCol);
+inline static void getColorMatAmb(HSD_Particle* pp, GXColor* matCol, GXColor* ambCol);
+static inline void getClrTrail(HSD_Particle* pp, GXColor* color);
+static inline void psSetColor(GXColor* color, u8 value);
+static inline void psSetupVtxFormat(GXVtxFmt format, bool has_color,
+                                    bool has_texture, GXCompType texture_type)
+{
+    GXSetVtxAttrFmt(format, GX_VA_POS, GX_POS_XYZ, GX_S16, 6U);
+    if (has_color) {
+        GXSetVtxAttrFmt(format, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA4, 0U);
+    }
+    if (has_texture) {
+        GXSetVtxAttrFmt(format, GX_VA_TEX0, GX_TEX_ST, texture_type, 0U);
+    }
+}
+
+static inline void psSetupVtxFormat(GXVtxFmt format, bool has_color, bool has_texture, GXCompType texture_type);
+static inline void setupChanCtrl(HSD_Particle* pp);
+static inline void setBlendMode(int blend_mode);
+static inline void psSetCurrentMtx(GXPosNrmMtx idx);
+static inline void psMaskAbsF32(f32* value);
+static inline bool psMaskAbsLtF32(f32 value, f32 limit);
+static inline bool psMaskAbsGtF32(f32 value, f64 limit);
+static inline bool psAbsLtF32(f32 value, f32 limit);
+static inline bool psAbsGtF32(f32 value, f64 limit);
+static inline bool psDispSubAbsLtF32(f32 value, f32 limit);
+static inline bool psDispSubAbsGtF32(f32 value, f64 limit);
+static inline void psScaleAppSRTAxes(HSD_Particle* pp, Mtx mtx);
+static inline void psUpdateBillboardAxes(const Mtx inv_view);
+inline void setupChanReg(HSD_Particle* pp);
+inline void setupTevReg(HSD_Particle* pp);
+inline HSD_Particle* psDispSubPointTrail(HSD_Particle* pp);
+inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f32 z, f32 vx, f32 vy, f32 vz, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1);
+inline void psDispSub(HSD_Particle* pp, u8* texform);
+inline void psDispSubAPPSRTPoint(HSD_Particle* pp);
+inline void psDispSubAppSRT(HSD_Particle* pp, u8* texform);
+
+void psDispStrippedC(void* o)
+{
+    ref_INC(o);
+}
+
+/* The original had two more functions here that the linker stripped; they left
+ * these identity SRT constants behind in .rodata. */
+void psDispStrippedA(Mtx out)
+{
+    Vec3 scale = { 1.0F, 1.0F, 1.0F };
+    Vec3 translate = { 0.0F, 0.0F, 0.0F };
+    Quaternion rot = { 0.0F, 0.0F, 0.0F, 0.0F };
+
+    HSD_MtxSRT(out, &scale, (Vec3*) &rot, &translate, NULL);
+}
+
+void psDispStrippedB(Mtx out)
+{
+    Vec3 scale = { 1.0F, 1.0F, 1.0F };
+    Vec3 translate = { 0.0F, 0.0F, 0.0F };
+    Quaternion rot = { 0.0F, 0.0F, 0.0F, 0.0F };
+
+    HSD_MtxSRT(out, &scale, (Vec3*) &rot, &translate, NULL);
+}
+
+void psDispBeginFrame(void)
+{
+    if (psFrameNum >= 0xFF) {
+        psFrameNum = 1;
+    } else {
+        psFrameNum += 1;
+    }
+}
+
+int psDispHasRenderData(u32 target_link)
+{
+    s32 i;
+    HSD_Particle* texedge;
+    HSD_Particle* xlu;
+
+    for (i = 0; i < PS_NUM_LINK; i++) {
+        if (target_link & (1 << i)) {
+            particleSort(i, &texedge, &xlu);
+            if (texedge != NULL || xlu != NULL) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static inline void setVtxDesc(s32 fmt)
+{
+    GXClearVtxDesc();
+    GXInvalidateVtxCache();
+    switch (fmt) {
+    case 0:
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+        return;
+    case 1:
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        return;
+    case 2:
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+        return;
+    case 3:
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+        return;
+    case 4:
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+        return;
+    case 5:
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+        GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+        return;
+    }
+}
+
+inline static void calcTornadoLastPos(HSD_Particle* pp, f32* x, f32* y, f32* z)
+{
+    f32 radius;
+    f32 px, py, pz;
+    f32 sina, sinb, cosa, cosb;
+    f32 vx0, vz0;
+    HSD_Generator* gp;
+
+    gp = pp->gen;
+    if (gp == NULL) {
+        *x = pp->pos.x;
+        *y = pp->pos.y;
+        *z = pp->pos.z;
+        return;
+    }
+
+    sina = (f32) sin(pp->grav);
+    sinb = (f32) sin(pp->fric);
+    cosa = (f32) cos(pp->grav);
+    cosb = (f32) cos(pp->fric);
+
+    vz0 = pp->vel.z - gp->aux.tornado.vel;
+    vx0 = pp->vel.x - gp->grav;
+
+    radius = ABS(gp->radius);
+    radius += vz0 * (f32) tan(ABS(gp->angle));
+    radius *= pp->vel.y;
+    px = radius * (f32) cos(vx0);
+    py = radius * (f32) sin(vx0);
+    pz = vz0;
+
+    *x = px * cosb + pz * sinb + gp->pos.x;
+    *y = -px * sina * sinb + py * cosa + pz * sina * cosb + gp->pos.y;
+    *z = -px * cosa * sinb - py * sina + pz * cosa * cosb + gp->pos.z;
+}
+
+inline static void getColorPrimEnv(HSD_Particle* pp, GXColor* primCol,
+                            GXColor* envCol)
+{
+    if (pp->primColCount) {
+        int scale = 65536 * pp->primColRemain / pp->primColCount;
+        primCol->r = ((pp->primColTarget.r << 16) +
+                      (pp->primCol.r - pp->primColTarget.r) * scale) >>
+                     16;
+        primCol->g = ((pp->primColTarget.g << 16) +
+                      (pp->primCol.g - pp->primColTarget.g) * scale) >>
+                     16;
+        primCol->b = ((pp->primColTarget.b << 16) +
+                      (pp->primCol.b - pp->primColTarget.b) * scale) >>
+                     16;
+        primCol->a = ((pp->primColTarget.a << 16) +
+                      (pp->primCol.a - pp->primColTarget.a) * scale) >>
+                     16;
+    } else {
+        *primCol = pp->primCol;
+    }
+    if (pp->envColCount) {
+        int scale = 65536 * pp->envColRemain / pp->envColCount;
+        envCol->r = ((pp->envColTarget.r << 16) +
+                     (pp->envCol.r - pp->envColTarget.r) * scale) >>
+                    16;
+        envCol->g = ((pp->envColTarget.g << 16) +
+                     (pp->envCol.g - pp->envColTarget.g) * scale) >>
+                    16;
+        envCol->b = ((pp->envColTarget.b << 16) +
+                     (pp->envCol.b - pp->envColTarget.b) * scale) >>
+                    16;
+        envCol->a = ((pp->envColTarget.a << 16) +
+                     (pp->envCol.a - pp->envColTarget.a) * scale) >>
+                    16;
+    } else {
+        *envCol = pp->envCol;
+    }
+}
+
+inline static void getColorMatAmb(HSD_Particle* pp, GXColor* matCol, GXColor* ambCol)
+{
+    if (pp->matColCount) {
+        int scale = 65536 * pp->matColRemain / pp->matColCount;
+        u8 rgb = ((pp->matRGBTarget << 16) +
+                  (pp->matRGB - pp->matRGBTarget) * scale) >>
+                 16;
+        matCol->r = matCol->g = matCol->b = rgb;
+        matCol->a =
+            ((pp->matATarget << 16) + (pp->matA - pp->matATarget) * scale) >>
+            16;
+    } else {
+        matCol->r = matCol->g = matCol->b = pp->matRGB;
+        matCol->a = pp->matA;
+    }
+    if (pp->ambColCount) {
+        int scale = 65536 * pp->ambColRemain / pp->ambColCount;
+        u8 rgb = ((pp->ambRGBTarget << 16) +
+                  (pp->ambRGB - pp->ambRGBTarget) * scale) >>
+                 16;
+        ambCol->r = ambCol->g = ambCol->b = rgb;
+        ambCol->a =
+            ((pp->ambATarget << 16) + (pp->ambA - pp->ambATarget) * scale) >>
+            16;
+    } else {
+        ambCol->r = ambCol->g = ambCol->b = pp->ambRGB;
+        ambCol->a = pp->ambA;
+    }
+}
+
+static inline void getClrTrail(HSD_Particle* pp, GXColor* color)
+{
+    GXColor env_color;
+
+    switch (pp->kind & (DispLighting | PrimEnv)) {
+    case 0:
+    case DispLighting:
+        getColorPrimEnv(pp, color, &env_color);
+        break;
+    case PrimEnv:
+    case DispLighting | PrimEnv:
+        color->r = color->g = color->b = color->a = 0xFF;
+        break;
+    }
+}
+
+static inline void psSetColor(GXColor* color, u8 value)
+{
+    color->r = value;
+    color->g = value;
+    color->b = value;
+    color->a = value;
+}
+
+static inline void setupChanCtrl(HSD_Particle* pp)
+{
+    u32 chan_state = pp->kind & (DispLighting | Trail);
+
+    if (chan_state != (u32) prevChanCtrl) {
+        prevChanCtrl = chan_state;
+        GXSetNumChans(1);
+        switch (prevChanCtrl) {
+        case Trail:
+            GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_VTX, GX_SRC_VTX, 0,
+                          GX_DF_NONE, GX_AF_NONE);
+            break;
+        case DispLighting:
+            GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_REG,
+                          HSD_LObjGetLightMaskDiffuse(), GX_DF_NONE,
+                          HSD_LObjGetLightMaskAttnFunc() ? GX_AF_SPOT
+                                                         : GX_AF_NONE);
+            GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0,
+                          GX_DF_NONE, GX_AF_NONE);
+            break;
+        case DispLighting | Trail:
+            GXSetChanCtrl(GX_COLOR0, GX_TRUE, GX_SRC_REG, GX_SRC_REG,
+                          HSD_LObjGetLightMaskDiffuse(), GX_DF_NONE,
+                          HSD_LObjGetLightMaskAttnFunc() ? GX_AF_SPOT
+                                                         : GX_AF_NONE);
+            GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_VTX, GX_SRC_VTX, 0,
+                          GX_DF_NONE, GX_AF_NONE);
+            break;
+        default:
+            GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0,
+                          GX_DF_NONE, GX_AF_NONE);
+            break;
+        }
+    }
+}
+
+static inline void setBlendMode(int blend_mode)
+{
+    if (prevBlendMode != blend_mode) {
+        prevBlendMode = blend_mode;
+        switch (blend_mode) {
+        case 0:
+            GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA,
+                           GX_LO_CLEAR);
+            break;
+        case 1:
+            GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_ONE,
+                           GX_LO_CLEAR);
+            break;
+        default:
+            OSReport("Particle:setBlendMode:Unknown mode\n");
+            break;
+        }
+    }
+}
+
+static inline void psSetCurrentMtx(GXPosNrmMtx idx)
+{
+    if (currentMtx != idx) {
+        currentMtx = idx;
+        GXSetCurrentMtx(idx);
+    }
+}
+
+static inline void psMaskAbsF32(f32* value)
+{
+    *(s32*) value &= 0x7FFFFFFF;
+}
+
+/* AppSRT tests its magnitudes through these: the compare temp then belongs
+ * to this expansion (one inline level below the caller), which is where the
+ * retail frame keeps it. */
+static inline bool psMaskAbsLtF32(f32 value, f32 limit)
+{
+    psMaskAbsF32(&value);
+    return value < limit;
+}
+
+static inline bool psMaskAbsGtF32(f32 value, f64 limit)
+{
+    psMaskAbsF32(&value);
+    return value > limit;
+}
+
+/* psDispSub tests its magnitudes through the value helper instead: the retail
+ * frame keeps those compare temps one inline level deeper than AppSRT's, after
+ * psDispSubMakePolygon's own locals. */
+static inline bool psAbsLtF32(f32 value, f32 limit)
+{
+    return fabs(value) < limit;
+}
+
+static inline bool psAbsGtF32(f32 value, f64 limit)
+{
+    return fabs(value) > limit;
+}
+
+static inline bool psDispSubAbsLtF32(f32 value, f32 limit)
+{
+    return psAbsLtF32(value, limit);
+}
+
+static inline bool psDispSubAbsGtF32(f32 value, f64 limit)
+{
+    return psAbsGtF32(value, limit);
+}
+
+static inline void psScaleAppSRTAxes(HSD_Particle* pp, Mtx mtx)
+{
+    mtx[0][0] *= pp->size;
+    mtx[1][0] *= pp->size;
+    mtx[2][0] *= pp->size;
+    mtx[0][1] *= pp->size;
+    mtx[1][1] *= pp->size;
+    mtx[2][1] *= pp->size;
+    mtx[0][2] *= pp->size;
+    mtx[1][2] *= pp->size;
+    mtx[2][2] *= pp->size;
+}
+
+static inline void psUpdateBillboardAxes(const Mtx inv_view)
+{
+    f32 right_x;
+    f32 up_x;
+    f32 right_y;
+    f32 up_y;
+    f32 right_z;
+    f32 up_z;
+
+    right_x = inv_view[0][0];
+    up_x = inv_view[0][1];
+    rx0 = right_x + up_x;
+    rx1 = right_x - up_x;
+    right_y = inv_view[1][0];
+    up_y = inv_view[1][1];
+    ry0 = right_y + up_y;
+    ry1 = right_y - up_y;
+    right_z = inv_view[2][0];
+    up_z = inv_view[2][1];
+    rz0 = right_z + up_z;
+    rz1 = right_z - up_z;
+}
+
+inline void setupChanReg(HSD_Particle* pp)
+{
+    GXColor prim_color;
+    GXColor amb_color;
+    GXColor mat_color;
+    HSD_LObj* lobj;
+
+    if (pp->kind & DispLighting) {
+        getColorMatAmb(pp, &mat_color, &amb_color);
+        if (pp->kind & PrimEnv) {
+            prim_color.r = prim_color.g = prim_color.b = 0xFF;
+        } else {
+            getColorPrimEnv(pp, &prim_color, &mat_color);
+            amb_color.r = (u8) ((amb_color.r * prim_color.r) >> 8);
+            amb_color.g = (u8) ((amb_color.g * prim_color.g) >> 8);
+            amb_color.b = (u8) ((amb_color.b * prim_color.b) >> 8);
+        }
+        if (prim_color.r != prevChanMat.r || prim_color.g != prevChanMat.g ||
+            prim_color.b != prevChanMat.b)
+        {
+            prevChanMat = prim_color;
+            GXSetChanMatColor(GX_COLOR0, prevChanMat);
+        }
+        lobj = HSD_LObjGetActiveByID(GX_MAX_LIGHT);
+        if (lobj != NULL) {
+            HSD_MulColor(&amb_color, &lobj->color, &amb_color);
+        } else {
+            amb_color.r = amb_color.g = amb_color.b = 0;
+        }
+        if (amb_color.r != prevChanAmb.r || amb_color.g != prevChanAmb.g ||
+            amb_color.b != prevChanAmb.b)
+        {
+            prevChanAmb = amb_color;
+            GXSetChanAmbColor(GX_COLOR0, prevChanAmb);
+        }
+    }
+}
+
+inline void setupTevReg(HSD_Particle* pp)
+{
+    GXColor prim_color;
+    GXColor env_color;
+    GXColor mat_color;
+    GXColor amb_color;
+
+    getColorPrimEnv(pp, &prim_color, &env_color);
+    if ((pp->kind & PrimEnv) ||
+        (!(pp->kind & DispLighting) && !(pp->kind & Trail)))
+    {
+        if (prevColorPrim.r != prim_color.r ||
+            prevColorPrim.g != prim_color.g ||
+            prevColorPrim.b != prim_color.b || prevColorPrim.a != prim_color.a)
+        {
+            prevColorPrim = prim_color;
+            GXSetTevColor(GX_TEVREG0, prevColorPrim);
+        }
+        if (pp->kind & PrimEnv) {
+            if (prevColorEnv.r != env_color.r ||
+                prevColorEnv.g != env_color.g ||
+                prevColorEnv.b != env_color.b || prevColorEnv.a != env_color.a)
+            {
+                prevColorEnv = env_color;
+                GXSetTevColor(GX_TEVREG1, prevColorEnv);
+            }
+        } else if (prevColorEnv.r != 0 || prevColorEnv.g != 0 ||
+                   prevColorEnv.b != 0 || prevColorEnv.a != 0)
+        {
+            prevColorEnv.r = prevColorEnv.g = prevColorEnv.b = prevColorEnv.a =
+                0;
+            GXSetTevColor(GX_TEVREG1, prevColorEnv);
+        }
+    }
+    if (pp->kind & DispLighting) {
+        getColorMatAmb(pp, &mat_color, &amb_color);
+        if (pp->kind & PrimEnv) {
+            if (prevColorMat.r != mat_color.r ||
+                prevColorMat.g != mat_color.g ||
+                prevColorMat.b != mat_color.b || prevColorMat.a != mat_color.a)
+            {
+                prevColorMat = mat_color;
+                GXSetTevColor(GX_TEVREG2, prevColorMat);
+            }
+        } else {
+            mat_color.a = (u8) ((mat_color.a * prim_color.a) >> 8);
+            if (prevColorMat.r != mat_color.r ||
+                prevColorMat.g != mat_color.g ||
+                prevColorMat.b != mat_color.b || prevColorMat.a != mat_color.a)
+            {
+                prevColorMat = mat_color;
+                GXSetTevColor(GX_TEVREG2, prevColorMat);
+            }
+        }
+    }
+}
+
+inline void psDispSubAPPSRTPoint(HSD_Particle* pp)
+{
+    Mtx mtx;
+    Mtx srt;
+    Vec3 v;
+    Vec3 last;
+    GXColor color;
+    f32 vx, vy, vz;
+    f32 px, py, pz;
+    f32 lx, ly, lz;
+    u8 w;
+
+    psSetCurrentMtx(GX_PNMTX0);
+    if (pp->appsrt->frameNum != psFrameNum) {
+        if (pp->appsrt->status != PS_APPSTATUS_STILL) {
+            HSD_MtxSRT(pp->appsrt->mmtx, &pp->appsrt->scale,
+                       (Vec3*) &pp->appsrt->rot, &pp->appsrt->translate,
+                       NULL);
+        }
+        if (pp->appsrt->status == PS_APPSTATUS_ONCE) {
+            pp->appsrt->status = PS_APPSTATUS_STILL;
+        }
+    }
+    pp->appsrt->frameNum = psFrameNum;
+    PSMTXCopy(pp->appsrt->mmtx, mtx);
+    mtx[0][3] -= pp->appsrt->translate.x;
+    mtx[1][3] -= pp->appsrt->translate.y;
+    mtx[2][3] -= pp->appsrt->translate.z;
+    v.x = pp->vel.x;
+    v.y = pp->vel.y;
+    v.z = pp->vel.z;
+    PSMTXMultVec(mtx, &v, &v);
+    if (pp->appsrt->xA2 != 0) {
+        PSMTXMultVec(rvmtxRot, &v, &v);
+    }
+    vx = v.x;
+    vy = v.y;
+    vz = v.z;
+    v.x = pp->pos.x;
+    v.y = pp->pos.y;
+    v.z = pp->pos.z;
+    if (pp->appsrt->xA2 != 0) {
+        PSMTXMultVec(mtx, &v, &v);
+        PSMTXMultVec(rvmtxRot, &v, &v);
+        v.x += pp->appsrt->translate.x;
+        v.y += pp->appsrt->translate.y;
+        v.z += pp->appsrt->translate.z;
+    } else {
+        PSMTXMultVec(pp->appsrt->mmtx, &v, &v);
+    }
+    px = v.x;
+    py = v.y;
+    pz = v.z;
+    if (pp->kind & Tornado) {
+        f32 tx, ty, tz;
+
+        calcTornadoLastPos(pp, &tx, &ty, &tz);
+        HSD_MtxSRT(srt, &pp->appsrt->scale, (Vec3*) &pp->appsrt->rot,
+                   &pp->appsrt->translate, NULL);
+        last.x = tx;
+        last.y = ty;
+        last.z = tz;
+        PSMTXMultVec(srt, &last, &last);
+        lx = last.x;
+        ly = last.y;
+        lz = last.z;
+    } else {
+        lx = px - vx;
+        ly = py - vy;
+        lz = pz - vz;
+    }
+    w = (pp->size > 42.5) ? 255.0f : 6.0f * pp->size;
+    if (pp->kind & Trail) {
+        if (prevLineWidth != (s32) w) {
+            prevLineWidth = w;
+            GXSetLineWidth(w, GX_TO_ONE);
+        }
+        getClrTrail(pp, &color);
+        if (pp->kind & DispTexture) {
+            setVtxDesc(2);
+            GXBegin(GX_LINES, GX_VTXFMT2, 2);
+        } else {
+            setVtxDesc(3);
+            GXBegin(GX_LINES, GX_VTXFMT3, 2);
+        }
+        psPosition3(lx, ly, lz);
+        psColorRGBA4(color.r, color.g, color.b,
+                     (u8) ((f32) color.a * pp->trail));
+        if (pp->kind & DispTexture) {
+            GXTexCoord1x8(0);
+        }
+        psPosition3(px, py, pz);
+        psColorRGBA4(color.r, color.g, color.b, color.a);
+        if (pp->kind & DispTexture) {
+            GXTexCoord1x8(1);
+        }
+    } else {
+        if (prevPointSize != (s32) w) {
+            prevPointSize = w;
+            GXSetPointSize(w, GX_TO_ONE);
+        }
+        if (pp->kind & DispTexture) {
+            setVtxDesc(0);
+            GXBegin(GX_POINTS, GX_VTXFMT0, 1);
+        } else {
+            setVtxDesc(1);
+            GXBegin(GX_POINTS, GX_VTXFMT1, 1);
+        }
+        psPosition3(px, py, pz);
+        if (pp->kind & DispTexture) {
+            GXTexCoord1x8(1);
+        }
+    }
+}
+
+inline HSD_Particle* psDispSubPointTrail(HSD_Particle* pp)
+{
+    u8 w;
+    GXColor color;
+    f32 x, y, z;
+
+    psSetCurrentMtx(GX_PNMTX0);
+    w = (pp->size > 42.5) ? 255.0f : 6.0f * pp->size;
+    if (prevLineWidth != (s32) w) {
+        prevLineWidth = w;
+        GXSetLineWidth(w, GX_TO_ONE);
+    }
+    if (pp->kind & Tornado) {
+        calcTornadoLastPos(pp, &x, &y, &z);
+    } else {
+        x = pp->pos.x - pp->vel.x;
+        y = pp->pos.y - pp->vel.y;
+        z = pp->pos.z - pp->vel.z;
+    }
+    getClrTrail(pp, &color);
+    if (pp->kind & DispTexture) {
+        setVtxDesc(2);
+        GXBegin(GX_LINES, GX_VTXFMT2, 2);
+    } else {
+        setVtxDesc(3);
+        GXBegin(GX_LINES, GX_VTXFMT3, 2);
+    }
+    psPosition3(x, y, z);
+    psColorRGBA4(color.r, color.g, color.b, (u8) ((f32) color.a * pp->trail));
+    if (pp->kind & DispTexture) {
+        GXTexCoord1x8(0);
+    }
+    psPosition3(pp->pos.x, pp->pos.y, pp->pos.z);
+    psColorRGBA4(color.r, color.g, color.b, color.a);
+    if (pp->kind & DispTexture) {
+        GXTexCoord1x8(1);
+    }
+    return pp;
+}
+
+inline void psDispSubAppSRT(HSD_Particle* pp, u8* texform)
+{
+    Mtx mtx;
+    Mtx rot;
+    Mtx smtx;
+    Vec3 v;
+    Vec3 axis;
+    f32 px, py, pz;
+    f32 vx, vy, vz;
+    f32 right_x, up_x, right_y, up_y, right_z, up_z;
+    f32 angle;
+
+    if (pp->appsrt->frameNum != psFrameNum) {
+        if (pp->appsrt->status != PS_APPSTATUS_STILL) {
+            HSD_MtxSRT(pp->appsrt->mmtx, &pp->appsrt->scale,
+                       (Vec3*) &pp->appsrt->rot, &pp->appsrt->translate,
+                       NULL);
+        }
+        if (pp->appsrt->status == PS_APPSTATUS_ONCE) {
+            pp->appsrt->status = PS_APPSTATUS_STILL;
+        }
+    }
+    pp->appsrt->frameNum = psFrameNum;
+    PSMTXCopy(pp->appsrt->mmtx, mtx);
+    mtx[0][3] -= pp->appsrt->translate.x;
+    mtx[1][3] -= pp->appsrt->translate.y;
+    mtx[2][3] -= pp->appsrt->translate.z;
+    v.x = pp->vel.x;
+    v.y = pp->vel.y;
+    v.z = pp->vel.z;
+    PSMTXMultVec(mtx, &v, &v);
+    if (pp->appsrt->xA2 != 0 && !(pp->kind & Tornado)) {
+        PSMTXMultVec(rvmtxRot, &v, &v);
+    }
+    vx = v.x;
+    vy = v.y;
+    vz = v.z;
+    v.x = pp->pos.x;
+    v.y = pp->pos.y;
+    v.z = pp->pos.z;
+    if (pp->appsrt->xA2 != 0) {
+        PSMTXMultVec(mtx, &v, &v);
+        PSMTXMultVec(rvmtxRot, &v, &v);
+        v.x += pp->appsrt->translate.x;
+        v.y += pp->appsrt->translate.y;
+        v.z += pp->appsrt->translate.z;
+    } else {
+        PSMTXMultVec(pp->appsrt->mmtx, &v, &v);
+    }
+    px = v.x;
+    py = v.y;
+    pz = v.z;
+    if (texform != NULL) {
+        PSMTXScale(smtx, pp->appsrt->scale.x, pp->appsrt->scale.y, 1.0f);
+        PSMTXConcat(rvmtx, smtx, smtx);
+        right_x = smtx[0][0] * pp->size;
+        up_x = -smtx[0][1] * pp->size;
+        right_y = smtx[1][0] * pp->size;
+        up_y = -smtx[1][1] * pp->size;
+        right_z = smtx[2][0] * pp->size;
+        up_z = -smtx[2][1] * pp->size;
+    } else {
+        Vec3 r;
+        Vec3 u;
+
+        r.x = pp->appsrt->scale.x + vmtx[0][3];
+        r.y = pp->appsrt->scale.y + vmtx[1][3];
+        r.z = vmtx[2][3];
+        u.x = pp->appsrt->scale.x + vmtx[0][3];
+        u.y = -pp->appsrt->scale.y + vmtx[1][3];
+        u.z = vmtx[2][3];
+        PSMTXMultVec(rvmtx, &r, &r);
+        right_x = r.x * pp->size;
+        right_y = r.y * pp->size;
+        right_z = r.z * pp->size;
+        PSMTXMultVec(rvmtx, &u, &u);
+        up_x = u.x * pp->size;
+        up_y = u.y * pp->size;
+        up_z = u.z * pp->size;
+    }
+    if (pp->gen != NULL && (pp->gen->flags & 0x20)) {
+        right_x *= pp->gen->scale.x;
+        up_x *= pp->gen->scale.x;
+        right_y *= pp->gen->scale.y;
+        up_y *= pp->gen->scale.y;
+        right_z *= pp->gen->scale.z;
+        up_z *= pp->gen->scale.z;
+    }
+    if ((pp->kind & Trail) || (pp->kind & DirVec)) {
+        f32 x, y;
+        f32 lx, ly, lz;
+
+        if (0.0f == prj[0]) {
+            if (pp->kind & Tornado) {
+                calcTornadoLastPos(pp, &v.x, &v.y, &v.z);
+                if (pp->appsrt->xA2 != 0) {
+                    PSMTXMultVec(mtx, &v, &v);
+                    PSMTXMultVec(rvmtxRot, &v, &v);
+                    v.x += pp->appsrt->translate.x;
+                    v.y += pp->appsrt->translate.y;
+                    v.z += pp->appsrt->translate.z;
+                } else {
+                    PSMTXMultVec(pp->appsrt->mmtx, &v, &v);
+                }
+                lx = v.x;
+                ly = v.y;
+                lz = v.z;
+            } else {
+                lx = px - vx;
+                ly = py - vy;
+                lz = pz - vz;
+            }
+            {
+                f32 w0 = vmtx[2][3] +
+                         (vmtx[2][2] * pz +
+                          (vmtx[2][0] * px + vmtx[2][1] * py));
+                if (0.0f != w0) {
+                    f32 w0inv = -1.0f / w0;
+                    f32 w1 = vmtx[2][3] +
+                             (vmtx[2][2] * lz +
+                              (vmtx[2][0] * lx + vmtx[2][1] * ly));
+                    if (0.0f != w1) {
+                        f32 w1inv = -1.0f / w1;
+                        x = w0inv * (pvmtx[0][3] +
+                                     (pvmtx[0][2] * pz +
+                                      (pvmtx[0][0] * px + pvmtx[0][1] * py))) -
+                            w1inv * (pvmtx[0][3] +
+                                     (pvmtx[0][2] * lz +
+                                      (pvmtx[0][0] * lx + pvmtx[0][1] * ly)));
+                        y = w0inv * (pvmtx[1][3] +
+                                     (pvmtx[1][2] * pz +
+                                      (pvmtx[1][0] * px + pvmtx[1][1] * py))) -
+                            w1inv * (pvmtx[1][3] +
+                                     (pvmtx[1][2] * lz +
+                                      (pvmtx[1][0] * lx + pvmtx[1][1] * ly)));
+                        goto have_xy;
+                    }
+                }
+                goto use_rotate;
+            }
+        } else if (pp->kind & Tornado) {
+            calcTornadoLastPos(pp, &v.x, &v.y, &v.z);
+            if (pp->appsrt->xA2 != 0) {
+                PSMTXMultVec(mtx, &v, &v);
+                PSMTXMultVec(rvmtxRot, &v, &v);
+                v.x += pp->appsrt->translate.x;
+                v.y += pp->appsrt->translate.y;
+                v.z += pp->appsrt->translate.z;
+            } else {
+                PSMTXMultVec(pp->appsrt->mmtx, &v, &v);
+            }
+            {
+                f32 dx = px - v.x;
+                f32 dy = py - v.y;
+                f32 dz = pz - v.z;
+                x = pvmtx[0][2] * dz + (pvmtx[0][0] * dx + pvmtx[0][1] * dy);
+                y = pvmtx[1][2] * dz + (pvmtx[1][0] * dx + pvmtx[1][1] * dy);
+            }
+        } else {
+            x = pvmtx[0][2] * vz + (pvmtx[0][0] * vx + pvmtx[0][1] * vy);
+            y = pvmtx[1][2] * vz + (pvmtx[1][0] * vx + pvmtx[1][1] * vy);
+        }
+    have_xy:
+        if (psAbsLtF32(y, FLT_MIN)) {
+            angle = (x >= 0.0f) ? 1.5707964f : -1.5707964f;
+        } else {
+            angle = (f32) atan2(x, y);
+        }
+        if (pp->kind & DirVec) {
+            angle += pp->rotate;
+        }
+    } else {
+    use_rotate:
+        angle = pp->rotate;
+    }
+    if (psAbsGtF32(angle, 0.01)) {
+        axis.x = right_y * up_z - right_z * up_y;
+        axis.y = right_z * up_x - right_x * up_z;
+        axis.z = right_x * up_y - right_y * up_x;
+        PSMTXRotAxisRad(rot, &axis, angle);
+        {
+            f32 nrx = rot[0][2] * right_z +
+                      (rot[0][0] * right_x + rot[0][1] * right_y);
+            f32 nux = rot[0][2] * up_z + (rot[0][0] * up_x + rot[0][1] * up_y);
+            f32 nry = rot[1][2] * right_z +
+                      (rot[1][0] * right_x + rot[1][1] * right_y);
+            f32 nuy = rot[1][2] * up_z + (rot[1][0] * up_x + rot[1][1] * up_y);
+            f32 nrz = rot[2][2] * right_z +
+                      (rot[2][0] * right_x + rot[2][1] * right_y);
+            f32 nuz = rot[2][2] * up_z + (rot[2][0] * up_x + rot[2][1] * up_y);
+            right_x = nrx;
+            right_y = nry;
+            right_z = nrz;
+            up_x = nux;
+            up_y = nuy;
+            up_z = nuz;
+        }
+    }
+    psDispSubMakePolygon(pp, texform, px, py, pz, vx, vy, vz, right_x, right_y,
+                         right_z, up_x, up_y, up_z);
+}
+
+inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f32 z,
+                          f32 vx, f32 vy, f32 vz, f32 x0, f32 y0, f32 z0,
+                          f32 x1, f32 y1, f32 z1)
+{
+    GXColor color_buf;
+    GXColor* color = &color_buf;
+    f32 prev_x_buf;
+    f32 prev_y_buf;
+    f32 prev_z_buf;
+    f32* prev_x = &prev_x_buf;
+    f32* prev_y = &prev_y_buf;
+    f32* prev_z = &prev_z_buf;
+    Vec3 vel;
+    Vec2 right;
+    f32 right_z;
+    Vec2 up;
+    f32 up_z;
+    u8* it = texform;
+    /* The embedded assignments below keep three corner arguments out of the
+     * inline parameter homes, which is how the retail frame counts them. */
+    f32 cx;
+
+    vel.x = vx;
+    vel.y = vy;
+    vel.z = vz;
+    right.x = x0;
+    right.y = y0;
+    right_z = z0;
+    up.x = x1;
+    up.y = y1;
+    up_z = z1;
+
+    psSetCurrentMtx(GX_PNMTX0);
+    if (pp->kind & Trail) {
+        if (pp->kind & Tornado) {
+            if (pp->appsrt != NULL) {
+                Mtx mtx;
+                Vec3 v;
+                f32 tx, ty, tz;
+
+                calcTornadoLastPos(pp, &tx, &ty, &tz);
+                HSD_MtxSRT(mtx, &pp->appsrt->scale,
+                           (Vec3*) &pp->appsrt->rot,
+                           &pp->appsrt->translate, NULL);
+                v.x = tx;
+                v.y = ty;
+                v.z = tz;
+                PSMTXMultVec(mtx, &v, &v);
+                *prev_x = v.x;
+                *prev_y = v.y;
+                *prev_z = v.z;
+            } else {
+                calcTornadoLastPos(pp, prev_x, prev_y, prev_z);
+            }
+        } else {
+            *prev_x = x - vel.x;
+            *prev_y = y - vel.y;
+            *prev_z = z - vel.z;
+        }
+        getClrTrail(pp, color);
+        if (it == NULL) {
+            if (pp->kind & DispTexture) {
+                setVtxDesc(2);
+                GXBegin(GX_QUADS, GX_VTXFMT2, 4);
+            } else {
+                setVtxDesc(3);
+                GXBegin(GX_QUADS, GX_VTXFMT3, 4);
+            }
+            psPosition3((*prev_x) - right.x, (*prev_y) - right.y,
+                           (*prev_z) - right_z);
+            {
+                u8 a = color->a;
+                u8 b = color->b;
+                u8 g = color->g;
+                u16 r = color->r;
+                psColorRGBA4(r, g, b, (u8) ((f32) a * pp->trail));
+            }
+            if (pp->kind & DispTexture) {
+                u8 tex_base = (pp->kind >> 16) & 0xC;
+
+                GXWGFifo.u8 = tex_base;
+            }
+            psPosition3(x - up.x, y - up.y, z - up_z);
+            {
+                u8 a = color->a;
+                u8 b = color->b;
+                u8 g = color->g;
+                u16 r = color->r;
+                psColorRGBA4(r, g, b, a);
+            }
+            if (pp->kind & DispTexture) {
+                GXWGFifo.u8 = ((pp->kind >> 16) & 0xC) + 1;
+            }
+            psPosition3(x + right.x, y + right.y, z + right_z);
+            {
+                u8 a = color->a;
+                u8 b = color->b;
+                u8 g = color->g;
+                u16 r = color->r;
+                psColorRGBA4(r, g, b, a);
+            }
+            if (pp->kind & DispTexture) {
+                GXWGFifo.u8 = ((pp->kind >> 16) & 0xC) + 2;
+            }
+            psPosition3((*prev_x) + up.x, (*prev_y) + up.y,
+                           (*prev_z) + up_z);
+            {
+                u8 a = color->a;
+                f32 alpha = (f32) a * pp->trail;
+                u8 b = color->b;
+                u8 g = color->g;
+                u16 r = color->r;
+                psColorRGBA4(r, g, b, (u8) alpha);
+            }
+            if (pp->kind & DispTexture) {
+                GXWGFifo.u8 = ((pp->kind >> 16) & 0xC) + 3;
+            }
+        } else {
+            f32 trail_alpha = 255.0f * (1.0f - pp->trail);
+            f32 up_len = sqrtf(up.x * up.x + up.y * up.y + up_z * up_z);
+
+            if (up_len != 0.0f) {
+                f32 dz = z - (*prev_z);
+                f32 dx = x - (*prev_x);
+                f32 dy = y - (*prev_y);
+                f32 xl = dx * dx;
+                f32 yl = dy * dy;
+                f32 zl = dz * dz;
+                f32 segment_len = sqrtf(zl + (xl + yl));
+                f32 ratio = segment_len / up_len;
+                u32 primitive_count = *(u32*) it;
+
+                it += sizeof(u32);
+                up.x *= ratio;
+                up.y *= ratio;
+                up_z *= ratio;
+                for (; primitive_count != 0; primitive_count--) {
+                    GXPrimitive primitive = it[0];
+                    u8 count = it[1];
+                    s32 i;
+
+                    it += 4;
+                    if (pp->kind & DispTexture) {
+                        setVtxDesc(5);
+                        GXBegin(primitive, GX_VTXFMT5, count);
+                    } else {
+                        setVtxDesc(3);
+                        GXBegin(primitive, GX_VTXFMT3, count);
+                    }
+                    for (i = count; i > 0; i--) {
+                        f32 s = *(f32*) &it[0];
+                        f32 sx = 2.0f * (s - 0.5f);
+                        f32 t;
+                        f32 tx;
+                        s32 converted_alpha;
+                        s32 alpha;
+
+                        if (pp->kind & TexFlipS) {
+                            s = 1.0f - s;
+                        }
+                        t = *(f32*) &it[4];
+                        it += 8;
+                        alpha = (s32) (255.0f - t * trail_alpha);
+                        converted_alpha = (s32) (255.0f - t * trail_alpha);
+                        if (converted_alpha < 0) {
+                            alpha = 0;
+                        }
+                        if (alpha > 0xFF) {
+                            alpha = 0xFF;
+                        }
+                        tx = 2.0f * (t - 0.5f);
+                        if (pp->kind & TexFlipT) {
+                            t = 1.0f - t;
+                        }
+                        GXWGFifo.f32 = up.x * tx + (right.x * sx + x);
+                        GXWGFifo.f32 = up.y * tx + (right.y * sx + y);
+                        GXWGFifo.f32 = up_z * tx + (right_z * sx + z);
+                        psColorRGBA4(color->r, color->g, color->b, alpha);
+                        if (pp->kind & DispTexture) {
+                            GXWGFifo.f32 = s;
+                            GXWGFifo.f32 = t;
+                        }
+                    }
+                }
+            }
+        }
+    } else if (it == NULL) {
+        if (pp->kind & DispTexture) {
+            setVtxDesc(0);
+            GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+        } else {
+            setVtxDesc(1);
+            GXBegin(GX_QUADS, GX_VTXFMT1, 4);
+        }
+        psPosition3((cx = x - right.x), y - right.y, z - right_z);
+        if (pp->kind & DispTexture) {
+            GXWGFifo.u8 = (pp->kind >> 16) & 0xC;
+        }
+        psPosition3((cx = x - up.x), y - up.y, z - up_z);
+        if (pp->kind & DispTexture) {
+            GXWGFifo.u8 = ((pp->kind >> 16) & 0xC) + 1;
+        }
+        psPosition3((cx = x + right.x), y + right.y, z + right_z);
+        if (pp->kind & DispTexture) {
+            GXWGFifo.u8 = ((pp->kind >> 16) & 0xC) + 2;
+        }
+        psPosition3(x + up.x, y + up.y, z + up_z);
+        if (pp->kind & DispTexture) {
+            GXWGFifo.u8 = ((pp->kind >> 16) & 0xC) + 3;
+        }
+    } else {
+        u32 primitive_count = *(u32*) it;
+        it += sizeof(u32);
+        for (; primitive_count != 0; primitive_count--) {
+            GXPrimitive primitive = it[0];
+            u8 count = it[1];
+            s32 i;
+
+            it += 4;
+            if (pp->kind & DispTexture) {
+                setVtxDesc(4);
+                GXBegin(primitive, GX_VTXFMT4, count);
+            } else {
+                setVtxDesc(1);
+                GXBegin(primitive, GX_VTXFMT1, count);
+            }
+            for (i = count; i > 0; i--) {
+                f32 s = *(f32*) &it[0];
+                f32 sx = 2.0f * (s - 0.5f);
+                f32 t;
+                f32 tx;
+
+                if (pp->kind & TexFlipS) {
+                    s = 1.0f - s;
+                }
+                t = *(f32*) &it[4];
+                it += 8;
+                tx = 2.0f * (t - 0.5f);
+                if (pp->kind & TexFlipT) {
+                    t = 1.0f - t;
+                }
+                psPosition3(x + right.x * sx + up.x * tx,
+                               y + right.y * sx + up.y * tx,
+                               z + right_z * sx + up_z * tx);
+                if (pp->kind & DispTexture) {
+                    GXWGFifo.f32 = s;
+                    GXWGFifo.f32 = t;
+                }
+            }
+        }
+    }
+    (void) (up.x + up.y + up_z);
+}
+
+inline void psDispSub(HSD_Particle* pp, u8* texform)
+{
+    f32 x = pp->pos.x;
+    f32 y = pp->pos.y;
+    f32 z = pp->pos.z;
+    f32 right_x;
+    f32 up_x;
+    f32 right_y;
+    f32 up_y;
+    f32 right_z;
+    f32 up_z;
+    f32 angle;
+
+    if (texform != NULL) {
+        right_x = rvmtx[0][0] * pp->size;
+        up_x = -rvmtx[0][1] * pp->size;
+        right_y = rvmtx[1][0] * pp->size;
+        up_y = -rvmtx[1][1] * pp->size;
+        right_z = rvmtx[2][0] * pp->size;
+        up_z = -rvmtx[2][1] * pp->size;
+    } else {
+        right_x = rx0 * pp->size;
+        up_x = rx1 * pp->size;
+        right_y = ry0 * pp->size;
+        up_y = ry1 * pp->size;
+        right_z = rz0 * pp->size;
+        up_z = rz1 * pp->size;
+    }
+    if (pp->gen != NULL && (pp->gen->flags & 0x20)) {
+        right_x *= pp->gen->scale.x;
+        up_x *= pp->gen->scale.x;
+        right_y *= pp->gen->scale.y;
+        up_y *= pp->gen->scale.y;
+        right_z *= pp->gen->scale.z;
+        up_z *= pp->gen->scale.z;
+    }
+    if ((pp->kind & Trail) || (pp->kind & DirVec)) {
+        f32 x;
+        f32 y;
+
+        if (0.0f == prj[0]) {
+            f32 prev_x;
+            f32 prev_y;
+            f32 prev_z;
+            f32 w0;
+            f32 w0inv;
+            f32 w1;
+            f32 w1inv;
+            f32 pv13;
+            f32 pv03;
+
+            if (pp->kind & Tornado) {
+                calcTornadoLastPos(pp, &prev_x, &prev_y, &prev_z);
+            } else {
+                prev_x = pp->pos.x - pp->vel.x;
+                prev_y = pp->pos.y - pp->vel.y;
+                prev_z = pp->pos.z - pp->vel.z;
+            }
+            w0 = vmtx[2][3] +
+                 (vmtx[2][2] * pp->pos.z +
+                  (vmtx[2][0] * pp->pos.x + vmtx[2][1] * pp->pos.y));
+            if (0.0f == w0) {
+                return;
+            }
+            w0inv = -1.0f / w0;
+            w1 = vmtx[2][3] + (vmtx[2][2] * prev_z +
+                               (vmtx[2][0] * prev_x + vmtx[2][1] * prev_y));
+            if (0.0f == w1) {
+                return;
+            }
+            w1inv = -1.0f / w1;
+            pv03 = pvmtx[0][3];
+            pv13 = pvmtx[1][3];
+            x = w0inv * (pv03 + (pvmtx[0][2] * pp->pos.z +
+                                 (pvmtx[0][0] * pp->pos.x +
+                                  pvmtx[0][1] * pp->pos.y))) -
+                w1inv *
+                    (pv03 + (pvmtx[0][2] * prev_z +
+                             (pvmtx[0][0] * prev_x + pvmtx[0][1] * prev_y)));
+            y = w0inv * (pv13 + (pvmtx[1][2] * pp->pos.z +
+                                 (pvmtx[1][0] * pp->pos.x +
+                                  pvmtx[1][1] * pp->pos.y))) -
+                w1inv *
+                    (pv13 + (pvmtx[1][2] * prev_z +
+                             (pvmtx[1][0] * prev_x + pvmtx[1][1] * prev_y)));
+            /* The second read pools the y-row product into a shared temp,
+             * which is what keeps it out of the spill pair. */
+            (void) (pvmtx[1][1] * prev_y);
+        } else if (pp->kind & Tornado) {
+            f32 prev_x;
+            f32 prev_y;
+            f32 prev_z;
+            f32 dx;
+            f32 dy;
+            f32 dz;
+
+            calcTornadoLastPos(pp, &prev_x, &prev_y, &prev_z);
+            dx = pp->pos.x - prev_x;
+            dy = pp->pos.y - prev_y;
+            dz = pp->pos.z - prev_z;
+            x = pvmtx[0][2] * dz + (pvmtx[0][0] * dx + pvmtx[0][1] * dy);
+            y = pvmtx[1][2] * dz + (pvmtx[1][0] * dx + pvmtx[1][1] * dy);
+        } else {
+            x = pvmtx[0][2] * pp->vel.z +
+                (pvmtx[0][0] * pp->vel.x + pvmtx[0][1] * pp->vel.y);
+            y = pvmtx[1][2] * pp->vel.z +
+                (pvmtx[1][0] * pp->vel.x + pvmtx[1][1] * pp->vel.y);
+        }
+        if (psDispSubAbsLtF32(y, FLT_MIN)) {
+            angle = (x >= 0.0f) ? 1.5707964f : -1.5707964f;
+        } else {
+            angle = (f32) atan2(x, y);
+        }
+        if (pp->kind & DirVec) {
+            angle += pp->rotate;
+        }
+    } else {
+        angle = pp->rotate;
+    }
+    if (psDispSubAbsGtF32(angle, 0.01)) {
+        Mtx mtx;
+        Vec3 axis;
+
+        f32 rx = right_x;
+        f32 ry = right_y;
+        f32 rz = right_z;
+        f32 ux = up_x;
+        f32 uz = up_z;
+        f32 uy = up_y;
+        f32 ax;
+        f32 ay;
+        f32 az;
+
+        ax = ry * uz - rz * uy;
+        {
+            f32 axis_y_product = rx * uz;
+            ay = rz * ux - axis_y_product;
+        }
+        az = rx * uy - ry * ux;
+        axis.x = ax;
+        axis.y = ay;
+        axis.z = az;
+        PSMTXRotAxisRad(mtx, &axis, angle);
+        right_x = mtx[0][2] * rz + (mtx[0][0] * rx + mtx[0][1] * ry);
+        right_y = mtx[1][2] * rz + (mtx[1][0] * rx + mtx[1][1] * ry);
+        right_z = mtx[2][2] * rz + (mtx[2][0] * rx + mtx[2][1] * ry);
+        up_x = mtx[0][2] * uz + (mtx[0][0] * ux + mtx[0][1] * uy);
+        up_y = mtx[1][2] * uz + (mtx[1][0] * ux + mtx[1][1] * uy);
+        up_z = mtx[2][2] * uz + (mtx[2][0] * ux + mtx[2][1] * uy);
+    }
+    psDispSubMakePolygon(pp, texform, x, y, z, pp->vel.x, pp->vel.y,
+                         pp->vel.z, right_x, right_y, right_z, up_x, up_y,
+                         up_z);
+}
+
+#define PS_FLAG_HIDDEN 0x20000000
+
+static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void* camera)
+{
+    s32 linkNo;
+    u8* prevTex;
+    u32 prevTexEdge;
+    u32 prevMirror;
+    u8 prevACmpParam1;
+    u8 prevACmpParam2;
+    s32 needs_setup;
+    u16* prevLut;
+    HSD_TlutDesc tlutdesc;
+    GXTexObj texObj;
+    HSD_Particle* sorted_particles;
+    HSD_Particle* non_edge_particles;
+    f32 y2;
+    GXTlutObj gx_tlut_obj;
+    s32 alpha_compare_mode;
+    s32 prev_tex_interp_near;
+    u32 prev_kind;
+    HSD_Particle* pp;
+
+    alpha_compare_mode = 0;
+    prev_tex_interp_near = 0;
+    prevACmpParam1 = 0;
+    prevACmpParam2 = 0xFF;
+    needs_setup = 1;
+    for (linkNo = 0; linkNo < PS_NUM_LINK; linkNo++) {
+        if (target_link & (1 << linkNo)) {
+            particleSort(linkNo, &sorted_particles, &non_edge_particles);
+            switch (sw) {
+            case 1:
+                pp = sorted_particles;
+                break;
+            case 2:
+                pp = non_edge_particles;
+                break;
+            default:
+                continue;
+            }
+            while (pp != NULL) {
+                HSD_PSTexGroup* tex_group = NULL;
+                HSD_PSFormGroup* form_group = NULL;
+                HSD_PSFormGroup** form_groups;
+                u8* form = NULL;
+                void* image;
+                u32 blend_mode;
+                u8 alpha0;
+                u8 alpha1;
+                GXTexWrapMode wrap_s;
+                GXTexWrapMode wrap_t;
+                f32 scale_s;
+                f32 scale_t;
+                GXTexFmt fmt;
+                u8** tex_table;
+                u32 width;
+                u32 height;
+
+                if ((sw == 1) && !(pp->kind & TexEdge)) {
+                    break;
+                }
+                if (!(pp->size < FLT_EPSILON) &&
+                    (gp == NULL || pp->idnum == gp->idnum) &&
+                    pp->gen->camera == camera &&
+                    !(pp->kind & PS_FLAG_HIDDEN))
+                {
+                    if (needs_setup != 0) {
+                        Mtx billboard_mtx = { { 1.0F, 0.0F, 0.0F, 0.0F },
+                                              { 0.0F, 1.0F, 0.0F, 0.0F },
+                                              { 0.0F, 0.0F, 1.0F, 0.0F } };
+                        prevLut = NULL;
+                        prevPointSize = -1;
+                        prevTex = NULL;
+                        prevLineWidth = -1;
+                        prevChanCtrl = -1;
+                        psSetupTevInvalidState();
+                        prevMirror = (u32) -1;
+                        prev_kind &= 0xFEFFFFFF;
+                        prevTexEdge = (u32) -1;
+                        HSD_FogSet(NULL);
+                        prevChanMat.r = prevChanMat.g = prevChanMat.b = 0xFF;
+                        prevChanAmb.r = prevChanAmb.g = prevChanAmb.b = 0xFF;
+                        prevChanMat.a = prevChanAmb.a = 0xFF;
+                        GXSetChanMatColor(GX_COLOR0A0, prevChanMat);
+                        GXSetChanAmbColor(GX_COLOR0A0, prevChanAmb);
+                        psSetupTevInvalidState();
+                        psSetupTevCommon();
+                        psSetColor(&prevColorPrim, 0xFF);
+                        psSetColor(&prevColorEnv, 0);
+                        psSetColor(&prevColorMat, 0xFF);
+                        GXSetTevColor(GX_TEVREG0, prevColorPrim);
+                        GXSetTevColor(GX_TEVREG1, prevColorEnv);
+                        GXSetTevColor(GX_TEVREG2, prevColorMat);
+                        prevBlendMode = -1;
+                        GXSetZCompLoc(GX_FALSE);
+                        HSD_CObjGetViewingMtx(HSD_CObjGetCurrent(), vmtx);
+                        PSMTXInverse(vmtx, rvmtx);
+                        {
+                            f32 w0;
+                            f32 x_offset;
+                            f32 x_scale;
+                            f32 w1;
+                            f32 y_offset;
+                            f32 y_scale;
+                            f32 w2;
+                            f32 w3;
+                            f32 y0;
+                            f32 y1;
+
+                            if (0.0f == prj[0]) {
+                                x_scale = prj[1];
+                                x_offset = prj[2];
+                                w0 = vmtx[2][0];
+                                pvmtx[0][0] =
+                                    x_scale * vmtx[0][0] + x_offset * w0;
+                                w1 = vmtx[2][1];
+                                pvmtx[0][1] =
+                                    x_scale * vmtx[0][1] + x_offset * w1;
+                                w2 = vmtx[2][2];
+                                pvmtx[0][2] =
+                                    x_scale * vmtx[0][2] + x_offset * w2;
+                                w3 = vmtx[2][3];
+                                pvmtx[0][3] =
+                                    x_scale * vmtx[0][3] + x_offset * w3;
+                                y_scale = prj[3];
+                                y_offset = prj[4];
+                                y0 = y_offset * w0;
+                                y1 = y_offset * w1;
+                                y2 = y_offset * w2;
+                                pvmtx[1][0] = y_scale * vmtx[1][0] + y0;
+                                pvmtx[1][1] = y_scale * vmtx[1][1] + y1;
+                                pvmtx[1][2] = y_scale * vmtx[1][2] + y2;
+                                pvmtx[1][3] =
+                                    y_scale * vmtx[1][3] + (y_offset * w3);
+                            } else {
+                                pvmtx[0][0] = prj[1] * vmtx[0][0] + prj[2];
+                                pvmtx[0][1] = prj[1] * vmtx[0][1] + prj[2];
+                                pvmtx[0][2] = prj[1] * vmtx[0][2] + prj[2];
+                                pvmtx[0][3] = prj[1] * vmtx[0][3] + prj[2];
+                                pvmtx[1][0] = prj[3] * vmtx[1][0] + prj[4];
+                                pvmtx[1][1] = prj[3] * vmtx[1][1] + prj[4];
+                                pvmtx[1][2] = prj[3] * vmtx[1][2] + prj[4];
+                                pvmtx[1][3] = prj[3] * vmtx[1][3] + prj[4];
+                            }
+ /// @todo Passing @c rvmtx directly swaps the first
+ /// two axis loads.
+                            psUpdateBillboardAxes(*(const Mtx*) rvmtx);
+                        }
+                        GXLoadPosMtxImm(vmtx, GX_PNMTX0);
+                                        GXLoadPosMtxImm(billboard_mtx, GX_PNMTX1);
+                        currentMtx = GX_PNMTX1;
+                        psSetCurrentMtx(GX_PNMTX0);
+                        GXEnableTexOffsets(GX_TEXCOORD0, GX_TRUE, GX_TRUE);
+                        HSD_MtxGetRotationMtx(rvmtx, rvmtxRot, 'z', 'x');
+                        GXSetCullMode(GX_CULL_BACK);
+                        GXSetArray(GX_VA_TEX0, billboard_tex0_u8, 2);
+                        psSetupVtxFormat(GX_VTXFMT0, false, true, GX_U8);
+                        psSetupVtxFormat(GX_VTXFMT1, false, false, GX_U8);
+                        psSetupVtxFormat(GX_VTXFMT2, true, true, GX_U8);
+                        psSetupVtxFormat(GX_VTXFMT3, true, false, GX_U8);
+                        psSetupVtxFormat(GX_VTXFMT4, false, true, GX_F32);
+                        psSetupVtxFormat(GX_VTXFMT5, true, true, GX_F32);
+                        needs_setup = 0;
+                    }
+
+                    blend_mode = (pp->kind >> 0x16U) & 3;
+                    setBlendMode(blend_mode);
+
+                    if (pp->aCmpCount != 0) {
+                        s32 scale = (65536 * pp->aCmpRemain) / pp->aCmpCount;
+                        alpha0 = ((pp->aCmpParam1Target << 16) +
+                                  scale * (pp->aCmpParam1 -
+                                           pp->aCmpParam1Target)) >>
+                                 16;
+                        alpha1 = ((pp->aCmpParam2Target << 16) +
+                                  scale * (pp->aCmpParam2 -
+                                           pp->aCmpParam2Target)) >>
+                                 16;
+                    } else {
+                        alpha0 = pp->aCmpParam1;
+                        alpha1 = pp->aCmpParam2;
+                    }
+                    if ((alpha_compare_mode != pp->aCmpMode) ||
+                        (prevACmpParam1 != alpha0) ||
+                        (prevACmpParam2 != alpha1))
+                    {
+                        prevACmpParam1 = alpha0;
+                        alpha_compare_mode = pp->aCmpMode;
+                        prevACmpParam2 = alpha1;
+                        GXSetAlphaCompare(
+                            (alpha_compare_mode >> 3) & 7, prevACmpParam1,
+                            (alpha_compare_mode >> 6) & 3,
+                            alpha_compare_mode & 7, prevACmpParam2);
+                    }
+
+                    psSetupTev(pp);
+                    setupChanCtrl(pp);
+                    setupChanReg(pp);
+                    setupTevReg(pp);
+                    if ((pp->kind & (TexEdge | NoZComp)) != prevTexEdge) {
+                        prevTexEdge = pp->kind & (TexEdge | NoZComp);
+                        if (prevTexEdge & TexEdge) {
+                            GXSetZMode((pp->kind & NoZComp) ? GX_FALSE : GX_TRUE,
+                                       GX_LEQUAL, GX_TRUE);
+                        } else {
+                            GXSetZMode((pp->kind & NoZComp) ? GX_FALSE : GX_TRUE,
+                                       GX_LEQUAL, GX_FALSE);
+                        }
+                    }
+                    if (((pp->kind ^ prev_kind) & DispFog) != 0) {
+                        if (pp->kind & DispFog) {
+                            HSD_FogSet(particleFog);
+                        } else {
+                            HSD_FogSet(NULL);
+                        }
+                    }
+
+                    /* particle.h declares psFormGroupArray as int[]; it holds
+                     * HSD_PSFormGroup** in XD. */
+                    form_groups = (HSD_PSFormGroup**) psFormGroupArray[pp->bank];
+                    if (form_groups != NULL &&
+                        (form_group = form_groups[pp->texGroup]) != NULL
+#ifdef MUST_MATCH
+                        && form_group->formTable != NULL
+#endif
+                    )
+                    {
+                        form = form_group->formTable[pp->poseNum];
+                    } else {
+                        form = NULL;
+                    }
+
+                    if (pp->kind & DispTexture) {
+                        if (pp->kind & MirrorS) {
+                            scale_s = 2.0f;
+                            wrap_s = GX_MIRROR;
+                        } else {
+                            scale_s = 1.0f;
+                            wrap_s = GX_CLAMP;
+                        }
+                        if (pp->kind & MirrorT) {
+                            scale_t = 2.0f;
+                            wrap_t = GX_MIRROR;
+                        } else {
+                            scale_t = 1.0f;
+                            wrap_t = GX_CLAMP;
+                        }
+                        if ((pp->kind & (MirrorS | MirrorT)) != prevMirror) {
+                            Mtx temp_mtx;
+
+                            prevMirror = pp->kind & (MirrorS | MirrorT);
+                            prevTex = NULL;
+                            PSMTXScale(temp_mtx, scale_s, scale_t, 1.0f);
+                            if (pp->kind & MirrorT) {
+                                temp_mtx[1][3] = 1.0f;
+                            }
+                            GXLoadTexMtxImm(temp_mtx, GX_TEXMTX0, GX_MTX2x4);
+                            GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4,
+                                              GX_TG_TEX0, GX_TEXMTX0, GX_FALSE,
+                                              GX_PTIDENTITY);
+                        }
+                        tex_group = psTexGroupArray[pp->bank][pp->texGroup];
+                        if (tex_group != NULL) {
+                            fmt = tex_group->fmt;
+                            tex_table = tex_group->texTable;
+                            width = tex_group->width;
+                            height = tex_group->height;
+                        } else {
+                            fmt = 0;
+                            height = 0;
+                            width = 0;
+                            tex_table = NULL;
+                        }
+                        if (tex_table != NULL) {
+                            image = tex_table[pp->poseNum];
+                        } else {
+                            image = NULL;
+                        }
+                        if ((fmt == GX_TF_C4) || (fmt == GX_TF_C8)) {
+                            if (tex_table != NULL) {
+                                void** palettes =
+                                    (void**) &tex_table[tex_group->num];
+                                if (palettes != NULL) {
+                                    if (pp->palNum != 0xFF) {
+                                        tlutdesc.lut = palettes[pp->palNum];
+                                    } else if (!(pp->kind & ComTLUT)) {
+                                        tlutdesc.lut = palettes[pp->poseNum];
+                                    } else {
+                                        tlutdesc.lut = palettes[0];
+                                    }
+                                    if (tlutdesc.lut != prevLut) {
+                                        tlutdesc.fmt = (GXTlutFmt) (u8)
+                                                           tex_group->tlutfmt;
+                                        tlutdesc.tlut_name = GX_TLUT0;
+                                        tlutdesc.n_entries =
+                                            (fmt == GX_TF_C4) ? 16 : 256;
+                                        GXInitTlutObj(
+                                            &gx_tlut_obj, tlutdesc.lut,
+                                            tlutdesc.fmt, tlutdesc.n_entries);
+                                        GXLoadTlut(&gx_tlut_obj,
+                                                   tlutdesc.tlut_name);
+                                    }
+                                    prevTex = NULL;
+                                }
+                            }
+                        }
+                        if ((prevTex != image) && (image != NULL)) {
+                            prevTex = image;
+                            switch (fmt) {
+                            case GX_TF_C4:
+                            case GX_TF_C8:
+                                GXInitTexObjCI(&texObj, image, width, height,
+                                               fmt, wrap_s, wrap_t, GX_FALSE,
+                                               GX_TLUT0);
+                                break;
+                            case GX_TF_I4:
+                            case GX_TF_I8:
+                            case GX_TF_IA4:
+                            case GX_TF_IA8:
+                            case GX_TF_RGB565:
+                            case GX_TF_RGB5A3:
+                            case GX_TF_RGBA8:
+                            case GX_TF_CMPR:
+                                GXInitTexObj(&texObj, image, width, height,
+                                             fmt, wrap_s, wrap_t, GX_FALSE);
+                                break;
+                            default:
+                                HSD_ASSERT(0x7AD, 0);
+                                break;
+                            }
+                            prev_tex_interp_near = pp->kind & TexInterpNear;
+                            GXInitTexObjLOD(
+                                &texObj,
+                                (prev_tex_interp_near != 0) ? GX_NEAR
+                                                            : GX_LINEAR,
+                                (pp->kind & TexInterpNear) ? GX_NEAR
+                                                           : GX_LINEAR,
+                                0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE,
+                                GX_ANISO_1);
+                            GXLoadTexObj(&texObj, GX_TEXMAP0);
+                        }
+                        if ((u32) prev_tex_interp_near !=
+                            (pp->kind & TexInterpNear))
+                        {
+                            prev_tex_interp_near = pp->kind & TexInterpNear;
+                            GXInitTexObjLOD(
+                                &texObj,
+                                (prev_tex_interp_near != 0) ? GX_NEAR
+                                                            : GX_LINEAR,
+                                (s32) (pp->kind & TexInterpNear) != 0
+                                    ? GX_NEAR
+                                    : GX_LINEAR,
+                                0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE,
+                                GX_ANISO_1);
+                            GXLoadTexObj(&texObj, GX_TEXMAP0);
+                        }
+                    }
+
+                    if (pp->kind & DispPoint) {
+                        if (pp->appsrt != NULL) {
+                            psDispSubAPPSRTPoint(pp);
+                        } else if (pp->kind & Trail) {
+                            pp = psDispSubPointTrail(pp);
+                        } else {
+                            u8 point_size;
+
+                            psSetCurrentMtx(GX_PNMTX0);
+                            point_size = (pp->size > 42.5) ? 255.0f : 6.0f * pp->size;
+                            if (prevPointSize != (s32) point_size) {
+                                prevPointSize = point_size;
+                                GXSetPointSize(point_size, GX_TO_ONE);
+                            }
+                            if (pp->kind & DispTexture) {
+                                setVtxDesc(0);
+                                GXBegin(GX_POINTS, GX_VTXFMT0, 1);
+                            } else {
+                                setVtxDesc(1);
+                                GXBegin(GX_POINTS, GX_VTXFMT1, 1);
+                            }
+                            psPosition3(pp->pos.x, pp->pos.y, pp->pos.z);
+                            if (pp->kind & DispTexture) {
+                                GXTexCoord1x8(1);
+                            }
+                        }
+                    } else if (pp->appsrt != NULL) {
+                        psDispSubAppSRT(pp, form);
+                    } else {
+                        psDispSub(pp, form);
+                    }
+                }
+
+                prev_kind = pp->kind;
+                pp = pp->next;
+            }
+        }
+    }
+    if (needs_setup == 0) {
+        HSD_StateInvalidate(-1);
+    }
+}
+
+void psDispSetProjection(void* proj)
+{
+    memcpy(prj, proj, sizeof(prj));
+}
+
+void psDispParticles(u32 target_link, u32 sw, void* camera)
+{
+    _psDispParticlesSub(target_link, sw, NULL, camera);
+}

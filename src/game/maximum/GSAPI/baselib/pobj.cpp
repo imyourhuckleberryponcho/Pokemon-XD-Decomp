@@ -1,0 +1,1512 @@
+// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
+// source order. Ported from the Melee decomp's pobj.c (headers: include/hsd_ref).
+// The original file name, used by the asserts.
+#define HSD_FILE_NAME "pobj.c"
+
+#include <sysdolphin/baselib/pobj.h>
+
+#include <string.h>
+
+#include <sysdolphin/baselib/aobj.h>
+#include <sysdolphin/baselib/class.h>
+#include <sysdolphin/baselib/debug.h>
+#include <sysdolphin/baselib/displayfunc.h>
+#include <sysdolphin/baselib/forward.h>
+#include <sysdolphin/baselib/id.h>
+#include <sysdolphin/baselib/jobj.h>
+#include <sysdolphin/baselib/memory.h>
+void HSD_MtxScaledAdd(Mtx arg0, Mtx arg1, Mtx arg2, f32 arg3);
+#include <sysdolphin/baselib/perf.h>
+#include <sysdolphin/baselib/state.h>
+#include <sysdolphin/baselib/tobj.h>
+s32 HSD_Index2PosNrmMtx(u32 arg0);
+#include <dolphin/gx.h>
+#include <dolphin/mtx.h>
+#include <dolphin/os.h>
+
+#pragma pool_strings off
+
+static void PObjInfoInit(void);
+extern int _HSD_MemCheckOwn(void* ptr);
+void* HSD_Alloc(s32 size);
+
+HSD_PObjInfo hsdPObj = { PObjInfoInit };
+
+static HSD_PObjInfo* default_class = NULL;
+
+static f32 (*vertex_buffer)[3] = NULL;
+static f32 (*normal_buffer)[3] = NULL;
+static u32 vertex_buffer_size = 0;
+static u32 normal_buffer_size = 0;
+
+static HSD_VtxDescList* prev_vtxdesclist_array = NULL;
+static HSD_VtxDescList* prev_vtxdesc = NULL;
+
+static struct mtx_mark_t {
+    void* obj;
+    u32 mark;
+} mtx_mark[2];
+
+#define pobj_min(x, y) (x < y ? x : y)
+
+inline void HSD_PObjRemoveAnimByFlags(HSD_PObj* pobj, u32 flags);
+inline void HSD_PObjAddAnim(HSD_PObj* pobj, HSD_ShapeAnim* shapeanim);
+inline void HSD_PObjReqAnimByFlags(HSD_PObj* pobj, f32 startframe, u32 flags);
+inline static void ShapeSetSetAnimResult(HSD_ShapeSet* shape_set, u32 type, HSD_ObjData* val);
+inline void HSD_PObjAnim(HSD_PObj* pobj);
+inline static HSD_Envelope* HSD_EnvelopeAlloc(void);
+inline static void HSD_EnvelopeFree(HSD_Envelope* env);
+inline static void HSD_EnvelopeListFree(HSD_SList* list);
+inline static HSD_SList* loadEnvelopeDesc(HSD_EnvelopeDesc** edesc_p);
+inline static void HSD_ShapeSetFree(HSD_ShapeSet* shape_set);
+inline static void HSD_ShapeSetRemove(HSD_ShapeSet* shape_set);
+inline static HSD_ShapeSet* loadShapeSetDesc(HSD_ShapeSetDesc* sdesc);
+inline void HSD_PObjRemove(HSD_PObj* pobj);
+inline HSD_PObjInfo* HSD_PObjGetDefaultClass(void);
+inline HSD_PObj* HSD_PObjAlloc(void);
+inline static void resolveEnvelope(HSD_SList* list, HSD_EnvelopeDesc** edesc_p);
+inline void HSD_PObjResolveRefs(HSD_PObj* pobj, HSD_PObjDesc* pdesc);
+inline static void setupArrayDesc(HSD_VtxDescList* desc_list);
+inline static void setupVtxDesc(HSD_PObj* pobj);
+inline static void setupShapeAnimArrayDesc(HSD_VtxDescList* desc_list);
+inline static void setupShapeAnimVtxDesc(HSD_PObj* pobj);
+static inline void decode_u8_xyz(void* src_base, f32 dst[3], int scale);
+static inline void decode_s8_xyz(void* src_base, f32 dst[3], int scale);
+static inline void decode_u16_xyz(void* src_base, f32 dst[3], int scale);
+static inline void decode_s16_xyz(void* src_base, f32 dst[3], int scale);
+inline static void MtxInverseTransposeInline(Mtx src, Mtx dest)
+{
+    if (!PSMTXInvXpose(src, dest)) {
+        PSMTXCopy(src, dest);
+    }
+}
+
+inline static PObjSetupFlag GetSetupFlags(HSD_JObj* jobj, u32 rendermode);
+inline static void SetupRigidModelMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode);
+inline static void PObjDispSimplePrimitive(HSD_PObj* pobj, u32 rendermode);
+inline static void PObjDispShapeAnim(HSD_PObj* pobj, u32 rendermode);
+void HSD_PObjRemoveAnimAllByFlags(HSD_PObj* pobj, u32 flags);
+void HSD_PObjAddAnimAll(HSD_PObj* pobj, HSD_ShapeAnim* shapeanim);
+void HSD_PObjReqAnimAllByFlags(HSD_PObj* pobj, f32 startframe, u32 flags);
+static void PObjUpdateFunc(void* obj, int type, HSD_ObjData* val);
+void HSD_PObjAnimAll(HSD_PObj* pobj);
+static s32 PObjLoad(HSD_PObj* pobj, HSD_PObjDesc* desc);
+HSD_PObj* HSD_PObjLoadDesc(HSD_PObjDesc* pobjdesc);
+void HSD_PObjRemoveAll(HSD_PObj* pobj);
+void HSD_PObjResolveRefsAll(HSD_PObj* pobj, HSD_PObjDesc* pdesc);
+void HSD_ClearVtxDesc(void);
+static void get_shape_vertex_xyz(HSD_ShapeSet* shape_set, int shape_id, int arrayidx, f32 dst[3]);
+static void get_shape_normal_xyz(HSD_ShapeSet* shape_set, int shape_id, int arrayidx, float dst[3]);
+static void get_shape_nbt_xyz(HSD_ShapeSet* shape_set, int shape_id, int arrayidx, float* dst);
+static void interpretShapeAnimDisplayList(HSD_PObj* pobj, float (*vertex)[3], float (*normal)[3]);
+static void drawShapeAnim(HSD_PObj* pobj);
+void HSD_PObjClearMtxMark(void* obj, u32 mark);
+void HSD_PObjSetMtxMark(int idx, void* obj, u32 mark);
+void HSD_PObjGetMtxMark(int idx, void** obj, u32* mark);
+static void SetupSharedVtxModelMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode);
+static void SetupEnvelopeModelMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode);
+static void PObjSetupMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode);
+void HSD_PObjDisp(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode);
+static void PObjRelease(HSD_Class* o);
+static void PObjAmnesia(HSD_ClassInfo* info);
+static void PObjInfoInit(void);
+
+inline void HSD_PObjRemoveAnimByFlags(HSD_PObj* pobj, u32 flags)
+{
+    if (pobj == NULL) {
+        return;
+    }
+
+    if (flags & POBJ_ANIM) {
+        HSD_AObjRemove(pobj->aobj);
+        pobj->aobj = NULL;
+    }
+}
+
+inline void HSD_PObjAddAnim(HSD_PObj* pobj, HSD_ShapeAnim* shapeanim)
+{
+    if (pobj == NULL) {
+        return;
+    }
+    if (pobj->aobj) {
+        HSD_AObjRemove(pobj->aobj);
+    }
+    pobj->aobj = HSD_AObjLoadDesc(shapeanim->aobjdesc);
+}
+
+inline void HSD_PObjReqAnimByFlags(HSD_PObj* pobj, f32 startframe, u32 flags)
+{
+    if (pobj == NULL) {
+        return;
+    }
+
+    if (flags & POBJ_ANIM) {
+        HSD_AObjReqAnim(pobj->aobj, startframe);
+    }
+}
+
+inline static void ShapeSetSetAnimResult(HSD_ShapeSet* shape_set, u32 type,
+                                  HSD_ObjData* val)
+{
+    if (shape_set->flags & SHAPESET_ADDITIVE) {
+        shape_set->blend.bp[type - HSD_A_S_W0] = val->fv;
+    } else {
+        shape_set->blend.bl = val->fv;
+    }
+}
+
+inline void HSD_PObjAnim(HSD_PObj* pobj)
+{
+    if (pobj != NULL) {
+        HSD_AObjInterpretAnim(pobj->aobj, pobj,
+                              HSD_POBJ_INFO(HSD_CLASS_METHOD(pobj))->update);
+    }
+}
+
+inline static HSD_Envelope* HSD_EnvelopeAlloc(void)
+{
+    HSD_Envelope* envelope = hsdAllocMemPiece(sizeof(HSD_Envelope));
+    HSD_ASSERT(0x1a8, envelope);
+    memset(envelope, 0, sizeof(HSD_Envelope));
+    return envelope;
+}
+
+inline static void HSD_EnvelopeFree(HSD_Envelope* env)
+{
+    if (env != NULL) {
+        hsdFreeMemPiece(env, sizeof(HSD_Envelope));
+    }
+}
+
+inline static void HSD_EnvelopeListFree(HSD_SList* list)
+{
+    while (list) {
+        HSD_Envelope* env = list->data;
+        while (env) {
+            HSD_Envelope* next = env->next;
+            HSD_JObjUnrefThis(env->jobj);
+            HSD_EnvelopeFree(env);
+            env = next;
+        }
+        list = HSD_SListRemove(list);
+    }
+}
+
+inline static HSD_SList* loadEnvelopeDesc(HSD_EnvelopeDesc** edesc_p)
+{
+    HSD_SList* list = NULL;
+    HSD_SList** list_p = &list;
+
+    if (edesc_p == NULL) {
+        return NULL;
+    }
+
+    while (*edesc_p) {
+        HSD_Envelope* envelope = NULL;
+        HSD_Envelope** env_p = &envelope;
+        HSD_EnvelopeDesc* edesc = *edesc_p;
+
+        while (edesc->joint) {
+            *env_p = HSD_EnvelopeAlloc();
+            (*env_p)->weight = edesc->weight;
+            env_p = &(*env_p)->next;
+            edesc++;
+        }
+
+        (*list_p) = HSD_SListAlloc();
+        (*list_p)->data = envelope;
+        list_p = &(*list_p)->next;
+        edesc_p++;
+    }
+    return list;
+}
+
+inline static void HSD_ShapeSetFree(HSD_ShapeSet* shape_set)
+{
+    if (!shape_set) {
+        return;
+    }
+    hsdFreeMemPiece(shape_set, sizeof(HSD_ShapeSet));
+}
+
+inline static void HSD_ShapeSetRemove(HSD_ShapeSet* shape_set)
+{
+    if (shape_set == NULL) {
+        return;
+    }
+
+    if (shape_set->flags & SHAPESET_ADDITIVE) {
+        HSD_Free(shape_set->blend.bp);
+    }
+
+    HSD_ShapeSetFree(shape_set);
+}
+
+inline static HSD_ShapeSet* loadShapeSetDesc(HSD_ShapeSetDesc* sdesc)
+{
+    int i;
+
+    HSD_ShapeSet* shape_set = hsdAllocMemPiece(sizeof(HSD_ShapeSet));
+    HSD_ASSERT(0x1e1, shape_set);
+    memset(shape_set, 0, sizeof(HSD_ShapeSet));
+    shape_set->flags = sdesc->flags;
+    shape_set->nb_shape = sdesc->nb_shape;
+    shape_set->nb_vertex_index = sdesc->nb_vertex_index;
+    shape_set->vertex_desc = sdesc->vertex_desc;
+    shape_set->vertex_idx_list = sdesc->vertex_idx_list;
+    shape_set->nb_normal_index = sdesc->nb_normal_index;
+    shape_set->normal_desc = sdesc->normal_desc;
+    shape_set->normal_idx_list = sdesc->normal_idx_list;
+    if (shape_set->flags & SHAPESET_ADDITIVE) {
+        shape_set->blend.bp = HSD_Alloc(shape_set->nb_shape * sizeof(f32));
+        for (i = 0; i < shape_set->nb_shape; i++) {
+            shape_set->blend.bp[i] = 0.0f;
+        }
+    } else {
+        shape_set->blend.bl = 0.0f;
+    }
+    return shape_set;
+}
+
+inline void HSD_PObjRemove(HSD_PObj* pobj)
+{
+    hsdDelete(pobj);
+}
+
+inline HSD_PObjInfo* HSD_PObjGetDefaultClass(void)
+{
+    return default_class ? default_class : &hsdPObj;
+}
+
+inline HSD_PObj* HSD_PObjAlloc(void)
+{
+    HSD_PObj* pobj = hsdNew(&HSD_PObjGetDefaultClass()->parent);
+    HSD_ASSERT(0x2a4, pobj);
+    return pobj;
+}
+
+inline static void resolveEnvelope(HSD_SList* list, HSD_EnvelopeDesc** edesc_p)
+{
+    if (list == NULL || edesc_p == NULL) {
+        return;
+    }
+
+    for (; list && *edesc_p; list = list->next, edesc_p++) {
+        HSD_Envelope* env = list->data;
+        HSD_EnvelopeDesc* edesc = *edesc_p;
+
+        while (env && edesc->joint) {
+            HSD_JObjUnrefThis(env->jobj);
+            env->jobj = HSD_IDGetData((HSD_IDKey) edesc->joint, NULL);
+            HSD_ASSERT(0x2c5, env->jobj);
+            HSD_JObjRefThis(env->jobj);
+            env = env->next;
+            edesc++;
+        }
+    }
+}
+
+inline void HSD_PObjResolveRefs(HSD_PObj* pobj, HSD_PObjDesc* pdesc)
+{
+    if (!pobj || !pdesc) {
+        return;
+    }
+
+    switch (pobj_type(pobj)) {
+    case POBJ_ENVELOPE:
+        resolveEnvelope(pobj->u.envelope_list, pdesc->u.envelope_p);
+        break;
+
+    case POBJ_SKIN:
+        HSD_JObjUnrefThis(pobj->u.jobj);
+        pobj->u.jobj = NULL;
+        if (pdesc->u.joint != NULL) {
+            pobj->u.jobj = HSD_IDGetData((HSD_IDKey) pdesc->u.joint, NULL);
+            HSD_ASSERT(0x2e0, pobj->u.jobj);
+            HSD_JObjRefThis(pobj->u.jobj);
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
+inline static void setupArrayDesc(HSD_VtxDescList* desc_list)
+{
+    HSD_VtxDescList* desc;
+
+    if (prev_vtxdesclist_array != desc_list) {
+        for (desc = desc_list; desc->attr != GX_VA_NULL; desc++) {
+            if (desc->attr_type != GX_DIRECT) {
+                GXSetArray(desc->attr, desc->vertex, desc->stride);
+            }
+        }
+        prev_vtxdesclist_array = desc_list;
+    }
+}
+
+inline static void setupVtxDesc(HSD_PObj* pobj)
+{
+    HSD_VtxDescList* desc;
+
+    if (prev_vtxdesc != pobj->verts) {
+        GXClearVtxDesc();
+        for (desc = pobj->verts; desc->attr != GX_VA_NULL; desc++) {
+            GXSetVtxDesc(desc->attr, desc->attr_type);
+            switch (desc->attr) {
+            case GX_VA_PNMTXIDX:
+            case GX_VA_TEX0MTXIDX:
+            case GX_VA_TEX1MTXIDX:
+            case GX_VA_TEX2MTXIDX:
+            case GX_VA_TEX3MTXIDX:
+            case GX_VA_TEX4MTXIDX:
+            case GX_VA_TEX5MTXIDX:
+            case GX_VA_TEX6MTXIDX:
+            case GX_VA_TEX7MTXIDX:
+                break;
+            default:
+                GXSetVtxAttrFmt(GX_VTXFMT0, desc->attr, desc->comp_cnt,
+                                desc->comp_type, desc->frac);
+            }
+        }
+        prev_vtxdesc = pobj->verts;
+    }
+}
+
+inline static void setupShapeAnimArrayDesc(HSD_VtxDescList* desc_list)
+{
+    HSD_VtxDescList* desc;
+
+    for (desc = desc_list; desc->attr != GX_VA_NULL; desc++) {
+        if (desc->attr_type != GX_DIRECT) {
+            switch (desc->attr) {
+            case GX_VA_POS:
+            case GX_VA_NRM:
+            case GX_VA_NBT:
+                break;
+            default:
+                GXSetArray(desc->attr, desc->vertex, desc->stride);
+            }
+        }
+    }
+    prev_vtxdesclist_array = NULL;
+}
+
+inline static void setupShapeAnimVtxDesc(HSD_PObj* pobj)
+{
+    HSD_VtxDescList* desc;
+
+    GXClearVtxDesc();
+    for (desc = pobj->verts; desc->attr != GX_VA_NULL; desc++) {
+        switch (desc->attr) {
+        case GX_VA_NRM:
+        case GX_VA_POS:
+        case GX_VA_NBT:
+            GXSetVtxDesc(desc->attr, GX_DIRECT);
+            GXSetVtxAttrFmt(GX_VTXFMT0, desc->attr, desc->comp_cnt, GX_F32, 0);
+            break;
+
+        case GX_VA_PNMTXIDX:
+        case GX_VA_TEX0MTXIDX:
+        case GX_VA_TEX1MTXIDX:
+        case GX_VA_TEX2MTXIDX:
+        case GX_VA_TEX3MTXIDX:
+        case GX_VA_TEX4MTXIDX:
+        case GX_VA_TEX5MTXIDX:
+        case GX_VA_TEX6MTXIDX:
+        case GX_VA_TEX7MTXIDX:
+            GXSetVtxDesc(desc->attr, desc->attr_type);
+            break;
+
+        default:
+            GXSetVtxDesc(desc->attr, desc->attr_type);
+            GXSetVtxAttrFmt(GX_VTXFMT0, desc->attr, desc->comp_cnt,
+                            desc->comp_type, desc->frac);
+        }
+    }
+    prev_vtxdesc = NULL;
+}
+
+static inline void decode_u8_xyz(void* src_base, f32 dst[3], int scale)
+{
+    u8* src = src_base;
+    dst[0] = (f32) src[0] / scale;
+    dst[1] = (f32) src[1] / scale;
+    dst[2] = (f32) src[2] / scale;
+}
+
+static inline void decode_s8_xyz(void* src_base, f32 dst[3], int scale)
+{
+    s8* src = src_base;
+    dst[0] = (f32) src[0] / scale;
+    dst[1] = (f32) src[1] / scale;
+    dst[2] = (f32) src[2] / scale;
+}
+
+static inline void decode_u16_xyz(void* src_base, f32 dst[3], int scale)
+{
+    u16* src = src_base;
+    dst[0] = (f32) src[0] / scale;
+    dst[1] = (f32) src[1] / scale;
+    dst[2] = (f32) src[2] / scale;
+}
+
+static inline void decode_s16_xyz(void* src_base, f32 dst[3], int scale)
+{
+    s16* src = src_base;
+    dst[0] = (f32) src[0] / scale;
+    dst[1] = (f32) src[1] / scale;
+    dst[2] = (f32) src[2] / scale;
+}
+
+inline static PObjSetupFlag GetSetupFlags(HSD_JObj* jobj, u32 rendermode)
+{
+    PObjSetupFlag flags = SETUP_NONE;
+    if (jobj->flags & JOBJ_LIGHTING) {
+        flags |= SETUP_NORMAL;
+    }
+
+    if (_HSD_TObjGetCurrentByType(NULL, TEX_COORD_REFLECTION)) {
+        flags |= SETUP_NORMAL | SETUP_REFLECTION;
+    }
+
+    if (_HSD_TObjGetCurrentByType(NULL, TEX_COORD_GRADATION)) {
+        flags |= SETUP_NORMAL | SETUP_REFLECTION;
+    }
+
+    if (_HSD_TObjGetCurrentByType(NULL, TEX_COORD_HILIGHT)) {
+        flags |= SETUP_NORMAL | SETUP_HIGHLIGHT;
+    }
+
+    return flags;
+}
+
+inline static void SetupRigidModelMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx,
+                               u32 rendermode)
+{
+    HSD_JObj* jobj;
+    Mtx n;
+    PObjSetupFlag flags;
+
+    jobj = HSD_JObjGetCurrent();
+
+    {
+        void* obj;
+        u32 mark;
+
+        HSD_PObjGetMtxMark(0, &obj, &mark);
+        if (obj == jobj && mark == HSD_MTX_RIGID) {
+            return;
+        }
+        HSD_PObjSetMtxMark(0, jobj, HSD_MTX_RIGID);
+    }
+
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXLoadPosMtxImm(pmtx, GX_PNMTX0);
+
+    flags = GetSetupFlags(jobj, rendermode);
+
+    if (flags & SETUP_NORMAL) {
+        MtxInverseTransposeInline(pmtx, n);
+        if (jobj->flags & JOBJ_LIGHTING) {
+            GXLoadNrmMtxImm(n, GX_PNMTX0);
+        }
+        if (flags & SETUP_NORMAL_PROJECTION) {
+            GXLoadTexMtxImm(n, GX_TEXMTX0, GX_MTX3x4);
+        }
+    }
+}
+
+inline static void PObjDispSimplePrimitive(HSD_PObj* pobj, u32 rendermode)
+{
+    setupArrayDesc(pobj->verts);
+    setupVtxDesc(pobj);
+
+    GXCallDisplayList(pobj->display, pobj->n_display << 5);
+}
+
+inline static void PObjDispShapeAnim(HSD_PObj* pobj, u32 rendermode)
+{
+    setupShapeAnimArrayDesc(pobj->verts);
+    setupShapeAnimVtxDesc(pobj);
+
+    HSD_ASSERT(0x779, pobj->u.shape_set);
+    drawShapeAnim(pobj);
+}
+
+f32 (*HSD_SetVertexBuffer(f32 (*buf)[3], u32 size))[3]
+{
+    f32 (*old)[3] = vertex_buffer;
+    vertex_buffer_size = size;
+    vertex_buffer = buf;
+    return old;
+}
+
+f32 (*HSD_SetNormalBuffer(f32 (*buf)[3], u32 size))[3]
+{
+    f32 (*old)[3] = normal_buffer;
+    normal_buffer_size = size;
+    normal_buffer = buf;
+    return old;
+}
+
+void HSD_PObjRemoveAnimAllByFlags(HSD_PObj* pobj, u32 flags)
+{
+    HSD_PObj* pp;
+
+    if (pobj == NULL) {
+        return;
+    }
+
+    for (pp = pobj; pp != NULL; pp = pp->next) {
+        HSD_PObjRemoveAnimByFlags(pp, flags);
+    }
+}
+
+void HSD_PObjAddAnimAll(HSD_PObj* pobj, HSD_ShapeAnim* shapeanim)
+{
+    HSD_PObj* po;
+    HSD_ShapeAnim* sa;
+
+    if (pobj == NULL || shapeanim == NULL) {
+        return;
+    }
+
+    for (po = pobj, sa = shapeanim; po != NULL; po = po->next, sa = next_p(sa))
+    {
+        HSD_PObjAddAnim(po, sa);
+    }
+}
+
+void HSD_PObjReqAnimAllByFlags(HSD_PObj* pobj, f32 startframe, u32 flags)
+{
+    HSD_PObj* pp;
+
+    if (pobj == NULL) {
+        return;
+    }
+
+    for (pp = pobj; pp; pp = pp->next) {
+        HSD_PObjReqAnimByFlags(pp, startframe, flags);
+    }
+}
+
+static void PObjUpdateFunc(void* obj, int type, HSD_ObjData* val)
+{
+    HSD_PObj* pobj = HSD_POBJ(obj);
+    if (pobj == NULL) {
+        return;
+    }
+
+    if (pobj_type(pobj) == POBJ_SHAPEANIM) {
+        ShapeSetSetAnimResult(pobj->u.shape_set, type, val);
+    }
+}
+
+void HSD_PObjAnimAll(HSD_PObj* pobj)
+{
+    HSD_PObj* pp;
+
+    if (pobj != NULL) {
+        for (pp = pobj; pp != NULL; pp = pp->next) {
+            HSD_PObjAnim(pp);
+        }
+    }
+}
+
+static s32 PObjLoad(HSD_PObj* pobj, HSD_PObjDesc* desc)
+{
+    pobj->next = HSD_PObjLoadDesc(desc->next);
+    pobj->verts = desc->verts;
+    pobj->flags = desc->flags;
+    pobj->n_display = desc->n_display;
+    pobj->display = desc->display;
+    switch (pobj_type(pobj)) {
+    case POBJ_SHAPEANIM:
+        pobj->u.shape_set = loadShapeSetDesc(desc->u.shape_set);
+        break;
+
+    case POBJ_ENVELOPE:
+        pobj->u.envelope_list = loadEnvelopeDesc(desc->u.envelope_p);
+        break;
+
+    case POBJ_SKIN:
+        break;
+
+    default:
+        HSD_Panic(HSD_FILE_NAME, 0x229, "pobj: unexected type.\n");
+    }
+
+ // _HSD_NeedCacheInvalidate(HSD_CACHE_VTX); // NOTE: This does not exist in
+ // Melee's sysdolphin, but is a potential optimization
+
+    return 0;
+}
+
+/* Not referenced by the retail game (stripped by the linker), but its assert
+   string sits in .rodata between the neighbouring functions' strings. */
+void HSD_PObjSetDefaultClass(HSD_PObjInfo* info)
+{
+    if (info != NULL) {
+        HSD_ASSERT(646, hsdIsDescendantOf(info, &hsdPObj));
+    }
+    default_class = info;
+}
+
+HSD_PObj* HSD_PObjLoadDesc(HSD_PObjDesc* pobjdesc)
+{
+    if (pobjdesc != NULL) {
+        HSD_PObj* pobj;
+        HSD_ClassInfo* info;
+
+        if (!pobjdesc->class_name ||
+            !(info = hsdSearchClassInfo(pobjdesc->class_name)))
+        {
+            pobj = HSD_PObjAlloc();
+        } else {
+            pobj = hsdNew(info);
+            HSD_ASSERT(0x242, pobj);
+        }
+        HSD_POBJ_METHOD(pobj)->load(pobj, pobjdesc);
+        return pobj;
+    } else {
+        return NULL;
+    }
+}
+
+void HSD_PObjRemoveAll(HSD_PObj* pobj)
+{
+    HSD_PObj* next;
+
+    while (pobj != NULL) {
+        next = pobj->next;
+        HSD_PObjRemove(pobj);
+        pobj = next;
+    }
+}
+
+void HSD_PObjResolveRefsAll(HSD_PObj* pobj, HSD_PObjDesc* pdesc)
+{
+    for (; pobj != NULL && pdesc != NULL;
+         pobj = pobj->next, pdesc = pdesc->next)
+    {
+        HSD_PObjResolveRefs(pobj, pdesc);
+    }
+}
+
+void HSD_PObjCountVertices(HSD_PObj* pobj, u32* vertex_count,
+                           u32* triangle_count)
+{
+    u32 vertices = 0;
+    u32 triangles = 0;
+
+    for (; pobj != NULL; pobj = pobj->next) {
+        int offset;
+        int length;
+        u8* display;
+        HSD_VtxDescList* desc = pobj->verts;
+        u32 stride = 0;
+
+        for (; desc->attr != GX_VA_NULL; desc++) {
+            u32 size;
+
+            switch (desc->attr_type) {
+            case GX_INDEX8:
+                stride += 1;
+                continue;
+            case GX_INDEX16:
+                stride += 2;
+                continue;
+            case GX_DIRECT:
+                break;
+            default:
+                continue;
+            }
+
+            if (desc->attr == GX_VA_CLR0 || desc->attr == GX_VA_CLR1) {
+                switch (desc->comp_type) {
+                case 0:
+                case 3:
+                    size = 2;
+                    break;
+                case 1:
+                case 4:
+                    size = 3;
+                    break;
+                case 2:
+                case 5:
+                    size = 4;
+                    break;
+                }
+            } else {
+                switch (desc->comp_type) {
+                case 0:
+                case 1:
+                    size = 1;
+                    break;
+                case 2:
+                case 3:
+                    size = 2;
+                    break;
+                case 4:
+                    size = 4;
+                    break;
+                default:
+                    goto next_pobj;
+                }
+            }
+
+            switch (desc->attr) {
+            case GX_VA_PNMTXIDX:
+                stride += 1;
+                break;
+            case GX_VA_POS:
+                if (desc->comp_cnt == 0) {
+                    stride += size * 2;
+                } else {
+                    stride += size * 3;
+                }
+                break;
+            case GX_VA_NRM:
+                if (desc->comp_cnt == 0) {
+                    stride += size * 3;
+                }
+                break;
+            case GX_VA_CLR0:
+            case GX_VA_CLR1:
+                stride += size;
+                break;
+            case GX_VA_TEX0:
+            case GX_VA_TEX1:
+            case GX_VA_TEX2:
+            case GX_VA_TEX3:
+            case GX_VA_TEX4:
+            case GX_VA_TEX5:
+            case GX_VA_TEX6:
+            case GX_VA_TEX7:
+                if (desc->comp_cnt == 0) {
+                    stride += size;
+                } else {
+                    stride += size * 2;
+                }
+                break;
+            default:
+                goto next_pobj;
+            }
+        }
+
+        length = pobj->n_display << 5;
+        display = pobj->display;
+        if (display != NULL) {
+            offset = 0;
+
+            while (offset < length) {
+                u32 primitive = display[offset++] & 0xF8;
+
+                if (primitive != 0) {
+                    u32 count = ((u16) display[offset] << 8) + display[offset + 1];
+                    offset += count * stride + 2;
+                    vertices += count;
+
+                    switch (primitive) {
+                    case 0x90:
+                        triangles += count / 3;
+                        break;
+                    case 0x98:
+                    case 0xA0:
+                        triangles += count - 2;
+                        break;
+                    case 0x80:
+                        triangles += count >> 1;
+                        break;
+                    }
+                }
+            }
+        }
+
+    next_pobj:
+        continue;
+    }
+
+    if (vertex_count != NULL) {
+        *vertex_count = vertices;
+    }
+    if (triangle_count != NULL) {
+        *triangle_count = triangles;
+    }
+}
+
+void HSD_ClearVtxDesc(void)
+{
+    GXClearVtxDesc();
+    prev_vtxdesclist_array = 0;
+    prev_vtxdesc = 0;
+}
+
+#pragma dont_inline on
+static void get_shape_vertex_xyz(HSD_ShapeSet* shape_set, int shape_id,
+                                 int arrayidx, f32 dst[3])
+{
+    u8* index_array = shape_set->vertex_idx_list[shape_id];
+    int idx;
+    void* src_base;
+
+    if (shape_set->vertex_desc->attr_type == GX_INDEX16) {
+        idx = index_array[arrayidx * 2];
+        idx = (idx << 8) + index_array[arrayidx * 2 + 1];
+    } else {
+        idx = index_array[arrayidx];
+    }
+
+    HSD_ASSERT(0x435, shape_set->vertex_desc->comp_cnt == GX_POS_XYZ);
+    src_base = ((u8*) shape_set->vertex_desc->vertex) +
+               idx * shape_set->vertex_desc->stride;
+
+    if (shape_set->vertex_desc->comp_type == GX_F32) {
+        memcpy(dst, src_base, sizeof(f32[3]));
+    } else {
+        int decimal_point = 1 << shape_set->vertex_desc->frac;
+        switch (shape_set->vertex_desc->comp_type) {
+        case GX_U8:
+            decode_u8_xyz(src_base, dst, decimal_point);
+            break;
+
+        case GX_S8:
+            decode_s8_xyz(src_base, dst, decimal_point);
+            break;
+
+        case GX_U16:
+            decode_u16_xyz(src_base, dst, decimal_point);
+            break;
+
+        case GX_S16:
+            decode_s16_xyz(src_base, dst, decimal_point);
+            break;
+
+        default:
+            HSD_Panic(HSD_FILE_NAME, 0x460, "unexpected vertex type.\n");
+        }
+    }
+}
+
+static void get_shape_normal_xyz(HSD_ShapeSet* shape_set, int shape_id,
+                                 int arrayidx, float dst[3])
+{
+    u8* index_array = shape_set->normal_idx_list[shape_id];
+    int idx;
+    void* src_base;
+
+    if (shape_set->normal_desc->attr_type == GX_INDEX16) {
+        idx = index_array[arrayidx * 2];
+        idx = (idx << 8) + index_array[arrayidx * 2 + 1];
+    } else {
+        idx = index_array[arrayidx];
+    }
+
+    HSD_ASSERT(0x474, shape_set->normal_desc->comp_cnt == GX_NRM_XYZ);
+    src_base = ((u8*) shape_set->normal_desc->vertex) +
+               idx * shape_set->normal_desc->stride;
+
+    if (shape_set->normal_desc->comp_type == GX_F32) {
+        memcpy(dst, src_base, sizeof(f32[3]));
+    } else {
+        int decimal_point = 1 << shape_set->normal_desc->frac;
+        switch (shape_set->normal_desc->comp_type) {
+        case GX_U8:
+            decode_u8_xyz(src_base, dst, decimal_point);
+            break;
+        case GX_S8:
+            decode_s8_xyz(src_base, dst, decimal_point);
+            break;
+        case GX_U16:
+            decode_u16_xyz(src_base, dst, decimal_point);
+            break;
+        case GX_S16:
+            decode_s16_xyz(src_base, dst, decimal_point);
+            break;
+        default:
+            HSD_Panic(HSD_FILE_NAME, 0x49f, "unexpected normal type.");
+        }
+    }
+}
+
+static void get_shape_nbt_xyz(HSD_ShapeSet* shape_set, int shape_id,
+                              int arrayidx, float* dst)
+{
+    u8* index_array = shape_set->normal_idx_list[shape_id];
+    int i, idx;
+    void* src_base;
+
+    HSD_ASSERT(0x4ac, shape_set->normal_desc->attr == GX_VA_NBT);
+
+    if (shape_set->normal_desc->attr_type == GX_INDEX16) {
+        idx = index_array[arrayidx * 2];
+        idx = (idx << 8) + index_array[arrayidx * 2 + 1];
+    } else {
+        idx = index_array[arrayidx];
+    }
+
+    HSD_ASSERT(0x4b5, shape_set->normal_desc->comp_cnt == GX_NRM_XYZ);
+
+    src_base = ((u8*) shape_set->normal_desc->vertex) +
+               idx * shape_set->normal_desc->stride;
+
+    if (shape_set->normal_desc->comp_type == GX_F32) {
+        memcpy(dst, src_base, sizeof(f32[9]));
+    } else {
+        int decimal_point = 1 << shape_set->normal_desc->frac;
+        switch (shape_set->normal_desc->comp_type) {
+        case GX_U8:
+            for (i = 0; i < 9; i++) {
+                dst[i] = (float) ((u8*) src_base)[i] / decimal_point;
+            }
+            break;
+        case GX_S8:
+            for (i = 0; i < 9; i++) {
+                dst[i] = (float) ((s8*) src_base)[i] / decimal_point;
+            }
+            break;
+        case GX_U16:
+            for (i = 0; i < 9; i++) {
+                dst[i] = (float) ((u16*) src_base)[i] / decimal_point;
+            }
+            break;
+        case GX_S16:
+            for (i = 0; i < 9; i++) {
+                dst[i] = (float) ((s16*) src_base)[i] / decimal_point;
+            }
+            break;
+        default:
+            HSD_Panic(HSD_FILE_NAME, 0x4d4, "unexpected normal type.");
+        }
+    }
+}
+
+#pragma dont_inline reset
+
+static void interpretShapeAnimDisplayList(HSD_PObj* pobj, float (*vertex)[3],
+                                          float (*normal)[3])
+{
+    u8* dl = pobj->display;
+    int length = pobj->n_display << 5;
+    int l;
+
+    for (l = 0; l + 3 < length;) {
+        int n = dl[1] << 8 | dl[2];
+        int m = 3;
+        int i, j;
+
+        if ((dl[0] & GX_OPCODE_MASK) == GX_NOP) {
+            break;
+        }
+        GXBegin((GXPrimitive) (dl[0] & GX_OPCODE_MASK),
+                (GXVtxFmt) (dl[0] & GX_VAT_MASK), n);
+        for (i = 0; i < n; i++) {
+            for (j = 0;; j++) {
+                HSD_VtxDescList* desc = &pobj->verts[j];
+                if (desc->attr == GX_VA_NULL) {
+                    break;
+                } else {
+                    u16 idx = dl[m++];
+                    switch (desc->attr) {
+                    case GX_VA_PNMTXIDX:
+                    case GX_VA_TEX0MTXIDX:
+                    case GX_VA_TEX1MTXIDX:
+                    case GX_VA_TEX2MTXIDX:
+                    case GX_VA_TEX3MTXIDX:
+                    case GX_VA_TEX4MTXIDX:
+                    case GX_VA_TEX5MTXIDX:
+                    case GX_VA_TEX6MTXIDX:
+                    case GX_VA_TEX7MTXIDX:
+                        GXTexCoord1u8(idx);
+                        break;
+
+                    case GX_VA_POS:
+                        if (desc->attr_type == GX_INDEX16) {
+                            idx = (idx << 8) | dl[m++];
+                        }
+                        GXPosition3f32(vertex[idx][0], vertex[idx][1],
+                                       vertex[idx][2]);
+                        break;
+
+                    case GX_VA_NRM:
+                        if (desc->attr_type == GX_INDEX16) {
+                            idx = (idx << 8) | dl[m++];
+                        }
+                        GXNormal3f32(normal[idx][0], normal[idx][1],
+                                     normal[idx][2]);
+                        break;
+
+                    case GX_VA_NBT:
+                        if (desc->attr_type == GX_INDEX16) {
+                            idx = (idx << 8) | dl[m++];
+                        }
+                        idx *= 3;
+                        GXNormal3f32(normal[idx + 0][0], normal[idx + 0][1],
+                                     normal[idx + 0][2]);
+                        GXNormal3f32(normal[idx + 1][0], normal[idx + 1][1],
+                                     normal[idx + 1][2]);
+                        GXNormal3f32(normal[idx + 2][0], normal[idx + 2][1],
+                                     normal[idx + 2][2]);
+                        break;
+
+                    case GX_VA_TEX0:
+                    case GX_VA_TEX1:
+                    case GX_VA_TEX2:
+                    case GX_VA_TEX3:
+                    case GX_VA_TEX4:
+                    case GX_VA_TEX5:
+                    case GX_VA_TEX6:
+                    case GX_VA_TEX7:
+                        if (desc->attr_type == GX_INDEX16) {
+                            idx = (idx << 8) | dl[m++];
+                            GXTexCoord1x16(idx);
+                        } else {
+                            GXTexCoord1x8(idx);
+                        }
+                        break;
+
+                    case GX_VA_CLR0:
+                    case GX_VA_CLR1:
+                        if (desc->attr_type == GX_INDEX16) {
+                            idx = (idx << 8) | dl[m++];
+                            GXColor1x16(idx);
+                        } else if (desc->attr_type == GX_INDEX8) {
+                            GXColor1x8(idx);
+                        } else {
+                            switch (desc->comp_type) {
+                            case GX_RGB565:
+                            case GX_RGBA4:
+                                GXColor1u16((idx << 8) | dl[m++]);
+                                break;
+                            case GX_RGB8:
+                            case GX_RGBA6:
+                                GXColor3u8(idx, dl[m], dl[m + 1]);
+                                m += 2;
+                                break;
+                            case GX_RGBA8:
+                            case GX_RGBX8:
+                                GXColor4u8(idx, dl[m], dl[m + 1], dl[m + 2]);
+                                m += 3;
+                                break;
+                            }
+                        }
+                        break;
+                    default:
+                        if (desc->attr_type == GX_INDEX16) {
+                            idx = (idx << 8) | dl[m++];
+                        }
+                        OSReport("attr(%d) is not supported by sysdolphin\n",
+                                 desc->attr);
+                        break;
+                    }
+                }
+            }
+        }
+        GXEnd();
+        l += m;
+        dl += m;
+    }
+}
+
+static void drawShapeAnim(HSD_PObj* pobj)
+{
+    HSD_ShapeSet* shape_set = pobj->u.shape_set;
+    f32 blend;
+    int shape_id, i;
+    int blend_nbt;
+
+    if (vertex_buffer_size == 0) {
+        vertex_buffer_size = HSD_DEFAULT_MAX_SHAPE_VERTICES;
+        vertex_buffer = HSD_Alloc(vertex_buffer_size * sizeof(f32[3]));
+    }
+    HSD_ASSERT(0x566, vertex_buffer_size >= shape_set->nb_vertex_index);
+    if (shape_set->normal_desc && normal_buffer_size == 0) {
+        normal_buffer_size = HSD_DEFAULT_MAX_SHAPE_NORMALS;
+        normal_buffer = HSD_Alloc(normal_buffer_size * sizeof(f32[3]));
+    }
+
+    if (shape_set->normal_desc) {
+        if (shape_set->normal_desc->attr == GX_VA_NRM) {
+            HSD_ASSERT(0x56f, normal_buffer_size >= shape_set->nb_normal_index);
+            blend_nbt = 0;
+        } else {
+            HSD_ASSERT(0x572, normal_buffer_size >= shape_set->nb_normal_index * 3);
+            blend_nbt = 1;
+        }
+    }
+
+    if (shape_set->flags & SHAPESET_AVERAGE) {
+        blend = shape_set->blend.bl;
+        shape_id = pobj_min(MAX(0, (int) blend), shape_set->nb_shape - 1);
+        blend = pobj_min(MAX(0.0, blend - (f32) shape_id), 1.0f);
+        for (i = 0; i < shape_set->nb_vertex_index; i++) {
+            f32 s0[3], s1[3];
+
+            get_shape_vertex_xyz(shape_set, shape_id, i, s0);
+            get_shape_vertex_xyz(
+                shape_set, pobj_min(shape_id + 1, shape_set->nb_shape - 1), i,
+                s1);
+            vertex_buffer[i][0] = (s1[0] - s0[0]) * blend + s0[0];
+            vertex_buffer[i][1] = (s1[1] - s0[1]) * blend + s0[1];
+            vertex_buffer[i][2] = (s1[2] - s0[2]) * blend + s0[2];
+        }
+        if (shape_set->nb_normal_index) {
+            if (blend_nbt) {
+                for (i = 0; i < shape_set->nb_normal_index; i++) {
+                    f32 s0[9], s1[9];
+                    int j, idx = i * 3;
+
+                    get_shape_nbt_xyz(shape_set, shape_id, i, s0);
+                    get_shape_nbt_xyz(
+                        shape_set,
+                        pobj_min(shape_id + 1, shape_set->nb_shape - 1), i,
+                        s1);
+                    for (j = 0; j < 9; j++) {
+                        normal_buffer[idx][j] =
+                            (s1[j] - s0[j]) * blend + s0[j];
+                    }
+                }
+            } else {
+                for (i = 0; i < shape_set->nb_normal_index; i++) {
+                    f32 s0[3], s1[3];
+
+                    get_shape_normal_xyz(shape_set, shape_id, i, s0);
+                    get_shape_normal_xyz(
+                        shape_set,
+                        pobj_min(shape_id + 1, shape_set->nb_shape - 1), i,
+                        s1);
+                    normal_buffer[i][0] = (s1[0] - s0[0]) * blend + s0[0];
+                    normal_buffer[i][1] = (s1[1] - s0[1]) * blend + s0[1];
+                    normal_buffer[i][2] = (s1[2] - s0[2]) * blend + s0[2];
+                }
+            }
+        }
+    } else {
+        int j;
+        f32* blend_bp;
+        blend_bp = shape_set->blend.bp;
+        for (i = 0; i < shape_set->nb_vertex_index; i++) {
+            get_shape_vertex_xyz(shape_set, 0, i, vertex_buffer[i]);
+            for (j = 0; j < shape_set->nb_shape; j++) {
+                f32 b = MAX(0.0, blend_bp[j]);
+                f32 s[3];
+
+                get_shape_vertex_xyz(shape_set, j + 1, i, s);
+                vertex_buffer[i][0] += s[0] * b;
+                vertex_buffer[i][1] += s[1] * b;
+                vertex_buffer[i][2] += s[2] * b;
+            }
+        }
+        if (shape_set->nb_normal_index) {
+            if (blend_nbt) {
+                for (i = 0; i < shape_set->nb_normal_index; i++) {
+                    s32 idx = i * 3;
+                    get_shape_nbt_xyz(shape_set, 0, i, normal_buffer[idx]);
+                    for (j = 0; j < shape_set->nb_shape; j++) {
+                        f32 b = MAX(0.0, blend_bp[j]);
+                        f32 s[9];
+                        int k;
+
+                        get_shape_nbt_xyz(shape_set, j + 1, i, s);
+                        for (k = 0; k < 9; k++) {
+                            normal_buffer[idx][k] += s[k] * b;
+                        }
+                    }
+                }
+            } else {
+                for (i = 0; i < shape_set->nb_normal_index; i++) {
+                    get_shape_normal_xyz(shape_set, 0, i, normal_buffer[i]);
+                    for (j = 0; j < shape_set->nb_shape; j++) {
+                        f32 b = MAX(0.0, blend_bp[j]);
+                        f32 s[3];
+
+                        get_shape_normal_xyz(shape_set, j + 1, i, s);
+                        normal_buffer[i][0] += s[0] * b;
+                        normal_buffer[i][1] += s[1] * b;
+                        normal_buffer[i][2] += s[2] * b;
+                    }
+                }
+            }
+        }
+    }
+    interpretShapeAnimDisplayList(pobj, vertex_buffer, normal_buffer);
+}
+
+void HSD_PObjClearMtxMark(void* obj, u32 mark)
+{
+    int i;
+
+    for (i = 0; i < 2; i++) {
+        mtx_mark[i].obj = obj;
+        mtx_mark[i].mark = mark;
+    }
+}
+
+void HSD_PObjSetMtxMark(int idx, void* obj, u32 mark)
+{
+    if (idx >= 2) {
+        return;
+    }
+
+    if (0 <= idx && idx < 2) {
+    } else {
+        mtx_mark[idx].obj = obj;
+        mtx_mark[idx].mark = mark;
+    }
+}
+
+void HSD_PObjGetMtxMark(int idx, void** obj, u32* mark)
+{
+    HSD_ASSERT(0x65e, obj);
+    HSD_ASSERT(0x65f, mark);
+
+    if (idx < 0 || 2 <= idx) {
+        *obj = NULL;
+        *mark = 0;
+    } else {
+        *obj = mtx_mark[idx].obj;
+        *mark = mtx_mark[idx].mark;
+    }
+}
+
+static void SetupSharedVtxModelMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx,
+                                   u32 rendermode)
+{
+    HSD_JObj* jobj;
+    Mtx n0, n1, m;
+    PObjSetupFlag flags = SETUP_NONE;
+
+    jobj = HSD_JObjGetCurrent();
+    {
+        void* obj;
+        u32 mark;
+
+        HSD_PObjGetMtxMark(0, &obj, &mark);
+        if (obj != jobj && mark != HSD_MTX_RIGID) {
+            flags |= SETUP_JOINT0;
+        }
+
+        HSD_PObjGetMtxMark(1, &obj, &mark);
+        if (obj != pobj->u.jobj && mark != HSD_MTX_RIGID) {
+            flags |= SETUP_JOINT1;
+        }
+    }
+
+    if (flags == SETUP_NONE) {
+        return;
+    }
+
+    flags |= GetSetupFlags(jobj, rendermode);
+
+#ifdef MUST_MATCH
+    if (flags | SETUP_JOINT0)
+#endif
+    {
+        GXSetCurrentMtx(GX_PNMTX0);
+        GXLoadPosMtxImm(pmtx, GX_PNMTX0);
+
+        if (flags & SETUP_NORMAL) {
+            MtxInverseTransposeInline(pmtx, n0);
+            if (jobj->flags & 0x80) {
+                GXLoadNrmMtxImm(n0, GX_PNMTX0);
+            }
+            if (flags & SETUP_NORMAL_PROJECTION) {
+                GXLoadTexMtxImm(n0, GX_TEXMTX0, GX_MTX3x4);
+            }
+        }
+    }
+#ifdef MUST_MATCH
+    if (flags | SETUP_JOINT1)
+#endif
+    {
+ ///@todo Unused stack
+        u8 _[4];
+        HSD_JObjSetupMatrix(pobj->u.jobj);
+        PSMTXConcat(vmtx, pobj->u.jobj->mtx, m);
+        GXLoadPosMtxImm(m, GX_PNMTX1);
+
+        if (flags & SETUP_NORMAL) {
+            MtxInverseTransposeInline(m, n1);
+            if (jobj->flags & 0x80) {
+                GXLoadNrmMtxImm(n1, GX_PNMTX1);
+            }
+            if (flags & SETUP_NORMAL_PROJECTION) {
+                GXLoadTexMtxImm(n1, GX_TEXMTX1, GX_MTX3x4);
+            }
+        }
+    }
+}
+
+static void SetupEnvelopeModelMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx,
+                                  u32 rendermode)
+{
+    HSD_JObj* jobj;
+    HSD_SList* list;
+    int MtxIdx = 0;
+    MtxPtr right;
+    Mtx mtx;
+    PObjSetupFlag flags = SETUP_NONE;
+
+    jobj = HSD_JObjGetCurrent();
+    HSD_PObjClearMtxMark(NULL, HSD_MTX_ENVELOPE);
+    flags = GetSetupFlags(jobj, rendermode);
+    right = _HSD_mkEnvelopeModelNodeMtx(jobj, mtx);
+
+    for (MtxIdx = 0, list = pobj->u.envelope_list; MtxIdx < 10 && list;
+         MtxIdx++, list = list->next)
+    {
+        Mtx mtx, tmp;
+        MtxPtr mtxp;
+        HSD_Envelope* envelope = list->data;
+        s32 mtx_no = HSD_Index2PosNrmMtx(MtxIdx);
+
+        HSD_ASSERT(0x715, envelope);
+        if (envelope->weight >= (1.0f - FLT_EPSILON)) {
+            HSD_JObjSetupMatrix(envelope->jobj);
+            if (right) {
+                MTXConcat(envelope->jobj->mtx, envelope->jobj->envelopemtx,
+                          mtx);
+                mtxp = mtx;
+            } else {
+                mtxp = envelope->jobj->mtx;
+            }
+        } else {
+            mtx[0][0] = mtx[0][1] = mtx[0][2] = mtx[0][3] = mtx[1][0] =
+                mtx[1][1] = mtx[1][2] = mtx[1][3] = mtx[2][0] = mtx[2][1] =
+                    mtx[2][2] = mtx[2][3] = 0.0f;
+            while (envelope) {
+                HSD_JObj* jp;
+
+                HSD_ASSERT(0x729, envelope->jobj);
+                jp = envelope->jobj;
+                HSD_JObjSetupMatrix(jp);
+                HSD_ASSERT(0x72c, jp->mtx);
+                HSD_ASSERT(0x72d, jp->envelopemtx);
+
+                MTXConcat(jp->mtx, jp->envelopemtx, tmp);
+                HSD_MtxScaledAdd(tmp, mtx, mtx, envelope->weight);
+                envelope = envelope->next;
+            }
+            mtxp = mtx;
+        }
+        if (right) {
+            MTXConcat(mtxp, right, mtx);
+        }
+        MTXConcat(vmtx, mtxp, tmp);
+        GXLoadPosMtxImm(tmp, mtx_no);
+
+        if (!(rendermode & 0x4000000) && (flags & SETUP_NORMAL)) {
+            MtxInverseTransposeInline(tmp, mtx);
+            if (jobj->flags & JOBJ_LIGHTING) {
+                GXLoadNrmMtxImm(mtx, mtx_no);
+            }
+            if (flags & SETUP_NORMAL_PROJECTION) {
+                GXLoadTexMtxImm(mtx, HSD_Index2TexMtx(MtxIdx), GX_MTX3x4);
+            }
+        }
+    }
+}
+
+static void PObjSetupMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode)
+{
+    switch (pobj_type(pobj)) {
+    case POBJ_SKIN:
+        if (!pobj->u.jobj) {
+            SetupRigidModelMtx(pobj, vmtx, pmtx, rendermode);
+        } else {
+            SetupSharedVtxModelMtx(pobj, vmtx, pmtx, rendermode);
+        }
+        break;
+    case POBJ_SHAPEANIM:
+        SetupRigidModelMtx(pobj, vmtx, pmtx, rendermode);
+        break;
+    case POBJ_ENVELOPE:
+        SetupEnvelopeModelMtx(pobj, vmtx, pmtx, rendermode);
+        break;
+    }
+}
+
+void HSD_PObjDisp(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode)
+{
+    if (pobj->flags & 0x800) {
+        return;
+    }
+    switch (pobj->flags & (POBJ_CULLFRONT | POBJ_CULLBACK)) {
+    case 0x0:
+        HSD_StateSetCullMode(GX_CULL_NONE);
+        break;
+    case POBJ_CULLFRONT:
+        HSD_StateSetCullMode(GX_CULL_FRONT);
+        break;
+    case POBJ_CULLBACK:
+        HSD_StateSetCullMode(GX_CULL_BACK);
+        break;
+    case POBJ_CULLFRONT | POBJ_CULLBACK:
+        return;
+    }
+
+    HSD_POBJ_METHOD(pobj)->setup_mtx(pobj, vmtx, pmtx, rendermode);
+    if (pobj_type(pobj) == POBJ_SHAPEANIM) {
+        PObjDispShapeAnim(pobj, rendermode);
+    } else {
+        PObjDispSimplePrimitive(pobj, rendermode);
+    }
+}
+
+static void PObjRelease(HSD_Class* o)
+{
+    HSD_PObj* pobj = HSD_POBJ(o);
+
+    if (pobj->aobj) {
+        HSD_AObjRemove(pobj->aobj);
+    }
+    switch (pobj_type(pobj)) {
+    case POBJ_SHAPEANIM:
+        HSD_ShapeSetRemove(pobj->u.shape_set);
+        break;
+    case POBJ_ENVELOPE:
+        HSD_EnvelopeListFree(pobj->u.envelope_list);
+        break;
+    case POBJ_SKIN:
+        HSD_JObjUnrefThis(pobj->u.jobj);
+        break;
+    default:
+        break;
+    }
+    HSD_PARENT_INFO(&hsdPObj)->release(o);
+}
+
+static void PObjAmnesia(HSD_ClassInfo* info)
+{
+    if (info == HSD_CLASS_INFO(default_class)) {
+        default_class = NULL;
+    }
+    if (info == HSD_CLASS_INFO(&hsdPObj)) {
+        if (_HSD_MemCheckOwn(vertex_buffer)) {
+            vertex_buffer = NULL;
+            vertex_buffer_size = 0;
+        }
+        if (_HSD_MemCheckOwn(normal_buffer)) {
+            normal_buffer = NULL;
+            normal_buffer_size = 0;
+        }
+        prev_vtxdesclist_array = NULL;
+        prev_vtxdesc = NULL;
+    }
+    HSD_PARENT_INFO(&hsdPObj)->amnesia(info);
+}
+
+static void PObjInfoInit(void)
+{
+    hsdInitClassInfo(HSD_CLASS_INFO(&hsdPObj), HSD_CLASS_INFO(&hsdClass),
+                     "sysdolphin_base_library", "hsd_pobj",
+                     sizeof(HSD_PObjInfo), sizeof(HSD_PObj));
+    HSD_CLASS_INFO(&hsdPObj)->release = PObjRelease;
+    HSD_CLASS_INFO(&hsdPObj)->amnesia = PObjAmnesia;
+    HSD_POBJ_INFO(&hsdPObj)->disp = HSD_PObjDisp;
+    HSD_POBJ_INFO(&hsdPObj)->setup_mtx = PObjSetupMtx;
+    HSD_POBJ_INFO(&hsdPObj)->load = PObjLoad;
+    HSD_POBJ_INFO(&hsdPObj)->update = PObjUpdateFunc;
+}

@@ -1,0 +1,1504 @@
+#!/usr/bin/env python3
+
+###
+# Generates build files for the project.
+# This file also includes the project configuration,
+# such as compiler flags and the object matching status.
+#
+# Usage:
+#   python3 configure.py
+#   ninja
+#
+# Append --help to see available options.
+###
+
+import argparse
+import sys
+from pathlib import Path
+from typing import Any, Dict, List
+
+from tools.project import (
+    Object,
+    ProgressCategory,
+    ProjectConfig,
+    calculate_progress,
+    generate_build,
+    is_windows,
+)
+
+# Game versions
+DEFAULT_VERSION = 0
+VERSIONS = [
+    "GXXE01",  # 0
+    "NXXJ01"
+]
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "mode",
+    choices=["configure", "progress"],
+    default="configure",
+    help="script mode (default: configure)",
+    nargs="?",
+)
+parser.add_argument(
+    "-v",
+    "--version",
+    choices=VERSIONS,
+    type=str.upper,
+    default=VERSIONS[DEFAULT_VERSION],
+    help="version to build",
+)
+parser.add_argument(
+    "--build-dir",
+    metavar="DIR",
+    type=Path,
+    default=Path("build"),
+    help="base build directory (default: build)",
+)
+parser.add_argument(
+    "--binutils",
+    metavar="BINARY",
+    type=Path,
+    help="path to binutils (optional)",
+)
+parser.add_argument(
+    "--compilers",
+    metavar="DIR",
+    type=Path,
+    help="path to compilers (optional)",
+)
+parser.add_argument(
+    "--map",
+    action="store_true",
+    help="generate map file(s)",
+)
+parser.add_argument(
+    "--debug",
+    action="store_true",
+    help="build with debug info (non-matching)",
+)
+if not is_windows():
+    parser.add_argument(
+        "--wrapper",
+        metavar="BINARY",
+        type=Path,
+        help="path to wibo or wine (optional)",
+    )
+parser.add_argument(
+    "--dtk",
+    metavar="BINARY | DIR",
+    type=Path,
+    help="path to decomp-toolkit binary or source (optional)",
+)
+parser.add_argument(
+    "--objdiff",
+    metavar="BINARY | DIR",
+    type=Path,
+    help="path to objdiff-cli binary or source (optional)",
+)
+parser.add_argument(
+    "--sjiswrap",
+    metavar="EXE",
+    type=Path,
+    help="path to sjiswrap.exe (optional)",
+)
+parser.add_argument(
+    "--ninja",
+    metavar="BINARY",
+    type=Path,
+    help="path to ninja binary (optional)"
+)
+parser.add_argument(
+    "--verbose",
+    action="store_true",
+    help="print verbose output",
+)
+parser.add_argument(
+    "--non-matching",
+    dest="non_matching",
+    action="store_true",
+    help="builds equivalent (but non-matching) or modded objects",
+)
+parser.add_argument(
+    "--warn",
+    dest="warn",
+    type=str,
+    choices=["all", "off", "error"],
+    help="how to handle warnings",
+)
+parser.add_argument(
+    "--no-progress",
+    dest="progress",
+    action="store_false",
+    help="disable progress calculation",
+)
+args = parser.parse_args()
+
+config = ProjectConfig()
+config.version = str(args.version)
+version_num = VERSIONS.index(config.version)
+
+# Apply arguments
+config.build_dir = args.build_dir
+config.dtk_path = args.dtk
+config.objdiff_path = args.objdiff
+config.binutils_path = args.binutils
+config.compilers_path = args.compilers
+config.generate_map = args.map
+config.non_matching = args.non_matching
+config.sjiswrap_path = args.sjiswrap
+config.ninja_path = args.ninja
+config.progress = args.progress
+if not is_windows():
+    config.wrapper = args.wrapper
+# Don't build asm unless we're --non-matching
+if not config.non_matching:
+    config.asm_dir = None
+
+# Tool versions
+config.binutils_tag = "2.42-1"
+config.compilers_tag = "20250812"
+config.dtk_tag = "v1.7.4"
+config.objdiff_tag = "v3.4.0"
+config.sjiswrap_tag = "v1.2.2"
+config.wibo_tag = "1.0.0-beta.4"
+
+# Project
+config.config_path = Path("config") / config.version / "config.yml"
+config.check_sha_path = Path("config") / config.version / "build.sha1"
+config.asflags = [
+    "-mgekko",
+    "--strip-local-absolute",
+    "-I include",
+    f"-I build/{config.version}/include",
+    f"--defsym BUILD_VERSION={version_num}",
+]
+config.ldflags = [
+    "-fp hardware",
+    "-nodefaults",
+]
+if args.debug:
+    config.ldflags.append("-g")  # Or -gdwarf-2 for Wii linkers
+if args.map:
+    config.ldflags.append("-mapunused")
+    # config.ldflags.append("-listclosure") # For Wii linkers
+
+# Use for any additional files that should cause a re-configure when modified
+config.reconfig_deps = []
+
+# Optional numeric ID for decomp.me preset
+# Can be overridden in libraries or objects
+config.scratch_preset_id = None
+
+# Base flags, common to most GC/Wii games.
+# Generally leave untouched, with overrides added below.
+cflags_base = [
+    "-nodefaults",
+    "-proc gekko",
+    "-align powerpc",
+    "-enum int",
+    "-fp hardware",
+    "-Cpp_exceptions off",
+    # "-W all",
+    "-O4,p",
+    "-inline auto",
+    '-pragma "cats off"',
+    '-pragma "warn_notinlined off"',
+    "-maxerrors 1",
+    "-nosyspath",
+    "-RTTI off",
+    "-fp_contract on",
+    "-str reuse",
+    "-multibyte",  # For Wii compilers, replace with `-enc SJIS`
+    "-i include",
+    f"-i build/{config.version}/include",
+    f"-DBUILD_VERSION={version_num}",
+    f"-DVERSION_{config.version}",
+]
+
+# Debug flags
+if args.debug:
+    # Or -sym dwarf-2 for Wii compilers
+    cflags_base.extend(["-sym on", "-DDEBUG=1"])
+else:
+    cflags_base.append("-DNDEBUG=1")
+
+# Warning flags
+if args.warn == "all":
+    cflags_base.append("-W all")
+elif args.warn == "off":
+    cflags_base.append("-W off")
+elif args.warn == "error":
+    cflags_base.append("-W error")
+
+# Metrowerks library flags
+cflags_runtime = [
+    *cflags_base,
+    "-use_lmw_stmw on",
+    "-str reuse,pool,readonly",
+    "-gccinc",
+    "-common off",
+    "-inline auto",
+]
+
+# MSL_C / Runtime: headers from the Pikmin 2 decomp (same SDK version)
+cflags_msl = [*cflags_runtime, "-i include/sdk_ref"]
+
+#pokemon object
+cflags_xd_app_pokemon = [
+    *cflags_base,
+    "-use_lmw_stmw on",
+    "-str reuse,pool,readonly",
+    "-gccinc",
+    "-common off",
+    "-O4",
+    "-inline noauto",
+]
+cflags_xd_app_pokemon.remove("-O4,p")
+cflags_xd_app_pokemon.remove("-inline auto")
+
+# REL flags
+cflags_rel = [
+    *cflags_base,
+    "-sdata 0",
+    "-sdata2 0",
+]
+
+cflags_trk = [
+    *cflags_base,
+    "-use_lmw_stmw on",
+    "-rostr",
+    "-str reuse",
+    "-gccinc",
+    "-common off",
+    "-inline deferred,auto",
+    "-char signed",
+    "-sdata 0",
+    "-sdata2 0",
+]
+
+cflags_dolphin = [
+    *cflags_base,
+    "-char unsigned",
+    "-sym on",
+    "-fp_contract off",
+    "-warn pragmas",
+    "-requireprotos",
+    "-D__GEKKO__",
+    "-i include/libc",
+    "-ir src/dolphin",
+]
+
+cflags_dolphin_exibios = cflags_dolphin[:]
+cflags_dolphin_exibios.remove("-O4,p")  # need to remove this flag for EXIBios.c
+
+cflags_musyx = [
+    "-proc gekko",
+    "-nodefaults",
+    "-nosyspath",
+    "-i include",
+    "-i extern/musyx/include",
+    "-i include/libc",
+    "-inline auto,depth=4",
+    "-O4,p",
+    "-fp hard",
+    "-enum int",
+    "-sym on",
+    "-Cpp_exceptions off",
+    "-str reuse,pool,readonly",
+    "-fp_contract off",
+    "-DMUSY_TARGET=MUSY_TARGET_DOLPHIN",
+]
+
+cflags_musyx_debug = [
+    "-proc gecko",
+    "-fp hard",
+    "-nodefaults",
+    "-nosyspath",
+    "-i include",
+    "-i extern/musyx/include",
+    "-i include/libc",
+    "-g",
+    "-sym on",
+    "-D_DEBUG=1",
+    "-fp hard",
+    "-enum int",
+    "-Cpp_exceptions off",
+    "-DMUSY_TARGET=MUSY_TARGET_DOLPHIN",
+]
+
+config.linker_version = "GC/2.6"
+
+
+# Helper function for Dolphin libraries
+def DolphinLib(lib_name: str, objects: List[Object], patch=2 if config.version == "NXXJ01" else 1) -> Dict[str, Any]:
+    return {
+        "lib": lib_name,
+        "mw_version": "GC/1.2.5n",
+        "cflags": [*cflags_dolphin, f"-DSDK_REVISION={patch}"],
+        "progress_category": "sdk",
+        "objects": objects,
+    }
+
+
+def MusyX(objects, mw_version="GC/1.3.2", debug=False, major=2, minor=0, patch=3 if version_num == 7 else 0, lib="musyx", src_dir="extern/musyx/src"):
+    cflags = cflags_musyx if not debug else cflags_musyx_debug
+    return {
+        "lib": lib,
+        "mw_version": mw_version,
+        "src_dir": src_dir,
+        "host": False,
+        "cflags": [
+            *cflags,
+            f"-DMUSY_VERSION_MAJOR={major}",
+            f"-DMUSY_VERSION_MINOR={minor}",
+            f"-DMUSY_VERSION_PATCH={patch}",
+        ],
+        "progress_category": "sdk",
+        "objects": objects,
+        "shift_jis": False,
+    }
+
+
+# Helper function for REL script objects
+def Rel(lib_name: str, objects: List[Object]) -> Dict[str, Any]:
+    return {
+        "lib": lib_name,
+        "mw_version": "GC/1.3.2",
+        "cflags": cflags_rel,
+        "progress_category": "game",
+        "objects": objects,
+    }
+
+
+Matching = True                   # Object matches and should be linked
+NonMatching = False               # Object does not match and should not be linked
+Equivalent = config.non_matching  # Object should be linked when configured with --non-matching
+
+
+# Object is only matching for specific versions
+def MatchingFor(*versions):
+    return config.version in versions
+
+
+config.warn_missing_config = True
+config.warn_missing_source = False
+config.libs = [
+    DolphinLib(
+        "base",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/base/PPCArch.c"),
+        ],
+    ),
+    DolphinLib(
+        "os",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OS.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSAlarm.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSArena.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSAudioSystem.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSCache.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSContext.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSError.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSExec.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSFatal.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSFont.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSInterrupt.c"),
+            Object(Equivalent, "dolphin/os/OSLink.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSMemory.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSMutex.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSReboot.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSReset.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSResetSW.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSRtc.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSSync.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSThread.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSTime.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/__start.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/__ppc_eabi_init.c"),
+        ],
+    ),
+    DolphinLib(
+        "db",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/db/db.c"),
+        ],
+    ),
+    DolphinLib(
+        "mtx",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/mtx/mtx.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/mtx/mtxvec.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/mtx/mtx44.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/mtx/vec.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/mtx/quat.c"),
+        ],
+    ),
+    DolphinLib(
+        "dvd",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dvd/dvdlow.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dvd/dvdfs.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dvd/dvd.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dvd/dvdqueue.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dvd/dvderror.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dvd/dvdidutils.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dvd/dvdFatal.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dvd/fstload.c", extra_cflags=["-char signed"]),
+        ],
+    ),
+    DolphinLib(
+        "vi",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/vi/vi.c"),
+        ],
+    ),
+    DolphinLib(
+        "pad",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/pad/Pad.c"),
+        ],
+    ),
+    DolphinLib(
+        "ai",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/ai/ai.c"),
+        ],
+    ),
+    DolphinLib(
+        "ar",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/ar/ar.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/ar/arq.c"),
+        ],
+    ),
+    DolphinLib(
+        "dsp",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dsp/dsp.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dsp/dsp_debug.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/dsp/dsp_task.c"),
+        ],
+    ),
+    DolphinLib(
+        "card",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDBios.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDUnlock.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDRdwr.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDBlock.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDDir.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDCheck.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDMount.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDFormat.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDOpen.c", extra_cflags=["-char signed"]),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDCreate.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDRead.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDWrite.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDDelete.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDStat.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDStatEx.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/card/CARDNet.c"),
+        ],
+    ),
+    DolphinLib(
+        "gx",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXInit.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXFifo.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXAttr.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXMisc.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXGeometry.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXFrameBuf.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXLight.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXTexture.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXBump.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXTev.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXPixel.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXDraw.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXDisplayList.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXTransform.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/gx/GXPerf.c"),
+        ], patch=2
+    ),
+    DolphinLib(
+        "perf",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/perf/perf.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/perf/perfdraw.c"),
+        ],
+    ),
+    DolphinLib(
+        "amcstubs",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/amcstubs/AmcExi2Stubs.c"),
+        ],
+    ),
+    DolphinLib(
+        "odenotstub",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/odenotstub/odenotstub.c"),
+        ],
+    ),
+    DolphinLib(
+        "OdemuExi2",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/OdemuExi2Lib/DebuggerDriver.c", extra_cflags=["-inline auto,deferred"]),
+        ],
+    ),
+    DolphinLib(
+        "exi",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/exi/EXIUart.c"),
+        ],
+    ),
+    {
+        "lib": "Dolphin EXIBios",
+        "mw_version": "GC/1.2.5n",
+        "cflags": cflags_dolphin_exibios,
+        "progress_category": "sdk",
+        "objects": [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/exi/EXIBios.c", extra_cflags=["-O3,p"]),
+        ],
+    },
+    DolphinLib(
+        "si",
+        [
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/si/SIBios.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/si/SISamplingRate.c"),
+        ],
+    ),
+    {
+        "lib": "TRK_MINNOW_DOLPHIN",
+        "mw_version": config.linker_version,
+        "cflags": [*cflags_trk, "-i include/sdk_ref"],
+        "progress_category": "sdk",
+        "host": False,
+        "objects": [
+            # debugger
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/mainloop.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/nubevent.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/nubinit.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/msg.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/msgbuf.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/serpoll.c", extra_cflags=["-sdata 8"]),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Os/dolphin/usr_put.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/dispatch.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/msghndlr.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/support.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/mutex_TRK.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/notify.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Processor/ppc/Generic/flush_cache.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/mem_TRK.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Processor/ppc/Generic/targimpl.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Processor/ppc/Export/targsupp.s"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Processor/ppc/Generic/__exception.s"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Portable/main_TRK.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Os/dolphin/dolphin_trk_glue.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Os/dolphin/targcont.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Os/dolphin/target_options.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Export/mslsupp.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/debugger/embedded/MetroTRK/Os/dolphin/UDP_Stubs.c"),
+
+            # gamedev
+            Object(MatchingFor("GXXE01"), "runtime_libs/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main_ddh.c", extra_cflags=["-sdata 8"]),
+            Object(MatchingFor("GXXE01"), "runtime_libs/gamedev/cust_connection/utils/common/CircleBuffer.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main_gdev.c", extra_cflags=["-sdata 8"]),
+            Object(MatchingFor("GXXE01"), "runtime_libs/gamedev/cust_connection/utils/common/MWTrace.c"),
+            Object(MatchingFor("GXXE01"), "runtime_libs/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.c"),
+        ],
+    },
+    {
+        "lib": "Runtime.PPCEABI.H",
+        "mw_version": config.linker_version,
+        "cflags": cflags_msl,
+        "progress_category": "sdk",
+        "host": False,
+        "objects": [
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/__mem.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/__va_arg.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/global_destructor_chain.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/CPlusLibPPC.cp"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/NMWException.cp", extra_cflags=["-Cpp_exceptions on"]),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/runtime.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/__init_cpp_exceptions.cpp"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/Gecko_ExceptionPPC.cp"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/Runtime/Src/GCN_mem_alloc.c", extra_cflags=["-str reuse,nopool,readonly"]),
+        ],
+    },
+    {
+        "lib": "MSL_C",
+        "mw_version": config.linker_version,
+        "cflags": cflags_msl,
+        "progress_category": "sdk",
+        "host": False,
+        "objects": [
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/abort_exit.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/alloc.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/errno.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/ansi_files.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Src/ansi_fp.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/arith.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/buffer_io.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/PPC_EABI/Src/critical_regions.gamecube.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/ctype.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/locale.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/direct_io.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/file_io.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/FILE_POS.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/mbstring.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/mem.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/mem_funcs.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/misc_io.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/printf.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/float.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/qsort.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/scanf.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/string.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/strtold.c", extra_cflags=["-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/strtoul.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/wchar_io.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/PPC_EABI/Src/uart_console_io_gcn.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_acos.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_asin.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_atan2.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_exp.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_fmod.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_log.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_pow.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_rem_pio2.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/k_cos.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/k_rem_pio2.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/k_sin.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/k_tan.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_atan.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_ceil.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_copysign.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_cos.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_floor.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_frexp.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_ldexp.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_modf.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_sin.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/s_tan.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_acos.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_asin.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_atan2.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_exp.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_fmod.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_log.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_pow.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/e_sqrt.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/PPC_EABI/Src/math_ppc.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_sqrt.c"),
+            Object(MatchingFor("GXXE01"), "PowerPC_EABI_Support/MSL_C/MSL_Common/Src/extras.c"),
+        ],
+    },
+    MusyX(
+        # debug=True,
+        # mw_version="GC/1.2.5n",
+        major=2,
+        minor=0,
+        patch=3,
+        objects=[
+            Object(MatchingFor("GXXE01"), "musyx/runtime/seq.c", src_dir="src"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/synth.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/seq_api.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/snd_synthapi.c"),
+            Object(NonMatching, "musyx/runtime/stream.c"),
+            Object(NonMatching, "musyx/runtime/synthvoice.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/synth_ac.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/synth_dbtab.c"),
+            Object(NonMatching, "musyx/runtime/synth_vsamples.c"),
+            Object(NonMatching, "musyx/runtime/s_data.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/hw_dspctrl.c"),
+            Object(MatchingFor("GXXE01"), "musyx/runtime/hw_volconv.c", src_dir="src"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/snd3d.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/snd_init.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/snd_math.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/snd_midictrl.c"),
+            Object(MatchingFor("GXXE01"), "musyx/runtime/snd_service.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/hardware.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/dsp_import.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/hw_aramdma.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/hw_dolphin.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/hw_memory.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/StdReverb/reverb_fx.c"),
+        ]
+    ),
+    # MusyX sources that differ in Pokemon XD: edited copies in src/musyx.
+    MusyX(
+        major=2,
+        minor=0,
+        patch=3,
+        lib="musyx_xd",
+        src_dir="src",
+        objects=[
+            Object(MatchingFor("GXXE01"), "musyx/runtime/synthdata.c"),
+            Object(MatchingFor("GXXE01"), "musyx/runtime/synthmacros.c"),
+            Object(MatchingFor("GXXE01"), "musyx/runtime/StdReverb/reverb.c"),
+            Object(MatchingFor("GXXE01"), "musyx/runtime/synth_adsr.c"),
+        ]
+    ),
+    DolphinLib(
+        "gba",
+        [
+            Object(MatchingFor("GXXE01"), "gba/GBA.c"),
+            Object(MatchingFor("GXXE01"), "gba/GBARead.c"),
+            Object(MatchingFor("GXXE01"), "gba/GBAWrite.c"),
+            Object(MatchingFor("GXXE01"), "gba/GBAXfer.c"),
+        ],
+    ),
+    {
+        "lib": "dbgMenu",
+        "mw_version": config.linker_version,
+        "cflags": cflags_runtime,
+        "progress_category": "game",
+        "objects": [
+            Object(MatchingFor("GXXE01"), "game/dbgMenuCamera.cpp"),
+            Object(NonMatching, "game/dbgMenuFight.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/dbgMenuFlag.cpp"),
+            Object(NonMatching, "game/dbgMenuPokemon.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuHero.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuFloor.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuGSgfx.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuGSvtr.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuMemcard.cpp", extra_cflags=["-lang=c"]),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuMsg.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuPeople.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuSoundTest.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuWazaViewer.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuWaza.cpp"),
+            Object(NonMatching, "game/dbgMenuFightTrainer.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuFightWaza.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuLog.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuFieldCamera.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuItemCreate.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuRelive.cpp"),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuToolBattle.cpp"),
+            Object(NonMatching, "game/dbgMenuSub.cpp", extra_cflags=["-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuMenu.cpp", extra_cflags=["-inline noauto,deferred"]),
+        ]
+    },
+    {
+        "lib": "menu",
+        "mw_version": config.linker_version,
+        "cflags": cflags_runtime,
+        "progress_category": "game",
+        "objects": [
+            Object(NonMatching, "game/menuData.c"),
+            Object(MatchingFor("GXXE01"), "game/menuTool.cpp"),
+            Object(NonMatching, "game/menuColosseumBattleConnection.cpp"),
+            Object(NonMatching, "game/menuSeq.c"),
+            Object(NonMatching, "game/menuSprite.c"),
+            Object(MatchingFor("GXXE01"), "game/menuPokeCoupon.cpp"),
+            Object(MatchingFor("GXXE01"), "game/menuKeyDisc.cpp"),
+            Object(NonMatching, "game/menuPocketBattleDisk.cpp"),
+            Object(NonMatching, "game/menuWorldMapMX.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuItemMX.cpp"),
+            Object(NonMatching, "game/menuPokemon.cpp"),
+            Object(NonMatching, "game/menuFightStatus.cpp"),
+            Object(NonMatching, "game/menuFight.cpp"),
+            Object(NonMatching, "game/menuPocketTool.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/menuPocket.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuTop.cpp"),
+            Object(NonMatching, "game/menuNameEntry.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuPokemonStatus.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuItemTool.cpp"),
+            Object(MatchingFor("GXXE01"), "game/menuSaveLoad.cpp"),
+            Object(NonMatching, "game/menuPda.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuReliveHall.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/menuPdaSearcher.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/menuPdaMailXD.cpp"),
+            Object(NonMatching, "game/menuPdaMailList.XD.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/menuColosseumBattle.cpp"),
+            Object(NonMatching, "game/menuCB_BattleResult.cpp"),
+            Object(NonMatching, "game/menuCB_BattleStart.cpp"),
+            Object(NonMatching, "game/menuCB_Bios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/menuCB_Common.cpp"),
+            Object(MatchingFor("GXXE01"), "game/menuCB_Debug.cpp"),
+            Object(NonMatching, "game/menuCB_ItemList.cpp"),
+            Object(NonMatching, "game/menuCB_PokemonEntry.cpp"),
+            Object(NonMatching, "game/menuCB_Rule.cpp"),
+            Object(NonMatching, "game/menuCB_Battle.cpp"),
+            Object(NonMatching, "game/menuToolBattle.cpp"),
+            Object(NonMatching, "game/menuGBAC.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuPdaDPMonitor.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/menuPdaDPMonitorList.cpp", extra_cflags=["-inline noauto"]),
+            Object(MatchingFor("GXXE01"), "game/menuPdaSub.cpp"),
+            Object(NonMatching, "game/menuPdaMemoXD.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/menuPdaMemoListXD.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/menuPcBoxPokemon.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuField.cpp"),
+            Object(NonMatching, "game/menuScript.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuReliveMeter.cpp"),
+            Object(NonMatching, "game/menuShop.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuPocketCologne.cpp"),
+            Object(NonMatching, "game/menuItemPda.cpp"),
+            Object(NonMatching, "game/menuSub.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/menuPdaMemoWaveXD.cpp"),
+            Object(MatchingFor("GXXE01"), "game/menuInterrupt.cpp"),
+            Object(NonMatching, "game/menuPcBoxNew.cpp"),
+            Object(NonMatching, "game/menuPcBoxDouguNew.cpp"),
+            Object(NonMatching, "game/menuCB_externDB.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/menuDataBios.cpp"),
+            Object(NonMatching, "game/menuPanel.cpp"),
+            Object(NonMatching, "game/menuCB_Sub1.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/menuLogoDemo.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuHologram.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuBingo.cpp"),
+            Object(NonMatching, "game/menuItemBT.c"),
+            Object(MatchingFor("GXXE01"), "game/menuReliveHallTutorial.cpp"),
+            Object(NonMatching, "game/menuPokemonChange.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuWorldMapMoveDemo.cpp"),
+            Object(NonMatching, "game/menuWorldMapModel.cpp"),
+            Object(NonMatching, "game/menuItem.c"),
+            Object(NonMatching, "game/menuBattleDisk.cpp"),
+            Object(NonMatching, "game/menuItemXD.c"),
+            Object(NonMatching, "game/menuOrreColosseum.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/menuTitle.cpp"),
+            Object(NonMatching, "game/menuUseItem.cpp"),
+            Object(NonMatching, "game/menuItemDebugRelease.c"),
+            Object(NonMatching, "game/menuMewWaza.cpp"),
+            Object(MatchingFor("GXXE01"), "game/menuMoveDemo.cpp"),
+            Object(NonMatching, "game/menuTitleOption.cpp"),
+        ],
+    },
+    {
+        "lib": "game_unsorted",
+        "mw_version": config.linker_version,
+        "cflags": cflags_runtime,
+        "progress_category": "game",
+        "objects": [
+            Object(NonMatching, "game/character.cpp"),
+            Object(NonMatching, "game/relglobal.c"),
+            Object(MatchingFor("GXXE01"), "game/pause.cpp"),
+            Object(MatchingFor("GXXE01"), "game/time.cpp"),
+            Object(MatchingFor("GXXE01"), "game/main.cpp"),
+            Object(MatchingFor("GXXE01"), "game/sysvars.cpp"),
+            Object(MatchingFor("GXXE01"), "game/flashmenuTest.cpp"),
+            Object(NonMatching, "game/gbaPokemon.cpp"),
+            Object(NonMatching, "game/gbaCommand.cpp"),
+            Object(MatchingFor("GXXE01"), "game/agbCommunication.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/floorRead.cpp"),
+            Object(NonMatching, "game/pokecolo.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pokeconv.cpp"),
+            Object(MatchingFor("GXXE01"), "game/wazaconv.cpp"),
+            Object(MatchingFor("GXXE01"), "game/floorLayerConfig.cpp"),
+        ]
+    },
+    {
+        "lib": "xd_GSAPI",
+        "mw_version": config.linker_version,
+        "cflags": cflags_runtime,
+        "progress_category": "game",
+        "objects": [
+            # GSmemman
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmemman/GSmemman.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmemman/memOverride.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmemman/OSAlloc.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmemman/sysdolmem.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmemman/poolAlloc.cpp"),
+
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GScamera/GScamera.cpp", extra_cflags=["-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSlight/GSlight.cpp", extra_cflags=["-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmaterial/GSmaterial.cpp"),
+
+            # GSmath
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSmtx.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSmtx44.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSquat.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/init.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSbezier.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSlerp.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSutil.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmath/GSvec.cpp"),
+
+            # GSmodel
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/effects.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmodel/blend.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmodel/bound.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/animation.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/GSmodel.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmodel/GSmodelExt.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/parse.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmodel/part.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmodel/save_state.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/shadow.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmodel/bank.cpp"),
+
+            Object(NonMatching, "game/pxdvs/GSAPI/GSpart/GSpart.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSscratch/GSscratch.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GStexture/GStexture.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSthread/GSthread.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSinput/GSinput.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSres/GSres.cpp"),
+
+            # GSmsg
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmsg/GSmsg.cpp", extra_cflags=["-inline deferred"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmsg/sprite.cpp"),
+
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgapp/GSgapp.cpp"),
+
+            # GScolsys
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Draw.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Walk.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Hit.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Util.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Human.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Thru.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Check.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GScolsys/GScolsys2Sun.cpp"),
+
+            # GSparticle
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/GSparticle.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peParticle.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peNode.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peBank.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peEmitter.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peModel.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peContainer.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peDistortion.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peParticleStrip.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peSpline.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/particleEngine.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSparticle/peShape.cpp"),
+
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSeffect/GSeffect.cpp"),
+
+            # GSsnd
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSsnd/GSsnd.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSsnd/sndStream.cpp"),
+
+            Object(NonMatching, "game/pxdvs/GSAPI/GSdvd/GSdvd.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSfilter/GSfilter.cpp", extra_cflags=["-inline deferred"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSspline/GSspline.cpp"),
+
+            # GSfsys
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSfsys/fsysStream.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSfsys/fsysBlock.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSfsys/fsysCache.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSfsys/fsysRead.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSfsys/fsysAlloc.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSfsys/GSfsys2.cpp", extra_cflags=["-inline noauto"]),
+
+            Object(NonMatching, "game/pxdvs/GSAPI/GSflag/GSflag.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSbound/GSbound.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSvtr/GSvtr.cpp"),
+
+            # GSmovie
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/movieStream.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/GSmovie.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/THPDraw.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmovie/THPDec.cpp", mw_version="GC/1.2.5n", cflags=[f for f in cflags_runtime if f not in ("-gccinc", "-str reuse,pool,readonly")] + ["-lang=c", "-i include/libc"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSmovie/THPAudio.cpp"),
+
+            Object(NonMatching, "game/pxdvs/GSAPI/GSlensFlare/GSlensFlare.cpp"),
+
+            # GSScript
+            Object(NonMatching, "game/pxdvs/GSAPI/GSScript/tiga.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSScript/tvariant.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSScript/chank.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSScript/defobj.cpp"),
+
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSnetwork/GSnetwork.cpp"),
+
+            # GSprim
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSprim/GSprim.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSprim/2d.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSprim/text.cpp"),
+
+            # GSshape
+            Object(NonMatching, "game/pxdvs/GSAPI/GSshape/shapeAnim.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSshape/shapeObject.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSshape/shapeRender.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSshape/GSshape.cpp"),
+
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSstream/GSstream.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSlogM/GSlog.cpp"),
+
+            # GSgfxM
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/backfb.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/GSgfx.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/layer.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/render.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/perfbar.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/token.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/project.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/halt.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/video.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/gpu.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/vf.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/dl.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/layerState.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/matrixStack.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/layerFunc.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/renderModule.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/c_func.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/layerConfig.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/light_gfxm.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/layerEffect.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/gamecube.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/screenshot.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/capture.cpp"),
+            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/reset.cpp"),
+        ]
+    },
+    {
+        "lib": "xd_app",
+        "mw_version": config.linker_version,
+        "cflags": cflags_runtime,
+        "progress_category": "game",
+        "objects": [
+            # kaisuu
+            Object(MatchingFor("GXXE01", "NXXJ01"), "game/pxdvs/app/kaisuu/kaisuuData.c"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "game/pxdvs/app/kaisuu/kaisuu.cpp"),
+            Object(MatchingFor("GXXE01", "NXXJ01"), "game/pxdvs/app/kaisuu/kaisuuBios.cpp"),
+
+            # menu
+            Object(NonMatching, "game/pxdvs/app/menu/winSprite.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/pxdvs/app/menu/menu.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/menuFace.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/menu/menuFaceBios.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/menuModel.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/menuOffScreen.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/window.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/menu/cursorBios.cpp"),
+            Object(NonMatching, "game/pxdvs/app/menu/winMsg.cpp"),
+
+            # zokusei
+            Object(NonMatching, "game/pxdvs/app/zokusei/zokusei.cpp"),
+            Object(NonMatching, "game/pxdvs/app/zokusei/zokuseiBios.cpp"),
+
+            # floor
+            Object(NonMatching, "game/pxdvs/app/floor/floor.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(NonMatching, "game/pxdvs/app/floor/floorEvent.cpp"),
+            Object(NonMatching, "game/pxdvs/app/floor/floorCharacterBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/floor/floorDataBios.cpp"),
+            Object(NonMatching, "game/pxdvs/app/floor/floorFieldCamera.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/pxdvs/app/floor/floorFieldCameraEditor.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/floor/floorOffscreen.cpp"),
+            Object(NonMatching, "game/pxdvs/app/floor/floorManager.cpp", extra_cflags=["-inline off"]),
+            Object(NonMatching, "game/pxdvs/app/floor/floorModule.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/floor/floorStack.cpp"),
+            Object(NonMatching, "game/pxdvs/app/floor/floorLoad.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/floor/floorScript.cpp"),
+            Object(NonMatching, "game/pxdvs/app/floor/floorsound.cpp"),
+
+            # joutai
+            Object(NonMatching, "game/pxdvs/app/joutai/joutaiData.c"),
+            Object(NonMatching, "game/pxdvs/app/joutai/joutai.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/joutai/joutaiBios.cpp"),
+
+            # waza
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/waza/waza.cpp"),
+            Object(NonMatching, "game/pxdvs/app/waza/wazaFuncData.c"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/waza/wazaBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/waza/wazaDB.cpp"),
+
+            # hero
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/hero/hero.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/hero/heroBios.cpp"),
+            Object(NonMatching, "game/pxdvs/app/hero/heroMove.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/hero/heroPokemonGet.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/hero/heroMemberFunctions.cpp", extra_cflags=["-inline noauto"]),
+
+            # sex
+            Object(NonMatching, "game/pxdvs/app/sex/sexdata.c"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/sex/sex.cpp"),
+
+            # msgctrl
+            Object(NonMatching, "game/pxdvs/app/msgctrl/msgctrlcode.c"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/msgctrl/msgctrl.cpp", extra_cflags=["-inline deferred"]),
+
+            Object(NonMatching, "game/pxdvs/app/dbgMenu/dbgMenu.cpp"),
+            Object(NonMatching, "game/pxdvs/app/pcbox/pcbox.cpp"),
+
+            # gamedata
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/gamedata/gamedatasaveBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/gamedata/gamedataBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/gamedata/gamedata.cpp"),
+
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/status/status.cpp"),
+
+            # kouka
+            Object(NonMatching, "game/pxdvs/app/kouka/koukaData.c"),
+            Object(NonMatching, "game/pxdvs/app/kouka/koukaLinkData.c"),
+            Object(NonMatching, "game/pxdvs/app/kouka/kouka.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/kouka/koukaBios.cpp"),
+
+            # tenkou
+            Object(NonMatching, "game/pxdvs/app/tenkou/tenkouData.c"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/tenkou/tenkouBios.cpp"),
+
+            # tikei
+            Object(NonMatching, "game/pxdvs/app/tikei/tikeiData.c"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/tikei/tikeiBios.cpp"),
+
+            # effects
+            Object(NonMatching, "game/pxdvs/app/effects/filter.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/effects/envMap.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/effects/blur.cpp"),
+            Object(NonMatching, "game/pxdvs/app/effects/glow.cpp"),
+
+            # item
+            Object(NonMatching, "game/pxdvs/app/item/itemBallData.c"),
+            Object(NonMatching, "game/pxdvs/app/item/itemSoubiData.c"),
+            Object(NonMatching, "game/pxdvs/app/item/tasteData.c"),
+            Object(NonMatching, "game/pxdvs/app/item/itemWazaMachineNo.c"),
+            Object(NonMatching, "game/pxdvs/app/item/itemParam.c"),
+            Object(NonMatching, "game/pxdvs/app/item/item.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/item/itemBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/item/itemDB.cpp"),
+            Object(NonMatching, "game/pxdvs/app/item/itemUse2Pokemon.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/item/itemFightItem.cpp"),
+
+            Object(NonMatching, "game/pxdvs/app/sound/sound.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/camera/camera.cpp"),
+
+            # battleGrid
+            Object(NonMatching, "game/pxdvs/app/battleGrid/battleGrid.cpp"),
+            Object(NonMatching, "game/pxdvs/app/battleGrid/wazaSequenceCamera.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/battleGrid/wazaSequenceCameraData.cpp"),
+            Object(NonMatching, "game/pxdvs/app/battleGrid/battleCamera.cpp"),
+
+            # fade
+            Object(NonMatching, "game/pxdvs/app/fade/fade.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fade/fade_effect.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fade/fade_fluid.cpp"),
+
+            # script
+            Object(NonMatching, "game/pxdvs/app/script/appScript.cpp", extra_cflags=["-O4,s", "-inline noauto"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/script/objCamera.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/script/objFloor.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/script/objHero.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/script/objMenu.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/script/objPeople.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/script/script.cpp", extra_cflags=["-O4,s", "-inline noauto,deferred"]),
+            Object(NonMatching, "game/pxdvs/app/script/scriptModel.cpp", extra_cflags=["-O4,s", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/script/contSave.cpp"),
+
+            # memcard
+            Object(NonMatching, "game/pxdvs/app/memcard/memcard.cpp"),
+            Object(NonMatching, "game/pxdvs/app/memcard/savedata.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/memcard/savedataBios.cpp"),
+
+            # recovery
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/recovery/recovery.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/recovery/recoveryEvent.cpp", extra_cflags=["-O4,s"]),
+
+            # mail
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/mail/mailMain.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/mail/mail.cpp"),
+
+            # wazaSequence
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaViewer.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaWZXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/trainerPKXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/pokemonPKXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaGenericWZXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaExtWZXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/pokemonWazaWZXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/unknownPokemonPKXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/rarePokemonPKXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaSequence.cpp"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaSequenceSys.cpp"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/modelSequence.cpp", extra_cflags=["-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/wazaSequence/nullSequence.cpp"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaResourceData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/wazaSequenceEntry.cpp"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/deoxyspokemonPKXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/rareDeoxysPokemonPKXData.c"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/pachiru.cpp"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/leaffx.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/wazaSequence/billboard.cpp", extra_cflags=["-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/wazaSequence/wazaeffects.cpp"),
+            Object(NonMatching, "game/pxdvs/app/wazaSequence/boneFill.cpp"),
+
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/etctools/etctools.cpp"),
+            Object(NonMatching, "game/pxdvs/app/sodateya/sodateya.cpp"),
+
+            # fight
+            Object(NonMatching, "game/pxdvs/app/fight/fightMain.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightKind.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTarget.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightType.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightWaza.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightWazaBios.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightEncount.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightEncountBios.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightFloor.cpp", extra_cflags=["-O4,s", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightFloorBios.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightFloorDB.cpp", extra_cflags=["-O4,s", "-inline noauto"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightSideBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightSide.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightSideDB.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainer.cpp", extra_cflags=["-O4,s", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTrainerBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTrainerDB.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTrainerEnemy.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightItemBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightItem.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightPokemon.cpp", extra_cflags=["-O4,s", "-inline noauto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightPokemonBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightPokemonEnemy.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightActionBios.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightAction.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightActionFlow.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightActionDisp.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightKouka.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightKoukaBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightJouken.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightJoukenBios.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightAbicnt.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fight.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightEncountWipeData.c"),
+
+            # fightData
+            Object(NonMatching, "game/pxdvs/app/fight/fightJoukenData.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightJoukenLinkData.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTargetData.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightActionKindData.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightActionData_waza.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightKoukaData.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightWazaCriticalData.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightActionData_kaisi.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightAbicntData.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightActionData_turn.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightActionData_item.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightActionData_syuuryou.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightWazaHitKakurituData.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAi_ComboId.c"),
+
+            # fightAi2
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAi2.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTrainerAiWazaHit.cpp", extra_cflags=["-O4,s", "-lang=c"]),
+
+            # fightSeq
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeqItem.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeqWaza.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeqWSWaza.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeqBasis.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeqItemseq.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeqMsg.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeqSpAction.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightSeq/fightSeqStatus.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeqWazaseq.cpp"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightSeq/fightSeq.cpp", extra_cflags=["-O4,s", "-inline noauto"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightSeq/fightWazaWzx.cpp"),
+
+            Object(NonMatching, "game/pxdvs/app/toolentry/toolentry.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/tableRes/tableResBios.cpp"),
+
+            # pokemonRelive
+            Object(NonMatching, "game/pxdvs/app/pokemon/pokemonRelive.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemonWazaSequenceDisplay.cpp"),
+
+            Object(NonMatching, "game/pxdvs/app/memo/memo.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/evolution/evolution.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/charName/charNameBios.cpp"),
+
+            # fightGSfloor
+            Object(NonMatching, "game/pxdvs/app/fight/fightGSfloor.cpp"),
+
+            # fightMenu
+            Object(NonMatching, "game/pxdvs/app/fight/fightMenu.cpp", extra_cflags=["-O4,s", "-inline noauto"]),
+
+            # fightTimer
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTimer/fightTimer.cpp"),
+
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/d2present/d2present.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/effectEditor/effectEditor.cpp"),
+
+            # flashmenu
+            Object(NonMatching, "game/pxdvs/app/flashmenu/flashmenu.cpp"),
+            Object(NonMatching, "game/pxdvs/app/flashmenu/flashcalc.cpp"),
+            Object(NonMatching, "game/pxdvs/app/flashmenu/vecGraph.cpp"),
+            Object(NonMatching, "game/pxdvs/app/flashmenu/flashsystem.cpp"),
+
+            # deck
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/deck/deck.cpp", extra_cflags=["-inline deferred"]),
+            Object(NonMatching, "game/pxdvs/app/deck/deckGroupData.c"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/deck/deckDataVirtualBios.cpp"),
+
+            Object(NonMatching, "game/pxdvs/app/reliveHall/reliveHall.cpp"),
+            Object(NonMatching, "game/pxdvs/app/ant/ant.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/mball/mballBios.cpp"),
+
+            # ribbon
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/ribbon/ribbon.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/ribbon/exribbon.cpp"),
+
+            # light
+            Object(NonMatching, "game/pxdvs/app/light/lightEditor.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/light/light.cpp"),
+
+            Object(NonMatching, "game/pxdvs/app/esaba/esaba.cpp"),
+
+            # undertaker
+            Object(NonMatching, "game/pxdvs/app/underTaker/undertaker.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/underTaker/undertakerBios.cpp"),
+
+            # people
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/people/peopleInfoBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/people/peopleBios.cpp"),
+            Object(NonMatching, "game/pxdvs/app/people/people.cpp", extra_cflags=["-inline noauto"]),
+            Object(NonMatching, "game/pxdvs/app/people/peopleViewer.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/people/peoplePartAnimation.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/people/peopleSave.cpp"),
+            Object(NonMatching, "game/pxdvs/app/people/peopleTalk.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/people/peopleWalkList.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/people/peopleMemberFunc.cpp"),
+            Object(NonMatching, "game/pxdvs/app/people/peopleColision.cpp"),
+
+            # mewwaza
+            Object(NonMatching, "game/pxdvs/app/mewwaza/mewwazadata.c"),
+            Object(NonMatching, "game/pxdvs/app/mewwaza/mewwaza.cpp"),
+
+            # fightAiM
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAi.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAiCombo.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTrainerAiItem.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAiIrekae.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAiComboFunc.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAiWaza.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTrainerAiWazaDamage.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTrainerAiWazaDamageFightPokemon.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTrainerAiWazaValue.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAi_ExpectWazaDat.c"),
+            Object(NonMatching, "game/pxdvs/app/fight/fightTrainerAiComboContinueFunc.cpp", extra_cflags=["-O4,s"]),
+        ]
+    },
+    {
+        "lib": "xd_app_pokemon",
+        "mw_version": config.linker_version,
+        "cflags": cflags_xd_app_pokemon,
+        "progress_category": "game",
+        "objects": [
+            # pokemon
+            Object(NonMatching, "game/pxdvs/app/pokemon/pokemonGrowData.c"),
+            Object(NonMatching, "game/pxdvs/app/pokemon/pokemonTokuseiData.c"),
+            Object(NonMatching, "game/pxdvs/app/pokemon/pokemonFriendFilterData.c"),
+            Object(NonMatching, "game/pxdvs/app/pokemon/pokemonNakigoeData.c"),
+            Object(NonMatching, "game/pxdvs/app/pokemon/pokemonWaveDispData.c"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemon.cpp", extra_cflags=["-inline deferred"]),
+            Object(NonMatching, "game/pxdvs/app/pokemon/pokemonBios.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemonDB.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemonEvolution.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemonStatusFightoutPokemon.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemonStatusFightPokemon.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemonStatusPokemon.cpp"),
+            Object(NonMatching, "game/pxdvs/app/pokemon/darkPokemon.cpp"),
+            Object(NonMatching, "game/pxdvs/app/pokemon/darkPokemonList.c"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/darkPokemonBios.cpp", extra_cflags=["-O4,s"]),
+        ]
+    },
+    {
+        "lib": "maximum_GSAPI",
+        "mw_version": config.linker_version,
+        "cflags": cflags_runtime,
+        "progress_category": "game",
+        "objects": [
+            # hsdparticle_gs
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/particle/pslist.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(NonMatching, "game/maximum/GSAPI/particle/particle.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/particle/psappsrt.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(NonMatching, "game/maximum/GSAPI/particle/psdisp.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/particle/psdisptev.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(NonMatching, "game/maximum/GSAPI/particle/psinterpret.cpp"),
+            Object(NonMatching, "game/maximum/GSAPI/particle/generator.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+
+            # hsdbase_gs
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/wobj.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/archive.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/bytecode.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/class.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/cobj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/debug.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/displayfunc.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/dobj.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/fobj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/fog.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/hash.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/id.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/initialize.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/jobj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/list.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/lobj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/memory.cpp", extra_cflags=["-lang=c"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/mobj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/mtx_base.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/objalloc.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/object.cpp"),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/pobj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/quatlib.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/random.cpp"),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/robj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/shadow_base.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/spline.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/state.cpp", extra_cflags=["-lang=c", "-inline deferred"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/tev.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(NonMatching, "game/maximum/GSAPI/baselib/texp.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/texpdag.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/texpopt.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/tobj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/util.cpp"),
+            Object(MatchingFor("GXXE01"), "game/maximum/GSAPI/baselib/aobj.cpp", extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"]),
+        ]
+    },
+    {
+        "lib": "maximum_app",
+        "mw_version": config.linker_version,
+        "cflags": cflags_runtime,
+        "progress_category": "game",
+        "objects": [
+            Object(MatchingFor("GXXE01"), "game/maximum/app/bingo/bingoBios.cpp", extra_cflags=["-O4,s"]),
+            Object(NonMatching, "game/maximum/app/gimmick/gimmickBox.cpp"),
+        ]
+    },
+]
+
+
+# Optional callback to adjust link order. This can be used to add, remove, or reorder objects.
+# This is called once per module, with the module ID and the current link order.
+#
+# For example, this adds "dummy.c" to the end of the DOL link order if configured with --non-matching.
+# "dummy.c" *must* be configured as a Matching (or Equivalent) object in order to be linked.
+def link_order_callback(module_id: int, objects: List[str]) -> List[str]:
+    # Don't modify the link order for matching builds
+    if not config.non_matching:
+        return objects
+    if module_id == 0:  # DOL
+        return objects + ["dummy.c"]
+    return objects
+
+# Uncomment to enable the link order callback.
+# config.link_order_callback = link_order_callback
+
+
+# Optional extra categories for progress tracking
+# Adjust as desired for your project
+config.progress_categories = [
+    ProgressCategory("game", "Game Code"),
+    ProgressCategory("sdk", "SDK Code"),
+]
+config.progress_each_module = args.verbose
+# Optional extra arguments to `objdiff-cli report generate`
+config.progress_report_args = [
+    # Marks relocations as mismatching if the target value is different
+    # Default is "functionRelocDiffs=none", which is most lenient
+    # "--config functionRelocDiffs=data_value",
+]
+
+if args.mode == "configure":
+    # Write build.ninja and objdiff.json
+    generate_build(config)
+elif args.mode == "progress":
+    # Print progress information
+    calculate_progress(config)
+else:
+    sys.exit("Unknown mode: " + args.mode)
