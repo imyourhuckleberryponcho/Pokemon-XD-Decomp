@@ -1,8 +1,8 @@
 #include <dolphin/types.h>
 
-// WIP: this unit remains NonMatching. GSscratchIsPtr, GSscratchWaitForCompletion,
-// and GSscratchStore match exactly. GSscratchInit's retail stack switch is not
-// reconstructed; this source is not a safe replacement for that behavior.
+// WIP: NonMatching. All exact except GSscratchAlloc (99%, free-slot pointer in r6 vs r7)
+// and GSscratchInit (hand-written asm in the original: it switches r1 to the
+// scratch stack; the C version here does not reconstruct that).
 
 struct ScratchBlock {
     u8 index;
@@ -19,6 +19,34 @@ static u8 _scratchInvalid;
 static u32 _blockMap;
 static ScratchBlock _blockTable[32];
 
+static inline ScratchBlock* scratchFindBlock(u8 index)
+{
+    ScratchBlock* block;
+    u32 i;
+
+    block = _blockTable;
+    for (i = 0; i < 32; block++, i++) {
+        if (block->index == index) {
+            return block;
+        }
+    }
+    return 0;
+}
+
+static inline ScratchBlock* scratchFindFreeBlock()
+{
+    ScratchBlock* block;
+    u32 i;
+
+    block = _blockTable;
+    for (i = 0; i < 32; block++, i++) {
+        if (block->index == 0xFF) {
+            return block;
+        }
+    }
+    return 0;
+}
+
 extern "C" {
 void LCEnable();
 u32 LCQueueLength();
@@ -27,30 +55,36 @@ s32 LCStoreData(void*, void*, u32);
 
 void GSscratchSetValid()
 {
+    s32 count;
+    ScratchBlock* block;
+
     if (_scratchInvalid != 0) {
-        s32 remaining = 31;
-        ScratchBlock* block = _blockTable;
-        do {
+        block = _blockTable;
+        count = 32;
+        while (count-- != 0) {
             if (block->index != 0xFF && block->notify != 0) {
-                block->notify(1, (u8*)_scratchPadBase + (block->index << 9), block->count);
+                block->notify(1, (u8*)_scratchPadBase + block->index * 0x200, block->count);
             }
-            ++block;
-        } while (remaining-- != 0);
+            block++;
+        }
         _scratchInvalid = 0;
     }
 }
 
 void GSscratchSetInvalid()
 {
+    s32 count;
+    ScratchBlock* block;
+
     if (_scratchInvalid != 1) {
-        s32 remaining = 31;
-        ScratchBlock* block = _blockTable;
-        do {
+        block = _blockTable;
+        count = 32;
+        while (count-- != 0) {
             if (block->index != 0xFF && block->notify != 0) {
-                block->notify(0, (u8*)_scratchPadBase + (block->index << 9), block->count);
+                block->notify(0, (u8*)_scratchPadBase + block->index * 0x200, block->count);
             }
-            ++block;
-        } while (remaining-- != 0);
+            block++;
+        }
         _scratchInvalid = 1;
     }
 }
@@ -77,83 +111,99 @@ s32 GSscratchStore(void* source, void* destination, u32 size)
 
 void GSscratchFree(void* ptr)
 {
-    u8 index = (u8)(((u32)ptr - (u32)_scratchPadBase) >> 9);
-    ScratchBlock* block = _blockTable;
-    for (s32 i = 0; i < 32; ++i, ++block) {
-        if (block->index == index) break;
-    }
-    if (block == _blockTable + 32) block = 0;
-    if (block == 0) return;
+    ScratchBlock* block;
+    u32 mask;
+    u8 shift;
+    u8 remaining;
+    u32 map;
 
-    u8 shift = block->index;
-    u8 remaining = block->count;
-    u32 mask = 0x80000000;
-    while (shift != 0) {
-        --shift;
+    block = scratchFindBlock(((u32)ptr - (u32)_scratchPadBase) >> 9);
+    if (block == 0) {
+        return;
+    }
+
+    remaining = block->count;
+    shift = block->index;
+    mask = 0x80000000;
+    while (shift-- != 0) {
         mask >>= 1;
     }
-    while (remaining != 0) {
-        --remaining;
-        _blockMap &= ~mask;
+
+    map = _blockMap;
+    while (remaining-- != 0) {
+        map &= ~mask;
         mask >>= 1;
     }
+    _blockMap = map;
     block->index = 0xFF;
 }
 
 void* GSscratchAlloc(u8 count, void (*notify)(u8, void*, u8))
 {
-    u8 blocks = count;
-    if (_scratchInvalid == 1) return 0;
-    if (blocks == 0 || blocks > 0x20) return 0;
+    u32 scanMask;
+    u32 occupied;
+    u8 shift;
+    u8 remaining;
+    u32 map;
+    u8 candidate;
+    ScratchBlock* entry;
 
-    u8 candidate = 0;
-    u32 map = _blockMap;
-    for (;;) {
-        if (candidate >= 0x20) return 0;
-        u8 needed = blocks;
-        u8 shift = candidate;
-        u32 occupied = 0;
-        u32 mask = 0x80000000;
-        while (shift != 0) {
-            --shift;
-            mask >>= 1;
+    if (_scratchInvalid == 1) {
+        return 0;
+    }
+    if (count == 0 || count > 32) {
+        return 0;
+    }
+
+    map = _blockMap;
+    for (candidate = 0; candidate < 32; candidate++) {
+        remaining = count;
+        shift = candidate;
+        occupied = 0;
+        scanMask = 0x80000000;
+        while (shift-- != 0) {
+            scanMask >>= 1;
         }
-        while (needed != 0) {
-            --needed;
+        while (remaining-- != 0) {
             occupied <<= 1;
-            if (mask != 0) {
-                if (map & mask) occupied |= 1;
-                mask >>= 1;
+            if (scanMask != 0) {
+                if ((map & scanMask) != 0) {
+                    occupied |= 1;
+                }
+                scanMask >>= 1;
             } else {
                 occupied |= 1;
             }
         }
         if (occupied == 0) {
-            ScratchBlock* entry = _blockTable;
-            for (s32 i = 0; i < 32; ++i, ++entry) {
-                if (entry->index == 0xFF) {
-                    entry->index = candidate;
-                    entry->count = blocks;
-                    entry->notify = notify;
-                    mask = 0x80000000;
-                    shift = candidate;
-                    while (shift != 0) {
-                        --shift;
-                        mask >>= 1;
-                    }
-                    needed = blocks;
-                    while (needed != 0) {
-                        --needed;
-                        _blockMap |= mask;
-                        mask >>= 1;
-                    }
-                    return (u8*)_scratchPadBase + (candidate << 9);
-                }
+            if ((entry = scratchFindFreeBlock()) == 0) {
+                return 0;
             }
-            return 0;
+
+            {
+                u32 entryMask;
+                u8 entryShift;
+
+                entry->index = candidate;
+                entryShift = candidate;
+                entryMask = 0x80000000;
+                entry->count = count;
+                entry->notify = notify;
+                while (entryShift-- != 0) {
+                    entryMask >>= 1;
+                }
+                map = _blockMap;
+                remaining = count;
+                while (remaining-- != 0) {
+                    map |= entryMask;
+                    entryMask >>= 1;
+                }
+                _blockMap = map;
+                return (u8*)_scratchPadBase + entry->index * 0x200;
+            }
         }
-        ++candidate;
     }
+    return 0;
 }
 
 s32 GSscratchInit(u8 stackSize)

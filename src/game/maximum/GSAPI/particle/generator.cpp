@@ -1,6 +1,5 @@
-// STATUS: 12/13 functions exact, LAYOUT/CONST/CALLS/DATA OK. generateParticle 99.45%: only float register
-// allocation differs (scaleX/Y/Z, velMag, angle3 land in f27..f24 instead of f26/f29/f28/f27/f23). Needs
-// extra_cflags=["-lang=c", "-inline deferred", "-i include/hsd_ref", "-i include/libc"] (already set).
+// STATUS: complete (13/13). Keys to matching generateParticle: MSL-style inline sinf/cosf/fabs (not
+// macros or (f32) casts).
 // Particle generators (XD's older design: own active/free/standby lists). Compiled as C with
 // deferred inlining: functions come out in reverse source order.
 #define HSD_FILE_NAME "generator.c"
@@ -16,8 +15,16 @@ double sin(double x);
 double cos(double x);
 double tan(double x);
 double atan2(double y, double x);
+
+inline f32 sinf(f32 x) { return (f32) sin(x); }
+inline f32 cosf(f32 x) { return (f32) cos(x); }
+inline f32 tanf(f32 x) { return (f32) tan(x); }
+inline f32 atan2f(f32 y, f32 x) { return (f32) atan2(y, x); }
 double __fabs(double x);
-#define fabs(x) __fabs(x)
+inline double fabs(double x)
+{
+    return __fabs(x);
+}
 
 inline int __fpclassifyf(float x)
 {
@@ -272,335 +279,330 @@ static inline f32 homeValue(f32 value)
 
 static f32 generateParticle(HSD_Generator* gp)
 {
-    Mtx rotMtx;
-    Mtx mtxX;
-    Mtx mtxY;
-    Mtx mtxZ;
-    Mtx trigMtx;
-    Vec3 velCopy;
-    Vec3 emitPos;
+    Vec3 vel_copy;
+    Vec3 emit_pos;
     Vec3 tmpvec;
     Vec3 vec;
-    Vec3 lookDir;
-    Vec3 camUp;
+    Mtx rot_mtx;
+    Mtx mtx_x;
+    Mtx mtx_y;
+    Mtx mtx_z;
+    Vec3 look_dir;
+    Vec3 cam_up;
     Vec3 cross1;
-    Vec3 velNorm;
-    f32 scaleX;
-    f32 scaleY;
-    f32 scaleZ;
-    f64 eps;
-    f32 velMag;
+    Vec3 vel_norm;
+    Mtx trig_mtx;
+    f32 cur_angle;
+    f32 angle_step;
+    f32 scale_x;
+    f32 scale_y;
+    f32 scale_z;
+    f32 vel_mag;
     f32 angle1;
-    f32 sinAz;
-    f32 cosAz;
+    f32 cone_angle;
+    f32 dist;
+    f32 radius;
     f32 elevation;
     f32 angle3;
-    f32 curAngle;
-    f32 coneAngle;
-    f32 sinEl;
-    f32 radius;
-    f32 angleStep;
-    f32 tmp;
 
-    angle3 = angle1 = 0.0F;
-    if (gp->count < 1.0F) {
+    angle3 = angle1 = 0.0f;
+    if (gp->count < 1.0f) {
         return gp->count;
     }
 
-    velCopy.x = gp->vel.x;
-    velCopy.y = gp->vel.y;
-    velCopy.z = gp->vel.z;
-    scaleX = gp->scale.x;
-    scaleY = gp->scale.y;
-    scaleZ = gp->scale.z;
+    vel_copy.x = gp->vel.x;
+    vel_copy.y = gp->vel.y;
+    vel_copy.z = gp->vel.z;
+    scale_x = gp->scale.x;
+    scale_y = gp->scale.y;
+    scale_z = gp->scale.z;
     if ((gp->type & 0xF) == 2 && (gp->flags & 0x80)) {
-        velCopy.x *= scaleX;
-        velCopy.y *= scaleY;
-        velCopy.z *= scaleZ;
+        vel_copy.x *= scale_x;
+        vel_copy.y *= scale_y;
+        vel_copy.z *= scale_z;
     }
 
-    velMag = sqrtf(velCopy.z * velCopy.z + (velCopy.x * velCopy.x + velCopy.y * velCopy.y));
+    vel_mag = sqrtf(vel_copy.z * vel_copy.z +
+                    (vel_copy.x * vel_copy.x + vel_copy.y * vel_copy.y));
 
-    PSMTXIdentity(rotMtx);
+    PSMTXIdentity(rot_mtx);
 
     if (!(gp->kind & 0x30000)) {
-        PSMTXRotRad(mtxX, 'X', gp->rot.x);
-        PSMTXRotRad(mtxY, 'Y', gp->rot.y);
-        PSMTXRotRad(mtxZ, 'Z', gp->rot.z);
-        PSMTXConcat(mtxY, mtxX, mtxX);
-        PSMTXConcat(mtxZ, mtxX, mtxX);
+        PSMTXRotRad(mtx_x, 'X', gp->rot.x);
+        PSMTXRotRad(mtx_y, 'Y', gp->rot.y);
+        PSMTXRotRad(mtx_z, 'Z', gp->rot.z);
+        PSMTXConcat(mtx_y, mtx_x, mtx_x);
+        PSMTXConcat(mtx_z, mtx_x, mtx_x);
 
-        vec.x = mtxX[0][0];
-        vec.y = mtxX[1][0];
-        vec.z = mtxX[2][0];
+        vec.x = mtx_x[0][0];
+        vec.y = mtx_x[1][0];
+        vec.z = mtx_x[2][0];
         PSVECNormalize(&vec, &vec);
-        rotMtx[0][0] = vec.x;
-        rotMtx[1][0] = vec.y;
-        rotMtx[2][0] = vec.z;
+        rot_mtx[0][0] = vec.x;
+        rot_mtx[1][0] = vec.y;
+        rot_mtx[2][0] = vec.z;
 
-        vec.x = mtxX[0][1];
-        vec.y = mtxX[1][1];
-        vec.z = mtxX[2][1];
+        vec.x = mtx_x[0][1];
+        vec.y = mtx_x[1][1];
+        vec.z = mtx_x[2][1];
         PSVECNormalize(&vec, &vec);
-        rotMtx[0][1] = vec.x;
-        rotMtx[1][1] = vec.y;
-        rotMtx[2][1] = vec.z;
+        rot_mtx[0][1] = vec.x;
+        rot_mtx[1][1] = vec.y;
+        rot_mtx[2][1] = vec.z;
 
-        vec.x = mtxX[0][2];
-        vec.y = mtxX[1][2];
-        vec.z = mtxX[2][2];
+        vec.x = mtx_x[0][2];
+        vec.y = mtx_x[1][2];
+        vec.z = mtx_x[2][2];
         PSVECNormalize(&vec, &vec);
-        rotMtx[0][2] = vec.x;
-        rotMtx[1][2] = vec.y;
-        rotMtx[2][2] = vec.z;
+        rot_mtx[0][2] = vec.x;
+        rot_mtx[1][2] = vec.y;
+        rot_mtx[2][2] = vec.z;
 
-        rotMtx[2][3] = 0.0F;
-        rotMtx[1][3] = 0.0F;
-        rotMtx[0][3] = 0.0F;
+        rot_mtx[2][3] = 0.0f;
+        rot_mtx[1][3] = 0.0f;
+        rot_mtx[0][3] = 0.0f;
     }
 
     if (gp->kind & 0x10000) {
-        if (psCamera == NULL) {
-            __assert("generator.c", 626, "psCamera");
-        }
-        lookDir.x = psCamera->eyepos->pos.x - gp->pos.x;
-        lookDir.y = psCamera->eyepos->pos.y - gp->pos.y;
-        lookDir.z = psCamera->eyepos->pos.z - gp->pos.z;
-        PSVECNormalize(&lookDir, &lookDir);
-        HSD_CObjGetUpVector(psCamera, &camUp);
-        PSVECNormalize(&camUp, &camUp);
-        PSVECCrossProduct(&camUp, &lookDir, &cross1);
-        PSVECCrossProduct(&lookDir, &cross1, &camUp);
+        HSD_ASSERT(626, psCamera);
+        look_dir.x = psCamera->eyepos->pos.x - gp->pos.x;
+        look_dir.y = psCamera->eyepos->pos.y - gp->pos.y;
+        look_dir.z = psCamera->eyepos->pos.z - gp->pos.z;
+        PSVECNormalize(&look_dir, &look_dir);
+        HSD_CObjGetUpVector(psCamera, &cam_up);
+        PSVECNormalize(&cam_up, &cam_up);
+        PSVECCrossProduct(&cam_up, &look_dir, &cross1);
+        PSVECCrossProduct(&look_dir, &cross1, &cam_up);
 
-        rotMtx[0][0] = cross1.x;
-        rotMtx[1][0] = cross1.y;
-        rotMtx[2][0] = cross1.z;
-        rotMtx[0][1] = camUp.x;
-        rotMtx[1][1] = camUp.y;
-        rotMtx[2][1] = camUp.z;
-        rotMtx[0][2] = lookDir.x;
-        rotMtx[1][2] = lookDir.y;
-        rotMtx[2][2] = lookDir.z;
+        rot_mtx[0][0] = cross1.x;
+        rot_mtx[1][0] = cross1.y;
+        rot_mtx[2][0] = cross1.z;
+        rot_mtx[0][1] = cam_up.x;
+        rot_mtx[1][1] = cam_up.y;
+        rot_mtx[2][1] = cam_up.z;
+        rot_mtx[0][2] = look_dir.x;
+        rot_mtx[1][2] = look_dir.y;
+        rot_mtx[2][2] = look_dir.z;
     }
 
-    if ((gp->type & 0xF) != 1 && velMag > FLT_EPSILON) {
-        velNorm.x = gp->vel.x;
-        velNorm.y = gp->vel.y;
-        velNorm.z = gp->vel.z;
-        PSVECNormalize(&velNorm, &velNorm);
+    if ((gp->type & 0xF) != 1 && vel_mag > FLT_EPSILON) {
+        f32 yaw;
+        f32 sin_yaw;
+        f32 cos_yaw;
+        f32 pitch;
+        f32 sin_pitch;
+        f32 cos_pitch;
 
-        if (fabs(velNorm.z) < FLT_MIN) {
-            if (velNorm.y >= 0.0F) {
-                sinAz = 1.5707964F;
+        vel_norm.x = gp->vel.x;
+        vel_norm.y = gp->vel.y;
+        vel_norm.z = gp->vel.z;
+        PSVECNormalize(&vel_norm, &vel_norm);
+
+        if (fabs(vel_norm.z) < FLT_MIN) {
+            if (vel_norm.y >= 0.0f) {
+                yaw = 1.5707964f;
             } else {
-                sinAz = -1.5707964F;
+                yaw = -1.5707964f;
             }
         } else {
-            sinAz = atan2fInline(velNorm.y, velNorm.z);
+            yaw = atan2fInline(vel_norm.y, vel_norm.z);
         }
-        cosAz = (f32) sin(sinAz);
-        sinAz = (f32) cos(sinAz);
+        sin_yaw = sinf(yaw);
+        cos_yaw = cosf(yaw);
 
         {
-            f32 projectedZ = velNorm.y * cosAz + velNorm.z * sinAz;
-            if (fabs(projectedZ) < FLT_MIN) {
-                if (velNorm.x >= 0.0F) {
-                    elevation = 1.5707964F;
+            f32 projected_z = vel_norm.y * sin_yaw + vel_norm.z * cos_yaw;
+
+            if (fabs(projected_z) < FLT_MIN) {
+                if (vel_norm.x >= 0.0f) {
+                    pitch = 1.5707964f;
                 } else {
-                    elevation = -1.5707964F;
+                    pitch = -1.5707964f;
                 }
             } else {
-                elevation = atan2fInline(velNorm.x, projectedZ);
+                pitch = atan2fInline(vel_norm.x, projected_z);
             }
         }
-        sinEl = (f32) sin(elevation);
-        {
-            f32 cosEl = (f32) cos(elevation);
-            f32 negCosAz = -cosAz;
+        sin_pitch = sinf(pitch);
+        cos_pitch = cosf(pitch);
 
-            trigMtx[0][0] = cosEl;
-            trigMtx[0][1] = 0.0F;
-            trigMtx[0][2] = sinEl;
-            trigMtx[0][3] = 0.0F;
-            trigMtx[1][0] = negCosAz * sinEl;
-            trigMtx[1][1] = sinAz;
-            trigMtx[1][2] = cosAz * cosEl;
-            trigMtx[1][3] = 0.0F;
-            trigMtx[2][0] = -sinAz * sinEl;
-            trigMtx[2][1] = negCosAz;
-            trigMtx[2][2] = sinAz * cosEl;
-            trigMtx[2][3] = 0.0F;
-        }
-        PSMTXConcat(rotMtx, trigMtx, rotMtx);
+        trig_mtx[0][0] = cos_pitch;
+        trig_mtx[0][1] = 0.0f;
+        trig_mtx[0][2] = sin_pitch;
+        trig_mtx[0][3] = 0.0f;
+        trig_mtx[1][0] = -sin_yaw * sin_pitch;
+        trig_mtx[1][1] = cos_yaw;
+        trig_mtx[1][2] = sin_yaw * cos_pitch;
+        trig_mtx[1][3] = 0.0f;
+        trig_mtx[2][0] = -cos_yaw * sin_pitch;
+        trig_mtx[2][1] = -sin_yaw;
+        trig_mtx[2][2] = cos_yaw * cos_pitch;
+        trig_mtx[2][3] = 0.0f;
+        PSMTXConcat(rot_mtx, trig_mtx, rot_mtx);
     }
-    elevation = velMag;
+    elevation = vel_mag;
 
     if ((gp->type & 0xF) == 2) {
-        if (fabs(rotMtx[2][2]) < FLT_MIN) {
-            if (rotMtx[1][2] >= 0.0F) {
-                angle1 = 1.5707964F;
+        if (fabs(rot_mtx[2][2]) < FLT_MIN) {
+            if (rot_mtx[1][2] >= 0.0f) {
+                angle1 = 1.5707964f;
             } else {
-                angle1 = -1.5707964F;
+                angle1 = -1.5707964f;
             }
         } else {
-            angle1 = atan2fInline(rotMtx[1][2], rotMtx[2][2]);
+            angle1 = atan2fInline(rot_mtx[1][2], rot_mtx[2][2]);
         }
         {
-            f32 c1 = (f32) cos(angle1);
-            f32 s1 = (f32) sin(angle1);
-            f32 comb = rotMtx[1][2] * s1 + rotMtx[2][2] * c1;
+            f32 comb = rot_mtx[1][2] * sinf(angle1) + rot_mtx[2][2] * cosf(angle1);
+
             if (fabs(comb) < FLT_MIN) {
-                if (rotMtx[0][2] >= 0.0F) {
-                    angle3 = 1.5707964F;
+                if (rot_mtx[0][2] >= 0.0f) {
+                    angle3 = 1.5707964f;
                 } else {
-                    angle3 = -1.5707964F;
+                    angle3 = -1.5707964f;
                 }
             } else {
-                angle3 = atan2fInline(rotMtx[0][2], comb);
+                angle3 = atan2fInline(rot_mtx[0][2], comb);
             }
         }
     }
 
-    if (gp->angle < 0.0F) {
+    /*
+     * Even angular spacing. In both disc/cone cases retail divides into a
+     * scratch register, copies it to angle_step and seeds cur_angle from the
+     * scratch copy (fdivs f0; fmr f30,f0; fmadds f31,f0,...): the step is a
+     * value of its own, not angle_step read back.
+     */
+    if (gp->angle < 0.0f) {
         switch (gp->type & 0xF) {
         case 0:
         case 3:
         case 4: {
-            f32 minA = gp->aux.disc.minAngle;
+            f32 min_a = gp->aux.cone.minAngle;
             f32 rnd = HSD_Randf();
-            f32 step = (gp->aux.disc.maxAngle - minA) / (f32) (s32) gp->count;
-            angleStep = step;
-            curAngle = step * rnd + minA;
+            f32 step = (gp->aux.cone.maxAngle - min_a) / (f32) (s32) gp->count;
+
+            angle_step = step;
+            cur_angle = step * rnd + min_a;
             break;
         }
         case 6:
         case 7: {
-            f32 minA = gp->aux.cone.minAngle;
+            f32 min_a = gp->aux.cone.minAngle;
             f32 rnd = HSD_Randf();
-            f32 step = (gp->aux.cone.maxAngle - minA) / (f32) (s32) gp->count;
-            angleStep = step;
-            curAngle = step * rnd + minA;
+            f32 step = (gp->aux.cone.maxAngle - min_a) / (f32) (s32) gp->count;
+
+            angle_step = step;
+            cur_angle = step * rnd + min_a;
             break;
         }
-        default: {
-            f32 rnd = HSD_Randf();
-            curAngle = (f32) ((eps = M_PI * (f64) homeValue(rnd)) * 2.0);
-            angleStep = (f32) ((2.0 * M_PI) / (f64) (s32) gp->count);
+        default:
+            cur_angle = (f32) (2.0 * (M_PI * HSD_Randf()));
+            angle_step = (f32) ((2.0 * M_PI) / (s32) gp->count);
             break;
-        }
         }
     }
 
-    eps = 0.001F;
-    while (gp->count >= 1.0F) {
+    while (gp->count >= 1.0f) {
         switch (gp->type & 0xF) {
         case 0:
         case 3:
         case 4:
         case 6:
-        case 7: {
-            if (gp->radius < 0.0F) {
-                sinAz = -gp->radius;
-                radius = 1.0F;
+        case 7:
+            if (gp->radius < 0.0f) {
+                dist = -gp->radius;
+                radius = 1.0f;
             } else {
                 radius = HSD_Randf();
                 if ((gp->type & 0xF) == 3 || (gp->type & 0xF) == 4) {
                     radius = sqrtf(radius);
                 }
-                sinAz = radius * gp->radius;
+                dist = radius * gp->radius;
             }
 
             switch (gp->type & 0xF) {
             case 6:
-                if (gp->angle < 0.0F) {
-                    tmp = curAngle + angleStep;
-                    curAngle = tmp;
-                    if (fabs(sinAz) < FLT_MIN) {
-                        if (gp->aux.cone.height >= 0.0F) {
-                            coneAngle = -gp->angle;
+                if (gp->angle < 0.0f) {
+                    cur_angle += angle_step;
+                    if (fabs(dist) < FLT_MIN) {
+                        if (gp->aux.cone.height >= 0.0f) {
+                            cone_angle = -gp->angle;
                         } else {
-                            coneAngle = (f32) (M_PI - gp->angle);
+                            cone_angle = (f32) (M_PI - gp->angle);
                         }
                     } else {
-                        coneAngle = (f32) (M_PI_2 - atan2fInline(gp->aux.cone.height, sinAz) - gp->angle);
+                        cone_angle =
+                            (f32) (M_PI_2 - atan2fInline(gp->aux.cone.height, dist) -
+                                   gp->angle);
                     }
                 } else {
-                    {
-                        f32 minAngle = gp->aux.cone.minAngle;
-                        curAngle = minAngle;
-                    }
-                    {
-                        f32 rnd = HSD_Randf();
-                        coneAngle = gp->aux.cone.maxAngle - curAngle;
-                        curAngle = coneAngle * rnd + curAngle;
-                        coneAngle = radius * gp->angle;
-                    }
-                    if (fabs(sinAz) < FLT_MIN) {
-                        if (gp->aux.cone.height >= 0.0F) {
-                            coneAngle = gp->angle;
+                    f32 min_angle = gp->aux.cone.minAngle;
+
+                    cur_angle = (gp->aux.cone.maxAngle - min_angle) *
+                                    HSD_Randf() +
+                                min_angle;
+                    if (fabs(dist) < FLT_MIN) {
+                        if (gp->aux.cone.height >= 0.0f) {
+                            cone_angle = gp->angle;
                         } else {
-                            coneAngle = (f32) (M_PI + gp->angle);
+                            cone_angle = (f32) (M_PI + gp->angle);
                         }
                     } else {
-                        coneAngle = (f32) (gp->angle + (M_PI_2 - atan2fInline(gp->aux.cone.height, sinAz)));
+                        cone_angle =
+                            (f32) (gp->angle +
+                                   (M_PI_2 -
+                                    atan2fInline(gp->aux.cone.height, dist)));
                     }
                 }
                 break;
             case 7:
-                if (gp->angle < 0.0F) {
-                    coneAngle = (f32) (M_PI_2 - gp->angle);
-                    tmp = curAngle + angleStep;
-                    curAngle = tmp;
+                if (gp->angle < 0.0f) {
+                    cone_angle = (f32) (M_PI_2 - gp->angle);
+                    cur_angle += angle_step;
                 } else {
-                    {
-                        f32 minAngle = gp->aux.disc.minAngle;
-                        curAngle = minAngle;
-                    }
-                    {
-                        f32 rnd = HSD_Randf();
-                        coneAngle = gp->aux.disc.maxAngle - curAngle;
-                        curAngle = coneAngle * rnd + curAngle;
-                        coneAngle = (f32) (M_PI_2 + gp->angle);
-                    }
+                    cur_angle = gp->aux.cone.minAngle;
+                    cur_angle = (gp->aux.cone.maxAngle - cur_angle) *
+                                    HSD_Randf() +
+                                cur_angle;
+                    cone_angle = (f32) (M_PI_2 + gp->angle);
                 }
                 break;
             default:
-                if (gp->angle < 0.0F) {
-                    coneAngle = -gp->angle;
-                    curAngle += angleStep;
-                    coneAngle = radius * coneAngle;
+                if (gp->angle < 0.0f) {
+                    cone_angle = -gp->angle;
+                    cur_angle += angle_step;
+                    cone_angle = radius * cone_angle;
                 } else {
-                    curAngle = gp->aux.disc.minAngle;
-                    {
-                        f32 rnd = HSD_Randf();
-                        coneAngle = radius * gp->angle;
-                        sinEl = gp->aux.disc.maxAngle - curAngle;
-                        curAngle = sinEl * rnd + curAngle;
-                    }
+                    cur_angle = gp->aux.cone.minAngle;
+                    cur_angle = (gp->aux.cone.maxAngle - cur_angle) *
+                                    HSD_Randf() +
+                                cur_angle;
+                    cone_angle = radius * gp->angle;
                 }
                 break;
             }
 
-            cosAz = curAngle;
-            emitPos.x = sinAz * (f32) cos(cosAz);
-            emitPos.y = sinAz * (f32) sin(cosAz);
+            emit_pos.x = dist * cosf(cur_angle);
+            emit_pos.y = dist * sinf(cur_angle);
 
             if ((gp->type & 0xF) == 6 || (gp->type & 0xF) == 7) {
-                emitPos.z = HSD_Randf();
+                emit_pos.z = HSD_Randf();
                 if ((gp->type & 0xF) == 6) {
-                    emitPos.x *= (1.0F - emitPos.z);
-                    emitPos.y *= (1.0F - emitPos.z);
+                    emit_pos.x *= 1.0f - emit_pos.z;
+                    emit_pos.y *= 1.0f - emit_pos.z;
                 }
-                emitPos.z *= gp->aux.cone.height;
+                emit_pos.z *= gp->aux.cone.height;
             } else {
-                emitPos.z = 0.0F;
+                emit_pos.z = 0.0f;
             }
 
             {
-                f32 sinCa = elevation * (f32) sin(coneAngle);
-                vec.x = sinCa * (f32) cos(cosAz);
-                vec.y = sinCa * (f32) sin(cosAz);
-                vec.z = elevation * (f32) cos(coneAngle);
+                f32 sin_ca = elevation * sinf(cone_angle);
+
+                vec.x = sin_ca * cosf(cur_angle);
+                vec.y = sin_ca * sinf(cur_angle);
+                vec.z = elevation * cosf(cone_angle);
             }
 
             if ((gp->type & 0xF) == 3) {
@@ -609,99 +611,107 @@ static f32 generateParticle(HSD_Generator* gp)
                 vec.z *= radius;
             }
 
-            PSMTXMultVec(rotMtx, &emitPos, &emitPos);
-            emitPos.x += gp->pos.x;
-            emitPos.y += gp->pos.y;
-            emitPos.z += gp->pos.z;
+            PSMTXMultVec(rot_mtx, &emit_pos, &emit_pos);
+            emit_pos.x += gp->pos.x;
+            emit_pos.y += gp->pos.y;
+            emit_pos.z += gp->pos.z;
+            PSMTXMultVec(rot_mtx, &vec, &vec);
 
-            PSMTXMultVec(rotMtx, &vec, &vec);
-
-            curAngle = cosAz;
-            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind, gp->texGroup, gp->cmdList, gp->life, 0, emitPos.x,
-                               emitPos.y, emitPos.z, vec.x * scaleX, vec.y * scaleY, vec.z * scaleZ, gp->size, gp->grav, gp->fric, gp);
+            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind,
+                               gp->texGroup, gp->cmdList, gp->life, 0,
+                               emit_pos.x, emit_pos.y, emit_pos.z,
+                               vec.x * scale_x, vec.y * scale_y,
+                               vec.z * scale_z, gp->size, gp->grav,
+                               gp->fric, gp);
             break;
-        }
 
         case 1: {
             f32 rnd = HSD_Randf();
-            emitPos.x = rnd * gp->aux.line.x2;
-            emitPos.y = rnd * gp->aux.line.y2;
-            emitPos.z = rnd * gp->aux.line.z2;
 
-            PSMTXMultVec(rotMtx, &emitPos, &emitPos);
-            emitPos.x += gp->pos.x;
-            emitPos.y += gp->pos.y;
-            emitPos.z += gp->pos.z;
+            emit_pos.x = rnd * gp->aux.line.x2;
+            emit_pos.y = rnd * gp->aux.line.y2;
+            emit_pos.z = rnd * gp->aux.line.z2;
 
-            PSMTXMultVec(rotMtx, &velCopy, &vec);
+            PSMTXMultVec(rot_mtx, &emit_pos, &emit_pos);
+            emit_pos.x += gp->pos.x;
+            emit_pos.y += gp->pos.y;
+            emit_pos.z += gp->pos.z;
+            PSMTXMultVec(rot_mtx, &vel_copy, &vec);
 
-            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind, gp->texGroup, gp->cmdList, gp->life, 0, emitPos.x,
-                               emitPos.y, emitPos.z, vec.x * scaleX, vec.y * scaleY, vec.z * scaleZ, gp->size, gp->grav, gp->fric, gp);
+            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind,
+                               gp->texGroup, gp->cmdList, gp->life, 0,
+                               emit_pos.x, emit_pos.y, emit_pos.z,
+                               vec.x * scale_x, vec.y * scale_y,
+                               vec.z * scale_z, gp->size, gp->grav,
+                               gp->fric, gp);
             break;
         }
 
-        case 2: {
-            if (gp->radius < 0.0F) {
-                sinAz = 1.0F;
+        case 2:
+            if (gp->radius < 0.0f) {
+                dist = 1.0f;
             } else {
-                sinAz = HSD_Randf();
+                dist = HSD_Randf();
             }
-            if (gp->angle < 0.0F) {
-                curAngle += angleStep;
+            if (gp->angle < 0.0f) {
+                cur_angle += angle_step;
             } else {
-                f32 rnd = HSD_Randf();
-                curAngle = (f32) (2.0 * (M_PI * (f64) homeValue(rnd)));
+                cur_angle = (f32) (2.0 * (M_PI * HSD_Randf()));
             }
             gp->aux.line.x2 = elevation;
-            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind | 4, gp->texGroup, gp->cmdList, gp->life, 0, 0.0F,
-                               0.0F, 0.0F, curAngle, sinAz, 0.0F, gp->size, angle1, angle3, gp);
+            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind | 4,
+                               gp->texGroup, gp->cmdList, gp->life, 0,
+                               0.0f, 0.0f, 0.0f, cur_angle, dist, 0.0f,
+                               gp->size, angle1, angle3, gp);
             break;
-        }
 
-        case 5: {
-            emitPos.x = HSD_Randf();
-            emitPos.y = HSD_Randf();
-            emitPos.z = HSD_Randf();
+        case 5:
+            emit_pos.x = HSD_Randf();
+            emit_pos.y = HSD_Randf();
+            emit_pos.z = HSD_Randf();
 
             switch (gp->aux.rect.flag) {
             case 0:
                 break;
             case 1:
-                emitPos.x = emitPos.x > 0.5F ? 1.0F : 0.0F;
+                emit_pos.x = emit_pos.x > 0.5f ? 1.0f : 0.0f;
                 break;
             case 2:
-                emitPos.y = emitPos.y > 0.5F ? 1.0F : 0.0F;
+                emit_pos.y = emit_pos.y > 0.5f ? 1.0f : 0.0f;
                 break;
             case 3: {
                 f32 rnd = HSD_Randf();
                 f32 a2 = gp->aux.rect.x;
+
                 if (rnd > a2 / (a2 + gp->aux.rect.y)) {
-                    emitPos.y = emitPos.y > 0.5F ? 1.0F : 0.0F;
+                    emit_pos.y = emit_pos.y > 0.5f ? 1.0f : 0.0f;
                 } else {
-                    emitPos.x = emitPos.x > 0.5F ? 1.0F : 0.0F;
+                    emit_pos.x = emit_pos.x > 0.5f ? 1.0f : 0.0f;
                 }
                 break;
             }
             case 4:
-                emitPos.z = emitPos.z > 0.5F ? 1.0F : 0.0F;
+                emit_pos.z = emit_pos.z > 0.5f ? 1.0f : 0.0f;
                 break;
             case 5: {
                 f32 rnd = HSD_Randf();
                 f32 a2 = gp->aux.rect.x;
+
                 if (rnd > a2 / (a2 + gp->aux.rect.z)) {
-                    emitPos.z = emitPos.z > 0.5F ? 1.0F : 0.0F;
+                    emit_pos.z = emit_pos.z > 0.5f ? 1.0f : 0.0f;
                 } else {
-                    emitPos.x = emitPos.x > 0.5F ? 1.0F : 0.0F;
+                    emit_pos.x = emit_pos.x > 0.5f ? 1.0f : 0.0f;
                 }
                 break;
             }
             case 6: {
                 f32 rnd = HSD_Randf();
                 f32 a2 = gp->aux.rect.y;
+
                 if (rnd > a2 / (a2 + gp->aux.rect.z)) {
-                    emitPos.z = emitPos.z > 0.5F ? 1.0F : 0.0F;
+                    emit_pos.z = emit_pos.z > 0.5f ? 1.0f : 0.0f;
                 } else {
-                    emitPos.y = emitPos.y > 0.5F ? 1.0F : 0.0F;
+                    emit_pos.y = emit_pos.y > 0.5f ? 1.0f : 0.0f;
                 }
                 break;
             }
@@ -710,99 +720,118 @@ static f32 generateParticle(HSD_Generator* gp)
                 f32 a2 = gp->aux.rect.z;
                 f32 b2 = gp->aux.rect.y;
                 f32 c2 = gp->aux.rect.x;
-                f32 r0 = 1.0F / (c2 * (b2 + a2) + b2 * a2);
+                f32 r0 = 1.0f / (c2 * (b2 + a2) + b2 * a2);
+
                 if (rnd < r0 * (c2 * b2)) {
-                    emitPos.z = emitPos.z > 0.5F ? 1.0F : 0.0F;
+                    emit_pos.z = emit_pos.z > 0.5f ? 1.0f : 0.0f;
+                } else if (rnd > 1.0f - r0 * (c2 * a2)) {
+                    emit_pos.y = emit_pos.y > 0.5f ? 1.0f : 0.0f;
                 } else {
-                    if (rnd > 1.0F - r0 * (c2 * a2)) {
-                        emitPos.y = emitPos.y > 0.5F ? 1.0F : 0.0F;
-                    } else {
-                        emitPos.x = emitPos.x > 0.5F ? 1.0F : 0.0F;
-                    }
+                    emit_pos.x = emit_pos.x > 0.5f ? 1.0f : 0.0f;
                 }
                 break;
             }
-            default:
-                break;
             }
 
-            emitPos.x -= 0.5F;
-            emitPos.y -= 0.5F;
-            emitPos.z -= 0.5F;
+            emit_pos.x -= 0.5f;
+            emit_pos.y -= 0.5f;
+            emit_pos.z -= 0.5f;
 
-            tmpvec.x = gp->aux.rect.xx * emitPos.x + gp->aux.rect.yx * emitPos.y + gp->aux.rect.zx * emitPos.z;
-            tmpvec.y = gp->aux.rect.xy * emitPos.x + gp->aux.rect.yy * emitPos.y + gp->aux.rect.zy * emitPos.z;
-            tmpvec.z = gp->aux.rect.xz * emitPos.x + gp->aux.rect.yz * emitPos.y + gp->aux.rect.zz * emitPos.z;
+            tmpvec.x = gp->aux.rect.xx * emit_pos.x +
+                       gp->aux.rect.yx * emit_pos.y +
+                       gp->aux.rect.zx * emit_pos.z;
+            tmpvec.y = gp->aux.rect.xy * emit_pos.x +
+                       gp->aux.rect.yy * emit_pos.y +
+                       gp->aux.rect.zy * emit_pos.z;
+            tmpvec.z = gp->aux.rect.xz * emit_pos.x +
+                       gp->aux.rect.yz * emit_pos.y +
+                       gp->aux.rect.zz * emit_pos.z;
 
-            PSMTXMultVec(rotMtx, &tmpvec, &emitPos);
-            emitPos.x += gp->pos.x;
-            emitPos.y += gp->pos.y;
-            emitPos.z += gp->pos.z;
+            PSMTXMultVec(rot_mtx, &tmpvec, &emit_pos);
+            emit_pos.x += gp->pos.x;
+            emit_pos.y += gp->pos.y;
+            emit_pos.z += gp->pos.z;
 
             {
-                f32 scale = elevation / sqrtf(gp->aux.rect.zx * gp->aux.rect.zx + gp->aux.rect.zy * gp->aux.rect.zy +
-                                              gp->aux.rect.zz * gp->aux.rect.zz);
+                f32 mag = sqrtf(gp->aux.rect.zx * gp->aux.rect.zx +
+                                gp->aux.rect.zy * gp->aux.rect.zy +
+                                gp->aux.rect.zz * gp->aux.rect.zz);
+                f32 scale = elevation / mag;
+
                 vec.x = gp->aux.rect.zx * scale;
                 vec.y = gp->aux.rect.zy * scale;
                 vec.z = gp->aux.rect.zz * scale;
             }
 
-            PSMTXMultVec(rotMtx, &vec, &vec);
+            PSMTXMultVec(rot_mtx, &vec, &vec);
 
-            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind, gp->texGroup, gp->cmdList, gp->life, 0, emitPos.x,
-                               emitPos.y, emitPos.z, vec.x * scaleX, vec.y * scaleY, vec.z * scaleZ, gp->size, gp->grav, gp->fric, gp);
+            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind,
+                               gp->texGroup, gp->cmdList, gp->life, 0,
+                               emit_pos.x, emit_pos.y, emit_pos.z,
+                               vec.x * scale_x, vec.y * scale_y,
+                               vec.z * scale_z, gp->size, gp->grav,
+                               gp->fric, gp);
             break;
-        }
 
         case 8: {
-            f32 r2;
-            if (0.0F == gp->aux.cone.height) {
-                tmp = (f32) (M_PI * (f64) HSD_Randf());
+            f32 lat;
+            f32 lon;
+
+            if (0.0f == gp->aux.sphere.latRange) {
+                lat = (f32) (M_PI * HSD_Randf());
             } else {
-                tmp = HSD_Randf() * gp->aux.cone.height;
+                lat = gp->aux.sphere.latRange * HSD_Randf();
             }
-            radius = tmp;
-            coneAngle = (f32) (2.0 * (M_PI * (f64) homeValue(HSD_Randf())));
-            r2 = gp->radius;
-            if (r2 < 0.0F) {
-                sinAz = -r2;
-            } else {
-                sinAz = r2 * HSD_Randf();
+            lon = (f32) (2.0 * (M_PI * HSD_Randf()));
+            {
+                f32 r2 = gp->radius;
+
+                if (r2 < 0.0f) {
+                    dist = -r2;
+                } else {
+                    dist = r2 * HSD_Randf();
+                }
             }
-            vec.x = (f32) sin(radius) * (f32) cos(coneAngle);
-            vec.y = (f32) sin(radius) * (f32) sin(coneAngle);
-            vec.z = (f32) cos(radius);
 
-            PSMTXMultVec(rotMtx, &vec, &emitPos);
+            vec.x = sinf(lat) * cosf(lon);
+            vec.y = sinf(lat) * sinf(lon);
+            vec.z = cosf(lat);
 
-            vec.x = emitPos.x * gp->aux.sphere.speed;
-            vec.y = emitPos.y * gp->aux.sphere.speed;
-            vec.z = emitPos.z * gp->aux.sphere.speed;
+            PSMTXMultVec(rot_mtx, &vec, &emit_pos);
 
-            if (gp->radius >= 0.0F && gp->aux.sphere.speed < 0.0F) {
-                f32 scale = sinAz / gp->radius;
+            vec.x = emit_pos.x * gp->aux.sphere.speed;
+            vec.y = emit_pos.y * gp->aux.sphere.speed;
+            vec.z = emit_pos.z * gp->aux.sphere.speed;
+
+            if (gp->radius >= 0.0f && gp->aux.sphere.speed < 0.0f) {
+                f32 scale = dist / gp->radius;
+
                 vec.x *= scale;
                 vec.y *= scale;
                 vec.z *= scale;
             }
 
-            emitPos.x = sinAz * emitPos.x + gp->pos.x;
-            emitPos.y = sinAz * emitPos.y + gp->pos.y;
-            emitPos.z = sinAz * emitPos.z + gp->pos.z;
+            emit_pos.x = dist * emit_pos.x + gp->pos.x;
+            emit_pos.y = dist * emit_pos.y + gp->pos.y;
+            emit_pos.z = dist * emit_pos.z + gp->pos.z;
 
-            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind, gp->texGroup, gp->cmdList, gp->life, 0, emitPos.x,
-                               emitPos.y, emitPos.z, vec.x * scaleX, vec.y * scaleY, vec.z * scaleZ, gp->size, gp->grav, gp->fric, gp);
+            psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind,
+                               gp->texGroup, gp->cmdList, gp->life, 0,
+                               emit_pos.x, emit_pos.y, emit_pos.z,
+                               vec.x * scale_x, vec.y * scale_y,
+                               vec.z * scale_z, gp->size, gp->grav,
+                               gp->fric, gp);
             break;
         }
 
         default:
-            if (psExtExecGenFunc != NULL) {
-                psExtExecGenFunc(gp, rotMtx);
+            if (psExtExecGenFunc != 0) {
+                psExtExecGenFunc(gp, rot_mtx);
             }
             break;
         }
 
-        gp->count -= 1.0F;
+        gp->count -= 1.0f;
     }
 
     return gp->count;
@@ -1021,7 +1050,7 @@ HSD_Generator* psCreateGeneratorID(int linkNo, int bank, int id)
                     gp->aux.sphere.latMid = -1.5707964F;
                 }
             } else {
-                gp->aux.sphere.latMid = (f32) atan2(gp->vel.y, mag);
+                gp->aux.sphere.latMid = atan2f(gp->vel.y, mag);
             }
             if (fabs(gp->vel.x) < FLT_MIN) {
                 if (gp->vel.z >= 0.0F) {
@@ -1030,7 +1059,7 @@ HSD_Generator* psCreateGeneratorID(int linkNo, int bank, int id)
                     gp->aux.sphere.lonMid = -1.5707964F;
                 }
             } else {
-                gp->aux.sphere.lonMid = (f32) atan2(gp->vel.z, gp->vel.x);
+                gp->aux.sphere.lonMid = atan2f(gp->vel.z, gp->vel.x);
             }
             gp->aux.sphere.latRange = psCmdListArray[bank][id]->param1;
             if (gp->aux.sphere.latRange < 0.0F) {

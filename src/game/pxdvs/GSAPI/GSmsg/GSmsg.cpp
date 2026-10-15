@@ -73,7 +73,7 @@ struct MSG_TASK_WORK;
 
 struct CtrlEntry {
     u8 mode : 2;
-    u8 pad : 1;
+    u8 stop : 1;
     u8 flagB : 1;
     u8 flagA : 1;
     u8 rest : 3;
@@ -105,10 +105,13 @@ struct MSG_TASK_WORK {
     s8 depth;
     s8 indent;
     s8 lineSpace;
-    u8 pad43;
+    s8 yAdjust;
     u8 layer;
     s8 f45;
-    u8 pad46[6];
+    u8 csrA;
+    u8 csrB;
+    u8 talking;
+    u8 pad49[3];
     u8 align;
     u8 ruby;
     u8 pad4e[2];
@@ -130,9 +133,9 @@ struct MsgSys {
     MsgBank* banks;
     GStexture* tex[2];
     void* image;
-    s16 count14;
-    s16 count16;
-    u8 pad18;
+    s16 count14; // atlas cursor x
+    s16 count16; // atlas cursor y
+    u8 pad18;    // current atlas row height
     s8 cur;
     u8 pad1a[2];
     MSG_TASK_WORK* tasks;
@@ -140,14 +143,18 @@ struct MsgSys {
     CtrlEntry* ctrl;
 };
 
+struct MsgKeyInfo {
+    u16 on;
+};
+extern "C" MsgKeyInfo* windowGetKeyInfo(void);
+
 struct MsgSE {
     u16 a;
     u16 b;
 };
 
 
-union GXRGBA {
-    u32 word;
+struct GXRGBA {
     struct {
         u8 r, g, b, a;
     } c;
@@ -166,6 +173,16 @@ public:
         dirty17b0 |= 1;
         dirty1760 |= 0x10;
     }
+
+    inline void mark(u32 sum, u32 off, u32 bit)
+    {
+        *(u32*)((u8*)this + off) |= bit;
+        dirty16a8 |= sum;
+        *(u32*)((u8*)this + off + 0xb8) |= bit;
+        dirty1760 |= sum;
+    }
+    inline void w8(u32 off, u8 v) { *(u8*)((u8*)this + off) = v; }
+    inline void w32(u32 off, u32 v) { *(u32*)((u8*)this + off) = v; }
 
     u8 pad0[0x28];
     s32 id;
@@ -201,6 +218,12 @@ GStexture* GStextureCreate(u16, u16, s32, s32, u8);
 void* GStextureLockImage(GStexture*, u8);
 u32 GStextureUnlockImage(GStexture*);
 u8 GSsndStopNow(u32);
+u8 GSsndPlayNow(u32);
+u32 timeGetLastFrameTime(void);
+s32 menuSubGetKaiwaCsrID(void);
+s32 menuSubGetKaiwaCloseWindowID(void);
+void windowDrawSprite(s32 x, s32 y, void* ctx, u16 key, u32 flags, s32 layer);
+double cos(double);
 bool pauseIsPause(void);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 void spriteSetEnv(s32);
@@ -219,12 +242,12 @@ u8 lbl_804E834C = 3;
 
 static s32 _msgMainSub(MSG_TASK_WORK* t, u8 layer, u32 a, bool b);
 static void _msgSetChar(MSG_TASK_WORK* t, u16 c);
-static void _msgMakeTexture(MSG_TASK_WORK* t, u8* p, s16 a, s16 b, s16 c);
+static void _msgMakeTexture(MSG_TASK_WORK* t, u8* p, s16 w, s16 h, s16 yofs);
 static void _msgDispRuby(MSG_TASK_WORK* t);
 extern "C" s32 GSmsgPrintRect(s32 layer, s32 x, s32 y, s16 w, s16 h, u32 color, u32 msg);
-static s32 SJIStoGSchar(u16* dst, char* src);
+s32 SJIStoGSchar(u16* dst, char* src);
 
-static const u16 sjis_81xx[5704] = {
+static const u16 sjis_81xx[31][184] = {
     0x3000, 0x3001, 0x3002, 0xFF0C, 0xFF0E, 0x30FB, 0xFF1A, 0xFF1B,
     0xFF1F, 0xFF01, 0x309B, 0x309C, 0x00B4, 0xFF40, 0x00A8, 0xFF3E,
     0xFFE3, 0xFF3F, 0x30FD, 0x30FE, 0x309D, 0x309E, 0x3003, 0x4EDD,
@@ -940,7 +963,7 @@ static const u16 sjis_81xx[5704] = {
     0x6E9F, 0x6F41, 0x6F11, 0x704C, 0x6EEC, 0x6EF8, 0x6EFE, 0x6F3F,
 };
 
-static const u16 sjis_e0xx[5336] = {
+static const u16 sjis_e0xx[29][184] = {
     0x6F3E, 0x6F13, 0x6EF7, 0x6F86, 0x6F7A, 0x6F78, 0x6F81, 0x6F80,
     0x6F6F, 0x6F5B, 0x6FF3, 0x6F6D, 0x6F82, 0x6F7C, 0x6F58, 0x6F8E,
     0x6F91, 0x6FC2, 0x6F66, 0x6FB3, 0x6FA3, 0x6FA1, 0x6FA4, 0x6FB9,
@@ -1690,9 +1713,12 @@ static FontEntry* _msgGetCodeInfo(MSG_TASK_WORK* t, u16 code, tagFONT_INFO** out
 static inline u8* msgFindNC(u32 key, MsgBank** outBank)
 {
     MsgBank* bank;
-    u32 sub = key & 0xFFFFF;
-    u32 group = key >> 20;
-        for (bank = _pMw->banks; bank != 0; bank = bank->next) {
+    u32 sub;
+    u32 group;
+    bank = _pMw->banks;
+    group = key >> 20;
+    sub = key & 0xFFFFF;
+    for (; bank != 0; bank = bank->next) {
         if (key < 60000 && fn_8010B208(bank) != pokecoloGetLanguage()) {
             continue;
         }
@@ -1723,12 +1749,15 @@ static inline u8* msgFindNC(u32 key, MsgBank** outBank)
 static inline u8* msgFind(u32 key, MsgBank** outBank)
 {
     MsgBank* bank;
-    u32 sub = key & 0xFFFFF;
-    u32 group = key >> 20;
+    u32 sub;
+    u32 group;
     if (key == 0) {
         return 0;
     }
-    for (bank = _pMw->banks; bank != 0; bank = bank->next) {
+    bank = _pMw->banks;
+    group = key >> 20;
+    sub = key & 0xFFFFF;
+    for (; bank != 0; bank = bank->next) {
         if (key < 60000 && fn_8010B208(bank) != pokecoloGetLanguage()) {
             continue;
         }
@@ -1759,93 +1788,105 @@ static inline u8* msgFind(u32 key, MsgBank** outBank)
 static inline u8* msgFindB(u32 key)
 {
     MsgBank* bank;
+    MsgEntry* entries;
+    u32 val;
+    u32 lo;
+    u32 hi;
+    u32 mid;
     u32 sub;
     u32 group;
-    if (key == 0) {
-        return 0;
-    }
-    sub = key & 0xFFFFF;
+
+    if (key == 0) return 0;
+
+    bank = _pMw->banks;
     group = key >> 20;
-    for (bank = _pMw->banks; bank != 0; bank = bank->next) {
+    sub = key & 0xFFFFF;
+
+    for (; bank != 0; bank = bank->next) {
         if (key < 60000 && fn_8010B208(bank) != pokecoloGetLanguage()) {
             continue;
         }
         if (bank->id == group) {
-            u32 lo = 0;
-            u32 hi = bank->count;
-            MsgEntry* entries = bank->entries;
+            hi = bank->count;
+            entries = bank->entries;
+            lo = 0;
             while (lo < hi) {
-                u32 mid = (lo + hi) >> 1;
-                MsgEntry* e = &entries[mid];
-                if (e->key == sub) {
-                    return (u8*)bank + e->offset;
+                mid = (lo + hi) / 2;
+                val = entries[mid].key;
+                if (val == sub) {
+                    return (u8*)bank + entries[mid].offset;
                 }
-                if (e->key < sub) {
-                    lo = mid + 1;
-                } else {
-                    hi = mid;
-                }
+                if (val < sub) lo = mid + 1;
+                else hi = mid;
             }
         }
     }
     return 0;
 }
 
-static inline u32 msgNextCode(MSG_TASK_WORK* t)
+/* Message reader and control dispatch, written with early returns. */
+static inline u16 msgReadCode(MSG_TASK_WORK* t)
 {
-    u32 c;
-    while (1) {
-        c = *(u16*)t->ip;
-        if (c == 0) {
-            if (t->depth != 0) {
-                t->ip = t->stack[--t->depth];
-            } else {
-                break;
-            }
+    u16* cursor;
+    u16 code;
+
+    for (;;) {
+        cursor = (u16*)t->ip;
+        code = *cursor;
+        if (code == 0) {
+            if (t->depth == 0) return code;
+            t->ip = t->stack[--t->depth];
         } else {
-            t->ip += 2;
-            break;
+            t->ip = (u8*)(cursor + 1);
+            return code;
         }
     }
-    return c;
 }
 
-static inline void _msgCallCtrlFunc(MSG_TASK_WORK* t, u8 code)
+static inline CtrlEntry* msgCtrlEntry(CtrlEntry* table, u32 code)
 {
-    CtrlEntry* table = _pMw->ctrl;
-    if (table != 0) {
-        u32 flag;
-        if (t->mode == 0) {
-            flag = table[code].flagB;
-        } else {
-            flag = table[code].flagA;
-        }
-        if (flag != 0) {
-            CtrlEntry* e = &table[code];
-            if (e->func != 0) {
-                u32 result = e->func(t);
-                u32 mode = e->mode;
-                if (mode != 0 && result != 0) {
-                    u8* next;
-                    switch (mode) {
-                    case 1:
-                        next = (u8*)result;
-                        break;
-                    case 2:
-                        next = msgFindB(result);
-                        break;
-                    }
-                    if (t->depth >= 3) {
-                        GSlogWrite("[%s] Error!! メッセージのネストが深すぎます\n", __FUNCTION__);
-                    } else {
-                        t->stack[t->depth] = t->ip;
-                        t->depth++;
-                        t->ip = next;
-                    }
-                }
+    return &table[code];
+}
+
+static inline u8 _msgCallCtrlFunc(MSG_TASK_WORK* t, u32 code)
+{
+    CtrlEntry* table;
+    CtrlEntry* e;
+    u8* next;
+    u32 flag;
+    u32 result;
+    u32 mode;
+
+    table = _pMw->ctrl;
+    if (table == 0) return 0;
+    if (t->mode == 0) {
+        flag = table[code].flagB;
+    } else {
+        flag = table[code].flagA;
+    }
+    if (flag == 0) return 0;
+    e = msgCtrlEntry(table, code);
+    if (e->func != 0) {
+        result = e->func(t);
+        mode = e->mode;
+        if (mode != 0 && result != 0) {
+            switch (mode) {
+            case 1:
+                next = (u8*)result;
+                break;
+            case 2:
+                next = msgFindB(result);
+                break;
+            }
+            if (t->depth >= 3) {
+                GSlogWrite("[%s] Error!! メッセージのネストが深すぎます\n", __FUNCTION__);
+            } else {
+                t->stack[t->depth++] = t->ip;
+                t->ip = next;
             }
         }
     }
+    return e->stop;
 }
 
 static inline MSG_TASK_WORK* msgFindTask(u32 key)
@@ -1869,44 +1910,45 @@ static AdjustEntry _adjustTable[2] = {
 s32 SJIStoGSchar(u16* dst, char* src)
 {
     s32 n = 0;
-    u8* p = (u8*)src;
+
     if (src == 0) {
         return 0;
     }
     if (dst == 0) {
-        while (*p != 0) {
-            u32 c = *p;
+        while (*(u8*)src != 0) {
+            u32 c = *(u8*)src;
             if ((c >= 0x81 && c <= 0x9f) || (c >= 0xe0 && c <= 0xfc)) {
-                p += 2;
+                src += 2;
                 n += 2;
             } else {
-                p += 1;
+                src += 1;
                 n += 1;
             }
         }
-        return n;
-    }
-    while (*p != 0) {
-        u32 c = *p;
-        u32 step;
-        if ((c >= 0x81 && c <= 0x9f) || (c >= 0xe0 && c <= 0xfc)) {
-            if (c >= 0x81 && c <= 0x9f) {
-                c = sjis_81xx[(c - 0x81) * 184 + (p[1] - 0x40)];
+    } else {
+        while (*(u8*)src != 0) {
+            u8 c = *(u8*)src;
+            u16 code = c;
+            s32 step;
+            if ((c >= 0x81 && c <= 0x9f) || (c >= 0xe0 && c <= 0xfc)) {
+                if (c >= 0x81 && c <= 0x9f) {
+                    code = sjis_81xx[c - 0x81][((u8*)src)[1] - 0x40];
+                } else {
+                    code = sjis_e0xx[c - 0xe0][((u8*)src)[1] - 0x40];
+                }
+                step = 2;
             } else {
-                c = sjis_e0xx[(c - 0xe0) * 184 + (p[1] - 0x40)];
+                if (c >= 0xa1 && c <= 0xdf) {
+                    code = c + 0xff00 - 0x40;
+                }
+                step = 1;
             }
-            step = 2;
-        } else {
-            if (c >= 0xa1 && c <= 0xdf) {
-                c = c + 0xff00 - 0x40;
-            }
-            step = 1;
+            *dst++ = code;
+            src += step;
+            n += step;
         }
-        *dst++ = c;
-        p += step;
-        n += step;
+        *dst = 0;
     }
-    *dst = 0;
     return n;
 }
 
@@ -1965,7 +2007,7 @@ static u32 _msgGetSize(const u16* s)
     t->mode = 1;
     GSmsgSetFontInfo(t);
     while (1) {
-        u16 code = msgNextCode(t);
+        u16 code = msgReadCode(t);
         if (code == 0) {
             break;
         }
@@ -1985,45 +2027,203 @@ static u32 _msgGetLength(const u16* s)
 #pragma dont_inline on
 static FontEntry* _msgGetCodeInfo(MSG_TASK_WORK* t, u16 code, tagFONT_INFO** out)
 {
-    FontSlot* slot;
-    tagFONT_INFO* info;
-    s32 i;
+    MsgSys* mw;
     s32 n;
-    n = _pMw->fontCount;
+    FontSlot* slot;
+    s32 i;
+    tagFONT_INFO* info;
+    FontEntry* entries;
+    FontEntry* e;
+    u32 lo;
+    u32 hi;
+    u32 mid;
+
+    mw = _pMw;
+    n = mw->fontCount;
     for (i = 0; i < n; i++) {
-        slot = &_pMw->fonts[i];
-        if (slot->id == t->font) {
-            break;
-        }
+        slot = &mw->fonts[i];
+        if (slot->id == t->font) break;
     }
-    if (i == n) {
-        return 0;
-    }
-    for (info = slot->info; info != 0; info = info->next) {
-        u32 lo = 0;
-        u32 hi = info->count;
-        FontEntry* entries = info->entries;
+    if (i == n) return 0;
+
+    info = slot->info;
+    while (info != 0) {
+        hi = info->count;
+        entries = info->entries;
+        lo = 0;
         while (lo < hi) {
-            u32 mid = (lo + hi) >> 1;
-            FontEntry* e = &entries[mid];
-            if (e->code == code) {
-                if (out != 0) {
-                    *out = info;
-                }
+            mid = (lo + hi) / 2;
+            e = &entries[mid];
+            if (e->code == (u32)code) {
+                if (out != 0) *out = info;
                 return e;
             }
-            if (e->code < code) {
-                lo = mid + 1;
-            } else {
-                hi = mid;
-            }
+            if (e->code < code) lo = mid + 1;
+            else hi = mid;
         }
+        if (lo < hi) break;
+        info = info->next;
     }
     return 0;
 }
 
-static void _msgMakeTexture(MSG_TASK_WORK* t, u8* p, s16 a, s16 b, s16 c)
+static inline void msgShadowQuad(s16 x0, s16 y0, s16 x1, s16 y1, u8 alpha, f32 u0, f32 v0, f32 u1, f32 v1)
 {
+    GXWGFifo.s16 = x0;
+    GXWGFifo.s16 = y0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = alpha;
+    GXWGFifo.f32 = u0;
+    GXWGFifo.f32 = v0;
+    GXWGFifo.s16 = x1;
+    GXWGFifo.s16 = y0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = alpha;
+    GXWGFifo.f32 = u1;
+    GXWGFifo.f32 = v0;
+    GXWGFifo.s16 = x0;
+    GXWGFifo.s16 = y1;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = alpha;
+    GXWGFifo.f32 = u0;
+    GXWGFifo.f32 = v1;
+    GXWGFifo.s16 = x1;
+    GXWGFifo.s16 = y1;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = alpha;
+    GXWGFifo.f32 = u1;
+    GXWGFifo.f32 = v1;
+}
+
+static void _msgMakeTexture(MSG_TASK_WORK* t, u8* p, s16 w, s16 h, s16 yofs)
+{
+    s32 xPos;
+    s32 widthRounded;
+    u8 outlineAlpha;
+    s16 drawX0;
+    s16 drawX1;
+    s16 drawY0;
+    s16 drawY1;
+    s32 row;
+    u8* buffer;
+    s32 rowPos;
+    s32 srcOffset;
+    s32 destOffset;
+    s32 tileOffset;
+    s32 texelOffset;
+    u8* srcRow;
+    f32 scaleX;
+    f32 scaleY;
+    f32 baseX;
+    f32 baseY;
+    f32 u0;
+    f32 u1;
+    f32 v0;
+    f32 v1;
+
+    if (_pMw->count14 + w + 2 >= 0x200) {
+        _pMw->count16 += _pMw->pad18 + 2;
+        _pMw->count14 = 2;
+        _pMw->pad18 = t->fontH + 2;
+        if (_pMw->count16 + _pMw->pad18 >= 0x200) {
+            _pMw->count16 = 1;
+        }
+    }
+    if (_pMw->pad18 < h) {
+        _pMw->pad18 = t->fontH;
+    }
+
+    buffer = (u8*)_pMw->image;
+    widthRounded = ((w + 1) & ~1) / 2;
+
+    for (row = -1; row < h + 1; row++) {
+        rowPos = _pMw->count16 + row;
+        tileOffset = (rowPos >> 3) * 64;
+        texelOffset = (rowPos & 7) << 3;
+        for (xPos = -2; xPos < w + 2; xPos += 2) {
+            srcOffset = _pMw->count14 + xPos;
+            *(u8*)((((srcOffset >> 3) + tileOffset) << 5) + (((srcOffset & 7) + texelOffset) >> 1) + buffer) = 0;
+        }
+    }
+
+    for (row = 0, srcOffset = 0; row < h; row++) {
+        rowPos = _pMw->count16 + row;
+        tileOffset = (rowPos >> 3) * 64;
+        texelOffset = (rowPos & 7) << 3;
+        srcRow = p + srcOffset;
+        for (xPos = 0; xPos < w; xPos += 2) {
+            destOffset = _pMw->count14 + xPos;
+            *(u8*)((((destOffset >> 3) + tileOffset) << 5) + (((destOffset & 7) + texelOffset) >> 1) + buffer) = *srcRow++;
+        }
+        srcOffset = srcOffset + widthRounded;
+    }
+
+    scaleX = t->scaleX;
+    scaleY = t->scaleY;
+    baseX = t->curX;
+    baseY = (f32)t->yAdjust + ((f32)yofs * scaleY + t->curY);
+    drawX0 = (s16)baseX;
+    drawY0 = (s16)baseY;
+    drawX1 = (s16)((f32)w * scaleX + (f32)drawX0);
+    drawY1 = (s16)((f32)h * scaleY + (f32)drawY0);
+
+    u0 = (f32)_pMw->count14 / 512.0f;
+    v0 = (f32)_pMw->count16 / 512.0f;
+    u1 = (f32)(_pMw->count14 + w) / 512.0f;
+    v1 = (f32)(_pMw->count16 + h) / 512.0f;
+
+    outlineAlpha = ((t->color & 0xFF) * 0xC0) / 0xFF;
+
+    _TargetLayer->f1998 = 0x98;
+    switch (t->shadow) {
+    case 0:
+    default:
+        _TargetLayer->beginSurface(4);
+        break;
+    case 1:
+        _TargetLayer->beginSurface(8);
+        msgShadowQuad(drawX0 + 1, (s16)(drawY0 - 2) + 1, drawX1 + 1, (s16)(drawY1 - 2) + 1, outlineAlpha, u0, v0, u1, v1);
+        break;
+    case 2:
+        _TargetLayer->beginSurface(20);
+        msgShadowQuad(drawX0 - 1, drawY0 - 2, drawX1 - 1, drawY1 - 2, outlineAlpha, u0, v0, u1, v1);
+        msgShadowQuad(drawX0 + 1, drawY0 - 2, drawX1 + 1, drawY1 - 2, outlineAlpha, u0, v0, u1, v1);
+        msgShadowQuad(drawX0, (s16)(drawY0 - 2) - 1, drawX1, (s16)(drawY1 - 2) - 1, outlineAlpha, u0, v0, u1, v1);
+        msgShadowQuad(drawX0, (s16)(drawY0 - 2) + 1, drawX1, (s16)(drawY1 - 2) + 1, outlineAlpha, u0, v0, u1, v1);
+        break;
+    }
+
+    GXWGFifo.s16 = drawX0;
+    GXWGFifo.s16 = drawY0 - 2;
+    GXWGFifo.u32 = t->color;
+    GXWGFifo.f32 = u0;
+    GXWGFifo.f32 = v0;
+    GXWGFifo.s16 = drawX1;
+    GXWGFifo.s16 = drawY0 - 2;
+    GXWGFifo.u32 = t->color;
+    GXWGFifo.f32 = u1;
+    GXWGFifo.f32 = v0;
+    GXWGFifo.s16 = drawX0;
+    GXWGFifo.s16 = drawY1 - 2;
+    GXWGFifo.u32 = t->color;
+    GXWGFifo.f32 = u0;
+    GXWGFifo.f32 = v1;
+    GXWGFifo.s16 = drawX1;
+    GXWGFifo.s16 = drawY1 - 2;
+    GXWGFifo.u32 = t->color;
+    GXWGFifo.f32 = u1;
+    GXWGFifo.f32 = v1;
+    _TargetLayer->endSurface();
+
+    _pMw->count14 += widthRounded * 2 + 2;
 }
 
 static void _msgSetChar(MSG_TASK_WORK* t, u16 code)
@@ -2031,7 +2231,7 @@ static void _msgSetChar(MSG_TASK_WORK* t, u16 code)
     tagFONT_INFO* info;
     FontEntry* e;
     if (code == 0x20) {
-        t->charW = (f32)((u32)t->fontW >> 1) * t->scaleX;
+        t->charW = (f32)((s32)t->fontW >> 1) * t->scaleX;
         return;
     }
     e = _msgGetCodeInfo(t, code, &info);
@@ -2115,8 +2315,261 @@ static void _msgDispRuby(MSG_TASK_WORK* t)
     t->curY = saveY;
 }
 
+static inline u32 msgGetTalkSE(MSG_TASK_WORK* t)
+{
+    u32 se = 0;
+    s32 i;
+    if (message_se == 0) {
+        return se;
+    }
+    for (i = 0; i < *message_se_number; i++) {
+        if (t->talkSE == message_se[i].a) {
+            se = message_se[i].b;
+            break;
+        }
+    }
+    return se;
+}
+
 static s32 _msgMainSub(MSG_TASK_WORK* t, u8 layer, u32 a, bool b)
 {
+    u16 code;
+    u8 ctl;
+    u8 quote = 0;
+    u8 normal = 0;
+    u8 cont;
+    s32 i;
+    u8 speed;
+    s32 frames;
+    GStexture* tex;
+    u8* savedIp;
+    u8 savedDepth;
+    u32 savedStack[3];
+    u32* saved;
+    GXRGBA color = {{0xFF, 0xFF, 0xFF, 0xFF}};
+
+    if (t == 0) {
+        return -1;
+    }
+    if (t->active == 0) {
+        return -1;
+    }
+
+    spriteSetEnv(_TargetLayer->id);
+    _TargetLayer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 1, 1, 4));
+    tex = _pMw->tex[_pMw->cur];
+    {
+        GSgfxLayer* l = _TargetLayer;
+        if (l->tex1740 != tex || l->tex17f8 != tex || ((u8*)tex)[7] != 0) {
+            l->tex1740 = tex;
+            l->dirty173c |= 1;
+            l->tex17f8 = tex;
+            l->dirty17f4 |= 1;
+        }
+    }
+    {
+        GSgfxLayer* l = _TargetLayer;
+        l->w8(0xeac, 1);
+        l->mark(8, 0x16cc, 1);
+    }
+    {
+        GSgfxLayer* l = _TargetLayer;
+        l->w32(0xeb0, 0);
+        l->w32(0xeb4, 0);
+        l->w32(0xeb8, 4);
+        l->mark(8, 0x16d0, 1);
+    }
+    _TargetLayer->setClearColor(color);
+    {
+        GSgfxLayer* l = _TargetLayer;
+        l->w32(0x1504, 0xc);
+        l->mark(0x10, 0x16fc, 1);
+    }
+    {
+        GSgfxLayer* l = _TargetLayer;
+        l->w32(0xf70, 0xf);
+        l->w32(0xf74, 0xe);
+        l->w32(0xf78, 0xa);
+        l->w32(0xf7c, 0xf);
+        l->mark(8, 0x16d4, 1);
+    }
+    {
+        GSgfxLayer* l = _TargetLayer;
+        l->w32(0x1170, 0);
+        l->w32(0x1174, 0);
+        l->w32(0x1178, 0);
+        l->w8(0x117c, 1);
+        l->w32(0x1180, 0);
+        l->mark(8, 0x16dc, 1);
+    }
+    {
+        GSgfxLayer* l = _TargetLayer;
+        l->w32(0x1070, 7);
+        l->w32(0x1074, 4);
+        l->w32(0x1078, 5);
+        l->w32(0x107c, 7);
+        l->mark(8, 0x16d8, 1);
+    }
+    {
+        GSgfxLayer* l = _TargetLayer;
+        l->w32(0x12b0, 0);
+        l->w32(0x12b4, 0);
+        l->w32(0x12b8, 0);
+        l->w8(0x12bc, 1);
+        l->w32(0x12c0, 0);
+        l->mark(8, 0x16e0, 1);
+    }
+
+    _pMw->image = GStextureLockImage(tex, 0);
+
+    if (a & 0x30) {
+        t->f45 = 1;
+    } else {
+        t->f45 = 0;
+    }
+    if ((windowGetKeyInfo()->on & 0x30) != 0) {
+        speed = lbl_804E834C;
+    } else {
+        speed = 1;
+    }
+    cont = 0;
+    t->mode = 0;
+    t->ruby = 0;
+    t->csrA = 0;
+    t->csrB = 0;
+    frames = timeGetLastFrameTime();
+    if (frames == 0) {
+        frames = 1;
+    }
+
+    if (b == 0) {
+        s32 n = frames * (s8)speed;
+        for (i = 0; i < n; i++) {
+            for (;;) {
+                code = msgReadCode(t);
+                if (code == 0) {
+                    t->active = 2;
+                    break;
+                }
+                if (code == 0xFFFF) {
+                    u8* p = t->ip;
+                    t->ip = p + 1;
+                    ctl = *p;
+                    cont = _msgCallCtrlFunc(t, ctl);
+                } else if (t->ruby != 2) {
+                    cont = 1;
+                    if (layer != 0) {
+                        cont = 0;
+                    }
+                    normal = 1;
+                }
+                if (cont != 0) {
+                    break;
+                }
+            }
+        }
+    }
+
+    saved = savedStack;
+    savedStack[0] = (u32)t->stack[0];
+    savedStack[1] = (u32)t->stack[1];
+    savedStack[2] = (u32)t->stack[2];
+    savedIp = t->ip;
+    savedDepth = *(u8*)&t->depth;
+
+    t->mode = 1;
+    t->curX = t->x;
+    t->curY = t->y;
+    t->ip = t->saved;
+    t->depth = 0;
+    t->ruby = 0;
+
+    for (;;) {
+        if (t->ip == savedIp) {
+            s32 j;
+            s32 d = t->depth;
+            for (j = 0; j < d; j++) {
+                if ((u32)t->stack[j] != saved[j]) {
+                    break;
+                }
+            }
+            if (j == d) {
+                break;
+            }
+        }
+        code = msgReadCode(t);
+        if (code == 0) {
+            break;
+        }
+        if (code == 0xFFFF) {
+            u8* p = t->ip;
+            t->ip = p + 1;
+            ctl = *p;
+            _msgCallCtrlFunc(t, ctl);
+            if (quote != 0 && t->curX == t->x) {
+                t->curX += (f32)(s32)t->fontW;
+            }
+        } else if (t->ruby != 2) {
+            _msgSetChar(t, code);
+            t->curX += t->charW;
+            if (t->indent == 0) {
+                if (code == 0x300C) {
+                    quote = 1;
+                }
+                if (code == 0x300D) {
+                    quote = 0;
+                }
+            }
+            if (t->ruby == 1) {
+                _msgDispRuby(t);
+            }
+        }
+    }
+
+    if (layer != 0) {
+        normal = 0;
+    }
+    if (normal != t->talking) {
+        u32 se = msgGetTalkSE(t);
+        if (se != 0) {
+            if (normal != 0) {
+                GSsndPlayNow(se);
+            } else {
+                GSsndStopNow(se);
+            }
+        }
+        t->talking = normal;
+    }
+
+    if (t->csrA != 0) {
+        static s32 cnt = 0;
+        s32 x = (s32)(2.0f + t->curX);
+        s32 y = (s32)(8.0f + t->curY);
+        f32 c = (f32)cos(3.1415927f * (f32)cnt / 25.0f);
+        y += (s32)(4.0f * c);
+        cnt += timeGetLastFrameTime();
+        cnt %= 50;
+        s32 id = _TargetLayer->id;
+        windowDrawSprite(x, y, 0, menuSubGetKaiwaCsrID(), 0, id);
+    }
+    if (t->csrB != 0) {
+        static s32 cnt = 0;
+        s32 y = (s32)t->curY;
+        s32 x = (s32)(2.0f + t->curX);
+        f32 c = (f32)cos(3.1415927f * (f32)cnt / 25.0f);
+        y += (s32)(4.0f * c);
+        cnt += timeGetLastFrameTime();
+        cnt %= 50;
+        s32 id = _TargetLayer->id;
+        windowDrawSprite(x, y, 0, menuSubGetKaiwaCloseWindowID(), 0, id);
+    }
+
+    t->ip = savedIp;
+    *(u8*)&t->depth = savedDepth;
+    t->stack[0] = (u8*)savedStack[0];
+    t->stack[1] = (u8*)savedStack[1];
+    t->stack[2] = (u8*)savedStack[2];
+    GStextureUnlockImage(_pMw->tex[_pMw->cur]);
     return 0;
 }
 #pragma dont_inline reset
@@ -2124,6 +2577,8 @@ static s32 _msgMainSub(MSG_TASK_WORK* t, u8 layer, u32 a, bool b)
 extern "C" {
 s32 GSmsgInit(u16 taskCount, u16 fontCount)
 {
+    MSG_TASK_WORK* t;
+    FontSlot* slot;
     s32 i;
     f32 one = 1.0f;
     memset(&_MsgSysWork, 0, sizeof(MsgSys));
@@ -2138,15 +2593,16 @@ s32 GSmsgInit(u16 taskCount, u16 fontCount)
         return -1;
     }
     for (i = 0; i < taskCount; i++) {
-        MSG_TASK_WORK* t = &_pMw->tasks[i];
+        t = &_pMw->tasks[i];
         memset(t, 0, sizeof(MSG_TASK_WORK));
         t->scaleX = one;
         t->scaleY = one;
     }
     _pMw->taskCount = taskCount;
     for (i = 0; i < fontCount; i++) {
-        _pMw->fonts[i].id = 0xFFFF;
-        _pMw->fonts[i].info = 0;
+        slot = &_pMw->fonts[i];
+        slot->id = 0xFFFF;
+        slot->info = 0;
     }
     _pMw->fontCount = fontCount;
     _pMw->tex[0] = GStextureCreate(0x200, 0x200, 0x40, 0, 0);
@@ -2166,33 +2622,40 @@ s32 GSmsgSetCtrlFunc(CtrlEntry* table)
 extern "C" {
 FontBlock* GSmsgFontOpen(FontBlock* first)
 {
-    FontBlock* blk = first;
+    FontBlock* blk;
+    MsgSys* mw;
+    FontSlot* slot;
+    tagFONT_INFO* info;
+    tagFONT_INFO* p;
+    u16 id;
+    s32 n;
+    s32 i;
+
+    blk = first;
     while (1) {
-        u16 id = blk->id;
-        s32 i;
-        s32 n;
-        FontSlot* slot;
-        if (id == 0xFFFF) {
-            return 0;
-        }
-        n = _pMw->fontCount;
+        id = blk->id;
+        if (id == 0xFFFF) return 0;
+
+        mw = _pMw;
+        n = mw->fontCount;
         for (i = 0; i < n; i++) {
-            slot = &_pMw->fonts[i];
-            if (slot->info != 0 && slot->id == id) {
-                break;
+            slot = &mw->fonts[i];
+            if (slot->info != 0) {
+                if (slot->id == id) break;
             }
         }
         if (i == n) {
             for (i = 0; i < n; i++) {
-                slot = &_pMw->fonts[i];
+                slot = &mw->fonts[i];
                 if (slot->info == 0) {
                     slot->id = id;
                     slot->width = blk->width;
                     slot->height = blk->height;
                     slot->info = (tagFONT_INFO*)blk->nextOffset;
-                    slot->info = &blk->info;
-                    blk->info.next = 0;
-                    blk->info.prev = 0;
+                    info = &blk->info;
+                    slot->info = info;
+                    info->next = 0;
+                    info->prev = 0;
                     break;
                 }
             }
@@ -2200,86 +2663,88 @@ FontBlock* GSmsgFontOpen(FontBlock* first)
                 GSlogWrite("[GSmsgFontOpen]  FONT[%d]の登録数をオーバーしました\n", blk->id);
             }
         } else {
-            tagFONT_INFO* p = slot->info;
-            tagFONT_INFO* mine = &blk->info;
+            info = &blk->info;
+            p = slot->info;
             while (1) {
-                if (p == mine) {
-                    return 0;
-                }
+                if (p == info) return 0;
                 if (p->next == 0) {
-                    p->next = mine;
-                    mine->next = 0;
-                    mine->prev = p;
+                    p->next = info;
+                    info->next = 0;
+                    info->prev = p;
                     break;
                 }
                 p = p->next;
             }
         }
-        if (blk->nextOffset == 0) {
-            return first;
-        }
+        if (blk->nextOffset == 0) break;
         blk = (FontBlock*)((u8*)blk + blk->nextOffset);
     }
+    return first;
 }
 }
 
 extern "C" {
 s32 GSmsgFontClose(FontBlock* blk)
 {
-    s32 i;
-    s32 n = _pMw->fontCount;
+    MsgSys* mw;
+    s32 n;
     FontSlot* slot;
-    for (i = 0; i < n; i++) {
-        slot = &_pMw->fonts[i];
-        if (slot->info != 0 && slot->id == blk->id) {
-            break;
-        }
-    }
-    if (i != n) {
-        tagFONT_INFO* p;
-        for (p = slot->info; p != 0; p = p->next) {
-            if (p == &blk->info) {
-                if (p->prev == 0 && p->next == 0) {
-                    slot->id = 0xFFFF;
-                    slot->info = 0;
-                    break;
-                }
-                if (p->prev != 0) {
-                    p->prev->next = p->next;
-                } else {
-                    slot->info = p->next;
-                }
-                if (p->next != 0) {
-                    p->next->prev = p->prev;
-                }
-                break;
+    tagFONT_INFO* p;
+    tagFONT_INFO* prev;
+    s32 i;
+
+    while (1) {
+        mw = _pMw;
+        n = mw->fontCount;
+        for (i = 0; i < n; i++) {
+            slot = &mw->fonts[i];
+            if (slot->info != 0) {
+                if (slot->id == blk->id) break;
             }
         }
-    }
-    if (blk->nextOffset != 0) {
-        return GSmsgFontClose((FontBlock*)((u8*)blk + blk->nextOffset));
+        if (i != n) {
+            p = slot->info;
+            while (p != 0) {
+                if (p == &blk->info) {
+                    prev = p->prev;
+                    if (prev == 0 && p->next == 0) {
+                        slot->id = 0xFFFF;
+                        slot->info = 0;
+                    } else {
+                        if (prev != 0) {
+                            prev->next = p->next;
+                        } else {
+                            slot->info = p->next;
+                        }
+                        if (p->next != 0) {
+                            p->next->prev = p->prev;
+                        }
+                    }
+                    break;
+                }
+                p = p->next;
+            }
+        }
+        if (blk->nextOffset == 0) break;
+        blk = (FontBlock*)((u8*)blk + blk->nextOffset);
     }
     return 0;
 }
 }
 
 extern "C" {
-void fn_80108D80(void)
-{
-}
-}
-
-extern "C" {
 MsgBank* GSmsgOpen(MsgBank* bank)
 {
+    MsgSys* mw;
     MsgBank* p;
-    if (_pMw->banks == 0) {
-        _pMw->banks = bank;
+    mw = _pMw;
+    if (mw->banks == 0) {
+        mw->banks = bank;
         bank->next = 0;
         bank->prev = 0;
         return bank;
     }
-    p = _pMw->banks;
+    p = mw->banks;
     for (;;) {
         if (p == bank) {
             return 0;
@@ -2322,13 +2787,16 @@ s32 GSmsgClose(MsgBank* bank)
 extern "C" {
 s32 GSmsgExec(u32 key, u8 layer, u8 talkSE)
 {
+    MsgSys* mw;
     MSG_TASK_WORK* t;
     MsgBank* bank;
-    u8* text;
+    s32 n;
     s32 i;
-    s32 n = _pMw->taskCount;
+    u8* text;
+    mw = _pMw;
+    n = mw->taskCount;
     for (i = 0; i < n; i++) {
-        t = &_pMw->tasks[i];
+        t = &mw->tasks[i];
         if (t->active == 0) {
             break;
         }
@@ -2344,9 +2812,9 @@ s32 GSmsgExec(u32 key, u8 layer, u8 talkSE)
     }
     memset(t, 0, sizeof(MSG_TASK_WORK));
     t->active = 1;
-    t->color = 0xF0F0F0FF;
     t->scaleX = 1.0f;
     t->scaleY = 1.0f;
+    t->color = 0xF0F0F0FF;
     t->base = text;
     t->saved = text;
     t->ip = text;
@@ -2370,12 +2838,11 @@ void GSmsgDaemon(void)
 }
 
 extern "C" {
-s32 GSmsgMain(s32 layer, u32 key, u32 a, bool b)
+s32 GSmsgMain(s32 layer, s32 key, u32 a, bool b)
 {
     MSG_TASK_WORK* t;
     if (pauseIsPause()) {
-        if (key >= 101 && key < 106) {
-        } else {
+        if (key >= 106 || key < 101) {
             b = true;
         }
     }
@@ -2396,16 +2863,7 @@ void GSmsgKill(u32 key)
 {
     MSG_TASK_WORK* t = msgFindTask(key);
     if (t != 0) {
-        u32 se = 0;
-        if (message_se != 0) {
-            s32 i;
-            for (i = 0; i < *message_se_number; i++) {
-                if (t->talkSE == message_se[i].a) {
-                    se = message_se[i].b;
-                    break;
-                }
-            }
-        }
+        u32 se = msgGetTalkSE(t);
         if (se != 0) {
             GSsndStopNow(se);
         }
@@ -2514,7 +2972,7 @@ s32 GSprint(s32 layer, s32 x, s32 y, u32 color, const char* fmt, ...)
     t->curX = t->x;
     t->curY = t->y;
     while (1) {
-        u16 c = msgNextCode(t);
+        u16 c = msgReadCode(t);
         if (c == 0) {
             break;
         }
@@ -2552,7 +3010,7 @@ void GSmsgInitRuby(MSG_TASK_WORK* t)
     t->ruby = 1;
     for (pass = 0; pass < 2; pass++) {
         while (1) {
-            u16 code = msgNextCode(t);
+            u16 code = msgReadCode(t);
             if (code == 0) {
                 break;
             }
@@ -2633,7 +3091,7 @@ u32 GSmsgGetRect(u32 key)
     t->mode = 1;
     GSmsgSetFontInfo(t);
     while (1) {
-        u16 code = msgNextCode(t);
+        u16 code = msgReadCode(t);
         if (code == 0) {
             break;
         }
@@ -2757,7 +3215,7 @@ void GSmsgSetFontInfo(MSG_TASK_WORK* t)
 extern "C" {
 void GSmsgSetColor(MSG_TASK_WORK* t)
 {
-    GXRGBA c = {0xffffffff};
+    GXRGBA c = {{0xff, 0xff, 0xff, 0xff}};
     GSgfxLayer* layer;
     if (_TargetLayer == 0) {
         _TargetLayer = GSgfxLayerFindByID(7);
@@ -2855,15 +3313,16 @@ u16* GScharLenCpy(u16* dst, const u16* src, s32 len)
     s32 n;
     s32 i;
     if (len <= 0) {
-        return 0;
+        return dst;
     }
-    n = (_msgGetSize(src) + 1) >> 1;
+    n = ((u32)_msgGetSize(src) + 1) >> 1;
     if (n >= len) {
         n = len - 1;
     }
     memcpy(dst, src, n * 2);
-    for (i = n; i < len; i++) {
-        dst[i] = 0;
+    i = n;
+    while (i < len) {
+        dst[i++] = 0;
     }
     return dst;
 }
@@ -3118,7 +3577,7 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
         u16 code;
         outStart = out;
         u32 countStart = count;
-        code = msgNextCode(t);
+        code = msgReadCode(t);
         if (code == 0) {
             break;
         }

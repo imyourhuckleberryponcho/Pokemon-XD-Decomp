@@ -9,9 +9,11 @@ typedef f32 GSmtx[3][4];
 struct CCD_TRI {
     GSvec verts[3];  // 0x00
     GSvec normal;    // 0x24
-    u8 attr;         // 0x30
-    u8 layer;        // 0x31
-    u8 pad32[2];
+    u8 surface : 4;  // 0x30
+    u8 attr : 4;
+    u8 layer : 4;    // 0x31
+    u8 subLayer : 4;
+    u16 id;          // 0x32
 };
 
 struct CCD_GRID_CELL {
@@ -56,7 +58,6 @@ struct GSwalkHit {
     u16 attrLo;
     u8 layer;
     u8 subLayer;
-    u8 pad[2];
 };
 
 extern "C" {
@@ -70,22 +71,107 @@ s32 GScolsys2WalkGetHeight(GSvec* pos, GSwalkHit* hits);
 
 static bool getCpPolyVec(GSvec* out, GSvec* point, GSvec* vertices, GSvec* plane);
 
-static inline bool addHit(GSwalkHit* hits, s32 count, GSwalkHit* dst, f32 height, CCD_TRI* tri) {
+#define COL_ABS(x) ((x) > 0.0f ? (x) : -(x))
+
+/* Which side of the edge (x,z)->(ex,ez) the point (px,pz) is on; the edge deltas are written in
+ * place, which gives retail's float-register order. */
+static inline f32 colEdgeSide(f32 ez, f32 ex, f32 z, f32 x, f32 pz, f32 px)
+{
+    ez -= z;
+    ex -= x;
+    return ex * (pz - z) - ez * (px - x);
+}
+
+/* Append the height of a hit point to the list unless it already holds it. */
+static inline bool addHit(GSwalkHit* list, s32 count, GSvec* cp, CCD_TRI* tri) {
     s32 i;
-    for (i = 0; i < count; i++, hits++) {
-        if (height == hits->height) {
+
+    for (i = 0; i < count; i++) {
+        if (cp->y == list[i].height) {
             break;
         }
     }
     if (i < count) {
         return false;
     }
-    dst->height = height;
-    dst->attrHi = ((tri->attr >> 4) == 0xF) ? 0xFFFF : (tri->attr >> 4);
-    dst->attrLo = ((tri->attr & 0xF) == 0xF) ? 0xFFFF : (tri->attr & 0xF);
-    dst->layer = tri->layer >> 4;
-    dst->subLayer = tri->layer & 0xF;
+
+    list[count].height = cp->y;
+    if (tri->surface == 15) {
+        list[count].attrHi = 0xFFFF;
+    } else {
+        list[count].attrHi = tri->surface;
+    }
+    if (tri->attr == 15) {
+        list[count].attrLo = 0xFFFF;
+    } else {
+        list[count].attrLo = tri->attr;
+    }
+    list[count].layer = tri->layer;
+    list[count].subLayer = tri->subLayer;
     return true;
+}
+
+/* Collect the walk heights under a point from a movable object's triangle list. */
+static inline s32 collectList(GSwalkHit* list, GSvec* point, CCD_TRILIST* tris, GSmtx matrix, GSmtx normalMatrix) {
+    GSvec verts[3];
+    GSvec normal;
+    GSvec cp;
+    CCD_TRI* tri;
+    u32 j;
+    s32 v;
+    s32 count;
+
+    count = 0;
+    tri = tris->tris;
+    for (j = 0; j < tris->count && count < 8; j++, tri++) {
+        for (v = 0; v < 3; v++) {
+            PSMTXMultVec(matrix, &tri->verts[v], &verts[v]);
+        }
+        PSMTXMultVec(normalMatrix, &tri->normal, &normal);
+        if (getCpPolyVec(&cp, point, verts, &normal) != 0) {
+            if (addHit(list, count, &cp, tri)) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+/* Collect the walk heights under a point from a fixed model's grid. */
+static inline s32 collectGrid(GSwalkHit* list, GSvec* point, CCD_GRID* grid) {
+    GSvec cp;
+    CCD_TRI* tri;
+    CCD_GRID_CELL* cell;
+    u32* index;
+    u32 j;
+    s32 z;
+    s32 x;
+    s32 count;
+
+    count = 0;
+    x = (point->x - grid->minX) / grid->cellWidth;
+    if (x < 0 || x >= grid->cellsX) {
+        return 0;
+    }
+    z = (point->z - grid->minZ) / grid->cellDepth;
+    if (z < 0 || z >= grid->cellsZ) {
+        return 0;
+    }
+
+    cell = grid->cells;
+    index = grid->indices;
+    cell += x + z * grid->cellsX;
+    index += cell->first;
+    for (j = 0; j < cell->count && count < 8; j++, index++) {
+        tri = grid->tris;
+        tri += *index;
+        if (getCpPolyVec(&cp, point, tri->verts, &tri->normal) != 0) {
+            if (addHit(list, count, &cp, tri)) {
+                count++;
+            }
+        }
+    }
+    return count;
 }
 
 extern "C" {
@@ -102,13 +188,10 @@ BOOL GScolsys2WalkGetLayer(GSvec* pos, u8* layer, u8* subLayer) {
         return FALSE;
     }
 
-    distance = pos->y - hits[0].height;
-    distance = distance > 0.0f ? distance : -distance;
+    closestDistance = COL_ABS(pos->y - hits[0].height);
     closest = 0;
-    closestDistance = distance;
     for (i = 1; i < count; i++) {
-        distance = pos->y - hits[i].height;
-        distance = distance > 0.0f ? distance : -distance;
+        distance = COL_ABS(pos->y - hits[i].height);
         if (closestDistance > distance) {
             closest = i;
             closestDistance = distance;
@@ -122,41 +205,50 @@ BOOL GScolsys2WalkGetLayer(GSvec* pos, u8* layer, u8* subLayer) {
 }
 
 static bool getCpPolyVec(GSvec* out, GSvec* point, GSvec* vertices, GSvec* plane) {
-    f32 minX;
     f32 minZ;
-    f32 maxX;
+    f32 minX;
     f32 maxZ;
+    f32 maxX;
+    f32 height;
     s32 i;
+    s32 next;
 
     minX = minZ = 1000000.0f;
     maxX = maxZ = -1000000.0f;
     for (i = 0; i < 3; i++) {
-        if (minX > vertices[i].x) {
-            minX = vertices[i].x;
+        f32 x;
+        f32 z;
+
+        x = vertices[i].x;
+        if (minX > x) {
+            minX = x;
         }
-        if (minZ > vertices[i].z) {
-            minZ = vertices[i].z;
+        z = vertices[i].z;
+        if (minZ > z) {
+            minZ = z;
         }
-        if (maxX < vertices[i].x) {
-            maxX = vertices[i].x;
+        if (maxX < x) {
+            maxX = x;
         }
-        if (maxZ < vertices[i].z) {
-            maxZ = vertices[i].z;
+        if (maxZ < z) {
+            maxZ = z;
         }
     }
-
     if (minX > point->x || minZ > point->z || maxX < point->x || maxZ < point->z) {
         return false;
     }
 
     for (i = 0; i < 3; i++) {
-        s32 next = i + 1;
+        f32 x;
+        f32 z;
+
+        next = i + 1;
         if (next >= 3) {
             next = 0;
         }
-        if ((vertices[next].x - vertices[i].x) * (point->z - vertices[i].z) -
-                (vertices[next].z - vertices[i].z) * (point->x - vertices[i].x) >
-            0.0f) {
+        x = vertices[i].x;
+        z = vertices[i].z;
+        if (colEdgeSide(vertices[next].z, vertices[next].x, z, x, point->z, point->x) > 0.0f) {
             return false;
         }
     }
@@ -164,39 +256,38 @@ static bool getCpPolyVec(GSvec* out, GSvec* point, GSvec* vertices, GSvec* plane
     if (0.0f == plane->y) {
         return false;
     }
+    height = -(plane->x * (point->x - vertices[0].x) + plane->y * (point->y - vertices[0].y) +
+               plane->z * (point->z - vertices[0].z)) /
+             plane->y;
     out->x = point->x;
-    out->y = point->y + -(plane->y * (point->y - vertices[0].y) + plane->x * (point->x - vertices[0].x) +
-                          plane->z * (point->z - vertices[0].z)) /
-                            plane->y;
+    out->y = point->y + height;
     out->z = point->z;
     return true;
 }
 
 extern "C" {
 s32 GScolsys2WalkGetHeight(GSvec* pos, GSwalkHit* outHits) {
+    GSwalkHit temp[8];
+    GSmtx matrix;
+    GSmtx normalMatrix;
     CCD_FILEHEAD* head;
     CCD_OBJ* obj;
+    void* walk;
+    u32 i;
     s32 total;
-    u32 objIndex;
     bool enable;
-    total = 0;
+    s32 k;
+    s32 count;
 
+    total = 0;
     head = GScolsys2GetCCDFileHead();
     if (head == 0) {
         return 0;
     }
 
     obj = head->objs;
-    for (objIndex = 0; objIndex < head->numObjs && total < 8; objIndex++, obj++) {
-        GSwalkHit temp[8];
-        GSwalkHit* dst;
-        GSwalkHit* src;
-        s32 count;
-        s32 i;
-        void* walk;
-        GSvec hit;
-
-        GScolsys2GetObjEnable(objIndex, &enable);
+    for (i = 0; i < head->numObjs && total < 8; i++, obj++) {
+        GScolsys2GetObjEnable(i, &enable);
         if (!enable) {
             continue;
         }
@@ -206,69 +297,15 @@ s32 GScolsys2WalkGetHeight(GSvec* pos, GSwalkHit* outHits) {
         }
 
         if (obj->flags & 1) {
-            GSmtx mtx;
-            GSmtx rotMtx;
-            GSvec verts[3];
-            GSvec normal;
-            CCD_TRILIST* list = (CCD_TRILIST*)walk;
-            CCD_TRI* tri;
-            u32 t;
-
-            GScolsys2GetObjMatrix(mtx, objIndex);
-            GScolsys2GetObjRotMatrix(rotMtx, objIndex);
-            count = 0;
-            tri = list->tris;
-            dst = temp;
-            for (t = 0; t < list->count && count < 8; t++, tri++) {
-                for (i = 0; i < 3; i++) {
-                    PSMTXMultVec(mtx, &tri->verts[i], &verts[i]);
-                }
-                PSMTXMultVec(rotMtx, &tri->normal, &normal);
-                if (!getCpPolyVec(&hit, pos, verts, &normal)) {
-                    continue;
-                }
-                if (addHit(temp, count, dst, hit.y, tri)) {
-                    dst++;
-                    count++;
-                }
-            }
+            GScolsys2GetObjMatrix(matrix, i);
+            GScolsys2GetObjRotMatrix(normalMatrix, i);
+            count = collectList(temp, pos, (CCD_TRILIST*) walk, matrix, normalMatrix);
         } else {
-            CCD_GRID* grid = (CCD_GRID*)walk;
-            CCD_GRID_CELL* cell;
-            u32* index;
-            CCD_TRI* tri;
-            s32 cx;
-            s32 cz;
-            u32 t;
-
-            count = 0;
-            cx = (pos->x - grid->minX) / grid->cellWidth;
-            if (cx < 0 || cx >= grid->cellsX) {
-                goto copy;
-            }
-            cz = (pos->z - grid->minZ) / grid->cellDepth;
-            if (cz < 0 || cz >= grid->cellsZ) {
-                goto copy;
-            }
-            cell = &grid->cells[cx + cz * grid->cellsX];
-            index = &grid->indices[cell->first];
-            dst = temp;
-            for (t = 0; t < cell->count && count < 8; t++, index++) {
-                tri = &grid->tris[*index];
-                if (!getCpPolyVec(&hit, pos, tri->verts, &tri->normal)) {
-                    continue;
-                }
-                if (addHit(temp, count, dst, hit.y, tri)) {
-                    dst++;
-                    count++;
-                }
-            }
+            count = collectGrid(temp, pos, (CCD_GRID*) walk);
         }
-    copy:
-        src = temp;
-        for (i = 0; i < count && total < 8; i++) {
-            *outHits++ = *src++;
-            total++;
+
+        for (k = 0; k < count && total < 8; k++, total++) {
+            outHits[total] = temp[k];
         }
     }
 

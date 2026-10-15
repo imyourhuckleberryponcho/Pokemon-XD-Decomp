@@ -170,11 +170,16 @@ PSParticle* psGenerateParticle0(PSParticle** head, s32 linkNo, s32 bank, void* u
                                 PSGenerator* gp, s32 flgInterpret);
 void psInitDataBankLocate(int* cmdBank, int* texBank, int* formBank);
 
-static inline void psKillParticle(PSParticle* pp)
+/* Returns the successor (read first): as psKillParticle's own local it is coloured like retail
+ * in the inlined callers. */
+static inline PSParticle* psKillParticle(PSParticle* pp)
 {
-    PSParticle* prev = NULL;
+    PSParticle* next;
+    PSParticle* prev;
     PSParticle* p;
 
+    next = pp->next;
+    prev = NULL;
     for (p = _psListGetFirst(pp->linkNo); p != NULL; p = p->next) {
         if (p == pp) {
             if (pp->owner != NULL) {
@@ -197,26 +202,28 @@ static inline void psKillParticle(PSParticle* pp)
         }
         prev = p;
     }
+    return next;
 }
 
 void psInitDataBankLocate(int* cmdBank, int* texBank, int* formBank)
 {
+    int i;
     int num;
+    int num2;
+    PSCmdList** base;
     int* ptr;
     int* group;
+    int* groups;
+    u32 fi;
     PSFormGroup* fg;
     int j;
-    int i;
-    int num2;
-    int* groups;
-    int* base;
-    int version;
+    int k;
+    int num_groups;
 
-    version = *(u16*) cmdBank;
-    switch (version) {
+    switch (*(u16*) cmdBank) {
     case 0:
         num2 = cmdBank[1];
-        base = cmdBank + 2;
+        base = (PSCmdList**) (cmdBank + 2);
         num = 0;
         for (i = 0; i < num2; i++) {
             cmdBank[i + 2] += (int) cmdBank;
@@ -228,108 +235,77 @@ void psInitDataBankLocate(int* cmdBank, int* texBank, int* formBank)
     case 0x43:
         num = cmdBank[1];
         num2 = cmdBank[2] + num;
-        base = cmdBank + 3 - num;
+        base = (PSCmdList**) (cmdBank + 3 - num);
         ptr = cmdBank;
-        j = 0;
-        while (j < cmdBank[2]) {
+        for (j = 0; j < cmdBank[2]; j++) {
             if (ptr[3] != 0) {
                 ptr[3] += (int) cmdBank;
             }
             ptr++;
-            j++;
         }
         break;
     }
 
-    ptr = base + num;
     for (i = num; i < num2; i++) {
-        int* cmd = (int*) ptr[0];
-        if (cmd != NULL) {
-            cmd[2] = cmd[2] & 0xF1FFFFFF;
-            cmd = (int*) ptr[0];
-            cmd[2] = cmd[2] | 0x08000000;
+        if (base[i] != NULL) {
+            base[i]->kind &= 0xF1FFFFFF;
+            base[i]->kind |= 0x08000000;
         }
-        ptr++;
     }
 
-    {
-        int num_groups = texBank[0];
-        int k;
-
-        group = groups = texBank + 1;
-        for (k = 1; k <= num_groups; k++) {
-            if (group[0] != 0) {
-                group[0] += (int) texBank;
-            }
-            group++;
+    num_groups = texBank[0];
+    group = groups = texBank + 1;
+    for (k = 1; k <= num_groups; k++) {
+        if (group[0] != 0) {
+            group[0] += (int) texBank;
         }
+        group++;
+    }
 
-        {
-            group = groups;
-            for (k = 0; k < num_groups; group++, k++) {
-                PSTexGroup* tg = (PSTexGroup*) group[0];
-                if (tg == NULL) {
-                    continue;
+    for (k = 0; k < num_groups; k++) {
+        PSTexGroup* tg = (PSTexGroup*) groups[k];
+
+        if (tg != NULL) {
+            u32 ti;
+
+            for (ti = 0; ti < ((PSTexGroup*) groups[k])->num; ti++) {
+                if (((PSTexGroup*) groups[k])->texTable[ti] != NULL) {
+                    ((PSTexGroup*) groups[k])->texTable[ti] += (u32) texBank;
                 }
-
-                {
-                    int ti;
-                    for (ti = 0; (u32) ti < ((PSTexGroup*) group[0])->num; ti++) {
-                        if (((PSTexGroup*) group[0])->texTable[ti] != NULL) {
-                            ((PSTexGroup*) group[0])->texTable[ti] += (u32) texBank;
-                        }
-                    }
-                    tg = (PSTexGroup*) group[0];
-                }
-
-                {
-                    u32 fmt = tg->fmt;
-                    if (fmt != 8 && (fmt - 9) > 1) {
-                        continue;
-                    }
-                }
-
+            }
+            tg = (PSTexGroup*) groups[k];
+            if (tg->fmt == 8 || tg->fmt == 9 || tg->fmt == 10) {
                 if (tg->palflag & 1) {
-                    i = tg->num;
-                    if (tg->texTable[i] != NULL) {
-                        tg->texTable[i] += (u32) texBank;
+                    if (tg->texTable[tg->num] != NULL) {
+                        tg->texTable[tg->num] += (u32) texBank;
                     }
                 } else if (tg->palnum != 0) {
-                    i = tg->num;
-                    for (; (u32) i < ((PSTexGroup*) group[0])->num + ((PSTexGroup*) group[0])->palnum; i++) {
-                        PSTexGroup* tg2 = (PSTexGroup*) group[0];
-                        u8** entry = &tg2->texTable[i];
-                        if (*entry != NULL) {
-                            *entry += (u32) texBank;
+                    for (ti = tg->num; ti < ((PSTexGroup*) groups[k])->num + ((PSTexGroup*) groups[k])->palnum; ti++) {
+                        if (((PSTexGroup*) groups[k])->texTable[ti] != NULL) {
+                            ((PSTexGroup*) groups[k])->texTable[ti] += (u32) texBank;
                         }
                     }
                 } else {
-                    i = tg->num;
-                    for (; (u32) i < ((PSTexGroup*) group[0])->num * 2; i++) {
-                        PSTexGroup* tg2 = (PSTexGroup*) group[0];
-                        u8** entry = &tg2->texTable[i];
-                        if (*entry != NULL) {
-                            *entry += (u32) texBank;
+                    for (ti = tg->num; ti < ((PSTexGroup*) groups[k])->num * 2; ti++) {
+                        if (((PSTexGroup*) groups[k])->texTable[ti] != NULL) {
+                            ((PSTexGroup*) groups[k])->texTable[ti] += (u32) texBank;
                         }
                     }
                 }
             }
         }
+    }
 
-        if (formBank == NULL) {
-            return;
-        }
-        {
-            for (i = 1; i <= num_groups; i++) {
-                if (formBank[i] != 0) {
-                    int fi;
-                    formBank[i] += (int) formBank;
-                    fg = (PSFormGroup*) formBank[i];
-                    for (fi = 0; (u32) fi < fg->num; fi++) {
-                        if (fg->formTable[fi] != NULL) {
-                            fg->formTable[fi] += (u32) formBank;
-                        }
-                    }
+    if (formBank == NULL) {
+        return;
+    }
+    for (i = 1; i <= num_groups; i++) {
+        if (formBank[i] != 0) {
+            formBank[i] += (int) formBank;
+            fg = (PSFormGroup*) formBank[i];
+            for (fi = 0; fi < fg->num; fi++) {
+                if (fg->formTable[fi] != NULL) {
+                    fg->formTable[fi] += (u32) formBank;
                 }
             }
         }
@@ -405,19 +381,14 @@ void psInitParticle(int num)
     }
 }
 
+void psKillAllParticle(void);
+static inline void psClearPointJObj(void);
+
 void psRemoveParticle(void)
 {
     int i;
-    PSParticle* pp;
-    PSParticle* next;
 
-    for (i = 0; i < 16; i++) {
-        for (pp = _psListGetFirst(i); pp != NULL; pp = next) {
-            next = pp->next;
-            psKillParticle(pp);
-        }
-    }
-
+    psKillAllParticle();
     psKillAllGenerator();
     _psListClear();
 
@@ -430,12 +401,7 @@ void psRemoveParticle(void)
         ptclref[i] = NULL;
     }
 
-    for (i = 0; i < 8; i++) {
-        if (psPointJObj[i] != NULL) {
-            HSD_JObjUnref(psPointJObj[i]);
-            psPointJObj[i] = NULL;
-        }
-    }
+    psClearPointJObj();
 }
 
 PSParticle* psGenerateParticle0(PSParticle** head, s32 linkNo, s32 bank, void* unused6, s32 unused7,
@@ -568,13 +534,24 @@ PSParticle* psGenerateParticle(s32 linkNo, s32 bank, s32 a, u32 kind, u16 texGro
 void psKillAllParticle(void)
 {
     PSParticle* pp;
-    PSParticle* next;
     int i;
 
     for (i = 0; i < 16; i++) {
-        for (pp = _psListGetFirst(i); pp != NULL; pp = next) {
-            next = pp->next;
-            psKillParticle(pp);
+        pp = _psListGetFirst(i);
+        while (pp != NULL) {
+            pp = psKillParticle(pp);
+        }
+    }
+}
+
+static inline void psClearPointJObj(void)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        if (psPointJObj[i] != NULL) {
+            HSD_JObjUnref(psPointJObj[i]);
+            psPointJObj[i] = NULL;
         }
     }
 }

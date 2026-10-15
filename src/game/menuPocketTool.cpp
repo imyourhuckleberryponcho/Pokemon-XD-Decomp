@@ -291,6 +291,10 @@ void GSprimDraw2DTexQuad4V(f32*, f32*, u8, GSgfxColAu8);
 double cos(double);
 double fmod(double, double);
 double sin(double);
+
+/* MSL-style float math wrappers: callers expand them inline (frsp into a temporary). */
+static inline float msl_sinf(float x) { return (float) sin(x); }
+static inline float msl_cosf(float x) { return (float) cos(x); }
 }
 
 
@@ -403,7 +407,7 @@ void CMenuPokemonCursor::draw()
             p.x += 8;
             p.y -= 8;
             if (mode == 1) {
-                f32 sn = (f32)sin(3.1415927f * t);
+                f32 sn = msl_sinf(3.1415927f * t);
                 int d1 = (int)(-8.0f * t);
                 int d2 = (int)(20.0f * sn);
                 PocketVec<short> v1 = p;
@@ -1264,11 +1268,11 @@ void menuPtSpriteDrawAndRollScale(u16 id, u32 color, f32 ox, f32 oy, f32 angle, 
     for (int i = 0; i < 4; i++) {
         f32 px = p[0];
         f32 py = p[1];
-        f32 c = (f32)cos(ang);
-        f32 s = (f32)sin(ang);
+        f32 c = msl_cosf(ang);
+        f32 s = msl_sinf(ang);
         p[0] = py * s + px * c;
-        f32 s2 = (f32)sin(ang);
-        p[1] = py * (f32)cos(ang) - px * s2;
+        f32 s2 = msl_sinf(ang);
+        p[1] = py * msl_cosf(ang) - px * s2;
         p += 2;
     }
     for (int i = 0; i < 4; i++) {

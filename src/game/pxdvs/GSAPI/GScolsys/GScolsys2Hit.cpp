@@ -1,6 +1,4 @@
-// STATUS: 2/5 exact (GScolsys2HitCollision, GScolsys2HitNpcCollision); default flags, LAYOUT/CONST OK.
-// checkHitMdl 98.5% (pass 2/3 loop var regs), checkHitFixedMdl 96.7% (float prelude/int regs),
-// checkHitCollision 93.9% (param/local register priority: target keeps iter/hitCount/i above alt/hitOut).
+// STATUS: 4/5 exact (checkHitCollision 98.4%: tmpPtr/head register order); default flags, LAYOUT/CONST/CALLS/DATA OK.
 #include <dolphin/types.h>
 
 struct GSvec {
@@ -79,32 +77,34 @@ static inline bool chkFace(GSvec* verts, GSvec* normal, GSvec* pos, f32 radiusSq
     if (PSVECSquareDistance(&cp, pos) >= radiusSq) {
         return false;
     }
-    if (!GScolsy2UtilChkInTri(&cp, verts, normal)) {
+    if (GScolsy2UtilChkInTri(&cp, verts, normal) == 0) {
         return false;
     }
     *hit = cp;
     return true;
 }
 
-static inline bool chkEdges(CCD_TRI* tri, GSvec* verts, GSvec* normal, GSvec* pos, f32 radiusSq, GSvec* hit) {
-    u16 mask[3] = {1, 2, 4};
-    u16 flags;
-    s32 j;
+static inline bool chkEdges(GSvec* verts, GSvec* normal, GSvec* pos, f32 radiusSq, GSvec* hit, u16 flags) {
+    u16 masks[3] = {1, 2, 4};
     GSvec cp;
+    s32 i;
+    s32 next;
+    f32 t;
 
-    flags = tri->flags;
     if (GScolsy2UtilGetSidePlanePoint(normal, verts, pos) < 0.0f) {
         return false;
     }
-    for (j = 0; j < 3; j++) {
-        if (flags & mask[j]) {
-            s32 next = j + 1;
-            f32 d;
+    for (i = 0; i < 3; i++) {
+        if (flags & masks[i]) {
+            next = i + 1;
             if (next >= 3) {
                 next = 0;
             }
-            d = GScolsys2UtilGetCpLinePoint(&cp, &verts[j], &verts[next], pos);
-            if (!(d < 0.0f) && !(d > 1.0f) && PSVECSquareDistance(&cp, pos) < radiusSq) {
+            t = GScolsys2UtilGetCpLinePoint(&cp, &verts[i], &verts[next], pos);
+            if (t < 0.0f || t > 1.0f) {
+                continue;
+            }
+            if (PSVECSquareDistance(&cp, pos) < radiusSq) {
                 *hit = cp;
                 return true;
             }
@@ -113,70 +113,90 @@ static inline bool chkEdges(CCD_TRI* tri, GSvec* verts, GSvec* normal, GSvec* po
     return false;
 }
 
-static inline bool chkVerts(CCD_TRI* tri, GSvec* verts, GSvec* normal, GSvec* pos, f32 radiusSq, GSvec* hit) {
-    u16 mask[3] = {1, 2, 4};
-    u16 flags;
-    s32 j;
+static inline bool chkVerts(GSvec* verts, GSvec* normal, GSvec* pos, f32 radiusSq, GSvec* hit, u16 flags) {
+    u16 masks[3] = {1, 2, 4};
+    s32 i;
+    s32 prev;
 
-    flags = tri->flags;
     if (GScolsy2UtilGetSidePlanePoint(normal, verts, pos) < 0.0f) {
         return false;
     }
-    for (j = 0; j < 3; j++) {
-        s32 other = j + 2;
-        if (other >= 3) {
-            other -= 3;
+    for (i = 0; i < 3; i++) {
+        prev = i + 2;
+        if (prev >= 3) {
+            prev -= 3;
         }
-        if ((flags & mask[j]) && (flags & mask[other]) && PSVECSquareDistance(&verts[j], pos) < radiusSq) {
-            *hit = verts[j];
-            return true;
+        if ((flags & masks[i]) && (flags & masks[prev])) {
+            if (PSVECSquareDistance(&verts[i], pos) < radiusSq) {
+                *hit = verts[i];
+                return true;
+            }
         }
     }
     return false;
 }
 
+/* Placeholder for a function the linker stripped from the original object: its float literals
+ * (0.0f, 1.0f) sit in .sdata2 ahead of the 0.0001f used by the hit tests below. */
+static f32 unusedClampT(f32 t) {
+    if (t < 0.0f) {
+        return 0.0f;
+    }
+    if (t > 1.0f) {
+        return 1.0f;
+    }
+    return t;
+}
+
 static bool checkHitFixedMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSvec* hitOut) {
-    f32 minX, minZ, maxX, maxZ;
-    s32 x0, z0, x1, z1;
-    s32 gx, gz;
-    u32 t;
-    bool found;
     GSvec hit;
-    GSvec cp;
-    f32 radiusSq;
     CCD_GRID_CELL* cell;
     u32* index;
     CCD_TRI* tri;
+    f32 radiusSq;
+    GSvec min;
+    GSvec max;
+    s32 x0;
+    s32 z0;
+    s32 x1;
+    s32 z1;
+    u32 k;
+    s32 x;
+    s32 z;
+    bool found;
 
-    minX = pos->x - radius;
-    minZ = pos->z - radius;
-    maxX = pos->x + radius;
-    maxZ = pos->z + radius;
-    x0 = (minX - head->minX) / head->cellWidth;
+    min.x = pos->x - radius;
+    min.z = pos->z - radius;
+    max.x = pos->x + radius;
+    max.z = pos->z + radius;
+    x0 = (min.x - head->minX) / head->cellWidth;
     if (x0 < 0) {
         x0 = 0;
     }
-    z0 = (minZ - head->minZ) / head->cellDepth;
+    z0 = (min.z - head->minZ) / head->cellDepth;
     if (z0 < 0) {
         z0 = 0;
     }
-    x1 = (maxX - head->minX) / head->cellWidth;
+    x1 = (max.x - head->minX) / head->cellWidth;
     if (x1 > head->cellsX - 1) {
         x1 = head->cellsX - 1;
     }
-    z1 = (maxZ - head->minZ) / head->cellDepth;
+    z1 = (max.z - head->minZ) / head->cellDepth;
     if (z1 > head->cellsZ - 1) {
         z1 = head->cellsZ - 1;
     }
     radiusSq = radius * radius;
 
     found = false;
-    for (gz = z0; gz <= z1 && !found; gz++) {
-        cell = &head->cells[x0 + gz * head->cellsX];
-        for (gx = x0; gx <= x1 && !found; gx++, cell++) {
-            index = &head->indices[cell->first];
-            for (t = 0; t < cell->count && !found; t++, index++) {
-                tri = &head->tris[*index];
+    for (z = z0; z <= z1 && !found; z++) {
+        cell = head->cells;
+        cell += z * head->cellsX + x0;
+        for (x = x0; x <= x1 && !found; x++, cell++) {
+            index = head->indices;
+            index += cell->first;
+            for (k = 0; k < cell->count && !found; k++, index++) {
+                tri = head->tris;
+                tri += *index;
                 found = chkFace(tri->verts, &tri->normal, pos, radiusSq, &hit);
             }
         }
@@ -190,15 +210,19 @@ static bool checkHitFixedMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSve
     }
 
     found = false;
-    for (gz = z0; gz <= z1 && !found; gz++) {
-        cell = &head->cells[x0 + gz * head->cellsX];
-        for (gx = x0; gx <= x1 && !found; gx++, cell++) {
-            index = &head->indices[cell->first];
-            for (t = 0; t < cell->count && !found; t++, index++) {
-                tri = &head->tris[*index];
-                if (tri->flags & 7) {
-                    found = chkEdges(tri, tri->verts, &tri->normal, pos, radiusSq, &hit);
+    for (z = z0; z <= z1 && !found; z++) {
+        cell = head->cells;
+        cell += z * head->cellsX + x0;
+        for (x = x0; x <= x1 && !found; x++, cell++) {
+            index = head->indices;
+            index += cell->first;
+            for (k = 0; k < cell->count && !found; k++, index++) {
+                tri = head->tris;
+                tri += *index;
+                if (!(tri->flags & 7)) {
+                    continue;
                 }
+                found = chkEdges(tri->verts, &tri->normal, pos, radiusSq, &hit, tri->flags);
             }
         }
     }
@@ -211,15 +235,19 @@ static bool checkHitFixedMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSve
     }
 
     found = false;
-    for (gz = z0; gz <= z1 && !found; gz++) {
-        cell = &head->cells[x0 + gz * head->cellsX];
-        for (gx = x0; gx <= x1 && !found; gx++, cell++) {
-            index = &head->indices[cell->first];
-            for (t = 0; t < cell->count && !found; t++, index++) {
-                tri = &head->tris[*index];
-                if (tri->flags & 7) {
-                    found = chkVerts(tri, tri->verts, &tri->normal, pos, radiusSq, &hit);
+    for (z = z0; z <= z1 && !found; z++) {
+        cell = head->cells;
+        cell += z * head->cellsX + x0;
+        for (x = x0; x <= x1 && !found; x++, cell++) {
+            index = head->indices;
+            index += cell->first;
+            for (k = 0; k < cell->count && !found; k++, index++) {
+                tri = head->tris;
+                tri += *index;
+                if (!(tri->flags & 7)) {
+                    continue;
                 }
+                found = chkVerts(tri->verts, &tri->normal, pos, radiusSq, &hit, tri->flags);
             }
         }
     }
@@ -237,17 +265,15 @@ static bool checkHitMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSmtx* mt
     GSvec verts[3];
     GSvec normal;
     GSvec hit;
-    GSvec cp;
-    f32 radiusSq = radius * radius;
     CCD_TRI* tri;
+    f32 radiusSq;
     u32 i;
     s32 j;
     bool found;
 
-    i = 0;
+    radiusSq = radius * radius;
     tri = head->tris;
-    found = false;
-    for (; i < head->numTris && !found; i++, tri++) {
+    for (i = 0, found = false; i < head->numTris && !found; i++, tri++) {
         for (j = 0; j < 3; j++) {
             PSMTXMultVec(mtx, &tri->verts[j], &verts[j]);
         }
@@ -262,17 +288,16 @@ static bool checkHitMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSmtx* mt
         return true;
     }
 
-    i = 0;
     tri = head->tris;
-    found = false;
-    for (; i < head->numTris && !found; i++, tri++) {
-        if (tri->flags & 7) {
-            for (j = 0; j < 3; j++) {
-                PSMTXMultVec(mtx, &tri->verts[j], &verts[j]);
-            }
-            PSMTXMultVec(rot, &tri->normal, &normal);
-            found = chkEdges(tri, verts, &normal, pos, radiusSq, &hit);
+    for (i = 0, found = false; i < head->numTris && !found; i++, tri++) {
+        if (!(tri->flags & 7)) {
+            continue;
         }
+        for (j = 0; j < 3; j++) {
+            PSMTXMultVec(mtx, &tri->verts[j], &verts[j]);
+        }
+        PSMTXMultVec(rot, &tri->normal, &normal);
+        found = chkEdges(verts, &normal, pos, radiusSq, &hit, tri->flags);
     }
     if (found) {
         if (hitOut == 0) {
@@ -282,17 +307,16 @@ static bool checkHitMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSmtx* mt
         return true;
     }
 
-    i = 0;
     tri = head->tris;
-    found = false;
-    for (; i < head->numTris && !found; i++, tri++) {
-        if (tri->flags & 7) {
-            for (j = 0; j < 3; j++) {
-                PSMTXMultVec(mtx, &tri->verts[j], &verts[j]);
-            }
-            PSMTXMultVec(rot, &tri->normal, &normal);
-            found = chkVerts(tri, verts, &normal, pos, radiusSq, &hit);
+    for (i = 0, found = false; i < head->numTris && !found; i++, tri++) {
+        if (!(tri->flags & 7)) {
+            continue;
         }
+        for (j = 0; j < 3; j++) {
+            PSMTXMultVec(mtx, &tri->verts[j], &verts[j]);
+        }
+        PSMTXMultVec(rot, &tri->normal, &normal);
+        found = chkVerts(verts, &normal, pos, radiusSq, &hit, tri->flags);
     }
     if (found) {
         if (hitOut == 0) {
@@ -305,26 +329,25 @@ static bool checkHitMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSmtx* mt
 }
 
 static bool checkHitCollision(GSvec* start, GSvec* end, f32 radius, GSvec* hitOut, bool alt) {
-    GSvec cur;
-    GSvec tmp;
     GSvec* tmpPtr;
+    CCD_FILEHEAD* head;
+    CCD_HITMDL_HEAD* group;
     s32 iter;
     s32 hitCount;
     u32 i;
-    CCD_FILEHEAD* head;
     CCD_OBJ* obj;
-    CCD_HITMDL_HEAD* hit;
+    GSvec cur;
+    GSvec tmp;
+    GSmtx mtx;
+    GSmtx rotMtx;
     bool enable;
     bool result;
 
     cur = *end;
     head = GScolsys2GetCCDFileHead();
-    tmpPtr = &tmp;
-    if (hitOut == 0) {
-        tmpPtr = 0;
-    }
-    iter = 0;
-    do {
+    tmpPtr = hitOut == 0 ? 0 : &tmp;
+
+    for (iter = 0; iter < 10; iter++) {
         obj = head->objs;
         hitCount = 0;
         for (i = 0; i < head->numObjs; i++, obj++) {
@@ -333,42 +356,37 @@ static bool checkHitCollision(GSvec* start, GSvec* end, f32 radius, GSvec* hitOu
                 continue;
             }
             if (alt) {
-                hit = obj->hitAlt;
-                if (hit == 0) {
+                group = obj->hitAlt;
+                if (group == 0) {
                     continue;
                 }
             } else {
-                hit = obj->hit;
-                if (hit == 0) {
+                group = obj->hit;
+                if (group == 0) {
                     continue;
                 }
             }
             if (obj->flags & 1) {
-                GSmtx mtx;
-                GSmtx rotMtx;
                 GScolsys2GetObjMatrix(&mtx, i);
                 GScolsys2GetObjRotMatrix(&rotMtx, i);
-                result = checkHitMdl(&cur, radius, hit, &mtx, &rotMtx, tmpPtr);
+                result = checkHitMdl(&cur, radius, group, &mtx, &rotMtx, tmpPtr);
             } else {
-                result = checkHitFixedMdl(&cur, radius, hit, tmpPtr);
+                result = checkHitFixedMdl(&cur, radius, group, tmpPtr);
             }
             if (result) {
                 if (hitOut == 0) {
                     return true;
                 }
                 hitCount++;
-                if (tmpPtr) {
-                    cur.x = tmpPtr->x;
-                    cur.y = tmpPtr->y;
-                    cur.z = tmpPtr->z;
+                if (tmpPtr != 0) {
+                    cur = *tmpPtr;
                 }
             }
         }
         if (hitCount <= 0) {
             break;
         }
-        iter++;
-    } while (iter < 10);
+    }
 
     if (iter <= 0) {
         return false;

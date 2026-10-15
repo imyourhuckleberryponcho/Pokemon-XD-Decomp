@@ -1694,7 +1694,7 @@ game/pxdvs/app/kaisuu/kaisuuBios.cpp:
 game/pxdvs/app/menu/winSprite.cpp:
 	.text       start:0x8010C3E4 end:0x8010E8C0
 	.rodata     start:0x802F2E78 end:0x802F2EA8
-	.data       start:0x803D5210 end:0x803D5280
+	.data       start:0x803D5210 end:0x803D5264
 	.bss        start:0x80445450 end:0x804454D8
 	.sbss       start:0x804EB050 end:0x804EB060
 	.sdata2     start:0x804ED648 end:0x804ED670
@@ -2397,7 +2397,7 @@ game/maximum/GSAPI/particle/pslist.cpp:
 game/maximum/GSAPI/particle/particle.cpp:
 	.text       start:0x80189250 end:0x8018A868
 	.rodata     start:0x802F3F10 end:0x802F3FA8
-	.data       start:0x8040AFE0 end:0x8040B020
+	.data       start:0x8040AFE0 end:0x8040B004
 	.bss        start:0x80474E80 end:0x804754A0
 	.sbss       start:0x804EB550 end:0x804EB560
 	.sdata2     start:0x804EDFC8 end:0x804EDFD8
