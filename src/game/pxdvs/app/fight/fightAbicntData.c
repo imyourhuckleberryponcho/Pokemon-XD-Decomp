@@ -1,2 +1,24 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
+
+typedef struct FightAbicntData {
+    u8 kake;
+    u8 waru;
+} FightAbicntData;
+
+FightAbicntData fight_abicnt_data[] = {
+    {0x0A, 0x28},
+    {0x0A, 0x23},
+    {0x0A, 0x1E},
+    {0x0A, 0x19},
+    {0x0A, 0x14},
+    {0x0A, 0x0F},
+    {0x0A, 0x0A},
+    {0x0F, 0x0A},
+    {0x14, 0x0A},
+    {0x19, 0x0A},
+    {0x1E, 0x0A},
+    {0x23, 0x0A},
+    {0x28, 0x0A},
+};
+
+u32 fight_abicnt_data_number = sizeof(fight_abicnt_data) / sizeof(fight_abicnt_data[0]);

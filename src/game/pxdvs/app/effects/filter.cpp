@@ -103,17 +103,24 @@ void filterEffect::_stop() {
                 GSmodelResetPEdescr((GSmodel*)m_target);
             }
         } else {
-            u32 group = floorGetCurrentGroupID();
-            u32 mapRes = floorDataBiosGetMapResID(floorDataBiosGetCurrentPtr());
-            u32 i = 0;
-            void* res = GSresGetResource(group, mapRes);
+            u32 base;
+            SceneData* scene;
+            u32 mapRes;
+            u32 i;
+            u32 group;
+            void* res;
+            GSmodel* model;
+            group = floorGetCurrentGroupID();
+            mapRes = floorDataBiosGetMapResID(floorDataBiosGetCurrentPtr());
+            i = 0;
+            res = GSresGetResource(group, mapRes);
             if (res != 0) {
-                SceneData* scene = (SceneData*)HSD_ArchiveGetPublicAddress(res, "scene_data");
+                scene = (SceneData*)HSD_ArchiveGetPublicAddress(res, "scene_data");
                 if (scene != 0) {
                     if (scene->models != 0) {
-                        u32 base = floorReadMakeModelResID(mapRes);
+                        base = floorReadMakeModelResID(mapRes);
                         while (scene->models[i] != 0) {
-                            GSmodel* model = (GSmodel*)GSresGetResource(group, base | i);
+                            model = (GSmodel*)GSresGetResource(group, base | i);
                             if (model != 0) {
                                 GSmodelDisableModulation(model);
                                 if (m_resetPE != 0) {

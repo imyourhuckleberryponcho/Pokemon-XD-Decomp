@@ -1,7 +1,6 @@
-// STATUS (rough draft, rd_fs): 15/15 functions, 0 exact, byte-weighted ~74%, default flags, LAYOUT/CONST/CALLS/DATA OK.
-// All functions share the inlined flashFind(id) slot search (target: loop index doubles as the result, `if (hit) {} else i++`
-// shape with an early-out branch; ours keeps an extra register copy). Fix that one idiom and all 15 should jump.
+// Flash menu system wrapper (slot table of FlashMenu instances). Built with #pragma peephole off.
 #include <dolphin/types.h>
+#pragma peephole off
 
 extern "C" void GSthreadSwitch();
 struct tagWINDOW_WORK;
@@ -35,26 +34,27 @@ struct FlashEntry {
 static FlashEntry _flashmenu[10];
 
 // find the slot of an active flash menu by its id
+static inline int flashIndex(u32 id) {
+    for (int i = 0; i < 10; i++) {
+        if (_flashmenu[i].menu != 0 && id == _flashmenu[i].id) return i;
+    }
+    return -1;
+}
+
+static inline FlashEntry* flashFree() {
+    for (int i = 0; i < 10; i++) {
+        if (_flashmenu[i].menu == 0) return &_flashmenu[i];
+    }
+    return 0;
+}
+
 static inline FlashEntry* flashFind(u32 id) {
-    int i = 0;
-    FlashEntry* e = _flashmenu;
-    int c = 0;
-    for (; c < 10; c++, e++) {
-        if (e->menu != 0 && id == e->id) break;
-        i++;
-    }
-    if (c == 10) i = -1;
-    FlashEntry* r;
+    int i = flashIndex(id);
     if (i >= 0) {
-        r = &_flashmenu[i];
-        if (r->menu != 0) {
-        } else {
-            r = 0;
-        }
-    } else {
-        r = 0;
+        if (_flashmenu[i].menu != 0) return &_flashmenu[i];
+        return 0;
     }
-    return r;
+    return 0;
 }
 
 extern "C" {
@@ -74,7 +74,7 @@ void FlashSystemPlayAndWait(u32 id, char* from, char* to) {
         e->menu->SetPlayFrame(e->menu->GetFrameFromLabel(from));
     }
     e = flashFind(id);
-    u16 target;
+    int target;
     if (e != 0) {
         target = e->menu->GetFrameFromLabel(to);
     } else {
@@ -121,7 +121,7 @@ s32 FlashSystemIsLastFrame(u32 id) {
     return r;
 }
 
-u16 FlashSystemGetFrameFromLabel(u32 id, char* label) {
+s32 FlashSystemGetFrameFromLabel(u32 id, char* label) {
     FlashEntry* e = flashFind(id);
     if (e != 0) return e->menu->GetFrameFromLabel(label);
     return 0;
@@ -144,7 +144,7 @@ s32 FlashSystemSetPlayFrameLabel(u32 id, char* from, char* to) {
     return 1;
 }
 
-void FlashSystemSetLoopFlag(u32 id, s32 loop) {
+void FlashSystemSetLoopFlag(u32 id, u8 loop) {
     FlashEntry* e = flashFind(id);
     if (e != 0) {
         e->menu->loopFlag = loop;
@@ -202,15 +202,7 @@ void FlashSystemPlay(u32 id) {
 }
 
 s32 FlashSystemInit(u32 id, void* data) {
-    int i = 0;
-    FlashEntry* e = _flashmenu;
-    FlashEntry* slot = 0;
-    for (int c = 0; c < 10; c++, e++, i++) {
-        if (e->menu == 0) {
-            slot = &_flashmenu[i];
-            break;
-        }
-    }
+    FlashEntry* slot = flashFree();
     if (slot != 0) {
         slot->menu = new FlashMenu();
         s32 r = slot->menu->Init(data, id);
@@ -221,7 +213,8 @@ s32 FlashSystemInit(u32 id, void* data) {
 }
 
 s32 FlashSystemInitAll(void) {
-    for (int i = 0; i < 10; i++) {
+    s32 i;
+    for (i = 0; i < 10; i++) {
         _flashmenu[i].menu = 0;
         _flashmenu[i].id = 0;
     }

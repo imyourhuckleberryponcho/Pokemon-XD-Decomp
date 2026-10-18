@@ -1,3 +1,5 @@
+// QuatSlerp: permuter hint (score 0) keeps theta/sinom as a two-element f32 array (sinom first); a natural form is
+// still needed. .sdata2 constant order also differs (see fcheck DATA).
 // Compiled as C with deferred inlining (see configure.py), which emits functions and data in
 // reverse source order.
 #include <dolphin/mtx.h>

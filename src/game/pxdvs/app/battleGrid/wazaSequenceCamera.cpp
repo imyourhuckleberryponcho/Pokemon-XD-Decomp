@@ -213,11 +213,211 @@ void _wazaSequenceCameraDoDollyPosition(TemplateExpFileHeader* header, wazaSeque
                                         f32 scale, bool reverse);
 f32 _wazaSequenceCameraSelectDuration(u8 mode, f32* thresholds, f32 duration);
 
+inline f32 _wazaSequenceCameraGetDistance(wazaSequenceCameraParams* params) {
+    return Lerp(params->distanceMin, params->distanceMax, HSD_Randf());
+}
+
+inline f32 _wazaSequenceCameraGetHeight(wazaSequenceCameraParams* params, f32) {
+    return Lerp(params->heightMin, params->heightMax, HSD_Randf());
+}
+
+inline void _wazaSequenceCameraDoWhalohPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
+                                                bool reverse) {
+    Vec direction;
+    f32 rotation;
+    f32 length;
+    f32 duration = header->times[header->count];
+
+    if (reverse) {
+        rotation = params->rotationBase - 0.47123894f;
+    } else {
+        rotation = 0.47123894f + params->rotationBase;
+    }
+
+    cameraSetDistance(110.0f);
+    cameraSetHeight(25.0f);
+    cameraSetRotY(rotation);
+    cameraUpdate();
+    cameraGetPosition(&direction);
+    cameraMovePosition(7, &direction, duration);
+
+    length = WazaSqrtf(110.0f * 110.0f + 25.0f * 25.0f);
+    params->farLength = length;
+    params->middleLength = length;
+    params->nearLength = length;
+}
+
+inline void _wazaSequenceCameraDoFixedPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
+                                               f32 scale, bool reverse, s8 size) {
+    Vec direction;
+    f32 sizeScale;
+    f32 distance;
+    f32 height;
+    f32 rotation;
+    f32 length;
+    f32 duration = header->times[header->count];
+
+    duration *= scale;
+
+    switch (size) {
+    case -2:
+    case -1:
+        sizeScale = 0.875f;
+        break;
+    case 1:
+        sizeScale = 1.4f;
+        break;
+    case 2:
+        sizeScale = 1.8f;
+        break;
+    case 3:
+        sizeScale = 3.0f;
+        break;
+    default:
+        sizeScale = 1.0f;
+        break;
+    }
+
+    distance = 50.0f * sizeScale;
+    height = _wazaSequenceCameraGetHeight(params, distance);
+    if (reverse) {
+        rotation = params->rotationBase - 0.7853982f;
+    } else {
+        rotation = 0.7853982f + params->rotationBase;
+    }
+
+    cameraSetDistance(1.25f * distance);
+    cameraSetHeight(height);
+    cameraSetRotY(rotation);
+    cameraUpdate();
+    cameraGetPosition(&direction);
+    cameraMovePosition(7, &direction, duration);
+
+    length = WazaSqrtf(distance * distance + height * height);
+    params->farLength = length;
+    params->middleLength = length;
+    params->nearLength = length;
+}
+
+inline void _wazaSequenceCameraDoStillPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
+                                               f32 scale, bool reverse) {
+    Vec direction;
+    f32 distance;
+    f32 height;
+    f32 rotation;
+    f32 length;
+    f32 duration = header->times[header->count];
+
+    duration *= scale;
+
+    distance = _wazaSequenceCameraGetDistance(params);
+    height = _wazaSequenceCameraGetHeight(params, distance);
+    if (reverse) {
+        rotation = (params->rotationBase - params->rotationMin) -
+                   (params->rotationMax - params->rotationMin) * HSD_Randf();
+    } else {
+        rotation = (params->rotationMax - params->rotationMin) * HSD_Randf() +
+                   (params->rotationBase + params->rotationMin);
+    }
+
+    cameraSetDistance(1.25f * distance);
+    cameraSetHeight(height);
+    cameraSetRotY(rotation);
+    cameraUpdate();
+    cameraGetPosition(&direction);
+    cameraMovePosition(7, &direction, duration);
+
+    length = WazaSqrtf(distance * distance + height * height);
+    params->farLength = length;
+    params->middleLength = length;
+    params->nearLength = length;
+}
+
+inline void _wazaSequenceCameraDoAroundPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
+                                                f32 scale, bool reverse) {
+    f32 distance;
+    f32 height;
+    f32 rotA;
+    f32 rotB;
+    f32 length;
+    f32 duration = header->times[header->count];
+
+    duration *= scale;
+
+    distance = _wazaSequenceCameraGetDistance(params);
+    height = _wazaSequenceCameraGetHeight(params, distance);
+    if (reverse) {
+        rotA = (params->rotationBase - params->rotationMin) -
+               (params->rotationMax - params->rotationMin) * HSD_Randf();
+        rotB = (params->rotationBase - params->rotationMin) -
+               (params->rotationMax - params->rotationMin) * HSD_Randf();
+    } else {
+        rotA = (params->rotationMax - params->rotationMin) * HSD_Randf() +
+               (params->rotationBase + params->rotationMin);
+        rotB = (params->rotationMax - params->rotationMin) * HSD_Randf() +
+               (params->rotationBase + params->rotationMin);
+    }
+    if (rotA > rotB) {
+        f32 swap = rotA;
+        rotA = rotB;
+        rotB = swap;
+    }
+
+    cameraSetDistance(1.25f * distance);
+    cameraSetHeight(height);
+    cameraSetRotY(rotA);
+    cameraUpdate();
+    cameraMoveRotationXYZ(7, 0.0f, rotB, 0.0f, duration);
+    cameraMoveRotationAcc(duration * (0.1f / (f32)GSgfxVideoGetVsyncRate()));
+
+    length = WazaSqrtf(distance * distance + height * height);
+    params->farLength = length;
+    params->middleLength = length;
+    params->nearLength = length;
+}
+
+inline void _wazaSequenceCameraDoAcrossPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
+                                                f32 scale, bool reverse) {
+    Vec direction;
+    f32 duration = header->times[header->count];
+    duration *= scale;
+    f32 offset = 10.0f * HSD_Randf() + 25.0f;
+    f32 height = 9.0f * HSD_Randf() + 1.0f;
+    f32 distance = 30.0f * HSD_Randf() + 20.0f;
+    f32 square;
+
+    cameraSetDistance(distance);
+    cameraSetHeight(height);
+    cameraSetRotY(0.0f);
+    cameraUpdate();
+    cameraGetPosition(&direction);
+    if (reverse) {
+        direction.x += 10.0f;
+    } else {
+        direction.x -= 10.0f;
+    }
+    cameraSetPosition(&direction);
+    if (reverse) {
+        direction.x += offset;
+    } else {
+        direction.x -= offset;
+    }
+    cameraMovePosition(7, &direction, duration);
+    cameraMovePositionAcc(duration * (0.1f / (f32)GSgfxVideoGetVsyncRate()));
+
+    square = offset * offset + height * height;
+    params->nearLength = WazaSqrtf(square);
+    params->farLength = WazaSqrtf(distance * distance + square);
+    params->middleLength = 0.5f * (params->nearLength + params->farLength);
+}
+
+// NXXJ01.map: the Whaloh/Fixed/Still/Around/Across/GetDistance/GetHeight helpers above were real
+// functions inlined here (UNUSED in the map). Remaining diff: saved-register order (target: timing r29,
+// params r30, reverse r31) and the Still case computing its lerps as (max - min) * rand + min.
 void _wazaSequenceCameraDoPosition(ModelSequence* modelSequence, wazaSequenceCameraParams* params,
                                    f32 scale, bool reverse) {
     TemplateExpFileHeader* timing =
         (TemplateExpFileHeader*)(modelSequence->timings + modelSequence->sequenceId * 0xD0);
-    f32 duration;
 
     cameraLockYTarget((*(u32*)((u8*)timing + 8) >> 4) & 1);
 
@@ -225,198 +425,21 @@ void _wazaSequenceCameraDoPosition(ModelSequence* modelSequence, wazaSequenceCam
     case 0:
         _wazaSequenceCameraDoDollyPosition(timing, params, scale, reverse);
         break;
-
-    case 1: {
-        Vec direction;
-            f32 duration = timing->times[timing->count];
-        duration *= scale;
-        f32 offset = 10.0f * HSD_Randf() + 25.0f;
-        f32 height = 9.0f * HSD_Randf() + 1.0f;
-        f32 distance = 30.0f * HSD_Randf() + 20.0f;
-        f32 square;
-
-        cameraSetDistance(distance);
-        cameraSetHeight(height);
-        cameraSetRotY(0.0f);
-        cameraUpdate();
-        cameraGetPosition(&direction);
-        if (reverse) {
-            direction.x += 10.0f;
-        } else {
-            direction.x -= 10.0f;
-        }
-        cameraSetPosition(&direction);
-        if (reverse) {
-            direction.x += offset;
-        } else {
-            direction.x -= offset;
-        }
-        cameraMovePosition(7, &direction, duration);
-        cameraMovePositionAcc(duration * (0.1f / (f32)GSgfxVideoGetVsyncRate()));
-
-        square = offset * offset + height * height;
-        params->nearLength = WazaSqrtf(square);
-        params->farLength = WazaSqrtf(distance * distance + square);
-        params->middleLength = 0.5f * (params->nearLength + params->farLength);
+    case 1:
+        _wazaSequenceCameraDoAcrossPosition(timing, params, scale, reverse);
         break;
-    }
-
-    case 2: {
-            f32 distance;
-        f32 height;
-        f32 rotA;
-        f32 rotB;
-        f32 length;
-
-        duration = timing->times[timing->count];
-        duration *= scale;
-
-        distance = Lerp(params->distanceMin, params->distanceMax, HSD_Randf());
-        height = Lerp(params->heightMin, params->heightMax, HSD_Randf());
-        if (reverse) {
-            rotA = (params->rotationBase - params->rotationMin) -
-                   (params->rotationMax - params->rotationMin) * HSD_Randf();
-            rotB = (params->rotationBase - params->rotationMin) -
-                   (params->rotationMax - params->rotationMin) * HSD_Randf();
-        } else {
-            rotA = (params->rotationMax - params->rotationMin) * HSD_Randf() +
-                   (params->rotationBase + params->rotationMin);
-            rotB = (params->rotationMax - params->rotationMin) * HSD_Randf() +
-                   (params->rotationBase + params->rotationMin);
-        }
-        if (rotA > rotB) {
-            f32 swap = rotA;
-            rotA = rotB;
-            rotB = swap;
-        }
-
-        cameraSetDistance(1.25f * distance);
-        cameraSetHeight(height);
-        cameraSetRotY(rotA);
-        cameraUpdate();
-        cameraMoveRotationXYZ(7, 0.0f, rotB, 0.0f, duration);
-        cameraMoveRotationAcc(duration * (0.1f / (f32)GSgfxVideoGetVsyncRate()));
-
-        length = WazaSqrtf(distance * distance + height * height);
-        params->farLength = length;
-        params->middleLength = length;
-        params->nearLength = length;
+    case 2:
+        _wazaSequenceCameraDoAroundPosition(timing, params, scale, reverse);
         break;
-    }
-
-    case 3: {
-        Vec direction;
-            f32 distance;
-        f32 height;
-        f32 rotation;
-        f32 length;
-
-        duration = timing->times[timing->count];
-        duration *= scale;
-
-        distance = Lerp(params->distanceMin, params->distanceMax, HSD_Randf());
-        height = Lerp(params->heightMin, params->heightMax, HSD_Randf());
-        if (reverse) {
-            rotation = (params->rotationBase - params->rotationMin) -
-                       (params->rotationMax - params->rotationMin) * HSD_Randf();
-        } else {
-            rotation = (params->rotationMax - params->rotationMin) * HSD_Randf() +
-                       (params->rotationBase + params->rotationMin);
-        }
-
-        cameraSetDistance(1.25f * distance);
-        cameraSetHeight(height);
-        cameraSetRotY(rotation);
-        cameraUpdate();
-        cameraGetPosition(&direction);
-        cameraMovePosition(7, &direction, duration);
-
-        length = WazaSqrtf(distance * distance + height * height);
-        params->farLength = length;
-        params->middleLength = length;
-        params->nearLength = length;
+    case 3:
+        _wazaSequenceCameraDoStillPosition(timing, params, scale, reverse);
         break;
-    }
-
-    case 4: {
-        Vec direction;
-            f32 rotation;
-        f32 length;
-
-        duration = timing->times[timing->count];
-
-        if (reverse) {
-            rotation = params->rotationBase - 0.47123894f;
-        } else {
-            rotation = 0.47123894f + params->rotationBase;
-        }
-
-        cameraSetDistance(110.0f);
-        cameraSetHeight(25.0f);
-        cameraSetRotY(rotation);
-        cameraUpdate();
-        cameraGetPosition(&direction);
-        cameraMovePosition(7, &direction, duration);
-
-        length = WazaSqrtf(110.0f * 110.0f + 25.0f * 25.0f);
-        params->farLength = length;
-        params->middleLength = length;
-        params->nearLength = length;
+    case 4:
+        _wazaSequenceCameraDoWhalohPosition(timing, params, reverse);
         break;
-    }
-
-    case 5: {
-        Vec direction;
-            f32 sizeScale;
-        f32 distance;
-        f32 height;
-        f32 rotation;
-        f32 length;
-        int mode = modelSequence->size;
-
-        duration = timing->times[timing->count];
-        duration *= scale;
-
-        switch (mode) {
-        case -2:
-        case -1:
-            sizeScale = 0.875f;
-            break;
-        case 1:
-            sizeScale = 1.4f;
-            break;
-        case 2:
-            sizeScale = 1.8f;
-            break;
-        case 3:
-            sizeScale = 3.0f;
-            break;
-        default:
-            sizeScale = 1.0f;
-            break;
-        }
-
-        distance = 50.0f * sizeScale;
-        height = Lerp(params->heightMin, params->heightMax, HSD_Randf());
-        if (reverse) {
-            rotation = params->rotationBase - 0.7853982f;
-        } else {
-            rotation = 0.7853982f + params->rotationBase;
-        }
-
-        cameraSetDistance(1.25f * distance);
-        cameraSetHeight(height);
-        cameraSetRotY(rotation);
-        cameraUpdate();
-        cameraGetPosition(&direction);
-        cameraMovePosition(7, &direction, duration);
-
-        length = WazaSqrtf(distance * distance + height * height);
-        params->farLength = length;
-        params->middleLength = length;
-        params->nearLength = length;
+    case 5:
+        _wazaSequenceCameraDoFixedPosition(timing, params, scale, reverse, modelSequence->size);
         break;
-    }
     }
 }
 

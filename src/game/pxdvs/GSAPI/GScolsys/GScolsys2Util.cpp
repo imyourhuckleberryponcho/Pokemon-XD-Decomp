@@ -136,7 +136,7 @@ BOOL GScolsy2UtilChkInTri(GSvec* point, GSvec* verts, GSvec* normal) {
         }
     }
 
-    if (minU > pu || minV > pv || maxU < pu || maxV < pv) {
+    if (minU > pointValues[u] || minV > pointValues[v] || maxU < pointValues[u] || maxV < pointValues[v]) {
         return FALSE;
     }
 

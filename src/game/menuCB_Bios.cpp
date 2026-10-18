@@ -1,6 +1,6 @@
-// STATUS (rough draft, rd_cb): 41/41 functions, 27 exact, byte-weighted ~92.7%, default flags + peephole off;
-// LAYOUT/CONST/CALLS/DATA all OK. Candidate for linking after: menuCBBios_InitContext 52% (loop/register shape),
-// menuCB_RULE_INIT 94%, InitContextAtFirst 93%, InitVersusTrainer 92% (switch tree), RuleConstRuleSet 98%.
+// STATUS (cleanup pass): 41/41 functions, 38 exact with extra_cflags -inline noauto (+ peephole off via pragma);
+// LAYOUT/CONST/CALLS/DATA all OK. Not exact: InitVersusTrainer 99.1% (callee arg clrlwi on the heroId passed as Hero*),
+// InitContextAtFirst 97.9% (li r3 scheduling after rule copies), menuCB_RULE_INIT 97.8% (ruleNameFill address folding).
 // CBRule is a pack(1) struct (misaligned s32 members): struct assignment gives the member-wise copies of the target.
 #include <dolphin/types.h>
 
@@ -21,9 +21,9 @@ struct CBRule {
     s16 a1A, a1C;
     s32 e[10];
     u16 a46;
-    s32 a48, a4C;
+    struct { s32 a, b; } a48;
     u16 a50;
-    s32 f[15];
+    u8 f[0x3C];
     u16 a8E;
 };
 #pragma pack(pop)
@@ -91,15 +91,15 @@ u8 stbCB_Lock;
 s32 toolbattle_mode_flag;
 
 void menuCBBios_UnlockContext(void);
-u8 menuCBBios_ContextIsLocked(_MENUCBWORK*);
+u8 menuCBBios_ContextIsLocked(void);
 void menuCBBios_ClearTrainer(CBTrainer* t);
 void menuCBBios_InitTrainer(CBTrainer* t, u16 id);
 s32 menuCBBios_FightTrainerDataIDToHomePlace(u16 id);
-s32 menuCBBios_PortIDtoControlerID(u16 port);
+s32 menuCBBios_PortIDtoControlerID(s32 port);
 s32 menuCBBios_ControlerIDtoPortID(s32 id);
 CBRule* menuCBBios_GetRule(s32 i);
-void menuCBBios_InitTrainerFromHero(CBTrainer* t, u16 id, u16 unused);
-void menuCBBios_InitTrainerFromDataID(CBTrainer* t, u16 id, s32 allowNoAi);
+void menuCBBios_InitTrainerFromHero(CBTrainer* t, Hero* src, u16 id);
+void menuCBBios_InitTrainerFromDataID(CBTrainer* t, u16 id, u16 encountId);
 void menuCBBios_CopyTrainer(CBTrainer* dst, CBTrainer* src);
 s32 menuCBBios_CurrentRuleType(void);
 void menuCBTrainerBios_SetControlerID(CBTrainer* t, s32 id);
@@ -107,7 +107,7 @@ void menuCBBios_RuleConstRuleSet(void);
 }
 
 static void _menuCBBios_RecoverAllPokemons(Hero* hero);
-void menuCBBios_InitContextAtFirst(_MENUCBWORK* cb, _TOOL_SAVEDATA* save);
+static void menuCBBios_InitContextAtFirst(_MENUCBWORK* cb, _TOOL_SAVEDATA* save);
 
 extern "C" {
 
@@ -166,6 +166,8 @@ void menuCBBios_InitVersusTrainer(CBTrainer* t, u16 id) {
         case 1:
             trainerId = 0x138A;
             break;
+        case 2:
+            break;
         }
         break;
     case 2:
@@ -175,6 +177,8 @@ void menuCBBios_InitVersusTrainer(CBTrainer* t, u16 id) {
             break;
         case 1:
             trainerId = 0x138C;
+            break;
+        case 2:
             break;
         }
         break;
@@ -186,15 +190,17 @@ void menuCBBios_InitVersusTrainer(CBTrainer* t, u16 id) {
         case 1:
             trainerId = 0x138E;
             break;
+        case 2:
+            break;
         }
         break;
     }
-    menuCBBios_InitTrainerFromHero(t, id, trainerId);
+    menuCBBios_InitTrainerFromHero(t, (Hero*)id, trainerId);
 }
 
-void menuCBBios_InitTrainerFromHero(CBTrainer* t, u16 id, u16 unused) {
+void menuCBBios_InitTrainerFromHero(CBTrainer* t, Hero* src, u16 id) {
     u8 hero[0x978];
-    heroBiosCopy(hero, 0);
+    heroBiosCopy(hero, src);
     heroBiosSetHizukiFlag(hero, 0);
     _menuCBBios_RecoverAllPokemons((Hero*)hero);
     menuCBBios_ClearTrainer(t);
@@ -204,10 +210,10 @@ void menuCBBios_InitTrainerFromHero(CBTrainer* t, u16 id, u16 unused) {
     t->homePlace = menuCBBios_FightTrainerDataIDToHomePlace(id);
 }
 
-void menuCBBios_InitTrainerFromDataID(CBTrainer* t, u16 id, s32 allowNoAi) {
+void menuCBBios_InitTrainerFromDataID(CBTrainer* t, u16 id, u16 encountId) {
     u8 hero[0x978];
     heroBiosCopy(hero, t->heroOrg);
-    fightTrainerCreateFightTrainerDataIdToHero(id, menuCBBios_PortIDtoControlerID(0), (Hero*)hero, allowNoAi);
+    fightTrainerCreateFightTrainerDataIdToHero(id, menuCBBios_PortIDtoControlerID(0), (Hero*)hero, encountId);
     heroBiosSetHizukiFlag(hero, 0);
     _menuCBBios_RecoverAllPokemons((Hero*)hero);
     menuCBBios_ClearTrainer(t);
@@ -218,7 +224,8 @@ void menuCBBios_InitTrainerFromDataID(CBTrainer* t, u16 id, s32 allowNoAi) {
 }
 
 void menuCBBios_ClearTrainer(CBTrainer* t) {
-    menuCBBios_InitTrainer(t, menuCBTrainerBios_GetPlayerID(t));
+    u16 id = menuCBTrainerBios_GetPlayerID(t);
+    menuCBBios_InitTrainer(t, id);
 }
 
 void menuCBBios_InitTrainer(CBTrainer* t, u16 id) {
@@ -227,33 +234,33 @@ void menuCBBios_InitTrainer(CBTrainer* t, u16 id) {
 }
 
 s32 menuCBBios_FightTrainerDataIDToHomePlace(u16 id) {
-    if (id != 0x1388) {
-        if (id < 0x1388) {
-            if (id < 6) {
-                if (id < 1) return 0;
-                return 1;
-            }
-            return 0;
-        }
-        if (id < 0x138D) {
-            if (id < 0x138B) return 1;
-            return 2;
-        }
-        if (id < 0x138F) return 3;
+    switch (id) {
+    case 1: case 2: case 3: case 4: case 5:
+    case 0x1389: case 0x138A:
+        return 1;
+    case 0x138B: case 0x138C:
+        return 2;
+    case 0x138D: case 0x138E:
+        return 3;
+    case 0x1388:
+        return 0;
+    default:
         return 0;
     }
-    return 0;
 }
 
 CBTrainer* menuCBBios_GetTrainerFromVersusBattleID(s32 id) {
-    if (_CB.state != 2 && _CB.state < 2) {
-        if (_CB.state >= 0) {
-            if (id >= 0 && id <= 1) return &_CB.trainer[id];
-            return 0;
+    switch (_CB.state) {
+    case 0:
+    case 1:
+        if (id >= 0 && id <= 1) return &_CB.trainer[id];
+        break;
+    case 2:
+    default:
+        for (s32 i = 0; i < 4; i++) {
+            if (id == _CB.trainer[i].versusId) return &_CB.trainer[i];
         }
-    }
-    for (s32 i = 0; i < 4; i++) {
-        if (id == _CB.trainer[i].versusId) return &_CB.trainer[i];
+        break;
     }
     return 0;
 }
@@ -266,8 +273,8 @@ s32 menuCBBios_GetRegisteredHero(void) {
     return 0;
 }
 
-CBTrainer* menuCBBios_GetTrainer(void) {
-    s32 port = menuCBBios_ControlerIDtoPortID(0);
+CBTrainer* menuCBBios_GetTrainer(s32 controllerId) {
+    s32 port = menuCBBios_ControlerIDtoPortID(controllerId);
     if (port < 0) return 0;
     return &_CB.trainer[port];
 }
@@ -299,14 +306,15 @@ static void _menuCBBios_RecoverAllPokemons(Hero* hero) {
 extern "C" {
 
 s32 menuCBBios_ControlerIDtoPortID(s32 id) {
-    if (id == staControlerMap[0]) return 0;
-    if (id == staControlerMap[1]) return 1;
-    if (id == staControlerMap[2]) return 2;
-    if (id == staControlerMap[3]) return 3;
+    const s32* cursor = staControlerMap;
+    s32 i;
+    for (i = 0; i < 4; i++, cursor++) {
+        if (id == *cursor) return i;
+    }
     return -1;
 }
 
-s32 menuCBBios_PortIDtoControlerID(u16 port) {
+s32 menuCBBios_PortIDtoControlerID(s32 port) {
     return staControlerMap[port];
 }
 
@@ -323,11 +331,16 @@ CBRule* menuCBBios_CurrentRule(void) {
     if (ore != 0) return ore;
     menuCBBios_CurrentRuleType();
     CBRule* constant = menuCBRule_ConstantRule2();
-    s32 type = menuCBBios_CurrentRuleType();
-    if (type < 3) {
-        if (type >= 0) {
-            if (constant != 0) return constant;
-        }
+    switch (menuCBBios_CurrentRuleType()) {
+    case 0:
+    case 1:
+    case 2:
+        if (constant != 0) return constant;
+        break;
+    case 3:
+    case 4:
+    case 5:
+        break;
     }
     return menuCBBios_GetRule(menuCBBios_CurrentRuleType());
 }
@@ -383,48 +396,40 @@ _MENUCBWORK* menuCBBios_WorkContext(void) {
 void menuCBBios_InitContext(_MENUCBWORK* cb) {
     static const u16 sta[4] = { 1, 2, 3, 4 };
     pGCB = &_CB;
-    if (menuCBBios_ContextIsLocked(&_CB) == 0) {
-        for (u16 i = 0; i < 4; i++) {
-            CBTrainer* t = &cb->trainer[i];
-            menuCBBios_InitTrainerFromDataID(t, sta[i], 0);
-            menuCBTrainerBios_SetControlerID(t, menuCBBios_PortIDtoControlerID(i));
-            t->playerId = i;
-            menuCBBios_CopyTrainer(&cb->trainerOrg[i], t);
+    if (menuCBBios_ContextIsLocked() == 0) {
+        u32 i;
+        for (i = 0; i < 4; i++) {
+            menuCBBios_InitTrainerFromDataID(&cb->trainer[i], sta[i], 0);
+            menuCBTrainerBios_SetControlerID(&cb->trainer[i], menuCBBios_PortIDtoControlerID(i));
+            cb->trainer[i].playerId = i;
+            menuCBBios_CopyTrainer(&cb->trainerOrg[i], &cb->trainer[i]);
         }
-        if (cb->mode != 1) {
-            menuCB_InitMenu(0xA9);
-            cb->f14 = 4;
-        } else {
+        switch (cb->mode) {
+        case 1:
             menuCB_InitMenu(0xA4);
             cb->f14 = 0;
+            break;
+        default:
+            menuCB_InitMenu(0xA9);
+            cb->f14 = 4;
+            break;
         }
     }
     menuCBBios_UnlockContext();
 }
 
-// fill one 3-rule name block (7 entries of 3 u16 each) from a message
-static inline void ruleNameFill(u16* src, u16* dst) {
-    for (int k = 0; k < 7; k++, dst += 3) {
-        if (src != 0) {
-            if (*src == 0xFFFF) src += 4;
-            dst[0] = *src;
-            if (*src != 0) src += 2;
-        } else {
-            dst[0] = 0;
-        }
-        if (src != 0) {
-            if (*src == 0xFFFF) src += 4;
-            dst[1] = *src;
-            if (*src != 0) src += 2;
-        } else {
-            dst[1] = 0;
-        }
-        if (src != 0) {
-            if (*src == 0xFFFF) src += 4;
-            dst[2] = *src;
-            if (*src != 0) src += 2;
-        } else {
-            dst[2] = 0;
+// fill one rule-name block (7 entries of 3 u16 each) from a message
+static inline void ruleNameFill(u16* src, void* base, int off) {
+    for (int k = 0; k < 7; k++) {
+        u16* dst = (u16*)((u8*)base + off + k * 6);
+        for (int j = 0; j < 3; j++) {
+            if (src != 0) {
+                if (*src == 0xFFFF) src += 2;
+                dst[j] = *src;
+                if (*src != 0) src += 1;
+            } else {
+                dst[j] = 0;
+            }
         }
     }
 }
@@ -450,23 +455,23 @@ void menuCB_RULE_INIT(_TOOL_SAVEDATA* save) {
     save->rule[5].a1A = 4;
     for (u32 i = 0; i < itemtoolbattle_number; i++) {
         if (menuCBRule_RegulationItemID(i) == 0xBF) {
-            ((u8*)save)[i + 0xE2] = 1;
-            ((u8*)save)[i + 0x172] = 1;
-            ((u8*)save)[i + 0x202] = 1;
-            ((u8*)save)[i + 0x292] = 1;
-            ((u8*)save)[i + 0x322] = 1;
+            save->rule[1].f[i] = 1;
+            save->rule[2].f[i] = 1;
+            save->rule[3].f[i] = 1;
+            save->rule[4].f[i] = 1;
+            save->rule[5].f[i] = 1;
         }
     }
-    ruleNameFill(GSmsgGetGSchar(0x438A), (u16*)((u8*)save + 0x1CE));
-    ruleNameFill(GSmsgGetGSchar(0x438B), (u16*)((u8*)save + 0x25E));
-    ruleNameFill(GSmsgGetGSchar(0x438C), (u16*)((u8*)save + 0x2EE));
+    ruleNameFill(GSmsgGetGSchar(0x438A), save, 0x1CE);
+    ruleNameFill(GSmsgGetGSchar(0x438B), save, 0x25E);
+    ruleNameFill(GSmsgGetGSchar(0x438C), save, 0x2EE);
     menuCBBios_InitContextAtFirst(&_CB, save);
     save->working = 0;
 }
 
 }
 
-void menuCBBios_InitContextAtFirst(_MENUCBWORK* cb, _TOOL_SAVEDATA* save) {
+static void menuCBBios_InitContextAtFirst(_MENUCBWORK* cb, _TOOL_SAVEDATA* save) {
     menuCBBios_UnlockContext();
     memset(cb, 0, 0xB5F4);
     cb->rule[0] = *menuCBRule_ConstantRule(0);
@@ -483,21 +488,21 @@ void menuCBBios_InitContextAtFirst(_MENUCBWORK* cb, _TOOL_SAVEDATA* save) {
     cb->rule[5].a1A = 4;
     for (u32 i = 0; i < itemtoolbattle_number; i++) {
         if (menuCBRule_RegulationItemID(i) == 0xBF) {
-            ((u8*)cb)[i + 0x99FA] = 1;
-            ((u8*)cb)[i + 0x9A8A] = 1;
-            ((u8*)cb)[i + 0x9B1A] = 1;
-            ((u8*)cb)[i + 0x9BAA] = 1;
-            ((u8*)cb)[i + 0x9C3A] = 1;
+            cb->rule[1].f[i] = 1;
+            cb->rule[2].f[i] = 1;
+            cb->rule[3].f[i] = 1;
+            cb->rule[4].f[i] = 1;
+            cb->rule[5].f[i] = 1;
         }
     }
-    memcpy((u8*)save + 0x1CE, (u8*)menuCB_RuleTitleNameGet(3), 0x2A);
-    memcpy((u8*)save + 0x25E, (u8*)menuCB_RuleTitleNameGet(4), 0x2A);
-    memcpy((u8*)save + 0x2EE, (u8*)menuCB_RuleTitleNameGet(5), 0x2A);
+    memcpy(menuCB_RuleTitleNameGet(3), (u8*)save + 0x1CE, 0x2A);
+    memcpy(menuCB_RuleTitleNameGet(4), (u8*)save + 0x25E, 0x2A);
+    memcpy(menuCB_RuleTitleNameGet(5), (u8*)save + 0x2EE, 0x2A);
 }
 
 extern "C" {
 
-u8 menuCBBios_ContextIsLocked(_MENUCBWORK*) {
+u8 menuCBBios_ContextIsLocked(void) {
     return stbCB_Lock;
 }
 

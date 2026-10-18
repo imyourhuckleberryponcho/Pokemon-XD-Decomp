@@ -278,6 +278,7 @@ s32 GScolsys2WalkGetHeight(GSvec* pos, GSwalkHit* outHits) {
     bool enable;
     s32 k;
     s32 count;
+    CCD_TRILIST* list;
 
     total = 0;
     head = GScolsys2GetCCDFileHead();
@@ -299,7 +300,8 @@ s32 GScolsys2WalkGetHeight(GSvec* pos, GSwalkHit* outHits) {
         if (obj->flags & 1) {
             GScolsys2GetObjMatrix(matrix, i);
             GScolsys2GetObjRotMatrix(normalMatrix, i);
-            count = collectList(temp, pos, (CCD_TRILIST*) walk, matrix, normalMatrix);
+            list = (CCD_TRILIST*) walk;
+            count = collectList(temp, pos, list, matrix, normalMatrix);
         } else {
             count = collectGrid(temp, pos, (CCD_GRID*) walk);
         }

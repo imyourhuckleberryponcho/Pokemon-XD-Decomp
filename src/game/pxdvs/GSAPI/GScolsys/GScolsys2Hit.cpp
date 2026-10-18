@@ -345,7 +345,11 @@ static bool checkHitCollision(GSvec* start, GSvec* end, f32 radius, GSvec* hitOu
 
     cur = *end;
     head = GScolsys2GetCCDFileHead();
-    tmpPtr = hitOut == 0 ? 0 : &tmp;
+    if (hitOut == 0) {
+        tmpPtr = 0;
+    } else {
+        tmpPtr = &tmp;
+    }
 
     for (iter = 0; iter < 10; iter++) {
         obj = head->objs;

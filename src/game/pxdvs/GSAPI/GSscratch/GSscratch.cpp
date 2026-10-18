@@ -1,8 +1,6 @@
 #include <dolphin/types.h>
 
-// WIP: NonMatching. All exact except GSscratchAlloc (99%, free-slot pointer in r6 vs r7)
-// and GSscratchInit (hand-written asm in the original: it switches r1 to the
-// scratch stack; the C version here does not reconstruct that).
+// GSscratchInit contains hand-written asm in the original (stack switch), kept as inline asm.
 
 struct ScratchBlock {
     u8 index;
@@ -35,16 +33,24 @@ static inline ScratchBlock* scratchFindBlock(u8 index)
 
 static inline ScratchBlock* scratchFindFreeBlock()
 {
-    ScratchBlock* block;
-    u32 i;
+    return scratchFindBlock(0xFF);
+}
 
-    block = _blockTable;
-    for (i = 0; i < 32; block++, i++) {
-        if (block->index == 0xFF) {
-            return block;
-        }
+static inline void scratchMarkBlocks(u8 first, u8 count)
+{
+    u32 mask;
+    u32 map;
+
+    mask = 0x80000000;
+    while (first-- != 0) {
+        mask >>= 1;
     }
-    return 0;
+    map = _blockMap;
+    while (count-- != 0) {
+        map |= mask;
+        mask >>= 1;
+    }
+    _blockMap = map;
 }
 
 extern "C" {
@@ -180,27 +186,11 @@ void* GSscratchAlloc(u8 count, void (*notify)(u8, void*, u8))
                 return 0;
             }
 
-            {
-                u32 entryMask;
-                u8 entryShift;
-
-                entry->index = candidate;
-                entryShift = candidate;
-                entryMask = 0x80000000;
-                entry->count = count;
-                entry->notify = notify;
-                while (entryShift-- != 0) {
-                    entryMask >>= 1;
-                }
-                map = _blockMap;
-                remaining = count;
-                while (remaining-- != 0) {
-                    map |= entryMask;
-                    entryMask >>= 1;
-                }
-                _blockMap = map;
-                return (u8*)_scratchPadBase + entry->index * 0x200;
-            }
+            entry->index = candidate;
+            entry->count = count;
+            entry->notify = notify;
+            scratchMarkBlocks(candidate, count);
+            return (u8*)_scratchPadBase + entry->index * 0x200;
         }
     }
     return 0;
@@ -208,21 +198,54 @@ void* GSscratchAlloc(u8 count, void (*notify)(u8, void*, u8))
 
 s32 GSscratchInit(u8 stackSize)
 {
-    _scratchInitLR = 0;
+    u32 mask;
+    u8 shift;
+    u8 remaining;
+    s32 i;
+
+ // The caller's return address is kept so the routine can return on the new stack.
+    asm {
+        mflr r3
+        stw r3, _scratchInitLR
+    }
     _blockMap = 0;
-    for (s32 i = 0; i < 32; ++i) _blockTable[i].index = 0xFF;
+    for (i = 0; i < 32; i++) {
+        _blockTable[i].index = 0xFF;
+    }
     LCEnable();
-    _stackSize = (stackSize << 9) & 0x1FE00;
     _scratchPadBase = (void*)0xE0000000;
+    _stackSize = (u32)stackSize << 9;
     if (stackSize != 0) {
-        _blockMap |= 0xFFFFFFFF << (32 - stackSize);
+        remaining = stackSize;
+        shift = 0;
+        mask = 0x80000000;
+        while (shift-- != 0) {
+            mask >>= 1;
+        }
+        while (remaining-- != 0) {
+            _blockMap |= mask;
+            mask >>= 1;
+        }
         _blockTable[0].index = 0;
         _blockTable[0].count = stackSize;
     }
     _scratchInvalid = 0;
-    if (stackSize == 0) return 1;
- // TODO: retail switches r1 to the scratch stack and returns through the
- // saved caller LR. That stack-switch behavior is not reconstructed here.
-    return 0;
+    if (stackSize == 0) {
+        return 1;
+    }
+ // Hand-written in the original: move the stack into the reserved scratch blocks
+ // and return straight to the caller on it (the epilogue below is skipped).
+    asm {
+        lwz r3, _scratchPadBase
+        lwz r5, _stackSize
+        add r3, r3, r5
+        subi r1, r3, 8
+        li r3, -1
+        stw r3, 0(r1)
+        lwz r3, _scratchInitLR
+        mtlr r3
+        blr
+    }
+    return 1;
 }
 }

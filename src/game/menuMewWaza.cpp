@@ -63,9 +63,9 @@ s32 menuMewWazaDraw(MewWazaWindow* window, MewWazaItem* item) {
 
     GSgfxLayerFindByID(layer);
     height = item->height;
+    width = item->width;
     top = height - 4;
     spriteSetOffset(layer, window->x + item->x, window->y + (item->y + (s16)(top - height)));
-    width = item->width;
     spriteSetEnv(layer);
 
     switch (item->id) {

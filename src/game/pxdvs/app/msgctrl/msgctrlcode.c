@@ -1,2 +1,227 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
+
+typedef struct MsgCtrl MsgCtrl;
+
+// Message control-code table: per code a flag byte and its handler.
+typedef struct MsgCtrlCode {
+    u8 flags;
+    u8 pad[3];
+    u32 (*func)(MsgCtrl*);
+} MsgCtrlCode;
+
+extern u32 msgctrlCR(MsgCtrl*);
+extern u32 msgctrlKeyEnd(MsgCtrl*);
+extern u32 msgctrlKeyWait(MsgCtrl*);
+extern u32 msgctrlRubyStart(MsgCtrl*);
+extern u32 msgctrlRubyTop(MsgCtrl*);
+extern u32 msgctrlRubyEnd(MsgCtrl*);
+extern u32 msgctrlFont(MsgCtrl*);
+extern u32 msgctrlColor(MsgCtrl*);
+extern u32 msgctrlWait(MsgCtrl*);
+extern u32 msgctrlEvStrBuf0(MsgCtrl*);
+extern u32 msgctrlEvStrBuf1(MsgCtrl*);
+extern u32 msgctrlAttackMons(MsgCtrl*);
+extern u32 msgctrlDeffenceMons(MsgCtrl*);
+extern u32 msgctrlClientMos(MsgCtrl*);
+extern u32 msgctrlTsuikaMons(MsgCtrl*);
+extern u32 msgctrlMyName(MsgCtrl*);
+extern u32 msgctrlMyMons(MsgCtrl*);
+extern u32 msgctrlMyMons2(MsgCtrl*);
+extern u32 msgctrlEnemyMons(MsgCtrl*);
+extern u32 msgctrlEnemyMons2(MsgCtrl*);
+extern u32 msgctrlEnemyTmons(MsgCtrl*);
+extern u32 msgctrlEnemyTmons2(MsgCtrl*);
+extern u32 msgctrlSpeabiNamea(MsgCtrl*);
+extern u32 msgctrlSpeabiNamed(MsgCtrl*);
+extern u32 msgctrlSpeabiNamec(MsgCtrl*);
+extern u32 msgctrlSpeabiNamet(MsgCtrl*);
+extern u32 msgctrlClientnowork(MsgCtrl*);
+extern u32 msgctrlSideAttackNameha(MsgCtrl*);
+extern u32 msgctrlSideAttackNamewo(MsgCtrl*);
+extern u32 msgctrlSideAttackNameno(MsgCtrl*);
+extern u32 msgctrlTrainerType(MsgCtrl*);
+extern u32 msgctrlTrainerName(MsgCtrl*);
+extern u32 msgctrlTrainerLose(MsgCtrl*);
+extern u32 msgctrlTrainerEnename(MsgCtrl*);
+extern u32 msgctrlTrainerEnename2(MsgCtrl*);
+extern u32 msgctrlTrainerClientno(MsgCtrl*);
+extern u32 msgctrlWazaName(MsgCtrl*);
+extern u32 msgctrlItemName(MsgCtrl*);
+extern u32 msgctrlPasoName(MsgCtrl*);
+extern u32 msgctrlHero(MsgCtrl*);
+extern u32 msgctrlHizuki(MsgCtrl*);
+extern u32 msgctrlItem(MsgCtrl*);
+extern u32 msgctrlItem2(MsgCtrl*);
+extern u32 msgctrlDigit(MsgCtrl*);
+extern u32 msgctrlDigit2(MsgCtrl*);
+extern u32 msgctrlMsgID(MsgCtrl*);
+extern u32 msgctrlPokemon(MsgCtrl*);
+extern u32 msgctrlPokemon2(MsgCtrl*);
+extern u32 msgctrlMenuDigit(MsgCtrl*);
+extern u32 msgctrlMenuDigit2(MsgCtrl*);
+extern u32 msgctrlMenuPokemon(MsgCtrl*);
+extern u32 msgctrlMenuMsg(MsgCtrl*);
+extern u32 msgctrlPalette(MsgCtrl*);
+extern u32 msgctrlWaza(MsgCtrl*);
+extern u32 msgctrlSeOff(MsgCtrl*);
+extern u32 msgctrlSeOn(MsgCtrl*);
+extern u32 msgctrlEvStrBuf2(MsgCtrl*);
+extern u32 msgctrlSideDefenceNameha(MsgCtrl*);
+extern u32 msgctrlSideDefenceNamewo(MsgCtrl*);
+extern u32 msgctrlSideDefenceNameno(MsgCtrl*);
+extern u32 msgctrlMenuUDigit(MsgCtrl*);
+extern u32 msgctrlMenuUDigit2(MsgCtrl*);
+extern u32 msgctrlMenuHex(MsgCtrl*);
+extern u32 msgctrlMenuHex2(MsgCtrl*);
+extern u32 msgctrlMenuZDigit(MsgCtrl*);
+extern u32 msgctrlMenuZDigit2(MsgCtrl*);
+extern u32 msgctrlMoney(MsgCtrl*);
+extern u32 msgctrlTime(MsgCtrl*);
+extern u32 msgctrlString(MsgCtrl*);
+extern u32 msgctrlPokemonID(MsgCtrl*);
+extern u32 msgctrlMenuFullDigit(MsgCtrl*);
+extern u32 msgctrlMenuMoney(MsgCtrl*);
+extern u32 msgctrlMenuMsg2(MsgCtrl*);
+extern u32 msgctrlShadow(MsgCtrl*);
+extern u32 msgctrlAlign(MsgCtrl*);
+extern u32 msgctrlTalkSE(MsgCtrl*);
+extern u32 msgctrlMenuMsgID(MsgCtrl*);
+extern u32 msgctrlMenuMsgID2(MsgCtrl*);
+extern u32 msgctrlString2(MsgCtrl*);
+extern u32 msgctrlTribe(MsgCtrl*);
+extern u32 msgctrlNpc(MsgCtrl*);
+extern u32 msgctrlIndentOff(MsgCtrl*);
+extern u32 msgctrlLineSpace(MsgCtrl*);
+extern u32 msgctrlBaseLineBias(MsgCtrl*);
+extern u32 msgctrlSndPlay(MsgCtrl*);
+extern u32 msgctrlSndWait(MsgCtrl*);
+extern u32 msgctrlMenuDigitH(MsgCtrl*);
+extern u32 msgctrlMenuDigitH2(MsgCtrl*);
+extern u32 msgctrlMenuUDigitH(MsgCtrl*);
+extern u32 msgctrlMenuUDigitH2(MsgCtrl*);
+extern u32 msgctrlMoneyH(MsgCtrl*);
+extern u32 msgctrlTimeH(MsgCtrl*);
+extern u32 msgctrlMenuHexH(MsgCtrl*);
+extern u32 msgctrlMenuHexH2(MsgCtrl*);
+extern u32 msgctrlMenuZDigitH(MsgCtrl*);
+extern u32 msgctrlMenuZDigitH2(MsgCtrl*);
+extern u32 msgctrlMenuMoneyH(MsgCtrl*);
+extern u32 msgctrlSetPeopleTalkFlag(MsgCtrl*);
+extern u32 msgctrlDigitH(MsgCtrl*);
+extern u32 msgctrlDigitH2(MsgCtrl*);
+extern u32 msgctrlCheckEnd(MsgCtrl*);
+extern u32 msgctrlCheckWait(MsgCtrl*);
+
+MsgCtrlCode msgctrlcode[] = {
+    {0x08, {0}, msgctrlCR},
+    {0x08, {0}, msgctrlCR},
+    {0x30, {0}, msgctrlKeyEnd},
+    {0x38, {0}, msgctrlKeyWait},
+    {0x18, {0}, msgctrlRubyStart},
+    {0x18, {0}, msgctrlRubyTop},
+    {0x18, {0}, msgctrlRubyEnd},
+    {0x18, {0}, msgctrlFont},
+    {0x18, {0}, msgctrlColor},
+    {0x38, {0}, msgctrlWait},
+    {0x00, {0}, 0},
+    {0x00, {0}, 0},
+    {0x00, {0}, 0},
+    {0x58, {0}, msgctrlEvStrBuf0},
+    {0x58, {0}, msgctrlEvStrBuf1},
+    {0x58, {0}, msgctrlAttackMons},
+    {0x58, {0}, msgctrlDeffenceMons},
+    {0x58, {0}, msgctrlClientMos},
+    {0x58, {0}, msgctrlTsuikaMons},
+    {0x58, {0}, msgctrlMyName},
+    {0x58, {0}, msgctrlMyMons},
+    {0x58, {0}, msgctrlMyMons2},
+    {0x58, {0}, msgctrlEnemyMons},
+    {0x58, {0}, msgctrlEnemyMons2},
+    {0x58, {0}, msgctrlEnemyTmons},
+    {0x58, {0}, msgctrlEnemyTmons2},
+    {0x58, {0}, msgctrlSpeabiNamea},
+    {0x58, {0}, msgctrlSpeabiNamed},
+    {0x58, {0}, msgctrlSpeabiNamec},
+    {0x58, {0}, msgctrlSpeabiNamet},
+    {0x58, {0}, msgctrlClientnowork},
+    {0x58, {0}, msgctrlSideAttackNameha},
+    {0x58, {0}, msgctrlSideAttackNamewo},
+    {0x58, {0}, msgctrlSideAttackNameno},
+    {0x58, {0}, msgctrlTrainerType},
+    {0x58, {0}, msgctrlTrainerName},
+    {0x58, {0}, msgctrlTrainerLose},
+    {0x58, {0}, msgctrlTrainerEnename},
+    {0x58, {0}, msgctrlTrainerEnename2},
+    {0x58, {0}, msgctrlTrainerClientno},
+    {0x58, {0}, msgctrlWazaName},
+    {0x58, {0}, msgctrlItemName},
+    {0x58, {0}, msgctrlPasoName},
+    {0x58, {0}, msgctrlHero},
+    {0x58, {0}, msgctrlHizuki},
+    {0x98, {0}, msgctrlItem},
+    {0x98, {0}, msgctrlItem2},
+    {0x58, {0}, msgctrlDigit},
+    {0x58, {0}, msgctrlDigit2},
+    {0x98, {0}, msgctrlMsgID},
+    {0x58, {0}, msgctrlPokemon},
+    {0x58, {0}, msgctrlPokemon2},
+    {0x58, {0}, msgctrlMenuDigit},
+    {0x58, {0}, msgctrlMenuDigit2},
+    {0x58, {0}, msgctrlMenuPokemon},
+    {0x58, {0}, msgctrlMenuMsg},
+    {0x18, {0}, msgctrlPalette},
+    {0x98, {0}, msgctrlWaza},
+    {0x98, {0}, 0},
+    {0x98, {0}, 0},
+    {0x58, {0}, 0},
+    {0x10, {0}, msgctrlSeOff},
+    {0x10, {0}, msgctrlSeOn},
+    {0x18, {0}, 0},
+    {0x18, {0}, 0},
+    {0x58, {0}, msgctrlEvStrBuf2},
+    {0x58, {0}, msgctrlSideDefenceNameha},
+    {0x58, {0}, msgctrlSideDefenceNamewo},
+    {0x58, {0}, msgctrlSideDefenceNameno},
+    {0x58, {0}, msgctrlMenuUDigit},
+    {0x58, {0}, msgctrlMenuUDigit2},
+    {0x58, {0}, msgctrlMenuHex},
+    {0x58, {0}, msgctrlMenuHex2},
+    {0x58, {0}, msgctrlMenuZDigit},
+    {0x58, {0}, msgctrlMenuZDigit2},
+    {0x58, {0}, msgctrlMoney},
+    {0x58, {0}, msgctrlTime},
+    {0x58, {0}, msgctrlString},
+    {0x98, {0}, msgctrlPokemonID},
+    {0x58, {0}, msgctrlMenuFullDigit},
+    {0x58, {0}, msgctrlMenuMoney},
+    {0x58, {0}, msgctrlMenuMsg2},
+    {0x08, {0}, msgctrlShadow},
+    {0x08, {0}, msgctrlAlign},
+    {0x10, {0}, msgctrlTalkSE},
+    {0x98, {0}, msgctrlMenuMsgID},
+    {0x98, {0}, msgctrlMenuMsgID2},
+    {0x58, {0}, msgctrlString2},
+    {0x98, {0}, msgctrlTribe},
+    {0x98, {0}, msgctrlNpc},
+    {0x10, {0}, msgctrlIndentOff},
+    {0x18, {0}, msgctrlLineSpace},
+    {0x18, {0}, msgctrlBaseLineBias},
+    {0x10, {0}, msgctrlSndPlay},
+    {0x30, {0}, msgctrlSndWait},
+    {0x58, {0}, msgctrlMenuDigitH},
+    {0x58, {0}, msgctrlMenuDigitH2},
+    {0x58, {0}, msgctrlMenuUDigitH},
+    {0x58, {0}, msgctrlMenuUDigitH2},
+    {0x58, {0}, msgctrlMoneyH},
+    {0x58, {0}, msgctrlTimeH},
+    {0x58, {0}, msgctrlMenuHexH},
+    {0x58, {0}, msgctrlMenuHexH2},
+    {0x58, {0}, msgctrlMenuZDigitH},
+    {0x58, {0}, msgctrlMenuZDigitH2},
+    {0x58, {0}, msgctrlMenuMoneyH},
+    {0x10, {0}, msgctrlSetPeopleTalkFlag},
+    {0x58, {0}, msgctrlDigitH},
+    {0x58, {0}, msgctrlDigitH2},
+    {0x30, {0}, msgctrlCheckEnd},
+    {0x38, {0}, msgctrlCheckWait},
+};

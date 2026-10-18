@@ -1,9 +1,10 @@
-// STATUS (rough draft, rd_fm): 22/22 functions, 3 exact, byte-weighted ~72%, default flags (+pool_strings off);
-// LAYOUT/DATA OK. Flash (SWF) tag parser/renderer; tag structs accessed by offset (AT) - the next pass should
-// define real _DEFINESHAPE/_PLACEOBJECT2/... structs. Weakest: DrawSub 65%, DrawSprite 66%, ParseDefineShapeSub 66%,
-// ParsePlaceObject2Sub 64%, ParseTag 77% (the 'needFix()' relocation test is an inline in the original).
+// Flash (SWF) tag parser/renderer. Built with #pragma peephole off (also -O4,s was NOT needed).
+// STATUS (cleanup pass): 7/22 functions exact; structures (FlashHeader, DepthEntry, CharEntry) fixed from the asm.
+// Open: DrawText/DrawSprite/DrawSub/ParseTag/ParseDefine*Sub/ParsePlaceObject2Sub need structural work; Init/Release/
+// Update/InitDataPointer/Draw only differ in register allocation.
 #include <dolphin/types.h>
 #pragma pool_strings off
+#pragma peephole off
 
 enum GSgfxLayerID { GSgfxLayerID0 };
 struct tagWINDOW_WORK;
@@ -56,7 +57,7 @@ void flcalcUnitCxform(void* cx);
 void flcalcUnitMatrix(FLASHMATRIXF* m);
 void flcalcUnitMatrix2(void* m);
 void msgctrlSetValue(s32 id, s32 value);
-u16 timeGetLastFrameTime();
+u32 timeGetLastFrameTime();
 void vectorGraph(u32 a0, void* fills, void* lines, _SHAPERECORD* rec, FLASHMATRIXF* parent, FLASHMATRIXF* mat, FLASHCXFORM* cx, u8 flags);
 void vectroGraphSetBlendMode(s32 src, s32 dst);
 s32 winSpriteGetLayerID(tagWINDOW_WORK* w, tagSPRITE_WORK* s);
@@ -67,12 +68,14 @@ void GSprimSetup2DRender(GSgfxLayer* layer);
 #define AT(T, p, o) (*(T*)((u8*)(p) + (o)))
 
 struct CharEntry {
-    s32 type;
+    u8 type;
+    u8 pad1[3];
     void* data;
 };
 
 struct DepthEntry {
     u16 charId;
+    u8 pad2[2];
     u8 matrix[0x18];
     f32 ratio;
     u8 cxform[0x10];
@@ -99,7 +102,8 @@ struct FlashMenu {
     s32 startPos;           // 0x04
     u8* data;               // 0x08
     s32 frame;              // 0x0C
-    s32 curDepth;           // 0x10
+    s16 curDepth;           // 0x10
+    s16 pad12;
     s32 inSprite;           // 0x14
     s32 spriteId;           // 0x18
     u16 spriteFrame;        // 0x1C
@@ -150,9 +154,31 @@ struct FlashMenu {
  // true when file-relative offsets still have to be converted to pointers
     inline bool needFix() { return AT(u32, data, 0x14) == 0 && relocate != 0; }
     inline void runTags(u32 frameNo);
+    static inline u16 defaultCount(u16& n) {
+        if (n == 0) {
+            return n = 0x28;
+        } else {
+            return n;
+        }
+    }
+    inline u8* fixup(u8*& p, u8* base) {
+        if (AT(u32, data, 0x14) == 0 && relocate != 0) {
+            return p = base + (u32)p;
+        } else {
+            return p;
+        }
+    }
     inline void fixPtr(void** p, u8* base) {
         if (needFix()) *p = base + (u32)*p;
     }
+};
+
+struct FlashHeader {
+    u8 pad0[6];
+    u16 frames;      // 0x06
+    u8 pad8[0x10];
+    u16 numChars;    // 0x18
+    u16 numDepth;    // 0x1A
 };
 
 struct FlTagName {
@@ -233,24 +259,32 @@ inline void FlashMenu::runTags(u32 frameNo) {
 }
 
 void FlashMenu::Draw(tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
+    GSgfxLayerID layer;
+    u32 next;
+    u32 rate;
+    u32 dt;
+    int i;
+    DepthEntry* d;
+    FlashHeader* hdr;
     if (dict != 0) {
-        GSgfxLayerID layer = (GSgfxLayerID)winSpriteGetLayerID(w, s);
+        layer = (GSgfxLayerID)winSpriteGetLayerID(w, s);
         GSgfxLayerSetActive(layer);
         GSgfxLayerFindByID(layer);
         DrawSub(layer, w, s);
-        u32 t = curTime;
+        next = curTime;
         if (stopFlag == 0) {
-            u8 rate = GSgfxVideoGetVsyncRate();
-            u16 dt = timeGetLastFrameTime();
+            rate = GSgfxVideoGetVsyncRate();
+            dt = timeGetLastFrameTime();
             if (dt >= 10) dt = 1;
             if (dt == 0) fps = (f32)rate;
             else fps = (f32)rate / (f32)dt;
-            u32 next = t + dt;
+            next += dt;
             if (next > loopEnd) {
                 if (loopFlag != 0) {
                     next = loopStart;
-                    DepthEntry* d = depth;
-                    for (int i = 0; i < AT(u16, data, 0x1A); i++, d++) {
+                    d = depth;
+                    hdr = (FlashHeader*)data;
+                    for (i = 0; i < hdr->numDepth; i++, d++) {
                         d->ratio = 0.0f;
                         d->clipDepth = 0;
                         d->place = 0;
@@ -267,10 +301,15 @@ void FlashMenu::Draw(tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
 }
 
 void FlashMenu::Update() {
+    DepthEntry* d;
+    FlashHeader* hdr;
+    int i;
+    int j;
+    s32 off;
     if (dict != 0) {
-        DepthEntry* d = depth;
-        u8* hdr = data;
-        for (int i = 0; i < AT(u16, hdr, 0x1A); i++, d++) {
+        d = depth;
+        hdr = (FlashHeader*)data;
+        for (i = 0; i < hdr->numDepth; i++, d++) {
             d->clipDepth = 0;
             d->place = 0;
             d->charId = 0;
@@ -278,18 +317,17 @@ void FlashMenu::Update() {
             flcalcUnitCxform(d->cxform);
             flcalcUnitMatrix2(d->matrix);
         }
-        s32 off = 0;
-        for (int i = 0; i < AT(u16, hdr, 0x18); i++, off += 8) {
-            SpriteTab* st = (SpriteTab*)((u8*)sprites + off);
-            DepthEntry* e = st->depth;
-            for (int j = 0; j < AT(u16, hdr, 0x1A); j++, e++) {
-                e->charId = 0;
-                e->ratio = 0.0f;
-                e->clipDepth = 0;
-                e->place = 0;
-                e->flags = 0;
-                flcalcUnitMatrix2(e->matrix);
-                flcalcUnitCxform(e->cxform);
+        off = 0;
+        for (i = 0; i < hdr->numChars; i++, off += 8) {
+            for (j = 0; j < hdr->numDepth; j++) {
+                SpriteTab* st = (SpriteTab*)((u8*)sprites + off);
+                st->depth[j].charId = 0;
+                st->depth[j].ratio = 0.0f;
+                st->depth[j].clipDepth = 0;
+                st->depth[j].place = 0;
+                st->depth[j].flags = 0;
+                flcalcUnitMatrix2(st->depth[j].matrix);
+                flcalcUnitCxform(st->depth[j].cxform);
             }
         }
         GSprimSetup2DRender(0);
@@ -300,33 +338,32 @@ void FlashMenu::Update() {
 }
 
 void FlashMenu::Init(void* d, unsigned long arg) {
+    u16 nChars;
+    u16 nDepth;
+    FlashHeader* hdr;
+    u8* p;
+    int i;
+    int j;
+    s32 depthBytes;
     GSgfxLayerFindByID(7);
     userArg = arg;
     GSprimSetup2DRender(0);
     GSprimSetBlendMode(1);
     dict = (CharEntry*)GSmemAlloc(0x640);
-    u16 nChars = AT(u16, d, 0x18);
-    if (nChars == 0) {
-        nChars = 0x28;
-        AT(u16, d, 0x18) = 0x28;
-    }
-    u16 nDepth = AT(u16, d, 0x1A);
-    if (nDepth == 0) {
-        nDepth = 0x28;
-        AT(u16, d, 0x1A) = 0x28;
-    }
+    nChars = defaultCount(AT(u16, d, 0x18));
+    nDepth = defaultCount(AT(u16, d, 0x1A));
     sprites = (SpriteTab*)GSmemAlloc(((nChars * 8) + 0x1F) & 0xFFFFFFE0);
-    s32 depthBytes = nChars * 2;
-    for (int i = 0; i < nChars; i++) {
+    depthBytes = nChars * 2;
+    for (i = 0; i < nChars; i++) {
         sprites[i].depth = 0;
         sprites[i].depth = (DepthEntry*)new u8[nDepth << 6];
-        for (int j = 0; j < nDepth; j++) {
+        for (j = 0; j < nDepth; j++) {
             sprites[i].depth[j].names = 0;
             sprites[i].depth[j].names = (u16*)new u8[depthBytes];
         }
     }
     depth = (DepthEntry*)GSmemAlloc(((nDepth << 6) + 0x1F) & 0xFFFFFFE0);
-    for (int j = 0; j < nDepth; j++) {
+    for (j = 0; j < nDepth; j++) {
         depth[j].names = 0;
         depth[j].names = (u16*)new u8[depthBytes];
     }
@@ -334,30 +371,30 @@ void FlashMenu::Init(void* d, unsigned long arg) {
     pos = 0x30;
     frame = 0;
     relocate = 0;
-    for (int i = 0; i < nChars; i++) sprites[i].frames = 0;
+    for (i = 0; i < nChars; i++) sprites[i].frames = 0;
     startPos = pos;
     data = (u8*)d;
-    u8* hdr = data;
+    hdr = (FlashHeader*)data;
+    p = (u8*)hdr + pos;
     inSprite = 0;
-    u8* p = hdr + pos;
     frame = 0;
     relocate = 1;
-    for (int i = 0; i < 30; i++) {
+    for (i = 0; i < 30; i++) {
         tex[i].id = 0;
         tex[i].tex = 0;
     }
     InitDataPointer();
     curTime = 0;
     fps = 0.0f;
-    for (u16 i = 0; i < AT(u16, hdr, 0x1A); i++) {
-        for (u16 j = 0; j < AT(u16, hdr, 0x18); j++) {
+    for (i = 0; i < hdr->numDepth; i++) {
+        for (j = 0; j < hdr->numChars; j++) {
             depth[i].names[j] = 0;
         }
     }
     while (1) {
         FlTagName* t = _fltagnametable;
         while (t->id != (s32)AT(u32, p, 0) && t->id >= 0) t++;
-        if (ParseTag(AT(u32, p, 4), 1, false, true, false) == 0) {
+        if (ParseTag(AT(u32, p, 0), AT(u32, p, 4), true, false, true) == 0) {
             p = data + pos;
             continue;
         }
@@ -374,14 +411,14 @@ void FlashMenu::Init(void* d, unsigned long arg) {
 }
 
 void FlashMenu::Release() {
-    u8* hdr = data;
+    FlashHeader* hdr = (FlashHeader*)data;
     if (dict != 0) {
-        GSmemFree(dict);
+        if (dict != 0) GSmemFree(dict);
         dict = 0;
     }
-    for (u16 i = 0; i < AT(u16, hdr, 0x18); i++) {
+    for (u16 i = 0; i < hdr->numChars; i++) {
         if (sprites[i].depth != 0) {
-            for (u16 j = 0; j < AT(u16, hdr, 0x1A); j++) {
+            for (u16 j = 0; j < hdr->numDepth; j++) {
                 if (sprites[i].depth[j].names != 0) {
                     delete[] sprites[i].depth[j].names;
                     sprites[i].depth[j].names = 0;
@@ -392,17 +429,17 @@ void FlashMenu::Release() {
         }
     }
     if (sprites != 0) {
-        GSmemFree(sprites);
+        if (sprites != 0) GSmemFree(sprites);
         sprites = 0;
     }
-    for (u16 i = 0; i < AT(u16, hdr, 0x1A); i++) {
+    for (u16 i = 0; i < hdr->numDepth; i++) {
         if (depth[i].names != 0) {
             delete[] depth[i].names;
             depth[i].names = 0;
         }
     }
     if (depth != 0) {
-        GSmemFree(depth);
+        if (depth != 0) GSmemFree(depth);
         depth = 0;
     }
     LabelNode* n = labels;
@@ -416,14 +453,23 @@ void FlashMenu::Release() {
 }
 
 void FlashMenu::InitDataPointer() {
-    CharEntry* c = dict;
-    DepthEntry* d = depth;
-    u8* hdr = data;
-    for (int i = 0; i < 0xC8; i++, c++) {
+    CharEntry* c;
+    DepthEntry* d;
+    FlashHeader* hdr;
+    s32 i;
+    int j;
+    s32 off;
+    c = dict;
+    d = depth;
+    hdr = (FlashHeader*)data;
+    i = 0;
+    while (i < 0xC8) {
         c->type = 0;
         c->data = 0;
+        c++;
+        i++;
     }
-    for (int i = 0; i < AT(u16, hdr, 0x1A); i++, d++) {
+    for (i = 0; i < hdr->numDepth; i++, d++) {
         d->clipDepth = 0;
         d->place = 0;
         d->charId = 0;
@@ -432,16 +478,17 @@ void FlashMenu::InitDataPointer() {
         flcalcUnitCxform(d->cxform);
         flcalcUnitMatrix2(d->matrix);
     }
-    for (int i = 0; i < AT(u16, hdr, 0x18); i++) {
-        for (int j = 0; j < AT(u16, hdr, 0x1A); j++) {
-            DepthEntry* e = &sprites[i].depth[j];
-            e->charId = 0;
-            e->ratio = 0.0f;
-            e->clipDepth = 0;
-            e->place = 0;
-            e->flags = 0;
-            flcalcUnitMatrix2(e->matrix);
-            flcalcUnitCxform(e->cxform);
+    off = 0;
+    for (i = 0; i < hdr->numChars; i++, off += 8) {
+        for (j = 0; j < hdr->numDepth; j++) {
+            SpriteTab* st = (SpriteTab*)((u8*)sprites + off);
+            st->depth[j].charId = 0;
+            st->depth[j].ratio = 0.0f;
+            st->depth[j].clipDepth = 0;
+            st->depth[j].place = 0;
+            st->depth[j].flags = 0;
+            flcalcUnitMatrix2(st->depth[j].matrix);
+            flcalcUnitCxform(st->depth[j].cxform);
         }
     }
 }
@@ -458,18 +505,20 @@ void FlashMenu::DrawText(_DEFINETEXT* t, FLASHMATRIXF* parent, FLASHMATRIXF* m, 
     s16 y = 0;
     s32 color = 0;
     s32 advance = 0;
-    s16 height = 0;
+    u16 height = 0;
     flcalcMatrixCopy((FLASHMATRIXF*)mat, m);
     while (1) {
         switch (rec[0]) {
+        case 0:
+            break;
         case 1: {
             u8* r = AT(u8*, rec, 4);
             u8 f = r[0];
             if ((f & 8) != 0) fontId = AT(u16, r, 2);
             if ((f & 4) != 0) color = AT(s32, r, 0xC);
-            if ((f & 1) != 0) x = AT(s32, r, 4) / 20;
+            if ((f & 1) != 0) x = AT(s16, r, 4) / 20;
             if ((f & 2) != 0) y = AT(s16, r, 6) / 20;
-            if ((f & 8) != 0) height = AT(s32, r, 8) / 20;
+            if ((f & 8) != 0) height = AT(u16, r, 8) / 20;
             break;
         }
         case 2: {
@@ -484,7 +533,7 @@ void FlashMenu::DrawText(_DEFINETEXT* t, FLASHMATRIXF* parent, FLASHMATRIXF* m, 
                     flcalcMatrixCopy((FLASHMATRIXF*)mat, m);
                     if (parent != 0) flcalcMatrixCopy((FLASHMATRIXF*)mat2, parent);
                     else flcalcUnitMatrix((FLASHMATRIXF*)mat2);
-                    f32 sc = (f32)adv * 0.0009765625f;
+                    f32 sc = 0.0009765625f * (f32)adv;
                     scale[1] = sc;
                     scale[0] = sc;
                     flcalcMatrixScale((FLASHMATRIXF*)mat, (FLASHMATRIXF*)mat, scale);
@@ -604,7 +653,7 @@ void FlashMenu::DrawSprite(_DEFINESPRITE* sp, FLASHMATRIXF* parent, FLASHCXFORM*
     u16 limit = sprites[id].frames;
     if (stopFlag == 0 && limit != 0) {
         u16 cur = AT(u16*, depth[depthIdx].names, 0)[id];
-        u16 dt = timeGetLastFrameTime();
+        u32 dt = timeGetLastFrameTime();
         GSgfxVideoGetVsyncRate();
         u16 next = cur + dt;
         if (next >= limit) {
@@ -909,35 +958,27 @@ void FlashMenu::ParsePlaceObject2(bool b) {
 u16 FlashMenu::GetFrameFromLabel(char* name) {
     LabelNode* n = labels;
     if (n != 0) {
-        while (n != 0) {
-            if (strcmp(name, n->name) == 0) return n->frame;
-            n = n->next;
+        LabelNode* c = n;
+        for (;;) {
+            if (c == 0) break;
+            if (strcmp(name, c->name) == 0) return c->frame;
+            c = c->next;
         }
     }
     return 0;
 }
 
 void FlashMenu::ParaseTextRecord(_DEFINETEXT* t) {
-    u8* rec;
-    if (AT(u32, data, 0x14) == 0 && relocate != 0) {
-        rec = (u8*)t + AT(u32, t, 0x2C);
-        AT(u8*, t, 0x2C) = rec;
-    } else {
-        rec = AT(u8*, t, 0x2C);
-    }
+    u8* rec = fixup(AT(u8*, t, 0x2C), (u8*)t);
     while (1) {
         switch (rec[0]) {
+        case 0:
+            break;
         case 1:
             if (AT(u32, data, 0x14) == 0 && relocate != 0) AT(u8*, rec, 4) = (u8*)t + AT(u32, rec, 4);
             break;
         case 2: {
-            u8* r;
-            if (AT(u32, data, 0x14) == 0 && relocate != 0) {
-                r = (u8*)t + AT(u32, rec, 4);
-                AT(u8*, rec, 4) = r;
-            } else {
-                r = AT(u8*, rec, 4);
-            }
+            u8* r = fixup(AT(u8*, rec, 4), (u8*)t);
             if (AT(u32, data, 0x14) == 0 && relocate != 0) AT(u8*, r, 4) = (u8*)t + AT(u32, r, 4);
             for (int i = 0; i < r[0]; i++) {}
             break;
@@ -945,12 +986,7 @@ void FlashMenu::ParaseTextRecord(_DEFINETEXT* t) {
         }
         u8* n = AT(u8*, rec, 8);
         if (n == 0) break;
-        if (AT(u32, data, 0x14) == 0 && relocate != 0) {
-            rec = (u8*)t + (u32)n;
-            AT(u8*, rec, 8) = rec;
-        } else {
-            rec = AT(u8*, rec, 8);
-        }
+        rec = fixup(AT(u8*, rec, 8), (u8*)t);
     }
 }
 

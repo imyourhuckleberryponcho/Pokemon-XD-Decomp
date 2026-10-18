@@ -2969,7 +2969,7 @@ game/pxdvs/app/fight/fightWazaHitKakurituData.c:
 	.sdata      start:0x804E85B8 end:0x804E85C0
 
 game/pxdvs/app/fight/fightTrainerAi_ComboId.c:
-	.data       start:0x80413CE0 end:0x80413F40
+	.data       start:0x80413CE0 end:0x80413F38
 
 game/pxdvs/app/fight/fightSeq/fightSeqItem.c:
 	.data       start:0x80413F40 end:0x80414090

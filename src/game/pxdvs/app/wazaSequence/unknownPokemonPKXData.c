@@ -1,2 +1,39 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
+
+struct PkxEntry {
+    u32 a;
+    u32 b;
+};
+
+struct PkxEntry unknown_pokemon_pkx_data[] = {
+    {0x000001F8, 0x04131E00},
+    {0x000001F9, 0x04141E00},
+    {0x000001FA, 0x04151E00},
+    {0x000001FB, 0x04161E00},
+    {0x000001FC, 0x04171E00},
+    {0x000001FD, 0x04181E00},
+    {0x000001FE, 0x04191E00},
+    {0x000001FF, 0x041A1E00},
+    {0x00000200, 0x041B1E00},
+    {0x00000201, 0x041C1E00},
+    {0x00000202, 0x041D1E00},
+    {0x00000203, 0x041E1E00},
+    {0x00000204, 0x04531E00},
+    {0x00000205, 0x041F1E00},
+    {0x00000206, 0x04201E00},
+    {0x00000207, 0x04211E00},
+    {0x00000208, 0x04221E00},
+    {0x00000209, 0x04231E00},
+    {0x0000020A, 0x04241E00},
+    {0x0000020B, 0x04251E00},
+    {0x0000020C, 0x04261E00},
+    {0x0000020D, 0x04271E00},
+    {0x0000020E, 0x04281E00},
+    {0x0000020F, 0x04291E00},
+    {0x00000210, 0x042A1E00},
+    {0x00000211, 0x04541E00},
+    {0x0000035E, 0x05BE1E00},
+    {0x0000035F, 0x05BF1E00},
+};
+
+u32 unknown_pokemon_pkx_data_number = sizeof(unknown_pokemon_pkx_data) / sizeof(unknown_pokemon_pkx_data[0]);

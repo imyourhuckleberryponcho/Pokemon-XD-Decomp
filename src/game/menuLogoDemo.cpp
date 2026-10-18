@@ -105,7 +105,7 @@ u32 heroGetStatus(void* hero, u32 selector, u16 index);
 void winMsgOpen(s32 type, s32 msg, s32 a, s32 b);
 void winMsgClose(bool flag);
 s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial);
-s32 fn_801E3C5C(u32 id);
+s32 GSmovieGetStatus(u32 id);
 bool pauseIsPause(void);
 f32 pokecoloGetFrameTime(void);
 void menuClose(s32 menuID);
@@ -985,7 +985,7 @@ void menuStaffRollMain(void)
     }
     GSmoviePlay(0x7dd, 0, 0, 0);
     soundOpenPlay(8, 0, 0x7f);
-    while (fn_801E3C5C(0x7dd) < 0) {
+    while (GSmovieGetStatus(0x7dd) < 0) {
         GSthreadSwitch();
     }
     lbl_804EA9F0 = 0.0;

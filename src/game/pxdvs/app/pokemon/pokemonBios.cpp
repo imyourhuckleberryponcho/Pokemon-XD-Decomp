@@ -1,4 +1,3 @@
-// STATUS: 263/272 exact. Permuter fix applied to pokemonBiosSetNicknamePtr. 9 remaining high-scorers (78-97%) have register/peephole diffs.
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/pokemonBios.hpp>
 #include <game/pxdvs/app/pokemon/pokemonDB.hpp>
@@ -2169,6 +2168,8 @@ u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u32 wazaNum) {
     return waza->dataId;
 }
 
+// The original most likely defined wazaNum as u16 while callers saw a u32 prototype: the
+// target re-masks it at every use but the callers pass it unmasked, hence the (u16) casts.
 PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon* poke, u32 wazaNum, u8 unk) {
     u8 darkWazaCount = 0;
     u8 hidden[4] = {0, 0, 0, 0};
@@ -2188,27 +2189,27 @@ PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon* poke, u32 wazaNum, u8 unk) {
 
     for (i = 0; i < 4; i++) {
         hidden[i] = 0;
-        if (darkPokemonBiosGetTemotiDarkWaza(pokemonBiosGetDarkpokemonDataId(poke), i) < 0x163 && darkWazaCount != 0) {
+        if ((s32)darkPokemonBiosGetTemotiDarkWaza(pokemonBiosGetDarkpokemonDataId(poke), i) < 0x163 && darkWazaCount != 0) {
             hidden[i] = 1;
             darkWazaCount--;
         }
     }
 
-    if (wazaNum >= 4) {
+    if ((u16)wazaNum >= 4) {
         wazaNum -= 4;
-        if (wazaNum >= 4) {
+        if ((u16)wazaNum >= 4) {
             return 0;
         }
     } else if (pokemonBiosGetDarkFlag(poke) == 1) {
-        u16 darkWaza = darkPokemonBiosGetTemotiDarkWaza(pokemonBiosGetDarkpokemonDataId(poke), wazaNum);
+        s32 darkWaza = darkPokemonBiosGetTemotiDarkWaza(pokemonBiosGetDarkpokemonDataId(poke), wazaNum);
         if (darkWaza > 0x163 && darkWaza < 0x176) {
             return (PokemonWaza*)&_pokemon_waza_darkwaza[darkWaza - 0x164];
         }
-        if (hidden[wazaNum] == 0) {
+        if (hidden[(u16)wazaNum] == 0) {
             return (PokemonWaza*)&_pokemon_waza_hatena;
         }
     }
-    return (PokemonWaza*)((u8*)poke + 0x80 + wazaNum * 4);
+    return (PokemonWaza*)((u8*)poke + 0x80 + (u16)wazaNum * 4);
 }
 
 u32 pokemonBiosGetConditionAmari(Pokemon* poke) {

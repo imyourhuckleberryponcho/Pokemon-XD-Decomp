@@ -13,12 +13,12 @@ copy of the game to build it.
 
 | | |
 |---|---|
-| Code matched (byte-identical functions) | 56.4% |
-| Code linked (complete files built from source) | 32.6% |
-| Game code matched | 49.4% |
-| Supporting SDK / runtime libraries | 99.6% |
+| Code matched (byte-identical functions) | 59.9% |
+| Code linked (complete files built from source) | 35.3% |
+| Game code matched | 53.5% |
+| Supporting SDK / runtime libraries | 99.8% |
 
-Last updated 2026-10-15.
+Last updated 2026-10-18.
 
 Every build is checked against the retail executable: the project only counts code that reproduces the
 original bytes exactly.

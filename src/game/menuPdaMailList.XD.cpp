@@ -481,10 +481,7 @@ static s32 _pdaMailListPageBunbo(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
 
 static s32 _pdaMailListPageBunshi(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     if (mailGetNbMailInMailbox() != 0) {
-        s32 q = window->pos;
-        q += 1;
-        q += window->top;
-        msgctrlSetValue(0x34, q);
+        msgctrlSetValue(0x34, window->top + window->pos + 1);
         s32 w = GSmsgGetRect(0x426F) >> 16;
         GSmsgPrint2(window->layer, sprite->x - w, 0, window->alpha | -0x100, 0x426F);
     }

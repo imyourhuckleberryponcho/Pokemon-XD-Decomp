@@ -484,8 +484,8 @@ static void _modelRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
         perf = GSgfxPerfbarCPUEntry(0xFF8000);
         modelShadowRender(layer);
         h = 240.0f;
-        w = 320.0f;
         x = 0.0f;
+        w = 320.0f;
         if (pass == GS_GFX_LAYER_PASS_OPA) {
             u16 efbH;
             u16 efbW;

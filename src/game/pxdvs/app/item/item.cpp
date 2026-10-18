@@ -1,8 +1,7 @@
-// STATUS (rough draft, rd_item): 13/13 functions, 0 exact, byte-weighted ~81%. LAYOUT/CONST/CALLS/DATA OK
-// with default flags (-inline deferred breaks function order; noauto same as default).
-// Biggest gaps: itemAddItemDataIdAry 75% (target keeps id/count params raw in regs, clrlwi at use),
-// itemSetStatus 68% (switch layout/args), itemSearchItemDataIdAry 79%, itemCheckAddItemDataIdAry 81%.
-// Helpers are static inline mirrors of the validity/search inlines the original has.
+// STATUS: 13/13 functions, 8 exact; remaining 5 differ only in register allocation (98-99.8%).
+// LAYOUT/CONST/CALLS/DATA OK with default flags (-inline deferred breaks function order).
+// Helpers are static inline mirrors of the original's inlines (itemCV = item validity check, itemAt = &ary[i]
+// as an rvalue; itemIs does its own null check before itemCV).
 #include <dolphin/types.h>
 
 struct ITEM {
@@ -70,7 +69,7 @@ void itemDataBiosSetItemSoubiDataId(u8* p, u16 val);
 void itemDataBiosSetKind(u8* p, u8 val);
 void itemDataBiosSetName(u8* p, u32 val);
 void itemDataBiosSetPrice(u8* p, u16 val);
-void itemDataBiosSetUseFriend(u8* p, u16 idx, u8 val);
+void itemDataBiosSetUseFriend(u8* p, u16 idx, s8 val);
 void itemDataBiosSetUseful(u8* p, u8 val);
 u16 itemSoubiDataBiosGetFightKoukaDataId(u8* p);
 u8* itemSoubiDataBiosGetPtr(u16 idx);
@@ -84,11 +83,16 @@ static inline bool itemIdOk(u16 id) {
     return true;
 }
 
-static inline bool itemOk(ITEM* p) {
+static inline bool itemCV(ITEM* p) {
     if (p == 0) return false;
     u16 id = item_GetItemDataId(p);
     if (id == 0) return false;
-    return itemIdOk(id);
+    if (!itemIdOk(id)) return false;
+    return true;
+}
+
+static inline bool itemOk(ITEM* p) {
+    return itemCV(p);
 }
 
 static inline bool itemIs(ITEM* p, u16 id) {
@@ -100,8 +104,9 @@ static inline bool itemIs(ITEM* p, u16 id) {
 
 static inline void itemSwapI(ITEM* a, ITEM* b) {
     if (a != 0 && b != 0) {
+        u16 num;
         u16 id = a->id;
-        u16 num = a->num;
+        num = a->num;
         a->id = b->id;
         a->num = b->num;
         b->id = id;
@@ -109,12 +114,16 @@ static inline void itemSwapI(ITEM* a, ITEM* b) {
     }
 }
 
+static inline ITEM* itemAt(ITEM* a, u16 i) {
+    return &a[i];
+}
+
 static inline ITEM* itemFindAny(ITEM* ary, u16 n, u16 id) {
     if (ary == 0) return 0;
     if (!itemIdOk(id)) return 0;
     for (u16 i = 0; i < n; i++) {
-        ITEM* p = &ary[i];
-        if (itemIs(p, id)) return p;
+        ITEM* p = itemAt(ary, i);
+        if (itemIs(p, id)) return ary + i;
     }
     return 0;
 }
@@ -123,7 +132,7 @@ static inline ITEM* itemFindNotFull(ITEM* ary, u16 n, u16 id, u16 max) {
     if (ary == 0) return 0;
     if (!itemIdOk(id)) return 0;
     for (u16 i = 0; i < n; i++) {
-        ITEM* p = &ary[i];
+        ITEM* p = itemAt(ary, i);
         if (itemIs(p, id) && item_GetNum(p) < max) return p;
     }
     return 0;
@@ -133,20 +142,21 @@ static inline ITEM* itemFindEmpty(ITEM* ary, u16 n, u16 id) {
     if (ary == 0) return 0;
     if (!itemIdOk(id)) return 0;
     for (u16 i = 0; i < n; i++) {
-        ITEM* p = &ary[i];
-        if (!itemOk(p)) return p;
+        ITEM* p = itemAt(ary, i);
+        if (!itemOk(p)) return ary + i;
     }
     return 0;
 }
 
-static inline s32 itemAddOne(ITEM* p, u16 id, s32 cnt, u16 max) {
+static inline s32 itemAddOne(ITEM* p, u16 id, u16 cnt, u16 max) {
     if (p == 0) return -1;
     if (!itemIdOk(id)) return -1;
     if (!itemIs(p, id)) return -1;
     if (p == 0) return -1;
-    if (!itemOk(p)) return -1;
-    s32 total = item_GetNum(p) + cnt;
+    if (!itemCV(p)) return -1;
+    s32 total = item_GetNum(p);
     s32 over;
+    total += cnt;
     if (total > (s32)max) {
         over = total - max;
         total = max;
@@ -157,14 +167,38 @@ static inline s32 itemAddOne(ITEM* p, u16 id, s32 cnt, u16 max) {
     return over;
 }
 
-static inline s32 itemDecOne(ITEM* p, u16 id, s32 cnt) {
+static inline s32 itemAddNew(ITEM* p, u16 id, u16 cnt, u16 max) {
+    if (p == 0) return -1;
+    if (!itemIdOk(id)) return -1;
+    if (p != 0) {
+        item_SetItemDataId(p, 0);
+        item_SetNum(p, 0);
+    }
+    item_SetItemDataId(p, id);
+    if (p == 0) return -1;
+    if (!itemCV(p)) return -1;
+    s32 total = item_GetNum(p);
+    s32 over;
+    total += cnt;
+    if (total > (s32)max) {
+        over = total - max;
+        total = max;
+    } else {
+        over = 0;
+    }
+    item_SetNum(p, (u16)total);
+    return over;
+}
+
+static inline s32 itemDecOne(ITEM* p, u16 id, u16 cnt) {
     if (p == 0) return -1;
     if (!itemIdOk(id)) return -1;
     if (!itemIs(p, id)) return -1;
     if (p == 0) return -1;
     if (!itemOk(p)) return -1;
-    s32 left = item_GetNum(p) - cnt;
+    s32 left = item_GetNum(p);
     s32 over;
+    left -= cnt;
     if (left < 0) {
         over = cnt - left;
         left = 0;
@@ -179,10 +213,10 @@ static inline s32 itemDecOne(ITEM* p, u16 id, s32 cnt) {
     return over;
 }
 
-static inline int itemPriorityOf(u16 id) {
-    int i = 0;
+static inline int itemPriorityOf(int id) {
+    int i;
     u16* t = currentPriorityTbl;
-    for (u32 c = currentPriorityTblQuantity; c > 0; c--, t++, i++) {
+    for (i = 0; i < currentPriorityTblQuantity; i++, t++) {
         if (id == *t) return i;
     }
     return 0;
@@ -190,7 +224,7 @@ static inline int itemPriorityOf(u16 id) {
 
 extern "C" {
 
-void itemSortAryByPriority(void* ary, u16 n, u32 type) {
+void itemSortAryByPriority(void* ary, u16 n, s32 type) {
     if (type == 2) {
         currentPriorityTbl = item_dougu_sort;
         currentPriorityTblQuantity = item_dougu_sort_number;
@@ -200,17 +234,20 @@ void itemSortAryByPriority(void* ary, u16 n, u32 type) {
     }
     ITEM* a = (ITEM*)ary;
     if (a != 0 && n != 0) {
+        int j;
+        int i;
+        ITEM* q;
         ITEM* p = a;
-        for (int i = 0; i < (int)(n - 1); i++, p++) {
+        int last = n - 1;
+        for (i = 0; i < last; i++, p++) {
             if (itemOk(p)) {
-                ITEM* q = p + 1;
-                for (int j = i + 1; j < (int)n; j++, q++) {
+                j = i + 1;
+                q = a + j;
+                for (; j < (int)n; j++, q++) {
                     if (itemOk(q)) {
-                        u16 idA = item_GetItemDataId(p);
-                        u16 idB = item_GetItemDataId(q);
-                        int pa = itemPriorityOf(idA);
-                        int pb = itemPriorityOf(idB);
-                        if (pa - pb > 0) itemSwapI(p, q);
+                        int idA = item_GetItemDataId(p);
+                        int idB = item_GetItemDataId(q);
+                        if (itemPriorityOf(idA) - itemPriorityOf(idB) > 0) itemSwapI(p, q);
                     }
                 }
             }
@@ -220,11 +257,13 @@ void itemSortAryByPriority(void* ary, u16 n, u32 type) {
 
 s32 itemCheckAddItemDataIdAry(void* aryv, u16 n, u16 id, u16 cnt, u8 flag) {
     ITEM* ary = (ITEM*)aryv;
+    ITEM* p;
+    s32 r;
+    u16 i;
     if (ary == 0) return -1;
     if (!itemIdOk(id)) return -1;
-    u16 r;
     if (flag == 0) {
-        ITEM* p = itemFindAny(ary, n, id);
+        p = itemFindAny(ary, n, id);
         if (p != 0) {
             r = cnt - item_GetNum(p);
         } else {
@@ -234,11 +273,11 @@ s32 itemCheckAddItemDataIdAry(void* aryv, u16 n, u16 id, u16 cnt, u8 flag) {
         }
     } else {
         r = 0;
-        for (u16 i = 0; i < n; i++) {
-            ITEM* p = &ary[i];
+        for (i = 0; i < n; i++) {
+            p = &ary[i];
             if (!itemOk(p)) {
                 r += cnt;
-            } else if (itemIs(p, id)) {
+            } else if (itemIs(p, id) == 1) {
                 r += cnt - item_GetNum(p);
             }
         }
@@ -250,79 +289,73 @@ void itemReplace(void* a, void* b) {
     itemSwapI((ITEM*)a, (ITEM*)b);
 }
 
-s32 itemDecItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 unused, u8 mode) {
-    ITEM* ary = (ITEM*)aryv;
+s32 itemDecItemDataIdAry(ITEM* ary, u16 n, u16 id, u32 cnt, s16 slot, u16 unused, u8 mode) {
     if (ary == 0) return -1;
     if (!itemIdOk(id)) return -1;
     u8 sort = 0;
-    u16 rem;
     if (slot < 0) {
-        rem = (u16)cnt;
+        cnt &= 0xFFFF;
         while (1) {
             ITEM* p = itemFindAny(ary, n, id);
             if (p == 0) break;
-            s32 r = itemDecOne(p, id, rem);
+            s32 r = itemDecOne(p, id, cnt);
             if (r < 0) return r;
             if (!itemOk(p)) sort = 1;
-            rem = (u16)r;
+            cnt = r;
             if (r <= 0) break;
         }
     } else {
         ITEM* p = ary + slot;
-        rem = (u16)itemDecOne(p, id, (u16)cnt);
+        cnt = itemDecOne(p, id, cnt);
         if (!itemOk(p)) sort = 1;
     }
     if (sort == 1) _itemSortAry(ary, n, mode);
-    return rem;
+    return cnt;
 }
 
 s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, u8 mode, u8 flag) {
     ITEM* ary = (ITEM*)aryv;
     if (ary == 0) return -1;
     if (!itemIdOk(id)) return -1;
+    u16 c16 = cnt;
+    s32 rem = c16;
     u8 sort = 0;
-    u16 rem = (u16)cnt;
     if (flag == 0) {
         ITEM* p = itemFindAny(ary, n, id);
-        if (p != 0 && item_GetNum(p) < max) {
-            s32 r = itemAddOne(p, id, rem, max);
-            if (r < 0) return r;
-            rem = (u16)r;
+        if (p != 0) {
+            if (item_GetNum(p) < max) {
+                s32 r = itemAddOne(p, id, rem, max);
+                if (r < 0) return r;
+                rem = r;
+            }
         } else {
             ITEM* e = itemFindEmpty(ary, n, id);
             if (e != 0) {
-                item_SetItemDataId(e, 0);
-                item_SetNum(e, 0);
-                item_SetItemDataId(e, id);
-                s32 r = itemAddOne(e, id, rem, max);
+                s32 r = itemAddNew(e, id, rem, max);
                 if (r < 0) return r;
-                rem = (u16)r;
+                rem = r;
                 sort = 1;
             }
         }
     } else if (slot < 0) {
-        while (1) {
+        do {
             ITEM* p = itemFindNotFull(ary, n, id, max);
             if (p != 0) {
                 s32 r = itemAddOne(p, id, rem, max);
                 if (r < 0) return r;
-                rem = (u16)r;
+                rem = r;
             } else {
                 ITEM* e = itemFindEmpty(ary, n, id);
                 if (e == 0) break;
-                item_SetItemDataId(e, 0);
-                item_SetNum(e, 0);
-                item_SetItemDataId(e, id);
-                s32 r = itemAddOne(e, id, rem, max);
+                s32 r = itemAddNew(e, id, rem, max);
                 if (r < 0) return r;
                 sort = 1;
-                rem = (u16)r;
+                rem = r;
             }
-            if ((s32)rem <= 0) break;
-        }
+        } while (rem > 0);
     } else {
         ITEM* p = ary + slot;
-        rem = (u16)itemAddOne(p, id, (u16)cnt, max);
+        rem = itemAddOne(p, id, c16, max);
     }
     if (sort == 1) _itemSortAry(ary, n, mode);
     return rem;
@@ -340,22 +373,24 @@ u16 itemGetQuantityInAry(void* aryv, u16 n, u16 id, u16 unused) {
     return total;
 }
 
-s32 itemSearchItemDataIdAry(void* aryv, u16 n, u16 id, u32 mode, u16 max) {
+s32 itemSearchItemDataIdAry(void* aryv, u16 n, u16 id, u8 mode, u16 max) {
     ITEM* ary = (ITEM*)aryv;
+    u16 i;
     if (ary == 0) return 0;
     if (!itemIdOk(id)) return 0;
-    for (u16 i = 0; i < n; i++) {
-        ITEM* p = &ary[i];
+    for (i = 0; i < n; i++) {
         if (mode == 2) {
-            if (!itemOk(p)) return (s32)(ary + i);
-            continue;
-        }
-        if (itemIs(p, id)) {
-            if (mode == 1) {
-                if (item_GetNum(p) < max) return (s32)(ary + i);
-                continue;
+            ITEM* p = itemAt(ary, i);
+            if (!itemCV(p)) return (s32)(ary + i);
+        } else {
+            ITEM* p = itemAt(ary, i);
+            if (itemIs(p, id)) {
+                if (mode == 1) {
+                    if (item_GetNum(p) < max) return (s32)(ary + i);
+                } else {
+                    return (s32)(ary + i);
+                }
             }
-            return (s32)(ary + i);
         }
     }
     return 0;
@@ -369,9 +404,10 @@ static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
             ITEM* p = ary;
             for (int i = 0; i < (int)(n - 1); i++, p++) {
                 if (!itemOk(p)) {
-                    ITEM* q = ary + (i + 1);
-                    for (int j = i + 1; j < (int)n; j++, q++) {
-                        if (itemOk(q)) {
+                    int j = i + 1;
+                    ITEM* q = ary + j;
+                    for (; j < (int)n; j++, q++) {
+                        if (itemOk(q) == 1) {
                             itemSwapI(p, ary + j);
                             break;
                         }
@@ -383,8 +419,9 @@ static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
             ITEM* p = ary;
             for (int i = 0; i < (int)(n - 1); i++, p++) {
                 if (itemOk(p)) {
-                    ITEM* q = ary + (i + 1);
-                    for (int j = i + 1; j < (int)n; j++, q++) {
+                    int j = i + 1;
+                    ITEM* q = ary + j;
+                    for (; j < (int)n; j++, q++) {
                         if (itemOk(q)) {
                             u16 a = item_GetItemDataId(p);
                             if (a > item_GetItemDataId(q)) itemSwapI(p, q);
@@ -399,18 +436,23 @@ static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
 extern "C" {
 
 bool itemDataCheckValid(u16 id) {
-    return itemIdOk(id);
+    if (itemDB_GetName(id) == 0) return false;
+    return id < *item_data_index_number;
 }
 
 bool itemCheckValid(void* p) {
-    return itemOk((ITEM*)p);
+    if (p == 0) return false;
+    u16 id = item_GetItemDataId((ITEM*)p);
+    if (id == 0) return false;
+    return itemIdOk(id) != 0;
 }
 
 void itemInitAry(void* aryv, u16 n) {
     ITEM* ary = (ITEM*)aryv;
     if (ary != 0) {
+        ITEM* p;
         for (u16 i = 0; i < n; i++) {
-            ITEM* p = &ary[i];
+            p = &ary[i];
             if (p != 0) {
                 item_SetItemDataId(p, 0);
                 item_SetNum(p, 0);
@@ -419,46 +461,40 @@ void itemInitAry(void* aryv, u16 n) {
     }
 }
 
-s32 itemSetStatus(u32 entry, u32 id, u32 kind16, u32 idx, s32 value) {
-    u8* p = (u8*)entry;
-    u16 kind = (u16)kind16;
-    u8 v = (u8)value;
-    if (kind == 0) return 0;
-    if (kind >= 0x23) return 0;
+void itemSetStatus(u8* p, u16 id, u16 kind, u16 idx, s32 value) {
+    if (kind == 0 || kind >= 0x23) return;
     if (kind < 0xB) {
         p = itemDataBiosGetPtr(id);
-        if (p == 0) return 0;
+        if (p == 0) return;
     } else if (kind < 0x18) {
         p = itemBallDataBiosGetPtr(id);
-        if (p == 0) return 0;
+        if (p == 0) return;
     } else if (p == 0) {
-        return 0;
+        return;
     }
     switch (kind) {
-    case 1: itemDataBiosSetName(p, v); break;
-    case 2: itemDataBiosSetKind(p, v); break;
-    case 3: itemDataBiosSetPrice(p, v); break;
-    case 4: itemDataBiosSetImportant(p, v != 0); break;
-    case 5: itemDataBiosSetUseful(p, v != 0); break;
-    case 6: itemDataBiosSetDoc(p, v); break;
-    case 7: itemDataBiosSetItemSoubiDataId(p, v); break;
-    case 8: itemDataBiosSetFightUseKoukaDataId(p, v); break;
-    case 9: itemDataBiosSetUseFriend(p, (u16)idx, v); break;
-    case 10: itemDataBiosSetBuff(p, v); break;
-    case 12: itemBallDataBiosSetFightKoukaDataId(p, v); break;
-    case 27: itemBiosSetItemDataId(p, v); break;
-    case 28: itemBiosSetNum(p, v); break;
-    case 30: fightItemBiosSetItemDataId(p, v); break;
-    case 31: fightItemBiosSetTargetDataId(p, v); break;
-    case 32: fightItemBiosSetCount(p, v); break;
-    case 33: fightItemBiosSetBuff(p, v); break;
+    case 1: itemDataBiosSetName(p, value); break;
+    case 2: itemDataBiosSetKind(p, value); break;
+    case 3: itemDataBiosSetPrice(p, value); break;
+    case 4: itemDataBiosSetImportant(p, value != 0); break;
+    case 5: itemDataBiosSetUseful(p, value != 0); break;
+    case 6: itemDataBiosSetDoc(p, value); break;
+    case 7: itemDataBiosSetItemSoubiDataId(p, value); break;
+    case 8: itemDataBiosSetFightUseKoukaDataId(p, value); break;
+    case 9: itemDataBiosSetUseFriend(p, idx, value); break;
+    case 10: itemDataBiosSetBuff(p, value);
+    case 12: itemBallDataBiosSetFightKoukaDataId(p, value); break;
+    case 27: itemBiosSetItemDataId(p, value); break;
+    case 28: itemBiosSetNum(p, value); break;
+    case 30: fightItemBiosSetItemDataId(p, value); break;
+    case 31: fightItemBiosSetTargetDataId(p, value); break;
+    case 32: fightItemBiosSetCount(p, value); break;
+    case 33: fightItemBiosSetBuff(p, value); break;
     }
-    return 0;
 }
 
-u32 itemGetStatus(u32 entry, u32 id, u32 kind16, u32 idx) {
+u32 itemGetStatus(void* entry, u16 id, u16 kind, u16 idx) {
     u8* p = (u8*)entry;
-    u16 kind = (u16)kind16;
     if (kind == 0 || kind >= 0x23) return 0;
     if (kind < 0xB) {
         p = itemDataBiosGetPtr(id);
@@ -475,15 +511,15 @@ u32 itemGetStatus(u32 entry, u32 id, u32 kind16, u32 idx) {
     switch (kind) {
     case 1: return itemDataBiosGetName(p);
     case 2: return itemDataBiosGetKind(p);
-    case 3: return (u8)itemDataBiosGetPrice(p);
-    case 4: return itemDataBiosGetImportant(p);
-    case 5: return itemDataBiosGetUseful(p);
+    case 3: return (u16)itemDataBiosGetPrice(p);
+    case 4: return (u8)itemDataBiosGetImportant(p);
+    case 5: return (u8)itemDataBiosGetUseful(p);
     case 6: return itemDataBiosGetDoc(p);
-    case 7: return (u8)itemDataBiosGetItemSoubiDataId(p);
-    case 8: return (u8)itemDataBiosGetFightUseKoukaDataId(p);
-    case 9: return (u8)itemDataBiosGetUseFriend(p, (u16)idx);
+    case 7: return (u16)itemDataBiosGetItemSoubiDataId(p);
+    case 8: return (u16)itemDataBiosGetFightUseKoukaDataId(p);
+    case 9: return (s8)itemDataBiosGetUseFriend(p, idx);
     case 10: return itemDataBiosGetBuff(p);
-    case 12: return (u8)itemBallDataBiosGetFightKoukaDataId(p);
+    case 12: return (u16)itemBallDataBiosGetFightKoukaDataId(p);
     case 13: return itemBallDataBiosGetInWzxDataId(p);
     case 14: return itemBallDataBiosGetOpenWzxDataId(p);
     case 15: return itemBallDataBiosGetOutWzxDataId(p);
@@ -495,11 +531,11 @@ u32 itemGetStatus(u32 entry, u32 id, u32 kind16, u32 idx) {
     case 21: return itemBallDataBiosGetSnatchPokeoutWzxDataId(p);
     case 22: return itemBallDataBiosGetSnatchShakeWzxDataId(p);
     case 23: return itemBallDataBiosGetSnatchSnatchWzxDataId(p);
-    case 25: return (u8)itemSoubiDataBiosGetFightKoukaDataId(p);
-    case 27: return (u8)itemBiosGetItemDataId(p);
-    case 28: return (u8)itemBiosGetNum(p);
-    case 30: return (u8)fightItemBiosGetItemDataId(p);
-    case 31: return (u8)fightItemBiosGetTargetDataId(p);
+    case 25: return (u16)itemSoubiDataBiosGetFightKoukaDataId(p);
+    case 27: return (u16)itemBiosGetItemDataId(p);
+    case 28: return (u16)itemBiosGetNum(p);
+    case 30: return (u16)fightItemBiosGetItemDataId(p);
+    case 31: return (u16)fightItemBiosGetTargetDataId(p);
     case 32: return fightItemBiosGetCount(p);
     case 33: return fightItemBiosGetBuff(p);
     }

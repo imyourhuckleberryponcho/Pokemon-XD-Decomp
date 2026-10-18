@@ -1,5 +1,4 @@
-// WIP (NonMatching): everything matches except scratch-register choices inside _flagGet and
-// _flagSet (the bit-merge expressions); permuter and type sweeps did not find it yet.
+// WIP (NonMatching): only _flagSet differs (99.4%: scratch registers in the bit-merge).
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -57,22 +56,26 @@ void GSflagSet(u32 id, u32 value) {
 }
 
 static u32 _flagGet(u32* bits, FlagData* data, u32 id) {
-    u32 length;
     u32 pos;
     u32 word;
+    u32 length;
     u32 shift;
 
     if (bits == NULL) {
         GSlogWrite("ERROR[GSflagGet]:Initialization has not finished.\n");
         return 0;
     }
-    length = data[id].length;
     pos = data[id].pos;
+    length = data[id].length;
     word = pos >> 5;
     shift = pos & 0x1F;
     if (length > 1) {
-        u32 value = (bits[word] >> shift) | (bits[word + 1] << (32 - shift));
-        return value & _flagAND[length];
+        u32 low = bits[word];
+        u32 high = bits[word + 1];
+
+        low >>= shift;
+        high <<= 32 - shift;
+        return (high | low) & _flagAND[length];
     }
     return (bits[word] >> shift) & 1;
 }
@@ -99,11 +102,14 @@ static void _flagSet(u32* bits, FlagData* data, u32 id, u32 value) {
     word = pos >> 5;
     shift = pos & 0x1F;
     if (length > 1) {
-        u32* p = &bits[word];
-        *p = (value << shift) | (*p & ~(_flagAND[length] << shift));
+        u32 low = bits[word];
+        low &= ~(_flagAND[length] << shift);
+        bits[word] = (value << shift) | low;
         if (length + shift >= 32) {
             u32 over = length + shift - 32;
-            p[1] = (value >> (length - over)) | (p[1] & ~_flagAND[over]);
+            u32 high = bits[word + 1];
+            high &= ~_flagAND[over];
+            bits[word + 1] = (value >> (length - over)) | high;
         }
     } else if (value == 0) {
         bits[word] &= ~(1 << shift);

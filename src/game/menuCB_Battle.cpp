@@ -131,7 +131,7 @@ s32 menuCB_InitBattle(BattleWork* work) {
     void* encounter;
     s32 encId = 0;
     s8 count;
-    s8 baseA;
+    int baseA;
     s8 baseB;
     u32 bgm;
     u32 floorId;

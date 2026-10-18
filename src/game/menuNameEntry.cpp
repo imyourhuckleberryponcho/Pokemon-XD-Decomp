@@ -1186,9 +1186,9 @@ static bool backNameCursor(NAME_ENTRY_ARG* a) {
     if (pos <= 0) {
         return false;
     }
-    int n = pos - 1;
-    a->name[n] = 0;
-    *a->nameCurX = n;
+    pos--;
+    a->name[pos] = 0;
+    *a->nameCurX = pos;
     return true;
 }
 

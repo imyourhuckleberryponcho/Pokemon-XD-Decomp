@@ -1,5 +1,4 @@
-// WIP (NonMatching): only GSgfxBackFBDoFrame differs: `pass` is computed into r0 and moved
-// to r29 (target computes it straight into r29). A bool local avoids the move but reorders registers.
+// WIP (NonMatching): only GSgfxBackFBDoFrame differs (99.3%): fb/i/pass register order.
 #include <dolphin/types.h>
 
 struct GStexture;
@@ -119,15 +118,15 @@ bool GSgfxBeginBackFBCapture(GStexture* texture, GSgfxBackFBCallback callback, v
 void GSgfxBackFBDoFrame(GSgfxLayer* layer) {
     unsigned long size;
     unsigned long used;
-    GSgfxBackFB* fb;
     u32 i;
+    GSgfxBackFB* fb;
     GSgfxLayerPass pass;
 
     if (!_backFBIsCapturing) {
         return;
     }
     layer->GetFifoSize(&size, &used);
-    pass = (GSgfxLayerPass)(used != 0);
+    pass = used != 0 ? (GSgfxLayerPass)1 : GS_GFX_LAYER_PASS_0;
     for (i = 0, fb = gfxBackFBList; i < BACK_FB_MAX; i++, fb++) {
         if (fb->active == 1) {
             layer->textureCopy(pass, fb->texture, true, NULL, false, false, false);

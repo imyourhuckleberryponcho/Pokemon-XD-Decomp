@@ -1,4 +1,3 @@
-// STATUS: EditButton + GetTotalEffort written; dbgMenuPokemonEditSub (8.5 KB) NOT started (empty stub).
 // Debug menu units were built without the peephole optimizer.
 #include <dolphin/types.h>
 
@@ -1209,24 +1208,25 @@ s32 dbgMenuPokemonEditSub(void* pokemon, u8 a1, u8* a2, u8* a3, u8* a4, u8* a5) 
             pokemonDoItemSoubi(pokemon, 0, 0);
         }
         if (trainerId != 0 && a1 == 1) {
+            s32 j;
             value = pokemonGetStatus(pokemon, 0, 0x6E, 0);
             fightTrainerSetStatus(0, trainerId, 0x15, 0, value);
             fightTrainerSetStatus(0, trainerId, 0xE, 0, pokemonGetStatus(0, value, 1, 0));
             fightTrainerSetStatus(0, trainerId, 0x11, 0, pokemonGetStatus(pokemon, 0, 0x7A, 0));
-            for (i = 0; i < 6; i++) {
-                fightTrainerSetStatus(0, trainerId, 0xF, i, pokemonGetStatus(pokemon, 0, ivStats[i], 0));
+            for (j = 0; j < 6; j++) {
+                fightTrainerSetStatus(0, trainerId, 0xF, j, pokemonGetStatus(pokemon, 0, ivStats[j], 0));
             }
-            for (i = 0; i < 6; i++) {
-                fightTrainerSetStatus(0, trainerId, 0x10, i, pokemonGetStatus(pokemon, 0, evStats[i], 0));
+            for (j = 0; j < 6; j++) {
+                fightTrainerSetStatus(0, trainerId, 0x10, j, pokemonGetStatus(pokemon, 0, evStats[j], 0));
             }
             fightTrainerSetStatus(0, trainerId, 0x14, 0, (u8)pokemonGetStatus(pokemon, 0, 0xB7, 0));
             fightTrainerSetStatus(0, trainerId, 0x16, 0, pokemonGetSoubiItemDataId(pokemon));
             fightTrainerSetStatus(0, trainerId, 0x19, 0, pokemonGetStatus(pokemon, 0, 0x99, 0));
             fightTrainerSetStatus(0, trainerId, 0x1A, 0, pokemonGetStatus(pokemon, 0, 0xBA, 0));
             fightTrainerSetStatus(0, trainerId, 0x1B, 0, pokemonGetStatus(pokemon, 0, 0xBF, 0));
-            for (i = 0; i < 4; i++) {
-                fightTrainerSetStatus(0, trainerId, 0x17, i, pokemonGetStatus(pokemon, 0, 0x7F, i));
-                fightTrainerSetStatus(0, trainerId, 0x18, i, pokemonGetStatus(pokemon, 0, 0x81, i));
+            for (j = 0; j < 4; j++) {
+                fightTrainerSetStatus(0, trainerId, 0x17, j, pokemonGetStatus(pokemon, 0, 0x7F, j));
+                fightTrainerSetStatus(0, trainerId, 0x18, j, pokemonGetStatus(pokemon, 0, 0x81, j));
             }
             fightTrainerSetStatus(0, trainerId, 0x13, 0, pokemonGetStatus(pokemon, 0, 0xC3, 0));
         }
