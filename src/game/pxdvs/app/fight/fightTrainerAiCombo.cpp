@@ -61,7 +61,7 @@ u8 fightFloorIsNowEncountVirtualBattle(u32);
 FightEncountData* fightEncountDataBiosGetPtr();
 u16 fightEncountDataBiosGetDiskId(FightEncountData*);
 u16 fightEncountDataBiosGetFightTrainerDataId(FightEncountData*, u8);
-u32 deckDataVirtualDB_GetEnemyDeck__FUs(u16);
+u16 deckDataVirtualDB_GetEnemyDeck__FUs(u16);
 DeckTrainer* getDeckTrainerObj__11DeckTrainerFUl(u32);
 u16 getFixedActionID__11DeckTrainerCFv(DeckTrainer*);
 u16 getComboID__11DeckTrainerCFUc(DeckTrainer*, u8);

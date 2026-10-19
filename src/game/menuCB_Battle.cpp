@@ -233,8 +233,8 @@ s32 menuCB_InitBattle(BattleWork* work) {
     case 1: {
         u16 rankB = work->trainers[1].rank;
         u16 rankA = work->trainers[0].rank;
-        u32 idB = VS_TRAINER_RANK_NUMBER[rankB];
         u32 idA = VS_TRAINER_RANK_NUMBER[rankA];
+        u32 idB = VS_TRAINER_RANK_NUMBER[rankB];
         menuCBBios_InitTrainerFromDataID(&work->trainers[1], idB, encId);
         work->trainers[1].trainerDataId = idB;
         work->trainers[1].rank = rankB;

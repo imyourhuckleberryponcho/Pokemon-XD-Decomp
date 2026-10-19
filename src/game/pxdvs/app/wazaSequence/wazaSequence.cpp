@@ -299,8 +299,8 @@ bool WazaSequence::Load(u8* data, u32 a, u32 b) {
     wazaSequenceSysGetResID();
     hdr = (WazaHeader*)p;
     p = (u8*)hdr + 0x20;
-    p = Align32(p);
     count = hdr->count - 1;
+    p = Align32(p);
     hdr->camera = 0;
     if (hdr->cameraSize != 0) {
         HSD_Archive* archive = (HSD_Archive*)operator new(0x44);
@@ -484,8 +484,8 @@ int WazaSequence::GetNumVariations(u16 wazaID, u16 kind) {
             n = 1;
         }
     } else {
-        WazaExtWzxEntry* x = waza_ext_wzx_data;
         u16 idx = kind - 1;
+        WazaExtWzxEntry* x = waza_ext_wzx_data;
         u32 i;
         if (wazaID == 0 || wazaID >= waza_wzx_data_number) {
             return 0;
@@ -516,6 +516,7 @@ void WazaSequence::SetRenderCamera(_GScamera* camera) {
 }
 
 void WazaSequence::Start(bool camera) {
+    _GSmodel* model;
     ModelSequence* ms;
     SequenceEntry* e;
     GSgfxLayer* layer;
@@ -524,10 +525,10 @@ void WazaSequence::Start(bool camera) {
         ApplyStop();
     }
     wazaSequenceSysApplyStop();
-    ms = AsModel(m_owner);
     e = m_entries;
+    ms = AsModel(m_owner);
     if (ms != 0) {
-        _GSmodel* model = ms->m_model;
+        model = ms->m_model;
         ms->LinkWithWazaSequence(this);
         if (ms->m_busy != 0 && m_kind == 2) {
             wazaSequenceSysResetAnimationExcept(ms);
@@ -699,7 +700,7 @@ bool WazaSequence::LoadData(u8* data) {
     }
     ms = AsModel(m_owner);
     if (ms != 0) {
-        u8 sec = m_section;
+        bool sec = m_section;
         if (sec == 11) {
             if (ms->m_maxSection < sec) {
                 m_section = 0;

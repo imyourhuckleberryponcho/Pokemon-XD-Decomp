@@ -43,17 +43,17 @@ void GSvecMakeFromQuat(GSvec* out, const GSquat* q) {
 
 // Rotates v by q (q * v * conj(q)).
 void GSvecTransformQuat(GSvec* out, const GSquat* q, const GSvec* v) {
-    f32 qx = q->x;
     f32 qy = q->y;
-    f32 qz = q->z;
-    f32 qw = q->w;
     f32 vx = v->x;
+    f32 qw = q->w;
+    f32 qz = q->z;
     f32 vy = v->y;
+    f32 qx = q->x;
     f32 vz = v->z;
-    f32 d = qy * vy + vx * qx + vz * qz;
-    f32 a = qy * vz + vx * qw - vy * qz;
     f32 b = qz * vx + vy * qw - vz * qx;
     f32 c = qx * vy + vz * qw - vx * qy;
+    f32 d = qy * vy + vx * qx + vz * qz;
+    f32 a = qy * vz + vx * qw - vy * qz;
 
     out->x = qx * d + a * qw + qy * c - b * qz;
     out->y = qy * d + b * qw + qz * a - c * qx;

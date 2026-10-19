@@ -655,9 +655,9 @@ static s32 _gbac_connect_job(long) {
         if (CB(s32, 0x4C9C) == 0) {
             list[2] = 0;
             type = 0;
+            list[3] = 0;
             list[0] = (s32)(_menuCB_Temp + 0x1320);
             list[1] = (s32)(_menuCB_Temp + 0x1C98);
-            list[3] = 0;
         } else {
             list[0] = 0;
             type = 1;

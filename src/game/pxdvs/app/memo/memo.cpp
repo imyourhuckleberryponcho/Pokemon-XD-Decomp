@@ -241,17 +241,17 @@ u32 memoDataSetMemoFlag(Memo* memo) {
 }
 
 void memoDataSetPokemonID(Memo* memo, u16 id) {
-    memoSetPokemonIDInline(memo, id);
+    memoSetPokemonIDInline(memo, (u16)id);
 }
 
 void memoDataSet(Memo* memo, void* pokemon) {
-    u16 i;
     Memo* m = memo;
     if (m == 0) {
         m = (Memo*)savedataGetStatus(0, 0xC);
     }
     u32 id = pokemonBiosGetPokemonDataId(pokemon);
     u16 count = m->count;
+    u16 i;
     for (i = 0; i < count; i++) {
         if (((u32)m->entries[i].id & 0x3FFF) == (u16)id) {
             return;

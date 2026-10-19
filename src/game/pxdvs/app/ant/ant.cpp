@@ -238,8 +238,8 @@ void dispTexture(GStexture* tex, f32 x, f32 y, int sx, int sy, int w, int h, GSg
         int hw = w / 2;
         int hh = h / 2;
         w = (int)((f32)w * scale);
-        h = (int)((f32)h * scale);
         x = (x + (f32)hw) - (f32)(w / 2);
+        h = (int)((f32)h * scale);
         y = (y + (f32)hh) - (f32)(h / 2);
     }
     GSgfxSetupRenderAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 1, 1, 4));
@@ -256,9 +256,9 @@ void dispTexture(GStexture* tex, f32 x, f32 y, int sx, int sy, int w, int h, GSg
         GSgfxSetTUnitUserAlphaOp(0, 0, 0, 0, 1, 0);
     }
     GSprimSetBlendMode(1);
-    u8 r = col.r, g = col.g, b = col.b, a = col.a;
     s16 px = (s16)x;
     s16 py = (s16)y;
+    u8 r = col.r, g = col.g, b = col.b, a = col.a;
     GSgfxSelectTexture(0, tex);
     GSgfxSetPrimitiveType(0x98);
     GSgfxBeginSurface(4);

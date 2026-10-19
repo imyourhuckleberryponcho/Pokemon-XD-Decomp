@@ -260,12 +260,12 @@ inline void FlashMenu::runTags(u32 frameNo) {
 
 void FlashMenu::Draw(tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
     GSgfxLayerID layer;
-    u32 next;
+    int i;
     u32 rate;
     u32 dt;
-    int i;
-    DepthEntry* d;
+    u32 next;
     FlashHeader* hdr;
+    DepthEntry* d;
     if (dict != 0) {
         layer = (GSgfxLayerID)winSpriteGetLayerID(w, s);
         GSgfxLayerSetActive(layer);
@@ -453,11 +453,12 @@ void FlashMenu::Release() {
 }
 
 void FlashMenu::InitDataPointer() {
-    CharEntry* c;
+    SpriteTab* st;
+    int j;
     DepthEntry* d;
     FlashHeader* hdr;
     s32 i;
-    int j;
+    CharEntry* c;
     s32 off;
     c = dict;
     d = depth;
@@ -481,7 +482,7 @@ void FlashMenu::InitDataPointer() {
     off = 0;
     for (i = 0; i < hdr->numChars; i++, off += 8) {
         for (j = 0; j < hdr->numDepth; j++) {
-            SpriteTab* st = (SpriteTab*)((u8*)sprites + off);
+            st = (SpriteTab*)((u8*)sprites + off);
             st->depth[j].charId = 0;
             st->depth[j].ratio = 0.0f;
             st->depth[j].clipDepth = 0;
@@ -984,7 +985,7 @@ void FlashMenu::ParaseTextRecord(_DEFINETEXT* t) {
             break;
         }
         }
-        u8* n = AT(u8*, rec, 8);
+        u8* n = AT(u8*, (s32)rec, 8);
         if (n == 0) break;
         rec = fixup(AT(u8*, rec, 8), (u8*)t);
     }

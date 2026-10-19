@@ -593,6 +593,7 @@ void CMenuPokemonLeave::main(CMenuGlobalState& st)
 void CMenuPokemonLeave::loop()
 {
     state.change(1);
+    long saved;
     char buf[0x18];
     while (true) {
         state.update();
@@ -736,7 +737,7 @@ void CMenuPokemonLeave::loop()
                 cursorUnderPokemonDel();
                 resetViewAntAll();
             }
-            long saved = cursor->index;
+            saved = cursor->index;
             temochiFlag = 1;
             animState.change(3);
             cursor->setPositionIndex(searchTemochiPokemonBlankSlot() + 4);
@@ -999,7 +1000,7 @@ void CMenuPokemonLeave::boxNameDraw(int box, long windowId, unsigned long itemId
     msgctrlSetValue(0x37, (u32)name);
     s16 tw = GSmsgGetRect(0x4276) >> 16;
     s16 off = sp->w / 2 - tw / 2;
-    GSmsgPrint2(w->layer, w->x + sp->x + off, w->y + sp->y, -1, 0x4276);
+    GSmsgPrint2(w->layer, w->x + sp->x + off, sp->y + w->y, -1, 0x4276);
 }
 
 void CMenuPokemonLeave::markingMenuItemCallBack(tagWINDOW_WORK* w, tagSPRITE_WORK* s)
@@ -1276,7 +1277,7 @@ void CMenuPokemonLeave::stateMainProc()
             }
             if (pos != cursor->index) {
                 menuPtPlaySe(0x441);
-                if (pos >= 10) {
+                if (10 <= pos) {
                     f37E0 = (pos - 10) % 6;
                 } else if (pos >= 4 && pos <= 5) {
                     f37E4 = pos;
@@ -1791,7 +1792,7 @@ void CMenuPokemonLeave::resetViewAntAll()
             near = true;
         }
         bool show = true;
-        if (!near && next != b) {
+        if (!near && b != next) {
             show = false;
         }
         s8 box = b;

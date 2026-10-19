@@ -948,6 +948,8 @@ void ModelSequence::SetVisibility(bool visible) {
 
 // ---
 u8 ModelSequence::LoadData(u8* data) {
+    GSpart* part;
+    s32 list;
     PkxHeader* hdr = (PkxHeader*)data;
     s32 resID = wazaSequenceSysGetResID();
     if (hdr->size == 0) {
@@ -971,8 +973,8 @@ u8 ModelSequence::LoadData(u8* data) {
     }
     data += 0x84;
     MotionSection* sections = (MotionSection*)data;
-    u16 i = 0;
     MotionSection* sec = sections;
+    u16 i = 0;
     m_unk46 = hdr->headJoint;
     m_modelSize = hdr->modelSize;
     m_section = 0;
@@ -1091,11 +1093,11 @@ u8 ModelSequence::LoadData(u8* data) {
     if (wazaSequenceSysGetModelShadowLight() != 0 && wazaSequenceSysGetModelShadowCount() != 0) {
         GSmodelSetShadowFlags(m_model, 1);
         GSmodelSetShadowLight(m_model, wazaSequenceSysGetModelShadowLight());
-        s32 list = wazaSequenceSysGetModelShadowList();
+        list = wazaSequenceSysGetModelShadowList();
         GSmodelSetShadowSurface(m_model, wazaSequenceSysGetModelShadowCount(), list);
     }
     if (m_model != 0 && m_hasParent == 0 && m_unk46 != 0) {
-        GSpart* part = GSmodelGetPart(m_model, m_unk46);
+        part = GSmodelGetPart(m_model, m_unk46);
         if (part != 0) {
             GSpartRegisterAnimMix(part, 2, 0x202, _getHeadRotationCallback, this);
             m_unk61 = 1;
@@ -1729,7 +1731,7 @@ bool ModelSequence::ModelMotionStart() {
         DoAnimation(motion->index, (enumSectionMotionType)motion->type, false);
     } else {
         m_step = 0;
-        s32 idle = IdleMotion();
+        int idle = IdleMotion();
         if (!(m_flags & 2)) {
             m_mouthState = 0;
             GSmodelLinkTexAnimToAnim(m_model, 1);
@@ -1754,7 +1756,7 @@ bool ModelSequence::ModelMotionStart() {
         u16 part = rem % mod;
         if (part == 0 && m_timer != 0) {
             u16 whole = __OSf32tou16(0.5f + frames);
-            part = whole;
+            s32 part = whole;
             m_timer--;
         }
         m_stepRestart = 1;

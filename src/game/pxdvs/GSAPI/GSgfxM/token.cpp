@@ -119,7 +119,7 @@ void GSgfxTokenIfClearedReset(u16* tokenPtr) {
     if (token == 0) {
         return;
     }
-    if (_tokenCleared(token) == true) {
+    if (_tokenCleared((u8)token) == true) {
         *tokenPtr = 0;
     }
 }

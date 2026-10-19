@@ -235,7 +235,7 @@ static inline void FillStreamBuffer(__GSmovieStreaming* s, s16* left, s16* right
 
 extern "C" s32 _StreamInitFillStreamBuffer(__GSmovieStreaming* s) {
     THPPlayer* p = s->player;
-    u32 n = _audioChunkSamples(p);
+    unsigned int n = _audioChunkSamples(p);
     if (p->audioInfo.sndChannels == 2) {
         FillStreamBuffer(s, p->audioWork0, p->audioWork1, n);
     } else {
@@ -290,8 +290,8 @@ static inline void _ringAdvance(__GSmovieStreaming* s, u64 total) {
     }
 }
 static u32 StreamUpdateCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
-    __GSmovieStreaming* s = (__GSmovieStreaming*)user;
     THPPlayer* p;
+    __GSmovieStreaming* s = (__GSmovieStreaming*)user;
     u32 n;
     if (s == 0) {
         return 0;
@@ -518,10 +518,10 @@ static u32 _VideoDecode(__GSmovieStreaming* s, THPReadBuffer* rb, THPTextureSet*
                 p->texWriteIdx = 0;
             }
             {
-                s32 cur = p->curVideoNumber + 1;
                 s32 old = p->videoDecodeCount;
-                p->videoDecodeCount = old + 1;
+                s32 cur = p->curVideoNumber + 1;
                 result = cur > old ? cur - old : 0;
+                p->videoDecodeCount = old + 1;
             }
         }
         data += *sizes;
@@ -584,6 +584,7 @@ static inline void _movieStreamPrepareGetData_Exec(__GSmovieStreaming* s, u32 si
 }
 
 extern "C" void _movieStreamPrepareGetData(__GSmovieStreaming* s) {
+    u32 size;
     THPPlayer* p = s->player;
     s32 level = OSDisableInterrupts();
     switch (s->state) {
@@ -599,7 +600,7 @@ extern "C" void _movieStreamPrepareGetData(__GSmovieStreaming* s) {
         break;
     default:
         if (p->readBuffer[p->readWriteIdx].isValid == 0) {
-            u32 size = p->nextSize;
+            size = p->nextSize;
             if (size != 0) {
                 _movieStreamPrepareGetData_Exec(s, size);
             }
@@ -617,9 +618,10 @@ static void _movieStreamPrepareGetDataCallback(s32, void* size, s32 arg) {
 
 static void _movieStreamPrepareGetDataCallback_Exec(__GSmovieStreaming* s, u32 offset, u32 size) {
     s32 count = 0x8000 - offset;
+    u32 next;
     THPPlayer* p = s->player;
-    u8* src = p->cache + offset;
     u32 filled = p->readBuffer[p->readWriteIdx].filled;
+    u8* src = p->cache + offset;
     u8* dst = p->readBuffer[p->readWriteIdx].ptr + filled;
     if (filled + count > size) {
         count = size - filled;
@@ -670,7 +672,7 @@ static void _movieStreamPrepareGetDataCallback_Exec(__GSmovieStreaming* s, u32 o
         break;
     default:
         if (q->readBuffer[q->readWriteIdx].isValid == 0) {
-            u32 next = q->nextSize;
+            next = q->nextSize;
             if (next != 0) {
                 _movieStreamPrepareGetData_Exec(s, next);
             }

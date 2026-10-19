@@ -67,7 +67,7 @@ void fn_80103420(void);
 static void _threadSwitch(void);
 static void threadRemoveFromList(GSthread* thread);
 static void threadInsertIntoList(GSthread* thread);
-static void threadExecutePass(u32 group, u8 groupOnly);
+void threadExecutePass(u32 group, u8 groupOnly);
 static void threadExitFunc(u32 result);
 static void threadRun(GSthread* thread, u32* ctx, u8* scratch);
 static void threadInitialize(GSthread* thread);
@@ -497,7 +497,10 @@ GSthread* GSthreadCreate(u8 affinity, u32 group, u32 stackSize, u8 usesFPU, u8 a
     if (thread->stack == 0) {
         return 0;
     }
-    u32 ctxSize = usesFPU ? 0x188 : 0x88;
+    u32 ctxSize = 0x88;
+    if (usesFPU) {
+        ctxSize = 0x188;
+    }
     thread->ctx = (u32*)GSmemAllocHeap(heap, ctxSize);
     if (thread->ctx == 0) {
         return 0;
@@ -586,7 +589,7 @@ static void threadInsertIntoList(GSthread* thread) {
     }
 }
 
-static void threadExecutePass(u32 group, u8 groupOnly) {
+void threadExecutePass(u32 group, u8 groupOnly) {
     u32* ctx;
     u32* stack;
     u8* scratch;
@@ -638,10 +641,9 @@ static void threadExecutePass(u32 group, u8 groupOnly) {
                 _nextThread = 0;
                 GSthreadTerminate(dead);
             }
-            next = threadFindNext(thread, group, groupOnly);
-            _nextThread = next;
-            thread = next;
-            if (next != 0) {
+            _nextThread = threadFindNext(thread, group, groupOnly);
+            thread = _nextThread;
+            if (thread != 0) {
                 stack = thread->stack;
                 ctx = thread->ctx;
                 scratch = threadDMAStackToScratch(stack, thread->stackSize, 1);

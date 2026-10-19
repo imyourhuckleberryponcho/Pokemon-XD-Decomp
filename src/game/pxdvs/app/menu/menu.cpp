@@ -507,8 +507,8 @@ void menuDaemon(void) {
     _menuUpdateKeyInfo(&winSysWork, &winSysWork2);
     menuOffScreenDraw();
     dt = _gettLastTime();
-    _currentTime = dt;
     total = _currentAddTime + (f32)dt;
+    _currentTime = dt;
     _menuCount++;
     _currentAddTime = total;
     if (total > 1.0f) {
@@ -1120,16 +1120,16 @@ static u8 _menuGetGcKeyInfo(s32 port, u16* keys, u16* keys2) {
 static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
     s32 port;
     u16 bit;
-    u16 repeat;
+    KeyInfo* k1;
     MenuWindow* window;
-    u16 repeat2;
+    KeyInfo* k2;
     u16 keys2;
     s32 i;
-    KeyInfo* k1;
+    u16 repeat;
     u16 held;
     u16 pressed;
     u16 keys;
-    KeyInfo* k2;
+    u16 repeat2;
     u8 type;
     u16 held2;
 
@@ -1193,7 +1193,7 @@ static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
         held = 0;
         for (i = 0; i < 16; i++) {
             bit = 1 << i;
-            if (pressed & bit) {
+            if (bit & pressed) {
                 k1->timer[i] = 15;
                 repeat |= bit;
             } else if (keys & bit) {

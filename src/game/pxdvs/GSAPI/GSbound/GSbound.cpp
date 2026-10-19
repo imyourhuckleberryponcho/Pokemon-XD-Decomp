@@ -717,9 +717,9 @@ void GSboundGetSize(GSbound* b, Vec* size, bool scale, bool rot)
     Vec v;
     Quaternion q;
     Vec diff;
-    f32 sx;
-    f32 sy;
     f32 sz;
+    f32 sy;
+    f32 sx;
     s32 i;
 
     GSboundGetMinMax(b, &mn, &mx, scale, false, false, false);
@@ -895,6 +895,7 @@ void GSboundGetShadowVolume(GSbound* out, GSbound* b, Vec* plane, f32 height)
 
 void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
 {
+    f32 s1;
     Vec mn;
     Vec mx;
     Vec up;
@@ -911,6 +912,7 @@ void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
     Mtx m;
     Mtx sm;
     f32 a;
+    f32 s0;
     f32 maxA;
     f32 maxB;
     f32 bb;
@@ -943,8 +945,8 @@ void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
         m[1][3] = 0.0f;
         m[2][3] = 0.0f;
         f32 (*src)[4] = (f32(*)[4]) b->data;
-        f32 s0 = PSVECMag((Vec*) &src[0][0]);
-        f32 s1 = PSVECMag((Vec*) &src[1][0]);
+        s0 = PSVECMag((Vec*) &src[0][0]);
+        s1 = PSVECMag((Vec*) &src[1][0]);
         PSMTXScale(sm, s0, s1, PSVECMag((Vec*) &src[2][0]));
         PSMTXInverse(sm, sm);
         PSMTXConcat(sm, m, m);
@@ -971,18 +973,18 @@ void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
     sx = fwd.x;
     sy = fwd.y;
     sz = fwd.z;
-    c[0].x = sx;
     c[0].y = sy;
+    c[0].x = sx;
     c[0].z = sz;
-    c[1].x = sx;
     c[1].y = sy * -1.0f;
+    c[1].x = sx;
     c[1].z = sz;
     c[2].x = sx * -1.0f;
-    c[2].y = sy;
     c[2].z = sz;
     c[3].x = sx * -1.0f;
-    c[3].y = sy * -1.0f;
+    c[2].y = sy;
     c[3].z = sz;
+    c[3].y = sy * -1.0f;
     maxA = 0.0f;
     maxB = 0.0f;
     cp = c;

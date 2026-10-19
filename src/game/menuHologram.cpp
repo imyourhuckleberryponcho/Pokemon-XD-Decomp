@@ -928,8 +928,8 @@ void CMenuHologram::renderOffscreenData()
             GXWGFifo.s16 = 480;
             fifoColor(0xFF, 0xFF, 0xFF, relivehall_data->alpha);
             GXWGFifo.u8 = 0;
-            GXWGFifo.u8 = 1;
             layer->endSurface();
+            GXWGFifo.u8 = 1;
         }
     }
 #undef LU8
@@ -1024,6 +1024,7 @@ void CMenuHologram::stageAllModelLoad()
 {
     stageAllModelUnLoad();
     initializeOffscreenData();
+    GSColor4 col;
     u16 wazaId;
     int dancers;
     u32 camId;
@@ -1174,7 +1175,6 @@ void CMenuHologram::stageAllModelLoad()
     }
     GSmodelDisableModulation(models[1].model);
     if (dancers != 0) {
-        GSColor4 col;
         memset(&col, 0, 4);
         if (visitor != 0) {
             GSgfxColAu8 c = pokemonToAisyouColor(visitor, stage->getDancerPointer(stage->hit));
@@ -1190,7 +1190,7 @@ void CMenuHologram::stageAllModelLoad()
     }
     for (int i = 0; i < dancers; i++) {
         Pokemon* a = stage->getDancerPointer((i + 1) % dancers);
-        GSgfxColAu8 c = pokemonToAisyouColor(stage->getDancerPointer(i), a);
+        GSgfxColAu8 c = pokemonToAisyouColor(stage->getDancerPointer((u16)i), a);
         u8 pl = ((u8*)relivehall_data)[colorLineIndexTbl[st][dancers][(dancers + i - stage->hit) % dancers + 1] + 6];
         GSmaterial* mat = (GSmaterial*)((u8*)mats + (pl - 1) * 0x34);
         GSmaterialSetModulate(mat, &c);
@@ -1225,7 +1225,7 @@ void CMenuHologram::stageAllModelLoad()
     GSmodelSetVisibility(object, 1);
     GSmodelSetAnimType(object, 1);
     GSmodelSetRenderLayer(object, 2, layers);
-    GSpart* neckPart = GSmodelGetPart(object, (s8)peopleInfoBiosGetNeckIndex(peopleInfoBiosGetPtr(0x16C90400)));
+    GSpart* neckPart = GSmodelGetPart(object, peopleInfoBiosGetNeckIndex(peopleInfoBiosGetPtr(0x16C90400)));
     GSpartRegisterAnimMix(neckPart, 2, 0x20202, _getNeckRotationCB, 0);
     GSpartFree(neckPart);
     if (wazaId != 0) {
@@ -1470,8 +1470,8 @@ void CMenuHologram::drawAll()
             flag = true;
         }
         Pokemon* visitor = st->getVisitorPointer();
-        relivehallDrawStageInfoCursor(stageCur, tempo, st->getDancerQuantity(), visitor, flag);
         info2.draw();
+        relivehallDrawStageInfoCursor((u16)stageCur, tempo, st->getDancerQuantity(), visitor, flag);
         localWindowDrawAll();
         menuDrawReliveUpdate();
     }

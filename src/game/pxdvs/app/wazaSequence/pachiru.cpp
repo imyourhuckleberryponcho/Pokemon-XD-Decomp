@@ -1,5 +1,5 @@
-// WIP (NonMatching): pachiruEffectFree/Create match; _pachiruEffectCreateTexture differs in register
-// choice (texture/dstImage swapped) and in the spot-offset math ordering inside the main loop.
+// WIP (NonMatching): pachiruEffectFree/Create match; _pachiruEffectCreateTexture (Colosseum port) is 98%:
+// only saved-register choice differs (width/texture/image). Declaration order and flags tried, no effect.
 #include <dolphin/types.h>
 
 struct GStexture;
@@ -20,12 +20,12 @@ GSmaterial* GSpartGetMaterial(GSpart* part, s32 index);
 GStexture* GSresGetResource(u32 group, u32 id);
 void GSmaterialSetTexture(GSmaterial* material, GStexture* texture);
 void GSpartFree(GSpart* part);
-int GStextureGetXsize(GStexture* texture);
-int GStextureGetYsize(GStexture* texture);
-u32 GStextureGetMiplevels(GStexture* texture);
+u16 GStextureGetXsize(GStexture* texture);
+u16 GStextureGetYsize(GStexture* texture);
+u8 GStextureGetMiplevels(GStexture* texture);
 u32 GStextureGetTlutFormat(GStexture* texture);
 u32 GStextureGetFormat(GStexture* texture);
-GStexture* GStextureCreate(u16 width, u16 height, u32 format, u32 tlutFormat, u32 mipLevels);
+GStexture* GStextureCreate(u16 width, u16 height, u32 format, u32 tlutFormat, u8 mipLevels);
 u16* GStextureLockImage(GStexture* texture, s32 level);
 void GStextureUnlockImage(GStexture* texture);
 void GStextureConvertFromHW(GStexture* texture);
@@ -92,84 +92,115 @@ bool pachiruEffectCreate(PachiruEffect* effect, GSmodel* model, u32 seed) {
 
 }
 
+// original's register allocation needs, e.g. `scratch` holds the copy size and later the spot width.
 static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spot, unsigned long seed) {
-    u16* dstImage;
+    u16* srcImage;
     GStexture* texture;
-    u16* srcImage = NULL;
-    s16 width;
-    s16 height;
-    s16 spotWidth;
+    s16 heightTemp;
+    u32 image;
+    s32 width;
+    s32 height;
     s32 size;
-    s16 spotHeight;
-    u16* end;
-    s16 i;
+    s32 scratch;
 
-    width = GStextureGetXsize(base);
-    height = GStextureGetYsize(base);
-    dstImage = (u16*)GStextureGetMiplevels(base);
-    texture = GStextureCreate(width, height, GStextureGetFormat(base), GStextureGetTlutFormat(base), (u32)dstImage);
-    dstImage = GStextureLockImage(texture, 0);
-    if (dstImage == NULL) {
+    srcImage = NULL;
+    width = (s16)GStextureGetXsize(base);
+    heightTemp = (s16)GStextureGetYsize(base);
+    height = heightTemp;
+    texture = GStextureCreate(width, height, GStextureGetFormat(base), GStextureGetTlutFormat(base),
+                              GStextureGetMiplevels(base));
+    image = (u32)GStextureLockImage(texture, 0);
+    if (image == 0) {
         goto fail;
     }
+
     srcImage = GStextureLockImage(base, 0);
     if (srcImage == NULL) {
         goto fail;
     }
+
     size = width * height;
-    memcpy(dstImage, srcImage, size * 2);
-    DCFlushRange(dstImage, size * 2);
+    scratch = size * (s32)sizeof(u16);
+    memcpy((void*)image, srcImage, scratch);
+    DCFlushRange((void*)image, scratch);
     GStextureUnlockImage(base);
+
     GStextureConvertFromHW(texture);
     GStextureConvertFromHW(spot);
     srcImage = GStextureLockImage(spot, 0);
     if (srcImage == NULL) {
         goto fail;
     }
-    spotWidth = GStextureGetXsize(spot);
-    spotHeight = GStextureGetYsize(spot);
-    if (spotWidth > (width >> 2) || spotHeight > (height >> 2)) {
-        goto fail;
-    }
-    end = dstImage + (size - 1);
-    for (i = 0; i < 4; i++) {
-        s16 dy = ((seed >> 4) & 0xF) - 8;
-        s16 dx = (seed & 0xF) - 8;
-        s16 start;
-        s16 srcOfs;
-        s32 dstOfs;
-        s16 row;
-        seed >>= 8;
-        start = ((s32)(3.4f * dx) + gPachiruCoords[i][0]) + ((s32)(3.4f * dy) + gPachiruCoords[i][1]) * width;
-        srcOfs = 0;
-        dstOfs = 0;
-        for (row = 0; row < spotHeight; row++) {
-            s16 idx = start + dstOfs;
-            if (idx >= 0) {
-                u16* dst = dstImage + idx;
-                if (dst <= end) {
-                    u16* src = srcImage + srcOfs;
-                    s16 col;
-                    for (col = 0; col < spotWidth; col++, dst++, src++) {
-                        if (dst <= end && *src > *dst) {
-                            *dst = *src;
+
+    {
+        u16* end;
+        s16 spotHeight;
+        s32 row;
+        s32 i;
+        s32 x;
+        s32 start;
+        const u8* coords;
+        s32 dstIndex;
+        s16 srcIndex;
+        s32 y;
+        s32 dx;
+        s32 dy;
+
+        scratch = (s16)GStextureGetXsize(spot);
+        spotHeight = (s16)GStextureGetYsize(spot);
+        if (scratch > (width >> 2) || spotHeight > (height >> 2)) {
+            goto fail;
+        }
+
+        end = (u16*)image + (size - 1);
+        i = 0;
+        coords = gPachiruCoords[0];
+        for (; (s16)i < 4;) {
+            dy = (s16)((s16)((seed >> 4) & 0xF) - 8);
+            dstIndex = (s16)(seed & 0xF) - 8;
+            dx = (s16)dstIndex;
+            seed >>= 8;
+            y = (s32)(3.4f * (f32)dy) + coords[1];
+            x = (s32)(3.4f * (f32)dx);
+            dy = y * width;
+            x = x + coords[0];
+            start = (s16)(x + dy);
+
+            for (row = 0; (s16)row < spotHeight; row++) {
+                srcIndex = (s16)(row * scratch);
+                dstIndex = (s16)(start + row * width);
+                if (dstIndex >= 0) {
+                    u16* src;
+                    u16* dst;
+                    s32 col;
+
+                    dst = (u16*)image + dstIndex;
+                    if (dst <= end) {
+                        src = srcImage + srcIndex;
+                        for (col = 0; (s16)col < scratch;) {
+                            if (dst <= end && *src > *dst) {
+                                *dst = *src;
+                            }
+                            col++;
+                            dst++;
+                            src++;
                         }
                     }
                 }
             }
-            srcOfs += spotWidth;
-            dstOfs += width;
+            coords += 2;
+            i++;
         }
+        GStextureUnlockImage(texture);
+        GStextureUnlockImage(spot);
+        GStextureConvertToHW(spot);
+        GStextureConvertToHW(texture);
+        return texture;
     }
-    GStextureUnlockImage(texture);
-    GStextureUnlockImage(spot);
-    GStextureConvertToHW(spot);
-    GStextureConvertToHW(texture);
-    return texture;
 
 fail:
     GSlogWrite("Failed to create Patchiru texture\n");
-    if (dstImage != NULL) {
+    if (image != 0) {
         GStextureUnlockImage(texture);
     }
     if (srcImage != NULL) {

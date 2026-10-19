@@ -3,6 +3,9 @@
 #pragma pool_strings off
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
+// Non-volatile view of the GX write-gather FIFO: the original kept constants in
+// registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
+#define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 
 struct GStexture {
     u8 pad[7];
@@ -116,22 +119,22 @@ u16 THPGXYuv2RgbDraw(u8* yData, u8* uData, u8* vData, s16 x, s16 y, u16 texW, u1
     thpLayer->vf = GSgfxVFGetPredef(8);
     thpLayer->primType = 0x80;
     thpLayer->beginSurface(4);
-    GXWGFifo.s16 = x;
-    GXWGFifo.s16 = y;
-    GXWGFifo.u8 = 0;
-    GXWGFifo.u8 = 0;
-    GXWGFifo.s16 = x + polyW;
-    GXWGFifo.s16 = y;
-    GXWGFifo.u8 = 1;
-    GXWGFifo.u8 = 0;
-    GXWGFifo.s16 = x + polyW;
-    GXWGFifo.s16 = y + polyH;
-    GXWGFifo.u8 = 1;
-    GXWGFifo.u8 = 1;
-    GXWGFifo.s16 = x;
-    GXWGFifo.s16 = y + polyH;
-    GXWGFifo.u8 = 0;
-    GXWGFifo.u8 = 1;
+    GXFifoNV.s16 = x;
+    GXFifoNV.s16 = y;
+    GXFifoNV.u8 = 0;
+    GXFifoNV.u8 = 0;
+    GXFifoNV.s16 = x + polyW;
+    GXFifoNV.s16 = y;
+    GXFifoNV.u8 = 1;
+    GXFifoNV.u8 = 0;
+    GXFifoNV.s16 = x + polyW;
+    GXFifoNV.s16 = y + polyH;
+    GXFifoNV.u8 = 1;
+    GXFifoNV.u8 = 1;
+    GXFifoNV.s16 = x;
+    GXFifoNV.s16 = y + polyH;
+    GXFifoNV.u8 = 0;
+    GXFifoNV.u8 = 1;
     thpLayer->endSurface();
     return thpLayer->tokenMark();
 }
@@ -175,8 +178,8 @@ void THPGXYuv2RgbSetup(void) {
     l->mark(2, 0x16b8, 1);
     thpLayer->colorUpdate = 1;
     thpLayer->alphaUpdate = 0;
-    thpLayer->zUpdate = 0;
     thpLayer->mark(0x40, 0x170C, 4);
+    thpLayer->zUpdate = 0;
     W(0x165C) = 1;
     W(0x1660) = 7;
     thpLayer->mark(0x40, 0x170C, 8);
@@ -217,8 +220,8 @@ void THPGXYuv2RgbSetup(void) {
     W(0x1074) = 4;
     W(0x1078) = 6;
     W(0x107C) = 1;
-    thpLayer->mark(8, 0x16D8, 1);
     W(0x12B0) = 1;
+    thpLayer->mark(8, 0x16D8, 1);
     W(0x12B4) = 0;
     W(0x12B8) = 0;
     W(0x12BC) = 0;
@@ -254,8 +257,8 @@ void THPGXYuv2RgbSetup(void) {
     W(0x12D0) = 0;
     W(0x12D4) = 0;
     thpLayer->mark(8, 0x16E0, 2);
-    thpLayer->tunitKRegSel(1, (GSgfxTunitKReg)1);
     W(0x158C) = 0;
+    thpLayer->tunitKRegSel(1, (GSgfxTunitKReg)1);
     W(0x1590) = 0;
     thpLayer->mark(0x20, 0x1704, 2);
     W(0xEC8) = 0;

@@ -462,8 +462,8 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             GXWGFifo.u32 = barColor;
             GXWGFifo.s16 = 0;
             GXWGFifo.s16 = sprite->height;
-            GXWGFifo.u32 = barColor;
             GXWGFifo.s16 = x;
+            GXWGFifo.u32 = barColor;
             GXWGFifo.s16 = sprite->height;
             GXWGFifo.u32 = barColor;
             layer->endSurface();
@@ -500,11 +500,11 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 windowDrawSprite2(0, 0, shown, sprite->height, color, window, 0x92, 0, winSpriteGetLayerID(window, sprite));
             } else if (anim->expDone != 0) {
                 windowDrawSprite2(0, 0, sprite->width, sprite->height, color, window, 0x92, 0, winSpriteGetLayerID(window, sprite));
-                layer = GSgfxLayerFindByID(winSpriteGetLayerID(window, sprite));
                 layer->primitive = 0x80;
+                layer = GSgfxLayerFindByID(winSpriteGetLayerID(window, sprite));
+                c = (s32)(255.0f - 254.0f * cFlash);
                 layer->colorCount = 6;
                 layer->colorMode = 0;
-                c = (s32)(255.0f - 254.0f * cFlash);
                 layer->flagsB |= 4;
                 layer->flagsA |= 1;
                 layer->flagsD |= 4;
@@ -529,8 +529,8 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 GXWGFifo.u8 = c;
                 GXWGFifo.u8 = c;
                 GXWGFifo.u8 = c;
-                GXWGFifo.s16 = 0;
                 GXWGFifo.s16 = sprite->height;
+                GXWGFifo.s16 = 0;
                 GXWGFifo.u8 = c;
                 GXWGFifo.u8 = c;
                 GXWGFifo.u8 = c;

@@ -141,19 +141,19 @@ void menuSubDrawMsgWindow2(s32 layer, s32 x, s32 y, s32 w, s32 h, u8 alpha) {
     s16 x0;
     s16 x1;
     s16 y0;
-    s16 y1;
+    u32 color;
     s16 midW;
     s16 midH;
-    u32 color;
+    s16 y1;
 
     if (GSgfxLayerFindByID(layer) != 0) {
         corner = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0xB3));
         color = alpha | 0xFFFFFF00;
-        x0 = x - corner->w / 2 - 15;
         x1 = x + w - corner->w / 2 + 15;
-        y0 = y - corner->h / 2 - 10;
+        x0 = x - corner->w / 2 - 15;
         y1 = y + h - corner->h / 2 + 10;
-        windowDrawSprite2(x0, y0, corner->w, corner->h, color, 0, 0xB3, 0, layer);
+        y0 = y - corner->h / 2 - 10;
+        windowDrawSprite2(x0, (s32)y0, corner->w, corner->h, color, 0, 0xB3, 0, layer);
         windowDrawSprite2(x1, y0, corner->w, corner->h, color, 0, 0xB3, 1, layer);
         windowDrawSprite2(x0, y1, corner->w, corner->h, color, 0, 0xB3, 2, layer);
         windowDrawSprite2(x1, y1, corner->w, corner->h, color, 0, 0xB3, 3, layer);
@@ -388,8 +388,8 @@ s32 menuSubOpenSelect_gba(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 f
     return result;
 }
 
-s8 menuSubOpenSelect3(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags, s32 a6, u8 a7, u8 a8) {
-    s8 result;
+u32 menuSubOpenSelect3(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags, s32 a6, u8 a7, u8 a8) {
+    u32 result;
 
     menuSubCursorAnimeInit();
     menuOpenCustom(0xAE, windowGetActiveID(), &flags, 0, 0, 6, selection, values, a2, a6, a7, a8);
@@ -400,8 +400,8 @@ s8 menuSubOpenSelect3(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags
     return result;
 }
 
-s8 menuSubOpenSelect2(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags, s32 a6, u8 a7) {
-    s8 result;
+u32 menuSubOpenSelect2(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags, s32 a6, u8 a7) {
+    u32 result;
 
     menuSubCursorAnimeInit();
     menuOpenCustom(0xAE, windowGetActiveID(), &flags, 0, 0, 6, selection, values, a2, a6, a7, 1);
@@ -412,8 +412,8 @@ s8 menuSubOpenSelect2(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags
     return result;
 }
 
-s8 menuSubOpenSelect(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags) {
-    s8 result;
+u32 menuSubOpenSelect(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags) {
+    u32 result;
 
     menuSubCursorAnimeInit();
     menuOpenCustom(0x59, windowGetActiveID(), &flags, 0, 0, 3, selection, values, a2);
@@ -540,9 +540,9 @@ void menuSubOpenColosseumEnter(void) {
 }
 
 s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial) {
-    s32 id;
     s16 menuID;
     s8 result;
+    s32 id;
 
     if (initial != 0) {
         initial = 1;
@@ -559,8 +559,7 @@ s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial) {
         id = 0x55;
         break;
     }
-    menuID = id;
-    menuOpenCustom(menuID, windowGetActiveID(), &initial, 0, 0, 0);
+    menuOpenCustom(menuID = id, windowGetActiveID(), &initial, 0, 0, 0);
     if (x >= 0 && y >= 0) {
         menuSetPosition(menuID, x, y);
     }

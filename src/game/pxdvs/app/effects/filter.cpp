@@ -91,6 +91,10 @@ bool filterEffect::_update(f32 dt) {
     return true;
 }
 
+static inline u32 _getMapResID() {
+    return floorDataBiosGetMapResID(floorDataBiosGetCurrentPtr());
+}
+
 void filterEffect::_stop() {
     if (m_modulate != 0) {
         if (m_target != 0) {
@@ -111,7 +115,7 @@ void filterEffect::_stop() {
             void* res;
             GSmodel* model;
             group = floorGetCurrentGroupID();
-            mapRes = floorDataBiosGetMapResID(floorDataBiosGetCurrentPtr());
+            mapRes = _getMapResID();
             i = 0;
             res = GSresGetResource(group, mapRes);
             if (res != 0) {

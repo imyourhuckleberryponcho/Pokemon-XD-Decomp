@@ -882,8 +882,8 @@ namespace {
 void CMenuPokemonChange::requestPokemonFaceLoad()
 {
     static Pokemon* stPokemonListFace[14];
-    s32 count = 0;
     s32 player = 0;
+    s32 count = 0;
     for (; player < 2; player++) {
         for (s32 i = 0; i < 6; i++) {
             Hero* hero = (player == 0) ? m_hero0 : (Hero*)m_hero1;
@@ -922,7 +922,7 @@ void CMenuPokemonChange::setMenuByTbl(s32* tbl)
     u32 i;
     s32 id;
     for (i = 0; i < 8; i++) {
-        if (m_menuTbl[i] == 0 || m_menuTbl[i] != tbl[i]) {
+        if (0 == m_menuTbl[i] || m_menuTbl[i] != tbl[i]) {
             break;
         }
     }
@@ -947,7 +947,7 @@ void CMenuPokemonChange::setMenuByTbl(s32* tbl)
     if (!loaded) {
         s32 last = tbl[count - 1];
         if (last == 0xD6) {
-            oneMenuLoad(last);
+            oneMenuLoad((u16)last);
         }
     }
     memset(m_menuTbl, 0, 0x20);
@@ -1224,11 +1224,17 @@ namespace {
 
 void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, u32 itemId)
 {
+    s32 waza;
+    Pokemon* target;
+    u16 item;
+    MENU_MODEL* model;
     s32 player = windowGetParam(window, 0);
     u32 color;
     Hero* hero = (player == 0) ? m_hero0 : (Hero*)m_hero1;
     Pokemon* pokemon = getSelPokemon((enumPlayerIndex)player);
     u32 pulse;
+    u32 msg;
+    bool visible;
     u8 windowAlpha = window->alpha;
     sprite->rgba.a = windowAlpha;
     color = (windowAlpha & 0xFF) | 0xFFFFFF00;
@@ -1289,8 +1295,8 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x603:
     case 0x604: {
         s32 index = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x5FF);
-        Pokemon* target = hero->getPokemon(index);
-        u16 item = 0;
+        target = hero->getPokemon(index);
+        item = 0;
         if (_isPokemonValid(target, (enumPlayerIndex)player)) {
             item = pokemonBiosGetItemDataId(target);
         }
@@ -1309,7 +1315,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x614: {
         s32 index = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x60F);
         Pokemon* target = hero->getPokemon(index);
-        u32 msg = 0;
+        msg = 0;
         s32 state = _getPokemonState(target, (enumPlayerIndex)player);
         if (state >= 3 || state < 0) {
             u8 sex = menuSubGetPokemonSexForFightDisp(target);
@@ -1412,7 +1418,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         }
         s32 who = (value >= getQuantityHeroPokemon(PLAYER_1)) ? 1 : 0;
         s32 spriteIndex = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x8CE);
-        bool visible = false;
+        visible = false;
         if (spriteIndex == index && who == player && m_state.current != 0x10
             && spriteIndex < getQuantityHeroPokemon((enumPlayerIndex)who)) {
             visible = true;
@@ -1434,8 +1440,8 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         s32 value = windowGetValue(0xD6);
         s32 count2 = getQuantityHeroPokemon(PLAYER_2);
         s32 count1 = getQuantityHeroPokemon(PLAYER_1);
-        winSpriteSetDisp(sprite, value == count1 + count2);
         sprite->rgba.a = pulse;
+        winSpriteSetDisp(sprite, value == count1 + count2);
         break;
     }
 
@@ -1456,7 +1462,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         break;
     case 0x63D:
         if (window->alpha == 0xFF) {
-            MENU_MODEL* model = &m_model[player];
+            model = &m_model[player];
             menuModelAdjustCamera(model);
             menuModelSetSize(model, window->offset + sprite->x, sprite->y, sprite->w, sprite->h);
             menuModelSetZoom(model, pokemonBiosGetPokemonDataId(pokemon) == 0x18E ? 0.4f : 0.65f);
@@ -1523,7 +1529,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x647:
     case 0x648: {
         s32 index = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x645);
-        s32 waza = pokemonBiosGetPokemonWazaDataId(pokemon, (u16)index);
+        waza = pokemonBiosGetPokemonWazaDataId(pokemon, (u16)index);
         if (pokemonWazaCheckValid(pokemon, (u16)index)) {
             u32 name = wazaGetStatus(0, waza, 1, 0);
             if (name != 0) {

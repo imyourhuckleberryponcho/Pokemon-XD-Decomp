@@ -679,7 +679,7 @@ u8 FloorManager::makeSaveData(u8** data, u32* size) {
     }
     GSlogWrite("------------------------------------\n");
     GSlogWrite("header size       = %dbytes\n", 0x20);
-    GSlogWrite("script state size = %dbytes\n", stateSize);
+    GSlogWrite("script state size = %dbytes\n", (u16)stateSize);
     GSlogWrite("system state size = %dbytes\n", pushSize);
     GSlogWrite("total             = %dbytes(max %d)\n", *size, m_maxSize);
     return 1;

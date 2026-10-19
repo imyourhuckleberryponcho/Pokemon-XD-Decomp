@@ -1,4 +1,3 @@
-// Draft: fightGSfloorPopData 98.3% (saved-register order); the rest exact.
 #include <dolphin/types.h>
 
 struct GSvec {
@@ -169,20 +168,20 @@ void fightGSfloorPushData(GSfloorPush* out) {
 void fightGSfloorPopData(GSfloorPush* in) {
     u16 pokemonCount;
     u8* grid;
-    u16 evtFlag;
     u16 trainerCount;
-    u8* cur;
+    u16 evtFlag;
+    GSfloorTrainerEntry* t;
+    GSfloorPokemonEntry* p;
     _GSmodel* model;
     u32 seq;
     GSvec v;
 
     grid = in->grid;
-    cur = grid + 0x44;
+    t = (GSfloorTrainerEntry*)(grid + 0x44);
     trainerCount = in->trainerCount;
     pokemonCount = in->pokemonCount;
     evtFlag = in->evtFlag;
     while (trainerCount-- != 0) {
-        GSfloorTrainerEntry* t = (GSfloorTrainerEntry*)cur;
         seq = Sequence_LoadTrainer(t->id);
         *(u32*)(t->target + 0x3544) = seq;
         *t->bgSeq = seq;
@@ -197,10 +196,9 @@ void fightGSfloorPopData(GSfloorPush* in) {
         Sequence_SetFlipped(seq, t->flipped);
         Sequence_SetFlags(seq, t->flags);
         Sequence_SetVisibility(seq, GSmodelGetVisibility(model));
-        cur += sizeof(GSfloorTrainerEntry);
+        t++;
     }
     if (evtFlag != 0) {
-        GSfloorTrainerEntry* t = (GSfloorTrainerEntry*)cur;
         seq = Sequence_LoadTrainer(0x40);
         fightEvtSetSequence(seq);
         model = Sequence_GetGSmodel(seq);
@@ -214,10 +212,10 @@ void fightGSfloorPopData(GSfloorPush* in) {
         Sequence_SetFlipped(seq, t->flipped);
         Sequence_SetFlags(seq, t->flags);
         Sequence_SetVisibility(seq, GSmodelGetVisibility(model));
-        cur += sizeof(GSfloorTrainerEntry);
+        t++;
     }
+    p = (GSfloorPokemonEntry*)t;
     while (pokemonCount-- != 0) {
-        GSfloorPokemonEntry* p = (GSfloorPokemonEntry*)cur;
         seq = Sequence_LoadPokemon(p->id, p->rnd, p->rare);
         *(u32*)(p->target + 0x7AC) = seq;
         *p->bgSeq = seq;
@@ -232,7 +230,7 @@ void fightGSfloorPopData(GSfloorPush* in) {
         Sequence_SetFlipped(seq, p->flipped);
         Sequence_SetFlags(seq, p->flags);
         Sequence_SetVisibility(seq, GSmodelGetVisibility(model));
-        cur += sizeof(GSfloorPokemonEntry);
+        p++;
     }
     memcpy(battleGridGetPtr(), grid, 0x44);
     fightMainAllCamera(1, 0);

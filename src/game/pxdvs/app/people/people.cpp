@@ -244,7 +244,7 @@ void peopleRestoreAnywaySaveData(void* data, s32 size);
 BOOL peopleFreeWalkList(u32 group, u32 id);
 
 PeopleInfo* peopleInfoBiosGetPtr(u32 objectID);
-s32 peopleInfoBiosGetNeckIndex(PeopleInfo* info);
+s8 peopleInfoBiosGetNeckIndex(PeopleInfo* info);
 f32 peopleInfoBiosGetNeckLeftLimit(PeopleInfo* info);
 f32 peopleInfoBiosGetNeckRightLimit(PeopleInfo* info);
 f32 peopleInfoBiosGetNeckUpLimit(PeopleInfo* info);
@@ -1407,6 +1407,7 @@ static void _peopleMoveTypeRandomRot(tagPeopleWork* work) {
 }
 
 static void _peopleMoveTypeRandomWalk(tagPeopleWork* work) {
+    f32 dz;
     f32 rate = 1.0f;
     switch (work->mode) {
     case 0:
@@ -1424,7 +1425,7 @@ static void _peopleMoveTypeRandomWalk(tagPeopleWork* work) {
     case 1:
                 peopleBiosGetPos(work, &work->startPos);
                 peopleBiosGetPos(work, &work->destPos);
-                s32 tries = 0;
+                u32 tries = 0;
                 do {
                     f32 angle = 6.2831855f * HSD_Randf();
                     work->destPos.x = work->randRadius * sin(angle) + work->basePos.x;
@@ -1435,7 +1436,7 @@ static void _peopleMoveTypeRandomWalk(tagPeopleWork* work) {
                     }
                     tries++;
                 } while (tries < 10);
-                f32 dz = work->destPos.z - peopleBiosGetPosPtr(work)->z;
+                dz = work->destPos.z - peopleBiosGetPosPtr(work)->z;
                 f32 target = atan2(work->destPos.x - peopleBiosGetPosPtr(work)->x, dz);
                 if (work->speed > 0.1f + work->walkRate) {
                     rate = 2.0f;
@@ -1735,7 +1736,7 @@ static void _peopleAnimEndCallback(_GSmodel* model, _GSmodelAnimCBData* data) {
             if (work->curRate < 0.00001f && work->curRate > -0.00001f) {
                 if (data->index != 0x13 && data->index != 0x14 && data->index != 0x15 &&
                     m_hero_idling_time > m_hero_next_special_idling_time) {
-                    s32 rnd = HSD_Rand() & 1;
+                    u32 rnd = HSD_Rand() & 1;
                     s32 next = 0x13;
                     switch (m_before_special_effect) {
                     case 0x13:
@@ -1832,6 +1833,8 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
     GSvec pos, rot;
     f32 walkRate = work->walkRate;
     f32 runRate = work->runRate;
+    f32 first;
+    f32 second;
     _GSmodel* model = work->model;
     f32 playRate = peopleViewerGetPlaySpeedRate(work);
     if (!(playRate < 0.00001f) || !(playRate > -0.00001f)) {
@@ -1840,15 +1843,15 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
         GSmodelGetFrameCount(model, &count, &blendCount);
         f32 frame = GSmodelGetAnimFrame(model);
         f32 rate1 = 0.0f;
-        if (count > 0.0f) {
+        if (count > 1.0f) {
             rate1 = frame / count;
         }
-        f32 first = rate1;
+        first = rate1;
         f32 rate2 = 0.0f;
         if (blendCount > 0.0f) {
             rate2 = frame / blendCount;
         }
-        f32 second = rate2;
+        second = rate2;
         if (rate1 > 1.0f) {
             first = 0.0f;
         }
@@ -2522,7 +2525,7 @@ void fn_8029CD20(u32 groupID, u32 peopleID, u32 targetGroupID, u32 targetPeopleI
     tagPeopleWork* work = peopleGet(groupID, peopleID);
     tagPeopleWork* target = peopleGet(targetGroupID, targetPeopleID);
     if (work) {
-        if (!target) {
+        if (target != 0) {
             return;
         }
         if (_getNeck(target, &info)) {
@@ -3005,9 +3008,12 @@ void peopleSetDisp(u32 groupID, u32 peopleID, u8 disp) {
     }
 }
 
-u8 peopleCheckFlag(u32 groupID, u32 peopleID, u32 flags) {
+bool peopleCheckFlag(u32 groupID, u32 peopleID, u32 flags) {
     tagPeopleWork* work = peopleGet(groupID, peopleID);
-    return work == 0 ? 0 : peopleBiosCheckFlag(work, flags);
+    if (work == 0) {
+        return 0;
+    }
+    return peopleBiosCheckFlag(work, flags);
 }
 
 u32 peopleGetFlags(u32 groupID, u32 peopleID) {

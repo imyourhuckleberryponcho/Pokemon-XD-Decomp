@@ -534,8 +534,8 @@ static s32 _menuPokemonActionGive(s8 index, s16 slot, u16 item, u16* outItem) {
                 *outItem = old;
             }
             pokemonDoItemSoubi(pokemon, item, 1);
-            msgctrlSetValue(0x2D, old);
             msgctrlSetValue(0x2E, item);
+            msgctrlSetValue(0x2D, old);
             winMsgOpen(2, (void*)0x3ACB, 1, 0);
         }
     } else if (heroItemDecItemDataId(hero, item, 1, slot) == 0) {
@@ -982,7 +982,7 @@ void menuPokemonDrawHelp(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 }
 
 static u8 _menuPokemonCheckItem(tagSPRITE_WORK* sp, s8 side) {
-    u8 enable = 1;
+    bool enable = 1;
     s32 color = -1;
     if (side == -1) {
         switch (sp->id) {
@@ -1076,6 +1076,7 @@ void menuPokemonDrawCur(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 
 extern "C" {
 void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
+    Pokemon* pokemon;
     u32 sexMsg;
     MENU_POKEMON_STATUS_TBL* info;
     u32 color;
@@ -1140,7 +1141,6 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         switch (sp->id) {
         case 0x137:
         case 0x142: {
-            Pokemon* pokemon;
             u32 msg;
             s16 i;
             u16 waza;
@@ -1265,8 +1265,8 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         }
         if (id == w->menuID) {
             s32 t;
-            *(u32*)&sp->r = 0xFFFF00FF;
             t = _menuPokemonTimer % 60;
+            *(u32*)&sp->r = 0xFFFF00FF;
             if (t < 30) {
                 f32 ang = 3.14f * ((f32)t / 30.0f);
                 sp->alpha = sp->alpha - (s32)(128.0f * (f32)sin(ang));
@@ -1287,8 +1287,8 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         }
         if (id == w->menuID) {
             s32 t;
-            *(u32*)&sp->r = 0xFFFFFFFF;
             t = _menuPokemonTimer % 60;
+            *(u32*)&sp->r = 0xFFFFFFFF;
             if (t < 30) {
                 f32 ang = 3.14f * ((f32)t / 30.0f);
                 sp->alpha = sp->alpha - (s32)(128.0f * (f32)sin(ang));

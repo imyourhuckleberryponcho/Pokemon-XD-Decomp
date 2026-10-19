@@ -763,8 +763,8 @@ inline void psDispSubAPPSRTPoint(HSD_Particle* pp)
         }
     } else {
         if (prevPointSize != (s32) w) {
-            prevPointSize = w;
-            GXSetPointSize(w, GX_TO_ONE);
+            s32 prevPointSize = w;
+            GXSetPointSize((u16)w, GX_TO_ONE);
         }
         if (pp->kind & DispTexture) {
             setVtxDesc(0);
@@ -1384,7 +1384,7 @@ inline void psDispSub(HSD_Particle* pp, u8* texform)
 
 static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void* camera)
 {
-    s32 linkNo;
+    HSD_Particle* pp;
     u8* prevTex;
     u32 prevTexEdge;
     u32 prevMirror;
@@ -1401,7 +1401,7 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
     s32 alpha_compare_mode;
     s32 prev_tex_interp_near;
     u32 prev_kind;
-    HSD_Particle* pp;
+    s32 linkNo;
 
     alpha_compare_mode = 0;
     prev_tex_interp_near = 0;
@@ -1693,7 +1693,7 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                             case GX_TF_C4:
                             case GX_TF_C8:
                                 GXInitTexObjCI(&texObj, image, width, height,
-                                               fmt, wrap_s, wrap_t, GX_FALSE,
+                                               fmt, (u16)wrap_s, wrap_t, GX_FALSE,
                                                GX_TLUT0);
                                 break;
                             case GX_TF_I4:

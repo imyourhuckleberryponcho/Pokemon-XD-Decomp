@@ -563,10 +563,12 @@ static inline u32 _shadowLightType(GSlight* light)
 
 void modelShadowRender(GSgfxLayer* layer)
 {
+    u8 shade;
+    _GSmodel* m;
     ShadowReceive* r = _modelShadowReceiveList;
-    u32 i;
-    u32 j;
     ShadowReceive* slot;
+    u32 j;
+    u32 i;
     u32 k;
 
     slot = r;
@@ -642,7 +644,7 @@ void modelShadowRender(GSgfxLayer* layer)
                 type = _shadowLightType(r->light);
                 HSD_ViewingRectInit(&rect, &eye, &avg, &up, type != 1);
                 for (node = r->shadow->objects; node != 0; node = node->next) {
-                    _GSmodel* m = GSmodelSearchModelList(node->jobj);
+                    m = GSmodelSearchModelList(node->jobj);
                     if (m != 0) {
                         GSboundGetWorldPosition(m->bound, &tmp);
                         if (!GSboundHasAnimData(m->bound)) {
@@ -693,7 +695,7 @@ void modelShadowRender(GSgfxLayer* layer)
                 }
                 {
                     HSD_Shadow* shadow = r->shadow;
-                    u8 shade = 255 - _modelShadowIntensity;
+                    shade = 255 - _modelShadowIntensity;
                     if (shadow == 0) {
                         __assert("shadow.h", 0x6c, "shadow");
                     }
@@ -1137,6 +1139,7 @@ static inline ShadowReceive* _shadowFindFreeSlot(ShadowReceive* r)
 
 static bool _modelShadowAddAsNewReceiver(_GSmodel* model, _GSmodel* receiveModel, GSlight* light, GSbound* bound)
 {
+    _GSmodel* rm;
     ShadowReceive* r = _modelShadowReceiveList;
     ShadowReceive* slot;
     u32 n;
@@ -1156,15 +1159,15 @@ static bool _modelShadowAddAsNewReceiver(_GSmodel* model, _GSmodel* receiveModel
             }
         }
         if (slot == 0) {
-            u32 i;
             bool ok = false;
+            u32 i;
 
             for (i = 0; i < 5; i++, r++) {
                 slot = r;
                 if (slot->model == model) {
                     ok = true;
                     for (k = 0; k < 16; k++) {
-                        _GSmodel* rm = slot->receivers[i];
+                        rm = slot->receivers[i];
                         if (rm != 0 && (rm->flags & 0x40000000)) {
                             ok = false;
                             break;

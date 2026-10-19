@@ -66,9 +66,10 @@ static inline f32 hermite(f32 p0, f32 p1, f32 m0, f32 m1, f32 h00, f32 h01, f32 
 extern "C" {
 
 void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t) {
+    u8* keys;
     u8 count = s->count;
     if (count >= 2) {
-        u8* keys = (u8*)s->keys;
+        keys = (u8*)s->keys;
         f32* times;
         if (t <= 0.0f) {
             out[0] = keys[0];
@@ -97,8 +98,8 @@ void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t) {
         if (count == 2)
             lerpColor(out, s, keys, t);
         else {
-            u8 idx = s->index;
             f32* inv;
+            u8 idx = s->index;
             f32 u;
             times = (f32*)(keys + count * 4);
             inv = times + count;
@@ -164,8 +165,8 @@ f32 peSplineGetValue(peSpline* s, f32 t) {
             }
         }
         f32* q = p + n;
-        f32* r = q + n;
         f32* d = data + i;
+        f32* r = q + n;
         t = t * *q;
         switch (type) {
         case 3: {
@@ -175,8 +176,8 @@ f32 peSplineGetValue(peSpline* s, f32 t) {
             f32 b = (u2 + u2) - u3;
             f32 c = a - u2;
             f32 h01 = b - a;
-            f32 h10 = t + c;
             f32 h00 = 1.0f - h01;
+            f32 h10 = t + c;
             f32 lo = (s->flags & 4) ? -1.0f : 0.0f;
             f32 v = hermite(d[0], d[1], r[0], r[n], h00, h01, h10, a, w);
             if (v < lo) {

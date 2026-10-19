@@ -604,13 +604,15 @@ static void _movieRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
 }
 
 static void _movieBeforeRender(f32 dt) {
+    u32 id;
+    __GSmovieStreaming* s;
     u8 any = 0;
     u32 i;
     for (i = 0; i < _maxStreaming; i++) {
-        __GSmovieStreaming* s = &_movieStreaming[i];
+        s = &_movieStreaming[i];
         if (s->state != 0) {
             bool found;
-            u32 id = s->id;
+            id = s->id;
             if (_initFlag == 0) {
                 found = false;
             } else if (_movieGetStream(id) == 0) {

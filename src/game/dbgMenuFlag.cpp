@@ -244,7 +244,7 @@ void dbgMenuFlagSetEtc(s32 index);
 
 s32 dbgMenuFlagCheck(void) {
     s32 i;
-    s32 id;
+    int id;
     s32 value;
     if (GSfloorIsFloorPushed()) {
         GSsndPlayNow(0x13);

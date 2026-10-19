@@ -140,7 +140,7 @@ BOOL OSRestoreInterrupts(BOOL level);
 void GSthreadSwitch(void);
 void GSdvdInit(void);
 s32 GSdvdGetDriveStatus(void);
-u8 _fsysMemFreeCacheGroup(s32);
+bool _fsysMemFreeCacheGroup(u32);
 void* GSresGetResource(u32, u32);
 u32 GSresAllocResourceAlign(u32, u32, u32, u32, void*);
 void OSLinkFixed(void*, void*);
@@ -836,8 +836,8 @@ static FsysQue* _fsysGetQueManage(u32 id, u32 idx) {
 static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, s32 a, s32 b, s32 c) {
     u32 n;
     FsysQue* p = _fsysQueManage;
-    s32 i = 0;
     FsysQue* ret = 0;
+    s32 i = 0;
 
     for (n = 0; n < _fsysQueManageMax; n++) {
         if (p->id == 0) {
@@ -1052,8 +1052,8 @@ static void GSfsysDaemonBackground(void) {
 }
 
 static void _fsysBackgroundTaskNormalType(FsysBG* bg, u8 copy) {
-    FsysBlock* block;
     u8* dst;
+    FsysBlock* block;
 
     if (bg->done != 1) {
         while (1) {
@@ -1789,7 +1789,7 @@ static FsysWork* _fsysGetWork(u32 id, u8 flag) {
     FsysWork* w = _fsysWork;
     u32 i;
 
-    for (i = 0; i < _fsysWorkMax; i++, w++) {
+    for (s32 i = 0; i < _fsysWorkMax; w++, i++) {
         if (flag == 1) {
             switch (w->status) {
             case 0:

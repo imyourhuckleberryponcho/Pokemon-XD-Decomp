@@ -2,6 +2,31 @@
 // Not done: RenderStats, SendFifoToRenderer, Prerender(Pass), SetupFifo, MarkAndInvalidate, dtor, UpdateActiveFifoStats
 // (the fifo-stats code is inlined into several of these; string pool base hoisting not reproduced).
 #include <dolphin/types.h>
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+enum ASM { ASM_draft_dummy };
+struct GXFifoObj;
+enum Mtx44 { Mtx44_draft_dummy };
+enum PrimColor { PrimColor_draft_dummy };
+#pragma pool_strings off
 
 struct GStexture;
 struct GSgfxVF;
@@ -21,6 +46,8 @@ class GSgfxMatrixStack {
 public:
     GSgfxMatrixStack(u32 depth);
     u32 pad[3];
+public: // draft
+    ~GSgfxMatrixStack();
 };
 
 class GSgfxLayer {
@@ -96,6 +123,12 @@ public:
     static u16 fbTexRefCount;
     static GStexture* distTexPtr;
     static u16 distTexRefCount;
+public: // draft
+    s32 EffectTextureCopy(GStexture*, bool, unsigned char*, bool, bool, bool);
+    void SetupFifo();
+    ~GSgfxLayer();
+    s32 EffectScreenClear(bool, bool, bool);
+    s32 EffectDistortion();
 };
 
 struct GSgfx_GCFifoObj {
@@ -159,6 +192,579 @@ static GSgfxLayer* _layerIDTable[16];
 
 extern "C" {
 
+
+extern "C++" {
+// ---- draft declarations ----
+struct GXFifoObj {
+    u8 _draft[1];
+};
+
+extern "C" {
+void GSmemFree(void* ptr);
+void GSmtx44Ortho(Mtx44 m, f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
+s32 GSprimDraw2DHLine(s32*, f32, f32, f32);
+s32 GSprimDraw2DQuadWH(s32*, s32, f32, f32, f32, f32, f32);
+void GSprimSetLineWidth(f32 w);
+void GSprimSetQuadVertexOrder(s32 order);
+void GSprimSetTextColor(PrimColor color);
+void GSprimSetTextSize(f32 xpel, f32 ypel);
+void GSprimSetTextWidth(f32 w);
+void GSprimWriteChar(char c, f32 x, f32 y);
+void GSprimWriteStr(f32 x, f32 y, char* fmt, ...);
+GXFifoObj* GXGetCPUFifo(void);
+extern u32 _layerStateLastHWState;
+extern GStexture* fbTexPtr__10GSgfxLayer;
+extern u16 fbTexRefCount__10GSgfxLayer;
+extern s32 mtxIdent;
+extern s32 jtbl_1809;
+extern s32 jtbl_1810;
+extern s32 jtbl_1811;
+extern s32 jtbl_1812;
+extern s32 jtbl_1813;
+extern s32 jtbl_1814;
+extern s32 jtbl_1815;
+extern s32 c_localstatic3_GSgfxPerfColorToGSgfxCol;
+}
+extern "C++" {
+s32 GSgfxGPUSetFifoWritePtr(GSgfx_GCFifoObj*, void*);
+void GSgfxLayerBuildRenderList();
+void GSgfxLayerRenderStats(GSgfxLayer* p0);
+s32 GSgfxRenderAddToFifoList(GSgfx_GCFifoObj*, void*, void*, unsigned long, void (*)(void*), void*);
+void GSgfxRenderModuleDoRender(GSgfxLayer* layer, GSgfxLayerPass pass);
+s32 GSgfxRenderWaitForDrawComplete();
+void GSprimSetRenderLayer(GSgfxLayer* layer);
+}
+
+void GSgfxLayerRenderStats(GSgfxLayer* p0) {
+    f32 var_f27;
+    s32 saved_reg_r25;
+    s32 saved_reg_r26;
+    f32 spB8;
+    f32 spC0;
+    f32 spC8;
+    f32 spD4;
+    f32 spD8;
+    s32 sp128;
+    s32 sp124;
+    s32 sp120;
+    s32 sp11C;
+    s32 sp118;
+    s32 sp114;
+    s32 sp110;
+    s32 sp10C;
+    s32 sp108;
+    s32 sp104;
+    s32 sp100;
+    s32 spFC;
+    s32 spF8;
+    s32 spF4;
+    s32 spF0;
+    s32 spEC;
+    f32 spAC;
+    s8 sp9E;
+    s32 sp8C;
+    s8 sp88;
+    s8 sp87;
+    s8 sp86;
+    s8 sp85;
+    s8 sp84;
+    s32 sp80;
+    u32 sp7C;
+    u32 sp78;
+    u32 sp74;
+    u32 sp70;
+    u32 sp6C;
+    u32 sp68;
+    s32 sp64;
+    s32 sp60;
+    s32 sp5C;
+    s32 sp58;
+    s32 sp54;
+    s32 sp50;
+    s32 sp4C;
+    s32 sp48;
+    s32 sp44;
+    s32 sp40;
+    s32 sp3C;
+    s32 sp38;
+    s32 sp34;
+    s32 sp30;
+    s32 sp2C;
+    s32 sp28;
+    s32 sp24;
+    s32 sp20;
+    s32 sp1C;
+    s32 sp18;
+    s32 sp14;
+    s32 sp10;
+    u8 spF;
+    u8 spE;
+    u8 spD;
+    u8 spC;
+    u8 spB;
+    u8 spA;
+    u8 sp9;
+    u8 sp8;
+    s32 *temp_r24;
+    s32 *temp_r3_2;
+    s32 *var_r20;
+    s32 *var_r3;
+    s32 *var_r4_3;
+    s32 *var_r6_2;
+    f32 var_f26;
+    f32 var_f26_2;
+    s32 saved_reg_f26;
+    f32 var_f27_2;
+    s32 *temp_r3;
+    s32 *var_r17;
+    s32 temp_r0;
+    s32 temp_r0_2;
+    s32 temp_r0_3;
+    s32 temp_r16_2;
+    s32 temp_r22;
+    s32 var_r18;
+    s32 var_r21;
+    s32 var_r25;
+    s32 var_r26;
+    s32 var_r30;
+    s32 var_r31;
+    s32 var_r4;
+    s8 var_r0_2;
+    u32 temp_r7;
+    u32 var_r0;
+    u32 var_r5;
+    u8 temp_r4;
+    u8 var_r0_3;
+    u8 var_r0_4;
+    u8 var_r3_2;
+    u8 var_r3_3;
+    u8 var_r3_4;
+    u8 var_r3_5;
+    u8 var_r4_2;
+    u8 var_r6;
+    u8 *temp_r16;
+    u8 *temp_r4_2;
+    u8 *temp_r4_3;
+
+    var_r25 = saved_reg_r25;
+    var_r26 = saved_reg_r26;
+    var_f26 = saved_reg_f26;
+    spEC = M2C_FIELD(&jtbl_1809, s32 *, 0);
+    spF0 = M2C_FIELD(&jtbl_1809, s32 *, 4);
+    spF4 = M2C_FIELD(&jtbl_1809, s32 *, 8);
+    spF8 = M2C_FIELD(&jtbl_1809, s32 *, 0xC);
+    spFC = M2C_FIELD(&jtbl_1809, s32 *, 0x10);
+    sp100 = M2C_FIELD(&jtbl_1809, s32 *, 0x14);
+    sp104 = M2C_FIELD(&jtbl_1809, s32 *, 0x18);
+    sp108 = M2C_FIELD(&jtbl_1809, s32 *, 0x1C);
+    sp10C = M2C_FIELD(&jtbl_1809, s32 *, 0x20);
+    sp110 = M2C_FIELD(&jtbl_1809, s32 *, 0x24);
+    sp114 = M2C_FIELD(&jtbl_1809, s32 *, 0x28);
+    sp118 = M2C_FIELD(&jtbl_1809, s32 *, 0x2C);
+    sp11C = M2C_FIELD(&jtbl_1809, s32 *, 0x30);
+    sp120 = M2C_FIELD(&jtbl_1809, s32 *, 0x34);
+    sp124 = M2C_FIELD(&jtbl_1809, s32 *, 0x38);
+    sp128 = M2C_FIELD(&jtbl_1809, s32 *, 0x3C);
+    sp80 = jtbl_1810;
+    sp64 = jtbl_1811;
+    sp60 = jtbl_1812;
+    sp5C = jtbl_1813;
+    sp58 = jtbl_1814;
+    sp54 = jtbl_1815;
+    if ((u8) _layerRenderStats != 0) {
+        var_r31 = 0;
+        var_r30 = 0;
+        GSprimSetRenderLayer((GSgfxLayer*)(p0));
+        GSprimSetQuadVertexOrder(0);
+        GSprimSetLineWidth(1.0f);
+        GSprimSetTextSize(10.0f, 10.0f);
+        GSprimSetTextWidth(1.0f);
+        M2C_FIELD(p0, s32 *, 0x1644) = 1;
+        M2C_FIELD(p0, s32 *, 0x1648) = 4;
+        M2C_FIELD(p0, s32 *, 0x164C) = 5;
+        M2C_FIELD(p0, s32 *, 0x1650) = 5;
+        M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 1);
+        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
+        M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 1);
+        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+        GSmtx44Ortho((Mtx44)((s32) &spAC), 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
+        M2C_FIELD(p0, s32 *, 0xD54) = 1;
+        M2C_FIELD(p0, f32 *, 0xD58) = spAC;
+        M2C_FIELD(p0, f32 *, 0xD5C) = spB8;
+        M2C_FIELD(p0, f32 *, 0xD60) = spC0;
+        M2C_FIELD(p0, f32 *, 0xD64) = spC8;
+        M2C_FIELD(p0, f32 *, 0xD68) = spD4;
+        M2C_FIELD(p0, f32 *, 0xD6C) = spD8;
+        temp_r16 = M2C_FIELD(p0, u8 **, 0x19A0);
+        memcpy((void*)(M2C_FIELD(temp_r16, s32 **, 4) + 4), (const void*)(&mtxIdent), 0x30U);
+        temp_r3 = M2C_FIELD(temp_r16, s32 **, 4);
+        *temp_r3 |= 1;
+        M2C_FIELD(p0, f32 *, 0x1684) = 0.0f;
+        M2C_FIELD(p0, f32 *, 0x1688) = 30000.0f;
+        if ((u8) M2C_FIELD(p0, u8 *, 0x16A7) != 0) {
+            if ((u8) M2C_FIELD(p0, u8 *, 0x16A6) != 0) {
+                M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x100);
+                M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x100);
+            }
+            M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x40);
+            M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
+            M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x40);
+            M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+        }
+        M2C_FIELD(p0, s32 *, 0x16AC) = (s32) (M2C_FIELD(p0, s32 *, 0x16AC) | 0x20);
+        var_r4 = 0;
+        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 1);
+        M2C_FIELD(p0, s32 *, 0x1764) = (s32) (M2C_FIELD(p0, s32 *, 0x1764) | 0x20);
+        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 1);
+        M2C_FIELD(p0, s8 *, 0x1656) = 1;
+        M2C_FIELD(p0, s8 *, 0x1657) = 0;
+        M2C_FIELD(p0, s8 *, 0x1658) = 0;
+        M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 4);
+        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
+        M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 4);
+        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+        M2C_FIELD(p0, s8 *, 0x165C) = 0;
+        M2C_FIELD(p0, s32 *, 0x1660) = 3;
+        M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 8);
+        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
+        M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 8);
+        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+        M2C_FIELD(p0, s32 *, 0x1664) = 7;
+        M2C_FIELD(p0, s8 *, 0x1670) = 0;
+        M2C_FIELD(p0, s32 *, 0x1668) = 0;
+        M2C_FIELD(p0, s32 *, 0x166C) = 7;
+        M2C_FIELD(p0, s8 *, 0x1671) = 0;
+        M2C_FIELD(p0, s8 *, 0x1672) = 1;
+        M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x10);
+        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
+        M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x10);
+        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+        M2C_FIELD(p0, s32 *, 0xD8C) = 0;
+        M2C_FIELD(p0, s32 *, 0x16B8) = (s32) (M2C_FIELD(p0, s32 *, 0x16B8) | 2);
+        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 2);
+        M2C_FIELD(p0, s32 *, 0x1770) = (s32) (M2C_FIELD(p0, s32 *, 0x1770) | 2);
+        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 2);
+        M2C_FIELD(p0, s32 *, 0xD90) = 1;
+        M2C_FIELD(p0, s32 *, 0x16B8) = (s32) (M2C_FIELD(p0, s32 *, 0x16B8) | 4);
+        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 2);
+        M2C_FIELD(p0, s32 *, 0x1770) = (s32) (M2C_FIELD(p0, s32 *, 0x1770) | 4);
+        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 2);
+        var_r3 = (long *)(_layerBottom);
+loop_7:
+        if (var_r3 != NULL) {
+            var_r3 = (long *)(*var_r3);
+            var_r4 += 1;
+            goto loop_7;
+        }
+        sp50 = sp80;
+        GSprimDraw2DQuadWH(&sp50, sp80, 10.0f, 22.0f, 620.0f, (12.0f * (f32) var_r4) + 28.0f, M2C_ERROR(/* Read from unset register $f5 */));
+        sp4C = sp5C;
+        GSprimSetTextColor((PrimColor)((s32) &sp4C));
+        GSprimSetTextSize(10.0f, 10.0f);
+        GSprimWriteStr(25.0f, 29.0f, (char*)("#"));
+        GSprimWriteStr(50.0f, 29.0f, (char*)("ID"));
+        GSprimWriteStr(85.0f, 29.0f, (char*)("Name"));
+        GSprimWriteStr(245.0f, 29.0f, (char*)("TCAZ"));
+        GSprimWriteStr(295.0f, 29.0f, (char*)("Opaque"));
+        GSprimWriteStr(470.0f, 29.0f, (char*)("Xluc"));
+        sp48 = sp58;
+        GSprimDraw2DHLine(&sp48, 20.0f, 620.0f, 42.0f);
+        var_r20 = (long *)(_layerBottom);
+        var_r21 = 0;
+loop_138:
+        if (var_r20 != NULL) {
+            temp_r22 = M2C_FIELD(var_r20, s32 *, 0x28);
+            temp_r24 = M2C_FIELD(var_r20, s32 **, 0);
+            var_f26 = (12.0f * (f32) var_r21) + 47.0f;
+            if (temp_r22 < 8) {
+                var_r5 = _layerPerfColor[temp_r22];
+            } else {
+                var_r5 = (unsigned long)(_layerPerfUserColor);
+            }
+            temp_r4 = (u8) (var_r5 >> 0x10U);
+            M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, u8 *, 1) = (u8) (var_r5 >> 8U);
+            M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, s8 *, 2) = (s8) var_r5;
+            M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, u8 *, 0) = temp_r4;
+            M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, s8 *, 3) = 0xFF;
+            sp44 = (s32) M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, u8 *, 0);
+            GSprimDraw2DQuadWH(&sp44, (s32) temp_r4, 20.0f, var_f26 - 1.0f, 50.0f, 12.0f, M2C_ERROR(/* Read from unset register $f5 */));
+            sp40 = sp5C;
+            GSprimSetTextColor((PrimColor)((s32) &sp40));
+            GSprimWriteStr(25.0f, var_f26, (char*)("%d"), var_r21);
+            GSprimWriteStr(55.0f, var_f26, (char*)("%d"), temp_r22);
+            if (&spF != NULL) {
+                spF = ((u32) M2C_FIELD(var_r20, u32 *, 4) >> 1U) & 1;
+            }
+            if (&spE != NULL) {
+                spE = ((u32) M2C_FIELD(var_r20, u32 *, 4) >> 2U) & 1;
+            }
+            if ((u32) (M2C_FIELD(var_r20, u32 *, 4) & 1) != 1) {
+                sp3C = sp64;
+                GSprimSetTextColor((PrimColor)((s32) &sp3C));
+                spF = 0;
+                spE = 0;
+            }
+            GSprimSetTextSize(8.5f, 10.0f);
+            if ((s32) (strlen((const char*)((s8 *) (var_r20 + 8))) + 1) <= 0x13) {
+                memcpy((void*)(&sp8C), (const void*)(var_r20 + 8), strlen((const char*)((s8 *) (var_r20 + 8))) + 1);
+            } else {
+                memcpy((void*)(&sp8C), (const void*)(var_r20 + 8), 0x12U);
+                sp9E = 0;
+            }
+            GSprimWriteStr(85.0f, var_f26, (char*)("%s"), &sp8C);
+            GSprimSetTextSize(10.0f, 10.0f);
+            if (M2C_FIELD(var_r20, u32 *, 4) & 0x200) {
+                var_r0 = M2C_FIELD(var_r20, u32 *, 0x19A4);
+            } else {
+                var_r0 = 0U;
+            }
+            var_r0_2 = 0x58;
+            if (var_r0 != 0U) {
+                var_r0_2 = 0x4F;
+            }
+            sp84 = var_r0_2;
+            temp_r3_2 = M2C_FIELD(var_r20, s32 **, 0);
+            if (temp_r3_2 == NULL) {
+                var_r6 = 0;
+                var_r4_2 = 0;
+                var_r3_2 = 0;
+            } else {
+                if (&sp8 != NULL) {
+                    sp8 = ((u32) M2C_FIELD(temp_r3_2, u32 *, 4) >> 6U) & 1;
+                }
+                if (&sp9 != NULL) {
+                    sp9 = ((u32) M2C_FIELD(temp_r3_2, u32 *, 4) >> 7U) & 1;
+                }
+                if (&spA != NULL) {
+                    spA = ((u32) M2C_FIELD(temp_r3_2, u32 *, 4) >> 8U) & 1;
+                }
+                temp_r7 = M2C_FIELD(var_r20, u32 *, 4);
+                var_r3_3 = 0;
+                if ((temp_r7 & 8) || (sp8 != 0)) {
+                    var_r3_3 = 1;
+                }
+                var_r3_4 = 0;
+                var_r6 = var_r3_3 != 0;
+                if ((temp_r7 & 0x10) || (sp9 != 0)) {
+                    var_r3_4 = 1;
+                }
+                var_r3_5 = 0;
+                var_r4_2 = var_r3_4 != 0;
+                if ((temp_r7 & 0x20) || (spA != 0)) {
+                    var_r3_5 = 1;
+                }
+                var_r3_2 = var_r3_5 != 0;
+            }
+            if (&spD != NULL) {
+                spD = var_r6;
+            }
+            if (&spC != NULL) {
+                spC = var_r4_2;
+            }
+            if (&spB != NULL) {
+                spB = var_r3_2;
+            }
+            if (spD == 1) {
+                sp85 = 0x4F;
+            } else {
+                sp85 = 0x58;
+            }
+            if (spC == 1) {
+                sp86 = 0x4F;
+            } else {
+                sp86 = 0x58;
+            }
+            if (spB == 1) {
+                sp87 = 0x4F;
+            } else {
+                sp87 = 0x58;
+            }
+            if ((temp_r24 != NULL) && ((u32) (M2C_FIELD(temp_r24, s32 *, 4) & 1) == 1)) {
+                temp_r0 = M2C_FIELD(temp_r24, s32 *, 0x2C);
+                switch (temp_r0) {                  /* irregular */
+                case 1:
+                    sp85 = 0x2B;
+                    sp86 = 0x2B;
+                    /* fallthrough */
+                case 4:
+                    sp84 = 0x2B;
+                    break;
+                }
+            }
+            sp88 = 0;
+            GSprimWriteStr(245.0f, var_f26, (char*)(&sp84), var_r4_2);
+            if (&sp7C != NULL) {
+                if ((u32) M2C_FIELD(var_r20, u32 *, 0x1818) != 0U) {
+                    sp7C = M2C_FIELD(var_r20, u32 *, 0x18C8);
+                } else {
+                    sp7C = 0;
+                }
+            }
+            if (&sp78 != NULL) {
+                if ((u32) M2C_FIELD(var_r20, u32 *, 0x18D4) != 0U) {
+                    sp78 = M2C_FIELD(var_r20, u32 *, 0x1984);
+                } else {
+                    sp78 = 0;
+                }
+            }
+            if (&sp74 != NULL) {
+                if ((u32) M2C_FIELD(var_r20, u32 *, 0x1818) != 0U) {
+                    sp74 = M2C_FIELD(var_r20, u32 *, 0x18D0);
+                } else {
+                    sp74 = 0;
+                }
+            }
+            if (&sp70 != NULL) {
+                if ((u32) M2C_FIELD(var_r20, u32 *, 0x18D4) != 0U) {
+                    sp70 = M2C_FIELD(var_r20, u32 *, 0x198C);
+                } else {
+                    sp70 = 0;
+                }
+            }
+            if (&sp6C != NULL) {
+                sp6C = M2C_FIELD(var_r20, u32 *, 0x181C);
+            }
+            if (&sp68 != NULL) {
+                sp68 = M2C_FIELD(var_r20, u32 *, 0x18D8);
+            }
+            var_f27 = 295.0f;
+            if ((u32) M2C_FIELD(var_r20, u32 *, 0x1818) == 0U) {
+                var_r0_3 = 0;
+            } else if ((u8) M2C_FIELD(var_r20, u8 *, 0x18AC) == 0) {
+                var_r0_3 = 0;
+            } else {
+                temp_r4_2 = (unsigned char *)(&spEC + var_r30);
+                if ((temp_r4_2 + 4) != NULL) {
+                    temp_r0_2 = M2C_FIELD(var_r20, s32 *, 0x18B0);
+                    if (temp_r0_2 == -1) {
+                        var_r26 = 0;
+                    } else if (temp_r0_2 < 0x10) {
+                        var_r26 = (long)(_layerIDTable[temp_r0_2]);
+                    }
+                    M2C_FIELD(temp_r4_2, s32 *, 4) = var_r26;
+                }
+                if ((temp_r4_2 + 8) != NULL) {
+                    M2C_FIELD(temp_r4_2, s32 *, 8) = (s32) M2C_FIELD(var_r20, s32 *, 0x18B4);
+                }
+                if ((temp_r4_2 + 0xC) != NULL) {
+                    M2C_FIELD(temp_r4_2, s32 *, 0xC) = (s32) M2C_FIELD(var_r20, s32 *, 0x18B8);
+                }
+                var_r0_3 = 1;
+            }
+            if (var_r0_3 == 1) {
+                sp38 = sp54;
+                GSprimSetTextColor((PrimColor)((s32) &sp38));
+                GSprimWriteChar((s8) *(&spEC + var_r30), 295.0f, var_f26);
+                var_r31 += 1;
+                var_r30 += 0x10;
+                var_f27 = 295.0f + 11.0f;
+            }
+            sp34 = sp5C;
+            GSprimSetTextColor((PrimColor)((s32) &sp34));
+            if (sp6C != 0) {
+                if (spF == 0) {
+                    sp30 = sp64;
+                    GSprimSetTextColor((PrimColor)((s32) &sp30));
+                } else if (sp7C == 0) {
+                    sp2C = sp60;
+                    GSprimSetTextColor((PrimColor)((s32) &sp2C));
+                }
+                if (sp7C != 0) {
+                    GSprimWriteStr(var_f27, var_f26, (char*)(&jtbl_1809 + 0x40), (u32) ((f32) sp6C * 0.0009765625f), (u32) (((f32) sp74 * 0.0009765625f) + 0.5f), (f32) sp7C * 0.0009765625f);
+                } else {
+                    GSprimWriteStr(var_f27, var_f26, (char*)(&jtbl_1809 + 0x50), (u32) ((f32) sp6C * 0.0009765625f), (u32) (((f32) sp74 * 0.0009765625f) + 0.5f));
+                }
+            }
+            var_f27_2 = 470.0f;
+            if ((u32) M2C_FIELD(var_r20, u32 *, 0x18D4) == 0U) {
+                var_r0_4 = 0;
+            } else if ((u8) M2C_FIELD(var_r20, u8 *, 0x1968) == 0) {
+                var_r0_4 = 0;
+            } else {
+                temp_r4_3 = (unsigned char *)(&spEC + var_r30);
+                if ((temp_r4_3 + 4) != NULL) {
+                    temp_r0_3 = M2C_FIELD(var_r20, s32 *, 0x196C);
+                    if (temp_r0_3 == -1) {
+                        var_r25 = 0;
+                    } else if (temp_r0_3 < 0x10) {
+                        var_r25 = (long)(_layerIDTable[temp_r0_3]);
+                    }
+                    M2C_FIELD(temp_r4_3, s32 *, 4) = var_r25;
+                }
+                if ((temp_r4_3 + 8) != NULL) {
+                    M2C_FIELD(temp_r4_3, s32 *, 8) = (s32) M2C_FIELD(var_r20, s32 *, 0x1970);
+                }
+                if ((temp_r4_3 + 0xC) != NULL) {
+                    M2C_FIELD(temp_r4_3, s32 *, 0xC) = (s32) M2C_FIELD(var_r20, s32 *, 0x1974);
+                }
+                var_r0_4 = 1;
+            }
+            if (var_r0_4 == 1) {
+                sp28 = sp54;
+                GSprimSetTextColor((PrimColor)((s32) &sp28));
+                GSprimWriteChar((s8) *(&spEC + var_r30), 470.0f, var_f26);
+                var_r31 += 1;
+                var_r30 += 0x10;
+                var_f27_2 = 470.0f + 11.0f;
+            }
+            sp24 = sp5C;
+            GSprimSetTextColor((PrimColor)((s32) &sp24));
+            if (sp68 != 0) {
+                if (spE == 0) {
+                    sp20 = sp64;
+                    GSprimSetTextColor((PrimColor)((s32) &sp20));
+                } else if (sp78 == 0) {
+                    sp1C = sp60;
+                    GSprimSetTextColor((PrimColor)((s32) &sp1C));
+                }
+                if (sp78 != 0) {
+                    GSprimWriteStr(var_f27_2, var_f26, (char*)(&jtbl_1809 + 0x40), (u32) ((f32) sp68 * 0.0009765625f), (u32) (((f32) sp70 * 0.0009765625f) + 0.5f), (f32) sp78 * 0.0009765625f);
+                } else {
+                    GSprimWriteStr(var_f27_2, var_f26, (char*)(&jtbl_1809 + 0x50), (u32) ((f32) sp68 * 0.0009765625f), (u32) (((f32) sp70 * 0.0009765625f) + 0.5f));
+                }
+            }
+            var_r20 = temp_r24;
+            var_r21 += 1;
+            goto loop_138;
+        }
+        if (var_r31 > 0) {
+            sp18 = sp80;
+            GSprimDraw2DQuadWH(&sp18, 0x43300000, 10.0f, (12.0f * (f32) var_r21) + 50.0f, 620.0f, (12.0f * (f32) var_r31) + 4.0f, 12.0f);
+            var_r17 = &spEC;
+            var_r18 = 0;
+            var_f26_2 = var_f26 + 18.0f;
+loop_149:
+            if (var_r18 < var_r31) {
+                sp14 = sp54;
+                GSprimSetTextColor((PrimColor)((s32) &sp14));
+                GSprimWriteChar((s8) M2C_FIELD(var_r17, u8 *, 0), 40.0f, var_f26_2);
+                sp10 = sp5C;
+                GSprimSetTextColor((PrimColor)((s32) &sp10));
+                temp_r16_2 = M2C_FIELD(var_r17, s32 *, 4);
+                if ((s32) (strlen((const char*)(temp_r16_2 + 8)) + 1) <= 0x13) {
+                    memcpy((void*)(&sp8C), (const void*)(temp_r16_2 + 8), strlen((const char*)(temp_r16_2 + 8)) + 1);
+                } else {
+                    memcpy((void*)(&sp8C), (const void*)(temp_r16_2 + 8), 0x12U);
+                    sp9E = 0;
+                }
+                var_r6_2 = (long *)("xluc");
+                if ((s32) M2C_FIELD(var_r17, s32 *, 8) == 0) {
+                    var_r6_2 = (long *)("opaque");
+                }
+                var_r4_3 = (long *)("after");
+                if ((s32) M2C_FIELD(var_r17, s32 *, 0xC) == 1) {
+                    var_r4_3 = (long *)("before");
+                }
+                GSprimWriteStr(60.0f, var_f26_2, (char*)(&jtbl_1809 + 0x60), var_r4_3, &sp8C, var_r6_2);
+                var_f26_2 += 12.0f;
+                var_r17 += 0x10;
+                var_r18 += 1;
+                goto loop_149;
+            }
+        }
+    }
+}
+}
 u8 GSgfxLayerGetStatsRenderMode() {
     return _layerRenderStats;
 }
@@ -166,6 +772,103 @@ u8 GSgfxLayerGetStatsRenderMode() {
 void GSgfxLayerSetStatsRenderMode(u8 mode) {
     _layerRenderStats = mode;
 }
+extern "C++" {
+void GSgfxLayerBuildRenderList() {
+    s32 unkspC;
+    u32 sp8;
+    GXFifoObj *temp_r29;
+    s32 *var_r28_2;
+    s32 temp_r4;
+    volatile s32 temp_r6;
+    u32 temp_r0;
+    u32 temp_r28;
+    u32 temp_r29_2;
+    u32 temp_r3;
+    int temp_r4_2;
+    u32 temp_r5;
+    u32 temp_r5_2;
+    u32 var_r28;
+    u32 var_r4;
+    u8 var_r0;
+    u8 *temp_r31;
+
+    if ((s32 *) _layerBottom != NULL) {
+        if ((s32) gsgfx_gpu_mode != 1) {
+            temp_r31 = (unsigned char *)(gsgfx_layer_activeFifo);
+            if (temp_r31 != NULL) {
+                temp_r29 = (GXFifoObj *)(temp_r31 + 8);
+                GXSaveCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r29)));
+                temp_r0 = *(u32 *)0xCC003014;
+                sp8 = temp_r0;
+                temp_r28 = (temp_r0 >> 0x1AU) & 1;
+                if (temp_r28 == 1) {
+                    GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+                    GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r29)));
+                }
+                if (temp_r28 == 1) {
+                    M2C_FIELD(temp_r31, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r31, u16 *, 0xAC) + 1);
+                }
+                temp_r5 = M2C_FIELD(temp_r31, u32 *, 0x88);
+                if (temp_r5 == 0U) {
+                    var_r28 = 0U;
+                } else {
+                    temp_r29_2 = M2C_FIELD(temp_r31, u32 *, 0x20);
+                    if (temp_r29_2 >= temp_r5) {
+                        var_r28 = (temp_r29_2 - temp_r5) + (M2C_FIELD(temp_r31, u16 *, 0xAC) * M2C_FIELD(temp_r31, u32 *, 4));
+                    } else {
+                        temp_r6 = M2C_FIELD(temp_r31, s32 *, 0);
+                        temp_r4 = temp_r6 + M2C_FIELD(temp_r31, u32 *, 4);
+                        if ((u16) M2C_FIELD(temp_r31, u16 *, 0xAC) == 0) {
+                            GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(temp_r31, s32 *, 0), M2C_FIELD(temp_r31, u32 *, 4));
+                            GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4, temp_r5, temp_r6);
+                            GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(temp_r31, u32 *, 0x88), temp_r29_2);
+                            GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                            M2C_FIELD(temp_r31, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r31, u16 *, 0xAC) + 1);
+                        }
+                        var_r28 = (temp_r4 - temp_r5) + (temp_r29_2 - temp_r6) + ((M2C_FIELD(temp_r31, u16 *, 0xAC) - 1) * M2C_FIELD(temp_r31, u32 *, 4));
+                    }
+                }
+                M2C_FIELD(temp_r31, u32 *, 0xB4) = var_r28;
+                temp_r3 = M2C_FIELD(temp_r31, u32 *, 0xB4);
+                if (temp_r3 > (u32) M2C_FIELD(temp_r31, u32 *, 0xB8)) {
+                    M2C_FIELD(temp_r31, u32 *, 0xB8) = temp_r3;
+                }
+                if ((u32) M2C_FIELD(temp_r31, u32 *, 0xB4) >= (u32) M2C_FIELD(temp_r31, u32 *, 4)) {
+                    M2C_FIELD(temp_r31, s16 *, 0xAE) = 1;
+                }
+                GXResetWriteGatherPipe();
+                GSgfxRenderWaitInit((GSgfxRenderWaitData*)(&unkspC));
+loop_20:
+                if ((u32) M2C_FIELD(temp_r31, u32 *, 0x54) == 1U) {
+                    var_r0 = 0;
+                } else {
+                    temp_r5_2 = M2C_FIELD(temp_r31, u32 *, 0x20);
+                    temp_r4_2 = M2C_FIELD(temp_r31, u32 *, 0x1C);
+                    if (temp_r5_2 >= temp_r4_2) {
+                        var_r4 = temp_r5_2 - temp_r4_2;
+                    } else {
+                        var_r4 = (M2C_FIELD(temp_r31, s32 *, 0xC) - temp_r4_2) + (temp_r5_2 - M2C_FIELD(temp_r31, s32 *, 8));
+                    }
+                    var_r0 = (u32) M2C_FIELD(temp_r31, u32 *, 0x14) <= var_r4;
+                }
+                if (var_r0 == 1) {
+                    GSgfxRenderWaitTick((GSgfxRenderWaitData*)(&unkspC));
+                    goto loop_20;
+                }
+                GSgfxRenderWaitExit((GSgfxRenderWaitData*)(&unkspC));
+            }
+        }
+        var_r28_2 = (long *)(_layerBottom);
+loop_30:
+        if (var_r28_2 != NULL) {
+            ((GSgfxLayer*)((GSgfxLayer *) var_r28_2))->BuildRenderList();
+            var_r28_2 = (long *)(*var_r28_2);
+            goto loop_30;
+        }
+    }
+}
+}
+
 
 }
 
@@ -434,6 +1137,755 @@ void GSgfxLayer::BuildRenderList() {
     BuildRenderListPass((GSgfxLayerPass)0);
     BuildRenderListPass((GSgfxLayerPass)1);
 }
+extern "C++" {
+void GSgfxLayer::SendFifoToRenderer(_gsgfxLayerFifo* p0) {
+    s32 unkspC;
+    u32 sp8;
+    u32 temp_r0;
+    GXFifoObj *temp_r28;
+    s32 *var_r5;
+    s32 temp_r4;
+    s32 temp_r4_4;
+    s32 var_r28_2;
+    GSgfxLayer *var_r27_2;
+    u32 temp_r0_2;
+    u32 temp_r27;
+    u32 temp_r3;
+    u32 temp_r3_2;
+    unsigned int temp_r4_2;
+    u32 temp_r6;
+    u32 temp_r6_2;
+    u32 var_r27;
+    u32 var_r28;
+    u32 var_r4;
+    u8 var_r0;
+    u8 var_r0_2;
+    u8 *temp_r27_2;
+    u8 *temp_r28_2;
+    u8 *temp_r4_3;
+    u8 *temp_r5;
+    u8 *temp_r5_2;
+    u8 *temp_r5_3;
+    u8 *temp_r7;
+    u8 *var_r4_2;
+
+    if ((u32) M2C_FIELD(p0, u32 *, 0) != 0U) {
+        temp_r28 = (GXFifoObj *)(((u8*)(p0) + 8));
+        if (temp_r28 == GXGetCPUFifo()) {
+            GXSaveCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r28)));
+            temp_r0 = *(u32 *)0xCC003014;
+            sp8 = temp_r0;
+            temp_r27 = (temp_r0 >> 0x1AU) & 1;
+            if (temp_r27 == 1) {
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r28)));
+            }
+            if (temp_r27 == 1) {
+                M2C_FIELD(p0, u16 *, 0xAC) = (u16) (M2C_FIELD(p0, u16 *, 0xAC) + 1);
+            }
+            temp_r5 = M2C_FIELD(p0, u8 **, 0x88);
+            if (temp_r5 == NULL) {
+                var_r28 = 0U;
+            } else {
+                temp_r27_2 = M2C_FIELD(p0, u8 **, 0x20);
+                if (temp_r27_2 >= temp_r5) {
+                    var_r28 = (temp_r27_2 - temp_r5) + (M2C_FIELD(p0, u16 *, 0xAC) * M2C_FIELD(p0, u32 *, 4));
+                } else {
+                    temp_r6 = M2C_FIELD(p0, u32 *, 0);
+                    temp_r4 = temp_r6 + M2C_FIELD(p0, u32 *, 4);
+                    if ((u16) M2C_FIELD((u16)p0, u16 *, 0xAC) == 0) {
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4, temp_r5, temp_r6);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(p0, u32 *, 0), M2C_FIELD(p0, u32 *, 4));
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(p0, u8 **, 0x88), temp_r27_2);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                        M2C_FIELD(p0, u16 *, 0xAC) = (u16) (M2C_FIELD(p0, u16 *, 0xAC) + 1);
+                    }
+                    var_r28 = (unsigned long)(((u32)temp_r4 - (u32)temp_r5) + (temp_r27_2 - temp_r6) + ((M2C_FIELD(p0, u16 *, 0xAC) - 1) * M2C_FIELD(p0, u32 *, 4)));
+                }
+            }
+            M2C_FIELD(p0, u32 *, 0xB4) = var_r28;
+            temp_r3 = M2C_FIELD(p0, u32 *, 0xB4);
+            if (temp_r3 > (u32) M2C_FIELD(p0, u32 *, 0xB8)) {
+                M2C_FIELD(p0, u32 *, 0xB8) = temp_r3;
+            }
+            if ((u32) M2C_FIELD(p0, u32 *, 0xB4) >= (u32) M2C_FIELD(p0, u32 *, 4)) {
+                M2C_FIELD(p0, u16 *, 0xAE) = 1U;
+            }
+            GXResetWriteGatherPipe();
+            GSgfxRenderWaitInit((GSgfxRenderWaitData*)(&unkspC));
+loop_19:
+            if ((u32) M2C_FIELD(p0, u32 *, 0x54) == 1U) {
+                var_r0 = 0;
+            } else {
+                temp_r5_2 = M2C_FIELD(p0, u8 **, 0x20);
+                temp_r4_2 = M2C_FIELD(p0, u32 *, 0x1C);
+                if ((u32)(temp_r5_2) >= (u32)(temp_r4_2)) {
+                    var_r4 = (unsigned long)(temp_r5_2 - temp_r4_2);
+                } else {
+                    var_r4 = (unsigned long)((M2C_FIELD(p0, s32 *, 0xC) - temp_r4_2) + (temp_r5_2 - M2C_FIELD(p0, s32 *, 8)));
+                }
+                var_r0 = (u32) M2C_FIELD(p0, u32 *, 0x14) <= var_r4;
+            }
+            if (var_r0 == 1) {
+                GSgfxRenderWaitTick((GSgfxRenderWaitData*)(&unkspC));
+                goto loop_19;
+            }
+            GSgfxRenderWaitExit((GSgfxRenderWaitData*)(&unkspC));
+        }
+        M2C_FIELD(p0, u8 **, 0x8C) = (u8 *) M2C_FIELD(p0, u8 **, 0x20);
+    }
+    temp_r4_3 = M2C_FIELD(p0, u8 **, 0x88);
+    temp_r0_2 = M2C_FIELD(p0, u8 **, 0x8C) - temp_r4_3;
+    if (temp_r0_2 == 0U) {
+        var_r0_2 = 1;
+    } else if (temp_r0_2 != 0x20U) {
+        var_r0_2 = 0;
+    } else {
+        var_r0_2 = (M2C_FIELD(temp_r4_3, s32 *, 0) | M2C_FIELD(temp_r4_3, s32 *, 4) | M2C_FIELD(temp_r4_3, s32 *, 8) | M2C_FIELD(temp_r4_3, s32 *, 0xC) | M2C_FIELD(temp_r4_3, s32 *, 0x10) | M2C_FIELD(temp_r4_3, s32 *, 0x14) | M2C_FIELD(temp_r4_3, s32 *, 0x18) | M2C_FIELD(temp_r4_3, s32 *, 0x1C)) == 0;
+    }
+    if (var_r0_2 == 1) {
+        GSgfxGPUSetFifoWritePtr((GSgfx_GCFifoObj*)(((u8*)(p0) + 8)), (void*)(temp_r4_3));
+        M2C_FIELD(p0, u8 **, 0x8C) = (u8 *) M2C_FIELD(p0, u8 **, 0x88);
+        M2C_FIELD(p0, u16 *, 0xAC) = 0U;
+        M2C_FIELD(p0, u16 *, 0xAE) = 0U;
+    }
+    temp_r5_3 = M2C_FIELD(p0, u8 **, 0x88);
+    if (temp_r5_3 == NULL) {
+        var_r27 = 0U;
+    } else {
+        temp_r28_2 = M2C_FIELD(p0, u8 **, 0x20);
+        if (temp_r28_2 >= temp_r5_3) {
+            var_r27 = (temp_r28_2 - temp_r5_3) + (M2C_FIELD(p0, u16 *, 0xAC) * M2C_FIELD(p0, u32 *, 4));
+        } else {
+            temp_r6_2 = M2C_FIELD(p0, u32 *, 0);
+            temp_r4_4 = temp_r6_2 + M2C_FIELD(p0, u32 *, 4);
+            if ((u16) M2C_FIELD(p0, u16 *, 0xAC) == 0) {
+                GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4_4, temp_r5_3, temp_r6_2);
+                GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(p0, u32 *, 0), M2C_FIELD(p0, u32 *, 4));
+                GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(p0, u8 **, 0x88), temp_r28_2);
+                GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                M2C_FIELD(p0, u16 *, 0xAC) = (u16) (M2C_FIELD(p0, u16 *, 0xAC) + 1);
+            }
+            var_r27 = (unsigned long)(((u32)temp_r4_4 - (u32)temp_r5_3) + (temp_r28_2 - temp_r6_2) + ((M2C_FIELD(p0, u16 *, 0xAC) - 1) * M2C_FIELD(p0, u32 *, 4)));
+        }
+    }
+    M2C_FIELD(p0, u32 *, 0xB4) = var_r27;
+    temp_r3_2 = M2C_FIELD(p0, u32 *, 0xB4);
+    if (temp_r3_2 > (u32) M2C_FIELD(p0, u32 *, 0xB8)) {
+        M2C_FIELD(p0, u32 *, 0xB8) = temp_r3_2;
+    }
+    if ((u32) M2C_FIELD(p0, u32 *, 0xB4) >= (u32) M2C_FIELD(p0, u32 *, 4)) {
+        M2C_FIELD(p0, u16 *, 0xAE) = 1U;
+    }
+    if ((u16) M2C_FIELD(p0, u16 *, 0xAE) == 1) {
+        var_r5 = (long *)("xluc");
+        if ((s32) M2C_FIELD(this, s32 *, 0x1994) == 0) {
+            var_r5 = (long *)("opaque");
+        }
+        GSlogWrite((const char*)(&jtbl_1809 + 0xD8), this + 8, var_r5);
+        return;
+    }
+    var_r4_2 = M2C_FIELD(p0, u8 **, 0x88);
+    var_r27_2 = this;
+    var_r28_2 = 0;
+loop_51:
+    temp_r7 = M2C_FIELD(var_r27_2, u8 **, 0x19DC);
+    if (temp_r7 != NULL) {
+        if ((u32)(this + ((M2C_FIELD(var_r27_2, s32 *, 0x19D4) * 0xBC) + 0x1818)) == (u32)(p0)) {
+            GSgfxRenderAddToFifoList((GSgfx_GCFifoObj*)(((u8*)(p0) + 8)), (void*)(var_r4_2), (void*)(M2C_FIELD(var_r27_2, u8 **, 0x19D8)), M2C_FIELD(p0, u32 *, 0x90), (void (*)(void*))(temp_r7), (void*)(M2C_FIELD(var_r27_2, u8 **, 0x19E0)));
+            var_r4_2 = M2C_FIELD(var_r27_2, u8 **, 0x19D8);
+        }
+        var_r28_2 += 1;
+        var_r27_2 += 0x10;
+        if (var_r28_2 < 4) {
+            goto loop_51;
+        }
+    }
+    GSgfxRenderAddToFifoList((GSgfx_GCFifoObj*)(((u8*)(p0) + 8)), (void*)(var_r4_2), (void*)(M2C_FIELD(p0, u8 **, 0x8C)), M2C_FIELD(p0, u32 *, 0x90), (void (*)(void*))(NULL), (void*)(NULL));
+}
+}
+
+extern "C++" {
+void GSgfxLayer::Prerender() {
+    u8 spD;
+    bool spC;
+    u8 spB;
+    u8 spA;
+    u8 sp9;
+    u8 sp8;
+    s32 temp_r0;
+    s32 temp_r0_2;
+    s32 temp_r7;
+    u8 var_r3;
+    u8 var_r3_2;
+    u8 var_r3_3;
+    u8 var_r3_4;
+    bool var_r4;
+    u8 var_r6;
+    u8 *temp_r3;
+
+    ((GSgfxLayer*)(this))->PrerenderPass((GSgfxLayerPass)(0));
+    ((GSgfxLayer*)(this))->PrerenderPass((GSgfxLayerPass)(1));
+    temp_r3 = M2C_FIELD(this, u8 **, 0);
+    if (temp_r3 == NULL) {
+        var_r6 = 0;
+        var_r4 = 0;
+        var_r3 = 0;
+    } else {
+        if (&sp8 != NULL) {
+            sp8 = ((u32) M2C_FIELD(temp_r3, u32 *, 4) >> 6U) & 1;
+        }
+        if (&sp9 != NULL) {
+            sp9 = ((u32) M2C_FIELD(temp_r3, u32 *, 4) >> 7U) & 1;
+        }
+        if (&spA != NULL) {
+            spA = ((u32) M2C_FIELD(temp_r3, u32 *, 4) >> 8U) & 1;
+        }
+        temp_r7 = M2C_FIELD(this, s32 *, 4);
+        var_r3_2 = 0;
+        if ((temp_r7 & 8) || (sp8 != 0)) {
+            var_r3_2 = 1;
+        }
+        var_r3_3 = 0;
+        var_r6 = var_r3_2 != 0;
+        if ((temp_r7 & 0x10) || (sp9 != 0)) {
+            var_r3_3 = 1;
+        }
+        var_r3_4 = 0;
+        var_r4 = var_r3_3 != 0;
+        if ((temp_r7 & 0x20) || (spA != 0)) {
+            var_r3_4 = 1;
+        }
+        var_r3 = var_r3_4 != 0;
+    }
+    if (&spD != NULL) {
+        spD = var_r6;
+    }
+    if (&spC != NULL) {
+        spC = var_r4;
+    }
+    if (&spB != NULL) {
+        spB = var_r3;
+    }
+    if ((u32) M2C_FIELD(this, u32 *, 0x18D4) != 0U) {
+        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
+            M2C_FIELD(this, s32 *, 0x1994) = 1;
+            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
+        }
+    } else if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 0) {
+        M2C_FIELD(this, s32 *, 0x1994) = 0;
+        M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
+    }
+    if (M2C_FIELD(this, s32 *, 4) & 1) {
+        temp_r0 = M2C_FIELD(this, s32 *, 0x2C);
+        switch (temp_r0) {                          /* switch 1; irregular */
+        case 4:                                     /* switch 1 */
+            break;
+        case 1:                                     /* switch 1 */
+            ((GSgfxLayer*)(this))->EffectDistortion();
+            break;
+        }
+    }
+    if (M2C_FIELD(this, s32 *, 4) & 0x200) {
+        temp_r0_2 = M2C_FIELD(this, s32 *, 0x19A8);
+        switch (temp_r0_2) {                        /* switch 2; irregular */
+        case 0:                                     /* switch 2 */
+            ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(M2C_FIELD(this, GStexture **, 0x19A4)), 0U, (unsigned char*)(NULL), spD, spC, spB);
+            return;
+        case 1:                                     /* switch 2 */
+            ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(M2C_FIELD(this, GStexture **, 0x19A4)), 1U, (unsigned char*)(NULL), spD, spC, spB);
+            return;
+        case 2:                                     /* switch 2 */
+            ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(M2C_FIELD(this, GStexture **, 0x19A4)), 1U, (unsigned char*)((u8*)this + 0x19AC), spD, spC, spB);
+            return;
+        }
+    } else {
+        ((GSgfxLayer*)(this))->EffectScreenClear(spD, spC, spB);
+    }
+}
+}
+
+extern "C++" {
+void GSgfxLayer::PrerenderPass(GSgfxLayerPass p0) {
+    s32 unksp10;
+    s32 unksp18;
+    u32 spC;
+    u32 sp8;
+    GXFifoObj *temp_r28;
+    GXFifoObj *temp_r30;
+    s32 temp_r29;
+    s32 temp_r4;
+    s32 temp_r4_3;
+    s32 temp_r6;
+    s32 temp_r6_2;
+    u32 temp_r0;
+    u32 temp_r0_2;
+    u32 temp_r25;
+    u32 temp_r25_2;
+    u32 temp_r25_3;
+    u32 temp_r25_4;
+    u32 temp_r3;
+    u32 temp_r3_2;
+    u32 temp_r4_2;
+    u32 temp_r4_4;
+    u32 temp_r5;
+    u32 temp_r5_2;
+    u32 temp_r5_3;
+    u32 temp_r5_4;
+    u32 var_r30;
+    u32 var_r30_2;
+    u32 var_r3;
+    u32 var_r4;
+    u32 var_r4_2;
+    u8 var_r0;
+    u8 var_r0_2;
+    u8 *temp_r25_5;
+    u8 *temp_r27;
+    u8 *temp_r28_2;
+    u8 *temp_r29_2;
+
+    temp_r29 = p0 * 0xBC;
+    if ((u32) M2C_FIELD((this + temp_r29), u32 *, 0x1818) != 0U) {
+        var_r3 = 5;
+        if (p0 == 0) {
+            var_r3 = 3;
+        }
+        if (var_r3 == (u32) (var_r3 & M2C_FIELD(this, s32 *, 4))) {
+            if ((s32) M2C_FIELD(this, s32 *, 0x1994) != p0) {
+                M2C_FIELD(this, s32 *, 0x1994) = p0;
+                M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
+            }
+            if ((s32) gsgfx_gpu_mode == 2) {
+                temp_r29_2 = (unsigned char *)(gsgfx_layer_activeFifo);
+                if (temp_r29_2 != (u8 *) M2C_FIELD(this, u8 **, 0x1990)) {
+                    if (((s32) gsgfx_gpu_mode != 1) && (temp_r29_2 != NULL)) {
+                        temp_r28 = (GXFifoObj *)(temp_r29_2 + 8);
+                        GXSaveCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r28)));
+                        temp_r0 = *(u32 *)0xCC003014;
+                        sp8 = temp_r0;
+                        temp_r25 = (temp_r0 >> 0x1AU) & 1;
+                        if (temp_r25 == 1) {
+                            GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+                            GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r28)));
+                        }
+                        if (temp_r25 == 1) {
+                            M2C_FIELD(temp_r29_2, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r29_2, u16 *, 0xAC) + 1);
+                        }
+                        temp_r5 = M2C_FIELD(temp_r29_2, u32 *, 0x88);
+                        if (temp_r5 == 0U) {
+                            var_r30 = 0U;
+                        } else {
+                            temp_r25_2 = M2C_FIELD(temp_r29_2, u32 *, 0x20);
+                            if (temp_r25_2 >= temp_r5) {
+                                var_r30 = (temp_r25_2 - temp_r5) + (M2C_FIELD(temp_r29_2, u16 *, 0xAC) * M2C_FIELD(temp_r29_2, u32 *, 4));
+                            } else {
+                                temp_r6 = M2C_FIELD(temp_r29_2, s32 *, 0);
+                                temp_r4 = temp_r6 + M2C_FIELD(temp_r29_2, u32 *, 4);
+                                if ((u16) M2C_FIELD(temp_r29_2, u16 *, 0xAC) == 0) {
+                                    GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4, temp_r5, temp_r6);
+                                    GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(temp_r29_2, s32 *, 0), M2C_FIELD(temp_r29_2, u32 *, 4));
+                                    GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(temp_r29_2, u32 *, 0x88), temp_r25_2);
+                                    GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                                    M2C_FIELD(temp_r29_2, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r29_2, u16 *, 0xAC) + 1);
+                                }
+                                var_r30 = (temp_r4 - temp_r5) + (temp_r25_2 - temp_r6) + ((M2C_FIELD(temp_r29_2, u16 *, 0xAC) - 1) * M2C_FIELD(temp_r29_2, u32 *, 4));
+                            }
+                        }
+                        M2C_FIELD(temp_r29_2, u32 *, 0xB4) = var_r30;
+                        temp_r3 = M2C_FIELD(temp_r29_2, u32 *, 0xB4);
+                        if (temp_r3 > (u32) M2C_FIELD(temp_r29_2, u32 *, 0xB8)) {
+                            M2C_FIELD(temp_r29_2, u32 *, 0xB8) = temp_r3;
+                        }
+                        if ((u32) M2C_FIELD(temp_r29_2, u32 *, 0xB4) >= (u32) M2C_FIELD(temp_r29_2, u32 *, 4)) {
+                            M2C_FIELD(temp_r29_2, s16 *, 0xAE) = 1;
+                        }
+                        GXResetWriteGatherPipe();
+                        GSgfxRenderWaitInit((GSgfxRenderWaitData*)(&unksp10));
+loop_27:
+                        if ((u32) M2C_FIELD(temp_r29_2, u32 *, 0x54) == 1U) {
+                            var_r0 = 0;
+                        } else {
+                            temp_r5_2 = M2C_FIELD(temp_r29_2, u32 *, 0x20);
+                            temp_r4_2 = M2C_FIELD(temp_r29_2, u32 *, 0x1C);
+                            if (temp_r5_2 >= temp_r4_2) {
+                                var_r4 = temp_r5_2 - temp_r4_2;
+                            } else {
+                                var_r4 = (M2C_FIELD(temp_r29_2, s32 *, 0xC) - temp_r4_2) + (temp_r5_2 - M2C_FIELD(temp_r29_2, s32 *, 8));
+                            }
+                            var_r0 = (u32) M2C_FIELD(temp_r29_2, u32 *, 0x14) <= var_r4;
+                        }
+                        if (var_r0 == 1) {
+                            GSgfxRenderWaitTick((GSgfxRenderWaitData*)(&unksp10));
+                            goto loop_27;
+                        }
+                        GSgfxRenderWaitExit((GSgfxRenderWaitData*)(&unksp10));
+                    }
+                    GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(M2C_FIELD(this, u8 **, 0x1990) + 8)));
+                    gsgfx_layer_activeFifo = M2C_FIELD(this, u8 **, 0x1990);
+                    M2C_FIELD(gsgfxState, GSgfxLayer **, 0xC40) = this;
+                }
+            }
+            GSgfxRenderModuleDoRender((GSgfxLayer*)(this), (GSgfxLayerPass)(p0));
+            return;
+        }
+        temp_r28_2 = (unsigned char *)(gsgfx_layer_activeFifo);
+        temp_r27 = (unsigned char *)(this + (temp_r29 + 0x1818));
+        if (temp_r27 == temp_r28_2) {
+            temp_r30 = (GXFifoObj *)(temp_r28_2 + 8);
+            GXSaveCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r30)));
+            temp_r0_2 = *(u8 *)0xCC003014;
+            spC = temp_r0_2;
+            temp_r25_3 = (temp_r0_2 >> 0x1AU) & 1;
+            if (temp_r25_3 == 1) {
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r30)));
+            }
+            if (temp_r25_3 == 1) {
+                M2C_FIELD(temp_r28_2, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r28_2, u16 *, 0xAC) + 1);
+            }
+            temp_r5_3 = M2C_FIELD(temp_r28_2, u32 *, 0x88);
+            if (temp_r5_3 == 0U) {
+                var_r30_2 = 0U;
+            } else {
+                temp_r25_4 = M2C_FIELD(temp_r28_2, u32 *, 0x20);
+                if (temp_r25_4 >= temp_r5_3) {
+                    var_r30_2 = (temp_r25_4 - temp_r5_3) + (M2C_FIELD(temp_r28_2, u16 *, 0xAC) * M2C_FIELD(temp_r28_2, u32 *, 4));
+                } else {
+                    temp_r6_2 = M2C_FIELD(temp_r28_2, s32 *, 0);
+                    temp_r4_3 = temp_r6_2 + M2C_FIELD(temp_r28_2, u32 *, 4);
+                    if ((u16) M2C_FIELD(temp_r28_2, u16 *, 0xAC) == 0) {
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4_3, temp_r5_3, temp_r6_2);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(temp_r28_2, s32 *, 0), M2C_FIELD(temp_r28_2, u32 *, 4));
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(temp_r28_2, u32 *, 0x88), temp_r25_4);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                        M2C_FIELD(temp_r28_2, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r28_2, u16 *, 0xAC) + 1);
+                    }
+                    var_r30_2 = (temp_r4_3 - temp_r5_3) + (temp_r25_4 - temp_r6_2) + ((M2C_FIELD(temp_r28_2, u16 *, 0xAC) - 1) * M2C_FIELD(temp_r28_2, u32 *, 4));
+                }
+            }
+            M2C_FIELD(temp_r28_2, u32 *, 0xB4) = var_r30_2;
+            temp_r3_2 = M2C_FIELD(temp_r28_2, u32 *, 0xB4);
+            if (temp_r3_2 > (u32) M2C_FIELD(temp_r28_2, u32 *, 0xB8)) {
+                M2C_FIELD(temp_r28_2, u32 *, 0xB8) = temp_r3_2;
+            }
+            if ((u32) M2C_FIELD(temp_r28_2, u32 *, 0xB4) >= (u32) M2C_FIELD(temp_r28_2, u32 *, 4)) {
+                M2C_FIELD(temp_r28_2, s16 *, 0xAE) = 1;
+            }
+            GXResetWriteGatherPipe();
+            GSgfxRenderWaitInit((GSgfxRenderWaitData*)(&unksp18));
+loop_55:
+            if ((u32) M2C_FIELD(temp_r28_2, u32 *, 0x54) == 1U) {
+                var_r0_2 = 0;
+            } else {
+                temp_r5_4 = M2C_FIELD(temp_r28_2, u32 *, 0x20);
+                temp_r4_4 = M2C_FIELD(temp_r28_2, u32 *, 0x1C);
+                if (temp_r5_4 >= temp_r4_4) {
+                    var_r4_2 = temp_r5_4 - temp_r4_4;
+                } else {
+                    var_r4_2 = (M2C_FIELD(temp_r28_2, s32 *, 0xC) - temp_r4_4) + (temp_r5_4 - M2C_FIELD(temp_r28_2, s32 *, 8));
+                }
+                var_r0_2 = (u32) M2C_FIELD(temp_r28_2, u32 *, 0x14) <= var_r4_2;
+            }
+            if (var_r0_2 == 1) {
+                GSgfxRenderWaitTick((GSgfxRenderWaitData*)(&unksp18));
+                goto loop_55;
+            }
+            GSgfxRenderWaitExit((GSgfxRenderWaitData*)(&unksp18));
+        }
+        temp_r25_5 = (unsigned char *)(this + temp_r29);
+        GSgfxGPUSetFifoWritePtr((GSgfx_GCFifoObj*)(temp_r27 + 8), (void*)(M2C_FIELD(temp_r25_5, u8 **, 0x18A0)));
+        M2C_FIELD(temp_r25_5, u8 **, 0x18A4) = (u8 *) M2C_FIELD(temp_r25_5, u8 **, 0x18A0);
+        M2C_FIELD(temp_r25_5, s16 *, 0x18C4) = 0;
+        M2C_FIELD(temp_r25_5, s16 *, 0x18C6) = 0;
+        ((GSgfxLayer*)(this))->InvalidateState();
+    }
+}
+}
+
+extern "C++" {
+void GSgfxLayer::SetupFifo() {
+    s32 unkspC;
+    u32 sp8;
+    GXFifoObj *temp_r28;
+    s32 temp_r4;
+    s32 temp_r6;
+    volatile u32 temp_r0;
+    u32 temp_r27;
+    u32 temp_r28_2;
+    u32 temp_r3;
+    int temp_r4_2;
+    u32 temp_r5;
+    u32 temp_r5_2;
+    u32 var_r27;
+    u32 var_r4;
+    u8 var_r0;
+    u8 *temp_r31;
+
+    if ((s32) gsgfx_gpu_mode == 2) {
+        temp_r31 = (unsigned char *)(gsgfx_layer_activeFifo);
+        if (temp_r31 != (u8 *) M2C_FIELD(this, u8 **, 0x1990)) {
+            if (((s32) gsgfx_gpu_mode != 1) && (temp_r31 != NULL)) {
+                temp_r28 = (GXFifoObj *)(temp_r31 + 8);
+                GXSaveCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r28)));
+                temp_r0 = *(u32 *)0xCC003014;
+                sp8 = temp_r0;
+                temp_r27 = (temp_r0 >> 0x1AU) & 1;
+                if (temp_r27 == 1) {
+                    GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+                    GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r28)));
+                }
+                if (temp_r27 == 1) {
+                    M2C_FIELD(temp_r31, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r31, u16 *, 0xAC) + 1);
+                }
+                temp_r5 = M2C_FIELD(temp_r31, u32 *, 0x88);
+                if (temp_r5 == 0U) {
+                    var_r27 = 0U;
+                } else {
+                    temp_r28_2 = M2C_FIELD(temp_r31, u32 *, 0x20);
+                    if (temp_r28_2 >= temp_r5) {
+                        var_r27 = (temp_r28_2 - temp_r5) + (M2C_FIELD(temp_r31, u16 *, 0xAC) * M2C_FIELD(temp_r31, u32 *, 4));
+                    } else {
+                        temp_r6 = M2C_FIELD(temp_r31, s32 *, 0);
+                        temp_r4 = temp_r6 + M2C_FIELD(temp_r31, u32 *, 4);
+                        if ((u16) M2C_FIELD((u16)temp_r31, u16 *, 0xAC) == 0) {
+                            GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4, temp_r5, temp_r6);
+                            GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(temp_r31, s32 *, 0), M2C_FIELD(temp_r31, u32 *, 4));
+                            GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(temp_r31, u32 *, 0x88), temp_r28_2);
+                            GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                            M2C_FIELD(temp_r31, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r31, u16 *, 0xAC) + 1);
+                        }
+                        var_r27 = (temp_r4 - temp_r5) + (temp_r28_2 - temp_r6) + ((M2C_FIELD(temp_r31, u16 *, 0xAC) - 1) * M2C_FIELD(temp_r31, u32 *, 4));
+                    }
+                }
+                M2C_FIELD(temp_r31, u32 *, 0xB4) = var_r27;
+                temp_r3 = M2C_FIELD(temp_r31, u32 *, 0xB4);
+                if (temp_r3 > (u32) M2C_FIELD(temp_r31, u32 *, 0xB8)) {
+                    M2C_FIELD(temp_r31, u32 *, 0xB8) = temp_r3;
+                }
+                if ((u32) M2C_FIELD(temp_r31, u32 *, 0xB4) >= (u32) M2C_FIELD(temp_r31, u32 *, 4)) {
+                    M2C_FIELD(temp_r31, s16 *, 0xAE) = 1;
+                }
+                GXResetWriteGatherPipe();
+                GSgfxRenderWaitInit((GSgfxRenderWaitData*)(&unkspC));
+loop_21:
+                if ((u32) M2C_FIELD(temp_r31, u32 *, 0x54) == 1U) {
+                    var_r0 = 0;
+                } else {
+                    temp_r5_2 = M2C_FIELD(temp_r31, u32 *, 0x20);
+                    temp_r4_2 = M2C_FIELD(temp_r31, u32 *, 0x1C);
+                    if (temp_r5_2 >= temp_r4_2) {
+                        var_r4 = temp_r5_2 - temp_r4_2;
+                    } else {
+                        var_r4 = (M2C_FIELD(temp_r31, s32 *, 0xC) - temp_r4_2) + (temp_r5_2 - M2C_FIELD(temp_r31, s32 *, 8));
+                    }
+                    var_r0 = (u32) M2C_FIELD(temp_r31, u32 *, 0x14) <= var_r4;
+                }
+                if (var_r0 == 1) {
+                    GSgfxRenderWaitTick((GSgfxRenderWaitData*)(&unkspC));
+                    goto loop_21;
+                }
+                GSgfxRenderWaitExit((GSgfxRenderWaitData*)(&unkspC));
+            }
+            GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(M2C_FIELD(this, u8 **, 0x1990) + 8)));
+            gsgfx_layer_activeFifo = M2C_FIELD(this, u8 **, 0x1990);
+            M2C_FIELD(gsgfxState, GSgfxLayer **, 0xC40) = this;
+        }
+    }
+}
+}
+
+extern "C++" {
+void GSgfxLayer::MarkAndInvalidate() {
+    s32 unksp10;
+    s32 unksp18;
+    u32 spC;
+    u32 sp8;
+    GXFifoObj *temp_r30;
+    GXFifoObj *temp_r30_2;
+    s32 temp_r4;
+    s32 temp_r4_3;
+    u32 temp_r0;
+    u32 temp_r0_2;
+    u32 temp_r27;
+    u32 temp_r27_2;
+    u32 temp_r27_3;
+    u32 temp_r28;
+    u32 temp_r3;
+    u32 temp_r3_2;
+    u32 temp_r4_2;
+    u32 temp_r4_4;
+    u32 temp_r5;
+    u32 temp_r5_2;
+    u32 temp_r5_3;
+    u32 temp_r5_4;
+    u32 temp_r6;
+    u32 temp_r6_2;
+    u32 var_r27;
+    u32 var_r28;
+    u32 var_r4;
+    u32 var_r4_2;
+    u8 var_r0;
+    u8 var_r0_2;
+    u8 var_r0_3;
+
+    if ((u32) M2C_FIELD(this, u32 *, 0x1818) != 0U) {
+        temp_r30 = (GXFifoObj *)(this + 0x1820);
+        if (temp_r30 == GXGetCPUFifo()) {
+            GXSaveCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r30)));
+            temp_r0 = *(u32 *)0xCC003014;
+            spC = temp_r0;
+            temp_r27 = (temp_r0 >> 0x1AU) & 1;
+            if (temp_r27 == 1) {
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r30)));
+            }
+            if (temp_r27 == 1) {
+                M2C_FIELD(this, u16 *, 0x18C4) = (u16) (M2C_FIELD(this, u16 *, 0x18C4) + 1);
+            }
+            temp_r5 = M2C_FIELD(this, u32 *, 0x18A0);
+            if (temp_r5 == 0U) {
+                var_r27 = 0U;
+            } else {
+                temp_r28 = M2C_FIELD(this, u32 *, 0x1838);
+                if (temp_r28 >= temp_r5) {
+                    var_r27 = (temp_r28 - temp_r5) + (M2C_FIELD(this, u16 *, 0x18C4) * M2C_FIELD(this, u32 *, 0x181C));
+                } else {
+                    temp_r6 = M2C_FIELD(this, u32 *, 0x1818);
+                    temp_r4 = temp_r6 + M2C_FIELD(this, u32 *, 0x181C);
+                    if ((u16) M2C_FIELD(this, u16 *, 0x18C4) == 0) {
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4, temp_r5, temp_r6);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(this, u32 *, 0x1818), M2C_FIELD(this, u32 *, 0x181C));
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(this, u32 *, 0x18A0), temp_r28);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                        M2C_FIELD(this, u16 *, 0x18C4) = (u16) (M2C_FIELD(this, u16 *, 0x18C4) + 1);
+                    }
+                    var_r27 = (temp_r4 - temp_r5) + (temp_r28 - temp_r6) + ((M2C_FIELD(this, u16 *, 0x18C4) - 1) * M2C_FIELD(this, u32 *, 0x181C));
+                }
+            }
+            M2C_FIELD(this, u32 *, 0x18CC) = var_r27;
+            temp_r3 = M2C_FIELD(this, u32 *, 0x18CC);
+            if (temp_r3 > (u32) M2C_FIELD(this, u32 *, 0x18D0)) {
+                M2C_FIELD(this, u32 *, 0x18D0) = temp_r3;
+            }
+            if ((u32) M2C_FIELD(this, u32 *, 0x18CC) >= (u32) M2C_FIELD(this, u32 *, 0x181C)) {
+                M2C_FIELD(this, s16 *, 0x18C6) = 1;
+            }
+            GXResetWriteGatherPipe();
+            GSgfxRenderWaitInit((GSgfxRenderWaitData*)(&unksp18));
+loop_19:
+            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x4C) == 1U) {
+                var_r0 = 0;
+            } else {
+                temp_r5_2 = M2C_FIELD(temp_r30, u32 *, 0x18);
+                temp_r4_2 = M2C_FIELD(temp_r30, u32 *, 0x14);
+                if (temp_r5_2 >= temp_r4_2) {
+                    var_r4 = temp_r5_2 - temp_r4_2;
+                } else {
+                    var_r4 = (M2C_FIELD(temp_r30, s32 *, 4) - temp_r4_2) + (temp_r5_2 - M2C_FIELD(this, s32 *, 0x1820));
+                }
+                var_r0 = (u32) M2C_FIELD(temp_r30, u32 *, 0xC) <= var_r4;
+            }
+            if (var_r0 == 1) {
+                GSgfxRenderWaitTick((GSgfxRenderWaitData*)(&unksp18));
+                goto loop_19;
+            }
+            GSgfxRenderWaitExit((GSgfxRenderWaitData*)(&unksp18));
+        }
+        M2C_FIELD(this, u32 *, 0x18A0) = (u32) M2C_FIELD(this, u32 *, 0x1838);
+    }
+    if ((u32) M2C_FIELD(this, u32 *, 0x18D4) != 0U) {
+        temp_r30_2 = (GXFifoObj *)((u8*)this + 0x18DC);
+        if (temp_r30_2 == GXGetCPUFifo()) {
+            GXSaveCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r30_2)));
+            temp_r0_2 = *(u8 *)0xCC003014;
+            sp8 = temp_r0_2;
+            temp_r27_2 = (temp_r0_2 >> 0x1AU) & 1;
+            if (temp_r27_2 == 1) {
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r30_2)));
+            }
+            if (temp_r27_2 == 1) {
+                M2C_FIELD(this, u16 *, 0x1980) = (u16) (M2C_FIELD(this, u16 *, 0x1980) + 1);
+            }
+            temp_r5_3 = M2C_FIELD(this, u32 *, 0x195C);
+            if (temp_r5_3 == 0U) {
+                var_r28 = 0U;
+            } else {
+                temp_r27_3 = M2C_FIELD(this, u32 *, 0x18F4);
+                if (temp_r27_3 >= temp_r5_3) {
+                    var_r28 = (temp_r27_3 - temp_r5_3) + (M2C_FIELD(this, u16 *, 0x1980) * M2C_FIELD(this, u32 *, 0x18D8));
+                } else {
+                    temp_r6_2 = M2C_FIELD(this, u32 *, 0x18D4);
+                    temp_r4_3 = temp_r6_2 + M2C_FIELD(this, u32 *, 0x18D8);
+                    if ((u16) M2C_FIELD(this, u16 *, 0x1980) == 0) {
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4_3, temp_r5_3, temp_r6_2);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(this, u32 *, 0x18D4), M2C_FIELD(this, u32 *, 0x18D8));
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(this, u32 *, 0x195C), temp_r27_3);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                        M2C_FIELD(this, u16 *, 0x1980) = (u16) (M2C_FIELD(this, u16 *, 0x1980) + 1);
+                    }
+                    var_r28 = (temp_r4_3 - temp_r5_3) + (temp_r27_3 - temp_r6_2) + ((M2C_FIELD(this, u16 *, 0x1980) - 1) * M2C_FIELD(this, u32 *, 0x18D8));
+                }
+            }
+            M2C_FIELD(this, u32 *, 0x1988) = var_r28;
+            temp_r3_2 = M2C_FIELD(this, u32 *, 0x1988);
+            if (temp_r3_2 > (u32) M2C_FIELD(this, u32 *, 0x198C)) {
+                M2C_FIELD(this, u32 *, 0x198C) = temp_r3_2;
+            }
+            if ((u32) M2C_FIELD(this, u32 *, 0x1988) >= (u32) M2C_FIELD(this, u32 *, 0x18D8)) {
+                M2C_FIELD(this, s16 *, 0x1982) = 1;
+            }
+            GXResetWriteGatherPipe();
+            GSgfxRenderWaitInit((GSgfxRenderWaitData*)(&unksp10));
+loop_47:
+            if ((u32) M2C_FIELD(temp_r30_2, u32 *, 0x4C) == 1U) {
+                var_r0_2 = 0;
+            } else {
+                temp_r5_4 = M2C_FIELD(temp_r30_2, u32 *, 0x18);
+                temp_r4_4 = M2C_FIELD(temp_r30_2, u32 *, 0x14);
+                if (temp_r5_4 >= temp_r4_4) {
+                    var_r4_2 = temp_r5_4 - temp_r4_4;
+                } else {
+                    var_r4_2 = (M2C_FIELD(temp_r30_2, s32 *, 4) - temp_r4_4) + (temp_r5_4 - M2C_FIELD(this, s32 *, 0x18DC));
+                }
+                var_r0_2 = (u32) M2C_FIELD(temp_r30_2, u32 *, 0xC) <= var_r4_2;
+            }
+            if (var_r0_2 == 1) {
+                GSgfxRenderWaitTick((GSgfxRenderWaitData*)(&unksp10));
+                goto loop_47;
+            }
+            GSgfxRenderWaitExit((GSgfxRenderWaitData*)(&unksp10));
+        }
+        M2C_FIELD(this, u32 *, 0x195C) = (u32) M2C_FIELD(this, u32 *, 0x18F4);
+    }
+    M2C_FIELD(this, u32 *, 0x18C8) = (u32) M2C_FIELD(this, u32 *, 0x18CC);
+    M2C_FIELD(this, u32 *, 0x1984) = (u32) M2C_FIELD(this, u32 *, 0x1988);
+    M2C_FIELD(this, u16 *, 0x18C4) = 0U;
+    M2C_FIELD(this, s16 *, 0x18C6) = 0;
+    M2C_FIELD(this, u16 *, 0x1980) = 0U;
+    M2C_FIELD(this, s16 *, 0x1982) = 0;
+    ((GSgfxLayer*)(this))->InvalidateState();
+    if ((s32) M2C_FIELD(this, s32 *, 0x2C) != 1) {
+        var_r0_3 = M2C_FIELD(this, u8 *, 0x16A7) != 0;
+    } else {
+        var_r0_3 = 0;
+    }
+    M2C_FIELD(this, u8 *, 0x16A7) = var_r0_3;
+    M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x40);
+    M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x40);
+    if (var_r0_3 != 0) {
+        M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x200);
+        M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x200);
+        if ((u8) M2C_FIELD(this, u8 *, 0x16A6) != 0) {
+            M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x100);
+            M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x100);
+        }
+    }
+    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
+    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
+}
+}
+
 
 void GSgfxLayer::BuildRenderListPass(GSgfxLayerPass pass) {
     PassFifo* p = &passes[pass];
@@ -544,8 +1996,8 @@ void GSgfxLayer::SetPassRedirect(GSgfxLayerPass pass, bool enable, GSgfxLayer* t
         src->flag = 0;
         src->redirectId = -1;
         src->redirectPass = 2;
-        src->redirectOffset = 0;
         *slot = 0;
+        src->redirectOffset = 0;
     }
 }
 
@@ -716,6 +2168,196 @@ void GSgfxLayer::SetLayerType(GSgfxLayerType newType) {
         type = newType;
     }
 }
+extern "C++" {
+GSgfxLayer::~GSgfxLayer() {
+    s32 saved_reg_r29;
+    s32 saved_reg_r30;
+    s32 unkspC;
+    u32 sp8;
+    GXFifoObj *temp_r30;
+    u32 temp_r26_2;
+    s32 *var_r3;
+    s32 *var_r5;
+    s32 *var_r5_2;
+    s32 temp_r0;
+    s32 temp_r0_2;
+    s32 temp_r3;
+    s32 temp_r3_2;
+    s32 temp_r4_2;
+    s32 temp_r6;
+    s32 var_r29;
+    s32 var_r30;
+    u16 temp_r4;
+    u32 temp_r0_4;
+    u32 temp_r26;
+    s32 *temp_r0_3;
+    u32 temp_r3_3;
+    int temp_r4_3;
+    u32 temp_r5;
+    u32 temp_r5_2;
+    u32 var_r30_2;
+    u32 var_r4;
+    u8 var_r0;
+    u8 *temp_r29;
+    u8 *temp_r3_4;
+    u8 *temp_r3_5;
+
+    var_r29 = saved_reg_r29;
+    var_r30 = saved_reg_r30;
+    if (this != NULL) {
+        GSgfxRenderWaitForDrawComplete();
+        if (((u8 *) M2C_FIELD(this, u8 **, 0x1818) != NULL) && ((u8) M2C_FIELD(this, u8 *, 0x18AC) != 0)) {
+            temp_r0 = M2C_FIELD(this, s32 *, 0x18B0);
+            if (temp_r0 == -1) {
+                var_r29 = 0;
+            } else if (temp_r0 < 0x10) {
+                var_r29 = (long)(_layerIDTable[temp_r0]);
+            }
+            temp_r3 = var_r29 + ((M2C_FIELD(this, s32 *, 0x18B4) * 0xBC) + 0x1818);
+            if ((s32) M2C_FIELD(this, s32 *, 0x18B8) == 1) {
+                var_r5 = (long *)(temp_r3 + 0xA4);
+            } else {
+                var_r5 = (long *)(temp_r3 + 0xA8);
+            }
+            M2C_FIELD(this, u8 *, 0x18AC) = 0U;
+            M2C_FIELD(this, s32 *, 0x18B0) = -1;
+            M2C_FIELD(this, s32 *, 0x18B4) = 2;
+            M2C_FIELD(this, s32 *, 0x18B8) = 0;
+            *var_r5 = 0;
+        }
+        if (((u8 *) M2C_FIELD(this, u8 **, 0x18D4) != NULL) && ((u8) M2C_FIELD(this, u8 *, 0x1968) != 0)) {
+            temp_r0_2 = M2C_FIELD(this, s32 *, 0x196C);
+            if (temp_r0_2 == -1) {
+                var_r30 = 0;
+            } else if (temp_r0_2 < 0x10) {
+                var_r30 = (long)(_layerIDTable[temp_r0_2]);
+            }
+            temp_r3_2 = var_r30 + ((M2C_FIELD(this, s32 *, 0x1970) * 0xBC) + 0x1818);
+            if ((s32) M2C_FIELD(this, s32 *, 0x1974) == 1) {
+                var_r5_2 = (long *)(temp_r3_2 + 0xA4);
+            } else {
+                var_r5_2 = (long *)(temp_r3_2 + 0xA8);
+            }
+            M2C_FIELD(this, u8 *, 0x1968) = 0U;
+            M2C_FIELD(this, s32 *, 0x196C) = -1;
+            M2C_FIELD(this, s32 *, 0x1970) = 2;
+            M2C_FIELD(this, s32 *, 0x1974) = 0;
+            *var_r5_2 = 0;
+        }
+        ((GSgfxLayer*)(this))->SetLayerType((GSgfxLayerType)(0));
+        M2C_FIELD(this, s32 *, 4) = (s32) (M2C_FIELD(this, s32 *, 4) & 0xFFFFFDFF);
+        if (((u32)(fbTexPtr__10GSgfxLayer) != (u32)(NULL)) && ((u32) M2C_FIELD(this, u32 *, 0x19A4) == (u32)fbTexPtr__10GSgfxLayer)) {
+            temp_r4 = fbTexRefCount__10GSgfxLayer - 1;
+            fbTexRefCount__10GSgfxLayer = temp_r4;
+            if (temp_r4 == 0) {
+                GStextureFree((GStexture*)(fbTexPtr__10GSgfxLayer));
+                fbTexPtr__10GSgfxLayer = NULL;
+            }
+        }
+        M2C_FIELD(this, u32 *, 0x19A4) = 0U;
+        M2C_FIELD(this, s32 *, 0x19A8) = 0;
+        if ((u32)(_layerBottom) == (u32)(this)) {
+            _layerBottom = (GSgfxLayer *)(M2C_FIELD(this, s32 **, 0));
+        } else {
+            var_r3 = (long *)(_layerBottom);
+loop_29:
+            if (var_r3 != NULL) {
+                temp_r0_3 = (long *)(*var_r3);
+                if ((u32)(temp_r0_3) != (u32)(this)) {
+                    var_r3 = temp_r0_3;
+                    goto loop_29;
+                }
+            }
+            *var_r3 = (long)(M2C_FIELD(this, s32 **, 0));
+        }
+        temp_r29 = (unsigned char *)(gsgfx_layer_activeFifo);
+        if ((temp_r29 != NULL) && ((temp_r29 == (u8 *) ((u8*)this + 0x1818)) || (temp_r29 == (u8 *) (this + 0x18D4)))) {
+            temp_r30 = (GXFifoObj *)(temp_r29 + 8);
+            GXSaveCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r30)));
+            temp_r0_4 = *(u32 *)0xCC003014;
+            sp8 = temp_r0_4;
+            temp_r26 = (temp_r0_4 >> 0x1AU) & 1;
+            if (temp_r26 == 1) {
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+                GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(temp_r30)));
+            }
+            if (temp_r26 == 1) {
+                M2C_FIELD(temp_r29, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r29, u16 *, 0xAC) + 1);
+            }
+            temp_r5 = M2C_FIELD(temp_r29, u32 *, 0x88);
+            if (temp_r5 == 0U) {
+                var_r30_2 = 0U;
+            } else {
+                temp_r26_2 = M2C_FIELD(temp_r29, u32 *, 0x20);
+                if (temp_r26_2 >= temp_r5) {
+                    var_r30_2 = (temp_r26_2 - temp_r5) + (M2C_FIELD(temp_r29, u16 *, 0xAC) * M2C_FIELD(temp_r29, u32 *, 4));
+                } else {
+                    temp_r6 = M2C_FIELD(temp_r29, s32 *, 0);
+                    temp_r4_2 = temp_r6 + M2C_FIELD(temp_r29, u32 *, 4);
+                    if ((u16) M2C_FIELD((u16)temp_r29, u16 *, 0xAC) == 0) {
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x7C), temp_r4_2, temp_r5, temp_r6);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0x9C), M2C_FIELD(temp_r29, s32 *, 0), M2C_FIELD(temp_r29, u32 *, 4));
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xB4), M2C_FIELD(temp_r29, u32 *, 0x88), temp_r26_2);
+                        GSlogWrite((const char*)(&jtbl_1809 + 0xCC), *(u8 *)0xCC003014);
+                        M2C_FIELD(temp_r29, u16 *, 0xAC) = (u16) (M2C_FIELD(temp_r29, u16 *, 0xAC) + 1);
+                    }
+                    var_r30_2 = (temp_r4_2 - temp_r5) + (temp_r26_2 - temp_r6) + ((M2C_FIELD(temp_r29, u16 *, 0xAC) - 1) * M2C_FIELD(temp_r29, u32 *, 4));
+                }
+            }
+            M2C_FIELD(temp_r29, u32 *, 0xB4) = var_r30_2;
+            temp_r3_3 = M2C_FIELD(temp_r29, u32 *, 0xB4);
+            if (temp_r3_3 > (u32) M2C_FIELD(temp_r29, u32 *, 0xB8)) {
+                M2C_FIELD(temp_r29, u32 *, 0xB8) = temp_r3_3;
+            }
+            if ((u32) M2C_FIELD(temp_r29, u32 *, 0xB4) >= (u32) M2C_FIELD(temp_r29, u32 *, 4)) {
+                M2C_FIELD(temp_r29, s16 *, 0xAE) = 1;
+            }
+            GXResetWriteGatherPipe();
+            GSgfxRenderWaitInit((GSgfxRenderWaitData*)(&unkspC));
+loop_52:
+            if ((u32) M2C_FIELD(temp_r29, u32 *, 0x54) == 1U) {
+                var_r0 = 0;
+            } else {
+                temp_r5_2 = M2C_FIELD(temp_r29, u32 *, 0x20);
+                temp_r4_3 = M2C_FIELD(temp_r29, u32 *, 0x1C);
+                if (temp_r5_2 >= temp_r4_3) {
+                    var_r4 = temp_r5_2 - temp_r4_3;
+                } else {
+                    var_r4 = (M2C_FIELD(temp_r29, s32 *, 0xC) - temp_r4_3) + (temp_r5_2 - M2C_FIELD(temp_r29, s32 *, 8));
+                }
+                var_r0 = (u32) M2C_FIELD(temp_r29, u32 *, 0x14) <= var_r4;
+            }
+            if (var_r0 == 1) {
+                GSgfxRenderWaitTick((GSgfxRenderWaitData*)(&unkspC));
+                goto loop_52;
+            }
+            GSgfxRenderWaitExit((GSgfxRenderWaitData*)(&unkspC));
+            GXSetCPUFifo((GSgfx_GCFifoObj *)((GXFifoObj*)(GSgfxGPUGetImmediateFifo())));
+            gsgfx_layer_activeFifo = NULL;
+        }
+        if ((u32) (u32)(_layerStateLastHWState) == (u32)((u8*)this + 0x30)) {
+            _layerStateLastHWState = 0U;
+        }
+        ((GSgfxMatrixStack*)(M2C_FIELD(this, GSgfxMatrixStack **, 0x19A0)))->~GSgfxMatrixStack();
+        _layerIDTable[M2C_FIELD(this, s32 *, 0x28)] = 0;
+        temp_r3_4 = M2C_FIELD(this, u8 **, 0x1818);
+        if (temp_r3_4 != NULL) {
+            GSmemFree((void*)(temp_r3_4));
+            M2C_FIELD(this, u8 **, 0x1818) = NULL;
+        }
+        temp_r3_5 = M2C_FIELD(this, u8 **, 0x18D4);
+        if (temp_r3_5 != NULL) {
+            GSmemFree((void*)(temp_r3_5));
+            M2C_FIELD(this, u8 **, 0x18D4) = NULL;
+        }
+        if ((s16) M2C_ERROR(/* Read from unset register $r4 */) > 0) {
+            operator delete((void*)(this));
+        }
+    }
+    return;
+}
+}
+
 
 static inline bool fifoBusy(GSgfx_GCFifoObj* o) {
     if (o->breakpointReached == 1) {

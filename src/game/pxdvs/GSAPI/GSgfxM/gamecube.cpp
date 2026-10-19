@@ -1112,7 +1112,7 @@ void GSgfx_GCFlushState(void) {
     gsgfxState->peCtrl.zfmt = _gcGlobalRegState.b3;
     gsgfxState->cmode1.f9 = _gcGlobalRegState.b4;
     {
-        GSState* st = gsgfxState;
+        volatile GSState* st = gsgfxState;
         if (st->dirty & 0x1000) WrFifo(RAW(st->r354));
         if (st->d10 != 0) {
             for (i = 0; i < 8; i++) {
@@ -1300,8 +1300,8 @@ void GSgfx_GCFlushState(void) {
             FIFO32 = st->genMode.nTex;
         }
         if (st->dirty & 0x4000000) {
-            FIFO8 = 0x10;
             FIFO16 = 0;
+            FIFO8 = 0x10;
             FIFO16 = 0x1005;
             FIFO32 = st->xf1005;
         }
@@ -1317,8 +1317,8 @@ void GSgfx_GCFlushState(void) {
                 FIFO32 = RAW(st->matIdxB);
             }
             if ((st->dirty & 0xc0) == 0xc0) {
-                FIFO8 = 0x10;
                 FIFO16 = 1;
+                FIFO8 = 0x10;
                 FIFO16 = 0x1018;
                 FIFO32 = RAW(st->matIdxA);
                 FIFO32 = RAW(st->matIdxB);
@@ -1415,8 +1415,8 @@ void GSgfx_GCInvalidateState(void) {
         gsgfxState->alphaOp[i].reg = 0xFEFEFEFE;
     }
     for (i = 0; i < 4; i++) gsgfxState->kcolFlag[i][0] = 1;
-    for (i = 0; i < 80; i++) gsgfxState->cA24[i] = 0xFEFEFEFE;
     for (i = 0; i < 16; i++) gsgfxState->indStatus[i] = 0xFE;
+    for (i = 0; i < 80; i++) gsgfxState->cA24[i] = 0xFEFEFEFE;
     for (i = 0; i < 20; i++) gsgfxState->cB74[i] = 0xFEFEFEFE;
     gsgfxState->cBC4[0] = 0xFE;
     gsgfxState->cBC4[1] = 0xFE;
@@ -1545,7 +1545,7 @@ void GSgfx_GCInitState(void) {
     gsgfxState->ras1ss0.id = 0x25;
     RAW(gsgfxState->ras1ss1) = 0;
     gsgfxState->ras1ss1.id = 0x26;
-    for (i = 0; i < 8; i++) {
+    for (s32 i = 0; i < 8; i++) {
         RAW(gsgfxState->texMode0[i]) = 0;
         RAW(gsgfxState->texMode1[i]) = 0;
         RAW(gsgfxState->texImg0[i]) = 0;
@@ -1596,8 +1596,8 @@ void GSgfx_GCInitState(void) {
     RAW(gsgfxState->suS[7]) = 0;
     RAW(gsgfxState->suT[7]) = 0;
     gsgfxState->suS[7].id = 0x3e;
-    gsgfxState->suT[7].id = 0x3f;
     RAW(gsgfxState->r1ec) = 0;
+    gsgfxState->suT[7].id = 0x3f;
     gsgfxState->r1ec.id = 0x22;
     RAW(gsgfxState->matIdxA) = 0;
     RAW(gsgfxState->matIdxB) = 0;
@@ -1668,8 +1668,8 @@ void GSgfx_GCInitState(void) {
     for (i = 0; i < 16; i++) {
         RAW(gsgfxState->tevc[i]) = 0;
         RAW(gsgfxState->teva[i]) = 0;
-        gsgfxState->tevc[i].id = 0xc0 + i * 2;
         gsgfxState->teva[i].id = 0xc1 + i * 2;
+        gsgfxState->tevc[i].id = 0xc0 + i * 2;
     }
     for (i = 0; i < 16; i++) {
         RAW(gsgfxState->indCmd[i]) = 0;

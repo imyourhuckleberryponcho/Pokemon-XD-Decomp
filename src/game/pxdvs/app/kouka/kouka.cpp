@@ -1,7 +1,4 @@
-// NonMatching: value0 load goes through r0, and "/ 2" is srawi+addze instead of srwi/add/srawi.
 #include <dolphin/types.h>
-
-// Built with -O4,s (see configure.py).
 
 extern "C" {
 u8 koukaDataBiosGetStatusKind(u32 id);
@@ -14,6 +11,12 @@ s32 statusGetStatus(u8 statusKind, void* fightPokemon, u16, u16, u16);
 s32 statusSetStatus(u8 statusKind, void* fightPokemon, u16, u16, void* target, s32 value);
 u32 fightFloorGetStatus(s32, s32, s32, s32);
 void* fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void* target, u16 id);
+}
+
+// Single-use helper (as in the Colosseum decomp): its s16 return lets the first value go straight to its
+// saved register instead of through r0.
+static inline s16 koukaGetBaseValue(u32 id) {
+    return koukaDataBiosGetValue(id, 0);
 }
 
 static s32 _koukaOneExec(u32 id, void* fightPokemon, void* target, s32* out);
@@ -55,7 +58,7 @@ static s32 _koukaOneExec(u32 id, void* fightPokemon, void* target, s32* out) {
     }
     statusKind = koukaDataBiosGetStatusKind(id);
     status = koukaDataBiosGetStatus(id);
-    value0 = koukaDataBiosGetValue(id, 0);
+    value0 = koukaGetBaseValue(id);
     value1 = koukaDataBiosGetValue(id, 1);
     var = koukaDataBiosGetVar(id);
     current = statusGetStatus(statusKind, fightPokemon, 0, status, value0);

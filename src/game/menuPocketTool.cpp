@@ -674,12 +674,12 @@ void CInfoWindow::draw()
         }
         tagWINDOW_WORK* win = (tagWINDOW_WORK*)windowSearchID(windowId);
         tagSPRITE_WORK* spr = menuPtSpriteWorkGetByItemID(win, itemId, 0);
-        s32 layer = winSpriteGetLayerID(win, spr);
+        int layer = winSpriteGetLayerID(win, spr);
         if (isMsg) {
             spriteSetOffset(layer, win->x + spr->x, win->y + spr->y);
             spriteClearScissor(layer);
             spriteSetEnv(layer);
-            GSmsgMain(layer, msgId, buttons, (win->flags & 4) == 0);
+            GSmsgMain((s32)layer, msgId, buttons, (win->flags & 4) == 0);
             spriteSetOffset(layer, 0, 0);
             spriteClearScissor(layer);
             spriteSetEnv(layer);
@@ -1592,8 +1592,8 @@ void menuPocketToolFloatToZero(f32& v, f32 step)
 
 void setBitTable(u32* table, long i, bool on)
 {
-    int bit = i % 32;
     int word = i / 32;
+    int bit = i % 32;
     if (on) table[word] |= 1 << bit;
 }
 

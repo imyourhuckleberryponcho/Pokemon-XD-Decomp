@@ -1668,6 +1668,8 @@ void Tiga::makeStateData(GSBinWriteStream* stream)
 s32 Tiga::restoreStateData(void* data, u32 length)
 {
     GSBinReadStream stream(data, length);
+    s32 t;
+    s32 handle;
     u32 n;
     CurrentGuard guard(this);
     if (length == 0) return 0;
@@ -1681,7 +1683,7 @@ s32 Tiga::restoreStateData(void* data, u32 length)
         n = stream.read32();
         timers[i] = *(f32*)&n;
     }
-    for (s32 i = 0; i < 16; i++) userFlags[i] = stream.read8();
+    for (s32 i = 0; 16 > i; i++) userFlags[i] = stream.read8();
     nextHandle = stream.read32();
     saveFlag = stream.read8() != 0;
     unk930 = stream.read32();
@@ -1708,8 +1710,8 @@ s32 Tiga::restoreStateData(void* data, u32 length)
     }
     for (s32 i = 0; i < count; i++) {
         if (threads[i]->state != 0) {
-            s32 handle = threads[i]->handle;
-            s32 t = floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread);
+            handle = threads[i]->handle;
+            t = floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread);
             GSthreadSetName(t, "GSscript thread");
             GSthreadSetArgs(t, 2, this, handle);
             threads[i]->gsThread = t;
@@ -1736,13 +1738,14 @@ void Tiga::debugDump()
     GSprint(GSgfxLayerFindByName_C("debug menu"), 0xCC, 0x34, 0xE0D0FFFF, "%3.1f", timers[3]);
     GSprint(GSgfxLayerFindByName_C("debug menu"), 0x10, 0x40, 0xE0D0FFFF, "- : Line  sp  ");
     GSprint(GSgfxLayerFindByName_C("debug menu"), 0x10, 0x4C, 0xE0D0FFFF, "------------------");
+    u32 sp;
     s32 y = 0x58;
     for (s32 i = 0; i < 8; i++, y += 0xC) {
         TigaThread* t = threads[i];
         if (t->state == 0) {
             GSprint(GSgfxLayerFindByName_C("debug menu"), 0x10, y, 0xE0D0FFFF, "%d : --", i);
         } else {
-            u32 sp = ((u32)t->ctx.sp - (u32)t->ctx.stackBase) >> 3;
+            sp = ((u32)t->ctx.sp - (u32)t->ctx.stackBase) >> 3;
             FuncEntry* found = 0;
             for (FuncEntry* e = funcs; e != funcs + funcCount; e++) {
                 FuncEntry* prev = found;

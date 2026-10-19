@@ -121,7 +121,7 @@ void GSinputClearButtonData(s32 pad, u32 buttons)
 void GSinputMotorStart(s32 pad, u8 mode, u8 strength, u32 frames, u8 step)
 {
     if (_padMotorFlag) {
-        InputDevice* d = _inputFindDevice(pad);
+        volatile InputDevice* d = _inputFindDevice(pad);
         if (d && !mode) {
             d->motorMode = 1;
             d->motorValue = strength * 15;

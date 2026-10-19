@@ -188,8 +188,8 @@ _HSD_SceneDesc* floorRegisterLight(u32 group, u32 id) {
             if (l != 0) {
                 GSresRegisterResource(l, group, base | i, _unloadLight);
             }
-            off += 4;
             i++;
+            off += 4;
         }
     }
     return desc;
@@ -464,15 +464,16 @@ void* floorReadObjPreFunc(u32 group, u32 id, u32 size) {
 }
 
 _HSD_SceneDesc* floorReadMapPostFunc(u32 group, u32 id, u32 size) {
-    s32 i = 0;
     s32 j = 0;
+    s32 off;
+    s32 i = 0;
     _HSD_SceneDesc* desc = _makeArchiveHeader(group, id, size);
     if (desc == 0) {
         return 0;
     }
     if (desc->models != 0) {
         u32 base = floorReadMakeModelResID(id);
-        s32 off = 0;
+        off = 0;
         while (*(void**)((u8*)desc->models + off) != 0) {
             GSresRegisterResource(*(void**)((u8*)desc->models + off), group, base | i, 0);
             off += 4;
@@ -603,6 +604,7 @@ static _HSD_SceneDesc* _makeArchiveHeader(u32 group, u32 id, u32 size) {
 }
 
 static s32 _unloadObject(void*, u32 group, u32 id) {
+    s32 off;
     s32 i = 0;
     void* res = GSresGetResource(group, id);
     if (res == 0) {
@@ -611,7 +613,7 @@ static s32 _unloadObject(void*, u32 group, u32 id) {
     _HSD_SceneDesc* desc = (_HSD_SceneDesc*)HSD_ArchiveGetPublicAddress(res, "scene_data");
     u32 base = floorReadMakeModelResID(id);
     if (desc->models != 0) {
-        s32 off = 0;
+        off = 0;
         while (*(void**)((u8*)desc->models + off) != 0) {
             GSresFreeResource(group, base | i);
             off += 4;

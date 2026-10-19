@@ -1,12 +1,50 @@
 // STATUS (snC): 12/23 exact with extra_cflags=["-inline noauto"]. Stubs (empty): menuCB_PokemonEntry, ButtonTask_20041006, EntCheck, EntCheckGBA. WIP: DeoxysParamCustom 72%, TexWorkInit 66%, WorkInit 92%.
 // Pokemon entry screen for battle (menuCB_PokemonEntry).
 #include <dolphin/types.h>
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+struct Hero;
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+struct KeyInfo;
+struct tagWINDOW_WORK;
 
 #pragma peephole off
 
 class Pokemon;
 
-struct GSinputDevice;
+enum GSinputDevice { GSinputDevice_dummy };
 
 struct PokemonEntryFace {
     u8 active;
@@ -137,8 +175,8 @@ static PokemonEntryWork _menuCBPokemonWork;
 
 static u8 _menuCB_pokemonGetDeoxysSel(u16 player, bool flag);
 static void _menuCBPokemonEntryEntCheckDebug(long);
-static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice* dev, long player);
-static void _menuCBPokemonEntryEntCheck(GSinputDevice* dev, long player);
+static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice inputDevice, long player);
+static void _menuCBPokemonEntryEntCheck(GSinputDevice dev, long player);
 static s32 _menuCBPokemonEntryButtonCheck(u32 buttons, long player);
 static void _menuCBPokemonEntryWork(void);
 static u16 _menuCBPokemonEntryPokemonNum(long player);
@@ -149,6 +187,28 @@ static void _menuCBPokemonEntryDispPosition(void);
 static u8 _menuCBPokemonEntryAllPlayer(void);
 static Pokemon* _menuCBPokemonEntryLoadCallBack(void* flag);
 static PokemonEntryFace* _menuCBPokemonEntryGetFaceBase(long player, long slot);
+
+// ---- draft declarations ----
+struct KeyInfo {
+    u8 _draft[1];
+};
+struct tagWINDOW_WORK {
+    u8 _draft[1];
+};
+
+
+// ---- draft declarations ----
+struct Hero {
+    u8 _draft[1];
+};
+
+extern "C" {
+void menuCBPokemonEntryButtonTask_20041006();
+s32 menuCB_PokemonEntry();
+}
+extern "C++" {
+static void _menuCB_DeoxysParamCustom(Pokemon* pokemon, u16 player);
+}
 
 static void _menuCB_DeoxysParamCustom(Pokemon* pokemon, u16 player) {
     u32 level = pokemonGetStatus(pokemon, 0, 0x7A, 0);
@@ -179,6 +239,59 @@ static void _menuCB_DeoxysParamCustom(Pokemon* pokemon, u16 player) {
     pokemonBiosSetSpeDef(pokemon, r3);
     pokemonBiosSetNimbleness(pokemon, r4);
 }
+extern "C" {
+#pragma push
+#pragma dont_inline on
+s32 menuCB_PokemonEntry() { return 0; }
+extern "C" {
+void menuCBPokemonEntryButtonTask_20041006() {
+    u32 temp_r0;
+    s32 temp_r0_2;
+    s32 temp_r29;
+    s32 temp_r3;
+    int var_r28;
+
+    temp_r29 = toolentryTaisenGetEntryPlayerNum();
+    toolentryTaisenGetBattleType();
+    toolentryTaisenGetHomePlace(0);
+    toolentryTaisenGetHomePlace(1);
+    toolentryTaisenGetHomePlace(2);
+    toolentryTaisenGetHomePlace(3);
+    var_r28 = 0;
+loop_20:
+    if (var_r28 < temp_r29) {
+        if ((toolentryTaisenGetBattleVersus() == 4) && (_menuCBPokemonEntryGetEntryFlag(var_r28) != 0) && ((toolentryTaisenGetControlerType(var_r28), temp_r0 = M2C_FIELD(menuCBBios_GetTrainer(), s32 *, 4), ((temp_r0 == 1) != 0)) || (temp_r0 == 2) || (temp_r0 == 3))) {
+            temp_r3 = toolentryTaisenGetControlerType(var_r28);
+            if (gbaCommandIsConnected(temp_r3) == 0) {
+                M2C_FIELD(&_menuCBPokemonWork, s8 *, 0x22C) = 0;
+                if ((s32) M2C_FIELD(&_menuCBPokemonWork, s32 *, 0x230) < 0) {
+                    M2C_FIELD(&_menuCBPokemonWork, s32 *, 0x230) = temp_r3;
+                }
+            }
+        }
+        if (_menuCBPokemonEntryGetEntryFlag(var_r28) == 0) {
+            if (toolentryTaisenGetBattleVersus() == 4) {
+                toolentryTaisenGetControlerType(var_r28);
+                temp_r0_2 = M2C_FIELD(menuCBBios_GetTrainer(), s32 *, 4);
+                if ((temp_r0_2 == 1) || (temp_r0_2 == 2) || (temp_r0_2 == 3)) {
+                    _menuCBPokemonEntryEntCheckGBA((GSinputDevice)(toolentryTaisenGetControlerType(var_r28)), var_r28);
+                } else {
+                    _menuCBPokemonEntryEntCheck((GSinputDevice)(toolentryTaisenGetControlerType(var_r28)), var_r28);
+                }
+            }
+            if ((toolentryTaisenGetControlerType(var_r28) == 1) && (toolentryTaisenGetHomePlace(var_r28) == 0)) {
+                toolentryTaisengetEtnryPokemonOrderNum(var_r28);
+                _menuCBPokemonEntryPokemonNum(var_r28);
+            }
+        }
+        var_r28 += 1;
+        goto loop_20;
+    }
+}
+}
+#pragma pop
+}
+
 
 static u8 _menuCB_pokemonGetDeoxysSel(u16 player, bool flag) {
     u8 sel = 0;
@@ -210,22 +323,158 @@ static u8 _menuCB_pokemonGetDeoxysSel(u16 player, bool flag) {
 }
 
 extern "C" {
-s32 menuCB_PokemonEntry(void) {
-    return 0;
+
+
 }
 
-void menuCBPokemonEntryButtonTask_20041006(void) {
-}
-}
+static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice inputDevice, long player) {
+    u32 linkStatus;
+    u8 gbaOrder[8];
+    s32 order[6];
+    f32* track;
+    s32 result;
+    s32 count;
+    s32 i;
 
-static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice* dev, long player) {
+    toolentryTaisenGetBattlePlayerID(player);
+    gbaCommandEntryResult(inputDevice, (s32*)&linkStatus);
+    switch (linkStatus & 0xFF000000) {
+    case 0x01000000:
+        count = toolentryTaisengetEtnryPokemonOrderNum(player);
+        result = toolentryTaisenSetEtnryPokemonOrder(player, count);
+        if (result >= 0) {
+            if (!pauseIsPause()) {
+                GSsndPlay(0x19, 0, 0);
+            }
+            track = _menuCBPokemonWork.track[player];
+            track[result] = (f32)((5 - result) * 0x18);
+            track[result + 6] = 0.0f;
+            _menuCBPokemonEntryEntCheckDebug(player);
+        }
+        break;
+    case 0xFF000000:
+        count = toolentryTaisengetEtnryPokemonOrderNum(player);
+        if (count != toolentryTaisenDeleteEtnryPokemonOrder(player)) {
+            if (!pauseIsPause()) {
+                GSsndPlay(0x12, 0, 0);
+            }
+        }
+        break;
+    case 0:
+        count = toolentryTaisenGetEntryPokemonNum(player);
+        gbaCommandEntryPokemon(linkStatus, gbaOrder);
+        for (i = 0; i < count; i++) {
+            order[i] = gbaOrder[i];
+        }
+        toolentryTaisenSetEtnryPokemonOrderGBA(player, count, order);
+        _menuCBPokemonEntrySetEntryFlag(player, true);
+        break;
+    case 0x03000000:
+        _menuCBPokemonWork.connected = 0;
+        if (_menuCBPokemonWork.f230 < 0) {
+            _menuCBPokemonWork.f230 = inputDevice;
+        }
+        break;
+    }
 }
 
 static void _menuCBPokemonEntryEntCheckDebug(long) {
 }
 
-static void _menuCBPokemonEntryEntCheck(GSinputDevice* dev, long player) {
+extern "C++" {
+static void _menuCBPokemonEntryEntCheck(GSinputDevice p0, long p1) {
+    s32 temp_r29;
+    s32 temp_r30_3;
+    s32 temp_r3;
+    s32 temp_r3_2;
+    s32 temp_r5;
+    s32 temp_r28;
+    u32 temp_r0;
+    u32 temp_r30;
+    u32 temp_r30_2;
+    u32 var_ctr_2;
+    u32 var_r3;
+    u8 *temp_r30_4;
+    u8 *temp_r4;
+    u8 *var_r6;
+    u32 var_ctr;
+
+    temp_r30 = GSinputButtonsChanged(p0);
+    temp_r30_2 = GSinputButtonsPressed(p0) & temp_r30;
+    toolentryTaisenGetBattlePlayerID(p1);
+    if ((pauseIsPause() == 0) && ((s32) (*windowGetKeyInfo() & 0x400) == 0) && (windowSearchID(0xE2) == NULL)) {
+        if ((u32) (temp_r30_2 & 0x140) != 0) {
+            if ((u32) (temp_r30_2 & 0x40) != 0) {
+                temp_r30_3 = toolentryTaisengetEtnryPokemonOrderNum(p1);
+                if (temp_r30_3 != toolentryTaisenDeleteEtnryPokemonOrder(p1)) {
+                    GSsndPlay(0x12U, 0, 0U);
+                }
+            } else if ((u32) (temp_r30_2 & 0x100) != 0) {
+                temp_r30_4 = (unsigned char *)(menuCBBios_GetTrainerImmediately(p1));
+                temp_r28 = toolentryTaisenGetEntryPokemonNum(p1);
+                temp_r29 = M2C_FIELD(temp_r30_4, s32 *, 0x20);
+                if (temp_r29 >= (s32) menuCBPokemonEntryPokemonNumMin(p1)) {
+                    var_r6 = temp_r30_4 + (temp_r29 * 4);
+                    var_r3 = temp_r28 - temp_r29;
+                    if (temp_r29 < (s32) temp_r28) {
+                        temp_r0 = var_r3 >> 3U;
+                        var_ctr = temp_r0;
+                        if (temp_r0 != 0) {
+                            do {
+                                M2C_FIELD(var_r6, s32 *, 8) = 0xF;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                M2C_FIELD(var_r6, s32 *, 0xC) = 0xF;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                M2C_FIELD(var_r6, s32 *, 0x10) = 0xF;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                M2C_FIELD(var_r6, s32 *, 0x14) = 0xF;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                M2C_FIELD(var_r6, s32 *, 0x18) = 0xF;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                M2C_FIELD(var_r6, s32 *, 0x1C) = 0xF;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                M2C_FIELD(var_r6, s32 *, 0x20) = 0xF;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                M2C_FIELD(var_r6, s32 *, 0x24) = 0xF;
+                                var_r6 += 0x20;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                var_ctr -= 1;
+                            } while (var_ctr != 0);
+                            var_r3 &= 7;
+                            if (var_r3 != 0) {
+                                goto block_13;
+                            }
+                        } else {
+block_13:
+                            var_ctr_2 = var_r3;
+                            do {
+                                M2C_FIELD(var_r6, s32 *, 8) = 0xF;
+                                var_r6 += 4;
+                                M2C_FIELD(temp_r30_4, s32 *, 0x20) = (s32) (M2C_FIELD(temp_r30_4, s32 *, 0x20) + 1);
+                                var_ctr_2 -= 1;
+                            } while (var_ctr_2 != 0);
+                        }
+                    }
+                    GSsndPlay(0x11U, 0, 0U);
+                }
+            }
+        } else if ((u32) (temp_r30_2 & 0xC0F) != 0) {
+            temp_r3 = _menuCBPokemonEntryButtonCheck(temp_r30_2, p1);
+            if (temp_r3 >= 0) {
+                temp_r3_2 = toolentryTaisenSetEtnryPokemonOrder(p1, temp_r3);
+                if (temp_r3_2 >= 0) {
+                    GSsndPlay(0x19U, 0, 0U);
+                    temp_r5 = temp_r3_2 * 4;
+                    *(temp_r4 + temp_r5) = (f32) ((5 - temp_r3_2) * 0x18);
+                    temp_r4 = (unsigned char *)(&_menuCBPokemonWork + (p1 * 0x30) + 0x160);
+                    M2C_FIELD((temp_r4 + temp_r5), f32 *, 0x18) = 0.0f;
+                }
+            }
+        }
+    }
 }
+}
+
 
 static s32 _menuCBPokemonEntryButtonCheck(u32 buttons, long player) {
     s32 r = -1;
@@ -467,7 +716,7 @@ void menuCBPokemonEntryPokemonFaceFree(void) {
     menuCBPokemonEntryTexWorkInit();
 }
 
-s32 menuCBPokemonEntryDispPokemonFace(s32 a, s32 b, u16 player, s32 slot) {
+s32 menuCBPokemonEntryDispPokemonFace(s32 a, s32 b, u32 player, s32 slot) {
     PokemonEntryFace* face = _menuCBPokemonEntryGetFaceBase(player, slot);
     if (face->active != 0) {
         menuFaceDispFromID(a, b, face->face);

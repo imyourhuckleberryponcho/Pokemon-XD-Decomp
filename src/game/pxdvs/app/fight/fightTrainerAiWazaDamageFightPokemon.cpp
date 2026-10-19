@@ -1,5 +1,5 @@
 // WIP: mechanical copy of fightTrainerAiWazaDamage.cpp (its matched twin, found with
-// xd-helpers/similar.py). 178/217 exact as-is. Remaining: the defender is a FightPokemon* and uses the
+// similar.py). 178/217 exact as-is. Remaining: the defender is a FightPokemon* and uses the
 // fightTrainerAiGetFightPokemon* accessors; static SubPre helpers come before their callers (LAYOUT).
 #include <dolphin/types.h>
 

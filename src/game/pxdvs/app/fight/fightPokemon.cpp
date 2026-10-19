@@ -2015,10 +2015,10 @@ u32 fightOutPokemonGetNowNimbleness(FightOutPokemon* fop, u8 useBadge, u8 tenki,
     if (p == 0) {
         return 0;
     }
-    u16 tokusei = fightOutPokemonGetTokuseiDataId(fop);
+    u8 abicnt = fightOutPokemon_GetAbicntNimbleness(fop);
     u16 item = fightOutPokemonGetSoubiItemSoubiDataId(fop);
     s32 itemBuff = figthOutPokemonGetSoubiItemBuff(fop);
-    u8 abicnt = fightOutPokemon_GetAbicntNimbleness(fop);
+    u16 tokusei = fightOutPokemonGetTokuseiDataId(fop);
     u8 badge;
     if (hero != 0) {
         badge = heroGetStatus(hero, 0x11, 0) != 0;

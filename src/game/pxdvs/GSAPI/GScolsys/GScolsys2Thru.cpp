@@ -279,10 +279,10 @@ int GScolsys2ThruPassEventID(GSvec* start, GSvec* end, EventTri* out) {
     }
     obj = head->objs;
     for (i = 0; i < head->numObjs && count < 4; i++, obj++) {
-        CCD_THRUMDL_HEAD* mdl;
+        EventTri* src;
         int n;
         int k;
-        EventTri* src;
+        CCD_THRUMDL_HEAD* mdl;
 
         GScolsys2GetObjEnable(i, &enable);
         if (!enable) {
@@ -320,19 +320,19 @@ static int getFixedMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_
     f32 minX, minZ, maxX, maxZ;
     s32 x0, z0, x1, z1;
     s32 gx, gz;
-    u32 t;
+    EventTri* cur;
     int count;
     int j;
     f32 radiusSq;
     GridCell* cell;
     u32* index;
     ThruTri* tri;
-    EventTri* cur;
+    u32 t;
 
     count = 0;
     minX = pos->x - radius;
-    minZ = pos->z - radius;
     maxX = pos->x + radius;
+    minZ = pos->z - radius;
     maxZ = pos->z + radius;
     x0 = (minX - head->minX) / head->cellWidth;
     if (x0 < 0) {
@@ -461,11 +461,11 @@ static int getMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_HEAD*
     Vec3 verts[3];
     Vec3 normal;
     f32 radiusSq = radius * radius;
-    EventTri* cur;
+    int count;
     ThruTri* tri;
     u32 i;
-    int count;
-    int j;
+    EventTri* cur;
+    s32 j;
 
     count = 0;
     cur = out;
@@ -617,7 +617,7 @@ extern "C" {
 int GScolsys2ThruGetEventID(GSvec* start, GSvec* end, f32 radius, EventTri* out) {
     EventTri temp[4];
     Vec3 dir;
-    Vec3 p;
+    f32 t;
     int count = 0;
     int n;
     EventTri* src;
@@ -625,7 +625,7 @@ int GScolsys2ThruGetEventID(GSvec* start, GSvec* end, f32 radius, EventTri* out)
     int j;
     f32 mag;
     f32 step;
-    f32 t;
+    Vec3 p;
     f32 t2;
 
     if (GScolsys2GetCCDFileHead() == 0) {

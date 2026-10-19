@@ -1,6 +1,9 @@
 #pragma peephole off
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
+// Non-volatile view of the GX write-gather FIFO: the original kept constants in
+// registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
+#define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 #include <libc/string.h>
 
 struct GSgfxVF;
@@ -310,34 +313,34 @@ void fadeDaemon(void) {
             f32 zero = 0.0f;
             f32 w = 640.0f;
             f32 h = 480.0f;
-            GXWGFifo.f32 = zero;
-            GXWGFifo.f32 = zero;
-            GXWGFifo.f32 = zero;
-            GXWGFifo.u8 = r;
-            GXWGFifo.u8 = g;
-            GXWGFifo.u8 = b;
-            GXWGFifo.u8 = a;
-            GXWGFifo.f32 = w;
-            GXWGFifo.f32 = zero;
-            GXWGFifo.f32 = zero;
-            GXWGFifo.u8 = r;
-            GXWGFifo.u8 = g;
-            GXWGFifo.u8 = b;
-            GXWGFifo.u8 = a;
-            GXWGFifo.f32 = zero;
-            GXWGFifo.f32 = h;
-            GXWGFifo.f32 = zero;
-            GXWGFifo.u8 = r;
-            GXWGFifo.u8 = g;
-            GXWGFifo.u8 = b;
-            GXWGFifo.u8 = a;
-            GXWGFifo.f32 = w;
-            GXWGFifo.f32 = h;
-            GXWGFifo.f32 = zero;
-            GXWGFifo.u8 = r;
-            GXWGFifo.u8 = g;
-            GXWGFifo.u8 = b;
-            GXWGFifo.u8 = a;
+            GXFifoNV.f32 = zero;
+            GXFifoNV.f32 = zero;
+            GXFifoNV.f32 = zero;
+            GXFifoNV.u8 = r;
+            GXFifoNV.u8 = g;
+            GXFifoNV.u8 = b;
+            GXFifoNV.u8 = a;
+            GXFifoNV.f32 = w;
+            GXFifoNV.f32 = zero;
+            GXFifoNV.f32 = zero;
+            GXFifoNV.u8 = r;
+            GXFifoNV.u8 = g;
+            GXFifoNV.u8 = b;
+            GXFifoNV.u8 = a;
+            GXFifoNV.f32 = zero;
+            GXFifoNV.f32 = h;
+            GXFifoNV.f32 = zero;
+            GXFifoNV.u8 = r;
+            GXFifoNV.u8 = g;
+            GXFifoNV.u8 = b;
+            GXFifoNV.u8 = a;
+            GXFifoNV.f32 = w;
+            GXFifoNV.f32 = h;
+            GXFifoNV.f32 = zero;
+            GXFifoNV.u8 = r;
+            GXFifoNV.u8 = g;
+            GXFifoNV.u8 = b;
+            GXFifoNV.u8 = a;
         }
         layer->endSurface();
         break;

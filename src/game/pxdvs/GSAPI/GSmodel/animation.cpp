@@ -1210,8 +1210,8 @@ void GSmodelAdvanceAnimation(_GSmodel* model, f32 dt) {
     if (model->flags & 0x4000) {
         s32 animType;
         u32 animIndex;
-        u32 animStopFlag;
         u32 animLoopFlag;
+        u32 animStopFlag;
 
         if (!(model->flags & 0x80)) {
             animIndex = model->animIndex;

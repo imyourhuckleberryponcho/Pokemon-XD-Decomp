@@ -414,12 +414,12 @@ static int selectDealMode(void) {
 static void shopBuyMain(int shop, u8 kind) {
     SHOP_MENU_ARG arg;
     u8 se;
-    int total;
+    u16 item;
     int max;
     int num;
-    s8 answer;
-    u16 item;
     int price;
+    int total;
+    s8 answer;
     u8* data;
     if (_getIsBattleDiskShopAllSelWithAllSellOutYet()) {
         winMsgOpenWithSE(2, 0xC5EA, 1, 0, shopSalesman[shopData[shop].unk0].se);
@@ -564,12 +564,12 @@ static void couponExchangeMain(int shop, u8 kind) {
     u8 se;
     int total;
     int price;
-    int max;
+    int ok;
     int num;
     s8 answer;
     u16 item;
     int done = 0;
-    int ok;
+    int max;
     switch (kind) {
     case 2:
         ok = memCardConnect(&arg.box);

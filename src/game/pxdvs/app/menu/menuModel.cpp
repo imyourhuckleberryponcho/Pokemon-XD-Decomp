@@ -544,14 +544,14 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
     mid = (width * 0.5f) + negB;
     GSmodelGetPosition(modelA, &spos);
     spos.y = 0.0f;
-    spos.z = 0.0f;
     spos.x = -(a->size[0] * 0.5f) + mid;
+    spos.z = 0.0f;
     PSVECAdd((f32*)&spos, a->offset, (f32*)&spos);
     GSmodelSetPosition(modelA, &spos);
     GSmodelGetPosition(modelB, &tpos);
     tpos.y = 0.0f;
-    tpos.z = 0.0f;
     tpos.x = (b->size[0] * 0.5f) + mid;
+    tpos.z = 0.0f;
     PSVECAdd((f32*)&tpos, b->offset, (f32*)&tpos);
     GSmodelSetPosition(modelB, &tpos);
     if (a->camera == 0) return 0;

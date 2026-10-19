@@ -350,8 +350,8 @@ void windowDrawSpriteCursor(s16 x, s16 y, u32 color0, void* ctx, u16 key, u32 fl
         if (info->last) {
             break;
         }
-        info = menuSpriteBiosGetPtr(info->next);
         i++;
+        info = menuSpriteBiosGetPtr(info->next);
     }
 }
 
@@ -623,9 +623,9 @@ void windowCloseMain(tagWINDOW_WORK* w)
 
 s32 windowClose(tagWINDOW_WORK* w, u32 flags)
 {
+    tagWINDOW_WORK* d;
     tagWINDOW_WORK* c;
     tagWINDOW_WORK* a;
-    tagWINDOW_WORK* d;
     bool found = false;
     bool setClose = (flags & 4) != 0;
     u32 chain = flags & 2;
@@ -682,7 +682,7 @@ static void _windowSetCloseFlag(tagWINDOW_WORK* w, bool b)
 
 static s32 _windowCreateItemSprite(tagWINDOW_WORK* w)
 {
-    s32 id = menuDataBiosGetPtr(w->menuID)->firstItem;
+    s16 id = menuDataBiosGetPtr(w->menuID)->firstItem;
     MENU_ITEM* item = menuItemBiosGetPtr(w->menuID, id);
     tagSPRITE_WORK* sp;
     MENU_SPRITE* ms;
@@ -693,7 +693,7 @@ static s32 _windowCreateItemSprite(tagWINDOW_WORK* w)
     winSpriteRelease(&w->itemSprites);
     _winCalcWindowSize(w->menuID, item, &cw, &ch);
     while (true) {
-        item = menuItemBiosGetPtr(w->menuID, id);
+        item = menuItemBiosGetPtr(w->menuID, (s32)id);
         sp = (tagSPRITE_WORK*)winSpriteAdd(&w->itemSprites);
         if (sp == 0) {
             winSpriteRelease(&w->itemSprites);
@@ -1019,14 +1019,13 @@ static void _winCalcWindowSize(long menuID, const MENU_ITEM* item, short* outW, 
     s32 minY = 0x1e0;
     s32 maxX = 0;
     s32 maxY = 0;
+    u32 rect;
+    s16 rw;
+    s16 rh;
+
     *outW = 0;
     *outH = 0;
     while (true) {
-        u32 rect;
-        s16 rw;
-        s16 rh;
-        s32 x;
-        s32 y;
         menuSpriteBiosGetPtr(item->spriteID);
         if (item->msg != 0) {
             rect = GSmsgGetRect(item->msg);
@@ -1034,26 +1033,24 @@ static void _winCalcWindowSize(long menuID, const MENU_ITEM* item, short* outW, 
             rect = 0;
         }
         rw = rect >> 16;
-        rh = rect;
-        x = item->x;
-        if (minX > x) {
-            minX = x;
+        rh = (u16)rect;
+        if (minX > item->x) {
+            minX = item->x;
         }
-        if (maxX < x + item->w) {
-            maxX = x + item->w;
+        if (maxX < item->x + item->w) {
+            maxX = item->x + item->w;
         }
-        if (maxX < x + rw) {
-            maxX = x + rw;
+        if (maxX < item->x + rw) {
+            maxX = item->x + rw;
         }
-        y = item->y;
-        if (minY > y) {
-            minY = y;
+        if (minY > item->y) {
+            minY = item->y;
         }
-        if (maxY < y + item->h) {
-            maxY = y + item->h;
+        if (maxY < item->y + item->h) {
+            maxY = item->y + item->h;
         }
-        if (maxY < y + rh) {
-            maxY = y + rh;
+        if (maxY < item->y + rh) {
+            maxY = item->y + rh;
         }
         if (item->last) {
             break;

@@ -1,4 +1,3 @@
-// NonMatching: only two instructions swapped in WorldMapMoveDemo::Main (lis r30 vs fsubs).
 #include <dolphin/types.h>
 
 #pragma peephole off
@@ -70,14 +69,14 @@ void menuWorldMapMoveDemoInit(void) { pMoveDemo = new WorldMapMoveDemo; }
 void WorldMapMoveDemo::Main() {
     s32 groupID = floorGetCurrentGroupID();
     MoveDemoAnime* anime;
-    f32 end;
+    f32 frameCount;
     SetModel(groupID, 0x1B4A0400, false);
     anime = &_animeTable[(u16)((u16)HSD_Rand() % 15)];
     cameraPlayAnime(groupID, anime->cameraAnime, 0, 0.0f);
     SetMotion(0x1B4A1000, anime->motion, 0.0f, false);
-    end = GetAnimeFrameCount(0x1B4A1000, anime->motion) - 30.0f;
+    frameCount = GetAnimeFrameCount(0x1B4A1000, anime->motion);
     for (;;) {
-        if (end < GetAnimeFrame(0x1B4A1000)) {
+        if (frameCount - 30.0f < GetAnimeFrame(0x1B4A1000)) {
             break;
         }
         GSthreadSwitch();

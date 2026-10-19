@@ -88,7 +88,7 @@ void scriptModelSetMotion(s32 id, s32 anim, s32 frame, s32 loop)
 {
     s32 group = floorGetCurrentGroupID();
     if (peopleGetHumanID(group, id)) {
-        peopleSetMotionForce(group, id, anim, frame, loop != 0);
+        peopleSetMotionForce(group, id, anim, frame, (bool)loop);
     } else {
         _GSmodel* model = GSresGetResource(group, id);
         if (model) {
@@ -112,7 +112,7 @@ void scriptModelSetMotionRate(s32 id, s32 anim, s32 frame, f32 rate, s32 loop)
 {
     s32 group = floorGetCurrentGroupID();
     if (peopleGetHumanID(group, id)) {
-        peopleSetMotionForce(group, id, anim, frame, loop != 0);
+        peopleSetMotionForce(group, id, anim, frame, (bool)loop);
     } else {
         _GSmodel* model = GSresGetResource(group, id);
         if (model) {

@@ -415,16 +415,17 @@ void pdaMemoList::Sort(menuPdaMemoSort sort) {
 }
 
 void pdaMemoList::SortPokemonID() {
-    int count = memoDataGetCount(0);
+    u16 id;
     MemoSortBuff* buf;
     u16* ids;
+    int count = memoDataGetCount(0);
     buf = (MemoSortBuff*)new u8[0x2BC0];
     ids = (u16*)new u8[0x320];
     for (u16 i = 0; i < count; i++) {
-        u16 id = sortList[i];
+        id = sortList[i];
         ids[i] = id;
-        buf[i].index = i;
         buf[i].key = id;
+        buf[i].index = i;
     }
     Sort_Small(buf, count);
     for (u16 i = 0; i < count; i++) {
@@ -439,16 +440,16 @@ void pdaMemoList::SortPokemonID() {
 }
 
 void pdaMemoList::SortGojyuon() {
-    int count = memoDataGetCount(0);
     MemoSortBuff* buf;
     u16* ids;
+    int count = memoDataGetCount(0);
     buf = (MemoSortBuff*)new u8[0x2BC0];
     ids = (u16*)new u8[0x320];
     for (u16 i = 0; i < count; i++) {
         u16 id = sortList[i];
         ids[i] = id;
-        buf[i].index = i;
         buf[i].key = SortGojyuonDataSet(id);
+        buf[i].index = i;
         GScharCpy(buf[i].name, GetPokemonName(i));
     }
     if (pokecoloGetCountryCode() == 0) {

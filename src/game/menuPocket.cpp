@@ -879,16 +879,16 @@ int menuPocket2DrawRollDown(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 extern "C" {
 int menuPocket2PrintItemKind(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 {
+    int tab;
     MenuItem* area = menuItemBiosGetPtr(w->menuID, 0xB7);
     MenuItem* base = menuItemBiosGetPtr(w->menuID, sp->id);
     spriteSetScissor(winSpriteGetLayerID(w, sp), area->x - base->x, area->y - base->y, area->w, area->h);
-    u32 title = TabTbl[w->cursor].titleMsg;
     int center = sp->w / 2;
+    u32 title = TabTbl[w->cursor].titleMsg;
     s16 tw;
     tw = GSmsgGetRect(title) >> 16;
     GSmsgPrint2(winSpriteGetLayerID(w, sp), (int)Data.tabScroll + (center - tw / 2), 0, -1, title);
     if (Data.tabScroll != 0.0f) {
-        int tab;
         f32 off;
         if (Data.tabScroll > 0.0f) {
             tab = w->cursor - 1;
@@ -1243,8 +1243,8 @@ int menuPocket2PrintPrice(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 extern "C" {
 int menuPocket2DrawNumMenuCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 {
-    u32 i;
     NumberParam* param = (NumberParam*)w->params[0];
+    u32 i;
     for (i = 0; i < 4; i++) {
         if (param->id == MenuPocket2Num[i].id) {
             break;
@@ -1278,7 +1278,7 @@ s32 menuPocket2OpenPokemonMenu(u16 item, int use)
     } else {
         mode = 3;
     }
-    r = menuPokemonOpenItemUse(mode, use != 0, item, Data.trainer);
+    r = menuPokemonOpenItemUse(mode, (bool)use, (u16)item, Data.trainer);
     if (use == 0) {
         r = -1;
     }
@@ -1295,7 +1295,7 @@ void menuPocket2ClosePokemonMenu(s32 slot)
 }
 
 extern "C" {
-void menuPocket2GetTemochiPokemon(u16 slot, void** pokemon, void** fightPokemon)
+void menuPocket2GetTemochiPokemon(u32 slot, void** pokemon, void** fightPokemon)
 {
     void* fp;
     void* p;
@@ -1362,6 +1362,7 @@ namespace {
 u16 _menuPocketLoop(void)
 {
     static CursorPos czero = { 0, 0 };
+    CursorPos c;
     CursorPos cp;
     long param;
     long* pp;
@@ -1374,7 +1375,7 @@ u16 _menuPocketLoop(void)
     if (Data.mode == 6) {
         cp.y = 1;
     } else {
-        CursorPos c = cursorBiosGetPos(2);
+        c = cursorBiosGetPos(2);
         cp.x = c.x;
         cp.y = c.y;
     }
@@ -1400,7 +1401,7 @@ u16 _menuPocketLoop(void)
         if (item == 0) {
             break;
         }
-        int r = _afterDecideItem(Data.mode, Data.tab, item, pos, &out);
+        int r = _afterDecideItem(Data.mode, Data.tab, (u8)item, pos, &out);
         if (out != 0) {
             item = out;
         }
@@ -1509,7 +1510,7 @@ void _printItemList(GSgfxLayerID layer, int x, int tab, CURSOR& cursor)
         } else {
             msg = 0x3A9E;
         }
-        GSmsgPrint2(layer, x, yy - scroll, -1, msg);
+        GSmsgPrint2((u16)layer, x, yy - scroll, -1, msg);
     }
 }
 }
@@ -2005,7 +2006,7 @@ int _execActionMenu(int tab, u16 item, int pos, u16* out)
     }
     int count = _makeActMenu(menu, 4, tab, pos);
     _setExplanationMsgID(0x4296);
-    int sel = _actionMenuOpen(menu, count);
+    int sel = _actionMenuOpen(menu, (u16)count);
     if (sel < 0) {
         return 1;
     }
@@ -2155,11 +2156,11 @@ int _makeActMenu(SActionMenuItem* out, int mode, int tab, int pos)
     while (src[n].func != 0) {
         n++;
     }
-    const SActionMenuItem* cur = src;
+    int limit = n + 1;
+    int i;
     SActionMenuItem* dst = out;
     int count = 0;
-    int i;
-    int limit = n + 1;
+    const SActionMenuItem* cur = src;
     for (i = 0; i < limit; i++, cur++) {
         if ((!(cur->flags & 1) || battleUse) && (!itemDataBiosGetImportant(itemData) || !(cur->flags & 2))) {
             count++;

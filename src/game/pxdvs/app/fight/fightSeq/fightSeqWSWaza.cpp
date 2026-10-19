@@ -1308,7 +1308,7 @@ void fightSeqWazaExec(void* floor, u16 wazaId) {
             fightOutPokemonInitJoutaiDataId(attack, 0x2A);
         }
         select = fightSeqSelectDefensePokemonPtr(attack, waza, fightType, 0, 1, 1, -1);
-        fightOutPokemonCreateFightActionAttackWaza(attack, 0, 0x13, 0, fight_action_data_waza, waza,
+        fightOutPokemonCreateFightActionAttackWaza(attack, 0, 0x13, 0, fight_action_data_waza, (u16)waza,
                                                    fightTargetGetTragetPtrToRelativeHostSideFightTargetId(select, fightType), buffId, 1);
         wazaId = waza;
         fightFloor_SetDefensePokemonPtr(0, select);
@@ -1364,9 +1364,9 @@ void fightSeqCallExec(void* floor) {
     u16 msgId;
     u8 kaijo;
     u8 hyper;
-    u8 abicnt;
-    u8 fightType;
     FightOutPokemon* attack;
+    u8 fightType;
+    u8 abicnt;
     FIGHT_TRAINER* trainer;
     u8 kakuritu;
 

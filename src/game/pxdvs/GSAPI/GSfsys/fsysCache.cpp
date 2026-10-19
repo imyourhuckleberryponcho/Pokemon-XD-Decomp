@@ -1,4 +1,5 @@
-// Draft (written from asm).
+// fsysCache: all 27 functions match (linked). The retail code has bare `return;` statements in value
+// functions (garbage return value) inside doubled null checks; kept as-is for matching.
 #include <dolphin/types.h>
 #include <dolphin/arq.h>
 
@@ -126,14 +127,16 @@ static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size
     manage = _fsysGetCacheManage(fsys->group, fsys->id);
     if (manage == 0) {
         if (manage == 0) {
-            return 0;
+            return;
         }
+        return 0;
     }
     trans = _fsysGetNewArq();
     if (trans == 0) {
         if (trans == 0) {
-            return 0;
+            return;
         }
+        return 0;
     }
     trans->fsys = fsys;
     trans->res = res;
@@ -363,13 +366,15 @@ void _fsysDelCacheManage(FsysCacheManage* manage) {
 }
 
 FsysCacheManage* _fsysGetNewCacheManage(u32 group, u32 id, u8 type, u8 locked, u32 prio) {
-    FsysCacheManage* manage = 0;
+    BOOL intr;
+    FsysCacheManage* entry;
     u32 i;
-    BOOL intr = OSDisableInterrupts();
+    FsysCacheManage* manage = 0;
+    intr = OSDisableInterrupts();
 
     i = _fsysCACHEManageIndex;
     while (manage == 0) {
-        FsysCacheManage* entry = &_fsysCACHEManage[i];
+        entry = &_fsysCACHEManage[i];
         if (entry->used == 0) {
             entry->prev = 0;
             entry->next = 0;
@@ -390,7 +395,9 @@ FsysCacheManage* _fsysGetNewCacheManage(u32 group, u32 id, u8 type, u8 locked, u
             i = 0;
         }
         if (i == _fsysCACHEManageIndex) {
-            return manage;
+            if (i == _fsysCACHEManageIndex) {
+                return;
+            }
         }
     }
     _fsysCACHEManageIndex = i;

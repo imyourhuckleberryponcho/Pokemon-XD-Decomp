@@ -463,6 +463,7 @@ bool GsShapeObject::CreateShapeDrawBuffer(s16 idx) {
     u16 n = data->vertCount;
     int i = 0;
     int o;
+    int t;
     int size = n * 12;
     int s4 = n * 4;
     int s8 = n * 8;
@@ -475,7 +476,7 @@ bool GsShapeObject::CreateShapeDrawBuffer(s16 idx) {
         memcpy(base, data->pos, size);
         u8* p = base + size;
         memcpy(p, data->col, s4);
-        int t = 0;
+        t = 0;
         o = 0;
         for (; t < data->texCount; t++, o += 8) {
             memcpy(p + n * (o + 4), data->tex, s8);
@@ -617,9 +618,9 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
 void GsShapeObject::SetStateMode(GSgfxLayer* l) {
     u8 zw = data->unk6;
     u8 zr = data->unk5;
-    u8 mode = data->mode;
     bool a = zw != 0;
     bool b = zr != 0;
+    u8 mode = data->mode;
     if (mode == 8) {
         b = true;
         a = true;
@@ -688,12 +689,12 @@ void GsShapeObject::MakeShapeGfxDL() {
 }
 
 void GsShapeObject::DrawShapeGfx(GSgfxLayer* layer, s16 s, u8 c) {
+    u16 i;
     u16 verts = data->vertCount;
     u16 n = data->cols + 1;
     u16 texN = data->texCount;
     bool ok = SetupVF(verts);
     if (ok) {
-        u16 i;
         layer->curVF = (GSgfxVF*)vf;
         layer->primType = 0x98;
         for (i = 0; i < data->rows; i++) {
@@ -928,15 +929,15 @@ bool GsShapeObject::ShadeVertexColor(GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f, boo
     Mtx34 rot;
     Vec3 axisCross;
     Vec3 up;
-    Vec3 pv;
     Vec3 nv;
+    Vec3 pv;
     PSMTXCopy(m2->m, m);
     PSMTXConcat(m1->m, m, m);
     PSMTXConcat(m3->m, m, m);
+    Vec3* normals = data->pos2;
     int i = 0;
     u8* col = (u8*)colArray;
     int o = 0;
-    Vec3* normals = data->pos2;
     int n = data->vertCount;
     Vec3* pos = (Vec3*)data->pos;
     for (; i < n; i++, normals++, pos++, col += 4, o += 4) {

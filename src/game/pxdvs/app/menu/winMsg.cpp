@@ -181,8 +181,8 @@ s32 winMsgCtrl(tagWINDOW_WORK* w)
         }
         if (w->menuID == 0x53) {
             u32 r = GSmsgGetRect(fw->msg);
-            fw->w = r >> 16;
             fw->h = r;
+            fw->w = r >> 16;
         }
         break;
     case 2:
@@ -191,7 +191,7 @@ s32 winMsgCtrl(tagWINDOW_WORK* w)
             w->seqSet = 1;
         }
         if (GSmsgIsCheck(fw->msg) != 0) {
-            w->pad_a4 = 0;
+            *(void**) &w->pad_a4 = 0;
         } else {
             w->pad_a4 = 1;
         }

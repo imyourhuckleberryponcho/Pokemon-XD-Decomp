@@ -627,6 +627,8 @@ u32 heroMoveGetKenObjID() {
 }
 
 static void initFloor() {
+    f32 h;
+    f32 bestAny;
     Vec3 rot;
     Vec3 pos;
     if (!GSfloorIsPop()) {
@@ -647,10 +649,10 @@ static void initFloor() {
                 if (count > 0) {
                     if (count >= 2) {
                         f32 bestNear = -1000000.0f;
-                        f32 bestAny = bestNear;
+                        bestAny = bestNear;
                         int found = 0;
                         for (int k = 0; k < count; k++) {
-                            f32 h = hits[k].height;
+                            h = hits[k].height;
                             if (bestAny < h) {
                                 bestAny = h;
                             }
@@ -1358,6 +1360,7 @@ static void initFootWork(FOOTWORK* work) {
 }
 
 static void getStep(FOOTSTEP* step, _GSmodel* model, int* parts, FOOTWORK* work) {
+    void* part;
     f32 dt = GSgfxVideoGetLastRenderTime();
     Vec3 modelPos;
     GSmodelGetPosition(model, &modelPos);
@@ -1369,12 +1372,12 @@ static void getStep(FOOTSTEP* step, _GSmodel* model, int* parts, FOOTWORK* work)
         step->pos[i].z = 0.0f;
         cur[i] = 0.0f;
         if (parts[i] >= 0) {
-            void* part = GSmodelGetPart(model, parts[i]);
+            part = GSmodelGetPart(model, parts[i]);
             if (part != 0) {
                 GSpartGetTransform(part, &t, 0, 0);
                 GSpartFree(part);
-                step->pos[i].x = t.x;
                 cur[i] = t.y - modelPos.y;
+                step->pos[i].x = t.x;
                 step->pos[i].y = t.y;
                 step->pos[i].z = t.z;
             }

@@ -247,6 +247,7 @@ s32 fn_8009E664(tagWINDOW_WORK* w) {
 }
 
 void fn_8009E6B8(tagWINDOW_WORK* win, bool pad) {
+    MenuItem* item;
     MenuItem* from;
     int up, down, left, right;
     int idx;
@@ -264,8 +265,8 @@ void fn_8009E6B8(tagWINDOW_WORK* win, bool pad) {
         w->cursor = 0;
         return;
     }
-    xr = 0x10;
     yr = 0xC;
+    xr = 0x10;
     rep = windowGetKeyInfo()->rep;
     u16 on = windowGetKeyInfo()->on;
     u16 add;
@@ -285,7 +286,7 @@ void fn_8009E6B8(tagWINDOW_WORK* win, bool pad) {
     right = rep & 8;
     do {
         idx = 0;
-        MenuItem* item = menuItemBiosGetPtr(w->menuID, data->firstItem);
+        item = menuItemBiosGetPtr(w->menuID, data->firstItem);
         if (up) {
             best = 0x1E0;
             while (1) {
@@ -364,8 +365,8 @@ void fn_8009E6B8(tagWINDOW_WORK* win, bool pad) {
         }
         xr += 0x10;
         yr += 0xC;
-        if (xr >= 0x280) xr = 0x280;
         if (yr >= 0x1E0) yr = 0x1E0;
+        if (xr >= 0x280) xr = 0x280;
     } while (xr != 0x280 || yr != 0x1E0);
 }
 
@@ -988,7 +989,7 @@ static void drawPkmPanel(u32 idx, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             windowDrawSprite2((s16)(offs + sRect[(base + 1) * 4]), sRect[(base + 1) * 4 + 1], sRect[(base + 1) * 4 + 2], sRect[(base + 1) * 4 + 3],
                               w->alpha | 0xFFFFFF00, w, 0x2FC, 0, layer);
             msgctrlSetValue(0x37, v77);
-            GSmsgPrintRect(layer, offs + sRect[(base + 2) * 4], sRect[(base + 2) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4277);
+            GSmsgPrintRect((u16)layer, offs + sRect[(base + 2) * 4], sRect[(base + 2) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4277);
             msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(0x42D4));
             GSmsgPrintRect(layer, offs + sRect[(base + 3) * 4], sRect[(base + 3) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4276);
             msgctrlSetValue(0x34, v7a);
@@ -1240,11 +1241,12 @@ void menuBattleDiskExit(void) {
 void menuBattleDiskMain(void) {
     int arg1 = 0;
     int arg2;
-    int faceOut;
     bool running;
-    int sel;
+    bool ok;
     Hero* hero0;
+    int sel;
     Hero* hero1;
+    int faceOut;
     running = true;
     switch (gBDisk.mode) {
     case 0: {
@@ -1295,7 +1297,7 @@ void menuBattleDiskMain(void) {
                 }
                 menuClose(0xEB);
                 for (int i = 0; i < 15; i++) {
-                    bool ok = true;
+                    ok = true;
                     if (getPanelIdx(i, gBDisk.pokeNum) == -1) {
                         ok = false;
                     } else {
@@ -1346,7 +1348,7 @@ void menuBattleDiskMain(void) {
                         gBDisk.cursor = windowSearchID(0x109)->cursor;
                         menuOpen(0xEC, 0);
                         while (1) {
-                            u16 c = gBDisk.cursor;
+                            u32 c = gBDisk.cursor;
                             if (c < heroGetPokeomCount(hero0)) {
                                 gBDisk.f4 = 0x131;
                                 gBDisk.f6 = 0;

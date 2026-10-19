@@ -1088,9 +1088,9 @@ void menuOpeningDemoExit(void)
 extern "C" {
 void fn_80085E88(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 {
-    CURSOR cur = *(CURSOR*)&w->top;
     u32 msg = 0;
     u32 col = w->alpha | 0xFFFFFF00;
+    CURSOR cur = *(CURSOR*)&w->top;
     switch (sp->id) {
     case 0xA2:
         msg = 0x4a43;

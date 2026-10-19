@@ -1,7 +1,6 @@
 #include <dolphin/types.h>
 
-// WIP (GXXE01, -O4,s): ten functions match. CheckAbiCnt has the correct
-// instruction count but 7 prologue/selection differences. Keep NonMatching.
+// Built with -O4,s. CheckAbiCnt's target selection is a switch (default/case 0), as in the Colosseum decomp.
 // Verification: build/scratch/ai-finish-verification.txt.
 
 struct FIGHT_TRAINER;
@@ -100,8 +99,14 @@ u8 fightTrainerAiCheckTextureZokusei(FIGHT_TRAINER* trainer, void* pokemon)
     int temp_r26;
     var_r28 = 0;
     var_r27 = 0;
-    if (arg6 & 0x40) var_r30 = arg1;
-    else var_r30 = arg2;
+    switch (arg6 & 0x40) {
+    default:
+        var_r30 = arg1;
+        break;
+    case 0:
+        var_r30 = arg2;
+        break;
+    }
     temp_r21 = fightTargetGetPtrAsNowFightType(2, var_r30);
     u8 flags = arg6;
     u8 maskedFlags = flags & 0xbf;

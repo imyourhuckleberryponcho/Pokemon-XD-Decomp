@@ -693,8 +693,8 @@ s32 menuPdaDPMList::SortPlace() {
             if (!dark->isSnach()) {
                 u16 pid = dark->getPokemonID();
                 temp[n].key = dark->getSnatchIndex();
-                temp[n].pokemonID = pid;
                 temp[n].darkID = did;
+                temp[n].pokemonID = pid;
                 n++;
             }
         }
@@ -726,6 +726,7 @@ u8 menuPdaDPMList::getTemochiIndex(u16 pokemonID, u16 darkID) {
 }
 
 s32 menuPdaDPMList::SortDP() {
+    DarkPokemon* dark;
     int i;
     s32 n = 0;
     s32 total = Sort(DPM_SORT_POKEMON);
@@ -749,7 +750,7 @@ s32 menuPdaDPMList::SortDP() {
     n = 0;
     for (i = 0; i < total; i++) {
         u16 did = GetDarkPokemonID(i);
-        DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
+        dark = darkPokemonGetDarkPokemon(did);
         if (dark->isRelive()) {
             u16 pid = dark->getPokemonID();
             temp[n].key = dark->getSnatchIndex();
@@ -870,7 +871,7 @@ void menuPdaDPMList::Cursor(tagWINDOW_WORK* window) {
         s16 p = c.pos;
         if (p < 0) {
             c.pos = 0;
-            s16 t1 = c.top + p;
+            s32 t1 = c.top + p;
             c.top = t1;
             if (t1 < 0) {
                 c.top = 0;

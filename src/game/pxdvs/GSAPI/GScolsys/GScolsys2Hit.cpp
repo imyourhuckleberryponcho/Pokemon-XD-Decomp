@@ -329,13 +329,13 @@ static bool checkHitMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSmtx* mt
 }
 
 static bool checkHitCollision(GSvec* start, GSvec* end, f32 radius, GSvec* hitOut, bool alt) {
-    GSvec* tmpPtr;
+    CCD_OBJ* obj;
     CCD_FILEHEAD* head;
     CCD_HITMDL_HEAD* group;
     s32 iter;
     s32 hitCount;
     u32 i;
-    CCD_OBJ* obj;
+    GSvec* tmpPtr;
     GSvec cur;
     GSvec tmp;
     GSmtx mtx;

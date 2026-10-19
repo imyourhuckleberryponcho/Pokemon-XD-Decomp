@@ -1,5 +1,8 @@
 // GSmodel parsing: walks a model's joint tree like HSD_JObjDispAll and hands every
 // PObj (with its view/position/envelope matrices) to a user callback instead of drawing.
+// WIP: built with -inline deferred (target function order = reverse source order). DObjDisp/LoadEnvelopeMatrix are
+// real functions; the target also inlines DObjDisp into JObjDispSub (not reproduced yet: dont_inline around
+// JObjDispSub also stops inlining inside it) and calls HSD_JObjMtxIsDirty only from JObjDispAll.
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -121,7 +124,7 @@ static inline void HSD_JObjSetupMatrix(HSD_JObj* jobj) {
 
 }
 
-static inline void _modelParseLoadEnvelopeMatrix(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pmtx, GSmtx* mtxStack) {
+static void _modelParseLoadEnvelopeMatrix(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pmtx, GSmtx* mtxStack) {
     GSmtx tmp;
     GSmtx mtx;
     GSmtx node;
@@ -189,7 +192,7 @@ static inline void _modelParseLoadEnvelopeMatrix(HSD_PObj* pobj, GSmtx* vmtx, GS
     }
 }
 
-static inline void _modelParseDObjDisp(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx, bool rendering, GSmodelParseFunc func, void* arg) {
+static void _modelParseDObjDisp(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx, bool rendering, GSmodelParseFunc func, void* arg) {
     HSD_PObj* pobj;
 
     for (pobj = dobj->pobj; pobj != 0; pobj = pobj->next) {
@@ -270,7 +273,8 @@ static inline void _modelParseDObjDisp(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx,
     }
 }
 
-static inline void _modelParseJObjDispSub(HSD_JObj* jobj, GSmtx* vmtx, GSmtx* pmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
+#pragma dont_inline on
+static void _modelParseJObjDispSub(HSD_JObj* jobj, GSmtx* vmtx, GSmtx* pmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
     HSD_DObj* dobj;
 
     HSD_JObjSetCurrent(jobj);
@@ -284,8 +288,9 @@ static inline void _modelParseJObjDispSub(HSD_JObj* jobj, GSmtx* vmtx, GSmtx* pm
     HSD_DObjSetCurrent(0);
     HSD_JObjSetCurrent(0);
 }
+#pragma dont_inline reset
 
-static inline void _modelParseJObjDispDObj(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
+static void _modelParseJObjDispDObj(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
     if (!(jobj->flags & JOBJ_HIDDEN)) {
         u32 mask = jobj->flags & (trsp_mask << 18);
         if (mask) {
@@ -311,13 +316,13 @@ static inline void _modelParseJObjDispDObj(HSD_JObj* jobj, GSmtx* vmtx, HSD_Trsp
     }
 }
 
-static inline void _modelParseJObjDisp(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
+static void _modelParseJObjDisp(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
     if (jobj != 0 && !(jobj->flags & (JOBJ_SPLINE | JOBJ_PTCL))) {
         _modelParseJObjDispDObj(jobj, vmtx, trsp_mask, rendering, func, arg);
     }
 }
 
-static inline void _modelParseSetupInstanceMtx(GSmtx* vmtx, HSD_JObj* jobj, GSmtx* mtx) {
+static void _modelParseSetupInstanceMtx(GSmtx* vmtx, HSD_JObj* jobj, GSmtx* mtx) {
     HSD_JObjSetupMatrix(jobj);
     HSD_JObjSetupMatrix(jobj->child);
     PSMTXInverse(&jobj->child->mtx, mtx);

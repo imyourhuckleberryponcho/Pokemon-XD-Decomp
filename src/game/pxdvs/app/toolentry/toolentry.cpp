@@ -307,6 +307,7 @@ void toolentryTaisenEntryPokemon(s32 player) {
     s32 num = toolentryTaisenGetEntryPokemonNum(player);
     Hero* entry = _toolentryTaisenGetEntryHeroPtr(player);
     s32 i;
+    Pokemon* src;
     s32 j;
     *entry = *_toolentryTaisenGetHeroPtr(player);
     for (i = 0; i < 6; i++) {
@@ -317,7 +318,7 @@ void toolentryTaisenEntryPokemon(s32 player) {
                 num = i;
             }
         } else {
-            Pokemon* src = _toolentryTaisenGetPokemonPtr(player, i);
+            src = _toolentryTaisenGetPokemonPtr(player, i);
             Pokemon* dst = _toolentryTaisenGetEntryPokemonPtr(player, i);
             if (dst != 0 && src != 0) {
                 *dst = *src;
@@ -437,12 +438,10 @@ void toolentryDebugPokemonDelete(void) {
 }
 
 static s32 _toolentryTrainerFaceIDGet(u32 id) {
-    u32 n = *trainer_face_data_number;
     s32 i;
-    ToolentryFaceData* data = trainer_face_data;
-    u16 key = id;
-    for (i = 0; i < n; i++) {
-        if (data[i].id == key) {
+    for (i = 0; i < *trainer_face_data_number; i++) {
+        u16 faceID = trainer_face_data[i].id;
+        if (faceID == (u16)id) {
             return i;
         }
     }

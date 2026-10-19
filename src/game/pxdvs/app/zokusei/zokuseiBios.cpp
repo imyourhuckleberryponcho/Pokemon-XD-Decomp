@@ -1,5 +1,3 @@
-// NonMatching: target zero-extends the u16 id twice (once for the bound check, once
-// for indexing) and uses an indexed load (offset computed, then lhzx). Close otherwise.
 #include <dolphin/types.h>
 
 struct ZokuseiData {

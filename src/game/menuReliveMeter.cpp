@@ -85,7 +85,7 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
     color.r = color.g = color.b = 0;
     color.a = alpha;
  // Black border enclosing five gauge segments.
-    rect(layer, x, y, width*5+(gap*4+2+x), height+y+2, color);
+    rect(layer, x, (u16)y, width*5+(gap*4+2+x), height+y+2, color);
     color.r = color.g = color.b = 117;
     color.a = alpha;
     s32 i;

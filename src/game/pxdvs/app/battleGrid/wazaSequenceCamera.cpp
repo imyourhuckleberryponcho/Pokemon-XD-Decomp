@@ -449,8 +449,8 @@ void _wazaSequenceCameraDoDollyPosition(TemplateExpFileHeader* header, wazaSeque
     Vec direction;
     Vec position;
     f32 threshold0 = 0.5f;
-    f32 threshold1 = 0.75f;
     f32 fullDuration;
+    f32 threshold1 = 0.75f;
     f32 randomDelay;
     f32 duration;
     f32 delay;

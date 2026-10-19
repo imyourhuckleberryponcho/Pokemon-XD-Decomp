@@ -376,9 +376,9 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
     for (i = 0; i < 4; i++) {
         LensFlare* lf = _lfLensFlarePtrs[i];
         LensFlareData* d;
-        GSvec camPos;
-        GSvec right;
         GSvec up;
+        GSvec right;
+        GSvec camPos;
         GSvec scr;
         Vec proj;
         s32 status;

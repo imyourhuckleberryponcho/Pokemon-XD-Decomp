@@ -1749,6 +1749,11 @@ static inline u8* msgFindNC(u32 key, MsgBank** outBank)
 static inline u8* msgFind(u32 key, MsgBank** outBank)
 {
     MsgBank* bank;
+    MsgEntry* entries;
+    u32 k;
+    u32 lo;
+    u32 hi;
+    u32 mid;
     u32 sub;
     u32 group;
     if (key == 0) {
@@ -1762,12 +1767,12 @@ static inline u8* msgFind(u32 key, MsgBank** outBank)
             continue;
         }
         if (bank->id == group) {
-            MsgEntry* entries = bank->entries;
-            u32 lo = 0;
-            u32 hi = bank->count;
+            entries = bank->entries;
+            lo = 0;
+            hi = bank->count;
             while (lo < hi) {
-                u32 mid = (lo + hi) >> 1;
-                u32 k = entries[mid].key;
+                mid = (lo + hi) >> 1;
+                k = entries[mid].key;
                 if (k == sub) {
                     if (outBank) {
                         *outBank = bank;
@@ -2206,8 +2211,8 @@ static void _msgMakeTexture(MSG_TASK_WORK* t, u8* p, s16 w, s16 h, s16 yofs)
     GXWGFifo.u32 = t->color;
     GXWGFifo.f32 = u0;
     GXWGFifo.f32 = v0;
-    GXWGFifo.s16 = drawX1;
     GXWGFifo.s16 = drawY0 - 2;
+    GXWGFifo.s16 = drawX1;
     GXWGFifo.u32 = t->color;
     GXWGFifo.f32 = u1;
     GXWGFifo.f32 = v0;
@@ -2486,8 +2491,8 @@ static s32 _msgMainSub(MSG_TASK_WORK* t, u8 layer, u32 a, bool b)
 
     for (;;) {
         if (t->ip == savedIp) {
-            s32 j;
             s32 d = t->depth;
+            s32 j;
             for (j = 0; j < d; j++) {
                 if ((u32)t->stack[j] != saved[j]) {
                     break;
@@ -2554,8 +2559,8 @@ static s32 _msgMainSub(MSG_TASK_WORK* t, u8 layer, u32 a, bool b)
     }
     if (t->csrB != 0) {
         static s32 cnt = 0;
-        s32 y = (s32)t->curY;
         s32 x = (s32)(2.0f + t->curX);
+        s32 y = (s32)t->curY;
         f32 c = (f32)cos(3.1415927f * (f32)cnt / 25.0f);
         y += (s32)(4.0f * c);
         cnt += timeGetLastFrameTime();
@@ -2623,12 +2628,12 @@ extern "C" {
 FontBlock* GSmsgFontOpen(FontBlock* first)
 {
     FontBlock* blk;
-    MsgSys* mw;
+    s32 n;
     FontSlot* slot;
     tagFONT_INFO* info;
     tagFONT_INFO* p;
     u16 id;
-    s32 n;
+    MsgSys* mw;
     s32 i;
 
     blk = first;
@@ -2962,8 +2967,8 @@ s32 GSprint(s32 layer, s32 x, s32 y, u32 color, const char* fmt, ...)
     {
         GStexture* tex = _pMw->tex[_pMw->cur];
         if (_TargetLayer->tex1740 != tex || _TargetLayer->tex17f8 != tex) {
-            _TargetLayer->tex1740 = tex;
             _TargetLayer->dirty173c |= 1;
+            _TargetLayer->tex1740 = tex;
             _TargetLayer->tex17f8 = tex;
             _TargetLayer->dirty17f4 |= 1;
         }
@@ -2990,73 +2995,93 @@ s32 GSprint(s32 layer, s32 x, s32 y, u32 color, const char* fmt, ...)
 extern "C" {
 void GSmsgInitRuby(MSG_TASK_WORK* t)
 {
-    u8* savedIp = t->ip;
-    s8 savedDepth = t->depth;
-    u8* st0 = t->stack[0];
-    u8* st1 = t->stack[1];
-    u8* st2 = t->stack[2];
-    u8 savedMode = t->mode;
-    s8 savedF45 = t->f45;
-    s16 w0 = 0;
-    s16 w1 = 0;
-    s32 n0 = 0;
-    s32 n1 = 0;
+    u8 count0;
+    u8 count1;
     u8 pass;
+    s16 width0;
+    s16 width1;
+    u8* savedIp;
+    u8 savedFlag;
+    u8 savedDepth;
+    s32 savedMode;
+    u8* resume[3];
+    f32 rubyHeight;
+    u16 code;
+    u32 control;
+    s16 glyphWidth;
+    s32 i;
+    FontEntry* fontInfo;
+
+    for (i = 0; i < 3; i++) {
+        resume[i] = t->stack[i];
+    }
+    savedIp = t->ip;
+    savedMode = (s8)t->f45;
+    savedDepth = t->depth;
+    savedFlag = t->mode;
+
     t->rubyPtr = 0;
     t->r5c = 0;
     t->r5d = 0;
     t->mode = 0;
     t->f45 = 1;
     t->ruby = 1;
+
+    count0 = 0;
+    count1 = 0;
+    width0 = 0;
+    width1 = 0;
+
     for (pass = 0; pass < 2; pass++) {
-        while (1) {
-            u16 code = msgReadCode(t);
-            if (code == 0) {
-                break;
-            }
+        for (;;) {
+            code = msgReadCode(t);
+            if (code == 0) break;
             if (code == 0xFFFF) {
-                u8 ctrl = *t->ip++;
-                _msgCallCtrlFunc(t, ctrl);
+                control = *t->ip++;
+                _msgCallCtrlFunc(t, control);
+
                 if (pass == 0) {
                     if (t->ruby == 2) {
                         t->rubyPtr = t->ip;
                         break;
                     }
-                } else {
-                    if (t->ruby == 0) {
-                        break;
-                    }
+                } else if (t->ruby == 0) {
+                    break;
                 }
+                continue;
+            }
+
+            fontInfo = _msgGetCodeInfo(t, code, 0);
+            if (fontInfo != 0) {
+                glyphWidth = fontInfo->width;
             } else {
-                FontEntry* e = _msgGetCodeInfo(t, code, 0);
-                s16 w;
-                if (e != 0) {
-                    w = e->width;
-                } else {
-                    w = t->fontW;
-                }
-                if (pass == 0) {
-                    n0++;
-                    w0 = (s32)((f32)w0 + ((f32)w * t->scaleX + 2.0f));
-                } else {
-                    n1++;
-                    w1 = (s32)((f32)w1 + (0.5f * ((f32)w * t->scaleX) + 2.0f));
-                }
+                glyphWidth = t->fontW;
+            }
+
+            if (pass == 0) {
+                count0++;
+                width0 = (s16)((f32)width0 + ((f32)glyphWidth * t->scaleX + 2.0f));
+            } else {
+                count1++;
+                width1 = (s16)((f32)width1 + (0.5f * ((f32)glyphWidth * t->scaleX) + 2.0f));
             }
         }
     }
-    t->r5e = n0;
-    t->r5f = n1;
-    t->f50 = t->curX + (f32)((w0 - w1) / 2);
-    t->f60 = 0.5f * ((f32)t->fontW * t->scaleX);
-    t->f54 = t->curY - 0.4f * (f32)t->fontH;
+
+    rubyHeight = 0.5f * ((f32)t->fontW * t->scaleX);
+    t->r5e = count0;
+    t->r5f = count1;
+    t->f50 = t->curX + (f32)((width0 - width1) / 2);
+    t->f60 = rubyHeight;
+    t->f54 = -((0.4f * (f32)t->fontH) - t->curY);
+
     t->ip = savedIp;
     t->depth = savedDepth;
-    t->stack[0] = st0;
-    t->stack[1] = st1;
-    t->stack[2] = st2;
-    t->f45 = savedF45 != 0;
-    t->mode = savedMode;
+    for (i = 0; i < 3; i++) {
+        t->stack[i] = resume[i];
+    }
+    t->f45 = savedMode != 0;
+    t->mode = savedFlag;
 }
 }
 
@@ -3100,7 +3125,7 @@ u32 GSmsgGetRect(u32 key)
             if (ctrl == 3 || ctrl == 0x6e || ctrl == 0x6d) {
                 t->curX = t->curX + (f32)t->fontW;
                 if ((f32)maxW < t->curX) {
-                    maxW = (s32)t->curX;
+                    maxW = t->curX;
                 }
             }
             _msgCallCtrlFunc(t, ctrl);
@@ -3132,14 +3157,14 @@ u32 GSmsgGetRect(u32 key)
             t->curX = t->curX + t->charW;
         }
         if ((f32)maxW < t->curX) {
-            maxW = (s32)t->curX;
+            maxW = t->curX;
         }
         if ((f32)maxH < t->curY) {
-            maxH = (s32)t->curY;
+            maxH = t->curY;
         }
     }
-    maxH = (s32)((f32)maxH + ((f32)t->fontH * t->scaleY + 1.0f));
-    return ((maxW - 1) << 16) | (u16)maxH;
+    maxH = ((f32)maxH + ((f32)t->fontH * t->scaleY + 1.0f));
+    return ((maxW - 1) << 16) | maxH;
 }
 }
 
@@ -3544,8 +3569,10 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
     u8* text;
     u16* out;
     u16* outStart;
-    u32 count = 0;
+    u8* p;
+    s8 depth;
     u32 limit;
+    u32 count = 0;
     if (key == 0) {
         return 0;
     }
@@ -3590,8 +3617,6 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
         out++;
         if (code == 0xFFFF) {
             u8 ctrl;
-            u8* p;
-            s8 depth;
             ctrl = *t->ip++;
             count++;
             if (count > limit) {
@@ -3619,7 +3644,7 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
             }
         }
     }
-    *out = 0;
+    out = 0;
     return dst;
 }
 }

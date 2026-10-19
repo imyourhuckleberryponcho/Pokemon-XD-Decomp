@@ -233,8 +233,8 @@ static void mkBillBoardMtx(HSD_JObj* jobj, MtxPtr src, MtxPtr dst)
     Vec3 x, y, z, pos;
     float sx, sy, sz, mag;
 
-    sx = HSD_MtxColMag(src, 0);
     sz = HSD_MtxColMag(src, 2);
+    sx = HSD_MtxColMag(src, 0);
     y.x = src[0][1];
     y.y = src[1][1];
     y.z = src[2][1];

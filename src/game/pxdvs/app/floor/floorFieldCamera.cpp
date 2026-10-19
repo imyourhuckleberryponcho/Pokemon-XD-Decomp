@@ -366,7 +366,7 @@ void floorUpdateFieldCamera() {
                 return;
             }
             if (gCameraVarsInitialised && g_Blending && g_BlendingMaxTime > 0.0f) {
-                u8 rate;
+                u32 rate;
                 f32 frate = rate = GSgfxVideoGetVsyncRate();
                 g_BlendingTime = g_BlendingTime + GSgfxVideoGetLastRenderTime(rate) / frate;
                 if (g_BlendingTime >= g_BlendingMaxTime) {
@@ -400,10 +400,10 @@ void floorUpdateFieldCamera() {
                         if (flip) {
                             e = 2.0f - e;
                         }
-                        e = e * 0.5f;
                         gCameraHeight = e * (height - gCameraInitHeight) + gCameraInitHeight;
                         gCameraDistance = e * (distance - gCameraInitDistance) + gCameraInitDistance;
                         gCameraRotY = e * (rotY - gCameraInitRotY) + gCameraInitRotY;
+                        e = e * 0.5f;
                         gCameraFOV = e * (fov - gCameraInitFOV) + gCameraInitFOV;
                     }
                 }

@@ -1,4 +1,4 @@
-// WIP (NonMatching): only _flagSet differs (99.4%: scratch registers in the bit-merge).
+// GSflag: all functions match (linked).
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -103,13 +103,16 @@ static void _flagSet(u32* bits, FlagData* data, u32 id, u32 value) {
     shift = pos & 0x1F;
     if (length > 1) {
         u32 low = bits[word];
+        u32 v = value << shift;
         low &= ~(_flagAND[length] << shift);
-        bits[word] = (value << shift) | low;
+        bits[word] = v | low;
         if (length + shift >= 32) {
+            u32 high;
             u32 over = length + shift - 32;
-            u32 high = bits[word + 1];
+            high = bits[word + 1];
+            v = value >> (length - over);
             high &= ~_flagAND[over];
-            bits[word + 1] = (value >> (length - over)) | high;
+            bits[word + 1] = v | high;
         }
     } else if (value == 0) {
         bits[word] &= ~(1 << shift);

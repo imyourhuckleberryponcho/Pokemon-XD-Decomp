@@ -262,9 +262,9 @@ void pdaMemoNakigoe::DispFuncSub(NakigoeDispWork* work, GSgfxLayerID layer) {
             f32 dx = work->scale;
             GSsplineAddControlVectorValue(spline, &v, 0.0f);
             time = step;
-            dx = 556.0f / dx;
             v.x = v.x + dx;
-            int i;
+            dx = 556.0f / dx;
+            s32 i;
             for (i = 0; i < n - 2; i++) {
                 f32 y = (f32)(s8)data[i + 1];
                 v.y = y;

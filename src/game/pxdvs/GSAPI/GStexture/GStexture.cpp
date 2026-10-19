@@ -435,12 +435,12 @@ static inline void _textureCalcSize(GStexture* tex, s32 levels, u32 baseSize)
     }
 }
 
-GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u16 height, void* data, s32 format, s32 tlutFormat,
-                                     u8 mipLevels)
+GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void* data, s32 format, s32 tlutFormat,
+                                     u32 mipLevels)
 {
     s32 tlutEntries = 0;
     u32 size;
-    u32 i;
+    int i;
     s32 levels;
 
     memset(tex, 0, sizeof(GStexture));
@@ -480,17 +480,17 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u16 height, void
     levels = (u8)(levels + 1);
     tex->mipLevels = levels;
     tex->inUse = 1;
-    tex->dirty = 1;
     tex->format = format;
-    tex->tlutFormat = tlutFormat;
+    tex->dirty = 1;
     tex->wrapS = 0;
+    tex->tlutFormat = tlutFormat;
     tex->wrapT = 0;
     tex->minFilter = 2;
     tex->magFilter = 2;
     tex->mipFilter = 0;
     tex->memHandle = 0;
-    tex->mipData[0] = data;
     tex->mipData[1] = 0;
+    tex->mipData[0] = data;
     tex->tlutData = 0;
     tex->totalSize = 0;
     size = (tex->bitsPerPixel * (width * height)) >> 3;
@@ -534,7 +534,7 @@ static inline GStexture* _textureGetFree(void)
     return 0;
 }
 
-GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u8 mipLevels)
+GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u32 mipLevels)
 {
     u16 h;
     u16 w;
@@ -543,7 +543,7 @@ GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u8
     s32 align;
     s32 mask;
     u32 size;
-    u32 i;
+    int i;
     u16 aw, ah;
     u16 tw, th;
     u8 maxMips;
@@ -636,7 +636,7 @@ GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u8
     }
     mipLevels = mipLevels + 1;
     size = (tex->bitsPerPixel * (w * h)) >> 3;
-    _textureCalcSize(tex, mipLevels, size);
+    _textureCalcSize(tex, (u8)mipLevels, size);
     if (tlutEntries != 0) {
         if (tlutFormat > 0 && tlutFormat < 4) {
             tex->totalSize += (tlutEntries << 4) >> 3;
@@ -689,7 +689,7 @@ GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u8
 GStexture* GStextureLoad(GStexture* tex)
 {
     s32 i;
-    s32 j;
+    int j;
     GXTexFilter min;
 
     for (i = 0; i < tex->mipLevels; i++) {

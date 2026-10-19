@@ -394,7 +394,7 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
 
 static s32 _fightTrainerAiWazaSubDefensePokemon(FIGHT_TRAINER* trainer, FightOutPokemon* pokemon, u16 wazaCount, u16* wazaId,
                                                 u16 partyCount, FightOutPokemon** party, FightOutPokemon** outTarget, s16* outSlot) {
-    s32 threat[8];
+    u16 waza;
     s32 maxDamage[8];
     FightOutPokemon* enemies[8];
     s16 slots[6];
@@ -411,7 +411,7 @@ static s32 _fightTrainerAiWazaSubDefensePokemon(FIGHT_TRAINER* trainer, FightOut
     u16 j;
     u8 flag;
     FightOutPokemon* enemy;
-    u16 waza;
+    s32 threat[8];
 
     aiId = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
     revise = fightTrainerAiDB_GetLastValueRevise(aiId);
@@ -421,13 +421,13 @@ static s32 _fightTrainerAiWazaSubDefensePokemon(FIGHT_TRAINER* trainer, FightOut
     enemyCount = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, trainer, enemies, 1, 1);
     fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, pokemon);
     if (fixWaza == 6) {
-        for (i = 0; i < enemyCount; i++) {
+        for (u16 i = 0; i < enemyCount; i++) {
             enemy = enemies[i];
             if (enemy != 0 && fightOutPokemonCheckFightOut(enemy) != 0 && pokemon != enemy) {
                 if (fightTrainerAiIsFightOutPokemonTokuseiDataId(trainer, enemy, 0x12) == 1 &&
                     fightTrainerAiIsFightOutPokemonJoutaiDataId(trainer, enemy, 0x3A) == 0) {
-                    s16 count = 0;
                     u16 j;
+                    s16 count = 0;
                     for (j = 0; j < 11; j++) {
                         waza = list1[j];
                         if ((waza != 0xED || (pokemonGetMezamerupower(fightOutPokemonGetPokemonPtr(pokemon), &mezamePower, &mezameType), mezameType == 0xA)) &&

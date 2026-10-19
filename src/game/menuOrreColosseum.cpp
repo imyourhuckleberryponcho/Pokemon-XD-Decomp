@@ -761,7 +761,7 @@ void menuOrre::Main() {
         }
         for (k = 0; k < 4; k++) {
             src = GetTemochiPokemonPtr(m_sel[k]);
-            pokemonBiosCopy(heroBiosGetPokemonPtr(hero, k), src);
+            pokemonBiosCopy(heroBiosGetPokemonPtr(hero, (u8)k), src);
         }
         fightSetMenuCtrlHero(fightGetMenuCtrlHero());
         _fightresult = fightEncount(m_deck);

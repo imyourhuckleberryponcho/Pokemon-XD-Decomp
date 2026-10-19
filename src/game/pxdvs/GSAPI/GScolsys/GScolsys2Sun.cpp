@@ -45,9 +45,9 @@ bool GScolsy2UtilChkInTri(GSvec* p, GSvec* tri, GSvec* normal);
 
 // Returns -1 if any segment can't be tested, else whether any new segment hit the triangle.
 static int getCpSegPolyArray(bool* hits, GSvec* start, GSvec* ends, unsigned long num, GSvec* tri, GSvec* normal) {
+    u32 i;
     bool hit = false;
     bool valid = true;
-    u32 i;
     GSvec cp;
     f32 t;
 
@@ -170,14 +170,14 @@ bool GScolsys2Sun(GSvec* start, GSvec* end) {
     PSVECSubtract(end, start, &dir);
     obj = head->objs;
     for (i = 0; i < head->numObjs; i++, obj++) {
-        bool enable;
-        ColMesh* mesh;
-        GSmtx mtx;
         GSmtx rot;
+        u32 j;
+        GSmtx mtx;
+        bool enable;
         GSvec normal;
         GSvec verts[3];
         ColTri* tri;
-        u32 j;
+        ColMesh* mesh;
         bool hit;
 
         GScolsys2GetObjEnable(i, &enable);

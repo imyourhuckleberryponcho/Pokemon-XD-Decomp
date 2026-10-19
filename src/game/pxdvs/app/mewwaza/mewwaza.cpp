@@ -307,7 +307,7 @@ static void _question_4(MEWPOINTS* mp) {
             mp->d = mp->d - ((s16)(RAND16() % 3) + 2);
             mp->a <<= 1;
         } else {
-            mp->d = (s16)(RAND16() % 3) + mp->d + 2;
+            mp->d = (RAND16() % 3) + mp->d + 2;
             mp->a = mp->a * ((s16)(RAND16() % 3) + 1);
         }
         break;
@@ -649,7 +649,7 @@ static s32 _searchwaza(MWAZA* tbl, long mode, u16* used, long usedCount, long nt
 
 extern "C" {
 s32 mewWazaSequence() {
-    s32 floor = GSfloorGetCurrent();
+    u32 floor = GSfloorGetCurrent();
     s32 r;
     if (floor != 0x15) {
         GSfsysReadWait(0x9ef);

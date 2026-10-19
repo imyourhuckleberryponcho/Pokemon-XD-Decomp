@@ -155,6 +155,7 @@ void underTakerCallBackFunc(s32 unused0, s32 unused1, u16 amount) {
     if (GSflagTest(undertakerdata->flagStart) && !GSflagTest(undertakerdata->flagDisable) &&
         darkpokemonCheckUnderTaker()) {
         if (GSflagGet(undertakerdata->flagID) == 0) {
+            u32 level;
             u16 cur = GSflagGet(undertakerdata->flagCounter);
             u32 total = cur + amount;
             if ((u16)total >= undertakerdata->threshold) {
@@ -165,7 +166,7 @@ void underTakerCallBackFunc(s32 unused0, s32 unused1, u16 amount) {
                 high = low + mid;
                 u16 rnd = (u16)HSD_Rand() % mod;
                 if (rnd < low) {
-                    u32 level = (u16)GSflagGet(undertakerdata->flagLevel) + 1;
+                    level = (u16)GSflagGet(undertakerdata->flagLevel) + 1;
                     if ((u16)level >= undertakerdata->maxCount - 1) {
                         if (_isInRange()) {
                             level--;

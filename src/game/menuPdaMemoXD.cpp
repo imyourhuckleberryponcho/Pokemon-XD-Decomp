@@ -529,23 +529,101 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
     MenuItem* item = menuItemBiosGetPtr(0x7E, sprite->id);
     GSmsgGetGSchar(0x3BBC);
     u8 first = pokemonDataBiosGetTokuseiDataId((void*)mon, 0);
-    u8 tokusei = pokemonDataBiosGetTokuseiDataId((void*)mon, slot);
-    if (slot != 0 && tokusei == first) {
-        tokusei = 0;
+    u8 tid = pokemonDataBiosGetTokuseiDataId((void*)mon, slot);
+    if (slot != 0 && tid == first) {
+        tid = 0;
     }
-    if ((u16)tokusei != 0) {
-        void* data = pokemonTokuseiDataBiosGetPtr(tokusei);
-        u16* text = GSmsgGetGSchar(pokemonTokuseiDataBiosGetDoc(data));
-        u32 length = GSmsgGetCharLength(text);
-        s32 size = (length + 2) * 2;
-        u16* line1 = (u16*)new u16[size / 2];
-        u16* line2 = (u16*)new u16[size / 2];
-        (void)line1;
-        (void)line2;
-        (void)item;
-        (void)window;
-        __dla__FPv(line1);
-        __dla__FPv(line2);
+    if (tid != 0) {
+        u16* text = GSmsgGetGSchar(pokemonTokuseiDataBiosGetDoc(pokemonTokuseiDataBiosGetPtr(tid)));
+        u32 len = GSmsgGetCharLength(text);
+        u32 k;
+        u16* buf1 = new u16[len + 2];
+        u16* buf2 = new u16[len + 2];
+        u16* name = buf1;
+        int n = 0;
+        int best = 0;
+        u8 wrap = 0;
+        do {
+            int spaces = 0;
+            int prev = n;
+            u16* src = text;
+            u16* dst = buf1;
+            k = 0;
+            n++;
+            for (;;) {
+                u16 ch = *src;
+                if (ch == 0x20 || ch == 0x3000) {
+                    if (spaces == prev) {
+                        break;
+                    }
+                    *dst = ch;
+                    spaces++;
+                } else {
+                    if (ch == 0) {
+                        break;
+                    }
+                    *dst = ch;
+                }
+                src++;
+                dst++;
+                k++;
+            }
+            buf1[k++] = 0;
+            msgctrlSetValue(0x37, (u32)name);
+            u32 width = GSmsgGetRect(0x4276) >> 16;
+            if (width <= item->width) {
+                best = n;
+            }
+            if (!(item->width >= width)) {
+                wrap = 1;
+            }
+        } while (k < len);
+        if (wrap) {
+            int spaces = 0;
+            int n1 = 0;
+            int n2 = 0;
+            u8 second = 0;
+            u32 total = GSmsgGetCharLength(text);
+            u32 idx = 0;
+            u16* p = text;
+            for (;; p++, idx++) {
+                u16 ch = *p;
+                if (ch == 0xFFFF) {
+                    continue;
+                }
+                if (ch == 0x20 || ch == 0x3000) {
+                    if (spaces == best - 1) {
+                        second = 1;
+                    } else if (second) {
+                        buf2[n2++] = ch;
+                    } else {
+                        buf1[n1++] = ch;
+                    }
+                    spaces++;
+                    continue;
+                }
+                if (ch == 0) {
+                    if (total <= idx) {
+                        break;
+                    }
+                } else if (second) {
+                    buf2[n2++] = ch;
+                } else {
+                    buf1[n1++] = ch;
+                }
+            }
+            buf1[n1] = 0;
+            buf2[n2] = 0;
+            msgctrlSetValue(0x37, (u32)buf1);
+            GSmsgPrint2(window->layer, 0, 0, window->alpha | 0xFFFFFF00, 0x4276);
+            msgctrlSetValue(0x37, (u32)buf2);
+            GSmsgPrint2(window->layer, 0, 0x12, window->alpha | 0xFFFFFF00, 0x4276);
+        } else {
+            msgctrlSetValue(0x37, (u32)text);
+            GSmsgPrint2(window->layer, 0, 0, window->alpha | 0xFFFFFF00, 0x4276);
+        }
+        delete[] buf1;
+        delete[] buf2;
     }
 }
 
@@ -658,8 +736,9 @@ void menuPdaMemoXD::Ctrl(tagWINDOW_WORK* window) {
 }
 
 void menuPdaMemoXD::Cursor(tagWINDOW_WORK* window) {
-    CURSOR* c = window->contents->cursor;
+    s32 last;
     WindowKeyInfo* key = windowGetKeyInfo();
+    CURSOR* c = window->contents->cursor;
     int count = memoDataGetCount(0);
     u16 repeat = key->unk6;
     int visible = 8;
@@ -740,7 +819,7 @@ void menuPdaMemoXD::Cursor(tagWINDOW_WORK* window) {
                 c->pos = 0;
             }
         } else if (pos >= visible) {
-            s16 last = visible - 1;
+            last = visible - 1;
             c->top += pos - last;
             c->pos = last;
             if (c->top + c->pos >= count) {

@@ -255,6 +255,7 @@ static void _updateTimer(u16 id)
 static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
 {
     _updateTimer(id);
+    f32 s;
     f32 t = _esaTimer[id] / 6.2831855f;
     f32 v = 1.0f - t;
     v = 255.0f * v;
@@ -268,18 +269,18 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
     MenuSpriteVal2* val = menuSpriteBiosGetValPtr(spr);
     void* tex = GSresGetResourceAllGroup(val->res);
     u16 xs = GStextureGetXsize(tex);
-    u16 ys = GStextureGetYsize(tex);
-    f32 angle = _startangle;
+    u32 ys = GStextureGetYsize(tex);
     f32 radius = scale * (f32)(val->w / 2);
+    f32 angle = _startangle;
     menuItemBiosGetPtr(w->menuID, sp->id);
     f32 tc[4][3];
     f32 u0 = (f32)val->x / (f32)xs;
-    f32 u1 = (f32)(val->x + val->w) / (f32)xs;
     f32 v0 = (f32)val->y / (f32)ys;
     f32 v1 = (f32)(val->y + val->h) / (f32)ys;
+    f32 u1 = (f32)(val->w + val->x) / (f32)xs;
     tc[0][0] = tc[3][0] = u0;
-    tc[1][0] = tc[2][0] = u1;
     tc[0][1] = tc[1][1] = v0;
+    tc[1][0] = tc[2][0] = u1;
     tc[2][1] = tc[3][1] = v1;
     f32 cx = (f32)(val->w / 2);
     f32 cy = (f32)(val->h / 2);
@@ -347,7 +348,7 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
     }
     layer->beginSurface(4);
     for (s32 i = 0; i < 4; i++) {
-        f32 s = (f32)sin(angle);
+        s = (f32)sin(angle);
         f32 c = (f32)cos(angle);
         f32 tu = tc[i][0];
         f32 tv = tc[i][1];

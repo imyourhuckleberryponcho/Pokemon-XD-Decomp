@@ -4,6 +4,9 @@
 #pragma peephole off
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
+// Non-volatile view of the GX write-gather FIFO: the original kept constants in
+// registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
+#define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 #include <dolphin/mtx.h>
 #include <libc/string.h>
 
@@ -631,9 +634,9 @@ static void _fadeVirtualHexaDecayRibbonDraw(GSgfxLayer* layer, GStexture* t, f32
         for (i = 0; i < n; i++, r++) {
             s16 x0 = r->a;
             s16 y0 = r->b;
-            s16 x1 = x0 + r->c;
-            s16 y1 = y0 + r->d;
             f32 u0 = (f32)(x0 + 21) / 640.0f;
+            s16 y1 = y0 + r->d;
+            s16 x1 = x0 + r->c;
             f32 v0 = (f32)y0 / 480.0f;
             f32 u1 = (f32)(x1 - 19) / 640.0f;
             f32 v1 = (f32)y1 / 480.0f;
@@ -848,50 +851,50 @@ static void _fadeVirtualHexaDecayNoiseDraw(GSgfxLayer* layer, GStexture* t, f32 
         f32 one = 1.0f;
         f32 h = 481.0f;
         f32 k = 15.0f;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = a;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = w;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = a;
-        GXWGFifo.f32 = one;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = one;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = h;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = a;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = one;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.f32 = k;
-        GXWGFifo.f32 = w;
-        GXWGFifo.f32 = h;
-        GXWGFifo.f32 = zero;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = a;
-        GXWGFifo.f32 = one;
-        GXWGFifo.f32 = one;
-        GXWGFifo.f32 = one;
-        GXWGFifo.f32 = k;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = a;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = w;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = a;
+        GXFifoNV.f32 = one;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = one;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = h;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = a;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = one;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.f32 = k;
+        GXFifoNV.f32 = w;
+        GXFifoNV.f32 = h;
+        GXFifoNV.f32 = zero;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = a;
+        GXFifoNV.f32 = one;
+        GXFifoNV.f32 = one;
+        GXFifoNV.f32 = one;
+        GXFifoNV.f32 = k;
         layer->endSurface();
     }
 }
@@ -992,7 +995,7 @@ static void _fadeVirtualHexaDecayLineDraw(GSgfxLayer* layer, f32 alphaf) {
                     int half = count / 2;
                     layer->beginSurface((u16)count);
                     f32* p = (f32*)e;
-                    for (j = 0; j < count; j++) {
+                    for (j = 0; j < (u8)count; j++) {
                         int k;
                         if (j == half) {
                             k = 1;
@@ -1006,10 +1009,10 @@ static void _fadeVirtualHexaDecayLineDraw(GSgfxLayer* layer, f32 alphaf) {
                         p += 2;
                         GXWGFifo.s16 = px;
                         GXWGFifo.s16 = py;
+                        GXWGFifo.u8 = a;
                         GXWGFifo.u8 = cr[k];
                         GXWGFifo.u8 = cg[k];
                         GXWGFifo.u8 = cb[k];
-                        GXWGFifo.u8 = a;
                     }
                     layer->endSurface();
                 }
@@ -1629,6 +1632,7 @@ static void _fadeDistortionStripInit(int cols, int rows) {
 }
 
 static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending, f32 elapsed, f32 duration, f32 hookElapsed, f32 hookDuration, void* tex) {
+    Mtx m;
     GSgfxLayer* layer = GSgfxLayerFindByID(id);
     if (layer == 0) {
         return pending;
@@ -1867,8 +1871,8 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
     *(u32*)((u8*)layer + 0x16dc) |= 0x4;
     *(u32*)((u8*)layer + 0x16a8) |= 0x8;
     *(u32*)((u8*)layer + 0x1794) |= 0x4;
-    *(u32*)((u8*)layer + 0x1760) |= 0x8;
     *(u32*)((u8*)layer + 0xf90) = 15;
+    *(u32*)((u8*)layer + 0x1760) |= 0x8;
     *(u32*)((u8*)layer + 0xf94) = 8;
     *(u32*)((u8*)layer + 0xf98) = 0;
     *(u32*)((u8*)layer + 0xf9c) = 15;
@@ -1892,8 +1896,8 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
     *(u32*)((u8*)layer + 0x16d8) |= 0x4;
     *(u32*)((u8*)layer + 0x16a8) |= 0x8;
     *(u32*)((u8*)layer + 0x1790) |= 0x4;
-        layer->vf = (GSgfxVF*)_fadeEffectTrainer_vf;
         layer->primType = 0x98;
+        layer->vf = (GSgfxVF*)_fadeEffectTrainer_vf;
         c.x = 320.0f;
         c.y = 240.0f;
         c.z = 0.0f;
@@ -1903,7 +1907,6 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
             return pending;
         }
         _fadeEffectWork.unk0E = aa;
-        Mtx m;
         Mtx r;
         GSvec v;
         GSvec out;
@@ -1927,62 +1930,62 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
         v.y = -128.0f;
         v.z = 0.0f;
         PSMTXMultVec(m, (Vec*)&v, (Vec*)&out);
-        GXWGFifo.f32 = out.x;
-        GXWGFifo.f32 = out.y;
-        GXWGFifo.f32 = out.z;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = a;
-        GXWGFifo.f32 = 0.01f;
-        GXWGFifo.f32 = 0.01f;
-        GXWGFifo.f32 = u0;
-        GXWGFifo.f32 = v0;
+        GXFifoNV.f32 = out.x;
+        GXFifoNV.f32 = out.y;
+        GXFifoNV.f32 = out.z;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = a;
+        GXFifoNV.f32 = 0.01f;
+        GXFifoNV.f32 = 0.01f;
+        GXFifoNV.f32 = u0;
+        GXFifoNV.f32 = v0;
         v.x = 128.0f;
         v.y = -128.0f;
         v.z = 0.0f;
         PSMTXMultVec(m, (Vec*)&v, (Vec*)&out);
-        GXWGFifo.f32 = out.x;
-        GXWGFifo.f32 = out.y;
-        GXWGFifo.f32 = out.z;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = a;
-        GXWGFifo.f32 = 0.99f;
-        GXWGFifo.f32 = 0.01f;
-        GXWGFifo.f32 = u1;
-        GXWGFifo.f32 = v0;
+        GXFifoNV.f32 = out.x;
+        GXFifoNV.f32 = out.y;
+        GXFifoNV.f32 = out.z;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = a;
+        GXFifoNV.f32 = 0.99f;
+        GXFifoNV.f32 = 0.01f;
+        GXFifoNV.f32 = v0;
+        GXFifoNV.f32 = u1;
         v.x = -128.0f;
         v.y = 128.0f;
         v.z = 0.0f;
         PSMTXMultVec(m, (Vec*)&v, (Vec*)&out);
-        GXWGFifo.f32 = out.x;
-        GXWGFifo.f32 = out.y;
-        GXWGFifo.f32 = out.z;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = a;
-        GXWGFifo.f32 = 0.01f;
-        GXWGFifo.f32 = 0.99f;
-        GXWGFifo.f32 = u0;
-        GXWGFifo.f32 = v1;
+        GXFifoNV.f32 = out.x;
+        GXFifoNV.f32 = out.y;
+        GXFifoNV.f32 = out.z;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = a;
+        GXFifoNV.f32 = 0.01f;
+        GXFifoNV.f32 = 0.99f;
+        GXFifoNV.f32 = u0;
+        GXFifoNV.f32 = v1;
         v.x = 128.0f;
         v.y = 128.0f;
         v.z = 0.0f;
         PSMTXMultVec(m, (Vec*)&v, (Vec*)&out);
-        GXWGFifo.f32 = out.x;
-        GXWGFifo.f32 = out.y;
-        GXWGFifo.f32 = out.z;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = a;
-        GXWGFifo.f32 = 0.99f;
-        GXWGFifo.f32 = 0.99f;
-        GXWGFifo.f32 = u1;
-        GXWGFifo.f32 = v1;
+        GXFifoNV.f32 = out.x;
+        GXFifoNV.f32 = out.y;
+        GXFifoNV.f32 = out.z;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = a;
+        GXFifoNV.f32 = 0.99f;
+        GXFifoNV.f32 = 0.99f;
+        GXFifoNV.f32 = u1;
+        GXFifoNV.f32 = v1;
         layer->endSurface();
     }
     return pending;
@@ -2117,136 +2120,136 @@ static bool fadeEffectHookFunction_tear_off(GSgfxLayerID id, bool pending, f32 e
 static void _fadeTearOffDraw(GSgfxLayer* layer, u8 alpha, int frame) {
     s16 x0 = _fadeTearOffWork.a;
     s16 y0 = _fadeTearOffWork.b;
-    u8 half = alpha / 2;
     f32 fx = (f32)x0 / 640.0f;
     f32 fy = (f32)y0 / 480.0f;
+    u8 half = alpha / 2;
     layer->beginSurface(4);
     s16 zero = 0;
     f32 fzero = 0.0f;
     f32 fone = 1.0f;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = alpha;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.s16 = 640;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = alpha;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.s16 = 480;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = alpha;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.s16 = 640;
-    GXWGFifo.s16 = 480;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = alpha;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.f32 = fone;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = alpha;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.s16 = 640;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = alpha;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.s16 = 480;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = alpha;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.s16 = 640;
+    GXFifoNV.s16 = 480;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = alpha;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.f32 = fone;
     layer->endSurface();
     layer->beginSurface(3);
-    GXWGFifo.s16 = x0;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = alpha;
-    GXWGFifo.f32 = fx;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.s16 = x0;
-    GXWGFifo.s16 = y0;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = alpha;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.s16 = 640;
-    GXWGFifo.s16 = y0;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = alpha;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.f32 = fy;
+    GXFifoNV.s16 = x0;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = alpha;
+    GXFifoNV.f32 = fx;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.s16 = x0;
+    GXFifoNV.s16 = y0;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = alpha;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.s16 = 640;
+    GXFifoNV.s16 = y0;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = alpha;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.f32 = fy;
     layer->endSurface();
     layer->beginSurface(3);
-    GXWGFifo.s16 = (s16)(x0 + frame);
-    GXWGFifo.s16 = (s16)frame;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = half;
-    GXWGFifo.f32 = fx;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.s16 = (s16)(frame + 640);
-    GXWGFifo.s16 = (s16)frame;
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = half;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.s16 = (s16)(frame + 640);
-    GXWGFifo.s16 = (s16)(y0 + frame);
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = half;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.f32 = fy;
+    GXFifoNV.s16 = (s16)(x0 + frame);
+    GXFifoNV.s16 = (s16)frame;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = half;
+    GXFifoNV.f32 = fx;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.s16 = (s16)(frame + 640);
+    GXFifoNV.s16 = (s16)frame;
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = half;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.s16 = (s16)(frame + 640);
+    GXFifoNV.s16 = (s16)(y0 + frame);
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = half;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.f32 = fy;
     layer->endSurface();
     layer->beginSurface(3);
-    GXWGFifo.s16 = (s16)(x0 + frame * 2);
-    GXWGFifo.s16 = (s16)(frame * 2);
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = half;
-    GXWGFifo.f32 = fx;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.s16 = (s16)(frame * 2 + 640);
-    GXWGFifo.s16 = (s16)(frame * 2);
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = half;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.f32 = fzero;
-    GXWGFifo.s16 = (s16)(frame * 2 + 640);
-    GXWGFifo.s16 = (s16)(y0 + frame * 2);
-    GXWGFifo.s16 = zero;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = half;
-    GXWGFifo.f32 = fone;
-    GXWGFifo.f32 = fy;
+    GXFifoNV.s16 = (s16)(x0 + frame * 2);
+    GXFifoNV.s16 = (s16)(frame * 2);
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = half;
+    GXFifoNV.f32 = fx;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.s16 = (s16)(frame * 2 + 640);
+    GXFifoNV.s16 = (s16)(frame * 2);
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = half;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.f32 = fzero;
+    GXFifoNV.s16 = (s16)(frame * 2 + 640);
+    GXFifoNV.s16 = (s16)(y0 + frame * 2);
+    GXFifoNV.s16 = zero;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = half;
+    GXFifoNV.f32 = fone;
+    GXFifoNV.f32 = fy;
     layer->endSurface();
 }
 
@@ -2421,17 +2424,19 @@ static bool fadeEffectHookFunction_distortion_yoko(GSgfxLayerID id, bool pending
 }
 
 static void _fadeDistortionDoAverage(u32 amount) {
+    f32* p;
+    f32* tex = _fadeDistortionWork.tex;
+    f32 fy;
     int cols = _fadeDistortionWork.cols;
     int rows = _fadeDistortionWork.rows;
     f32 invX = 1.0f / (f32)(cols - 1);
     f32 invY = 1.0f / (f32)(rows - 1);
-    f32* tex = _fadeDistortionWork.tex;
+    int x;
     if (tex != 0) {
         int y;
         for (y = 0; y < rows; y++) {
-            f32* p = tex;
-            f32 fy = invY * (f32)y;
-            int x;
+            p = tex;
+            fy = invY * (f32)y;
             for (x = 0; x < cols; x++) {
                 f32 sx;
                 f32 sy;
@@ -3076,7 +3081,7 @@ static bool fadeEffectHookFunction_four_ball(GSgfxLayerID id, bool pending, f32 
             p.x = ball->x;
             p.y = ball->y;
             p.z = ball->z;
-            _disp_four_ball(layer, &p, 1.0f, ball->w, alpha0);
+            _disp_four_ball(layer, &p, 1.0f, ball->w, (s32)alpha0);
             p.y += 235.0f;
             _disp_four_ball(layer, &p, 1.0f, ball->w, alpha0);
         }
@@ -3087,6 +3092,11 @@ static bool fadeEffectHookFunction_four_ball(GSgfxLayerID id, bool pending, f32 
 }
 
 static void _fadeEffectFourBallInit() {
+    FADE_EFFECT_BALL (*trails)[12] = (FADE_EFFECT_BALL (*)[12])_fadeEffectBall;
+    GSvec start[2];
+    int side;
+    int point;
+
     GSgfxVideoSetLockFrameRate(1);
     _fadeEffectWork.tex0 = (GStexture*)GSresGetResourceAllGroup(0xEBC1200);
     _fadeEffectWork.tex1 = GSresGetResourceAllGroup(0xEBD1200);
@@ -3097,25 +3107,21 @@ static void _fadeEffectFourBallInit() {
     _fadeEffectWork.step = 4.0f;
     _fadeEffectWork.value = 0.0f;
     _fadeEffectWork.target = 64.0f;
-    GSvec start[2];
     start[0].x = -65.0f;
     start[0].y = 65.0f;
     start[0].z = 0.0f;
     start[1].x = 705.0f;
     start[1].y = 181.66666f;
     start[1].z = 0.0f;
-    int g;
-    int i;
-    int c;
-    for (g = 0; g < 2; g++) {
-        FADE_EFFECT_BALL* b = &_fadeEffectBall[g * 12];
-        for (i = 0, c = 0; i < 12; i++, c += 21) {
-            b[i].x = start[g].x;
-            b[i].y = start[g].y;
-            b[i].z = start[g].z;
-            b[i].w = 0.0f;
-            b[i].a = 255 - c;
+    for (side = 0; side < 2; side++) {
+        for (point = 0; point < 12; point++) {
+            trails[side][point].x = start[side].x;
+            trails[side][point].y = start[side].y;
+            trails[side][point].z = start[side].z;
+            trails[side][point].w = 0.0f;
+            trails[side][point].a = 0x82 - point * 10;
         }
+        trails[side][0].a = 0xFF;
     }
     _fadeEffect_AdjustParms();
 }
@@ -3995,8 +4001,8 @@ static bool fadeEffectHookFunction_slide_ball(GSgfxLayerID id, bool pending, f32
             u0 = (640.0f - x1) / 640.0f;
         }
         f32 y0 = e->y - 26;
-        f32 v0 = y0 / 480.0f;
         f32 y1 = 53.0f + y0;
+        f32 v0 = y0 / 480.0f;
         f32 v1 = y1 / 480.0f;
         GXWGFifo.f32 = x0;
         GXWGFifo.f32 = y0;
@@ -4012,8 +4018,8 @@ static bool fadeEffectHookFunction_slide_ball(GSgfxLayerID id, bool pending, f32
         GXWGFifo.u8 = 0xFF;
         GXWGFifo.u8 = 0xFF;
         GXWGFifo.u8 = alpha;
-        GXWGFifo.f32 = u1;
         GXWGFifo.f32 = v0;
+        GXWGFifo.f32 = u1;
         GXWGFifo.f32 = x1;
         GXWGFifo.f32 = y1;
         GXWGFifo.u8 = 0xFF;
@@ -4078,7 +4084,7 @@ static void _fadeEffectSlideBallInit() {
     _fadeEffectWork.tex1 = GSresGetResourceAllGroup(0xEBD1200);
     _fadeEffectWork.unk0C = 0;
     _fadeEffectWork.frame = 0;
-    u8 side = fadeRandInline(2) == 0 ? 1 : 0;
+    u32 side = fadeRandInline(2) == 0 ? 1 : 0;
     FADE_EFFECT_BOUND* e = _fadeEffectBound;
     int i;
     for (i = 0; i < 12; i++, e++) {
@@ -4207,9 +4213,9 @@ static bool fadeEffectHookFunction_bound_ball(GSgfxLayerID id, bool pending, f32
     _fadeEffectSnapshotFadeFunction(layer, t, &c, 1.0f, 0.0f, progress, 0.5f);
     _fadeEffectStartTexture(layer, _fadeEffectWork.tex0);
     int alpha = (s32)(255.0f * (1.0f - progress) * (1.0f - hprogress));
-    FADE_EFFECT_BOUND* e = _fadeEffectBound;
-    f32 zero = 0.0f;
     int i;
+    f32 zero = 0.0f;
+    FADE_EFFECT_BOUND* e = _fadeEffectBound;
     for (i = 0; i < 16; i++, e++) {
         f32 x;
         f32 y;
@@ -4501,6 +4507,7 @@ static bool fadeEffectHookFunction_carde(GSgfxLayerID p0, bool p1, f32 p2, f32 p
 }
 
 static bool fadeEffectHookFunction_trainer(GSgfxLayerID id, bool pending, f32 elapsed, f32 duration, f32 hookElapsed, f32 hookDuration, void* tex) {
+    Mtx m;
     GSgfxLayer* layer = GSgfxLayerFindByID(id);
     if (layer == 0) {
         return pending;
@@ -4718,7 +4725,6 @@ static bool fadeEffectHookFunction_trainer(GSgfxLayerID id, bool pending, f32 el
         layer->primType = 0x98;
         f32 alphaf = 255.0f * (1.0f - progress);
         f32 scale = 1.0f + (f32)_fadeEffectWork.frame / 150.0f;
-        Mtx m;
         Mtx r;
         GSvec cen;
         GSvec v;
@@ -4746,62 +4752,62 @@ static bool fadeEffectHookFunction_trainer(GSgfxLayerID id, bool pending, f32 el
         v.y = -128.0f;
         v.z = 0.0f;
         PSMTXMultVec(m, (Vec*)&v, (Vec*)&out);
-        GXWGFifo.f32 = out.x;
-        GXWGFifo.f32 = out.y;
-        GXWGFifo.f32 = out.z;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = alphaf;
-        GXWGFifo.f32 = 0.0f;
-        GXWGFifo.f32 = 0.0f;
-        GXWGFifo.f32 = u0;
-        GXWGFifo.f32 = v0;
+        GXFifoNV.f32 = out.x;
+        GXFifoNV.f32 = out.y;
+        GXFifoNV.f32 = out.z;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = alphaf;
+        GXFifoNV.f32 = 0.0f;
+        GXFifoNV.f32 = 0.0f;
+        GXFifoNV.f32 = u0;
+        GXFifoNV.f32 = v0;
         v.x = 128.0f;
         v.y = -128.0f;
         v.z = 0.0f;
         PSMTXMultVec(m, (Vec*)&v, (Vec*)&out);
-        GXWGFifo.f32 = out.x;
-        GXWGFifo.f32 = out.y;
-        GXWGFifo.f32 = out.z;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = alphaf;
-        GXWGFifo.f32 = 1.0f;
-        GXWGFifo.f32 = 0.0f;
-        GXWGFifo.f32 = u1;
-        GXWGFifo.f32 = v0;
+        GXFifoNV.f32 = out.x;
+        GXFifoNV.f32 = out.y;
+        GXFifoNV.f32 = out.z;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = alphaf;
+        GXFifoNV.f32 = 1.0f;
+        GXFifoNV.f32 = 0.0f;
+        GXFifoNV.f32 = v0;
+        GXFifoNV.f32 = u1;
         v.x = -128.0f;
         v.y = 128.0f;
         v.z = 0.0f;
         PSMTXMultVec(m, (Vec*)&v, (Vec*)&out);
-        GXWGFifo.f32 = out.x;
-        GXWGFifo.f32 = out.y;
-        GXWGFifo.f32 = out.z;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = alphaf;
-        GXWGFifo.f32 = 0.0f;
-        GXWGFifo.f32 = 1.0f;
-        GXWGFifo.f32 = u0;
-        GXWGFifo.f32 = v1;
+        GXFifoNV.f32 = out.x;
+        GXFifoNV.f32 = out.y;
+        GXFifoNV.f32 = out.z;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = alphaf;
+        GXFifoNV.f32 = 0.0f;
+        GXFifoNV.f32 = 1.0f;
+        GXFifoNV.f32 = u0;
+        GXFifoNV.f32 = v1;
         v.x = 128.0f;
         v.y = 128.0f;
         v.z = 0.0f;
         PSMTXMultVec(m, (Vec*)&v, (Vec*)&out);
-        GXWGFifo.f32 = out.x;
-        GXWGFifo.f32 = out.y;
-        GXWGFifo.f32 = out.z;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = alphaf;
-        GXWGFifo.f32 = 1.0f;
-        GXWGFifo.f32 = 1.0f;
-        GXWGFifo.f32 = u1;
-        GXWGFifo.f32 = v1;
+        GXFifoNV.f32 = out.x;
+        GXFifoNV.f32 = out.y;
+        GXFifoNV.f32 = out.z;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = 0xFF;
+        GXFifoNV.u8 = alphaf;
+        GXFifoNV.f32 = 1.0f;
+        GXFifoNV.f32 = 1.0f;
+        GXFifoNV.f32 = u1;
+        GXFifoNV.f32 = v1;
         layer->endSurface();
     }
     if (timeGetLastFrameTime() != 0) {
@@ -5100,6 +5106,11 @@ static void _fadeEffectBallSecondQuit() {
 }
 
 static void _fadeEffectBallSecondInit() {
+    FADE_EFFECT_BALL (*trails)[12] = (FADE_EFFECT_BALL (*)[12])_fadeEffectBall;
+    GSvec start[2];
+    int side;
+    int point;
+
     GSgfxVideoSetLockFrameRate(1);
     _fadeEffectWork.tex0 = (GStexture*)GSresGetResourceAllGroup(0xEBC1200);
     _fadeEffectWork.tex1 = GSresGetResourceAllGroup(0xEBD1200);
@@ -5110,24 +5121,19 @@ static void _fadeEffectBallSecondInit() {
     _fadeEffectWork.step = 4.0f;
     _fadeEffectWork.value = 0.0f;
     _fadeEffectWork.target = 48.0f;
-    GSvec start[2];
     start[0].x = -75.0f;
     start[0].y = 165.0f;
     start[0].z = 0.0f;
     start[1].x = 715.0f;
     start[1].y = 315.0f;
     start[1].z = 0.0f;
-    int g;
-    int i;
-    int c;
-    for (g = 0; g < 2; g++) {
-        FADE_EFFECT_BALL* b = &_fadeEffectBall[g * 12];
-        for (i = 0, c = 0; i < 12; i++, c += 21) {
-            b[i].x = start[g].x;
-            b[i].y = start[g].y;
-            b[i].z = start[g].z;
-            b[i].w = 0.0f;
-            b[i].a = 255 - c;
+    for (side = 0; side < 2; side++) {
+        for (point = 0; point < 12; point++) {
+            trails[side][point].x = start[side].x;
+            trails[side][point].y = start[side].y;
+            trails[side][point].z = start[side].z;
+            trails[side][point].w = 0.0f;
+            trails[side][point].a = 0xFF - point * 0x15;
         }
     }
     _fadeEffect_AdjustParms();
@@ -5257,6 +5263,11 @@ static void _dispball(GSgfxLayer* layer, GSvec* pos, f32 scale, f32 angle, int a
 }
 
 static void _fadeEffectFunction_ball_FirstInit() {
+    FADE_EFFECT_BALL (*trails)[12] = (FADE_EFFECT_BALL (*)[12])_fadeEffectBall;
+    GSvec start[2];
+    int side;
+    int point;
+
     GSgfxVideoSetLockFrameRate(0);
     _fadeEffectWork.tex0 = (GStexture*)GSresGetResourceAllGroup(0xEBC1200);
     _fadeEffectWork.tex1 = GSresGetResourceAllGroup(0xEBD1200);
@@ -5267,24 +5278,19 @@ static void _fadeEffectFunction_ball_FirstInit() {
     _fadeEffectWork.step = 4.0f;
     _fadeEffectWork.value = 0.0f;
     _fadeEffectWork.target = 48.0f;
-    GSvec start[2];
     start[0].x = -128.0f;
     start[0].y = 364.0f;
     start[0].z = 0.0f;
     start[1].x = 768.0f;
     start[1].y = 116.0f;
     start[1].z = 0.0f;
-    int g;
-    int i;
-    int c;
-    for (g = 0; g < 2; g++) {
-        FADE_EFFECT_BALL* b = &_fadeEffectBall[g * 12];
-        for (i = 0, c = 0; i < 12; i++, c += 21) {
-            b[i].x = start[g].x;
-            b[i].y = start[g].y;
-            b[i].z = start[g].z;
-            b[i].w = 0.0f;
-            b[i].a = 255 - c;
+    for (side = 0; side < 2; side++) {
+        for (point = 0; point < 12; point++) {
+            trails[side][point].x = start[side].x;
+            trails[side][point].y = start[side].y;
+            trails[side][point].z = start[side].z;
+            trails[side][point].w = 0.0f;
+            trails[side][point].a = 0xFF - point * 0x15;
         }
     }
     _fadeEffect_AdjustParms();

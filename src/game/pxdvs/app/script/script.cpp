@@ -525,7 +525,7 @@ s32 scriptCatchPokemon(s32 kind)
         s32 slot = hero->pokemonGet(&param, true);
         if (param.shadowPokemonDataID) {
             bool found;
-            Pokemon* pokemon = hero->getPokemon((s16)slot, found);
+            Pokemon* pokemon = hero->getPokemon(slot, found);
             DarkPokemon* dark = pokemon->getDarkPokemon();
             if (dark) {
                 dark->setCatchBallID(4);
@@ -949,13 +949,14 @@ extern "C" {
 
 s32 floorEventCtrlElevatorHero(s32 floorID, u32 doorIndex, u16 mode, u32 type)
 {
+    GSpart* part2;
     FloorDoor* door;
     _GSmodel* model;
     s16 anim;
     f32 frame = 0.0f;
-    s32 group;
-    GSpart* part;
     s32 sound;
+    GSpart* part;
+    s32 group;
     anim = -1;
     getHeroPtr__4HeroFv();
     if (doorIndex >= *floor_door_list_number) {
@@ -1000,7 +1001,7 @@ s32 floorEventCtrlElevatorHero(s32 floorID, u32 doorIndex, u16 mode, u32 type)
             peopleRotateToAngle(0, 100, 0.0f, 2.0f);
         } else {
             peopleDetach(0, 100, 0);
-            GSpart* part2 = GSmodelGetPart(model, door->part);
+            part2 = GSmodelGetPart(model, door->part);
             GSpartGetTransform(part2, &pos, 0, 0);
             GSpartFree(part2);
             target = pos;

@@ -28,7 +28,7 @@ void* savedataGetStatus(void*, u16);
 Pokemon* heroBiosGetPokemonPtr(void* hero, u16 index);
 u32 heroGetPokeomCount(void* hero);
 u8 pokemonCheckValid(Pokemon*);
-u32 pokemonBiosGetDp(Pokemon*);
+s32 pokemonBiosGetDp(Pokemon*);
 bool pokemonBiosGetDarkFlag(Pokemon*);
 u16 pokemonBiosGetDarkpokemonDataId(Pokemon*);
 u16 pokemonBiosGetHp(Pokemon*);
@@ -134,6 +134,7 @@ void sodateyaReclaim(s32 slot) {
 }
 
 void sodateyaRaise(s32 slot) {
+    Pokemon* cur;
     Pokemon* poke;
     void* hero;
     u32 count;
@@ -186,7 +187,7 @@ void sodateyaRaise(s32 slot) {
         int i = slot;
         int end = count - 1;
         for (; i < end; i++) {
-            Pokemon* cur = heroBiosGetPokemonPtr(hero, i);
+            cur = heroBiosGetPokemonPtr(hero, i);
             poke = heroBiosGetPokemonPtr(hero, i + 1);
             if (!pokemonCheckValid(poke)) {
                 break;
@@ -273,9 +274,9 @@ static inline void reliveEvent(Pokemon* p) {
 }
 
 static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
-    u16 progress;
     u16 i;
     void* hero = savedataGetStatus(0, 2);
+    u16 progress;
     if (hero != 0) {
         for (i = 0; i < 6; i++) {
             Pokemon* p = heroBiosGetPokemonPtr(hero, i);
@@ -326,7 +327,7 @@ static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
             u16 dark = 0;
             if (np != 0) {
                 dark = getDarkId(np, mode);
-                if (dark != 0 && darkPokemonBiosGetReliveFlag(dark)) {
+                if (dark != 0 && darkPokemonBiosGetReliveFlag((u8)dark)) {
                     dark = 0;
                 }
             }

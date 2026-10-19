@@ -1055,7 +1055,7 @@ s32 AppScript::execExtendGlobalFunction(int function, GSscript::tigaVariant* arg
     GSresID* res;
     switch (function) {
     case 0x81: {
-        u32 id = args[0].getInteger();
+        int id = args[0].getInteger();
         if (id != 0 && id <= *flag_data_number) GSflagOn(id);
         break;
     }

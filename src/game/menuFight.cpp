@@ -1127,11 +1127,11 @@ s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
         } else if (isImasugu()) {
             u32 base = fightFloorGetStatus(0, 0, 0x35, 0);
             if (fightFloorGetFightOutPokemonPtrToFightTrainerPtr(fightFloorGetNowPtr(), (void*)arg->user) == (void*)(base + 0x64)) {
-                id = 0xa0;
                 other = 0xa2;
+                id = 0xa0;
             } else {
-                id = 0xa3;
                 other = 0x9f;
+                id = 0xa3;
             }
             result = menuOpenCustom(id, 0, b, 0, c, 1, arg);
             menuCloseCustom(id, 2, c);
@@ -1953,6 +1953,9 @@ void menuFightCurIkousan(void)
 void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
 {
     static s32 waza_no[2] = { -1, -1 };
+    WindowKeyInfo* key;
+    s32 sel;
+    tagWINDOW_WORK* w;
     tagWINDOW_WORK* w1;
     tagWINDOW_WORK* w2;
     {
@@ -2013,7 +2016,6 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
     }
     {
         WazaAlloc* alloc;
-        WindowKeyInfo* key;
         s32 sel;
         void* pk;
         u16 stick2;
@@ -2099,8 +2101,8 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
             alloc = (WazaAlloc*)windowGetAllocPtr(w2);
             pk = fightOutPokemonGetPokemonPtr(alloc->fightOut);
             key = windowGetPortKeyInfo(1);
-            stick = _menuFightGetRightStickInfo(0, 1);
             stick2 = _menuFightGetRightStickInfo(0, 0);
+            stick = _menuFightGetRightStickInfo(0, 1);
             if (menuIsCheck(0x9f)) {
                 if (!(key->press & 0x40)) {
                     menuClose(0x9f);
@@ -2154,9 +2156,9 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
         }
     }
     {
-        s32 sel;
-        WindowKeyInfo* key;
         u16 left;
+        WindowKeyInfo* key;
+        s32 sel;
         TargetArg* arg;
         sel = -1;
         if (menuIsCheck(0xa3)) {
@@ -2202,9 +2204,7 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
         }
     }
     {
-        s32 sel;
         u16 left;
-        tagWINDOW_WORK* w;
         TargetArg* arg;
         WindowKeyInfo* key;
         sel = -1;
@@ -2554,7 +2554,7 @@ void menuFightDrawSecretWazaDoc(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
                     case 0x26e: {
                         s16 x = (s16)(GSmsgGetRect(0x42d1) >> 16);
                         s16 w = sprite->w - x;
-                        s16 half;
+                        s32 half;
                         GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0, 0, color, 0x42d1);
                         half = (w - (s16)(GSmsgGetRect(0x42c4) >> 16)) / 2;
                         GSmsgPrint2(winSpriteGetLayerID(window, sprite), x + half, 0, color, 0x42c4);
@@ -3694,8 +3694,8 @@ void menuFightDrawTimer(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     case 0xac: {
         s32 sec = windowGetParam(window, 0);
         s32 min = sec / 60;
-        buff[2] = 0;
         buff[0] = half_digit_code[min / 10];
+        buff[2] = 0;
         buff[1] = half_digit_code[min % 10];
         msgctrlSetValue(0x37, (u32)buff);
         GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0, 0, menuSubCalcColor(window, sprite), 0x4276);
@@ -3704,8 +3704,8 @@ void menuFightDrawTimer(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     case 0xad: {
         s32 sec = windowGetParam(window, 0);
         s32 s = sec % 60;
-        buff[2] = 0;
         buff[0] = half_digit_code[s / 10];
+        buff[2] = 0;
         buff[1] = half_digit_code[s % 10];
         msgctrlSetValue(0x37, (u32)buff);
         GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0, 0, menuSubCalcColor(window, sprite), 0x4276);

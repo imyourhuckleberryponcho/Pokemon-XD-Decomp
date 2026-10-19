@@ -283,6 +283,7 @@ static inline void PlaceModel(ModelSequence* m, GSvec* pos, GSvec* rot, u8 mirro
 }
 
 void battleGridUpdate(void) {
+    u16 i;
     u16 count = gBattleGrid.count;
     BattleGridEntry* g = gBattleGrid.entries;
     wazaSequenceSysGetActiveWazaNum();
@@ -296,15 +297,14 @@ void battleGridUpdate(void) {
         f32 depthScale;
         f32 soloOffset;
         f32 pairOffset;
-        u16 i;
         GSvec pos;
         GSvec rot;
         GSvec slotPos;
         GSvec pairPos;
         bool found;
-        u16 a;
-        u16 b;
         BattleGridEntry* e;
+        u16 b;
+        u16 a;
 
         g_max_model_size = -2;
         found = false;

@@ -1200,7 +1200,7 @@ u8 fightTrainerCheckTrainerDataIdValid(u16 id, s32 allowNoAi) {
 
 u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon, u32 unused, u16 darkId, u16 encountId) {
     u16 rndKinds[6] = {0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
-    u16 effortKinds[6] = {0x8D, 0x8E, 0x8F, 0x90, 0x91, 0x92};
+    s8 sex;
     u8 statusRnd[6];
     u8 statusEffort[6];
     u16 waza[4];
@@ -1209,18 +1209,18 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     Hero* save;
     u8 fightKind;
     u16 pokemonId;
-    u8 random;
+    u32 heroRnd;
     u8 level;
-    u8 friendLevel;
-    s8 sex;
+    u32 friendLevel;
+    u16 effortKinds[6] = {0x8D, 0x8E, 0x8F, 0x90, 0x91, 0x92};
     s8 seikaku;
     u8 tokusei;
     u16 item;
     u8 combo;
     u8 i;
     DarkPokemon* dark;
-    u16 floorId;
-    u32 heroRnd;
+    u32 floorId;
+    u8 random;
     u16 total;
     u16 tries;
     u8 j;
@@ -1353,17 +1353,17 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     for (i = 0; i < 4; i++) {
         w = waza[i];
         if (w == 0 && wazaCheckDarkWaza(w) == 1 && w == 0x176 && w == 0x163) {
-            pokemonWazaInit(pokemon, i);
+            pokemonWazaInit(pokemon, (s32)i);
         } else {
-            pokemonWazaCreate(pokemon, i, w);
+            pokemonWazaCreate(pokemon, (u8)i, w);
         }
     }
     if (darkId != 0) {
         pokemonSetDarkPokemonStatus(pokemon, darkId);
         if (darkFlag == 0) {
             rnd = pokemonCreateRndFit(pokemon, -1, -1, 0, heroRnd);
-            darkPokemonBiosSetRnd(darkId, rnd);
             pokemon_SetRnd(pokemon, rnd);
+            darkPokemonBiosSetRnd(darkId, rnd);
             if (dark != 0) {
                 dark->setRnd(rnd);
             }
@@ -1606,10 +1606,10 @@ static void _fightTrainerCreateDeckBingo(u16 id, Hero* hero) {
     u16 waza;
     u8 tokusei;
     u8 hoseiVal;
-    u16 hosei;
     u32 pokemonRnd;
     u8 sex;
     u8 seikaku;
+    u16 hosei;
 
     trainerPokemonId = fightTrainerDB_GetTemotiPokemonId(id, 0);
     rnd = heroGetStatus(hero, 2, 0);
@@ -1693,19 +1693,19 @@ static void _fightTrainerCreateDeckVirtual(u16 id, Hero* hero, u16 encountId) {
 }
 
 static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
-    Pokemon pokemon;
+    u16 trainerPokemonId;
     u8 itemRnd = (u16)HSD_Rand() % 100;
     u16 floorId = fightFloor_GetFightFloorDataId(0);
-    s32 esabaIndex;
+    u8 slot;
     u16 pokemonId;
     u32 rnd;
-    u8 slot;
+    s32 esabaIndex;
     u8 k;
     EsabaPokemonTable* table;
-    u8 maxLevel;
+    u32 maxLevel;
     u8 minLevel;
-    u16 levelRnd;
-    u16 trainerPokemonId;
+    u32 levelRnd;
+    Pokemon pokemon;
     u16 item0;
     u16 item1;
 
@@ -1772,9 +1772,9 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
 }
 
 static void _fightTrainerCreateDeckNormal(u16 id, Hero* hero, u16 encountId) {
-    u8 hasDark;
-    u32 swapMode;
     u8 j;
+    u16 darkId;
+    u8 hasDark;
     u16 ballId;
     u16 swapDeck;
     DarkPokemon* dark;
@@ -1783,7 +1783,7 @@ static void _fightTrainerCreateDeckNormal(u16 id, Hero* hero, u16 encountId) {
     u8 i;
     u16 pokemonId;
     FIGHT_ENCOUNT* encount;
-    u16 darkId;
+    u32 swapMode;
 
     hasDark = 0;
     encount = fightEncountGetStrObj();
@@ -1800,7 +1800,7 @@ static void _fightTrainerCreateDeckNormal(u16 id, Hero* hero, u16 encountId) {
     swapId = swapDeck;
     for (j = 0;; j++) {
         if (swapMode == 2 && hasDark == 1) {
-            pokemonId = fightTrainerDB_GetTemotiPokemonId(swapId, j);
+            pokemonId = fightTrainerDB_GetTemotiPokemonId((u16)swapId, j);
             darkId = DeckTrainer::getDeckTrainerObj(swapId)->getDarkPokemonDataID(j);
         } else {
             pokemonId = fightTrainerDB_GetTemotiPokemonId(id, j);
@@ -1924,7 +1924,7 @@ extern "C" {
 void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* hero, u16 encountId) {
     u8 i;
     Hero* player;
-    u8 num;
+    u32 num;
     u8 fightKind;
     u32 sex;
     u8 maxLevel;

@@ -1,4 +1,4 @@
-// STATUS: all 40 functions written; see fcheck for the per-function state.
+// menuCB_Rule: all 40 functions match (linked).
 // Tool-battle rule checks (menuCBRule_*) for the Colosseum-style menus.
 #include <dolphin/types.h>
 
@@ -415,13 +415,8 @@ bool menuCBRule_CheckTrainerRegulationAt(Hero* hero, Pokemon* p, CBRule* rule, s
             }
         }
         return 1;
-    case 3: {
-        bool r = 0;
-        if (menuCBRule_CheckTrainerRegulation(hero, rule, 3) || !menuCBRule_IsBlankPokemon(p)) {
-            r = 1;
-        }
-        return r;
-    }
+    case 3:
+        return menuCBRule_CheckTrainerRegulation(hero, rule, 3) || !menuCBRule_IsBlankPokemon(p);
     }
     return 0;
 }
@@ -662,7 +657,7 @@ void menuCBRule_ParticipationPokemonMax(void) {
 }
 
 CBRule* menuCBRule_ConstantRule2(s32 type) {
-    u16* src = 0;
+    u16* src;
     int idx;
     switch (type) {
     case 0:
@@ -698,6 +693,11 @@ CBRule* menuCBRule_ConstantRule2(s32 type) {
         }
     }
     switch (type) {
+    case 0:
+    case 1:
+    case 2:
+        src = 0;
+        break;
     case 3:
         src = GSmsgGetGSchar(0x438A);
         break;
@@ -707,19 +707,14 @@ CBRule* menuCBRule_ConstantRule2(s32 type) {
     case 5:
         src = GSmsgGetGSchar(0x438C);
         break;
-    default:
-        src = 0;
-        break;
     }
-    for (int k = 0; k < 7; k++) {
-        for (int j = 0; j < 3; j++) {
-            if (src != 0) {
-                if (*src == 0xFFFF) src += 2;
-                ruleTempBuff.name[k][j] = *src;
-                if (*src != 0) src += 1;
-            } else {
-                ruleTempBuff.name[k][j] = 0;
-            }
+    for (int i = 0; i < 21; i++) {
+        if (src != 0) {
+            if (*src == 0xFFFF) src += 2;
+            ruleTempBuff.name[0][i] = *src;
+            if (*src != 0) src += 1;
+        } else {
+            ruleTempBuff.name[0][i] = 0;
         }
     }
     return &ruleTempBuff;

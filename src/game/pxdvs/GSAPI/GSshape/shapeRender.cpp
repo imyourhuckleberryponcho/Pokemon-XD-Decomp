@@ -536,8 +536,8 @@ bool GsShapeRender::LoadShapeRender(void* file) {
     u32* keyOffsets = (u32*)(base + ah->keyOffset);
     keyCount = ah->keyCount;
     keys = (GsKeyObject*)GSmemAlloc(anim->keyCount * 0x12C);
-    s32 maxUV_U = 0, maxUV_V = 0, maxTw = 0, maxGr = 0;
-    for (s32 i = 0; i < keyCount; i++) {
+    u32 maxUV_U = 0, maxUV_V = 0, maxTw = 0, maxGr = 0;
+    for (u32 i = 0; i < keyCount; i++) {
         GsKeyObject* key = &keys[i];
         key->entry = (tagGsFilePrimObjectEntry*)(base + keyOffsets[i]);
         key->frames = (tagGsFilePrimKeyFrame**)(base + key->entry->frameOffset);
@@ -686,8 +686,8 @@ bool GsShapeRender::LoadShapeRender(void* file) {
         s->texArray[1] = 0;
         s->texArray[2] = 0;
         s->texArray[3] = 0;
-        GSgfxVFInit((GSgfxVF*)s->vf, attrs[3], attrs[2], attrs[1], attrs[0]);
         GSgfxVFCreate((GSgfxVF*)s->vf);
+        GSgfxVFInit((GSgfxVF*)s->vf, attrs[3], attrs[2], attrs[1], attrs[0]);
         GSgfxVFSetElement((GSgfxVF*)s->vf, 9, 1, 4, 0);
         GSgfxVFSetElement((GSgfxVF*)s->vf, 0xB, 1, 5, 0);
         for (s32 k = 0; k < d->texCount; k++) {
@@ -767,6 +767,7 @@ void GsShapeRender::Update(f32 time, s16 id) {
         }
     }
     for (s32 i = 0; i < keyCount; i++) {
+        GSmtx* m;
         GsKeyObject* key = &keys[i];
         tagGsFilePrimObjectEntry* entry = key->entry;
         GsShapeObject* shape = &shapes[entry->shapeIndex];
@@ -858,13 +859,13 @@ void GsShapeRender::Update(f32 time, s16 id) {
             if (data->mode == 8 && k == 0) {
                 memcpy(&key->texMtx[k], &mtxIdent, 0x30);
             } else if (entry->texAnim[k] == 1) {
-                GsVec2 off = key->GetTextureOffset(a, b, t, k);
+                volatile GsVec2 off = key->GetTextureOffset(a, b, t, k);
                 f32 oy = off.v[1];
                 f32 ox = off.v[0];
-                GsVec2 scl = key->GetTextureScale(a, b, t, k);
+                volatile GsVec2 scl = key->GetTextureScale(a, b, t, k);
                 f32 sy = scl.v[1];
                 f32 sx = scl.v[0];
-                GSmtx* m = &key->texMtx[k];
+                m = &key->texMtx[k];
                 if (a->texAnim[k] != 0) {
                     if (info->kind == 0) {
                         m->m[0][0] = 0.0f;
@@ -943,8 +944,8 @@ void GsShapeRender::Render(s16 id, GSgfxLayerID layerID) {
     if (frame >= anim->frameCount) {
         return;
     }
-    GSmtx* camMtx;
     GSmtx* viewMtx;
+    GSmtx* camMtx;
     GSgfxLayer* layer = GSgfxLayerFindByID(layerID);
     f32 fov, aspect;
     f32 nearZ = 0.1f;

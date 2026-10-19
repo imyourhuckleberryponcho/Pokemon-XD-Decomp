@@ -100,10 +100,8 @@ static f32 _atable[3];
 extern "C" {
 
 void menuTitleOptionCtrl(tagWINDOW_WORK* w) {
-    CursorPos pos;
-
     menuTitleCursorAnimeMain();
-    pos = w->pos;
+    CursorPos pos = w->pos;
     switch (w->state) {
     case 0:
         if (w->seqSet == 0) {
@@ -270,13 +268,13 @@ void menuTitleOptionHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             }
             break;
         case 0x56:
-            sp->alpha = (s32)_atable[0];
+            sp->alpha = _atable[0];
             break;
         case 0x57:
-            sp->alpha = (s32)_atable[1];
+            sp->alpha = _atable[1];
             break;
         case 0x58:
-            sp->alpha = (s32)_atable[2];
+            sp->alpha = _atable[2];
             break;
         case 0x68:
             if (pos.y >= 0) {

@@ -74,7 +74,7 @@ u32 fightEncountDataBiosGetBgmSndId(FightEncountData* data);
 u16 fightEncountDataBiosGetDiskId(FightEncountData* data);
 u32 fightEncountDataBiosGetWipeId(FightEncountData* data);
 u16 fightEncountDataBiosGetFightTrainerDataId(FightEncountData* data, u8 index);
-u8 fightEncountDataBiosGetWipeSnapshotUse(FightEncountWipeData* data);
+bool fightEncountDataBiosGetWipeSnapshotUse(FightEncountWipeData* data);
 void* fightEncountDataBiosGetWipeFunction(FightEncountWipeData* data);
 f32 fightEncountDataBiosGetWipeEffectTime(FightEncountWipeData* data);
 u16 fightEncountDataBiosGetWipeEffectSndID(FightEncountWipeData* data);
@@ -177,18 +177,18 @@ u8 fightEncountCheckZenmetu(void) {
 u32 fightEncount(u16 id) {
     FIGHT_ENCOUNT* enc = fightEncountGetStrObj();
     FightEncountData* data;
-    u8 i;
-    void* fn;
+    u32 bgm;
+    Hero* hero;
     u16 floorId;
     u32 env;
-    u32 bgm;
+    u8 i;
     u8 kind;
     s32 cur;
     FightEncountWipeData* wipe;
-    u8 snapshot;
+    bool snapshot;
     u32 snd;
     u16 sndId;
-    Hero* hero;
+    void* fn;
     u8 index;
 
     enc->getField();
@@ -213,8 +213,8 @@ u32 fightEncount(u16 id) {
     floorId = fightFloorDB_GetFloorDataId(fightEncountDataBiosGetFightFloorDataId(data));
     mailMainReceiveTerminate();
     fightTrainerSetNameHearFlag(id);
-    bgm = soundGetBGMID();
     env = soundGetEnvID();
+    bgm = soundGetBGMID();
     soundOpenPlay(8, 1000, 0xFF);
     soundStopEnv(1000);
     if (kind == 15 && fightEncountDataBiosGetDiskId(fightEncountDataBiosGetPtr(id)) == 0) {

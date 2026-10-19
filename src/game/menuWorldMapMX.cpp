@@ -831,7 +831,7 @@ void WorldMap::SelectIcon(s32 sel) {
     f32 fov;
     f32 c;
     f32 b;
-    s16 idx = _cursor_index[sel];
+    s32 idx = _cursor_index[sel];
     WorldMapData* d = SearchData(idx);
     GetCameraData(d->camera, &pos, &a, &b, &c, &fov);
     PSVECAdd(&icons[idx].pos, &pos, &sum);
@@ -1005,10 +1005,12 @@ struct Mtx34 { f32 m[12]; };
 void WorldMap::CalcModel2D(f32 fov, bool init) {
     s32 i;
     s32 a;
-    s32 b;
-    f32 nk;
-    f32 k;
+    WorldMapIconWork* ia;
     void* camera = GSresGetResource(0, 0);
+    f32 nk;
+    f32 dist;
+    f32 k;
+    s32 b;
     void* view = GScameraGetMatrixPtr();
     Mtx34 proj;
     {
@@ -1037,11 +1039,10 @@ void WorldMap::CalcModel2D(f32 fov, bool init) {
     a = 0;
     while (a < GetDataNum()) {
         b = 0;
-        WorldMapIconWork* ia = &icons[a];
+        ia = &icons[a];
         while (b < GetDataNum()) {
             WorldMapIconWork* ib = &icons[b];
             if (a != b) {
-                f32 dist;
                 f32 ang;
                 if (GetFlagData(a) == 0 || GetFlagData(b) == 0) {
                     dist = 0.0f;
@@ -1081,7 +1082,7 @@ void WorldMap::CheckPadIndex(bool) {
     do {
         s32 a = 0;
         while (a < GetDataNum()) {
-            s32 dist[8];
+            int dist[8];
             s8 idx[8];
             s32 k;
             memset(dist, 0, 0x20);

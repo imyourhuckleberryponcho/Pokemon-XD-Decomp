@@ -314,11 +314,12 @@ s32 itemDecItemDataIdAry(ITEM* ary, u16 n, u16 id, u32 cnt, s16 slot, u16 unused
 }
 
 s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, u8 mode, u8 flag) {
+    ITEM* p;
     ITEM* ary = (ITEM*)aryv;
     if (ary == 0) return -1;
     if (!itemIdOk(id)) return -1;
     u16 c16 = cnt;
-    s32 rem = c16;
+    int rem = c16;
     u8 sort = 0;
     if (flag == 0) {
         ITEM* p = itemFindAny(ary, n, id);
@@ -339,7 +340,7 @@ s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, 
         }
     } else if (slot < 0) {
         do {
-            ITEM* p = itemFindNotFull(ary, n, id, max);
+            ITEM* p = itemFindNotFull(ary, n, (u16)id, max);
             if (p != 0) {
                 s32 r = itemAddOne(p, id, rem, max);
                 if (r < 0) return r;
@@ -354,7 +355,7 @@ s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, 
             }
         } while (rem > 0);
     } else {
-        ITEM* p = ary + slot;
+        p = ary + slot;
         rem = itemAddOne(p, id, c16, max);
     }
     if (sort == 1) _itemSortAry(ary, n, mode);
@@ -401,11 +402,12 @@ s32 itemSearchItemDataIdAry(void* aryv, u16 n, u16 id, u8 mode, u16 max) {
 static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
     if (ary != 0 && n != 0) {
         if (mode == 0 || mode == 1) {
+            ITEM* q;
             ITEM* p = ary;
             for (int i = 0; i < (int)(n - 1); i++, p++) {
                 if (!itemOk(p)) {
                     int j = i + 1;
-                    ITEM* q = ary + j;
+                    q = ary + j;
                     for (; j < (int)n; j++, q++) {
                         if (itemOk(q) == 1) {
                             itemSwapI(p, ary + j);

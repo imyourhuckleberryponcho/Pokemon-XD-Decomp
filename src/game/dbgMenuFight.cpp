@@ -507,17 +507,16 @@ static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon) {
     u8 spA;
     u8 sp9;
     u8 sp8;
-    u16 floorStatus;
+    u32 species;
     u8 level;
     void* trainer;
     void* pokemon;
     s32 result;
     void* outPokemon;
-    u16 species;
+    u16 floorStatus;
     void* seq;
     void* newSeq;
     u16 i;
-    u16 j;
 
     spB = 0;
     spA = 0;
@@ -565,8 +564,12 @@ static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon) {
                 fightMenuFightOutPokemonRenewStatusMenu(outPokemon, fightFloorGetStatus(0, 0, 0x14, 0), 1);
                 pokemonSetSequenceStatus(pokemon, pokemonGetStatus(outPokemon, 0, 0xEE, 0));
                 fightOutPokemonSetTokuseiDataId(outPokemon, pokemonGetTokuseiDataId(pokemon));
-                for (j = 0; j < 2; j++) {
-                    fightOutPokemonSetZokuseiDataId(outPokemon, j, pokemonGetStatus(0, species, 0x16, j));
+                {
+                    u32 i;
+                    for (i = 0; (u16)i < 2; i++) {
+                        u16 val = pokemonGetStatus(0, species, 0x16, i);
+                        fightOutPokemonSetZokuseiDataId(outPokemon, (u8)i, val);
+                    }
                 }
             }
         }

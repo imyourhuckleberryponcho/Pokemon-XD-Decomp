@@ -287,8 +287,8 @@ s32 esabaSet(s32 place) {
             GSflagSet(esabadata[place].flag8, 0);
         }
         fromBox = 0;
-        fromBag = 0;
         diff = num - orig;
+        fromBag = 0;
         if (diff != 0) {
             if (diff > 0) {
                 heroItemDecItemDataId(0, 0x1FF, (u16)diff, -1);
@@ -300,7 +300,7 @@ s32 esabaSet(s32 place) {
                 } else if (rest > 0) {
                     s32 left = rest;
                     fromBag = -(diff + rest);
-                    n = (u16)pcboxAddItem(0, 0x1FF, (u16)left);
+                    n = (u16)pcboxAddItem(0, 0x1FF, left);
                     if (n != 0) {
                         fromBox = left - n;
                     } else {
@@ -416,9 +416,9 @@ static void _esabaCallBackAppFunc(u16 place, FootStepCounter, long amount) {
     u32 mirabo = underTakerGetMiraboPlace();
     u32 table[3] = {0x5A, 0x5B, 0x5C};
     u32 total;
-    u32 stepB;
-    u32 limit;
     u32 mod;
+    u32 limit;
+    u32 stepB;
 
     if (mirabo == table[place]) {
         return;

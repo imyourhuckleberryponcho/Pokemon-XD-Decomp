@@ -711,10 +711,10 @@ static void _menuPdaDrawFace(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
 }
 
 static void _SelectCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s8 idx) {
-    GSvec2 buf[72];
+    s32 alpha;
     f32 half;
     GSgfxLayer* layer;
-    s32 alpha;
+    GSvec2 buf[72];
     s32 n;
     s32 i;
     MenuItem* item;
@@ -815,7 +815,7 @@ s32 menuPdaBackDrawTitleText(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             digit = value % 10;
             value /= 10;
             msgctrlSetValue(0x34, digit);
-            GSmsgPrint2(window->layer, x, 0, window->alpha | 0xFFFFFF00, 0x426F);
+            GSmsgPrint2(window->layer, (u16)x, 0, window->alpha | 0xFFFFFF00, 0x426F);
             x -= GSmsgGetRect(0x426F) >> 16;
         }
         break;

@@ -640,11 +640,11 @@ s32 menuUseItemSkill(u32 item, s32* consume) {
     s32 learned;
     u8* data = itemDataBiosGetPtr(item);
     u8 machine = itemDataBiosGetWazaMachineNo(data);
-    u16 waza = itemDataBiosGetWazaIDByWazaMachineNo(machine);
+    s32 msg;
     u32 hiden;
     s32 yn;
     s32 slot;
-    s32 msg;
+    u16 waza = itemDataBiosGetWazaIDByWazaMachineNo(machine);
     GSsndPlayNow(0x23);
     hiden = itemDataBiosGetHidenMachineNo(data);
     if ((u8)hiden != 0xFF) {
@@ -803,7 +803,7 @@ s32 menuUseItemBattleBall(u32 item, s32* consume) {
     Pokemon* pokemon;
     FightPokemon* fp;
     s32 empty = 0;
-    u32 stock = (u8)fightFloor_GetStockPokemonNum(0);
+    int stock = (u8)fightFloor_GetStockPokemonNum(0);
     int i;
     s8 boxes;
     u8 kind;
@@ -974,6 +974,8 @@ static void getLogMsgField(u16* out, int idx, ITEMUSE2POKEMON_LOG1* log, short n
         { 27, 0xC35D, -1 }, { 26, 0xC35E, -1 }, { 25, 0xC35F, -1 }, { 18, 0xC360, -1 }, { 29, 0xC360, -1 },
         { 23, 0xC361, -1 },
     };
+    int j2;
+    s32 kind;
     int j;
     int i;
     s16 a;
@@ -985,7 +987,7 @@ static void getLogMsgField(u16* out, int idx, ITEMUSE2POKEMON_LOG1* log, short n
         return;
     }
     for (i = 0; i < 21; i++) {
-        s32 kind = table[i].kind;
+        kind = table[i].kind;
         for (j = 0; j < n; j++) {
             if (kind == log[j].kind) {
                 break;
@@ -1006,7 +1008,6 @@ static void getLogMsgField(u16* out, int idx, ITEMUSE2POKEMON_LOG1* log, short n
     b = log[j].b;
     if (link >= 0) {
         int i2 = i + 1;
-        int j2;
         for (; i2 < 21; i2++) {
             if (table[i2].link >= 0 && link != table[i2].link) {
                 for (j2 = 0; j2 < n; j2++) {

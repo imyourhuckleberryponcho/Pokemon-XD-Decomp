@@ -388,8 +388,8 @@ void fadeFluidSetShockSecond(GSvec* position, f32 strength) {
     f32 edge, corner;
 
     _fadeFluidSetShockSub(x, y, strength);
-    corner = 0.25f * strength;
     edge = 0.5f * strength;
+    corner = 0.25f * strength;
     _fadeFluidSetShockSub(x - 1, y - 1, corner);
     _fadeFluidSetShockSub(x, y - 1, edge);
     _fadeFluidSetShockSub(x + 1, y - 1, corner);
@@ -402,8 +402,8 @@ void fadeFluidSetShockSecond(GSvec* position, f32 strength) {
 
 void fadeFluidEvaluateSecond(void) {
     FadeFluidWork* fluid = &_fadeFluidWork;
-    u32 rowStride = fluid->columns + 1;
     GSvec* source;
+    u32 rowStride = fluid->columns + 1;
     s32 x;
     s32 y;
     f32 accel = fluid->accel;

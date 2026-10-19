@@ -879,7 +879,6 @@ void floorLinkWithSE(u32 floorID, u32 posIndex, u32 se) {
     GSfloor_dd_* next;
     Hero* hero;
     GSfloor_dd_* cur;
-    u32 curGroup;
     if (floorID != 0) {
         _floorChangeInfo.prevFloorID = GSfloorGetCurrent();
         _floorChangeInfo.nextFloorID = floorID;
@@ -897,8 +896,7 @@ void floorLinkWithSE(u32 floorID, u32 posIndex, u32 se) {
         }
         cur = floorDataBiosGetPtr(GSfloorGetCurrent());
         next = floorDataBiosGetPtr(floorID);
-        curGroup = floorDataBiosGetFileGroupID(cur);
-        if (curGroup != floorDataBiosGetFileGroupID(next)) {
+        if (floorDataBiosGetFileGroupID(next) != floorDataBiosGetFileGroupID(cur)) {
             GSfsysPreRead(floorDataBiosGetFileGroupID(next));
         }
         u32 snd;
@@ -1189,12 +1187,15 @@ static void _floorInitTresure(GSfloor_dd_* floor) {
 }
 
 static void _floorInitMapFog(GSfloor_dd_* floor) {
+    u32 id;
+    u32 idx;
+    FogRange* range;
     GSgfxColAu8 zero = {0};
     u32 group;
     u32 mapRes;
     FogData* fog = 0;
-    GSgfxLayer* layerB;
     GSgfxLayer* layerA;
+    GSgfxLayer* layerB;
     switch (floorDataBiosGetFloorKind(floor)) {
     case 3:
     case 5:
@@ -1237,7 +1238,7 @@ static void _floorInitMapFog(GSfloor_dd_* floor) {
             default:
                 return;
             }
-            FogRange* range = fog->range;
+            range = fog->range;
             layerA->setFog(type, fog->start, fog->end, fog->color);
             layerB->setFog(type, fog->start, fog->end, fog->color);
             if (range != 0) {
@@ -1250,12 +1251,12 @@ static void _floorInitMapFog(GSfloor_dd_* floor) {
             layerA->fog(true);
             layerB->fog(true);
             GSgfxVideoSetClearColor(fog->color);
-            u32 idx = 0;
+            idx = 0;
             SceneData* scene = (SceneData*)HSD_ArchiveGetPublicAddress(GSresGetResource(group, mapRes), "scene_data");
             if (scene != 0 && scene->models != 0) {
                 u32 base = floorReadMakeModelResID(mapRes);
                 for (int i = 0; scene->models[i] != 0; i++, idx++) {
-                    u32 id = base | idx;
+                    id = base | idx;
                     void* model = GSresGetResource(group, id);
                     if (model != 0) {
                         s32 state = floorDataBiosModelIDGetFogState(id);
@@ -1851,7 +1852,7 @@ void floorMapResourceDataIterate(FloorMapCB cb, void* ctx) {
             if (scene->lights != 0) {
                 u32 base = floorReadMakeLightResID(mapRes);
                 for (int i = 0; scene->lights[i] != 0; i++, lightIdx++) {
-                    id = base | lightIdx;
+                    id = lightIdx | base;
                     void* res = GSresGetResource(group, id);
                     if (res != 0) {
                         cb(2, group, id, res, ctx);

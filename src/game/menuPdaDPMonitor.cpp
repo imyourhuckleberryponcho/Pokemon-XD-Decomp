@@ -1,5 +1,8 @@
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
+// Non-volatile view of the GX write-gather FIFO: the original kept constants in
+// registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
+#define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 
 // Menu files were built without the peephole optimizer.
 #pragma peephole off
@@ -102,14 +105,14 @@ public:
 };
 
 static inline void dpmVertex(tagWINDOW_WORK* window, s16 x, s16 y, f32 u, f32 v) {
-    GXWGFifo.s16 = x;
-    GXWGFifo.s16 = y;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = 0xFF;
-    GXWGFifo.u8 = window->alpha;
-    GXWGFifo.f32 = u;
-    GXWGFifo.f32 = v;
+    GXFifoNV.s16 = x;
+    GXFifoNV.s16 = y;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = 0xFF;
+    GXFifoNV.u8 = window->alpha;
+    GXFifoNV.f32 = u;
+    GXFifoNV.f32 = v;
 }
 
 class menuPdaDPM {
@@ -326,6 +329,7 @@ void menuPdaDPM::Ctrl(tagWINDOW_WORK* window) {
 
 void menuPdaDPM::Cursor(tagWINDOW_WORK* window) {
     windowGetKeyInfo();
+    s8 last;
     CURSOR* c = window->contents->cursor;
     int n = menuPdaDPMListGetDPNum();
     int visible = 10;
@@ -356,7 +360,7 @@ void menuPdaDPM::Cursor(tagWINDOW_WORK* window) {
             c->pos = 0;
         }
     } else if (pos >= visible) {
-        s8 last = visible - 1;
+        last = visible - 1;
         c->top += pos - last;
         c->pos = last;
         if (c->top + c->pos >= n) {

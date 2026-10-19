@@ -959,7 +959,7 @@ s16 fightMenuFightTrainerGcHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, 
 static u8 _fightMenuFightTrainerGcHeroOpenMenuSubItem(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id)
 {
     u16 item;
-    u8 slot;
+    u32 slot;
     u16 i;
     FightOutPokemon* op;
     u16 seq;
@@ -1039,8 +1039,8 @@ static u8 _fightMenuFightTrainerGcHeroOpenMenuSubItem(FIGHT_TRAINER* trainer, Fi
             if (fightTrainerIsSelectedItemBall(trainer) != 1) {
                 FightOutPokemon* sel = _fightMenuFightTrainerGcHeroOpenMenuSubBallSelectTargetPokemon(p, item, id);
                 if (sel != 0) {
-                    flag = 0;
                     relId = fightTargetGetTragetPtrToRelativeHostSideFightTargetId(sel, id);
+                    flag = 0;
                     break;
                 }
             }

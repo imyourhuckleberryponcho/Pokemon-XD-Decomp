@@ -170,10 +170,10 @@ static inline f32 bezier(const f32* pts, u8 count, f32 t) {
 bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePrimObjectEntry* entry, u8 count,
                                  const u8* order, const tagGsFilePrimKeyFrame* a,
                                  const tagGsFilePrimKeyFrame* b, f32 t) const {
-    f32 rot[3];
-    f32 pivot[3];
+    volatile f32 rot[3];
+    volatile f32 pivot[3];
     f32 trans[3];
-    f32 scale[3];
+    volatile f32 scale[3];
     f32 it = 1.0f - t;
     int i;
     for (i = 0; i < 3; i++) {

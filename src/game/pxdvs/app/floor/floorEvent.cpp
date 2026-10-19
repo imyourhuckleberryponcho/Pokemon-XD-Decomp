@@ -531,6 +531,7 @@ s32 floorEventCtrlElevator(s32 floor, u32 index, u16 command, s32 group, s32 per
 }
 
 s32 floorEventCtrlDoor(s32 floor, u32 index, u8 mode) {
+    u32 savedB;
     FloorEventDoor* door;
     _GSmodel* model;
     s16 animation = -1;
@@ -669,13 +670,13 @@ s32 floorEventCtrlDoor(s32 floor, u32 index, u8 mode) {
         u32 savedHero = peopleGetFlags(0, 0x64);
         u32 savedPartner = peopleGetFlags(0, 0x65);
         u32 savedA = peopleGetFlags(0, 0x69);
-        u32 savedB = peopleGetFlags(0, 0x68);
+        savedB = peopleGetFlags(0, 0x68);
         heroMoveInitEvent();
         _floorEventWaitMotion(model);
         heroMoveTermEvent();
-        peopleSetFlags(0, 0x64, savedHero);
-        peopleSetFlags(0, 0x65, savedPartner);
-        peopleSetFlags(0, 0x69, savedA);
+        peopleSetFlags(0, 0x64, (u16)savedHero);
+        peopleSetFlags(0, 0x65, (u16)savedPartner);
+        peopleSetFlags(0, 0x69, (u16)savedA);
         peopleSetFlags(0, 0x68, savedB);
         break;
     }

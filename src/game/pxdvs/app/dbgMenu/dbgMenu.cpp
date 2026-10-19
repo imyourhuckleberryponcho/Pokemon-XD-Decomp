@@ -345,7 +345,7 @@ static s32 _dbgMenuGetMsgID(tagWINDOW_WORK* window, s32 index) {
 }
 
 static s32 _dbgMenuGetItemNo(tagWINDOW_WORK* window, s32 index) {
-    s32 depth;
+    int depth;
     s32 base;
     s32 item;
     tagWINDOW_WORK* parent;

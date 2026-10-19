@@ -296,6 +296,8 @@ void fightMain(void) {
             fightTimerAllInit();
             fightTimerAllStart();
         }
+        u8* turn = fight_action_data_turn;
+        FightActionWork* act = &fight_action;
         while (fightGetFightResultId() == 0) {
             fightMainDebugMenu();
             if (fightGetFightResultId() == 0) {
@@ -331,7 +333,7 @@ void fightMain(void) {
                         fightMainWaitFrame(0x258);
                     }
                     fightActionDispFifoAll();
-                    fightActionCreateAndFlowFifo(&fight_action, 0, 0, 7, 0, fight_action_data_turn);
+                    fightActionCreateAndFlowFifo(act, 0, 0, 7, 0, turn);
                     while (1) {
                         if (menuFightChkSeq() == 0) {
                             break;
@@ -348,11 +350,16 @@ void fightMain(void) {
                         fightTimerCommandTerminate();
                     }
                     fightSeqCheckZenmetu();
-                    if (fightGetFightResultId() == 0) {
-                        fightActionCreateAndFlowFifo(&fight_action, 0, 0, 0xB, 0, fight_action_data_turn);
-                        if (fightGetFightResultId() == 0) {
-                            fightActionCreateAndFlowFifo(&fight_action, 0, 0, 0xD, 0, fight_action_data_turn);
-                        }
+                    if (fightGetFightResultId() != 0) {
+                        break;
+                    }
+                    fightActionCreateAndFlowFifo(act, 0, 0, 0xB, 0, turn);
+                    if (fightGetFightResultId() != 0) {
+                        break;
+                    }
+                    fightActionCreateAndFlowFifo(act, 0, 0, 0xD, 0, turn);
+                    if (fightGetFightResultId() != 0) {
+                        break;
                     }
                 }
             }

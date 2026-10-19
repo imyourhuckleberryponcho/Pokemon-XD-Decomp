@@ -442,25 +442,25 @@ static inline void DoTracked(GSvec* t, GSvec* a, GSvec* b, f32 fov) {
 static void _battleCameraStartRandom(ModelSequence* seq) {
     wazaSequenceCameraParams params;
     GSvec cur;
-    GSvec t;
-    GSvec b;
     GSvec a;
-    bool isTrainer;
+    GSvec b;
+    GSvec t;
+    int pattern;
     u8 nonTrainerActive;
     int flags;
-    int pattern;
+    bool isTrainer;
     bool again;
     f32 dir;
     f32 d1;
     f32 d0;
-    f32 dist1;
+    f32 dur;
     f32 dist2;
     f32 height;
     f32 rot1;
     f32 rot2;
     f32 fov1;
     f32 fov2;
-    f32 dur;
+    f32 dist1;
     f32 r;
     f32 lowA, highA, lowB, highB;
     static u8 old_pos_pattern[2] = {12, 12};
@@ -786,7 +786,7 @@ void battleCameraStartWaza(WazaSequence* waza) {
                     reverse = true;
                 }
                 if (waza->resource != 0 && GSresGetResource(20000, waza->resource) != 0) {
-                    flags = 0;
+                    u8 flags = 0;
                     if (reverse) {
                         flags = 4;
                     }
