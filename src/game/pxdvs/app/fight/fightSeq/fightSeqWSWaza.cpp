@@ -153,7 +153,7 @@ s32 fightOutPokemonGetJoutaiMigawariHp(FightOutPokemon*);
 
 u8 fightActionCreate(FightAction*, void*, FightOutPokemon*, u8, u8, void*);
 void fightActionBiosSetBuffDataPtr(FightAction*, void*);
-void fightActionFlowFifo(FightAction*);
+u8 fightActionFlowFifo(FightAction*);
 u8 fightActionCheckValid(FightAction*);
 void* fightActionBiosGetFightActionDataPtr(FightAction*);
 
@@ -984,14 +984,13 @@ static u8 _fightSeqInitSubFightOutPokemon(void* pokemonPtr, u16 fightType, void*
 
 extern "C" {
 
-void fightSeqFightActionCreateAndFlowFifo(void* a, FightOutPokemon* pokemon, u8 kind, u8 b, void* data, void* buff) {
+u8 fightSeqFightActionCreateAndFlowFifo(void* a, FightOutPokemon* pokemon, u8 kind, u8 b, void* data, void* buff) {
     FightAction action;
-
-    switch (fightSeqFightActionCreate(&action, a, pokemon, kind, b, data, buff)) {
-    case 1:
-        fightActionFlowFifo(&action);
-        break;
+    u8 r = fightSeqFightActionCreate(&action, a, pokemon, kind, b, data, buff);
+    if (r != 1) {
+        return r;
     }
+    return fightActionFlowFifo(&action);
 }
 
 #pragma peephole off

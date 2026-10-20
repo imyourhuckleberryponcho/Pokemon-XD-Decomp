@@ -404,12 +404,11 @@ static void _controlCursor() {
             }
         }
         if (((s32) (temp_r3 & 1) != 0) && (((s16) M2C_FIELD(&Data, s16 *, 0xE) > 0) || (M2C_FIELD(&Data, s32 *, 0xC) > 0))) {
-            temp_r3_4 = M2C_FIELD(&Data, s16 *, 0xE) - 1;
-            M2C_FIELD(&Data, s16 *, 0xE) = temp_r3_4;
-            if (temp_r3_4 < 0) {
-                M2C_FIELD(&Data, s16 *, 0xE) = 0;
+            M2C_FIELD(&Data, s16 *, 0xE)--;
+            if (M2C_FIELD(&Data, s16 *, 0xE) < 0) {
                 var_r29 = 0x10;
                 M2C_FIELD(&Data, s32 *, 0xC) = (M2C_FIELD(&Data, s32 *, 0xC) - 1);
+                M2C_FIELD(&Data, s16 *, 0xE) = 0;
                 M2C_FIELD(&Data, s8 *, 0x14) = 1;
             } else {
                 var_r29 = 0x10;

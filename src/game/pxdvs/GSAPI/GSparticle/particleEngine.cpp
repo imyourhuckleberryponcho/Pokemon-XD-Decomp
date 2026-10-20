@@ -968,9 +968,9 @@ s32 particleEnginePrepareUpdate(u32 p0) {
     sp68 = sp38;
     sp6C = sp3C;
     sp70 = sp40;
-    PSMTXCopy((const Mtx)((s32) &sp44), (Mtx)((s32) &sp74));
     temp_r3 = (Vec *)(&g_particle_debug_stats + 0x3C);
     temp_r28 = (Vec *)(&g_particle_debug_stats + 0x48);
+    PSMTXCopy((const Mtx)((s32) &sp44), (Mtx)((s32) &sp74));
     M2C_FIELD(&g_particle_debug_stats, f32 *, 0x48) = sp74;
     M2C_FIELD(temp_r28, f32 *, 4) = sp84;
     M2C_FIELD(temp_r28, f32 *, 8) = sp94;
@@ -982,10 +982,10 @@ s32 particleEnginePrepareUpdate(u32 p0) {
     M2C_FIELD(&g_particle_debug_stats, f32 *, 0x48) = (f32) -M2C_FIELD(&g_particle_debug_stats, f32 *, 0x48);
     M2C_FIELD(temp_r28, f32 *, 4) = (f32) -M2C_FIELD(temp_r28, f32 *, 4);
     M2C_FIELD(temp_r28, f32 *, 8) = (f32) -M2C_FIELD(temp_r28, f32 *, 8);
+    M2C_FIELD(temp_r4, f32 *, 4) = spC;
     PSVECCrossProduct((const register Vec*)(temp_r28), (const register Vec*)(&g_particle_debug_stats + 0x3C), (register Vec*)(&unksp8));
     temp_r4 = (unsigned char *)(&g_particle_debug_stats + 0x30);
     M2C_FIELD(&g_particle_debug_stats, f32 *, 0x30) = unksp8;
-    M2C_FIELD(temp_r4, f32 *, 4) = spC;
     M2C_FIELD(temp_r4, f32 *, 8) = sp10;
     return 1;
 }

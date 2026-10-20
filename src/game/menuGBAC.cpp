@@ -270,11 +270,11 @@ static s32 _waitComplete(_GBA_Connect_WORK* work)
 
 static u8 _checkDisconnect(_GBA_Connect_WORK* work)
 {
-    s32* p = work->phase.v;
-    u8* port = _menu_ports;
-    s32 i = 0;
+    s32* p;
+    u8* port;
+    s32 i;
     u8 result = 0;
-    for (; i <= 3; p++, port++, i++) {
+    for (i = 0, p = work->phase.v, port = _menu_ports; i <= 3; p++, port++, i++) {
         if (*p == 5 || *p == 4) {
             if (!gbaCommandIsConnected(i + 1)) {
                 menuSetEnablePort(menuGetEnablePort() & ~*port);

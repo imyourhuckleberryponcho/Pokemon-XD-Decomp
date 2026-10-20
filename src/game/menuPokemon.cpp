@@ -125,7 +125,7 @@ void menuSubSleep(f32);
 tagWINDOW_WORK* windowSearchID(s32);
 void fadeSet(s32, f32);
 void fadeCheck(s32);
-void pokemonToMenuPokemonStatus(Pokemon*, void*, MENU_POKEMON_STATUS_TBL*, u8);
+void pokemonToMenuPokemonStatus(Pokemon*, void*, MENU_POKEMON_STATUS_TBL*, u32);
 u16 pokemonGetJoutaiMenuSpriteId(Pokemon*);
 u8 pokemonCheckValid(Pokemon*);
 Pokemon* heroBiosGetPokemonPtr(void*, u16);
@@ -1343,7 +1343,8 @@ static Pokemon* _menuPokemonStatusCB(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type
     s8 cur = _menuPokemon.sel;
     switch ((s32)type) {
     case 1:
-        next = cur - 1;
+        next = cur;
+        next -= 1;
         break;
     case 2:
         next = 1;

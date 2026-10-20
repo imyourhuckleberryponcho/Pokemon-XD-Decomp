@@ -336,14 +336,14 @@ void peDistortionContainer::Render() {
     GSgfxVF *var_r31;
     s32 temp_cr0_eq;
     s32 temp_r0;
-    s32 var_r7;
+    u8 *temp_r4_2;
     s32 var_r8;
     u32 temp_r31;
     u32 temp_r4;
     s32 temp_r0_2;
     u8 var_r0;
     u8 *temp_r29;
-    u8 *temp_r4_2;
+    s32 var_r7;
 
     if (M2C_FIELD(this, u8 *, 0x19)) {
         if (canRender(this)) {
@@ -391,9 +391,9 @@ void peDistortionContainer::Render() {
             if (temp_r31 & 0x40) {
                 var_r8 = 2;
             }
-            var_r7 = 0;
             var_r7 = !(temp_r31 & 0x20) ? var_r7 : 2;
             particleEngineSetupTexture(0, M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 *, 0x60), temp_r31 & 3, (temp_r31 >> 2U) & 3, var_r7, var_r8);
+            var_r7 = 0;
             temp_r0_2 = M2C_FIELD(this, u8 *, 0x21);
             temp_r4_2 = (unsigned char *)(this + ((temp_r0_2 * 0x10) + 0x28));
             temp_r29 = M2C_FIELD((this + (temp_r0_2 * 4)), u8 **, 0x48);
@@ -633,7 +633,7 @@ peDistortionContainer::peDistortionContainer(peEmitterNode* p0, _peDistortion* p
 #pragma pop
 }
 void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, char* p2, float p3) {
-    s32 sp18;
+    u32 temp_r31;
     s32 sp1C;
     s32 sp20;
     s32 sp28;
@@ -746,7 +746,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
     s32 var_r0;
     u32 temp_r26;
     u32 temp_r26_2;
-    u32 temp_r31;
+    s32 sp18;
     u8 *temp_r27;
 
     temp_r5 = M2C_FIELD(this, Vec **, 0x20);

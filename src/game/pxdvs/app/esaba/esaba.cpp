@@ -433,7 +433,8 @@ static void _esabaCallBackAppFunc(u16 place, FootStepCounter, long amount) {
             _esabaAppearPokemon(place);
         } else {
             limit = esabaappdata->stepMax;
-            stepB = amount + GSflagGet(esabadata[place].flag8);
+            stepB = GSflagGet(esabadata[place].flag8);
+            stepB += amount;
             if (stepB >= limit) {
                 mod = esabaappdata->randMod;
                 if ((u16)HSD_Rand() % (s32)mod == 0) {

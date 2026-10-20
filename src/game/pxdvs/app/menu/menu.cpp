@@ -730,22 +730,21 @@ void menuButtonNormal(MenuWindow* node) {
 
 // Move cursor to nearest selectable item
 void menuCursorNormal(MenuWindow* window, u8 useSub) {
+    MenuItem* current;
+    int right;
+    int left;
+    int down;
+    int up;
     s8 index;
-    s32 cross;
-    s32 best;
-    s32 up;
-    s32 down;
+    int xRange;
+    int yRange;
+    MenuData* data;
     u16 wrap;
-    const MenuData* data;
-    s32 left;
     u16 keys;
-    u32 on;
-    s32 xRange;
-    const MenuItem* current;
-    const MenuItem* item;
-    s32 yRange;
-    s32 delta;
-    s32 right;
+    int best;
+    int cross;
+    MenuItem* item;
+    int delta;
 
     wrap = 0;
     if (window == NULL) {
@@ -765,8 +764,18 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
     xRange = 16;
     yRange = 12;
     keys = windowGetKeyInfo()->rep;
-    on = windowGetKeyInfo()->on;
-    keys = keys | (useSub ? ((on & 0xF) ? 0 : windowGetKeyInfo2()->rep) : 0);
+    u16 on = windowGetKeyInfo()->on;
+    u16 add;
+    if (useSub) {
+        if ((on & 0xF) != 0) {
+            add = 0;
+        } else {
+            add = windowGetKeyInfo2()->rep;
+        }
+    } else {
+        add = 0;
+    }
+    keys |= add;
     up = keys & 1;
     down = keys & 2;
     left = keys & 4;

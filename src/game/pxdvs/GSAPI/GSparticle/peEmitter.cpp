@@ -801,7 +801,8 @@ block_8:
     if ((temp_r3 == NULL) || !(M2C_FIELD(temp_r3, u8 *, 0) & 3)) {
         var_f1 = 1.0f;
     } else {
-        var_f1_2 = M2C_FIELD((u16)temp_r3, f32 *, 8) - var_f31;
+        var_f1_2 = M2C_FIELD((u16)temp_r3, f32 *, 8);
+        var_f1_2 -= var_f31;
         if (var_f1_2 < 0.0f) {
             var_f1_2 = -var_f1_2;
         }
@@ -1246,7 +1247,7 @@ extern "C++" {
 void peEmitterNode::CreateParameters(unsigned short p0, float p1) {
     s32 unksp100;
     s32 sp10;
-    s32 sp14;
+    u8 *temp_r31;
     s32 sp1C;
     s32 sp20;
     s32 sp28;
@@ -1333,7 +1334,7 @@ void peEmitterNode::CreateParameters(unsigned short p0, float p1) {
     u16 temp_r3;
     s32 var_r27;
     u32 temp_r29;
-    u8 *temp_r31;
+    s32 sp14;
     u8 *temp_r3_4;
     u8 *temp_r3_5;
 

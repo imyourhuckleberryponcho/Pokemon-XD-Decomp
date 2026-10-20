@@ -1004,22 +1004,15 @@ int menuShopDrawHaveText2(tagWINDOW_WORK* w) {
 }
 extern "C" {
 int menuShopDrawHaveWaku(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
-    u8 mode = ((SHOP_MENU_ARG*)w->params[0])->mode;
-    bool show = false;
-    if (mode == 0 || mode == 1 || mode == 4 || mode == 6) {
-        show = true;
-    }
-    winSpriteSetDisp(sp, show);
+    SHOP_MENU_ARG* arg = (SHOP_MENU_ARG*)w->params[0];
+    winSpriteSetDisp(sp, arg->mode == 0 || arg->mode == 1 || arg->mode == 4 || arg->mode == 6);
     return 0;
 }
 }
 extern "C" {
 int menuShopDrawHaveWakuBack(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
-    bool show = false;
-    if (shopArg(w)->mode == 0 || shopArg(w)->mode == 1 || shopArg(w)->mode == 4 || shopArg(w)->mode == 6) {
-        show = true;
-    }
-    winSpriteSetDisp(sp, show);
+    SHOP_MENU_ARG* arg = (SHOP_MENU_ARG*)w->params[0];
+    winSpriteSetDisp(sp, arg->mode == 0 || arg->mode == 1 || arg->mode == 4 || arg->mode == 6);
     return 0;
 }
 }

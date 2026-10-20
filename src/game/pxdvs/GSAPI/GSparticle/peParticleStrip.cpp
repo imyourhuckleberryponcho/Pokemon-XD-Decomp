@@ -772,7 +772,7 @@ void peParticleStripNode::UpdateRenderData(peEmitterNode* p0, _peParticleStrip* 
     f32 sp48;
     f32 sp44;
     f32 sp40;
-    f32 sp3C;
+    volatile f32 sp3C;
     f32 sp38;
     f32 sp34;
     f32 sp30;
@@ -841,7 +841,7 @@ void peParticleStripNode::UpdateRenderData(peEmitterNode* p0, _peParticleStrip* 
     peColorSplineGetValue((u8*)(&sp1C), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 8)), p3);
     spA = sp1C;
     sp9 = sp1D;
-    sp1C = sp14;
+    if (sp1C < sp14) sp1C = sp14;
     sp8 = sp1E;
     sp1D = sp10;
     sp1E = spC;

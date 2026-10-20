@@ -228,8 +228,8 @@ static void SBscan(void) {
     }
     if (debugstep != 0x174B) {
         if (debugstep == 0x77F) return;
-        GSprimSetLineWidth(1.0f);
         lList[0] = 0;
+        GSprimSetLineWidth(1.0f);
         for (u32 i = 0; i < gVecDat.numStyles; i++) {
             calcVecRect(&vecRect, &gVecDat, i);
             lPoint[i].d = gVecDat;
@@ -237,7 +237,7 @@ static void SBscan(void) {
         u32* row = scanline_buffer[0];
         y = vecRect.y0;
         row = scanline_buffer[y];
-        for (; y <= vecRect.y1; y++, row += 0x50) {
+        for (; y <= vecRect.y1; row += 0x50, y++) {
             lPoint[3].n = 0;
             lPoint[2].n = 0;
             lPoint[1].n = 0;
@@ -344,7 +344,7 @@ static inline void buildGradient(VEC_GRAPH_DATA* d) {
 extern "C++" {
 static void SBdec(u32 p0, s16 p1, u32 p2) {
     s32 *var_r7;
-    s32 *var_r9;
+    u8 *var_r8;
     s32 *var_r9_2;
     s32 *var_r9_3;
     s32 temp_r0;
@@ -358,7 +358,7 @@ static void SBdec(u32 p0, s16 p1, u32 p2) {
     u8 *var_r10;
     u8 *var_r10_2;
     u8 *var_r10_3;
-    u8 *var_r8;
+    s32 *var_r9;
     u8 temp_r4;
     u8 temp_r4_2;
     u8 temp_r6;
@@ -442,7 +442,7 @@ static void SBdec(u32 p0, s16 p1, u32 p2) {
         temp_r0_3 = p1 * 8;
         var_r7 = (long *)(&bit_value);
         var_r8 = (unsigned char *)(lPoint);
-        var_ctr_4 = p2;
+        if (var_ctr_4 < p2) var_ctr_4 = p2;
         if (p2 > 0U) {
             do {
                 if ((u32) (p0 & M2C_FIELD(var_r7, s32 *, 0x60)) != 0) {
@@ -722,7 +722,7 @@ static void getUV(GSvec2* out, GSvec2* uv, GSvec2* pts, FLASHMATRIXF* mat, FLASH
 extern "C++" {
 #pragma peephole off
 static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
-    s32 sp18;
+    s32 var_ctr_2;
     s32 sp1C;
     s32 sp20;
     u8 sp34[4];
@@ -732,7 +732,7 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
     s32 sp24;
     s16 sp16;
     s16 sp14;
-    s16 sp12;
+    volatile s16 sp12;
     s16 sp10;
     s16 spE;
     s16 spC;
@@ -750,7 +750,7 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
     s32 temp_r0_3;
     s32 temp_r25;
     s32 temp_r9;
-    s32 var_ctr_2;
+    s32 sp18;
     s32 var_r20;
     s32 var_r31;
     s32 var_r4;
@@ -1133,9 +1133,10 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
                                     x = 0;
                                 break;
                             }
-                            u8* st = gVecDat.styles + (si << 7);
+                            u8* st = gVecDat.styles;
+                            st += (si << 7);
                             inLine = 1;
-                            rec = SpriteCode(a0, rec, (u16)((u16*)rec)[4], mat, (FLASHMATRIX*)(st + 0x68), x, y, &gVecDat, cx);
+                            rec = SpriteCode(a0, rec, (u16)((u16*)rec)[4], mat, (FLASHMATRIX*)(st + 0x68), (u16)x, y, &gVecDat, cx);
                         }
                     }
                 }
@@ -1192,7 +1193,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
                         bezPrev = bez;
                         if ((s16)bez.x < gVecDat.minX) gVecDat.minX = (s16)bez.x;
                         if ((s16)bez.x > gVecDat.maxX) gVecDat.maxX = (s16)bez.x;
-                        if ((s16)bez.y < gVecDat.minY) gVecDat.minY = (s16)bez.y;
+                        if (bez.y < gVecDat.minY) gVecDat.minY = (s16)bez.y;
                         if ((s16)bez.y > gVecDat.maxY) gVecDat.maxY = (s16)bez.y;
                     }
                     bez = seg[2];

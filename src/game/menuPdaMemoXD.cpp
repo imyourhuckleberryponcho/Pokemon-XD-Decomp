@@ -183,8 +183,8 @@ void menuPdaMemoBackHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     switch (sprite->id) {
     case 0xC4:
         if ((u16)menuPdaMemoXDGetItem() == 0) {
-            winSpriteSetDisp(sprite, 1);
             msgctrlSetValue(0x34, memoDataGetCount(0));
+            winSpriteSetDisp(sprite, 1);
         } else {
             winSpriteSetDisp(sprite, 0);
         }
@@ -227,7 +227,7 @@ void menuPdaMemoBackHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         break;
     default:
         if (sprite->id >= 0xBB) {
-            if ((u16)menuPdaMemoXDGetItem() == 1) {
+            if (menuPdaMemoXDGetItem() == 1) {
                 winSpriteSetDisp(sprite, 1);
             } else {
                 winSpriteSetDisp(sprite, 0);
@@ -822,7 +822,8 @@ void menuPdaMemoXD::Cursor(tagWINDOW_WORK* window) {
                 c->pos = 0;
             }
         } else if (pos >= visible) {
-            last = visible - 1;
+            last = visible;
+            last -= 1;
             c->top += pos - last;
             c->pos = last;
             if (c->top + c->pos >= count) {

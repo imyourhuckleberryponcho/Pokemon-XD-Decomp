@@ -453,13 +453,13 @@ u8* GSgfx_GCWriteCopyFilterDirect(u8* p, u8 aa, u8* pat, u8 vf, u8* vfilt) {
         ms.x2 = pat[j + 4];
         ms.y0 = pat[j + 1];
         ms.y1 = pat[j + 2];
-        ms.y2 = pat[j + 4];
         ms.id = i + 1;
         WrBP(p, RAW(ms));
+        ms.y2 = pat[j + 4];
     }
     co.c0 = vfilt[0];
-    co.c1 = vfilt[1];
     co.id = 0x53;
+    co.c1 = vfilt[1];
     co.c2 = vfilt[2];
     co.c3 = vfilt[3];
     WrBP(p, RAW(co));
@@ -781,7 +781,7 @@ static inline void WrIndTexMtx(u32 id, f32* m, s8 scale) {
 }
 
 void GSgfx_GCWriteTevIndTile(u32 stage, u8 indId, u16 sizeS, u16 sizeT, u16 spaceS, u16 spaceT, u32 fmt, s32 mtx,
-                             u8 bias, u32 alpha) {
+                             u32 bias, u32 alpha) {
     u32 ws, wt, id;
     f32 m[6];
     switch (sizeS) {
@@ -812,7 +812,7 @@ void GSgfx_GCWriteTevIndTile(u32 stage, u8 indId, u16 sizeS, u16 sizeT, u16 spac
     case 3: id = 6; break;
     }
     WrIndTexMtx(id, m, 10);
-    SetTevIndirect(stage, indId, fmt, bias, mtx, ws, wt, 0, 1, alpha);
+    SetTevIndirect(stage, (u16)indId, fmt, bias, mtx, ws, wt, 0, 1, alpha);
 }
 
 
@@ -822,7 +822,7 @@ void GSgfx_GCWriteIndTexMtx(u32 mtx, f32* m, s32 scale) {
     case 2: mtx = 3; break;
     case 3: mtx = 6; break;
     }
-    WrIndTexMtx(mtx, m, scale);
+    WrIndTexMtx((u16)mtx, m, scale);
 }
 
 void GSgfx_GCWriteTexCoordGen(u32 coord, s32 func, s32 src, u32 mtxIdx, u8 normalize, u32 postMtx) {

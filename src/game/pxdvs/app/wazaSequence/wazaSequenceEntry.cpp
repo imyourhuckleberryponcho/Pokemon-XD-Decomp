@@ -2331,9 +2331,9 @@ block_25:
         }
         var_r3 = 0;
         temp_f2 = (f32) M2C_FIELD(temp_r11, u8 *, 0);
+        M2C_FIELD(temp_r12, s8 *, 0x19) = (s8) ((var_f4 * ((f32) M2C_FIELD((u16)temp_r11, u8 *, 4) - temp_f2)) + temp_f2);
         temp_f5 = (f32) M2C_FIELD(temp_r11, u8 *, 1);
         temp_f2_2 = (f32) M2C_FIELD(temp_r11, u8 *, 2);
-        M2C_FIELD(temp_r12, s8 *, 0x19) = (s8) ((var_f4 * ((f32) M2C_FIELD(temp_r11, u8 *, 4) - temp_f2)) + temp_f2);
         temp_f2_3 = (f32) M2C_FIELD(temp_r11, u8 *, 3);
         M2C_FIELD(temp_r12, s8 *, 0x1A) = (s8) ((var_f4 * ((f32) M2C_FIELD(temp_r11, u8 *, 5) - temp_f5)) + temp_f5);
         M2C_FIELD(temp_r12, s8 *, 0x1B) = (s8) ((var_f4 * ((f32) M2C_FIELD(temp_r11, u8 *, 6) - temp_f2_2)) + temp_f2_2);
@@ -2359,7 +2359,8 @@ block_40:
         goto block_40;
     case 7:
         temp_r5_2 = M2C_FIELD(this, u32 *, 0x34);
-        temp_r0_2 = M2C_FIELD(this, u8 *, 0x3D) * 0x10;
+        temp_r0_2 = 0x10;
+        temp_r0_2 *= M2C_FIELD(this, u8 *, 0x3D);
         temp_f1_3 = *((u8 *)temp_r5_2 + temp_r0_2);
         M2C_FIELD(M2C_FIELD(this, GSeffect **, 0x30), u8 *, 0x18) = (f32) ((M2C_ERROR(/* Read from unset register $f3 */) * (M2C_FIELD((temp_r5_2 + temp_r0_2), f32 *, 4) - temp_f1_3)) + temp_f1_3);
         goto block_40;

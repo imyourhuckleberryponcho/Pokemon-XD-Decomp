@@ -1370,6 +1370,7 @@ u32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* p, u16 id, boo
 
 void fightMenuFightTrainerCloseStatusMenu(FIGHT_TRAINER* p, u16 id, s32 wait)
 {
+    extern void menuCloseCustom(u32, s32, s32);
     u32 menuId = fightMenuGetFightTrainerPtrToStatusMenuId(p, id);
     if (menuIsCheck(menuId)) {
         menuCloseCustom(menuId, 0, wait);
@@ -1384,15 +1385,12 @@ void fightMenuFightTrainerRenewStatusMenu(FIGHT_TRAINER* p, u16 id)
 }
 
 void fightMenuFightTrainerOpenStatusMenu(FIGHT_TRAINER* p, u16 id)
-{
-    MenuBallStatusArg arg;
-    MenuBallStatusArg status;
+{    MenuBallStatusArg status;
     u8 menuId = fightMenuGetFightTrainerPtrToStatusMenuId(p, id);
 
     fightTrainerToMenuBallStatus(p, &status);
     if (dbgMenuFightGetFightPokeStMenuOpenFlag() == 1 && menuFightChkOpenBall(menuId)) {
-        arg = status;
-        menuOpenCustom(menuId, 0, 0, 0, 0, 1, arg);
+        menuOpenCustom(menuId, 0, 0, 0, 0, 1, (MenuBallStatusArg)(status));
     }
 }
 

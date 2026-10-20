@@ -1856,7 +1856,8 @@ u8 fightSeqAttackPokemonJoutaiCheck(void) {
                     result = 2;
                 } else {
                     volatile u8 early = tokusei == 0x30;
-                    s8 now = fightOutPokemonGetNowKaisuuJoutaiDataId(p, 8) + (early + 1);
+                    s8 now = (early + 1);
+                    now += fightOutPokemonGetNowKaisuuJoutaiDataId(p, 8);
                     u16 cmpv = fightOutPokemonGetKaisuuJoutaiDataId(p, 8);
                     if (cmpv <= now) {
                         fightOutPokemonInitJoutaiDataId(p, 8);

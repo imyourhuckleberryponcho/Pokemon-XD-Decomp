@@ -325,6 +325,7 @@ void menuPdaDPM::Ctrl(tagWINDOW_WORK* window) {
 }
 
 void menuPdaDPM::Cursor(tagWINDOW_WORK* window) {
+    int prev;
     windowGetKeyInfo();
     s8 last;
     CURSOR* c = window->contents->cursor;
@@ -333,7 +334,8 @@ void menuPdaDPM::Cursor(tagWINDOW_WORK* window) {
     u16 key = windowGetKeyRepeat();
     s16 oldPos = c->pos;
     s16 oldTop = c->top;
-    int prev = oldPos + oldTop;
+    prev = oldPos;
+    prev += oldTop;
     if (n < 10) {
         visible = n;
     }

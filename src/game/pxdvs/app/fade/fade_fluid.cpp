@@ -249,7 +249,8 @@ void fadeFluidDispSecond(int layerID, GStexture* tex, f32 progress, f32 blend) {
     FadeFluidWork* work = &_fadeFluidWork;
     f32 xScale = work->xScale;
     f32 yScale = work->yScale;
-    u32 stride = work->columns + 1;
+    u32 stride = work->columns;
+    stride += 1;
     for (y = 0; y < work->rows; y++) {
         layer->primType = 0x98;
         layer->beginSurface(stride * 2);

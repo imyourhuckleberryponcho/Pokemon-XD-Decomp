@@ -1621,7 +1621,7 @@ inline void GSgfx_GCSetTevIndWarp(s32 stage, u8 indId, u8 signMod, u8 wrap, u8 m
     }
     int bias = 0;
     bias = !(signMod) ? bias : 7;
-    GSIndSet(stage, indId, 0, bias, mtx, w, w, 0, 0, 0);
+    GSIndSet(stage, (u16)indId, 0, bias, mtx, w, w, 0, 0, 0);
 }
 
 inline void GSgfx_GCSetTevIndirect(s32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, u8 ws, u8 wt, s32 addPrev, u8 utc, s32 alpha) {
@@ -1792,11 +1792,11 @@ void GSgfx_GCSetChanCtrl(s32 p0, u8 p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6) 
             var_r27 = 0;
         }
         *(s8 *)0xCC008000 = 0x10;
+        *((u8 *)temp_r11 + temp_r12_2) = p1;
         *(s8 *)0xCC008000 = 0;
         *(s8 *)0xCC008000 = (s16) ((p0 & 3) + 0x100E);
         temp_r12_2 = p0 * 0x18;
         *(s8 *)0xCC008000 = (s32) (((p4 << 7) & 0x7800) | ((((u32) (-p6 | p6) >> 0x15U) & 0x400) | ((((u32) ((2 - p6) | (p6 - 2)) >> 0x16U) & 0x200) | ((p2 << 6) | (((p4 * 4) & 0x3C) | (p3 | ((p1 * 2) & 0x1FE))) | (var_r27 << 7)))));
-        *((u8 *)temp_r11 + temp_r12_2) = p1;
         M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x45C) = p2;
         M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x460) = p3;
         M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x464) = p4;

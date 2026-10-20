@@ -309,11 +309,12 @@ static u8* _dlParseVertex(_HSD_VtxDescList* desc, u8* ptr, GSgfxParseCallbackLis
     case 20:
     case 25:
         if (attr == 11 || attr == 12) {
-            attrFlag = 0x20;
+            count = 0x20;
             if (attr == 11) {
-                attrFlag = 0x10;
+                count = 0x10;
             }
             typeFlag = 0x10000000;
+            attrFlag = count;
             switch (desc->comp_type) {
             case 0:
                 compFlag = 0x200000;
@@ -644,7 +645,9 @@ void GSgfxDLPrimitiveType(u32 value) {
 }
 
 void GSgfxDLBeginSurface(u16 count) {
-    DLFifo.u8 = ((GSgfxVFHead*)((GSgfxDL*)_dlCurPtr)->vf)->vat | _dlPrimType;
+    u32 vat = ((GSgfxVFHead*)((GSgfxDL*)_dlCurPtr)->vf)->vat;
+    vat = _dlPrimType | vat;
+    DLFifo.u8 = vat;
     DLFifo.u16 = count;
 }
 

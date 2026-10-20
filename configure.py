@@ -826,7 +826,7 @@ config.libs = [
             Object(NonMatching, "game/menuCB_Battle.cpp"),
             Object(MatchingFor("GXXE01"), "game/menuToolBattle.cpp", extra_cflags=["-inline noauto"]),
             Object(NonMatching, "game/menuGBAC.cpp", extra_cflags=["-inline noauto,deferred"]),
-            Object(NonMatching, "game/menuPdaDPMonitor.cpp", extra_cflags=["-inline noauto"]),
+            Object(MatchingFor("GXXE01"), "game/menuPdaDPMonitor.cpp", extra_cflags=["-inline noauto"]),
             Object(NonMatching, "game/menuPdaDPMonitorList.cpp", extra_cflags=["-inline noauto"]),
             Object(MatchingFor("GXXE01"), "game/menuPdaSub.cpp"),
             Object(NonMatching, "game/menuPdaMemoXD.cpp", extra_cflags=["-inline noauto"]),

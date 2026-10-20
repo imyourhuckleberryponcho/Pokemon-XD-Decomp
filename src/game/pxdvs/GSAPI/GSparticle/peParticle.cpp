@@ -295,11 +295,11 @@ extern "C++" {
 
 
 void peParticleContainer::Stop() {
-    s16 *var_r7;
+    u8 *temp_r8;
     s32 temp_cr0_eq;
     s32 var_r4;
     u32 temp_r30;
-    u8 *temp_r8;
+    s16 *var_r7;
     u8 *var_r9;
 
     if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
@@ -329,7 +329,7 @@ loop_13:
             var_r4 -= 1;
             if (temp_cr0_eq == 0) {
                 M2C_FIELD(var_r7, u16 *, 0) = 0xFFFF;
-                M2C_FIELD(var_r7, u16 *, 2) = 0xFFFF;
+                M2C_FIELD((u16)var_r7, u16 *, 2) = 0xFFFF;
                 M2C_FIELD(var_r7, u16 *, 4) = 0xFFFF;
                 var_r7 += 6;
                 if ((u32) (((u32) *M2C_FIELD(this, u32 **, 0x58) >> 0x19U) & 1) != 0) {
@@ -499,7 +499,7 @@ void peParticleContainer::DepthSort() {
     s32 var_r12;
     s32 var_r4_2;
     s32 var_r5;
-    s32 var_r6;
+    u32 var_r6;
     s32 var_r8;
     u16 temp_r8;
     u16 var_r9;
@@ -589,7 +589,7 @@ loop_19:
                         while (var_r9 < 4U) {
                             temp_r7 = (var_r9 * 2) & 0xFFFE;
                             temp_r8_2 = var_r9 * 3;
-                            var_r9 = var_r9 + 1;
+                            var_r9 += 1;
                             M2C_FIELD(var_r11_2, s16 *, 0) = (s16) (temp_r8 + temp_r8_2);
                             M2C_FIELD(var_r11_2, u16 *, 2) = temp_r8;
                             M2C_FIELD(var_r11_2, u16 *, 4) = temp_r8;
@@ -815,7 +815,7 @@ void peParticleNode::Render(_peParticle* p0, GSgfxDL* p1, char* p2) {
     u8 sp27;
     u8 sp26;
     u8 sp25;
-    u8 sp24;
+    volatile u8 sp24;
     s32 sp20;
     s32 sp1C;
     s32 sp18;
@@ -843,8 +843,8 @@ void peParticleNode::Render(_peParticle* p0, GSgfxDL* p1, char* p2) {
     u8 *var_r5;
 
     temp_r31 = M2C_FIELD(p0, u32 *, 0);
-    temp_r30 = M2C_FIELD(p0, s32 **, 0x54);
     var_r28 = M2C_FIELD(this, u8 *, 0x34);
+    temp_r30 = M2C_FIELD(p0, s32 **, 0x54);
     temp_r29 = (temp_r31 >> 0x19U) & 1;
     if ((p2 != NULL) && ((s32) (M2C_FIELD(p1, u16 *, 0) & 1) == 1)) {
         if (temp_r31 & 0x400000) {
@@ -853,7 +853,8 @@ void peParticleNode::Render(_peParticle* p0, GSgfxDL* p1, char* p2) {
             temp_r24 = (temp_r31 >> 0x17U) & 1;
             var_f2 = temp_f1;
             if (temp_r24 != 0) {
-                var_f2 = temp_f1 - 1.0f;
+                var_f2 = temp_f1;
+                var_f2 -= 1.0f;
             }
             if (temp_r31 & 0x01000000) {
                 var_f1 = (var_f2 * (M2C_FIELD(this, f32 *, 0) - M2C_FIELD(this, f32 *, 4))) / M2C_FIELD(p0, f32 *, 0x30);
@@ -949,7 +950,7 @@ loop_30:
 }
 void peParticleNode::Start(peEmitterNode* p0, _peParticle* p1, GSgfxDL* p2, _EmitParams* p3) {
     s32 spC;
-    s16 sp8;
+    volatile s16 sp8;
     f32 temp_f1;
     s16 temp_r0;
     s16 temp_r0_2;
@@ -990,7 +991,7 @@ void peParticleNode::Start(peEmitterNode* p0, _peParticle* p1, GSgfxDL* p2, _Emi
             M2C_FIELD(p0, u8 *, 0x34) = 0U;
         }
         temp_r4 = (u8) ((temp_r31 != 0) + 0xD);
-        temp_r4 *= M2C_FIELD(p0, u16 *, 0x30);
+        temp_r4 *= M2C_FIELD((u16)p0, u16 *, 0x30);
         if (M2C_FIELD(p3, u16 *, 0) & 1) {
             var_r5 = (unsigned char *)(M2C_FIELD(p3, s32 *, 4) + ((((M2C_FIELD(p0, u16 *, 0x32) * 4) & 0xFFFC) * M2C_FIELD(p3, u16 *, 2)) + 3));
         } else {

@@ -1133,7 +1133,8 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
         int iu = (int)(u * data->cols) % data->cols;
         int iv = (int)(v * data->rows) % data->rows;
         f32 fu = data->cols * (u - (f32)iu / data->cols);
-        f32 fv = data->rows * (v - (f32)iv / data->rows);
+        f32 fv = (v - (f32)iv / data->rows);
+        fv *= data->rows;
         fu = fu - (f32)(int)fu;
         fv = fv - (f32)(int)fv;
         f32 w00 = fu * fv;
@@ -1156,7 +1157,7 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
                 if (b == 0 && y == rows1 - 1) {
                     b = r;
                 }
-                int k = a + b * cols1;
+                volatile int k = a + b * cols1;
                 if (a == lastCol) {
                     if (b == rows1 - 1) {
                         p = pos[k];
@@ -1622,7 +1623,7 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
     if (f4 > 360.0f) {
         f4 = 360.0f;
     }
-    f32 start;
+    volatile f32 start;
     f32 start2;
     if (f3 < 0.00001f) {
         start = 0.0f;
@@ -1662,9 +1663,9 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
             } else {
                 fastSinCos(ang, &sn, &cs);
             }
+            out->z = f2 * fastSin(a2);
             out->x = radius * cs;
             out->y = radius * sn;
-            out->z = f2 * fastSin(a2);
         }
     }
     return true;

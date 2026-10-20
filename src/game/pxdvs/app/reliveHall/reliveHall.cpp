@@ -533,10 +533,14 @@ void CReliveHall::allocMakeBackup() {
     memcpy(_pRelivehallCopy, this, 0x2298);
 }
 
+static inline CReliveStage* _backupStage(u32 i) {
+    return &_pRelivehallCopy->stage[i];
+}
+
 void CReliveHall::checkWithBackupSet() {
     for (u32 i = 0; i < 9; i++) {
         CReliveStage* cur = &stage[i];
-        if (memcmp(cur, &_pRelivehallCopy->stage[i], 0x3D8) != 0) {
+        if (memcmp(cur, _backupStage(i), 0x3D8) != 0) {
             Pokemon* v = VISITOR_OR_NULL(cur);
             if (v != 0) {
                 darkPokemonBiosSetSteps(pokemonBiosGetDarkpokemonDataId(v), 0);
@@ -544,7 +548,7 @@ void CReliveHall::checkWithBackupSet() {
         }
     }
     for (u32 i = 0; i < 9; i++) {
-        CReliveStage* old = &_pRelivehallCopy->stage[i];
+        CReliveStage* old = _backupStage(i);
         Pokemon* ov = VISITOR_OR_NULL(old);
         if (ov != 0) {
             u16 id = pokemonBiosGetDarkpokemonDataId(ov);

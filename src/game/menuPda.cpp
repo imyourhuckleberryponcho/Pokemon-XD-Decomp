@@ -658,9 +658,8 @@ static void _SelectCursorCalcAngle(s8 idx) {
 }
 
 static s32 _SelectCursorCalcPositon(GSvec2* out) {
-    f32 d1 = (_menuPdaStatus.ang1 - _menuPdaStatus.ang0);
-    d1 *= 0.0625f;
-    f32 d2 = (_menuPdaStatus.ang3 - _menuPdaStatus.ang2) * 0.0625f;
+    f32 d1 = (_menuPdaStatus.ang1 - _menuPdaStatus.ang0) / 16.0f;
+    f32 d2 = (_menuPdaStatus.ang3 - _menuPdaStatus.ang2) / 16.0f;
     s32 n;
     s32 i;
     s32 prev;

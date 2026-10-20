@@ -192,7 +192,7 @@ Pokemon* fightPokemon_GetPokemonBuffPtr(FightPokemon*);
 u8 fightFloorCmpfightOutPokemonNimbleness(u32, FightOutPokemon*, FightOutPokemon*, u8);
 void* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, u8, void*, u32, u32, s32);
 s32 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void*, u8);
-void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon*, u32, u32, u32, void*, u16, s32, u8, u32);
+void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon*, u32, u32, u32, void*, u16, s32, u32, u32);
 extern u8 fightTrainerAiWazaSelectDefensePokemon[];
 extern u8 fight_action_data_waza[];
 u8 fightTrainer_GetEnemyStoreWazaNum(FIGHT_TRAINER*, u16);
@@ -1097,7 +1097,7 @@ void fightAi_CreateAllWazaValid(FIGHT_TRAINER* p0, FightOutPokemon** p1, u8 p2) 
     s32 *spA0;
     s32 sp9C;
     s32 sp98;
-    s32 sp94;
+    volatile s32 sp94;
     s32 sp74;
     s32 sp64;
     s32 sp54;
@@ -1183,7 +1183,7 @@ void fightAi_CreateAllWazaValid(FIGHT_TRAINER* p0, FightOutPokemon** p1, u8 p2) 
                     temp_r0 = (var_r25 * 2) & 0x1FE;
                     temp_r22 = var_r25;
                     *(&sp74 + ((var_r3 * 0x10) & 0xFF0) + ((var_r24 * 4) & 0x3FC) + temp_r0) = 0;
-                    var_r25 = var_r25 + 1;
+                    var_r25 += 1;
                     *(&sp14 + temp_r21 + temp_r0) = 0;
                     (&sp8)[temp_r22] = 0;
                 }
@@ -1492,13 +1492,13 @@ extern "C" {
 #pragma push
 #pragma peephole off
 u8 fightAi_GetWazaCombValue(u32 *p0, u16 *p1, u8 *p2) {
-    f32 unkspA;
+    volatile f32 unkspA;
     s32 sp24;
     s32 sp20;
     s32 sp18;
     f32 sp14;
     f32 sp10;
-    s32 spC;
+    u32 spC;
     s32 sp8;
     FightOutPokemon *temp_r3;
     Pokemon *temp_r3_2;
@@ -1683,7 +1683,7 @@ u8 fightAi_WazaSuccessProbability(FIGHT_TRAINER* t, FightOutPokemon* self, Fight
             speeds[i] = 0;
         }
         if (selfSpeed < speeds[i]) {
-            faster = faster + 1;
+            ++faster;
         }
     }
     if (faster == 1) {
@@ -2080,7 +2080,7 @@ void fightTrainerAiSortFirstSelectPokemonAry(s32 p0, s32 p1, s32 p2, u16 p3, u16
     s32 sp424;
     u16 sp406;
     enum TsE sp405;
-    u8 sp404;
+    u8 temp_r5;
     u8 sp403;
     u8 sp402;
     s16 sp400;
@@ -2143,7 +2143,7 @@ void fightTrainerAiSortFirstSelectPokemonAry(s32 p0, s32 p1, s32 p2, u16 p3, u16
     u32 temp_r11;
     u8 temp_r3_5;
     u8 temp_r4_3;
-    u8 temp_r5;
+    u8 sp404;
     u8 var_r12;
     u8 var_r16;
     u8 var_r29;
@@ -2388,7 +2388,7 @@ static u16 _fightTrainerAiSortFirstSelectPokemonArySubSelect(FIGHT_TRAINER* p0, 
     u8 sp3E2;
     s16 sp3E0;
     s32 sp3DC;
-    s32 sp3D8;
+    s32 spD0;
     s32 sp3D4;
     s32 sp3D0;
     s32 sp30C;
@@ -2403,7 +2403,7 @@ static u16 _fightTrainerAiSortFirstSelectPokemonArySubSelect(FIGHT_TRAINER* p0, 
     s32 spDC;
     s32 spD8;
     s32 spD4;
-    s32 spD0;
+    s32 sp3D8;
     s32 spC;
     s32 sp8;
     FightPokemon *temp_r3;
@@ -2468,7 +2468,7 @@ static u16 _fightTrainerAiSortFirstSelectPokemonArySubSelect(FIGHT_TRAINER* p0, 
     var_r27 = 0;
     var_r28 = 0;
     while (var_r28 < 6U) {
-        temp_r3_3 = heroGetStatus((Hero*)(p1), 3U, var_r28);
+        temp_r3_3 = heroGetStatus((Hero*)((u16)p1), 3U, var_r28);
         if ((temp_r3_3 != 0) && (pokemonCheckValid((Pokemon*)((Pokemon *) temp_r3_3)) != 0) && (pokemonCheckFightOut((Pokemon*)((Pokemon *) temp_r3_3)) != 0)) {
             var_r4_3 = 0;
 loop_18:

@@ -1452,7 +1452,8 @@ s32 menuBingoSheetBtn(tagWINDOW_WORK* w) {
             break;
         }
         if (!(trg & 0x10)) break;
-        u8 e = gBingo.epoint + d;
+        u8 e = d;
+        e += gBingo.epoint;
         gBingo.epoint = e;
         gBingo.f12f = e;
         stepAdvanceSe(w);
@@ -1942,11 +1943,12 @@ void menuBingoMain(void) {
             menuClose(0xCA);
             menuCloseCustom(0xC8, 0, 0);
             if (ok < 0) {
-                u8 cur = BIOS->getNo(gBingo.sheet) - 1;
+                u8 cur = BIOS->getNo(gBingo.sheet);
+                cur -= 1;
                 u8 idx;
                 do {
                     if (cur != 0) {
-                        cur = cur - 1;
+                        --cur;
                     } else {
                         cur = 10;
                     }
@@ -2883,12 +2885,12 @@ void cBingo::ResetSheet(u32 n) {
     f148 = 1;
     f121 = 0;
     bingo_bios::setStaticBall(ball);
-    for (int i = 0; i < 16; i++) {
+    for (s32 i = 0; i < 16; i++) {
         panel[i].flag = 0;
     }
-    mPokemon[0].point = 2;
     mPokemon[0].order = 1;
     mPokemon[0].flag = 0;
+    mPokemon[0].point = 2;
     for (int i = 1; i < 14; i++) {
         mPokemon[i].flag = 0;
         mPokemon[i].point = 0;

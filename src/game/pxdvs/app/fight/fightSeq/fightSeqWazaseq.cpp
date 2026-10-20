@@ -455,6 +455,7 @@ void WS_HUKITOBASHI_OIUCHI(void) {
 
 extern "C" {
 void WS_HOGOSYOKU(void) {
+    extern void fightOutPokemonSetZokuseiDataId(FightOutPokemon*, u8, u32);
     u8* cmd;
     u32 zokusei;
     FightOutPokemon* p;
@@ -704,7 +705,7 @@ s32 fightSeqGetTemotiPokemonNekonoteWazaDataAry(void* trainer, u16* ary, u16 n, 
     void* hero;
     u32 moto;
     s32 count;
-    u16 i;
+    int i;
     u16 j;
     u16 k;
     u16 m;
@@ -1313,6 +1314,7 @@ void WS_KIERUTAME(void) {
 
 extern "C" {
 void WS_HUKURODATAKI(void) {
+    extern u32 pokemon_GetPokemonDataId(void* poke);
     u8* cmd;
     FightOutPokemon* atk;
     FightOutPokemon* def;
@@ -1472,7 +1474,7 @@ void WS_WEATHERKAIFUKU(void) {
     FightOutPokemon* atk;
     void* fw;
     u8 weather;
-    u16 heal;
+    s32 heal;
     cmd = (u8*)fightSeq_GetWazaSeq();
     atk = fightTargetGetPtrAsNowFightType(0x11, 0);
     fw = fightOutPokemon_GetFightWazaPtr(atk);
@@ -1480,11 +1482,11 @@ void WS_WEATHERKAIFUKU(void) {
     weather = fightFloorGetNowTenkouDataId(0, 1);
     if (fightOutPokemonIsHpMantan(atk) == 0) {
         if (weather == 0) {
-            heal = fightOutPokemonMaxHpWaruValue(atk, 2);
+            heal = (u16)fightOutPokemonMaxHpWaruValue(atk, 2);
         } else if (weather == 1) {
-            heal = (u16)((s32)(fightOutPokemonMaxHpWaruValue(atk, 1) * 20) / 30);
+            heal = (s32)((u16)fightOutPokemonMaxHpWaruValue(atk, 1) * 20) / 30;
         } else {
-            heal = fightOutPokemonMaxHpWaruValue(atk, 4);
+            heal = (u16)fightOutPokemonMaxHpWaruValue(atk, 4);
         }
         fightWaza_SetDamage(fw, -(s32)heal);
         fightSeq_NextWazaSeq(5);
@@ -1682,7 +1684,7 @@ void WS_PRESENT(void) {
     } else if (r < 0xCC) {
         fightWaza_SetIryoku(fw, 0x78);
     } else {
-        fightWaza_SetDamage(fw, -(s32)fightOutPokemonMaxHpWaruValue(def, 4));
+        fightWaza_SetDamage(fw, -(u16)fightOutPokemonMaxHpWaruValue(def, 4));
     }
     if (r < 0xCC) {
         fightSeq_JumpWazaSeq(WAZA_HitCalcOnly);
@@ -1882,6 +1884,8 @@ void WS_MIYABURU(void) {
 
 extern "C" {
 void WS_MAKIBISHI(void) {
+    extern void fightSideWriteJoutaiDataId(void*, bool, u32);
+    extern s16 fightSideGetCountAsJoutaiDataId(void* side, u16 id);
     s16 cnt;
     u8* cmd;
     FightOutPokemon* atk;
@@ -2519,6 +2523,9 @@ void WS_CHIKYUUNAGE(void) {
 
 extern "C" {
 void WS_YUBIWOHURU(void) {
+    extern u8 fightSeqCheckYubiwohuruWazaDataId(u16 move_id);
+    extern FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, u32, u32, u32, u32, s32);
+    extern u16 wazaDB_GetSeqId(u32);
     u16 ary[400];
     u8 type;
     FightOutPokemon* atk;
@@ -2805,6 +2812,7 @@ void WS_MEROMERO(void) {
 
 extern "C" {
 void WS_WEATHER_KEEP(void) {
+    extern void fightWaza_SetDamage(void*, u16);
     u16 tok;
     u16 dmg;
     u8 weather;

@@ -403,7 +403,7 @@ extern "C++" {
 #pragma push
 #pragma optimize_for_size on
 static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2) {
-    f32 sp54;
+    u32 temp_ret;
     f32 sp50;
     f32 sp4C;
     f32 sp48;
@@ -454,7 +454,7 @@ static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2) {
     u16 var_r26;
     u32 temp_r25;
     u32 temp_r26;
-    u32 temp_ret;
+    f32 sp54;
     u8 var_r0;
     u8 var_r5;
     keepRelivePatternIsHologram = 0;
@@ -531,7 +531,7 @@ static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2) {
             winMsgOpenField((void*)((u8 *)0xC548), 1U, 0U);
             winMsgCloseField(1U);
         }
-        pokemonBiosSetFriend((Pokemon*)(p1), (u16) ((pokemonBiosGetFriend((Pokemon*)(p1))) + (pokemonBiosGetPoolFriend((Pokemon*)(p1)) + 0x46)));
+        pokemonBiosSetFriend((Pokemon*)((s32)p1), (u16) ((pokemonBiosGetFriend((Pokemon*)(p1))) + (pokemonBiosGetPoolFriend((Pokemon*)(p1)) + 0x46)));
         pokemonBiosSetPoolFriend((Pokemon*)(p1), 0U);
         if (_expRecover((Pokemon*)(p1), temp_r25) == 1) {
             temp_r3_5 = pokemonEvolutionCheck((s32) p1, 0, 0, &sp8, &sp1C);

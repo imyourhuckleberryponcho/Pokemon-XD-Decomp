@@ -571,7 +571,7 @@ void FlashMenu::DrawSprite(_DEFINESPRITE* sp, FLASHMATRIXF* parent, FLASHCXFORM*
     u8* hdr = data;
     u32 di = 0;
     s32 off = 0;
-    while (di < AT(u16, hdr, 0x1A)) {
+    while (di < AT(u16, (u16)hdr, 0x1A)) {
         DepthEntry* e = (DepthEntry*)((u8*)sprites[*(u16*)sp].depth + off);
         if (e->place != 0) {
             CharEntry* ch = &dict[e->charId];
@@ -602,7 +602,7 @@ void FlashMenu::DrawSprite(_DEFINESPRITE* sp, FLASHMATRIXF* parent, FLASHCXFORM*
                     }
                 }
                 BlendShapeRecord((_SHAPERECORD*)hdr, 0, 0, ratio);
-                vectorGraph(userArg, hdrBlend, hdrBlend, 0, parent, (FLASHMATRIXF*)mat, (FLASHCXFORM*)cxf, fl);
+                vectorGraph(userArg, hdrBlend, hdrBlend, 0, parent, (FLASHMATRIXF*)mat, (FLASHCXFORM*)cxf, (u16)fl);
             }
             if ((ch->type & 4) != 0) {
                 u16* child = (u16*)ch->data;
@@ -1102,7 +1102,7 @@ void FlashMenu::ParsePlaceObject2Sub(_PLACEOBJECT2* p) {
         s32 dd = AT(u16, p, 8);
         if (inSprite != 0) {
             s32 sid = spriteId;
-            sprites[sid].depth[dd].charId = spriteFrame > AT(u16*, depth[curDepth].names, 0)[(u16)sid] ? sprites[sid].depth[dd].charId : (u16)ch;
+            sprites[sid].depth[dd].charId = spriteFrame > AT(u16*, depth[curDepth].names, 0)[(u16)sid] ? sprites[sid].depth[dd].charId : ch;
         } else {
             depth[dd].charId = (u16)ch;
         }
@@ -1122,7 +1122,7 @@ void FlashMenu::ParsePlaceObject2Sub(_PLACEOBJECT2* p) {
         s32 dd = AT(u16, p, 8);
         if (inSprite != 0) {
             s32 sid = spriteId;
-            if (spriteFrame <= AT(u16*, depth[curDepth].names, 0)[(u16)sid]) {
+            if (spriteFrame <= AT(u16*, depth[curDepth].names, 0)[sid]) {
                 memcpy(sprites[sid].depth[dd].cxform, (u8*)p + 0x24, 0x10);
             }
         } else {
@@ -1174,7 +1174,7 @@ void FlashMenu::ParseDefineShapeSub(_DEFINESHAPE* s) {
     }
     dict[AT(u16, s, 0)].type = 2;
     dict[AT(u16, s, 0)].data = s;
-    while ((u16)AT(u8*, rec, 8) != 0) {
+    while (AT(u8*, rec, 8) != 0) {
         switch (rec[0]) {
         case 0:
             break;
@@ -1190,7 +1190,7 @@ void FlashMenu::ParseDefineShapeSub(_DEFINESHAPE* s) {
                 s32 n = AT(s32, d, 0x10);
                 if (needFix()) AT(u8*, d, 0x14) = (u8*)s + AT(u32, d, 0x14);
                 for (int i = 0; i < n; i++) {}
-                s32 m = AT(s32, d, 0x18);
+                int m = AT(s32, d, 0x18);
                 if (needFix()) AT(u8*, d, 0x1C) = (u8*)s + AT(u32, d, 0x1C);
                 for (int i = 0; i < m; i++) {}
             }

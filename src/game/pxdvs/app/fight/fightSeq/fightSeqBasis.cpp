@@ -335,7 +335,7 @@ u8 fightSeqFightOutPokemonTokuseiCheckWazaHitBefore(FightOutPokemon* atk, FightO
 u8 fightSeqIsTenkouHit(u16);
 void fightSeqKizetuInit(FightOutPokemon* p);
 u8 fightSeqRegulationCheck(u32 param2, u32 param1, u32 param3);
-u8 fightSeqRegulationOverTwoCheck(u32 type, u32 elem);
+u8 fightSeqRegulationOverTwoCheck(u16 type, u32 elem);
 u8 fightSeqRegulationZenmetuCheck(u16 param2);
 u8 fightSeqTameWazaCheck(u32 id);
 s32 fightSeqWazaDamageCalc(FightOutPokemon*, FightOutPokemon*, FightOutPokemon*, u16, u16, u16);
@@ -1593,16 +1593,16 @@ u8 fightSeqRegulationZenmetuCheck(u16 waza) {
     return 0;
 }
 
-u8 fightSeqRegulationOverTwoCheck(u32 type, u32 arg) {
+u8 fightSeqRegulationOverTwoCheck(u16 type, u32 arg) {
     u8 flag = fightFloor_GetFightKindRegulationFlag(0);
     u8 sleep = menuCBRule_EnableSbToSleep();
     u8 ice = menuCBRule_EnableSbToIceed();
     if (flag == 1) {
-        if ((u16)type == 8) {
+        if (type == 8) {
             if (sleep != 1 && fightSeqRegulationGetJoutaiCount(type, arg) >= 1) {
                 return 1;
             }
-        } else if ((u16)type == 7 && ice != 1 && fightSeqRegulationGetJoutaiCount(7, arg) >= 1) {
+        } else if (type == 7 && ice != 1 && fightSeqRegulationGetJoutaiCount(7, arg) >= 1) {
             return 1;
         }
     }
@@ -2442,6 +2442,8 @@ void WS_KIZETSU_CHECK(void) {
 }
 
 void WS_TSUIKA_CHECK(void) {
+    extern u32 wazaDB_GetAddFightKoukaAvg(u16 id);
+    extern u16 HSD_Rand(void);
     enum TsE { TsE0 };
     FightOutPokemon* attacker;
     void* waza;
@@ -2781,7 +2783,7 @@ void fightSeqWsBadgeCheckYokodori(FightOutPokemon* p) {
         void* mine = fightOutPokemon_GetFightWazaPtr(p);
         void* theirs = fightOutPokemon_GetFightWazaPtr(data.found);
         if (theirs != 0 && mine != 0) {
-            s32 moto = fightWaza_GetUseWazaDataId(theirs);
+            u16 moto = fightWaza_GetUseWazaDataId(theirs);
             fightWazaBiosCopy(theirs, mine);
             fightWaza_SetMotoWazaDataId(theirs, moto);
         }
@@ -3524,6 +3526,7 @@ void figthSeqZokuseiCheckCalc(void* waza, u16 type, u16 wazaId, u8 apply) {
 }
 
 void fightSeqDamageLoss(u8 kind, u8 randomize) {
+    extern u16 HSD_Rand(void);
     FightOutPokemon* defender;
     u16 wazaId;
     u32 item;

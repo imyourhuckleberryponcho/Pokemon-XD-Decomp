@@ -1093,7 +1093,8 @@ void menuColosseumBattle(s32 p0) {
         M2C_FIELD(temp_r4_4, s32 *, 0xB0E8) = 0;
         M2C_FIELD(temp_r4_4, s32 *, 0xB0EC) = 0;
         M2C_FIELD(temp_r4_4, s32 *, 0xB0F0) = 0;
-        temp_r4_6 = temp_r4_5 + 0x20;
+        temp_r4_6 = temp_r4_5;
+        temp_r4_6 += 0x20;
         M2C_FIELD(temp_r4_5, s32 *, 0xB0D4) = 0;
         M2C_FIELD(temp_r4_5, s32 *, 0xB0D8) = 0;
         M2C_FIELD(temp_r4_5, s32 *, 0xB0DC) = 0;
@@ -1130,8 +1131,8 @@ void menuColosseumBattle(s32 p0) {
         M2C_FIELD(temp_r4_7, s32 *, 0xB1AC) = 0;
         M2C_FIELD(temp_r4_7, s32 *, 0xB1B0) = 0;
     }
-    _flashBackFlag = 1;
     GSfloorPush(0x395U);
+    _flashBackFlag = 1;
     floorSetFadeScript(0U, 0U);
     floorWaitForChange();
 }

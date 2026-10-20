@@ -761,7 +761,7 @@ s16 fightAiCombo_GetAllWazaMaxValueTable(AI_ALLWAZA_VALID_TBL* tbls, u8 num, s16
     return maxVal;
 }
 
-s32 fightAiCombo_Act(FIGHT_TRAINER* t, FightOutPokemon** foes, s32 p3) {
+s32 fightAiCombo_Act(FIGHT_TRAINER* t, FightOutPokemon** foes, u8 p3) {
     FightOutPokemon* ary[8];
     AI_ALLWAZA_VALID_TBL valid;
     u16 cnt;
@@ -776,7 +776,7 @@ s32 fightAiCombo_Act(FIGHT_TRAINER* t, FightOutPokemon** foes, s32 p3) {
         ComboData* combo = &comboid[getComboID__11DeckTrainerCFUc(deck, i)];
         u8 (*func)(FIGHT_TRAINER*, FightOutPokemon**, u16, FightOutPokemon**, u16, s32, u8) = combo->func;
         u8 active = getComboActive__11DeckTrainerCFUc(deck, i);
-        if (active != 0 && func != 0 && func(t, ary, cnt, foes, (u8)p3, 0, active) == 1) {
+        if (active != 0 && func != 0 && func(t, ary, cnt, foes, p3, 0, active) == 1) {
             fightAi_CreateAction_FromAllWazaValid(t, &valid);
             return 1;
         }

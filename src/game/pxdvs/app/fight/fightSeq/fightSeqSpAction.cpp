@@ -1020,9 +1020,9 @@ void WS_APPEAR_EFFECT(void) {
     void* buff; // @decl
     void* trainer; // @decl
     FightPokemon* moto; // @decl
-    s32 irekae; // @decl
     void* createSeq; // @decl
     void* seq; // @decl
+    s32 irekae; // @decl
     cmd = (u8*)fightSeq_GetWazaSeq();
     mode = cmd[2];
     p = fightTargetGetPtrAsNowFightType(cmd[1], 0);

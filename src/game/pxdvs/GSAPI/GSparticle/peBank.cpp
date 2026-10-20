@@ -493,7 +493,8 @@ peBank* peBankCreate(_gpdHeader* file) {
             }
         }
         g_emitParamsBank = bank;
-        u16 m = ((bank->maxParticles + 9) / 10) * 10;
+        u16 m = ((bank->maxParticles + 9) / 10);
+        m *= 10;
         g_maxEmitParams = m;
         g_emitParams = new _EmitParams[m];
         g_particle_debug_stats.emitMem += g_maxEmitParams * sizeof(_EmitParams);

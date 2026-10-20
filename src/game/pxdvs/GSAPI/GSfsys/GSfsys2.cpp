@@ -519,7 +519,8 @@ void* GSfsysOSLinkPostFunc(u32 a, u32 b) {
     if (res->unk1C < 3) {
         return 0;
     }
-    end = (u8*)res + res->count * 0x4C;
+    end = (u8*)res;
+    end += res->count * 0x4C;
     OSLinkFixed(res, (void*)(((u32)end + 0x1F) & ~0x1F));
     if (res->linkFunc != 0) {
         res->linkFunc();

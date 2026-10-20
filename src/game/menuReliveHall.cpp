@@ -1020,7 +1020,8 @@ void CMenuReliveHall::drawMainBG() {
     var_r28 = (long *)(_passion2ColorTbl);
     var_r25 = 0;
     temp_r26 = (s32) (temp_f1 / 0.03846154f);
-    temp_f30 = -(((f32) temp_r26 * 0.03846154f) - temp_f1) * 26.0f;
+    temp_f30 = -(((f32) temp_r26 * 0.03846154f) - temp_f1);
+    temp_f30 *= 26.0f;
     temp_f31 = 1.0f - temp_f30;
     do {
         temp_r24 = menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x28DU, var_r25);
@@ -1157,13 +1158,13 @@ void menuPtSpriteDrawArrow(u16 p0, u32 p1, f32 p2, int p3) {
     temp_f0_2 = (temp_f27 + temp_f30) / (f32) GStextureGetXsize((GStexture*)(temp_r31));
     M2C_FIELD(&st_S3117, f32 *, 0x18) = temp_f0_2;
     M2C_FIELD(&st_S3117, f32 *, 0x10) = temp_f0_2;
-    temp_f0_3 = temp_f31 / (f32) GStextureGetYsize((GStexture*)(temp_r31));
+    temp_f7 = (temp_f31 + temp_f29) / (f32) GStextureGetYsize((GStexture*)(temp_r31));
+    temp_f0_3 = temp_f31 / (f32) GStextureGetYsize((GStexture*)((u16)temp_r31));
     M2C_FIELD(&st_S3117, f32 *, 0x14) = temp_f0_3;
     M2C_FIELD(&st_S3117, f32 *, 0xC) = temp_f0_3;
     var_r27 = &xy_S3116;
     temp_f8 = temp_f30 * 0.5f;
     temp_f6 = temp_f29 - temp_f29;
-    temp_f7 = (temp_f31 + temp_f29) / (f32) GStextureGetYsize((GStexture*)(temp_r31));
     M2C_FIELD(&xy_S3116, f32 *, 4) = temp_f29;
     temp_f2 = 0.0f - temp_f29;
     M2C_FIELD(&xy_S3116, f32 *, 0x14) = 0.0f;
@@ -3304,8 +3305,8 @@ void CMenuReliveHall::resetViewAll() {
         ((CAnt*)(((u8*)((s32)var_r26) + 0x350)))->initByPokemon((Pokemon*)((Pokemon *) temp_r4));
         ((CAnt*)(((u8*)(var_r26) + 0x350)))->setAnimation(1);
         var_r26 += 0x50;
-        var_r25 += 4;
         var_r24 += 4;
+        var_r25 += 4;
         var_r29 += 1;
     }
     temp_r3_2 = ((CMenuReliveHall*)(this))->getQuantityMarkerDancerEmpty();
@@ -3347,7 +3348,7 @@ void CMenuReliveHall::resetViewAll() {
                         temp_r6_3 = (unsigned char *)((u8*)this + ((temp_r0 * 0x50) + 0x340));
                         M2C_FIELD(temp_r24_2, f32 *, 8) = (f32) M2C_FIELD(temp_r24_2, f32 *, 4);
                         M2C_FIELD(temp_r24_2, f32 *, 0xC) = (f32) M2C_FIELD(temp_r24_2, f32 *, 4);
-                        M2C_FIELD(temp_r10, s8 *, 0) = 1;
+                        M2C_FIELD((u16)temp_r10, s8 *, 0) = 1;
                         M2C_FIELD(temp_r10, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0xC);
                         M2C_FIELD(temp_r10, f32 *, 8) = (f32) M2C_FIELD(temp_r10, f32 *, 4);
                         M2C_FIELD(temp_r10, f32 *, 0xC) = (f32) M2C_FIELD(temp_r10, f32 *, 4);

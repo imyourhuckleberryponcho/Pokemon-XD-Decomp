@@ -254,7 +254,7 @@ void gbaPokemonFromGC(void *p0, void *p1) {
     s32 temp_r3_5;
     s32 var_ctr;
     s32 var_r28;
-    s32 var_r31;
+    u8 *var_r27;
     u16 *var_r27_2;
     u16 *var_r31_2;
     u16 var_r26;
@@ -277,7 +277,7 @@ void gbaPokemonFromGC(void *p0, void *p1) {
     u8 temp_r0_8;
     u8 temp_r0_9;
     u8 temp_r3_2;
-    u8 *var_r27;
+    s32 var_r31;
 
     var_r29 = 0;
     memset((void*)(p1), 0, 0x64U);
@@ -365,8 +365,8 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         M2C_FIELD(p1, u8 *, 0x28) = 0U;
         do {
             M2C_FIELD(var_r27, s16 *, 0x2C) = _swap16(pokemonBiosGetPokemonWazaDataId((Pokemon*)((Pokemon *) p0), (u32) var_r26));
-            M2C_FIELD(p1, u8 *, 0x28) = (u8) (M2C_FIELD(p1, u8 *, 0x28) | (pokemonBiosGetPokemonWazaPpCount((Pokemon*)((Pokemon *) p0), (u32) var_r26) << var_r31));
             var_r27 += 2;
+            M2C_FIELD(p1, u8 *, 0x28) = (u8) (M2C_FIELD(p1, u8 *, 0x28) | (pokemonBiosGetPokemonWazaPpCount((Pokemon*)((Pokemon *) p0), (u32) var_r26) << var_r31));
             *((u8*)(p1) + (var_r26 + 0x34)) = pokemonBiosGetPokemonWazaPp((Pokemon*)((Pokemon *) p0), (u32) var_r26);
             var_r31 += 2;
             var_r26 += 1;
@@ -766,7 +766,8 @@ static void _revrotatepp(unsigned char* p0, unsigned long p1) {
         memcpy((void*)(p0 + 0x18), (const void*)(p0 + 0x24), 0xCU);
         memcpy((void*)(p0 + 0x24), (const void*)(&sp8), 0xCU);
     }
-    temp_r31 = (p1 >> 1U) - ((p1 / 6) * 3);
+    temp_r31 = (p1 >> 1U);
+    temp_r31 -= ((p1 / 6) * 3);
     if (temp_r31 != 0) {
         memcpy((void*)(&sp8), (const void*)(p0 + 0xC), 0xCU);
         temp_r31_2 = temp_r31 * 0xC;

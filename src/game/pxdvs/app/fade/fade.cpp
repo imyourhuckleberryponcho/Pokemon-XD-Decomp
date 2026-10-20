@@ -381,13 +381,19 @@ void fadeSetFunctionOnly(FadeHook hook) {
 }
 }
 
+// The original passes the type through a small inline here (found by the permuter): with a plain
+// `_fadeWork.type = type;` MWCC masks the parameter in place (r3) instead of into a new register.
+static inline u16 _fadeType(u16 type) {
+    return type;
+}
+
 static FadeHook fadeSetFunction(void (*init)(void), bool snapshot, u16 type, f32 hookDuration) {
     FadeHook prev;
     if (init == 0) {
         return _fadeWork.hook;
     }
     _fadeWork.pending = 1;
-    _fadeWork.type = type;
+    _fadeWork.type = _fadeType(type);
     _fadeWork.hookDuration = hookDuration;
     _fadeWork.hookElapsed = 0.0f;
     _fadeWork.mode = 0;
@@ -407,9 +413,10 @@ static FadeHook fadeSetFunction(void (*init)(void), bool snapshot, u16 type, f32
 }
 
 extern "C" {
+
 void fadeSet(u16 type, f32 time) {
     _fadeWork.pending = 1;
-    _fadeWork.type = type;
+    _fadeWork.type = _fadeType(type);
     _fadeWork.duration = time;
     _fadeWork.elapsed = 0.0f;
     if (type & 8) {

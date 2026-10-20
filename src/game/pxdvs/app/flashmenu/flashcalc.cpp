@@ -55,7 +55,7 @@ void flcalcBezier3(void *p0, void *p1, f32 p2) {
 
 extern "C" {
 void flcalcConvFlashMatrix(void *p0, void *p1) {
-    M2C_FIELD(p0, f32 *, 0) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0) / 65536.0f);
+    M2C_FIELD((u16)p0, f32 *, 0) = (f32) ((f32) M2C_FIELD((u16)p1, s32 *, 0) / 65536.0f);
     M2C_FIELD(p0, f32 *, 4) = (f32) ((f32) M2C_FIELD(p1, s32 *, 4) / 65536.0f);
     M2C_FIELD(p0, f32 *, 8) = (f32) ((f32) M2C_FIELD(p1, s32 *, 8) / 65536.0f);
     M2C_FIELD(p0, f32 *, 0xC) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0xC) / 65536.0f);
@@ -66,8 +66,8 @@ void flcalcConvFlashMatrix(void *p0, void *p1) {
 
 extern "C" {
 s32 flcalcBlendColor(u8 p0, u8 p1, f32 p2) {
-    f32 temp_f28;
-    f32 temp_f29;
+    volatile f32 temp_f28;
+    volatile f32 temp_f29;
     f32 temp_f30;
     f32 temp_f3;
 
@@ -119,14 +119,11 @@ s32 flcalcMultiTransformColor(void *p0, u8 p1) {
     u32 var_r7;
 
     var_r5 = ((u32) ((p1 >> 0x18U) * M2C_FIELD(p0, s16 *, 4)) >> 8U);
-    var_r5 += M2C_FIELD(p0, s16 *, 6);
+    var_r5 += M2C_FIELD((u8)p0, s16 *, 6);
     var_r5 = var_r5 < 0xFFU ? var_r5 : 0xFF;
-    var_r6 = M2C_FIELD(p0, s16 *, 0xA) + ((u32) ((u8) (p1 >> 0x10U) * M2C_FIELD(p0, s16 *, 8)) >> 8U);
-    if (var_r6 < 0xFFU) {
-
-    } else {
-        var_r6 = 0xFF;
-    }
+    var_r6 = ((u32) ((u8) (p1 >> 0x10U) * M2C_FIELD(p0, s16 *, 8)) >> 8U);
+    var_r6 += M2C_FIELD(p0, s16 *, 0xA);
+    var_r6 = var_r6 < 0xFFU ? var_r6 : 0xFF;
     var_r4 = ((u32) ((u8) (p1 >> 8U) * M2C_FIELD(p0, s16 *, 0xC)) >> 8U);
     var_r4 += M2C_FIELD(p0, s16 *, 0xE);
     var_r4 = var_r4 < 0xFFU ? var_r4 : 0xFF;
@@ -261,8 +258,12 @@ void flcalcMatrix(void* p0, void* p1, void* p2) {
     FlPoint* out = (FlPoint*)p0;
     FlMatrix* m = (FlMatrix*)p1;
     FlPoint p = *(FlPoint*)p2;
-    f32 x = m->a * p.x + m->c * p.y;
-    f32 y = m->b * p.x + m->d * p.y;
+    f32 x = p.y;
+    x *= m->c;
+    x += m->a * p.x;
+    f32 y = p.y;
+    y *= m->d;
+    y += m->b * p.x;
     out->x = x + m->tx;
     out->y = y + m->ty;
 }

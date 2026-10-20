@@ -282,8 +282,8 @@ s32 OSCreateExternalHeap(s32 p0, s32 p1, s32 *p2, s32 p3) {
     s32 var_r30;
 
     temp_r27 = (p0 + 0x1F) & 0xFFFFFFE0;
-    var_r30 = 0;
     memset((void*)(p2), 0, p3 * 0x14);
+    var_r30 = 0;
 loop_7:
     if (var_r30 >= (s32) NumHeaps) {
         return -1;
@@ -687,7 +687,9 @@ GSmemCell* GSmemHeapDesc::createNewCell() {
         freeCells = next;
         if (freeCells != NULL) {
             head = freeCells;
-            head->prev = NULL;
+            freeCells->prev = NULL;
+            if (head) {  // probably a compiled-out ASSERT(head)
+            }
         }
     }
     return cell;

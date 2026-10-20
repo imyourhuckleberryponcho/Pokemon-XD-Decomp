@@ -1598,7 +1598,6 @@ s32 menuCB_GCEntry_SubWindow_Disp(void) {
                 winMsgClose(0);
                 return 6;
             }
-            break;
         case 3:
             return 6;
         }
@@ -2613,7 +2612,7 @@ s32 menuCBBattleBANextMenu(CBWin* win) {
         win->unkA4 = 1;
         return 0;
     }
-    if ((battleEndHPEndFlag = battleEndHPEndFlag - 1) == 0x37 && CB32(0xB180) != 0) {
+    if (--battleEndHPEndFlag == 0x37 && CB32(0xB180) != 0) {
         menuCB_SE_Stop(0x5D0);
     }
     return 0;

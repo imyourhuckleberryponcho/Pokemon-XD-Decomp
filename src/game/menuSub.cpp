@@ -437,10 +437,10 @@ void menuSubCursorAnimeMain(void) {
     s16 time;
 
     if (_cursorAnimeWork.x != 0.0f) {
+        _cursorAnimeWork.time = time;
         time = _cursorAnimeWork.time + timeGetLastFrameTime();
         ratio = (f32)time / (f32)_cursorAnimeWork.duration;
-        _cursorAnimeWork.time = time;
-        value = (s16)((((f32)time * (f32)time) / (f32)_cursorAnimeWork.duration / (f32)_cursorAnimeWork.duration) *
+        value = ((((f32)time * (f32)time) / (f32)_cursorAnimeWork.duration / (f32)_cursorAnimeWork.duration) *
                           (_cursorAnimeWork.endX - _cursorAnimeWork.startX) +
                       _cursorAnimeWork.startX);
         _cursorAnimeWork.x = value;

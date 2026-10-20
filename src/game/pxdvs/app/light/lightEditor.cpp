@@ -204,7 +204,7 @@ void LightEditor::editDirection(GSlight* p0) {
     s32 sp60;
     s32 sp64;
     s32 unksp14;
-    s32 spC8;
+    volatile s32 spC8;
     s32 spC4;
     s32 spC0;
     s32 spBC;
@@ -225,7 +225,7 @@ void LightEditor::editDirection(GSlight* p0) {
     f32 sp20;
     f32 sp10;
     f32 spC;
-    f32 sp8;
+    volatile f32 sp8;
     f32 temp_f30;
     f32 temp_f31;
     f32 temp_f31_2;
@@ -498,7 +498,7 @@ extern "C++" {
 void LightEditor::editCommand() {
     f32 sp1C;
     f32 sp20;
-    f32 sp9;
+    volatile f32 sp9;
     f32 spA;
     f32 unksp24;
     f32 unksp8;
@@ -529,8 +529,8 @@ void LightEditor::editCommand() {
     var_r27 = 0;
     while (var_r27 < lightGetLightSize()) {
         temp_r26 = (GSlight *)(lightGetLight(var_r27));
-        var_r28 = 0;
         temp_r31_2 = GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)(floorDataBiosGetCurrentPtr()))) == temp_r26;
+        var_r28 = 0;
         temp_r3 = GSlightGetType((GSlight*)(temp_r26));
         switch (temp_r3) {                          /* irregular */
         case 0:
@@ -939,7 +939,7 @@ void LightEditor::dispLightModel(GSlight* p0, bool p1) {
     if (GSlightGetActive((GSlight*)(p0)) != 0) {
         if (p1 != 0) {
             if (((f32) sin((f64) M2C_FIELD(this, f32 *, 8)) / 2.0f) < 0.0f) {
-                var_f0 = -((f32) sin((f64) M2C_FIELD(this, f32 *, 8)) * 0.5f);
+                var_f0 = -((f32) sin((f64) M2C_FIELD(this, f32 *, 8)) / 2.0f);
             } else {
                 var_f0 = (f32) sin((f64) M2C_FIELD(this, f32 *, 8)) / 2.0f;
             }

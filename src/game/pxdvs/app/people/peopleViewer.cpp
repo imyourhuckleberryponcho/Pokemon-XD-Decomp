@@ -458,9 +458,9 @@ static void _peopleViewerMain() {
 extern "C" {
 void peopleViewerSetHeroPos() {
     f32 sp10;
-    f32 sp1C;
+    volatile f32 sp1C;
     f32 sp14;
-    f32 sp8;
+    volatile f32 sp8;
 
     if ((GSfloorGetCurrent() == 0xFA1U) && ((f32 *) m_pKen != NULL) && ((u32) M2C_FIELD(m_pKen, u32 *, 8) != 0U) && ((tagPeopleWork *) m_pChara != NULL)) {
         if ((u32) M2C_FIELD(m_pChara, u32 *, 8) == 0U) {

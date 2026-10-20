@@ -175,8 +175,8 @@ void GSpartGetTransform(GSpart* part, GSvec* pos, GSvec* rot, GSvec* scale);
 void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4, u8 p5);
 void GSparticleBankSetCamera(void *p0, s32 p1);
 GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* bank, s32 index, s32);
-void GSparticleDestroyAllGenerators(GSparticleBank* bank, s32 children);
-void GSparticleDestroyGenerator(void *p0, u8 p1);
+void GSparticleDestroyAllGenerators(GSparticleBank* bank, bool children);
+void GSparticleDestroyGenerator(void *p0, bool p1);
 void GSparticleDetachGeneratorFromGSpart(void *p0, u8 p1);
 void GSparticleFree(GSparticleBank* bank);
 void GSparticleGeneratorSetCamera(void *p0, s32 p1);
@@ -1242,7 +1242,7 @@ loop_11:
 }
 
 extern "C" {
-void GSparticleDestroyAllGenerators(GSparticleBank* p0, s32 p1) {
+void GSparticleDestroyAllGenerators(GSparticleBank* p0, bool p1) {
     u8 *var_r31;
     u32 var_r30;
 
@@ -1250,7 +1250,7 @@ void GSparticleDestroyAllGenerators(GSparticleBank* p0, s32 p1) {
     var_r31 = M2C_FIELD(p0, u8 **, 0xC);
     while (var_r30 < (u8) M2C_FIELD(p0, u8 *, 3)) {
         if ((u32) M2C_FIELD(var_r31, u32 *, 0x38) != 0U) {
-            GSparticleDestroyGenerator(var_r31, (u8) p1);
+            GSparticleDestroyGenerator(var_r31, p1);
         }
         var_r30 += 1;
         var_r31 += 0x3C;
@@ -1259,7 +1259,7 @@ void GSparticleDestroyAllGenerators(GSparticleBank* p0, s32 p1) {
 }
 
 extern "C" {
-void GSparticleDestroyGenerator(void *p0, u8 p1) {
+void GSparticleDestroyGenerator(void *p0, bool p1) {
     HSD_Generator *temp_r4;
     u8 *temp_r3;
 
@@ -1355,9 +1355,15 @@ void GSparticleSetRandomVelocityScaling(void *p0, u8 p1) {
     temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r5 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            return;
+ // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
+            if (temp_r5 != NULL) {
+                if (p1 != 0) {
+                } else {
+                }
+            }
+        } else {
+            psSetRandomVelocityScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
         }
-        psSetRandomVelocityScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
     }
 }
 }
@@ -1369,9 +1375,15 @@ void GSparticleSetNodeScaling(void *p0, u8 p1) {
     temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r5 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            return;
+ // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
+            if (temp_r5 != NULL) {
+                if (p1 != 0) {
+                } else {
+                }
+            }
+        } else {
+            psSetNodeScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
         }
-        psSetNodeScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
     }
 }
 }
@@ -1383,9 +1395,15 @@ void GSparticleSetTornadoScaling(void *p0, u8 p1, u8 p2) {
     temp_r6 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r6 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            return;
+ // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
+            if (temp_r6 != NULL) {
+                if (p1 != 0) {
+                } else {
+                }
+            }
+        } else {
+            psSetTornadoScaling((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), (u16)p1, (u16)p2);
         }
-        psSetTornadoScaling((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), (u16)p1, (u16)p2);
     }
 }
 }
@@ -1397,9 +1415,15 @@ void GSparticleSetParticleTextureScaling(void *p0, u8 p1) {
     temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r5 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            return;
+ // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
+            if (temp_r5 != NULL) {
+                if (p1 != 0) {
+                } else {
+                }
+            }
+        } else {
+            psSetParticleTexScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
         }
-        psSetParticleTexScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
     }
 }
 }
@@ -1411,9 +1435,15 @@ void GSparticleSetOffsetRotationInLocal(void *p0, u8 p1, u8 p2) {
     temp_r6 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r6 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            return;
+ // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
+            if (temp_r6 != NULL) {
+                if (p1 != 0) {
+                } else {
+                }
+            }
+        } else {
+            psSetOffsetRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), (u16)p1, (u16)p2);
         }
-        psSetOffsetRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), (u16)p1, (u16)p2);
     }
 }
 }
@@ -1425,9 +1455,15 @@ void GSparticleSetVelocityRotationInLocal(void *p0, u8 p1) {
     temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r5 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            return;
+ // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
+            if (temp_r5 != NULL) {
+                if (p1 != 0) {
+                } else {
+                }
+            }
+        } else {
+            psSetVelocityRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
         }
-        psSetVelocityRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
     }
 }
 }
@@ -2274,13 +2310,13 @@ void GSparticleInit(u32 p0) {
     sp10 = M2C_FIELD(&jtbl_1991, s32 *, 8);
     sp14 = M2C_FIELD(&jtbl_1991, s32 *, 0xC);
     sp18 = M2C_FIELD(&jtbl_1991, s32 *, 0x10);
+    _particleBankStructList = temp_r3;
     sp1C = M2C_FIELD(&jtbl_1991, s32 *, 0x14);
     sp20 = M2C_FIELD(&jtbl_1991, s32 *, 0x18);
     memset((void*)(g_particle_cameras), 0, 0x10U);
     _particleBankStructCount = p0;
     g_particle_cameras_count = 0;
     temp_r3 = (unsigned char *)(GSmemAlloc(p0 * 0x14));
-    _particleBankStructList = temp_r3;
     if (temp_r3 != NULL) {
         var_r5 = 0;
         var_r6 = 0U;

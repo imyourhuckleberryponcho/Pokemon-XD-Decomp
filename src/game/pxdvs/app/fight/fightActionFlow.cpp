@@ -1489,7 +1489,7 @@ void fightActionFlowKaisiPreSubLoad(void) {
 //D5
     FIGHT_TRAINER* hostTrainer;
     u32 msgA;
-    u16 msgB;
+    u32 msgB;
     FIGHT_TRAINER* trainer;
     Sequence* seq;
     u16 trainerId;
@@ -1510,6 +1510,7 @@ void fightActionFlowKaisiPreSubLoad(void) {
     if (msgA == 0) {
         msgA = 0x5f;
     }
+    extern u16 fightTrainerDB_GetSerihuMsgId(u16, u8);
     msgB = fightTrainerDB_GetSerihuMsgId(trainerId, 0);
     if (fightKind_CheckFightKind(10)) {
         msgB = 0;

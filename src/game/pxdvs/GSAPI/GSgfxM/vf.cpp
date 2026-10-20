@@ -97,16 +97,16 @@ void GSgfxVFSetArray(GSgfxVF* p0, s32 p1, s32 p2, void* p3, s32 p4, s32 p5) {
     s32 temp_r0;
     s32 temp_r0_3;
     s32 temp_r0_4;
-    s32 temp_r11;
+    u32 temp_r11;
     u32 temp_r0_5;
     u32 var_ctr;
-    u32 var_ctr_2;
+    u8 *var_r9_3;
     u32 var_r10;
     u32 var_r5_4;
     u8 *var_r10_2;
     u8 *var_r5;
     u8 *var_r5_3;
-    u8 *var_r9_3;
+    u32 var_ctr_2;
 
     if ((p3 != NULL) || ((u32) (p5 + 0x10000) == -1U) || ((p3 != NULL) && ((u32) p5 != 0U))) {
         var_r9 = (long *)(((u8*)(p0) + 0x1B8));
@@ -242,7 +242,7 @@ block_43:
 extern "C" {
 void GSgfxVFRemoveElement(void *p0, s32 p1) {
     u8 *var_r5_2;
-    s32 *var_r6;
+    u8 *var_r5_3;
     s32 *var_r6_2;
     s32 *var_r6_3;
     s32 temp_r0;
@@ -262,7 +262,7 @@ void GSgfxVFRemoveElement(void *p0, s32 p1) {
     u8 *var_r4;
     u8 *var_r5;
     s32 *var_r5_5;
-    u8 *var_r5_3;
+    s32 *var_r6;
 
     var_r6 = (long *)(((u8*)(p0) + 0x1B8));
     var_r7 = 0;
@@ -365,7 +365,7 @@ loop_41:
         var_r6_4 = 0;
 loop_55:
         if (var_r6_4 < 8U) {
-            var_r5_5 = (long *)(((u8*)(p0) + 8));
+            var_r5_5 = (long *)(((u8*)((u8)p0) + 8));
 loop_51:
             temp_r4_2 = *var_r5_5;
             if (temp_r4_2 == 0xFF) {
@@ -406,6 +406,7 @@ loop_62:
 extern "C" {
 extern "C" {
 void GSgfxVFSetElement(GSgfxVF* p0, s32 p1, s32 p2, s32 p3, s32 p4) {
+    goto loop_4;
     s32 *var_r3;
     s32 *var_r3_2;
     s32 *var_r4;
@@ -454,7 +455,6 @@ loop_4:
     } else {
         var_r4 += 4;
         var_r6 += 1;
-        goto loop_4;
     }
     var_r5 = (long *)(&_vfElemTable[var_r6]);
 loop_15:
@@ -463,7 +463,7 @@ loop_15:
     } else {
         temp_r0_2 = M2C_FIELD(var_r5, s32 *, -4);
         var_r5 -= 4;
-        var_r4_2 = (long *)(((u8*)(p0) + 0x1B8));
+        var_r4_2 = (long *)(((u8*)((u16)p0) + 0x1B8));
         var_r6 -= 1;
 loop_11:
         temp_r7 = *var_r4_2;

@@ -336,7 +336,7 @@ void peShapeContainer::Render() {
     f32 sp3C;
     f32 sp38;
     f32 sp34;
-    f32 sp30;
+    volatile f32 sp30;
     f32 sp2C;
     GSgfxLight *sp1C;
     GSgfxLight *sp18;
@@ -529,7 +529,7 @@ block_48:
                     } else {
                         temp_r5 = M2C_FIELD(this, _peShape **, 0x20);
                         sp30 = -M2C_FIELD(temp_r5, f32 *, 0x60);
-                        sp2C = -M2C_FIELD(temp_r5, f32 *, 0x5C);
+                        sp2C = -M2C_FIELD((u16)temp_r5, f32 *, 0x5C);
                         sp34 = -M2C_FIELD(temp_r5, f32 *, 0x64);
                         PSVECNormalize((const register Vec*)((Vec *) &sp2C), (register Vec*)((Vec *) &sp2C));
                     }
@@ -1406,8 +1406,8 @@ peShapeContainer::peShapeContainer(peEmitterNode* p0, _peShape* p1, unsigned sho
 
 extern "C++" {
 void peShapeNode::Render(_peShape* p0) {
-    f32 unksp50;
-    s32 sp20;
+    volatile f32 unksp50;
+    volatile s32 sp20;
     s32 sp1C;
     s32 sp18;
     s32 sp14;
@@ -1495,7 +1495,7 @@ void peShapeNode::Render(_peShape* p0) {
 
 extern "C++" {
 u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
-    s32 sp10;
+    f32 temp_f31;
     s32 sp14;
     s32 sp18;
     s32 sp24;
@@ -1540,7 +1540,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
     u8 sp8;
     Quaternion *temp_r3_6;
     f32 temp_f1_4;
-    f32 temp_f31;
+    s32 sp10;
     f32 var_f0;
     f32 var_f1;
     f32 var_f1_10;
@@ -1831,12 +1831,14 @@ void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
                 sp14 = 0.0f;
             }
             if (temp_r31 & 0x2000) {
-                sp18 = 6.2831855f * HSD_Randf();
+                sp18 = HSD_Randf();
+                sp18 *= 6.2831855f;
             } else {
                 sp18 = 0.0f;
             }
             if (temp_r31 & 0x4000) {
-                sp1C = 6.2831855f * HSD_Randf();
+                sp1C = 6.2831855f;
+                sp1C *= HSD_Randf();
             } else {
                 sp1C = 0.0f;
             }

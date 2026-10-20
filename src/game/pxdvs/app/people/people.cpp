@@ -984,6 +984,7 @@ static void _peopleMarkAnimEndCallback(_GSmodel* model, _GSmodelAnimCBData* data
 
 extern "C" {
 void peopleDispMark(u32 groupID, u32 peopleID) {
+    extern void peopleAttach(u32 groupID, u32 peopleID, u32 targetGroupID, u32 targetPeopleID, s8 part);
     static MarkRes markRes;
     u32 floorGroup;
     u32 markID;
@@ -1741,8 +1742,7 @@ static void _peopleAnimEndCallback(_GSmodel* model, _GSmodelAnimCBData* data) {
                         next = rnd ? 0x14 : 0x15;
                         break;
                     case 0x14:
-                        next = 0x15;
-                        next = !(rnd) ? next : 0x13;
+                        next = rnd ? 0x13 : 0x15;
                         break;
                     case 0x15:
                         next = rnd ? 0x13 : 0x14;
@@ -1775,7 +1775,7 @@ static void _peopleAnimEndCallback(_GSmodel* model, _GSmodelAnimCBData* data) {
         PeopleInfo* info = peopleInfoBiosGetPtr(work->objectID);
         if (info && !info->noWalkStart) {
             s32 index = data->index;
-            if (index == work->motionTable[0] && (work->moveDist < 0.00001f == 0 || !(work->moveDist > -0.00001f)) &&
+            if (index == work->motionTable[0] && !(work->moveDist < 0.00001f && work->moveDist > -0.00001f) &&
                 !work->blend) {
                 if (!work->running) {
                     work->setAnimIndex(work->motionTable[3]);
@@ -2601,12 +2601,13 @@ void peopleSetNeckTarget(u32 groupID, u32 peopleID, u32 targetGroupID, u32 targe
     }
 }
 
-u8 peopleSetNeckLimitHold(u32 groupID, u32 peopleID, u8 hold) {
+bool peopleSetNeckLimitHold(u32 groupID, u32 peopleID, u8 hold) {
+    bool old;
     tagPeopleWork* work = peopleGet(groupID, peopleID);
     if (!work) {
         return 0;
     }
-    bool old = peopleBiosCheckFlag(work, 2);
+    old = peopleBiosCheckFlag(work, 2);
     if (hold) {
         peopleBiosSetFlagOn(work, 2);
     } else {

@@ -1018,12 +1018,12 @@ u32 fn_801CC508() {
             strcpy((char*)(temp_r30), (const char*)(&_memcardBannerImage + 0x3A44));
             strcpy((char*)(temp_r30 + 0x20), (const char*)(&_memcardBannerImage + 0x3A50));
             M2C_FIELD(temp_r30, s8 *, 3) = -0x17;
-            M2C_FIELD(temp_r30, s8 *, 0x32) = (s8) (((sp1C / 10) % 10) + 0x30);
-            M2C_FIELD(temp_r30, s8 *, 0x33) = (s8) ((sp1C % 10) + 0x30);
             M2C_FIELD(temp_r30, s8 *, 0x2A) = (s8) ((((sp18 + 1) / 10) % 10) + 0x30);
             M2C_FIELD(temp_r30, s8 *, 0x2B) = (s8) (((sp18 + 1) % 10) + 0x30);
             M2C_FIELD(temp_r30, s8 *, 0x2D) = (s8) (((sp14 / 10) % 10) + 0x30);
+            M2C_FIELD(temp_r30, s8 *, 0x32) = (s8) (((sp1C / 10) % 10) + 0x30);
             M2C_FIELD(temp_r30, s8 *, 0x2E) = (s8) ((sp14 % 10) + 0x30);
+            M2C_FIELD(temp_r30, s8 *, 0x33) = (s8) ((sp1C % 10) + 0x30);
         }
     } else {
         strcpy((char*)(temp_r30), (const char*)(&_memcardBannerImage + 0x3A1C));
@@ -1702,7 +1702,7 @@ static inline void _memcardSumBlocks(u16* data, u32* sums)
 static u8 _memcard_Decryption(void* data)
 {
     u16* d = (u16*)data;
-    u32 sums[4];
+    u32 sums[10];
     u32 stored[4];
     int i;
     sums[0] = 0;
@@ -1720,9 +1720,9 @@ static u8 _memcard_Decryption(void* data)
         d[i + 3] -= _memcard_encrypt_key[3];
         _memcardKeyStep(_memcard_encrypt_key);
     }
+    stored[2] = d[6] | (d[7] << 16);
     stored[0] = d[10] | (d[11] << 16);
     stored[1] = d[8] | (d[9] << 16);
-    stored[2] = d[6] | (d[7] << 16);
     stored[3] = d[4] | (d[5] << 16);
     d[10] = 0;
     d[11] = 0;
@@ -1740,7 +1740,7 @@ static void _memcard_Encryption(void* data)
 {
     u16* d = (u16*)data;
     u32 sums[4];
-    int i;
+    volatile int i;
     sums[0] = 0;
     sums[1] = 0;
     sums[2] = 0;
@@ -1767,7 +1767,7 @@ static void _memcard_Encryption(void* data)
     d[4] = sums[3];
     d[5] = sums[3] >> 16;
     for (i = 4; i < 0x13FE8; i += 4) {
-        d[i] += _memcard_encrypt_key[0];
+        d[i] = d[i] + _memcard_encrypt_key[0];
         d[i + 1] += _memcard_encrypt_key[1];
         d[i + 2] += _memcard_encrypt_key[2];
         d[i + 3] += _memcard_encrypt_key[3];

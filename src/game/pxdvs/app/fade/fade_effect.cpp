@@ -3019,8 +3019,8 @@ static void _fadeDistortionInit() {
             py *= (f32)y;
             f32 v = 0.03448276f * (f32)y;
             for (x = 0; x < 40; x++) {
-                pos[0] = (s32)(16.410257f * (f32)x);
-                pos[1] = (s32)py;
+                pos[0] = (16.410257f * (f32)x);
+                pos[1] = py;
                 if (y == 29) {
                     pos[1] += 1;
                 }
@@ -5133,7 +5133,8 @@ static bool fadeEffectHookFunction_ball_second(GSgfxLayerID id, bool pending, f3
             ball->x = x;
         }
         if (!(x > 790.0f) && !(x < -150.0f)) {
-            f32 y = ball->y - move[g];
+            f32 y = ball->y;
+            y -= move[g];
             if (y > 405.0f) {
                 y = 405.0f;
             } else if (y < 75.0f) {

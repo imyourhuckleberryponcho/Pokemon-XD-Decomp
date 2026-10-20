@@ -185,7 +185,8 @@ void sodateyaRaise(s32 slot) {
     }
     if (ok && slot < 6) {
         int i = slot;
-        int end = count - 1;
+        int end = count;
+        end--;
         for (; i < end; i++) {
             cur = heroBiosGetPokemonPtr(hero, i);
             poke = heroBiosGetPokemonPtr(hero, i + 1);

@@ -400,8 +400,8 @@ static void _modelDrawDistortionSub(_GSmodel* p0, GSgfxLayer* p1, GSmtx* p2, GSv
     s32 sp60;
     s32 sp5C;
     s32 sp2C;
-    f32 sp28;
-    f32 sp18;
+    volatile f32 sp28;
+    volatile f32 sp18;
     s32 sp14;
     f32 sp10;
     f32 spC;

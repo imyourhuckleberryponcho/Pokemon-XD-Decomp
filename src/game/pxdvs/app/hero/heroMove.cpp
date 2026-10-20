@@ -1302,8 +1302,8 @@ static u8 updateChat(HEROMOVE_MEMBER member) {
     u32 id;
     PeopleWork* target;
     s32 script;
-    u8 walking;
     s32 count;
+    u8 walking;
     getResID(&group, &id, member);
     target = peopleTalkCheck(group, id, 0.3f, 40.0f);
     if (target == 0) {
