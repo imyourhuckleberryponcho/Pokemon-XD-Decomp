@@ -20,7 +20,7 @@ struct AI_ALLWAZA_VALID_TBL {
     u16 unk14;
     u8 mode[2];
     u8 stat[4];
-    s16 val[2][2];
+    u16 val[2][2];
     u8 rest[8];
 };
 
@@ -54,11 +54,11 @@ extern ComboData comboid[];
 
 extern "C" {
 u16 HSD_Rand();
-FIGHT_FLOOR* fightFloor_GetEncountDataId(u32);
+u16 fightFloor_GetEncountDataId(u32);
 u32 fightFloor_GetTurnCount(u32);
 u32 fightFloor_GetFightType(u32);
 u8 fightFloorIsNowEncountVirtualBattle(u32);
-FightEncountData* fightEncountDataBiosGetPtr();
+FightEncountData* fightEncountDataBiosGetPtr(u16 id);
 u16 fightEncountDataBiosGetDiskId(FightEncountData*);
 u16 fightEncountDataBiosGetFightTrainerDataId(FightEncountData*, u8);
 u16 deckDataVirtualDB_GetEnemyDeck__FUs(u16);
@@ -85,7 +85,7 @@ u8 fightFloorCmpfightOutPokemonNimbleness(FIGHT_FLOOR*, FightOutPokemon*, FightO
 FIGHT_TRAINER* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(FIGHT_FLOOR*, FightOutPokemon*);
 u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(FIGHT_FLOOR*, FIGHT_TRAINER*, FightOutPokemon**, u8, u8);
 s16 fightTrainerAiAddValueByAddsubDataId(s16, FIGHT_TRAINER*, u16);
-u32 wazaIsWazaTypeId(u16, u8);
+u8 wazaIsWazaTypeId(u16, u8);
 s32 fightAi_ThreatEnemyValue(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon*, s8, u8, s32, s32);
 u8 fightAi_HitCheckWazaAboutJoutaiAndType(FIGHT_TRAINER*, FightOutPokemon*, u16);
 u8 fightAi_GetTokuseiHaveFlag(FIGHT_TRAINER*, FightOutPokemon*, u16);
@@ -166,14 +166,13 @@ extern "C" {
 
 void fightAi_FixedActIrekaeInit(FightOutPokemon* poke) {
     DeckTrainer* deck;
-    fightFloor_GetEncountDataId(0);
-    deck = getDeckTrainerObj__11DeckTrainerFUl(deckDataVirtualDB_GetEnemyDeck__FUs(fightEncountDataBiosGetDiskId(fightEncountDataBiosGetPtr())));
+    deck = getDeckTrainerObj__11DeckTrainerFUl(deckDataVirtualDB_GetEnemyDeck__FUs(fightEncountDataBiosGetDiskId(fightEncountDataBiosGetPtr(fightFloor_GetEncountDataId(0)))));
     if (fixAiShell[(u8)getFixedActionID__11DeckTrainerCFv(deck)].flag == 0) {
         fightOutPokemon_SetFixAiWaza(poke, 6);
     }
 }
 
-u8 fightAi_FixedActCheck(FIGHT_TRAINER* trainer, FightOutPokemon* attacker, u16 waza, FightOutPokemon* target) {
+bool fightAi_FixedActCheck(FIGHT_TRAINER* trainer, FightOutPokemon* attacker, u16 waza, FightOutPokemon* target) {
     u8 (*hit)(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*) = wazaDB_GetFightTrainerAiWazaHitFuncPtr(waza);
     if (trainer == 0) {
         return 0;
@@ -210,20 +209,22 @@ void* fightAi_GetWazaDataIDFromFixActDef(FightOutPokemon* poke, void* trainer, u
 }
 
 u16 fightAi_GetWazaDataIDFromFixActWaza(FIGHT_TRAINER* trainer, FightOutPokemon* poke, u8 slot) {
-    s32 n = slot;
-    if (n < 5) {
-        if (n >= 1) {
-            return pokemon_GetPokemonWazaDataId(fightOutPokemonGetPokemonPtr(poke), n - 1);
-        }
+    switch (slot) {
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+        return pokemon_GetPokemonWazaDataId(fightOutPokemonGetPokemonPtr(poke), slot - 1);
     }
     return 0;
 }
 
 void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
+    s32 n;
     u8 turn = fightFloor_GetTurnCount(0);
-    u8 cnt[2] = {0, 0};
+    u8 b;
     FightEncountData* enc;
-    u16 trainerId;
+    u32 trainerId;
     DeckTrainer* deck;
     FixAiShell* shell;
     u8 i;
@@ -232,10 +233,9 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
     FightOutPokemon* poke;
     u8 idx;
     u8 a;
-    u8 b;
+    u8 cnt[2] = {0, 0};
 
-    fightFloor_GetEncountDataId(0);
-    enc = fightEncountDataBiosGetPtr();
+    enc = fightEncountDataBiosGetPtr(fightFloor_GetEncountDataId(0));
     if (fightFloorIsNowEncountVirtualBattle(0) == 1) {
         trainerId = deckDataVirtualDB_GetEnemyDeck__FUs(fightEncountDataBiosGetDiskId(enc));
     } else {
@@ -260,9 +260,10 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
             }
         }
     }
-    t = (turn - 1) * 2;
+    t = (turn - 1);
+    t *= 2;
     for (i = 0; i < 2; i++) {
-        poke = fightTrainer_GetFightoutPokemonPtr(trainer, i);
+        poke = fightTrainer_GetFightoutPokemonPtr(trainer, (u8)i);
         if (fightOutPokemon_GetFixAiWaza(poke) == 6) {
             continue;
         }
@@ -271,7 +272,7 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
             continue;
         }
         {
-            s32 n = cnt[i] - 1;
+            n = cnt[i] - 1;
             if (t < n) {
                 idx = t;
             } else if (n == t) {
@@ -289,7 +290,7 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
         a = acts[i][idx];
         b = acts[i][idx + 1];
         if (a < 6) {
-            if (a == 0) {
+            if (a) {
                 fightOutPokemon_SetFixAiWaza(poke, 6);
             } else if (a >= 0) {
                 fightOutPokemon_SetFixAiWaza(poke, a);
@@ -303,8 +304,8 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
     }
 }
 
-s16 fightAiCombo_GetValidValue(FightOutPokemon** ary, u16 cnt, FightOutPokemon** oppAry, u16 oppCnt) {
-    s16 value = 0x32;
+s32 fightAiCombo_GetValidValue(FightOutPokemon** ary, u16 cnt, FightOutPokemon** oppAry, u16 oppCnt) {
+    s32 value = 0x32;
     FightOutPokemon* fastA = 0;
     FightOutPokemon* slowA = 0;
     FightOutPokemon* fastB = 0;
@@ -322,8 +323,8 @@ s16 fightAiCombo_GetValidValue(FightOutPokemon** ary, u16 cnt, FightOutPokemon**
             fastA = ary[i];
             slowA = ary[fightAi_getAnotherPokeNo(i)];
         } else {
-            slowA = ary[i];
             fastA = ary[fightAi_getAnotherPokeNo(i)];
+            slowA = ary[i];
         }
     }
     for (i = 0; i < oppCnt; i++) {
@@ -337,8 +338,8 @@ s16 fightAiCombo_GetValidValue(FightOutPokemon** ary, u16 cnt, FightOutPokemon**
             fastB = oppAry[i];
             slowB = oppAry[fightAi_getAnotherPokeNo(i)];
         } else {
-            slowB = oppAry[i];
             fastB = oppAry[fightAi_getAnotherPokeNo(i)];
+            slowB = oppAry[i];
         }
     }
     if (fightFloorCmpfightOutPokemonNimbleness(0, slowB, slowA, 0) == 0) {
@@ -361,7 +362,7 @@ static void _GetAllWazaTableValue_StatusUpWaza(FIGHT_TRAINER* t, AI_ALLWAZA_VALI
 
 extern "C" {
 s16 fightAiCombo_GetAllWazaTableDefValue(FIGHT_TRAINER* t, FightOutPokemon** foes, AI_ALLWAZA_VALID_TBL* tbl, s16 base, s8 mode) {
-    FightOutPokemon* ary[2];
+    FightOutPokemon* ary[6];
     s16 val;
     u16 cnt;
     s32 prod;
@@ -380,8 +381,11 @@ s16 fightAiCombo_GetAllWazaTableDefValue(FIGHT_TRAINER* t, FightOutPokemon** foe
         return 0;
     }
     for (i = 0; i < 2; i++) {
-        if (cnt >= 2 && tbl->poke[i] != 0) {
-            if (wazaIsWazaTypeId(tbl->waza[i], 1) == 1) {
+        if (cnt >= 2) {
+            if (tbl->poke[i] == 0) {
+                continue;
+            }
+            if ((u8)wazaIsWazaTypeId(tbl->waza[i], 1) == 1) {
                 s32 a = fightAi_ThreatEnemyValue(t, tbl->poke[i], ary[0], mode, 0, -1, -1);
                 s32 b = fightAi_ThreatEnemyValue(t, tbl->poke[i], ary[1], mode, 0, -1, -1);
                 switch (tbl->mode[i]) {
@@ -393,16 +397,15 @@ s16 fightAiCombo_GetAllWazaTableDefValue(FIGHT_TRAINER* t, FightOutPokemon** foe
                     break;
                 }
             }
-        } else {
-            sum = 0;
-            for (j = 0; j < 2; j++) {
-                sum += tbl->val[j][i];
-            }
-            if (tbl->target[i] != 0) {
-                u16 hp = pokemon_GetHp(fightOutPokemonGetPokemonPtr(tbl->target[i]));
-                if (hp != 0) {
-                    val += (sum * 100 / hp) / 10;
-                }
+        }
+        sum = 0;
+        for (j = 0; j < 2; j++) {
+            sum += tbl->val[j][i];
+        }
+        if (tbl->target[i] != 0) {
+            u16 hp = pokemon_GetHp(fightOutPokemonGetPokemonPtr(tbl->target[i]));
+            if (hp != 0) {
+                val += (sum * 100 / hp) / 10;
             }
         }
     }
@@ -423,7 +426,7 @@ static void _GetAllWazaTableValue_StatusUpWaza(FIGHT_TRAINER* t, AI_ALLWAZA_VALI
             for (j = 0; j < 14; j++) {
                 StatusWazaEntry* e = &statusUpWazaTbl[j];
                 if (tbl->waza[i] == e->waza && tbl->poke[i] != 0) {
-                    u8 cur;
+                    int cur;
                     switch (e->kind) {
                     case 1:
                         cur = fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(t, tbl->poke[i]);
@@ -459,12 +462,12 @@ static void _GetAllWazaTableValue_StatusUpWaza(FIGHT_TRAINER* t, AI_ALLWAZA_VALI
 
 static void _GetAllWazaTableValue_StatusDownWaza(FIGHT_TRAINER* t, FightOutPokemon** foes, AI_ALLWAZA_VALID_TBL* tbl, s16* pval) {
     u16 tokusei[3];
-    s16 val = *pval;
+    u32 k;
     u8 i;
     u8 j;
-    u8 k;
+    u32 cur;
     u8 m;
-    u8 cur;
+    s16 val = *pval;
     u8 num;
 
     tokusei[0] = 0x1D;
@@ -575,17 +578,17 @@ static void _GetAllWazaTableValue_StatusDownWaza(FIGHT_TRAINER* t, FightOutPokem
 }
 
 static void _GetAllWazaTableValue_JoutaiChangeWazaSub(FIGHT_TRAINER* t, FightOutPokemon** foes, AI_ALLWAZA_VALID_TBL* tbl, s16* pval, u8 state) {
+    u8 i;
+    u16 wazaList[22];
+    u8 j;
     u16 tokusei[2];
-    u16 wazaList[6];
+    u8 k;
     s16 val = *pval;
     u8 numWaza;
-    u8 numTokusei;
-    u8 i;
-    u8 j;
-    u8 k;
     u8 m;
     u8 n;
     u8 cnt;
+    u8 numTokusei;
 
     switch (state) {
     case 8:
@@ -667,7 +670,7 @@ static void _GetAllWazaTableValue_JoutaiChangeWazaSub(FIGHT_TRAINER* t, FightOut
                         if (cnt >= 2) {
                             val = 0;
                         } else if (cnt == 1) {
-                            val = val * 0.5;
+                            val *= 0.5;
                         }
                         break;
                     }
@@ -694,18 +697,18 @@ static void _GetAllWazaTableValue_IryokuWaza(FIGHT_TRAINER* t, FightOutPokemon**
 
     for (i = 0; i < 2; i++) {
         if (tbl->poke[i] != 0) {
-            if (wazaIsWazaTypeId(tbl->waza[i], 1) == 1) {
+            if ((u16)wazaIsWazaTypeId(tbl->waza[i], 1) == 1) {
                 switch (tbl->mode[i]) {
                 case 0:
                 case 1:
-                    if (tbl->target[i] != 0 && fightAi_HitCheckWazaAboutJoutaiAndType(t, tbl->poke[i], tbl->waza[i]) == 0) {
+                    if (tbl->target[i] != 0 && (u16)fightAi_HitCheckWazaAboutJoutaiAndType(t, tbl->poke[i], tbl->waza[i]) == 0) {
                         val = 0;
                     }
                     break;
                 case 2:
                     hits = 0;
                     for (k = 0; k < 2; k++) {
-                        if (foes[k] != 0 && fightAi_HitCheckWazaAboutJoutaiAndType(t, tbl->poke[i], tbl->waza[i]) == 0) {
+                        if (foes[k] != 0 && (u16)fightAi_HitCheckWazaAboutJoutaiAndType(t, tbl->poke[i], tbl->waza[i]) == 0) {
                             hits = 1;
                             break;
                         }
@@ -713,7 +716,7 @@ static void _GetAllWazaTableValue_IryokuWaza(FIGHT_TRAINER* t, FightOutPokemon**
                     if (hits >= 2) {
                         val = 0;
                     } else if (hits == 1) {
-                        val = val * 0.5;
+                        val *= 0.5;
                     }
                     break;
                 }
@@ -730,16 +733,16 @@ s16 fightAiCombo_GetAllWazaValueTable(AI_ALLWAZA_VALID_TBL* tbl, s16 base, FIGHT
 
 s16 fightAiCombo_GetAllWazaMaxValueTable(AI_ALLWAZA_VALID_TBL* tbls, u8 num, s16 base, FIGHT_TRAINER* t, FightOutPokemon** ary, FightOutPokemon** foes, AI_ALLWAZA_VALID_TBL* out, s8 mode) {
     u8 best[40];
-    s16 values[40];
+    s16 values[80];
     s16 maxVal = 0;
-    u8 bestNum = 0;
     u8 i;
+    u8 bestNum = 0;
 
     for (i = 0; i < num; i++) {
         if (tbls != 0) {
             AI_ALLWAZA_VALID_TBL* e = &tbls[i];
             if (((e->poke[0] == ary[0] || e->poke[0] == ary[1]) && e->poke[1] == ary[0]) || e->poke[1] == ary[1]) {
-                values[i] = fightAiCombo_GetAllWazaTableDefValue(t, foes, e, base, mode);
+                values[i] = fightAiCombo_GetAllWazaTableDefValue(t, foes, e, base, (u16)mode);
                 if (maxVal < values[i]) {
                     best[0] = i;
                     maxVal = values[i];
@@ -759,7 +762,7 @@ s16 fightAiCombo_GetAllWazaMaxValueTable(AI_ALLWAZA_VALID_TBL* tbls, u8 num, s16
 }
 
 s32 fightAiCombo_Act(FIGHT_TRAINER* t, FightOutPokemon** foes, s32 p3) {
-    FightOutPokemon* ary[2];
+    FightOutPokemon* ary[8];
     AI_ALLWAZA_VALID_TBL valid;
     u16 cnt;
     u8 i;
@@ -773,7 +776,7 @@ s32 fightAiCombo_Act(FIGHT_TRAINER* t, FightOutPokemon** foes, s32 p3) {
         ComboData* combo = &comboid[getComboID__11DeckTrainerCFUc(deck, i)];
         u8 (*func)(FIGHT_TRAINER*, FightOutPokemon**, u16, FightOutPokemon**, u16, s32, u8) = combo->func;
         u8 active = getComboActive__11DeckTrainerCFUc(deck, i);
-        if (active != 0 && func != 0 && func(t, ary, cnt, foes, p3, 0, active) == 1) {
+        if (active != 0 && func != 0 && func(t, ary, cnt, foes, (u8)p3, 0, active) == 1) {
             fightAi_CreateAction_FromAllWazaValid(t, &valid);
             return 1;
         }
@@ -782,7 +785,7 @@ s32 fightAiCombo_Act(FIGHT_TRAINER* t, FightOutPokemon** foes, s32 p3) {
 }
 
 s32 fightAiCombo_ActContinue(FIGHT_TRAINER* t, FightOutPokemon* poke) {
-    FightOutPokemon* ary[2];
+    FightOutPokemon* ary[8];
     u16 cnt = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, t, ary, 0, 1);
     u8 id = getComboFuncId__15FightOutPokemonFv(poke);
     u8 (*func)(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon**, u16) = comboid[id].continueFunc;

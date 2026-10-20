@@ -186,6 +186,7 @@ void GSgfxPerfbarRender(GSgfxLayer* layer) {
     if (_perfRenderMode == 0) {
         return;
     }
+    u32 j;
     f32 next;
     OSTime start = OSGetTime();
     PerfFrame* last = &_perfLastFrame;
@@ -324,7 +325,6 @@ void GSgfxPerfbarRender(GSgfxLayer* layer) {
     }
     GSprimDraw2DQuadWH(*GSgfxPerfColorToGSgfxCol(0xFFFFFF), 20.0f, 440.0f, _perfPixelSkip * last->cpuTotal, 5.0f);
     {
-        u32 j;
         PerfFrame* f = perfLast();
         f32 prev = _perfPixelSkip * f->cpuTimes[0];
         for (j = 1; j < f->cpuCount; j++) {

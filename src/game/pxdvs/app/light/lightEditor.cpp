@@ -21,6 +21,27 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+
 #pragma pool_strings off
 // ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
@@ -161,6 +182,13 @@ void GSprimSetup3DRender(GSgfxLayer* layer);
 
 
 
+// ---- draft declarations ----
+
+struct _struct_widthArray_S2051_0x8 {
+     f32 unk0;                             
+     f32 unk4;                             
+};
+static struct _struct_widthArray_S2051_0x8 widthArray_S2051[4] = { { -1.0f, -1.0f }, { 1.0f, -1.0f }, { 1.0f, 1.0f }, { -1.0f, 1.0f } };
 void LightEditor::editDirection(GSlight* p0) {
     s32 sp30;
     s32 sp34;
@@ -206,12 +234,10 @@ void LightEditor::editDirection(GSlight* p0) {
     s32 temp_r28_3;
     s32 var_r29;
     s32 var_r30;
-    u32 temp_r28;
 
     temp_f31 = GSgfxVideoGetLastRenderTime();
     var_f28 = 1000.0f;
-    temp_r28 = GSinputButtonsChanged(1);
-    temp_r28_2 = GSinputButtonsPressed(1) & temp_r28;
+    temp_r28_2 = GSinputButtonsPressed(1) & (u32)(GSinputButtonsChanged(1));
     temp_r28_3 = peopleBiosGetMaxNum();
     var_r30 = (s8) M2C_FIELD(this, u8 *, 4);
     if (temp_r28_2 & 0x20) {
@@ -288,8 +314,8 @@ void LightEditor::editPosition(GSlight* p0) {
     s32 sp1C;
     s32 sp30;
     s32 sp34;
-    s32 unksp14;
-    s32 unksp5C;
+    u32 unksp14;
+    u8 unksp5C[sizeof(s32) + 64];
     f32 sp70;
     f32 sp6C;
     f32 sp68;
@@ -303,20 +329,20 @@ void LightEditor::editPosition(GSlight* p0) {
     f32 sp3C;
     f32 sp38;
     f32 sp2C;
-    f32 sp28;
+    volatile f32 sp28;
     f32 sp24;
     f32 sp20;
     f32 sp8;
     GScamera *temp_r3;
     GScamera *temp_r3_2;
     f32 *var_r29;
-    f32 temp_f27;
+    f32 var_f29;
     f32 temp_f28;
     f32 temp_f30;
     f32 temp_f30_2;
     f32 var_f0;
     f32 var_f1;
-    f32 var_f29;
+    f32 temp_f27;
     f32 var_f30;
     f32 var_f31;
     u8 temp_r0;
@@ -342,7 +368,8 @@ void LightEditor::editPosition(GSlight* p0) {
     sp40 = 0.0f;
     GSlightGetPosition((GSlight*)(p0), (f32*)(&sp68));
     var_f29 = temp_f30 * (f32) GSinputGetLeftStickXData(1, 0);
-    temp_f28 = temp_f30 * (f32) GSinputGetLeftStickYData(1, 0);
+    temp_f28 = (f32) GSinputGetLeftStickYData(1, 0);
+    temp_f28 *= temp_f30;
     temp_f27 = temp_f30 * (f32) GSinputGetRightStickXData(1, 0);
     temp_f30_2 = temp_f30 * (f32) GSinputGetRightStickYData(1, 0);
     if (temp_f27 < 0.0f) {
@@ -426,7 +453,7 @@ void LightEditor::editType(GSlight* p0) {
     s32 var_r29;
 
     if (((s8) M2C_FIELD(this, u8 *, 1) == 0) && (GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)(floorDataBiosGetCurrentPtr()))) != p0)) {
-        temp_r30 = GSlightGetType((GSlight*)(p0));
+        temp_r30 = GSlightGetType((GSlight*)((u16)p0));
         var_r29 = 0xFF;
         if (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x400) {
             switch (temp_r30) {                     /* switch 1; irregular */
@@ -550,7 +577,7 @@ void LightEditor::editUpdate() {
     s32 sp14;
     u8 sp12;
     u8 sp11;
-    u32 spC;
+    s32 var_r29;
     u32 sp8;
     GSgfxLayer *temp_r3_6;
     GSlight *temp_r3_3;
@@ -559,7 +586,7 @@ void LightEditor::editUpdate() {
     s32 temp_r31;
     s32 temp_r3;
     s32 temp_r3_7;
-    s32 var_r29;
+    u32 spC;
     s32 var_r29_2;
     s32 var_r31;
     s32 var_r6;
@@ -608,7 +635,7 @@ void LightEditor::editUpdate() {
                     M2C_FIELD(this, u8 *, 2) = 0U;
                     break;
                 case 1:                             /* switch 1 */
-                    M2C_FIELD(this, u8 *, 2) = (u8) (M2C_FIELD(this, u8 *, 2) + 1);
+                    M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) > 2) {
                         if (temp_r31 == 0) {
                             M2C_FIELD(this, u8 *, 1) = 0U;
@@ -619,7 +646,7 @@ void LightEditor::editUpdate() {
                     }
                     break;
                 case 2:                             /* switch 1 */
-                    M2C_FIELD(this, u8 *, 2) = (u8) (M2C_FIELD(this, u8 *, 2) + 1);
+                    M2C_FIELD(this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) > 2) {
                         M2C_FIELD(this, u8 *, 1) = 0U;
                         M2C_FIELD(this, u8 *, 2) = 0U;
@@ -640,7 +667,7 @@ void LightEditor::editUpdate() {
                     M2C_FIELD(this, u8 *, 2) = 2U;
                     break;
                 case 1:                             /* switch 2 */
-                    M2C_FIELD(this, u8 *, 2) = (u8) (M2C_FIELD(this, u8 *, 2) - 1);
+                    M2C_FIELD(this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) - 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) < 0) {
                         M2C_FIELD(this, u8 *, 1) = 0U;
                         M2C_FIELD(this, u8 *, 2) = 0U;
@@ -722,10 +749,10 @@ block_59:
             temp_ret = cameraGetType();
             temp_f1 = M2C_BITWISE(f32, temp_ret);
             if (temp_ret == 6) {
-                GSprint(temp_r3_7, 0x1F4, 0x20, -1, (const char*)("camera mode"), temp_f1);
+                GSprint((u16)temp_r3_7, 0x1F4, 0x20, -1, (const char*)("camera mode"), temp_f1);
                 return;
             }
-            GSprint(temp_r3_7, 0x1F4, 0x20, -1, (const char*)("light mode"), temp_f1);
+            GSprint((u16)temp_r3_7, 0x1F4, 0x20, -1, (const char*)("light mode"), temp_f1);
         }
     }
 }
@@ -756,11 +783,10 @@ LightEditor::LightEditor() {
 extern "C++" {
 #pragma push
 #pragma dont_inline on
-void LightEditor::dispLightModel(GSlight* p0, bool p1) { }
 extern "C++" {
 void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
     f32 sp1C;
-    f32 sp20;
+    volatile f32 sp20;
     volatile s32 sp9;
     volatile s32 spA;
     s32 unksp8;
@@ -793,9 +819,7 @@ void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
     temp_r3 = dbgMenuGetLayerID();
     if (temp_r3 != -1) {
         var_r3 = -1;
-        if (p3 != 0) {
-            var_r3 = -0x7F01;
-        }
+        var_r3 = p3 == 0 ? var_r3 : -0x7F01;
         GSlightGetActive((GSlight*)(p0));
         GSlightGetPosition((GSlight*)(p0), (f32*)(&sp18));
         GSlightGetTarget((GSlight*)(p0), (f32*)(&spC));
@@ -824,65 +848,39 @@ void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
             break;
         }
         var_r6 = -1;
-        if ((s8) M2C_FIELD(this, u8 *, 1) == 0) {
-            var_r6 = var_r3;
-        }
+        var_r6 = !((s8) M2C_FIELD(this, u8 *, 1) == 0) ? var_r6 : var_r3;
         GSprint(temp_r3, p1, p2, var_r6, (const char*)("%s:"), var_r8, M2C_BITWISE(f32, temp_ret));
         var_r6_2 = 0;
-        if (((s8) M2C_FIELD(this, u8 *, 2) == 0) && ((s32) M2C_FIELD(this, u8 *, 1) == 1)) {
-            var_r6_2 = 1;
-        }
+        var_r6_2 = !(((s8) M2C_FIELD((s32)this, u8 *, 2) == 0) && ((s32) M2C_FIELD(this, u8 *, 1) == 1)) ? var_r6_2 : 1;
         var_r6_3 = -1;
-        if (var_r6_2 != 0) {
-            var_r6_3 = var_r3;
-        }
+        var_r6_3 = var_r6_2 == 0 ? var_r6_3 : var_r3;
         GSprint(temp_r3, p1 + 0x34, p2, var_r6_3, (const char*)("(%02x,"), unksp8);
         var_r6_4 = 0;
-        if (((s32) M2C_FIELD(this, u8 *, 2) == 1) && ((s32) M2C_FIELD(this, u8 *, 1) == 1)) {
-            var_r6_4 = 1;
-        }
+        var_r6_4 = !(((s32) M2C_FIELD(this, u8 *, 2) == 1) && ((s32) M2C_FIELD(this, u8 *, 1) == 1)) ? var_r6_4 : 1;
         var_r6_5 = -1;
-        if (var_r6_4 != 0) {
-            var_r6_5 = var_r3;
-        }
+        var_r6_5 = var_r6_4 == 0 ? var_r6_5 : var_r3;
         GSprint(temp_r3, p1 + 0x5B, p2, var_r6_5, (const char*)("%02x,"), sp9);
         var_r3_2 = 0;
-        if (((s32) M2C_FIELD(this, u8 *, 2) == 2) && ((s32) M2C_FIELD(this, u8 *, 1) == 1)) {
-            var_r3_2 = 1;
-        }
+        var_r3_2 = !(((s32) M2C_FIELD(this, u8 *, 2) == 2) && ((s32) M2C_FIELD(this, u8 *, 1) == 1)) ? var_r3_2 : 1;
         var_r6_6 = -1;
-        if (var_r3_2 != 0) {
-            var_r6_6 = var_r3;
-        }
-        var_r24 = var_r6_6;
+        var_r6_6 = var_r3_2 == 0 ? var_r6_6 : var_r3;
         GSprint(temp_r3, p1 + 0x7A, p2, var_r6_6, (const char*)("%02x)"), spA);
+        var_r24 = var_r6_6;
         if (var_r29 != 0) {
             var_r6_7 = 0;
-            if (((s8) M2C_FIELD(this, u8 *, 2) == 0) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) {
-                var_r6_7 = 1;
-            }
+            var_r6_7 = !(((s8) M2C_FIELD(this, u8 *, 2) == 0) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) ? var_r6_7 : 1;
             var_r6_8 = -1;
-            if (var_r6_7 != 0) {
-                var_r6_8 = var_r3;
-            }
+            var_r6_8 = var_r6_7 == 0 ? var_r6_8 : var_r3;
             GSprint(temp_r3, p1 + 0xB6, p2, var_r6_8, (const char*)("(%.2f,"), sp18);
             var_r6_9 = 0;
-            if (((s32) M2C_FIELD(this, u8 *, 2) == 1) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) {
-                var_r6_9 = 1;
-            }
+            var_r6_9 = !(((s32) M2C_FIELD(this, u8 *, 2) == 1) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) ? var_r6_9 : 1;
             var_r6_10 = -1;
-            if (var_r6_9 != 0) {
-                var_r6_10 = var_r3;
-            }
+            var_r6_10 = var_r6_9 == 0 ? var_r6_10 : var_r3;
             GSprint(temp_r3, p1 + 0xF7, p2, var_r6_10, (const char*)(" %.2f,"), sp1C);
             var_r3_3 = 0;
-            if (((s32) M2C_FIELD(this, u8 *, 2) == 2) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) {
-                var_r3_3 = 1;
-            }
+            var_r3_3 = !(((s32) M2C_FIELD(this, u8 *, 2) == 2) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) ? var_r3_3 : 1;
             var_r6_11 = -1;
-            if (var_r3_3 != 0) {
-                var_r6_11 = var_r3;
-            }
+            var_r6_11 = var_r3_3 == 0 ? var_r6_11 : var_r3;
             var_r24 = var_r6_11;
             GSprint(temp_r3, p1 + 0x130, p2, var_r6_11, (const char*)(" %.2f)"), sp20);
         }
@@ -893,4 +891,401 @@ void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
 }
 }
 #pragma pop
+}
+
+extern "C++" {
+void LightEditor::dispLightModel(GSlight* p0, bool p1) {
+    f32 sp44;
+    f32 sp9;
+    f32 spA;
+    f32 unksp8;
+    f32 sp40;
+    f32 sp3C;
+    f32 sp38;
+    f32 sp34;
+    f32 sp30;
+    f32 sp24;
+    f32 sp20;
+    f32 sp1C;
+    f32 sp18;
+    f32 sp14;
+    f32 sp10;
+    f32 spC;
+    PeopleWork *temp_r3;
+    f32 temp_f3;
+    f32 temp_f3_2;
+    f32 temp_f3_3;
+    f32 temp_f4;
+    f32 temp_f4_2;
+    f32 temp_f4_3;
+    f32 var_f0;
+    f32 var_f31;
+    s32 temp_r3_3;
+    struct _struct_widthArray_S2051_0x8 *temp_r11;
+    struct _struct_widthArray_S2051_0x8 *temp_r11_2;
+    struct _struct_widthArray_S2051_0x8 *temp_r11_3;
+    struct _struct_widthArray_S2051_0x8 *temp_r11_4;
+    struct _struct_widthArray_S2051_0x8 *temp_r4;
+    struct _struct_widthArray_S2051_0x8 *temp_r4_2;
+    struct _struct_widthArray_S2051_0x8 *temp_r4_3;
+    struct _struct_widthArray_S2051_0x8 *temp_r4_4;
+    struct _struct_widthArray_S2051_0x8 *temp_r4_5;
+    struct _struct_widthArray_S2051_0x8 *temp_r4_6;
+    struct _struct_widthArray_S2051_0x8 *temp_r4_7;
+    struct _struct_widthArray_S2051_0x8 *temp_r4_8;
+    u8 *temp_r3_2;
+
+    var_f31 = 0.5f;
+    if (GSlightGetActive((GSlight*)(p0)) != 0) {
+        if (p1 != 0) {
+            if (((f32) sin((f64) M2C_FIELD(this, f32 *, 8)) / 2.0f) < 0.0f) {
+                var_f0 = -((f32) sin((f64) M2C_FIELD(this, f32 *, 8)) * 0.5f);
+            } else {
+                var_f0 = (f32) sin((f64) M2C_FIELD(this, f32 *, 8)) / 2.0f;
+            }
+            var_f31 = 0.5f + var_f0;
+            M2C_FIELD(this, f32 *, 8) = (f32) (M2C_FIELD(this, f32 *, 8) + 0.1f);
+            if (M2C_FIELD(this, f32 *, 8) > 6.2831855f) {
+                M2C_FIELD(this, f32 *, 8) = 0.0f;
+            }
+        }
+        if (GSlightGetType((GSlight*)(p0)) != 0) {
+            GSlightGetPosition((GSlight*)(p0), (f32*)(&sp3C));
+            GSlightGetTarget((GSlight*)(p0), (f32*)(&sp24));
+            GSlightGetColor((GSlight*)(p0), (GXColor*)(&unksp8));
+            if (GSlightGetType((GSlight*)(p0)) == 1) {
+                temp_r3 = peopleBiosGetWorkPtr((s32) (s8) M2C_FIELD(this, u8 *, 4));
+                if (temp_r3 != NULL) {
+                    temp_r3_2 = (unsigned char *)(peopleBiosGetPosPtr((PeopleWork*)(temp_r3)));
+                    sp18 = M2C_FIELD(temp_r3_2, f32 *, 0);
+                    sp1C = M2C_FIELD(temp_r3_2, f32 *, 4);
+                    sp20 = M2C_FIELD(temp_r3_2, f32 *, 8);
+                    sp30 = sp3C;
+                    sp34 = sp40;
+                    sp38 = sp44;
+                    PSVECNormalize((const register Vec*)((Vec *) &sp30), (register Vec*)((Vec *) &sp30));
+                    spC = sp30;
+                    sp10 = sp34;
+                    sp14 = sp38;
+                    PSVECScale((const register Vec*)((Vec *) &spC), (register Vec*)((Vec *) &spC), 20.0f);
+                    PSVECAdd((const register Vec*)((Vec *) &spC), (const register Vec*)((Vec *) &sp18), (register Vec*)((Vec *) &sp3C));
+                    sp40 += 5.0f;
+                }
+            }
+            temp_r3_3 = GSgfxLayerFindByID(2);
+            if (temp_r3_3 != 0) {
+                GScameraLoadActiveCameraMatrix((GSgfxLayerID)(M2C_FIELD(temp_r3_3, s32 *, 0x28)));
+                M2C_FIELD(temp_r3_3, s8 *, 0x1656) = 1;
+                M2C_FIELD(temp_r3_3, s8 *, 0x1657) = 1;
+                M2C_FIELD(temp_r3_3, s8 *, 0x1658) = 1;
+                M2C_FIELD(temp_r3_3, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x170C) | 4);
+                M2C_FIELD(temp_r3_3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16A8) | 0x40);
+                M2C_FIELD(temp_r3_3, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x17C4) | 4);
+                M2C_FIELD(temp_r3_3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1760) | 0x40);
+                M2C_FIELD(temp_r3_3, s8 *, 0x165C) = 1;
+                M2C_FIELD(temp_r3_3, s32 *, 0x1660) = 1;
+                M2C_FIELD(temp_r3_3, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x170C) | 8);
+                M2C_FIELD(temp_r3_3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16A8) | 0x40);
+                M2C_FIELD(temp_r3_3, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x17C4) | 8);
+                M2C_FIELD(temp_r3_3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1760) | 0x40);
+                M2C_FIELD(temp_r3_3, s32 *, 0x1664) = 7;
+                M2C_FIELD(temp_r3_3, s8 *, 0x1670) = 0;
+                M2C_FIELD(temp_r3_3, s32 *, 0x1668) = 0;
+                M2C_FIELD(temp_r3_3, s32 *, 0x166C) = 7;
+                M2C_FIELD(temp_r3_3, s8 *, 0x1671) = 0;
+                M2C_FIELD(temp_r3_3, s8 *, 0x1672) = 1;
+                M2C_FIELD(temp_r3_3, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x170C) | 0x10);
+                M2C_FIELD(temp_r3_3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16A8) | 0x40);
+                M2C_FIELD(temp_r3_3, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x17C4) | 0x10);
+                M2C_FIELD(temp_r3_3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1760) | 0x40);
+                M2C_FIELD(temp_r3_3, s32 *, 0xD8C) = 0;
+                M2C_FIELD(temp_r3_3, s32 *, 0x16B8) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16B8) | 2);
+                M2C_FIELD(temp_r3_3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16A8) | 2);
+                M2C_FIELD(temp_r3_3, s32 *, 0x1770) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1770) | 2);
+                M2C_FIELD(temp_r3_3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1760) | 2);
+                if ((s32) M2C_FIELD(temp_r3_3, s32 *, 0x1994) != 1) {
+                    M2C_FIELD(temp_r3_3, s32 *, 0x1994) = 1;
+                    M2C_FIELD(temp_r3_3, s32 *, 0x1990) = (s32) (temp_r3_3 + ((M2C_FIELD(temp_r3_3, s32 *, 0x1994) * 0xBC) + 0x1818));
+                }
+                M2C_FIELD(temp_r3_3, s32 *, 0x1644) = 1;
+                M2C_FIELD(temp_r3_3, s32 *, 0x1648) = 4;
+                M2C_FIELD(temp_r3_3, s32 *, 0x164C) = 5;
+                M2C_FIELD(temp_r3_3, s32 *, 0x1650) = 5;
+                M2C_FIELD(temp_r3_3, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x170C) | 1);
+                M2C_FIELD(temp_r3_3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16A8) | 0x40);
+                M2C_FIELD(temp_r3_3, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x17C4) | 1);
+                M2C_FIELD(temp_r3_3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1760) | 0x40);
+                ((GSgfxLayer*)((GSgfxLayer *) temp_r3_3))->setRenderStateAndSelect((GSgfxVF*)(GSgfxVFGetPredef(0)));
+                M2C_FIELD(temp_r3_3, s32 *, 0x1998) = 0x80;
+                ((GSgfxLayer*)((GSgfxLayer *) temp_r3_3))->beginSurface(0x18U);
+                temp_f3 = sp3C + var_f31;
+                temp_f4 = sp3C - var_f31;
+                *(f32 *)0xCC008000 = temp_f3;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk0) + sp40;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = temp_f3;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[1].unk0) + sp40;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[1].unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = temp_f3;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[2].unk0) + sp40;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[2].unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = temp_f3;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[3].unk0) + sp40;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[3].unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = temp_f4;
+                temp_r4 = &widthArray_S2051[3 - 0];
+                temp_f3_2 = sp40 + var_f31;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4->unk0) + sp40;
+                temp_r4_2 = &widthArray_S2051[3 - 1];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = temp_f4;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_2->unk0) + sp40;
+                temp_r4_3 = &widthArray_S2051[3 - 2];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_2->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = temp_f4;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_3->unk0) + sp40;
+                temp_r4_4 = &widthArray_S2051[3 - 3];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_3->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = temp_f4;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_4->unk0) + sp40;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_4->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                temp_f4_2 = sp40 - var_f31;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk0) + sp3C;
+                *(f32 *)0xCC008000 = temp_f3_2;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[1].unk0) + sp3C;
+                *(f32 *)0xCC008000 = temp_f3_2;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[1].unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[2].unk0) + sp3C;
+                *(f32 *)0xCC008000 = temp_f3_2;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[2].unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[3].unk0) + sp3C;
+                *(f32 *)0xCC008000 = temp_f3_2;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[3].unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                temp_f3_3 = sp44 + var_f31;
+                temp_r4_5 = &widthArray_S2051[3 - 0];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_5->unk0) + sp3C;
+                *(f32 *)0xCC008000 = temp_f4_2;
+                temp_r4_6 = &widthArray_S2051[3 - 1];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_5->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_6->unk0) + sp3C;
+                *(f32 *)0xCC008000 = temp_f4_2;
+                temp_r4_7 = &widthArray_S2051[3 - 2];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_6->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_7->unk0) + sp3C;
+                *(f32 *)0xCC008000 = temp_f4_2;
+                temp_r4_8 = &widthArray_S2051[3 - 3];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_7->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_8->unk0) + sp3C;
+                *(f32 *)0xCC008000 = temp_f4_2;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r4_8->unk4) + sp44;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                temp_f4_3 = sp44 - var_f31;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk0) + sp3C;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk4) + sp40;
+                *(f32 *)0xCC008000 = temp_f3_3;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[1].unk0) + sp3C;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[1].unk4) + sp40;
+                *(f32 *)0xCC008000 = temp_f3_3;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[2].unk0) + sp3C;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[2].unk4) + sp40;
+                *(f32 *)0xCC008000 = temp_f3_3;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[3].unk0) + sp3C;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[3].unk4) + sp40;
+                *(f32 *)0xCC008000 = temp_f3_3;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                temp_r11 = &widthArray_S2051[3 - 0];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r11->unk0) + sp3C;
+                temp_r11_2 = &widthArray_S2051[3 - 1];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r11->unk4) + sp40;
+                *(f32 *)0xCC008000 = temp_f4_3;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r11_2->unk0) + sp3C;
+                temp_r11_3 = &widthArray_S2051[3 - 2];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r11_2->unk4) + sp40;
+                *(f32 *)0xCC008000 = temp_f4_3;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r11_3->unk0) + sp3C;
+                temp_r11_4 = &widthArray_S2051[3 - 3];
+                *(f32 *)0xCC008000 = (var_f31 * temp_r11_3->unk4) + sp40;
+                *(f32 *)0xCC008000 = temp_f4_3;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r11_4->unk0) + sp3C;
+                *(f32 *)0xCC008000 = (var_f31 * temp_r11_4->unk4) + sp40;
+                *(f32 *)0xCC008000 = temp_f4_3;
+                *(f32 *)0xCC008000 = unksp8;
+                *(f32 *)0xCC008000 = sp9;
+                *(f32 *)0xCC008000 = spA;
+                *(f32 *)0xCC008000 = 0xFF;
+                ((GSgfxLayer*)((GSgfxLayer *) temp_r3_3))->endSurface();
+                if (p1 != 0) {
+                    M2C_FIELD(temp_r3_3, s32 *, 0x1998) = 0xA8;
+                    M2C_FIELD(temp_r3_3, s8 *, 0xD34) = 0xC;
+                    M2C_FIELD(temp_r3_3, s32 *, 0xD38) = 0;
+                    M2C_FIELD(temp_r3_3, s32 *, 0x16AC) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16AC) | 4);
+                    M2C_FIELD(temp_r3_3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16A8) | 1);
+                    M2C_FIELD(temp_r3_3, s32 *, 0x1764) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1764) | 4);
+                    M2C_FIELD(temp_r3_3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1760) | 1);
+                    ((GSgfxLayer*)((GSgfxLayer *) temp_r3_3))->beginSurface(6U);
+                    *(u8 *)0xCC008000 = sp3C;
+                    *(u8 *)0xCC008000 = (f32) (sp40 - 100.0f);
+                    *(u8 *)0xCC008000 = sp44;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = sp3C;
+                    *(u8 *)0xCC008000 = (f32) (100.0f + sp40);
+                    *(u8 *)0xCC008000 = sp44;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = (f32) (sp3C - 100.0f);
+                    *(u8 *)0xCC008000 = sp40;
+                    *(u8 *)0xCC008000 = sp44;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = (f32) (100.0f + sp3C);
+                    *(u8 *)0xCC008000 = sp40;
+                    *(u8 *)0xCC008000 = sp44;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = sp3C;
+                    *(u8 *)0xCC008000 = sp40;
+                    *(u8 *)0xCC008000 = (f32) (sp44 - 100.0f);
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = sp3C;
+                    *(u8 *)0xCC008000 = sp40;
+                    *(u8 *)0xCC008000 = (f32) (100.0f + sp44);
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    ((GSgfxLayer*)((GSgfxLayer *) temp_r3_3))->endSurface();
+                }
+                if (GSlightGetType((GSlight*)(p0)) == 1) {
+                    PSVECScale((const register Vec*)((Vec *) &sp30), (register Vec*)((Vec *) &sp30), 10.0f);
+                    M2C_FIELD(temp_r3_3, s32 *, 0x1998) = 0xB0;
+                    M2C_FIELD(temp_r3_3, s8 *, 0xD34) = 0xC;
+                    M2C_FIELD(temp_r3_3, s32 *, 0xD38) = 0;
+                    M2C_FIELD(temp_r3_3, s32 *, 0x16AC) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16AC) | 4);
+                    M2C_FIELD(temp_r3_3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x16A8) | 1);
+                    M2C_FIELD(temp_r3_3, s32 *, 0x1764) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1764) | 4);
+                    M2C_FIELD(temp_r3_3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3_3, s32 *, 0x1760) | 1);
+                    ((GSgfxLayer*)((GSgfxLayer *) temp_r3_3))->beginSurface(2U);
+                    *(u8 *)0xCC008000 = sp3C;
+                    *(u8 *)0xCC008000 = sp40;
+                    *(u8 *)0xCC008000 = sp44;
+                    *(u8 *)0xCC008000 = unksp8;
+                    *(u8 *)0xCC008000 = sp9;
+                    *(u8 *)0xCC008000 = spA;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    *(u8 *)0xCC008000 = (f32) (sp3C - sp30);
+                    *(u8 *)0xCC008000 = (f32) (sp40 - sp34);
+                    *(u8 *)0xCC008000 = (f32) (sp44 - sp38);
+                    *(u8 *)0xCC008000 = unksp8;
+                    *(u8 *)0xCC008000 = sp9;
+                    *(u8 *)0xCC008000 = spA;
+                    *(u8 *)0xCC008000 = 0xFF;
+                    ((GSgfxLayer*)((GSgfxLayer *) temp_r3_3))->endSurface();
+                }
+            }
+        }
+    }
+}
 }

@@ -151,7 +151,7 @@ void menuSubCursorAnimeValGet(f32*, int*);
 bool winSeqCheckMove(int);
 void menuSubCursorAnimeStart(void);
 void menuButtonNormal(tagWINDOW_WORK*);
-void menuSubCursorAnimeInit(f32*, int);
+void menuSubCursorAnimeInit(void);
 void menuSubCursorAnimeMain(void);
 void* GSmemAlloc(u32);
 void GSmemFree(void*);
@@ -308,7 +308,7 @@ static void _setBattleDiskSellOut(int index) {
     }
 }
 static int _getBattleDiskShopID(void) {
-    u16 flags[9];
+    u16 flags[11];
     int count;
     u32 i;
     u16* list;
@@ -700,17 +700,15 @@ int menuShopCtrl(tagWINDOW_WORK* w) {
     SHOP_MENU_ARG* arg = (SHOP_MENU_ARG*)w->params[0];
     f32 v;
     f32 n;
-    f32* t;
     switch (w->state) {
     case 0:
         if (w->seqSet == 0) {
             winSeqSetMenu(0x3C, 0x78);
             *arg->curPos = 0.0f;
             *arg->isScroll = 0;
-            t = arg->rollUpTime;
-            *t = 0.0f;
+            *arg->rollUpTime = 0.0f;
             w->seqSet = 1;
-            menuSubCursorAnimeInit(t, 0);
+            menuSubCursorAnimeInit();
         }
         break;
     case 2:
@@ -724,7 +722,8 @@ int menuShopCtrl(tagWINDOW_WORK* w) {
         }
         v = *arg->curPos;
         if (v < 0.0f) {
-            n = 7.0f + v;
+            n = v;
+            n += 7.0f;
             *arg->curPos = n;
             if (n > 0.0f) {
                 *arg->curPos = 0.0f;
@@ -869,15 +868,15 @@ int menuShopDrawBallCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 extern "C" {
 int menuShopDrawListText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     int last;
-    int scroll;
-    int count;
     int listY;
-    int priceX;
-    SHOP_MENU_ARG* arg;
+    int count;
     int row;
+    s32 priceX;
+    SHOP_MENU_ARG* arg;
+    int scroll;
     int idx;
-    int first;
     int y;
+    int first;
     u16 id;
     u32 nameMsg;
     u32 nameW;
@@ -918,7 +917,8 @@ int menuShopDrawListText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
                     GSmsgPrint2(w->layer, priceX, y, -1, 0xC5EB);
                 } else {
                     GSmsgPrint2(w->layer, priceX, y, -1, 0x42AF);
-                    msgctrlSetValue(0x50, getItemPrice(id));
+                    s32 tmp1 = getItemPrice(id);
+                    msgctrlSetValue(0x50, tmp1);
                     GSmsgPrint2(w->layer, sp->w - ((u32)GSmsgGetRect(0x434E) >> 16), y, -1, 0x434E);
                 }
             } else {
@@ -1004,8 +1004,8 @@ int menuShopDrawHaveText2(tagWINDOW_WORK* w) {
 }
 extern "C" {
 int menuShopDrawHaveWaku(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
-    bool show = false;
     u8 mode = ((SHOP_MENU_ARG*)w->params[0])->mode;
+    bool show = false;
     if (mode == 0 || mode == 1 || mode == 4 || mode == 6) {
         show = true;
     }

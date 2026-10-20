@@ -1,4 +1,6 @@
-// Not yet decompiled.
+// Matching. Dark Pokemon records + iteration over scenario dark Pokemon with function-local listener classes
+// (openDarkPokeInfo). Their compiler-numbered names ($39/$29/$19/$6) are mapped onto the target names in
+// config/GXXE01/symbols.txt (retail numbers 2060.., a precompiled header shifted its counter).
 #include <dolphin/types.h>
 // ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
@@ -27,14 +29,24 @@ struct DarkPokemon {
     f32 getDarkPoint() const;
     void setPlace(darkPokemonWhere, unsigned char);
     void setDarkPoint(float);
+    s32 getStatus() const;
+    u8 isSnach() const;
+    u8 isRelive() const;
+    u16 getCatchFloorId() const;
 };
 struct DeckDarkPokemon {
     u8 _draft[1];
     bool isScenarioPokemon() const;
+    u8 getWorth() const;
 };
-struct darkpokemonIterateListener {
-    u8 _draft[1];
+}
+// Callback interface of darkpokemonScenarioPokemonIterate: exec is called for every scenario dark Pokemon
+// and stops the iteration when it returns 0.
+class darkpokemonIterateListener {
+public:
+    virtual u8 exec(u32 index, DeckDarkPokemon* deck, DarkPokemon* dark) = 0;
 };
+extern "C" {
 
 extern "C" {
 DarkPokemon* darkPokemonGetDarkPokemon(u32);
@@ -47,40 +59,87 @@ u32 deckGetDarkPokemonSize(void);
 DeckDarkPokemon* deckGetDeckDarkPokemon(u32 index);
 void deckInitDarkPokemon(void);
 void* savedataGetStatus(void* save, s32 kind);
-extern s32 __vt__36openDarkPokeInfo;
 }
 extern "C++" {
-s32 darkpokemonScenarioPokemonIterate(darkpokemonIterateListener* p0);
+s32 darkpokemonScenarioPokemonIterate(darkpokemonIterateListener* listener);
 }
-s32 __vt__26darkpokemonIterateListener;
-u8 darkpokemonCheckUnderTaker() { return 0; }
+u8 darkpokemonCheckUnderTaker() {
+    class openDarkPokeInfo : public darkpokemonIterateListener {
+    public:
+        s32 count;
+        openDarkPokeInfo() : count(0) {}
+        virtual u8 exec(u32 index, DeckDarkPokemon* deck, DarkPokemon* dark) {
+            if (dark->getStatus() == 2 && !dark->isSnach() && deck->getWorth() && dark->getCatchFloorId() != 0xB5) {
+                count++;
+            }
+            return 1;
+        }
+    } info;
+    darkpokemonScenarioPokemonIterate(&info);
+    return info.count != 0;
+}
 extern "C" {
-s32 darkPokemonGetReliveNum() { return 0; }
+s32 darkPokemonGetReliveNum() {
+    class openDarkPokeInfo : public darkpokemonIterateListener {
+    public:
+        s32 count;
+        openDarkPokeInfo() : count(0) {}
+        virtual u8 exec(u32 index, DeckDarkPokemon* deck, DarkPokemon* dark) {
+            if (dark->isRelive()) {
+                count++;
+            }
+            return 1;
+        }
+    } info;
+    darkpokemonScenarioPokemonIterate(&info);
+    return info.count;
+}
 extern "C" {
-s32 darkPokemonGetSnatchSuccessNum() { return 0; }
+s32 darkPokemonGetSnatchSuccessNum() {
+    class openDarkPokeInfo : public darkpokemonIterateListener {
+    public:
+        s32 count;
+        openDarkPokeInfo() : count(0) {}
+        virtual u8 exec(u32 index, DeckDarkPokemon* deck, DarkPokemon* dark) {
+            if (dark->isSnach()) {
+                count++;
+            }
+            return 1;
+        }
+    } info;
+    darkpokemonScenarioPokemonIterate(&info);
+    return info.count;
+}
 extern "C" {
-s32 darkPokemonGetMeetNum() { return 0; }
+s32 darkPokemonGetMeetNum() {
+    class openDarkPokeInfo : public darkpokemonIterateListener {
+    public:
+        s32 count;
+        openDarkPokeInfo() : count(0) {}
+        virtual u8 exec(u32 index, DeckDarkPokemon* deck, DarkPokemon* dark) {
+            if (dark->getStatus() > 0) {
+                count++;
+            }
+            return 1;
+        }
+    } info;
+    darkpokemonScenarioPokemonIterate(&info);
+    return info.count;
+}
 extern "C++" {
-s32 darkpokemonScenarioPokemonIterate(darkpokemonIterateListener* p0) {
-    u32 var_r31;
-    DeckDarkPokemon *temp_r30;
-    DarkPokemon *temp_r29;
-
-    if (p0 == NULL) {
+s32 darkpokemonScenarioPokemonIterate(darkpokemonIterateListener* listener) {
+    u32 i;
+    if (listener == NULL) {
         return 0;
     }
-    var_r31 = 0;
-loop_9:
-    if (var_r31 >= deckGetDarkPokemonSize()) {
-        return 1;
+    for (i = 0; i < deckGetDarkPokemonSize(); i++) {
+        DeckDarkPokemon* deck = deckGetDeckDarkPokemon(i);
+        DarkPokemon* dark = darkPokemonGetDarkPokemon(i);
+        if (deck != NULL && dark != NULL && deck->isScenarioPokemon() && listener->exec(i, deck, dark) == 0) {
+            return 0;
+        }
     }
-    temp_r30 = deckGetDeckDarkPokemon(var_r31);
-    temp_r29 = darkPokemonGetDarkPokemon(var_r31);
-    if ((temp_r30 != NULL) && (temp_r29 != NULL) && (((DeckDarkPokemon*)(temp_r30))->isScenarioPokemon() != 0) && (M2C_FIELD((*(s32*)(p0)), u8 (**)(darkpokemonIterateListener *, u32, DeckDarkPokemon *, DarkPokemon *), 8)(p0, (u16)var_r31, temp_r30, temp_r29) == 0)) {
-        return 0;
-    }
-    var_r31 += 1;
-    goto loop_9;
+    return 1;
 }
 }
 
@@ -92,22 +151,17 @@ void darkpokemonValInit() {
 }
 
 extern "C++" {
-void DarkPokemon::setPlace(darkPokemonWhere p0, unsigned char p1) {
-    M2C_FIELD(this, s32 *, 0) = (s32) ((M2C_FIELD(this, s32 *, 0) & ~0x38000) | ((p0 << 0xF) & 0x38000));
-    M2C_FIELD(this, u8 *, 0x11) = 0U;
-    switch (p0) {                                   /* irregular */
-    case 1:
-        if (p1 <= 6U) {
-            M2C_FIELD(this, u8 *, 0x11) = p1;
-            return;
+void DarkPokemon::setPlace(darkPokemonWhere where, unsigned char id) {
+    M2C_FIELD(this, s32 *, 0) = (s32) ((M2C_FIELD(this, s32 *, 0) & ~0x38000) | ((where << 0xF) & 0x38000));
+    M2C_FIELD(this, u8 *, 0x11) = 0;
+    if (where == 1) {
+        if (id <= 6) {
+            M2C_FIELD(this, u8 *, 0x11) = id;
         }
-        return;
-    case 2:
-        M2C_FIELD(this, u8 *, 0x11) = p1;
-        return;
-    case 3:
-        M2C_FIELD((u16)this, u8 *, 0x11) = p1;
-        return;
+    } else if (where == 2) {
+        M2C_FIELD(this, u8 *, 0x11) = id;
+    } else if (where == 3) {
+        M2C_FIELD(this, u8 *, 0x11) = id;
     }
 }
 }
@@ -120,15 +174,8 @@ f32 DarkPokemon::getDarkPoint() const {
 
 extern "C++" {
 void DarkPokemon::setDarkPoint(float p0) {
-    f32 var_f0;
-    s32 temp_r4;
-
-    var_f0 = 65535.0f;
-    temp_r4 = (s32) p0;
-    if ((f32) temp_r4 < 65535.0f) {
-        var_f0 = (f32) temp_r4;
-    }
-    M2C_FIELD(this, s32 *, 0x24) = (s32) var_f0;
+    s32 point = p0;
+    M2C_FIELD(this, s32 *, 0x24) = (s32)((f32)point < 65535.0f ? (f32)point : 65535.0f);
 }
 }
 

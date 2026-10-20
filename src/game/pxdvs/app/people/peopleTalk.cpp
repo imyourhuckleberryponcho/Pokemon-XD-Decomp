@@ -225,11 +225,18 @@ void peopleSetTalkKeyWaitCallback() {
 }
 
 void peopleTalkMsg(s32 group, s32 id, s32 msg) {
+    void* ch;
+    u32 value;
+    PeopleInfo* info;
+    u16 flag;
+    u32 nameID;
     u8 se = 0;
+    FloorBgmMask* bgm;
     PeopleWork* work = peopleGet(group, id);
+    s32 flags;
     if (work != 0) {
         if (work != 0) {
-            s32 flags = peopleGetFlags(group, id);
+            flags = peopleGetFlags(group, id);
             if (flags & 0x20) {
                 if (work->rotating == 0) {
                     work->savedAngle = work->angleY;
@@ -248,15 +255,15 @@ void peopleTalkMsg(s32 group, s32 id, s32 msg) {
                     work->rotating = 1;
                 }
             }
-            PeopleInfo* info = peopleInfoBiosGetPtr(work->modelResID);
+            info = peopleInfoBiosGetPtr(work->modelResID);
             if (info != 0) {
                 se = peopleInfoBiosGetTalkSe(info);
             }
-            u32 value = 0x1772;
-            void* ch = floorCharacterBiosFindByResID(work->group, work->id);
+            value = 0x1772;
+            ch = floorCharacterBiosFindByResID(work->group, work->id);
             if (ch != 0) {
-                u32 nameID = floorCharacterBiosGetNameID(ch);
-                u16 flag = charNameBiosGetHearFlag(nameID);
+                nameID = floorCharacterBiosGetNameID(ch);
+                flag = charNameBiosGetHearFlag(nameID);
                 if (flag == 0) {
                     value = 0x1772;
                 } else if (GSflagTest(flag) == 1) {
@@ -270,7 +277,7 @@ void peopleTalkMsg(s32 group, s32 id, s32 msg) {
         }
         _peopleTalkRes.group = work->group;
         _peopleTalkRes.id = work->id;
-        FloorBgmMask* bgm = floorSound_getBgmMaskObj();
+        bgm = floorSound_getBgmMaskObj();
         if (bgm != 0) {
             bgm->startMask();
             winMsgOpenFieldWithSE(msg, 1, 0, se);
@@ -288,19 +295,21 @@ PeopleWork* peopleTalkCheck(u32 group, u32 id, f32 unused, f32 range) {
     PeopleInfo* info;
     void* ch;
     u32 resGroup = 0;
-    u32 resId = 0;
+    u32 resId;
     f32 dist;
     f32 ang;
     f32 bestAng;
     f32 myRadius;
     f32 bestArea = 10000.0f;
-    f32 limit = 0.017453292f * range;
+    f32 limit;
     GSvec target;
     GSvec heroMember;
     GSvec hero;
     heroMember.x = 0.0f;
     heroMember.y = 0.0f;
     heroMember.z = 0.0f;
+    resId = 0;
+    limit = 0.017453292f * range;
     me = peopleGet(group, id);
     if (me == 0) {
         return 0;
@@ -360,8 +369,7 @@ PeopleWork* peopleTalkCheck(u32 group, u32 id, f32 unused, f32 range) {
             peopleInfoBiosGetColBallSize(info);
             if (peopleInsideCheck(&hero, &target, &heroMember)) continue;
         }
-        f32 fa = (f32)fabs(ang);
-        f32 area = dist * dist * fa * 0.5f;
+        f32 area = dist * dist * (f32)fabs(ang) / 2.0f;
         GSlogWritef("talk ->  people(%d,%d)  len =%.2f  ang =%.2f  area =%.2f\n", other->group, other->id, dist, ang, area);
         u8 better = 0;
         if (area < bestArea) {

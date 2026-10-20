@@ -1332,7 +1332,6 @@ void menuCB_RuleNameChengeBeforeJob(u8 first) {
 }
 
 void menuCB_MenuDispCheckONorOFF_RULE(CBWin* win, s32 idx) {
-    bool on;
     if (_CB.unkB124 != -1) {
         menuSetDisp(win->menuId, 0);
         if (_CB.unkB124 == idx) {
@@ -1345,11 +1344,7 @@ void menuCB_MenuDispCheckONorOFF_RULE(CBWin* win, s32 idx) {
         }
     } else {
         if (idx == 1) {
-            on = false;
-            if (_CB.unkB118 == idx || _CB.unkB118 == 5) {
-                on = true;
-            }
-            menuCB_MenuDispCheckONorOFF(win, on);
+            menuCB_MenuDispCheckONorOFF(win, _CB.unkB118 == idx || _CB.unkB118 == 5);
             return;
         }
         menuCB_MenuDispCheckONorOFF(win, _CB.unkB118 == idx);
@@ -1798,9 +1793,10 @@ void menuCBPokemonEntryBallAnaDisp(CBItem* item, s32 player, u32 idx) {
 }
 
 void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
+    enum TsE { TsE0 };
     u16 max = menuCBBios_ParticipationPokemonMax();
     u16 num = toolentryTaisenGetPokemonNum(player);
-    u16 order = toolentryTaisengetEtnryPokemonOrderNum(player);
+    enum TsE order = (enum TsE)(toolentryTaisengetEtnryPokemonOrderNum(player));
     num = num < max ? num : max;
     if (idx > num || idx > order) {
         if (pauseIsPause()) {
@@ -1826,7 +1822,7 @@ void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
     CBB.on[player][idx] = 1;
     item->x = CBB.x[player][idx] + CBB.y[player][idx];
     if (CBB.y[player][idx] != 0) {
-        CBB.y[player][idx] = CBB.y[player][idx] - 5;
+        CBB.y[player][idx] -= 5;
     }
     winSpriteSetDisp(item, 1);
     if (*(s32*)((u8*)&_CB + player * 0x1320 + idx * 4 + 0x1C) == 0xF) {
@@ -2016,7 +2012,8 @@ void menuCBPCBOXTitleNameDisp(CBWin* win, CBItem* item, s8 box, s32 x) {
     msgctrlSetValue(0x37, PCBOX::getPointer()->getPokemonBoxName((u16)box));
     w = GSmsgGetRect(0x4277) >> 16;
     x1 = item->w / 2 - w / 2;
-    GSmsgPrint2(win->layer, (s16)(x1 + x), 0, win->alpha | ~0xFF, 0x4277);
+    x1 += x;
+    GSmsgPrint2(win->layer, x1, 0, win->alpha | ~0xFF, 0x4277);
     spriteClearScissor(win->layer);
 }
 
@@ -2027,7 +2024,8 @@ void menuCBReliveTitleNameDisp(CBWin* win, CBItem* item, s32 id, s32 x) {
     msgctrlSetValue(0x37, GSmsgGetGSchar(id));
     w = GSmsgGetRect(0x4277) >> 16;
     x1 = item->w / 2 - w / 2;
-    GSmsgPrint2(win->layer, (s16)(x1 + x), 0, win->alpha | ~0xFF, 0x4277);
+    x1 += x;
+    GSmsgPrint2(win->layer, x1, 0, win->alpha | ~0xFF, 0x4277);
     spriteClearScissor(win->layer);
 }
 
@@ -2038,7 +2036,8 @@ void menuCBGCEntryTitleDisp(CBWin* win, CBItem* item, s32 msg, s32 x) {
     msgctrlSetValue(0x37, heroBiosGetNamePtr(_CB.hero));
     w = GSmsgGetRect(msg) >> 16;
     x1 = item->w / 2 - w / 2;
-    GSmsgPrint2(win->layer, (s16)(x1 + x), 0, win->alpha | ~0xFF, msg);
+    x1 += x;
+    GSmsgPrint2(win->layer, x1, 0, win->alpha | ~0xFF, msg);
     spriteClearScissor(win->layer);
 }
 
@@ -2539,7 +2538,7 @@ void menuCB2DPokemonDisp2(CBWin* win, CBItem* item, u32 type, u32 index) {
         }
         pos.x = item->x + win->x8C + 0x20;
         pos.y = item->y + 0x20;
-        if (CB32(0xB150) < 0) {
+        if ((s16)CB32(0xB150) < 0) {
             a = &antR[i];
             a->initByPokemonAndSetColorAnimationInAny(p);
             antR[i].setPos(pos);
@@ -2564,10 +2563,10 @@ void menuCB2DPokemonDisp2(CBWin* win, CBItem* item, u32 type, u32 index) {
 }
 
 void menuCB2DPokemonDisp(CBWin* win, CBItem* item, u32 type, u32 index) {
+    CAnt* a;
     Pokemon* p = menuCBPokemonPtrGet(type, index);
     u32 i = menuCBPokemonGetIndex(type, index);
     CAntPos pos;
-    CAnt* a;
     if (i == 0x1E) {
         _menuCB2DPokemonNewSet(0);
         _menuCB2DPokemonNewSet(1);
@@ -2685,7 +2684,7 @@ void menuCB_BattleBA_HPBarDispSet(CBItem* sprite, s32 p, s32 i) {
             }
         } else {
             if (!pauseIsPause()) {
-                battleEndHPStartFlag -= 1;
+                battleEndHPStartFlag = battleEndHPStartFlag - 1;
             }
             if (battleEndHPStartFlag == 0 && CB32(0xB180) != 0) {
                 menuCB_SE_Play(0x5D0);
@@ -3104,7 +3103,7 @@ void toobattle_drawHeroName(CBWin* win, s32 player) {
 }
 
 void toolbattle_drawHeroID(CBWin* win, s32 player) {
-    u16 wide[128];
+    u16 wide[129];
     char str[128];
     u32 rnd = heroBiosGetRnd((u8*)&_CB + player * 0x1320 + 0x563C);
     u8 d0 = rnd % 10;

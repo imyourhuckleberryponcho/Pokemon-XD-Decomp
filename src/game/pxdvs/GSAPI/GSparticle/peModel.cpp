@@ -414,8 +414,7 @@ void peModelContainer::Render() {
                         default:
                             continue;
                         }
-                        Mtx* mp = &mtx;
-                        HSD_JObjCopyMtx(jobj, *mp);
+                        HSD_JObjCopyMtx(jobj, *(Mtx*)(&mtx));
                         jobj->flags |= 0x3800000;
                         HSD_JObjSetMtxDirty(jobj);
                         if (m->loopTime > 0.00001f) {
@@ -550,14 +549,14 @@ bool peModelNode::Update(peEmitterNode* e, _peModel* m, f32 dt) {
     fq.x = (flip & 1) ? -rotQuat.x : rotQuat.x;
     fq.y = (flip & 2) ? -rotQuat.y : rotQuat.y;
     fq.z = (flip & 4) ? -rotQuat.z : rotQuat.z;
-    fq.w = rotQuat.w;
+    local.rot.x = out.x;
     euler.x = offset.x * evalSpline(m->sclXSpline, t);
     euler.y = offset.y * evalSpline(m->sclYSpline, t);
     euler.z = offset.z * evalSpline(m->sclZSpline, t);
-    PSQUATMultiply(&spinQuat, &fq, &out);
-    local.pos.x = pos.x;
-    local.rot.x = out.x;
+    fq.w = rotQuat.w;
     local.pos.y = pos.y;
+    local.pos.x = pos.x;
+    PSQUATMultiply(&spinQuat, &fq, &out);
     local.pos.z = pos.z;
     local.rot.y = out.y;
     local.rot.z = out.z;

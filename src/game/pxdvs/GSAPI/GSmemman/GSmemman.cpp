@@ -19,9 +19,9 @@ enum OSHeapHandle { OSHeapHandle_draft_dummy };
 
 extern "C" {
 
-extern u16 _currentLayer;
-extern u32 _currentHeap;
-extern u8 _memInitialized;
+static u8 _memInitialized;
+static u16 _currentLayer;
+static u32 _currentHeap = -1;
 
 void* OSAllocFromHeap(s32 heap, u32 size);
 void OSFreeToHeap(s32 heap, void* ptr);
@@ -52,7 +52,7 @@ void GSmemDumpHeap(s32 p0);
 void* GSmemInit(void* lo, void* hi, s32);
 void GSmemInitPool(void);
 u8 GSmemIsInitialized(void);
-s32 GSmemVisitHeapAllocated(void*, s32, s32*);
+s32 GSmemVisitHeapAllocated(s32, void*, s32, s32*);
 s32 OSCheckHeap(OSHeapHandle heap);
 s32 OSCreateExternalHeap(s32, s32, s32, s32);
 OSHeapHandle OSCreateHeap(void* start, void* end);
@@ -63,11 +63,8 @@ extern "C++" {
 static void _dumpHeapVisitor(void* p0, unsigned long p1, void* p2, void* p3);
 }
 
-s32 GSmemCheckHeap(s32 p0) {
-    s32 sp8;
-
-    sp8 = p0;
-    return (OSCheckHeap((OSHeapHandle)(p0)) >> 0x1FU) ^ 1;
+s32 GSmemCheckHeap(s32 heap) {
+    return (u32)OSCheckHeap((OSHeapHandle)heap) >> 31 ^ 1;
 }
 }
 u32 GSmemGetLargestFree(void) {
@@ -122,16 +119,18 @@ static void _dumpHeapVisitor(void* p0, unsigned long p1, void* p2, void* p3) {
 }
 
 extern "C" {
-void GSmemDumpHeap(s32 p0) {
-    s32 sp14;
-    s32 sp10;
-    s32 spC;
-    s32 sp8;
+void GSmemDumpHeap(s32 heap) {
+    s32 size;
+    s32 largest;
+    s32 free;
+    s32 used;
+    s32 count;
 
-    sp8 = 0;
-    GSmemVisitHeapAllocated((u8 *) p0, (s32) _dumpHeapVisitor, NULL);
-    OSGetHeapFreeSize((long)(p0), (long)(&sp10), (unsigned long *)(&sp14));
-    spC = OSGetHeapSize(p0) - sp10;
+    count = 0;
+    GSmemVisitHeapAllocated(heap, (void*)_dumpHeapVisitor, 0, &count);
+    OSGetHeapFreeSize(heap, (s32)&free, (u32*)&largest);
+    size = OSGetHeapSize(heap);
+    used = size - free;
 }
 }
 
@@ -171,20 +170,23 @@ void* GSmemAllocFillHeap(s32 heap, u32 size, u8 fill) {
 }
 
 void* GSmemAllocHeap(s32 heap, u32 size) {
-    return OSAllocFromHeap(heap, size);
+    void* p = OSAllocFromHeap(heap, size);
+    return p;
 }
 
 s32 GSmemSetAllocMethodHeap(s32 heap, s32 method) {
     return OSSetAllocMethodHeap(heap, method);
 }
 
-void GSmemSetCurrentHeap(s32 heap) {
-    GSmemGetCurrentHeap();
-    _currentHeap = heap;
-}
 
 u16 GSmemGetCurrentLayer(void) {
     return _currentLayer;
+}
+
+s32 GSmemSetCurrentHeap(s32 heap) {
+    s32 old = GSmemGetCurrentHeap();
+    _currentHeap = heap;
+    return old;
 }
 
 u32 GSmemGetCurrentHeap(void) {
@@ -192,53 +194,32 @@ u32 GSmemGetCurrentHeap(void) {
 }
 extern "C" {
 s32 GSmemCreateExternalHeap(s32 p0, s32 p1, s32 p2, s32 p3) {
-    s32 sp14;
-    s32 sp10;
-    s32 spC;
-    s32 sp8;
-
-    sp8 = p0;
-    spC = p1;
-    sp10 = p2;
-    sp14 = p3;
-    if (GSmemIsInitialized() == 0) {
+    if (!GSmemIsInitialized()) {
         return -1;
     }
-    return OSCreateExternalHeap(sp8, spC, sp10, sp14);
+    return OSCreateExternalHeap(p0, p1, p2, p3);
 }
 }
 
 extern "C" {
-s32 GSmemCreateHeap(void* p0, void* p1) {
-    u8 *spC;
-    u8 *sp8;
-
-    sp8 = (unsigned char *)(p0);
-    spC = (unsigned char *)(p1);
-    if (GSmemIsInitialized() == 0) {
+s32 GSmemCreateHeap(void* start, void* end) {
+    if (!GSmemIsInitialized()) {
         return -1;
     }
-    return OSCreateHeap((void*)(sp8), (void*)(spC));
+    return OSCreateHeap(start, end);
 }
 }
 
 extern "C" {
 #pragma optimize_for_size on
-void* GSmemInit(void* p0, void* p1, s32 p2) {
-    s32 sp10;
-    u8 *spC;
-    u8 *sp8;
-    u8 *temp_r31;
-
-    sp8 = (unsigned char *)(p0);
-    spC = (unsigned char *)(p1);
-    sp10 = p2;
+void* GSmemInit(void* start, void* end, s32 maxHeaps) {
+    void* arena;
     _currentHeap = -1;
     _currentLayer = 0;
-    temp_r31 = (unsigned char *)(OSInitAlloc((void*)(p0), (void*)(p1), p2));
+    arena = OSInitAlloc(start, end, maxHeaps);
     _memInitialized = 1;
     GSmemInitPool();
-    return temp_r31;
+    return arena;
 }
 #pragma optimize_for_size reset
 }

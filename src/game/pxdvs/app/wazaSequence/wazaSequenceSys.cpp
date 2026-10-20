@@ -980,9 +980,8 @@ u16 wazaSequenceSysGetResourceID(ModelSequence* seq, u16 wazaID, u16 kind, u8 va
         }
         result = waza_wzx_data[wazaID].res[idx];
         if (variation != 0) {
-            u32 n = waza_ext_wzx_data_number;
             WazaExtWzxEntry* x = waza_ext_wzx_data;
-            for (i = 0; i < n; i++, x++) {
+            for (i = 0; i < waza_ext_wzx_data_number; i++, x++) {
                 if (x->wazaID == wazaID && x->variation == variation) {
                     if (x->res[idx] != 0) {
                         result = x->res[idx];

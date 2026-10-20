@@ -142,7 +142,8 @@ bool GSgfxTokenCleared(u16 token) {
 }
 
 u16 GSgfxTokenMark_Sub() {
-    u16 token = _tokenCurrent;
+    enum TsE { TsE0 };
+    enum TsE token = (enum TsE)(_tokenCurrent);
     if (token == _tokenFrameEnd) {
         return token;
     }

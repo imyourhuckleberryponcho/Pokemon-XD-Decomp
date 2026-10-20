@@ -27,7 +27,7 @@ void flcalcBezier3(void *p0, void *p1, f32 p2);
 s32 flcalcBlend(s32 p0, s32 p1, f32 p2);
 s32 flcalcBlendColor(u8 p0, u8 p1, f32 p2);
 void flcalcConvFlashMatrix(void *p0, void *p1);
-void flcalcCreateCxform(void *p0, u8 p1);
+void flcalcCreateCxform(void *p0, u32 color);
 void flcalcMatrix(void *p0, void *p1, void *p2);
 void flcalcMatrixCopy(void *p0, void *p1);
 void flcalcMatrixScale(void *p0, void *p1, void *p2);
@@ -86,19 +86,28 @@ s32 flcalcBlend(s32 p0, s32 p1, f32 p2) {
 }
 
 extern "C" {
-void flcalcCreateCxform(void *p0, u8 p1) {
-    M2C_FIELD(p0, s16 *, 4) = 0x100;
-    M2C_FIELD(p0, s16 *, 8) = 0x100;
-    M2C_FIELD(p0, s16 *, 0xC) = 0x100;
-    M2C_FIELD(p0, s16 *, 0) = 0x100;
-    M2C_FIELD(p0, s16 *, 6) = 0;
-    M2C_FIELD(p0, s16 *, 0xA) = 0;
-    M2C_FIELD(p0, s16 *, 0xE) = 0;
-    M2C_FIELD(p0, s16 *, 2) = 0;
-    M2C_FIELD(p0, s16 *, 4) = (s16) (p1 >> 0x18U);
-    M2C_FIELD(p0, s16 *, 8) = (s16) (u8) (p1 >> 0x10U);
-    M2C_FIELD(p0, s16 *, 0xC) = (s16) (u8) (p1 >> 8U);
-    M2C_FIELD(p0, s16 *, 0) = (s16) p1;
+// Flash colour transform: per channel a multiplier (0x100 = 1.0) and an additive term
+struct FlCxform {
+    s16 aMul, aAdd;     // 0x0
+    s16 rMul, rAdd;     // 0x4
+    s16 gMul, gAdd;     // 0x8
+    s16 bMul, bAdd;     // 0xC
+};
+
+void flcalcCreateCxform(void* p0, u32 color) {
+    FlCxform* cx = (FlCxform*)p0;
+    cx->rMul = 0x100;
+    cx->gMul = 0x100;
+    cx->bMul = 0x100;
+    cx->aMul = 0x100;
+    cx->rAdd = 0;
+    cx->gAdd = 0;
+    cx->bAdd = 0;
+    cx->aAdd = 0;
+    cx->rMul = (s16)((color >> 24) & 0xFF);
+    cx->gMul = (s16)((color >> 16) & 0xFF);
+    cx->bMul = (s16)((color >> 8) & 0xFF);
+    cx->aMul = (s16)(color & 0xFF);
 }
 }
 
@@ -109,24 +118,18 @@ s32 flcalcMultiTransformColor(void *p0, u8 p1) {
     u32 var_r6;
     u32 var_r7;
 
-    var_r5 = M2C_FIELD(p0, s16 *, 6) + ((u32) ((p1 >> 0x18U) * M2C_FIELD(p0, s16 *, 4)) >> 8U);
-    if (var_r5 < 0xFFU) {
-
-    } else {
-        var_r5 = 0xFF;
-    }
+    var_r5 = ((u32) ((p1 >> 0x18U) * M2C_FIELD(p0, s16 *, 4)) >> 8U);
+    var_r5 += M2C_FIELD(p0, s16 *, 6);
+    var_r5 = var_r5 < 0xFFU ? var_r5 : 0xFF;
     var_r6 = M2C_FIELD(p0, s16 *, 0xA) + ((u32) ((u8) (p1 >> 0x10U) * M2C_FIELD(p0, s16 *, 8)) >> 8U);
     if (var_r6 < 0xFFU) {
 
     } else {
         var_r6 = 0xFF;
     }
-    var_r4 = M2C_FIELD(p0, s16 *, 0xE) + ((u32) ((u8) (p1 >> 8U) * M2C_FIELD(p0, s16 *, 0xC)) >> 8U);
-    if (var_r4 < 0xFFU) {
-
-    } else {
-        var_r4 = 0xFF;
-    }
+    var_r4 = ((u32) ((u8) (p1 >> 8U) * M2C_FIELD(p0, s16 *, 0xC)) >> 8U);
+    var_r4 += M2C_FIELD(p0, s16 *, 0xE);
+    var_r4 = var_r4 < 0xFFU ? var_r4 : 0xFF;
     var_r7 = M2C_FIELD(p0, s16 *, 2) + ((u32) (p1 * M2C_FIELD(p0, s16 *, 0)) >> 8U);
     if (var_r7 < 0xFFU) {
 
@@ -209,35 +212,58 @@ void flcalcMatrixCopy(void *p0, void *p1) {
 
 extern "C" {
 void flcalcMatrixTranslate(void *p0, void *p1, void *p2) {
-    M2C_FIELD(p0, f32 *, 0) = (f32) ((M2C_FIELD(p1, f32 *, 0) * 1.0f) + (M2C_FIELD(p1, f32 *, 4) * 0.0f));
-    M2C_FIELD(p0, f32 *, 4) = (f32) ((M2C_FIELD(p1, f32 *, 0) * 0.0f) + (M2C_FIELD(p1, f32 *, 4) * 1.0f));
-    M2C_FIELD(p0, f32 *, 8) = (f32) ((M2C_FIELD(p1, f32 *, 8) * 1.0f) + (M2C_FIELD(p1, f32 *, 0xC) * 0.0f));
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((M2C_FIELD(p1, f32 *, 8) * 0.0f) + (M2C_FIELD(p1, f32 *, 0xC) * 1.0f));
-    M2C_FIELD(p0, f32 *, 0x10) = (f32) (M2C_FIELD(p2, f32 *, 0) + ((M2C_FIELD(p1, f32 *, 0x10) * 1.0f) + (M2C_FIELD(p1, f32 *, 0x14) * 0.0f)));
-    M2C_FIELD(p0, f32 *, 0x14) = (f32) (M2C_FIELD(p2, f32 *, 4) + ((M2C_FIELD(p1, f32 *, 0x10) * 0.0f) + (M2C_FIELD(p1, f32 *, 0x14) * 1.0f)));
+    f32 kc59 = 1.0f;
+    f32 kc80 = 0.0f;
+    M2C_FIELD(p0, f32 *, 0) = (f32) ((M2C_FIELD(p1, f32 *, 0) * kc59) + (M2C_FIELD(p1, f32 *, 4) * kc80));
+    f32 kc208 = 0.0f;
+    f32 kc230 = 1.0f;
+    M2C_FIELD(p0, f32 *, 4) = (f32) ((M2C_FIELD(p1, f32 *, 0) * kc208) + (M2C_FIELD(p1, f32 *, 4) * kc230));
+    f32 kc361 = 1.0f;
+    f32 kc383 = 0.0f;
+    M2C_FIELD(p0, f32 *, 8) = (f32) ((M2C_FIELD(p1, f32 *, 8) * kc361) + (M2C_FIELD(p1, f32 *, 0xC) * kc383));
+    f32 kc516 = 0.0f;
+    f32 kc538 = 1.0f;
+    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((M2C_FIELD(p1, f32 *, 8) * kc516) + (M2C_FIELD(p1, f32 *, 0xC) * kc538));
+    f32 kc673 = 1.0f;
+    f32 kc695 = 0.0f;
+    M2C_FIELD(p0, f32 *, 0x10) = (f32) (M2C_FIELD(p2, f32 *, 0) + ((M2C_FIELD(p1, f32 *, 0x10) * kc673) + (M2C_FIELD(p1, f32 *, 0x14) * kc695)));
+    f32 kc863 = 0.0f;
+    f32 kc885 = 1.0f;
+    M2C_FIELD(p0, f32 *, 0x14) = (f32) (M2C_FIELD(p2, f32 *, 4) + ((M2C_FIELD(p1, f32 *, 0x10) * kc863) + (M2C_FIELD(p1, f32 *, 0x14) * kc885)));
 }
 }
 
 extern "C" {
 void flcalcMatrixScale(void *p0, void *p1, void *p2) {
 
-    M2C_FIELD(p0, f32 *, 0) = (f32) ((M2C_FIELD(p1, f32 *, 0) * (M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 4) * 0.0f));
-    M2C_FIELD(p0, f32 *, 4) = (f32) ((M2C_FIELD(p1, f32 *, 0) * 0.0f) + (M2C_FIELD(p1, f32 *, 4) * (M2C_FIELD(p2, f32 *, 4))));
-    M2C_FIELD(p0, f32 *, 8) = (f32) ((M2C_FIELD(p1, f32 *, 8) * (M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 0xC) * 0.0f));
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((M2C_FIELD(p1, f32 *, 8) * 0.0f) + (M2C_FIELD(p1, f32 *, 0xC) * (M2C_FIELD(p2, f32 *, 4))));
+    f32 kc56 = 0.0f;
+    M2C_FIELD(p0, f32 *, 0) = (f32) ((M2C_FIELD(p1, f32 *, 0) * (M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 4) * kc56));
+    M2C_FIELD(p0, f32 *, 4) = (f32) ((M2C_FIELD(p1, f32 *, 0) * (f32)(0.0f)) + (M2C_FIELD(p1, f32 *, 4) * (M2C_FIELD(p2, f32 *, 4))));
+    f32 kc356 = 0.0f;
+    M2C_FIELD(p0, f32 *, 8) = (f32) ((M2C_FIELD(p1, f32 *, 8) * (M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 0xC) * kc356));
+    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((M2C_FIELD(p1, f32 *, 8) * (f32)(0.0f)) + (M2C_FIELD(p1, f32 *, 0xC) * (M2C_FIELD(p2, f32 *, 4))));
     M2C_FIELD(p0, f32 *, 0x10) = (f32) M2C_FIELD(p1, f32 *, 0x10);
     M2C_FIELD(p0, f32 *, 0x14) = (f32) M2C_FIELD(p1, f32 *, 0x14);
 }
 }
 
 extern "C" {
-void flcalcMatrix(void *p0, void *p1, void *p2) {
-    f32 spC;
-    f32 sp8;
+// Flash 2x3 matrix {a, b, c, d, tx, ty}
+struct FlMatrix {
+    f32 a, b, c, d;
+    f32 tx, ty;
+};
+struct FlPoint {
+    f32 x, y;
+};
 
-    spC = M2C_FIELD(p2, f32 *, 4);
-    sp8 = M2C_FIELD(p2, f32 *, 0);
-    M2C_FIELD(p0, f32 *, 0) = (f32) (M2C_FIELD(p1, f32 *, 0x10) + ((M2C_FIELD(p1, f32 *, 0) * sp8) + (M2C_FIELD(p1, f32 *, 8) * spC)));
-    M2C_FIELD(p0, f32 *, 4) = (f32) (M2C_FIELD(p1, f32 *, 0x14) + ((M2C_FIELD(p1, f32 *, 4) * sp8) + (M2C_FIELD(p1, f32 *, 0xC) * spC)));
+void flcalcMatrix(void* p0, void* p1, void* p2) {
+    FlPoint* out = (FlPoint*)p0;
+    FlMatrix* m = (FlMatrix*)p1;
+    FlPoint p = *(FlPoint*)p2;
+    f32 x = m->a * p.x + m->c * p.y;
+    f32 y = m->b * p.x + m->d * p.y;
+    out->x = x + m->tx;
+    out->y = y + m->ty;
 }
 }

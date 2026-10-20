@@ -16,6 +16,7 @@ u8 fightAi_GetTokuseiHaveFlag(u32, FightOutPokemon*, u16);
 FightOutPokemon* fightAi_SelectDefPoke(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon**, u16, u16, s8);
 u32 fightFloor_GetFightType(u32);
 void* fightTargetGetPtrAsNowFightType(u32, void*);
+void* fightTargetGetPtr(u16, void*, u16);
 u32 fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(FIGHT_TRAINER*, FightOutPokemon*);
 u32 fightTrainerAiGetFightOutPokemonAbiCntSubayasa(FIGHT_TRAINER*, FightOutPokemon*);
 u16 fightTrainerAiGetFightOutPokemonLastUseWazaDataId(FIGHT_TRAINER*, FightOutPokemon*);
@@ -34,24 +35,24 @@ s32 fightAiCombo_Batontatti_Zikoanzi_Continue(FIGHT_TRAINER *arg0, FightOutPokem
     u8 sp8[50];
     u16 sp14[25];
     s16 spC[25];
-    FightOutPokemon *temp_r23;
+    u8 var_r26;
     FightOutPokemon *var_r4;
-    s32 temp_r29;
+    u32 temp_r29;
     s8 temp_r3_2;
     u16 temp_r25;
     u16 temp_r27;
     u16 var_r24;
     u8 temp_r20;
-    u8 temp_r20_2;
-    u8 temp_r26;
-    u8 temp_r3;
-    u8 var_r26;
+    volatile u8 temp_r20_2;
+    u32 temp_r26;
+    u32 temp_r3;
+    FightOutPokemon *temp_r23;
 
     var_r24 = 0;
     temp_r20 = fightFloor_GetFightType(0);
     temp_r25 = fightTrainerAiGetFightOutPokemonWazaDataIdAry(arg0, arg1, sp14, spC, 1);
     temp_r27 = fightTrainerAiGetFightOutPokemonLastUseWazaDataId(arg0, arg1);
-    temp_r23 = (FightOutPokemon*)fightTargetGetPtrAsNowFightType(0xE, arg1);
+    temp_r23 = (FightOutPokemon*)fightTargetGetPtr(0xE, arg1, temp_r20);
     temp_r26 = fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(arg0, arg1);
     temp_r20_2 = fightTrainerAiGetFightOutPokemonAbiCntSubayasa(arg0, arg1);
     temp_r3 = fightTrainerAiGetFightOutPokemonAbiCntSubayasa(arg0, temp_r23);
@@ -81,7 +82,8 @@ s32 fightAiCombo_Batontatti_Zikoanzi_Continue(FIGHT_TRAINER *arg0, FightOutPokem
 
     var_r26 = 0;
     while ((s32) var_r26 < (s32) temp_r25) {
-        temp_r29 = var_r26 * 2;
+        temp_r29 = var_r26;
+        temp_r29 *= 2;
         sp8[spC[temp_r29 / 2]] = 0x32;
         if (fightAi_CanMoveAppointWaza(arg0, arg1, sp14[temp_r29 / 2]) == 0) {
             sp8[spC[temp_r29 / 2]] = 0;
@@ -112,17 +114,17 @@ s32 fightAiCombo_Batontatti_Zikoanzi_Continue(FIGHT_TRAINER *arg0, FightOutPokem
 
 s32 fightAiCombo_Batontatti_Nekodamasi_Continue(FIGHT_TRAINER *arg0, FightOutPokemon *arg1)
 {
-    u8 sp8[50];
+    u8 var_r27;
     u16 sp14[25];
     s16 spC[25];
-    s32 temp_r22;
+    u32 temp_r22;
     s8 temp_r3_2;
     u16 temp_r26;
     u16 temp_r27;
     u16 var_r22;
-    u8 temp_r23;
-    u8 temp_r3;
-    u8 var_r27;
+    u32 temp_r23;
+    u32 temp_r3;
+    u8 sp8[50];
 
     var_r22 = 0;
     temp_r26 = fightTrainerAiGetFightOutPokemonWazaDataIdAry(arg0, arg1, sp14, spC, 1);
@@ -185,11 +187,11 @@ s32 fightAiCombo_Sukirusuwappu_Irekae_Continue(FIGHT_TRAINER *arg0, FightOutPoke
 
 s32 fightAiCombo_Amaikaori_Hubuki_Continue(FIGHT_TRAINER *arg0, FightOutPokemon *arg1, FightOutPokemon **arg2, u16 arg3)
 {
-    u8 sp8[50];
-    u16 sp14[25];
     s16 spC[25];
+    u16 sp14[25];
+    u8 sp8[50];
     s32 temp_r18;
-    s32 temp_r26;
+    u32 temp_r26;
     s8 temp_r3;
     u16 temp_r0;
     u16 temp_r21;

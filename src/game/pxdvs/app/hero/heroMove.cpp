@@ -180,7 +180,7 @@ char* pokemonBiosGetNicknamePtr(Pokemon*);
 void msgctrlSetValue(s32, u32);
 s32 winMsgOpenField(u32, bool, bool);
 void winMsgCloseField(bool);
-s8 GSinputGetLeftStickXData(s32, s32);
+u8 GSinputGetLeftStickXData(s32, s32);
 s8 GSinputGetLeftStickYData(s32, s32);
 s8 GSinputGetRightStickXData(s32, s32);
 s8 GSinputGetRightStickYData(s32, s32);
@@ -446,10 +446,10 @@ static inline f32 _sqrtf(f32 x) {
 }
 
 static inline bool vecIsZero(const Vec3& v) {
-    if (v.x < 0.00001f && v.x > -0.00001f && v.y < 0.00001f && v.y > -0.00001f && v.z < 0.00001f && v.z > -0.00001f) {
-        return true;
+    if (!(v.x < 0.00001f && v.x > -0.00001f && v.y < 0.00001f && v.y > -0.00001f && v.z < 0.00001f && v.z > -0.00001f)) {
+        return false;
     }
-    return false;
+    return true;
 }
 
 static bool getResID(u32* group, u32* id, HEROMOVE_MEMBER member) {
@@ -540,7 +540,8 @@ void heroMoveSyncWithHero() {
 extern "C" {
 s32 heroMoveInit(GSvec* pos, GSvec* rot) {
     if (!GSfloorIsPop()) {
-        peopleOpen(0, 0x64, heroMoveGetKenObjID());
+        s32 tmp2 = heroMoveGetKenObjID();
+        peopleOpen(0, 0x64, tmp2);
         peopleOpen(0, 0x65, 0x16C70400);
         peopleOpen(0, 0x68, 0x195B0400);
         peopleOpen(0, 0x69, 0x19540400);
@@ -994,7 +995,7 @@ static f32 moveLeader(HEROMOVE_MEMBER member) {
 
 static f32 moveLeaderPosition(HEROMOVE_MEMBER member) {
     u8 rate = GSgfxVideoGetVsyncRate();
-    f32 rateF = rate;
+    volatile f32 rateF = rate;
     u32 frame = timeGetLastFrameTime(rate);
     f32 dt = (30.0f * (f32)frame) / rateF;
     Vec3 before;
@@ -1211,8 +1212,7 @@ static f32 moveParty(HEROMOVE_MEMBER member) {
     }
     peopleRotateToAngle(getFollowerGrpID__4HeroFv(hero), getFollowerResID__4HeroFv(hero), dirLeader, 20.0f);
     peopleMoveAlongAngle(getFollowerGrpID__4HeroFv(hero), getFollowerResID__4HeroFv(hero), speed, dirTarget);
-    f32* prev = peopleBiosGetPrevPosPtr(follower);
-    return GSvecDistanceXZ((GSvec*)peopleBiosGetPosPtr(follower), (GSvec*)prev);
+    return GSvecDistanceXZ((GSvec*)peopleBiosGetPosPtr(follower), (GSvec*)peopleBiosGetPrevPosPtr(follower));
 }
 
 static _GSmodel* getModel(HEROMOVE_MEMBER member) {
@@ -1367,10 +1367,10 @@ static void getStep(FOOTSTEP* step, _GSmodel* model, int* parts, FOOTWORK* work)
     Vec3 t;
     f32 cur[4];
     for (int i = 0; i < 4; i++) {
+        cur[i] = 0.0f;
         step->pos[i].x = 0.0f;
         step->pos[i].y = 0.0f;
         step->pos[i].z = 0.0f;
-        cur[i] = 0.0f;
         if (parts[i] >= 0) {
             part = GSmodelGetPart(model, parts[i]);
             if (part != 0) {
@@ -1523,7 +1523,7 @@ void heroMoveTermEvent() {
             u32 group;
             u32 id;
             getResID(&group, &id, (HEROMOVE_MEMBER)i);
-            peopleSetCollision(group, id, 1);
+            peopleSetCollision((u16)group, id, 1);
             peopleSetFlagOn(group, id, 0x700);
             peopleSetFlagOff(group, id, 0x80000008);
         }

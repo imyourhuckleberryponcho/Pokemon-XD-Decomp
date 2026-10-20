@@ -3,6 +3,7 @@
 // r0 (not r4) for the constant 1 in the blend setup; tried u8/s32/u32/mask/cast variants and fifo inline signatures.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
+#define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 
 #pragma peephole off
 #pragma pool_strings off
@@ -247,7 +248,7 @@ void WorldMapModel::renderOffscreenData(f32 alphaF)
 {
 #define LU8(o) (*(u8*)((u8*)layer + (o)))
 #define LU32(o) (*(u32*)((u8*)layer + (o)))
-    u8 alpha = (u8)(s32)(255.0f * alphaF);
+    u8 alpha = 255.0f * alphaF;
     if (mOffscreenData != 0) {
         GSgfxLayer* layer = GSgfxLayerFindByID(4);
         if (layer != 0) {
@@ -330,9 +331,9 @@ void WorldMapModel::renderOffscreenData(f32 alphaF)
                 layer->curBlendIdx = 1;
                 layer->curBlend = &layer->blendTable[layer->curBlendIdx];
             }
-            layer->blendSrc = 4;
             layer->blendOp = 1;
-            layer->blendDst = 1;
+            layer->blendSrc = 4;
+            layer->blendDst = 5;
             layer->blendLogic = 5;
             layer->mark(0x40, 0x170c, 1);
             GStexture* t = mOffscreenData;
@@ -343,26 +344,26 @@ void WorldMapModel::renderOffscreenData(f32 alphaF)
                 layer->dirty17f4 |= 1;
             }
             layer->beginSurface(4);
-            GXWGFifo.s16 = 0;
-            GXWGFifo.s16 = 0;
-            GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = alpha;
-            GXWGFifo.u8 = 0;
-            GXWGFifo.u8 = 0;
-            GXWGFifo.s16 = 640;
-            GXWGFifo.s16 = 0;
-            GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = alpha;
-            GXWGFifo.u8 = 1;
-            GXWGFifo.u8 = 0;
-            GXWGFifo.s16 = 640;
-            GXWGFifo.s16 = 480;
-            GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = alpha;
-            GXWGFifo.u8 = 1;
-            GXWGFifo.u8 = 1;
-            GXWGFifo.s16 = 0;
-            GXWGFifo.s16 = 480;
-            GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = 0xFF; GXWGFifo.u8 = alpha;
-            GXWGFifo.u8 = 0;
-            GXWGFifo.u8 = 1;
+            GXFifoNV.s16 = 0;
+            GXFifoNV.s16 = 0;
+            GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = alpha;
+            GXFifoNV.u8 = 0;
+            GXFifoNV.u8 = 0;
+            GXFifoNV.s16 = 640;
+            GXFifoNV.s16 = 0;
+            GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = alpha;
+            GXFifoNV.u8 = 1;
+            GXFifoNV.u8 = 0;
+            GXFifoNV.s16 = 640;
+            GXFifoNV.s16 = 480;
+            GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = alpha;
+            GXFifoNV.u8 = 1;
+            GXFifoNV.u8 = 1;
+            GXFifoNV.s16 = 0;
+            GXFifoNV.s16 = 480;
+            GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = 0xFF; GXFifoNV.u8 = alpha;
+            GXFifoNV.u8 = 0;
+            GXFifoNV.u8 = 1;
             layer->endSurface();
         }
     }

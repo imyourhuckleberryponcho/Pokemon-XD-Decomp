@@ -706,7 +706,7 @@ static u8 _fsysRequest(s32 type, u32 id, u32 idx, s8 flag, s32 a, s32 b, s32 c, 
     if (_initFlag == 0) {
         return 0;
     }
-    if (type < 0 || type >= 6) {
+    if (type < 0 || prio >= 6) { // retail checks prio here, not type
         return 0;
     }
     if (prio < 0 || prio >= 3) {
@@ -738,9 +738,8 @@ static void _fsysQueExec(void) {
         }
         _fsysQueManageExec = 0;
     }
-    rp = _fsysQueManageRoot;
-    for (i = 0; i < 3; i++, rp++) {
-        que = *rp;
+    for (i = 0; i < 3; i++) {
+        que = _fsysQueManageRoot[i];
         while (que != 0) {
             next = que->next;
             if (_fsysQueExecSub(que) == 0) {
@@ -861,9 +860,10 @@ static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, s32 a, 
 }
 
 static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, s32 a, s32 b, s32 c) {
+    enum TsE { TsE0 };
     BOOL intr;
     FsysWork* work;
-    u32 gid = id;
+    enum TsE gid = (enum TsE)(id);
 
     intr = OSDisableInterrupts();
     _fsysFreeStatus(id);
@@ -1052,8 +1052,8 @@ static void GSfsysDaemonBackground(void) {
 }
 
 static void _fsysBackgroundTaskNormalType(FsysBG* bg, u8 copy) {
-    u8* dst;
     FsysBlock* block;
+    u8* dst;
 
     if (bg->done != 1) {
         while (1) {
@@ -1066,7 +1066,8 @@ static void _fsysBackgroundTaskNormalType(FsysBG* bg, u8 copy) {
             }
             if (copy == 1) {
                 dst = (u8*)bg->res->data + bg->pos;
-                memcpy(dst, block->data, _fsysGetTransLength(bg->res->size14, bg->pos));
+                s32 tmp2 = _fsysGetTransLength(bg->res->size14, bg->pos);
+                memcpy(dst, block->data, tmp2);
             }
             _fsysFreeBlock(&bg->res->blockB, 1);
             bg->pos += _fsysBlockByteSize;
@@ -1081,7 +1082,7 @@ static void _fsysBackgroundTaskNormalType(FsysBG* bg, u8 copy) {
 
 static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
     FsysBlock* block;
-    u32 off;
+    u8 b;
     u32 wpos;
     u32 flags;
     u32 count;
@@ -1093,7 +1094,7 @@ static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
     u32 blockSize;
     s32 state;
     u32 in;
-    u8 b;
+    u32 off;
     s32 len;
     s32 k;
 
@@ -1145,7 +1146,7 @@ static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
             goto read_off;
         case 4:
             goto read_len;
-        default:
+        case 0:        default:
             break;
         }
     next:
@@ -1215,9 +1216,9 @@ static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
         off |= (b << 4) & 0xF00;
         for (k = 0; k <= len; k++) {
             u8 c = window[(off + k) & 0xFFF];
+            window[wpos] = c;
             dest[dpos] = c;
             dpos++;
-            window[wpos] = c;
             wpos = (wpos + 1) & 0xFFF;
         }
     step:
@@ -1415,7 +1416,7 @@ static void _fsysForegroundTask(FsysWork* work) {
 }
 
 static void _fsysHeaderSizeReadDvdCallback(s32 result, u32 handle) {
-    FsysWork* work = _fsysInfo2Work(handle);
+    FsysWork* work = _fsysInfo2Work((u16)handle);
 
     if (work == 0) {
         _headerTop = 0;
@@ -1526,8 +1527,7 @@ static u8 _fsysCheckExpandComplete(FsysWork* work, u32 idx) {
                 _fsysWorkSetTaskStatus(work, 10);
                 _fsysResHeaderSetTaskStatus(res, 1);
             } else {
-                s32 a = _fsysGetActiveTask(2);
-                if (_fsysGetActiveTask(1) + a == 0) {
+                if (_fsysGetActiveTask(1) + (s32)(_fsysGetActiveTask(2)) == 0) {
                     if (res->unk44 <= _fsysStreamGetNormalCacheSize()) {
                         _fsysReadDataExec(work, res);
                     }
@@ -1541,6 +1541,9 @@ static u8 _fsysCheckExpandComplete(FsysWork* work, u32 idx) {
                 _fsysWorkSetTaskStatus(work, 10);
                 _fsysResHeaderSetTaskStatus(res, 1);
             }
+            break;
+        case 0:
+        case 1:
             break;
         }
         done = 0;
@@ -1657,9 +1660,9 @@ void _fsysAddBGWork(FsysBG* bg) {
 }
 
 FsysBG* _fsysGetNewBGWork(void) {
-    FsysBG* ret = 0;
-    FsysBG* bg;
     u32 i;
+    FsysBG* bg;
+    FsysBG* ret = 0;
 
     OSDisableInterrupts();
     i = _fsysBGWorkIndex;

@@ -60,6 +60,27 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define M2C_TRAP_IF(cond) (0)
 #define M2C_BREAK() (0)
 #define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
 #define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
 #define M2C_CARRY 0
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
@@ -167,7 +188,7 @@ s32 GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32);
 void GSgfxVertex2f(f32 x, f32 y);
 char* GSmsgGetGSchar(u32 msg);
 u32 GSmsgGetRect(s32, s32);
-s32 GSmsgPrint2(s32, s16, s16, s32, s32, s16);
+s32 GSmsgPrint2(s32 layer, s32 x, s32 y, u32 color, u32 msg);
 void GSprimSetQuadVertexOrder(s32 order);
 void* GSresGetResourceAllGroup(u32 id);
 u16 GStextureGetXsize(GStexture* tex);
@@ -179,7 +200,7 @@ s32 pokecoloGetCountryCode(void);
 const char* pokemonDataBiosGetName(PokemonData* pdata);
 extern s32 jtbl_3115;
 extern s32 lbl_804EA7F0;
-extern s32 rate01ToAlphaFrom50;
+namespace { u8 rate01ToAlphaFrom50(f32); }
 }
 namespace {
 bool isDirRegionInReverseClockwise(f32 a, f32 b, f32 c);
@@ -201,6 +222,10 @@ extern "C" {
 extern s32 _stateDirChangeProcHook;
 extern s32 jtbl_2171;
 }
+
+// ---- draft declarations ----
+
+
 
 static inline int ptFPClassify(f32 x)
 {
@@ -298,7 +323,7 @@ void GSprimDraw2DPixelListC(void*, s32, void*);
 void* memset(void*, int, u32);
 double sin(double);
 double cos(double);
-double fabs(double);
+inline double fabs(double x) { return __fabs(x); }
 void* GSmemAllocClr(u32);
 void GSmemFree(void*);
 void* windowSearchID(s32);
@@ -741,7 +766,8 @@ void relivehallDraw9StageInfo(int cur)
     for (int i = 0; i < 9; i++) {
         if (i != cur) {
             MENU_ITEM_dd_* it;
-            long ox = lbl_8032E568[i] + i * 0x42;
+            long ox = i * 0x42;
+            ox += lbl_8032E568[i];
             CReliveStage* stage = CReliveHall::getPointer()->getStage(i);
             Pokemon* v = CReliveHall::getPointer()->getStage(i)->getVisitorPointer();
             if (v) {
@@ -806,6 +832,235 @@ void _relivehallTempoBarSpriteSetting(tagWINDOW_WORK* w, u32 id, int tempo, u8 a
         return;
     }
     menuPtSpriteWorkSetWidthRateColor(w, id, 0, rate, c);
+}
+void CMenuReliveHall::drawStatusPanel() {
+    s32 spA;
+    u16 sp8;
+    CMenuPokemonCursor *temp_r27_3;
+    MenuItem *temp_r3_2;
+    Pokemon *var_r3;
+    s16 temp_r3_7;
+    s16 temp_r3_8;
+    s16 temp_r4;
+    s16 temp_r8;
+    s32 temp_r27_2;
+    s32 temp_r3_3;
+    s32 temp_r3_5;
+    s32 temp_r3_9;
+    s32 var_r27_2;
+    s8 var_r27_4;
+    tagWINDOW_WORK *temp_r31;
+    u16 *var_r27;
+    u16 var_r28;
+    u32 temp_r0;
+    u32 temp_r0_2;
+    u32 temp_r0_3;
+    u32 temp_r3;
+    u32 temp_r5;
+    u32 temp_r7;
+    u8 var_r0;
+    u8 var_r27_3;
+    u8 var_r28_2;
+    u8 var_r30;
+    u8 *temp_r27;
+    u8 *temp_r28;
+    u8 *temp_r28_2;
+    u8 *temp_r28_3;
+    u8 *temp_r30;
+    u8 *temp_r30_2;
+    u8 *temp_r30_3;
+    u8 *temp_r30_4;
+    u8 *temp_r3_4;
+    u8 *temp_r3_6;
+
+    temp_r31 = (tagWINDOW_WORK *)(windowSearchID(0x67));
+    temp_r3 = (unsigned long)(((CMenuReliveHall*)(this))->getStatusDisplayVisitorGetPointer());
+    if (temp_r3 != 0) {
+        temp_r3_2 = (MenuItem *)(menuItemBiosGetPtr(M2C_FIELD(temp_r31, s32 *, 4), 0x289U));
+        _menuDrawReliveMeter((Pokemon*)((Pokemon *) temp_r3), (s32) M2C_FIELD(temp_r3_2, s16 *, 6), (s32) M2C_FIELD(temp_r3_2, s16 *, 8), (s32) M2C_FIELD(temp_r3_2, s16 *, 0xA), (s32) M2C_FIELD(temp_r3_2, s16 *, 0xC), 0xFFU, (GSgfxLayerID)(M2C_FIELD(temp_r31, s32 *, 0x1C)), M2C_FIELD(this, s32 *, 0x338));
+        var_r27 = &sp8;
+        var_r28 = 0;
+        do {
+            *var_r27 = zokuseiGetPokemonSpriteID((void *)(((Pokemon*)((Pokemon *) temp_r3))->getPokemonDataPtr()), (unsigned short)(0));
+            var_r27 += 2;
+            var_r28 += 1;
+        } while ((s32) var_r28 < 2);
+        temp_r27 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x297U, 0));
+        temp_r28 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x298U, 0));
+        if (sp8 == spA) {
+            temp_r7 = M2C_FIELD(temp_r27, s16 *, 0x50) + M2C_FIELD(temp_r28, s16 *, 0x50);
+            temp_r5 = M2C_FIELD(temp_r27, s16 *, 0x52) + M2C_FIELD(temp_r28, s16 *, 0x52);
+            menuPtSpriteDraw(sp8, (s32) ((temp_r7 >> 0x1FU) + temp_r7) >> 1, (s32) ((temp_r5 >> 0x1FU) + temp_r5) >> 1);
+        } else {
+            menuPtSpriteDraw(sp8, (s32) M2C_FIELD(temp_r27, s16 *, 0x50), (s32) M2C_FIELD(temp_r27, s16 *, 0x52));
+            menuPtSpriteDraw(spA, (s32) M2C_FIELD(temp_r28, s16 *, 0x50), (s32) M2C_FIELD(temp_r28, s16 *, 0x52));
+        }
+    }
+    if (temp_r3 != 0) {
+        temp_r3_3 = pokecoloGetCountryCode();
+        if (temp_r3_3 != 0) {
+            if ((temp_r3_3 >= 0) && (temp_r3_3 < 3)) {
+                msgctrlSetValue((unsigned long)(0x37), (unsigned long)(((Pokemon*)((Pokemon *) temp_r3))->getNicknamePtr()));
+                temp_r3_4 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D3U, 0));
+                GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r3_4, s16 *, 0x50), M2C_FIELD(temp_r3_4, s16 *, 0x52), -1, 0x4279);
+            }
+        } else {
+            temp_r28_2 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D3U, 0));
+            msgctrlSetValue((unsigned long)(0x37), (unsigned long)(GSmsgGetGSchar((unsigned long)(pokemonDataBiosGetName((PokemonData*)(((Pokemon*)((Pokemon *) temp_r3))->getPokemonDataPtr()))))));
+            GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r28_2, s16 *, 0x50), M2C_FIELD(temp_r28_2, s16 *, 0x52), -1, 0x4278);
+        }
+        temp_r28_3 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D4U, 0));
+        msgctrlSetValue(0x34, (u32) ((Pokemon*)((Pokemon *) temp_r3))->getLevel());
+        GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r28_3, s16 *, 0x50), M2C_FIELD(temp_r28_3, s16 *, 0x52), -1, 0x4271);
+        temp_r3_5 = pokecoloGetCountryCode();
+        if (temp_r3_5 < 3) {
+            if (temp_r3_5 < 1) {
+
+            } else {
+                temp_r3_6 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x8EEU, 0));
+                GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r3_6, s16 *, 0x50), M2C_FIELD(temp_r3_6, s16 *, 0x52), -1, 0xD15F);
+            }
+        }
+    }
+    temp_r30 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x2A5U, 0));
+    msgctrlSetValue(0x2F, M2C_FIELD(this, s32 *, 0x338) + 1);
+    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30, s16 *, 0x50), M2C_FIELD(temp_r30, s16 *, 0x52), -1, 0xD157);
+    temp_r30_2 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x2A6U, 0));
+    temp_r0 = GSmsgGetRect(0xD161, 0x10000) >> 0x10U;
+    temp_r3_7 = M2C_FIELD(temp_r30_2, s16 *, 0x54);
+    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30_2, s16 *, 0x50) + (s16) (((s32) (((u32) temp_r3_7 >> 0x1FU) + temp_r3_7) >> 1) - ((s32) (((u32) (s16) temp_r0 >> 0x1FU) + (s16) temp_r0) >> 1)), M2C_FIELD(temp_r30_2, s16 *, 0x52), -1, 0xD161);
+    temp_r30_3 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x2D2U, 0));
+    temp_r0_2 = GSmsgGetRect(0xD123, 0x10000) >> 0x10U;
+    temp_r3_8 = M2C_FIELD(temp_r30_3, s16 *, 0x54);
+    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30_3, s16 *, 0x50) + (s16) (((s32) (((u32) temp_r3_8 >> 0x1FU) + temp_r3_8) >> 1) - ((s32) (((u32) (s16) temp_r0_2 >> 0x1FU) + (s16) temp_r0_2) >> 1)), M2C_FIELD(temp_r30_3, s16 *, 0x52), -1, 0xD123);
+    temp_r30_4 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D0U, 0));
+    var_r27_2 = 0xD122;
+    if ((u8) lbl_804EA7F0 != 0) {
+        var_r27_2 = 0xD15A;
+    }
+    temp_r0_3 = GSmsgGetRect(var_r27_2, 0x10000) >> 0x10U;
+    temp_r4 = M2C_FIELD(temp_r30_4, s16 *, 0x54);
+    temp_r8 = M2C_FIELD(temp_r30_4, s16 *, 0x50);
+    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), temp_r8 + (s16) (((s32) (((u32) temp_r4 >> 0x1FU) + temp_r4) >> 1) - ((s32) (((u32) (s16) temp_r0_3 >> 0x1FU) + (s16) temp_r0_3) >> 1)), M2C_FIELD(temp_r30_4, s16 *, 0x52), -1, var_r27_2);
+    if ((u8) M2C_FIELD(this, u8 *, 0x81184) != 0) {
+        menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x316U, 0, 0U);
+        temp_r27_2 = M2C_FIELD(this, s32 *, 0x80FC0);
+        _relivehallTempoBarSpriteSetting((tagWINDOW_WORK*)(temp_r31), 0x28BU, (s32) ((M2C_FIELD(this, f32 *, 0x81188) * (f32) (((CMenuReliveHall*)(this))->getTempo(0U) - temp_r27_2)) + (f32) temp_r27_2), 0xFFU, 1U);
+        return;
+    }
+    var_r28_2 = 0;
+    var_r30 = 0;
+    if (((CMenuPokemonCursor*)(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64)))->isCatchPokemon() != 0) {
+        if (((Pokemon*)(((u8*)((temp_r27_3 = M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64))) + 0x20)))->checkValid() != 0) {
+            var_r3 = (Pokemon *)(((u8*)(temp_r27_3) + 0x20));
+        } else {
+            var_r3 = NULL;
+        }
+        if (((Pokemon*)(var_r3))->isDarkPokemon() == 0) {
+            var_r30 = 1;
+        }
+    }
+    if (var_r30 != 0) {
+        var_r0 = 0;
+        temp_r3_9 = M2C_FIELD(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64), s32 *, 0xC);
+        var_r0 = !((temp_r3_9 >= 0) && (temp_r3_9 <= 5)) ? var_r0 : 1;
+        if (var_r0 != 0) {
+            var_r28_2 = 1;
+        }
+    }
+    var_r27_3 = 0;
+    if (var_r28_2 != 0) {
+        var_r27_3 = 0xFF;
+    }
+    _relivehallTempoBarSpriteSetting((tagWINDOW_WORK*)(temp_r31), 0x316U, ((CMenuReliveHall*)(this))->getTempo(1U), var_r27_3, 1U);
+    var_r27_4 = -1;
+    if (var_r28_2 != 0) {
+        var_r27_4 = rate01ToAlphaFrom50(((CMetaMenu*)((CMetaMenu *) this))->calcAnimationTimeRate0to1to0(0.6f));
+    }
+    _relivehallTempoBarSpriteSetting((tagWINDOW_WORK*)(temp_r31), 0x28BU, ((CMenuReliveHall*)(this))->getTempo(0U), (u8) var_r27_4, 1U);
+}
+
+}
+
+namespace {
+void CMenuReliveHall::drawMainBG() {
+    s32 spC;
+    s32 sp8;
+    f32 temp_f1;
+    f32 temp_f30;
+    f32 temp_f31;
+    s32 *var_r28;
+    s32 temp_r0;
+    s32 temp_r26;
+    s32 temp_r3;
+    s32 var_r25;
+    s32 var_r27;
+    s8 var_r23;
+    tagSPRITE_WORK *temp_r24;
+    tagWINDOW_WORK *temp_r31;
+    u8 temp_r30;
+
+    temp_r31 = (tagWINDOW_WORK *)(windowSearchID(0x67));
+    temp_r30 = ((CMenuReliveHall*)(this))->getVisitorWithCatch() != 0;
+    temp_r3 = ((CMenuReliveHall*)(this))->getPassion((int*)(&spC));
+    if (temp_r3 <= 0) {
+        var_r27 = 0;
+    } else if (temp_r3 <= 0x1B) {
+        var_r27 = 1;
+    } else if (temp_r3 <= 0x34) {
+        var_r27 = 2;
+    } else if (temp_r3 <= 0x5A) {
+        var_r27 = 3;
+    } else if (temp_r3 < 0xC0) {
+        var_r27 = 4;
+    } else {
+        var_r27 = spC + 4;
+    }
+    temp_f1 = ((CMetaMenu*)((CMetaMenu *) this))->calcAnimationTimeRate0to1(0.8f);
+    var_r28 = (long *)(_passion2ColorTbl);
+    var_r25 = 0;
+    temp_r26 = (s32) (temp_f1 / 0.03846154f);
+    temp_f30 = -(((f32) temp_r26 * 0.03846154f) - temp_f1) * 26.0f;
+    temp_f31 = 1.0f - temp_f30;
+    do {
+        temp_r24 = menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x28DU, var_r25);
+        sp8 = *var_r28;
+        M2C_FIELD(temp_r24, u32 *, 0x64) = GSgfxColAu8To32(*(GSgfxColAu8*)&sp8);
+        if ((var_r25 < var_r27) && (temp_r30 != 0)) {
+            if (temp_r26 < 0xD) {
+                if (var_r25 < temp_r26) {
+                    var_r23 = -1;
+                } else if (var_r25 == temp_r26) {
+                    var_r23 = rate01ToAlphaFrom50(temp_f30);
+                } else {
+                    var_r23 = 0x46;
+                }
+            } else {
+                temp_r0 = temp_r26 - 0xD;
+                if (var_r25 < temp_r0) {
+                    var_r23 = 0x46;
+                } else if (var_r25 == temp_r0) {
+                    var_r23 = rate01ToAlphaFrom50(temp_f31);
+                } else {
+                    var_r23 = -1;
+                }
+            }
+            menuPtSpriteWorkSetSw((tagWINDOW_WORK *)((tagWINDOW_WORK*)(temp_r31)), (unsigned long)((tagSPRITE_WORK*)(temp_r24)), (long)(1U), (bool)(0));
+            M2C_FIELD(temp_r24, s8 *, 0x67) = var_r23;
+        } else {
+            menuPtSpriteWorkSetSw((tagWINDOW_WORK *)((tagWINDOW_WORK*)(temp_r31)), (unsigned long)((tagSPRITE_WORK*)(temp_r24)), (long)(0U), (bool)(0));
+        }
+        var_r28 += 4;
+        var_r25 += 1;
+    } while (var_r25 < 0xD);
+    menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x28CU, 0, temp_r30);
+    menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x316U, 0, 0U);
+    menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x28BU, 0, 0U);
+    menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x28AU, 0, ((CMenuReliveHall*)(this))->dancerPositionQuantityWithCatch() != 0);
+    menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x4D1U, 0, ((CMenuReliveHall*)(this))->dancerPositionQuantityWithCatch() != 0);
+    menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x8EEU, 0, temp_r30);
+    menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x4D2U, 0, temp_r30);
+    menuPtWindowWorkDraw((tagWINDOW_WORK*)(temp_r31));
 }
 }
 
@@ -1175,7 +1430,7 @@ void CMenuReliveHall::infoMessageDisplay(u32 msg)
 void CMenuReliveHall::stateDirChangeProc() {
     PocketVec<short> sp8;
     CKeyInfo *temp_r3;
-    CMenuReliveHall *var_r28;
+    u8 var_r27;
     f32 var_f30;
     f32 var_f1;
     f32 var_f29;
@@ -1187,11 +1442,11 @@ void CMenuReliveHall::stateDirChangeProc() {
     u16 temp_r0;
     u16 temp_r0_2;
     u8 var_r26;
-    u8 var_r27;
+    CMenuReliveHall *var_r28;
 
     memset((void*)((u8*)this + 0x620), 0, 0xCU);
     *M2C_FIELD((s32)this, s8 **, 0x80F64) = 0;
-    M2C_FIELD(this, s8 *, 0x81135) = 0;
+    M2C_FIELD((s32)this, s8 *, 0x81135) = 0;
     windowSearchID(0x76);
     var_r31 = (s8) M2C_FIELD(M2C_FIELD(this, CReliveStage **, 0x33C), u8 *, 0x3D4);
     temp_r30 = var_r31;
@@ -1257,8 +1512,7 @@ void CMenuReliveHall::stateDirChangeProc() {
                 var_r28 = this;
                 var_r26_2 = 0;
                 var_r25 = 0;
-loop_26:
-                if (var_r25 < ((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getDancerQuantity()) {
+                while (var_r25 < ((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getDancerQuantity()) {
                     sp8 = ((SPokemonView*)(((u8*)(var_r28) + 0x340)))->getPosition();
                     temp_f1 = xyxy2dir(*(const PocketVec<short>*)((PocketVec<short> *) &sp8), *(const PocketVec<short>*)(&circlePosition));
                     if (dirSubHalf(temp_f1, var_f30) < 0.0f) {
@@ -1270,9 +1524,8 @@ loop_26:
                         var_f29 = var_f1;
                         var_r26_2 = var_r25;
                     }
-                    var_r28 += 0x50;
+                    var_r28 = var_r28 + 0x50;
                     var_r25 += 1;
-                    goto loop_26;
                 }
                 if (var_r31 != var_r26_2) {
                     menuPtPlaySe(0x459U);
@@ -1281,7 +1534,7 @@ loop_26:
                 M2C_FIELD(M2C_FIELD(this, CReliveStage **, 0x33C), u8 *, 0x3D4) = (u8) var_r26_2;
             }
         }
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x330), s32 (**)(CMenuReliveHall *), 0x10)(this);
+        updateAll();
     } while (var_r27 == 0);
     ((CMetaMenu*)((CMetaMenu *) this))->localWindowRemove(0x76);
     ((CInfoWindow*)((u8*)this + 0x80F8C))->close();
@@ -1332,7 +1585,8 @@ void CMenuReliveHall::drawVsitorLine(long ci, SPokemonView* v)
         f32 dir = 1.5707964f + xy2dir(px - fcirclePosition.x, py - fcirclePosition.y);
         for (f32 k = 0.0f; k < (f32)w; k += 0.5f) {
             f32 o = k - (f32)(w / 2);
-            ox = o * (f32)sin(dir);
+            ox = (f32)sin(dir);
+            ox *= o;
             GSgfxColAu8 c2 = c;
             f32 oy = o * -(f32)cos(dir);
             PocketVec<f32> a = { fcirclePosition.x + ox, fcirclePosition.y + oy };
@@ -1385,8 +1639,6 @@ void CMenuReliveHall::setCircleSw()
     }
 }
 
-void CMenuReliveHall::drawStatusPanel() { }
-void CMenuReliveHall::drawMainBG() { }
 
 
 void _antZokuseiDraw(SPokemonView&);
@@ -1488,19 +1740,19 @@ void CMenuReliveHall::actionMenuMain()
 void CMenuReliveHall::animationStateUpdate() {
     CMenuReliveHall *var_r29;
     CMenuReliveHall *var_r29_2;
-    CMenuReliveHall *var_r5;
+    u32 var_ctr;
     f32 temp_f0;
     f32 temp_f0_2;
     f32 temp_f1;
-    f32 temp_f29;
-    f32 temp_f29_2;
-    f32 temp_f2;
+    f32 var_f31;
+    f32 var_f31_3;
+    f32 var_f31_2;
     f32 var_f0;
     f32 var_f1;
     f32 var_f30;
-    f32 var_f31;
-    f32 var_f31_2;
-    f32 var_f31_3;
+    f32 temp_f29;
+    f32 temp_f2;
+    f32 temp_f29_2;
     s32 temp_r0_3;
     s32 temp_r30;
     s32 temp_r3;
@@ -1514,9 +1766,9 @@ void CMenuReliveHall::animationStateUpdate() {
     s32 var_r6;
     s8 temp_r0_2;
     u32 temp_r0;
-    u32 var_ctr;
+    CMenuReliveHall *var_r5;
     u32 var_r28;
-    u8 temp_r0_4;
+    u32 temp_r0_4;
     u8 *var_r4;
 
     ((CState*)(this + 0x8108C))->update();
@@ -1526,7 +1778,7 @@ void CMenuReliveHall::animationStateUpdate() {
         if (M2C_FIELD(this, f32 *, 0x8109C) == 0.0f) {
             ((CMenuReliveHall*)(this))->animationDataReset();
             ((CMenuReliveHall*)(this))->resetStatusDisplayVisitor();
-            ((CMenuPokemonCursor*)(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64)))->setAnimationOff();
+            ((CMenuPokemonCursor*)(M2C_FIELD((u16)this, CMenuPokemonCursor **, 0x80F64)))->setAnimationOff();
             ((CMenuReliveHall*)(this))->setCircleSw();
             return;
         }
@@ -1572,12 +1824,12 @@ void CMenuReliveHall::animationStateUpdate() {
             var_r28_2 = 0;
 loop_19:
             if (var_r28_2 < temp_r30) {
-                var_r28_2 += 1;
                 M2C_FIELD(var_r29_2, s8 *, 0x341) = (s8) (isDirRegionInReverseClockwise(dirRefresh2PI(M2C_FIELD(var_r29_2, f32 *, 0x344)), var_f30, temp_f29) == 0);
+                var_r28_2 += 1;
                 var_r29_2 += 0x50;
                 goto loop_19;
             }
-            M2C_FIELD(this, s8 *, 0x521) = 1;
+            M2C_FIELD((u16)this, s8 *, 0x521) = 1;
         } else {
             var_r6 = 0;
             if (temp_r30 > 0) {
@@ -1595,8 +1847,8 @@ loop_19:
                             M2C_FIELD(var_r5, s8 *, 0x481) = 0;
                             M2C_FIELD(var_r5, s8 *, 0x4D1) = 0;
                             M2C_FIELD(var_r5, s8 *, 0x521) = 0;
-                            M2C_FIELD(var_r5, s8 *, 0x571) = 0;
                             var_r5 += 0x280;
+                            M2C_FIELD(var_r5, s8 *, 0x571) = 0;
                             var_ctr -= 1;
                         } while (var_ctr != 0);
                     }
@@ -1612,15 +1864,14 @@ loop_19:
                 }
             }
         }
-        M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-        if (var_f31 == 1.0f) {
+        if (var_f31 >= 1.0f) {
             M2C_FIELD(this, s32 *, 0x81090) = 0;
             memset((void*)(this + 0x810A4), 0, 0x40U);
             return;
         }
         break;
     case 2:
-        if (M2C_FIELD(this, f32 *, 0x8109C) == 0.0f) {
+        if (M2C_FIELD((s32)this, f32 *, 0x8109C) == 0.0f) {
             M2C_FIELD(this, s8 *, 0x81137) = 0;
             M2C_FIELD(this, s8 *, 0x81184) = 1;
         }
@@ -1630,8 +1881,7 @@ loop_19:
             var_f31_2 = temp_f0_2;
         }
         ((CMenuReliveHall*)(this))->dancerMoveAnimationAll(var_f31_2);
-        M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-        if (var_f31_2 == 1.0f) {
+        if (var_f31_2 >= 1.0f) {
             M2C_FIELD(this, s32 *, 0x81090) = 3;
             memset((void*)(this + 0x810A4), 0, 0x40U);
         }
@@ -1659,12 +1909,12 @@ loop_19:
         M2C_FIELD(this, s8 *, 0x81138) = (s8) (u8) var_r0_2;
         if (temp_r3 >= 0xFF) {
             M2C_FIELD(this, s32 *, 0x81090) = 0;
-            memset((void*)(this + 0x810A4), 0, 0x40U);
+            memset((void*)((u8*)this + 0x810A4), 0, 0x40U);
             return;
         }
         break;
     case 5:
-        if (M2C_FIELD(this, f32 *, 0x8109C) == 0.0f) {
+        if (M2C_FIELD((s32)this, f32 *, 0x8109C) == 0.0f) {
             M2C_FIELD(this, s8 *, 0x81137) = -1;
             M2C_FIELD(this, s8 *, 0x81138) = -1;
         }
@@ -1678,8 +1928,8 @@ loop_19:
         M2C_FIELD(this, s8 *, 0x81138) = (s8) temp_r0_4;
         M2C_FIELD(this, s8 *, 0x81137) = (s8) temp_r0_4;
         if (temp_r3_2 >= 0xFF) {
-            M2C_FIELD(this, s32 *, 0x81090) = 0;
-            memset((void*)(this + 0x810A4), 0, 0x40U);
+            M2C_FIELD((u16)this, s32 *, 0x81090) = 0;
+            memset((void*)((u8*)this + 0x810A4), 0, 0x40U);
             return;
         }
         break;
@@ -1694,8 +1944,7 @@ loop_19:
         }
         M2C_FIELD(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64), f32 *, 8) = var_f0;
         ((CMenuReliveHall*)(this))->setCircleSw();
-        M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-        if (temp_f29_2 == 1.0f) {
+        if (temp_f29_2 >= 1.0f) {
             M2C_FIELD(this, s32 *, 0x81090) = 0;
             memset((void*)((u8*)this + 0x810A4), 0, 0x40U);
             return;
@@ -1717,8 +1966,7 @@ loop_19:
             var_f1 = temp_f2;
         }
         M2C_FIELD(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64), f32 *, 8) = var_f1;
-        M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-        if (temp_f2 == 1.0f) {
+        if (temp_f2 >= 1.0f) {
             M2C_FIELD(this, s32 *, 0x81090) = 0;
             memset((void*)(this + 0x810A4), 0, 0x40U);
         }
@@ -1738,18 +1986,18 @@ int CMenuReliveHall::getTempo(bool b)
     return getTempoPassion(0, b, 1);
 }
 int CMenuReliveHall::getTempoPassion(int* p0, bool p1, bool p2) {
-    CReliveStage *temp_r30;
+    ModelBank *var_r28;
     CReliveStage *temp_r3_4;
     CReliveStage *var_r3_2;
     ModelBank *var_r23;
-    ModelBank *var_r28;
+    CReliveStage *temp_r30;
     ModelBank *var_r29;
     Pokemon *temp_r3_3;
     s32 temp_r24;
     s32 var_r20;
     s32 var_r21;
     s32 var_r3;
-    s32 var_r22;
+    u32 var_r22;
     u32 temp_r3;
     u8 temp_r3_5;
     u8 *temp_r3_2;
@@ -1775,8 +2023,7 @@ int CMenuReliveHall::getTempoPassion(int* p0, bool p1, bool p2) {
         temp_r24 = ((CMenuReliveHall*)(this))->dancerPositionQuantityWithCatch();
         var_r23 = var_r29;
         var_r20 = 0;
-loop_9:
-        if (var_r20 < temp_r24) {
+        while (var_r20 < temp_r24) {
             temp_r3_3 = ((SPokemonView*)(((CMenuReliveHall*)(this))->getPokemonViewByClockwizePositionWithCatch(var_r20)))->getPokemonWithPickupOverride();
             memcpy((void*)(var_r23), (const void*)(temp_r3_3), 0xC4U);
             if (var_r22 == ((Pokemon*)(temp_r3_3))->getPokemonDataId()) {
@@ -1784,13 +2031,12 @@ loop_9:
             }
             var_r23 += 0xC4;
             var_r20 += 1;
-            goto loop_9;
         }
         M2C_FIELD(var_r29, u8 *, 0x3D4) = (u8) var_r21;
         memcpy((void*)(var_r28), (const void*)(temp_r30), 0xC4U);
         memcpy((void*)(((u8*)(var_r28) + 0xC4)), (const void*)(((u8*)((u16)temp_r30) + 0xC4)), 0xC4U);
         memcpy((void*)(((u8*)(var_r28) + 0x188)), (const void*)(((u8*)((u16)temp_r30) + 0x188)), 0xC4U);
-        memcpy((void*)(((u8*)(var_r28) + 0x24C)), (const void*)(((u8*)(temp_r30) + 0x24C)), 0xC4U);
+        memcpy((void*)(((u8*)(var_r28) + 0x24C)), (const void*)(((u8*)((u16)temp_r30) + 0x24C)), 0xC4U);
         memcpy((void*)(((u8*)(var_r28) + 0x310)), (const void*)(((u8*)((u16)temp_r30) + 0x310)), 0xC4U);
         M2C_FIELD(var_r28, u8 *, 0x3D4) = (u8) M2C_FIELD(temp_r30, u8 *, 0x3D4);
         memcpy((void*)(temp_r30), (const void*)(var_r29), 0xC4U);
@@ -1838,8 +2084,7 @@ f32 CMenuReliveHall::getDirToAisyou(f32 dir)
         SPokemonView* a = getPokemonViewByClockwizePositionWithCatch(i);
         SPokemonView* b = getPokemonViewByClockwizePositionWithCatch((i + 1) % n);
         if (isDirRegionIn(dir, a->dir, b->dir)) {
-            Pokemon* pb = b->getPokemonWithPickupOverride();
-            return pokemonToAisyou(a->getPokemonWithPickupOverride(), pb);
+            return pokemonToAisyou(a->getPokemonWithPickupOverride(), (Pokemon*)(b->getPokemonWithPickupOverride()));
         }
     }
     return -1;
@@ -1860,7 +2105,8 @@ void CMenuReliveHall::getCircleColorAisyou(f32& a, f32& b, int& color, int idx)
 GSgfxColAu8 CMenuReliveHall::positionToAisyouColor(int i, int j)
 {
     Pokemon* a = getPokemonFromPositionWithCatch(i);
-    return pokemonToAisyouColor(a, getPokemonFromPositionWithCatch(j));
+    Pokemon* b = getPokemonFromPositionWithCatch(j);
+    return pokemonToAisyouColor(a, b);
 }
 
 GSgfxColAu8 CMenuReliveHall::pokemonToAisyouColor(Pokemon* a, Pokemon* b)
@@ -1880,17 +2126,20 @@ int CMenuReliveHall::pokemonToAisyou(Pokemon* a, Pokemon* b)
 int CMenuReliveHall::dancerPositionQuantityWithCatch()
 {
     CMenuPokemonCursor* c;
+    Pokemon* p;
+    int idx;
+    u8 in;
     int n = stage->getDancerQuantity();
     u8 catching = 0;
     if (cursor->isCatchPokemon()) {
         c = cursor;
-        Pokemon* p = c->pokemon.checkValid() ? &c->pokemon : 0;
+        p = c->pokemon.checkValid() ? &c->pokemon : 0;
         if (!p->isDarkPokemon()) catching = 1;
     }
     if (catching) {
         CMenuPokemonCursor* c = cursor;
-        u8 in = 0;
-        int idx = c->index;
+        in = 0;
+        idx = c->index;
         if (stage->getDancerQuantity() <= idx && cursor->index <= 5) in = 1;
         if (in) n += 1;
     }
@@ -2068,9 +2317,9 @@ int CMenuReliveHall::getQuantityMarkerDancerOnPlusDancerEmpty()
     return n + getQuantityMarkerDancerEmpty();
 }
 void CMenuReliveHall::cursorPositionDecideAtStageChange(int p0) {
-    CMenuPokemonCursor *temp_r30_2;
+    u8 var_r29_4;
     CMenuPokemonCursor *temp_r30_3;
-    CMenuPokemonCursor *temp_r30_4;
+    CMenuPokemonCursor *temp_r30_2;
     CMenuPokemonCursor *temp_r30_5;
     CMenuReliveHall *temp_r31;
     CMenuReliveHall *var_r3;
@@ -2085,7 +2334,7 @@ void CMenuReliveHall::cursorPositionDecideAtStageChange(int p0) {
     u8 var_r0;
     u8 var_r29_2;
     u8 var_r29_3;
-    u8 var_r29_4;
+    CMenuPokemonCursor *temp_r30_4;
     u8 var_r29_5;
     u8 var_r29_6;
 
@@ -2128,7 +2377,7 @@ void CMenuReliveHall::cursorPositionDecideAtStageChange(int p0) {
         }
         if (var_r28 == -1) {
             var_r29_3 = 0;
-            if (((CMenuPokemonCursor*)(M2C_FIELD(temp_r31, CMenuPokemonCursor **, 0x80F64)))->isCatchPokemon() != 0) {
+            if (((CMenuPokemonCursor*)(M2C_FIELD((u16)temp_r31, CMenuPokemonCursor **, 0x80F64)))->isCatchPokemon() != 0) {
                 temp_r30_2 = M2C_FIELD(temp_r31, CMenuPokemonCursor **, 0x80F64);
                 if (((Pokemon*)(((u8*)((s32)temp_r30_2) + 0x20)))->checkValid() != 0) {
                     var_r3_3 = (Pokemon *)(((u8*)(temp_r30_2) + 0x20));
@@ -2143,7 +2392,7 @@ void CMenuReliveHall::cursorPositionDecideAtStageChange(int p0) {
                 var_r29_4 = 0;
                 if (((CMenuPokemonCursor*)(M2C_FIELD(temp_r31, CMenuPokemonCursor **, 0x80F64)))->isCatchPokemon() != 0) {
                     temp_r30_3 = M2C_FIELD(temp_r31, CMenuPokemonCursor **, 0x80F64);
-                    if (((Pokemon*)(((u8*)(temp_r30_3) + 0x20)))->checkValid() != 0) {
+                    if (((Pokemon*)(((u8*)((s32)temp_r30_3) + 0x20)))->checkValid() != 0) {
                         var_r3_4 = (Pokemon *)(((u8*)(temp_r30_3) + 0x20));
                     } else {
                         var_r3_4 = NULL;
@@ -2158,7 +2407,7 @@ void CMenuReliveHall::cursorPositionDecideAtStageChange(int p0) {
                 var_r29_5 = 0;
                 if (((CMenuPokemonCursor*)(M2C_FIELD(temp_r31, CMenuPokemonCursor **, 0x80F64)))->isCatchPokemon() != 0) {
                     temp_r30_4 = M2C_FIELD(temp_r31, CMenuPokemonCursor **, 0x80F64);
-                    if (((Pokemon*)(((u8*)(temp_r30_4) + 0x20)))->checkValid() != 0) {
+                    if (((Pokemon*)(((u8*)((s32)temp_r30_4) + 0x20)))->checkValid() != 0) {
                         var_r3_5 = (Pokemon *)(((u8*)(temp_r30_4) + 0x20));
                     } else {
                         var_r3_5 = NULL;
@@ -2252,7 +2501,7 @@ void CMenuReliveHall::resetStatusDisplayVisitor()
     statusSet = 0;
 }
 void CMenuReliveHall::aButtomAction() {
-    CMenuPokemonCursor *temp_r28_3;
+    u8 var_r28;
     CMenuPokemonCursor *temp_r3;
     Pokemon *var_r3;
     Pokemon *var_r3_2;
@@ -2261,7 +2510,7 @@ void CMenuReliveHall::aButtomAction() {
     s32 temp_r28_2;
     u8 temp_r30_2;
     u8 var_r27;
-    u8 var_r28;
+    CMenuPokemonCursor *temp_r28_3;
     u8 *var_r0;
     u8 *var_r0_2;
     u8 *var_r0_3;
@@ -2285,8 +2534,8 @@ void CMenuReliveHall::aButtomAction() {
             }
         }
         if (var_r28 != 0) {
-            temp_r28 = M2C_FIELD(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64), s32 *, 0xC);
-            if (temp_r28 < ((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getDancerQuantity()) {
+            temp_r28 = M2C_FIELD(M2C_FIELD((u16)this, CMenuPokemonCursor **, 0x80F64), s32 *, 0xC);
+            if (temp_r28 < ((CReliveStage*)(M2C_FIELD((u16)this, CReliveStage **, 0x33C)))->getDancerQuantity()) {
                 if ((u8) M2C_FIELD(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64), u8 *, 0x14C) != 0) {
                     ((CMenuReliveHall*)(this))->actionChange();
                 } else {
@@ -2300,7 +2549,7 @@ void CMenuReliveHall::aButtomAction() {
         } else {
             temp_r28_2 = M2C_FIELD(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64), s32 *, 0xC);
             if (temp_r28_2 < ((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getDancerQuantity()) {
-                if ((u8) M2C_FIELD(M2C_FIELD(this, CMenuPokemonCursor **, 0x80F64), u8 *, 0x14C) != 0) {
+                if ((u8) M2C_FIELD(M2C_FIELD((u16)this, CMenuPokemonCursor **, 0x80F64), u8 *, 0x14C) != 0) {
                     ((CMenuReliveHall*)(this))->actionPickup();
                 } else {
                     M2C_FIELD(this, u8 **, 0x614) = (u8 *) (&relivehallAisyou2ColorTbl + 0x298);
@@ -2393,7 +2642,7 @@ loop_65:
         temp_r31 = ((CReliveHall*)(((CReliveHall*)(temp_r3))->getPointer()))->isReliveReadyDarkLugiaExist();
         temp_r26 = (M2C_FIELD(temp_r3, u16 *, 4) | M2C_FIELD(temp_r3, u16 *, 6)) != 0;
         if (((temp_r26 == 0) && ((u8) M2C_FIELD((s32)this, u8 *, 0x620) == 0)) || (((CMenuReliveHall*)(this))->animationProcessButtonInterrupt() == 0)) {
-            if ((u8) M2C_FIELD(this, u8 *, 0x620) != 0) {
+            if ((u8) M2C_FIELD((s32)this, u8 *, 0x620) != 0) {
                 ((CMenuReliveHall*)(this))->cursorMoveDir((s32) ((180.0f * M2C_FIELD(this, f32 *, 0x624)) / 3.1415927f));
             } else if (((u8) M2C_FIELD(this, u8 *, 0x621) == 0) && (temp_r26 != 0)) {
                 temp_r0 = M2C_FIELD(temp_r3, u16 *, 6);
@@ -2464,8 +2713,8 @@ loop_65:
                     }
                 }
             }
-            temp_r3_3 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x330), CReliveHall *(**)(CMenuReliveHall *), 0x10)(this);
-            if ((temp_r31 == 0) && (((CReliveHall*)(((CReliveHall*)(temp_r3_3))->getPointer()))->isReliveReadyDarkLugiaExist() != 0)) {
+            updateAll();
+            if ((temp_r31 == 0) && (CReliveHall::getPointer()->isReliveReadyDarkLugiaExist() != 0)) {
                 ((CMenuReliveHall*)(this))->infoMessageDisplay(0xD152U);
             }
             temp_r3_4 = (CReliveHall *)(darkPokemonGetDarkPokemon(0x49U));
@@ -2483,6 +2732,7 @@ loop_65:
     }
 }
 void CMenuReliveHall::loop() {
+    enum TsE { TsE0 };
     goto loop_1;
     s32 spC;
     u32 sp8;
@@ -2491,7 +2741,7 @@ void CMenuReliveHall::loop() {
     CReliveHall *temp_r3_4;
     CReliveHall *temp_r4;
     CReliveHall *temp_r4_2;
-    s32 temp_r29;
+    enum TsE temp_r29;
     s32 temp_r29_3;
     s32 temp_r31_2;
     s32 temp_r3;
@@ -2515,15 +2765,15 @@ sw0_c1:;
     lbl_804EA7F0 = M2C_FIELD(M2C_FIELD(this, CReliveHall **, 0x328), s32 *, 4) == 3;
     goto loop_1;
 sw0_c2:;
-    ((CMenuReliveHall*)(this))->stateMainProc();
+    ((CMenuReliveHall*)((s32)this))->stateMainProc();
     goto loop_1;
 sw0_c3:;
     ((CInfoWindow*)(this + 0x80F8C))->setMsgCtrlValue(0x32U, (unsigned long)(((Pokemon*)(((CMenuReliveHall*)(this))->getCurrentPokemonPointer()))->getNicknamePtr()));
     ((CInfoWindow*)(this + 0x80F8C))->open(0xD110U, 0U);
     ((CMenuReliveHall*)(this))->actionMenuMain();
-    temp_r29 = 0;
+    temp_r29 = (enum TsE)(0);
     ((CInfoWindow*)(this + 0x80F8C))->close();
-    temp_r29_2 = ((CReliveHall*)(((CReliveHall*)(M2C_ERROR(/* Read from unset register $r3 */)))->getPointer()))->isReliveReadyDarkLugiaExist();
+    temp_r29_2 = CReliveHall::getPointer()->isReliveReadyDarkLugiaExist();
     ((CMenuReliveHall*)(this))->actionDecide(*(M2C_FIELD(this, s32 **, 0x614) + ((temp_r29 * 4) + 4)));
     temp_r3 = 0;
     if (temp_r29_2 != 0) {
@@ -2719,9 +2969,9 @@ namespace {
 void CStick::update()
 {
     prev = cur;
-    s8 ly = GSinputGetLeftStickYData(1, 0);
-    s8 lx = GSinputGetLeftStickXData(1, 0);
     s8 ry = GSinputGetRightStickYData(1, 0);
+    s8 lx = GSinputGetLeftStickXData(1, 0);
+    s8 ly = GSinputGetLeftStickYData(1, 0);
     s8 rx = GSinputGetRightStickXData(1, 0);
     s8 t;
     dir = 0.0f;
@@ -2743,7 +2993,7 @@ void CStick::update()
                 dir = xy2dir((f32)rx, (f32)ry);
                 cur = 1;
             } else {
-                t = ry;
+                if (t < ry) t = ry;
                 if (t < 0) t = -t;
                 if (t > 0x16) {
                     dir = xy2dir((f32)rx, (f32)ry);
@@ -2774,7 +3024,7 @@ namespace {
 void CMenuReliveHall::editAfterDp0VisitorCheck()
 {
     Pokemon* v = stage->getVisitorPointer();
-    if (v && v->getDarkPoint() == 0.0f && stage->getDancerQuantity() == 0) {
+    if (v && !v->getDarkPoint() && stage->getDancerQuantity() == 0) {
         msgctrlSetValue(0x32, (u32)v->getNicknamePtr());
         infoMessageDisplay3Line(0xD15D);
     }
@@ -2840,7 +3090,6 @@ void CMenuReliveHall::dancerMoveAnimationAll(f32 t)
 void CMenuReliveHall::dancerMoveAnimationKick(f32* p0, f32* p1, bool p2, f32 p3) {
     u32 var_ctr;
     CMenuReliveHall *var_r5;
-    f32 *var_r5_2;
     f32 *var_r6;
     f32 *var_r7;
     f32 temp_f0;
@@ -2869,6 +3118,7 @@ void CMenuReliveHall::dancerMoveAnimationKick(f32* p0, f32* p1, bool p2, f32 p3)
     u8 *temp_r3_2;
     u8 *var_r4;
     f32 *var_r6_2;
+    f32 *var_r5_2;
 
     temp_r3 = ((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getDancerQuantity();
     var_r8 = 0;
@@ -2948,8 +3198,8 @@ void CMenuReliveHall::dancerMoveAnimationKick(f32* p0, f32* p1, bool p2, f32 p3)
                     var_r7 += 0x20;
                     M2C_FIELD(var_r5, f32 *, 0x5BC) = temp_f0_16;
                     M2C_FIELD(var_r5, f32 *, 0x5B4) = temp_f0_16;
-                    var_r5 += 0x280;
                     var_ctr -= 1;
+                    var_r5 += 0x280;
                 } while (var_ctr != 0);
             }
         }
@@ -3028,7 +3278,7 @@ void CMenuReliveHall::resetViewAll() {
     u8 *var_r12;
     u8 *var_r6;
 
-    memset((void*)(this + 0x340), 0, 0x2D0U);
+    memset((void*)((u8*)this + 0x340), 0, 0x2D0U);
     temp_r24 = (unsigned long)(((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getVisitorPointer());
     memset((void*)((u8*)this + 0x530), 0, 0x34U);
     if (temp_r24 != 0) {
@@ -3041,8 +3291,7 @@ void CMenuReliveHall::resetViewAll() {
     var_r29 = 0;
     var_r25 = (float *)(&relivehallAisyou2ColorTbl + 0x8C + temp_r30);
     var_r24 = (float *)(&relivehallAisyou2ColorTbl + 0xDC + temp_r30);
-loop_4:
-    if (var_r29 < temp_r3) {
+    while (var_r29 < temp_r3) {
         temp_r4 = (unsigned long)(((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getDancerPointer(var_r29));
         M2C_FIELD(var_r26, f32 *, 0x34C) = (*var_r25);
         M2C_FIELD(var_r26, f32 *, 0x348) = (*var_r25);
@@ -3058,7 +3307,6 @@ loop_4:
         var_r25 += 4;
         var_r24 += 4;
         var_r29 += 1;
-        goto loop_4;
     }
     temp_r3_2 = ((CMenuReliveHall*)(this))->getQuantityMarkerDancerEmpty();
     if (temp_r3_2 != 0) {
@@ -3071,7 +3319,7 @@ loop_4:
                 var_ctr = (temp_r6 + 7) >> 3U;
                 if (temp_r6 > 0) {
                     do {
-                        temp_r26 = (unsigned char *)(this + (var_r5 + 0x340));
+                        temp_r26 = (unsigned char *)((u8*)this + (var_r5 + 0x340));
                         M2C_FIELD(temp_r26, s8 *, 0) = 1;
                         M2C_FIELD(temp_r26, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0);
                         temp_r8 = var_r29 + 4;
@@ -3079,24 +3327,24 @@ loop_4:
                         M2C_FIELD(temp_r26, f32 *, 8) = (f32) M2C_FIELD(temp_r26, f32 *, 4);
                         temp_r6_2 = var_r29 + 6;
                         temp_r0 = var_r29 + 7;
-                        temp_r25 = (unsigned char *)(this + (((var_r29 + 1) * 0x50) + 0x340));
+                        temp_r25 = (unsigned char *)((u8*)this + (((var_r29 + 1) * 0x50) + 0x340));
                         M2C_FIELD(temp_r26, f32 *, 0xC) = (f32) M2C_FIELD(temp_r26, f32 *, 4);
                         temp_r9 = (var_r29 + 3) * 0x50;
-                        temp_r24_2 = (unsigned char *)(this + (((var_r29 + 2) * 0x50) + 0x340));
+                        temp_r24_2 = (unsigned char *)((u8*)this + (((var_r29 + 2) * 0x50) + 0x340));
                         var_r29 += 8;
                         var_r5 += 0x280;
                         M2C_FIELD(temp_r25, s8 *, 0) = 1;
-                        temp_r10 = (unsigned char *)(this + (temp_r9 + 0x340));
+                        temp_r10 = (unsigned char *)((u8*)this + (temp_r9 + 0x340));
                         M2C_FIELD(temp_r25, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 4);
                         var_r4 += 8;
-                        temp_r9_2 = (unsigned char *)(this + ((temp_r8 * 0x50) + 0x340));
+                        temp_r9_2 = (unsigned char *)((u8*)this + ((temp_r8 * 0x50) + 0x340));
                         M2C_FIELD(temp_r25, f32 *, 8) = (f32) M2C_FIELD(temp_r25, f32 *, 4);
-                        temp_r8_2 = (unsigned char *)(this + ((temp_r7 * 0x50) + 0x340));
+                        temp_r8_2 = (unsigned char *)((u8*)this + ((temp_r7 * 0x50) + 0x340));
                         M2C_FIELD(temp_r25, f32 *, 0xC) = (f32) M2C_FIELD(temp_r25, f32 *, 4);
-                        temp_r7_2 = (unsigned char *)(this + ((temp_r6_2 * 0x50) + 0x340));
+                        temp_r7_2 = (unsigned char *)((u8*)this + ((temp_r6_2 * 0x50) + 0x340));
                         M2C_FIELD(temp_r24_2, s8 *, 0) = 1;
                         M2C_FIELD(temp_r24_2, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 8);
-                        temp_r6_3 = (unsigned char *)(this + ((temp_r0 * 0x50) + 0x340));
+                        temp_r6_3 = (unsigned char *)((u8*)this + ((temp_r0 * 0x50) + 0x340));
                         M2C_FIELD(temp_r24_2, f32 *, 8) = (f32) M2C_FIELD(temp_r24_2, f32 *, 4);
                         M2C_FIELD(temp_r24_2, f32 *, 0xC) = (f32) M2C_FIELD(temp_r24_2, f32 *, 4);
                         M2C_FIELD(temp_r10, s8 *, 0) = 1;
@@ -3125,7 +3373,7 @@ loop_4:
                     } while (var_ctr != 0);
                 }
             }
-            var_r6 = (unsigned char *)(this + (var_r29 * 0x50));
+            var_r6 = (unsigned char *)((u8*)this + (var_r29 * 0x50));
             var_r7 = (float *)(&relivehallAisyou2ColorTbl + 0x12C + (temp_r30 + (var_r4 * 4)));
             var_ctr_2 = temp_r3_2 - var_r4;
             if (var_r4 < temp_r3_2) {
@@ -3257,9 +3505,9 @@ void CMenuReliveHall::init(CMenuGlobalState& st)
     SCircle* c = circle;
     for (i = 0; i < 3; i++) {
         c->init(lw->b, lw->c, lw->d, *col);
-        c++;
         col++;
         lw++;
+        c++;
     }
     memset(&scriptB, 0, 0x10);
     state.init();
@@ -3306,12 +3554,12 @@ void CMenuReliveHall::animationDataReset()
     }
     makeCursorPositionTbl(markerPosA);
     markerClear();
+    memset(&tempoMode, 0, 8);
     markerOnVisitor = 0xFF;
     markerOnDancer = 0xFF;
     markerOnEmpty = 0xFF;
     alphaB = 0xFF;
     alphaA = 0xFF;
-    memset(&tempoMode, 0, 8);
 }
 
 void CMenuReliveHall::drawAll()
@@ -3408,7 +3656,7 @@ void CMenuReliveHall::actionPickup()
         f32* a = dir2s;
         f32* b = dirs;
         v = views;
-        for (int i = 0; i < n; i++, v++) {
+        for (int i = 0; i < n; v++, i++) {
             if (i != cursor->index) {
                 *a++ = v->dir2;
                 *b++ = v->dir;
@@ -3448,12 +3696,12 @@ void CMenuReliveHall::actionPut()
 {
     savedTempo = getTempo(false);
     menuPtPlaySe(0x45E);
-    int pos = -1;
-    CMenuPokemonCursor* c = cursor;
-    u8 in = 0;
-    int idx = c->index;
     f32 dirs[4];
+    CMenuPokemonCursor* c = cursor;
     f32 dir2s[4];
+    int idx = c->index;
+    int pos = -1;
+    u8 in = 0;
     if (idx >= 0 && idx <= 5) in = 1;
     if (in) {
         int n = stage->getDancerQuantity();
@@ -3464,7 +3712,8 @@ void CMenuReliveHall::actionPut()
         } else {
             CMenuPokemonCursor* c2 = cursor;
             int i2 = c2->index;
-            pos = (i2 - stage->getDancerQuantity()) + 1;
+            pos = (i2 - stage->getDancerQuantity());
+            pos += 1;
         }
         c = cursor;
         stage->insertDancer(*(c->pokemon.checkValid() ? &c->pokemon : 0), pos);

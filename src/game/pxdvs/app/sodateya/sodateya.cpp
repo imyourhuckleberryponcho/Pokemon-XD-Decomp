@@ -210,9 +210,10 @@ s32 sodateyaGetPokemonDPValue(void) {
 
 s32 sodateyaGetPokemonLevelUpValue(void) {
     Sodateya* s = (Sodateya*)savedataGetStatus(0, 0xB);
-    s32 level = s->active != 0 ? s->level : 0xFF;
+    u8 level = s->active != 0 ? s->level : 0xFF;
     s = (Sodateya*)savedataGetStatus(0, 0xB);
-    return pokemonBiosGetLevel((Pokemon*)s->pokemon) - level;
+    u8 now = pokemonBiosGetLevel((Pokemon*)s->pokemon);
+    return now - level;
 }
 
 u8* sodateyaGetPokemonPtr(void* data) {
@@ -283,7 +284,8 @@ static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
             if (pokemonCheckValid(p) && p != 0) {
                 u16 dark = getDarkId(p, mode);
                 if (dark != 0) {
-                    if (pokemonBiosGetDp(p) != 0) {
+                    u32 cmpv = pokemonBiosGetDp(p);
+                    if (cmpv != 0) {
                         u16 sum = steps + darkPokemonBiosGetSteps(dark);
                         if (sum >= 0x100) {
                             pokemonAddDpFormPokemonDpFilterId(p, 0, 1);
@@ -336,9 +338,7 @@ static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
                     u32 exp = pokemonBiosGetExp(np);
                     u32 sum = exp + steps;
                     u32 arg = 0xFFFFFFFF;
-                    if (exp <= sum) {
-                        arg = sum;
-                    }
+                    arg = exp > sum ? arg : sum;
                     pokemonGrowBasisStatus(np, arg);
                     u8 learned = 0;
                     pokemonOboeWaza(np, pokemonBiosGetLevel(np), 1, &learned);

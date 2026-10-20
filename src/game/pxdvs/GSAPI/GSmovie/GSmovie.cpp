@@ -361,25 +361,27 @@ static inline void _movieStop(u32 id) {
 // ---------------------------------------------------------------- public API
 extern "C" {
 
+static inline bool _movieStreamingInit(void) {
+    _maxStreaming = 4;
+    _movieStreaming = (__GSmovieStreaming*)GSmemAllocAlignFromEnd(_maxStreaming * sizeof(__GSmovieStreaming), 0x20);
+    if (_movieStreaming == 0) {
+        return false;
+    }
+    __GSmovieStreaming* s;
+    u32 i;
+    for (i = 0; i < _maxStreaming; i++) {
+        s = &_movieStreaming[i];
+        s->id = 0;
+        s->state = 0;
+        s->player = 0;
+    }
+    return true;
+}
+
 void GSmovieInit(void) {
     GSgfxRenderModule module = {0, _movieBeforeRender, _movieRender, 0, 0, 0, 0xB29A48E1};
     if (_initFlag != 1) {
-        bool ok;
-        u32 i;
-        _maxStreaming = 4;
-        _movieStreaming = (__GSmovieStreaming*)GSmemAllocAlignFromEnd(_maxStreaming * sizeof(__GSmovieStreaming), 0x20);
-        if (_movieStreaming == 0) {
-            ok = false;
-        } else {
-            for (i = 0; i < _maxStreaming; i++) {
-                __GSmovieStreaming* s = &_movieStreaming[i];
-                s->id = 0;
-                s->state = 0;
-                s->player = 0;
-            }
-            ok = true;
-        }
-        if (ok) {
+        if (_movieStreamingInit()) {
             _movieDaemonHDL = GSgappCreate(1, 0x1E, 0, _movieDaemon);
             GSgappSetName(_movieDaemonHDL, "GSmovieDaemon");
             _activeMovieStreaming = 0;
@@ -402,10 +404,9 @@ void GSmoviePlay(u32 id, s8 onMemory, s8 loop, struct GStexture* tex) {
                 }
             }
             break;
+        case 1:
+            break;
         default:
-            if (status >= 1) {
-                break;
-            }
             {
             __GSmovieStreaming* s = _movieGetNewStream();
             if (s != 0) {
@@ -523,12 +524,12 @@ extern "C" void GSmoviePlayWait(u32 id) {
             if (s == 0) {
                 break;
             }
-            if (s->state < 9) {
-                if (s->state == 0) {
-                    break;
-                }
-            } else if (s->state < 12) {
-                break;
+            switch (s->state) {
+            case 0:
+            case 9:
+            case 10:
+            case 11:
+                return;
             }
             GSthreadSwitch();
         }
@@ -846,10 +847,10 @@ static void _movieDaemon() {
                         _StreamInitFillStreamBuffer(s);
                     }
                     if (s->player->state == 1 || s->player->state == 4) {
-                        s->player->state = 2;
-                        s->player->retraceCount = -1;
                         s->player->prevCount = 0;
+                        s->player->state = 2;
                         s->player->curCount = 0;
+                        s->player->retraceCount = -1;
                         if (OldVIPostCallback == 0) {
                             OldVIPostCallback = GSgfxVideoSetVSyncCallback((void (*)(void))_PlayControl);
                         }

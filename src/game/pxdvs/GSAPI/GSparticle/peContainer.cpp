@@ -368,7 +368,8 @@ void peRenderContainer::PreUpdate() {
                     swapPending = 0;
                     if (dirty) {
                         memcpy(dl[cur].data, dl[cur == 0].data, dl[0].size);
-                        dl[cur].flags |= 2;
+                        GSgfxDL* d = &dl[cur];
+                        d->flags |= 2;
                         dirty = 0;
                     }
                 }

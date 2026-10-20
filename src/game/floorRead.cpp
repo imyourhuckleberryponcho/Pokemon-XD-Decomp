@@ -314,8 +314,10 @@ struct FloorData {
 };
 
 void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
+    s32 off;
     s32 i = 0;
-    FloorData* fd = (FloorData*)floorDataBiosGetCurrentPtr();
+    void* dc_ataBiosGetCurrentPtr = floorDataBiosGetCurrentPtr();
+    FloorData* fd = (FloorData*)dc_ataBiosGetCurrentPtr;
     if (GSresGetResource(floorGetCurrentGroupID(), fd->mapResID) == 0) {
         _postFuncManager.add(group, id, size, (FloorPostFunc)floorReadParticlePostFunc);
         return 0;
@@ -325,7 +327,7 @@ void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
     void* p = GSparticleLoad(res);
     if (p != 0) {
         GSresRegisterResource(p, group, id, _unloadParticles);
-        fd = (FloorData*)floorDataBiosGetCurrentPtr();
+        fd = (FloorData*)dc_ataBiosGetCurrentPtr;
         _HSD_SceneDesc* desc = (_HSD_SceneDesc*)HSD_ArchiveGetPublicAddress(GSresGetResource(floorGetCurrentGroupID(), fd->mapResID), "scene_data");
         if (GSresGetResource(floorGetCurrentGroupID(), fd->mapResID) == 0) {
             return 0;
@@ -335,7 +337,7 @@ void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
         }
         if (desc->models != 0) {
             u32 base = floorReadMakeModelResID(fd->mapResID);
-            s32 off = 0;
+            off = 0;
             while (*(void**)((u8*)desc->models + off) != 0) {
                 void* m = GSresGetResource(floorGetCurrentGroupID(), base | i);
                 if (m != 0) {
@@ -562,8 +564,7 @@ void* floorReadMsgPostFunc(u32 group, u32 id) {
     }
     GSresUnlockResource(group, id);
     void* res = GSresGetResource(group, id);
-    s32 lang = pokecoloGetLanguage();
-    if (lang != fn_8010B208(res)) {
+    if (fn_8010B208(res) != pokecoloGetLanguage()) {
         GSresFreeResource(group, id);
         return res;
     }
@@ -598,8 +599,9 @@ static void _registerCamera(u32 group, u32 id, _HSD_SceneDesc* desc) {
 
 static _HSD_SceneDesc* _makeArchiveHeader(u32 group, u32 id, u32 size) {
     GSresUnlockResource(group, id);
-    void* res = GSresGetResource(group, id);
-    HSD_ArchiveParse(res, ((ArchiveBuf*)res)->payload, size);
+    ArchiveBuf* buf = (ArchiveBuf*)GSresGetResource(group, id);
+    void* res = buf;
+    HSD_ArchiveParse(res, buf->payload, size);
     return (_HSD_SceneDesc*)HSD_ArchiveGetPublicAddress(res, "scene_data");
 }
 

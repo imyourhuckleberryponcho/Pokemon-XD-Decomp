@@ -125,9 +125,9 @@ static inline void HSD_JObjSetupMatrix(HSD_JObj* jobj) {
 }
 
 static void _modelParseLoadEnvelopeMatrix(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pmtx, GSmtx* mtxStack) {
-    GSmtx tmp;
-    GSmtx mtx;
     GSmtx node;
+    GSmtx mtx;
+    GSmtx tmp;
     GSmtx* nodeMtx;
     GSmtx* src;
     HSD_SList* list;
@@ -192,7 +192,7 @@ static void _modelParseLoadEnvelopeMatrix(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pm
     }
 }
 
-static void _modelParseDObjDisp(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx, bool rendering, GSmodelParseFunc func, void* arg) {
+static inline void _modelParseDObjDispBody(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx, bool rendering, GSmodelParseFunc func, void* arg) {
     HSD_PObj* pobj;
 
     for (pobj = dobj->pobj; pobj != 0; pobj = pobj->next) {
@@ -273,6 +273,10 @@ static void _modelParseDObjDisp(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx, bool r
     }
 }
 
+static void _modelParseDObjDisp(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx, bool rendering, GSmodelParseFunc func, void* arg) {
+    _modelParseDObjDispBody(dobj, vmtx, pmtx, rendering, func, arg);
+}
+
 #pragma dont_inline on
 static void _modelParseJObjDispSub(HSD_JObj* jobj, GSmtx* vmtx, GSmtx* pmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
     HSD_DObj* dobj;
@@ -282,7 +286,7 @@ static void _modelParseJObjDispSub(HSD_JObj* jobj, GSmtx* vmtx, GSmtx* pmtx, HSD
     for (dobj = jobj->dobj; dobj != 0; dobj = dobj->next) {
         if (!(dobj->flags & 1) && (dobj->flags & (trsp_mask << 1))) {
             HSD_DObjSetCurrent(dobj);
-            _modelParseDObjDisp(dobj, vmtx, pmtx, rendering, func, arg);
+            _modelParseDObjDispBody(dobj, vmtx, pmtx, rendering, func, arg);
         }
     }
     HSD_DObjSetCurrent(0);

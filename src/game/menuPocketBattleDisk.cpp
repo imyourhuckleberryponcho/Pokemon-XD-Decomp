@@ -77,29 +77,29 @@ struct tagWINDOW_WORK {
 
 extern "C" {
 u32 GSmsgGetRect(s32);
-s32 GSmsgPrint2(s32, s32, s32, s32);
+s32 GSmsgPrint2(s32, s32, s32, u32, u32);
 void* memset(void* dst, int val, size_t n);
 s32 menuBattleDiskCloseDoc();
 s32 menuBattleDiskOpenDoc(u8);
 void menuCloseCustom(s32 menuID, s32, s32);
 MenuItem* menuItemBiosGetPtr(s32 menuID, u32 index);
-s32 menuPdaSubScrollBar(s32, s32, s32, s32, s32, void*);
+void menuPdaSubScrollBar(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s32, u32, s32, s32, s16*);
 s32 menuPocketBattleDiskDrawBallCursor(void *p0, void *p1);
 s32 menuPocketBattleDiskDrawLineCursor(void *p0, void *p1);
-u16 menuPocketBattleDiskMain(s32 p0, s32 p1);
+u16 menuPocketBattleDiskMain(s32 p0, s32 p1, s32 p2);
 s32 menuPocketBattleDiskPrintItemKind(void *p0, void *p1);
 s32 menuPocketBattleDiskPrintItemList(void *p0, void *p1);
 void menuSubCursorAnimeInit(void);
 void menuSubCursorAnimeMain(void);
 void menuSubCursorAnimeValGet(f32* pos, s32* color);
-s32 spriteClearScissor();
-s32 spriteSetEnv();
-s32 spriteSetOffset(s32, s32);
-s32 spriteSetScissor(s32, s32, s16, s16);
+void spriteClearScissor(s32);
+void spriteSetEnv(s32);
+void spriteSetOffset(s32, s16, s16);
+void spriteSetScissor(s32, s32, s32, s32, s32);
 void winSeqSetMenu(s32 menuID, u32 id);
 s32 winSpriteGetLayerID(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
 void winSpriteSetDisp(tagSPRITE_WORK* sp, bool on);
-s32 windowDrawSpriteCursor(s32, s16, s32, void*, s32, s32, s32, s32*);
+s32 windowDrawSpriteCursor(s32, s16, s32, void*, s32, s32, s32, void*, s32);
 s32 windowGetActiveID(void);
 extern s32 jtbl_2177;
 extern s32 Data__34;
@@ -107,7 +107,7 @@ extern s32 _controlCursor__34;
 extern s32 printItemList__34;
 }
 extern "C++" {
-static s16 getCursorPositionY();
+static s32 getCursorPositionY();
 void menuPocketButtonWait();
 void menuPocketToolFloatToZero(f32& v, f32 step);
 }
@@ -125,11 +125,11 @@ struct MenuSpriteVal {
 
 extern "C" {
 void* heroItemGetItemKindToItemAryPtr(Hero*, u8, u16*, u16*, u8*, u8*);
-u32 itemBiosGetItemDataId(u8* p);
+u16 itemBiosGetItemDataId(u8* p);
 u8 itemCheckValid(s32);
 u32 itemDataBiosGetName(u8* p);
 u8* itemDataBiosGetPtr(u16 index);
-void menuOpenCustom(s32 menuID, ...);
+s32 menuOpenCustom(s32 menuID, ...);
 MenuSprite* menuSpriteBiosGetPtr(u32 id);
 MenuSpriteVal* menuSpriteBiosGetValPtr(MenuSprite* sprite);
 void menuSubCursorAnimeStart(void);
@@ -140,7 +140,7 @@ namespace {
 static void _controlCursor();
 static void diskUsedMarkDisplay(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, int p2);
 static u16 getItemIDFromMenuPos(int p0);
-static void getItemNameMsg(unsigned long p0);
+static u32 getItemNameMsg(unsigned long p0);
 static s32 getNbItemSlot();
 static void printItemList(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1);
 static u16 selectItem();
@@ -149,14 +149,16 @@ extern "C++" {
 bool deckDataVirtualDB_GetFlagData(u16 id);
 void menuPtPlaySe(u32 id);
 }
-static s32 Data__34ANONNS;
+namespace {
+u8 Data[0x28];
+}
 // ---- draft declarations ----
 
 
 extern "C" {
 s32 menuPocketBattleDiskCtrl(void *p0);
-s32 menuPocketBattleDiskDrawRollDown(void *p0);
-s32 menuPocketBattleDiskDrawRollUp(void *p0);
+s32 menuPocketBattleDiskDrawRollDown(void *p0, void *p1);
+s32 menuPocketBattleDiskDrawRollUp(void *p0, void *p1);
 s32 menuPocketBattleDiskPageBar(void *p0, s32 p1);
 }
 
@@ -170,62 +172,57 @@ s32 menuPocketBattleDiskDrawLineCursor(void *p0, void *p1) {
 }
 
 extern "C" {
-s32 menuPocketBattleDiskDrawBallCursor(void *p0, void *p1) {
-    s32 sp18;
-    f32 sp14;
-    s32 sp10;
-    s32 sp8;
-    s32 temp_r4;
-    s32 temp_r31;
+struct BallCursorPos {
+    f32 x;
+    f32 y;
+};
 
-    sp14 = M2C_FIELD(&jtbl_2177, f32 *, 0);
-    sp18 = M2C_FIELD(&jtbl_2177, s32 *, 4);
-    sp10 = -1;
+s32 menuPocketBattleDiskDrawBallCursor(void *p0, void *p1) {
+    BallCursorPos pos = {0.0f, 0.0f};
+    s32 color = -1;
     if ((s32) M2C_FIELD(p0, s32 *, 4) == windowGetActiveID()) {
-        menuSubCursorAnimeValGet((f32*)(&sp14), (s32*)(&sp10));
+        menuSubCursorAnimeValGet(&pos.x, &color);
     }
-    temp_r31 = winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-    temp_r4 = getCursorPositionY();
-    sp8 = sp10;
-    windowDrawSpriteCursor(0, temp_r4, -1, p0, 0xC2, 0, temp_r31, (s32 *) &sp14);
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    s32 layer = winSpriteGetLayerID((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1);
+    windowDrawSpriteCursor(0, getCursorPositionY(), -1, p0, 0xC2, 0, layer, &pos, color);
+    winSpriteSetDisp((tagSPRITE_WORK*)p1, 0U);
     return 0;
 }
 extern "C++" {
-static s16 getCursorPositionY() {
-    s16 var_r3;
+static s32 getCursorPositionY() {
+    s32 var_r3;
 
-    var_r3 = M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) * 0x1E;
-    if ((u8) M2C_FIELD(&Data__34ANONNS, u8 *, 0x14) == 0) {
-        var_r3 += (s16) M2C_FIELD(&Data__34ANONNS, f32 *, 0x10);
+    var_r3 = (s16)(M2C_FIELD(&Data, s16 *, 0xE) * 0x1E);
+    if ((u8) M2C_FIELD(&Data, u8 *, 0x14) == 0) {
+        var_r3 += (s16) M2C_FIELD(&Data, f32 *, 0x10);
     }
     return var_r3;
 }
 }
 
 extern "C" {
-s32 menuPocketBattleDiskDrawRollDown(void *p0) {
-    if ((u8) M2C_FIELD(&Data__34ANONNS, u8 *, 0x1C) == 0) {
+s32 menuPocketBattleDiskDrawRollDown(void *p0, void *p1) {
+    if ((u8) M2C_FIELD(&Data, u8 *, 0x1C) == 0) {
         return 0;
     }
-    if ((s32) (M2C_FIELD(&Data__34ANONNS, s16 *, 0xC) + 8) < (s32) (M2C_FIELD(&Data__34ANONNS, s32 *, 8) + 1)) {
-        M2C_FIELD(M2C_ERROR(/* Read from unset register $r4 */), s8 *, 0x67) = (s8) (255.0f * (1.0f - M2C_FIELD(&Data__34ANONNS, f32 *, 0x18)));
+    if ((s32) (M2C_FIELD(&Data, s16 *, 0xC) + 8) < (s32) (M2C_FIELD(&Data, s32 *, 8) + 1)) {
+        M2C_FIELD(p1, s8 *, 0x67) = (s8) (255.0f * (1.0f - M2C_FIELD(&Data, f32 *, 0x18)));
     } else {
-        M2C_FIELD(M2C_ERROR(/* Read from unset register $r4 */), s8 *, 0x67) = 0;
+        M2C_FIELD(p1, s8 *, 0x67) = 0;
     }
     return 0;
 }
 }
 
 extern "C" {
-s32 menuPocketBattleDiskDrawRollUp(void *p0) {
-    if ((u8) M2C_FIELD(&Data__34ANONNS, u8 *, 0x1C) == 0) {
+s32 menuPocketBattleDiskDrawRollUp(void *p0, void *p1) {
+    if ((u8) M2C_FIELD(&Data, u8 *, 0x1C) == 0) {
         return 0;
     }
-    if ((s16) M2C_FIELD(&Data__34ANONNS, s16 *, 0xC) > 0) {
-        M2C_FIELD(M2C_ERROR(/* Read from unset register $r4 */), s8 *, 0x67) = (s8) (255.0f * (1.0f - M2C_FIELD(&Data__34ANONNS, f32 *, 0x18)));
+    if ((s16) M2C_FIELD(&Data, s16 *, 0xC) > 0) {
+        M2C_FIELD(p1, s8 *, 0x67) = (s8) (255.0f * (1.0f - M2C_FIELD(&Data, f32 *, 0x18)));
     } else {
-        M2C_FIELD(M2C_ERROR(/* Read from unset register $r4 */), s8 *, 0x67) = 0;
+        M2C_FIELD(p1, s8 *, 0x67) = 0;
     }
     return 0;
 }
@@ -233,7 +230,7 @@ s32 menuPocketBattleDiskDrawRollUp(void *p0) {
 
 extern "C" {
 s32 menuPocketBattleDiskPageBar(void *p0, s32 p1) {
-    menuPdaSubScrollBar((long)((s32) p0), (long)(p1), (long)(M2C_FIELD(p0, s32 *, 4)), (long)(0x110), (long)(-0x0F9BDD01), (void *)(M2C_FIELD(&Data__34ANONNS, s32 *, 8) + 1));
+    menuPdaSubScrollBar((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1, M2C_FIELD(p0, s32 *, 4), 0x110, 0xF06422FF, M2C_FIELD(&Data, s32 *, 8) + 1, 8, (s16*)((u8*)&Data + 0xC));
     winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
     return 0;
 }
@@ -255,11 +252,12 @@ s32 menuPocketBattleDiskCtrl(void *p0) {
         break;
     case 2:
         _controlCursor();
-        menuPocketToolFloatToZero(*(float*)(&Data__34ANONNS + 0x10), 7.0f);
-        temp_f1 = M2C_FIELD(&Data__34ANONNS, f32 *, 0x18) + 0.033333335f;
-        M2C_FIELD(&Data__34ANONNS, f32 *, 0x18) = temp_f1;
+        menuPocketToolFloatToZero(*(float*)((u8*)&Data + 0x10), 7.0f);
+        f32 kc494 = 0.033333335f;
+        temp_f1 = M2C_FIELD(&Data, f32 *, 0x18) + kc494;
+        M2C_FIELD(&Data, f32 *, 0x18) = temp_f1;
         if (temp_f1 > 1.0f) {
-            M2C_FIELD(&Data__34ANONNS, f32 *, 0x18) = 0.0f;
+            M2C_FIELD(&Data, f32 *, 0x18) = 0.0f;
         }
         menuSubCursorAnimeMain();
         break;
@@ -283,30 +281,21 @@ extern "C" {
 extern "C" {
 extern "C" {
 s32 menuPocketBattleDiskPrintItemKind(void *p0, void *p1) {
-    s16 temp_r31;
-    u32 temp_r4;
-
-    temp_r31 = (s16) (GSmsgGetRect(0x14D3) >> 0x10U);
-    temp_r4 = M2C_FIELD(p1, s16 *, 0x54) - temp_r31;
-    GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1)), (s32) ((temp_r4 >> 0x1FU) + temp_r4) >> 1, 0, -1);
+    s16 width = GSmsgGetRect(0x14D3) >> 16;
+    GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1), (M2C_FIELD(p1, s16 *, 0x54) - width) / 2, 0, -1, 0x14D3);
     return 0;
 }
 extern "C" {
 s32 menuPocketBattleDiskPrintItemList(void *p0, void *p1) {
-    MenuItem *temp_r30;
-    MenuItem *temp_r31;
-
-    temp_r30 = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x11BU);
-    temp_r31 = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), (u32) M2C_FIELD(p1, s16 *, 6));
-    spriteSetScissor(winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1)), M2C_FIELD(temp_r30, s16 *, 6) - M2C_FIELD(temp_r31, s16 *, 6), M2C_FIELD(temp_r30, s16 *, 8) - M2C_FIELD(temp_r31, s16 *, 8), M2C_FIELD(temp_r30, s16 *, 0xA));
-    winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-    spriteSetEnv();
-    printItemList((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-    spriteSetOffset(winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1)), 0);
-    winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-    spriteClearScissor();
-    winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-    spriteSetEnv();
+    MenuItem* area = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x11BU);
+    MenuItem* item = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), (u32) M2C_FIELD(p1, s16 *, 6));
+    spriteSetScissor(winSpriteGetLayerID((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1), M2C_FIELD(area, s16 *, 6) - M2C_FIELD(item, s16 *, 6),
+                     M2C_FIELD(area, s16 *, 8) - M2C_FIELD(item, s16 *, 8), M2C_FIELD(area, s16 *, 0xA), M2C_FIELD(area, s16 *, 0xC));
+    spriteSetEnv(winSpriteGetLayerID((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1));
+    printItemList((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1);
+    spriteSetOffset(winSpriteGetLayerID((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1), 0, 0);
+    spriteClearScissor(winSpriteGetLayerID((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1));
+    spriteSetEnv(winSpriteGetLayerID((tagWINDOW_WORK*)p0, (tagSPRITE_WORK*)p1));
     return 0;
 }
 }
@@ -322,17 +311,17 @@ s32 menuPocketBattleDiskCursor(void) {
     return 0x0;
 }
 extern "C" {
-u16 menuPocketBattleDiskMain(s32 p0, s32 p1) {
+u16 menuPocketBattleDiskMain(s32 p0, s32 p1, s32 p2) {
     u16 temp_r28;
 
-    memset((void*)(&Data__34ANONNS), 0, 0x24U);
-    M2C_FIELD(&Data__34ANONNS, s32 *, 4) = (s32) M2C_ERROR(/* Read from unset register $r5 */);
-    M2C_FIELD(&Data__34ANONNS, s32 *, 8) = getNbItemSlot();
-    M2C_FIELD(&Data__34ANONNS, s32 *, 0) = p1;
+    memset((void*)(&Data), 0, 0x24U);
+    M2C_FIELD(&Data, s32 *, 0) = p1;
+    M2C_FIELD(&Data, s32 *, 4) = p2;
+    M2C_FIELD(&Data, s32 *, 8) = getNbItemSlot();
 loop_1:
-    M2C_FIELD(&Data__34ANONNS, s8 *, 0x1C) = 1;
+    M2C_FIELD(&Data, s8 *, 0x1C) = 1;
     temp_r28 = selectItem();
-    M2C_FIELD(&Data__34ANONNS, s8 *, 0x1C) = 0;
+    M2C_FIELD(&Data, s8 *, 0x1C) = 0;
     if (temp_r28 != 0) {
         menuBattleDiskOpenDoc((u8) (temp_r28 - 0x215));
         menuPocketButtonWait();
@@ -359,74 +348,76 @@ static void _controlCursor() {
 
     temp_r3 = windowGetKeyRepeat();
     var_r29 = 0;
-    temp_r6 = M2C_FIELD(&Data__34ANONNS, s32 *, 8) + 1;
-    if (M2C_FIELD(&Data__34ANONNS, f32 *, 0x10) == 0.0f) {
-        if ((u8) M2C_FIELD(&Data__34ANONNS, u8 *, 0x1C) == 0) {
+    temp_r6 = M2C_FIELD(&Data, s32 *, 8);
+    temp_r6 += 1;
+    if (M2C_FIELD(&Data, f32 *, 0x10) == 0.0f) {
+        if ((u8) M2C_FIELD(&Data, u8 *, 0x1C) == 0) {
             return;
         }
-        sp8 = M2C_FIELD(&Data__34ANONNS, s32 *, 0xC);
+        sp8 = M2C_FIELD(&Data, s32 *, 0xC);
         if ((s32) (temp_r3 & 8) != 0) {
             temp_r0 = temp_r6 - 8;
             if ((s32) ((s32) (temp_r6 + 7) / 8) == 1) {
-                M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) = (s16) (temp_r6 - 1);
-            } else if ((s16) M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) == temp_r0) {
-                M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) = 7;
+                M2C_FIELD(&Data, s16 *, 0xE) = (s16) (temp_r6 - 1);
+            } else if ((s16) M2C_FIELD(&Data, s32 *, 0xC) == temp_r0) {
+                M2C_FIELD(&Data, s16 *, 0xE) = 7;
             } else {
-                temp_r3_2 = (s16) M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) + 8;
-                M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) = temp_r3_2;
+                temp_r3_2 = (s16) M2C_FIELD(&Data, s32 *, 0xC) + 8;
+                M2C_FIELD(&Data, s32 *, 0xC) = temp_r3_2;
                 if (temp_r3_2 > temp_r0) {
-                    M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) = temp_r0;
+                    M2C_FIELD(&Data, s32 *, 0xC) = temp_r0;
                 }
             }
-            if ((sp8 != (s16) M2C_FIELD(&Data__34ANONNS, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data__34ANONNS, s16 *, 0xE))) {
+            if ((sp8 != (s16) M2C_FIELD(&Data, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data, s16 *, 0xE))) {
                 menuPtPlaySe(0x44DU);
             }
         } else if ((s32) (temp_r3 & 4) != 0) {
-            if ((s16) M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) == 0) {
-                M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) = 0;
+            if ((s16) M2C_FIELD(&Data, s32 *, 0xC) == 0) {
+                M2C_FIELD(&Data, s16 *, 0xE) = 0;
             } else {
-                temp_r3_3 = (s16) M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) - 8;
-                M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) = temp_r3_3;
+                temp_r3_3 = (s16) M2C_FIELD(&Data, s32 *, 0xC) - 8;
+                M2C_FIELD(&Data, s32 *, 0xC) = temp_r3_3;
                 if (temp_r3_3 < 0) {
-                    M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) = 0;
+                    M2C_FIELD(&Data, s32 *, 0xC) = 0;
                 }
             }
-            if (((s16) sp8 != (s16) M2C_FIELD(&Data__34ANONNS, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data__34ANONNS, s16 *, 0xE))) {
+            if (((s16) sp8 != (s16) M2C_FIELD(&Data, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data, s16 *, 0xE))) {
                 menuPtPlaySe(0x44DU);
             }
         } else if ((temp_r3 & 2) != 0) {
-            temp_r0_2 = M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) + 1;
-            M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) = temp_r0_2;
-            if ((s32) (temp_r0_2 + M2C_FIELD(&Data__34ANONNS, s32 *, 0xC)) >= temp_r6) {
-                M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) = (s16) (temp_r0_2 - 1);
+            temp_r0_2 = M2C_FIELD(&Data, s16 *, 0xE) + 1;
+            M2C_FIELD(&Data, s16 *, 0xE) = temp_r0_2;
+            if ((s32) (temp_r0_2 + M2C_FIELD(&Data, s32 *, 0xC)) >= temp_r6) {
+                M2C_FIELD(&Data, s16 *, 0xE) = (s16) (temp_r0_2 - 1);
             } else {
                 if (temp_r0_2 >= 8) {
-                    M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) = ((s16) M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) + 1);
+                    M2C_FIELD(&Data, s32 *, 0xC) = ((s16) M2C_FIELD(&Data, s32 *, 0xC) + 1);
                     var_r29 = 0x10;
-                    M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) = (s16) (temp_r0_2 - 1);
-                    M2C_FIELD(&Data__34ANONNS, s8 *, 0x14) = 1;
+                    M2C_FIELD(&Data, s16 *, 0xE) = (s16) (temp_r0_2 - 1);
+                    M2C_FIELD(&Data, s8 *, 0x14) = 1;
                 } else {
                     var_r29 = 0x10;
-                    M2C_FIELD(&Data__34ANONNS, s8 *, 0x14) = 0;
+                    M2C_FIELD(&Data, s8 *, 0x14) = 0;
                 }
-                M2C_FIELD(&Data__34ANONNS, f32 *, 0x10) = -30.0f;
+                f32 kc2597 = 30.0f;
+                M2C_FIELD(&Data, f32 *, 0x10) = -kc2597;
             }
         }
-        if (((s32) (temp_r3 & 1) != 0) && (((s16) M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) > 0) || (M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) > 0))) {
-            temp_r3_4 = M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) - 1;
-            M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) = temp_r3_4;
+        if (((s32) (temp_r3 & 1) != 0) && (((s16) M2C_FIELD(&Data, s16 *, 0xE) > 0) || (M2C_FIELD(&Data, s32 *, 0xC) > 0))) {
+            temp_r3_4 = M2C_FIELD(&Data, s16 *, 0xE) - 1;
+            M2C_FIELD(&Data, s16 *, 0xE) = temp_r3_4;
             if (temp_r3_4 < 0) {
-                M2C_FIELD(&Data__34ANONNS, s16 *, 0xE) = 0;
+                M2C_FIELD(&Data, s16 *, 0xE) = 0;
                 var_r29 = 0x10;
-                M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) = (M2C_FIELD(&Data__34ANONNS, s32 *, 0xC) - 1);
-                M2C_FIELD(&Data__34ANONNS, s8 *, 0x14) = 1;
+                M2C_FIELD(&Data, s32 *, 0xC) = (M2C_FIELD(&Data, s32 *, 0xC) - 1);
+                M2C_FIELD(&Data, s8 *, 0x14) = 1;
             } else {
                 var_r29 = 0x10;
-                M2C_FIELD(&Data__34ANONNS, s8 *, 0x14) = 0;
+                M2C_FIELD(&Data, s8 *, 0x14) = 0;
             }
-            M2C_FIELD(&Data__34ANONNS, f32 *, 0x10) = 30.0f;
+            M2C_FIELD(&Data, f32 *, 0x10) = 30.0f;
         }
-        if (((s16) sp8 != (s16) M2C_FIELD(&Data__34ANONNS, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data__34ANONNS, s16 *, 0xE))) {
+        if (((s16) sp8 != (s16) M2C_FIELD(&Data, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data, s16 *, 0xE))) {
             menuSubCursorAnimeStart();
         }
         if (var_r29 != 0) {
@@ -438,52 +429,50 @@ static void _controlCursor() {
 
 namespace {
 static void printItemList(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
-    s32 var_r26;
+    s32 var_r24;
     s32 temp_r22;
     s32 temp_r27;
-    s32 var_r23;
-    s32 var_r24;
+    s32 var_r4;
+    s32 var_r26;
     s32 var_r25;
     s32 var_r28;
-    s32 var_r4;
+    s32 var_r23;
     volatile u16 temp_r3;
 
     var_r4 = 0;
     var_r25 = 8;
-    temp_r27 = M2C_FIELD(&Data__34ANONNS, s32 *, 8);
+    temp_r27 = M2C_FIELD(&Data, s32 *, 8);
     var_r24 = 0;
-    var_r26 = M2C_FIELD(&Data__34ANONNS, s16 *, 0xC);
-    if ((M2C_FIELD(&Data__34ANONNS, f32 *, 0x10) != 0.0f) && ((s8) M2C_FIELD(&Data__34ANONNS, s8 *, 0x14) != 0)) {
-        if (M2C_FIELD(&Data__34ANONNS, f32 *, 0x10) < 0.0f) {
+    var_r26 = M2C_FIELD(&Data, s16 *, 0xC);
+    if ((M2C_FIELD(&Data, f32 *, 0x10) != 0.0f) && ((s8) M2C_FIELD(&Data, s8 *, 0x14) != 0)) {
+        if (M2C_FIELD(&Data, f32 *, 0x10) < 0.0f) {
             var_r26 -= 1;
             var_r4 = -1;
         } else {
             var_r25 = 9;
         }
-        var_r24 = (s32) M2C_FIELD(&Data__34ANONNS, f32 *, 0x10);
+        var_r24 = (s32) M2C_FIELD(&Data, f32 *, 0x10);
     }
     var_r28 = var_r4 * 0x1E;
     var_r23 = var_r4;
-loop_13:
-    if ((var_r23 < var_r25) && (var_r26 < temp_r27)) {
+    while ((var_r23 < var_r25) && (var_r26 < temp_r27)) {
         if (var_r26 >= 0) {
             temp_r22 = var_r28 - var_r24;
             temp_r3 = getItemIDFromMenuPos((s32) var_r26);
-            getItemNameMsg((u32) temp_r3);
-            if ((u32) M2C_ERROR(/* Read from unset register $r3 */) != 0U) {
+            u32 msg = getItemNameMsg((u32) temp_r3);
+            if (msg != 0U) {
                 if (deckDataVirtualDB_GetFlagData((u16) (temp_r3 - 0x215)) != 0) {
                     diskUsedMarkDisplay((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1), temp_r22);
                 }
-                GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1)), 0, temp_r22, -1U);
+                GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1)), 0, temp_r22, -1U, msg);
             }
         }
         var_r28 += 0x1E;
         var_r23 += 1;
         var_r26 += 1;
-        goto loop_13;
     }
-    if (var_r23 - 48 < var_r25) {
-        GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1)), 0, (var_r23 * 0x1E) - var_r24, -1U);
+    if (var_r23 < var_r25) {
+        GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1)), 0, (var_r23 * 0x1E) - var_r24, -1U, 0x3A9E);
     }
 }
 }
@@ -503,78 +492,54 @@ static void diskUsedMarkDisplay(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, int p2) 
     temp_r29 = M2C_FIELD(temp_r3, s16 *, 8) - M2C_FIELD(temp_r31, s16 *, 8);
     temp_r31_2 = menuSpriteBiosGetValPtr((MenuSprite*)(menuSpriteBiosGetPtr(0xD9U)));
     sp8 = winSpriteGetLayerID((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1));
-    windowDrawSprite2((u16)temp_r30, (s16) (temp_r29 + p2), M2C_FIELD(temp_r31_2, s16 *, 4), M2C_FIELD(temp_r31_2, s16 *, 6), -1U, (void*)(p0), 0xD9U, 0U, M2C_ERROR(/* Unable to find stack arg 0x0 in block */));
+    windowDrawSprite2(temp_r30, (s16) (temp_r29 + p2), M2C_FIELD(temp_r31_2, s16 *, 4), M2C_FIELD(temp_r31_2, s16 *, 6), -1U, (void*)(p0), 0xD9U, 0U, sp8);
 }
 }
 
 namespace {
 static u16 selectItem() {
-    s32 temp_ret;
-
-    temp_ret = windowGetActiveID();
-    menuOpenCustom(0x3B, temp_ret, 0, 0, 1, 0, M2C_BITWISE(f32, temp_ret));
-    if ((s32) M2C_ERROR(/* Read from unset register $r3 */) == -1) {
-        return 0U;
+    if (menuOpenCustom(0x3B, windowGetActiveID(), 0, 0, 1, 0) == -1) {
+        return 0;
     }
-    M2C_FIELD(&Data__34ANONNS, s32 *, 0x20) = (M2C_FIELD(&Data__34ANONNS, s16 *, 0xC) + M2C_FIELD(&Data__34ANONNS, s16 *, 0xE));
-    return getItemIDFromMenuPos((M2C_FIELD(&Data__34ANONNS, s16 *, 0xC) + M2C_FIELD(&Data__34ANONNS, s16 *, 0xE)));
+    M2C_FIELD(&Data, s32 *, 0x20) = M2C_FIELD(&Data, s16 *, 0xC) + M2C_FIELD(&Data, s16 *, 0xE);
+    return getItemIDFromMenuPos(M2C_FIELD(&Data, s16 *, 0xC) + M2C_FIELD(&Data, s16 *, 0xE));
 }
 }
 
 namespace {
-static u16 getItemIDFromMenuPos(int p0) {
-    u16 sp8;
-    u8 *var_r31;
-    s32 var_r30;
-    s32 var_r29;
-
-    var_r31 = (unsigned char *)(heroItemGetItemKindToItemAryPtr((Hero*)(M2C_FIELD(&Data__34ANONNS, Hero **, 4)), 7U, (u16*)(&sp8), (u16*)(NULL), (u8*)(NULL), (u8*)(NULL)));
-    var_r30 = -1;
-    var_r29 = 0;
-loop_5:
-    if (var_r29 >= (s32) sp8) {
-        return 0U;
-    }
-    if (itemCheckValid((s32) var_r31) != 0) {
-        var_r30 += 1;
-        if (var_r30 >= p0) {
-            return itemBiosGetItemDataId((u8*)(var_r31));
+static u16 getItemIDFromMenuPos(int pos) {
+    u16 count;
+    u8* item = (u8*)heroItemGetItemKindToItemAryPtr(M2C_FIELD(&Data, Hero **, 4), 7, &count, 0, 0, 0);
+    s32 n = -1;
+    for (s32 i = 0; i < count; i++, item += 4) {
+        if (itemCheckValid((s32)item) != 0) {
+            n++;
+            if (n >= pos) {
+                return itemBiosGetItemDataId(item);
+            }
         }
     }
-    var_r29 += 1;
-    var_r31 += 4;
-    goto loop_5;
+    return 0;
 }
 }
 
 namespace {
-#pragma optimize_for_size on
 static s32 getNbItemSlot() {
-    u16 sp8;
-    u8 *var_r31;
-    s32 var_r30;
-    s32 var_r29;
-
-    var_r31 = (unsigned char *)(heroItemGetItemKindToItemAryPtr((Hero*)(M2C_FIELD(&Data__34ANONNS, Hero **, 4)), 7U, (u16*)(&sp8), (u16*)(NULL), (u8*)(NULL), (u8*)(NULL)));
-    var_r30 = 0;
-    var_r29 = 0;
-loop_4:
-    if (var_r29 < (s32) sp8) {
-        if (itemCheckValid((s32) var_r31) != 0) {
-            var_r30 += 1;
+    u16 count;
+    u8* item = (u8*)heroItemGetItemKindToItemAryPtr(M2C_FIELD(&Data, Hero **, 4), 7, &count, 0, 0, 0);
+    s32 n = 0;
+    for (s32 i = 0; i < count; i++, item += 4) {
+        if (itemCheckValid((s32)item) != 0) {
+            n++;
         }
-        var_r29 += 1;
-        var_r31 += 4;
-        goto loop_4;
     }
-    return var_r30;
+    return n;
 }
-#pragma optimize_for_size reset
 }
 
 namespace {
-static void getItemNameMsg(unsigned long p0) {
-    itemDataBiosGetName((u8*)(itemDataBiosGetPtr((u16) p0)));
+static u32 getItemNameMsg(unsigned long p0) {
+    return itemDataBiosGetName((u8*)(itemDataBiosGetPtr((u16) p0)));
 }
 }
 

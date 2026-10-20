@@ -923,11 +923,11 @@ void CMenuHologram::renderOffscreenData()
             GXWGFifo.s16 = 480;
             fifoColor(0xFF, 0xFF, 0xFF, relivehall_data->alpha);
             GXWGFifo.u8 = 1;
-            GXWGFifo.u8 = 1;
             GXWGFifo.s16 = 0;
             GXWGFifo.s16 = 480;
             fifoColor(0xFF, 0xFF, 0xFF, relivehall_data->alpha);
             GXWGFifo.u8 = 0;
+            GXWGFifo.u8 = 1;
             layer->endSurface();
             GXWGFifo.u8 = 1;
         }
@@ -1470,8 +1470,8 @@ void CMenuHologram::drawAll()
             flag = true;
         }
         Pokemon* visitor = st->getVisitorPointer();
-        info2.draw();
         relivehallDrawStageInfoCursor((u16)stageCur, tempo, st->getDancerQuantity(), visitor, flag);
+        info2.draw();
         localWindowDrawAll();
         menuDrawReliveUpdate();
     }

@@ -52,10 +52,10 @@ void GStextureConvertToHW(GStexture* tex)
 {
     s32 y;
     u16* data;
-    s32 x;
+    u16* src;
     u16* dst;
     s32 off;
-    u16* src;
+    s32 x;
 
     if ((tex->format != 0x44 && tex->format != 0x90) || (tex->width & 2) || (tex->height & 2)) {
         return;
@@ -64,16 +64,15 @@ void GStextureConvertToHW(GStexture* tex)
     data = (u16*)tex->mipData[0];
     for (y = 0; y < tex->height; y += 4) {
         dst = _texXformBuf;
-        off = 0;
-        for (x = 0; x < tex->width; x += 4) {
+        for (x = 0, off = 0; x < tex->width; x += 4) {
             src = (u16*)((u8*)data + y * tex->width * 2 + off);
             off += 8;
             dst[0] = src[0];
             dst[1] = src[1];
             dst[2] = src[2];
             dst[3] = src[3];
-            src += 4;
             src = (u16*)((u8*)src + (tex->width * 2 - 8));
+            src += 4;
             dst[4] = src[0];
             dst[5] = src[1];
             dst[6] = src[2];
@@ -101,9 +100,9 @@ void GStextureConvertToHW(GStexture* tex)
 
 void GStextureConvertFromHW(GStexture* tex)
 {
-    u16* buf;
-    s32 y;
     u16* data;
+    s32 y;
+    u16* buf;
     s32 x;
     u16* src;
     u16* dst;
@@ -484,10 +483,10 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void
     tex->dirty = 1;
     tex->wrapS = 0;
     tex->tlutFormat = tlutFormat;
+    tex->mipFilter = 0;
     tex->wrapT = 0;
     tex->minFilter = 2;
     tex->magFilter = 2;
-    tex->mipFilter = 0;
     tex->memHandle = 0;
     tex->mipData[1] = 0;
     tex->mipData[0] = data;
@@ -634,9 +633,9 @@ GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u3
     default:
         return 0;
     }
-    mipLevels = mipLevels + 1;
     size = (tex->bitsPerPixel * (w * h)) >> 3;
     _textureCalcSize(tex, (u8)mipLevels, size);
+    mipLevels = mipLevels + 1;
     if (tlutEntries != 0) {
         if (tlutFormat > 0 && tlutFormat < 4) {
             tex->totalSize += (tlutEntries << 4) >> 3;

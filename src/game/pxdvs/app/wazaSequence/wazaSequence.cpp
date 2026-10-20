@@ -362,8 +362,8 @@ void WazaSequence::Unload(u8* data) {
     u16 i;
 
     p = (u8*)hdr + 0x20;
-    p = Align32(p);
     count = hdr->count - 1;
+    p = Align32(p);
     if (hdr->camera != 0) {
         operator delete(hdr->camera);
         hdr->camera = 0;
@@ -427,8 +427,10 @@ WazaSequence::WazaSequence(NullSequence* owner, u16 wazaID, u8 kind, u8 variatio
     } else {
         ModelSequence* ms = 0;
         u16 resID;
-        if (owner->m_kind == 1) {
-            ms = (ModelSequence*)owner;
+        switch (owner->m_kind) {
+        case 1:
+                ms = (ModelSequence*)owner;
+            break;
         }
         resID = wazaSequenceSysGetResourceID(ms, wazaID, kind, variation);
         if (resID == 0) {
@@ -461,7 +463,9 @@ WazaSequence::~WazaSequence() {
     if (m_active) {
         ApplyStop();
     }
-    delete m_entries;
+    if (m_entries != 0) {
+        delete m_entries;
+    }
     if (m_camera != 0) {
         GSresFreeResource(20000, m_camera);
     }
@@ -502,14 +506,18 @@ int WazaSequence::GetNumVariations(u16 wazaID, u16 kind) {
     return n;
 }
 
+static inline bool entryIsRunning(SequenceEntry* e) {
+    bool running = false;
+    if (e->m_state == 1 || e->m_state == 3) {
+        running = true;
+    }
+    return running;
+}
+
 void WazaSequence::SetRenderCamera(_GScamera* camera) {
     SequenceEntry* e;
     for (e = m_entries; e != 0; e = e->m_next) {
-        bool running = false;
-        if (e->m_state == 1 || e->m_state == 3) {
-            running = true;
-        }
-        if (running) {
+        if (entryIsRunning(e)) {
             e->SetRenderCamera(camera);
         }
     }
@@ -555,7 +563,7 @@ void WazaSequence::Start(bool camera) {
     for (; e != 0; e = e->m_next) {
         e->m_state = 0;
     }
-    distmtx[1][1] = distmtx[0][1] = 0.5f * m_distortion;
+    distmtx[0][1] = distmtx[1][1] = 0.5f * m_distortion;
     for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = layer->m_next) {
         if (layer->m_kind == 1) {
             layer->SetDistortionParams(distmtx, 0);
@@ -593,7 +601,7 @@ void WazaSequence::ApplyStop() {
         for (e = m_entries; e != 0; e = e->m_next) {
             e->Stop(true);
         }
-        distmtx[1][1] = distmtx[0][1] = 0.5f;
+        distmtx[0][1] = distmtx[1][1] = 0.5f;
         for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = layer->m_next) {
             if (layer->m_kind == 1) {
                 layer->SetDistortionParams(distmtx, 0);

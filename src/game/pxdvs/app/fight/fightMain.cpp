@@ -296,9 +296,10 @@ void fightMain(void) {
             fightTimerAllInit();
             fightTimerAllStart();
         }
-        u8* turn = fight_action_data_turn;
+        u8* turn;
         FightActionWork* act = &fight_action;
         while (fightGetFightResultId() == 0) {
+            turn = fight_action_data_turn;
             fightMainDebugMenu();
             if (fightGetFightResultId() == 0) {
                 if (fightFloorIsUseFightTimerAll(0) == 1 && fightTimerAllIsOver() == 1) {

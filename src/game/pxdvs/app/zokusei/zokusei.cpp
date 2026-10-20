@@ -50,8 +50,8 @@ u8 pokemonDataBiosGetZokuseiDataId(PokemonData* pdata, u16 index);
 u16 zokuseiBiosGetSpriteID(u16 id);
 u16 zokuseiBiosGetWazaJoutai(u32 id, u32 target);
 s32 zokuseiGetAisyouValue(u16 p0, u8 p1, u8 p2);
-s32 zokuseiGetPokemonSpriteID(s32 p0, u16 p1);
-void zokuseiGetWazaJoutai(u16 p0, u16 p1);
+u16 zokuseiGetPokemonSpriteID(PokemonData* pdata, u16 index);
+u16 zokuseiGetWazaJoutai(u16 id, u16 target);
 s32 zokuseiGetWazaJoutai_PokemonId(u16 p0, u16 p1);
 extern u32* pokemon_data_number;
 extern u32* zokusei_data_number;
@@ -61,198 +61,132 @@ extern u32* zokusei_data_number;
 
 
 extern "C" {
-s32 zokuseiGetWazaJoutaiAsDefenseZokuseiAry(u16 p0, s32 p1, u16 p2);
+s32 zokuseiGetWazaJoutaiAsDefenseZokuseiAry(u16 type, u16* arr, u16 count);
 }
 
-s32 zokuseiGetPokemonSpriteID(s32 p0, u16 p1) {
-    s32 sp8;
-
-    sp8 = p0;
-    if (p1 >= 2U) {
+u16 zokuseiGetPokemonSpriteID(PokemonData* pdata, u16 index) {
+    if (index >= 2) {
         return 0;
     }
-    return zokuseiBiosGetSpriteID((u16) pokemonDataBiosGetZokuseiDataId((PokemonData*)((PokemonData *) sp8), p1));
+    return zokuseiBiosGetSpriteID(pokemonDataBiosGetZokuseiDataId(pdata, index));
 }
 }
 
 extern "C" {
-s32 zokuseiGetAisyouValue(u16 p0, u8 p1, u8 p2) {
-    volatile u8 sp8;
-    s32 var_r31;
-    u16 temp_r3;
-    u16 temp_r3_2;
-    u16 var_r29;
+s32 zokuseiGetAisyouValue(u16 type, u8 attack, u8 side) {
+    s32 value;
+    u16 result;
+    u16 i;
+    u16 code1;
+    u16 code2;
 
-    var_r31 = 0;
-    sp8 = p1;
-    var_r29 = 0;
-    while (var_r29 < (u32) *zokusei_data_number) {
-        if (var_r29 != 9) {
-            if (sp8 == 1) {
-                temp_r3 = zokuseiBiosGetWazaJoutai((u32) p0, (u32) var_r29);
-                switch (temp_r3) {                  /* switch 1; irregular */
-                case 0x43:                          /* switch 1 */
-                    if (p2 != 1) {
-                        var_r31 -= 0xA;
-                    }
-                    break;
-                case 0x42:                          /* switch 1 */
-                    if (p2 != 1) {
-                        var_r31 -= 0xA;
-                    }
-                    break;
-                case 0x41:                          /* switch 1 */
-                    if (p2 != 2) {
-                        var_r31 += 0xA;
-                    }
-                    break;
+    value = 0;
+    for (i = 0; i < *zokusei_data_number; i++) {
+        if (i == 9) {
+            continue;
+        }
+        if (attack == 1) {
+            code1 = zokuseiBiosGetWazaJoutai(type, i);
+            result = code1;
+            if (result == 0x43) {
+                if (side != 1) {
+                    value -= 10;
                 }
-            } else {
-                temp_r3_2 = zokuseiBiosGetWazaJoutai((u32) var_r29, (u32) p0);
-                switch (temp_r3_2) {                /* switch 2; irregular */
-                case 0x43:                          /* switch 2 */
-                    if (p2 != 2) {
-                        var_r31 += 0xA;
-                    }
-                    break;
-                case 0x42:                          /* switch 2 */
-                    if (p2 != 2) {
-                        var_r31 += 0xA;
-                    }
-                    break;
-                case 0x41:                          /* switch 2 */
-                    if ((u8)p2 != 1) {
-                        var_r31 -= 0xA;
-                    }
-                    break;
+            } else if (result == 0x42) {
+                if (side != 1) {
+                    value -= 10;
+                }
+            } else if (result == 0x41) {
+                if (side != 2) {
+                    value += 10;
+                }
+            }
+        } else {
+            code2 = zokuseiBiosGetWazaJoutai(i, type);
+            result = code2;
+            if (result == 0x43) {
+                if (side != 2) {
+                    value += 10;
+                }
+            } else if (result == 0x42) {
+                if (side != 2) {
+                    value += 10;
+                }
+            } else if (result == 0x41) {
+                if (side != 1) {
+                    value -= 10;
                 }
             }
         }
-        var_r29 += 1;
     }
-    return var_r31;
+    return value;
 }
-extern "C" {
-s32 zokuseiGetWazaJoutaiAsDefenseZokuseiAry(u16 p0, s32 p1, u16 p2) {
-    u16 spA;
-    u16 sp8;
-    u16 temp_r3;
-    u16 var_r29;
-    u16 var_r30;
-    u16 var_r31;
+s32 zokuseiGetWazaJoutaiAsDefenseZokuseiAry(u16 type, u16* arr, u16 count) {
+    u16 i;
+    u16 countA = 0;
+    u16 countB = 0;
+    u16 e;
+    u16 code;
+    u16 result;
 
-    var_r30 = 0;
-    var_r29 = 0;
-    sp8 = p0;
-    var_r31 = 0;
-    spA = p2;
-loop_9:
-    if (var_r31 >= spA) {
-        if ((var_r30 == 0) && (var_r29 == 0)) {
-            return 0x3F;
+    for (i = 0; i < count; i++) {
+        if (arr[i] == 9) {
+            continue;
         }
-        if (var_r30 == var_r29) {
-            return 0x3F;
-        }
-        if (var_r30 > var_r29) {
-            return 0x41;
-        }
-        return 0x42;
-    }
-    if ((u16) *((u8 *)p1 + ((var_r31 * 2) & 0x1FFFE)) != 9) {
-        temp_r3 = zokuseiBiosGetWazaJoutai((u32) sp8, (u32) *((u8 *)p1 + ((var_r31 * 2) & 0x1FFFE)));
-        switch (temp_r3) {                          /* irregular */
-        case 0x43:
+        e = arr[i];
+        code = zokuseiBiosGetWazaJoutai((u32)type, (u32)e);
+        result = code;
+        if (result == 0x43) {
             return 0x43;
-        case 0x41:
-            var_r30 += 1;
-            goto block_8;
-        case 0x42:
-            var_r29 += 1;
-            goto block_8;
         }
-    } else {
-block_8:
-        var_r31 += 1;
-        goto loop_9;
+        if (result == 0x41) {
+            countA++;
+            continue;
+        }
+        if (result == 0x42) {
+            countB++;
+        }
     }
-}
+    if (countA == 0 && countB == 0) {
+        return 0x3f;
+    }
+    if (countA == countB) {
+        return 0x3f;
+    }
+    if (countA > countB) {
+        return 0x41;
+    }
+    return 0x42;
 }
 
 }
 
 extern "C" {
 extern "C" {
-s32 zokuseiGetWazaJoutai_PokemonId(u16 p0, u16 p1) {
-    s32 spA;
-    u16 sp8;
-    s32 var_r31;
-    u16 temp_r3_2;
-    u16 var_r27;
-    u16 var_r28;
-    u16 var_r29;
-    u16 var_r30;
-    u8 temp_r3;
-    u8 var_r26;
+s32 zokuseiGetWazaJoutai_PokemonId(u16 type, u16 pokemon) {
+    u16 types[4];
+    u16 count;
+    u8 i;
+    u16 id;
 
-    sp8 = p0;
-    if (p1 > (u32) *pokemon_data_number) {
+    if (pokemon > *pokemon_data_number) {
         return 0;
     }
-    var_r27 = 0;
-    var_r26 = 0;
-    while (var_r26 < 2U) {
-        temp_r3 = pokemonDB_GetZokuseiDataId(p1, (u16) var_r26);
-        if (temp_r3 != 9) {
-            *(&spA + ((var_r27 * 2) & 0x1FFFE)) = (s16) temp_r3;
-            var_r27 += 1;
+    count = 0;
+    for (i = 0; i < 2; i++) {
+        id = pokemonDB_GetZokuseiDataId(pokemon, i);
+        if (id != 9) {
+            types[count] = id;
+            count++;
         }
-        var_r26 += 1;
     }
-    var_r29 = 0;
-    var_r30 = 0;
-    var_r28 = 0;
-loop_16:
-    if (var_r28 >= var_r27) {
-        if ((var_r29 == 0) && (var_r30 == 0)) {
-            var_r31 = 0x3F;
-        } else if (var_r29 == var_r30) {
-            var_r31 = 0x3F;
-        } else if (var_r29 > var_r30) {
-            var_r31 = 0x41;
-        } else {
-            var_r31 = 0x42;
-        }
-    } else if (*(&spA + ((var_r28 * 2) & 0x1FFFE)) != 9) {
-        temp_r3_2 = zokuseiBiosGetWazaJoutai((u32) sp8, (u32) *(&spA + ((var_r28 * 2) & 0x1FFFE)));
-        switch (temp_r3_2) {                        /* irregular */
-        case 0x43:
-            var_r31 = 0x43;
-            break;
-        case 0x41:
-            var_r29 += 1;
-            goto block_15;
-        case 0x42:
-            var_r30 += 1;
-            goto block_15;
-        }
-    } else {
-block_15:
-        var_r28 += 1;
-        goto loop_16;
-    }
-    return var_r31;
+    return zokuseiGetWazaJoutaiAsDefenseZokuseiAry(type, types, count);
 }
 }
 
 extern "C" {
-void zokuseiGetWazaJoutai(u16 p0, u16 p1) {
-    u16 spA;
-    u16 sp8;
-
-    sp8 = p0;
-    spA = p1;
-    zokuseiBiosGetWazaJoutai((u32) p0, (u32) p1);
+u16 zokuseiGetWazaJoutai(u16 id, u16 target) {
+    return zokuseiBiosGetWazaJoutai(id, target);
 }
 }
 }

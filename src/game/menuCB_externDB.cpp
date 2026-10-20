@@ -58,6 +58,27 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define M2C_TRAP_IF(cond) (0)
 #define M2C_BREAK() (0)
 #define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
 #define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
 #define M2C_CARRY 0
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
@@ -326,7 +347,7 @@ void menuCB_RuleItemNameEntry(tagWINDOW_WORK*);
 void menuCBMessageCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void menuCBMessageYCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void menuCB_RuleDispColorChenge(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
-void menuCB_RuleDispColorChenge_flag(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
+void menuCB_RuleDispColorChenge_flag(tagWINDOW_WORK*, tagSPRITE_WORK*, bool);
 void menuCBRULE_EditNameDisp(s32);
 bool menuCB_GCStatusDispMode(tagSPRITE_WORK*, s32);
 void menuCBPokemonEntryDisp(tagSPRITE_WORK*);
@@ -445,10 +466,11 @@ struct CBSprite {
 struct CBWin {
     u8 _draft[1];
 };
+struct CReliveStage;
 struct CReliveHall {
     u8 _draft[1];
-    void* getPointer();
-    s32 getStage(long);
+    static CReliveHall* getPointer();
+    CReliveStage* getStage(long);
 };
 struct CReliveStage {
     u8 _draft[1];
@@ -475,11 +497,11 @@ s32 menuCBPokemon_ErrorDispSet(void*, s32);
 void menuCBRULE_EditNameDispLarge(CBWin* win, s32 idx);
 s32 menuCBReliveHallCursolInit();
 s32 menuCBReliveTitleNameDisp(s32, void*, s32, void*);
-s32 menuCBRuleNumberDisp(s32);
+s32 menuCBRuleNumberDisp(s32, void*, s32);
 s32 menuCBRule_Copy(s32*, void*);
-void menuCB_GCEntryCursolDisp(CBWin* win, void* unused, u8 flag);
+void menuCB_GCEntryCursolDisp(CBWin* win, void* unused, bool flag);
 s32 menuCB_GCEntry_OkPushErrorCheck();
-void menuCB_Rule00_Disp(void *p0);
+void menuCB_Rule00_Disp(void *p0, void *p1);
 void menuCB_Rule01_Disp(s32 p0, void *p1);
 void menuCB_Rule02_Disp(s32 p0, void *p1);
 void menuCB_Tunaide01_3_Disp(void *p0, void *p1);
@@ -491,15 +513,15 @@ void menuCB_tunaideGCEntry02_Disp_1(void *p0, void *p1);
 void menuCB_tunaideGCEntry03_Disp(void *p0, void *p1);
 void menuCB_tunaideGCEntry03_Disp_1(void *p0, void *p1);
 void menuCB_tunaideGCEntry04_Disp(void *p0, void *p1);
-void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2);
+void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2, s32 n);
 void menuTool_Rule00_Ctrl(void *p0);
 s32 spriteSetEnv(s32);
-s32 spriteSetOffset(s32, s32, s32, void*);
+void spriteSetOffset(s32, s16, s16);
 s32 spriteSetScissor(s32, s32, s32, s32, s32);
 s32 toolbattle_drawHeroID(s32, s32);
 s32 windowDrawSprite3(s16, s16, s16, s16, s32, void*, u16, s16);
 }
-static s32 _ruleCursol;
+static s32 _ruleCursol[5];
 static s32 _ruleCursol2;
 static s32 _ruleTempBuff_DB[0x1F];
 static s32 field_anime;
@@ -515,6 +537,13 @@ void menuCB_tunaideGCEntry04_Disp_1(void *p0, void *p1);
 void menuTool_tunaideGCEntry00_Ctrl(void *p0);
 }
 
+// ---- draft declarations ----
+
+
+extern "C" {
+void menuCB_GBAConnect_Disp(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
+}
+static s16 tool_gba_x_anime[4] = { -1, 0, 1, 0 };
 void menuTool_imasugu00_Ctrl(tagWINDOW_WORK* window) {
     menuCB_DispEffect(window);
     menuSetStatus(window->seq, 0x10);
@@ -1007,6 +1036,7 @@ void menuTool_tunaide00_Ctrl(tagWINDOW_WORK* window) {
                     break;
                 }
                 _CB.unkB10C = 0;
+                return;
             }
             return;
         } else if (_CB.unkB064 == 0) {
@@ -1486,96 +1516,96 @@ void menuTool_tunaide01_4_Ctrl(tagWINDOW_WORK* window) {
 extern "C" {
 void menuCB_Tunaide01_3_Disp(void *p0, void *p1) {
     s32 sp18;
-    s32 sp14;
+    volatile s32 sp14;
     s32 sp10;
-    s32 spC;
+    volatile s32 spC;
     s32 sp8;
     s16 temp_r0;
     s32 temp_r3;
     s32 temp_r3_2;
-
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    switch (temp_r0) {                              /* switch 1; irregular */
-    case 0x2A3:                                     /* switch 1 */
+    switch (temp_r0) {
+    case 0x2A3:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB114) == 0) {
             menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)])));
             return;
         }
         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
         switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB114)) { /* switch 2; irregular */
-        case 1:                                     /* switch 2 */
-            M2C_FIELD(&field_anime, s16 *, 0) = 0;
-            M2C_FIELD(&field_anime, s16 *, 2) = 0;
-            M2C_FIELD(&field_anime, s16 *, 4) = 0x116;
-            M2C_FIELD(&field_anime, s16 *, 6) = 0;
-            M2C_FIELD(&field_anime, s32 *, 8) = -1;
-            M2C_FIELD(&field_anime, s16 *, 0xE) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x10) = 0xA7;
-            M2C_FIELD(&field_anime, u16 *, 0xC) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)];
-            M2C_FIELD(&field_anime, s32 *, 0x14) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x18) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x1A) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x1C) = 0x116;
-            M2C_FIELD(&field_anime, s16 *, 0x1E) = 0xA7;
-            M2C_FIELD(&field_anime, s32 *, 0x20) = -1;
-            M2C_FIELD(&field_anime, s16 *, 0x26) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x28) = 0;
-            M2C_FIELD(&field_anime, u16 *, 0x24) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xB000)];
-            M2C_FIELD(&field_anime, s32 *, 0x2C) = 0;
-            M2C_FIELD(&_CB, s32 *, 0xB114) = 2;
-            return;
-        case 3:                                     /* switch 2 */
-            M2C_FIELD(&field_anime, s16 *, 0) = 0;
-            M2C_FIELD(&field_anime, s16 *, 2) = 0xA7;
-            M2C_FIELD(&field_anime, s16 *, 4) = 0x116;
-            M2C_FIELD(&field_anime, s16 *, 6) = 0;
-            M2C_FIELD(&field_anime, s32 *, 8) = -1;
-            M2C_FIELD(&field_anime, s16 *, 0xE) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x10) = 0;
-            M2C_FIELD(&field_anime, u16 *, 0xC) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)];
-            M2C_FIELD(&field_anime, s32 *, 0x14) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x18) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x1A) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x1C) = 0x116;
-            M2C_FIELD(&field_anime, s16 *, 0x1E) = 0xA7;
-            M2C_FIELD(&field_anime, s32 *, 0x20) = -1;
-            M2C_FIELD(&field_anime, s16 *, 0x26) = 0;
-            M2C_FIELD(&field_anime, s16 *, 0x28) = 0;
-            M2C_FIELD(&field_anime, u16 *, 0x24) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xB000)];
-            M2C_FIELD(&field_anime, s32 *, 0x2C) = 0;
-            M2C_FIELD(&_CB, s32 *, 0xB114) = 4;
-            return;
-        case 2:                                     /* switch 2 */
-            temp_r3 = M2C_FIELD(&field_anime, s16 *, 6) + 0xF;
-            M2C_FIELD(&field_anime, s16 *, 6) = temp_r3;
-            if (temp_r3 >= 0xA7) {
-                M2C_FIELD(&field_anime, s16 *, 6) = 0;
-                M2C_FIELD(&_CB, s32 *, 0xB114) = 0;
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)])));
-            }
-            M2C_FIELD(&field_anime, s16 *, 0x1A) = (s16) M2C_FIELD(&field_anime, s16 *, 6);
-            M2C_FIELD(&field_anime, s16 *, 0x10) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
-            M2C_FIELD(&field_anime, s16 *, 0x1E) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
-            return;
-        case 4:                                     /* switch 2 */
-            temp_r3_2 = M2C_FIELD(&field_anime, s16 *, 6) + 0xF;
-            M2C_FIELD(&field_anime, s16 *, 6) = temp_r3_2;
-            if (temp_r3_2 >= 0xA7) {
-                M2C_FIELD(&field_anime, s16 *, 6) = 0;
-                M2C_FIELD(&_CB, s32 *, 0xB114) = 0;
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)])));
-            }
-            M2C_FIELD(&field_anime, s16 *, 0x28) = (s16) M2C_FIELD(&field_anime, s16 *, 6);
-            M2C_FIELD(&field_anime, s16 *, 2) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
-            M2C_FIELD(&field_anime, s16 *, 0x1E) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
-            return;
-        case 0:                                     /* switch 2 */
-            return;
-        }
+                case 1:                                     /* switch 2 */
+                    M2C_FIELD(&field_anime, s16 *, 0) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 2) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 4) = 0x116;
+                    M2C_FIELD(&field_anime, s16 *, 6) = 0;
+                    M2C_FIELD(&field_anime, s32 *, 8) = -1;
+                    M2C_FIELD(&field_anime, s16 *, 0xE) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x10) = 0xA7;
+                    M2C_FIELD(&field_anime, u16 *, 0xC) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)];
+                    M2C_FIELD(&field_anime, s32 *, 0x14) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x18) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x1A) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x1C) = 0x116;
+                    M2C_FIELD(&field_anime, s16 *, 0x1E) = 0xA7;
+                    M2C_FIELD(&field_anime, s32 *, 0x20) = -1;
+                    M2C_FIELD(&field_anime, s16 *, 0x26) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x28) = 0;
+                    M2C_FIELD(&field_anime, u16 *, 0x24) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xB000)];
+                    M2C_FIELD(&field_anime, s32 *, 0x2C) = 0;
+                    M2C_FIELD(&_CB, s32 *, 0xB114) = 2;
+                    return;
+                case 3:                                     /* switch 2 */
+                    M2C_FIELD(&field_anime, s16 *, 0) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0xE) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 2) = 0xA7;
+                    M2C_FIELD(&field_anime, s16 *, 4) = 0x116;
+                    M2C_FIELD(&field_anime, s16 *, 6) = 0;
+                    M2C_FIELD(&field_anime, s32 *, 8) = -1;
+                    M2C_FIELD(&field_anime, s16 *, 0x10) = 0;
+                    M2C_FIELD(&field_anime, u16 *, 0xC) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)];
+                    M2C_FIELD(&field_anime, s32 *, 0x14) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x18) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x1A) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x1C) = 0x116;
+                    M2C_FIELD(&field_anime, s16 *, 0x1E) = 0xA7;
+                    M2C_FIELD(&field_anime, s32 *, 0x20) = -1;
+                    M2C_FIELD(&field_anime, s16 *, 0x26) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x28) = 0;
+                    M2C_FIELD(&field_anime, u16 *, 0x24) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xB000)];
+                    M2C_FIELD(&field_anime, s32 *, 0x2C) = 0;
+                    M2C_FIELD(&_CB, s32 *, 0xB114) = 4;
+                    return;
+                case 2:                                     /* switch 2 */
+                    temp_r3 = M2C_FIELD(&field_anime, s16 *, 6);
+                    temp_r3 += 0xF;
+                    M2C_FIELD(&field_anime, s16 *, 6) = temp_r3;
+                    if (temp_r3 >= 0xA7) {
+                        M2C_FIELD(&field_anime, s16 *, 6) = 0;
+                        M2C_FIELD(&_CB, s32 *, 0xB114) = 0;
+                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+                        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)])));
+                    }
+                    M2C_FIELD(&field_anime, s16 *, 0x1A) = (s16) M2C_FIELD(&field_anime, s16 *, 6);
+                    M2C_FIELD(&field_anime, s16 *, 0x10) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
+                    M2C_FIELD(&field_anime, s16 *, 0x1E) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
+                    return;
+                case 4:                                     /* switch 2 */
+                    temp_r3_2 = M2C_FIELD(&field_anime, s16 *, 6) + 0xF;
+                    M2C_FIELD(&field_anime, s16 *, 6) = temp_r3_2;
+                    if (temp_r3_2 >= 0xA7) {
+                        M2C_FIELD(&field_anime, s16 *, 6) = 0;
+                        M2C_FIELD(&_CB, s32 *, 0xB114) = 0;
+                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+                        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)])));
+                    }
+                    M2C_FIELD(&field_anime, s16 *, 0x28) = (s16) M2C_FIELD(&field_anime, s16 *, 6);
+                    M2C_FIELD(&field_anime, s16 *, 2) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
+                    M2C_FIELD(&field_anime, s16 *, 0x1E) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
+                    return;
+                case 0:                                     /* switch 2 */
+                    return;
+                }
         break;
-    case 0x2D9:                                     /* switch 1 */
+    case 0x2D9:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB114) != 0) {
             sp8 = (s32) M2C_FIELD(&field_anime, s16 *, 0x10);
             spC = (s32) M2C_FIELD(&field_anime, s16 *, 4);
@@ -1586,7 +1616,7 @@ void menuCB_Tunaide01_3_Disp(void *p0, void *p1) {
             return;
         }
         break;
-    case 0x2D8:                                     /* switch 1 */
+    case 0x2D8:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB114) != 0) {
             sp8 = (s32) M2C_FIELD(&field_anime, s16 *, 0x28);
             spC = (s32) M2C_FIELD(&field_anime, s16 *, 0x1C);
@@ -1597,19 +1627,21 @@ void menuCB_Tunaide01_3_Disp(void *p0, void *p1) {
             return;
         }
         break;
-    case 0x2A1:                                     /* switch 1 */
+    case 0x2A1:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB10C) != 1) {
             M2C_FIELD(p1, s8 *, 0x67) = 0x7F;
         }
-        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) (((6 - M2C_FIELD(&_CB, s32 *, 0xAFFC)) | (M2C_FIELD(&_CB, s32 *, 0xAFFC) - 6)) >> 0x1FU)));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), M2C_FIELD(&_CB, s32 *, 0xAFFC) != 6);
         return;
-    case 0x2A2:                                     /* switch 1 */
+    case 0x2A2:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB10C) != 1) {
             M2C_FIELD(p1, s8 *, 0x67) = 0x7F;
         }
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xAFFC) != 0));
         return;
-    default:                                        /* switch 1 */
+    case 0x3ED:
+    case 0x3EE:
+    case 0x3EF:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB114) != 0) {
             winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
             return;
@@ -1837,365 +1869,88 @@ void menuTool_tunaide03_Ctrl(tagWINDOW_WORK* window) {
 extern "C" {
 void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
     s32 temp_r0;
-    s32 var_r30;
-    s32 var_r30_2;
-    s32 var_r30_3;
-    s32 var_r30_4;
-    s32 var_r4;
-    s32 var_r4_2;
-
+    bool var_r30;
+    bool var_r30_2;
+    bool var_r30_3;
+    bool var_r30_4;
+    bool var_r4;
+    bool var_r4_2;
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    if (temp_r0 != 0xB6) {
-        if (temp_r0 < 0xB6) {
-            if (temp_r0 != 0xA6) {
-                if (temp_r0 < 0xA6) {
-                    switch (temp_r0) {              /* switch 1; irregular */
-                    default:                        /* switch 1 */
-                        var_r30 = 0;
-                        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
-                            var_r30 = 1;
-                        }
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30));
-                        return;
-                    case 0xA2:                      /* switch 1 */
-                        if (toolbattle_trainerFace(0) == 0) {
-                            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&Port_Icon_Char, u32 *, 4))));
-                            return;
-                        }
-                        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&Port_Icon_Char, u32 *, 0))));
-                            return;
-                        }
-                        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&Port_Icon_Char, u32 *, 4))));
-                        return;
-                    case 0x9E:                      /* switch 1 */
-                        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(0)])));
-                            return;
-                        }
-                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                        return;
-                    case 0x9F:                      /* switch 1 */
-                        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(1)])));
-                            return;
-                        }
-                        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(0)])));
-                        return;
-                    case 0xA4:                      /* switch 1 */
-                        var_r30_2 = 0;
-                        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
-                            var_r30_2 = 1;
-                        }
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30_2));
-                        return;
-                    case 0xA0:                      /* switch 1 */
-                        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(2)])));
-                            return;
-                        }
-                        if (toolbattle_trainerFace(0) != 0) {
-                            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(1)])));
-                            return;
-                        }
-                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                        return;
-                    case 0xA1:                      /* switch 1 */
-                        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(3)])));
-                            return;
-                        }
-                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                        return;
-                    }
-                } else {
-                    if (temp_r0 != 0xAF) {
-                        if (temp_r0 < 0xAF) {
-                            if (temp_r0 != 0xA9) {
-                                if (temp_r0 < 0xA9) {
-                                    if (temp_r0 < 0xA8) {
-                                        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
-                                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 1) == 0));
-                                            return;
-                                        }
-                                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                                        return;
-                                    }
-                                    if ((s32) tunaide02_last_kakunin_flag == 2) {
-                                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                                        return;
-                                    }
-                                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) == 0));
-                                    return;
-                                }
-                                if (temp_r0 < 0xAE) {
-                                    if (temp_r0 < 0xAC) {
-                                        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
-                                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) == 0));
-                                            return;
-                                        }
-                                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                                        return;
-                                    }
-                                    if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 8) == 0));
-                                        return;
-                                    }
-                                    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                                    return;
-                                }
-                                var_r30_3 = 0;
-                                if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                                    var_r30_3 = 1;
-                                }
-                                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30_3));
-                                return;
-                            }
-                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) == 0));
-                            return;
-                        }
-                        if (temp_r0 != 0xB3) {
-                            if (temp_r0 < 0xB3) {
-                                if (temp_r0 != 0xB1) {
-                                    if (temp_r0 < 0xB1) {
-                                        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                                            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                                            return;
-                                        }
-                                        if (toolbattle_trainerFace(0) != 0) {
-                                            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&PlayerNumber, u32 *, 4))));
-                                            return;
-                                        }
-                                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                                        return;
-                                    }
-                                    if ((s32) tunaide02_last_kakunin_flag == 1) {
-                                        M2C_FIELD(p1, s32 *, 0x4C) = 0x43C8;
-                                        return;
-                                    }
-                                    if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                                        if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 1) != 0) {
-                                            M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                            return;
-                                        }
-                                        M2C_FIELD(p1, s32 *, 0x4C) = 0x43C6;
-                                        return;
-                                    }
-                                    M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                    return;
-                                }
-                                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 8) == 2));
-                                return;
-                            }
-                            if (temp_r0 < 0xB5) {
-                                if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
-                                    if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) != 0) {
-                                        M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                        return;
-                                    }
-                                    M2C_FIELD(p1, s32 *, 0x4C) = 0x43C6;
-                                    return;
-                                }
-                                M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                return;
-                            }
-                            if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                                if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 8) != 0) {
-                                    M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                    return;
-                                }
-                                M2C_FIELD(p1, s32 *, 0x4C) = 0x43C6;
-                                return;
-                            }
-                            M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                            return;
-                        }
-                        if ((s32) tunaide02_last_kakunin_flag == 2) {
-                            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C8;
-                            return;
-                        }
-                        if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) != 0) {
-                            M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                            return;
-                        }
-                        M2C_FIELD(p1, s32 *, 0x4C) = 0x43C6;
-                        return;
-                    }
-                    if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                        return;
-                    }
-                    menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&PlayerNumber, u32 *, 0))));
-                }
-            } else {
-                if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
-                    if ((s32) tunaide02_last_kakunin_flag == 1) {
-                        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                        return;
-                    }
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 1) == 0));
-                    return;
-                }
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-            }
-        } else if (temp_r0 != 0xC4) {
-            if (temp_r0 < 0xC4) {
-                if (temp_r0 != 0xBD) {
-                    if (temp_r0 < 0xBD) {
-                        if (temp_r0 != 0xBA) {
-                            if (temp_r0 < 0xBA) {
-                                if (temp_r0 != 0xB8) {
-                                    if (temp_r0 < 0xB8) {
-                                        if ((s32) tunaide02_last_kakunin_flag == 2) {
-                                            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C7;
-                                            return;
-                                        }
-                                        if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) != 0) {
-                                            M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                            return;
-                                        }
-                                        M2C_FIELD(p1, s32 *, 0x4C) = 0x43C5;
-                                        return;
-                                    }
-                                    if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                                        if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 8) != 0) {
-                                            M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                            return;
-                                        }
-                                        M2C_FIELD(p1, s32 *, 0x4C) = 0x43C5;
-                                        return;
-                                    }
-                                    M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                    return;
-                                }
-                                if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
-                                    if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) != 0) {
-                                        M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                        return;
-                                    }
-                                    M2C_FIELD(p1, s32 *, 0x4C) = 0x43C5;
-                                    return;
-                                }
-                                M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                return;
-                            }
-                            if (temp_r0 < 0xBC) {
-                                if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                                    toolbattle_drawHeroID(p0, 2);
-                                    return;
-                                }
-                                if (toolbattle_trainerFace(0) != 0) {
-                                    toolbattle_drawHeroID(p0, 1);
-                                }
-                            } else {
-                                if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                                    toolbattle_drawHeroID(p0, 1);
-                                    return;
-                                }
-                                toolbattle_drawHeroID(p0, 0);
-                            }
-                        } else if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                            toolbattle_drawHeroID(p0, 3);
-                        }
-                    } else if (temp_r0 != 0xC1) {
-                        if (temp_r0 < 0xC1) {
-                            if (temp_r0 != 0xBF) {
-                                if (temp_r0 < 0xBF) {
-                                    if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                                        toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(3));
-                                    }
-                                } else {
-                                    if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                                        toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(1));
-                                        return;
-                                    }
-                                    toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(0));
-                                }
-                            } else {
-                                if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                                    toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(2));
-                                    return;
-                                }
-                                if (toolbattle_trainerFace(0) != 0) {
-                                    toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(1));
-                                }
-                            }
-                        } else {
-                            if (temp_r0 < 0xC3) {
-                                M2C_FIELD(p1, s32 *, 0x4C) = 0x440A;
-                                return;
-                            }
-                            M2C_FIELD(p1, s32 *, 0x4C) = 0x440B;
-                        }
-                    } else if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                        toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(0));
-                    }
-                } else if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-                    toolbattle_drawHeroID(p0, 0);
-                }
-            } else if (temp_r0 != 0xCA) {
-                if (temp_r0 < 0xCA) {
-                    if (temp_r0 != 0xC7) {
-                        if (temp_r0 < 0xC7) {
-                            if (temp_r0 < 0xC6) {
-                                if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-                                    M2C_FIELD(p1, s32 *, 0x4C) = 0x440D;
-                                    return;
-                                }
-                                M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                return;
-                            }
-                            if ((s32) tunaide02_last_kakunin_flag == 0) {
-                                M2C_FIELD(p1, s32 *, 0x4C) = 0x43C9;
-                                return;
-                            }
-                            M2C_FIELD(p1, s32 *, 0x4C) = 0x43CA;
-                            return;
-                        }
-                        if (temp_r0 < 0xC9) {
-                            var_r4 = 0;
-                            if (((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) != 0) && ((s32) tunaide02_last_kakunin_flag != 2)) {
-                                var_r4 = 1;
-                            }
-                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4));
-                            return;
-                        }
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) != 0));
-                        return;
-                    }
-                    var_r4_2 = 0;
-                    if (((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 1) != 0) && ((s32) tunaide02_last_kakunin_flag != 1)) {
-                        var_r4_2 = 1;
-                    }
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_2));
-                    return;
-                }
-                switch (temp_r0) {                  /* switch 2; irregular */
-                case 0x2DA:                         /* switch 2 */
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(tunaide02_last_kakunin_flag == 1));
-                    return;
-                case 0x2DB:                         /* switch 2 */
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(tunaide02_last_kakunin_flag == 2));
-                    return;
-                default:                            /* switch 2 */
-                    var_r30_4 = 0;
-                    if (((s32) M2C_FIELD(&_CB, s32 *, 8) != 2) && (toolbattle_trainerFace(0) != 0)) {
-                        var_r30_4 = 1;
-                    }
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30_4));
-                    return;
-                }
-            } else {
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 8) != 0));
-            }
-        } else {
-            if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
-                M2C_FIELD(p1, s32 *, 0x4C) = 0x440C;
+    switch (temp_r0) {
+    case 0xC6:
+        if ((s32) tunaide02_last_kakunin_flag == 0) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C9;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x43CA;
+        return;
+    case 0x2DA:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(tunaide02_last_kakunin_flag == 1));
+        return;
+    case 0x2DB:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(tunaide02_last_kakunin_flag == 2));
+        return;
+    case 0xC7:
+        var_r4_2 = 0;
+        if (((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 1) != 0) && ((s32) tunaide02_last_kakunin_flag != 1)) {
+            var_r4_2 = 1;
+        }
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_2));
+        return;
+    case 0xD0:
+    case 0xD1:
+    case 0xD2:
+        var_r30_4 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) != 2) && (toolbattle_trainerFace(0) != 0)) {
+            var_r30_4 = 1;
+        }
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30_4));
+        return;
+    case 0x8A:
+    case 0x8B:
+    case 0x8C:
+    case 0x8D:
+    case 0x8E:
+        var_r30 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
+            var_r30 = 1;
+        }
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30));
+        return;
+    case 0xA6:
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
+            if ((s32) tunaide02_last_kakunin_flag == 1) {
+                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
                 return;
             }
-            M2C_FIELD(p1, s32 *, 0x4C) = 0;
+            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 1) == 0));
+            return;
         }
-    } else {
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        break;
+    case 0xA7:
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
+            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 1) == 0));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0xB2:
+        if ((s32) tunaide02_last_kakunin_flag == 1) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C8;
+            return;
+        }
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 1) != 0) {
+                M2C_FIELD(p1, s32 *, 0x4C) = 0;
+                return;
+            }
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C6;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0;
+        return;
+    case 0xB6:
         if ((s32) tunaide02_last_kakunin_flag == 1) {
             M2C_FIELD(p1, s32 *, 0x4C) = 0x43C7;
             return;
@@ -2209,9 +1964,286 @@ void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
             return;
         }
         M2C_FIELD(p1, s32 *, 0x4C) = 0;
+        break;
+    case 0xC2:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x440A;
+        return;
+    case 0xAE:
+        var_r30_3 = 0;
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            var_r30_3 = 1;
+        }
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30_3));
+        return;
+    case 0xA2:
+        if (toolbattle_trainerFace(0) == 0) {
+            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&Port_Icon_Char, u32 *, 4))));
+            return;
+        }
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&Port_Icon_Char, u32 *, 0))));
+            return;
+        }
+        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&Port_Icon_Char, u32 *, 4))));
+        return;
+    case 0x9E:
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(0)])));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0xBD:
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            toolbattle_drawHeroID(p0, 0);
+        }
+        break;
+    case 0xC1:
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(0));
+        }
+        break;
+    case 0xC8:
+        var_r4 = 0;
+        if (((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) != 0) && ((s32) tunaide02_last_kakunin_flag != 2)) {
+            var_r4 = 1;
+        }
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4));
+        return;
+    case 0xA8:
+        if ((s32) tunaide02_last_kakunin_flag == 2) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+            return;
+        }
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) == 0));
+        return;
+    case 0xA9:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) == 0));
+        return;
+    case 0xB3:
+        if ((s32) tunaide02_last_kakunin_flag == 2) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C8;
+            return;
+        }
+        if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) != 0) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x43C6;
+        return;
+    case 0xB7:
+        if ((s32) tunaide02_last_kakunin_flag == 2) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C7;
+            return;
+        }
+        if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 2) != 0) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x43C5;
+        return;
+    case 0xC3:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x440B;
+        break;
+    case 0xAF:
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+            return;
+        }
+        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&PlayerNumber, u32 *, 0))));
+        break;
+    case 0x9F:
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(1)])));
+            return;
+        }
+        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(0)])));
+        return;
+    case 0xBC:
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            toolbattle_drawHeroID(p0, 1);
+            return;
+        }
+        toolbattle_drawHeroID(p0, 0);
+        break;
+    case 0xC0:
+        if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(1));
+            return;
+        }
+        toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(0));
+        break;
+    case 0xC9:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) != 0));
+        return;
+    case 0x94:
+    case 0x95:
+    case 0x96:
+    case 0x97:
+    case 0x98:
+    case 0xA4:
+        var_r30 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
+            var_r30 = 1;
+        }
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30));
+        return;
+        
+        break;
+    case 0xAA:
+    case 0xAB:
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
+            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) == 0));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0xB4:
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
+            if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) != 0) {
+                M2C_FIELD(p1, s32 *, 0x4C) = 0;
+                return;
+            }
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C6;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0;
+        return;
+    case 0xB8:
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
+            if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) != 0) {
+                M2C_FIELD(p1, s32 *, 0x4C) = 0;
+                return;
+            }
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C5;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0;
+        return;
+    case 0xC4:
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x440C;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0;
+        break;
+    case 0xB0:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+            return;
+        }
+        if (toolbattle_trainerFace(0) != 0) {
+            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(M2C_FIELD(&PlayerNumber, u32 *, 4))));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0xA0:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(2)])));
+            return;
+        }
+        if (toolbattle_trainerFace(0) != 0) {
+            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(1)])));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0xBB:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            toolbattle_drawHeroID(p0, 2);
+            return;
+        }
+        if (toolbattle_trainerFace(0) != 0) {
+            toolbattle_drawHeroID(p0, 1);
+        }
+        break;
+    case 0xBF:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(2));
+            return;
+        }
+        if (toolbattle_trainerFace(0) != 0) {
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(1));
+        }
+        break;
+    case 0xCA:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 8) != 0));
+        break;
+    case 0x99:
+    case 0x9A:
+    case 0x9B:
+    case 0x9C:
+    case 0x9D:
+    case 0xA5:
+    case 0xB1:
+        var_r30 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
+            var_r30 = 1;
+        }
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30));
+        return;
+        
+        
+        break;
+    case 0xAC:
+    case 0xAD:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 8) == 0));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0xB5:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 8) != 0) {
+                M2C_FIELD(p1, s32 *, 0x4C) = 0;
+                return;
+            }
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C6;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0;
+        return;
+    case 0xB9:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            if ((s32) (M2C_FIELD(&_CB, s32 *, 0xB0D4) & 8) != 0) {
+                M2C_FIELD(p1, s32 *, 0x4C) = 0;
+                return;
+            }
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x43C5;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0;
+        return;
+    case 0xC5:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0x440D;
+            return;
+        }
+        M2C_FIELD(p1, s32 *, 0x4C) = 0;
+        return;
+    case 0xA1:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(Big_Face_Char[toolbattle_trainerFace(3)])));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0xBA:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            toolbattle_drawHeroID(p0, 3);
+        }
+        break;
+    case 0xBE:
+        if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(3));
+        }
+        break;
     }
 }
 }
+
 
 }
 
@@ -2416,234 +2448,266 @@ void menuTool_error01_Ctrl(tagWINDOW_WORK* window) {
 extern "C" {
 void menuCB_error00_Disp(void *p0, void *p1) {
     s16 temp_r0;
-    u8 var_r5;
-    u8 var_r5_2;
-    u8 var_r5_3;
-    u8 var_r5_4;
-    u8 var_r5_5;
-    u8 var_r5_6;
-    u8 var_r5_7;
-
+    bool var_r5;
+    bool var_r5_2;
+    bool var_r5_3;
+    bool var_r5_4;
+    bool var_r5_5;
+    bool var_r5_6;
+    bool var_r5_7;
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    if (temp_r0 != 0x2B) {
-        if (temp_r0 < 0x2B) {
-            if (temp_r0 != 0x11) {
-                if (temp_r0 < 0x11) {
-                    switch (temp_r0) {              /* switch 1; irregular */
-                    case 5:                         /* switch 1 */
-                        menuCBPokemon_ErrorDispSet(p1, 0);
-                        return;
-                    case 4:                         /* switch 1 */
-                        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)((s32) p0), (tagSPRITE_WORK *)((s32) p1), (unsigned long)(0), (long)(0));
-                        return;
-                    case 7:                         /* switch 1 */
-                        menuCBPokemon_ErrorDispSet(p1, 1);
-                        return;
-                    case 6:                         /* switch 1 */
-                        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)((s32) p0), (tagSPRITE_WORK *)((s32) p1), (unsigned long)(0), (long)(0));
-                        return;
-                    case 9:                         /* switch 1 */
-                        menuCBPokemon_ErrorDispSet(p1, 2);
-                        return;
-                    case 8:                         /* switch 1 */
-                        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)((s32) p0), (tagSPRITE_WORK *)((s32) p1), (unsigned long)(0), (long)(0));
-                        return;
-                    case 11:                        /* switch 1 */
-                        menuCBPokemon_ErrorDispSet(p1, 3);
-                        return;
-                    case 10:                        /* switch 1 */
-                        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)((s32) p0), (tagSPRITE_WORK *)((s32) p1), (unsigned long)(0), (long)(0));
-                        return;
-                    case 13:                        /* switch 1 */
-                        menuCBPokemon_ErrorDispSet(p1, 4);
-                        return;
-                    case 12:                        /* switch 1 */
-                        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)((s32) p0), (tagSPRITE_WORK *)((s32) p1), (unsigned long)(0), (long)(0));
-                        return;
-                    case 15:                        /* switch 1 */
-                        menuCBPokemon_ErrorDispSet(p1, 5);
-                        return;
-                    case 14:                        /* switch 1 */
-                        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)((s32) p0), (tagSPRITE_WORK *)((s32) p1), (unsigned long)(0), (long)(0));
-                        return;
-                    default:                        /* switch 1 */
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(windowSearchID(0xA7) == NULL));
-                        return;
-                    }
-                } else {
-                    if (temp_r0 != 0x24) {
-                        if (temp_r0 < 0x24) {
-                            if (temp_r0 < 0x1B) {
-                                if (temp_r0 < 0x18) {
-                                    if (temp_r0 < 0x15) {
-                                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 0));
-                                        var_r5 = 0;
-                                        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 0) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
-                                            var_r5 = 1;
-                                        }
-                                        menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5));
-                                        return;
-                                    }
-                                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 1));
-                                    var_r5_2 = 0;
-                                    if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 1) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
-                                        var_r5_2 = 1;
-                                    }
-                                    menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_2));
-                                    return;
-                                }
-                                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 2));
-                                var_r5_3 = 0;
-                                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 2) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
-                                    var_r5_3 = 1;
-                                }
-                                menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_3));
-                                return;
-                            }
-                            if (temp_r0 < 0x21) {
-                                if (temp_r0 < 0x1E) {
-                                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 3));
-                                    var_r5_4 = 0;
-                                    if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 3) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
-                                        var_r5_4 = 1;
-                                    }
-                                    menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_4));
-                                    return;
-                                }
-                                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 4));
-                                var_r5_5 = 0;
-                                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 4) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
-                                    var_r5_5 = 1;
-                                }
-                                menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_5));
-                                return;
-                            }
-                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 5));
-                            var_r5_6 = 0;
-                            if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 5) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
-                                var_r5_6 = 1;
-                            }
-                            menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_6));
-                            return;
-                        }
-                        if (temp_r0 != 0x28) {
-                            if (temp_r0 < 0x28) {
-                                if (temp_r0 != 0x26) {
-                                    if (temp_r0 < 0x26) {
-                                        if (windowSearchID(0xA7) != NULL) {
-                                            M2C_FIELD(p1, s32 *, 0x4C) = 0;
-                                            return;
-                                        }
-                                        fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43C2));
-                                        return;
-                                    }
-                                    menuCBPokemonItem_ErrorSet(p1, 2);
-                                    return;
-                                }
-                                menuCBPokemonItem_ErrorSet(p1, 1);
-                                return;
-                            }
-                            if (temp_r0 < 0x2A) {
-                                menuCBPokemonItem_ErrorSet(p1, 5);
-                                return;
-                            }
-                            menuCBPokemonLevel((tagWINDOW_WORK *)((s32) p0), (unsigned long)(M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(0), (long)(0));
-                            return;
-                        }
-                        menuCBPokemonItem_ErrorSet(p1, 3);
-                        return;
-                    }
-                    menuCBPokemonItem_ErrorSet(p1, 0);
-                }
-            } else {
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 6));
-                var_r5_7 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 6) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
-                    var_r5_7 = 1;
-                }
-                menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_7));
-            }
-        } else {
-            switch (temp_r0) {                      /* switch 2; irregular */
-            case 0x2DC:                             /* switch 2 */
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                return;
-            case 0x38:                              /* switch 2 */
-                menuCBPokemonMaruWaku_ErrorSet(p1, 0);
-                return;
-            case 0x2DD:                             /* switch 2 */
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                return;
-            default:                                /* switch 2 */
-                menuCBPokemonLevel((tagWINDOW_WORK *)((s32) p0), (unsigned long)(M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(1), (long)(0));
-                return;
-            case 0x2D:                              /* switch 2 */
-                menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(1U), (long)(1U));
-                return;
-            case 0xCB:                              /* switch 2 */
-                menuCBPokemonMaruWaku_ErrorSet(p1, 1);
-                return;
-            case 0x2DE:                             /* switch 2 */
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                return;
-            case 0x2E:                              /* switch 2 */
-                menuCBPokemonLevel((tagWINDOW_WORK *)((s32) p0), (unsigned long)(M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(2), (long)(0));
-                return;
-            case 0x2F:                              /* switch 2 */
-                menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(2U), (long)(1U));
-                return;
-            case 0xCC:                              /* switch 2 */
-                menuCBPokemonMaruWaku_ErrorSet(p1, 2);
-                return;
-            case 0x2DF:                             /* switch 2 */
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                return;
-            case 0x30:                              /* switch 2 */
-                menuCBPokemonLevel((tagWINDOW_WORK *)((s32) p0), (unsigned long)(M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(3), (long)(0));
-                return;
-            case 0x31:                              /* switch 2 */
-                menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(3U), (long)(1U));
-                return;
-            case 0xCD:                              /* switch 2 */
-                menuCBPokemonMaruWaku_ErrorSet(p1, 3);
-                return;
-            case 0x2E0:                             /* switch 2 */
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                return;
-            case 0x33:                              /* switch 2 */
-                menuCBPokemonLevel((tagWINDOW_WORK *)((s32) p0), (unsigned long)(M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(4), (long)(0));
-                return;
-            case 0x34:                              /* switch 2 */
-                menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(4U), (long)(1U));
-                return;
-            case 0xCE:                              /* switch 2 */
-                menuCBPokemonMaruWaku_ErrorSet(p1, 4);
-                return;
-            case 0x32:                              /* switch 2 */
-                menuCBPokemonItem_ErrorSet(p1, 4);
-                return;
-            case 0x2E1:                             /* switch 2 */
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                return;
-            case 0x35:                              /* switch 2 */
-                menuCBPokemonLevel((tagWINDOW_WORK *)((s32) p0), (unsigned long)(M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(5), (long)(0));
-                return;
-            case 0x36:                              /* switch 2 */
-                menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(5U), (long)(1U));
-                return;
-            case 0xCF:                              /* switch 2 */
-                menuCBPokemonMaruWaku_ErrorSet(p1, 5);
-                return;
-            case 0x37:                              /* switch 2 */
-                M2C_FIELD(p1, s32 *, 0x4C) = 0x43C1;
-                return;
-            }
+    switch (temp_r0) {
+    case 0x5:
+        menuCBPokemon_ErrorDispSet(p1, 0);
+        return;
+    case 0x2DC:
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0x4:
+        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)p0, (tagSPRITE_WORK *)p1, M2C_FIELD(&_CB, s32 *, 0xB0D8), 0);
+        return;
+    case 0x12:
+    case 0x13:
+    case 0x14:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 0));
+        var_r5 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 0) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
+            var_r5 = 1;
         }
-    } else {
+        menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5));
+        return;
+    case 0x2A:
+        menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 0, 1);
+        return;
+    case 0x2B:
         menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(0U), (long)(1U));
+        break;
+    case 0x38:
+        menuCBPokemonMaruWaku_ErrorSet(p1, 0);
+        return;
+    case 0x24:
+        menuCBPokemonItem_ErrorSet(p1, 0);
+        break;
+    case 0x7:
+        menuCBPokemon_ErrorDispSet(p1, 1);
+        return;
+    case 0x2DD:
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+        
+        break;
+    case 0x6:
+        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)p0, (tagSPRITE_WORK *)p1, M2C_FIELD(&_CB, s32 *, 0xB0D8), 1);
+        return;
+        
+        break;
+    case 0x15:
+    case 0x16:
+    case 0x17:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 1));
+        var_r5_2 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 1) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
+            var_r5_2 = 1;
+        }
+        menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_2));
+        return;
+    case 0x2C:
+        menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 1, 1);
+        return;
+    case 0x2D:
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(1U), (long)(1U));
+        return;
+    case 0xCB:
+        menuCBPokemonMaruWaku_ErrorSet(p1, 1);
+        return;
+    case 0x26:
+        menuCBPokemonItem_ErrorSet(p1, 1);
+        return;
+    case 0x9:
+        menuCBPokemon_ErrorDispSet(p1, 2);
+        return;
+    case 0x2DE:
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+        
+        
+        break;
+    case 0x8:
+        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)p0, (tagSPRITE_WORK *)p1, M2C_FIELD(&_CB, s32 *, 0xB0D8), 2);
+        return;
+        
+        
+        break;
+    case 0x18:
+    case 0x19:
+    case 0x1A:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 2));
+        var_r5_3 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 2) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
+            var_r5_3 = 1;
+        }
+        menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_3));
+        return;
+    case 0x2E:
+        menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 2, 1);
+        return;
+    case 0x2F:
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(2U), (long)(1U));
+        return;
+    case 0xCC:
+        menuCBPokemonMaruWaku_ErrorSet(p1, 2);
+        return;
+    case 0x27:
+        menuCBPokemonItem_ErrorSet(p1, 2);
+        return;
+    case 0xB:
+        menuCBPokemon_ErrorDispSet(p1, 3);
+        return;
+    case 0x2DF:
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+        
+        
+        
+        break;
+    case 0xA:
+        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)p0, (tagSPRITE_WORK *)p1, M2C_FIELD(&_CB, s32 *, 0xB0D8), 3);
+        return;
+        
+        
+        
+        break;
+    case 0x1B:
+    case 0x1C:
+    case 0x1D:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 3));
+        var_r5_4 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 3) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
+            var_r5_4 = 1;
+        }
+        menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_4));
+        return;
+    case 0x30:
+        menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 3, 1);
+        return;
+    case 0x31:
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(3U), (long)(1U));
+        return;
+    case 0xCD:
+        menuCBPokemonMaruWaku_ErrorSet(p1, 3);
+        return;
+    case 0x28:
+        menuCBPokemonItem_ErrorSet(p1, 3);
+        return;
+    case 0xD:
+        menuCBPokemon_ErrorDispSet(p1, 4);
+        return;
+    case 0x2E0:
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+        
+        
+        
+        
+        break;
+    case 0xC:
+        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)p0, (tagSPRITE_WORK *)p1, M2C_FIELD(&_CB, s32 *, 0xB0D8), 4);
+        return;
+        
+        
+        
+        
+        break;
+    case 0x1E:
+    case 0x1F:
+    case 0x20:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 4));
+        var_r5_5 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 4) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
+            var_r5_5 = 1;
+        }
+        menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_5));
+        return;
+    case 0x33:
+        menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 4, 1);
+        return;
+    case 0x34:
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(4U), (long)(1U));
+        return;
+    case 0xCE:
+        menuCBPokemonMaruWaku_ErrorSet(p1, 4);
+        return;
+    case 0x32:
+        menuCBPokemonItem_ErrorSet(p1, 4);
+        return;
+    case 0xF:
+        menuCBPokemon_ErrorDispSet(p1, 5);
+        return;
+    case 0x2E1:
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+        
+        
+        
+        
+        
+        break;
+    case 0xE:
+        menuCBPokemonEntryDispPokemonFace((tagWINDOW_WORK *)p0, (tagSPRITE_WORK *)p1, M2C_FIELD(&_CB, s32 *, 0xB0D8), 5);
+        return;
+        
+        
+        
+        
+        
+        break;
+    case 0x21:
+    case 0x22:
+    case 0x23:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 5));
+        var_r5_6 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 5) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
+            var_r5_6 = 1;
+        }
+        menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_6));
+        return;
+    case 0x35:
+        menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 5, 1);
+        return;
+    case 0x36:
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(5U), (long)(1U));
+        return;
+    case 0xCF:
+        menuCBPokemonMaruWaku_ErrorSet(p1, 5);
+        return;
+    case 0x29:
+        menuCBPokemonItem_ErrorSet(p1, 5);
+        return;
+    case 0x11:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB008) == 6));
+        var_r5_7 = 0;
+        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB008) == 6) && ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0)) {
+            var_r5_7 = 1;
+        }
+        menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(var_r5_7));
+        break;
+    case 0x25:
+        if (windowSearchID(0xA7) != NULL) {
+            M2C_FIELD(p1, s32 *, 0x4C) = 0;
+            return;
+        }
+        fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43C2));
+        return;
+    case 0x10:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(windowSearchID(0xA7) == NULL));
+        return;
+    case 0x37:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x43C1;
+        return;
     }
 }
 }
+
 
 }
 
@@ -2723,111 +2787,184 @@ void menuTool_GBAConnect_Button(void) {
 }
 }
 
-extern "C" {
-void menuCB_GBAConnect_Disp(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
-    switch (sprite->id) {
-    case 0xF1:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lwz r0, 0x0(r5) | cmpwi r0, 0xa | beq .L_800772A8 | cmpwi r0, 0x5 | bne .L_800772AC
-        break;
-    case 0xF2:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lwz r0, 0x4(r4) | subfic r0, r0, 0x5 | cntlzw r0, r0 | srwi r4, r0, 5
-        break;
-    case 0xF3:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lwz r0, 0x8(r4) | subfic r0, r0, 0x5 | cntlzw r0, r0 | srwi r4, r0, 5
-        break;
-    case 0xF4:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lwz r0, 0xc(r4) | subfic r0, r0, 0x5 | cntlzw r0, r0 | srwi r4, r0, 5
-        break;
-    case 0xF5:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lwz r0, 0x0(r5) | cmpwi r0, 0xb | beq .L_8007734C | cmpwi r0, 0x6 | beq .L_8007734C | cmpwi r0, 0x7 | bne .L_80077350
-        break;
-    case 0xF6:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lwz r0, 0x4(r5) | cmpwi r0, 0x6 | beq .L_8007737C | cmpwi r0, 0x7 | bne .L_80077380
-        break;
-    case 0xF7:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lwz r0, 0x8(r5) | cmpwi r0, 0x6 | beq .L_800773AC | cmpwi r0, 0x7 | bne .L_800773B0
-        break;
-    case 0xF8:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lwz r0, 0xc(r5) | cmpwi r0, 0x6 | beq .L_800773DC | cmpwi r0, 0x7 | bne .L_800773E0
-        break;
-    case 0xDE:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x30(r5) | extsb r0, r0 | cmpwi r0, 0x1 | beq .L_80077414 | cmpwi r0, 0x4 | beq .L_80077414
-        break;
-    case 0xE2:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x30(r5) | extsb r0, r0 | cmpwi r0, 0x1 | beq .L_80077448 | cmpwi r0, 0x4 | beq .L_80077448
-        break;
-    case 0xE6:
- // RAW: lis r3, gbaConectGBA_Connect_WORK@ha | addi r3, r3, gbaConectGBA_Connect_WORK@l | lbz r0, 0x30(r3) | extsb r0, r0 | cmpwi r0, 0x1 | beq .L_80077470 | cmpwi r0, 0x4 | bne .L_80077480
-        break;
-    case 0xEA:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x30(r4) | extsb r5, r0 | subfic r4, r5, 0x1 | subi r0, r5, 0x1 | or r0, r4, r0 | srwi r4, r0, 31
-        break;
-    case 0xEE:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x30(r5) | extsb r0, r0 | cmpwi r0, 0x1 | beq .L_80077594 | cmpwi r0, 0x4 | bne .L_80077598
-        break;
-    case 0xEF:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x30(r5) | extsb r0, r0 | cmpwi r0, 0x1 | beq .L_800775C8 | cmpwi r0, 0x4 | bne .L_800775CC
-        break;
-    case 0xF0:
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r5, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x30(r5) | extsb r0, r0 | cmpwi r0, 0x1 | beq .L_800775FC | cmpwi r0, 0x4 | bne .L_80077600
-        break;
-    case 0xE7:
- // RAW: lis r3, gbaConectGBA_Connect_WORK@ha | addi r4, r3, gbaConectGBA_Connect_WORK@l | lbz r0, 0x49(r4) | cmplwi r0, 0x0 | beq .L_80077634 | lha r3, 0x50(r31) | sth r3, 0x36(r4) | lha r3, 0x52(r31) | sth r3, 0x3e(r4) | stb r0, 0x49(r4)
-        break;
-    case 0xE0:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x32(r4) | extsb r4, r0 | neg r0, r4 | or r0, r0, r4 | srwi r4, r0, 31
-        break;
-    case 0xE4:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x32(r4) | extsb r4, r0 | neg r0, r4 | or r0, r0, r4 | srwi r4, r0, 31
-        break;
-    case 0xE8:
-        winSpriteSetDisp(sprite, 0x0);
- // RAW: lis r3, gbaConectGBA_Connect_WORK@ha | addi r4, r3, gbaConectGBA_Connect_WORK@l | lbz r0, 0x32(r4) | extsb r0, r0 | cmpwi r0, 0x0 | bne .L_80077734
-        break;
-    case 0xEC:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x32(r4) | extsb r4, r0 | neg r0, r4 | or r0, r0, r4 | srwi r4, r0, 31
-        break;
-    case 0xE1:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x33(r4) | extsb r4, r0 | neg r0, r4 | or r0, r0, r4 | srwi r4, r0, 31
-        break;
-    case 0xE5:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x33(r4) | extsb r4, r0 | neg r0, r4 | or r0, r0, r4 | srwi r4, r0, 31
-        break;
-    case 0xE9:
-        winSpriteSetDisp(sprite, 0x0);
- // RAW: lis r3, gbaConectGBA_Connect_WORK@ha | addi r4, r3, gbaConectGBA_Connect_WORK@l | lbz r0, 0x33(r4) | extsb r0, r0 | cmpwi r0, 0x0 | bne .L_80077880
-        break;
-    case 0xED:
-        menuCB_SpriteDispCheckONorOFF(sprite, sprite);
- // RAW: lis r4, gbaConectGBA_Connect_WORK@ha | addi r4, r4, gbaConectGBA_Connect_WORK@l | lbz r0, 0x33(r4) | extsb r4, r0 | neg r0, r4 | or r0, r0, r4 | srwi r4, r0, 31
-        break;
-    case 0xFB:
-        sprite->msg = 0x441c;
-        break;
-    case 0xFC:
-        sprite->msg = 0x441d;
-        break;
-    case 0xFD:
-        sprite->msg = 0x435e;
-        break;
-    }
-}
-}
 
 extern "C" {
 void menuTool_BattleBA01_Ctrl(tagWINDOW_WORK* window) {
     menuCB_DispEffect(window);
     menuSetStatus(window->seq, 0x10);
 }
+extern "C" {
+void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
+    s16 temp_r3;
+    s32 var_r4;
+    s32 var_r4_10;
+    s32 var_r4_2;
+    s32 var_r4_3;
+    s32 var_r4_4;
+    s32 var_r4_5;
+    bool var_r4_6;
+    bool var_r4_7;
+    s32 var_r4_8;
+    s32 var_r4_9;
+
+    temp_r3 = M2C_FIELD(p1, s16 *, 6);
+    switch (temp_r3) {
+    case 0xF1:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 0xA) || ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 5));
+        return;
+    case 0xF2:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 4) == 5));
+        return;
+    case 0xF3:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 8) == 5));
+        return;
+    case 0xF4:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0xC) == 5));
+        return;
+    case 0xF5:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 0xB) || ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 6) || ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 7));
+        return;
+    case 0xF6:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 4) == 6) || ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 4) == 7));
+        return;
+    case 0xF7:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 8) == 6) || ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 8) == 7));
+        return;
+    case 0xF8:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0xC) == 6) || ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0xC) == 7));
+        return;
+    case 0xDE:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) != 1) && ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) != 4));
+        return;
+    case 0xE2:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) != 1) && ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) != 4));
+        return;
+    case 0xE6:
+        if (((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) == 1) || ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) == 4)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)(p1), 0U);
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)(p1), 1U);
+        if ((u8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x48) != 0) {
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34) = (s16) M2C_FIELD(p1, s16 *, 0x50);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C) = (s16) M2C_FIELD(p1, s16 *, 0x52);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x48) = 0U;
+        }
+        if ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 2) {
+            if (pauseIsPause() == 0) {
+                M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x44)++;
+            }
+            M2C_FIELD(p1, s16 *, 0x50) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x44) & 3]);
+            M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C);
+            return;
+        }
+        M2C_FIELD(p1, s16 *, 0x50) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34);
+        M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C);
+        return;
+    case 0xEA:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (s8)M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) != 1);
+        return;
+    case 0xEE:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) == 1) || ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) == 4));
+        return;
+    case 0xEF:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) == 1) || ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) == 4));
+        return;
+    case 0xF0:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) == 1) || ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) == 4));
+        return;
+    case 0xE7:
+        if ((u8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x49) != 0) {
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36) = (s16) M2C_FIELD(p1, s16 *, 0x50);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E) = (s16) M2C_FIELD(p1, s16 *, 0x52);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x49) = 0U;
+        }
+        if ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 4) == 2) {
+            if (pauseIsPause() == 0) {
+                M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x45)++;
+            }
+            M2C_FIELD(p1, s16 *, 0x50) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x45) & 3]);
+            M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E);
+            return;
+        }
+        M2C_FIELD(p1, s16 *, 0x50) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36);
+        M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E);
+        return;
+    case 0xE0:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x32) != 0));
+        return;
+    case 0xE4:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x32) != 0));
+        return;
+    case 0xE8:
+        if ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x32) == 0) {
+            winSpriteSetDisp((tagSPRITE_WORK*)(p1), 0U);
+            return;
+        }
+        if ((u8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x4A) != 0) {
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38) = (s16) M2C_FIELD(p1, s16 *, 0x50);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40) = (s16) M2C_FIELD(p1, s16 *, 0x52);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x4A) = 0U;
+        }
+        if ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 8) == 2) {
+            if (pauseIsPause() == 0) {
+                M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x46)++;
+            }
+            M2C_FIELD(p1, s16 *, 0x50) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x46) & 3]);
+            M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40);
+            return;
+        }
+        M2C_FIELD(p1, s16 *, 0x50) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38);
+        M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40);
+        return;
+    case 0xEC:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x32) != 0));
+        return;
+    case 0xE1:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x33) != 0));
+        return;
+    case 0xE5:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x33) != 0));
+        return;
+    case 0xE9:
+        if ((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x33) == 0) {
+            winSpriteSetDisp((tagSPRITE_WORK*)(p1), 0U);
+            return;
+        }
+        if ((u8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x4B) != 0) {
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A) = (s16) M2C_FIELD(p1, s16 *, 0x50);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42) = (s16) M2C_FIELD(p1, s16 *, 0x52);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x4B) = 0U;
+        }
+        if ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0xC) == 2) {
+            if (pauseIsPause() == 0) {
+                M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x47)++;
+            }
+            M2C_FIELD(p1, s16 *, 0x50) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x47) & 3]);
+            M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42);
+            return;
+        }
+        M2C_FIELD(p1, s16 *, 0x50) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A);
+        M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42);
+        return;
+    case 0xED:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x33) != 0));
+        return;
+    case 0xFB:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x441C;
+        return;
+    case 0xFC:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x441D;
+        return;
+    case 0xFD:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x435E;
+        /* fallthrough */
+    default:
+        return;
+    }
+}
+}
+
 }
 
 extern "C" {
@@ -3692,9 +3829,9 @@ void menuTool_tunaideGCEntry00_Ctrl(void *p0) {
     volatile s32 temp_r29;
     s32 saved_reg_r29;
 
-    var_r29 = saved_reg_r29;
     temp_r28 = M2C_FIELD(&_CB, s32 *, 0xB0F8);
     menuCB_DispEffect((tagWINDOW_WORK *)((s32 *) p0));
+    var_r29 = saved_reg_r29;
     menuSetStatus(M2C_FIELD(p0, s32 *, 4), 0x10);
     if ((s8) M2C_FIELD(p0, u8 *, 1) != 2) {
         goto block_362;
@@ -3908,7 +4045,7 @@ block_64:
         goto block_66;
     }
     temp_r29 = M2C_FIELD(&_CB, s32 *, 0xB0EC);
-    var_r29 = ((CReliveStage*)(((CReliveHall*)(((CReliveHall*)(&_CB))->getPointer()))->getStage(temp_r29)))->getDancerQuantity();
+    var_r29 = CReliveHall::getPointer()->getStage(temp_r29)->getDancerQuantity();
 block_66:
     if ((s32) (windowGetKeyRepeat() & 1) == 0) {
         goto block_144;
@@ -4822,73 +4959,75 @@ block_359:
 block_362:
     return;
 }
-}
-
 extern "C" {
-extern "C" {
-void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2) {
+void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2, s32 n) {
     s16 temp_r3;
-    s32 temp_r28;
+    int temp_r28;
     s32 temp_r31;
-    u8 var_r5;
-    u8 var_r5_10;
-    u8 var_r5_11;
-    u8 var_r5_12;
-    u8 var_r5_13;
-    u8 var_r5_14;
-    u8 var_r5_15;
-    u8 var_r5_16;
-    u8 var_r5_17;
-    u8 var_r5_18;
-    u8 var_r5_19;
-    u8 var_r5_20;
-    u8 var_r5_21;
-    u8 var_r5_22;
-    u8 var_r5_23;
-    u8 var_r5_24;
-    u8 var_r5_25;
-    u8 var_r5_26;
-    u8 var_r5_27;
-    u8 var_r5_28;
-    u8 var_r5_29;
-    u8 var_r5_2;
-    u8 var_r5_30;
-    u8 var_r5_31;
-    u8 var_r5_32;
-    u8 var_r5_33;
-    u8 var_r5_34;
-    u8 var_r5_35;
-    u8 var_r5_36;
-    u8 var_r5_37;
-    u8 var_r5_38;
-    u8 var_r5_39;
-    u8 var_r5_3;
-    u8 var_r5_40;
-    u8 var_r5_41;
-    u8 var_r5_42;
-    u8 var_r5_43;
-    u8 var_r5_44;
-    u8 var_r5_45;
-    u8 var_r5_46;
-    u8 var_r5_47;
-    u8 var_r5_4;
-    u8 var_r5_5;
-    u8 var_r5_6;
-    u8 var_r5_7;
-    u8 var_r5_8;
-    u8 var_r5_9;
+    bool var_r5;
+    bool var_r5_10;
+    bool var_r5_11;
+    bool var_r5_12;
+    bool var_r5_13;
+    bool var_r5_14;
+    bool var_r5_15;
+    bool var_r5_16;
+    bool var_r5_17;
+    bool var_r5_18;
+    bool var_r5_19;
+    bool var_r5_20;
+    bool var_r5_21;
+    bool var_r5_22;
+    bool var_r5_23;
+    bool var_r5_24;
+    bool var_r5_25;
+    bool var_r5_26;
+    bool var_r5_27;
+    bool var_r5_28;
+    bool var_r5_29;
+    bool var_r5_2;
+    bool var_r5_30;
+    bool var_r5_31;
+    bool var_r5_32;
+    bool var_r5_33;
+    bool var_r5_34;
+    bool var_r5_35;
+    bool var_r5_36;
+    bool var_r5_37;
+    bool var_r5_38;
+    bool var_r5_39;
+    bool var_r5_3;
+    bool var_r5_40;
+    bool var_r5_41;
+    bool var_r5_42;
+    bool var_r5_43;
+    bool var_r5_44;
+    bool var_r5_45;
+    bool var_r5_46;
+    bool var_r5_47;
+    bool var_r5_4;
+    bool var_r5_5;
+    bool var_r5_6;
+    bool var_r5_7;
+    bool var_r5_8;
+    bool var_r5_9;
 
     temp_r31 = M2C_FIELD(&_CB, s32 *, 0xB0F8);
     if (((s32) M2C_FIELD(&_CB, s32 *, 0xB0F4) == 1) || ((s32) M2C_FIELD(&_CB, s32 *, 0xB150) != 0)) {
         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
         return;
     }
-    switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0)) { /* switch 1; irregular */
-    case 1:                                         /* switch 1 */
+    switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0)) {
+    case 0:
+        n = 0;
         break;
-    case 2:                                         /* switch 1 */
+    case 1:
+        n = 1;
+        break;
+    case 2:
         temp_r28 = M2C_FIELD(&_CB, s32 *, 0xB0EC);
-        ((CReliveStage*)(((CReliveHall*)(((CReliveHall*)(&_CB + 0x10000))->getPointer(), temp_r28))->getStage((long)(0))))->getDancerQuantity();
+        CReliveHall* hall = CReliveHall::getPointer();
+        n = hall->getStage(temp_r28)->getDancerQuantity() + 2;
         break;
     }
     temp_r3 = M2C_FIELD(p1, s16 *, 6);
@@ -4920,330 +5059,327 @@ void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2) {
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), temp_r31 == 0x23);
         return;
     case 0x227:                                     /* switch 2 */
-        var_r5 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) >= 2) && ((s32) M2C_ERROR(/* Read from unset register $r6 */) <= 6) && (temp_r31 == 4)) {
-            var_r5 = 1;
-        }
+        var_r5 = (n >= 2 && n <= 6 && temp_r31 == 4);
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5);
         return;
     case 0x228:                                     /* switch 2 */
         var_r5_2 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 3) && (temp_r31 == 0)) {
+        if ((n == 3) && (temp_r31 == 0)) {
             var_r5_2 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_2);
         return;
     case 0x229:                                     /* switch 2 */
         var_r5_3 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 4) && (temp_r31 == 0)) {
+        if ((n == 4) && (temp_r31 == 0)) {
             var_r5_3 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_3);
         return;
     case 0x22A:                                     /* switch 2 */
         var_r5_4 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 4) && (temp_r31 == 1)) {
+        if ((n == 4) && (temp_r31 == 1)) {
             var_r5_4 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_4);
         return;
     case 0x22B:                                     /* switch 2 */
         var_r5_5 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 5) && (temp_r31 == 0)) {
+        if ((n == 5) && (temp_r31 == 0)) {
             var_r5_5 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_5);
         return;
     case 0x22D:                                     /* switch 2 */
         var_r5_6 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 5) && (temp_r31 == 1)) {
+        if ((n == 5) && (temp_r31 == 1)) {
             var_r5_6 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_6);
         return;
     case 0x22C:                                     /* switch 2 */
         var_r5_7 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 5) && (temp_r31 == 2)) {
+        if ((n == 5) && (temp_r31 == 2)) {
             var_r5_7 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_7);
         return;
     case 0x230:                                     /* switch 2 */
         var_r5_8 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 6) && (temp_r31 == 0)) {
+        if ((n == 6) && (temp_r31 == 0)) {
             var_r5_8 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_8);
         return;
     case 0x231:                                     /* switch 2 */
         var_r5_9 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 6) && (temp_r31 == 1)) {
+        if ((n == 6) && (temp_r31 == 1)) {
             var_r5_9 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_9);
         return;
     case 0x22E:                                     /* switch 2 */
         var_r5_10 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 6) && (temp_r31 == 2)) {
+        if ((n == 6) && (temp_r31 == 2)) {
             var_r5_10 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_10);
         return;
     case 0x22F:                                     /* switch 2 */
         var_r5_11 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 6) && (temp_r31 == 3)) {
+        if ((n == 6) && (temp_r31 == 3)) {
             var_r5_11 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_11);
         return;
     case 0x232:                                     /* switch 2 */
         var_r5_12 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 0) && (temp_r31 == 0)) {
+        if ((n == 0) && (temp_r31 == 0)) {
             var_r5_12 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_12);
         return;
     case 0x233:                                     /* switch 2 */
         var_r5_13 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 0) && (temp_r31 == 1)) {
+        if ((n == 0) && (temp_r31 == 1)) {
             var_r5_13 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_13);
         return;
     case 0x234:                                     /* switch 2 */
         var_r5_14 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 0) && (temp_r31 == 2)) {
+        if ((n == 0) && (temp_r31 == 2)) {
             var_r5_14 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_14);
         return;
     case 0x235:                                     /* switch 2 */
         var_r5_15 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 0) && (temp_r31 == 3)) {
+        if ((n == 0) && (temp_r31 == 3)) {
             var_r5_15 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_15);
         return;
     case 0x236:                                     /* switch 2 */
         var_r5_16 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 0) && (temp_r31 == 4)) {
+        if ((n == 0) && (temp_r31 == 4)) {
             var_r5_16 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_16);
         return;
     case 0x237:                                     /* switch 2 */
         var_r5_17 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 0) && (temp_r31 == 5)) {
+        if ((n == 0) && (temp_r31 == 5)) {
             var_r5_17 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_17);
         return;
     case 0x238:                                     /* switch 2 */
         var_r5_18 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0)) {
+        if ((n == 1) && (temp_r31 == 0)) {
             var_r5_18 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_18);
         return;
     case 0x239:                                     /* switch 2 */
         var_r5_19 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 1)) {
+        if ((n == 1) && (temp_r31 == 1)) {
             var_r5_19 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_19);
         return;
     case 0x23A:                                     /* switch 2 */
         var_r5_20 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 2)) {
+        if ((n == 1) && (temp_r31 == 2)) {
             var_r5_20 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_20);
         return;
     case 0x23B:                                     /* switch 2 */
         var_r5_21 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 3)) {
+        if ((n == 1) && (temp_r31 == 3)) {
             var_r5_21 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_21);
         return;
     case 0x23C:                                     /* switch 2 */
         var_r5_22 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 4)) {
+        if ((n == 1) && (temp_r31 == 4)) {
             var_r5_22 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_22);
         return;
     case 0x23D:                                     /* switch 2 */
         var_r5_23 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 5)) {
+        if ((n == 1) && (temp_r31 == 5)) {
             var_r5_23 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_23);
         return;
     case 0x23E:                                     /* switch 2 */
         var_r5_24 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 6)) {
+        if ((n == 1) && (temp_r31 == 6)) {
             var_r5_24 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_24);
         return;
     case 0x23F:                                     /* switch 2 */
         var_r5_25 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 7)) {
+        if ((n == 1) && (temp_r31 == 7)) {
             var_r5_25 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_25);
         return;
     case 0x240:                                     /* switch 2 */
         var_r5_26 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 8)) {
+        if ((n == 1) && (temp_r31 == 8)) {
             var_r5_26 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_26);
         return;
     case 0x241:                                     /* switch 2 */
         var_r5_27 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 9)) {
+        if ((n == 1) && (temp_r31 == 9)) {
             var_r5_27 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_27);
         return;
     case 0x242:                                     /* switch 2 */
         var_r5_28 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0xA)) {
+        if ((n == 1) && (temp_r31 == 0xA)) {
             var_r5_28 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_28);
         return;
     case 0x243:                                     /* switch 2 */
         var_r5_29 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0xB)) {
+        if ((n == 1) && (temp_r31 == 0xB)) {
             var_r5_29 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_29);
         return;
     case 0x244:                                     /* switch 2 */
         var_r5_30 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0xC)) {
+        if ((n == 1) && (temp_r31 == 0xC)) {
             var_r5_30 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_30);
         return;
     case 0x245:                                     /* switch 2 */
         var_r5_31 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0xD)) {
+        if ((n == 1) && (temp_r31 == 0xD)) {
             var_r5_31 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_31);
         return;
     case 0x246:                                     /* switch 2 */
         var_r5_32 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0xE)) {
+        if ((n == 1) && (temp_r31 == 0xE)) {
             var_r5_32 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_32);
         return;
     case 0x247:                                     /* switch 2 */
         var_r5_33 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0xF)) {
+        if ((n == 1) && (temp_r31 == 0xF)) {
             var_r5_33 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_33);
         return;
     case 0x248:                                     /* switch 2 */
         var_r5_34 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x10)) {
+        if ((n == 1) && (temp_r31 == 0x10)) {
             var_r5_34 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_34);
         return;
     case 0x249:                                     /* switch 2 */
         var_r5_35 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x11)) {
+        if ((n == 1) && (temp_r31 == 0x11)) {
             var_r5_35 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_35);
         return;
     case 0x24A:                                     /* switch 2 */
         var_r5_36 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x12)) {
+        if ((n == 1) && (temp_r31 == 0x12)) {
             var_r5_36 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_36);
         return;
     case 0x24B:                                     /* switch 2 */
         var_r5_37 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x13)) {
+        if ((n == 1) && (temp_r31 == 0x13)) {
             var_r5_37 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_37);
         return;
     case 0x24C:                                     /* switch 2 */
         var_r5_38 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x14)) {
+        if ((n == 1) && (temp_r31 == 0x14)) {
             var_r5_38 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_38);
         return;
     case 0x24D:                                     /* switch 2 */
         var_r5_39 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x15)) {
+        if ((n == 1) && (temp_r31 == 0x15)) {
             var_r5_39 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_39);
         return;
     case 0x24E:                                     /* switch 2 */
         var_r5_40 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x16)) {
+        if ((n == 1) && (temp_r31 == 0x16)) {
             var_r5_40 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_40);
         return;
     case 0x24F:                                     /* switch 2 */
         var_r5_41 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x17)) {
+        if ((n == 1) && (temp_r31 == 0x17)) {
             var_r5_41 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_41);
         return;
     case 0x250:                                     /* switch 2 */
         var_r5_42 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x18)) {
+        if ((n == 1) && (temp_r31 == 0x18)) {
             var_r5_42 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_42);
         return;
     case 0x251:                                     /* switch 2 */
         var_r5_43 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x19)) {
+        if ((n == 1) && (temp_r31 == 0x19)) {
             var_r5_43 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_43);
         return;
     case 0x252:                                     /* switch 2 */
         var_r5_44 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x1A)) {
+        if ((n == 1) && (temp_r31 == 0x1A)) {
             var_r5_44 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_44);
         return;
     case 0x253:                                     /* switch 2 */
         var_r5_45 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x1B)) {
+        if ((n == 1) && (temp_r31 == 0x1B)) {
             var_r5_45 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_45);
         return;
     case 0x254:                                     /* switch 2 */
         var_r5_46 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x1C)) {
+        if ((n == 1) && (temp_r31 == 0x1C)) {
             var_r5_46 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_46);
         return;
     case 0x255:                                     /* switch 2 */
         var_r5_47 = 0;
-        if (((s32) M2C_ERROR(/* Read from unset register $r6 */) == 1) && (temp_r31 == 0x1D)) {
+        if ((n == 1) && (temp_r31 == 0x1D)) {
             var_r5_47 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_47);
@@ -5253,7 +5389,9 @@ void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2) {
     }
 }
 }
+
 }
+
 
 }
 
@@ -5592,12 +5730,41 @@ void menuCB_tunaideGCEntry02_Disp(void *p0, void *p1) {
     s32 temp_r29;
 
     temp_r29 = M2C_FIELD(&_CB, s32 *, 0xB0E8);
-    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0, &_CB + 0x10000);
+    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
     switch (temp_r0) {                              /* irregular */
-    default:
+    case 0x199:
+    case 0x19A:
+    case 0x19B:
+    case 0x19C:
+    case 0x19D:
+    case 0x19E:
+    case 0x19F:
+    case 0x1A0:
+    case 0x1A1:
+    case 0x1A2:
+    case 0x1A3:
+    case 0x1A4:
+    case 0x1A5:
+    case 0x1A6:
+    case 0x1A7:
+    case 0x1A8:
+    case 0x1A9:
+    case 0x1AA:
+    case 0x1AB:
+    case 0x1AC:
+    case 0x1AD:
+    case 0x1AE:
+    case 0x1AF:
+    case 0x1B0:
+    case 0x1B1:
+    case 0x1B2:
+    case 0x1B3:
+    case 0x1B4:
+    case 0x1B5:
+    case 0x1B6:
         menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(PCBOXBG_Char[temp_r29])));
         return;
     case 0x1FE:
@@ -5714,7 +5881,7 @@ extern "C" {
 void menuCB_tunaideGCEntry03_Disp(void *p0, void *p1) {
     s16 temp_r0;
 
-    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0, M2C_ERROR(/* Read from unset register $r6 */));
+    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
@@ -5760,8 +5927,8 @@ void menuCB_tunaideGCEntry04_Disp(void *p0, void *p1) {
     s32 temp_r29;
 
     temp_r28 = M2C_FIELD(&_CB, s32 *, 0xB0EC);
-    temp_r29 = ((CReliveStage*)(((CReliveHall*)(((CReliveHall*)(&_CB + 0x10000))->getPointer(), temp_r28))->getStage((long)(0))))->getDancerQuantity();
-    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0, M2C_ERROR(/* Read from unset register $r6 */));
+    temp_r29 = CReliveHall::getPointer()->getStage(temp_r28)->getDancerQuantity();
+    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
@@ -5998,8 +6165,7 @@ void menuTool_tunaidePokemonSelect1_Ctrl(tagWINDOW_WORK* window) {
     menuCBPokemonEntryButtonTask_20041006();
     if (_CB.unkB108 < 1 && !pauseIsPause()) {
         if (windowGetKeyInfo()->trg & 0x10) {
-            count = menuCBPokemonEntryPokemonNumMin(0);
-            if (toolentryTaisengetEtnryPokemonOrderNum(0) >= count && toolentryTaisenGetHomePlace(0) == 0) {
+            if (toolentryTaisengetEtnryPokemonOrderNum(0) >= (count = menuCBPokemonEntryPokemonNumMin(0)) && toolentryTaisenGetHomePlace(0) == 0) {
                 _CB.unkB108 = 1;
                 return;
             }
@@ -6490,7 +6656,7 @@ void menuTool_Rule00_Button(void) {
 extern "C" {
 void menuTool_Rule00_Ctrl(void * p0) {
     s16 temp_r30;
-    s16 temp_r0_6;
+    s32 temp_r0;
     s16 temp_r0_7;
     s16 temp_r0_8;
     s16 temp_r29;
@@ -6503,7 +6669,7 @@ void menuTool_Rule00_Ctrl(void * p0) {
     s16 temp_r4;
     s16 temp_r4_2;
     s32 temp_r9;
-    s32 temp_r0;
+    s16 temp_r0_6;
     s32 temp_r0_2;
     s32 temp_r0_3;
     s32 temp_r0_4;
@@ -6518,23 +6684,6 @@ void menuTool_Rule00_Ctrl(void * p0) {
     s32 *var_r3;
     s32 var_ctr;
     s32 var_ctr_2;
-    u16 temp_r29_10;
-    u16 temp_r29_11;
-    u16 temp_r29_12;
-    u16 temp_r29_13;
-    u16 temp_r29_14;
-    u16 temp_r29_15;
-    u16 temp_r29_16;
-    u16 temp_r29_17;
-    u16 temp_r29_18;
-    u16 temp_r29_19;
-    u16 temp_r29_20;
-    u16 temp_r29_21;
-    u16 temp_r29_5;
-    u16 temp_r29_6;
-    u16 temp_r29_7;
-    u16 temp_r29_8;
-    u16 temp_r29_9;
     u32 var_r5;
     u8 temp_r6_2;
     u8 temp_r7_2;
@@ -6606,8 +6755,8 @@ block_17:
                             do {
                                 temp_r6_2 = M2C_FIELD(var_r7, u8 *, 0x52);
                                 temp_r0_2 = var_r5 + 0x52;
-                                var_r7 += 1;
                                 var_r5 += 1;
+                                var_r7 += 1;
                                 *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r0_2) = temp_r6_2;
                                 var_ctr_2 -= 1;
                             } while (var_ctr_2 != 0);
@@ -6729,8 +6878,7 @@ block_27:
                             if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) >= 0x64) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = 0x64;
                             }
-                            temp_r4 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0);
-                            if (temp_r4 >= (s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2)) {
+                            if ((temp_r4 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0)) >= (s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2)) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = temp_r4;
                             }
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6);
@@ -6762,8 +6910,7 @@ block_27:
                             if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) <= 1) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = 1;
                             }
-                            temp_r4_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2);
-                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) >= temp_r4_2) {
+                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) >= (temp_r4_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2))) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) = temp_r4_2;
                             }
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6);
@@ -6808,12 +6955,10 @@ block_27:
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) + 1);
                                 break;
                             }
-                            temp_r0_5 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6;
-                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) <= temp_r0_5) {
+                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) <= (temp_r0_5 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = temp_r0_5;
                             }
-                            temp_r0_6 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6;
-                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) >= temp_r0_6) {
+                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) >= (temp_r0_6 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6)) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = temp_r0_6;
                             }
                         }
@@ -6829,12 +6974,10 @@ block_27:
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) - 1);
                                 break;
                             }
-                            temp_r0_7 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6;
-                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) <= temp_r0_7) {
+                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) <= (temp_r0_7 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = temp_r0_7;
                             }
-                            temp_r0_8 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6;
-                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) >= temp_r0_8) {
+                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) >= (temp_r0_8 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6)) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = temp_r0_8;
                             }
                         }
@@ -7000,8 +7143,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_5 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_5) & 4) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 4) != 0) {
                             M2C_FIELD(&_ruleCursol, s32 *, 0x10) = 0;
                             if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 0) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) = 0;
@@ -7009,8 +7151,7 @@ block_27:
                                 return;
                             }
                         }
-                        temp_r29_6 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_6) & 8) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 8) != 0) {
                             M2C_FIELD(&_ruleCursol, s32 *, 0x10) = 1;
                             if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 1) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) = 1;
@@ -7019,16 +7160,14 @@ block_27:
                             }
                         }
                         if (((s32) (windowGetKeyRepeat() & 1) != 0) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0)) {
-                            temp_r3_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A);
-                            if (temp_r3_2 != 6) {
+                            if ((temp_r3_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A)) != 6) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) = (s16) (temp_r3_2 + 1);
                                 menuCB_SE_Play(0x10);
                                 return;
                             }
                         }
                         if (((s32) (windowGetKeyRepeat() & 2) != 0) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0)) {
-                            temp_r3_3 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A);
-                            if (temp_r3_3 != 1) {
+                            if ((temp_r3_3 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A)) != 1) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) = (s16) (temp_r3_3 - 1);
                                 menuCB_SE_Play(0x10);
                                 return;
@@ -7047,8 +7186,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_7 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_7) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7074,10 +7212,8 @@ block_27:
                             menuCB_SE_Play(0x14);
                             return;
                         }
-                        temp_r29_8 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_8) & 1) != 0) {
-                            temp_r3_4 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8);
-                            if (temp_r3_4 != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 1) != 0) {
+                            if ((temp_r3_4 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8)) != 0) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) = (s32) (temp_r3_4 - 1);
                                 menuCB_SE_Play(0x10);
                                 return;
@@ -7086,10 +7222,8 @@ block_27:
                             menuCB_SE_Play(0x10);
                             return;
                         }
-                        temp_r29_9 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_9) & 2) != 0) {
-                            temp_r3_5 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8);
-                            if (temp_r3_5 != 2) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 2) != 0) {
+                            if ((temp_r3_5 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8)) != 2) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) = (s32) (temp_r3_5 + 1);
                                 menuCB_SE_Play(0x10);
                                 return;
@@ -7111,8 +7245,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_10 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_10) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7130,8 +7263,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_11 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_11) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x19) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x19) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7149,8 +7281,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_12 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_12) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xE) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xE) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7168,8 +7299,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_13 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_13) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x10) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x10) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7187,8 +7317,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_14 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_14) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x11) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x11) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7206,8 +7335,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_15 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_15) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x12) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x12) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7225,8 +7353,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_16 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_16) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xF) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xF) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7244,8 +7371,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_17 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_17) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x13) = (u8) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x13) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7266,8 +7392,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_18 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_18) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB030) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB030) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7288,8 +7413,7 @@ block_27:
                             menuCB_SE_Play(0x11);
                             return;
                         }
-                        temp_r29_19 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_19) & 3) != 0) {
+                        if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB034) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB034) ^ 1);
                             menuCB_SE_Play(0x10);
                             return;
@@ -7307,8 +7431,7 @@ block_27:
                             return;
                         }
                         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1) {
-                            temp_r29_20 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                            if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_20) & 1) != 0) {
+                            if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 1) != 0) {
                                 if ((s32) M2C_FIELD(&_CB, s32 *, 0xB118) != 0) {
                                     _menuCB_Rule_Page_Chenge_Init();
                                     M2C_FIELD(&_CB, s32 *, 0xB118) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB118) - 1);
@@ -7317,8 +7440,7 @@ block_27:
                                     return;
                                 }
                             } else {
-                                temp_r29_21 = M2C_FIELD(windowGetKeyInfo2(), u16 *, 4);
-                                if (((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | temp_r29_21) & 2) != 0) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB118) != 3)) {
+                                if (((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 2) != 0) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB118) != 3)) {
                                     _menuCB_Rule_Page_Chenge_Init();
                                     M2C_FIELD(&_CB, s32 *, 0xB118) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB118) + 1);
                                     menuCB_SE_Play(0x15);
@@ -7334,7 +7456,7 @@ block_27:
                                 case 0:             /* switch 10 */
                                     M2C_FIELD(&_CB, s32 *, 0xB11C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB11C) + M2C_FIELD(&_CB, s32 *, 0xB014));
                                     switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB014)) { /* switch 11; irregular */
-                                    default:        /* switch 11 */
+                                    case 1:                                    default:        /* switch 11 */
                                         M2C_FIELD(&_ruleCursol, s32 *, 0) = 0;
                                         M2C_FIELD(&_ruleCursol, s32 *, 4) = 0;
                                         break;
@@ -7509,14 +7631,14 @@ static void _menuCB_Rule_Page_Chenge_Init(void) {
     _CB.unkB12C = 0xF;
 }
 extern "C" {
-void menuCB_Rule00_Disp(void *p0) {
+void menuCB_Rule00_Disp(void *p0, void *p1) {
     s16 temp_r0;
     tagSPRITE_WORK *temp_r31;
-    s32 var_r4;
-    u8 var_r4_2;
-    s32 var_r5;
+    bool var_r4;
+    bool var_r4_2;
+    bool var_r5;
 
-    temp_r31 = M2C_ERROR(/* Read from unset register $r4 */);
+    temp_r31 = (tagSPRITE_WORK *) p1;
     temp_r0 = M2C_FIELD(temp_r31, s16 *, 6);
     switch (temp_r0) {                              /* irregular */
     case 0x3AA:
@@ -7528,7 +7650,7 @@ void menuCB_Rule00_Disp(void *p0) {
             winSpriteSetDisp((tagSPRITE_WORK*)(temp_r31), 0U);
             return;
         }
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)(M2C_ERROR(/* Read from unset register $r4 */))), (long)(M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)p1, (M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) temp_r31)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB118) == 0));
         return;
     case 0x3F0:
@@ -7541,19 +7663,17 @@ void menuCB_Rule00_Disp(void *p0) {
         if (((s32) M2C_FIELD(&_CB, s32 *, 0xB118) == 1) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0)) {
             var_r5 = 1;
         }
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) temp_r31)), (long)(var_r5));
-        var_r4 = 0;
-        if (((s32) M2C_FIELD(&_CB, s32 *, 0xB118) == 1) || ((s32) M2C_FIELD(&_CB, s32 *, 0xB118) == 5)) {
-            var_r4 = 1;
-        }
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) temp_r31)), (var_r5));
+        var_r4 = ((s32) M2C_FIELD(&_CB, s32 *, 0xB118) == 1) || ((s32) M2C_FIELD(&_CB, s32 *, 0xB118) == 5);
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) temp_r31)), (bool)(var_r4));
         return;
-    default:
+    case 0x3B2:
+    case 0x3B3:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB124) != -1) {
             winSpriteSetDisp((tagSPRITE_WORK*)(temp_r31), 0U);
             return;
         }
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)(M2C_ERROR(/* Read from unset register $r4 */))), (long)(M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)p1, (M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) temp_r31)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB118) == 2));
         return;
     case 0x3B4:
@@ -7561,7 +7681,7 @@ void menuCB_Rule00_Disp(void *p0) {
             winSpriteSetDisp((tagSPRITE_WORK*)(temp_r31), 0U);
             return;
         }
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)(M2C_ERROR(/* Read from unset register $r4 */))), (long)(M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)p1, (M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) temp_r31)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB118) == 3));
         return;
     case 0x3B1:
@@ -7569,7 +7689,7 @@ void menuCB_Rule00_Disp(void *p0) {
             winSpriteSetDisp((tagSPRITE_WORK*)(temp_r31), 0U);
             return;
         }
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)(M2C_ERROR(/* Read from unset register $r4 */))), (long)(M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)p1, (M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
         var_r4_2 = 0;
         if (((s32) M2C_FIELD(&_CB, s32 *, 0xB118) == 3) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) != -1)) {
             var_r4_2 = 1;
@@ -7581,7 +7701,7 @@ void menuCB_Rule00_Disp(void *p0) {
             winSpriteSetDisp((tagSPRITE_WORK*)(temp_r31), 0U);
             return;
         }
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)(M2C_ERROR(/* Read from unset register $r4 */))), (long)(M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)p1, (M2C_FIELD(&_CB, s32 *, 0xB11C) == 0));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) temp_r31)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB118) == 4));
         return;
     }
@@ -7623,395 +7743,368 @@ void menuTool_Rule02_Ctrl(tagWINDOW_WORK* window) {
 extern "C" {
 void menuCB_Rule01_Disp(s32 p0, void *p1) {
     s32 temp_r0;
-    s32 var_r4;
-    s32 var_r4_10;
-    s32 var_r4_11;
-    s32 var_r4_12;
-    s32 var_r4_13;
-    s32 var_r4_14;
-    s32 var_r4_15;
-    s32 var_r4_16;
-    s32 var_r4_17;
-    s32 var_r4_18;
-    s32 var_r4_19;
-    s32 var_r4_20;
-    s32 var_r4_21;
-    s32 var_r4_22;
-    s32 var_r4_23;
-    s32 var_r4_24;
-    s32 var_r4_25;
-    s32 var_r4_26;
-    s32 var_r4_27;
-    s32 var_r4_28;
-    s32 var_r4_2;
-    s32 var_r4_3;
-    s32 var_r4_4;
-    s32 var_r4_5;
-    s32 var_r4_6;
-    s32 var_r4_7;
-    s32 var_r4_8;
-    s32 var_r4_9;
-
+    bool var_r4;
+    bool var_r4_10;
+    bool var_r4_11;
+    bool var_r4_12;
+    bool var_r4_13;
+    bool var_r4_14;
+    bool var_r4_15;
+    bool var_r4_16;
+    bool var_r4_17;
+    bool var_r4_18;
+    bool var_r4_19;
+    bool var_r4_20;
+    bool var_r4_21;
+    bool var_r4_22;
+    bool var_r4_23;
+    bool var_r4_24;
+    bool var_r4_25;
+    bool var_r4_26;
+    bool var_r4_27;
+    bool var_r4_28;
+    bool var_r4_2;
+    bool var_r4_3;
+    bool var_r4_4;
+    bool var_r4_5;
+    bool var_r4_6;
+    bool var_r4_7;
+    bool var_r4_8;
+    bool var_r4_9;
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    if (temp_r0 != 0x30C) {
-        if (temp_r0 < 0x30C) {
-            switch (temp_r0) {                      /* switch 1; irregular */
-            case 0x307:                             /* switch 1 */
-                menuCBRuleNumberDisp(p0);
-                return;
-            case 0x308:                             /* switch 1 */
-                menuCBRuleNumberDisp(p0);
-                return;
-            case 0x309:                             /* switch 1 */
-                menuCBRuleNumberDisp(p0);
-                return;
-            case 0x30A:                             /* switch 1 */
-                menuCBRuleNumberDisp(p0);
-                return;
-            default:                                /* switch 1 */
-                menuCBRuleNumberDisp(p0);
-                return;
-            case 0x2ED:                             /* switch 1 */
-                var_r4 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64)) {
-                    var_r4 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2EE:                             /* switch 1 */
-                var_r4_2 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1)) {
-                    var_r4_2 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_2));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2EF:                             /* switch 1 */
-                var_r4_3 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64)) {
-                    var_r4_3 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_3));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F0:                             /* switch 1 */
-                var_r4_4 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1)) {
-                    var_r4_4 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_4));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F1:                             /* switch 1 */
-                var_r4_5 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64)) {
-                    var_r4_5 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_5));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F2:                             /* switch 1 */
-                var_r4_6 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1)) {
-                    var_r4_6 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_6));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F3:                             /* switch 1 */
-                var_r4_7 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 3) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64)) {
-                    var_r4_7 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_7));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F4:                             /* switch 1 */
-                var_r4_8 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 3) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1)) {
-                    var_r4_8 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_8));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F5:                             /* switch 1 */
-                var_r4_9 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 4) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64)) {
-                    var_r4_9 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_9));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F6:                             /* switch 1 */
-                var_r4_10 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 4) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1)) {
-                    var_r4_10 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_10));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F7:                             /* switch 1 */
-                var_r4_11 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 5) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64)) {
-                    var_r4_11 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_11));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F8:                             /* switch 1 */
-                var_r4_12 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 5) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1)) {
-                    var_r4_12 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_12));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2F9:                             /* switch 1 */
-                var_r4_13 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6))) {
-                    var_r4_13 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_13));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2FA:                             /* switch 1 */
-                var_r4_14 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6))) {
-                    var_r4_14 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_14));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2FB:                             /* switch 1 */
-                var_r4_15 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6))) {
-                    var_r4_15 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_15));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2FC:                             /* switch 1 */
-                var_r4_16 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6))) {
-                    var_r4_16 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_16));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2FD:                             /* switch 1 */
-                var_r4_17 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6))) {
-                    var_r4_17 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_17));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2FE:                             /* switch 1 */
-                var_r4_18 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6))) {
-                    var_r4_18 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_18));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2FF:                             /* switch 1 */
-                var_r4_19 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 0x63)) {
-                    var_r4_19 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_19));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x300:                             /* switch 1 */
-                var_r4_20 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 1)) {
-                    var_r4_20 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_20));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x301:                             /* switch 1 */
-                var_r4_21 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 0x63)) {
-                    var_r4_21 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_21));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x302:                             /* switch 1 */
-                var_r4_22 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 1)) {
-                    var_r4_22 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_22));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2EB:                             /* switch 1 */
-                menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x12U));
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) & 0x8000) != 0));
-                return;
-            case 0x303:                             /* switch 1 */
-                var_r4_23 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0x63)) {
-                    var_r4_23 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_23));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x304:                             /* switch 1 */
-                var_r4_24 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0xA)) {
-                    var_r4_24 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_24));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x305:                             /* switch 1 */
-                var_r4_25 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0x63)) {
-                    var_r4_25 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_25));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x306:                             /* switch 1 */
-                var_r4_26 = 0;
-                if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0xA)) {
-                    var_r4_26 = 1;
-                }
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_26));
-                menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                return;
-            case 0x2EC:                             /* switch 1 */
-                menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x13U));
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) & 0x8000) != 0));
-                return;
-            }
-        } else if (temp_r0 != 0x3B7) {
-            if (temp_r0 < 0x3B7) {
-                switch (temp_r0) {                  /* switch 2; irregular */
-                case 0x310:                         /* switch 2 */
-                    M2C_FIELD(p1, s32 *, 0x4C) = 0x4413;
-                    return;
-                case 0x313:                         /* switch 2 */
-                    M2C_FIELD(p1, s32 *, 0x4C) = 0x43DF;
-                    return;
-                case 0x314:                         /* switch 2 */
-                    menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DD));
-                    return;
-                case 0x317:                         /* switch 2 */
-                    M2C_FIELD(p1, s32 *, 0x4C) = 0x43E0;
-                    return;
-                case 0x318:                         /* switch 2 */
-                    menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CB));
-                    return;
-                case 0x319:                         /* switch 2 */
-                    menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CC));
-                    return;
-                case 0x31A:                         /* switch 2 */
-                    menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CD));
-                    return;
-                case 0x31C:                         /* switch 2 */
-                    menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CE));
-                    return;
-                case 0x31B:                         /* switch 2 */
-                    menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CF));
-                    return;
-                default:                            /* switch 2 */
-                    menuCBRuleNumberDisp(p0);
-                    return;
-                case 0x30E:                         /* switch 2 */
-                    menuCBRuleNumberDisp(p0);
-                    return;
-                case 0x30F:                         /* switch 2 */
-                    menuCBRuleNumberDisp(p0);
-                    return;
-                case 0x311:                         /* switch 2 */
-                    menuCBRuleNumberDisp(p0);
-                    return;
-                case 0x312:                         /* switch 2 */
-                    menuCBRuleNumberDisp(p0);
-                    return;
-                case 0x315:                         /* switch 2 */
-                    menuCBRuleNumberDisp(p0);
-                    return;
-                case 0x316:                         /* switch 2 */
-                    menuCBRuleNumberDisp(p0);
-                    return;
-                }
-            } else if (temp_r0 < 0x67A) {
-                switch (temp_r0) {                  /* switch 3; irregular */
-                case 0x3BC:                         /* switch 3 */
-                    menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x441B));
-                    return;
-                case 0x3BE:                         /* switch 3 */
-                    M2C_FIELD(p1, s32 *, 0x4C) = 0x441A;
-                    return;
-                case 0x3BD:                         /* switch 3 */
-                    menuCBRuleNumberDisp(p0);
-                    return;
-                case 0x3B9:                         /* switch 3 */
-                    menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) == 1));
-                    return;
-                case 0x3BA:                         /* switch 3 */
-                    menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
-                    var_r4_27 = 0;
-                    if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x14) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 1) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) != 6)) {
-                        var_r4_27 = 1;
-                    }
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_27));
-                    menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                    return;
-                case 0x3BB:                         /* switch 3 */
-                    menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
-                    var_r4_28 = 0;
-                    if (((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x14) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 1) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) != 1)) {
-                        var_r4_28 = 1;
-                    }
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r4_28));
-                    menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
-                    return;
-                }
-            } else {
-                if (temp_r0 < 0x686) {
-                    if (temp_r0 < 0x680) {
-                        if (temp_r0 < 0x67D) {
-                            menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 0));
-                            return;
-                        }
-                        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 1));
-                        return;
-                    }
-                    if (temp_r0 < 0x683) {
-                        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 2));
-                        return;
-                    }
-                    menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 3));
-                    return;
-                }
-                if (temp_r0 < 0x690) {
-                    if (temp_r0 < 0x689) {
-                        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 4));
-                    }
-                } else if (temp_r0 < 0x692) {
-                    M2C_FIELD(p1, s32 *, 0x4C) = 0x4396;
-                }
-            }
-        } else {
-            menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DD));
-        }
-    } else {
-        menuCBRuleNumberDisp(p0);
+    switch (temp_r0) {
+    case 0x690:
+    case 0x691:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x4396;
+        break;
+    case 0x310:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x4413;
+        return;
+    case 0x313:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x43DF;
+        return;
+    case 0x314:
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DD));
+        return;
+    case 0x317:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x43E0;
+        return;
+    case 0x3B7:
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DD));
+        break;
+    case 0x318:
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CB));
+        return;
+    case 0x319:
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CC));
+        return;
+    case 0x31A:
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CD));
+        return;
+    case 0x31C:
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CE));
+        return;
+    case 0x31B:
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CF));
+        return;
+    case 0x3BC:
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x441B));
+        return;
+    case 0x3BE:
+        M2C_FIELD(p1, s32 *, 0x4C) = 0x441A;
+        return;
+    case 0x307:
+        menuCBRuleNumberDisp(p0, p1, 0);
+        return;
+    case 0x308:
+        menuCBRuleNumberDisp(p0, p1, 1);
+        return;
+        
+        break;
+    case 0x309:
+        menuCBRuleNumberDisp(p0, p1, 2);
+        return;
+        
+        
+        break;
+    case 0x30A:
+        menuCBRuleNumberDisp(p0, p1, 3);
+        return;
+        
+        
+        
+        break;
+    case 0x30B:
+        menuCBRuleNumberDisp(p0, p1, 4);
+        return;
+        
+        
+        
+        
+        break;
+    case 0x30C:
+        menuCBRuleNumberDisp(p0, p1, 5);
+        break;
+    case 0x30D:
+        menuCBRuleNumberDisp(p0, p1, 6);
+        return;
+        
+        
+        
+        
+        
+        break;
+    case 0x30E:
+        menuCBRuleNumberDisp(p0, p1, 7);
+        return;
+        
+        
+        
+        
+        
+        
+        break;
+    case 0x30F:
+        menuCBRuleNumberDisp(p0, p1, 8);
+        return;
+        
+        
+        
+        
+        
+        
+        
+        break;
+    case 0x311:
+        menuCBRuleNumberDisp(p0, p1, 9);
+        return;
+        
+        
+        
+        
+        
+        
+        
+        
+        break;
+    case 0x312:
+        menuCBRuleNumberDisp(p0, p1, 0xa);
+        return;
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        break;
+    case 0x315:
+        menuCBRuleNumberDisp(p0, p1, 0xb);
+        return;
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        break;
+    case 0x316:
+        menuCBRuleNumberDisp(p0, p1, 0xc);
+        return;
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        break;
+    case 0x3BD:
+        menuCBRuleNumberDisp(p0, p1, 0xd);
+        return;
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        break;
+    case 0x2ED:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2EE:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2EF:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F0:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F1:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F2:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F3:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 3) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F4:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 3) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F5:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 4) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F6:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 4) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F7:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 5) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F8:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 5) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2F9:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6)));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2FA:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2FB:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6)));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2FC:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2FD:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6)));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2FE:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2FF:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 0x63));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x300:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x301:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 0x63));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x302:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2EB:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x12U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) & 0x8000) != 0));
+        return;
+    case 0x303:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0x63));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x304:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0xA));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x305:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0x63));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x306:
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0xA));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x2EC:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x13U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) & 0x8000) != 0));
+        return;
+    case 0x3B9:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) == 1));
+        return;
+    case 0x3BA:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x14) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 1) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) != 6));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x3BB:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x14) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 1) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) != 1));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        return;
+    case 0x67A:
+    case 0x67B:
+    case 0x67C:
+        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 0));
+        return;
+    case 0x67D:
+    case 0x67E:
+    case 0x67F:
+        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 1));
+        return;
+    case 0x680:
+    case 0x681:
+    case 0x682:
+        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 2));
+        return;
+    case 0x683:
+    case 0x684:
+    case 0x685:
+        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 3));
+        return;
+    case 0x686:
+    case 0x687:
+    case 0x688:
+        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB014) == 4));
+        break;
     }
 }
 }
+
 
 }
 
@@ -8031,142 +8124,135 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
     s16 temp_r0;
     u8 temp_r5;
     u8 temp_r5_2;
-
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    if (temp_r0 != 0x331) {
-        if (temp_r0 < 0x331) {
-            if (temp_r0 != 0x32B) {
-                if (temp_r0 < 0x32B) {
-                    if (temp_r0 < 0x326) {
-                        if (temp_r0 < 0x323) {
-                            if (temp_r0 < 0x320) {
-                                return;
-                            }
-                            menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB018) == 0));
-                            return;
-                        }
-                        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB018) == 1));
-                        return;
-                    }
-                    if (temp_r0 != 0x329) {
-                        if (temp_r0 < 0x329) {
-                            menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB018) == 2));
-                            return;
-                        }
-                        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x20U));
-                        temp_r5 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC);
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((u8) ((u32) ((1 - temp_r5) | (temp_r5 - 1)) >> 0x1FU)));
-                        return;
-                    }
-                    menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x20U));
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC) == 1));
-                    return;
-                }
-                if (temp_r0 != 0x32E) {
-                    if (temp_r0 < 0x32E) {
-                        if (temp_r0 < 0x32D) {
-                            if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
-                                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                                return;
-                            }
-                            menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
-                            menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 1));
-                            return;
-                        }
-                        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
-                            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                            return;
-                        }
-                        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2));
-                        return;
-                    }
-                    if (temp_r0 < 0x330) {
-                        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x22U));
-                        temp_r5_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD);
-                        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((u8) ((u32) ((1 - temp_r5_2) | (temp_r5_2 - 1)) >> 0x1FU)));
-                    } else {
-                        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43D0));
-                    }
-                } else {
-                    menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x22U));
-                    menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD) == 1));
-                }
-            } else {
-                if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
-                    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                    return;
-                }
-                menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
-                menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 0));
-            }
-        } else {
-            switch (temp_r0) {                      /* irregular */
-            default:
-                menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43D2));
-                return;
-            case 0x333:
-                menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E1));
-                return;
-            case 0x334:
-                menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E2));
-                return;
-            case 0x335:
-                if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
-                    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                    return;
-                }
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E3));
-                return;
-            case 0x336:
-                if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
-                    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                    return;
-                }
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E4));
-                return;
-            case 0x337:
-                if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
-                    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                    return;
-                }
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DE));
-                return;
-            case 0x689:
-                if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
-                    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                    menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DE));
-                    return;
-                }
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                return;
-            case 0x68A:
-                if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
-                    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-                    menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x4458));
-                    return;
-                }
-                winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-                return;
-            case 0x338:
-                menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E3));
-                return;
-            case 0x339:
-                menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E4));
-                return;
-            }
-        }
-    } else {
+    switch (temp_r0) {
+    case 0x330:
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43D0));
+        break;
+    case 0x331:
         menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43D1));
+        break;
+    case 0x332:
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43D2));
+        return;
+    case 0x333:
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E1));
+        return;
+    case 0x334:
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E2));
+        return;
+    case 0x335:
+        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E3));
+        return;
+    case 0x336:
+        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E4));
+        return;
+    case 0x337:
+        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DE));
+        return;
+    case 0x689:
+        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+            menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DE));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0x68A:
+        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
+            menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x4458));
+            return;
+        }
+        winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+        return;
+    case 0x338:
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E3));
+        return;
+    case 0x339:
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E4));
+        return;
+    case 0x320:
+    case 0x321:
+    case 0x322:
+        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB018) == 0));
+        return;
+    case 0x323:
+    case 0x324:
+    case 0x325:
+        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB018) == 1));
+        return;
+    case 0x326:
+    case 0x327:
+    case 0x328:
+        menuCB_RuleCustomMainCursolColorChenge((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB018) == 2));
+        return;
+    case 0x329:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x20U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC) == 1));
+        return;
+    case 0x32A:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x20U));
+        temp_r5 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC);
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), temp_r5 != 1);
+        return;
+    case 0x32B:
+        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+            return;
+        }
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 0));
+        break;
+    case 0x32C:
+        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+            return;
+        }
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 1));
+        return;
+    case 0x32D:
+        if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
+            winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+            return;
+        }
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2));
+        return;
+    case 0x32E:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x22U));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD) == 1));
+        break;
+    case 0x32F:
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x22U));
+        temp_r5_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD);
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), temp_r5_2 != 1);
+        break;
+    default:
+        return;
     }
 }
 }
+
 
 }
 
@@ -8673,7 +8759,7 @@ void menuCB_tunaideGCEntry04_Disp_1(void *p0, void *p1) {
     s32 temp_r29;
     s32 temp_r3;
 
-    spriteSetOffset((long)(M2C_FIELD(p0, s32 *, 0x1C)), (long)(0), (long)(0), (void *)(0));
+    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB150) == 0) {
@@ -8683,12 +8769,9 @@ void menuCB_tunaideGCEntry04_Disp_1(void *p0, void *p1) {
         goto block_35;
     }
     temp_r29 = M2C_FIELD(&_CB, s32 *, 0xB164);
-    temp_r3 = ((CReliveStage*)(((CReliveHall*)(((CReliveHall*)(&_CB + 0x10000))->getPointer()))->getStage(temp_r29)))->getDancerQuantity();
+    temp_r3 = CReliveHall::getPointer()->getStage(temp_r29)->getDancerQuantity();
     temp_r4 = M2C_FIELD(p1, s16 *, 6);
-    if ((u32) (temp_r4 - 0x5E2) > 0xAU) {
-        goto block_35;
-    }
-    switch (temp_r4) { case 0x5E2: goto sw0_c0x5E2; case 0x5E3: goto sw0_c0x5E3; case 0x5E4: goto sw0_c0x5E4; case 0x5E5: goto sw0_c0x5E5; case 0x5E6: goto sw0_c0x5E6; case 0x5E8: goto sw0_c0x5E8; case 0x5E7: goto sw0_c0x5E7; case 0x5EB: goto sw0_c0x5EB; case 0x5EC: goto sw0_c0x5EC; case 0x5E9: goto sw0_c0x5E9; case 0x5EA: goto sw0_c0x5EA; default: break; }                               /* jump table: jtbl_5783 */
+    switch (temp_r4) { case 0x5E2: goto sw0_c0x5E2; case 0x5E3: goto sw0_c0x5E3; case 0x5E4: goto sw0_c0x5E4; case 0x5E5: goto sw0_c0x5E5; case 0x5E6: goto sw0_c0x5E6; case 0x5E8: goto sw0_c0x5E8; case 0x5E7: goto sw0_c0x5E7; case 0x5EB: goto sw0_c0x5EB; case 0x5EC: goto sw0_c0x5EC; case 0x5E9: goto sw0_c0x5E9; case 0x5EA: goto sw0_c0x5EA; default: goto block_35; }                               /* jump table: jtbl_5783 */
 sw0_c0x5E2:;
     menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 4);
     return;
@@ -8791,7 +8874,7 @@ extern "C" {
 void menuCB_tunaideGCEntry03_Disp_1(void *p0, void *p1) {
     s16 temp_r0;
 
-    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0, M2C_ERROR(/* Read from unset register $r6 */));
+    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     if (((s32) M2C_FIELD(&_CB, s32 *, 0xB150) != 0) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C) == 0)) {
@@ -8821,146 +8904,148 @@ void menuCB_tunaideGCEntry03_Disp_1(void *p0, void *p1) {
 extern "C" {
 void menuCB_tunaideGCEntry02_Disp_1(void * p0, void * p1) {
     s16 temp_r3;
+    s32 idx;
 
-    spriteSetOffset((long)(M2C_FIELD(p0, s32 *, 0x1C)), (long)(0), (long)(0), (void *)(0));
+    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB150) == 0) {
-        goto block_35;
+        return;
     }
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C) != 1) {
-        goto block_35;
+        return;
     }
     temp_r3 = M2C_FIELD(p1, s16 *, 6);
-    if ((u32) (temp_r3 - 0x5A3) > 0x3BU) {
-        goto block_35;
+    idx = M2C_FIELD(&_CB, s32 *, 0xB160);
+    switch (temp_r3) {
+    case 0x5A3:
+    case 0x5A4:
+    case 0x5A5:
+    case 0x5A6:
+    case 0x5A7:
+    case 0x5A8:
+    case 0x5A9:
+    case 0x5AA:
+    case 0x5AB:
+    case 0x5AC:
+    case 0x5AD:
+    case 0x5AE:
+    case 0x5AF:
+    case 0x5B0:
+    case 0x5B1:
+    case 0x5B2:
+    case 0x5B3:
+    case 0x5B4:
+    case 0x5B5:
+    case 0x5B6:
+    case 0x5B7:
+    case 0x5B8:
+    case 0x5B9:
+    case 0x5BA:
+    case 0x5BB:
+    case 0x5BC:
+    case 0x5BD:
+    case 0x5BE:
+    case 0x5BF:
+    case 0x5C0:
+    menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(PCBOXBG_Char[idx])));
+    return;
+    case 0x5C1:
+    menuCB2DPokemonDisp2(p0, p1, 5, (idx * 0x10000) & 0xFFFF0000);
+    return;
+    case 0x5C2:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 1);
+    return;
+    case 0x5C3:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 2);
+    return;
+    case 0x5C4:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 3);
+    return;
+    case 0x5C5:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 4);
+    return;
+    case 0x5C6:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 5);
+    return;
+    case 0x5C7:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 6);
+    return;
+    case 0x5C8:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 7);
+    return;
+    case 0x5C9:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 8);
+    return;
+    case 0x5CA:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 9);
+    return;
+    case 0x5CB:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0xA);
+    return;
+    case 0x5CC:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0xB);
+    return;
+    case 0x5CD:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0xC);
+    return;
+    case 0x5CE:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0xD);
+    return;
+    case 0x5CF:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0xE);
+    return;
+    case 0x5D0:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0xF);
+    return;
+    case 0x5D1:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x10);
+    return;
+    case 0x5D2:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x11);
+    return;
+    case 0x5D3:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x12);
+    return;
+    case 0x5D4:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x13);
+    return;
+    case 0x5D5:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x14);
+    return;
+    case 0x5D6:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x15);
+    return;
+    case 0x5D7:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x16);
+    return;
+    case 0x5D8:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x17);
+    return;
+    case 0x5D9:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x18);
+    return;
+    case 0x5DA:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x19);
+    return;
+    case 0x5DB:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x1A);
+    return;
+    case 0x5DC:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x1B);
+    return;
+    case 0x5DD:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x1C);
+    return;
+    case 0x5DE:
+    menuCB2DPokemonDisp2(p0, p1, 5, ((idx * 0x10000) & 0xFFFF0000) | 0x1D);
     }
-    switch (temp_r3) { case 0x5A3: goto sw0_c0x5A3; case 0x5A4: goto sw0_c0x5A4; case 0x5A5: goto sw0_c0x5A5; case 0x5A6: goto sw0_c0x5A6; case 0x5A7: goto sw0_c0x5A7; case 0x5A8: goto sw0_c0x5A8; case 0x5A9: goto sw0_c0x5A9; case 0x5AA: goto sw0_c0x5AA; case 0x5AB: goto sw0_c0x5AB; case 0x5AC: goto sw0_c0x5AC; case 0x5AD: goto sw0_c0x5AD; case 0x5AE: goto sw0_c0x5AE; case 0x5AF: goto sw0_c0x5AF; case 0x5B0: goto sw0_c0x5B0; case 0x5B1: goto sw0_c0x5B1; case 0x5B2: goto sw0_c0x5B2; case 0x5B3: goto sw0_c0x5B3; case 0x5B4: goto sw0_c0x5B4; case 0x5B5: goto sw0_c0x5B5; case 0x5B6: goto sw0_c0x5B6; case 0x5B7: goto sw0_c0x5B7; case 0x5B8: goto sw0_c0x5B8; case 0x5B9: goto sw0_c0x5B9; case 0x5BA: goto sw0_c0x5BA; case 0x5BB: goto sw0_c0x5BB; case 0x5BC: goto sw0_c0x5BC; case 0x5BD: goto sw0_c0x5BD; case 0x5BE: goto sw0_c0x5BE; case 0x5BF: goto sw0_c0x5BF; case 0x5C0: goto sw0_c0x5C0; case 0x5C1: goto sw0_c0x5C1; case 0x5C2: goto sw0_c0x5C2; case 0x5C3: goto sw0_c0x5C3; case 0x5C4: goto sw0_c0x5C4; case 0x5C5: goto sw0_c0x5C5; case 0x5C6: goto sw0_c0x5C6; case 0x5C7: goto sw0_c0x5C7; case 0x5C8: goto sw0_c0x5C8; case 0x5C9: goto sw0_c0x5C9; case 0x5CA: goto sw0_c0x5CA; case 0x5CB: goto sw0_c0x5CB; case 0x5CC: goto sw0_c0x5CC; case 0x5CD: goto sw0_c0x5CD; case 0x5CE: goto sw0_c0x5CE; case 0x5CF: goto sw0_c0x5CF; case 0x5D0: goto sw0_c0x5D0; case 0x5D1: goto sw0_c0x5D1; case 0x5D2: goto sw0_c0x5D2; case 0x5D3: goto sw0_c0x5D3; case 0x5D4: goto sw0_c0x5D4; case 0x5D5: goto sw0_c0x5D5; case 0x5D6: goto sw0_c0x5D6; case 0x5D7: goto sw0_c0x5D7; case 0x5D8: goto sw0_c0x5D8; case 0x5D9: goto sw0_c0x5D9; case 0x5DA: goto sw0_c0x5DA; case 0x5DB: goto sw0_c0x5DB; case 0x5DC: goto sw0_c0x5DC; case 0x5DD: goto sw0_c0x5DD; case 0x5DE: goto sw0_c0x5DE; default: break; }                               /* jump table: jtbl_5860 */
-sw0_c0x5A3:;
-sw0_c0x5A4:;
-sw0_c0x5A5:;
-sw0_c0x5A6:;
-sw0_c0x5A7:;
-sw0_c0x5A8:;
-sw0_c0x5A9:;
-sw0_c0x5AA:;
-sw0_c0x5AB:;
-sw0_c0x5AC:;
-sw0_c0x5AD:;
-sw0_c0x5AE:;
-sw0_c0x5AF:;
-sw0_c0x5B0:;
-sw0_c0x5B1:;
-sw0_c0x5B2:;
-sw0_c0x5B3:;
-sw0_c0x5B4:;
-sw0_c0x5B5:;
-sw0_c0x5B6:;
-sw0_c0x5B7:;
-sw0_c0x5B8:;
-sw0_c0x5B9:;
-sw0_c0x5BA:;
-sw0_c0x5BB:;
-sw0_c0x5BC:;
-sw0_c0x5BD:;
-sw0_c0x5BE:;
-sw0_c0x5BF:;
-sw0_c0x5C0:;
-    menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(PCBOXBG_Char[M2C_FIELD(&_CB, s32 *, 0xB160)])));
-    return;
-sw0_c0x5C1:;
-    menuCB2DPokemonDisp2(p0, p1, 5, (M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000);
-    return;
-sw0_c0x5C2:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 1);
-    return;
-sw0_c0x5C3:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 2);
-    return;
-sw0_c0x5C4:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 3);
-    return;
-sw0_c0x5C5:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 4);
-    return;
-sw0_c0x5C6:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 5);
-    return;
-sw0_c0x5C7:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 6);
-    return;
-sw0_c0x5C8:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 7);
-    return;
-sw0_c0x5C9:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 8);
-    return;
-sw0_c0x5CA:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 9);
-    return;
-sw0_c0x5CB:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0xA);
-    return;
-sw0_c0x5CC:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0xB);
-    return;
-sw0_c0x5CD:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0xC);
-    return;
-sw0_c0x5CE:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0xD);
-    return;
-sw0_c0x5CF:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0xE);
-    return;
-sw0_c0x5D0:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0xF);
-    return;
-sw0_c0x5D1:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x10);
-    return;
-sw0_c0x5D2:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x11);
-    return;
-sw0_c0x5D3:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x12);
-    return;
-sw0_c0x5D4:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x13);
-    return;
-sw0_c0x5D5:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x14);
-    return;
-sw0_c0x5D6:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x15);
-    return;
-sw0_c0x5D7:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x16);
-    return;
-sw0_c0x5D8:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x17);
-    return;
-sw0_c0x5D9:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x18);
-    return;
-sw0_c0x5DA:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x19);
-    return;
-sw0_c0x5DB:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x1A);
-    return;
-sw0_c0x5DC:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x1B);
-    return;
-sw0_c0x5DD:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x1C);
-    return;
-sw0_c0x5DE:;
-    menuCB2DPokemonDisp2(p0, p1, 5, ((M2C_FIELD(&_CB, s32 *, 0xB160) * 0x10000) & 0xFFFF0000) | 0x1D);
 block_35:
+
     return;
 }
 }
+
 
 }
 

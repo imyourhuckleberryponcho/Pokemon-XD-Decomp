@@ -1,5 +1,5 @@
-// WIP (NonMatching): _memAllocCallback and GSmemGetSysdolAllocator keep locals in saved registers
-// (r29-r31) in the original even when not needed; flags, compiler versions and `register` did not help.
+// Matching (-opt level=0: optimizer off; a local that receives the final call result before returning it takes
+// the top saved register, see _memAllocCallback).
 #include <dolphin/types.h>
 
 class GSmemPoolAllocator {
@@ -68,7 +68,8 @@ static void* _memAllocCallback(unsigned long size, unsigned long, unsigned long)
             }
         }
     }
-    return GSmemAlloc(size);
+    ptr = GSmemAlloc(size);
+    return ptr;
 }
 
 extern "C" {

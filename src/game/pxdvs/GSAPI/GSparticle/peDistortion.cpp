@@ -47,12 +47,12 @@ struct Quaternion;
 struct Vec;
 struct _EmitParams;
 struct _peDistortion;
-struct peContainer;
-struct peDistortionContainer;
+class peContainer;
+class peDistortionContainer;
 struct peDistortionNode;
 struct peEmitterNode;
 struct peNode;
-struct peRenderContainer;
+class peRenderContainer;
 struct peSpline;
 
 extern "C++" {
@@ -68,13 +68,13 @@ struct GSgfxLayer {
     s32 dlDraw(GSgfxDL*);
 };
 struct GSgfxVF {
-    u8 _draft[1];
+    u8 data[0x440];
 };
 struct Quaternion {
     u8 _draft[1];
 };
 struct Vec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 struct _EmitParams {
     u8 _draft[1];
@@ -82,22 +82,63 @@ struct _EmitParams {
 struct _peDistortion {
     u8 _draft[1];
 };
-struct peContainer {
-    u8 _draft[1];
+class peContainer {
+public:
+    peEmitterNode* emitter;  // 0x00
+    u32 unk4;                // 0x04
+    void* buffer;            // 0x08
+    peNode* freeList;        // 0x0c
+    peNode* activeList;      // 0x10
+    u16 count;               // 0x14
+    u16 maxCount;            // 0x16
+    u8 dirty;                // 0x18
+    u8 started;              // 0x19
+
+    peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
+    virtual ~peContainer();
+    virtual void Start();
+    virtual void PreUpdate();
+    virtual u16 Emit(unsigned short n) = 0;
+    virtual void Update(float dt) = 0;
+    virtual void Render() = 0;
+    virtual void Stop() = 0;
+
+    static void SetLayerVisibility(GSgfxLayerID, bool);
     s32 RemoveNode(peNode*);
     u16 CreateNodes(unsigned short);
-    s32 SetLayerVisibility(GSgfxLayerID, bool);
     s32 RemoveAll();
+    s32 MoveNode(peNode*, peNode*);
 };
-struct peDistortionContainer {
-    u8 _draft[1];
-    ~peDistortionContainer();
-    void Update(float);
+class peRenderContainer : public peContainer {
+public:
+    u8 swapPending;  // 0x20
+    u8 cur;          // 0x21
+    u32 bufSize;     // 0x24
+    u8 dl[2][0x10];  // 0x28
+    u8* bufA;        // 0x48
+    u8* bufB;        // 0x4c
+    u16 tokens[2];   // 0x50
+
+    peRenderContainer(peEmitterNode*, unsigned long, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
+    virtual ~peRenderContainer();
+    virtual void PreUpdate();
+    s32 InitSwap();
+    s32 ResetSwap();
+    s32 MarkForSwap();
+    s32 ResolveMultipleSwap();
+};
+class peDistortionContainer : public peRenderContainer {
+public:
+    _peDistortion* data;  // 0x54
+    f32 uv[8];            // 0x58
+
     peDistortionContainer(peEmitterNode*, _peDistortion*, unsigned short);
-    void Render();
-    static u16 Emit(unsigned short);
-    void Start();
-    void Stop();
+    virtual ~peDistortionContainer();
+    virtual void Start();
+    virtual u16 Emit(unsigned short);
+    virtual void Update(float);
+    virtual void Render();
+    virtual void Stop();
 };
 struct peDistortionNode {
     u8 _draft[1];
@@ -110,15 +151,6 @@ struct peNode {
     u8 _draft[1];
     void Start(peEmitterNode*, _EmitParams*);
     bool Update(peEmitterNode*, float);
-};
-struct peRenderContainer {
-    u8 _draft[1];
-    s32 MarkForSwap();
-    peRenderContainer(peEmitterNode*, unsigned long, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
-    s32 ResolveMultipleSwap();
-    s32 InitSwap();
-    ~peRenderContainer();
-    s32 ResetSwap();
 };
 struct peSpline {
     u8 _draft[1];
@@ -146,49 +178,93 @@ s32 particleEngineSetupTevStages(s32, s32, s32);
 s32 particleEngineSetupTexture(s32, s32, s32, s32, s32, s32);
 f32 peSplineGetValue(peSpline* s, f32 t);
 extern f32 __float_nan;
+
+inline int __fpclassifyf(float x) {
+    switch ((*(s32*)&x) & 0x7F800000) {
+    case 0x7F800000:
+        if ((*(s32*)&x) & 0x007FFFFF) {
+            return 1;
+        } else {
+            return 2;
+        }
+    case 0:
+        if ((*(s32*)&x) & 0x007FFFFF) {
+            return 5;
+        } else {
+            return 3;
+        }
+    }
+    return 4;
+}
+
+inline float sqrtf(float x) {
+    if (x > 0.0f) {
+        double guess = __frsqrte((double)x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        return (float)(x * guess);
+    } else if (x < 0.0) {
+        return __float_nan;
+    } else if (__fpclassifyf(x) == 1) {
+        return __float_nan;
+    }
+    return x;
+}
 extern Vec g_CameraPosition;
 extern s32 g_CameraSideDir;
 extern Vec g_CameraUpDir;
 extern GSbound* g_currentBound;
 extern GSgfxLayer* g_current_layer;
 extern _EmitParams* g_emitParams;
-extern s32 g_particle_debug_stats;
+struct ParticleDebugStats {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    s32 unkC;
+    s32 unk10;
+    s32 unk14;
+    s32 unk18;
+    s32 unk1C;
+    s32 unk20;
+};
+extern ParticleDebugStats g_particle_debug_stats;
 extern s32 g_render_pass;
 extern GSgfxVF g_vertex_format;
-extern s32 xAxisVector;
+struct XdBlobC { u8 data[0xC]; };
+extern XdBlobC xAxisVector;
 extern s32 yAxisVector;
 extern s32 this_;
 }
-s32 __vt__21peDistortionContainer;
 // ---- draft declarations ----
 
 
 
 void peDistortionContainer::Stop() {
-    s32 temp_cr0_eq;
+    u8 *var_r6;
     s32 temp_r29;
     s32 var_r4;
     u8 *temp_r7;
     u8 *var_r31;
-    u8 *var_r6;
+    s32 temp_cr0_eq;
 
     if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x1C), s32 (**)(), 0x10)();
+        ((peContainer*)this)->PreUpdate();
         M2C_FIELD(this, u8 *, 0x19) = 0U;
         var_r31 = M2C_FIELD(this, u8 **, 0x10);
         temp_r29 = *M2C_FIELD(M2C_FIELD(this, u8 **, 0), s32 **, 0xFC);
         if (temp_r29 & 0x800000) {
-            ((peContainer*)((peContainer *)1))->SetLayerVisibility((GSgfxLayerID)(0), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
         if (temp_r29 & 0x01000000) {
-            ((peContainer*)((peContainer *)3))->SetLayerVisibility((GSgfxLayerID)(0), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)3, false);
         }
         if (temp_r29 & 0x02000000) {
-            ((peContainer*)((peContainer *)5))->SetLayerVisibility((GSgfxLayerID)(0), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)5, false);
         }
         while (var_r31 != NULL) {
             temp_r7 = (unsigned char *)(this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
-            if (M2C_FIELD(temp_r7, u16 *, 0) & 1) {
+            if (M2C_FIELD((u16)temp_r7, u16 *, 0) & 1) {
                 var_r6 = (unsigned char *)(M2C_FIELD(temp_r7, s32 *, 4) + ((((M2C_FIELD(var_r31, u16 *, 0x30) * 4) & 0xFFFC) * M2C_FIELD(temp_r7, u16 *, 2)) + 3));
             } else {
                 var_r6 = NULL;
@@ -204,13 +280,55 @@ loop_13:
                 var_r6 += 6;
                 goto loop_13;
             }
-            M2C_FIELD(temp_r7, u16 *, 0) = (u16) (M2C_FIELD(temp_r7, u16 *, 0) | 2);
+            M2C_FIELD((u16)temp_r7, u16 *, 0) = (u16) (M2C_FIELD(temp_r7, u16 *, 0) | 2);
             var_r31 = M2C_FIELD(var_r31, u8 **, 0x28);
         }
         ((peContainer*)((peContainer *) this))->RemoveAll();
         ((peRenderContainer*)((peRenderContainer *) this))->ResetSwap();
     }
 }
+}
+
+#define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
+// layer state dirty mark: the state word, its copy 0xB8 further, and the group masks at 0x16A8/0x1760
+static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
+    LAYER_FIELD(l, u32, off) |= bit;
+    LAYER_FIELD(l, u32, 0x16A8) |= sum;
+    LAYER_FIELD(l, u32, off + 0xB8) |= bit;
+    LAYER_FIELD(l, u32, 0x1760) |= sum;
+}
+
+static inline bool canRender(peDistortionContainer* c) {
+    if (!M2C_FIELD(c, u8 *, 0x19)) {
+        return false;
+    }
+    u32 flags = M2C_FIELD(M2C_FIELD(c, u8 **, 0x54), u32 *, 0);
+    if (M2C_FIELD(c, u16 *, 0x14) == 0) {
+        return false;
+    }
+    if (g_render_pass != 1) {
+        return false;
+    }
+    switch (M2C_FIELD(g_current_layer, s32 *, 0x28)) {
+    case 1:
+        if (!(flags & 0x2000)) {
+            return false;
+        }
+        break;
+    case 3:
+        if (flags & 0x10) {
+            return false;
+        }
+        break;
+    case 5:
+        if (!(flags & 0x10)) {
+            return false;
+        }
+        break;
+    default:
+        return false;
+    }
+    return true;
 }
 
 extern "C++" {
@@ -227,86 +345,46 @@ void peDistortionContainer::Render() {
     u8 *temp_r29;
     u8 *temp_r4_2;
 
-    temp_cr0_eq = (u8) M2C_FIELD(this, u8 *, 0x19) == 0;
-    if (temp_cr0_eq == 0) {
-        if (temp_cr0_eq != 0) {
-            var_r0 = 0;
-        } else {
-            temp_r4 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), u32 *, 0);
-            if ((u16) M2C_FIELD(this, u16 *, 0x14) == 0) {
-                var_r0 = 0;
-            } else if ((s32) g_render_pass != 1) {
-                var_r0 = 0;
-            } else {
-                temp_r0 = M2C_FIELD(g_current_layer, s32 *, 0x28);
-                switch (temp_r0) {                  /* irregular */
-                case 1:
-                    if (!(temp_r4 & 0x2000)) {
-                        var_r0 = 0;
-                    } else {
-block_20:
-                        var_r0 = 1;
-                    }
-                    break;
-                case 3:
-                    if (temp_r4 & 0x10) {
-                        var_r0 = 0;
-                    } else {
-                        goto block_20;
-                    }
-                    break;
-                case 5:
-                    if (!(temp_r4 & 0x10)) {
-                        var_r0 = 0;
-                    } else {
-                        goto block_20;
-                    }
-                    break;
-                default:
-                    var_r0 = 0;
-                    break;
-                }
-            }
-        }
-        if (var_r0 != 0) {
+    if (M2C_FIELD(this, u8 *, 0x19)) {
+        if (canRender(this)) {
             ((peRenderContainer*)((peRenderContainer *) this))->ResolveMultipleSwap();
             temp_r31 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), u32 *, 0);
             if (temp_r31 & 0x100) {
-                M2C_FIELD(g_current_layer, s32 *, 0xD8C) = 2;
-                M2C_FIELD(g_current_layer, s32 *, 0x16B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16B8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1770) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1770) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 2);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xD8C) = 2;
+                    layerMark(l, 2, 0x16B8, 2);
+                }
             } else {
-                M2C_FIELD(g_current_layer, s32 *, 0xD8C) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16B8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1770) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1770) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 2);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xD8C) = 0;
+                    layerMark(l, 2, 0x16B8, 2);
+                }
             }
-            M2C_FIELD(g_current_layer, s8 *, 0x165C) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1660) = 3;
-            M2C_FIELD(g_current_layer, s32 *, 0x170C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x170C) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x40);
-            M2C_FIELD(g_current_layer, s32 *, 0x17C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17C4) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x40);
-            M2C_FIELD(g_current_layer, s8 *, 0x1656) = 1;
-            M2C_FIELD(g_current_layer, s8 *, 0x1657) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x1658) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x170C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x170C) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x40);
-            M2C_FIELD(g_current_layer, s32 *, 0x17C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17C4) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x40);
-            M2C_FIELD(g_current_layer, s32 *, 0x1664) = 7;
-            M2C_FIELD(g_current_layer, s8 *, 0x1670) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1668) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x166C) = 7;
-            M2C_FIELD(g_current_layer, s8 *, 0x1671) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x1672) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x170C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x170C) | 0x10);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x40);
-            M2C_FIELD(g_current_layer, s32 *, 0x17C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17C4) | 0x10);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x40);
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s8, 0x165C) = 0;
+                LAYER_FIELD(l, s32, 0x1660) = 3;
+                layerMark(l, 0x40, 0x170C, 8);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s8, 0x1656) = 1;
+                LAYER_FIELD(l, s8, 0x1657) = 0;
+                LAYER_FIELD(l, s8, 0x1658) = 0;
+                layerMark(l, 0x40, 0x170C, 4);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1664) = 7;
+                LAYER_FIELD(l, s8, 0x1670) = 0;
+                LAYER_FIELD(l, s32, 0x1668) = 0;
+                LAYER_FIELD(l, s32, 0x166C) = 7;
+                LAYER_FIELD(l, s8, 0x1671) = 0;
+                LAYER_FIELD(l, s8, 0x1672) = 1;
+                layerMark(l, 0x40, 0x170C, 0x10);
+            }
             particleEngineSetupBlendMode(0, g_current_layer, 1, 0, g_current_layer);
             particleEngineSetupTevStages(0, 0, 0);
             var_r8 = 0;
@@ -314,9 +392,7 @@ block_20:
                 var_r8 = 2;
             }
             var_r7 = 0;
-            if (temp_r31 & 0x20) {
-                var_r7 = 2;
-            }
+            var_r7 = !(temp_r31 & 0x20) ? var_r7 : 2;
             particleEngineSetupTexture(0, M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 *, 0x60), temp_r31 & 3, (temp_r31 >> 2U) & 3, var_r7, var_r8);
             temp_r0_2 = M2C_FIELD(this, u8 *, 0x21);
             temp_r4_2 = (unsigned char *)(this + ((temp_r0_2 * 0x10) + 0x28));
@@ -328,7 +404,7 @@ block_20:
             }
             GSgfxVFSetArray((GSgfxVF*)(var_r31), 9, 3, (void*)(temp_r29), 4, M2C_FIELD(this, s32 *, 0x24));
             GSgfxVFSetArray((GSgfxVF*)(var_r31), 0xB, 3, (void*)(temp_r29 + 0x30), 4, M2C_FIELD(this, s32 *, 0x24));
-            GSgfxVFSetArray((GSgfxVF*)(var_r31), 0xD, 3, (void*)(this + 0x58), 4, 0x20);
+            GSgfxVFSetArray((GSgfxVF*)(var_r31), 0xD, 3, (void*)((u8*)this + 0x58), 4, 0x20);
             ((GSgfxLayer*)(g_current_layer))->dlDraw((GSgfxDL*)(this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28)));
             ((peRenderContainer*)((peRenderContainer *) this))->MarkForSwap();
         }
@@ -337,35 +413,123 @@ block_20:
 }
 
 extern "C++" {
+
+
+
+extern "C++" {
+extern "C++" {
+
+extern "C++" {
+void peDistortionContainer::Update(float p0) {
+    peNode *var_r31;
+    f32 temp_f31;
+    f32 var_f1;
+    f32 var_f1_2;
+    peEmitterNode *temp_r28;
+    peNode *temp_r30;
+    _peDistortion *temp_r27;
+    peSpline *temp_r3;
+    s32 temp_cr0_eq;
+    s8 *temp_r26;
+    u32 var_r4;
+    u8 *var_r5;
+    u8 var_r0;
+    u8 *temp_r6;
+    u8 temp_r0;
+
+    if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
+        var_r31 = M2C_FIELD(this, peNode **, 0x10);
+        while (var_r31 != NULL) {
+            temp_r0 = M2C_FIELD(this, u8 *, 0x21);
+            temp_r30 = M2C_FIELD(var_r31, peNode **, 0x28);
+            temp_r27 = M2C_FIELD(this, _peDistortion **, 0x54);
+            temp_r26 = (signed char *)&(*((u8*)this + ((temp_r0 * 4) + 0x48)));
+            temp_r28 = M2C_FIELD(this, peEmitterNode **, 0);
+            if (temp_r26 == NULL) {
+                var_r0 = 0;
+            } else if ((s32) (*((u8 *)this + ((temp_r0 * 0x10) + 0x28)) & 1) != 1) {
+                var_r0 = 0;
+            } else if (((peNode*)(var_r31))->Update((peEmitterNode*)(temp_r28), p0) == 0) {
+                var_r0 = 0;
+            } else {
+                temp_f31 = 1.0f - (M2C_FIELD(var_r31, f32 *, 4) / M2C_FIELD(var_r31, f32 *, 0));
+                if (M2C_FIELD(temp_r27, s32 *, 0) & 0x200) {
+                    temp_r3 = M2C_FIELD(temp_r27, peSpline **, 0x30);
+                    if ((temp_r3 == NULL) || !(M2C_FIELD(temp_r3, u8 *, 0) & 3)) {
+                        var_f1 = 1.0f;
+                    } else {
+                        var_f1_2 = M2C_FIELD(temp_r3, f32 *, 8) - temp_f31;
+                        if (var_f1_2 < 0.0f) {
+                            var_f1_2 = -var_f1_2;
+                        }
+                        if (var_f1_2 <= 0.00001f) {
+                            var_f1 = M2C_FIELD(temp_r3, f32 *, 4);
+                        } else {
+                            var_f1 = peSplineGetValue((peSpline*)(temp_r3), temp_f31);
+                        }
+                    }
+                    M2C_FIELD(var_r31, f32 *, 0x40) = (f32) (M2C_FIELD(temp_r27, f32 *, 0x24) * var_f1);
+                }
+                M2C_FIELD(var_r31, f32 *, 0x40) = (f32) ((M2C_FIELD(var_r31, f32 *, 0x44) * p0) + M2C_FIELD(var_r31, f32 *, 0x40));
+                ((peDistortionNode*)((peDistortionNode *) var_r31))->UpdateRenderData((peEmitterNode*)(temp_r28), (_peDistortion*)(temp_r27), (char*)(temp_r26), temp_f31);
+                var_r0 = 1;
+            }
+            if (var_r0 == 0) {
+                temp_r6 = (unsigned char *)((u8*)this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
+                if (M2C_FIELD(temp_r6, u16 *, 0) & 1) {
+                    var_r5 = (unsigned char *)(M2C_FIELD(temp_r6, s32 *, 4) + ((((M2C_FIELD(var_r31, u16 *, 0x30) * 4) & 0xFFFC) * M2C_FIELD(temp_r6, u16 *, 2)) + 3));
+                } else {
+                    var_r5 = NULL;
+                }
+                var_r4 = 4;
+loop_25:
+                temp_cr0_eq = var_r4 == 0;
+                var_r4 -= 1;
+                if (temp_cr0_eq == 0) {
+                    M2C_FIELD(var_r5, s16 *, 0) = 0xFFFF;
+                    M2C_FIELD(var_r5, s16 *, 2) = 0xFFFF;
+                    M2C_FIELD(var_r5, s16 *, 4) = 0xFFFF;
+                    var_r5 += 6;
+                    goto loop_25;
+                }
+                M2C_FIELD(temp_r6, u16 *, 0) = (u16) (M2C_FIELD(temp_r6, u16 *, 0) | 2);
+                ((peContainer*)((peContainer *) this))->RemoveNode((peNode*)(var_r31));
+            }
+            var_r31 = temp_r30;
+        }
+    }
+}
+}
+
 extern "C++" {
 u16 peDistortionContainer::Emit(unsigned short p0) {
-    _EmitParams *var_r29;
+    u8 *temp_r31;
     f32 temp_f1;
     peNode *temp_r27;
     peNode *var_r28;
-    s32 *temp_r23;
     s32 temp_r24;
+    s32 *temp_r23;
     s32 temp_r26;
     u16 temp_r4;
     u16 temp_r8;
-    u16 var_r30;
-    u8 *temp_r31;
+    u32 var_r30;
+    _EmitParams *var_r29;
     u8 *var_r9;
 
-    if ((u8) M2C_FIELD(this_, u8 *, 0x19) == 0) {
+    if ((u8) M2C_FIELD(((s32)this), u8 *, 0x19) == 0) {
         return 0U;
     }
-    var_r30 = ((peContainer*)((peContainer *) this_))->CreateNodes(p0);
+    var_r30 = ((peContainer*)((peContainer *) ((s32)this)))->CreateNodes(p0);
     var_r29 = g_emitParams;
-    var_r28 = M2C_FIELD(this_, peNode **, 0x10);
+    var_r28 = M2C_FIELD(((s32)this), peNode **, 0x10);
     temp_r26 = var_r30;
     while (var_r30 != 0) {
-        temp_r23 = M2C_FIELD(this_, s32 **, 0x54);
+        temp_r23 = M2C_FIELD(((s32)this), s32 **, 0x54);
         temp_r27 = M2C_FIELD(var_r28, peNode **, 0x28);
-        temp_r31 = (unsigned char *)(this_ + ((M2C_FIELD(this_, u8 *, 0x21) * 0x10) + 0x28));
+        temp_r31 = (unsigned char *)(((s32)this) + ((M2C_FIELD(((s32)this), u8 *, 0x21) * 0x10) + 0x28));
         temp_r24 = M2C_FIELD(temp_r23, s32 *, 0);
         if ((s32) (M2C_FIELD(temp_r31, u16 *, 0) & 1) == 1) {
-            ((peNode*)(var_r28))->Start((peEmitterNode*)(M2C_FIELD(this_, peEmitterNode **, 0)), (_EmitParams*)(var_r29));
+            ((peNode*)(var_r28))->Start((peEmitterNode*)(M2C_FIELD(((s32)this), peEmitterNode **, 0)), (_EmitParams*)(var_r29));
             temp_f1 = HSD_Randf();
             M2C_FIELD(var_r28, f32 *, 0x34) = (f32) (M2C_FIELD(temp_r23, f32 *, 0xC) * temp_f1);
             M2C_FIELD(var_r28, f32 *, 0x38) = (f32) (M2C_FIELD(temp_r23, f32 *, 0x10) * temp_f1);
@@ -419,13 +583,13 @@ void peDistortionContainer::Start() {
         temp_r31 = *M2C_FIELD(M2C_FIELD(this, u8 **, 0), s32 **, 0xFC);
         ((peRenderContainer*)((peRenderContainer *) this))->InitSwap();
         if (temp_r31 & 0x800000) {
-            ((peContainer*)((peContainer *)1))->SetLayerVisibility((GSgfxLayerID)(1), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
         }
         if (temp_r31 & 0x01000000) {
-            ((peContainer*)((peContainer *)3))->SetLayerVisibility((GSgfxLayerID)(1), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)3, true);
         }
         if (temp_r31 & 0x02000000) {
-            ((peContainer*)((peContainer *)5))->SetLayerVisibility((GSgfxLayerID)(1), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)5, true);
         }
     }
 }
@@ -433,141 +597,40 @@ void peDistortionContainer::Start() {
 
 extern "C++" {
 peDistortionContainer::~peDistortionContainer() {
-    if (this != NULL) {
-        M2C_FIELD(this, s32 **, 0x1C) = &__vt__21peDistortionContainer;
-        M2C_FIELD(&g_particle_debug_stats, s32 *, 4) = (s32) (M2C_FIELD(&g_particle_debug_stats, s32 *, 4) - 0x78);
-        M2C_FIELD(&g_particle_debug_stats, s32 *, 0x14) = (s32) (M2C_FIELD(&g_particle_debug_stats, s32 *, 0x14) - 0x78);
-        ((peRenderContainer*)((peRenderContainer *) this))->~peRenderContainer();
-        if ((s16) M2C_ERROR(/* Read from unset register $r4 */) > 0) {
-            operator delete((void*)(this));
-        }
+    g_particle_debug_stats.unk4 -= 0x78;
+    g_particle_debug_stats.unk14 -= 0x78;
+}
+}
+
+extern "C++" {
+#pragma push
+#pragma dont_inline off
+peDistortionContainer::peDistortionContainer(peEmitterNode* p0, _peDistortion* p1, unsigned short p2)
+    : peRenderContainer(p0, 0x48, p2, &g_vertex_format, (GSgfxPrimType)0x80, 4, 0x34, (*(u32*)p1 >> 14) & 1) {
+    peNode* node;
+    u16 i;
+    _peDistortion* d;
+
+    data = p1;
+    d = data;
+    uv[0] = M2C_FIELD(d, f32 *, 0x58);
+    uv[1] = M2C_FIELD(d, f32 *, 0x5C);
+    uv[2] = M2C_FIELD(d, f32 *, 0x50);
+    uv[3] = M2C_FIELD(d, f32 *, 0x5C);
+    uv[4] = M2C_FIELD(d, f32 *, 0x50);
+    uv[5] = M2C_FIELD(d, f32 *, 0x54);
+    uv[6] = M2C_FIELD(d, f32 *, 0x58);
+    uv[7] = M2C_FIELD(d, f32 *, 0x54);
+    DCFlushRange(uv, 0x20);
+    i = 0;
+    for (node = freeList; node != 0; node = M2C_FIELD(node, peNode **, 0x28)) {
+        M2C_FIELD(node, u16 *, 0x30) = i;
+        i++;
     }
-    return;
+    g_particle_debug_stats.unk4 += 0x78;
+    g_particle_debug_stats.unk14 += 0x78;
 }
-}
-
-extern "C++" {
-extern "C++" {
-
-extern "C++" {
-void peDistortionContainer::Update(float p0) {
-    peNode *var_r31;
-    f32 temp_f31;
-    f32 var_f1;
-    f32 var_f1_2;
-    peEmitterNode *temp_r28;
-    peNode *temp_r30;
-    _peDistortion *temp_r27;
-    peSpline *temp_r3;
-    s32 temp_cr0_eq;
-    s8 *temp_r26;
-    u32 var_r4;
-    u8 *var_r5;
-    u8 var_r0;
-    u8 *temp_r6;
-    u8 temp_r0;
-
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
-        var_r31 = M2C_FIELD(this, peNode **, 0x10);
-loop_28:
-        if (var_r31 != NULL) {
-            temp_r0 = M2C_FIELD(this, u8 *, 0x21);
-            temp_r30 = M2C_FIELD(var_r31, peNode **, 0x28);
-            temp_r27 = M2C_FIELD(this, _peDistortion **, 0x54);
-            temp_r26 = (signed char *)&(*(this + ((temp_r0 * 4) + 0x48)));
-            temp_r28 = M2C_FIELD(this, peEmitterNode **, 0);
-            if (temp_r26 == NULL) {
-                var_r0 = 0;
-            } else if ((s32) (*((u8 *)this + ((temp_r0 * 0x10) + 0x28)) & 1) != 1) {
-                var_r0 = 0;
-            } else if (((peNode*)(var_r31))->Update((peEmitterNode*)(temp_r28), p0) == 0) {
-                var_r0 = 0;
-            } else {
-                temp_f31 = 1.0f - (M2C_FIELD(var_r31, f32 *, 4) / M2C_FIELD(var_r31, f32 *, 0));
-                if (M2C_FIELD(temp_r27, s32 *, 0) & 0x200) {
-                    temp_r3 = M2C_FIELD(temp_r27, peSpline **, 0x30);
-                    if ((temp_r3 == NULL) || !(M2C_FIELD(temp_r3, u8 *, 0) & 3)) {
-                        var_f1 = 1.0f;
-                    } else {
-                        var_f1_2 = M2C_FIELD(temp_r3, f32 *, 8) - temp_f31;
-                        if (var_f1_2 < 0.0f) {
-                            var_f1_2 = -var_f1_2;
-                        }
-                        M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-                        if (var_f1_2 == 0.00001f) {
-                            var_f1 = M2C_FIELD(temp_r3, f32 *, 4);
-                        } else {
-                            var_f1 = peSplineGetValue((peSpline*)(temp_r3), temp_f31);
-                        }
-                    }
-                    M2C_FIELD(var_r31, f32 *, 0x40) = (f32) (M2C_FIELD(temp_r27, f32 *, 0x24) * var_f1);
-                }
-                M2C_FIELD(var_r31, f32 *, 0x40) = (f32) ((M2C_FIELD(var_r31, f32 *, 0x44) * p0) + M2C_FIELD(var_r31, f32 *, 0x40));
-                ((peDistortionNode*)((peDistortionNode *) var_r31))->UpdateRenderData((peEmitterNode*)(temp_r28), (_peDistortion*)(temp_r27), (char*)(temp_r26), temp_f31);
-                var_r0 = 1;
-            }
-            if (var_r0 == 0) {
-                temp_r6 = (unsigned char *)(this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
-                if (M2C_FIELD(temp_r6, u16 *, 0) & 1) {
-                    var_r5 = (unsigned char *)(M2C_FIELD(temp_r6, s32 *, 4) + ((((M2C_FIELD(var_r31, u16 *, 0x30) * 4) & 0xFFFC) * M2C_FIELD(temp_r6, u16 *, 2)) + 3));
-                } else {
-                    var_r5 = NULL;
-                }
-                var_r4 = 4;
-loop_25:
-                temp_cr0_eq = var_r4 == 0;
-                var_r4 -= 1;
-                if (temp_cr0_eq == 0) {
-                    M2C_FIELD(var_r5, s16 *, 0) = 0xFFFF;
-                    M2C_FIELD(var_r5, s16 *, 2) = 0xFFFF;
-                    M2C_FIELD(var_r5, s16 *, 4) = 0xFFFF;
-                    var_r5 += 6;
-                    goto loop_25;
-                }
-                M2C_FIELD(temp_r6, u16 *, 0) = (u16) (M2C_FIELD(temp_r6, u16 *, 0) | 2);
-                ((peContainer*)((peContainer *) this))->RemoveNode((peNode*)(var_r31));
-            }
-            var_r31 = temp_r30;
-            goto loop_28;
-        }
-    }
-}
-}
-
-extern "C++" {
-peDistortionContainer::peDistortionContainer(peEmitterNode* p0, _peDistortion* p1, unsigned short p2) {
-    s32 sp8;
-    _peDistortion *temp_r5;
-    s16 var_r4;
-    u8 *var_r3;
-
-    sp8 = (*(u32 *)p1 >> 0xEU) & 1;
-    ((peRenderContainer*)((peRenderContainer *) this))->peRenderContainer((peEmitterNode*)(p0), 0x48U, p2, (GSgfxVF*)(&g_vertex_format), (GSgfxPrimType)(0x80), 4U, 0x34U, M2C_ERROR(/* Unable to find stack arg 0x0 in block */));
-    M2C_FIELD(this, s32 **, 0x1C) = &__vt__21peDistortionContainer;
-    M2C_FIELD(this, _peDistortion **, 0x54) = p1;
-    temp_r5 = M2C_FIELD(this, _peDistortion **, 0x54);
-    M2C_FIELD(this, f32 *, 0x58) = (f32) M2C_FIELD(temp_r5, f32 *, 0x58);
-    M2C_FIELD(this, f32 *, 0x5C) = (f32) M2C_FIELD(temp_r5, f32 *, 0x5C);
-    M2C_FIELD(this, f32 *, 0x60) = (f32) M2C_FIELD(temp_r5, f32 *, 0x50);
-    M2C_FIELD(this, f32 *, 0x64) = (f32) M2C_FIELD(temp_r5, f32 *, 0x5C);
-    M2C_FIELD(this, f32 *, 0x68) = (f32) M2C_FIELD(temp_r5, f32 *, 0x50);
-    M2C_FIELD(this, f32 *, 0x6C) = (f32) M2C_FIELD(temp_r5, f32 *, 0x54);
-    M2C_FIELD(this, f32 *, 0x70) = (f32) M2C_FIELD(temp_r5, f32 *, 0x58);
-    M2C_FIELD(this, f32 *, 0x74) = (f32) M2C_FIELD(temp_r5, f32 *, 0x54);
-    DCFlushRange((register void*)(this + 0x58), 0x20U);
-    var_r3 = M2C_FIELD(this, u8 **, 0xC);
-    var_r4 = 0;
-loop_2:
-    if (var_r3 != NULL) {
-        M2C_FIELD(var_r3, s16 *, 0x30) = var_r4;
-        var_r4 += 1;
-        var_r3 = M2C_FIELD((u16)var_r3, u8 **, 0x28);
-        goto loop_2;
-    }
-    M2C_FIELD(&g_particle_debug_stats, s32 *, 4) = (s32) (M2C_FIELD(&g_particle_debug_stats, s32 *, 4) + 0x78);
-    M2C_FIELD(&g_particle_debug_stats, s32 *, 0x14) = (s32) (M2C_FIELD(&g_particle_debug_stats, s32 *, 0x14) + 0x78);
-    return;
-}
+#pragma pop
 }
 void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, char* p2, float p3) {
     s32 sp18;
@@ -726,39 +789,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
             temp_f29 = M2C_FIELD(this, f32 *, 0x1C);
             temp_f30 = M2C_FIELD(this, f32 *, 0x14);
             var_f2 = (temp_f30 * temp_f30) + (temp_f29 * temp_f29);
-            if (var_f2 > 0.0f) {
-                temp_f1 = __frsqrte(var_f2);
-                temp_f1_2 = 0.5 * temp_f1 * -(((f64) var_f2 * (temp_f1 * temp_f1)) - 3.0);
-                temp_f1_3 = 0.5 * temp_f1_2 * -(((f64) var_f2 * (temp_f1_2 * temp_f1_2)) - 3.0);
-                var_f2 = (f32) ((f64) var_f2 * (0.5 * temp_f1_3 * -(((f64) var_f2 * (temp_f1_3 * temp_f1_3)) - 3.0)));
-            } else if (var_f2 < M2C_BITWISE(f32, 0.0)) {
-                var_f2 = __float_nan;
-            } else {
-                spC = var_f2;
-                temp_r3 = M2C_BITWISE(s32, spC) & 0x7F800000;
-                switch (temp_r3) {                  /* irregular */
-                case 0x7F800000:
-                    if (M2C_BITWISE(s32, spC) & 0x7FFFFF) {
-                        var_r0 = 1;
-                    } else {
-                        var_r0 = 2;
-                    }
-                    break;
-                case 0x0:
-                    if (M2C_BITWISE(s32, spC) & 0x7FFFFF) {
-                        var_r0 = 5;
-                    } else {
-                        var_r0 = 3;
-                    }
-                    break;
-                default:
-                    var_r0 = 4;
-                    break;
-                }
-                if (var_r0 == 1) {
-                    var_f2 = __float_nan;
-                }
-            }
+            var_f2 = sqrtf(var_f2);
             spF8 = (f32) atan2(-M2C_FIELD(this, f32 *, 0x18), (f64) var_f2);
             temp_f1_4 = (f32) atan2((f64) temp_f30, (f64) temp_f29);
             sp100 = 0.0f;
@@ -840,8 +871,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
         if (var_f1_3 < 0.0f) {
             var_f1_3 = -var_f1_3;
         }
-        M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-        if (var_f1_3 == 0.00001f) {
+        if (var_f1_3 <= 0.00001f) {
             var_f1_2 = M2C_FIELD(temp_r3_2, f32 *, 4);
         } else {
             var_f1_2 = peSplineGetValue((peSpline*)(temp_r3_2), p3);
@@ -856,8 +886,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
         if (var_f1_5 < 0.0f) {
             var_f1_5 = -var_f1_5;
         }
-        M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-        if (var_f1_5 == 0.00001f) {
+        if (var_f1_5 <= 0.00001f) {
             var_f1_4 = M2C_FIELD(temp_r3_3, f32 *, 4);
         } else {
             var_f1_4 = peSplineGetValue((peSpline*)(temp_r3_3), p3);
@@ -957,8 +986,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
         if (var_f1_7 < 0.0f) {
             var_f1_7 = -var_f1_7;
         }
-        M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-        if (var_f1_7 == 0.00001f) {
+        if (var_f1_7 <= 0.00001f) {
 
         } else {
             peSplineGetValue((peSpline*)(temp_r3_4), p3);

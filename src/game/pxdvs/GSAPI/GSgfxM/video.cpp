@@ -488,10 +488,11 @@ static inline void colorSet(GSgfxCol* d, u8 r, u8 g, u8 b, u8 a) {
 
 extern "C" {
 void GSgfxVideoGetClearColor(GSgfxCol* out) {
-    u8 r = _videoState.clear.r;
+    enum TsE { TsE0 };
+    enum TsE r = (enum TsE)(_videoState.clear.r);
     u8 g = _videoState.clear.g;
-    u8 b = _videoState.clear.b;
     u8 a = _videoState.clear.a;
+    u8 b = _videoState.clear.b;
     colorSet(out, r, g, b, a);
 }
 }
@@ -628,12 +629,12 @@ void GSgfxVideoInit(u8 count, u16 efbHeight, GSgfxVideoMode mode) {
         _videoState.f94 = 0;
         _videoState.dropCount = 0;
         _videoState.flipCount = 0;
+        _videoState.lockActive = 0;
         _videoState.renderTime = 0.0f;
         _videoState.realTime = 0.0f;
         _videoState.lastTime = OSGetTime();
         _videoState.lockRate = 0;
         _videoState.lockCount = 0;
-        _videoState.lockActive = 0;
         VISetBlack(1);
         VIConfigure(&_videoState);
         VIFlush();
@@ -679,9 +680,12 @@ static void _videoUpdateViewport(bool b) {
         GX_WGPIPE.f32 = halfW;
         GX_WGPIPE.f32 = -halfH;
         GX_WGPIPE.f32 = farScaled - nz * zs;
-        GX_WGPIPE.f32 = 342.0f + (x + halfW);
-        GX_WGPIPE.f32 = 342.0f + (y + halfH);
-        GX_WGPIPE.f32 = farScaled + 0.0f;
+        f32 kc1133 = 342.0f;
+        GX_WGPIPE.f32 = kc1133 + (x + halfW);
+        f32 kc1208 = 342.0f;
+        GX_WGPIPE.f32 = kc1208 + (y + halfH);
+        f32 kc1283 = 0.0f;
+        GX_WGPIPE.f32 = farScaled + kc1283;
         g->vp[0] = x;
         gsgfxState->vp[1] = y;
         gsgfxState->vp[2] = w;
@@ -712,9 +716,12 @@ static void _videoUpdateViewport(bool b) {
         GX_WGPIPE.f32 = halfW;
         GX_WGPIPE.f32 = -halfH;
         GX_WGPIPE.f32 = farScaled - nz * zs;
-        GX_WGPIPE.f32 = 342.0f + (x + halfW);
-        GX_WGPIPE.f32 = 342.0f + (y + halfH);
-        GX_WGPIPE.f32 = farScaled + 0.0f;
+        f32 kc2349 = 342.0f;
+        GX_WGPIPE.f32 = kc2349 + (x + halfW);
+        f32 kc2424 = 342.0f;
+        GX_WGPIPE.f32 = kc2424 + (y + halfH);
+        f32 kc2499 = 0.0f;
+        GX_WGPIPE.f32 = farScaled + kc2499;
         g->vp[0] = x;
         gsgfxState->vp[1] = y;
         gsgfxState->vp[2] = w;

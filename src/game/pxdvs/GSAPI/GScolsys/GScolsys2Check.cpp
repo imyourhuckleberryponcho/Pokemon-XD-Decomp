@@ -117,9 +117,9 @@ static bool getMdlEventList(GSvec* start, GSvec* end, GSvec* dir, CCD_CHECKMDL_H
 
 static int getEventList(GSvec* start, GSvec* end, EventTri* out) {
     u32 i;
-    int count = 0;
-    CCDFileHead* head;
     CheckObj* obj;
+    CCDFileHead* head;
+    int count = 0;
     EventTri temp[4];
     Vec3 dir;
     bool enable;
@@ -131,9 +131,9 @@ static int getEventList(GSvec* start, GSvec* end, EventTri* out) {
     obj = head->objs;
     for (i = 0; i < head->numObjs && count < 4; i++, obj++) {
         CCD_CHECKMDL_HEAD* mdl;
-        int n;
-        int k;
         EventTri* src;
+        int k;
+        int n;
 
         GScolsys2GetObjEnable(i, &enable);
         if (!enable) {
@@ -147,7 +147,7 @@ static int getEventList(GSvec* start, GSvec* end, EventTri* out) {
         GScolsys2GetObjRotMatrix(&rot, i);
         n = getMdlEventList(start, end, (GSvec*)&dir, mdl, &mtx, &rot, temp);
         src = temp;
-        for (k = 0; k < n && count < 4; k++, src++) {
+        for (k = 0; k < n && count < 4; src++, k++) {
             int j;
             for (j = 0; j < count; j++) {
                 if (out[j].id == src->id) {

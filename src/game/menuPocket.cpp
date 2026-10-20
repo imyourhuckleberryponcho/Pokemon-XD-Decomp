@@ -146,7 +146,7 @@ struct PocketScript {
 extern "C" {
 void* memset(void*, int, u32);
 void* memmove(void*, const void*, u32);
-CursorPos cursorBiosGetPos(u16 index);
+CursorPos cursorBiosGetPos(u32 index);
 CursorPos cursorBiosSetPos(u16 index, CursorPos newPos);
 s32 winMsgOpen(s8 type, u32 msg, bool a, bool b);
 s32 winMsgOpenWithSE(s8 type, u32 msg, bool a, bool b, u8 se);
@@ -376,12 +376,11 @@ PocketScript menuPocketWork;
 PocketData Data;
 
 extern "C" {
-void menuPocket2AddItemScript(u16 id, u32 value)
-{
-    ScriptEntry* p = menuPocketWork.e;
-    int i;
-    for (i = 0; i < 8; i++, p++) {
-        if (p->id == id && p->value == value) {
+void menuPocket2AddItemScript(u32 id, u32 value)
+{    int i;
+    for (i = 0; i < 8; i++) {
+        ScriptEntry* p = &menuPocketWork.e[i];
+        if (p->id == (u16)id && p->value == value) {
             return;
         }
     }
@@ -623,6 +622,7 @@ void menuPocket2Button(tagWINDOW_WORK* w)
 extern "C" {
 int menuPocket2Cursor(tagWINDOW_WORK* w)
 {
+    CursorPos c3;
     CursorPos pos;
     CursorPos prev;
     u16 rep = windowGetKeyRepeat();
@@ -637,7 +637,7 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
     pos.x = c.x;
     pos.y = c.y;
     _getNbItemSlot(w->cursor);
-    s16 cur = pos.x + pos.y;
+    s32 cur = pos.x + pos.y;
     if (Data.exchangeFrom < 0) {
         if ((trg & 0xC0) && _IsIrekaeAble(w) && _getItemIDFromMenuPos(w->cursor, cur) != 0) {
             Data.exchangeFrom = cur;
@@ -653,13 +653,13 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
     }
     CursorPos c2 = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
     pos.x = c2.x;
-    pos.y = c2.y;
     prev = pos;
+    pos.y = c2.y;
     int total = _getNbItemSlot(w->cursor) + 1;
     if (rep & 2) {
-        pos.y = pos.y + 1;
+        pos.y += 1;
         if (pos.y + pos.x >= total) {
-            pos.y = pos.y - 1;
+            pos.y -= 1;
         } else {
             if (pos.y >= 9) {
                 pos.x++;
@@ -676,7 +676,7 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
     }
     if (rep & 1) {
         if (pos.y > 0 || pos.x > 0) {
-            pos.y = pos.y - 1;
+            pos.y -= 1;
             if (pos.y < 0) {
                 pos.y = 0;
                 pos.x--;
@@ -699,19 +699,19 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
         if ((rep & 8) && Data.mode != 6) {
             int t = w->cursor + 1;
             w->cursor = t;
-            if ((u32)(s16)t >= 5) {
+            if ((u32)t >= 5) {
                 w->cursor = 0;
             }
-            se = 0x44D;
             Data.tabScroll = (f32)menuItemBiosGetPtr(0x2C, 0xB6)->w;
+            se = 0x44D;
         } else if ((rep & 4) && Data.mode != 6) {
             int t = w->cursor - 1;
             w->cursor = t;
-            if ((s16)t < 0) {
+            if (t < 0) {
                 w->cursor = 4;
             }
-            se = 0x44D;
             Data.tabScroll = (f32)-menuItemBiosGetPtr(0x2C, 0xB6)->w;
+            se = 0x44D;
         } else if (trg & 0x600) {
             if (_IsSortAble(w)) {
                 se = 0x11;
@@ -728,7 +728,7 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
     if (Data.exchangeFrom >= 0) {
         msg = 0x3AAD;
     } else {
-        CursorPos c3 = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
+        c3 = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
         pos.x = c3.x;
         pos.y = c3.y;
         u16 id = _getItemIDFromMenuPos(w->cursor, c3.x + c3.y);
@@ -827,8 +827,10 @@ int menuPocket2DrawExchangeCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
         if (t > 0.5f) {
             t = 1.0f - t;
         }
-        f32 k = t * 2.0f;
-        sp->alpha = 155.0f * k + 100.0f;
+        f32 kc552 = 2.0f;
+        f32 k = t * kc552;
+        f32 kc578 = 155.0f;
+        sp->alpha = k * kc578 + 100.0f;
     } else {
         winSpriteSetDisp(sp, 0);
     }
@@ -882,6 +884,9 @@ int menuPocket2PrintItemKind(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     int tab;
     MenuItem* area = menuItemBiosGetPtr(w->menuID, 0xB7);
     MenuItem* base = menuItemBiosGetPtr(w->menuID, sp->id);
+    f32 off;
+    s16 tw2;
+    u32 title2;
     spriteSetScissor(winSpriteGetLayerID(w, sp), area->x - base->x, area->y - base->y, area->w, area->h);
     int center = sp->w / 2;
     u32 title = TabTbl[w->cursor].titleMsg;
@@ -889,7 +894,6 @@ int menuPocket2PrintItemKind(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     tw = GSmsgGetRect(title) >> 16;
     GSmsgPrint2(winSpriteGetLayerID(w, sp), (int)Data.tabScroll + (center - tw / 2), 0, -1, title);
     if (Data.tabScroll != 0.0f) {
-        f32 off;
         if (Data.tabScroll > 0.0f) {
             tab = w->cursor - 1;
             if (tab < 0) {
@@ -903,8 +907,8 @@ int menuPocket2PrintItemKind(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             }
             off = Data.tabScroll + (f32)menuItemBiosGetPtr(0x2C, 0xB6)->w;
         }
-        u32 title2 = TabTbl[tab].titleMsg;
-        s16 tw2 = GSmsgGetRect(title2) >> 16;
+        title2 = TabTbl[tab].titleMsg;
+        tw2 = GSmsgGetRect(title2) >> 16;
         GSmsgPrint2(winSpriteGetLayerID(w, sp), (int)off + (center - tw2 / 2), 0, -1, title2);
     }
     spriteClearScissor(winSpriteGetLayerID(w, sp));
@@ -1198,9 +1202,15 @@ int menuPocketInputNumber(tagWINDOW_WORK* w, int value, int max, u16 keys, int d
 extern "C" {
 int menuPocket2PrintNumMenu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 {
+    NumberParam* param;
     u32 i;
+    const NumRow* row;
     int j;
-    NumberParam* param = (NumberParam*)w->params[0];
+    s32 k;
+    int power;
+    int digit;
+
+    param = (NumberParam*)w->params[0];
     for (i = 0; i < 4; i++) {
         if (param->id == MenuPocket2Num[i].id) {
             break;
@@ -1209,18 +1219,25 @@ int menuPocket2PrintNumMenu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     if (i >= 4) {
         return 0;
     }
-    const NumRow* row = MenuPocket2Num[i].tbl;
-    int count = MenuPocket2Num[i].count;
-    for (j = 0; j < count; j++, row++) {
+    row = MenuPocket2Num[i].tbl;
+    j = 0;
+    while (j < MenuPocket2Num[i].count) {
         if (sp->id == row->a) {
             break;
         }
+        j++;
+        row++;
     }
     if (j >= MenuPocket2Num[i].count) {
         return 0;
     }
-    int div = pow10(count - j - 1);
-    msgctrlSetValue(0x34, Data.number / div % 10);
+    power = 1;
+    for (k = 0; k < MenuPocket2Num[i].count - j - 1; k++) {
+        power *= 10;
+    }
+    digit = Data.number / power;
+    digit %= 10;
+    msgctrlSetValue(0x34, digit);
     GSmsgPrintRight(winSpriteGetLayerID(w, sp), 0, 0, sp->w, sp->h, -1, 0x4270);
     return 0;
 }
@@ -1382,7 +1399,7 @@ u16 _menuPocketLoop(void)
     t = TabTbl;
     pp = &param;
     param = cp.y;
-    for (i = 0; i < 5; i++, t++) {
+    for (i = 0; i < 5; t++, i++) {
         CursorPos c = cursorBiosGetPos(t->cursorIdx);
         if (c.x + c.y >= _getNbItemSlot(i) + 1) {
             CursorPos z = czero;
@@ -2126,9 +2143,9 @@ int _execDeposit(int tab, u16 item, int pos)
 namespace {
 void _setActMenuResizeWork(void)
 {
-    ResizeEntry* e = ActMenuResizeWork;
     u32 i;
-    for (i = 0; i < 7; i++, e++) {
+    for (i = 0; i < 7; i++) {
+        ResizeEntry* e = &ActMenuResizeWork[i];
         e->y = menuItemBiosGetPtr(0x2C, e->id)->y;
         e->h = menuItemBiosGetPtr(0x2C, e->id)->h;
     }
@@ -2156,12 +2173,11 @@ int _makeActMenu(SActionMenuItem* out, int mode, int tab, int pos)
     while (src[n].func != 0) {
         n++;
     }
-    int limit = n + 1;
     int i;
     SActionMenuItem* dst = out;
     int count = 0;
     const SActionMenuItem* cur = src;
-    for (i = 0; i < limit; i++, cur++) {
+    for (i = 0; i < n + 1; i++, cur++) {
         if ((!(cur->flags & 1) || battleUse) && (!itemDataBiosGetImportant(itemData) || !(cur->flags & 2))) {
             count++;
             dst->msg = cur->msg;

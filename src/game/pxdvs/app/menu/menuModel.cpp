@@ -172,7 +172,7 @@ u8 menuFaceCheckLoading();
 u8 pokemonGetAnnonKatati(s32 rnd);
 u8 pokemonIsJoutaiDataId(Pokemon* p, u16 id);
 f64 tan(f64);
-u8 wazaSequenceSysIsValidWaza();
+u8 wazaSequenceSysIsValidWaza(u32 a0 = 0);
 void wazaSequenceSysSetVisibilityAll(s32 v);
 extern PokemonMenuAnim* pokemon_menu_animation;
 extern u32* pokemon_menu_animation_number;
@@ -390,7 +390,7 @@ static s32 _menuModelAdjustCamera(MENU_MODEL* m, bool first) {
     }
     spos.x = 0.0f;
     spos.z = 0.0f;
-    spos.y = -(m->min[1] + m->max[1]) * 0.5f;
+    spos.y = -(m->min[1] + m->max[1]) / 2.0f;
     PSVECAdd((f32*)&spos, m->offset, (f32*)&spos);
     GSmodelSetPosition(model, &spos);
     if (m->camera == 0) return 0;
@@ -402,10 +402,10 @@ static s32 _menuModelAdjustCamera(MENU_MODEL* m, bool first) {
     else aspectScale = 1.0f;
     if (m->size[0] > m->size[1]) width = m->size[0];
     else width = m->size[1];
-    f32 t = (f32)tan(0.017453292f * fov * 0.5f);
+    f32 t = (f32)tan(0.017453292f * fov / 2.0f);
+    camPos.z = (((0.8f * (width / sizeScale)) / t * scale) / aspectScale) / m->zoom;
     camPos.x = 0.0f;
     camPos.y = 0.0f;
-    camPos.z = (((0.8f * (width / sizeScale)) / t * scale) / aspectScale) / m->zoom;
     PSMTXRotRad(mtxA, 0x58, m->angle[0]);
     PSMTXRotRad(mtxB, 0x59, -m->angle[1]);
     PSMTXConcat(mtxB, mtxA, mtxA);
@@ -541,16 +541,18 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
         depth = b->size[1];
     }
     f32 negB = -b->size[0];
-    mid = (width * 0.5f) + negB;
+    f32 kc1917 = 0.5f;
+    mid = (width * kc1917) + negB;
     GSmodelGetPosition(modelA, &spos);
     spos.y = 0.0f;
-    spos.x = -(a->size[0] * 0.5f) + mid;
+    spos.x = -(a->size[0] / 2.0f) + mid;
     spos.z = 0.0f;
     PSVECAdd((f32*)&spos, a->offset, (f32*)&spos);
     GSmodelSetPosition(modelA, &spos);
     GSmodelGetPosition(modelB, &tpos);
     tpos.y = 0.0f;
-    tpos.x = (b->size[0] * 0.5f) + mid;
+    f32 kc2241 = 0.5f;
+    tpos.x = (b->size[0] * kc2241) + mid;
     tpos.z = 0.0f;
     PSVECAdd((f32*)&tpos, b->offset, (f32*)&tpos);
     GSmodelSetPosition(modelB, &tpos);
@@ -573,11 +575,11 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
         break;
     }
     width = (width > depth) ? width : depth;
-    f32 t = (f32)tan(0.017453292f * fov * 0.5f);
-    camPos.x = 0.0f;
-    camPos.y = 0.0f;
+    f32 t = (f32)tan(0.017453292f * fov / 2.0f);
     camPos.z = (((0.8f * (width / sizeScale)) / t * scale) / dispScale) / a->zoom;
     target2.y = 0.75f * depth;
+    camPos.x = 0.0f;
+    camPos.y = 0.0f;
     PSMTXRotRad(mtxA, 0x58, a->camRot[0]);
     PSMTXRotRad(mtxB, 0x59, -a->camRot[1]);
     PSMTXConcat(mtxB, mtxA, mtxA);
@@ -950,7 +952,7 @@ static void _menuModelRenderOff(MENU_MODEL* m) {
     if (m->cur.kind != 0) {
         if (m->model != 0) Sequence_SetVisibility(m->model, 0);
         if (m->wazaSeq != 0) {
-            if (wazaSequenceSysIsValidWaza() == 1 && WazaSequence_IsActive(m->wazaSeq) == 1) {
+            if (wazaSequenceSysIsValidWaza((u32)(m->wazaSeq)) == 1 && WazaSequence_IsActive(m->wazaSeq) == 1) {
                 WazaSequence_Stop(m->wazaSeq);
             }
         }
@@ -980,7 +982,7 @@ s32 menuModelRender(MENU_MODEL* m) {
     }
     if (m->cur.kind != 0 && m->cur.kind != 0) {
         if (m->wazaSeq != 0) {
-            if (wazaSequenceSysIsValidWaza() == 1 && WazaSequence_IsActive(m->wazaSeq) == 0) {
+            if (wazaSequenceSysIsValidWaza((u32)(m->wazaSeq)) == 1 && WazaSequence_IsActive(m->wazaSeq) == 0) {
                 WazaSequence_Start(m->wazaSeq, 0);
                 Sequence_DoAnimation(m->model, m->cur.anim);
             }

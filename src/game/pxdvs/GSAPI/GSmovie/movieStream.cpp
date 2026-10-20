@@ -354,9 +354,7 @@ static u32 GetAudioSample(__GSmovieStreaming* s, s16* left, s16* right, u32 coun
     n = ab->validSample;
     if (n != 0) {
         u32 i;
-        if (n >= count) {
-            n = count;
-        }
+        n = n < count ? n : count;
         src = ab->curPtr;
         if (right == 0) {
             for (i = 0; i < n; i++) {
@@ -501,28 +499,30 @@ static u32 _VideoDecode(__GSmovieStreaming* s, THPReadBuffer* rb, THPTextureSet*
     sizes = (s32*)(rb->ptr + 8);
     data = rb->ptr + 8 + p->compInfo.numComponents * 4;
     for (i = 0; i < p->compInfo.numComponents; i++) {
-        if (p->compInfo.frameComp[i] == 0) {
-            s32 err = THPVideoDecode(data, ts->ytexture, ts->utexture, ts->vtexture, p->thpWork);
-            p->videoError = err;
-            if (err != 0) {
-                if (s->f15 == 1) {
-                    s->f14 = 0;
-                    s->f15 = 0;
+        switch (p->compInfo.frameComp[i]) {
+        case 0:
+                s32 err = THPVideoDecode(data, ts->ytexture, ts->utexture, ts->vtexture, p->thpWork);
+                p->videoError = err;
+                if (err != 0) {
+                    if (s->f15 == 1) {
+                        s->f14 = 0;
+                        s->f15 = 0;
+                    }
+                    p->state = 5;
                 }
-                p->state = 5;
-            }
-            ts->frameNumber = rb->frameNumber;
-            ts->isValid = 1;
-            p->texWriteIdx++;
-            if (p->texWriteIdx >= 3) {
-                p->texWriteIdx = 0;
-            }
-            {
-                s32 old = p->videoDecodeCount;
-                s32 cur = p->curVideoNumber + 1;
-                result = cur > old ? cur - old : 0;
-                p->videoDecodeCount = old + 1;
-            }
+                ts->frameNumber = rb->frameNumber;
+                ts->isValid = 1;
+                p->texWriteIdx++;
+                if (p->texWriteIdx >= 3) {
+                    p->texWriteIdx = 0;
+                }
+                {
+                    s32 old = p->videoDecodeCount;
+                    s32 cur = p->curVideoNumber + 1;
+                    result = cur > old ? cur - old : 0;
+                    p->videoDecodeCount = old + 1;
+                }
+            break;
         }
         data += *sizes;
         sizes++;

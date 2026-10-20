@@ -928,8 +928,9 @@ void CMenuPokemonChange::setMenuByTbl(s32* tbl)
     }
     u32 common = i;
     for (i = common; (id = m_menuTbl[i]) != 0 && i < 8; i++) {
-        u8 found = 0;
-        for (s32* p = tbl; *p != 0; p++) {
+        s32* p;
+        u8 found;
+        for (p = tbl, found = 0; *p != 0; p++) {
             if (id == *p) {
                 found = 1;
                 break;
@@ -1357,7 +1358,8 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
             msg = 0;
             break;
         default:
-            msgctrlSetValue(0x37, (u32)pokemonBiosGetNicknamePtr(target));
+            s32 tmp1 = (u32)pokemonBiosGetNicknamePtr(target);
+            msgctrlSetValue(0x37, tmp1);
             break;
         }
         if (msg != 0) {
@@ -1372,7 +1374,8 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         break;
     }
     case 0x61B:
-        msgctrlSetValue(0x37, heroBiosGetNamePtr(hero));
+        s32 tmp1 = heroBiosGetNamePtr(hero);
+        msgctrlSetValue(0x37, tmp1);
         GSmsgPrint2(window->msgHandle, 0, 0, color, 0x4277);
         break;
     case 0x605:
@@ -1383,7 +1386,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x60A:
     case 0x60B:
     case 0x60C:
-        winSpriteSetDisp(sprite, player == m_player);
+        winSpriteSetDisp(sprite, m_player == player);
         break;
     case 0x8B9:
     case 0x8BA:
@@ -1419,7 +1422,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         s32 who = (value >= getQuantityHeroPokemon(PLAYER_1)) ? 1 : 0;
         s32 spriteIndex = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x8CE);
         visible = false;
-        if (spriteIndex == index && who == player && m_state.current != 0x10
+        if (spriteIndex == index && player == who && m_state.current != 0x10
             && spriteIndex < getQuantityHeroPokemon((enumPlayerIndex)who)) {
             visible = true;
         }
@@ -1499,7 +1502,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
             msg = 0x9C6;
             break;
         case 3:
-        default:
+        case 2:        default:
             msg = 0;
             break;
         }

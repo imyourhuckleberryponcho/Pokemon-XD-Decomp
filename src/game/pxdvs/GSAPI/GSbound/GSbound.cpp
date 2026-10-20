@@ -155,8 +155,8 @@ void GSboundCreate(GSbound* b, BoundAnim* anim)
         *(BoundAnim**) &b->minZ = anim;
         *(s32*) &b->minX = 0;
         b->minY = 0.0f;
-        *(void**) &b->maxX = GSmemAlloc((*(BoundAnim**) &b->minZ)->count * 4);
         p = (u16*) (*(BoundAnim**) &b->minZ + 1);
+        *(void**) &b->maxX = GSmemAlloc((*(BoundAnim**) &b->minZ)->count * 4);
         for (i = 0; i < (*(BoundAnim**) &b->minZ)->count; i++) {
             (*(u16***) &b->maxX)[i] = p;
             p = (u16*) ((u8*) p + p[1] * 0x18);
@@ -971,13 +971,13 @@ void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
         fwd.z = -fwd.z;
     }
     sx = fwd.x;
+    c[0].x = sx;
     sy = fwd.y;
     sz = fwd.z;
-    c[0].y = sy;
-    c[0].x = sx;
     c[0].z = sz;
     c[1].y = sy * -1.0f;
     c[1].x = sx;
+    c[0].y = sy;
     c[1].z = sz;
     c[2].x = sx * -1.0f;
     c[2].z = sz;

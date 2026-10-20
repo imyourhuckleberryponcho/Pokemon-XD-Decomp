@@ -268,7 +268,7 @@ void menuPdaMemoListDispPokemonModel(tagWINDOW_WORK* window, tagSPRITE_WORK* spr
         case 2:
             itemID = 0xBA;
             break;
-        case 4:
+        case 3:
         default:
             itemID = 0x1C7;
             break;
@@ -522,13 +522,13 @@ u16 pdaMemoList::SortGojyuonDataSet(u16 id) {
 void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     CURSOR cursor = _getCursor();
     int count = memoDataGetCount(0);
-    s32 layer = winSpriteGetLayerID(window, sprite);
+    int layer = winSpriteGetLayerID(window, sprite);
     MenuItem* base = menuItemBiosGetPtr(0x78, 0xF1);
     MenuItem* type1 = menuItemBiosGetPtr(0x78, 0xEF);
     MenuItem* type2 = menuItemBiosGetPtr(0x78, 0xF0);
     MenuItem* area = menuItemBiosGetPtr(0x78, 0xEE);
     MenuItem* self = menuItemBiosGetPtr(0x78, sprite->id);
-    s32 textLayer = layer;
+    int textLayer = layer;
     spriteSetScissor(layer, area->x - self->x, area->y - self->y, area->width, area->height);
     f32 y = unk248;
     f32 offset;
@@ -551,7 +551,7 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             if (type2ID != 0 && type2ID != type) {
                 s32 sprID2 = zokuseiBiosGetSmallSpriteID(type2ID);
                 windowDrawSprite2(type2->x - base->x, (s32)y, type2->width, type2->height, window->alpha | ~0xFF,
-                                  window, sprID2, 0, layer);
+                                  window, (u16)sprID2, 0, layer);
             }
         }
         y += 27.0f;
@@ -834,14 +834,14 @@ void pdaMemoList::Cursor(tagWINDOW_WORK* window) {
         c.pos -= visible;
     }
     if (c.pos < 0) {
+        c.top += c.pos;
         c.pos = 0;
-        c.top = c.top + c.pos;
         if (c.top < 0) {
             c.top = 0;
             c.pos = 0;
         }
     } else if (c.pos >= visible) {
-        s16 last = visible - 1;
+        s32 last = visible - 1;
         c.top = c.top + (c.pos - last);
         c.pos = last;
         if (c.top + last >= count) {

@@ -70,9 +70,9 @@ extern u32 itemtoolbattle_number;
 u16* GSmsgGetGSchar(u32 msg);
 void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* hero, u16 encountId);
 void heroBiosCopy(void* dst, void* src);
-u8 heroBiosGetHomePlace(u16 id);
+u8 heroBiosGetHomePlace(Hero* hero);
 Pokemon* heroBiosGetPokemonPtr(Hero* hero, u16 index);
-u8 heroBiosGetSexDataId(u16 id);
+u8 heroBiosGetSexDataId(Hero* hero);
 void heroBiosSetHizukiFlag(void* hero, u8 v);
 void* memcpy(void* dst, const void* src, u32 n);
 void* memset(void* dst, int v, u32 n);
@@ -151,15 +151,15 @@ void menuCBTrainerBios_SetControlerID(CBTrainer* t, s32 v) {
     t->controllerId = v;
 }
 
-void menuCBBios_InitVersusTrainer(CBTrainer* t, u16 id) {
+void menuCBBios_InitVersusTrainer(CBTrainer* t, Hero* hero) {
     u16 trainerId = 0x1388;
-    u8 place = heroBiosGetHomePlace(id);
+    u8 place = heroBiosGetHomePlace(hero);
     switch (place) {
     case 0:
         trainerId = 0x1388;
         break;
     case 1:
-        switch (heroBiosGetSexDataId(id)) {
+        switch (heroBiosGetSexDataId(hero)) {
         case 0:
             trainerId = 0x1389;
             break;
@@ -171,7 +171,7 @@ void menuCBBios_InitVersusTrainer(CBTrainer* t, u16 id) {
         }
         break;
     case 2:
-        switch (heroBiosGetSexDataId(id)) {
+        switch (heroBiosGetSexDataId(hero)) {
         case 0:
             trainerId = 0x138B;
             break;
@@ -183,7 +183,7 @@ void menuCBBios_InitVersusTrainer(CBTrainer* t, u16 id) {
         }
         break;
     case 3:
-        switch (heroBiosGetSexDataId(id)) {
+        switch (heroBiosGetSexDataId(hero)) {
         case 0:
             trainerId = 0x138D;
             break;
@@ -195,7 +195,7 @@ void menuCBBios_InitVersusTrainer(CBTrainer* t, u16 id) {
         }
         break;
     }
-    menuCBBios_InitTrainerFromHero(t, (Hero*)id, trainerId);
+    menuCBBios_InitTrainerFromHero(t, hero, trainerId);
 }
 
 void menuCBBios_InitTrainerFromHero(CBTrainer* t, Hero* src, u16 id) {

@@ -256,7 +256,7 @@ loop_9:
                     M2C_FIELD(temp_r29, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x1760) | 0x40);
                     if ((s32) M2C_FIELD(temp_r29, s32 *, 0x1994) != 1) {
                         M2C_FIELD(temp_r29, s32 *, 0x1994) = 1;
-                        M2C_FIELD(temp_r29, u8 **, 0x1990) = (u8 *) (temp_r29 + ((M2C_FIELD(temp_r29, s32 *, 0x1994) * 0xBC) + 0x1818));
+                        M2C_FIELD(temp_r29, u8 **, 0x1990) = (u8 *) ((u8*)temp_r29 + 0x1818 + M2C_FIELD(temp_r29, s32 *, 0x1994) * 0xBC);
                     }
                     M2C_FIELD(temp_r29, s32 *, 0x1644) = 1;
                     M2C_FIELD(temp_r29, s32 *, 0x1648) = 1;
@@ -504,9 +504,8 @@ void GSmodelFreeDistortion(void *p0) {
         GSmemFree((void*)(temp_r3_2));
         M2C_FIELD(p0, u8 **, 0x618) = NULL;
         if ((u8) g_distortion_layer_ref_count != 0) {
-            temp_r3_3 = g_distortion_layer_ref_count - 1;
-            g_distortion_layer_ref_count = temp_r3_3;
-            if (temp_r3_3 == 0) {
+            g_distortion_layer_ref_count--;
+            if (g_distortion_layer_ref_count == 0) {
                 temp_ret = GSgfxLayerFindByName((const char*)("model distortion"));
                 temp_r3_4 = temp_ret;
                 if (temp_r3_4 != NULL) {
@@ -525,18 +524,18 @@ void GSmodelFreeDistortion(void *p0) {
 
 extern "C" {
 void GSmodelCreateDistortion(void *p0, u16 p1, u8 p2, u8 p3) {
-    s32 spC;
+    u8 *temp_r31;
     s32 sp8;
     GSgfxLayer *temp_r3_3;
     GSgfxLayer *var_r28;
     GSpart *temp_r3;
-    s32 temp_r4;
+    u32 temp_r4;
     s32 temp_r5;
     u32 temp_r26;
     u32 temp_r3_4;
     u8 var_r30;
     u8 *temp_r25;
-    u8 *temp_r31;
+    s32 spC;
     u8 *temp_r3_2;
     u8 *var_r25;
 
@@ -625,20 +624,20 @@ void GSmodelEnableDistortion(void *p0) {
 
 extern "C++" {
 void modelDustUpdate(_GSmodel* p0) {
-    s32 sp24;
+    u32 sp24;
     s32 sp30;
     s32 unksp14;
     s32 unksp20;
     s32 unksp2C;
-    f32 sp10;
+    volatile f32 sp10;
     f32 spC;
     f32 sp8;
     GSpart *temp_r3;
-    GSpart *temp_r3_3;
+    s32 var_r28;
     GSparticleGenerator *temp_r3_2;
     f32 temp_f0;
     f32 temp_f31;
-    s32 var_r28;
+    GSpart *temp_r3_3;
     u8 *var_r30;
 
     if ((GSparticleBank *) M2C_FIELD(p0, GSparticleBank **, 0x5F8) != NULL) {

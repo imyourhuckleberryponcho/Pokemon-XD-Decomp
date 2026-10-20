@@ -703,8 +703,7 @@ static void expEvaluate(HSD_Exp* exp, u32 type, void* obj,
     HSD_JObj* jobj;
     Vec3 scale;
     float temp_f31;
-    Vec3 sp2C;
-    u8 _[4]; ///< @todo should HSD_ObjData be 4 bytes larger?
+    Quaternion sp2C; // 16 bytes in XD: the scale vector sits 4 bytes higher on the stack (Melee: Vec3 + u8 _[4])
     HSD_ObjData sp1C;
     HSD_RObj* robj = (HSD_RObj*) obj;
 
@@ -770,15 +769,15 @@ static void expEvaluate(HSD_Exp* exp, u32 type, void* obj,
             case 0x800:
                 break;
             case 0x10000:
-                HSD_MtxGetRotation(jobj->mtx, &sp2C);
+                HSD_MtxGetRotation(jobj->mtx, (Vec3*) &sp2C);
                 *cur_arg++ = temp_f31 * sp2C.x;
                 break;
             case 0x20000:
-                HSD_MtxGetRotation(jobj->mtx, &sp2C);
+                HSD_MtxGetRotation(jobj->mtx, (Vec3*) &sp2C);
                 *cur_arg++ = temp_f31 * sp2C.y;
                 break;
             case 0x40000:
-                HSD_MtxGetRotation(jobj->mtx, &sp2C);
+                HSD_MtxGetRotation(jobj->mtx, (Vec3*) &sp2C);
                 *cur_arg++ = temp_f31 * sp2C.z;
                 break;
             case 0x100000:

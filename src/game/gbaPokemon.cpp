@@ -276,10 +276,7 @@ void gbaPokemonFromGC(void *p0, void *p1) {
     u8 temp_r0_7;
     u8 temp_r0_8;
     u8 temp_r0_9;
-    u32 temp_r27;
-    u8 temp_r31;
     u8 temp_r3_2;
-    u8 temp_r3_3;
     u8 *var_r27;
 
     var_r29 = 0;
@@ -312,8 +309,7 @@ void gbaPokemonFromGC(void *p0, void *p1) {
             sp10 &= ~0x780;
             break;
         }
-        temp_r3_3 = gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3));
-        switch (temp_r3_3) {                        /* switch 2 */
+        switch ((u8)(gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3)))) {                        /* switch 2 */
         case 1:                                     /* switch 2 */
             M2C_FIELD(p1, s8 *, 0x12) = 1;
             break;
@@ -346,14 +342,12 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         M2C_FIELD(p1, u8 *, 0x13) = (u8) ((M2C_FIELD(p1, u8 *, 0x13) & ~4) | (((pokemonBiosGetTamagoFlag((Pokemon*)((Pokemon *) p0)) != 0) << 2) & 4));
         M2C_FIELD(p1, u8 *, 0x13) = (u8) ((M2C_FIELD(p1, u8 *, 0x13) & ~0xF8) | ((pokemonBiosGetFlagAmari((Pokemon*)((Pokemon *) p0)) << 3) & 0xF8));
         M2C_FIELD(p1, u8 *, 0x13) = (u8) ((M2C_FIELD(p1, u8 *, 0x13) & ~1) | ((pokemonBiosGetFuseiFlag((Pokemon*)((Pokemon *) p0)) != 0) & 1));
-        temp_r27 = gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3));
-        temp_r3_4 = GBAMakeFromGSchar((u8*)(((u8*)(p1) + 8)), (const u16*)(pokemonBiosGetNicknameOrgPtr((Pokemon*)((Pokemon *) p0))), (void*)((u8 *) temp_r27));
+        temp_r3_4 = GBAMakeFromGSchar((u8*)(((u8*)(p1) + 8)), (const u16*)(pokemonBiosGetNicknameOrgPtr((Pokemon*)((Pokemon *) p0))), (void*)((u8 *) (u32)(gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3)))));
         if (temp_r3_4 < 0xA) {
             M2C_FIELD(((u8 *)p1 + temp_r3_4), s8 *, 8) = 0xFF;
             memset((void*)((u8*)(p1) + (temp_r3_4 + 9)), 0, 9 - temp_r3_4);
         }
-        temp_r31 = gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3));
-        temp_r3_5 = GBAMakeFromGSchar((u8*)(((u8*)(p1) + 0x14)), (const u16*)(pokemonBiosGetCatchTrainerNamePtr((Pokemon*)((Pokemon *) p0))), (void*)((u8 *) temp_r31));
+        temp_r3_5 = GBAMakeFromGSchar((u8*)(((u8*)(p1) + 0x14)), (const u16*)(pokemonBiosGetCatchTrainerNamePtr((Pokemon*)((Pokemon *) p0))), (void*)((u8 *) (u8)(gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3)))));
         if (temp_r3_5 < 7) {
             M2C_FIELD(((u8 *)p1 + temp_r3_5), s8 *, 0x14) = 0xFF;
             memset((void*)((u8*)(p1) + (temp_r3_5 + 0x15)), 0, 6 - temp_r3_5);
@@ -505,28 +499,28 @@ void gbaPokemonToGC(Pokemon* p0, GBAPokemon* p1) {
     u8 var_r28;
     u8 var_r29_2;
 
-    pokemonInit((Pokemon*)(p0));
+    pokemonInit((Pokemon*)((u16)p0));
     temp_r3 = M2C_FIELD(p1, u8 *, 0x13);
     if (((u32) ((temp_r3 >> 1U) & 1) != 0) || ((u32) (temp_r3 & 1) != 0)) {
         var_r29 = (unsigned short *)(((u8*)(p1) + 0x20));
         var_r3 = var_r29;
         var_ctr = 2;
         do {
-            M2C_FIELD(var_r3, s32 *, 0) = (s32) (M2C_FIELD(var_r3, s32 *, 0) ^ (M2C_FIELD(p1, u32 *, 0) ^ M2C_FIELD(p1, u32 *, 4)));
+            M2C_FIELD(var_r3, s32 *, 0) = (s32) (M2C_FIELD(var_r3, s32 *, 0) ^ (M2C_FIELD((u16)p1, u32 *, 0) ^ M2C_FIELD(p1, u32 *, 4)));
             M2C_FIELD(var_r3, s32 *, 4) = (s32) (M2C_FIELD(var_r3, s32 *, 4) ^ (M2C_FIELD(p1, u32 *, 0) ^ M2C_FIELD(p1, u32 *, 4)));
             M2C_FIELD(var_r3, s32 *, 8) = (s32) (M2C_FIELD(var_r3, s32 *, 8) ^ (M2C_FIELD(p1, u32 *, 0) ^ M2C_FIELD(p1, u32 *, 4)));
             M2C_FIELD(var_r3, s32 *, 0xC) = (s32) (M2C_FIELD(var_r3, s32 *, 0xC) ^ (M2C_FIELD(p1, u32 *, 0) ^ M2C_FIELD(p1, u32 *, 4)));
             M2C_FIELD(var_r3, s32 *, 0x10) = (s32) (M2C_FIELD(var_r3, s32 *, 0x10) ^ (M2C_FIELD(p1, u32 *, 0) ^ M2C_FIELD(p1, u32 *, 4)));
             M2C_FIELD(var_r3, s32 *, 0x14) = (s32) (M2C_FIELD(var_r3, s32 *, 0x14) ^ (M2C_FIELD(p1, u32 *, 0) ^ M2C_FIELD(p1, u32 *, 4)));
-            var_r3 += 0x18;
-            var_ctr -= 1;
+            var_r3 = var_r3 + 0x18;
+            var_ctr = var_ctr - 1;
         } while (var_ctr != 0);
-        _revrotatepp((unsigned char*)(((u8*)(p1) + 0x20)), _swap32(M2C_FIELD(p1, u32 *, 0)));
+        _revrotatepp((unsigned char*)(((u8*)((s32)p1) + 0x20)), _swap32(M2C_FIELD(p1, u32 *, 0)));
         var_r27 = 0;
         do {
             _swap16(*var_r29);
-            var_r29 += 2;
-            var_r27 += 1;
+            var_r29 = var_r29 + 2;
+            var_r27 = var_r27 + 1;
         } while (var_r27 < 0x18);
         sp10 = _swap32(M2C_FIELD(p1, u32 *, 0x44));
         spC = _swap32(M2C_FIELD(p1, u32 *, 0x48));
@@ -600,22 +594,22 @@ void gbaPokemonToGC(Pokemon* p0, GBAPokemon* p1) {
         pokemonBiosSetPcboxMark((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x1B));
         pokemonBiosSetAmari((Pokemon*)(p0), _swap16(M2C_FIELD(p1, u16 *, 0x1E)));
         pokemonBiosSetPokemonDataId((Pokemon*)(p0), _swap16(M2C_FIELD(p1, u16 *, 0x20)));
+        var_r29_3 = 0;
         pokemonBiosSetItemDataId((Pokemon*)(p0), _swap16(M2C_FIELD(p1, u16 *, 0x22)));
         pokemonBiosSetExp((Pokemon*)(p0), _swap32(M2C_FIELD(p1, u32 *, 0x24)));
         pokemonBiosSetFriend((Pokemon*)(p0), (u16) M2C_FIELD(p1, u8 *, 0x29));
         pokemonBiosSetPara1Amari((Pokemon*)(p0), M2C_FIELD(p1, u16 *, 0x2A));
         var_r27_3 = 0;
         var_r28_2 = p1;
-        var_r29_3 = 0;
         do {
-            pokemonBiosSetPokemonWazaDataId((Pokemon*)(p0), (u32) var_r27_3, _swap16(M2C_FIELD(var_r28_2, u16 *, 0x2C)));
+            u16 tmp2 = _swap16(M2C_FIELD((u16)var_r28_2, u16 *, 0x2C));
+            pokemonBiosSetPokemonWazaDataId((Pokemon*)(p0), (u32) var_r27_3, tmp2);
             pokemonBiosSetPokemonWazaPpCount((Pokemon*)(p0), (u32) var_r27_3, ((s32) M2C_FIELD(p1, u8 *, 0x28) >> var_r29_3) & 3);
             pokemonBiosSetPokemonWazaPp((Pokemon*)(p0), (u32) var_r27_3, *((u8*)(p1) + (var_r27_3 + 0x34)));
-            var_r28_2 += 2;
-            var_r29_3 += 2;
-            var_r27_3 += 1;
+            var_r28_2 = var_r28_2 + 2;
+            var_r29_3 = var_r29_3 + 2;
+            var_r27_3 = var_r27_3 + 1;
         } while ((s32) var_r27_3 < 4);
-        pokemonBiosSetMaxHpEffort((Pokemon*)(p0), (u16) M2C_FIELD(p1, u8 *, 0x38));
         pokemonBiosSetPhyAtkEffort((Pokemon*)(p0), (u16) M2C_FIELD(p1, u8 *, 0x39));
         pokemonBiosSetPhyDefEffort((Pokemon*)(p0), (u16) M2C_FIELD(p1, u8 *, 0x3A));
         pokemonBiosSetNimblenessEffort((Pokemon*)(p0), (u16) M2C_FIELD(p1, u8 *, 0x3B));
@@ -627,6 +621,7 @@ void gbaPokemonToGC(Pokemon* p0, GBAPokemon* p1) {
         pokemonBiosSetClever((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x41));
         pokemonBiosSetStrong((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x42));
         pokemonBiosSetFur((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x43));
+        pokemonBiosSetMaxHpEffort((Pokemon*)(p0), (u16) M2C_FIELD(p1, u8 *, 0x38));
         pokemonBiosSetPokerus((Pokemon*)(p0), unksp13);
         pokemonBiosSetCatchFloorId((Pokemon*)(p0), (u16) unksp12);
         pokemonBiosSetCatchLevel((Pokemon*)(p0), unksp11 & 0x7F);
@@ -732,7 +727,7 @@ static void _rotatepp(unsigned char* p0, unsigned long p1) {
     u32 temp_r0;
     u32 temp_r0_2;
     u32 temp_r30;
-    s32 sp8;
+    u8 sp8[sizeof(s32) + 8];
     u32 temp_r31_2;
 
     temp_r0 = (p1 % 24) / 6;
@@ -760,10 +755,10 @@ static void _rotatepp(unsigned char* p0, unsigned long p1) {
 
 extern "C++" {
 static void _revrotatepp(unsigned char* p0, unsigned long p1) {
-    s32 sp8;
-    u32 temp_r31;
-    u32 temp_r31_2;
+    u8 sp8[sizeof(s32) + 8];
     u32 temp_r31_3;
+    u32 temp_r31_2;
+    u32 temp_r31;
     u32 temp_r31_4;
 
     if ((u32) (p1 & 1) != 0) {
@@ -781,7 +776,8 @@ static void _revrotatepp(unsigned char* p0, unsigned long p1) {
     temp_r31_3 = (p1 / 6) & 3;
     if (temp_r31_3 != 0) {
         memcpy((void*)(&sp8), (const void*)(p0), 0xCU);
-        temp_r31_4 = temp_r31_3 * 0xC;
+        temp_r31_4 = temp_r31_3;
+        temp_r31_4 *= 0xC;
         memmove((void*)(p0), (const void*)(p0 + 0xC), temp_r31_4);
         memcpy((void*)(p0 + temp_r31_4), (const void*)(&sp8), 0xCU);
     }

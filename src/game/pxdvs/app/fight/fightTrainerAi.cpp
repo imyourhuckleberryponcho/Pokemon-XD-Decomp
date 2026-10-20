@@ -192,7 +192,7 @@ Pokemon* fightPokemon_GetPokemonBuffPtr(FightPokemon*);
 u8 fightFloorCmpfightOutPokemonNimbleness(u32, FightOutPokemon*, FightOutPokemon*, u8);
 void* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, u8, void*, u32, u32, s32);
 s32 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void*, u8);
-void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon*, u32, u32, u32, void*, u16, s32, s8, u32);
+void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon*, u32, u32, u32, void*, u16, s32, u8, u32);
 extern u8 fightTrainerAiWazaSelectDefensePokemon[];
 extern u8 fight_action_data_waza[];
 u8 fightTrainer_GetEnemyStoreWazaNum(FIGHT_TRAINER*, u16);
@@ -285,7 +285,7 @@ struct Hero {
 };
 
 extern "C" {
-u8 fightAi_AttackResult(FIGHT_TRAINER* t, FightOutPokemon* def, u16 waza1, u16 waza2, u16 damage);
+s32 fightAi_AttackResult(FIGHT_TRAINER* t, FightOutPokemon* def, u16 waza1, u16 waza2, u16 damage);
 u32 fightAi_CreateAllWazaValid_GetDefense(u16 waza, s32 value);
 u8 fightAi_GetWazaCombValue(u32 *p0, u16 *p1, u8 *p2);
 void fightAi_InitAllWazaValid();
@@ -312,7 +312,8 @@ static u16 _fightTrainerAiSortFirstSelectPokemonArySubSelect(FIGHT_TRAINER* p0, 
 }
 
 u8 fightTrainerAi_SelComboPartner(Pokemon** party, Pokemon** out, u8 num, FIGHT_TRAINER* t) {
-    u8 order[4] = {0, 1, 2, 3};
+    volatile s32 x;
+    bool order[4] = {0, 1, 2, 3};
     u8 second[8];
     u8 first[8];
     u8 list[16];
@@ -345,8 +346,7 @@ u8 fightTrainerAi_SelComboPartner(Pokemon** party, Pokemon** out, u8 num, FIGHT_
                         first[nFirst++] = j;
                     }
                 }
-                nSecond = 0;
-                for (j = 0; j < num; j++) {
+                for (j = 0, nSecond = 0; j < num; j++) {
                     u8 has = pokemon_GetComboPartner(party[j], order[i], 0) != 0;
                     if (flag == 0) {
                         if (has) {
@@ -361,12 +361,11 @@ u8 fightTrainerAi_SelComboPartner(Pokemon** party, Pokemon** out, u8 num, FIGHT_
                 }
                 if (nFirst != 0 && nSecond != 0) {
                     u8 tries = 0;
-                    s32 x;
                     s32 y;
                     do {
                         x = (u16)HSD_Rand() % nFirst;
-                        tries++;
                         y = (u16)HSD_Rand() % nSecond;
+                        tries++;
                     } while (tries <= 100 && first[x] == second[y]);
                     out[n] = party[first[x]];
                     out[n + 1] = party[second[y]];
@@ -455,23 +454,24 @@ u8 fightAi_CreateFightActionAttckWaza(FightOutPokemon* self, FightOutPokemon* ta
         return 0;
     }
     side = fightTargetGetTragetPtrToRelativeHostSideFightTargetId(target, type);
-    fightOutPokemonCreateFightActionAttackWaza(self, 0, 0x13, 0, fight_action_data_waza, waza, side, index, 0);
+    fightOutPokemonCreateFightActionAttackWaza(self, 0, 0x13, 0, fight_action_data_waza, (u16)waza, side, index, 0);
     return 1;
 }
 
 extern "C" {
 u32 fightTrainerAiGetFightOutPokemonAbiCntSubayasa(FIGHT_TRAINER* t, FightOutPokemon* a);
 void fightAi_AllWazaValid_DelListFromSpeed(FIGHT_TRAINER* t, AllWazaValid* list, u8* count, u16 waza, u8 faster) {
-    s32 speed[2];
+    AllWazaValid* e;
+    s32 speed[3];
     s32 eff[2];
-    u8 cnt[2];
+    u32 cnt[2];
     s8 i;
     s8 k;
     s8 m;
     for (i = 0; i < *count; i++) {
-        u8 del = 0;
         s32 j;
-        AllWazaValid* e = &list[i];
+        u8 del = 0;
+        e = &list[i];
         for (j = 0; j < 2; j++) {
             speed[j] = pokemon_GetNimbleness((Pokemon*)fightOutPokemonGetPokemonPtr((FightOutPokemon*)e->a[j]));
             cnt[j] = fightTrainerAiGetFightOutPokemonAbiCntSubayasa(t, (FightOutPokemon*)e->a[j]);
@@ -624,10 +624,10 @@ u8 fightAi_GetWazaZokuseiData_ThinkWeatherBall(u16 waza, u16 weather) {
     return zokusei;
 }
 FightOutPokemon* fightAi_SelectDefPoke(FIGHT_TRAINER* t, FightOutPokemon* self, FightOutPokemon** cand, u16 count, u16 waza, s8 mode) {
-    u8 candidates[8];
+    u8 i;
     s16 best;
     s16 value;
-    u8 i;
+    u8 candidates[8];
     u8 num;
     u8 type = fightFloor_GetFightType(0);
     if (wazaDB_GetRangeId(waza) != 0) {
@@ -635,7 +635,7 @@ FightOutPokemon* fightAi_SelectDefPoke(FIGHT_TRAINER* t, FightOutPokemon* self, 
     }
     best = -0xff;
     for (i = 0; i < count; i++) {
-        value = fightAi_ThreatEnemyValue(t, self, cand[i], mode, 0, -1, -1);
+        value = fightAi_ThreatEnemyValue(t, self, cand[i], (u16)mode, 0, -1, -1);
         if (best < value) {
             candidates[0] = i;
             best = value;
@@ -662,9 +662,9 @@ s32 fightTrainerAiAddValueByAddsubDataId(s32 value, FIGHT_TRAINER* t, u16 id);
 s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER* t, FightOutPokemon* atk, FightOutPokemon* def, s8 tenkou, u32 unused,
                              s32 hitFlag, s32 killFlag) {
     s8 hit = hitFlag;
-    s8 kill = killFlag;
-    s16 tenki = tenkou;
     s16 value = 0;
+    s16 tenki = tenkou;
+    s8 kill = killFlag;
     u8 maxLv = 0;
     u8 trainerNum = fightFloor_GetFightTypeTrainerNum(0);
     u8 entryNum = fightFloor_GetFightTypeEntryPokemonNum(0);
@@ -675,16 +675,16 @@ s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER* t, FightOutPokemon* atk, FightOutPok
     Pokemon* defBuff;
     FIGHT_TRAINER* defTrainer;
     u8 defLv;
-    void* side;
-    u16 atkSpeed;
+    FightOutPokemon* allies[8];
+    volatile u16 atkSpeed;
     u16 defSpeed;
     u16 allyNum;
     u16 hp;
     u16 waza;
     u8 i;
     FightOutPokemon* enemies[8];
-    FightOutPokemon* allies[8];
-    FightPokemon* allyFp[24];
+    void* side;
+    FightPokemon* allyFp[25];
     FightPokemon* enemyFp[24];
     if (atk == 0) {
         return 0;
@@ -710,7 +710,7 @@ s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER* t, FightOutPokemon* atk, FightOutPok
     for (i = 0; i < 4; i++) {
         waza = pokemon_GetPokemonWazaDataId(atkBuff, i);
         if (waza != 0x176 && waza != 0 && waza != 0x163) {
-            s32 res = fightTrainerAiWazaDoWazaHitFunc(t, (u32)atk, (u32)def, waza);
+            u32 res = fightTrainerAiWazaDoWazaHitFunc(t, (u32)atk, (u32)def, waza);
             if (res == 1 && hit == -1) {
                 hit = 1;
             }
@@ -743,7 +743,7 @@ s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER* t, FightOutPokemon* atk, FightOutPok
         }
     }
     for (i = 0; i < 4; i++) {
-        waza = pokemon_GetPokemonWazaDataId(atkBuff, i);
+        waza = pokemon_GetPokemonWazaDataId(atkBuff, (u8)i);
         if (waza != 0 && fightAi_AppointWazaKoukaFlag(atk, def, fightAi_GetWazaZokuseiData_ThinkWeatherBall(waza, tenki)) == 0x41) {
             value = fightTrainerAiAddValueByAddsubDataId(value, t, 0x28A);
         }
@@ -855,10 +855,14 @@ u8 fightAi_HitCheckWazaAboutJoutaiAndType(FIGHT_TRAINER* t, FightOutPokemon* atk
 extern "C" {
 void fightAi_AllWazaValid_DelComboList(FIGHT_TRAINER* t, AllWazaValid* list, u8* count, u8 kind0, s32 value0, s8 kind1,
                                        s32 value1, u8 keep) {
+    u8 a;
+    u8 b;
     AllWazaValid tmp[0x40];
     u8 kind[2];
     s32 value[2];
     u8 n;
+    AllWazaValid* e;
+    AllWazaValid* pk;
     u8 i;
     u8 j;
     kind[0] = kind0;
@@ -867,10 +871,8 @@ void fightAi_AllWazaValid_DelComboList(FIGHT_TRAINER* t, AllWazaValid* list, u8*
     value[0] = value0;
     value[1] = value1;
     for (i = 0; i < *count; i++) {
-        u8 a = 0;
-        u8 b = 0;
-        AllWazaValid* pk;
-        AllWazaValid* e;
+        a = 0;
+        b = 0;
         fightAi_InitAllWazaValidSub(&tmp[i]);
         pk = &ai_allwaza_valid_tbl[i];
         e = &list[i];
@@ -965,8 +967,11 @@ void fightAi_AllWazaValid_DelComboList(FIGHT_TRAINER* t, AllWazaValid* list, u8*
 
 void fightAi_AllWazaValid_AddComboList(FIGHT_TRAINER* t, AllWazaValid* list, u8* count, u8 kind0, s32 value0, s8 kind1,
                                        s32 value1) {
+    u8 a;
+    u8 b;
+    AllWazaValid* e;
     u8 kind[2];
-    s32 value[2];
+    s32 value[6];
     u8 i;
     u8 n;
     kind[0] = kind0;
@@ -976,10 +981,10 @@ void fightAi_AllWazaValid_AddComboList(FIGHT_TRAINER* t, AllWazaValid* list, u8*
     value[1] = value1;
     n = *count;
     for (; i < 0x40; i++) {
-        u8 a = 0;
+        a = 0;
         u8 j = 0;
-        u8 b = 0;
-        AllWazaValid* e = &ai_allwaza_valid_tbl[i];
+        b = 0;
+        e = &ai_allwaza_valid_tbl[i];
         for (; j < 2; j++) {
             switch (kind[j]) {
             case 0:
@@ -1071,7 +1076,7 @@ void fightAi_CreateAction_FromAllWazaValid(FIGHT_TRAINER* t, AllWazaValid* v) {
         u8 index = v->d[i];
         FightOutPokemon* target = (FightOutPokemon*)v->b[i];
         if (self != 0 && target != 0 && fightActionCheckValid(fightOutPokemon_GetFightActionBuffPtr(self)) != 1) {
-            void* defender = fightSeqSelectDefensePokemonPtr(self, waza, type, fightTrainerAiWazaSelectDefensePokemon, 1, 0, -1);
+            void* defender = fightSeqSelectDefensePokemonPtr(self, waza, (u8)type, fightTrainerAiWazaSelectDefensePokemon, 1, 0, -1);
             s32 side;
             if (defender != 0) {
                 target = (FightOutPokemon*)defender;
@@ -1086,7 +1091,7 @@ void fightAi_CreateAction_FromAllWazaValid(FIGHT_TRAINER* t, AllWazaValid* v) {
 }
 extern "C" {
 void fightAi_CreateAllWazaValid(FIGHT_TRAINER* p0, FightOutPokemon** p1, u8 p2) {
-    u8 sp10[2];
+    u8 sp10[22];
     s32 sp50;
     s32 spD;
     s32 *spA0;
@@ -1157,7 +1162,7 @@ void fightAi_CreateAllWazaValid(FIGHT_TRAINER* p0, FightOutPokemon** p1, u8 p2) 
     u8 var_r28;
     u8 var_r29;
     u8 var_r30;
-    u8 var_r3;
+    u32 var_r3;
     u8 *temp_r12;
     u8 *temp_r22_2;
     u8 *temp_r23;
@@ -1167,39 +1172,33 @@ void fightAi_CreateAllWazaValid(FIGHT_TRAINER* p0, FightOutPokemon** p1, u8 p2) 
     if (p0 != 0) {
         fightAi_InitAllWazaValid();
         var_r3 = 0;
-loop_9:
-        if (var_r3 < 2U) {
+        while (var_r3 < 2U) {
             temp_r21 = (var_r3 * 4) & 0x3FC;
             temp_r8 = (var_r3 * 8) & 0x7F8;
             temp_r20 = var_r3;
             var_r24 = 0;
-loop_7:
-            if (var_r24 < 4U) {
+            while (var_r24 < 4U) {
                 var_r25 = 0;
-loop_5:
-                if (var_r25 < 2U) {
+                while (var_r25 < 2U) {
                     temp_r0 = (var_r25 * 2) & 0x1FE;
                     temp_r22 = var_r25;
                     *(&sp74 + ((var_r3 * 0x10) & 0xFF0) + ((var_r24 * 4) & 0x3FC) + temp_r0) = 0;
-                    var_r25 += 1;
+                    var_r25 = var_r25 + 1;
                     *(&sp14 + temp_r21 + temp_r0) = 0;
                     (&sp8)[temp_r22] = 0;
-                    goto loop_5;
                 }
                 temp_r8_2 = var_r24 * 2;
                 *(&sp1C + temp_r21 + var_r24) = 0;
-                var_r24 += 1;
+                var_r24 = var_r24 + 1;
                 *(&sp64 + temp_r8 + temp_r8_2) = 0;
                 *(&sp54 + temp_r8 + temp_r8_2) = 0;
-                goto loop_7;
             }
             temp_r0_2 = temp_r20 * 2;
             *(&sp4C + temp_r21) = 0;
-            var_r3 += 1;
+            var_r3 = var_r3 + 1;
             (&spC)[temp_r20] = 0;
             *(&sp10[0] + temp_r0_2) = 0;
             *(&sp44 + temp_r21) = 0;
-            goto loop_9;
         }
         temp_r4 = M2C_FIELD(p1, FightOutPokemon **, 0);
         if (temp_r4 != NULL) {
@@ -1211,16 +1210,14 @@ loop_5:
         }
         temp_r20_2 = fightFloorGetFightTrainerFightOutPokemonPtrAry((unsigned long)((FIGHT_FLOOR*)(NULL)), (FIGHT_TRAINER *)((FIGHT_TRAINER*)((FIGHT_TRAINER *) p0)), (FightOutPokemon **)((FightOutPokemon**)(&sp4C)), (unsigned char)(0U), (unsigned char)(1U));
         var_r28 = 0;
-loop_29:
-        if (var_r28 < 2U) {
+        while (var_r28 < 2U) {
             temp_r19 = (var_r28 * 4) & 0x3FC;
             if ((u32) *(p1 + temp_r19) != 0U) {
                 temp_r3 = var_r28 * 8;
                 temp_r22_2 = (unsigned char *)(&sp54 + temp_r3);
                 temp_r23 = (unsigned char *)(&sp64 + temp_r3);
                 var_r29 = 0;
-loop_27:
-                if (var_r29 < 4U) {
+                while (var_r29 < 4U) {
                     if (var_r28 == 0) {
                         temp_r5 = (var_r29 * 2) & 0x1FE;
                         *(temp_r22_2 + temp_r5) = *(&sp2C + temp_r5);
@@ -1235,28 +1232,23 @@ loop_27:
                     if (temp_r6 != 0) {
                         (&spC)[var_r28] = fightAi_WazaSuccessProbability((FIGHT_TRAINER*)((FIGHT_TRAINER *) p0), (FightOutPokemon*)(*(p1 + temp_r19)), (FightOutPokemon**)(&sp4C), temp_r6);
                         var_r30 = 0;
-loop_25:
-                        if (var_r30 < 2U) {
+                        while (var_r30 < 2U) {
                             temp_r6_2 = (FightOutPokemon *)(*(&(u8*)(sp4C) + ((var_r30 * 4) & 0x3FC)));
                             if (temp_r6_2 != NULL) {
                                 *(&sp74 + (var_r28 * 0x10) + (var_r29 * 4) + (var_r30 * 2)) = fightTrainerAiWazaDoWazaDamageFunc((FIGHT_TRAINER*)((FIGHT_TRAINER *) p0), (FightOutPokemon*)(*(p1 + temp_r19)), *(temp_r22_2 + temp_r18), (FightOutPokemon*)(temp_r6_2), 0U);
                             }
-                            var_r30 += 1;
-                            goto loop_25;
+                            var_r30 = var_r30 + 1;
                         }
                     }
-                    var_r29 += 1;
-                    goto loop_27;
+                    var_r29 = var_r29 + 1;
                 }
             }
-            var_r28 += 1;
-            goto loop_29;
+            var_r28 = var_r28 + 1;
         }
         ai_allwaza_valid_work = p2;
         spA0 = (long *)(&ai_allwaza_valid_tbl);
         var_r22 = 0;
-loop_111:
-        if (var_r22 < 4U) {
+        while (var_r22 < 4U) {
             temp_r25 = (unsigned char *)(&sp74 + ((var_r22 * 4) & 0x3FC));
             temp_r24 = (var_r22 * 2) & 0x1FE;
             sp94 = (var_r22 * 0x10) & 0xFF0;
@@ -1265,16 +1257,14 @@ loop_109:
             if (var_r20 < 2U) {
                 var_r21 = 0;
                 sp98 = ((var_r20 * 8) & 0x7F8) + sp94;
-loop_107:
-                if (var_r21 < 4U) {
+                while (var_r21 < 4U) {
                     temp_r23_2 = (unsigned char *)(&sp74 + ((var_r21 * 4) & 0x3FC));
                     temp_r4_3 = (var_r21 * 2) & 0x1FE;
                     var_r19 = 0;
                     sp9C = temp_r4_3 + sp98;
                     temp_r29 = temp_r4_3 + 8;
                     temp_r28 = var_r21 + 4;
-loop_105:
-                    if (var_r19 < 2U) {
+                    while (var_r19 < 2U) {
                         sp16 = 0;
                         sp14 = 0;
                         sp1A = 0;
@@ -1288,16 +1278,16 @@ loop_105:
                                 temp_r0_3 = *(&sp1C + var_r22);
                                 switch ((s32) temp_r0_3) { /* switch 1; irregular */
                                 case 0:             /* switch 1 */
-                                    sp14 += M2C_FIELD(temp_r25, u16 *, 0);
+                                    sp14 = sp14 + (M2C_FIELD(temp_r25, u16 *, 0));
                                     sp44 = sp4C;
                                     break;
                                 case 1:             /* switch 1 */
-                                    sp16 += M2C_FIELD(temp_r25, u16 *, 2);
+                                    sp16 = sp16 + (M2C_FIELD(temp_r25, u16 *, 2));
                                     sp44 = (FightOutPokemon *)(sp50);
                                     break;
                                 case 2:             /* switch 1 */
-                                    sp14 += M2C_FIELD(temp_r25, u16 *, 0);
-                                    sp16 += M2C_FIELD(temp_r25, u16 *, 2);
+                                    sp14 = sp14 + (M2C_FIELD(temp_r25, u16 *, 0));
+                                    sp16 = sp16 + (M2C_FIELD(temp_r25, u16 *, 2));
                                     sp44 = sp4C;
                                     break;
                                 case 3:             /* switch 1 */
@@ -1342,11 +1332,11 @@ loop_105:
                                 temp_r0_4 = *(&sp1C + temp_r28);
                                 switch ((s32) temp_r0_4) { /* switch 2; irregular */
                                 case 0:             /* switch 2 */
-                                    sp18 += M2C_FIELD(temp_r23_2, u16 *, 0x10);
+                                    sp18 = sp18 + (M2C_FIELD(temp_r23_2, u16 *, 0x10));
                                     sp48 = sp4C;
                                     break;
                                 case 1:             /* switch 2 */
-                                    sp1A += M2C_FIELD(temp_r23_2, u16 *, 0x12);
+                                    sp1A = sp1A + (M2C_FIELD(temp_r23_2, u16 *, 0x12));
                                     sp48 = (FightOutPokemon *)(sp50);
                                     break;
                                 case 3:             /* switch 2 */
@@ -1356,8 +1346,8 @@ loop_105:
                                     sp48 = M2C_FIELD(p1, FightOutPokemon **, 4);
                                     break;
                                 case 2:             /* switch 2 */
-                                    sp18 += M2C_FIELD(temp_r23_2, u16 *, 0x10);
-                                    sp1A += M2C_FIELD(temp_r23_2, u16 *, 0x12);
+                                    sp18 = sp18 + (M2C_FIELD(temp_r23_2, u16 *, 0x10));
+                                    sp1A = sp1A + (M2C_FIELD(temp_r23_2, u16 *, 0x12));
                                     sp48 = (FightOutPokemon *)(sp50);
                                     break;
                                 case 5:             /* switch 2 */
@@ -1393,7 +1383,7 @@ loop_105:
                         sp8 = fightAi_AttackResult((FIGHT_TRAINER *)(p0), (FightOutPokemon *)((u32) sp4C), (unsigned short)(sp10[0]), (unsigned short)(sp12), (unsigned short)((u16) (sp14 + sp18)));
                         temp_r3_6 = fightAi_AttackResult((FIGHT_TRAINER *)(p0), (FightOutPokemon *)((u32) sp50), (unsigned short)(sp10[0]), (unsigned short)(sp12), (unsigned short)((u16) (sp16 + sp1A)));
                         temp_r7 = (s16) (var_r19 + sp9C) * 0x2C;
-                        var_r19 += 1;
+                        var_r19 = var_r19 + 1;
                         temp_r12 = (unsigned char *)(spA0 + temp_r7);
                         M2C_FIELD(temp_r12, FightOutPokemon **, 0) = (FightOutPokemon *) M2C_FIELD(p1, FightOutPokemon **, 0);
                         M2C_FIELD(temp_r12, FightOutPokemon **, 4) = (FightOutPokemon *) M2C_FIELD(p1, FightOutPokemon **, 4);
@@ -1415,16 +1405,13 @@ loop_105:
                         M2C_FIELD(temp_r12, u8 *, 0x24) = sp8;
                         sp9 = temp_r3_6;
                         M2C_FIELD(temp_r12, u8 *, 0x25) = temp_r3_6;
-                        goto loop_105;
                     }
-                    var_r21 += 1;
-                    goto loop_107;
+                    var_r21 = var_r21 + 1;
                 }
-                var_r20 += 1;
+                var_r20 = var_r20 + 1;
                 goto loop_109;
             }
-            var_r22 += 1;
-            goto loop_111;
+            var_r22 = var_r22 + 1;
         }
     }
 }
@@ -1451,7 +1438,7 @@ u32 fightAi_CreateAllWazaValid_GetDefense(u16 waza, s32 value) {
 }
 
 extern "C" {
-u8 fightAi_AttackResult(FIGHT_TRAINER* t, FightOutPokemon* def, u16 waza1, u16 waza2, u16 damage) {
+s32 fightAi_AttackResult(FIGHT_TRAINER* t, FightOutPokemon* def, u16 waza1, u16 waza2, u16 damage) {
     FightPokemon* defFp;
     void* buff;
     u16 defType1;
@@ -1498,9 +1485,12 @@ u8 fightAi_AttackResult(FIGHT_TRAINER* t, FightOutPokemon* def, u16 waza1, u16 w
             return 2;
         }
     }
-    return pokemon_GetHp((Pokemon*)buff) <= damage ? 3 : 0;
+    u16 hp = pokemon_GetHp((Pokemon*)buff);
+    return hp <= damage ? 3 : 0;
 }
 extern "C" {
+#pragma push
+#pragma peephole off
 u8 fightAi_GetWazaCombValue(u32 *p0, u16 *p1, u8 *p2) {
     f32 unkspA;
     s32 sp24;
@@ -1527,8 +1517,7 @@ u8 fightAi_GetWazaCombValue(u32 *p0, u16 *p1, u8 *p2) {
     sp10 = M2C_FIELD(&jtbl_3692, f32 *, 0);
     sp14 = M2C_FIELD(&jtbl_3692, f32 *, 4);
     sp8 = jtbl_3693;
-loop_14:
-    if (var_r30 < 2U) {
+    while (var_r30 < 2U) {
         temp_r24 = (var_r30 * 4) & 0x3FC;
         temp_r3 = (FightOutPokemon *)(*(p0 + temp_r24));
         if (temp_r3 != NULL) {
@@ -1561,7 +1550,6 @@ loop_14:
             }
         }
         var_r30 += 1;
-        goto loop_14;
     }
     switch (var_r29) {                              /* irregular */
     case 2:
@@ -1572,6 +1560,7 @@ loop_14:
         return (u8) (s32) ((0.25 * (f64) sp10 * (f64) (u16) sp8) + (0.25 * (f64) sp14 * (f64) unkspA));
     }
 }
+#pragma pop
 }
 
 
@@ -1586,11 +1575,11 @@ u16 fightOutPokemon_GetFightoutTurnCount(FightOutPokemon* fop);
 u8 fightTrainerAiIsFightPokemonZokuseiDataId(FIGHT_TRAINER* t, FightPokemon* p, u16 z);
 u16 fightOutPokemonNowHpWaruValue(FightOutPokemon* fop, u8 waru);
 u8 fightAi_CanMoveAppointWaza(FIGHT_TRAINER* t, FightOutPokemon* p, u16 waza) {
+    u8 i;
     u8 found = 0;
     FightPokemon* fp;
     void* buff;
     s8 slot;
-    u8 i;
     if (p == 0) {
         return 0;
     }
@@ -1654,8 +1643,7 @@ u8 fightAi_CanMoveAppointWaza(FIGHT_TRAINER* t, FightOutPokemon* p, u16 waza) {
         return 1;
     case 0xAE:
         if (fightTrainerAiIsFightPokemonZokuseiDataId(t, fp, 7) == 1) {
-            u16 hp = fightOutPokemonNowHpWaruValue(p, 1);
-            if (fightOutPokemonMaxHpWaruValue(p, 2) >= hp) {
+            if (fightOutPokemonMaxHpWaruValue(p, 2) >= (int)(fightOutPokemonNowHpWaruValue(p, 1))) {
                 return 1;
             }
         }
@@ -1672,11 +1660,11 @@ u8 fightAi_CanMoveAppointWaza(FIGHT_TRAINER* t, FightOutPokemon* p, u16 waza) {
 }
 }
 u8 fightAi_WazaSuccessProbability(FIGHT_TRAINER* t, FightOutPokemon* self, FightOutPokemon** ary, u16 waza) {
-    u16 speeds[2];
-    u8 faster = 0;
     u8 probability;
-    u16 selfSpeed;
     u8 i;
+    u8 faster = 0;
+    u16 selfSpeed;
+    u16 speeds[2];
     if (self == 0) {
         return 0;
     }
@@ -1746,9 +1734,9 @@ void fightAi_AddStoreTokusei(FightOutPokemon* a, FIGHT_TRAINER* t) {
     u16 entry;
     u8 tokusei0;
     u8 tokusei1;
-    FightPokemon* fp;
-    Pokemon* pokemon;
     u16 current;
+    Pokemon* pokemon;
+    FightPokemon* fp;
     if (a != 0 && t != 0) {
         fp = fightOutPokemon_GetFightPokemonPtr(a);
         pokemon = fightPokemon_GetPokemonBuffPtr(fp);
@@ -1806,7 +1794,7 @@ u8 fightAi_GetTokuseiHaveFlag(u32 trainer, FightOutPokemon* a, u16 tokusei) {
 void fightAi_DereteExpectWaza(FightOutPokemon* a, FIGHT_TRAINER* t, u16 waza) {
     u8 i;
     u16 entry;
-    u8 next;
+    u32 next;
     if (a != 0 && t != 0) {
         entry = fightPokemon_GetEntryId(fightOutPokemon_GetFightPokemonPtr(a));
         for (i = 0; i < 8; i++) {
@@ -1824,9 +1812,9 @@ void fightAi_DereteExpectWaza(FightOutPokemon* a, FIGHT_TRAINER* t, u16 waza) {
     }
 }
 void fightAi_AddStoreWaza(FightOutPokemon* a, FIGHT_TRAINER* t, u16 waza) {
+    u8 j;
     u8 i;
     u16 entry;
-    u8 j;
     if (a != 0 && t != 0) {
         entry = fightPokemon_GetEntryId(fightOutPokemon_GetFightPokemonPtr(a));
         for (i = 0; i < 4; i++) {
@@ -1835,7 +1823,8 @@ void fightAi_AddStoreWaza(FightOutPokemon* a, FIGHT_TRAINER* t, u16 waza) {
             }
             if (fightTrainer_GetEnemyStoreWazaData(t, entry, i) == 0) {
                 fightTrainer_SetEnemyStoreWazaData(t, entry, i, waza);
-                fightTrainer_SetEnemyStoreWazaNum(t, entry, fightTrainer_GetEnemyStoreWazaNum(t, entry) + 1);
+                u8 num = fightTrainer_GetEnemyStoreWazaNum(t, entry);
+                fightTrainer_SetEnemyStoreWazaNum(t, entry, num + 1);
                 break;
             }
         }
@@ -1867,14 +1856,14 @@ s32 fightAi_GetEnemyWazaAndFlag(FIGHT_TRAINER* t, FightPokemon* p, u16* out, u8 
         if (*out == 0) {
             return 0;
         }
-        return *out <= 0x176;
+        return *out <= 0x176 ? 1 : 0;
     }
     return 0;
 }
 u32 fightAi_GetWazaHaveFlag(FIGHT_TRAINER* t, FightPokemon* p, u16 waza) {
-    u16 entry;
-    Pokemon* pokemon;
     u8 i;
+    Pokemon* pokemon;
+    u16 entry;
     u8 j;
     if (t == 0) {
         return 0;
@@ -1954,13 +1943,18 @@ u8 fightTrainerAiDB_GetStrokeValue(u16 id);
 
 extern "C" {
 void fightAi_CheckDoFightActionStroke(FIGHT_TRAINER* t) {
-    AllWazaValid best;
-    u8 bestValue = 0;
+    AllWazaValid* x;
+    AllWazaValid* e;
+    u8 j;
+    bool bestValue = 0;
+    u8 value;
     u8 type = fightFloor_GetFightType(0);
-    u8 done = 0;
+    bool done = 0;
     u8 stroke;
     u8 i;
-    u8 j;
+    AllWazaValid best;
+    void* act1;
+    s32 total;
     if (t == 0) {
         return;
     }
@@ -1970,8 +1964,7 @@ void fightAi_CheckDoFightActionStroke(FIGHT_TRAINER* t) {
     }
     fightAi_InitAllWazaValidSub(&best);
     for (i = 0; i < 0x3F; i++) {
-        AllWazaValid* x = &ai_allwaza_valid_tbl[i];
-        for (j = i + 1; j < 0x40; j++) {
+        for (j = i + 1, x = &ai_allwaza_valid_tbl[i]; j < 0x40; j++) {
             AllWazaValid* y = &ai_allwaza_valid_tbl[j];
             if (x->g < y->g) {
                 fightAi_CopyAllWazaValidTable(&best, x);
@@ -1983,16 +1976,15 @@ void fightAi_CheckDoFightActionStroke(FIGHT_TRAINER* t) {
     fightAi_InitAllWazaValidSub(&best);
     for (i = 0; i < 0x40; i++) {
         AllWazaValid* e = &ai_allwaza_valid_tbl[i];
-        u8 value;
         void* act0;
         AI_STROKE_VALUE(e, value);
         act0 = fightOutPokemon_GetFightActionBuffPtr((FightOutPokemon*)e->a[0]);
         if (act0) {
-            void* act1 = fightOutPokemon_GetFightActionBuffPtr((FightOutPokemon*)e->a[1]);
+            act1 = fightOutPokemon_GetFightActionBuffPtr((FightOutPokemon*)e->a[1]);
             if (act1 && fightActionCheckValid(act0) != 1 && fightActionCheckValid(act1) != 1 && e->k[0] == 3 && e->k[1] == 3 &&
                 _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza(e->c[0]) == 0 &&
                 _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza(e->c[1]) == 0) {
-                s32 total = value + stroke;
+                total = value + stroke;
                 if (total >= 100 && bestValue < total) {
                     fightAi_CopyAllWazaValidTable(&best, e);
                     bestValue = total;
@@ -2014,10 +2006,10 @@ void fightAi_CheckDoFightActionStroke(FIGHT_TRAINER* t) {
     if (done == 0) {
         fightAi_InitAllWazaValidSub(&best);
         for (i = 0; i < 0x40; i++) {
-            AllWazaValid* e = &ai_allwaza_valid_tbl[i];
-            u8 value;
-            void* act0;
+            e = &ai_allwaza_valid_tbl[i];
             void* act1;
+            void* act0;
+            u8 value;
             AI_STROKE_VALUE(e, value);
             act0 = fightOutPokemon_GetFightActionBuffPtr((FightOutPokemon*)e->a[0]);
             if (act0 && (act1 = fightOutPokemon_GetFightActionBuffPtr((FightOutPokemon*)e->a[1])) != 0 &&
@@ -2047,7 +2039,7 @@ static u8 _fightAi_CheckDoFightActionStrokeCheckIgnoreWaza(u16 waza) {
 }
 extern "C" {
 FightOutPokemon** fightAi_JudgeMoveFightOutPokemon(FIGHT_TRAINER* t, FightOutPokemon** ary, u16* count) {
-    u8 i;
+    bool i;
     u8 j;
     u16 n = *count;
     for (i = 0; i < n; i++) {
@@ -2060,7 +2052,8 @@ FightOutPokemon** fightAi_JudgeMoveFightOutPokemon(FIGHT_TRAINER* t, FightOutPok
                 ary[i] = 0;
                 *count -= 1;
             }
-            if (fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, ary[i]) != (u32)t) {
+            s32 cmpv = fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, ary[i]);
+            if (cmpv != (u32)t) {
                 ary[i] = 0;
                 *count -= 1;
             }
@@ -2083,9 +2076,10 @@ FightOutPokemon** fightAi_JudgeMoveFightOutPokemon(FIGHT_TRAINER* t, FightOutPok
 }
 extern "C" {
 void fightTrainerAiSortFirstSelectPokemonAry(s32 p0, s32 p1, s32 p2, u16 p3, u16 p4) {
+    enum TsE { TsE0 };
     s32 sp424;
     u16 sp406;
-    u8 sp405;
+    enum TsE sp405;
     u8 sp404;
     u8 sp403;
     u8 sp402;
@@ -2172,7 +2166,7 @@ void fightTrainerAiSortFirstSelectPokemonAry(s32 p0, s32 p1, s32 p2, u16 p3, u16
             sp402 = M2C_FIELD(temp_r3, u8 *, 0xDA);
             sp403 = M2C_FIELD(temp_r3, u8 *, 0xDB);
             sp404 = M2C_FIELD(temp_r3, u8 *, 0xDC);
-            sp405 = M2C_FIELD(temp_r3, u8 *, 0xDD);
+            sp405 = (enum TsE)(M2C_FIELD(temp_r3, u8 *, 0xDD));
             sp406 = M2C_FIELD(temp_r3, u16 *, 0xDE);
             M2C_STRUCT_COPY((s32) &sp404 + 4, (s32) (((u8*)(temp_r3) + 0xDC)) + 4, 0x20);
             M2C_STRUCT_COPY((s32) &sp424 + 4, (s32) (((u8*)(temp_r3) + 0xFC)) + 4, 0x200);
@@ -2191,24 +2185,20 @@ void fightTrainerAiSortFirstSelectPokemonAry(s32 p0, s32 p1, s32 p2, u16 p3, u16
             M2C_STRUCT_COPY((s32) &sp104 + 4, (s32) (temp_r3_2 + 0xDC) + 4, 0x20);
             M2C_STRUCT_COPY((s32) &sp124 + 4, (s32) (temp_r3_2 + 0xFC) + 4, 0x200);
             var_r5 = 0;
-loop_4:
-            if (var_r5 < p3) {
+            while (var_r5 < p3) {
                 temp_r3_3 = (var_r5 * 4) & 0x3FFFC;
                 var_r5 += 1;
                 *((u8 *)p2 + temp_r3_3) = 0;
-                goto loop_4;
             }
             var_r5_2 = 0;
             var_r21 = 0;
-loop_7:
-            if (var_r5_2 < 6U) {
+            while (var_r5_2 < 6U) {
                 temp_r0 = var_r5_2;
                 var_r5_2 += 1;
                 *(&sp8 + temp_r0) = 0;
-                goto loop_7;
             }
             var_r15 = 1;
-            if (fightTrainerAiDB_GetPokemonDataOrderAceBossFlag(temp_r31) != 1) {
+            if ((s16)fightTrainerAiDB_GetPokemonDataOrderAceBossFlag(temp_r31) != 1) {
                 var_r15 = p4;
             }
             temp_ret = fightTrainer_GetFightTrainerDataId((FIGHT_TRAINER *)((u8*)((u8 *) p0)));
@@ -2303,13 +2293,11 @@ loop_35:
             if (fightTrainerAiDB_GetPokemonSelectRandomFlag(temp_r31) != 1) {
                 if (fightTrainerAiDB_GetPokemonDataOrderOutFlag(temp_r31) == 1) {
                     var_r20 = 0;
-loop_51:
-                    if (var_r20 < p3) {
+                    while (var_r20 < p3) {
                         temp_r16 = (var_r20 * 4) & 0x3FFFC;
                         if ((u32) *((u8 *)p2 + temp_r16) != 0U) {
                             var_r21_2 = var_r20 + 1;
-loop_49:
-                            if (var_r21_2 < p3) {
+                            while (var_r21_2 < p3) {
                                 temp_r15 = (var_r21_2 * 4) & 0x3FFFC;
                                 if ((u32) *((u8 *)p2 + temp_r15) != 0U) {
                                     temp_r29 = pokemon_GetFightTrainerPokemonDataId((Pokemon*)(*((u8 *)p2 + temp_r16)));
@@ -2321,11 +2309,9 @@ loop_49:
                                     }
                                 }
                                 var_r21_2 += 1;
-                                goto loop_49;
                             }
                         }
                         var_r20 += 1;
-                        goto loop_51;
                     }
                 } else {
                     var_r12 = var_r29;
@@ -2333,9 +2319,9 @@ loop_63:
                     if ((u16) var_r12 < p3) {
                         temp_r7 = (var_r12 * 4) & 0x3FFFC;
                         if ((u32) *((u8 *)p2 + temp_r7) != 0U) {
-                            var_r15_2 = var_r12 + 1;
-loop_61:
-                            if (var_r15_2 < p3) {
+                            var_r15_2 = 1;
+                            var_r15_2 += var_r12;
+                            while (var_r15_2 < p3) {
                                 temp_r6_3 = (var_r15_2 * 4) & 0x3FFFC;
                                 temp_r11 = *((u8 *)p2 + temp_r6_3);
                                 if (temp_r11 != 0U) {
@@ -2351,7 +2337,6 @@ loop_61:
                                     }
                                 }
                                 var_r15_2 += 1;
-                                goto loop_61;
                             }
                         }
                         var_r12 += 1;
@@ -2394,10 +2379,11 @@ loop_61:
 
 extern "C++" {
 static u16 _fightTrainerAiSortFirstSelectPokemonArySubSelect(FIGHT_TRAINER* p0, Hero* p1, Pokemon** p2, unsigned short p3, unsigned char p4, Pokemon** p5) {
+    enum TsE { TsE0 };
     s32 sp404;
     u16 sp3E6;
     u8 sp3E5;
-    u8 sp3E4;
+    enum TsE sp3E4;
     u8 sp3E3;
     u8 sp3E2;
     s16 sp3E0;
@@ -2434,12 +2420,10 @@ static u16 _fightTrainerAiSortFirstSelectPokemonArySubSelect(FIGHT_TRAINER* p0, 
 
     fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId((FIGHT_TRAINER *)((u8*)((u8 *) p0))));
     var_r4 = 0;
-loop_2:
-    if (var_r4 < 6U) {
+    while (var_r4 < 6U) {
         temp_r0 = (var_r4 * 4) & 0x3FFFC;
         var_r4 += 1;
         *(p5 + temp_r0) = 0;
-        goto loop_2;
     }
     temp_r3 = (FightPokemon *)(fightTrainer_GetFightPokemonPtr((u8*)((u8 *) p0), 0U));
     if (temp_r3 == NULL) {
@@ -2458,7 +2442,7 @@ loop_2:
     sp3E0 = M2C_FIELD(temp_r3, s16 *, 0xD8);
     sp3E2 = M2C_FIELD(temp_r3, u8 *, 0xDA);
     sp3E3 = M2C_FIELD(temp_r3, u8 *, 0xDB);
-    sp3E4 = M2C_FIELD(temp_r3, u8 *, 0xDC);
+    sp3E4 = (enum TsE)(M2C_FIELD(temp_r3, u8 *, 0xDC));
     sp3E5 = M2C_FIELD(temp_r3, u8 *, 0xDD);
     sp3E6 = M2C_FIELD(temp_r3, u16 *, 0xDE);
     M2C_STRUCT_COPY((s32) &sp3E4 + 4, (s32) (((u8*)(temp_r3) + 0xDC)) + 4, 0x20);
@@ -2478,15 +2462,12 @@ loop_2:
     M2C_STRUCT_COPY((s32) &spE4 + 4, (s32) (temp_r3_2 + 0xDC) + 4, 0x20);
     M2C_STRUCT_COPY((s32) &sp104 + 4, (s32) (temp_r3_2 + 0xFC) + 4, 0x200);
     var_r4_2 = 0;
-loop_9:
-    if (var_r4_2 < p3) {
+    while (var_r4_2 < p3) {
         var_r4_2 += 1;
-        goto loop_9;
     }
     var_r27 = 0;
     var_r28 = 0;
-loop_32:
-    if (var_r28 < 6U) {
+    while (var_r28 < 6U) {
         temp_r3_3 = heroGetStatus((Hero*)(p1), 3U, var_r28);
         if ((temp_r3_3 != 0) && (pokemonCheckValid((Pokemon*)((Pokemon *) temp_r3_3)) != 0) && (pokemonCheckFightOut((Pokemon*)((Pokemon *) temp_r3_3)) != 0)) {
             var_r4_3 = 0;
@@ -2502,7 +2483,8 @@ loop_18:
                 fightPokemonCreate((FightTrainer*)((FightTrainer *) p0), (FightPokemon*)(temp_r3), (Pokemon*)((Pokemon *) temp_r3_3), fightFloorGetFightPokemonEntryCntInc((FIGHT_FLOOR*)(NULL)));
                 switch (p4) {                       /* irregular */
                 case 1:
-                    if (fightTrainerAiGetFightPokemonKeyPlayerFlag((FIGHT_TRAINER*)(p0), (FightPokemon*)(temp_r3)) == 2) {
+                    s32 cmpv = fightTrainerAiGetFightPokemonKeyPlayerFlag((FIGHT_TRAINER*)(p0), (FightPokemon*)(temp_r3));
+                    if (cmpv == 2) {
                     default:
                     case 0:
 block_30:
@@ -2525,7 +2507,6 @@ block_30:
             }
         }
         var_r28 += 1;
-        goto loop_32;
     }
     M2C_FIELD(temp_r3, s32 *, 0) = sp308;
     memcpy((void*)(((u8*)(temp_r3) + 4)), (const void*)(&sp30C), 0xC4U);
@@ -2572,7 +2553,11 @@ u8 fightTrainerAiCheckDoFightActionIrekae(FIGHT_TRAINER* t) {
     return result;
 }
 u32 fightTrainerAiGetPokemonDataDefense(FIGHT_TRAINER* t, u16 id) {
-    u16 def;
+ // The original saw 32-bit return types here (no masks on the sum), while the BasisPhyDef/SpeDef wrappers below
+ // need the u16 prototypes: block-scope declarations reproduce both.
+    extern u32 pokemonDB_GetBasisPhyDef(u16);
+    extern u32 pokemonDB_GetBasisSpeDef(u16);
+    u32 def;
     fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(t));
     def = pokemonDB_GetBasisPhyDef(id);
     return def + pokemonDB_GetBasisSpeDef(id);
@@ -2742,10 +2727,10 @@ FightOutPokemon* fightTrainerAiGetFightFloorFightOutPokemonPtrAryPokemonTokuseiD
 }
 }
 static s32 _fightTrainerAiGetFightFloorFightOutPokemonPtrAryPokemonTokuseiDataIdFirstSub(void* mon, u16 index, void* data) {
+    void* refSide;
     TokuseiSearch* search = (TokuseiSearch*)data;
     FightOutPokemon* ref = search->ref;
     FIGHT_TRAINER* trainer = search->trainer;
-    void* refSide;
     void* monSide;
     if (fightOutPokemonCheckFightOut(mon) == 0) {
         return 1;
@@ -2809,11 +2794,13 @@ u8 fightTrainerAiCheckHaveFightOutPokemonWazaDataId(FIGHT_TRAINER* t, FightOutPo
     return 0;
 }
 u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(FIGHT_TRAINER* t, FightOutPokemon* a, u16* ids, s16* indices, u8 check) {
-    u8 type = fightFloor_GetFightType(0);
+    extern u32 fightTrainerAiCheckFightOutPokemonCanOutOkWazaBanme(FIGHT_TRAINER*, FightOutPokemon*, u8);
+    extern u16 fightTrainerAiGetFightOutPokemonWazaDataId(FIGHT_TRAINER*, FightOutPokemon*, u8);
+    u16 j;
     u16 count;
     u16 entry;
     u16 i;
-    u16 j;
+    u8 type = fightFloor_GetFightType(0);
     fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(t));
     entry = fightPokemon_GetEntryId(fightOutPokemon_GetFightPokemonPtr(a));
     if (a == 0) {
@@ -2867,11 +2854,13 @@ u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(FIGHT_TRAINER* t, FightOutPoke
     return count;
 }
 u16 fightTrainerAiGetFightPokemonWazaDataIdAry(FIGHT_TRAINER* t, FightPokemon* p, u16* ids, s16* indices, u8 check) {
-    u8 type = fightFloor_GetFightType(0);
+    extern u8 fightTrainerAiGetFightPokemonWazaNowPp(FIGHT_TRAINER*, FightPokemon*, u8);
+    extern u16 fightTrainerAiGetFightPokemonWazaDataId(FIGHT_TRAINER*, FightPokemon*, u8);
+    u16 j;
     u16 count;
     u16 entry;
     u16 i;
-    u16 j;
+    u8 type = fightFloor_GetFightType(0);
     fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(t));
     entry = fightPokemon_GetEntryId(p);
     if (p == 0) {
@@ -3365,7 +3354,8 @@ static u16 _fightTrainerAiGetFightPokemonTokuseiDataId(FIGHT_TRAINER* t, FightPo
     pokemon = fightPokemonGetPokemonPtr(p);
     entry = fightPokemon_GetEntryId(p);
     if (fightTrainerAiDB_GetTokuseiCheckFlag(ai) == 1) {
-        if ((u32)t != fightFloorGetFightPokemonPtrToFightTrainerPtr(0, p)) {
+        u32 owner = fightFloorGetFightPokemonPtrToFightTrainerPtr(0, p);
+        if (owner != (u32)t) {
             return fightTrainer_GetEnemyStoreTokuseiData(t, entry);
         }
         return pokemonGetTokuseiDataId(pokemon);
@@ -3482,7 +3472,7 @@ u16 fightTrainerAiGetWazaZokuseiDataId(FIGHT_TRAINER* t, u16 waza, FightOutPokem
     fightTrainer_GetFightTrainerDataId(t);
     ai = fightTrainerDB_GetAiDataId(0);
     weather = fightTrainerAiGetFightFloorNowTenkouDataId(t, 0, 1);
-    if (fightTrainerAiDB_GetZokuseiCheckFlag(ai) == 1) {
+    if ((s16)fightTrainerAiDB_GetZokuseiCheckFlag(ai) == 1) {
         if (waza == 0xa5 || wazaCheckDarkWaza(waza) == 1 || waza == 0xf8 || waza == 0x161) {
             return 9;
         }
@@ -3582,28 +3572,30 @@ s32 fightTrainerAiAddValue(s32 value, s32 delta)
 #pragma pop
 void fightTrainerAiSetAllyPokemon(FIGHT_TRAINER* t) {
     u16 wazas[8];
-    FightOutPokemon* outs[8];
+    u16 k;
     FightPokemon* pokes[8];
     u16 outCount;
     u16 pokeCount;
     u16 i;
     u16 j;
-    u16 k;
+    s32 damage;
+    FightOutPokemon* o;
+    FightOutPokemon* outs[8];
     outCount = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, t, outs, 0, 1);
     pokeCount = fightFloorGetFightTrainerFightPokemonPtrAry(0, t, pokes, 1, 1);
     for (i = 0; i < pokeCount; i++) {
         FightPokemon* fp = pokes[i];
         if (fp != 0) {
             for (j = 0; j < outCount; j++) {
-                FightOutPokemon* o = outs[j];
+                o = outs[j];
                 if (o != 0 && fightOutPokemonGetFightEntryId(o) >= 0) {
                     u16 n = fightTrainerAiGetFightOutPokemonWazaDataIdAry(t, o, wazas, 0, 0);
                     u16 maxHp = fightOutPokemonMaxHpWaruValue(o, 1);
                     for (k = 0; k < n; k++) {
-                        s32 damage = 0;
+                        damage = 0;
                         u16 waza = wazas[k];
                         if (waza != 0 && waza != 0x176 && fightTrainerAiGetWazaZokuseiDataId(t, waza, o) != 9) {
-                            u16 index;
+                            u32 index;
                             if (fightTrainerAiIsWazaTypeId(t, waza, 1) == 1) {
                                 damage = fightTrainerAiWazaDoWazaDamageFightPokemonFunc(t, o, waza, fp, 0);
                             }
@@ -3633,19 +3625,23 @@ void fightTrainer_SetEnemyDefense1banhikuiFlag(u8* t, s16 id, u8 v);
 void fightTrainer_SetEnemyBadwazaHaveFlag(u8* t, s16 id, u8 v);
 void fightTrainer_SetEnemyParam1bantakaiFlag(u8* t, s16 id, u8 v);
 void fightTrainerAiSetEnemyPokemon(FIGHT_TRAINER* t) {
-    u16 wazaIds[8];
+    FightOutPokemon* enemies[8];
     u32 param[8];
     s32 percent[8];
-    u32 damage[8];
+    u16 wazaIds[8];
     FightOutPokemon* allies[8];
-    FightOutPokemon* enemies[8];
+    u32 damage[8];
     u16 enemyNum;
     u16 allyNum;
     u16 minHp;
     s32 maxPercent;
-    u16 minDef;
-    s32 maxParam;
+    FightOutPokemon* e;
+    FightOutPokemon* a;
+    s16 entry;
+    u16 waza;
     u8 minLv;
+    s32 maxParam;
+    u16 minDef;
     u32 i;
     fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(t));
     fightTrainerInitEnemyPokemonFightOutStatus(t, 1);
@@ -3660,16 +3656,16 @@ void fightTrainerAiSetEnemyPokemon(FIGHT_TRAINER* t) {
     minDef = 0xFFFF;
     maxParam = -0xFFFF;
     minLv = 0xFF;
-    for (i = 0; i < enemyNum; i++) {
-        FightOutPokemon* e = enemies[i];
+    for (u16 i = 0; i < enemyNum; i++) {
+        e = enemies[i];
         if (e) {
-            s16 entry = fightOutPokemonGetFightEntryId(e);
+            entry = fightOutPokemonGetFightEntryId(e);
             if (entry >= 0) {
                 u16 mons = fightTrainerAiGetFightOutPokemonPokemonDataId(t, e);
-                u16 wazaNum = fightTrainerAiGetFightOutPokemonWazaDataIdAry(t, e, wazaIds, 0, 0);
+                u32 k;
                 u16 hp;
                 u32 j;
-                u32 k;
+                u16 wazaNum = fightTrainerAiGetFightOutPokemonWazaDataIdAry(t, e, wazaIds, 0, 0);
                 u16 v = fightTrainerAiGetFightOutPokemonNowHpPercentage(t, e);
                 if (minHp > v) {
                     minHp = v;
@@ -3696,11 +3692,11 @@ void fightTrainerAiSetEnemyPokemon(FIGHT_TRAINER* t) {
                 }
                 fightAi_AddStoreTokusei(e, t);
                 hp = pokemon_GetHp(fightOutPokemonGetPokemonPtr(e));
-                for (j = 0; j < allyNum; j++) {
-                    FightOutPokemon* a = allies[j];
+                for (u16 j = 0; j < allyNum; j++) {
+                    a = allies[j];
                     if (a) {
-                        for (k = 0; k < wazaNum; k++) {
-                            u16 waza = wazaIds[k];
+                        for (u16 k = 0; k < wazaNum; k++) {
+                            waza = wazaIds[k];
                             if (waza != 0 && waza != 0x176 && fightTrainerAiGetWazaZokuseiDataId(t, waza, e) != 9 &&
                                 fightTrainerAiIsWazaTypeId(t, waza, 1) != 0) {
                                 damage[i] += fightTrainerAiWazaDoWazaDamageFunc(t, e, waza, a, 0);
@@ -3728,19 +3724,20 @@ void fightTrainerAiSetEnemyPokemon(FIGHT_TRAINER* t) {
             }
         }
     }
-    for (i = 0; i < enemyNum; i++) {
+    for (u16 i = 0; i < enemyNum; i++) {
         FightOutPokemon* e = enemies[i];
         if (e) {
             s16 entry = fightOutPokemonGetFightEntryId(e);
             if (entry >= 0) {
-                u16 mons = fightTrainerAiGetFightOutPokemonPokemonDataId(t, e);
+                u32 mons = fightTrainerAiGetFightOutPokemonPokemonDataId(t, e);
                 if ((s32)minHp >= fightTrainerAiGetFightOutPokemonNowHpPercentage(t, e)) {
                     fightTrainer_SetEnemyNowhp1banhikuiFlag((u8*)t, entry, 1);
                 }
                 if (minLv >= fightTrainerAiGetFightOutPokemonLevel(t, e)) {
                     fightTrainer_SetEnemyLv1banhikuiFlag((u8*)t, entry, 1);
                 }
-                if (minDef >= fightTrainerAiGetPokemonDataDefense(t, mons)) {
+                u16 cmpv = fightTrainerAiGetPokemonDataDefense(t, mons);
+                if (minDef >= cmpv) {
                     fightTrainer_SetEnemyDefense1banhikuiFlag((u8*)t, entry, 1);
                 }
                 if (maxPercent <= percent[i]) {
@@ -3756,7 +3753,7 @@ void fightTrainerAiSetEnemyPokemon(FIGHT_TRAINER* t) {
 }
 
 extern "C" {
-void* fightTypeDataBiosGetPtr(u16 id);
+void* fightTypeDataBiosGetPtr(u32 id);
 u8 fightTypeDataBiosGetFightoutPokemonNum(void* data);
 FightOutPokemon* fightTrainerGetValidFightOutPokemonPtr(void* trainer, u16 index);
 u8 fightOutPokemonCheckFightActionSelect(FightOutPokemon* fop, u8 create);
@@ -3777,7 +3774,8 @@ void fightAiCombo_Act(FIGHT_TRAINER* trainer, FightOutPokemon** ary, u8 count, v
 void fightTrainerAiSelectFightActionWaza(FIGHT_TRAINER* trainer, FightOutPokemon* pokemon, void* target);
 
 void fightTrainerAiSelectFightAction(FIGHT_TRAINER* trainer, void* target) {
-    u8 num;
+    FightOutPokemon* p;
+    int num;
     u8 i;
     u8 count;
     FightOutPokemon* list[8];
@@ -3786,7 +3784,7 @@ void fightTrainerAiSelectFightAction(FIGHT_TRAINER* trainer, void* target) {
     fightTrainerAiSetAllyPokemon(trainer);
     num = fightTypeDataBiosGetFightoutPokemonNum(fightTypeDataBiosGetPtr((u32)target));
     for (i = 0; i < num; i++) {
-        FightOutPokemon* p = fightTrainerGetValidFightOutPokemonPtr(trainer, i);
+        p = fightTrainerGetValidFightOutPokemonPtr(trainer, i);
         if (p && fightOutPokemonCheckFightActionSelect(p, 1) != 0) {
             fightOutPokemonInitFightActionBuff(p);
         }
@@ -3820,21 +3818,19 @@ void fightTrainerAiSelectFightAction(FIGHT_TRAINER* trainer, void* target) {
     for (i = 0; i < 8; i++) {
         list[i] = 0;
     }
-    count = 0;
-    for (i = 0; i < num; i++) {
+    for (i = 0, count = 0; i < num; i++) {
         FightOutPokemon* p = fightTrainerGetNoActionFightOutPokemonPtr(trainer, i);
         if (p) {
             list[count++] = p;
         }
     }
     if (count) {
-        fightAiCombo_Act(trainer, list, count, target);
+        fightAiCombo_Act(trainer, list, (u16)count, target);
     }
     for (i = 0; i < 8; i++) {
         list[i] = 0;
     }
-    count = 0;
-    for (i = 0; i < num; i++) {
+    for (i = 0, count = 0; i < num; i++) {
         FightOutPokemon* p = fightTrainerGetNoActionFightOutPokemonPtr(trainer, i);
         if (p && fightOutPokemonCheckFightActionWazaSelect(p, 1) == 0) {
             list[count++] = p;

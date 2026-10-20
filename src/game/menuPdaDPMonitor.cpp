@@ -107,10 +107,7 @@ public:
 static inline void dpmVertex(tagWINDOW_WORK* window, s16 x, s16 y, f32 u, f32 v) {
     GXFifoNV.s16 = x;
     GXFifoNV.s16 = y;
-    GXFifoNV.u8 = 0xFF;
-    GXFifoNV.u8 = 0xFF;
-    GXFifoNV.u8 = 0xFF;
-    GXFifoNV.u8 = window->alpha;
+    GXColor4u8(0xFF, 0xFF, 0xFF, window->alpha);
     GXFifoNV.f32 = u;
     GXFifoNV.f32 = v;
 }
@@ -360,8 +357,8 @@ void menuPdaDPM::Cursor(tagWINDOW_WORK* window) {
             c->pos = 0;
         }
     } else if (pos >= visible) {
+        c->top += pos - (visible - 1);
         last = visible - 1;
-        c->top += pos - last;
         c->pos = last;
         if (c->top + c->pos >= n) {
             c->pos = last;

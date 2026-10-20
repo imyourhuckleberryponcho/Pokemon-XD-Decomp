@@ -10,3 +10,8 @@ block_relocations:
 - target: .text:0x80007F00
 - target: .text:0x8000FF00
 - target: .text:0x800A0B00
+# psSetupTev compares against constants that look like .text addresses
+- source: .text:0x8018F104
+- source: .text:0x8018F10C
+- source: .text:0x8018F184
+- source: .text:0x8018F194

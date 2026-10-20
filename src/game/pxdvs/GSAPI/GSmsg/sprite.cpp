@@ -1,375 +1,346 @@
+// 2D sprite environment for a graphics layer: per-layer offset/scale, scissor box and the orthographic-looking
+// perspective camera used to draw menu sprites.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
-#ifndef M2C_MACROS_H
-#define M2C_MACROS_H
-typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
-#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
-#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
-#define M2C_ERROR(desc) (0)
-#define M2C_TRAP_IF(cond) (0)
-#define M2C_BREAK() (0)
-#define M2C_SYNC() (0)
-#ifdef __cplusplus
-template <int N> struct M2C_Blob { u8 b[N]; };
-#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
-#else
-#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
-#endif
-#define M2C_CARRY 0
-#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
-#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
-#endif
+#include <dolphin/mtx.h>
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
-#ifndef M2C_MACROS_H
-#define M2C_MACROS_H
-typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
-#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
-#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
-#define M2C_ERROR(desc) (0)
-#define M2C_TRAP_IF(cond) (0)
-#define M2C_BREAK() (0)
-#define M2C_SYNC() (0)
-#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
-#define M2C_CARRY 0
-#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
-#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
-#endif
-struct GSgfxLayer;
-enum Mtx { Mtx_draft_dummy };
-enum Mtx44 { Mtx44_draft_dummy };
-struct Point3d;
-struct Vec;
+struct BlendState {
+    u8 pad[0xbc];
+};
+
+struct GSlayerCam {
+    u32 pad;
+    u32* data;
+};
+
+class GSgfxLayer {
+public:
+    u8 pad0[0xd54];
+    s32 projType;
+    f32 proj[6];
+    u16 scissorX;
+    u16 scissorY;
+    u16 scissorW;
+    u16 scissorH;
+    u8 pad_d78[0xd8c - 0xd78];
+    s32 d8c;
+    u8 pad_d90[0x1644 - 0xd90];
+    s32 blendOp;
+    s32 blendSrc;
+    s32 blendDst;
+    s32 blendLogic;
+    u8 pad_1654[2];
+    u8 colorUpdate;
+    u8 alphaUpdate;
+    u8 zUpdate;
+    u8 pad_1659[3];
+    u8 zEnable;
+    u8 pad_165d[3];
+    s32 zFunc;
+    s32 f1664;
+    s32 f1668;
+    s32 f166c;
+    u8 f1670;
+    u8 f1671;
+    u8 f1672;
+    u8 pad_1673[0x1684 - 0x1673];
+    f32 nearZ;
+    f32 farZ;
+    u8 pad_168c[0x16a6 - 0x168c];
+    u8 f16a6;
+    u8 f16a7;
+    u32 dirty16a8;
+    u32 dirty16ac;
+    u8 pad_16b0[8];
+    u32 dirty16b8;
+    u8 pad_16bc[0x170c - 0x16bc];
+    u32 dirty170c;
+    u8 pad_1710[0x1760 - 0x1710];
+    u32 dirty1760;
+    u32 dirty1764;
+    u8 pad_1768[8];
+    u32 dirty1770;
+    u8 pad_1774[0x17c4 - 0x1774];
+    u32 dirty17c4;
+    u8 pad_17c8[0x1818 - 0x17c8];
+    BlendState blendTable[2];
+    BlendState* curBlend;
+    s32 curBlendIdx;
+    u8 pad_1998[0x19a0 - 0x1998];
+    GSlayerCam* cam;
+};
+
+struct SpriteWork {
+    f32 offX;
+    f32 offY;
+    f32 scaleX;
+    f32 scaleY;
+};
 
 extern "C" {
-// ---- draft declarations ----
-struct GSgfxLayer {
-    u8 _draft[1];
-};
-struct Point3d {
-    u8 _draft[1];
-};
-struct Vec {
-    u8 _draft[1];
-};
-struct _struct__spriteWork_0x10 {
-     f32 unk0;                            
-     f32 unk4;                            
-     f32 unk8;                            
-     f32 unkC;                            
-};
-extern "C" {
-void C_MTXLookAt(Mtx m, const Point3d* camPos, const Vec* camUp, const Point3d* target);
-int GSgfxLayerFindByID(int id);
+GSgfxLayer* GSgfxLayerFindByID(s32 id);
 void GSgfxVideoGetEFBSize(u16* w, u16* h);
 void GSmtx44Perspective(Mtx44 m, f32 fovY, f32 aspect, f32 n, f32 f);
-asm void PSMTXConcat(const register Mtx a, const register Mtx b, register Mtx ab);
-GSgfxLayer* floorGetMenuLayerID(void);
-void* memcpy(void* dst, const void* src, size_t n);
-void spriteClearEnv();
-void spriteClearScissor();
-void spriteSetOffset(s32 p0, s16 p1, s16 p2);
+s32 floorGetMenuLayerID(void);
+void* memcpy(void* dst, const void* src, u32 n);
 double tan(double x);
-extern void* _TargetLayer;
-extern s32 mtxIdent;
+extern GSgfxLayer* _TargetLayer;
+extern Mtx mtxIdent;
 }
-static u8 _spriteWork[1];
+
+static SpriteWork _spriteWork[3] = {
+    {0.0f, 0.0f, 1.0f, 1.0f},
+    {0.0f, 0.0f, 1.0f, 1.0f},
+    {0.0f, 0.0f, 1.0f, 1.0f},
+};
+
 #pragma peephole off
-// ---- draft declarations ----
-
 
 extern "C" {
-void spriteGetOffset(s32 p0, s16 *p1, s16 *p2);
-void spriteSetEnv(s32 p0);
-void spriteSetScissor(s32 p0, s32 p1, s32 p2, s32 p3, s32 p4);
-}
 
-void spriteClearScissor() {
-    u8 *temp_r3;
-
-    temp_r3 = (unsigned char *)(GSgfxLayerFindByID(M2C_ERROR(/* Read from unset register $r3 */)));
-    _TargetLayer = temp_r3;
-    if (temp_r3 != NULL) {
-        M2C_FIELD(temp_r3, s16 *, 0xD70) = 0;
-        M2C_FIELD(temp_r3, s16 *, 0xD72) = 0;
-        GSgfxVideoGetEFBSize((u16*)(temp_r3 + 0xD74), (u16*)(temp_r3 + 0xD76));
-        M2C_FIELD(temp_r3, s32 *, 0x16B8) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x16B8) | 1);
-        M2C_FIELD(temp_r3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x16A8) | 2);
-        M2C_FIELD(temp_r3, s32 *, 0x1770) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x1770) | 1);
-        M2C_FIELD(temp_r3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x1760) | 2);
+void spriteClearScissor(s32 layer) {
+    GSgfxLayer* l = GSgfxLayerFindByID(layer);
+    _TargetLayer = l;
+    if (l != 0) {
+        l->scissorX = 0;
+        l->scissorY = 0;
+        GSgfxVideoGetEFBSize(&l->scissorW, &l->scissorH);
+        l->dirty16b8 |= 1;
+        l->dirty16a8 |= 2;
+        l->dirty1770 |= 1;
+        l->dirty1760 |= 2;
     }
 }
-extern "C" {
-void spriteSetScissor(s32 p0, s32 p1, s32 p2, s32 p3, s32 p4) {
-    f32 temp_f5;
-    f32 temp_f6;
-    s16 var_r0;
-    s32 var_r27;
-    s32 var_r28;
-    s32 var_r29;
-    s32 var_r30;
-    struct _struct__spriteWork_0x10 *temp_r31;
-    u8 *temp_r3;
 
-    if ((u32)(p0) == (s32)floorGetMenuLayerID()) {
-        var_r0 = 0;
-    } else if (p0 == 7) {
-        var_r0 = 1;
+void spriteSetScissor(s32 layer, s32 x, s32 y, s32 w, s32 h) {
+    enum TsE { TsE0 };
+    s16 idx;
+    if (layer == floorGetMenuLayerID()) {
+        idx = 0;
+    } else if (layer == 7) {
+        idx = 1;
     } else {
-        var_r0 = 2;
+        idx = 2;
     }
-    temp_r31 = (_struct__spriteWork_0x10 *)(&_spriteWork[var_r0]);
-    temp_r3 = (unsigned char *)(GSgfxLayerFindByID(p0));
-    _TargetLayer = temp_r3;
-    if (temp_r3 != NULL) {
-        temp_f5 = temp_r31->unk8;
-        temp_f6 = temp_r31->unkC;
-        var_r27 = (s32) ((f32) (s32) (temp_r31->unk0 + (f32) p1) * temp_f5);
-        var_r28 = (s32) ((f32) (s32) (temp_r31->unk4 + (f32) p2) * temp_f6);
-        var_r29 = (s32) ((f32) p3 * temp_f5);
-        var_r30 = (s32) ((f32) p4 * temp_f6);
-        if (var_r27 >= 0x280) {
-            var_r27 = 0x280;
+    SpriteWork* work = &_spriteWork[idx];
+    GSgfxLayer* l = GSgfxLayerFindByID(layer);
+    _TargetLayer = l;
+    if (l != 0) {
+        s32 sx = work->offX + (f32)x;
+        enum TsE sy = (enum TsE)(work->offY + (f32)y);
+        f32 scaleX = work->scaleX;
+        f32 scaleY = work->scaleY;
+        sx = (f32)sx * scaleX;
+        sy = (enum TsE)((f32)sy * scaleY);
+        w = (f32)w * scaleX;
+        h = (f32)h * scaleY;
+        if (sx >= 640) {
+            sx = 640;
         }
-        if (var_r28 >= 0x1E0) {
-            var_r28 = 0x1E0;
+        if (sy >= 480) {
+            sy = (enum TsE)(480);
         }
-        if (var_r29 >= 0x280) {
-            var_r29 = 0x280;
+        if (w >= 640) {
+            w = 640;
         }
-        if (var_r30 >= 0x1E0) {
-            var_r30 = 0x1E0;
+        if (h >= 480) {
+            h = 480;
         }
-        if (var_r27 < 0) {
-            var_r27 = 0;
+        if (sx < 0) {
+            sx = 0;
         }
-        if (var_r28 < 0) {
-            var_r28 = 0;
+        if (sy < 0) {
+            sy = (enum TsE)(0);
         }
-        if (var_r29 < 0) {
-            var_r29 = 0;
+        if (w < 0) {
+            w = 0;
         }
-        if (var_r30 < 0) {
-            var_r30 = 0;
+        if (h < 0) {
+            h = 0;
         }
-        M2C_FIELD(temp_r3, u16 *, 0xD70) = (u16) var_r27;
-        M2C_FIELD(temp_r3, u16 *, 0xD72) = (u16) var_r28;
-        M2C_FIELD(temp_r3, u16 *, 0xD74) = (u16) var_r29;
-        M2C_FIELD(temp_r3, u16 *, 0xD76) = (u16) var_r30;
-        M2C_FIELD(temp_r3, s32 *, 0x16B8) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x16B8) | 1);
-        M2C_FIELD(temp_r3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x16A8) | 2);
-        M2C_FIELD(temp_r3, s32 *, 0x1770) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x1770) | 1);
-        M2C_FIELD(temp_r3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x1760) | 2);
-    }
-}
-}
-
-#pragma peephole reset
-}
-
-extern "C" {
-extern "C" {
-void spriteClearEnv() {
-    u8 *temp_r3;
-
-    temp_r3 = (unsigned char *)(GSgfxLayerFindByID(M2C_ERROR(/* Read from unset register $r3 */)));
-    _TargetLayer = temp_r3;
-    if (temp_r3 != NULL) {
-        if ((s32) M2C_FIELD(temp_r3, s32 *, 0x1994) != 1) {
-            M2C_FIELD(temp_r3, s32 *, 0x1994) = 1;
-            M2C_FIELD(temp_r3, u8 **, 0x1990) = (u8 *) (temp_r3 + ((M2C_FIELD(temp_r3, s32 *, 0x1994) * 0xBC) + 0x1818));
-        }
-        M2C_FIELD(temp_r3, s32 *, 0x1644) = 1;
-        M2C_FIELD(temp_r3, s32 *, 0x1648) = 4;
-        M2C_FIELD(temp_r3, s32 *, 0x164C) = 5;
-        M2C_FIELD(temp_r3, s32 *, 0x1650) = 5;
-        M2C_FIELD(temp_r3, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x170C) | 1);
-        M2C_FIELD(temp_r3, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(temp_r3, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x17C4) | 1);
-        M2C_FIELD(temp_r3, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x1760) | 0x40);
+        l->scissorX = sx;
+        l->scissorY = sy;
+        l->scissorW = w;
+        l->scissorH = h;
+        l->dirty16b8 |= 1;
+        l->dirty16a8 |= 2;
+        l->dirty1770 |= 1;
+        l->dirty1760 |= 2;
     }
 }
-extern "C" {
-void spriteSetEnv(s32 p0) {
-    f32 sp34;
-    f32 sp40;
-    f32 sp44;
-    f32 sp54;
-    f32 sp58;
-    s32 sp6C;
-    f32 sp2C;
-    f32 sp28;
-    f32 sp24;
-    f32 sp20;
-    f32 sp1C;
-    f32 sp18;
-    f32 sp14;
-    f32 sp10;
-    f32 spC;
-    f32 sp8;
-    f32 temp_f28;
-    f32 temp_f29;
-    f32 temp_f2;
-    f32 temp_f2_2;
-    f32 temp_f30;
-    f32 temp_f31;
-    f32 temp_f4;
-    s16 var_r0;
-    s32 *temp_r3_2;
-    s32 *temp_r3_4;
-    s32 temp_r3_3;
-    struct _struct__spriteWork_0x10 *temp_r31;
-    u8 *temp_r31_2;
-    u8 *temp_r31_3;
-    u8 *temp_r31_4;
-    u8 *temp_r3;
 
-    if ((u32)(p0) == (s32)floorGetMenuLayerID()) {
-        var_r0 = 0;
-    } else if (p0 == 7) {
-        var_r0 = 1;
+void spriteClearEnv(s32 layer) {
+    GSgfxLayer* l = GSgfxLayerFindByID(layer);
+    _TargetLayer = l;
+    if (l != 0) {
+        if (l->curBlendIdx != 1) {
+            l->curBlendIdx = 1;
+            l->curBlend = &l->blendTable[l->curBlendIdx];
+        }
+        l->blendOp = 1;
+        l->blendSrc = 4;
+        l->blendDst = 5;
+        l->blendLogic = 5;
+        l->dirty170c |= 1;
+        l->dirty16a8 |= 0x40;
+        l->dirty17c4 |= 1;
+        l->dirty1760 |= 0x40;
+    }
+}
+
+void spriteSetEnv(s32 layer) {
+    s16 idx;
+    if (layer == floorGetMenuLayerID()) {
+        idx = 0;
+    } else if (layer == 7) {
+        idx = 1;
     } else {
-        var_r0 = 2;
+        idx = 2;
     }
-    temp_r31 = (_struct__spriteWork_0x10 *)(&_spriteWork[var_r0]);
-    temp_r3 = (unsigned char *)(GSgfxLayerFindByID(p0));
-    _TargetLayer = temp_r3;
-    if (temp_r3 != NULL) {
-        temp_f29 = 640.0f / temp_r31->unk8;
-        temp_f28 = 480.0f / temp_r31->unkC;
-        temp_f31 = temp_f29 * 0.5f;
-        temp_f30 = temp_f28 * 0.5f;
-        temp_f2 = temp_f30 / (f32) tan(5.1826099e-315);
-        sp1C = 0.0f;
-        sp8 = 0.0f;
-        temp_f4 = temp_f30 - temp_r31->unk4;
-        sp28 = temp_f2;
-        temp_f2_2 = temp_f31 - temp_r31->unk0;
-        spC = -1.0f;
-        sp20 = temp_f2_2;
-        sp24 = temp_f4;
-        sp14 = temp_f2_2;
-        sp18 = temp_f4;
-        sp10 = 0.0f;
-        C_MTXLookAt((Mtx)((s32) &sp6C), (const Point3d*)((Point3d *) &sp20), (const Vec*)((Vec *) &sp8), (const Point3d*)((Point3d *) &sp14));
-        temp_r31_2 = (unsigned char *)(_TargetLayer);
-        GSmtx44Perspective((Mtx44)((s32) &sp2C), 30.0f, -(temp_f29 / temp_f28), 0.1f, 30000.0f);
-        M2C_FIELD(temp_r31_2, s32 *, 0xD54) = 0;
-        M2C_FIELD(temp_r31_2, f32 *, 0xD58) = sp2C;
-        M2C_FIELD(temp_r31_2, f32 *, 0xD5C) = sp34;
-        M2C_FIELD(temp_r31_2, f32 *, 0xD60) = sp40;
-        M2C_FIELD(temp_r31_2, f32 *, 0xD64) = sp44;
-        M2C_FIELD(temp_r31_2, f32 *, 0xD68) = sp54;
-        M2C_FIELD(temp_r31_2, f32 *, 0xD6C) = sp58;
-        M2C_FIELD(temp_r31_2, f32 *, 0x1684) = 0.1f;
-        M2C_FIELD(temp_r31_2, f32 *, 0x1688) = 30000.0f;
-        if ((u8) M2C_FIELD(temp_r31_2, u8 *, 0x16A7) != 0) {
-            if ((u8) M2C_FIELD(temp_r31_2, u8 *, 0x16A6) != 0) {
-                M2C_FIELD(temp_r31_2, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x170C) | 0x100);
-                M2C_FIELD(temp_r31_2, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x17C4) | 0x100);
+    SpriteWork* work = &_spriteWork[idx];
+    GSgfxLayer* l = GSgfxLayerFindByID(layer);
+    _TargetLayer = l;
+    if (l != 0) {
+        Mtx view;
+        Mtx44 proj;
+        Vec eye;
+        Vec at;
+        Vec up;
+        f32 cx;
+        f32 cy;
+        f32 width = 640.0f / work->scaleX;
+        f32 height = 480.0f / work->scaleY;
+        f32 kc520 = 0.5f;
+        cx = width * kc520;
+        f32 kc544 = 0.5f;
+        cy = height * kc544;
+        f32 fov = 0.2617994f;
+        f32 dist = cy / (f32)tan(fov);
+        up.z = 0.0f;
+        up.x = 0.0f;
+        at.y = cy - work->offY;
+        eye.x = cx - work->offX;
+        eye.y = cy - work->offY;
+        eye.z = dist;
+        up.y = -1.0f;
+        at.z = 0.0f;
+        at.x = cx - work->offX;
+        C_MTXLookAt(view, &eye, &up, &at);
+        GSmtx44Perspective(proj, 30.0f, -(width / height), 0.1f, 30000.0f);
+
+        l = _TargetLayer;
+        l->projType = 0;
+        l->proj[0] = proj[0][0];
+        l->proj[1] = proj[0][2];
+        l->proj[2] = proj[1][1];
+        l->proj[3] = proj[1][2];
+        l->proj[4] = proj[2][2];
+        l->proj[5] = proj[2][3];
+        l->nearZ = 0.1f;
+        l->farZ = 30000.0f;
+        if (l->f16a7 != 0) {
+            if (l->f16a6 != 0) {
+                l->dirty170c |= 0x100;
+                l->dirty17c4 |= 0x100;
             }
-            M2C_FIELD(temp_r31_2, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x170C) | 0x40);
-            M2C_FIELD(temp_r31_2, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x16A8) | 0x40);
-            M2C_FIELD(temp_r31_2, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x17C4) | 0x40);
-            M2C_FIELD(temp_r31_2, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x1760) | 0x40);
+            l->dirty170c |= 0x40;
+            l->dirty16a8 |= 0x40;
+            l->dirty17c4 |= 0x40;
+            l->dirty1760 |= 0x40;
         }
-        M2C_FIELD(temp_r31_2, s32 *, 0x16AC) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x16AC) | 0x20);
-        M2C_FIELD(temp_r31_2, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x16A8) | 1);
-        M2C_FIELD(temp_r31_2, s32 *, 0x1764) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x1764) | 0x20);
-        M2C_FIELD(temp_r31_2, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r31_2, s32 *, 0x1760) | 1);
-        temp_r31_3 = M2C_FIELD(_TargetLayer, u8 **, 0x19A0);
-        memcpy((void*)(M2C_FIELD(temp_r31_3, s32 **, 4) + 4), (const void*)(&mtxIdent), 0x30U);
-        temp_r3_2 = M2C_FIELD(temp_r31_3, s32 **, 4);
-        *temp_r3_2 |= 1;
-        temp_r31_4 = M2C_FIELD(_TargetLayer, u8 **, 0x19A0);
-        temp_r3_3 = (long)(M2C_FIELD(temp_r31_4, s32 **, 4) + 4);
-        PSMTXConcat((const Mtx)(temp_r3_3), (const Mtx)((s32) &sp6C), (Mtx)(temp_r3_3));
-        temp_r3_4 = M2C_FIELD(temp_r31_4, s32 **, 4);
-        *temp_r3_4 |= 1;
-        if ((s32) M2C_FIELD(_TargetLayer, s32 *, 0x1994) != 1) {
-            M2C_FIELD(_TargetLayer, s32 *, 0x1994) = 1;
-            M2C_FIELD(_TargetLayer, u8 **, 0x1990) = (u8 *) ((u8 *)_TargetLayer + ((M2C_FIELD(_TargetLayer, s32 *, 0x1994) * 0xBC) + 0x1818));
+        l->dirty16ac |= 0x20;
+        l->dirty16a8 |= 1;
+        l->dirty1764 |= 0x20;
+        l->dirty1760 |= 1;
+
+        GSlayerCam* cam = _TargetLayer->cam;
+        memcpy(cam->data + 1, mtxIdent, sizeof(Mtx));
+        cam->data[0] |= 1;
+        cam = _TargetLayer->cam;
+        PSMTXConcat((MtxPtr)(cam->data + 1), view, (MtxPtr)(cam->data + 1));
+        cam->data[0] |= 1;
+
+        l = _TargetLayer;
+        if (l->curBlendIdx != 1) {
+            l->curBlendIdx = 1;
+            l->curBlend = &l->blendTable[l->curBlendIdx];
         }
-        M2C_FIELD(_TargetLayer, s32 *, 0x1644) = 1;
-        M2C_FIELD(_TargetLayer, s32 *, 0x1648) = 4;
-        M2C_FIELD(_TargetLayer, s32 *, 0x164C) = 5;
-        M2C_FIELD(_TargetLayer, s32 *, 0x1650) = 5;
-        M2C_FIELD(_TargetLayer, s32 *, 0x170C) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x170C) | 1);
-        M2C_FIELD(_TargetLayer, s32 *, 0x16A8) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(_TargetLayer, s32 *, 0x17C4) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x17C4) | 1);
-        M2C_FIELD(_TargetLayer, s32 *, 0x1760) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(_TargetLayer, s8 *, 0x1656) = 1;
-        M2C_FIELD(_TargetLayer, s8 *, 0x1657) = 0;
-        M2C_FIELD(_TargetLayer, s8 *, 0x1658) = 1;
-        M2C_FIELD(_TargetLayer, s32 *, 0x170C) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x170C) | 4);
-        M2C_FIELD(_TargetLayer, s32 *, 0x16A8) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(_TargetLayer, s32 *, 0x17C4) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x17C4) | 4);
-        M2C_FIELD(_TargetLayer, s32 *, 0x1760) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(_TargetLayer, s32 *, 0x1664) = 7;
-        M2C_FIELD(_TargetLayer, s8 *, 0x1670) = 0;
-        M2C_FIELD(_TargetLayer, s32 *, 0x1668) = 0;
-        M2C_FIELD(_TargetLayer, s32 *, 0x166C) = 7;
-        M2C_FIELD(_TargetLayer, s8 *, 0x1671) = 0;
-        M2C_FIELD(_TargetLayer, s8 *, 0x1672) = 1;
-        M2C_FIELD(_TargetLayer, s32 *, 0x170C) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x170C) | 0x10);
-        M2C_FIELD(_TargetLayer, s32 *, 0x16A8) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(_TargetLayer, s32 *, 0x17C4) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x17C4) | 0x10);
-        M2C_FIELD(_TargetLayer, s32 *, 0x1760) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(_TargetLayer, s8 *, 0x165C) = 0;
-        M2C_FIELD(_TargetLayer, s32 *, 0x1660) = 3;
-        M2C_FIELD(_TargetLayer, s32 *, 0x170C) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x170C) | 8);
-        M2C_FIELD(_TargetLayer, s32 *, 0x16A8) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(_TargetLayer, s32 *, 0x17C4) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x17C4) | 8);
-        M2C_FIELD(_TargetLayer, s32 *, 0x1760) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(_TargetLayer, s32 *, 0xD8C) = 0;
-        M2C_FIELD(_TargetLayer, s32 *, 0x16B8) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x16B8) | 2);
-        M2C_FIELD(_TargetLayer, s32 *, 0x16A8) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x16A8) | 2);
-        M2C_FIELD(_TargetLayer, s32 *, 0x1770) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x1770) | 2);
-        M2C_FIELD(_TargetLayer, s32 *, 0x1760) = (s32) (M2C_FIELD(_TargetLayer, s32 *, 0x1760) | 2);
+        l->blendOp = 1;
+        l->blendSrc = 4;
+        l->blendDst = 5;
+        l->blendLogic = 5;
+        l->dirty170c |= 1;
+        l->dirty16a8 |= 0x40;
+        l->dirty17c4 |= 1;
+        l->dirty1760 |= 0x40;
+
+        l = _TargetLayer;
+        l->colorUpdate = 1;
+        l->alphaUpdate = 0;
+        l->zUpdate = 1;
+        l->dirty170c |= 4;
+        l->dirty16a8 |= 0x40;
+        l->dirty17c4 |= 4;
+        l->dirty1760 |= 0x40;
+
+        l = _TargetLayer;
+        l->f1664 = 7;
+        l->f1670 = 0;
+        l->f1668 = 0;
+        l->f166c = 7;
+        l->f1671 = 0;
+        l->f1672 = 1;
+        l->dirty170c |= 0x10;
+        l->dirty16a8 |= 0x40;
+        l->dirty17c4 |= 0x10;
+        l->dirty1760 |= 0x40;
+
+        l = _TargetLayer;
+        l->zEnable = 0;
+        l->zFunc = 3;
+        l->dirty170c |= 8;
+        l->dirty16a8 |= 0x40;
+        l->dirty17c4 |= 8;
+        l->dirty1760 |= 0x40;
+
+        l = _TargetLayer;
+        l->d8c = 0;
+        l->dirty16b8 |= 2;
+        l->dirty16a8 |= 2;
+        l->dirty1770 |= 2;
+        l->dirty1760 |= 2;
     }
 }
-}
 
-extern "C" {
-void spriteGetOffset(s32 p0, s16 *p1, s16 *p2) {
-    s16 var_r0;
-    struct _struct__spriteWork_0x10 *temp_r3;
-
-    if ((u32)(p0) == (s32)floorGetMenuLayerID()) {
-        var_r0 = 0;
-    } else if (p0 == 7) {
-        var_r0 = 1;
+void spriteGetOffset(s32 layer, s16* x, s16* y) {
+    s16 idx;
+    if (layer == floorGetMenuLayerID()) {
+        idx = 0;
+    } else if (layer == 7) {
+        idx = 1;
     } else {
-        var_r0 = 2;
+        idx = 2;
     }
-    temp_r3 = (_struct__spriteWork_0x10 *)(&_spriteWork[var_r0]);
-    if (p1 != NULL) {
-        *p1 = (s16) temp_r3->unk0;
+    SpriteWork* work = &_spriteWork[idx];
+    if (x != 0) {
+        *x = work->offX;
     }
-    if (p2 != NULL) {
-        *p2 = (s16) temp_r3->unk4;
+    if (y != 0) {
+        *y = work->offY;
     }
 }
-}
 
-extern "C" {
-void spriteSetOffset(s32 p0, s16 p1, s16 p2) {
-    s16 var_r5;
-    struct _struct__spriteWork_0x10 *temp_r4;
-
-    if ((u32)(p0) == (s32)floorGetMenuLayerID()) {
-        var_r5 = 0;
-    } else if (p0 == 7) {
-        var_r5 = 1;
+void spriteSetOffset(s32 layer, s16 x, s16 y) {
+    s16 idx;
+    if (layer == floorGetMenuLayerID()) {
+        idx = 0;
+    } else if (layer == 7) {
+        idx = 1;
     } else {
-        var_r5 = 2;
+        idx = 2;
     }
-    temp_r4 = (_struct__spriteWork_0x10 *)(&_spriteWork[var_r5]);
-    temp_r4->unk0 = (f32) p1;
-    temp_r4->unk4 = (f32) p2;
-}
-}
-
+    SpriteWork* work = &_spriteWork[idx];
+    work->offX = x;
+    work->offY = y;
 }
 
 }

@@ -57,7 +57,7 @@ void spriteSetEnv(s32);
 void menuSubDrawMsgWindow2(s32, s32, s16, s16, s16, u8, u8);
 void GSmsgMain(s32, void*, u32, bool);
 void GSmsgKill(void*);
-u32 GSmsgGetRect(void*);
+s8 GSmsgGetRect(void*);
 void GSmsgExec(void*, u8, u8);
 s32 GSmsgIsCheck(void*);
 u32 windowGetParam(tagWINDOW_WORK*, u32);
@@ -68,7 +68,7 @@ tagWINDOW_WORK* windowSearchID(s32);
 s32 windowGetActiveID(void);
 u8 menuIsCheck(s32);
 s32 menuCloseCustom(s32, s32, bool);
-s32 menuOpenCustom(s32, ...);
+s32 menuOpenCustom(s32, s32, void*, s32, bool, ...);
 void GSthreadSwitch(void);
 }
 
@@ -186,12 +186,14 @@ s32 winMsgCtrl(tagWINDOW_WORK* w)
         }
         break;
     case 2:
-        if (w->seqSet == 0) {
-            GSmsgExec(fw->msg, fw->b4, fw->b5);
-            w->seqSet = 1;
+        switch (w->seqSet) {
+        case 0:
+                GSmsgExec(fw->msg, fw->b4, fw->b5);
+                w->seqSet = 1;
+            break;
         }
         if (GSmsgIsCheck(fw->msg) != 0) {
-            *(void**) &w->pad_a4 = 0;
+            w->pad_a4 = 0;
         } else {
             w->pad_a4 = 1;
         }
@@ -258,7 +260,7 @@ void winMsgCloseFight(bool flag)
 
 u8 winMsgCloseCheckFight(void)
 {
-    return winMsgCheck() >= 0;
+    return (s8)winMsgCheck() >= 0;
 }
 
 s32 winMsgOpenFightNoWait(void* msg, bool a, bool b)
@@ -370,7 +372,7 @@ static s32 _winMsgOpenSub(s8 type, void* msg, bool a, bool b, bool c, u8 d, bool
     if (c) {
         flags |= 2;
     }
-    return menuOpenCustom(_winMsgGetMenuID(type), parentID, 0, e ? 2 : 0, a, 3, msg, flags, (u32)d);
+    return menuOpenCustom(_winMsgGetMenuID((u16)type), parentID, 0, e ? 2 : 0, a, 3, msg, flags, (u32)d);
 }
 
 static s32 _winMsgGetMenuID(s8 type)

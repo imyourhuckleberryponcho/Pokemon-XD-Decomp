@@ -31,6 +31,27 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define M2C_TRAP_IF(cond) (0)
 #define M2C_BREAK() (0)
 #define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
 #define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
 #define M2C_CARRY 0
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
@@ -188,7 +209,7 @@ void* peBankCreate(s32);
 s32 peBankFree(void*);
 s32 peBankFreeFile(s32);
 f32 peBankGetLife(void*);
-u8 peBankIsInfinite();
+u8 peBankIsInfinite(u32 a0 = 0);
 void* peBankLoadFile(void*, void*);
 s32 peBankStart(void*);
 s32 peBankStop(u32);
@@ -222,10 +243,12 @@ void psSetToken(u16 token);
 void psSetTornadoScaling(PSGenerator* gen, u8 enabledA, u8 enabledB);
 void psSetVelocityRotationInLocal(PSGenerator* gen, u8 enabled);
 void psUnlinkChildGensFromJObj(PSGenerator* gen);
-extern s32 psSetPointJObjNodup;
+void psSetPointJObjNodup();
 extern s32 unitScaleVector;
-extern s32 zeroQuaternion;
-extern s32 zeroVector;
+struct XdBlob10 { u8 data[0x10]; };
+extern XdBlob10 zeroQuaternion;
+struct XdBlobC { u8 data[0xC]; };
+extern XdBlobC zeroVector;
 extern s32 init;
 extern s32 jtbl_1991;
 extern s32 func;
@@ -245,26 +268,32 @@ static u8 _invalidateVtx;
 static u32 _particleBankStructCount;
 static u8* _particleBankStructList;
 static u8 _particlePALFrameCount;
-GScamera* g_particle_cameras;
+GScamera* g_particle_cameras[4];
 u32 g_particle_cameras_count;
 // ---- draft declarations ----
 
 
 extern "C" {
 void GSparticleInit(u32 p0);
-u8* GSparticleLoad(void *p0);
 }
 static u8 init_S2345;
 static f32 sysdolRemain_S2344;
+// ---- draft declarations ----
+
+
+extern "C" {
+u8* GSparticleLoad(void *p0);
+}
+
 static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
     GScamera **var_r30;
-    GScamera *temp_r25;
+    u32 var_r24;
     GScamera *temp_r3;
-    s32 temp_r0;
+    u32 var_r29;
     s32 temp_r28;
     u32 temp_r31;
-    u32 var_r24;
-    u32 var_r29;
+    GScamera *temp_r25;
+    s32 temp_r0;
     u8 var_r27;
 
     temp_r3 = GScameraGetActiveCamera();
@@ -311,7 +340,7 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
                 psDispParticles(var_r29, 2U, (void*)(NULL));
                 ((GSgfxLayer*)(p0))->InvalidateState();
                 var_r24 = 0U;
-                var_r30 = &g_particle_cameras;
+                var_r30 = g_particle_cameras;
                 while (var_r24 < (u32) g_particle_cameras_count) {
                     temp_r25 = *var_r30;
                     if (GScameraIsValid((GScamera*)(temp_r25)) != 0) {
@@ -338,7 +367,7 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
                 }
             }
             /* fallthrough */
-        default:
+        case 0:        default:
         case 3:
         case 5:
             particleEngineRender(p0);
@@ -389,7 +418,7 @@ static void _particlePostUpdate(float p0) {
             while (var_r29 < (u8) M2C_FIELD(temp_r26, u8 *, 3)) {
                 temp_r3 = M2C_FIELD(var_r27, u8 **, 0x38);
                 temp_cr0_eq = temp_r3 == NULL;
-                if (temp_cr0_eq == 0) {
+                if (temp_cr0_eq) {
                     if (temp_cr0_eq != 0) {
                         var_r0 = 0;
                     } else {
@@ -398,7 +427,7 @@ static void _particlePostUpdate(float p0) {
                             if (temp_r3 == NULL) {
                                 var_r3 = 0;
                             } else if (temp_r0 != 0) {
-                                if (peBankIsInfinite() != 0) {
+                                if (peBankIsInfinite((u32)(temp_r3)) != 0) {
                                     var_r3 = -1U;
                                 } else {
                                     var_r3 = (u32) (peBankGetLife(M2C_FIELD(var_r27, u8 **, 0x38)) * ((f32) GSgfxVideoGetVsyncRate()));
@@ -418,7 +447,7 @@ static void _particlePostUpdate(float p0) {
                             if (temp_r3_2 == NULL) {
                                 var_r3_2 = 0;
                             } else if ((u8) M2C_FIELD(var_r27, u8 *, 0) != 0) {
-                                if (peBankIsInfinite() != 0) {
+                                if (peBankIsInfinite((u32)(temp_r3_2)) != 0) {
                                     var_r3_2 = -1U;
                                 } else {
                                     var_r3_2 = (u32) (peBankGetLife(M2C_FIELD(var_r27, u8 **, 0x38)) * ((f32) GSgfxVideoGetVsyncRate()));
@@ -451,6 +480,162 @@ extern "C++" {
 extern "C++" {
 #pragma optimize_for_size on
 
+
+extern "C++" {
+static void _particlePreUpdate(float p0) {
+    GScamera **var_r3;
+    GScamera *temp_r3;
+    GScamera *temp_r3_7;
+    GScamera *var_r25_2;
+    _GSparticleGen *var_r25;
+    _GSparticleGen *var_r27;
+    f32 temp_f1;
+    s32 temp_cr0_eq;
+    s32 temp_cr0_eq_2;
+    s32 temp_r28;
+    s32 var_r31;
+    u32 temp_r3_5;
+    u32 var_ctr;
+    u32 var_r25_3;
+    u32 var_r27_2;
+    u32 var_r29_2;
+    u32 var_r30;
+    u8 *temp_r26;
+    u8 temp_r3_6;
+    u8 temp_r3_8;
+    u8 var_r29;
+    u8 var_r4;
+    u8 *temp_r3_2;
+    u8 *temp_r3_3;
+    u8 *temp_r3_4;
+
+    if ((s8) init_S2345 == 0) {
+        init_S2345 = 1;
+        sysdolRemain_S2344 = 0.0f;
+    }
+    temp_r28 = GSgfxPerfbarCPUEntry(0x800080);
+    memset((void*)(g_particle_cameras), 0, 0x10U);
+    var_r31 = 0;
+    var_r30 = 0U;
+    g_particle_cameras_count = 0;
+    while (var_r30 < (u32) _particleBankStructCount) {
+        temp_r26 = &_particleBankStructList[var_r31];
+        if ((u8) M2C_FIELD(temp_r26, u8 *, 0) == 1) {
+            temp_r3 = M2C_FIELD(temp_r26, GScamera **, 0x10);
+            if ((temp_r3 != NULL) && (GScameraIsValid((GScamera*)(temp_r3)) == 0) && (temp_r26 != NULL) && ((u8) M2C_FIELD(temp_r26, u8 *, 0) != 0)) {
+                M2C_FIELD(temp_r26, GScamera **, 0x10) = NULL;
+                var_r29 = M2C_FIELD(temp_r26, u8 *, 3);
+                var_r25 = M2C_FIELD(temp_r26, _GSparticleGen **, 0xC);
+loop_16:
+                temp_cr0_eq = var_r29 == 0;
+                var_r29 -= 1;
+                if (temp_cr0_eq == 0) {
+                    temp_r3_2 = M2C_FIELD(var_r25, u8 **, 0x38);
+                    temp_cr0_eq_2 = temp_r3_2 == NULL;
+                    if ((temp_cr0_eq_2 == 0) && (temp_cr0_eq_2 == 0)) {
+                        if ((u8) M2C_FIELD(var_r25, u8 *, 0) != 0) {
+                            if (temp_r3_2 != NULL) {
+                                M2C_FIELD(temp_r3_2, s32 *, 0x160) = 0;
+                            }
+                        } else {
+                            psGeneratorSetCamera((HSD_Generator*)(M2C_FIELD(temp_r3_2, HSD_Generator **, 8)), (HSD_CObj*)(NULL));
+                        }
+                    }
+                    var_r25 += 0x3C;
+                    goto loop_16;
+                }
+            }
+            var_r27 = M2C_FIELD(temp_r26, _GSparticleGen **, 0xC);
+            var_r29_2 = 0U;
+            while (var_r29_2 < (u8) M2C_FIELD(temp_r26, u8 *, 3)) {
+                if ((u8 *) M2C_FIELD(var_r27, u8 **, 0x38) != NULL) {
+                    _particleUpdateAttachment((_GSparticleGen*)(var_r27));
+                    temp_r3_3 = M2C_FIELD(var_r27, u8 **, 0x38);
+                    if (temp_r3_3 == NULL) {
+                        var_r25_2 = NULL;
+                    } else if ((u8) M2C_FIELD(var_r27, u8 *, 0) != 0) {
+                        if (temp_r3_3 != NULL) {
+                            var_r25_2 = M2C_FIELD(temp_r3_3, GScamera **, 0x160);
+                        } else {
+                            var_r25_2 = NULL;
+                        }
+                    } else {
+                        var_r25_2 = (GScamera *)(psGeneratorGetCamera((HSD_Generator*)(M2C_FIELD(temp_r3_3, HSD_Generator **, 8))));
+                    }
+                    if (GScameraIsValid((GScamera*)(var_r25_2)) != 0) {
+                        var_r3 = (GScamera **)(g_particle_cameras);
+                        var_r4 = 0;
+                        var_ctr = g_particle_cameras_count;
+                        if ((u32) g_particle_cameras_count > 0U) {
+loop_28:
+                            if ((GScamera *) *var_r3 == var_r25_2) {
+                                var_r4 = 1;
+                            } else {
+                                var_r3 += 4;
+                                var_ctr -= 1;
+                                if (var_ctr != 0) {
+                                    goto loop_28;
+                                }
+                            }
+                        }
+                        if (var_r4 == 0) {
+                            g_particle_cameras[g_particle_cameras_count] = var_r25_2;
+                            g_particle_cameras_count += 1;
+                        }
+                    } else {
+                        temp_r3_4 = M2C_FIELD(var_r27, u8 **, 0x38);
+                        if (temp_r3_4 != NULL) {
+                            if ((u8) M2C_FIELD(var_r27, u8 *, 0) != 0) {
+                                if (temp_r3_4 != NULL) {
+                                    M2C_FIELD(temp_r3_4, GScamera **, 0x160) = NULL;
+                                }
+                            } else {
+                                psGeneratorSetCamera((HSD_Generator*)(M2C_FIELD(temp_r3_4, HSD_Generator **, 8)), (HSD_CObj*)(NULL));
+                            }
+                        }
+                    }
+                }
+                var_r29_2 += 1;
+                var_r27 += 0x3C;
+            }
+        }
+        var_r31 += 0x14;
+        var_r30 += 1;
+    }
+    var_r27_2 = (u32) p0;
+    temp_f1 = sysdolRemain_S2344 + (p0 - (f32) var_r27_2);
+    sysdolRemain_S2344 = temp_f1;
+    M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
+    if (temp_f1 == 1.0f) {
+        temp_r3_5 = (u32) temp_f1;
+        var_r27_2 += temp_r3_5;
+        sysdolRemain_S2344 -= (f32) temp_r3_5;
+    }
+    if (GSgfxVideoGetVsyncRate() == 0x32) {
+        temp_r3_6 = 1;
+        temp_r3_6 += _particlePALFrameCount;
+        _particlePALFrameCount = temp_r3_6;
+        if (temp_r3_6 >= 5U) {
+            var_r27_2 += 1;
+            _particlePALFrameCount = 0;
+        }
+    }
+    temp_r3_7 = GScameraGetActiveCamera();
+    if ((temp_r3_7 != NULL) && (GScameraIsValid((GScamera*)(temp_r3_7)) != 0)) {
+        psSetBillboardCamera((HSD_CObj*)(M2C_FIELD(temp_r3_7, HSD_CObj **, 8)));
+        var_r25_3 = 0U;
+        while (var_r25_3 < var_r27_2) {
+            psInterpretParticles(0);
+            psExecGenerator(0);
+            var_r25_3 += 1;
+        }
+    }
+    temp_r3_8 = GSgfxVideoGetVsyncRate();
+    particleEngineUpdate(temp_r3_8, p0 / (f32) temp_r3_8);
+    psDispBeginFrame();
+    GSgfxPerfbarCPUEntry(temp_r28);
+}
+}
 static void _particleUpdateAttachment(_GSparticleGen* p0) {
     s32 unksp74;
     f32 sp1C;
@@ -474,7 +659,7 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
     f32 sp7C;
     f32 sp78;
     GSpart *temp_r3;
-    f32 temp_f2;
+    f32 var_f1_2;
     f32 temp_f2_2;
     f32 temp_f2_3;
     f32 var_f0;
@@ -499,7 +684,7 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
     f32 var_f1_13;
     f32 var_f1_14;
     f32 var_f1_15;
-    f32 var_f1_2;
+    f32 temp_f2;
     f32 var_f1_3;
     f32 var_f1_4;
     f32 var_f1_5;
@@ -1021,19 +1206,19 @@ void GSparticleGeneratorSetCamera(void *p0, s32 p1) {
 
 extern "C" {
 void GSparticleBankSetCamera(void *p0, s32 p1) {
-    s32 temp_cr0_eq;
+    u8 *var_r31;
     s32 temp_cr0_eq_2;
     s32 var_r30;
     u8 *temp_r3;
-    u8 *var_r31;
+    s32 temp_cr0_eq;
 
     if (p0 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) == 0) {
             return;
         }
+        var_r31 = M2C_FIELD(p0, u8 **, 0xC);
         M2C_FIELD(p0, s32 *, 0x10) = p1;
         var_r30 = M2C_FIELD(p0, u8 *, 3);
-        var_r31 = M2C_FIELD(p0, u8 **, 0xC);
 loop_11:
         temp_cr0_eq = var_r30 == 0;
         var_r30 -= 1;
@@ -1058,8 +1243,8 @@ loop_11:
 
 extern "C" {
 void GSparticleDestroyAllGenerators(GSparticleBank* p0, s32 p1) {
-    u32 var_r30;
     u8 *var_r31;
+    u32 var_r30;
 
     var_r30 = 0U;
     var_r31 = M2C_FIELD(p0, u8 **, 0xC);
@@ -1104,7 +1289,7 @@ void GSparticleDestroyGenerator(void *p0, u8 p1) {
 extern "C" {
 void GSparticleStopGenerator(void *p0) {
     if (((u32) M2C_FIELD(p0, u32 *, 0x38) != 0) && ((u8) M2C_FIELD(p0, u8 *, 0) != 0)) {
-        if (peBankIsInfinite() != 0) {
+        if (peBankIsInfinite(M2C_FIELD(p0, u32 *, 0x38)) != 0) {
             peBankStopLoop(M2C_FIELD(p0, u32 *, 0x38));
             return;
         }
@@ -1172,7 +1357,7 @@ void GSparticleSetRandomVelocityScaling(void *p0, u8 p1) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
             return;
         }
-        psSetRandomVelocityScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), p1);
+        psSetRandomVelocityScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
     }
 }
 }
@@ -1186,7 +1371,7 @@ void GSparticleSetNodeScaling(void *p0, u8 p1) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
             return;
         }
-        psSetNodeScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), p1);
+        psSetNodeScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
     }
 }
 }
@@ -1200,7 +1385,7 @@ void GSparticleSetTornadoScaling(void *p0, u8 p1, u8 p2) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
             return;
         }
-        psSetTornadoScaling((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), p1, p2);
+        psSetTornadoScaling((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), (u16)p1, (u16)p2);
     }
 }
 }
@@ -1214,7 +1399,7 @@ void GSparticleSetParticleTextureScaling(void *p0, u8 p1) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
             return;
         }
-        psSetParticleTexScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), p1);
+        psSetParticleTexScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
     }
 }
 }
@@ -1228,7 +1413,7 @@ void GSparticleSetOffsetRotationInLocal(void *p0, u8 p1, u8 p2) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
             return;
         }
-        psSetOffsetRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), p1, p2);
+        psSetOffsetRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), (u16)p1, (u16)p2);
     }
 }
 }
@@ -1242,7 +1427,7 @@ void GSparticleSetVelocityRotationInLocal(void *p0, u8 p1) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
             return;
         }
-        psSetVelocityRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), p1);
+        psSetVelocityRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
     }
 }
 }
@@ -1271,7 +1456,7 @@ s32 GSparticleIsGeneratorAlive(void *p0) {
         if (temp_r3 == NULL) {
             var_r3_2 = 0;
         } else if (temp_r0 != 0) {
-            if (peBankIsInfinite() != 0) {
+            if (peBankIsInfinite((u32)(temp_r3)) != 0) {
                 var_r3_2 = -1U;
             } else {
                 var_r3_2 = (u32) (peBankGetLife(M2C_FIELD(p0, u8 **, 0x38)) * ((f32) GSgfxVideoGetVsyncRate()));
@@ -1293,7 +1478,7 @@ s32 GSparticleIsGeneratorAlive(void *p0) {
     if (temp_r3_2 == NULL) {
         var_r3 = 0;
     } else if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-        if (peBankIsInfinite() != 0) {
+        if (peBankIsInfinite((u32)(temp_r3_2)) != 0) {
             var_r3 = -1U;
         } else {
             var_r3 = (u32) (peBankGetLife(M2C_FIELD(p0, u8 **, 0x38)) * ((f32) GSgfxVideoGetVsyncRate()));
@@ -1316,7 +1501,7 @@ u32 GSparticleGetGeneratorLife(GSparticleGenerator* p0) {
         return 0U;
     }
     if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-        if (peBankIsInfinite() != 0) {
+        if (peBankIsInfinite((u32)(temp_r3)) != 0) {
             return -1U;
         }
         return (u32) (peBankGetLife(M2C_FIELD(p0, u8 **, 0x38)) * ((f32) GSgfxVideoGetVsyncRate()));
@@ -1607,8 +1792,8 @@ void GSparticleDetachGeneratorFromGSpart(void *p0, u8 p1) {
 extern "C" {
 void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4, u8 p5) {
     f32 sp14;
-    f32 sp10;
-    f32 spC;
+    volatile f32 sp10;
+    volatile f32 spC;
     f32 sp8;
     u8 *temp_r3;
     u8 *temp_r3_2;
@@ -1654,9 +1839,9 @@ void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4,
                 sp10 = M2C_FIELD(temp_r3_2, f32 *, 0x120);
                 sp14 = M2C_FIELD(temp_r3_2, f32 *, 0x124);
             } else {
-                sp8 = 0.0f;
                 spC = 0.0f;
                 sp10 = 0.0f;
+                sp8 = 0.0f;
                 sp14 = 1.0f;
             }
             GSvecMakeFromQuat((GSvec*)(((u8*)(p0) + 0x1C)), (const GSquat*)((GSquat *) &sp8));
@@ -1731,24 +1916,24 @@ void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4,
 extern "C" {
 GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* p0, s32 p1, s32 p2) {
     GSparticleGenerator *var_r30;
-    HSD_Generator *temp_r3_3;
-    s32 var_r28;
     s32 var_r30_2;
+    s32 var_r28;
+    HSD_Generator *temp_r3_3;
     s32 var_r3_2;
-    s32 var_r3_3;
+    u8 *var_r4;
     s32 var_r4_2;
     u8 temp_r0;
     u8 temp_r0_2;
     u8 temp_r0_3;
     u8 temp_r5;
-    s32 var_ctr;
+    u8 *var_r5;
     s32 var_ctr_2;
     s32 var_ctr_3;
     u8 *temp_r3;
     u8 *temp_r3_2;
     u8 *var_r3;
-    u8 *var_r4;
-    u8 *var_r5;
+    s32 var_r3_3;
+    s32 var_ctr;
 
     if ((u8) M2C_FIELD(p0, u8 *, 0) == 0) {
         return NULL;
@@ -1793,7 +1978,7 @@ block_11:
             return NULL;
         }
         if (temp_r3 != NULL) {
-            M2C_FIELD(temp_r3, HSD_CObj **, 0x160) = (HSD_CObj *) M2C_FIELD(p0, HSD_CObj **, 0x10);
+            M2C_FIELD((u16)temp_r3, HSD_CObj **, 0x160) = (HSD_CObj *) M2C_FIELD(p0, HSD_CObj **, 0x10);
         }
         peBankStart(temp_r3);
         M2C_FIELD(var_r30, u8 **, 0x38) = temp_r3;
@@ -1916,10 +2101,162 @@ void GSparticleFree(GSparticleBank* p0) {
     M2C_FIELD(p0, s8 *, 0) = 0;
 }
 extern "C" {
+u8* GSparticleLoad(void *p0) {
+    ModelBank *temp_r3;
+    ModelBank *temp_r4;
+    ModelBank *temp_r4_2;
+    ModelBank *temp_ret;
+    f32 temp_f1;
+    s32 temp_r4_3;
+    u16 temp_r5;
+    u32 var_ctr;
+    u32 var_ctr_2;
+    u8 *var_r29;
+    u8 *var_r4;
+    u8 var_r0;
+    u8 var_r30;
+
+    var_r29 = _particleBankStructList;
+    var_ctr = _particleBankStructCount;
+    if ((u32) _particleBankStructCount > 0U) {
+loop_1:
+        if ((u8) *var_r29 == 0) {
+
+        } else {
+            var_r29 += 0x14;
+            var_ctr -= 1;
+            if (var_ctr == 0U) {
+                goto block_4;
+            }
+            goto loop_1;
+        }
+    } else {
+block_4:
+        var_r29 = NULL;
+    }
+    if (var_r29 == NULL) {
+        return NULL;
+    }
+    var_r30 = 0;
+loop_16:
+    if (var_r30 >= 0x40U) {
+        var_r30 = 0xFF;
+    } else {
+        var_r4 = _particleBankStructList;
+        var_ctr_2 = _particleBankStructCount;
+        if ((u32) _particleBankStructCount > 0U) {
+loop_9:
+            if ((u8) M2C_FIELD(var_r4, u8 *, 1) == var_r30) {
+                var_r0 = 1;
+            } else {
+                var_r4 += 0x14;
+                var_ctr_2 -= 1;
+                if (var_ctr_2 == 0U) {
+                    goto block_12;
+                }
+                goto loop_9;
+            }
+        } else {
+block_12:
+            var_r0 = 0;
+        }
+        if (var_r0 == 0) {
+
+        } else {
+            var_r30 += 1;
+            goto loop_16;
+        }
+    }
+    if (var_r30 == 0xFF) {
+        return NULL;
+    }
+    M2C_FIELD(var_r29, s32 *, 0x10) = 0;
+    M2C_FIELD(var_r29, ModelBank **, 0xC) = NULL;
+    M2C_FIELD(var_r29, s8 *, 4) = 0;
+    if ((u32) (M2C_FIELD(p0, s32 *, 0) + 0xFE100000) == 0x56DAU) {
+        if ((u32) (M2C_FIELD(p0, s32 **, 4) + 0xFFFD0000) != 2U) {
+            return NULL;
+        }
+        M2C_FIELD(var_r29, s8 *, 2) = 1;
+        M2C_FIELD(var_r29, s8 *, 3) = 0x10;
+        M2C_FIELD(var_r29, ModelBank **, 0xC) = GSmemAllocClr(0x3C0U);
+        temp_r4 = M2C_FIELD(var_r29, ModelBank **, 0xC);
+        if (temp_r4 == NULL) {
+            return NULL;
+        }
+        M2C_FIELD(temp_r4, s8 *, 0) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x3C) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x78) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0xB4) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0xF0) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x12C) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x168) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x1A4) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x1E0) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x21C) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x258) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x294) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x2D0) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x30C) = 1;
+        M2C_FIELD(M2C_FIELD(var_r29, ModelBank **, 0xC), s8 *, 0x348) = 1;
+        temp_r4_2 = M2C_FIELD(var_r29, ModelBank **, 0xC);
+        M2C_FIELD(temp_r4_2, s8 *, 0x384) = 1;
+        M2C_FIELD(var_r29, u8 **, 8) = (unsigned char *)(peBankLoadFile(p0, temp_r4_2));
+        if ((u8 *) M2C_FIELD(var_r29, u8 **, 8) != NULL) {
+            goto block_38;
+        }
+        goto block_39;
+    }
+    M2C_FIELD(var_r29, s8 *, 2) = 0;
+    M2C_FIELD(var_r29, s8 *, 3) = 0x40;
+    temp_ret = GSmemAllocClr(0xF00U);
+    temp_f1 = M2C_BITWISE(f32, temp_ret);
+    M2C_FIELD(var_r29, ModelBank **, 0xC) = temp_ret;
+    if ((ModelBank *) M2C_FIELD(var_r29, ModelBank **, 0xC) == NULL) {
+        return NULL;
+    }
+    temp_r4_3 = M2C_FIELD(p0, s32 *, 0);
+    switch (temp_r4_3) {                            /* irregular */
+    case 0x47505430:
+        GSlogWrite((const char*)(&jtbl_1991 + 0x6C), temp_r4_3, temp_f1);
+        GSlogWrite((const char*)(&jtbl_1991 + 0xC8));
+        GSlogWrite((const char*)(&jtbl_1991 + 0x6C));
+block_39:
+        temp_r3 = M2C_FIELD(var_r29, ModelBank **, 0xC);
+        if (temp_r3 != NULL) {
+            GSmemFree((void*)(temp_r3));
+            M2C_FIELD(var_r29, ModelBank **, 0xC) = NULL;
+        }
+        return NULL;
+    default:
+        GSlogWrite((const char*)(&jtbl_1991 + 0x124), temp_r4_3, temp_f1);
+        goto block_39;
+    case 0x47505431:
+        M2C_FIELD(p0, s32 **, 4) = (s32 *) ((s32)M2C_FIELD(p0, s32 **, 4) + (s32)p0);
+        M2C_FIELD(p0, s32 **, 8) = (s32 *) ((s32)M2C_FIELD(p0, s32 **, 8) + (s32)p0);
+        M2C_FIELD(p0, u32 **, 0x10) = (u32 *) ((s32)M2C_FIELD(p0, u32 **, 0x10) + (s32)p0);
+        temp_r5 = *M2C_FIELD(p0, s32 **, 4);
+        if ((s32) temp_r5 != 0x43) {
+            GSlogWrite((const char*)(&jtbl_1991 + 0x144), 0x43, temp_r5, temp_f1);
+            goto block_39;
+        }
+        M2C_FIELD(var_r29, u8 **, 8) = (unsigned char *)(p0);
+        DCFlushRange((register void*)(M2C_FIELD(p0, s32 **, 8)), (M2C_FIELD(p0, s32 *, 0xC) + 0x1F) & 0xFFFFFFE0);
+        psInitDataBank((s32) var_r30, (int*)(M2C_FIELD(p0, s32 **, 4)), (int*)(M2C_FIELD(p0, s32 **, 8)), (u32*)(M2C_FIELD(p0, u32 **, 0x10)), (int*)(NULL));
+block_38:
+        M2C_FIELD(var_r29, u8 *, 0) = 1;
+        M2C_FIELD(var_r29, u8 *, 1) = var_r30;
+        return var_r29;
+    }
+}
+}
+
+extern "C" {
 #pragma push
 #pragma dont_inline on
-u8* GSparticleLoad(void *p0) { return 0; }
 extern "C" {
+#pragma push
+#pragma peephole off
 void GSparticleInit(u32 p0) {
     s32 sp20;
     s32 sp1C;
@@ -1947,12 +2284,10 @@ void GSparticleInit(u32 p0) {
     if (temp_r3 != NULL) {
         var_r5 = 0;
         var_r6 = 0U;
-loop_3:
-        if (var_r6 < (u32) _particleBankStructCount) {
+        while (var_r6 < (u32) _particleBankStructCount) {
             var_r6 += 1;
             _particleBankStructList[var_r5] = 0;
             var_r5 += 0x14;
-            goto loop_3;
         }
         psSetToken(0U);
         psInitParticle(0);
@@ -1965,6 +2300,7 @@ loop_3:
         GSgfxRenderModuleRegister(0x40U, (GSgfxRenderModule*)((GSgfxRenderModule *) &sp8), (void*)(NULL));
     }
 }
+#pragma pop
 }
 #pragma pop
 }
@@ -1975,18 +2311,18 @@ extern "C" {
 extern "C" {
 extern "C++" {
 static void _particleBankDestroyOldestGenerator(_GSparticleBank* p0) {
-    s32 var_r3;
-    s32 var_r8;
+    u8 *var_r4;
+    s32 var_ctr;
     u32 temp_r0_2;
     u32 var_r7;
-    s32 var_ctr;
-    u8 *var_r4;
+    s32 var_r8;
+    s32 var_r3;
 
     var_r7 = -1U;
     var_r8 = -1;
     var_r3 = 0;
     var_r4 = (M2C_FIELD(p0, u8 **, 0xC));
-    var_ctr = (M2C_FIELD(p0, u8 *, 3));
+    var_ctr = (M2C_FIELD((s32)p0, u8 *, 3));
     if ((s32) (M2C_FIELD(p0, u8 *, 3)) > 0) {
         do {
             if ((M2C_FIELD(var_r4, u8 **, 0x38)) != NULL) {
@@ -2010,9 +2346,9 @@ static void _particleBankDestroyOldestGenerator(_GSparticleBank* p0) {
 extern "C++" {
 static void _particleJObjCallback(int p0, int p1, int p2, _HSD_JObj* p3) {
     GSpart *temp_r3_4;
-    GSparticleBank *temp_r3_2;
-    GSparticleGenerator *temp_r3_5;
     _GSmodel *temp_r3;
+    GSparticleGenerator *temp_r3_5;
+    GSparticleBank *temp_r3_2;
     _HSD_JObj *var_r0;
     _HSD_JObj *var_r31;
     s32 temp_r3_3;
@@ -2039,7 +2375,8 @@ loop_4:
     if (temp_r3 != NULL) {
         temp_r3_2 = (GSparticleBank *)(GSmodelGetLinkedGSparticleBank((_GSmodel*)(temp_r3)));
         if (temp_r3_2 != NULL) {
-            if (GSmodelIsRootNullAdded((_GSmodel*)(temp_r3)) != 0) {
+            u8 cmpv = GSmodelIsRootNullAdded((_GSmodel*)(temp_r3));
+            if (cmpv != 0) {
                 var_r31 = M2C_FIELD(var_r31, _HSD_JObj **, 0x10);
             }
             temp_r3_3 = GSpartGetJObjIndex(var_r31, p3);

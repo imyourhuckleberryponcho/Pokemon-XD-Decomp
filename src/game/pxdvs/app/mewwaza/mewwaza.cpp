@@ -75,6 +75,7 @@ static inline void _openRandomMsg() {
 }
 
 static inline void _scale(MEWPOINTS* mp, u8 sel, u32 rem, s32 base) {
+    enum TsE { TsE0 };
     if (sel == 0) {
         mp->a = ((s32)(rem + base) * mp->a) >> 8;
     } else {
@@ -82,9 +83,9 @@ static inline void _scale(MEWPOINTS* mp, u8 sel, u32 rem, s32 base) {
         s32 ac = c < 0 ? -c : c;
         s32 ab = mp->b < 0 ? -mp->b : mp->b;
         if (ab > ac) {
-            s16 ad = mp->d;
+            enum TsE ad = (enum TsE)(mp->d);
             if (ad < 0) {
-                ad = -ad;
+                ad = (enum TsE)(-ad);
             }
             s32 ab2 = mp->b < 0 ? -mp->b : mp->b;
             if (ab2 > ad) {
@@ -98,9 +99,9 @@ static inline void _scale(MEWPOINTS* mp, u8 sel, u32 rem, s32 base) {
         }
         s32 ac2 = c < 0 ? -c : c;
         if (ac2 > b) {
-            s16 ad = mp->d;
+            s16 ad = (enum TsE)(mp->d);
             if (ad < 0) {
-                ad = -ad;
+                ad = (enum TsE)(-ad);
             }
             s32 ac3 = c < 0 ? -c : c;
             if (ac3 > ad) {
@@ -123,11 +124,11 @@ static s32 _searchwaza(MWAZA* tbl, long mode, u16* used, long usedCount, long nt
 
 static s32 _mewSequence(MEWPOINTS* mp) {
     s32 q1[2];
-    s32 q2[2];
+    u32 x;
     s32 sel;
     s32 res;
     u32 y;
-    u32 x;
+    s32 q2[2];
 
     heroMoveInitEvent();
     GSthreadSwitch();
@@ -170,18 +171,16 @@ static s32 _mewSequence(MEWPOINTS* mp) {
     winMsgOpenFieldWithSE(0xC6FF, 1, 0, 1);
     x = HSD_Rand() & 3;
     y = x;
-    while (y == x) {
+    while (x == y) {
         y = HSD_Rand() & 3;
     }
-    q2[0] = mewans2[x];
     q2[1] = mewans2[y];
+    q2[0] = mewans2[x];
     do {
         res = menuSubOpenSelect3(0, q2, 2, 0x34, 0xd1, 0, 2, 1, 0);
     } while (res < 0);
     sel = y;
-    if (res == 0) {
-        sel = x;
-    }
+    sel = res != 0 ? sel : x;
     winMsgClose(1);
     switch (sel) {
     case 0:
@@ -227,8 +226,8 @@ static s32 _mewSequence(MEWPOINTS* mp) {
         winMsgClose(1);
         menuOpen((u16)mid, 0);
         yn = menuSubOpenYesNo(1, 0x196, 0xc0, 0);
-        menuClose((u16)mid);
-        menuCloseSync((u16)mid, 1);
+        menuClose(mid);
+        menuCloseSync(mid, 1);
         heroMoveTermEvent();
         return yn;
     }
@@ -254,9 +253,7 @@ static void _question_3(MEWPOINTS* mp) {
         res = menuSubOpenSelect3(0, q, 2, 0x34, 0xd1, 0, 2, 1, 0);
     } while (res < 0);
     sel = y;
-    if (res == 0) {
-        sel = x;
-    }
+    sel = res != 0 ? sel : x;
     winMsgClose(1);
     switch (sel) {
     case 0:
@@ -266,7 +263,7 @@ static void _question_3(MEWPOINTS* mp) {
         mp->b = (s16)(RAND16() % 3) + mp->b + 1;
         break;
     case 2:
-        mp->c = (s16)(RAND16() % 3) + mp->c + 1;
+        mp->c = (RAND16() % 3) + mp->c + 1;
         break;
     case 3:
         if (RAND16() % 10 < 5) {
@@ -361,6 +358,7 @@ static void _question_5(MEWPOINTS* mp) {
 }
 
 static s32 _tmplSelect(MEWPOINTS* mp) {
+    enum TsE { TsE0 };
     u8 kinds[3];
     s32 vals[3];
     s32 i;
@@ -406,19 +404,19 @@ static s32 _tmplSelect(MEWPOINTS* mp) {
         return 4;
     }
     {
-        s16 t = mp->b;
+        enum TsE t = (enum TsE)(mp->b);
         if (t < 0) {
-            t = -t;
+            t = (enum TsE)(-t);
         }
         mp->a = mp->a + t;
-        t = mp->c;
+        t = (enum TsE)(mp->c);
         if (t < 0) {
-            t = -t;
+            t = (enum TsE)(-t);
         }
         mp->a = mp->a + t;
-        t = mp->d;
+        t = (enum TsE)(mp->d);
         if (t < 0) {
-            t = -t;
+            t = (enum TsE)(-t);
         }
         mp->a = mp->a + t;
     }
@@ -582,10 +580,11 @@ static s32 _fillTmplate(u16* tmpl, MEWPOINTS* mp) {
 }
 
 static s32 _searchwaza(MWAZA* tbl, long mode, u16* used, long usedCount, long nth) {
-    s32 count = 0;
+    u16 w;
     u16 ok = 0;
+    s32 count = 0;
     for (;; tbl++) {
-        u16 w = tbl->waza;
+        w = tbl->waza;
         s32 j;
         if (w == 0) {
             return count;

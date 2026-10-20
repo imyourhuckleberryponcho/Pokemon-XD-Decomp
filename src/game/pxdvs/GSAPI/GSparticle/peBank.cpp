@@ -509,9 +509,9 @@ void peBankFreeFile(_gpdHeader* file) {
     if (file->refCount == 0) {
         _gpdResourceItem* items = file->items;
         _peFreeInternalBankData((_particleData*)(items + file->count));
-        _gpdResourceItem* it = items;
         int n = file->count;
-        for (; n != 0; n--, it++) {
+        _gpdResourceItem* it = items;
+        for (; n != 0; it++, n--) {
             if ((it->flags & 0x40) == 0x40) {
                 switch (it->type) {
                 case 0:
@@ -604,7 +604,7 @@ static void _peFreeInternalBankData(_particleData* data) {
         if (m->flags & 0x40) {
             break;
         }
-        if (!m->jobj) {
+        if (m->jobj != 0) {
             HSD_JObjUnref(m->jobj);
             return;
         }

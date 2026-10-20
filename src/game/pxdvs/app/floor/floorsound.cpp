@@ -1,6 +1,5 @@
-// floorsound: every function exact, but the weak FloorBgmMask inlines (changeMode, isEnable) must come out in
-// their own section after __sinit like the target (same issue as floorManager); not linked yet.
-// Draft (first pass), not yet matching.
+// floorsound: matching. The weak FloorBgmMask inlines (changeMode, isEnable) come after __sinit in the
+// original, so __sinit is written by hand (see the end of the file).
 #include <dolphin/types.h>
 #pragma pool_strings off
 #pragma peephole off
@@ -73,7 +72,10 @@ extern floorsound_dd_* floorsoundTbl;
 }
 
 static u8 _displaySndFlag;
-static FloorBgmMask _bgmMask;
+// _bgmMask is constructed by a hand-written __sinit (see the end of the file): the original's static
+// initializer comes BEFORE the weak FloorBgmMask inlines, but MWCC always emits its own __sinit last.
+static u32 _bgmMaskStorage[sizeof(FloorBgmMask) / 4];
+#define _bgmMask (*(FloorBgmMask*)_bgmMaskStorage)
 
 static u8 _playEnvSound(floorsound_dd_* e);
 static u8 _playSound(floorsound_dd_* e);
@@ -302,6 +304,14 @@ static u8 _playSound(floorsound_dd_* e) {
     }
     return 1;
 }
+
+extern "C" void __ct__12FloorBgmMaskFv(void*);
+
+static void __sinit_floorsound_cpp() {
+    __ct__12FloorBgmMaskFv(&_bgmMask);
+}
+
+__declspec(section ".ctors") extern void* const __sinit_floorsound_cpp_ctor = (void*)__sinit_floorsound_cpp;
 
 inline void FloorBgmMask::changeMode(BgmMaskMode m) {
     mode = m;

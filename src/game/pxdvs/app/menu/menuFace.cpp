@@ -582,10 +582,10 @@ static s32 _menuFaceAddList(u16 id, FaceFn fn, void* arg) {
     idx = _menuFaceSearchList(id);
     if (idx < 0) {
         if (n == _menuFaceListNum) {
+            fArg = pMenuFaceList[0].arg;
             fFace = pMenuFaceList[0].faceId;
             fIdx = pMenuFaceList[0].texIdx;
             fFn = pMenuFaceList[0].fn;
-            fArg = pMenuFaceList[0].arg;
             fState = pMenuFaceList[0].state;
             fTex = pMenuFaceList[0].texID;
             if (fState == 2) {

@@ -93,9 +93,7 @@ static inline s32 _dbgMenuGetIndex(tagWINDOW_WORK* window) {
     s32 index = -1;
     s32 base = _menu_data_number + 1;
     s32 id = window->menuID;
-    if (id >= base) {
-        index = id - base;
-    }
+    index = id < base ? index : id - base;
     return index;
 }
 
@@ -125,8 +123,9 @@ void dbgMenuSetLayerID(s32 id) {
 }
 
 void dbgMenuCursor(tagWINDOW_WORK* window) {
+    enum TsE { TsE0 };
     u16 repeat = windowGetKeyInfo()->repeat;
-    s8 count = _dbgMenuGetMenuNum(window, 0);
+    enum TsE count = (enum TsE)(_dbgMenuGetMenuNum(window, 0));
     s8 visible = menuDataBiosGetDispMax(window->menuID);
     s16 top;
     s16 cursor;

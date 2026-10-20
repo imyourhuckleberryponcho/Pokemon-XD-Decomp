@@ -29,7 +29,7 @@ u8 fightFloor_GetFightTypeEntryPokemonNum(void*);
 u8 fightFloor_GetFightTypeFightoutPokemonNum(void*);
 u8 fightFloor_GetFightTypeTrainerNum(void*);
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
-void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon*, u8, u8, u8, FightActionData*, u16, u32, s8, u32);
+void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon*, u8, u8, u8, FightActionData*, u32, u32, s8, u32);
 s16 fightOutPokemonGetFightEntryId(FightOutPokemon*);
 Pokemon* fightOutPokemonGetPokemonPtr(FightOutPokemon*);
 u8 fightOutPokemon_GetFixAiDef(FightOutPokemon*);
@@ -106,7 +106,7 @@ extern "C" {
 
 s32 fightTrainerAiSelectFightActionWaza(FIGHT_TRAINER* trainer, FightOutPokemon* pokemon, u16 targetType) {
     u16 wazaId[8];
-    s16 wazaSlot[8];
+    FightOutPokemon* defender;
     FightOutPokemon* party[8];
     FightOutPokemon* defTarget;
     s16 defSlot;
@@ -117,9 +117,9 @@ s32 fightTrainerAiSelectFightActionWaza(FIGHT_TRAINER* trainer, FightOutPokemon*
     u8 fixDef;
     u16 fixWazaId;
     FightOutPokemon* fixTarget;
-    FightOutPokemon* defender;
+    s16 wazaSlot[8];
     u16 waza;
-    s16 slot;
+    s32 slot;
     s32 pick;
 
     aiId = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
@@ -157,7 +157,7 @@ s32 fightTrainerAiSelectFightActionWaza(FIGHT_TRAINER* trainer, FightOutPokemon*
             u32 target = fightTargetGetTragetPtrToRelativeHostSideFightTargetId(defTarget, targetType);
             waza = fightTrainerAiGetFightOutPokemonWazaDataId(trainer, pokemon, defSlot);
             if (waza != 0) {
-                fightOutPokemonCreateFightActionAttackWaza(pokemon, 0, 0x13, 0, &fight_action_data_waza, waza, target, defSlot, 0);
+                fightOutPokemonCreateFightActionAttackWaza(pokemon, 0, 0x13, 0, &fight_action_data_waza, (u16)waza, target, defSlot, 0);
                 return 1;
             }
             return 0;
@@ -234,20 +234,20 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
                                       FightOutPokemon* defender, u16 targetType) {
     s32 values[8];
     s32 damage[8];
-    s32 remain[8];
-    s32 avg[8];
-    FIGHT_SIDE* side;
-    int trainerNum;
-    int entryNum;
-    int fightOutNum;
     u16 aiId;
+    s32 maxDamage;
+    FIGHT_SIDE* side;
+    int fightOutNum;
+    int entryNum;
+    int trainerNum;
+    s32 remain[8];
     u8 revise;
     u8 partDataId;
     u16 i;
     u16 j;
     u16 k;
     u16 hp;
-    s32 maxDamage;
+    s32 avg[8];
     s32 maxRemain;
     s32 maxAvg;
     u16 waza;
@@ -297,7 +297,7 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
             }
         }
     }
-    for (i = 0; i < count; i++) {
+    for (u16 i = 0; i < count; i++) {
         waza = wazaId[i];
         if (waza == 0) {
             continue;
@@ -334,9 +334,10 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
         }
         if (zokusei != 9) {
             for (j = 0; j < 2; j++) {
-                u8 revZokusei = fightTrainerAiDB_GetZokuseiReviseZokuseiDataId(aiId, j);
+                u32 revZokusei = fightTrainerAiDB_GetZokuseiReviseZokuseiDataId(aiId, j);
                 if (revZokusei != 9 && zokusei == revZokusei) {
-                    values[i] = fightTrainerAiReviseValueByAddsubDataId(values[i], fightTrainerAiDB_GetZokuseiReviseValue(aiId, j), trainer, 0x3E);
+                    s32 tmp1 = fightTrainerAiDB_GetZokuseiReviseValue(aiId, j);
+                    values[i] = fightTrainerAiReviseValueByAddsubDataId(values[i], tmp1, trainer, 0x3E);
                 }
             }
         }
@@ -346,7 +347,8 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
                 for (k = 0; k < 2; k++) {
                     u8 revType = fightTrainerAiDB_GetWazaTypeReviseTypeDataId(aiId, k);
                     if (revType != 0 && type == revType) {
-                        values[i] = fightTrainerAiReviseValueByAddsubDataId(values[i], fightTrainerAiDB_GetWazaTypeReviseValue(aiId, k), trainer, 0x3F);
+                        s32 tmp1 = fightTrainerAiDB_GetWazaTypeReviseValue(aiId, k);
+                        values[i] = fightTrainerAiReviseValueByAddsubDataId(values[i], tmp1, trainer, 0x3F);
                     }
                 }
             }
@@ -385,7 +387,7 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
             values[i] = fightTrainerAiAddValue(values[i], HSD_Rand() % (revise * 2 + 1) - revise);
         }
     }
-    pick = fightTrainerAiGetValueAryMaxBanme(values, count, 1);
+    pick = fightTrainerAiGetValueAryMaxBanme(values, (u16)count, 1);
     if (pick < 0) {
         return -1;
     }
@@ -449,8 +451,8 @@ static s32 _fightTrainerAiWazaSubDefensePokemon(FIGHT_TRAINER* trainer, FightOut
                 if ((fightTrainerAiIsFightOutPokemonTokuseiDataId(trainer, enemy, 0x3E) == 1 ||
                      fightTrainerAiIsFightOutPokemonTokuseiDataId(trainer, enemy, 0x3F) == 1) &&
                     fightTrainerAiIsFightOutPokemonJoutaiNormal(trainer, enemy) == 1) {
-                    u16 j;
                     s16 count = 0;
+                    u16 j;
                     for (j = 0; j < 4; j++) {
                         if (fightTrainerAiCheckHaveFightOutPokemonWazaDataId(trainer, pokemon, list2[j], &slot, 1) != 0 && slot >= 0) {
                             slots[count++] = slot;
@@ -589,6 +591,7 @@ s32 fightTrainerAiWazaDoWazaDamageFightPokemonFunc(FIGHT_TRAINER* trainer, Fight
     FightOutPokemon* party[8];
     FightWazaDamageFunc func;
     u16 partyCount;
+    u8 range;
     u16 i;
     s32 result;
 
@@ -601,9 +604,10 @@ s32 fightTrainerAiWazaDoWazaDamageFightPokemonFunc(FIGHT_TRAINER* trainer, Fight
         return 0;
     }
     partyCount = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, trainer, party, 0, 1);
+    range = wazaDB_GetRangeId(waza);
     result = 0;
     if (dispatch == 1) {
-        switch (wazaDB_GetRangeId(waza)) {
+        switch (range) {
         case 0:
         case 3:
             result = func(trainer, pokemon, waza, target);
@@ -631,6 +635,7 @@ s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER* trainer, FightOutPokemon* 
     FightOutPokemon* party[8];
     FightWazaDamageFunc func;
     u16 partyCount;
+    u8 range;
     u16 i;
     s32 result;
 
@@ -643,9 +648,10 @@ s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER* trainer, FightOutPokemon* 
         return 0;
     }
     partyCount = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, trainer, party, 0, 1);
+    range = wazaDB_GetRangeId(waza);
     result = 0;
     if (dispatch == 1) {
-        switch (wazaDB_GetRangeId(waza)) {
+        switch (range) {
         case 0:
         case 3:
             result = func(trainer, pokemon, waza, target);
@@ -673,8 +679,9 @@ u8 fightTrainerAiWazaDoWazaHitFunc(FIGHT_TRAINER* trainer, FightOutPokemon* poke
     FightOutPokemon* party[8];
     FightWazaHitFunc func;
     u16 partyCount;
-    u16 i;
+    u8 range;
     u8 result;
+    u16 i;
 
     if (fightTrainerAiDB_GetWazaHitFlag(fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer))) == 1) {
         func = (FightWazaHitFunc)wazaDB_GetFightTrainerAiWazaHitFuncPtr(waza);
@@ -685,8 +692,9 @@ u8 fightTrainerAiWazaDoWazaHitFunc(FIGHT_TRAINER* trainer, FightOutPokemon* poke
         return 1;
     }
     partyCount = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, trainer, party, 0, 1);
+    range = wazaDB_GetRangeId(waza);
     result = 0;
-    switch (wazaDB_GetRangeId(waza)) {
+    switch (range) {
     case 0:
     case 3:
         if (_fightTrainerAiWazaDoWazaHitFuncPre(trainer, pokemon, waza, target) == 0) {
@@ -711,9 +719,11 @@ u8 fightTrainerAiWazaDoWazaHitFunc(FIGHT_TRAINER* trainer, FightOutPokemon* poke
     case 5:
     case 7:
         if (_fightTrainerAiWazaDoWazaHitFuncPre(trainer, pokemon, waza, target) == 0) {
-            return 0;
+            result = 0;
+            break;
         }
-        return func(trainer, pokemon, waza, target);
+        result = func(trainer, pokemon, waza, target);
+        break;
     }
     return result;
 }

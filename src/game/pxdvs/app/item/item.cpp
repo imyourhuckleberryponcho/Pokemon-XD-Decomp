@@ -122,8 +122,7 @@ static inline ITEM* itemFindAny(ITEM* ary, u16 n, u16 id) {
     if (ary == 0) return 0;
     if (!itemIdOk(id)) return 0;
     for (u16 i = 0; i < n; i++) {
-        ITEM* p = itemAt(ary, i);
-        if (itemIs(p, id)) return ary + i;
+        if (itemIs((ITEM*)(itemAt(ary, i)), id)) return ary + i;
     }
     return 0;
 }
@@ -239,11 +238,11 @@ void itemSortAryByPriority(void* ary, u16 n, s32 type) {
         ITEM* q;
         ITEM* p = a;
         int last = n - 1;
-        for (i = 0; i < last; i++, p++) {
+        for (i = 0; i < last; p++, i++) {
             if (itemOk(p)) {
                 j = i + 1;
                 q = a + j;
-                for (; j < (int)n; j++, q++) {
+                for (; j < (int)n; q++, j++) {
                     if (itemOk(q)) {
                         int idA = item_GetItemDataId(p);
                         int idB = item_GetItemDataId(q);
@@ -366,9 +365,9 @@ u16 itemGetQuantityInAry(void* aryv, u16 n, u16 id, u16 unused) {
     ITEM* ary = (ITEM*)aryv;
     if (ary == 0) return 0;
     if (!itemIdOk(id)) return 0;
-    ITEM* p = ary;
     s32 total = 0;
-    for (s32 i = 0; i < (s32)n; i++, p++) {
+    for (s32 i = 0; i < (s32)n; i++) {
+        ITEM* p = &ary[i];
         if (itemIs(p, id)) total += item_GetNum(p);
     }
     return total;
@@ -403,12 +402,12 @@ static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
     if (ary != 0 && n != 0) {
         if (mode == 0 || mode == 1) {
             ITEM* q;
-            ITEM* p = ary;
-            for (int i = 0; i < (int)(n - 1); i++, p++) {
+            for (int i = 0; i < (int)(n - 1); i++) {
+                ITEM* p = &ary[i];
                 if (!itemOk(p)) {
                     int j = i + 1;
                     q = ary + j;
-                    for (; j < (int)n; j++, q++) {
+                    for (; j < (int)n; q++, j++) {
                         if (itemOk(q) == 1) {
                             itemSwapI(p, ary + j);
                             break;
@@ -418,8 +417,9 @@ static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
             }
         }
         if (mode == 1) {
-            ITEM* p = ary;
-            for (int i = 0; i < (int)(n - 1); i++, p++) {
+            int i;
+            ITEM* p;
+            for (i = 0, p = ary; i < (int)(n - 1); p++, i++) {
                 if (itemOk(p)) {
                     int j = i + 1;
                     ITEM* q = ary + j;

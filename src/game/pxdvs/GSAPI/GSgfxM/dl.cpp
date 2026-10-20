@@ -23,7 +23,7 @@ struct _HSD_VtxDescList;
 
 extern "C" {
 
-extern u32 _dlPrimType;
+static u32 _dlPrimType = 0x90;
 
 
 extern "C" {
@@ -53,9 +53,10 @@ struct _HSD_VtxDescList {
 
 extern "C" {
 asm void DCFlushRange(register void* addr, register u32 nBytes);
-void GSgfxDLBegin(void *p0, void *p1, s32 p2, u16 p3);
-void GSgfxDLBeginSurface(s16 p0);
-void GSgfxDLCreate(void *p0, s32 p1, void *p2, u16 p3);
+struct GSgfxDL;
+void GSgfxDLBegin(GSgfxDL* dl, GSgfxVF* vf, u16 surfaces, u16 verts);
+void GSgfxDLBeginSurface(u16 count);
+void GSgfxDLCreate(void* p0, s32 prim, void* p2, u16 count);
 void GSgfxDLEnd();
 void GSgfxDLFree(void *p0);
 void GSgfxParseDisplayList(_HSD_VtxDescList* desc, u8* ptr, u32 size, GSgfxParseCallbackList* callbacks, void* user);
@@ -69,255 +70,177 @@ void GXResetWriteGatherPipe(void);
 void* memset(void* dst, int val, size_t n);
 }
 extern "C++" {
-static void _dlCalculateStride(GSgfxVF* p0);
+static u16 _dlCalculateStride(GSgfxVF* p0);
 static u8* _dlParseSurface(GSgfxPrimType prim, _HSD_VtxDescList* desc, u8* ptr, u16 count, GSgfxParseCallbackList* callbacks, void* user);
 static u8* _dlParseVertex(_HSD_VtxDescList* p0, unsigned char* p1, GSgfxParseCallbackList* p2, void* p3);
 }
+// display list object
+struct GSgfxDL {
+    u16 flags;          // 0x0
+    u16 stride;         // 0x2 bytes per vertex
+    u8* data;           // 0x4
+    u32 size;           // 0x8
+    GSgfxVF* vf;        // 0xC
+};
+// vertex format: GX vertex attribute table index at +4
+struct GSgfxVFHead {
+    u32 unk0;
+    u32 vat;
+};
+
 static void* _dlCurPtr;
 s8 gsgfx_dl_buildingDList;
 }
-void GSgfxParseDisplayList(_HSD_VtxDescList* desc, u8* ptr, u32 size, GSgfxParseCallbackList* callbacks, void* user) {
-    s32 prim;
-    u8* end;
-    u16 count;
-    s32 cmd;
-
-    end = ptr + size;
-    while (ptr < end) {
-        cmd = *ptr++ & 0xF8;
-        switch (cmd) {
-        case 0x00:
-            break;
-        case 0x80:
-        case 0x90:
-        case 0x98:
-        case 0xA0:
-        case 0xA8:
-        case 0xB0:
-        case 0xB8:
-            count = *(u16*)ptr;
-            ptr = (u8*)((u16*)ptr + 1);
-            switch (cmd) {
-            case 0xB8:
-                prim = 0xB8;
-                break;
-            case 0xA8:
-                prim = 0xA8;
-                break;
-            case 0xB0:
-                prim = 0xB0;
-                break;
-            case 0x90:
-                prim = 0x90;
-                break;
-            case 0x98:
-                prim = 0x98;
-                break;
-            case 0xA0:
-                prim = 0xA0;
-                break;
-            case 0x80:
-                prim = 0x80;
-                break;
-            }
-            ptr = _dlParseSurface((GSgfxPrimType)prim, desc, ptr, count, callbacks, user);
-            break;
-        case 0x61:
-            ptr += 4;
-            break;
-        default:
-            return;
-        }
-    }
-}
-
-void GSgfxDLEndSurface(void) {
-}
-extern "C" {
-void GSgfxDLBeginSurface(s16 p0) {
-    *(s8 *)0xCC008000 = _dlPrimType | M2C_FIELD(M2C_FIELD(_dlCurPtr, u8 **, 0xC), s32 *, 4);
-    *(s8 *)0xCC008000 = p0;
-}
-}
-
-
-void GSgfxDLPrimitiveType(u32 value) {
-    _dlPrimType = value;
-}
-extern "C" {
-void GSgfxDLEnd() {
-    s32 temp_r3;
-
-    temp_r3 = GXEndDisplayList();
-    GSmemShrink(M2C_FIELD(_dlCurPtr, s32 *, 4), temp_r3);
-    M2C_FIELD(_dlCurPtr, s32 *, 8) = temp_r3;
-    gsgfx_dl_buildingDList = 0;
-    _dlCurPtr = NULL;
-}
-}
 
 extern "C" {
-void GSgfxDLBegin(void *p0, void *p1, s32 p2, u16 p3) {
-    _dlCalculateStride((GSgfxVF*)((GSgfxVF *) p1));
-    M2C_FIELD(p0, u16 *, 2) = (u16) M2C_ERROR(/* Read from unset register $r3 */);
-    M2C_FIELD(p0, u32 *, 8) = (u32) ((((p2 << 5) & 0x1FFFE0) + ((p3 * M2C_FIELD(p0, u16 *, 2)) + 0x5F)) & 0xFFFFFFE0);
-    M2C_FIELD(p0, u8 **, 4) = (unsigned char *)(GSmemAllocAlign(M2C_FIELD(p0, u32 *, 8), 0x20U));
-    memset((void*)(M2C_FIELD(p0, u8 **, 4)), 0, M2C_FIELD(p0, u32 *, 8));
-    DCFlushRange((register void*)(M2C_FIELD(p0, u8 **, 4)), M2C_FIELD(p0, u32 *, 8));
-    M2C_FIELD(p0, u8 **, 0xC) = (unsigned char *)(p1);
-    GXBeginDisplayList((void*)(M2C_FIELD(p0, u8 **, 4)), M2C_FIELD(p0, u32 *, 8));
-    GXResetWriteGatherPipe();
-    M2C_FIELD(p0, u16 *, 0) = (u16) (M2C_FIELD(p0, u16 *, 0) | 1);
-    gsgfx_dl_buildingDList = 1;
-    _dlCurPtr = p0;
-}
+union DLWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+};
+#define DLFifo (*(volatile DLWGPipe*)0xCC008000)
+
 }
 
-extern "C" {
-void GSgfxDLFree(void *p0) {
-    if (M2C_FIELD(p0, u16 *, 0) & 1) {
-        GSmemFree((void*)(M2C_FIELD(p0, u8 **, 4)));
-        M2C_FIELD(p0, u8 **, 4) = NULL;
-        M2C_FIELD(p0, u16 *, 0) = (u16) (M2C_FIELD(p0, u16 *, 0) & 0xFFFE);
-    }
-}
-}
 
-extern "C" {
-void GSgfxDLCreate(void *p0, s32 p1, void *p2, u16 p3) {
-    u8 *temp_r3;
-    u8 *temp_r4;
-    u8 *temp_ret;
 
-    _dlCalculateStride((GSgfxVF*)((GSgfxVF *) p2));
-    M2C_FIELD(p0, s16 *, 2) = (s16) M2C_ERROR(/* Read from unset register $r3 */);
-    M2C_FIELD(p0, u32 *, 8) = (u32) (((p3 * M2C_FIELD(p0, s16 *, 2)) + 0x22) & 0xFFFFFFE0);
-    temp_ret = (unsigned char *)(GSmemAllocAlign(M2C_FIELD(p0, u32 *, 8), 0x20U));
-    M2C_FIELD(p0, u8 **, 4) = temp_ret;
-    temp_r3 = M2C_FIELD(p0, u8 **, 4);
-    if (temp_r3 == NULL) {
-        GSlogWrite((const char*)("GSgfxDL Warning: unable to allocate display list memory of (%d) bytes\n"), M2C_FIELD(p0, u32 *, 8), M2C_BITWISE(f32, temp_ret));
-        M2C_FIELD(p0, u32 *, 8) = 0U;
-        return;
-    }
-    memset((void*)(temp_r3), 0, M2C_FIELD(p0, u32 *, 8));
-    M2C_FIELD(p0, u8 **, 0xC) = (unsigned char *)(p2);
-    temp_r4 = M2C_FIELD(p0, u8 **, 4);
-    switch (p1) {                                   /* irregular */
-    case 0xB8:
-        M2C_FIELD(temp_r4, u8 *, 0) = 0xB8U;
-        break;
-    case 0xA8:
-        M2C_FIELD(temp_r4, u8 *, 0) = 0xA8U;
-        break;
-    case 0xB0:
-        M2C_FIELD(temp_r4, u8 *, 0) = 0xB0U;
-        break;
-    case 0x90:
-        M2C_FIELD(temp_r4, u8 *, 0) = 0x90U;
-        break;
-    case 0x98:
-        M2C_FIELD(temp_r4, u8 *, 0) = 0x98U;
-        break;
-    case 0xA0:
-        M2C_FIELD(temp_r4, u8 *, 0) = 0xA0U;
-        break;
-    case 0x80:
-        M2C_FIELD(temp_r4, u8 *, 0) = 0x80U;
-        break;
-    }
-    M2C_FIELD(temp_r4, u8 *, 0) = (u8) (M2C_FIELD(temp_r4, u8 *, 0) | M2C_FIELD(p2, s32 *, 4));
-    M2C_FIELD(temp_r4, s16 *, 1) = p3;
-    M2C_FIELD(p0, s16 *, 0) = (s16) (M2C_FIELD(p0, s16 *, 0) | 7);
-}
-}
+
+
 
 extern "C++" {
-static u8* _dlParseSurface(GSgfxPrimType prim, _HSD_VtxDescList* desc, u8* ptr, u16 count, GSgfxParseCallbackList* callbacks, void* user) {
-    _HSD_VtxDescList* it;
-    u32 mask;
-    s32 attr;
-
-    mask = 0;
-    it = desc;
-    while ((attr = it->attr) != 0xff) {
-        switch (attr) {
-        case 0:
-            mask |= 1;
-            break;
-        case 1:
-            mask |= 0x40;
-            break;
-        case 9:
-            mask |= 2;
-            break;
-        case 10:
-            mask |= 4;
-            break;
-        case 25:
-            mask |= 8;
-            break;
-        case 11:
-            mask |= 0x10;
-            break;
-        case 12:
-            mask |= 0x20;
-            break;
-        case 13:
-            mask |= 0x80;
-            break;
-        case 14:
-            mask |= 0x100;
-            break;
-        case 15:
-            mask |= 0x200;
-            break;
-        case 16:
-            mask |= 0x400;
-            break;
-        case 17:
-            mask |= 0x800;
-            break;
-        case 18:
-            mask |= 0x1000;
-            break;
-        case 19:
-            mask |= 0x2000;
-            break;
-        case 20:
-            mask |= 0x4000;
-            break;
-        }
-        it++;
-    }
-
-    if (callbacks->begin != 0) {
-        callbacks->begin(prim, count, mask, user);
-    }
-
-    while (count-- != 0) {
-        if (callbacks->beginVertex != 0) {
-            callbacks->beginVertex(user);
-        }
-        it = desc;
-        while (it->attr != 0xff) {
-            ptr = _dlParseVertex(it, ptr, callbacks, user);
-            it++;
-        }
-        if (callbacks->endVertex != 0) {
-            callbacks->endVertex(user);
-        }
-    }
-
-    if (callbacks->end != 0) {
-        callbacks->end(user);
-    }
-    return ptr;
-}
 extern "C++" {
 #pragma peephole off
 #pragma push
 #pragma opt_lifetimes off
+#pragma pop
+#pragma peephole reset
+}
+
+extern "C++" {
+// vertex format: GX attribute formats (16 bytes each) at +0x8, {attr, GXAttrType} pairs at +0x1B8 ending with 0xFF
+struct DLVtxAttrFmt {
+    u32 attr;
+    s32 cnt;
+    s32 type;
+    s32 frac;
+};
+struct DLVtxDesc {
+    s32 attr;
+    s32 type;
+};
+
+static u16 _dlCalculateStride(GSgfxVF* vf) {
+    DLVtxAttrFmt* fmt = (DLVtxAttrFmt*)((u8*)vf + 8);
+    DLVtxDesc* desc = (DLVtxDesc*)((u8*)vf + 0x1B8);
+    u16 stride = 0;
+    u16 n;
+
+    for (; desc->attr != 0xFF; fmt++, desc++) {
+        switch (desc->type) {
+        case 1: // GX_DIRECT
+            switch (fmt->attr) {
+            case 0: // GX_VA_PNMTXIDX
+                stride += 1;
+                break;
+            case 9: // GX_VA_POS
+                if (fmt->cnt == 0) {
+                    n = 2;
+                } else if (fmt->cnt == 1) {
+                    n = 3;
+                }
+                switch (fmt->type) {
+                case 0:
+                case 1:
+                    stride += n;
+                    break;
+                case 2:
+                case 3:
+                    stride += n * 2;
+                    break;
+                case 4:
+                    stride += n * 4;
+                    break;
+                }
+                break;
+            case 10: // GX_VA_NRM
+                if (fmt->cnt == 0) {
+                    n = 3;
+                }
+                switch (fmt->type) {
+                case 1:
+                    stride += n;
+                    break;
+                case 3:
+                    stride += n * 2;
+                    break;
+                case 4:
+                    stride += n * 4;
+                    break;
+                }
+                break;
+            case 11: // GX_VA_CLR0
+            case 12: // GX_VA_CLR1
+                switch (fmt->type) {
+                case 0:
+                case 3:
+                    stride += 2;
+                    break;
+                case 1:
+                case 4:
+                    stride += 3;
+                    break;
+                case 2:
+                case 5:
+                    stride += 4;
+                    break;
+                }
+                break;
+            case 13: // GX_VA_TEX0..7
+            case 14:
+            case 15:
+            case 16:
+            case 17:
+            case 18:
+            case 19:
+            case 20:
+                if (fmt->cnt == 0) {
+                    n = 1;
+                } else if (fmt->cnt == 1) {
+                    n = 2;
+                }
+                switch (fmt->type) {
+                case 0:
+                case 1:
+                    stride += n;
+                    break;
+                case 2:
+                case 3:
+                    stride += n * 2;
+                    break;
+                case 4:
+                    stride += n * 4;
+                    break;
+                }
+                break;
+            case 21: // GX_VA_MTX_ARRAY .. GX_VA_LIGHT_ARRAY
+            case 22:
+            case 23:
+            case 24:
+            case 25:
+                break;
+            }
+            break;
+        case 2: // GX_INDEX8
+            stride += 1;
+            break;
+        case 3: // GX_INDEX16
+            stride += 2;
+            break;
+        }
+    }
+    return stride;
+}
+
 static u8* _dlParseVertex(_HSD_VtxDescList* desc, u8* ptr, GSgfxParseCallbackList* callbacks, void* user) {
     u16 index;
     u8* data;
@@ -386,12 +309,10 @@ static u8* _dlParseVertex(_HSD_VtxDescList* desc, u8* ptr, GSgfxParseCallbackLis
     case 20:
     case 25:
         if (attr == 11 || attr == 12) {
-            /* RULE-EXCEPTION(title-path): data reused for the flag values - see docs/RULE_EXCEPTIONS.md */
-            data = (u8*)0x20;
+            attrFlag = 0x20;
             if (attr == 11) {
-                data = (u8*)0x10;
+                attrFlag = 0x10;
             }
-            attrFlag = (u32)data;
             typeFlag = 0x10000000;
             switch (desc->comp_type) {
             case 0:
@@ -550,107 +471,240 @@ static u8* _dlParseVertex(_HSD_VtxDescList* desc, u8* ptr, GSgfxParseCallbackLis
     }
     return ptr;
 }
-#pragma pop
-#pragma peephole reset
-}
 
-extern "C++" {
-static void _dlCalculateStride(GSgfxVF* p0) {
-    s32 temp_r6;
-    s32 temp_r6_3;
-    s32 temp_r6_4;
-    s32 temp_r6_5;
-    s32 temp_r6_6;
-    s32 temp_r6_7;
-    s32 temp_r6_8;
-    u32 temp_r6_2;
-    u8 *var_r4;
-    u8 *var_r5;
+static u8* _dlParseSurface(GSgfxPrimType prim, _HSD_VtxDescList* desc, u8* ptr, u16 count, GSgfxParseCallbackList* callbacks, void* user) {
+    _HSD_VtxDescList* it;
+    u32 mask;
+    s32 attr;
 
-    var_r4 = ((u8*)(p0) + 8);
-    var_r5 = ((u8*)(p0) + 0x1B8);
-    while ((s32) M2C_FIELD(var_r5, s32 *, 0) != 0xFF) {
-        temp_r6 = M2C_FIELD(var_r5, s32 *, 4);
-        switch (temp_r6) {                          /* switch 1; irregular */
-        case 1:                                     /* switch 1 */
-            temp_r6_2 = M2C_FIELD(var_r4, u32 *, 0);
-            switch (temp_r6_2) {                    /* switch 2 */
-                break;
-            case 9:                                 /* switch 2 */
-                temp_r6_3 = M2C_FIELD(var_r4, s32 *, 4);
-                if (temp_r6_3 == 0) {
-
-                } else if (temp_r6_3 == 1) {
-
-                }
-                temp_r6_4 = M2C_FIELD(var_r4, s32 *, 8);
-                if (temp_r6_4 != 4) {
-                    if (temp_r6_4 < 4) {
-                        if (temp_r6_4 < 2) {
-                            if (temp_r6_4 < 0) {
-
-                            }
-                        }
-                    }
-                }
-                break;
-            case 10:                                /* switch 2 */
-                if ((s32) M2C_FIELD(var_r4, s32 *, 4) == 0) {
-
-                }
-                temp_r6_5 = M2C_FIELD(var_r4, s32 *, 8);
-                switch (temp_r6_5) {                /* switch 3; irregular */
-                case 1:                             /* switch 3 */
-                    break;
-                case 3:                             /* switch 3 */
-                    break;
-                }
-                break;
-            case 11:                                /* switch 2 */
-            case 12:                                /* switch 2 */
-                temp_r6_6 = M2C_FIELD(var_r4, s32 *, 8);
-                switch (temp_r6_6) {                /* switch 4; irregular */
-                case 3:                             /* switch 4 */
-                    break;
-                case 1:                             /* switch 4 */
-                    break;
-                case 5:                             /* switch 4 */
-                    break;
-                }
-                break;
-            case 13:                                /* switch 2 */
-            case 14:                                /* switch 2 */
-            case 15:                                /* switch 2 */
-            case 16:                                /* switch 2 */
-            case 17:                                /* switch 2 */
-            case 18:                                /* switch 2 */
-            case 19:                                /* switch 2 */
-            case 20:                                /* switch 2 */
-                temp_r6_7 = M2C_FIELD(var_r4, s32 *, 4);
-                if (temp_r6_7 == 0) {
-
-                } else if (temp_r6_7 == 1) {
-
-                }
-                temp_r6_8 = M2C_FIELD(var_r4, s32 *, 8);
-                if (temp_r6_8 != 4) {
-                    if (temp_r6_8 < 4) {
-                        if (temp_r6_8 < 2) {
-                            if (temp_r6_8 < 0) {
-
-                            }
-                        }
-                    }
-                }
-                break;
-            }
+    mask = 0;
+    it = desc;
+    while ((attr = it->attr) != 0xff) {
+        switch (attr) {
+        case 0:
+            mask |= 1;
             break;
-        case 2:                                     /* switch 1 */
+        case 1:
+            mask |= 0x40;
+            break;
+        case 9:
+            mask |= 2;
+            break;
+        case 10:
+            mask |= 4;
+            break;
+        case 25:
+            mask |= 8;
+            break;
+        case 11:
+            mask |= 0x10;
+            break;
+        case 12:
+            mask |= 0x20;
+            break;
+        case 13:
+            mask |= 0x80;
+            break;
+        case 14:
+            mask |= 0x100;
+            break;
+        case 15:
+            mask |= 0x200;
+            break;
+        case 16:
+            mask |= 0x400;
+            break;
+        case 17:
+            mask |= 0x800;
+            break;
+        case 18:
+            mask |= 0x1000;
+            break;
+        case 19:
+            mask |= 0x2000;
+            break;
+        case 20:
+            mask |= 0x4000;
             break;
         }
-        var_r4 += 0x10;
-        var_r5 += 8;
+        it++;
     }
+
+    if (callbacks->begin != 0) {
+        callbacks->begin(prim, count, mask, user);
+    }
+
+    while (count-- != 0) {
+        if (callbacks->beginVertex != 0) {
+            callbacks->beginVertex(user);
+        }
+        it = desc;
+        while (it->attr != 0xff) {
+            ptr = _dlParseVertex(it, ptr, callbacks, user);
+            it++;
+        }
+        if (callbacks->endVertex != 0) {
+            callbacks->endVertex(user);
+        }
+    }
+
+    if (callbacks->end != 0) {
+        callbacks->end(user);
+    }
+    return ptr;
+}
+extern "C" {
+
+extern "C" {
+void GSgfxDLCreate(void* p0, s32 prim, void* p2, u16 count) {
+    GSgfxDL* dl = (GSgfxDL*)p0;
+    GSgfxVF* vf = (GSgfxVF*)p2;
+    u8* cmd;
+
+    dl->stride = _dlCalculateStride(vf);
+    dl->size = (count * dl->stride + 0x22) & ~0x1F;
+    dl->data = (u8*)GSmemAllocAlign(dl->size, 0x20);
+    if (dl->data == NULL) {
+        GSlogWrite("GSgfxDL Warning: unable to allocate display list memory of (%d) bytes\n", dl->size);
+        dl->size = 0;
+        return;
+    }
+    memset(dl->data, 0, dl->size);
+    dl->vf = vf;
+    cmd = dl->data;
+    switch (prim) {
+    case 0xB8:
+        cmd[0] = 0xB8;
+        break;
+    case 0xA8:
+        cmd[0] = 0xA8;
+        break;
+    case 0xB0:
+        cmd[0] = 0xB0;
+        break;
+    case 0x90:
+        cmd[0] = 0x90;
+        break;
+    case 0x98:
+        cmd[0] = 0x98;
+        break;
+    case 0xA0:
+        cmd[0] = 0xA0;
+        break;
+    case 0x80:
+        cmd[0] = 0x80;
+        break;
+    }
+    cmd[0] |= ((GSgfxVFHead*)vf)->vat;
+    *(u16*)(cmd + 1) = count;
+    dl->flags |= 7;
+}
+}
+
+extern "C" {
+void GSgfxDLFree(void *p0) {
+    if (M2C_FIELD(p0, u16 *, 0) & 1) {
+        GSmemFree((void*)(M2C_FIELD(p0, u8 **, 4)));
+        M2C_FIELD(p0, u8 **, 4) = NULL;
+        M2C_FIELD(p0, u16 *, 0) = (u16) (M2C_FIELD(p0, u16 *, 0) & 0xFFFE);
+    }
+}
+}
+
+extern "C" {
+void GSgfxDLBegin(GSgfxDL* dl, GSgfxVF* vf, u16 surfaces, u16 verts) {
+    dl->stride = _dlCalculateStride(vf);
+    dl->size = (surfaces * 32 + verts * dl->stride + 0x40 + 0x1F) & ~0x1F;
+    dl->data = (u8*)GSmemAllocAlign(dl->size, 0x20);
+    memset(dl->data, 0, dl->size);
+    DCFlushRange(dl->data, dl->size);
+    dl->vf = vf;
+    GXBeginDisplayList(dl->data, dl->size);
+    GXResetWriteGatherPipe();
+    dl->flags |= 1;
+    gsgfx_dl_buildingDList = 1;
+    _dlCurPtr = dl;
+}
+}
+
+extern "C" {
+void GSgfxDLEnd() {
+    s32 temp_r3;
+
+    temp_r3 = GXEndDisplayList();
+    GSmemShrink(M2C_FIELD(_dlCurPtr, s32 *, 4), temp_r3);
+    M2C_FIELD(_dlCurPtr, s32 *, 8) = temp_r3;
+    gsgfx_dl_buildingDList = 0;
+    _dlCurPtr = NULL;
+}
+}
+
+void GSgfxDLPrimitiveType(u32 value) {
+    _dlPrimType = value;
+}
+
+void GSgfxDLBeginSurface(u16 count) {
+    DLFifo.u8 = ((GSgfxVFHead*)((GSgfxDL*)_dlCurPtr)->vf)->vat | _dlPrimType;
+    DLFifo.u16 = count;
+}
+
+void GSgfxDLEndSurface(void) {
+}
+
+void GSgfxParseDisplayList(_HSD_VtxDescList* desc, u8* ptr, u32 size, GSgfxParseCallbackList* callbacks, void* user) {
+    s32 prim;
+    u8* end;
+    u16 count;
+    s32 cmd;
+
+    end = ptr + size;
+    while (ptr < end) {
+        cmd = *ptr++ & 0xF8;
+        switch (cmd) {
+        case 0x00:
+            break;
+        case 0x80:
+        case 0x90:
+        case 0x98:
+        case 0xA0:
+        case 0xA8:
+        case 0xB0:
+        case 0xB8:
+            count = *(u16*)ptr;
+            ptr = (u8*)((u16*)ptr + 1);
+            switch (cmd) {
+            case 0xB8:
+                prim = 0xB8;
+                break;
+            case 0xA8:
+                prim = 0xA8;
+                break;
+            case 0xB0:
+                prim = 0xB0;
+                break;
+            case 0x90:
+                prim = 0x90;
+                break;
+            case 0x98:
+                prim = 0x98;
+                break;
+            case 0xA0:
+                prim = 0xA0;
+                break;
+            case 0x80:
+                prim = 0x80;
+                break;
+            }
+            ptr = _dlParseSurface((GSgfxPrimType)prim, desc, ptr, count, callbacks, user);
+            break;
+        case 0x61:
+            ptr += 4;
+            break;
+        default:
+            return;
+        }
+    }
+}
 }
 }
 }

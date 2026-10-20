@@ -188,9 +188,9 @@ void* GScameraGetActiveCamera(void);
 void GScameraGetRotation(void* camera, GSvec* rot);
 void GSpartGetTransform(GSpart* part, GSvec* pos, s32 a, s32 b);
 f32 HSD_Randf(void);
-void GSmodelSetRenderCamera(void* camera);
-void GSparticleBankSetCamera(void* camera);
-void GSparticleGeneratorSetCamera(void* camera);
+void GSmodelSetRenderCamera(_GSmodel* model, void* camera);
+void GSparticleBankSetCamera(GSparticleBank* bank, void* camera);
+void GSparticleGeneratorSetCamera(GSparticleGen* gen, void* camera);
 f32* GSmodelGetMatrixPtr(_GSmodel* model);
 void PSVECScale(const GSvec* src, GSvec* dst, f32 scale);
 void PSVECSubtract(const GSvec* a, const GSvec* b, GSvec* dst);
@@ -985,7 +985,7 @@ u8 ModelSequence::LoadData(u8* data) {
     m_modelID = hdr->count;
     for (; i < m_modelID; i++, sec++) {
         MotionEntry* motion = sec->motions;
-        for (s32 n = sec->count; n > 0; n--, motion++) {
+        for (s32 n = sec->count; n > 0; motion++, n--) {
             if (motion->type == 0) {
                 motion->index = 1;
             }
@@ -1071,9 +1071,7 @@ u8 ModelSequence::LoadData(u8* data) {
         u8 mode = 0;
         if (flags & 2) {
             mode = 1;
-            if (flags & 8) {
-                mode = 1 | 4;
-            }
+            mode = !(flags & 8) ? mode : 1 | 4;
         }
         if (flags & 4) {
             mode |= 2;
@@ -1325,11 +1323,13 @@ f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec
 // ---
 void ModelSequence::UpdateLookAt() {
     if (m_unk61 != 0) {
+        GSvec step;
+        GSvec dir;
         ModelSequence* target = m_unk78;
         if (target == 0) {
             GSvec scaled;
             PSVECScale(&m_look, &scaled, 0.25f);
-            GSvec step = scaled;
+            step = scaled;
             PSVECSubtract(&m_look, &step, &m_look);
             return;
         }
@@ -1357,7 +1357,7 @@ void ModelSequence::UpdateLookAt() {
             GSpartGetTransform(targetPart, &targetPos, 0, 0);
             GSvec diff;
             PSVECSubtract(&targetPos, &myPos, &diff);
-            GSvec dir = diff;
+            dir = diff;
             PSVECNormalize(&dir, &dir);
             f32 dotUp = PSVECDotProduct(&up, &dir);
             f32 pitch = -(f32)asin(dotUp);
@@ -1368,7 +1368,7 @@ void ModelSequence::UpdateLookAt() {
             PSVECNormalize(&dir, &dir);
             f32 dotRight = PSVECDotProduct(&right, &dir);
             f32 oldPitch = m_look.x;
-            f32 oldYaw = m_look.y;
+            volatile f32 oldYaw = m_look.y;
             f32 newPitch = 0.25f * (pitch - oldPitch) + oldPitch;
             f32 newYaw = 0.25f * ((f32)asin(dotRight) - oldYaw) + oldYaw;
             if (newPitch > 3.1415927f) {
@@ -1401,8 +1401,8 @@ void ModelSequence::UpdateLookAt() {
 // ---
 void ModelSequence::Update(f32 dt) {
     if (m_unk64 != 0 && m_unk62 != 0) {
-        GSpart* part;
         void* camera = m_camera ? m_camera : GScameraGetActiveCamera();
+        GSpart* part;
         if (camera != 0) {
             part = GSmodelGetPart(m_unk64, m_unk62);
             if (part != 0) {
@@ -1411,10 +1411,9 @@ void ModelSequence::Update(f32 dt) {
                 GSpartGetTransform(part, &pos, 0, 0);
                 SetPosition(&pos);
                 GScameraGetRotation(camera, &rot);
-                f32 y = rot.y;
                 rot.x = 0.0f;
+                rot.y = rot.y + m_unk68;
                 rot.z = 0.0f;
-                rot.y = y + m_unk68;
                 SetRotation(&rot);
                 GSpartFree(part);
             }
@@ -1427,7 +1426,7 @@ void ModelSequence::Update(f32 dt) {
         if (m_mouthState != 0) {
             m_unk4A = 0;
         } else if (m_unk8C->enabled != 0) {
-            m_unk4A = m_unk4A + (u16)(dt * (f32)GSgfxVideoGetVsyncRate());
+            m_unk4A += (u16)(u32)(dt * (f32)GSgfxVideoGetVsyncRate());
             u16 t = m_unk4A;
             if (t >= 10) {
                 f32 chance;
@@ -1440,7 +1439,8 @@ void ModelSequence::Update(f32 dt) {
                 } else {
                     s32 d = t - 10;
                     f32 x = (f32)d / 50.0f;
-                    chance = x * (2.0f - x) * 0.016666668f;
+                    chance = x * (2.0f - x);
+                    chance *= 0.016666668f;
                 }
                 if (chance >= HSD_Randf()) {
                     m_mouthState = 1;
@@ -1450,16 +1450,16 @@ void ModelSequence::Update(f32 dt) {
         }
     }
     if (m_model != 0) {
-        GSmodelSetRenderCamera(m_camera);
+        GSmodelSetRenderCamera(m_model, m_camera);
     }
     if (m_unk98 != 0) {
-        GSparticleBankSetCamera(m_camera);
+        GSparticleBankSetCamera(m_unk98, m_camera);
     }
     if (m_iceGen != 0) {
-        GSparticleGeneratorSetCamera(m_camera);
+        GSparticleGeneratorSetCamera(m_iceGen, m_camera);
     }
     if (m_sleepGen != 0) {
-        GSparticleGeneratorSetCamera(m_camera);
+        GSparticleGeneratorSetCamera(m_sleepGen, m_camera);
     }
 }
 

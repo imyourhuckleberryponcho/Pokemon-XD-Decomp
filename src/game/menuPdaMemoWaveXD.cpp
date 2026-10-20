@@ -262,8 +262,7 @@ void pdaMemoNakigoe::DispFuncSub(NakigoeDispWork* work, GSgfxLayerID layer) {
             f32 dx = work->scale;
             GSsplineAddControlVectorValue(spline, &v, 0.0f);
             time = step;
-            v.x = v.x + dx;
-            dx = 556.0f / dx;
+            v.x = v.x + (dx = 556.0f / dx);
             s32 i;
             for (i = 0; i < n - 2; i++) {
                 f32 y = (f32)(s8)data[i + 1];
@@ -314,6 +313,9 @@ u8 pdaMemoNakigoe::NakigoeCheck() {
     return playing;
 }
 
+// Non-volatile view of the GX FIFO: the original kept both converted coordinates in registers.
+#define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
+static inline void dlPos(s16 x, s16 y) { GXFifoNV.s16 = x; GXFifoNV.s16 = y; }
 static void _drawLine(GSgfxLayerID layerID, GSvec* a, GSvec* b, float width) {
     GSgfxLayer* layer = GSgfxLayerFindByID(layerID);
     layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
@@ -325,9 +327,9 @@ static void _drawLine(GSgfxLayerID layerID, GSvec* a, GSvec* b, float width) {
     layer->flagsD |= 4;
     layer->flagsC |= 1;
     layer->beginSurface(2);
-    GXPosition2s16((s16)a->x, (s16)(0.5f * a->y + 105.0f));
+    dlPos(a->x, 0.5f * a->y + 105.0f);
     GXColor1u32((u8)(s32)a->z | 0x96E6F000);
-    GXPosition2s16((s16)b->x, (s16)(0.5f * b->y + 105.0f));
+    dlPos(b->x, 0.5f * b->y + 105.0f);
     GXColor1u32((u8)(s32)b->z | 0x96E6F000);
     layer->endSurface();
     layer->colorCount = 6;

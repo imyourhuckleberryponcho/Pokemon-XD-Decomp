@@ -148,7 +148,7 @@ u16 fightOutPokemon_GetFightoutTurnCount(FightOutPokemon*);
 void fightOutPokemon_SetFightoutTurnCount(FightOutPokemon*, u16);
 s32 fightOutPokemonGetNowKaisuuJoutaiDataId(FightOutPokemon*, u16);
 s32 fightOutPokemonGetKaisuuJoutaiDataId(FightOutPokemon*, u16);
-void fightOutPokemonSetNowKaisuuJoutaiDataId(FightOutPokemon*, u16);
+void fightOutPokemonSetNowKaisuuJoutaiDataId(FightOutPokemon*, u16, s8);
 s32 fightOutPokemonGetJoutaiMigawariHp(FightOutPokemon*);
 
 u8 fightActionCreate(FightAction*, void*, FightOutPokemon*, u8, u8, void*);
@@ -987,10 +987,11 @@ extern "C" {
 void fightSeqFightActionCreateAndFlowFifo(void* a, FightOutPokemon* pokemon, u8 kind, u8 b, void* data, void* buff) {
     FightAction action;
 
-    if (fightSeqFightActionCreate(&action, a, pokemon, kind, b, data, buff) != 1) {
-        return;
+    switch (fightSeqFightActionCreate(&action, a, pokemon, kind, b, data, buff)) {
+    case 1:
+        fightActionFlowFifo(&action);
+        break;
     }
-    fightActionFlowFifo(&action);
 }
 
 #pragma peephole off
@@ -1343,9 +1344,13 @@ void fightSeqWazaExec(void* floor, u16 wazaId) {
             }
         }
         defense = fightTargetGetPtrAsNowFightType(0xE, defense);
-        if (defense == 0 || !fightOutPokemonCheckFightOut(defense)) {
+        if (defense != 0) {
+            if (fightOutPokemonCheckFightOut(defense)) {
+                goto found;
+            }
             return;
         }
+        return;
     found:
         fightFloor_SetDefPokemonAndAtkFightWazaTargetId(0, defense);
         fightTargetGetPtrAsNowFightType(2, defense);
@@ -1670,10 +1675,11 @@ static u8 _fightSeqClearOneTurnCountSub(void* pokemonPtr, u16 fightType, void* d
         }
         if (fightOutPokemonIsJoutaiDataId(pokemon, 0x12) == 1) {
             now = fightOutPokemonGetNowKaisuuJoutaiDataId(pokemon, 0x12);
-            if ((s8)((s8)now + 1) >= (s8)fightOutPokemonGetKaisuuJoutaiDataId(pokemon, 0x12)) {
+            s8 max = fightOutPokemonGetKaisuuJoutaiDataId(pokemon, 0x12);
+            if ((s8)((s8)now + 1) >= max) {
                 fightOutPokemonInitJoutaiDataId(pokemon, 0x12);
             } else {
-                fightOutPokemonSetNowKaisuuJoutaiDataId(pokemon, 0x12);
+                fightOutPokemonSetNowKaisuuJoutaiDataId(pokemon, 0x12, (s8)now + 1);
             }
         }
     }

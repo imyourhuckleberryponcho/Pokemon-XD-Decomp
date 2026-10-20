@@ -5,6 +5,9 @@
 
 // XD's MSL <math.h> inlines (sqrtf with its NaN checks) instead of include/libc's math.h.
 #include <dolphin/types.h>
+// The recursive tree walkers (SetFlagsAll, ClearFlagsAll, ReqAnimAllByFlags, ...) expand into themselves as
+// deep as retail only with this inlining size budget.
+#pragma inline_max_size(600)
 #define _MATH_H_
 
 extern f32 __float_nan[];
@@ -925,6 +928,27 @@ static void HSD_JObjWalkTree0(HSD_JObj* jobj, HSD_JObjWalkTreeCallback cb,
 #include <sysdolphin/baselib/robj.h>
 #include <sysdolphin/baselib/spline.h>
 #include <dolphin/mtx.h>
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+
 
 #pragma pool_strings off
 
@@ -1004,6 +1028,12 @@ static void JObjReleaseChild(HSD_JObj* jobj);
 static void JObjRelease(HSD_Class* o);
 static void JObjAmnesia(HSD_ClassInfo* info);
 static void JObjInfoInit(void);
+
+// ---- draft declarations ----
+
+
+static inline bool HSD_JObjMtxIsDirty(HSD_JObj* jobj);
+void __assert(const char* file, u32 line, const char* assertion);
 
 static inline bool has_scl(HSD_JObj* jobj)
 {
@@ -2343,27 +2373,158 @@ void HSD_JObjSetupMatrixSub(HSD_JObj* jobj)
 
 #pragma push
 #pragma auto_inline off
-void HSD_JObjSetMtxDirtySub(HSD_JObj* jobj)
-{
-    jobj->flags |= 0x40;
-    if (!(jobj->flags & JOBJ_INSTANCE)) {
-        HSD_JObj* child = jobj->child;
-        while (child != NULL) {
-            if (!(child->flags & JOBJ_MTX_INDEP_PARENT)) {
-                if (!HSD_JObjMtxIsDirty(child)) {
-                    HSD_JObjSetMtxDirtySub(child);
+void HSD_JObjSetMtxDirtySub(HSD_JObj* p0) {
+    HSD_JObj *var_r25;
+    u8 *var_r31;
+    s32 temp_r4_2;
+    s32 temp_r4_3;
+    s32 temp_r4_4;
+    s32 temp_r4_5;
+    s32 temp_r4_6;
+    s32 var_r3;
+    s32 var_r3_2;
+    s32 var_r3_3;
+    s32 var_r3_4;
+    s32 var_r3_5;
+    s32 var_r3_6;
+    u8 *var_r26;
+    u8 *var_r27;
+    u8 *var_r28;
+    u8 *var_r29;
+    u8 *var_r30;
+    s32 temp_r4;
+
+    M2C_FIELD(p0, s32 *, 0x14) = (s32) (M2C_FIELD(p0, s32 *, 0x14) | 0x40);
+    if (!(M2C_FIELD(p0, s32 *, 0x14) & 0x1000)) {
+        var_r27 = M2C_FIELD(p0, u8 **, 0x10);
+        while (var_r27 != NULL) {
+            if (!(M2C_FIELD(var_r27, s32 *, 0x14) & 0x01000000)) {
+                if (var_r27 == NULL) {
+                    __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
+                }
+                temp_r4 = M2C_FIELD((s32)var_r27, s32 *, 0x14);
+                var_r3 = 0;
+                if (!(temp_r4 & 0x800000) && (temp_r4 & 0x40)) {
+                    var_r3 = 1;
+                }
+                if (var_r3 == 0) {
+                    M2C_FIELD(var_r27, s32 *, 0x14) = (s32) (M2C_FIELD(var_r27, s32 *, 0x14) | 0x40);
+                    if (!(M2C_FIELD(var_r27, s32 *, 0x14) & 0x1000)) {
+                        var_r31 = M2C_FIELD(var_r27, u8 **, 0x10);
+                        while (var_r31 != NULL) {
+                            if (!(M2C_FIELD(var_r31, s32 *, 0x14) & 0x01000000)) {
+                                if (var_r31 == NULL) {
+                                    __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
+                                }
+                                temp_r4_2 = M2C_FIELD((s32)var_r31, s32 *, 0x14);
+                                var_r3_2 = 0;
+                                if (!(temp_r4_2 & 0x800000) && (temp_r4_2 & 0x40)) {
+                                    var_r3_2 = 1;
+                                }
+                                if (var_r3_2 == 0) {
+                                    M2C_FIELD(var_r31, s32 *, 0x14) = (s32) (M2C_FIELD(var_r31, s32 *, 0x14) | 0x40);
+                                    if (!(M2C_FIELD(var_r31, s32 *, 0x14) & 0x1000)) {
+                                        var_r30 = M2C_FIELD(var_r31, u8 **, 0x10);
+                                        while (var_r30 != NULL) {
+                                            if (!(M2C_FIELD(var_r30, s32 *, 0x14) & 0x01000000)) {
+                                                if (var_r30 == NULL) {
+                                                    __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
+                                                }
+                                                temp_r4_3 = M2C_FIELD(var_r30, s32 *, 0x14);
+                                                var_r3_3 = 0;
+                                                if (!(temp_r4_3 & 0x800000) && (temp_r4_3 & 0x40)) {
+                                                    var_r3_3 = 1;
+                                                }
+                                                if (var_r3_3 == 0) {
+                                                    M2C_FIELD(var_r30, s32 *, 0x14) = (s32) (M2C_FIELD(var_r30, s32 *, 0x14) | 0x40);
+                                                    if (!(M2C_FIELD(var_r30, s32 *, 0x14) & 0x1000)) {
+                                                        var_r29 = M2C_FIELD(var_r30, u8 **, 0x10);
+                                                        while (var_r29 != NULL) {
+                                                            if (!(M2C_FIELD(var_r29, s32 *, 0x14) & 0x01000000)) {
+                                                                if (var_r29 == NULL) {
+                                                                    __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
+                                                                }
+                                                                temp_r4_4 = M2C_FIELD(var_r29, s32 *, 0x14);
+                                                                var_r3_4 = 0;
+                                                                if (!(temp_r4_4 & 0x800000) && (temp_r4_4 & 0x40)) {
+                                                                    var_r3_4 = 1;
+                                                                }
+                                                                if (var_r3_4 == 0) {
+                                                                    M2C_FIELD(var_r29, s32 *, 0x14) = (s32) (M2C_FIELD(var_r29, s32 *, 0x14) | 0x40);
+                                                                    if (!(M2C_FIELD(var_r29, s32 *, 0x14) & 0x1000)) {
+                                                                        var_r28 = M2C_FIELD(var_r29, u8 **, 0x10);
+                                                                        while (var_r28 != NULL) {
+                                                                            if (!(M2C_FIELD(var_r28, s32 *, 0x14) & 0x01000000)) {
+                                                                                if (var_r28 == NULL) {
+                                                                                    __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
+                                                                                }
+                                                                                temp_r4_5 = M2C_FIELD(var_r28, s32 *, 0x14);
+                                                                                var_r3_5 = 0;
+                                                                                if (!(temp_r4_5 & 0x800000) && (temp_r4_5 & 0x40)) {
+                                                                                    var_r3_5 = 1;
+                                                                                }
+                                                                                if (var_r3_5 == 0) {
+                                                                                    M2C_FIELD(var_r28, s32 *, 0x14) = (s32) (M2C_FIELD(var_r28, s32 *, 0x14) | 0x40);
+                                                                                    if (!(M2C_FIELD(var_r28, s32 *, 0x14) & 0x1000)) {
+                                                                                        var_r26 = M2C_FIELD(var_r28, u8 **, 0x10);
+                                                                                        while (var_r26 != NULL) {
+                                                                                            if (!(M2C_FIELD(var_r26, s32 *, 0x14) & 0x01000000)) {
+                                                                                                if (var_r26 == NULL) {
+                                                                                                    __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
+                                                                                                }
+                                                                                                temp_r4_6 = M2C_FIELD(var_r26, s32 *, 0x14);
+                                                                                                var_r3_6 = 0;
+                                                                                                if (!(temp_r4_6 & 0x800000) && (temp_r4_6 & 0x40)) {
+                                                                                                    var_r3_6 = 1;
+                                                                                                }
+                                                                                                if (var_r3_6 == 0) {
+                                                                                                    M2C_FIELD(var_r26, s32 *, 0x14) = (s32) (M2C_FIELD(var_r26, s32 *, 0x14) | 0x40);
+                                                                                                    if (!(M2C_FIELD(var_r26, s32 *, 0x14) & 0x1000)) {
+                                                                                                        var_r25 = M2C_FIELD(var_r26, HSD_JObj **, 0x10);
+                                                                                                        while (var_r25 != NULL) {
+                                                                                                            if (!(M2C_FIELD(var_r25, s32 *, 0x14) & 0x01000000) && (HSD_JObjMtxIsDirty((HSD_JObj*)(var_r25)) == 0)) {
+                                                                                                                HSD_JObjSetMtxDirtySub((HSD_JObj*)(var_r25));
+                                                                                                            }
+                                                                                                            var_r25 = M2C_FIELD(var_r25, HSD_JObj **, 8);
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                            var_r26 = M2C_FIELD(var_r26, u8 **, 8);
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            var_r28 = M2C_FIELD(var_r28, u8 **, 8);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            var_r29 = M2C_FIELD(var_r29, u8 **, 8);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            var_r30 = M2C_FIELD(var_r30, u8 **, 8);
+                                        }
+                                    }
+                                }
+                            }
+                            var_r31 = M2C_FIELD(var_r31, u8 **, 8);
+                        }
+                    }
                 }
             }
-            child = child->next;
+            var_r27 = M2C_FIELD(var_r27, u8 **, 8);
         }
     }
 }
-#pragma pop
 
 void HSD_JObjSetDPtclCallback(DPCtlCallback cb)
 {
     dptcl_callback = cb;
 }
+
 
 void HSD_JObjSetPtclTargetCallback(void (*cb)(HSD_JObj*, s32))
 {

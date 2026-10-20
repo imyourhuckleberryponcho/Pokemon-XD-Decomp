@@ -300,7 +300,7 @@ int GScolsys2ThruPassEventID(GSvec* start, GSvec* end, EventTri* out) {
             n = getFixedMdlEventListPass(start, end, mdl, temp);
         }
         src = temp;
-        for (k = 0; k < n && count < 4; k++, src++) {
+        for (k = 0; k < n && count < 4; src++, k++) {
             int j;
             for (j = 0; j < count; j++) {
                 if (out[j].id == src->id) {
@@ -649,7 +649,7 @@ int GScolsys2ThruGetEventID(GSvec* start, GSvec* end, f32 radius, EventTri* out)
         PSVECAdd(&p, start, &p);
         n = getEventList((GSvec*)&p, (GSvec*)&dir, radius, temp);
         src = temp;
-        for (k = 0; k < n && count < 4; k++, src++) {
+        for (k = 0; k < n && count < 4; src++, k++) {
             for (j = 0; j < count; j++) {
                 if (src->id == out[j].id) {
                     break;

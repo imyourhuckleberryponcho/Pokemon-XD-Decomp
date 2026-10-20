@@ -426,7 +426,8 @@ static void _esabaCallBackAppFunc(u16 place, FootStepCounter, long amount) {
     if (GSflagTest(esabadata[place].flag14)) {
         return;
     }
-    total = amount + GSflagGet(esabadata[place].flag4);
+    total = GSflagGet(esabadata[place].flag4);
+    total += amount;
     if (total >= esabaappdata->limitA) {
         if (total >= esabaappdata->limitB) {
             _esabaAppearPokemon(place);
@@ -456,7 +457,8 @@ static void _esabaCallBackEsaFunc(u16 place, FootStepCounter, long amount) {
 
     if (!GSflagTest(esabadata[place].flag14)) {
         rate = getRateID(place, id);
-        steps = GSflagGet(esabadata[place].flag8) + amount;
+        steps = GSflagGet(esabadata[place].flag8);
+        steps += amount;
         if (steps >= rate) {
             steps -= rate;
             left = GSflagGet(esabadata[place].flagNum) - 1;
@@ -474,24 +476,29 @@ static void _esabaAppearPokemon(u16 place) {
     u32 kind = esabaappdata->flagKind;
     u16 want;
 
-    if (GSflagGet(0x3C4) >= flag_etc[kind].limit && (want = esabaappdata->unk8, want == GSflagGet(esabaappdata->flagCheck))) {
-        _esabaAppearPokemonSub(place);
-    } else {
-        _esabaAppearPokemonSub2(place);
+    if (GSflagGet(0x3C4) >= flag_etc[kind].limit) {
+        want = esabaappdata->unk8;
+        u32 flag = GSflagGet(esabaappdata->flagCheck);
+        if (flag == want) {
+            _esabaAppearPokemonSub(place);
+            return;
+        }
     }
+    _esabaAppearPokemonSub2(place);
 }
 
 static void _esabaAppearPokemonSub2(u16 place) {
     u16 count = getMax(place);
-    u8 found = 0;
     u16 i;
+    u8 found = 0;
     u16 roll;
     u16 total;
     u16 id;
     s32 k;
 
     for (i = 0; i < (u16)*esabadata_number; i++) {
-        if ((u16)GSflagGet(esabadata[i].flagID) == esabapokemondata_EX[1].id) {
+        u32 cmpv = (u16)GSflagGet(esabadata[i].flagID);
+        if (cmpv == esabapokemondata_EX[1].id) {
             found = 1;
             break;
         }
@@ -504,12 +511,11 @@ static void _esabaAppearPokemonSub2(u16 place) {
         }
     } else {
         roll = (u16)HSD_Rand() % 100;
-        total = 0;
-        for (k = 0; k < count; k++) {
+        for (k = 0, total = 0; k < (u8)count; k++) {
             EsaTable* t = getTable(place);
             total += t ? t->entries[k].prob : 0;
             if (total >= roll) {
-                EsaTable* t2 = getTable(place);
+                volatile EsaTable* t2 = getTable(place);
                 id = t2 ? t2->entries[k].id : 0;
                 setPokemon(place, id);
                 return;
@@ -519,28 +525,32 @@ static void _esabaAppearPokemonSub2(u16 place) {
 }
 
 static void _esabaAppearPokemonSub(u16 place) {
-    u16 count = getMax(place);
+    enum TsE { TsE0 };
+    u16 count = getMax((u16)place);
+    u16 roll = (u16)HSD_Rand() % 100;
     u16 probA = esabapokemondata_EX[0].prob;
-    u16 probB = esabapokemondata_EX[1].prob;
-    u8 foundA = 0;
-    u8 foundB = 0;
-    u16 i;
-    u16 roll;
     u16 total;
+    enum TsE foundA = (enum TsE)(0);
+    u8 foundB;
+    u16 i;
+    u16 probB = esabapokemondata_EX[1].prob;
     u16 id;
     s32 k;
 
     for (i = 0; i < (u16)*esabadata_number; i++) {
-        if ((u16)GSflagGet(esabadata[i].flagID) == esabapokemondata_EX[0].id) {
-            foundA = 1;
+        u32 cmpv = (u16)GSflagGet(esabadata[i].flagID);
+        if (cmpv == esabapokemondata_EX[0].id) {
+            foundA = (enum TsE)(1);
             break;
         }
     }
     if (foundA) {
         probA = 0;
     }
+    foundB = 0;
     for (i = 0; i < (u16)*esabadata_number; i++) {
-        if ((u16)GSflagGet(esabadata[i].flagID) == esabapokemondata_EX[1].id) {
+        u32 cmpv = (u16)GSflagGet(esabadata[i].flagID);
+        if (cmpv == esabapokemondata_EX[1].id) {
             foundB = 1;
             break;
         }
@@ -550,16 +560,17 @@ static void _esabaAppearPokemonSub(u16 place) {
     }
     roll = (u16)HSD_Rand() % 100;
     if (roll < probA) {
-        setPokemon(place, esabapokemondata_EX[0].id);
+        setPokemon((u16)place, esabapokemondata_EX[0].id);
     } else if (roll < (u16)(probA ? probA + probB : probB)) {
-        setPokemon(place, esabapokemondata_EX[1].id);
+        setPokemon((u16)place, esabapokemondata_EX[1].id);
     } else {
+        roll = (u16)HSD_Rand() % 100;
         total = 0;
         for (k = 0; k < count; k++) {
             EsaTable* t = getTable(place);
             total += t ? t->entries[k].prob : 0;
             if (total >= roll) {
-                EsaTable* t2 = getTable(place);
+                volatile EsaTable* t2 = getTable(place);
                 id = t2 ? t2->entries[k].id : 0;
                 setPokemon(place, id);
                 return;

@@ -404,6 +404,8 @@ static u8 _shadowCheckCameraHeight;
 
 static void _modelShadowSetShadowFlag(HSD_JObj* jobj, void** data, int unused);
 
+static inline void shVecSet(Vec* v, f32 x, f32 y, f32 z) { v->x = x; v->y = y; v->z = z; }
+
 static u8 _modelShadowGetLightToGroundIntersect(_GSmodel* model, GSvec* out);
 static bool _modelShadowAddAsNewReceiver(_GSmodel* model, _GSmodel* receiveModel, GSlight* light, GSbound* bound);
 static ShadowReceive* _modelShadowFindValidReceiveModel(_GSmodel* model, _GSmodel* model2, GSlight* light, GSbound* bound);
@@ -924,10 +926,10 @@ void GSmodelSetShadowDistLimits(f32 marukage, f32 off)
 
 void GSmodelFreeAllShadowTextures(void)
 {
-    ShadowReceive* r = _modelShadowReceiveList;
     u32 i;
 
-    for (i = 0; i < 5; i++, r++) {
+    for (i = 0; i < 5; i++) {
+        ShadowReceive* r = &_modelShadowReceiveList[i];
         if (_shadowHasTexture(r->shadow)) {
             GSgfxRenderWaitForDrawComplete();
             HSD_ShadowFreeTexture(r->shadow);
@@ -1041,20 +1043,21 @@ static inline bool _shadowIsReceiveModel(_GSmodel* model)
 
 void modelShadowPrepare(_GSmodel* model, bool enable)
 {
-    ShadowReceive* r = _modelShadowReceiveList;
+    HSD_JObj* jobj;
     u32 i;
 
-    if (_shadowIsReceiveModel(model)) {
-        HSD_JObj* jobj = modelGetRenderJObj(model);
-        if (!enable) {
-            HSD_JObjWalkTree(jobj, (void*)_modelShadowSetShadowFlag, (void*)0);
-        } else {
-            HSD_JObjWalkTree(jobj, (void*)_modelShadowSetShadowFlag, (void*)1);
-        }
-        for (i = 0; i < 5; i++, r++) {
-            if (r->active != 0 && r->model == model) {
-                HSD_ShadowSetActive(r->shadow, enable);
-            }
+    if (!_shadowIsReceiveModel(model)) {
+        return;
+    }
+    jobj = modelGetRenderJObj(model);
+    if (!enable) {
+        HSD_JObjWalkTree(jobj, (void*)_modelShadowSetShadowFlag, (void*)0);
+    } else {
+        HSD_JObjWalkTree(jobj, (void*)_modelShadowSetShadowFlag, (void*)1);
+    }
+    for (i = 0; i < 5; i++) {
+        if (_modelShadowReceiveList[i].active && _modelShadowReceiveList[i].model == model) {
+            HSD_ShadowSetActive(_modelShadowReceiveList[i].shadow, enable);
         }
     }
 }
@@ -1074,8 +1077,8 @@ void modelShadowInit(void)
     _modelShadowYsize = 0x180;
     _modelShadowCutoffDist = 0.0f;
     _modelShadowBoundExpansion = 0.0f;
-    r = _modelShadowReceiveList;
-    for (i = 0; i < 5; i++, r++) {
+    for (i = 0; i < 5; i++) {
+        r = &_modelShadowReceiveList[i];
         r->active = 0;
         r->shadow = HSD_ShadowAlloc();
         HSD_ShadowSetActive(r->shadow, 0);
@@ -1091,10 +1094,12 @@ static inline bool _shadowCanMark(HSD_JObj* jobj)
 
 static void _modelShadowSetShadowFlag(HSD_JObj* jobj, void** data, int unused)
 {
-    HSD_DObj* dobj;
+    s32 valid;
     bool enable = data != 0;
+    HSD_DObj* dobj;
 
-    if (!_shadowCanMark(jobj)) {
+    valid = (jobj->flags & 0x4020) ? 0 : 1;
+    if (valid == 0) {
         return;
     }
     for (dobj = jobj->dobj; dobj != 0; dobj = dobj->next) {
@@ -1137,6 +1142,30 @@ static inline ShadowReceive* _shadowFindFreeSlot(ShadowReceive* r)
     return 0;
 }
 
+static inline bool _shadowAddReceiver(ShadowReceive* slot, _GSmodel* receiveModel, GSbound* bound)
+{
+    s32 idx;
+    u32 n;
+
+    idx = _shadowFindReceiver(slot, receiveModel);
+    if (idx != -1) {
+        return true;
+    }
+    idx = _shadowFindReceiver(slot, 0);
+    if (idx < 0) {
+        return false;
+    }
+    slot->receivers[idx] = receiveModel;
+    n = _shadowBoundSize(bound);
+    if (n < slot->sizeMin) {
+        slot->sizeMin = n;
+    }
+    if (n > slot->sizeMax) {
+        slot->sizeMax = n;
+    }
+    return true;
+}
+
 static bool _modelShadowAddAsNewReceiver(_GSmodel* model, _GSmodel* receiveModel, GSlight* light, GSbound* bound)
 {
     _GSmodel* rm;
@@ -1162,7 +1191,7 @@ static bool _modelShadowAddAsNewReceiver(_GSmodel* model, _GSmodel* receiveModel
             bool ok = false;
             u32 i;
 
-            for (i = 0; i < 5; i++, r++) {
+            for (i = 0; i < 5; r++, i++) {
                 slot = r;
                 if (slot->model == model) {
                     ok = true;
@@ -1182,23 +1211,7 @@ static bool _modelShadowAddAsNewReceiver(_GSmodel* model, _GSmodel* receiveModel
                 return false;
             }
         }
-        idx = _shadowFindReceiver(slot, receiveModel);
-        if (idx != -1) {
-            return true;
-        }
-        idx = _shadowFindReceiver(slot, 0);
-        if (idx < 0) {
-            return false;
-        }
-        slot->receivers[idx] = receiveModel;
-        n = _shadowBoundSize(bound);
-        if (n < slot->sizeMin) {
-            slot->sizeMin = n;
-        }
-        if (n > slot->sizeMax) {
-            slot->sizeMax = n;
-        }
-        return true;
+        return _shadowAddReceiver(slot, receiveModel, bound);
     }
     slot->model = model;
     slot->light = light;
@@ -1210,25 +1223,27 @@ static bool _modelShadowAddAsNewReceiver(_GSmodel* model, _GSmodel* receiveModel
 }
 
 static ShadowReceive* _modelShadowFindValidReceiveModel(_GSmodel* model, _GSmodel* model2, GSlight* light, GSbound* bound)
-{
-    ShadowReceive* r = _modelShadowReceiveList;
-    u32 i;
+{    u32 i;
     Vec p0;
     Vec p1;
     Vec size;
 
-    for (i = 0; i < 5; i++, r++) {
+    for (i = 0; i < 5; i++) {
+        ShadowReceive* r = &_modelShadowReceiveList[i];
         if (r->model == model && r->light == light) {
             if (bound != 0) {
                 f32 m;
                 u32 n;
                 GSboundGetSize(bound, &size, 1, 1);
-                m = size.x;
-                if (size.y > m) {
-                    m = size.y;
-                }
-                if (size.z > m) {
-                    m = size.z;
+                {
+                    Vec* dims = &size;
+                    m = dims->x;
+                    if (dims->y > m) {
+                        m = dims->y;
+                    }
+                    if (dims->z > m) {
+                        m = dims->z;
+                    }
                 }
                 n = (u32)(f32)ceil(m);
                 if (n < r->sizeMin) {
@@ -1287,12 +1302,8 @@ static u8 _modelShadowGetLightToGroundIntersect(_GSmodel* model, GSvec* out)
     GSboundGetWorldPosition(model->bound, &center);
     GSboundGetSize((GSbound*)model->bound, &size, 1, 1);
     center.y = 0.5f * size.y + center.y;
-    planePt.x = 0.0f;
-    planePt.y = model->groundY;
-    planePt.z = 0.0f;
-    planeN.x = 0.0f;
-    planeN.y = -1.0f;
-    planeN.z = 0.0f;
+    shVecSet(&planePt, 0.0f, model->groundY, 0.0f);
+    shVecSet(&planeN, 0.0f, -1.0f, 0.0f);
     PSVECSubtract(&lightPos, &center, &tmp1);
     rayDir = tmp1;
     PSVECSubtract(&center, &planePt, &tmp2);
@@ -1309,7 +1320,10 @@ static u8 _modelShadowGetLightToGroundIntersect(_GSmodel* model, GSvec* out)
         PSVECScale(&rayDir, &scaled, numer / denom);
         scaled2 = scaled;
         PSVECSubtract(&center, &scaled2, &result);
-        *out = *(GSvec*)&result;
+        f32 x = result.x;
+        f32 y = result.y;
+        f32 z = result.z;
+        shVecSet((Vec*)out, x, y, z);
         status = 0;
     }
     return status == 0;

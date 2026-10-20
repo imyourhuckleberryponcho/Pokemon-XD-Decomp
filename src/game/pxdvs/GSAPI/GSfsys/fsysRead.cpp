@@ -39,7 +39,10 @@ struct FsysBlock {
     u8 _draft[1];
 };
 struct FsysHeader {
-    u8 _draft[1];
+    u8 unk0[0xC];
+    u32 count;          // 0x0C number of resources
+    u8 unk10[0x30];
+    u32 offsetTable;    // 0x40 offset (from the header) of the u32 resource offset table
 };
 struct FsysResHeader {
     u8 _draft[1];
@@ -81,8 +84,8 @@ FsysWork* _fsysInfo2Work(u32 handle);
 void* _fsysMemAllocCache(Fsys* fsys, u32 id, u32 size, u32 arg);
 bool _fsysMemAllocHeader(Fsys* fsys);
 void _fsysMoveBlock(FsysBlock** from, FsysBlock** to);
-static void _fsysReadBlockCacheCallback();
-static void _fsysReadBlockCacheWriteCallback();
+static void _fsysReadBlockCacheCallback(u32 request);
+static void _fsysReadBlockCacheWriteCallback(u32 request);
 static void _fsysReadBlockDvdCallback(s32 p0, s32 p1);
 static void _fsysReadBlockHandling(void *p0, void *p1);
 u8 _fsysReadCache(void*, void*, void*, s32);
@@ -90,7 +93,7 @@ static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5
 void* _fsysReadDataExec(void *p0, void *p1);
 static void _fsysReadDataNext(void *p0, void *p1);
 static void* _fsysReadFile(void *p0);
-static void _fsysReadHeaderCacheCallback();
+static void _fsysReadHeaderCacheCallback(u32 request);
 static void _fsysReadHeaderCacheWriteCallback();
 static void _fsysReadHeaderCallbackSub(void *p0);
 static void _fsysReadHeaderDvdCallback(s32 p0, s32 p1);
@@ -105,7 +108,13 @@ void _fsysWorkSetTaskStatus(FsysWork* work, u32 status);
 s32 _fsysWriteCache(void*, void*, s32, u32, void*, void*, void*);
 int sprintf(char* s, const char* format, ...);
 extern u32 _fsysBlockByteSize;
-extern s32 fsys_datatype;
+struct FsysDataType {
+    u32 unk0;
+    u32 type;
+    void* pre;
+    void* post;
+};
+extern FsysDataType fsys_datatype[];
 extern u32 fsys_datatype_number;
 }
 
@@ -119,9 +128,9 @@ void _fsysSeekRequest(void *p0) {
 extern "C" {
 void _fsysReadRequest(void *p0) {
     void (*sp8)();
-    FsysWork *temp_r3;
-    s32 temp_r28;
     s32 temp_r29;
+    s32 temp_r28;
+    FsysWork *temp_r3;
     u8 var_r28;
 
     if (((u8 *) M2C_FIELD(p0, u8 **, 0x20) != NULL) && ((u8) M2C_FIELD(p0, u8 *, 0x2E) == 1)) {
@@ -150,8 +159,8 @@ loop_4:
             var_r28 = 1;
         }
         OSRestoreInterrupts(temp_r29);
-        sp8 = _fsysReadHeaderCacheCallback;
-        _fsysReadData((void *)(p0), (void *)(NULL), (unsigned char)(var_r28), (long)(0xFFFF), (void *)(M2C_FIELD(p0, u8 **, 0x20)), (void *)(M2C_FIELD(M2C_FIELD(p0, u8 **, 0x1C), u8 **, 8)), (void *)(NULL), (void *)(_fsysReadHeaderDvdCallback), (long)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)), (long)(0));
+        sp8 = (void (*)())_fsysReadHeaderCacheCallback;
+        _fsysReadData((void *)(p0), (void *)(NULL), (unsigned char)(var_r28), (long)(0xFFFF), (void *)(M2C_FIELD(p0, u8 **, 0x20)), (void *)(M2C_FIELD(M2C_FIELD(p0, u8 **, 0x1C), u8 **, 8)), (void *)(NULL), (void *)((u16)_fsysReadHeaderDvdCallback), (long)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)), (long)(0));
     }
 }
 }
@@ -193,10 +202,10 @@ block_11:
 }
 
 extern "C" {
-static void _fsysReadHeaderCacheCallback() {
+static void _fsysReadHeaderCacheCallback(u32 request) {
     FsysArqTrans *temp_r3;
 
-    temp_r3 = _fsysArq2ArqTrans((void*)(M2C_ERROR(/* Read from unset register $r3 */)));
+    temp_r3 = _fsysArq2ArqTrans((void*)request);
     if (temp_r3 != NULL) {
         _fsysReadHeaderCallbackSub(M2C_FIELD(temp_r3, u8 **, 0x30));
     }
@@ -269,21 +278,27 @@ static void _fsysReadHeaderCallbackSub(void *p0) {
 
 extern "C" {
 static void* _fsysReadFile(void *p0) {
-    s8 sp8;
+    u8 sp8[sizeof(s8) + 112];
     FsysHeader *temp_ret;
     FsysResHeader *var_r3;
     s32 temp_r0_2;
     s32 temp_r30;
     u32 temp_r0;
 
-    if ((u8) M2C_FIELD(p0, u8 *, 0x2C) == 1) {
-        _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), 0xAU);
-        return NULL;
+    switch ((u8) M2C_FIELD(p0, u8 *, 0x2C)) {
+
+    case 1:
+            _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), 0xAU);
+            return NULL;
+
+        break;
+
     }
     var_r3 = _fsysGetResHeader((Fsys*)((Fsys *) p0), M2C_FIELD(p0, u32 *, 0x24));
     if (var_r3 != NULL) {
+        temp_r30 = M2C_FIELD(var_r3, s32 *, 0x1C);
+        temp_r30 += M2C_FIELD(p0, s32 *, 0x20);
         M2C_FIELD(var_r3, s32 *, 0x28) = 0;
-        temp_r30 = M2C_FIELD(p0, s32 *, 0x20) + M2C_FIELD(var_r3, s32 *, 0x1C);
         M2C_FIELD(var_r3, s32 *, 0x2C) = 0;
         M2C_FIELD(var_r3, s32 *, 0x30) = 0;
         M2C_FIELD(var_r3, s32 *, 0x34) = 0;
@@ -302,7 +317,7 @@ static void* _fsysReadFile(void *p0) {
         }
         temp_ret = _fsysGetHeader((Fsys*)((Fsys *) p0));
         if (M2C_FIELD(temp_ret, s32 *, 0x10) & 1) {
-            sprintf((char*)(&sp8), (const char*)("debug/%s"), temp_r30, M2C_BITWISE(f32, temp_ret));
+            sprintf((char*)(&sp8), (const char*)("debug/%s"), (u16)temp_r30, M2C_BITWISE(f32, temp_ret));
             if (GSdvdOpenTest((const char*)(&sp8)) == 1) {
                 M2C_FIELD(var_r3, GSdvdFile **, 0x38) = GSdvdOpen((const char*)(&sp8));
                 M2C_FIELD(var_r3, s32 *, 0xC) = (s32) (M2C_FIELD(var_r3, s32 *, 0xC) & 0x7FFFFFFF);
@@ -378,21 +393,21 @@ block_14:
     _fsysAddBlock((FsysBlock**)(((u8*)(p1) + 0x30)), (FsysBlock*)(temp_r3));
     temp_r28 = M2C_FIELD(p1, s32 *, 0x28);
     temp_r27_2 = ((u32) M2C_FIELD(p1, u32 *, 0xC) >> 0x11U) & 1;
-    temp_r8 = _fsysGetTransLength(M2C_FIELD(p1, s32 *, 0x14), temp_r28);
-    sp8 = _fsysReadBlockCacheCallback;
-    temp_r27 = (unsigned char *)(_fsysReadData((void *)(p0), (void *)(p1), (unsigned char)(temp_r27_2), (long)(M2C_FIELD(p0, s32 *, 0x24)), (void *)(M2C_FIELD(M2C_FIELD(p1, s8 **, 0x30), u8 **, 8)), (void *)((u8 *) temp_r8), (void *)((u8 *) temp_r28), (void *)(_fsysReadBlockDvdCallback), (long)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)), (long)(0)));
+    temp_r8 = _fsysGetTransLength(M2C_FIELD(p1, s32 *, 0x14), (u16)temp_r28);
+    sp8 = (void (*)())_fsysReadBlockCacheCallback;
+    temp_r27 = (unsigned char *)(_fsysReadData((void *)((u16)p0), (void *)(p1), (unsigned char)(temp_r27_2), (long)(M2C_FIELD(p0, s32 *, 0x24)), (void *)(M2C_FIELD(M2C_FIELD((u16)p1, s8 **, 0x30), u8 **, 8)), (void *)((u8 *) temp_r8), (void *)((u8 *) temp_r28), (void *)(_fsysReadBlockDvdCallback), (long)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)), (long)(0)));
     OSRestoreInterrupts(temp_r31);
     return temp_r27;
 }
 }
 
 extern "C" {
-static void _fsysReadBlockCacheCallback() {
+static void _fsysReadBlockCacheCallback(u32 request) {
     FsysArqTrans *temp_r3;
-    u8 *temp_r30;
     u8 *temp_r31;
+    u8 *temp_r30;
 
-    temp_r3 = _fsysArq2ArqTrans((void*)(M2C_ERROR(/* Read from unset register $r3 */)));
+    temp_r3 = _fsysArq2ArqTrans((void*)request);
     if (temp_r3 != NULL) {
         temp_r30 = M2C_FIELD(temp_r3, u8 **, 0x34);
         temp_r31 = M2C_FIELD(temp_r3, u8 **, 0x30);
@@ -459,10 +474,10 @@ s32 _fsysGetTransLength(s32 p0, s32 p1) {
 }
 
 extern "C" {
-static void _fsysReadBlockCacheWriteCallback() {
+static void _fsysReadBlockCacheWriteCallback(u32 request) {
     FsysArqTrans *temp_r3;
 
-    temp_r3 = _fsysArq2ArqTrans((void*)(M2C_ERROR(/* Read from unset register $r3 */)));
+    temp_r3 = _fsysArq2ArqTrans((void*)request);
     if (temp_r3 != NULL) {
         _fsysReadBlockHandling(M2C_FIELD(temp_r3, u8 **, 0x30), M2C_FIELD(temp_r3, u8 **, 0x34));
     }
@@ -537,13 +552,14 @@ block_12:
                 goto block_25;
             }
         }
-        if (_fsysID2Index((FsysWork*)((FsysWork *) p0), M2C_FIELD(p0, u32 *, 8)) != -1U) {
+        if (_fsysID2Index((FsysWork*)((FsysWork *) p0), M2C_FIELD(p0, u32 *, 8)) != 0xFFFF) {
             _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), 0xAU);
             return;
         }
         M2C_FIELD(p0, u32 *, 0x24) = (u32) (M2C_FIELD(p0, u32 *, 0x24) + 1);
 block_25:
-        if ((u32) M2C_FIELD(p0, u32 *, 0x24) >= (u32) M2C_FIELD(_fsysGetHeader((Fsys*)((Fsys *) p0)), u32 *, 0xC)) {
+        FsysHeader* h = _fsysGetHeader((Fsys*)p0);
+        if ((u32) M2C_FIELD(p0, u32 *, 0x24) >= (u32) M2C_FIELD(h, u32 *, 0xC)) {
             _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), 0xAU);
             return;
         }
@@ -556,7 +572,16 @@ block_28:
 }
 
 extern "C" {
-FsysResHeader* _fsysGetResHeader(Fsys* p0, u32 p1) { return 0; }
+FsysResHeader* _fsysGetResHeader(Fsys* fsys, u32 index) {
+    FsysHeader* header = _fsysGetHeader(fsys);
+    if (header == NULL) {
+        return NULL;
+    }
+    if (index >= header->count) {
+        return NULL;
+    }
+    return (FsysResHeader*)((u8*)header + *(u32*)((u8*)header + header->offsetTable + index * 4));
+}
 extern "C" {
 FsysHeader* _fsysGetHeader(Fsys* p0) {
     FsysHeader *temp_r4;
@@ -582,11 +607,11 @@ static u8 _fsysAdjustReadFile(void *p0) {
 loop_3:
     if (var_r29 < (u32) M2C_FIELD(temp_r31, u32 *, 0xC)) {
         if (_fsysCheckCache(M2C_FIELD(p0, s32 *, 0), (u8 *) var_r29) != 0) {
-            var_r29 += 1;
+            var_r29 = var_r29 + 1;
             goto loop_3;
         }
     }
-    if (var_r29 >= (u32) M2C_FIELD(temp_r31, u32 *, 0xC)) {
+    if (var_r29 >= (u32) M2C_FIELD((u16)temp_r31, u32 *, 0xC)) {
         return 0U;
     }
     M2C_FIELD(p0, s32 *, 0x24) = (s32) var_r29;
@@ -599,7 +624,8 @@ extern "C" {
 static u8 _fsysExpandFile(void *p0) {
     FsysResHeader *temp_r3;
 
-    if ((M2C_FIELD(p0, u32 *, 0x28)) >= (u32) M2C_FIELD(_fsysGetHeader((Fsys*)((Fsys *) p0)), u32 *, 0xC)) {
+    void* h = _fsysGetHeader((Fsys*)p0);
+    if ((M2C_FIELD(p0, u32 *, 0x28)) >= (u32) M2C_FIELD(h, u32 *, 0xC)) {
         return 0U;
     }
     temp_r3 = _fsysGetResHeader((Fsys*)((Fsys *) p0), (M2C_FIELD(p0, u32 *, 0x28)));
@@ -639,24 +665,13 @@ u8 _fsysExpandFileExec(void *p0, void *p1) {
 }
 
 extern "C" {
-s32* _fsysGetDataType(u32 p0) {
-    s32 *var_r4;
-    u32 var_ctr;
-
-    var_r4 = &fsys_datatype;
-    var_ctr = fsys_datatype_number;
-    if (fsys_datatype_number > 0U) {
-loop_1:
-        if ((u32) M2C_FIELD(var_r4, u32 *, 4) == p0) {
-            return var_r4;
+s32* _fsysGetDataType(u32 type) {
+    FsysDataType* entry = fsys_datatype;
+    u32 i;
+    for (i = 0; i < fsys_datatype_number; i++, entry++) {
+        if (entry->type == type) {
+            return (s32*)entry;
         }
-        var_r4 += 0x10;
-        var_ctr -= 1;
-        if (var_ctr == 0U) {
-            /* Duplicate return node #4. Try simplifying control flow for better match */
-            return NULL;
-        }
-        goto loop_1;
     }
     return NULL;
 }

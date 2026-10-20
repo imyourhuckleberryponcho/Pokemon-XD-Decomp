@@ -184,19 +184,20 @@ static void* _fadeFluidDoMalloc(u32 size);
 extern "C" {
 
 void fadeFluidDispSecond(int layerID, GStexture* tex, f32 progress, f32 blend) {
+    enum TsE { TsE0 };
     GSgfxLayer* layer = GSgfxLayerFindByID(layerID);
     GSvec interpolated;
     GSvec to;
     GSvec from;
-    s32 alpha;
+    enum TsE alpha;
     u32 x;
     u32 y;
 
     to.z = to.y = to.x = 1.0f;
     from.z = from.y = from.x = 0.0f;
     GSlerpGetLinearInterpolationVector(&interpolated, &to, &from, blend);
-    alpha = (s32)(255.0f * interpolated.x);
-    alpha = (s32)((f32)alpha * (1.0f - progress));
+    alpha = (enum TsE)((s32)(255.0f * interpolated.x));
+    alpha = (enum TsE)((s32)((f32)alpha * (1.0f - progress)));
     spriteSetEnv(layerID);
     if (layer->curBlendIdx != 1) {
         layer->curBlendIdx = 1;
@@ -252,7 +253,8 @@ void fadeFluidDispSecond(int layerID, GStexture* tex, f32 progress, f32 blend) {
     for (y = 0; y < work->rows; y++) {
         layer->primType = 0x98;
         layer->beginSurface(stride * 2);
-        u32 row0 = y * stride;
+        u32 row0 = stride;
+        row0 *= y;
         u32 row1 = (y + 1) * stride;
         for (x = 0; x < stride; x++) {
             GSvec* p0 = &work->heightPage[_fadeFluidSw][x + row0];
@@ -283,19 +285,20 @@ void fadeFluidDispSecond(int layerID, GStexture* tex, f32 progress, f32 blend) {
 }
 
 void fadeFluidDisp(GStexture* tex, f32 progress, f32 blend) {
+    enum TsE { TsE0 };
     GSgfxLayer* layer = GSgfxLayerFindByID(7);
     GSvec interpolated;
     GSvec to;
     GSvec from;
-    s32 alpha;
+    enum TsE alpha;
     u32 x;
     u32 y;
 
     to.z = to.y = to.x = 1.0f;
     from.z = from.y = from.x = 0.0f;
     GSlerpGetLinearInterpolationVector(&interpolated, &to, &from, blend);
-    alpha = (s32)(255.0f * interpolated.x);
-    alpha = (s32)((f32)alpha * (1.0f - progress));
+    alpha = (enum TsE)((s32)(255.0f * interpolated.x));
+    alpha = (enum TsE)((s32)((f32)alpha * (1.0f - progress)));
     spriteSetEnv(7);
     if (layer->curBlendIdx != 1) {
         layer->curBlendIdx = 1;
@@ -351,7 +354,8 @@ void fadeFluidDisp(GStexture* tex, f32 progress, f32 blend) {
     layer->primType = 0x98;
     for (y = 0; y < work->rows; y++) {
         layer->beginSurface(stride * 2);
-        u32 row0 = y * stride;
+        u32 row0 = stride;
+        row0 *= y;
         u32 row1 = (y + 1) * stride;
         for (x = 0; x < stride; x++) {
             GSvec* p0 = &work->heightPage[_fadeFluidSw][x + row0];

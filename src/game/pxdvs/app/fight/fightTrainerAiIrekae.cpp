@@ -134,7 +134,7 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
 {
     FightPokemon* candidate;
     FightOutPokemon saved;
-    FightPokemon* party[24];
+    FightPokemon* party[25];
     FightPokemon* candidates[6];
     s32 values[6];
     FightOutPokemon* opponents[8];
@@ -142,7 +142,7 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
     u16 moves[8];
     u16 ai = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
     u8 revise = fightTrainerAiDB_GetLastValueRevise();
-    s32 weather = fightTrainerAiGetFightFloorNowTenkouDataId(trainer, 0, 1);
+    volatile s32 weather = fightTrainerAiGetFightFloorNowTenkouDataId(trainer, 0, 1);
     for (u8 i = 0; i < 6; i++) values[i] = 0;
     fightOutPokemonBiosCopy(&saved, pokemon);
     if (fightOutPokemonCheckFightOut(pokemon) == 1) fightOutPokemonIsFightActionAttackWazaOut(pokemon, 0xE2, 0);
@@ -264,7 +264,7 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
         }
         u16 add = fightTrainerAiGetFightPokemonIrekaeDasuTokuseiAddsubDataId(trainer, candidate);
         if (add != 0) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, add);
-        switch ((u8)weather) {
+        switch (weather) {
         case 2:
             if (fightTrainerAiIsFightPokemonTokuseiDataId(trainer, candidate, 0x21) == 1 || fightTrainerAiIsFightPokemonTokuseiDataId(trainer, candidate, 0x2C) == 1) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x2C);
             break;

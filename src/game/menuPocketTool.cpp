@@ -111,11 +111,7 @@ f32 menuGetPokemonScale(u32 id, int index)
     }
     memoGetScaleAngle(index, &memoScale, &angle);
     GSboundGetSize(GSmodelGetBound(model), size, 0, 0);
-    f32 m = size[0];
-    if (m > size[1]) {
-    } else {
-        m = size[1];
-    }
+    f32 m = size[0] > size[1] ? size[0] : size[1];
     f32 r = 11.0f / (memoScale * (m / scale));
     static f32 multi = 2.0f;
     return r * multi;
@@ -247,12 +243,13 @@ extern "C" {
 void GSgfxLayerSetActive(s32);
 u8 GSgfxVideoGetVsyncRate();
 s32 floorGetMenuLayerID();
+enum GSgfxLayerID { GSgfxLayerID0 };
 void spriteSetOffset(s32, s16, s16);
 void spriteClearScissor(s32);
 void spriteSetEnv(s32);
 void spriteClearEnv(s32);
-void GSmsgMain(s16, s32, u16, bool);
-void GSmsgPrint2(s16, s32, s32, s32, s32);
+void GSmsgMain(u32, s32, u16, bool);
+void GSmsgPrint2(u32, s32, s32, s32, s32);
 void GSmsgExec(u32, s32, s32);
 s32 GSmsgIsCheck(s32);
 void GSmsgKill(s32);
@@ -408,13 +405,13 @@ void CMenuPokemonCursor::draw()
             p.y -= 8;
             if (mode == 1) {
                 f32 sn = msl_sinf(3.1415927f * t);
-                int d1 = (int)(-8.0f * t);
                 int d2 = (int)(20.0f * sn);
-                PocketVec<short> v1 = p;
+                int d1 = (int)(-8.0f * t);
                 PocketVec<short> v2 = p;
+                PocketVec<short> v1 = p;
                 PocketVec<short> v3 = p;
-                v2.x += d2;
                 v1.x -= d2;
+                v2.x += d2;
                 v2.y -= d1;
                 v1.y -= -8 - d1;
                 if (t < 0.5f) {
@@ -448,12 +445,12 @@ void CMenuPokemonCursor::draw()
             if (off > 4) off = 4;
             short x1 = p.x + off + 4;
             short y1 = p.y + off + 4;
-            menuPtSpriteDrawColor(0x216, x1, y1, w, h, col);
+            menuPtSpriteDrawColor(0x216, (u16)x1, y1, w, h, col);
             short x2 = p.x + 0x32 - off;
             menuPtSpriteDrawColor(0x216, x2, y1, -w, h, col);
             short y2 = p.y + 0x32 - off;
-            menuPtSpriteDrawColor(0x216, x1, y2, w, -h, col);
             menuPtSpriteDrawColor(0x216, x2, y2, -w, -h, col);
+            menuPtSpriteDrawColor(0x216, x1, y2, w, -h, col);
         } else {
             menuPtSpriteDrawColor(0x215, p.x + 0xE, p.y + 0xE, (col & 0xFFFFFF00) | (short)(155.0f * pulse + 100.0f));
         }
@@ -955,10 +952,11 @@ void CMetaMenu::aButtonWait()
 {
     bool done = false;
     while (!done) {
-        if ((s32)getKeyInfo()->trg != 0x10) {
-        } else {
+        switch (getKeyInfo()->trg) {
+        case 0x10:
             done = true;
             menuPtPlaySe(seId);
+            break;
         }
         updateAll();
     }
@@ -970,12 +968,12 @@ static void _tutorialWindowButtonFunc(tagWINDOW_WORK*);
 long CMetaMenu::actionMenu(u32* list, int a, long count, long b, long defaultSel)
 {
     MENU_DATA_dd_* m = (MENU_DATA_dd_*)menuDataBiosGetPtr(0x59);
+    u8 b1, b0;
     u8 b2, b3, b4;
     s16 s6, s8, sA;
     void (*f0)(tagWINDOW_WORK*);
     void (*f1)(tagWINDOW_WORK*);
     s32 i14, i18;
-    u8 b1, b0;
     if (tutorialMode) {
         _selectItemQuantity = count;
         _pThis = this;
@@ -1000,8 +998,8 @@ long CMetaMenu::actionMenu(u32* list, int a, long count, long b, long defaultSel
     if (r == -1) r = count - 1;
     if (tutorialMode) {
         m->b0 = b0;
-        *((u8*)m + 1) = b1;
         *((u8*)m + 2) = b2;
+        *((u8*)m + 1) = b1;
         m->b3 = b3;
         m->b4 = b4;
         m->s6 = s6;
@@ -1193,9 +1191,9 @@ void menuPtWindowWorkDraw(long id)
 void menuPtWindowWorkDraw(tagWINDOW_WORK* w)
 {
     if (w != 0) {
-        s32 l;
+        GSgfxLayerID l;
         s32 menuLayer = floorGetMenuLayerID();
-        l = w->layer;
+        l = (GSgfxLayerID)w->layer;
         spriteSetOffset(l, w->x, w->y);
         spriteClearScissor(l);
         spriteSetEnv(l);
@@ -1494,8 +1492,7 @@ f32 xyxy2distance(const PocketVec<short>& a, const PocketVec<short>& b)
 {
     int dx = a.x - b.x;
     int dy = a.y - b.y;
-    int d = dx * dx + dy * dy;
-    return ptSqrt((f32)d);
+    return ptSqrt((f32)(int)(dx * dx + dy * dy));
 }
 
 f32 dirSubOne(f32 a, f32 b);

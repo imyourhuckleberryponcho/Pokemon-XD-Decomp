@@ -739,6 +739,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
     const MenuData* data;
     s32 left;
     u16 keys;
+    u32 on;
     s32 xRange;
     const MenuItem* current;
     const MenuItem* item;
@@ -764,7 +765,8 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
     xRange = 16;
     yRange = 12;
     keys = windowGetKeyInfo()->rep;
-    keys |= useSub ? ((windowGetKeyInfo()->on & 0xF) ? 0 : windowGetKeyInfo2()->rep) : 0;
+    on = windowGetKeyInfo()->on;
+    keys = keys | (useSub ? ((on & 0xF) ? 0 : windowGetKeyInfo2()->rep) : 0);
     up = keys & 1;
     down = keys & 2;
     left = keys & 4;
@@ -866,8 +868,8 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
         if (window->prev.p.offset != window->cursor.p.offset) {
             break;
         }
-        xRange += 16;
-        yRange += 12;
+        xRange = xRange + 16;
+        yRange = yRange + 12;
         if (xRange >= 640) {
             xRange = 640;
         }
@@ -981,8 +983,8 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
             }
         }
 
-        xRange += 16;
-        yRange += 12;
+        xRange = xRange + 16;
+        yRange = yRange + 12;
         if (xRange >= 640) {
             xRange = 640;
         }
@@ -1118,9 +1120,9 @@ static u8 _menuGetGcKeyInfo(s32 port, u16* keys, u16* keys2) {
 
 // Update key info structure
 static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
-    s32 port;
-    u16 bit;
     KeyInfo* k1;
+    u16 bit;
+    s32 port;
     MenuWindow* window;
     KeyInfo* k2;
     u16 keys2;
@@ -1134,11 +1136,11 @@ static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
     u16 held2;
 
     for (port = 0; port < 4; port++) {
-        k1 = &winSysWork.port[port];
         k2 = &winSysWork2.port[port];
+        k1 = &winSysWork.port[port];
         connect_bak[port] = connect[port];
-        keys = 0;
         keys2 = 0;
+        keys = 0;
         if (_menuGetGcKeyInfo(port, &keys, &keys2) == 0) {
             if (_menuGetAgbKeyInfo(port, &keys) == 0) {
                 keys = 0;

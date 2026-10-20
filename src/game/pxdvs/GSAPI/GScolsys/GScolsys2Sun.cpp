@@ -95,6 +95,7 @@ bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
     bool found;
     CCDFileHead* head;
     ColObj* obj;
+    int result;
     u32 i;
 
     if (GScolsys2GetCCDFileHead() == NULL) {
@@ -106,14 +107,13 @@ bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
     obj = head->objs;
     for (i = 0; i < head->numObjs; i++, obj++) {
         bool enable;
-        ColMesh* mesh;
+        u32 j;
         GSmtx mtx;
         GSmtx rot;
         GSvec normal;
         GSvec verts[3];
         ColTri* tri;
-        u32 j;
-        int result;
+        ColMesh* mesh;
 
         GScolsys2GetObjEnable(i, &enable);
         if (!enable) {
@@ -123,10 +123,10 @@ bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
         if (mesh == NULL) {
             continue;
         }
+        tri = mesh->tris;
         GScolsys2GetObjMatrix(mtx, i);
         GScolsys2GetObjRotMatrix(rot, i);
         result = 0;
-        tri = mesh->tris;
         for (j = 0; j < mesh->numTris; j++, tri++) {
             int k;
             int res;

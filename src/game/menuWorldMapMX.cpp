@@ -211,7 +211,7 @@ u8 menuScriptGetOpenWorldMapFlag(void);
 void menuScriptSetOpenWorldMapFlag(s32);
 u16 menuScriptOpenWorldMapGetMapNumber(void);
 void menuItemBiosSetSelectFlag(s32, u32, bool);
-bool menuItemBiosGetSelectFlag(s32);
+bool menuItemBiosGetSelectFlag(s32, u32 a1 = 0);
 void heroMovePoolCounter(s32, s32);
 void fadeSet(s32, f32);
 s8 fadeCheck(s32);
@@ -984,7 +984,7 @@ s8 WorldMap::GetPadIndex3(f32 ang, s32 k, f32 tol) {
     u8 hit = 0;
     s8 result = -1;
     f32 lim = 6.2831855f - tol;
-    f32 center = 3.1415927f * (f32)k * 0.25f;
+    f32 center = 3.1415927f * (f32)k / 4.0f;
     if (0.0f == (f32)k) {
         if (ang >= lim || ang < tol) {
             hit = 1;
@@ -1021,7 +1021,7 @@ void WorldMap::CalcModel2D(f32 fov, bool init) {
     }
     Mtx34 result;
     PSMTXConcat(view, &proj, &result);
-    f32 t = (f32)tan(0.017453292f * fov * 0.5f);
+    f32 t = (f32)tan(0.017453292f * fov / 2.0f);
     k = -240.0f / t;
     nk = -k;
     i = 0;
@@ -1551,7 +1551,7 @@ s32 WorldMap::Ctrl(tagWINDOW_WORK* window) {
     case 2:
         MainControl(now);
         break;
-    case 4:
+    case 3:
     default:
         break;
     }
@@ -1583,7 +1583,7 @@ void WorldMap::CallBackFunc(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     case 0x38C: case 0x38D: case 0x38E:
     case 0x5E1:
         if (_mojiOn != 0) {
-            if (menuItemBiosGetSelectFlag(0x54) != 0) {
+            if (menuItemBiosGetSelectFlag(0x54, (u32)(id)) != 0) {
                 u32 ids[18] = {
                     0x147, 0x148, 0x149, 0x14A, 0x14B, 0x14C, 0x14D, 0x14E, 0x14F, 0x150, 0x151, 0x152, 0x153, 0x154, 0x5E1, 0x38C, 0x38D, 0x38E,
                 };

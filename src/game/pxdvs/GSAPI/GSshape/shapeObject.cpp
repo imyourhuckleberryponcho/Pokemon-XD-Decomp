@@ -1,9 +1,32 @@
-// WIP (NonMatching): GS shape objects (GsShapeObject). 7 of 29 functions exact; all others written (see
-// notes below). SetStateTexture is only partially reconstructed (texgen branch missing), the weak GSgfxLayer
-// tunit*/texSelect copies are not emitted yet (member inlines get fully inlined in our compile).
+// WIP (NonMatching): GS shape objects (GsShapeObject). 12 of 29 functions exact; all others written.
+// SetStateTexture is fully reconstructed (84%: register allocation left; the original keeps kalpha[1] in a
+// saved register from the array copy). The konst-selection writes are inline field stores in the target,
+// while the tunit*/texSelect helpers are real calls (dont_inline around the function).
 // Weak constant order in .sdata2 not yet checked against the target.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+enum Mtx { Mtx_draft_dummy };
+struct Vec;
 #define fabs(x) __fabs(x)
 #define fabsf(x) __fabsf(x)
 extern f32 __float_nan[];
@@ -113,8 +136,8 @@ public:
     }
     void tunitMapping(u8 stage, u8 a, u8 b, u8 c) {
         u32* e = (u32*)((u8*)this + 0xEB0 + stage * 12);
-        e[0] = a;
         e[1] = b;
+        e[0] = a;
         if (c != 0xFF) {
             e[2] = c + 4;
         } else {
@@ -196,7 +219,10 @@ public:
     u32 alphaArgs[16][4];
     GSgfxTevOp colorOps[16];
     GSgfxTevOp alphaOps[16];
-    u8 unk13F0[0x254];
+    u8 unk13F0[0x114];
+    u32 kcolorSel[16];
+    u32 kalphaSel[16];
+    u8 unk1584[0xC0];
     u32 blendType;
     u32 blendSrc;
     u32 blendDst;
@@ -301,7 +327,7 @@ void GSgfxVFSetArray(GSgfxVF* vf, s32, s32, void*, s32, s32);
 void GSgfxDLPrimitiveType(int type);
 void GSgfxDLBeginSurface(u16 count);
 void GSgfxDLEndSurface(void);
-void GSgfxDLBegin(void* dl, void* buf, u16 rows, u16 size);
+void GSgfxDLBegin(void* dl, void* buf, int rows, u16 size);
 void GSgfxDLEnd(void);
 void GSgfxDLFree(void* dl);
 }
@@ -390,6 +416,16 @@ f32* GSgfxMatrixGetPtr(int which);
 
 
 
+
+// ---- draft declarations ----
+struct Vec {
+    u8 _draft[1];
+};
+
+extern "C" {
+extern s32 jtbl_1816;
+extern s32 jtbl_1815;
+}
 
 inline int __fpclassifyf(float x) {
     switch ((*(s32*)&x) & 0x7F800000) {
@@ -511,109 +547,356 @@ inline bool GsShapeObject::SetupVF(u16 n) {
     return true;
 }
 
+void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStexture* override);
+
+#pragma push
+#pragma dont_inline on
+#define LAYER_DIRTY(word, bits, group)     l->dirty[0].words[word] |= (bits);     l->dirty[0].groups |= (group);         l->dirty[1].words[word] |= (bits);     l->dirty[1].groups |= (group);
+#define KCOLOR(s, v) l->kcolorSel[s] = (v); LAYER_DIRTY(20, 1 << (s), 0x10)
+#define KALPHA(s, v) l->kalphaSel[s] = (v); LAYER_DIRTY(21, 1 << (s), 0x10)
+#define CARG(s, a, b, c, d) l->tunitColorArg(s, (GSgfxTunitCArg)(a), (GSgfxTunitCArg)(b), (GSgfxTunitCArg)(c), (GSgfxTunitCArg)(d))
+#define AARG(s, a, b, c, d) l->tunitAlphaArg(s, (GSgfxTunitAArg)(a), (GSgfxTunitAArg)(b), (GSgfxTunitAArg)(c), (GSgfxTunitAArg)(d))
+#define COP(s, op, reg) l->tunitColorOp(s, (GSgfxTunitOp)(op), (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)(reg))
+#define AOP(s, op, reg) l->tunitAlphaOp(s, (GSgfxTunitOp)(op), (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)(reg))
+
 void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStexture* override) {
-    const int attrB[4] = {12, 13, 14, 15};
-    const int attrA[4] = {28, 29, 30, 31};
+    const int kcolor[4] = {12, 13, 14, 15};
+    const int kalpha[4] = {28, 29, 30, 31};
+    int kalphaLast = kalpha[1];
     u8 stage = 0;
+    int sel;
     u8 ti = 0;
     u8 texN = data->texCount;
     int last = texN - 1;
     for (; ti < texN; ti++) {
-        u8 map = ti;
+        u32 map = ti;
         GsShapeTexInfo* info = data->texInfo[ti];
         GsShapeTexture* t = texes + info->index;
-        GStextureSetFilter(t->tex, info->filter ? 2 : 1, info->filterB ? 2 : 1, info->filter ? 2 : 1);
+        int mip = 1;
+        if (info->filter) {
+            mip = 2;
+        }
+        int mag = 1;
+        mag = !(info->filterB) ? mag : 2;
+        int min = 1;
+        if (info->filter) {
+            min = 2;
+        }
+        GStextureSetFilter(t->tex, min, mag, mip);
         GStextureSetWrap(t->tex, info->wrapS, info->wrapT);
         GStexture* tex = t->tex;
         if (ti == 0 && override != 0) {
             tex = override;
         }
         if (data->mode == 10 && ti == 0 && data->texCount >= 2) {
-            u8 s1 = stage + 1;
+            u32 s1;
             l->texSelect(map, tex);
             l->tunitMapping(stage, map, map, 0);
-            l->tunitColorArg(stage, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15);
-            l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-            l->tunitAlphaArg(stage, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7);
-            l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+            CARG(stage, 15, 15, 15, 15);
+            COP(stage, 0, 0);
+            AARG(stage, 7, 7, 7, 7);
+            AOP(stage, 0, 0);
+            s1 = stage + 1;
             l->tunitMapping(s1, map, map, 0);
-            l->tunitColorArg(s1, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15);
-            l->tunitColorOp(s1, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-            l->tunitAlphaArg(s1, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7);
-            l->tunitAlphaOp(s1, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+            CARG(s1, 15, 15, 15, 15);
+            COP(s1, 0, 0);
+            AARG(s1, 7, 7, 7, 7);
+            AOP(s1, 0, 0);
             stage += 2;
             if (t->info->mode == 1) {
                 l->tunitMapping(stage, map, map, 0);
-                l->tunitColorArg(stage, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15);
-                l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-                l->tunitAlphaArg(stage, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7);
-                l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+                CARG(stage, 15, 15, 15, 15);
+                COP(stage, 0, 0);
+                AARG(stage, 7, 7, 7, 7);
+                AOP(stage, 0, 0);
                 stage += 1;
             }
         } else if (ti < 2) {
- // The texgen-coordinate setup and the two/three stage combiner setups of this branch are not reconstructed.
-            l->texSelect(map, tex);
-            l->tunitMapping(stage, map, map, 0);
-            stage += 1;
+            if (t->info->mode != 0) {
+                bool s1 = stage + 1;
+                u32 s2 = stage + 2;
+                KCOLOR(stage, kcolor[map * 2]);
+                KALPHA(stage, kalpha[map * 2]);
+                KCOLOR(s1, kcolor[map * 2 + 1]);
+                KALPHA(s1, kalpha[map * 2 + 1]);
+                KALPHA(s2, kalphaLast);
+                l->texSelect(map, tex);
+                l->tunitMapping(stage, map, map, 0);
+                CARG(stage, 15, 15, 15, 14);
+                COP(stage, 0, 1);
+                AARG(stage, 7, 6, 4, 7);
+                AOP(stage, 0, 1);
+                l->tunitMapping(s1, map, map, 0);
+                CARG(s1, 14, 2, 8, 15);
+                COP(s1, 0, 2);
+                AARG(s1, 7, 7, 7, 1);
+                AOP(s1, 0, 2);
+                l->tunitMapping(s2, map, map, 0);
+                switch (info->kind) {
+                case 0:
+                    sel = 0;
+                    sel = ti != 0 ? sel : 12;
+                    CARG(s2, 15, 4, sel, 15);
+                    COP(s2, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 6;
+                    }
+                    AARG(s2, 7, 2, sel, 7);
+                    AOP(s2, 0, 0);
+                    break;
+                case 2:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 4;
+                    }
+                    CARG(s2, sel, 4, 9, 15);
+                    COP(s2, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 2;
+                    }
+                    AARG(s2, sel, 2, 4, 7);
+                    AOP(s2, 0, 0);
+                    break;
+                case 3:
+                    CARG(s2, 15, 15, 15, 4);
+                    COP(s2, 0, 0);
+                    AARG(s2, 7, 7, 7, 2);
+                    AOP(s2, 0, 0);
+                    break;
+                case 4:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 15;
+                    }
+                    CARG(s2, 4, 15, 15, sel);
+                    COP(s2, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 7;
+                    }
+                    AARG(s2, 2, 7, 7, sel);
+                    AOP(s2, 0, 0);
+                    break;
+                case 5:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 15;
+                    }
+                    CARG(s2, 4, 15, 15, sel);
+                    COP(s2, ti != 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 7;
+                    }
+                    AARG(s2, 2, 7, 7, sel);
+                    AOP(s2, 0, 0);
+                    break;
+                case 9:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 4;
+                    }
+                    CARG(s2, 15, 15, 15, sel);
+                    COP(s2, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 6;
+                    }
+                    AARG(s2, 7, 2, sel, 7);
+                    AOP(s2, 0, 0);
+                    break;
+                default:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 10;
+                    }
+                    CARG(s2, 4, 15, 15, sel);
+                    COP(s2, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 5;
+                    }
+                    AARG(s2, 2, 7, 7, sel);
+                    AOP(s2, 0, 0);
+                    break;
+                }
+                stage += 3;
+            } else {
+                u32 s1 = stage + 1;
+                KCOLOR(stage, kcolor[map * 2]);
+                KALPHA(stage, kalpha[map * 2]);
+                KALPHA((u8)s1, kalphaLast);
+                l->texSelect(map, tex);
+                l->tunitMapping(stage, map, map, 0);
+                CARG(stage, 15, 14, 8, 15);
+                COP(stage, 0, 1);
+                AARG(stage, 7, 6, 4, 7);
+                AOP(stage, 0, 1);
+                l->tunitMapping(s1, map, map, 0);
+                switch (info->kind) {
+                case 0:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 12;
+                    }
+                    sel = 0;
+                    CARG(s1, 15, sel, 2, 15);
+                    COP(s1, 0, 0);
+                    if (ti == 0) {
+                        sel = 6;
+                    }
+                    AARG(s1, 7, sel, 1, 7);
+                    AOP(s1, 0, 0);
+                    break;
+                case 2:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 12;
+                    }
+                    CARG(s1, sel, 2, 9, 15);
+                    COP(s1, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 6;
+                    }
+                    AARG(s1, sel, 1, 4, 7);
+                    AOP(s1, 0, 0);
+                    break;
+                case 3:
+                    CARG(s1, 15, 8, 14, 15);
+                    COP(s1, 0, 0);
+                    AARG(s1, 7, 4, 6, 7);
+                    AOP(s1, 0, 0);
+                    break;
+                case 4:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 15;
+                    }
+                    CARG(s1, 2, 15, 15, sel);
+                    COP(s1, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 7;
+                    }
+                    AARG(s1, 1, 7, 7, sel);
+                    AOP(s1, 0, 0);
+                    break;
+                case 5:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 15;
+                    }
+                    CARG(s1, 2, 15, 15, sel);
+                    COP(s1, ti != 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 7;
+                    }
+                    AARG(s1, 1, 7, 7, sel);
+                    AOP(s1, 0, 0);
+                    break;
+                case 9:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 8;
+                    }
+                    CARG(s1, 15, 15, 15, sel);
+                    COP(s1, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 6;
+                    }
+                    AARG(s1, 7, sel, 1, 7);
+                    AOP(s1, 0, 0);
+                    break;
+                default:
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 15;
+                    }
+                    CARG(s1, 2, 15, 15, sel);
+                    COP(s1, 0, 0);
+                    sel = 0;
+                    if (ti == 0) {
+                        sel = 7;
+                    }
+                    AARG(s1, 1, 7, 7, sel);
+                    AOP(s1, 0, 0);
+                    break;
+                }
+                stage += 2;
+            }
         } else {
             l->texSelect(map, tex);
             l->tunitMapping(stage, map, map, 0);
             switch (info->kind) {
             case 0:
-                l->tunitColorArg(stage, (GSgfxTunitCArg)15, (GSgfxTunitCArg)8, (GSgfxTunitCArg)0, (GSgfxTunitCArg)15);
-                l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-                l->tunitAlphaArg(stage, (GSgfxTunitAArg)7, (GSgfxTunitAArg)4, (GSgfxTunitAArg)0, (GSgfxTunitAArg)7);
-                l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+                CARG(stage, 15, 8, 0, 15);
+                COP(stage, 0, 0);
+                AARG(stage, 7, 4, 0, 7);
+                AOP(stage, 0, 0);
                 break;
             case 2:
-                l->tunitColorArg(stage, (GSgfxTunitCArg)0, (GSgfxTunitCArg)8, (GSgfxTunitCArg)9, (GSgfxTunitCArg)15);
-                l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-                l->tunitAlphaArg(stage, (GSgfxTunitAArg)4, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)0);
-                l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+                CARG(stage, 0, 8, 9, 15);
+                COP(stage, 0, 0);
+                AARG(stage, 4, 7, 7, 0);
+                AOP(stage, 0, 0);
                 break;
             case 3:
-                l->tunitColorArg(stage, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)8);
-                l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-                l->tunitAlphaArg(stage, (GSgfxTunitAArg)4, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)0);
-                l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+                CARG(stage, 15, 15, 15, 8);
+                COP(stage, 0, 0);
+                AARG(stage, 4, 7, 7, 0);
+                AOP(stage, 0, 0);
                 break;
             case 4:
-                l->tunitColorArg(stage, (GSgfxTunitCArg)8, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)0);
-                l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-                l->tunitAlphaArg(stage, (GSgfxTunitAArg)4, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)0);
-                l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+                CARG(stage, 8, 15, 15, 0);
+                COP(stage, 0, 0);
+                AARG(stage, 4, 7, 7, 0);
+                AOP(stage, 0, 0);
                 break;
             case 5:
-                l->tunitColorArg(stage, (GSgfxTunitCArg)8, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)0);
-                l->tunitColorOp(stage, (GSgfxTunitOp)1, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-                l->tunitAlphaArg(stage, (GSgfxTunitAArg)4, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)0);
-                l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+                CARG(stage, 8, 15, 15, 0);
+                COP(stage, 1, 0);
+                AARG(stage, 4, 7, 7, 0);
+                AOP(stage, 0, 0);
                 break;
             case 9:
-                l->tunitColorArg(stage, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)0);
-                l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-                l->tunitAlphaArg(stage, (GSgfxTunitAArg)7, (GSgfxTunitAArg)4, (GSgfxTunitAArg)0, (GSgfxTunitAArg)7);
-                l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+                CARG(stage, 15, 15, 15, 0);
+                COP(stage, 0, 0);
+                AARG(stage, 7, 4, 0, 7);
+                AOP(stage, 0, 0);
                 break;
             default:
-                l->tunitColorArg(stage, (GSgfxTunitCArg)8, (GSgfxTunitCArg)15, (GSgfxTunitCArg)15, (GSgfxTunitCArg)0);
-                l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-                l->tunitAlphaArg(stage, (GSgfxTunitAArg)4, (GSgfxTunitAArg)7, (GSgfxTunitAArg)7, (GSgfxTunitAArg)0);
-                l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+                CARG(stage, 8, 15, 15, 0);
+                COP(stage, 0, 0);
+                AARG(stage, 4, 7, 7, 0);
+                AOP(stage, 0, 0);
                 break;
             }
             stage += 1;
         }
         if (map == last) {
             l->tunitMapping(stage, map, map, 0);
-            l->tunitColorArg(stage, (GSgfxTunitCArg)15, (GSgfxTunitCArg)10, (GSgfxTunitCArg)0, (GSgfxTunitCArg)15);
-            l->tunitColorOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
-            l->tunitAlphaArg(stage, (GSgfxTunitAArg)7, (GSgfxTunitAArg)5, (GSgfxTunitAArg)0, (GSgfxTunitAArg)7);
-            l->tunitAlphaOp(stage, (GSgfxTunitOp)0, (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)0);
+            CARG(stage, 15, 10, 0, 15);
+            COP(stage, 0, 0);
+            AARG(stage, 7, 5, 0, 7);
+            AOP(stage, 0, 0);
             stage += 1;
         }
     }
 }
+
+#undef LAYER_DIRTY
+#undef KCOLOR
+#undef KALPHA
+#undef CARG
+#undef AARG
+#undef COP
+#undef AOP
+#pragma pop
 
 void GsShapeObject::SetStateMode(GSgfxLayer* l) {
     u8 zw = data->unk6;
@@ -768,6 +1051,29 @@ static inline Vec3 bilerp(Vec3* pos, int a, int b, int c, int d, f32 wa, f32 wb,
     return p;
 }
 
+bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f);
+
+static inline f32 rimFactor(Vec3* n, Vec3* v, f32 sharp) {
+    if (PSVECSquareMag(n) > 9.9999994e-11f && PSVECSquareMag(v) > 9.9999994e-11f) {
+        PSVECNormalize(n, n);
+        PSVECNormalize(v, v);
+        f32 d = (f32)fabs(PSVECDotProduct(n, v));
+        if (d > 1.0f || sharp < 0.00001f) {
+            return 1.0f;
+        }
+        f32 s = sqrtf(1.0f - d);
+        f32 r = 1.0f;
+        f32 th = 1.0f - sharp;
+        if (!(s <= th)) {
+            f32 c = (f32)cos((1.5707964f * (s - th)) / sharp);
+            r = c * c;
+        }
+        return r;
+    }
+    return 0.0f;
+}
+
+extern "C++" {
 bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f) {
     f32* proj = GSgfxMatrixGetPtr(4);
     int layer = 0;
@@ -900,28 +1206,10 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
     }
     return true;
 }
-
-static inline f32 rimFactor(Vec3* n, Vec3* v, f32 sharp) {
-    if (PSVECSquareMag(n) > 9.9999994e-11f && PSVECSquareMag(v) > 9.9999994e-11f) {
-        PSVECNormalize(n, n);
-        PSVECNormalize(v, v);
-        f32 d = (f32)fabs(PSVECDotProduct(n, v));
-        if (d > 1.0f || sharp < 0.00001f) {
-            return 1.0f;
-        }
-        f32 s = sqrtf(1.0f - d);
-        f32 r = 1.0f;
-        f32 th = 1.0f - sharp;
-        if (!(s <= th)) {
-            f32 c = (f32)cos((1.5707964f * (s - th)) / sharp);
-            r = c * c;
-        }
-        return r;
-    }
-    return 0.0f;
 }
 
 bool GsShapeObject::ShadeVertexColor(GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f, bool b) {
+    enum TsE { TsE0 };
     if (colArray == 0) {
         return false;
     }
@@ -1000,7 +1288,7 @@ bool GsShapeObject::ShadeVertexColor(GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f, boo
             factor *= k;
         }
         u8* dst = (u8*)colArray;
-        u8 mode = data->mode;
+        enum TsE mode = (enum TsE)(data->mode);
         if (mode == 8 || mode == 2 || mode == 10) {
             dst[o + 3] = (u8)(factor * col[3]);
         } else {
@@ -1162,7 +1450,8 @@ static inline f32 fastSin(f32 x) {
 
 static inline f32 fastCos(f32 x) {
     f32 a = reduceAngle(x);
-    f32 t = 2.0f * foldAngle(a);
+    f32 t = foldAngle(a);
+    t *= 2.0f;
     f32 t2 = t * t;
     f32 c = t2 * (t2 * (-0.00002170139f * t2 + 0.0026041667f) + -0.125f) + 1.0f;
     if (fabsf(a) > 1.5707964f) {
@@ -1173,6 +1462,7 @@ static inline f32 fastCos(f32 x) {
 
 
 bool GsShapeObject::WaveTextureCoord(u32 idx, f32 u, f32 v, const GSmtx* m, bool keep) {
+    int x;
     f32* out = (f32*)texArray[idx];
     if (out == 0) {
         return false;
@@ -1214,17 +1504,16 @@ bool GsShapeObject::WaveTextureCoord(u32 idx, f32 u, f32 v, const GSmtx* m, bool
     f32 w11 = (1.0f - fu) * (1.0f - fv);
     for (; y < rows1; y++) {
         int o = base * 8;
-        int x;
         for (x = 0; x < cols1; x++) {
-            u16 c = data->cols;
+            volatile u16 c = data->cols;
             u16 r = data->rows;
             int a = (x + iu) % c;
             int b = (y + iv) % r;
             Vec3 p;
-            if (a == 0 && x == cols1 - 1) {
+            if (a == 0 && cols1 == x - 1) {
                 a = c;
             }
-            if (b == 0 && y == rows1 - 1) {
+            if (b == 0 && rows1 == y - 1) {
                 b = r;
             }
             int k = a + b * cols1;
@@ -1262,15 +1551,14 @@ bool GsShapeObject::DeformTextureCoord(u32 idx, bool a, const f32* A, const f32*
         return false;
     }
     f32* src = (f32*)data->tex;
+    int rows = data->rows;
     int cols = data->cols + 1;
-    int rows = data->rows + 1;
+    rows += 1;
     f32 off = 0.0f;
     int i = 0;
     for (; i < rows; i++, B++, C++) {
         int j;
-        if (b == 1) {
-            off = *C;
-        }
+        off = b != 1 ? off : *C;
         if (a == 1) {
             for (j = 0; j < cols; j++) {
                 out[0] = off + A[j];
@@ -1289,6 +1577,23 @@ bool GsShapeObject::DeformTextureCoord(u32 idx, bool a, const f32* A, const f32*
     return true;
 }
 
+bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
+                                           bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C);
+
+bool GsShapeObject::DeformVertexCoordSphere(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
+                                            bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C);
+
+
+
+
+
+void GsShapeObject::SetVertexColorAlpha(int mode, int type, f32 f, bool b);
+
+
+
+
+
+extern "C++" {
 bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                            bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C) {
     Vec3* out = (Vec3*)posArray;
@@ -1364,92 +1669,210 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
     }
     return true;
 }
+}
 
-bool GsShapeObject::DeformVertexCoordSphere(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
-                                            bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C) {
-    Vec3* out = (Vec3*)posArray;
-    if (out == 0) {
-        return false;
+extern "C++" {
+bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p2, bool p3, f32 p4, f32 p5, bool p6, f32 p7, f32 p8, bool p9, const f32* p10) {
+    u32 saved_reg_f24;
+    f64 sp38;
+    f64 sp30;
+    f64 sp28;
+    f64 sp20;
+    f32 spC;                                        /* compiler-managed */
+    f32 sp8;                                        /* compiler-managed */
+    f32 *var_r27;
+    f32 *var_r28;
+    f32 *var_r29;
+    f32 temp_f0;
+    f32 temp_f1;
+    f32 temp_f23;
+    f32 temp_f31;
+    f32 temp_f4;
+    f32 temp_f4_2;
+    f32 temp_f5;
+    f32 var_f0;
+    f32 var_f0_2;
+    f32 var_f0_3;
+    f32 var_f0_4;
+    f32 var_f0_5;
+    f32 var_f0_6;
+    f32 var_f1;
+    f32 var_f22;
+    f32 var_f23;
+    f32 var_f24;
+    f32 var_f25;
+    f32 var_f27;
+    f32 var_f29;
+    f32 var_f3;
+    f32 var_f4;
+    f32 var_f4_2;
+    s32 temp_r23;
+    s32 temp_r24;
+    s32 var_r25;
+    s32 var_r26;
+    u8 *temp_r11;
+    u8 *temp_r12;
+    u8 *var_r22;
+
+    var_f24 = saved_reg_f24;
+    var_f3 = p7;
+    var_f4 = p8;
+    temp_r12 = M2C_FIELD(this, u8 **, 0x444);
+    var_f22 = p4;
+    if (temp_r12 == NULL) {
+        return 0;
     }
-    int cols1 = data->cols + 1;
-    int rows1 = data->rows + 1;
-    f32 scale;
-    if (!angOwn) {
-        f3 = data->angle;
-        f4 = data->angle2;
-    }
-    if (f3 < 0.00001f) {
-        f3 = 0.00001f;
-    }
-    if (f3 > 360.0f) {
-        f3 = 360.0f;
-    }
-    if (f4 < 0.00001f) {
-        f4 = 0.00001f;
-    }
-    if (f4 > 360.0f) {
-        f4 = 360.0f;
-    }
-    f32 start;
-    if (f3 < 0.00001f) {
-        start = 0.0f;
+    temp_r11 = M2C_FIELD(this, u8 **, 0);
+    var_r22 = temp_r12;
+    temp_r24 = M2C_FIELD(temp_r11, u16 *, 0xA) + 1;
+    temp_r23 = M2C_FIELD(temp_r11, u16 *, 0xC) + 1;
+    if (p6 != 0) {
+
     } else {
-        start = 0.5f * (360.0f - f3);
+        var_f3 = M2C_FIELD(temp_r11, f32 *, 0x5C);
+        var_f4 = M2C_FIELD(temp_r11, f32 *, 0x60);
     }
-    f32 start2;
-    if (data->unkCF == 0) {
-        start2 = 0.017453292f * (0.5f * -f4);
+    if (var_f3 < 0.00001f) {
+        var_f3 = 0.00001f;
+    }
+    if (var_f3 > 360.0f) {
+        var_f3 = 360.0f;
+    }
+    if (var_f4 < 0.00001f) {
+        var_f4 = 0.00001f;
+    }
+    if (var_f4 > 360.0f) {
+        var_f4 = 360.0f;
+    }
+    if (var_f3 < 0.00001f) {
+        var_f29 = 0.0f;
     } else {
-        start2 = -1.5707964f;
+        var_f29 = 0.5f * (360.0f - var_f3);
     }
-    if (!own) {
-        f1 = data->sizeX;
+    if ((u8) M2C_FIELD(temp_r11, u8 *, 0xCF) == 0) {
+        var_f27 = 0.017453292f * (0.5f * -var_f4);
+    } else {
+        f32 kc1768 = 1.5707964f;
+        var_f27 = -kc1768;
     }
-    int i;
-    for (i = 0; i < rows1; i++, B++, C++) {
-        int j;
-        f32 t;
-        const f32* a = A;
-        if (scaled == 1) {
-            scale = 1.0f + *C;
+    if (p3 == 0) {
+        var_f22 = M2C_FIELD(temp_r11, f32 *, 0x3C);
+    }
+    var_r28 = (float *)(p10);
+    var_r27 = (float *)(p2);
+    sp20 = 4.904352253e-315;
+    var_r25 = 0;
+    sp28 = 1.574918751e-314;
+    sp30 = 5.263544247e-315;
+    sp38 = 5.287201034e-315;
+    while (var_r25 < temp_r23) {
+        if (p9 == 1) {
+            var_f24 = 1.0f + *var_r28;
         }
-        if (useUV) {
-            t = *B;
+        if (p0 != 0) {
+            var_f0 = *var_r27;
         } else {
-            t = (f32)i / (f32)(rows1 - 1);
+            var_f0 = (f32) var_r25 / (f32) (temp_r23 - 1);
         }
-        f32 a2 = 0.017453292f * f4 * t + start2;
-        f32 radius = f1 * fastCos(a2);
-        for (j = 0; j < cols1; j++, a++, out++) {
-            f32 u;
-            if (useUV) {
-                u = *a;
-            } else {
-                u = (f32)j / (f32)(cols1 - 1);
+        temp_f4 = (0.017453292f * var_f4 * var_f0) + var_f27;
+        if (var_f1 < temp_f4) var_f1 = temp_f4;
+        if (temp_f4 > 3.1415927f) {
+            var_f1 = -((6.2831855f * (f32) (s32) (temp_f4 / 6.2831855f)) - temp_f4);
+            if (var_f1 > 3.1415927f) {
+                var_f1 -= 6.2831855f;
             }
-            f32 rr = radius;
-            f32 ang = f3 * 0.017453292f * u + (start + 90.0f) * 0.017453292f;
-            f32 sn;
-            f32 cs;
-            if (scaled == 1) {
-                rr = radius * scale;
+        } else if (temp_f4 < -3.1415927f) {
+            var_f1 = -((6.2831855f * (f32) (s32) (temp_f4 / 6.2831855f)) - temp_f4);
+            if (var_f1 < -3.1415927f) {
+                var_f1 += 6.2831855f;
             }
-            if (j == 0 || j == cols1 - 1) {
-                sn = (f32)sin(ang);
-                cs = (f32)cos(ang);
-            } else {
-                fastSinCos(ang, &sn, &cs);
-            }
-            out->x = rr * cs;
-            out->y = rr * sn;
-            out->z = f1 * fastSin(a2);
         }
+        if (var_f1 < -1.5707964f) {
+            var_f0_2 = -3.1415927f - var_f1;
+        } else {
+            M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
+            if (var_f1 == 1.5707964f) {
+                var_f0_2 = var_f1;
+            } else {
+                var_f0_2 = 3.1415927f - var_f1;
+            }
+        }
+        temp_f5 = 2.0f * var_f0_2;
+        spC = var_f1;
+        spC = M2C_BITWISE(s32, spC) & 0x7FFFFFFF;
+        var_f0_3 = (temp_f4_2 * ((temp_f4_2 * ((-0.00002170139f * temp_f4_2) + (f32) sp20)) + (f32) sp28)) + (f32) sp30;
+        temp_f4_2 = temp_f5 * temp_f5;
+        if (M2C_BITWISE(f32, spC) > (f32) sp38) {
+            var_f0_3 = -var_f0_3;
+        }
+        temp_f31 = var_f22 * var_f0_3;
+        var_r29 = (float *)(p1);
+        var_r26 = 0;
+        while (var_r26 < temp_r24) {
+            if (p0 != 0) {
+                var_f0_4 = *var_r29;
+            } else {
+                var_f0_4 = (f32) var_r26 / (f32) (temp_r24 - 1);
+            }
+            var_f25 = temp_f31;
+            temp_f23 = (var_f3 * 0.017453292f * var_f0_4) + ((var_f29 + 90.0f) * 0.017453292f);
+            if (p9 == 1) {
+                var_f25 = temp_f31 * var_f24;
+            }
+            if ((var_r26 == 0) || (var_r26 == (s32) (temp_r24 - 1))) {
+                var_f23 = (f32) sin((f64) temp_f23);
+                var_f0_5 = (f32) cos((f64) temp_f23);
+            } else {
+                var_f4_2 = temp_f23;
+                if (temp_f23 > 3.1415927f) {
+                    var_f4_2 = -((6.2831855f * (f32) (s32) (temp_f23 / 6.2831855f)) - temp_f23);
+                    if (var_f4_2 > 3.1415927f) {
+                        var_f4_2 -= 6.2831855f;
+                    }
+                } else if (temp_f23 < -3.1415927f) {
+                    var_f4_2 = -((6.2831855f * (f32) (s32) (temp_f23 / 6.2831855f)) - temp_f23);
+                    if (var_f4_2 < -3.1415927f) {
+                        var_f4_2 += 6.2831855f;
+                    }
+                }
+                if (var_f4_2 < -1.5707964f) {
+                    var_f0_6 = -3.1415927f - var_f4_2;
+                } else {
+                    M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
+                    if (var_f4_2 == 1.5707964f) {
+                        var_f0_6 = var_f4_2;
+                    } else {
+                        var_f0_6 = 3.1415927f - var_f4_2;
+                    }
+                }
+                temp_f1 = 2.0f * var_f0_6;
+                temp_f0 = temp_f1 * temp_f1;
+                sp8 = M2C_BITWISE(s32, sp8) & 0x7FFFFFFF;
+                sp8 = var_f4_2;
+                var_f23 = temp_f1 * ((temp_f0 * ((temp_f0 * ((-0.0000015500992f * temp_f0) + 0.00026041668f)) + -0.020833334f)) + 0.5f);
+                var_f0_5 = (temp_f0 * ((temp_f0 * ((-0.00002170139f * temp_f0) + 0.0026041667f)) + -0.125f)) + 1.0f;
+                if (M2C_BITWISE(f32, (s32)sp8) > 1.5707964f) {
+                    var_f0_5 = -var_f0_5;
+                }
+            }
+            var_r29 += 4;
+            var_r26 += 1;
+            M2C_FIELD(var_r22, f32 *, 0) = (f32) (var_f25 * var_f0_5);
+            M2C_FIELD(var_r22, f32 *, 4) = (f32) (var_f25 * var_f23);
+            M2C_FIELD(var_r22, f32 *, 8) = (f32) (var_f22 * (temp_f5 * ((temp_f4_2 * ((temp_f4_2 * ((-0.0000015500992f * temp_f4_2) + 0.00026041668f)) + -0.020833334f)) + 0.5f)));
+            var_r22 += 0xC;
+        }
+        var_r28 += 4;
+        var_r27 += 4;
+        var_r25 += 1;
     }
-    return true;
+    return 1;
+}
 }
 
 bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                             bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C) {
+    f32 q;
     Vec3* out = (Vec3*)posArray;
     if (out == 0) {
         return false;
@@ -1465,8 +1888,8 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
     if (angOwn) {
         normals = data->pos2;
     } else {
-        f3 = data->angle;
         f4 = data->angle2;
+        f3 = data->angle;
     }
     f32 diff = f2 - f1;
     f32 height = data->height;
@@ -1479,7 +1902,6 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
     for (i = 0; i < rows1; i++, B++, C++) {
         int j;
         f32 t;
-        const f32* a = A;
         if (scaled == 1) {
             scale = 1.0f + *C;
         }
@@ -1488,7 +1910,8 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
         } else {
             t = (f32)i / (f32)(rows1 - 1);
         }
-        for (j = 0; j < cols1; j++, a++) {
+        for (j = 0; j < cols1; j++) {
+            const f32* a = &A[j];
             f32 u;
             if (useUV) {
                 u = *a;
@@ -1507,7 +1930,7 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
                     w = (u - 0.5f) * shrink + 0.5f;
                     r = f1 * (1.0f - w) + f2 * w;
                     f32 h = height * (f32)fabs(w - 0.5f);
-                    f32 q = -(h * h - qh);
+                    q = -(h * h - qh);
                     if (q > 0.0f) {
                         r += sqrtf(q);
                     }
@@ -1559,14 +1982,15 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
 
 bool GsShapeObject::DeformVertexCoordCylinderEx(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                                 bool angOwn, f32 f3, bool scaled, const f32* C) {
+    int j;
     Vec3* out = (Vec3*)posArray;
     if (out == 0) {
         return false;
     }
     int cols1 = data->cols + 1;
     int rows1 = data->rows + 1;
-    f32 scale;
-    if (!angOwn) {
+    volatile f32 scale;
+    if (angOwn != 0) {
         f3 = data->angle;
     }
     if (f3 < 0.00001f) {
@@ -1581,7 +2005,8 @@ bool GsShapeObject::DeformVertexCoordCylinderEx(bool useUV, const f32* A, const 
     } else {
         start = 0.5f * (360.0f - f3);
     }
-    f32 angStep = f3 * 0.017453292f;
+    f32 kc455 = 0.017453292f;
+    f32 angStep = f3 * kc455;
     start = (start + 90.0f) * 0.017453292f;
     if (!own) {
         f1 = data->sizeX;
@@ -1591,7 +2016,6 @@ bool GsShapeObject::DeformVertexCoordCylinderEx(bool useUV, const f32* A, const 
     f32 height = data->height;
     int i;
     for (i = 0; i < rows1; i++, C++, B++) {
-        int j;
         f32 t;
         const f32* a = A;
         if (scaled == 1) {
@@ -1641,20 +2065,18 @@ bool GsShapeObject::DeformVertexCoord(bool useUV, const f32* A, const f32* B, bo
             return false;
         }
         f32 sx = d->sizeX;
-        f32 sy = d->sizeY;
         f32 offX = 0.5f * -sx;
+        f32 sy = d->sizeY;
         f32 offY = 0.5f * -sy;
         int cols1 = d->cols + 1;
         int rows1 = d->rows + 1;
         f32 shear = 0.0f;
-        if (!angOwn) {
-            f3 = d->angle;
-        }
+        f3 = angOwn == 0 ? f3 : d->angle;
         if ((f32)fabs(f3) > 0.00001f) {
             shear = data->sizeY * (f32)tan(0.017453292f * f3);
         }
-        const f32* b = B;
         int i = 0;
+        const f32* b = B;
         for (; i < rows1; i++, C++, b++) {
             const f32* a = A;
             int j;
@@ -1698,33 +2120,33 @@ bool GsShapeObject::DeformVertexCoord(bool useUV, const f32* A, const f32* B, bo
 
 void GsShapeObject::SetVertexColorGradation(u8 perVertex, const tagGScol4ub* colors, int mode, f32 f, bool b) {
     if (colArray != 0) {
-        tagGScol4ub* dst = (tagGScol4ub*)colArray;
+        const tagGScol4ub* row = colors;
         int cols = data->cols + 1;
         int rows = data->rows + 1;
-        const tagGScol4ub* row = colors;
+        tagGScol4ub* dst = (tagGScol4ub*)colArray;
         int i;
         int j;
         if (mode == 2 || mode == 4) {
-            for (i = 0; i < rows; i++, row++) {
+            for (i = 0; i < rows; row++, i++) {
                 const tagGScol4ub* s = colors;
                 if (perVertex == 0) {
                     for (j = 0; j < cols; j++, s++, dst++) {
                         dst->r = s->r;
                         dst->g = s->g;
                         dst->b = s->b;
-                        dst->a = (u8)(s->a * f);
+                        dst->a = (u8)(f * s->a);
                     }
                 } else {
                     for (j = 0; j < cols; j++, dst++) {
                         dst->r = row->r;
                         dst->g = row->g;
                         dst->b = row->b;
-                        dst->a = (u8)(row->a * f);
+                        dst->a = (u8)(f * row->a);
                     }
                 }
             }
         } else {
-            for (i = 0; i < rows; i++, row++) {
+            for (s32 i = 0; i < rows; row++, i++) {
                 const tagGScol4ub* s = colors;
                 if (perVertex == 0) {
                     for (j = 0; j < cols; j++, s++, dst++) {
@@ -1746,14 +2168,15 @@ void GsShapeObject::SetVertexColorGradation(u8 perVertex, const tagGScol4ub* col
     }
 }
 
+extern "C++" {
 void GsShapeObject::SetVertexColorAlpha(int mode, int type, f32 f, bool b) {
     if (colArray != 0) {
-        tagGScol4ub* dst = (tagGScol4ub*)colArray;
-        tagGScol4ub* src = (tagGScol4ub*)data->col;
         int cols = data->cols + 1;
         int rows = data->rows + 1;
-        int i;
+        tagGScol4ub* src = (tagGScol4ub*)data->col;
+        tagGScol4ub* dst = (tagGScol4ub*)colArray;
         int j;
+        int i;
         if (mode == 0) {
             if (type != 5) {
                 u8 a = (u8)(255.0f * f);
@@ -1793,17 +2216,19 @@ void GsShapeObject::SetVertexColorAlpha(int mode, int type, f32 f, bool b) {
         } else {
             for (i = 0; i < rows; i++) {
                 for (j = 0; j < cols; j++) {
-                    f32 s = (src->a / 255.0f) * f;
-                    dst->r = (u8)(src->r * s);
-                    dst->g = (u8)(src->g * s);
+                    u8 a = src->a;
+                    f32 s = (a / 255.0f) * f;
+                    dst->r = (u8)(s * src->r);
+                    dst->g = (u8)(s * src->g);
                     dst->b = (u8)(src->b * s);
-                    dst->a = src->a;
+                    dst->a = a;
                     dst++;
                     src++;
                 }
             }
         }
     }
+}
 }
 
 void GsShapeObject::SetVertexColorSpecify(const tagGScol4ub& c, bool b) {
@@ -1824,4 +2249,3 @@ void GsShapeObject::SetVertexColorSpecify(const tagGScol4ub& c, bool b) {
         }
     }
 }
-

@@ -154,8 +154,8 @@ void GSvtrLoadTexture() {
 
 extern "C" {
 s32 GSvtrRegisterGSgapp(u32 p0) {
-    s32 var_ctr;
     u32 *var_r5;
+    s32 var_ctr;
 
     if ((u32) (_vtrGSgappCount + 1) >= 4U) {
         return 0;
@@ -191,12 +191,13 @@ void GSvtrInit() {
 
 extern "C++" {
 static void _vtrUpdateFunc(unsigned long p0, unsigned long p1) {
+    enum TsE { TsE0 };
     s32 saved_reg_r30;
     s32 var_r4;
     u32 *var_r30_3;
     u32 *var_r31;
     u32 temp_r0;
-    u32 temp_r3;
+    enum TsE temp_r3;
     u32 temp_r3_2;
     u32 var_r30_2;
     u32 var_r31_2;
@@ -214,7 +215,7 @@ static void _vtrUpdateFunc(unsigned long p0, unsigned long p1) {
             var_r31 = _vtrGSgappHdlList;
             var_r30_2 = 0U;
             while (var_r30_2 < (u32) _vtrGSgappCount) {
-                temp_r3 = *var_r31;
+                temp_r3 = (enum TsE)(*var_r31);
                 if (temp_r3 != 0) {
                     GSgappBlock((s32) temp_r3);
                 }
@@ -280,8 +281,8 @@ static void _vtrUpdateFunc(unsigned long p0, unsigned long p1) {
 extern "C++" {
 #pragma optimize_for_size on
 static void _vtrTexDispFunc() {
-    s32 sp14;
-    s32 sp10;
+    volatile s32 sp14;
+    volatile s32 sp10;
     s32 spC;
     s32 sp8;
     f32 temp_f1;
@@ -297,7 +298,7 @@ static void _vtrTexDispFunc() {
             GSprimSetup2DRender((GSgfxLayer*)((GSgfxLayer *) temp_r3));
             if ((s32) M2C_FIELD(temp_r3, s32 *, 0x1994) != 1) {
                 M2C_FIELD(temp_r3, s32 *, 0x1994) = 1;
-                M2C_FIELD(temp_r3, s32 *, 0x1990) = (s32) (temp_r3 + ((M2C_FIELD(temp_r3, s32 *, 0x1994) * 0xBC) + 0x1818));
+                M2C_FIELD(temp_r3, s32 *, 0x1990) = (s32) ((u8*)temp_r3 + 0x1818 + M2C_FIELD(temp_r3, s32 *, 0x1994) * 0xBC);
             }
             M2C_FIELD(temp_r3, s32 *, 0x1644) = 1;
             M2C_FIELD(temp_r3, s32 *, 0x1648) = 1;

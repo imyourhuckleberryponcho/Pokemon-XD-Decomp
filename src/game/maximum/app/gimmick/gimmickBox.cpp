@@ -103,7 +103,7 @@ void peopleUpdateAnimation(tagPeopleWork* w, s32 a);
 f32 peopleVecCalcRotY(GSvec* a, GSvec* b);
 void soundOpenPlay(s32, s32, s32);
 u32 timeGetLastFrameTime();
-f32 fabs(f32);
+double fabs(double);
 f64 fmod(f32, f32);
 }
 
@@ -116,7 +116,7 @@ f32 fmodf(f32 a, f32 b);
 }
 
 struct GimmickBoxPushData {
-    s32 f0;             // 0x00
+    u8 f0;              // 0x00
     f32 f4;
     GSvec boxPos;       // 0x08
     GSvec kenPos;       // 0x14
@@ -216,10 +216,14 @@ static void _gimmickBoxSetJumpPosYs() {
         if (i <= 3) {
             pd.jumpY[i] = 10.0f;
         } else if (i <= 0xC) {
-            f32 t = -0.5f + ((1.5f * (f32)(i - 3)) / (f32)8);
-            pd.jumpY[i] = (10.0f + 3.3333333f) - ((10.0f * (t * t)) / 0.75f);
+            f32 kc177 = 0.5f;
+            f32 t = ((1.5f * (f32)(i - 3)) / (f32)8);
+            t += -kc177;
+            f32 kc270 = 10.0f;
+            pd.jumpY[i] = (kc270 + 3.3333333f) - ((10.0f * (t * t)) / 0.75f);
         } else {
-            pd.jumpY[i] = (10.0f + 3.3333333f) - ((10.0f * (1.1363636f * 1.1363636f)) / 0.75f);
+            f32 kc396 = 10.0f;
+            pd.jumpY[i] = (kc396 + 3.3333333f) - ((10.0f * (1.1363636f * 1.1363636f)) / 0.75f);
         }
     }
 }
@@ -250,8 +254,8 @@ static s32 _gimmickBoxBoxMoveStart(tagPeopleWork* w, f32 fx, f32 fz) {
     peopleBiosGetPos(w, &pd.boxPos);
     _gimmickBoxSetBoxDirection(fx, fz);
     _gimmickBoxGetDirection((M_STICK_DIRECTION)pd.direction, &dx, &dz, 0);
-    pd.target.x = pd.boxPos.x + (dx * pd.pushDist);
-    pd.target.z = pd.boxPos.z + (dz * pd.pushDist);
+    pd.target.x = pd.boxPos.x + (pd.pushDist * dx);
+    pd.target.z = pd.boxPos.z + (pd.pushDist * dz);
     pd.progress = 0.0f;
     if (pd.direction == _gimmickBoxCheckStickDirection() && _gimmickBoxCanBoxMove(&pd.boxPos, &pd.target) != 0) {
         pd.box = w;
@@ -295,11 +299,12 @@ extern "C" void gimmickBoxPushBox(tagPeopleWork* w) {
         if (pd.box != 0) {
             for (s32 i = 0; i < pd.peopleNum; i++) {
                 tagPeopleWork* p = peopleBiosGetWorkPtr(i);
-                if (p != 0) {
-                    if (peopleBiosCheckFlag(p, 0x100000) != 0 && p == pd.box) {
-                        _gimmickBoxReadyAndMoveBox(p);
-                        break;
-                    }
+                if (p == 0) {
+                    break;
+                }
+                if (peopleBiosCheckFlag(p, 0x100000) != 0 && p == pd.box) {
+                    _gimmickBoxReadyAndMoveBox(p);
+                    break;
                 }
             }
         }
@@ -395,8 +400,8 @@ static void _gimmickBoxPushBoxComplete() {
 }
 
 static void _gimmickBoxSetBoxAndKenToPushPosition(tagPeopleWork* w, f32 fx, f32 fz) {
-    pd.kenPos.x = pd.boxPos.x - (fx * pd.pushOffset);
-    pd.kenPos.z = pd.boxPos.z - (fz * pd.pushOffset);
+    pd.kenPos.x = pd.boxPos.x - (pd.pushOffset * fx);
+    pd.kenPos.z = pd.boxPos.z - (pd.pushOffset * fz);
     pd.kenPos.y = GScolsys2HumanGetWalkHighest(&pd.kenPos);
     peopleBiosSetPos(w, &pd.boxPos);
     peopleBiosSetPos(pd.ken, &pd.kenPos);
@@ -405,11 +410,10 @@ static void _gimmickBoxSetBoxAndKenToPushPosition(tagPeopleWork* w, f32 fx, f32 
 static void _gimmickBoxMoveBox(tagPeopleWork* w) {
     f32 dx, dz;
     _gimmickBoxGetDirection((M_STICK_DIRECTION)pd.direction, &dx, &dz, 0);
-    f32 rate = (f32)GSgfxVideoGetVsyncRate();
-    f32 step = (30.0f * (f32)timeGetLastFrameTime()) / rate;
+    f32 step = (30.0f * (f32)timeGetLastFrameTime()) / (f32)((f32)GSgfxVideoGetVsyncRate());
+    pd.progress += 0.25f * step;
     pd.boxPos.x += step * (0.25f * dx);
     pd.boxPos.z += step * (0.25f * dz);
-    pd.progress += 0.25f * step;
     if (sound_flag == 0) {
         soundOpenPlay(0x562, 0, 0x64);
         sound_flag = 1;
@@ -423,8 +427,7 @@ static void _gimmickBoxMoveBox(tagPeopleWork* w) {
         }
     } else {
         gimmickSetMotion(0, 0x64, 0x20, (s32)pd.pushFrame, 1);
-        f32 rate2 = (f32)GSgfxVideoGetVsyncRate();
-        pd.pushFrame += (30.0f * (f32)timeGetLastFrameTime()) / rate2;
+        pd.pushFrame += (30.0f * (f32)timeGetLastFrameTime()) / (f32)((f32)GSgfxVideoGetVsyncRate());
         pd.walking = 0;
         pd.moving = 1;
     }
@@ -535,24 +538,24 @@ static f32 _gimmickBoxGetFixDistanceBoxAndPeople(f32 fx, f32 fz) {
     if (len == 0.0f) len = 1.0f;
     f32 ex = rx + ((dx * pd.boxRadius) / len);
     f32 ez = rz + ((dz * pd.boxRadius) / len);
-    return std::sqrtf((ex * ex) + (ez * ez));
+    rx = std::sqrtf((ex * ex) + (ez * ez));
+    return rx;
 }
 
 static void _gimmickBoxSetBoxDirection(f32 fx, f32 fz) {
-    f32 az = std::fabsf(fz);
-    if (std::fabsf(fx) > az) {
+    if (std::fabsf(fx) > (f32)(std::fabsf(fz))) {
         if (fx > 0.0f) {
             pd.direction = 1;
             return;
         }
-        pd.direction = 3;
+        pd.direction = 2;
         return;
     }
     if (fz > 0.0f) {
-        pd.direction = 4;
+        pd.direction = 3;
         return;
     }
-    pd.direction = 6;
+    pd.direction = 4;
 }
 
 extern "C" f32 gimmickBoxGetFrameCount(tagPeopleWork* w, s32 anim) {
@@ -705,9 +708,9 @@ static void _gimmickBoxJump() {
                         f32 step2 = step_fix;
                         while (1) {
                             if (step2 != 90.0f) {
+                                peopleUpdateAnimation(pd.ken, 1);
                                 GSvecCopy(peopleBiosGetPrevPosPtr(pd.ken), peopleBiosGetPosPtr(pd.ken));
                                 pd.ken->f28 = 0.0f;
-                                peopleUpdateAnimation(pd.ken, 1);
                                 return;
                             }
                             ang = adjust2PI(base - (0.017453292f * step2));
@@ -760,12 +763,13 @@ static u8 _gimmickBoxJumpMotion() {
     pd.kenPos.y = saveY;
     if (pd.jumping != 0) {
         GSmodelGetAnimIndex(pd.ken->model, &anim, &blend);
-        if (anim == 0x22 && blend == -1 && GSmodelHasAnimationEnded(pd.ken->model) != 0) {
+        if (anim == 0x22 && blend == -1 && (u16)GSmodelHasAnimationEnded(pd.ken->model) != 0) {
             pd.jumpFrame = pd.jumpFrames;
             return 1;
         }
         f32 rate = (f32)GSgfxVideoGetVsyncRate();
-        f32 step = (30.0f * (f32)timeGetLastFrameTime()) / rate;
+        f32 kc629 = 30.0f;
+        f32 step = (kc629 * (f32)timeGetLastFrameTime()) / rate;
         f32 ang = pd.jumpAngle;
         f32 s = std::sinf(ang);
         f32 c = std::cosf(ang);
@@ -853,10 +857,10 @@ static s32 _gimmickBoxAllowAcrossPrevention(long n) {
     d.x += 4.0f;
     d.z -= 4.0f;
     s32 count = 0;
-    if (_gimmickBoxIsJumpOK(&a) == 0) count = 1;
-    if (_gimmickBoxIsJumpOK(&b) == 0) count += 1;
-    if (_gimmickBoxIsJumpOK(&c) == 0) count += 1;
-    if (_gimmickBoxIsJumpOK(&d) == 0) count += 1;
+    if (_gimmickBoxIsJumpOK(&a) == 0) count++;
+    if (_gimmickBoxIsJumpOK(&b) == 0) count++;
+    if (_gimmickBoxIsJumpOK(&c) == 0) count++;
+    if (_gimmickBoxIsJumpOK(&d) == 0) count++;
     if (count >= n) return 1;
     return 0;
 }
@@ -922,12 +926,14 @@ static u8 _gimmickBoxCanJump(f32 angle, u8* flags) {
 }
 
 static s32 _gimmickBoxGetPeopleNum() {
-    s32 i = 0;
-    while (1) {
-        if (i >= peopleBiosGetMaxNum()) return peopleBiosGetMaxNum();
-        if (peopleBiosGetWorkPtr(i) == 0) return i;
-        i++;
+    s32 i;
+    for (i = 0; i < peopleBiosGetMaxNum(); i++) {
+        void* work = peopleBiosGetWorkPtr(i);
+        if (work == 0) {
+            return i;
+        }
     }
+    return peopleBiosGetMaxNum();
 }
 
 extern "C" s32 gimmickBoxSetKenShadowOnBoxIfOnBoxFloor(tagPeopleWork* ken, s32* list, s32* count) {
@@ -1123,13 +1129,13 @@ static f32 adjust2PI(f32 x) {
 }
 
 static f32 adjustNear8(f32 x) {
-    f32 a = adjust2PI(x);
-    if (a < 0.3926991f || a > 5.8904862f) return 0.0f;
-    if (a > 5.105088f) return 5.497787f;
-    if (a > 4.3196898f) return 4.712389f;
-    if (a > 3.5342917f) return 3.9269907f;
-    if (a > 2.7488935f) return 3.1415927f;
-    if (a > 1.9634954f) return 2.3561945f;
-    if (a > 1.1780972f) return 1.5707964f;
+    x = adjust2PI(x);
+    if (x < 0.3926991f || x > 5.8904862f) return 0.0f;
+    if (x > 5.105088f) return 5.497787f;
+    if (x > 4.3196898f) return 4.712389f;
+    if (x > 3.5342917f) return 3.9269907f;
+    if (x > 2.7488935f) return 3.1415927f;
+    if (x > 1.9634954f) return 2.3561945f;
+    if (x > 1.1780972f) return 1.5707964f;
     return 0.7853982f;
 }

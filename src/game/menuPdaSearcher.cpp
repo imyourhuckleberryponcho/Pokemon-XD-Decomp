@@ -278,10 +278,10 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
     f32 v0 = (f32)val->y / (f32)ys;
     f32 v1 = (f32)(val->y + val->h) / (f32)ys;
     f32 u1 = (f32)(val->w + val->x) / (f32)xs;
-    tc[0][0] = tc[3][0] = u0;
-    tc[0][1] = tc[1][1] = v0;
-    tc[1][0] = tc[2][0] = u1;
     tc[2][1] = tc[3][1] = v1;
+    tc[0][0] = tc[3][0] = u0;
+    tc[1][0] = tc[2][0] = u1;
+    tc[0][1] = tc[1][1] = v0;
     f32 cx = (f32)(val->w / 2);
     f32 cy = (f32)(val->h / 2);
 
@@ -355,10 +355,10 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
         angle += 1.5707964f;
         GXWGFifo.s16 = (s16)(radius * s + cx);
         GXWGFifo.s16 = (s16)(radius * c + cy);
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
         GXWGFifo.u8 = sp->alpha;
+        GXWGFifo.u8 = 0xFF;
+        GXWGFifo.u8 = 0xFF;
+        GXWGFifo.u8 = 0xFF;
         GXWGFifo.f32 = tu;
         GXWGFifo.f32 = tv;
     }

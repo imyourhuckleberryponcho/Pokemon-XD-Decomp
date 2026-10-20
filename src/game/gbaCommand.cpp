@@ -10,6 +10,27 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define M2C_TRAP_IF(cond) (0)
 #define M2C_BREAK() (0)
 #define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
 #define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
 #define M2C_CARRY 0
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
@@ -90,7 +111,7 @@ u16 fightOutPokemonGetTokuseiDataId(FightOutPokemon* fop);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon* fop, u16 id);
 Pokemon* fightPokemonGetPokemonPtr(FightPokemon* fp);
 u16 fightPokemonGetSoubiItemDataId(FightPokemon* fp);
-s32 fightSeqSelectDefensePokemonPtr(u32, s32, u16, void*, s32, s32, s32);
+s32 fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, u16, void*, s32, s32, s32);
 void* fightTargetGetPtr(u16 slotType, void* ptr, u16 type);
 bool fightTimerCommandIsOver(void);
 u8 fightTrainerBiosGetControllerId(FightTrainer* trainer);
@@ -102,7 +123,7 @@ u8 fightTypeDataBiosGetFightoutPokemonNum(FightTypeData* data);
 FightTypeData* fightTypeDataBiosGetPtr(u16 id);
 u8 fightTypeDataBiosGetTrainerNum(FightTypeData* data);
 u8 gamedataAttestBiosGetLangareaId(GamedataAttest* attest);
-void gbaCommandChangePokemon(s32 p0, s32 p1, u32 p2, s32 p3);
+s32 gbaCommandChangePokemon(s32 p0, s32 p1, u32 p2, s32 p3);
 void gbaCommandChangePokemonEnd(s32 p0);
 s32 gbaCommandChangePokemonIsPrepared(s32 p0);
 s32 gbaCommandEntryPokemon(u32 p0, void *p1);
@@ -110,10 +131,9 @@ void gbaCommandEntryRequest(s32 p0, s32 p1, s32 p2, s32 p3);
 s32 gbaCommandEntryResult(s32 p0, u32 *p1);
 bool gbaCommandIsConnected(s32 gba);
 u16 gbaCommandKeyPressed(s32 p0);
-s32 gbaCommandKeyRead(s32 p0);
-u32 gbaCommandRequestAction(s32 p0, s32 p1, u16 p2, s32 p3);
+u32 gbaCommandRequestAction(s32 p0, s32 p1, s32 p2, s32 p3);
 void gbaCommandSendWazaText(s32 p0, s32 p1);
-void gbaCommandSetKeyState(s32 chan, s32 state);
+s32 gbaCommandSetKeyState(s32 chan, s32 state);
 u16 gbaPokemonConditonFromGC(s32);
 s32 gbaPokemonFromGC(s32, s32*);
 u32 gba_SIProbe(s32 chan);
@@ -131,8 +151,8 @@ u8 pokemonBiosGetMailId(Pokemon* poke);
 u16 pokemonBiosGetMaxHp(Pokemon* poke);
 char* pokemonBiosGetNicknamePtr(Pokemon* poke);
 u16 pokemonBiosGetPokemonDataId(Pokemon* poke);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u32 wazaNum);
-u8 pokemonBiosGetPokemonWazaPp(Pokemon* poke, u32 wazaNum);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u16 wazaNum);
+u8 pokemonBiosGetPokemonWazaPp(Pokemon* poke, u16 wazaNum);
 u8 pokemonBiosGetPokerus(Pokemon* poke);
 u32 pokemonBiosGetRnd(Pokemon* poke);
 u8 pokemonBiosGetTokuseiFlag(Pokemon* poke);
@@ -140,30 +160,37 @@ void pokemonBiosSetTokuseiFlag(Pokemon* poke, bool data);
 u8 pokemonGetDeoxysSel(u8 controllerId);
 u8 pokemonGetSex(Pokemon* pokemon);
 s32 wazaconv(void* hero, u8* out);
-extern s32 _CB;
+extern s32 _CB[];
 }
 extern "C++" {
 static s32 _dummySelect(FightOutPokemon* p0, unsigned short p1, unsigned short p2);
 static u16 _swap16(unsigned short p0);
 static u32 _swap32(u32 value);
 }
-static u32 _SIProbe_Counter = 0U;
 static u32 _SIProbe_Result[4] = { 0, 0, 0, 0 };
-static s32 _keyCounter;
-static s32 _keyPressed;
-static s32 _keyResult[4];
+static u32 _SIProbe_Counter[4] = { 0, 0, 0, 0 };
+static u8 gba_SIProbe_ErrorCnt[4];
+static u16 _keyCounter[4];
+static u16 _keyPressed[4];
 static s32 _keyState[4];
+static s32 _keyResult[4];
 static u8 _needSelect;
-static s32 gba_SIProbe_ErrorCnt;
-void gba_SIProbe_ErrorCntClear(s32 p0) {
-    if (p0 == -1) {
-        M2C_FIELD(&gba_SIProbe_ErrorCnt, s8 *, 3) = 0;
-        M2C_FIELD(&gba_SIProbe_ErrorCnt, s8 *, 2) = 0;
-        M2C_FIELD(&gba_SIProbe_ErrorCnt, s8 *, 1) = 0;
-        M2C_FIELD(&gba_SIProbe_ErrorCnt, s8 *, 0) = 0;
+// ---- draft declarations ----
+
+
+extern "C" {
+s32 gbaCommandKeyRead(s32 p0);
+}
+
+void gba_SIProbe_ErrorCntClear(s32 ch) {
+    if (ch == -1) {
+        gba_SIProbe_ErrorCnt[3] = 0;
+        gba_SIProbe_ErrorCnt[2] = 0;
+        gba_SIProbe_ErrorCnt[1] = 0;
+        gba_SIProbe_ErrorCnt[0] = 0;
         return;
     }
-    *(&gba_SIProbe_ErrorCnt + p0) = 0;
+    gba_SIProbe_ErrorCnt[ch] = 0;
 }
 }
 
@@ -174,60 +201,60 @@ u32 gba_SIProbe(s32 p0) {
 }
 
 extern "C" {
+#pragma push
+#pragma peephole off
 void gbaCommandChangePokemonEnd(s32 p0) {
     PKJB_ExchangeEnd(p0 - 1);
 }
+#pragma pop
 }
 
 extern "C" {
-s32 gbaCommandChangePokemonIsPrepared(s32 p0) {
-    s32 var_r3;
-    s32 temp_r4;
-    u8 *temp_r5;
+s32 gbaCommandChangePokemonIsPrepared(s32 port) {
+    s32 status;
 
-    var_r3 = PKJB_ExchangeIsPrepared(p0 - 1);
-    if (var_r3 < 0) {
-        M2C_FIELD((&_keyCounter + (p0 * 2)), s16 *, -2) = 0;
-        return var_r3;
-    }
-    if ((var_r3 == 1) || (var_r3 == 2)) {
-        temp_r5 = (unsigned char *)(&_keyCounter + (p0 * 2));
-        temp_r4 = M2C_FIELD(temp_r5, u16 *, -2) + 1;
-        M2C_FIELD(temp_r5, u16 *, -2) = temp_r4;
-        if (temp_r4 <= 0xAU) {
-            var_r3 = -1;
+    status = PKJB_ExchangeIsPrepared(port - 1);
+    if (status < 0) {
+        _keyCounter[port - 1] = 0;
+    } else if (status == 1 || status == 2) {
+        if (++_keyCounter[port - 1] <= 10) {
+            status = -1;
         }
     }
-    return var_r3;
+
+    return status;
 }
 }
 
 extern "C" {
 #pragma peephole off
-void gbaCommandChangePokemon(s32 p0, s32 p1, u32 p2, s32 p3) {
-    u8 sp74;
-    s32 sp10;
-    u32 spC;
-    u32 sp8;
-    u32 var_r30;
-    u8 *var_r31;
+struct GbaExchangePacket {
+    u32 tag;
+    u32 species;
+    s32 pokemon[0x64 / 4];
+    u8 ribbons[0xC];
+};
 
-    sp8 = _swap32(p2);
-    spC = _swap32((p3 << 0x10) | pokemonBiosGetPokemonDataId((Pokemon*)((Pokemon *) p1)));
-    if (pokemonBiosGetPokemonDataId((Pokemon*)((Pokemon *) p1)) == 0x181) {
-        pokemonBiosSetTokuseiFlag((Pokemon*)((Pokemon *) p1), pokemonBiosGetTokuseiFlag((Pokemon*)((Pokemon *) p1)) == 0);
+s32 gbaCommandChangePokemon(s32 p0, s32 p1, u32 p2, s32 p3) {
+    GbaExchangePacket packet;
+    u8* ribbon;
+    s32 i;
+
+    packet.tag = _swap32(p2);
+    packet.species = _swap32((p3 << 0x10) | pokemonBiosGetPokemonDataId((Pokemon*)p1));
+    if (pokemonBiosGetPokemonDataId((Pokemon*)p1) == 0x181) {
+        pokemonBiosSetTokuseiFlag((Pokemon*)p1, pokemonBiosGetTokuseiFlag((Pokemon*)p1) == 0);
     }
-    gbaPokemonFromGC(p1, &sp10);
-    var_r31 = &sp74;
-    memset((void*)(var_r31), 0, 0xCU);
-    var_r30 = 0;
-    do {
-        *var_r31 = exribbonGetNo(var_r30);
-        var_r31 += 1;
-        var_r30 += 1;
-    } while (var_r30 < 0xB);
-    PKJB_ExchangeStart(p0 - 1, (u8*)((u8 *) &sp8));
-    M2C_FIELD((&_keyCounter + (p0 * 2)), s16 *, -2) = 0;
+    gbaPokemonFromGC(p1, packet.pokemon);
+    ribbon = packet.ribbons;
+    memset(ribbon, 0, 0xC);
+    for (i = 0; i < 0xB; i++) {
+        *ribbon = exribbonGetNo(i);
+        ribbon++;
+    }
+    s32 result = PKJB_ExchangeStart(p0 - 1, (u8*)&packet);
+    _keyCounter[p0 - 1] = 0;
+    return result;
 }
 #pragma peephole reset
 }
@@ -246,378 +273,313 @@ u8 gbaCommandGetWazaDataId(u32 value) {
 u32 gbaCommandGetAction(u32 value) {
     return value >> 16;
 }
-extern "C" {
-u32 gbaCommandRequestAction(s32 p0, s32 p1, u16 p2, s32 p3) {
-    s32 saved_reg_r16;
-    s32 unksp3E;
-    s32 sp854;
-    u8 sp5B;
-    u8 sp5A;
-    u16 sp58;
-    u16 sp4A;
-    u16 sp48;
-    u32 sp44;
-    u32 sp40;
-    u8 sp3F;
-    s32 sp3C;
-    u8 sp3B;
-    s32 sp38;
-    FightOutPokemon *sp34;
-    FightOutPokemon *sp30;
-    FightOutPokemon *sp2C;
-    FightOutPokemon *sp28;
-    u8 sp27;
-    u8 sp26;
-    u8 sp25;
-    u8 sp24;
-    u32 sp20;
-    u32 sp1C;
-    FightOutPokemon *sp18;
-    u32 sp14;
-    u16 sp10;
-    s32 spC;
-    s32 sp8;
-    FightOutPokemon **var_r15_3;
-    FightOutPokemon **var_r4;
-    FightOutPokemon *temp_r23;
-    FightOutPokemon *temp_r3_18;
-    FightPokemon *temp_r3_8;
-    FightTrainer *temp_r3_3;
-    FightTrainer *temp_r3_4;
-    FightTrainer *temp_r3_5;
-    FightTrainer *temp_r3_6;
-    FightTrainer *temp_r3_7;
-    FightTypeData *temp_r3_2;
-    GamedataAttest *temp_r3_20;
-    s32 *var_r14;
-    Pokemon *temp_r20;
-    Pokemon *temp_r3_19;
-    Pokemon *temp_r3_9;
-    s32 *var_r15;
-    s32 *var_r17_2;
-    s32 *var_r26;
-    s32 *var_r27;
-    s32 *var_r29;
-    s32 *var_r30;
-    s32 *var_r31;
-    s32 temp_r15;
-    s32 temp_r16;
-    s32 temp_r3_21;
-    s32 var_ctr;
-    s32 var_r15_2;
-    s32 var_r17;
-    s32 var_r17_3;
-    s32 var_r18;
-    s32 var_r20;
-    s32 var_r22;
-    s32 var_r28;
-    s32 var_r6;
-    s32 temp_r20_3;
-    u16 temp_r3;
-    u16 temp_r3_10;
-    u16 temp_r3_12;
-    u16 temp_r3_13;
-    u16 temp_r3_14;
-    u16 temp_r3_15;
-    u16 temp_r3_16;
-    u16 var_r0_2;
-    u16 var_r16;
-    s32 var_r19_2;
-    u16 var_r21;
-    u16 var_r22_2;
-    u32 temp_r14_2;
-    u32 var_r19;
-    u8 *var_r16_2;
-    u8 temp_r0;
-    s32 temp_r14;
-    u8 temp_r17;
-    u8 temp_r18;
-    u8 temp_r19;
-    s32 temp_r24;
-    u8 temp_r3_11;
-    u8 temp_r3_17;
-    u8 temp_r4;
-    u8 var_r0;
-    u8 var_r0_3;
-    u8 var_r3;
+// Battle snapshot sent to the GBA when the player opens the GBA command menu (shape ported from Colosseum's
+// personality value, species, HP, max HP and the Deoxys form. Multi-byte fields are GBA (little-endian) order.
+struct GbaBattleMon {
+    /* 0x00 */ u16 hp;
+    /* 0x02 */ u8 condition;
+    /* 0x03 */ u8 hasItem : 1;
+    /* 0x03 */ u8 hasMail : 1;
+    /* 0x03 */ u8 pokerusStrain : 1;
+    /* 0x03 */ u8 pokerusDays : 1;
+    /* 0x03 */ u8 status : 4;
+    /* 0x04 */ u16 item;
+    /* 0x06 */ u16 pad_06;
+    /* 0x08 */ u16 moves[4];
+    /* 0x10 */ u8 pp[4];
+    /* 0x14 */ u8 moveInfo[4][0x50];
+};
 
-    var_r16 = saved_reg_r16;
-    sp8 = p0;
-    spC = p3;
-    temp_r3 = fightFloorGetStatus((FIGHT_FLOOR*)(NULL), 0U, 0x14U, 0U);
-    temp_r3_2 = fightTypeDataBiosGetPtr(temp_r3);
-    temp_r19 = fightTypeDataBiosGetTrainerNum((FightTypeData*)(temp_r3_2));
-    temp_r14 = fightTypeDataBiosGetEntryPokemonNum((FightTypeData*)(temp_r3_2));
-    temp_r18 = fightTypeDataBiosGetFightoutPokemonNum((FightTypeData*)(temp_r3_2));
-    temp_r24 = temp_r19 * temp_r18 * 2;
-    temp_r3_3 = (FightTrainer *)(fightTargetGetPtr(0xBU, (void*)((u8 *) p1), temp_r3));
-    sp28 = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)(temp_r3_3), 0U);
-    sp24 = 1;
-    if (temp_r19 == 2) {
-        temp_r3_4 = (FightTrainer *)(fightTargetGetPtr(7U, (void*)(temp_r3_3), temp_r3));
-        sp2C = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)(temp_r3_4), 0U);
-        sp25 = fightTrainerBiosGetControllerId((FightTrainer*)(temp_r3_4));
-        temp_r3_5 = (FightTrainer *)(fightTargetGetPtr(9U, (void*)(temp_r3_3), temp_r3));
-        sp30 = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)(temp_r3_5), 0U);
-        sp26 = fightTrainerBiosGetControllerId((FightTrainer*)(temp_r3_5));
-        temp_r3_6 = (FightTrainer *)(fightTargetGetPtr(0xAU, (void*)(temp_r3_3), temp_r3));
-        sp34 = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)(temp_r3_6), 0U);
-        sp27 = fightTrainerBiosGetControllerId((FightTrainer*)(temp_r3_6));
-    } else if (temp_r18 == 2) {
-        sp2C = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)(temp_r3_3), 1U);
-        temp_r3_7 = (FightTrainer *)(fightTargetGetPtr(9U, (void*)(temp_r3_3), temp_r3));
-        sp30 = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)(temp_r3_7), 0U);
-        sp34 = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)(temp_r3_7), 1U);
-        sp25 = 1;
-        sp26 = 2;
-        sp27 = 2;
+struct GbaBattleFoe {
+    /* 0x00 */ u8 name[10];
+    /* 0x0A */ u8 sex : 2;
+    /* 0x0A */ u8 isNidoranM : 1;
+    /* 0x0A */ u8 isNidoranF : 1;
+    /* 0x0A */ u8 isJapanese : 1;
+    /* 0x0A */ u8 controller : 3;
+    /* 0x0B */ u8 level;
+    /* 0x0C */ u32 rnd;
+    /* 0x10 */ u16 species;
+    /* 0x12 */ u16 hp;
+    /* 0x14 */ u16 maxHp;
+    /* 0x16 */ u16 form;
+};
+
+struct GbaBattleSnapshot {
+    /* 0x000 */ u32 partyIds : 24;
+    /* 0x003 */ u32 isIrekae : 1;
+    /* 0x003 */ u32 activeSlot : 7;
+    /* 0x004 */ u32 canSwitch : 24;
+    /* 0x007 */ u8 fighterCount;
+    /* 0x008 */ u32 rnd0;
+    /* 0x00C */ u32 rnd1;
+    /* 0x010 */ u16 species;
+    /* 0x012 */ u16 form;
+    /* 0x014 */ u16 moves[4];
+    /* 0x01C */ u8 pp[4];
+    /* 0x020 */ u16 moveFlags;
+    /* 0x022 */ u8 lockedMove : 4;
+    /* 0x022 */ u8 moveSelect : 4;
+    /* 0x023 */ u8 targetIndex : 4;
+    /* 0x023 */ u8 switchMode : 4;
+    /* 0x024 */ GbaBattleMon party[6];
+    /* 0x81C */ GbaBattleFoe foes[4];
+};
+
+#pragma push
+#pragma peephole off
+#pragma dont_inline on
+u32 gbaCommandRequestAction(s32 port, s32 trainer, s32 slot, s32 irekae) {
+    GbaBattleSnapshot snap;
+    FightOutPokemon* targets[4];
+    u8 controllers[4];
+    u32 rnd0;
+    u32 rnd1;
+    FightOutPokemon* target;
+    u32 reply;
+    u16 locked;
+    u16 fightType;
+    FightTypeData* type;
+    u8 trainerNum;
+    u8 entryNum;
+    u8 outNum;
+    u8 fighterNum;
+    FightTrainer* enemy;
+    FightTrainer* other;
+    FightOutPokemon* out;
+    s32 i;
+    u16 condition;
+    s32 j;
+    u32 partyIds;
+    u32 canSwitch;
+    Pokemon* pokemon;
+    u8 pokerus;
+    u16 waza;
+    u8 count;
+    Pokemon* outPokemon;
+    u16 moveFlags;
+    u16 lockedWaza;
+    u8 result;
+    u8 mode;
+    s32 index;
+    FightPokemon* fightPokemon;
+    GamedataAttest* attest;
+    u16 species;
+    u16 form;
+    u16 zokusei;
+    u16 tokusei;
+    s32 length;
+    u32 size;
+    s32 channel;
+    s32 status;
+    u16 wazaId;
+    Pokemon* foePokemon;
+
+    fightType = fightFloorGetStatus(0, 0, 0x14, 0);
+    type = fightTypeDataBiosGetPtr(fightType);
+    trainerNum = fightTypeDataBiosGetTrainerNum(type);
+    entryNum = fightTypeDataBiosGetEntryPokemonNum(type);
+    outNum = fightTypeDataBiosGetFightoutPokemonNum(type);
+    fighterNum = trainerNum * outNum * 2;
+
+    enemy = (FightTrainer*)fightTargetGetPtr(0xB, (void*)trainer, fightType);
+    targets[0] = fightTrainerGetValidFightOutPokemonPtr(enemy, 0);
+    controllers[0] = 1;
+    if (trainerNum == 2) {
+        other = (FightTrainer*)fightTargetGetPtr(7, enemy, fightType);
+        targets[1] = fightTrainerGetValidFightOutPokemonPtr(other, 0);
+        controllers[1] = fightTrainerBiosGetControllerId(other);
+        other = (FightTrainer*)fightTargetGetPtr(9, enemy, fightType);
+        targets[2] = fightTrainerGetValidFightOutPokemonPtr(other, 0);
+        controllers[2] = fightTrainerBiosGetControllerId(other);
+        other = (FightTrainer*)fightTargetGetPtr(10, enemy, fightType);
+        targets[3] = fightTrainerGetValidFightOutPokemonPtr(other, 0);
+        controllers[3] = fightTrainerBiosGetControllerId(other);
+    } else if (outNum == 2) {
+        targets[1] = fightTrainerGetValidFightOutPokemonPtr(enemy, 1);
+        other = (FightTrainer*)fightTargetGetPtr(9, enemy, fightType);
+        targets[2] = fightTrainerGetValidFightOutPokemonPtr(other, 0);
+        targets[3] = fightTrainerGetValidFightOutPokemonPtr(other, 1);
+        controllers[1] = 1;
+        controllers[2] = 2;
+        controllers[3] = 2;
     } else {
-        sp2C = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)(fightTargetGetPtr(9U, (void*)(temp_r3_3), temp_r3)), 0U);
-        sp25 = 1;
+        targets[1] = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)fightTargetGetPtr(9, enemy, fightType), 0);
+        controllers[1] = 1;
     }
-    temp_r23 = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)((FightTrainer *) p1), p2);
-    if (temp_r18 == 2) {
-        var_r0 = p2 + 1;
-    } else {
-        var_r0 = 0;
-    }
-    temp_r4 = (sp3B & ~0x7F) | (var_r0 & 0x7F);
-    var_r26 = &sp38;
-    sp3B = temp_r4;
-    sp3F = temp_r24;
-    var_r27 = var_r26;
-    sp3B = (temp_r4 & ~0x80) | (((u8) spC << 7) & 0x80);
-    var_r20 = 0;
-    var_r19 = 0;
-    var_r22 = 0;
-    var_r28 = 8;
-loop_13:
-    if (var_r22 < (s32) temp_r14) {
-        temp_r3_8 = fightTrainerGetValidFightPokemonPtr((FightTrainer*)((FightTrainer *) p1), (u16) var_r22);
-        if (temp_r3_8 != NULL) {
-            temp_r3_9 = fightPokemonGetPokemonPtr((FightPokemon*)(temp_r3_8));
-            var_r20 |= pokemonBiosGetFightTrainerPokemonDataId((Pokemon*)(temp_r3_9)) << var_r28;
-            var_r19 |= fightTrainerCheckCanIrekaeFightPokemon((FightTrainer*)((FightTrainer *) p1), (FightPokemon*)(temp_r3_8)) << var_r28;
-            temp_r17 = pokemonBiosGetPokerus((Pokemon*)(temp_r3_9));
-            M2C_FIELD(var_r27, u16 *, 0x24) = _swap16(pokemonBiosGetHp((Pokemon*)(temp_r3_9)));
-            temp_r3_10 = gbaPokemonConditonFromGC((s32) temp_r3_9);
-            M2C_FIELD(var_r27, u8 *, 0x26) = (u8) temp_r3_10;
-            M2C_FIELD(var_r27, u8 *, 0x27) = (u8) ((M2C_FIELD(var_r27, u8 *, 0x27) & ~0x80) | (((fightPokemonGetSoubiItemDataId((FightPokemon*)(temp_r3_8)) != 0) << 7) & 0x80));
-            temp_r3_11 = pokemonBiosGetMailId((Pokemon*)(temp_r3_9));
-            M2C_FIELD(var_r27, u8 *, 0x27) = (u8) ((M2C_FIELD(var_r27, u8 *, 0x27) & ~0x40) | ((((u32) ((0xFF - temp_r3_11) | (temp_r3_11 - 0xFF)) >> 0x1FU) << 6) & 0x40));
-            M2C_FIELD(var_r27, u8 *, 0x27) = (u8) ((M2C_FIELD(var_r27, u8 *, 0x27) & ~0x10) | ((((temp_r17 & 0xF) != 0) << 4) & 0x10));
-            M2C_FIELD(var_r27, u8 *, 0x27) = (u8) ((M2C_FIELD(var_r27, u8 *, 0x27) & ~0x20) | ((((temp_r17 & 0xF0) != 0) << 5) & 0x20));
-            M2C_FIELD(var_r27, u8 *, 0x27) = (u8) ((M2C_FIELD(var_r27, u8 *, 0x27) & ~0xF) | ((u8) ((s32) temp_r3_10 >> 8) & 0xF));
-            M2C_FIELD(var_r27, u16 *, 0x28) = _swap16(fightPokemonGetSoubiItemDataId((FightPokemon*)(temp_r3_8)));
-            var_r31 = var_r27;
-            var_r30 = var_r27;
-            var_r29 = var_r27;
-            var_r21 = 0;
-            do {
-                temp_r3_12 = pokemonBiosGetPokemonWazaDataId((Pokemon*)(temp_r3_9), (u32) var_r21);
-                M2C_FIELD(var_r31, u16 *, 0x2C) = _swap16(temp_r3_12);
-                M2C_FIELD(var_r30, u8 *, 0x34) = pokemonBiosGetPokemonWazaPp((Pokemon*)(temp_r3_9), (u32) var_r21);
-                GetWazaDocGBA((u8*)((u8 *) (var_r29 + 0x38)), temp_r3_12);
-                var_r31 += 2;
-                var_r30 += 1;
-                var_r29 += 0x50;
-                var_r21 += 1;
-            } while ((s32) var_r21 < 4);
-            var_r28 += 4;
-            var_r27 += 0x154;
-            var_r22 += 1;
-            goto loop_13;
+
+    out = fightTrainerGetValidFightOutPokemonPtr((FightTrainer*)trainer, slot);
+    snap.activeSlot = (u8)(outNum == 2 ? slot + 1 : 0);
+    snap.isIrekae = (u8)irekae;
+    snap.fighterCount = fighterNum;
+
+    partyIds = 0;
+    canSwitch = 0;
+    for (i = 0; i < entryNum; i++) {
+        fightPokemon = fightTrainerGetValidFightPokemonPtr((FightTrainer*)trainer, i);
+        if (fightPokemon == 0) {
+            break;
+        }
+        pokemon = fightPokemonGetPokemonPtr(fightPokemon);
+        partyIds |= pokemonBiosGetFightTrainerPokemonDataId(pokemon) << (i * 4 + 8);
+        canSwitch |= fightTrainerCheckCanIrekaeFightPokemon((FightTrainer*)trainer, fightPokemon) << (i * 4 + 8);
+        pokerus = pokemonBiosGetPokerus(pokemon);
+        snap.party[i].hp = _swap16(pokemonBiosGetHp(pokemon));
+        condition = ((s32 (*)(Pokemon*))gbaPokemonConditonFromGC)(pokemon);
+        snap.party[i].condition = condition;
+        snap.party[i].hasItem = fightPokemonGetSoubiItemDataId(fightPokemon) != 0;
+        snap.party[i].hasMail = pokemonBiosGetMailId(pokemon) != 0xFF;
+        snap.party[i].pokerusDays = (pokerus & 0xF) != 0;
+        snap.party[i].pokerusStrain = (pokerus & 0xF0) != 0;
+        snap.party[i].status = condition >> 8;
+        snap.party[i].item = _swap16(fightPokemonGetSoubiItemDataId(fightPokemon));
+        for (j = 0; j < 4; j++) {
+            waza = pokemonBiosGetPokemonWazaDataId(pokemon, j);
+            snap.party[i].moves[j] = _swap16(waza);
+            snap.party[i].pp[j] = pokemonBiosGetPokemonWazaPp(pokemon, j);
+            GetWazaDocGBA(snap.party[i].moveInfo[j], waza);
         }
     }
-    sp38 = (sp38 & ~0xFFFFFF00) | (_swap32(var_r20 | -(1 << ((var_r22 * 4) + 8))) << 8);
-    var_r22_2 = 0;
-    sp3C = (sp3C & ~0xFFFFFF00) | (_swap32(var_r19) << 8);
-    temp_r20 = fightOutPokemonGetPokemonPtr((FightOutPokemon*)(temp_r23));
-    fightOutPokemonGetRndStatus((FightOutPokemon*)(temp_r23), (u32*)(&sp20), (u32*)(&sp1C));
-    sp40 = _swap32(sp20);
-    sp44 = _swap32(sp1C);
-    temp_r3_13 = pokemonBiosGetPokemonDataId((Pokemon*)(temp_r20));
-    sp48 = _swap16(temp_r3_13);
-    if (temp_r3_13 == 0x181) {
-        temp_r3_14 = fightOutPokemonBiosGetZokuseiDataId((u8*)((u8 *) temp_r23), 0U);
-        switch (temp_r3_14) {                       /* switch 1; irregular */
-        case 10:                                    /* switch 1 */
-            var_r0_2 = 1;
-            break;
-        case 11:                                    /* switch 1 */
-            var_r0_2 = 2;
-            break;
-        case 15:                                    /* switch 1 */
-            var_r0_2 = 3;
-            break;
-        default:                                    /* switch 1 */
-            var_r0_2 = 0;
-            break;
-        }
-        sp4A = _swap16(var_r0_2);
+    count = i;
+
+    partyIds |= -(1 << (count * 4 + 8));
+    snap.partyIds = _swap32(partyIds);
+    snap.canSwitch = _swap32(canSwitch);
+
+    moveFlags = 0;
+    outPokemon = fightOutPokemonGetPokemonPtr(out);
+    fightOutPokemonGetRndStatus(out, &rnd0, &rnd1);
+    snap.rnd0 = _swap32(rnd0);
+    snap.rnd1 = _swap32(rnd1);
+    species = pokemonBiosGetPokemonDataId(outPokemon);
+    snap.species = _swap16(species);
+    if (species == 0x181) {
+        zokusei = fightOutPokemonBiosGetZokuseiDataId((u8*)out, 0);
+        form = zokusei == 0xA ? 1 : zokusei == 0xB ? 2 : zokusei == 0xF ? 3 : 0;
+        snap.form = _swap16(form);
     } else {
-        sp4A = 0;
+        snap.form = 0;
     }
-    if (spC != 0) {
-        var_r3 = 0;
-        var_r6 = 0;
+
+    if (irekae != 0) {
+        mode = 0;
+        index = 0;
     } else {
-        var_r3 = fightFloorCheckFightActionFightOutPokemonIrekaeSelect((FIGHT_FLOOR*)(fightFloorBiosGetFightFloorPtr()), (FightOutPokemon*)(temp_r23), (FightOutPokemon**)(&sp18));
-        if (var_r3 == 2) {
-            temp_r3_15 = fightOutPokemonGetTokuseiDataId((FightOutPokemon*)(sp18));
-            switch (temp_r3_15) {                   /* switch 2; irregular */
-            case 0x17:                              /* switch 2 */
-                var_r0_3 = 2;
-                break;
-            case 0x2A:                              /* switch 2 */
-                var_r0_3 = 3;
-                break;
-            case 0x47:                              /* switch 2 */
-                var_r0_3 = 4;
-                break;
-            default:                                /* switch 2 */
-                var_r0_3 = 0;
+        mode = fightFloorCheckFightActionFightOutPokemonIrekaeSelect((FIGHT_FLOOR*)fightFloorBiosGetFightFloorPtr(),
+                                                                     out, &target);
+        if (mode == 2) {
+            tokusei = fightOutPokemonGetTokuseiDataId(target);
+            mode = tokusei == 0x17 ? 2 : tokusei == 0x2A ? 3 : tokusei == 0x47 ? 4 : 0;
+        }
+        for (index = fighterNum - 1; index > 0; index--) {
+            if (target == targets[index]) {
                 break;
             }
-            var_r3 = var_r0_3;
-        }
-        var_r6 = temp_r24 - 1;
-        var_r4 = &(&sp28)[var_r6];
-        var_ctr = var_r6;
-        if (var_r6 > 0) {
-loop_36:
-            if (sp18 != (FightOutPokemon *) *var_r4) {
-                var_r4 -= 4;
-                var_r6 -= 1;
-                var_ctr -= 1;
-                if (var_ctr != 0) {
-                    goto loop_36;
-                }
-            }
         }
     }
-    temp_r0 = (sp5B & ~0xF) | (var_r3 & 0xF);
-    sp5B = temp_r0;
-    sp5B = (temp_r0 & ~0xF0) | (((u8) var_r6 << 4) & 0xF0);
-    var_r19_2 = 0;
-    var_r15 = var_r26;
-    sp5A = (sp5A & ~0xF) | (fightOutPokemonCheckFightActionWazaSelect((FightOutPokemon*)(temp_r23), 0U) & 0xF);
-    var_r17_2 = var_r26;
-    var_r18 = 0;
-    do {
+    snap.switchMode = mode;
+    snap.targetIndex = index;
+    snap.moveSelect = fightOutPokemonCheckFightActionWazaSelect(out, 0);
+
+    for (j = 0; j < 4; j++) {
         _needSelect = 0;
-        temp_r3_16 = pokemonBiosGetPokemonWazaDataId((Pokemon*)(temp_r20), (u32) var_r19_2);
-        M2C_FIELD(var_r15, u16 *, 0x14) = _swap16(temp_r3_16);
-        M2C_FIELD(var_r17_2, u8 *, 0x1C) = pokemonBiosGetPokemonWazaPp((Pokemon*)(temp_r20), (u32) var_r19_2);
-        fightSeqSelectDefensePokemonPtr((u32) temp_r23, (s32) temp_r3_16, temp_r3, _dummySelect, 1, 0, -1);
-        if ((u8) _needSelect != 0) {
-            var_r22_2 |= 8 << var_r18;
+        wazaId = pokemonBiosGetPokemonWazaDataId(outPokemon, j);
+        snap.moves[j] = _swap16(wazaId);
+        snap.pp[j] = pokemonBiosGetPokemonWazaPp(outPokemon, j);
+        fightSeqSelectDefensePokemonPtr(out, wazaId, fightType, (void*)_dummySelect, 1, 0, -1);
+        if (_needSelect != 0) {
+            moveFlags |= 8 << (j * 4);
         }
-        temp_r3_17 = fightOutPokemonCheckCanOutOkWazaBanme((FightOutPokemon*)(temp_r23), var_r19_2, 1U, (u16*)(&sp10));
-        var_r22_2 |= temp_r3_17 << var_r18;
-        if (temp_r3_17 == 5) {
-            var_r16 = sp10;
-        }
-        var_r15 += 2;
-        var_r17_2 += 1;
-        var_r18 += 4;
-        var_r19_2 += 1;
-    } while ((s32) var_r19_2 < 4);
-    sp58 = _swap16(var_r22_2);
-    var_r14 = &unksp3E;
-    var_r15_2 = 3;
-loop_45:
-    if ((u16) M2C_FIELD(var_r14, u16 *, 0x14) != _swap16(var_r16)) {
-        var_r14 -= 2;
-        var_r15_2 -= 1;
-        if (var_r15_2 > 0) {
-            goto loop_45;
+        result = fightOutPokemonCheckCanOutOkWazaBanme(out, j, 1, &locked);
+        moveFlags |= result << (j * 4);
+        if (result == 5) {
+            lockedWaza = locked;
         }
     }
-    var_r15_3 = &sp28;
-    sp5A = (sp5A & ~0xF0) | (((u8) var_r15_2 << 4) & 0xF0);
-    var_r16_2 = &sp24;
-    var_r17_3 = 0;
-    while (var_r17_3 < (s32) temp_r24) {
-        memset((void*)(var_r26 + 0x81C), 0, 0x18U);
-        temp_r3_18 = *var_r15_3;
-        if (temp_r3_18 == temp_r23) {
-            M2C_FIELD(var_r26, s8 *, 0x81C) = 0xFF;
+    snap.moveFlags = _swap16(moveFlags);
+    for (index = 3; index > 0; index--) {
+        if (snap.moves[index] == _swap16(lockedWaza)) {
+            break;
+        }
+    }
+    snap.lockedMove = index;
+
+    for (i = 0; i < fighterNum; i++) {
+        memset(snap.foes[i].name, 0, sizeof(GbaBattleFoe));
+        if (targets[i] == out) {
+            snap.foes[i].name[0] = 0xFF;
         } else {
-            temp_r3_19 = fightOutPokemonGetPokemonPtr((FightOutPokemon*)(temp_r3_18));
-            temp_r3_20 = (GamedataAttest *)(pokemonBiosGetAttest((Pokemon*)(temp_r3_19)));
-            temp_r3_21 = GBAMakeFromGSchar((u8*)((u8 *) (var_r26 + 0x81C)), (const u16*)(pokemonBiosGetNicknamePtr((Pokemon*)(temp_r3_19))), (void*)((u8 *) (gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3_20)))));
-            if (temp_r3_21 < 0xA) {
-                *(var_r26 + (temp_r3_21 + 0x81C)) = 0xFF;
+            foePokemon = fightOutPokemonGetPokemonPtr(targets[i]);
+            attest = (GamedataAttest*)pokemonBiosGetAttest(foePokemon);
+            length = GBAMakeFromGSchar(snap.foes[i].name, (const u16*)pokemonBiosGetNicknamePtr(foePokemon),
+                                       (void*)gamedataAttestBiosGetLangareaId(attest));
+            if (length < 10) {
+                snap.foes[i].name[length] = 0xFF;
             }
-            temp_r20_3 = pokemonBiosGetPokemonDataId((Pokemon*)(temp_r3_19));
-            M2C_FIELD(var_r26, u8 *, 0x826) = (u8) ((M2C_FIELD(var_r26, u8 *, 0x826) & ~0xC0) | ((pokemonGetSex((Pokemon*)(temp_r3_19)) << 6) & 0xC0));
-            M2C_FIELD(var_r26, u8 *, 0x826) = (u8) ((M2C_FIELD(var_r26, u8 *, 0x826) & ~0x20) | (((u8) (temp_r20_3 == 0x20) << 5) & 0x20));
-            M2C_FIELD(var_r26, u8 *, 0x826) = (u8) ((M2C_FIELD(var_r26, u8 *, 0x826) & ~0x10) | (((u8) (temp_r20_3 == 0x1D) << 4) & 0x10));
-            M2C_FIELD(var_r26, u8 *, 0x826) = (u8) ((M2C_FIELD(var_r26, u8 *, 0x826) & ~7) | (*var_r16_2 & 7));
-            if (gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3_20)) == 1) {
-                M2C_FIELD(var_r26, u8 *, 0x826) = (u8) (M2C_FIELD(var_r26, u8 *, 0x826) | 8);
+            species = pokemonBiosGetPokemonDataId(foePokemon);
+            snap.foes[i].sex = pokemonGetSex(foePokemon);
+            snap.foes[i].isNidoranM = species == 0x20;
+            snap.foes[i].isNidoranF = species == 0x1D;
+            snap.foes[i].controller = controllers[i];
+            if (gamedataAttestBiosGetLangareaId(attest) == 1) {
+                snap.foes[i].isJapanese = 1;
             } else {
-                M2C_FIELD(var_r26, u8 *, 0x826) = (u8) (M2C_FIELD(var_r26, u8 *, 0x826) & ~8);
+                snap.foes[i].isJapanese = 0;
             }
-            M2C_FIELD(var_r26, u8 *, 0x827) = pokemonBiosGetLevel((Pokemon*)(temp_r3_19));
-            M2C_FIELD(var_r26, u32 *, 0x828) = _swap32(pokemonBiosGetRnd((Pokemon*)(temp_r3_19)));
-            M2C_FIELD(var_r26, u16 *, 0x82C) = _swap16(pokemonBiosGetPokemonDataId((Pokemon*)(temp_r3_19)));
-            M2C_FIELD(var_r26, u16 *, 0x82E) = _swap16(pokemonBiosGetHp((Pokemon*)(temp_r3_19)));
-            M2C_FIELD(var_r26, u16 *, 0x830) = _swap16(pokemonBiosGetMaxHp((Pokemon*)(temp_r3_19)));
-            M2C_FIELD(var_r26, u16 *, 0x832) = 0U;
-            if (pokemonBiosGetPokemonDataId((Pokemon*)(temp_r3_19)) == 0x19A) {
+            snap.foes[i].level = pokemonBiosGetLevel(foePokemon);
+            snap.foes[i].rnd = _swap32(pokemonBiosGetRnd(foePokemon));
+            snap.foes[i].species = _swap16(pokemonBiosGetPokemonDataId(foePokemon));
+            snap.foes[i].hp = _swap16(pokemonBiosGetHp(foePokemon));
+            snap.foes[i].maxHp = _swap16(pokemonBiosGetMaxHp(foePokemon));
+            snap.foes[i].form = 0;
+            if (pokemonBiosGetPokemonDataId(foePokemon) == 0x19A) {
                 if (menuCBRule_DEOKISISUCamouflage() != 0) {
-                    if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || ((s32) M2C_FIELD(&_CB, s32 *, 0x1C) == 0)) {
-                        M2C_FIELD(var_r26, u16 *, 0x832) = _swap16((u16) pokemonGetDeoxysSel(*var_r16_2));
+                    if (((s32*)_CB)[2] == 2 || ((s32*)_CB)[7] == 0) {
+                        snap.foes[i].form = _swap16(pokemonGetDeoxysSel(controllers[i]));
                     } else {
-                        M2C_FIELD(var_r26, u16 *, 0x832) = _swap16((u16) pokemonGetDeoxysSel((u8) (*var_r16_2 + 1)));
+                        snap.foes[i].form = _swap16(pokemonGetDeoxysSel(controllers[i] + 1));
                     }
                 }
-                if (fightOutPokemonIsJoutaiDataId((FightOutPokemon*)(*var_r15_3), 0x10U) == 1) {
-                    M2C_FIELD(var_r26, u16 *, 0x832) = 0U;
+                if (fightOutPokemonIsJoutaiDataId(targets[i], 0x10) == 1) {
+                    snap.foes[i].form = 0;
                 }
             }
         }
-        var_r26 += 0x18;
-        var_r15_3 += 4;
-        var_r16_2 += 1;
-        var_r17_3 += 1;
     }
-    temp_r14_2 = temp_r24 * 0x18;
-    memmove((void*)(&sp38 + (((u8) var_r22 * 0x154) + 0x24)), (const void*)(&sp854), temp_r14_2);
-    temp_r16 = sp8 - 1;
-    PKJB_BattleRequest(temp_r16, (const u8*)((u8 *) &sp38), ((u8) var_r22 * 0x154) + temp_r14_2 + 0x24);
-    gba_SIProbe_ErrorCntClear(temp_r16);
-    temp_r15 = sp8 - 1;
-loop_66:
-    if (fightGetFightResultId() == 1) {
-        PKJB_ReturnTitle(temp_r16);
-        return 0x50000U;
-    }
-    if ((fightFloorIsUseFightTimerCommand((FIGHT_FLOOR*)(NULL)) == 1) && (fightTimerCommandIsOver() == 1)) {
-        PKJB_ReturnTitle(temp_r16);
-        return 0x40000U;
-    }
-    var_r17 = PKJB_BattleGetStatus(temp_r16, (u32*)(&sp14));
-    if (var_r17 == 1) {
-        *(&gba_SIProbe_ErrorCnt + temp_r15) = *(&gba_SIProbe_ErrorCnt + temp_r15) + 1;
-        if ((u8) *(&gba_SIProbe_ErrorCnt + temp_r15) != 2) {
-            var_r17 = -1;
+
+    size = fighterNum * sizeof(GbaBattleFoe);
+    memmove(&snap.party[count], snap.foes, size);
+    channel = port - 1;
+    PKJB_BattleRequest(channel, (const u8*)&snap, 0x24 + count * sizeof(GbaBattleMon) + size);
+    gba_SIProbe_ErrorCntClear(channel);
+    while (TRUE) {
+        if (fightGetFightResultId() == 1) {
+            PKJB_ReturnTitle(channel);
+            return 0x50000;
         }
-    } else {
-        gba_SIProbe_ErrorCntClear(temp_r16);
+        if (fightFloorIsUseFightTimerCommand(0) == 1 && fightTimerCommandIsOver() == 1) {
+            PKJB_ReturnTitle(channel);
+            return 0x40000;
+        }
+        status = PKJB_BattleGetStatus(channel, &reply);
+        if (status == 1) {
+            gba_SIProbe_ErrorCnt[port - 1]++;
+            if (gba_SIProbe_ErrorCnt[port - 1] != 2) {
+                status = -1;
+            }
+        } else {
+            gba_SIProbe_ErrorCntClear(channel);
+        }
+        if (status > 0) {
+            return status | 0x50000;
+        }
+        if (status == 0) {
+            return _swap32(reply);
+        }
+        GSthreadSwitch();
     }
-    if (var_r17 > 0) {
-        return var_r17 | 0x50000;
-    }
-    if (var_r17 == 0) {
-        return _swap32(sp14);
-    }
-    GSthreadSwitch();
-    goto loop_66;
 }
-}
+#pragma pop
 
 extern "C++" {
 static s32 _dummySelect(FightOutPokemon* p0, unsigned short p1, unsigned short p2) {
@@ -639,46 +601,48 @@ s32 gbaCommandEntryPokemon(u32 p0, void *p1) {
 }
 
 extern "C" {
-s32 gbaCommandEntryResult(s32 p0, u32 *p1) {
-    u32 sp8;
-    s32 temp_r31;
-    s32 var_r30;
-    u8 *temp_r4;
+#pragma push
+#pragma peephole off
+#pragma dont_inline on
+s32 gbaCommandEntryResult(s32 port, u32* status) {
+    u32 raw;
+    s32 chan = port - 1;
+    s32 result;
 
-    temp_r31 = p0 - 1;
-    *p1 = 0x02000000;
-    var_r30 = PKJB_EntryGetStatus(temp_r31, (u32*)(&sp8));
-    if (var_r30 == 1) {
-        temp_r4 = (unsigned char *)((&gba_SIProbe_ErrorCnt + p0) - 1);
-        *temp_r4 += 1;
-        if ((u8) *temp_r4 != 2) {
-            var_r30 = -1;
+    *status = 0x02000000;
+    result = PKJB_EntryGetStatus(chan, &raw);
+    if (result == 1) {
+        gba_SIProbe_ErrorCnt[port - 1]++;
+        if (gba_SIProbe_ErrorCnt[port - 1] != 2) {
+            result = -1;
         }
     } else {
-        gba_SIProbe_ErrorCntClear(temp_r31);
+        gba_SIProbe_ErrorCntClear(chan);
     }
-    if (var_r30 < 0) {
-        sp8 = 0x02000000;
-        goto block_10;
+    if (result < 0) {
+        raw = 0x02000000;
+    } else if (result != 0) {
+        *status = 0x03000000;
+        gbaCommandSetKeyState(port, 1);
+        return result;
+    } else {
+        *status = _swap32(raw);
+        if ((*status >> 24) == 0) {
+            gbaCommandSetKeyState(port, 1);
+        }
     }
-    if (var_r30 != 0) {
-        *p1 = 0x03000000;
-        gbaCommandSetKeyState(p0, 1);
-        return var_r30;
-    }
-    *p1 = _swap32(sp8);
-    if ((u32) ((u32) *p1 >> 0x18U) == 0) {
-        gbaCommandSetKeyState(p0, 1);
-    }
-block_10:
     return 0;
 }
+#pragma pop
 }
 
 extern "C" {
+#pragma push
+#pragma peephole off
 void gbaCommandEntryRequest(s32 p0, s32 p1, s32 p2, s32 p3) {
     PKJB_EntryRequest(p0 - 1, (p2 << 8) | ((p3 << 0x18) | p1));
 }
+#pragma pop
 }
 
 extern "C" {
@@ -691,44 +655,118 @@ void gbaCommandSendWazaText(s32 p0, s32 p1) {
 }
 
 extern "C" {
-u16 gbaCommandKeyPressed(s32 p0) {
-    return M2C_FIELD((&_keyPressed + (p0 * 2)), u16 *, -2);
+u16 gbaCommandKeyPressed(s32 port) {
+    return _keyPressed[port - 1];
 }
 }
 
 extern "C" {
-bool gbaCommandIsConnected(s32 p0) {
-    if (((s32) M2C_FIELD(&_keyState[p0], s32 *, -4) != 0) && ((s32) M2C_FIELD(&_keyResult[p0], s32 *, -4) == 0)) {
-        return 1U;
+bool gbaCommandIsConnected(s32 port) {
+    bool r = 0;
+    if (_keyState[port - 1] != 0 && _keyResult[port - 1] == 0) {
+        r = 1;
     }
-    return 0U;
+    return r;
 }
 }
 
 extern "C" {
-void gbaCommandSetKeyState(s32 p0, s32 p1) {
-    s32 temp_r10;
-
-    temp_r10 = p0 * 2;
-    *(&_keyState[p0] - 4) = p1;
-    M2C_FIELD(&_keyResult[p0], s32 *, -4) = 0;
-    M2C_FIELD((&_keyCounter + temp_r10), s16 *, -2) = 0;
-    M2C_FIELD((&_keyPressed + temp_r10), s16 *, -2) = 0;
+#pragma push
+#pragma peephole off
+s32 gbaCommandSetKeyState(s32 port, s32 state) {
+    s32 old = _keyState[port - 1];
+    _keyState[port - 1] = state;
+    _keyResult[port - 1] = 0;
+    _keyCounter[port - 1] = 0;
+    _keyPressed[port - 1] = 0;
+    return old;
 }
+#pragma pop
+extern "C" {
+#pragma push
+#pragma peephole off
+#pragma dont_inline on
+s32 gbaCommandKeyRead(s32 port) {
+    u16 key;
+    s32 result;
+
+    if (port == 2) {
+        u32 type;
+        s32 i;
+        for (i = 0; i < 4; i++) {
+            type = SIProbe(i);
+            if (menuCB_GetToolBattleModeFlag() == 1 && menuCBBios_CurrentlyWorkingToolBattle() != 0) {
+                type = 0x40000;
+            }
+            if (type == 0x40000) {
+                _SIProbe_Result[i] = type;
+                _SIProbe_Counter[i] = 2;
+            } else if (_SIProbe_Counter[i] == 0) {
+                _SIProbe_Result[i] = type;
+            } else {
+                _SIProbe_Counter[i]--;
+            }
+        }
+    }
+    switch (_keyState[port - 1]) {
+    case 1:
+        result = PKJB_GetKey(port - 1, &key);
+        if (result == 0) {
+            _keyCounter[port - 1] = 0;
+            _keyPressed[port - 1] = key;
+        } else if (result <= 2 && ++_keyCounter[port - 1] <= 10) {
+            result = 0;
+        } else {
+            _keyPressed[port - 1] = 0;
+            gbaCommandSetKeyState(port, 0);
+        }
+        break;
+    case 3:
+        result = PKJB_IdleSend(port - 1);
+        if (result == 0) {
+            _keyCounter[port - 1] = 0;
+        } else if (result <= 2 && ++_keyCounter[port - 1] <= 10) {
+            result = 0;
+        } else {
+            _keyPressed[port - 1] = 0;
+            gbaCommandSetKeyState(port, 0);
+        }
+        _keyPressed[port - 1] = 0;
+        break;
+    case 2:
+        _keyPressed[port - 1] = 0;
+        result = 0;
+        break;
+    default:
+        _keyPressed[port - 1] = 0;
+        result = 1;
+        break;
+    }
+    _keyResult[port - 1] = result;
+    return result;
+}
+#pragma pop
+}
+
 }
 
 extern "C" {
-s32 gbaCommandKeyRead(s32 p0) { return 0; }
 extern "C++" {
+#pragma push
+#pragma peephole off
 static u32 _swap32(unsigned long p0) {
     return (p0 >> 0x18U) | (((u32) (p0 & 0xFF0000) >> 8U) | ((p0 << 0x18) | ((p0 & 0xFF00) << 8)));
 }
+#pragma pop
 }
 
 extern "C++" {
+#pragma push
+#pragma peephole off
 static u16 _swap16(unsigned short p0) {
     return (u16) ((p0 << 8) | ((s32) p0 >> 8));
 }
+#pragma pop
 }
 }
 

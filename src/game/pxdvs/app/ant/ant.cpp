@@ -366,7 +366,7 @@ void CAnt::initByPokemon(Pokemon* p) {
                 0x1E803200, 0x1E813200, 0x1E823200, 0x1E833200, 0x1E553200, 0x1E563200, 0x1E6F3200, 0x1E703200
             };
             int form = pokemonGetAnnonKatati(pokemonGetStatus(p, 0, 0x6F, 0));
-            if (pokemonCheckRare(p)) {
+            if ((u8)pokemonCheckRare(p) != 0) {
                 key = tbl[form * 2 + 1];
             } else {
                 key = tbl[form * 2];
@@ -377,8 +377,10 @@ void CAnt::initByPokemon(Pokemon* p) {
             key = pokemonDB_GetPokebodyId(id, p->isRare());
         }
         u32 k = key;
-        if (k != 0 && res == 0) {
-            res = antLookup(k);
+        switch (k != 0 && res) {
+        case 0:
+                res = antLookup(k);
+            break;
         }
     }
 }
@@ -407,7 +409,7 @@ void CAnt::initByPokemonAndSetColorAnimationInReliveHallVisitor(Pokemon* p) {
 
 void CAnt::use() {
     if (key != 0) {
-        int idx = antFindOrAlloc(key);
+        int idx = antFindOrAlloc((u16)key);
         _pokeDance.e[idx].use = 1;
     }
 }
@@ -430,7 +432,7 @@ void CAnt::draw(PocketVec<short> off) {
         p.x = pos.x + off.x;
         p.y = pos.y + off.y;
         if (getRes() == 0) {
-            windowDrawSprite(p.x - 0x18, p.y - 0x18, 0, menuRelivehallPcBoxDefaultPokemonSprite, 0, 7);
+            windowDrawSprite(p.x - 0x18, p.y - 0x18, 0, (u16)menuRelivehallPcBoxDefaultPokemonSprite, 0, 7);
             return;
         }
         GSgfxColAu8 col;
@@ -448,16 +450,17 @@ void CAnt::draw(PocketVec<short> off) {
         case 2: {
             f32 f = colorAnimationTimeReliveReady - 0.5f;
             if (f < 0.0f) f = -f;
-            f32 t = -((2.0f * f) - 1.0f);
+            f32 kc776 = 2.0f;
+            f32 t = -((f * kc776) - 1.0f);
             f32 u = 1.0f - t;
             if (t > 0.5) {
                 col.a = (s8)(255.0f * t);
             } else {
                 col.a = 0x80;
             }
-            col.r = (s8)((f32)colorWhite.r * t + (f32)colorPurple.r * u);
             col.g = (s8)((f32)colorWhite.g * t + (f32)colorPurple.g * u);
             col.b = (s8)((f32)colorWhite.b * t + (f32)colorPurple.b * u);
+            col.r = (s8)((f32)colorWhite.r * t + (f32)colorPurple.r * u);
             break;
         }
         }
@@ -471,7 +474,7 @@ void CAnt::draw(PocketVec<short> off) {
         u8* sp = tbl + *(u16*)(ent + 2);
         for (int i = 0; i < *(u16*)ent; i++) {
             u16* s = (u16*)sp;
-            dispTexture(tex, (f32)(p.x + (offX + (s16)s[4])), (f32)(p.y + (offY + (s16)s[5] + 0x20)), s[0], s[1], s[2], s[3], col, scale, alpha);
+            dispTexture(tex, (f32)(p.x + (offX + s[4])), (f32)(p.y + (offY + s[5] + 0x20)), s[0], s[1], s[2], s[3], col, scale, alpha);
             sp += 0x1C;
         }
     }

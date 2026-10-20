@@ -35,7 +35,11 @@ extern "C" {
 extern "C++" {
 // ---- draft declarations ----
 struct CAM_STORE {
-    u8 _draft[1];
+    f32 pos[3];
+    f32 rot[3];
+    f32 target[3];
+    f32 targetOfs[3];
+    f32 fovy;
 };
 struct GScamera {
     u8 _draft[1];
@@ -53,7 +57,7 @@ struct Sequence {
     u8 _draft[1];
 };
 struct WORK {
-    u8 _draft[1];
+    u8 data[0x30];
 };
 struct WazaSequence {
     u8 _draft[1];
@@ -106,11 +110,11 @@ void cameraSetTargetPos(GSvec* pos);
 u8 cameraSetType(u8 type);
 void evolution();
 void evolutionMain();
-void evolutionOpen(void*, void*, s32, u16*, s32, u8*);
+s32 evolutionOpen(void*, void*, s32, u16*, s32, u8*);
 s32 evolutionStart(s32 *p0, s32 *p1, s32 p2, u16 *p3, s32 p4, u8 *p5);
 s32 evolutionWazaLearn(s32 *p0, u16 p1, s8 *p2, s32 p3, void *p4, u32 *p5);
 static s32 evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc(u32 *p0, s32 p1, s32 *p2, s32 *p3, u16 *p4, s32 p5, u8 *p6);
-void fadeCheck(s32);
+s8 fadeCheck(bool);
 void fadeSet(s32 type, f32 time);
 void floorSetFadeScript(u32 out, u32 in);
 void floorWaitForChange(void);
@@ -132,7 +136,7 @@ u32 soundGetBGMID(void);
 s32 soundGetEnvID();
 s32 soundGetVolume(s32);
 void soundOpenPlay(s32, s32, s32);
-void soundOpenPlayEnv(u16 id, s32, s32 volume);
+void soundOpenPlayEnv(u32 id, s32, s32 volume);
 void soundOpenPlayME(u32 id, u32, u8 volume);
 s32 soundStop(s32, s32);
 s32 soundStopEnv(s32);
@@ -171,7 +175,17 @@ static s32 wazaSeqStart(WORK* p0, STEP p1);
 static s32 wazaSeqUpdate(WORK* p0);
 }
 static const struct _struct_CancelStep_0x8 CancelStep[3] = { { 0x1E0U, 2 }, { 0x21CU, 3 }, { 0x1770U, 4 } };
-static s32 Parameter;
+// arguments of evolutionOpen, consumed by the evolution menu room
+struct EvolutionParameter {
+    void* pokemon;      // 0x00
+    void* evolved;      // 0x04
+    s32 mode;           // 0x08
+    s32 x0C;            // 0x0C
+    u16* moves;         // 0x10
+    u8* result;         // 0x14
+    s32 ret;            // 0x18
+};
+static EvolutionParameter Parameter;
 static const struct _struct_StepSeqTbl_0x8 StepSeqTbl[5] = { { 0x4A, 0 }, { 0x5E, 1 }, { 0x5B, 0 }, { 0x5C, 0 }, { 0x5D, 0 } };
 static void restoreCamera(CAM_STORE* p0) {
     cameraSetType(2U);
@@ -227,7 +241,7 @@ static void restoreSound(WORK* p0) {
     }
     temp_r3_2 = M2C_FIELD(p0, u32 *, 0x10);
     if (temp_r3_2 != 0) {
-        soundOpenPlayEnv((u16) temp_r3_2, 0x32, (s32) (u8) M2C_FIELD(p0, s32 *, 0x18));
+        soundOpenPlayEnv(temp_r3_2, 0x32, (s32) (u8) M2C_FIELD(p0, s32 *, 0x18));
         GSsndSetPushVolumeID(M2C_FIELD(p0, u32 *, 0x10), (u8*)(((u8*)(p0) + 0x20)));
     }
 }
@@ -293,15 +307,14 @@ static u16 playPokemonVoice(Pokemon* p0) {
 extern "C++" {
 static s32 dispMsgYesNo(unsigned long p0, EVOLUTION_WINDOW_TYPE p1) {
     s8 temp_r31;
-
     openMsgWin(p0, (EVOLUTION_WINDOW_TYPE)(p1));
     temp_r31 = getYesNo((EVOLUTION_WINDOW_TYPE)(p1));
     closeMsgWin((EVOLUTION_WINDOW_TYPE)(p1));
-    switch (temp_r31) {                             /* irregular */
-    case 1:
-        return 1;
-    case 0:
+    switch (temp_r31) {
+    case 0x0:
         return 0;
+    case 0x1:
+        return 1;
     default:
         return 2;
     }
@@ -377,11 +390,11 @@ static u16 getPkxID(Pokemon* p0) {
 
 extern "C++" {
 static u32 loadSequence(Pokemon* p0, int p1) {
-    s32 var_r30;
     struct _struct_StepSeqTbl_0x8 *var_r31;
+    s32 var_r30;
+    u32 temp_r3;
     s32 temp_r3_2;
     u32 temp_r30;
-    u32 temp_r3;
 
     temp_r3_2 = getPkxID((Pokemon*)(p0));
     if (temp_r3_2 == -1U) {
@@ -468,8 +481,9 @@ static s32 loadAll(WORK* p0, Pokemon* p1, Pokemon* p2) {
 
 extern "C" {
 s32 evolutionWazaLearn(s32 *p0, u16 p1, s8 *p2, s32 p3, void *p4, u32 *p5) {
+    enum TsE { TsE0 };
     s32 var_r26;
-    u32 temp_r3;
+    enum TsE temp_r3;
 
     var_r26 = 0;
 loop_1:
@@ -480,7 +494,7 @@ loop_1:
         }
     }
     if ((s32) var_r26 >= 4) {
-        temp_r3 = (unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)((Pokemon *) p0)));
+        temp_r3 = (enum TsE)((unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)((Pokemon *) p0))));
         msgctrlSetValue(0x32, temp_r3);
         msgctrlSetValue(0x39, (u32) p1);
 loop_5:
@@ -494,16 +508,16 @@ loop_5:
                 goto block_10;
             }
             msgctrlSetValue((long)(0x32), (unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)((Pokemon *) p0))));
-            msgctrlSetValue(0x5D, 0x21U);
             msgctrlSetValue(0x39, (u32) pokemonBiosGetPokemonWazaDataId((Pokemon*)((Pokemon *) p0), (u32) var_r26));
-            openMsgWin(0xC36DU, (EVOLUTION_WINDOW_TYPE)(p3));
+            openMsgWin(0xC36DU, (EVOLUTION_WINDOW_TYPE)((u16)p3));
+            msgctrlSetValue(0x5D, 0x21U);
             goto block_13;
         }
 block_10:
         msgctrlSetValue(0x32, temp_r3);
         msgctrlSetValue(0x39, (u32) p1);
         if (dispMsgYesNo(0xC36BU, (EVOLUTION_WINDOW_TYPE)(p3)) == 0) {
-            dispMsg(0xC36CU, (EVOLUTION_WINDOW_TYPE)(p3));
+            dispMsg(0xC36CU, (EVOLUTION_WINDOW_TYPE)((u16)p3));
             return 0;
         }
         goto loop_5;
@@ -520,12 +534,12 @@ block_13:
 
 extern "C++" {
 static s8 cbWazaForget(Pokemon* p0, unsigned short p1, long p2) {
-    s32 unksp8;
+    CAM_STORE store;
     s32 var_r31;
 
     fadeSet(3, 0.5f);
     fadeCheck(1);
-    storeCamera((CAM_STORE*)(&unksp8));
+    storeCamera(&store);
     var_r31 = menuPokemonStatusOpenWazaLearn((Pokemon*)(p0), p1);
     if (var_r31 >= 4) {
         var_r31 = -1;
@@ -533,7 +547,7 @@ static s8 cbWazaForget(Pokemon* p0, unsigned short p1, long p2) {
     loadSequenceAfter((WORK*)((WORK *) p2), (Pokemon*)(p0));
     GSmodelSetAnimType((_GSmodel*)(Sequence_GetGSmodel(M2C_FIELD(p2, s32 *, 4))), 1);
     toVisible((WORK*)((WORK *) p2), 1, 1);
-    restoreCamera((CAM_STORE*)(&unksp8));
+    restoreCamera(&store);
     fadeSet(2, 0.5f);
     fadeCheck(1);
     return (s8) var_r31;
@@ -542,12 +556,12 @@ static s8 cbWazaForget(Pokemon* p0, unsigned short p1, long p2) {
 
 extern "C++" {
 static s32 doWazaSequence(WORK* p0, STEP p1, int p2, FADE_CTRL p3) {
-    s32 unksp8;
+    u8 unksp8[sizeof(s32) + 48];
     Sequence *var_r3;
     WazaSequence *temp_r3;
-    s32 var_r29;
-    s32 var_r30;
     s32 var_r31;
+    s32 var_r30;
+    s32 var_r29;
     s32 var_r3_2;
     s32 var_r3_3;
 
@@ -645,22 +659,22 @@ extern "C++" {
 static s32 evolutionDemo(WORK* p0, int p1, Pokemon* p2, Pokemon* p3) {
     s32 saved_reg_r22;
     s32 var_r22;
-    s32 var_r23;
-    s32 var_r24;
-    s32 var_r27;
-    s32 var_r4;
     s16 temp_r26;
+    u32 var_r25;
+    s32 var_r24;
+    s32 var_r4;
+    s32 var_r23;
     s16 temp_r28_2;
     s16 temp_r28_3;
     u32 temp_r28;
-    u32 var_r25;
+    s32 var_r27;
 
     var_r22 = saved_reg_r22;
     toVisible((WORK*)(p0), 0, 1);
     msgctrlSetValue((long)(0x32), (unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)(p2))));
     openMsgWin(0xC419U, (EVOLUTION_WINDOW_TYPE)(0));
     temp_r26 = playPokemonVoice((Pokemon*)(p2));
-    wazaSeqStart((WORK*)(p0), (STEP)(0));
+    wazaSeqStart((WORK*)((u16)p0), (STEP)(0));
     var_r27 = 1;
     var_r24 = 0;
     var_r23 = 0;
@@ -698,12 +712,9 @@ loop_19:
         }
     }
     fadeSet(5, 0.5f);
-loop_22:
-    fadeCheck(0);
-    if ((s8) M2C_ERROR(/* Read from unset register $r3 */) != 0) {
+    while (fadeCheck(0) != 0) {
         wazaSeqUpdate((WORK*)(p0));
         GSthreadSwitch();
-        goto loop_22;
     }
     wazaSeqEnd((WORK*)(p0));
     waitTime(1.0f);
@@ -786,18 +797,21 @@ static s32 evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc(u32 *p0, s32 p1, s
 
 extern "C" {
 s32 evolutionStart(s32 *p0, s32 *p1, s32 p2, u16 *p3, s32 p4, u8 *p5) {
-    s32 unksp8;
+    WORK unksp8;
     wazaSequenceSysEnableLayerChange();
     if (loadAll((WORK*)(&unksp8), (Pokemon*)((Pokemon *) p0), (Pokemon*)((Pokemon *) p1)) == 0) {
         return 2;
     }
-    return evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc((unsigned long *)(&unksp8), (long)(p2), (long *)(p0), (long *)(p1), (unsigned short *)(p3), (long)(p4), (unsigned char *)(p5)) == 0;
+    if (evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc((unsigned long *)(&unksp8), (long)(p2), (long *)(p0), (long *)(p1), (unsigned short *)(p3), (long)(p4), (unsigned char *)(p5)) == 0) {
+        return 1;
+    }
+    return 0;
 }
 }
 
 extern "C" {
 void evolution() {
-    M2C_FIELD(&Parameter, s32 *, 0x18) = evolutionStart(M2C_FIELD(&Parameter, s32 **, 0), M2C_FIELD(&Parameter, s32 **, 4), M2C_FIELD(&Parameter, s32 *, 8), M2C_FIELD(&Parameter, u16 **, 0x10), M2C_FIELD(&Parameter, s32 *, 0xC), M2C_FIELD(&Parameter, u8 **, 0x14));
+    Parameter.ret = evolutionStart((s32*)Parameter.pokemon, (s32*)Parameter.evolved, Parameter.mode, Parameter.moves, Parameter.x0C, Parameter.result);
     GSfloorPop();
     floorSetFadeScript(0U, 0U);
 }
@@ -814,19 +828,19 @@ void evolutionMain() {
 void evolutionInit(void) {
 }
 extern "C" {
-#pragma peephole off
-void evolutionOpen(void* p0, void* p1, s32 p2, u16* p3, s32 p4, u8* p5) {
-    M2C_FIELD(&Parameter, u8 **, 0) = (unsigned char *)(p0);
-    M2C_FIELD(&Parameter, u8 **, 4) = (unsigned char *)(p1);
-    M2C_FIELD(&Parameter, s32 *, 8) = p2;
-    M2C_FIELD(&Parameter, s32 *, 0xC) = p4;
-    M2C_FIELD(&Parameter, u16 **, 0x10) = p3;
-    M2C_FIELD(&Parameter, u8 **, 0x14) = p5;
+s32 evolutionOpen(void* p0, void* p1, s32 p2, u16* p3, s32 p4, u8* p5) {
+    EvolutionParameter* param = &Parameter;
+    param->pokemon = p0;
+    param->evolved = p1;
+    param->mode = p2;
+    param->x0C = p4;
+    param->moves = p3;
+    param->result = p5;
     GSfloorPush(0x386U);
     floorSetFadeScript(0U, 0U);
     floorWaitForChange();
+    return Parameter.ret;
 }
-#pragma peephole reset
 }
 
 

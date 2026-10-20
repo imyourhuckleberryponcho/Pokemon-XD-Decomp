@@ -248,10 +248,10 @@ static inline u32 GetTargetPart(ModelSequence* ms, WazaSequence* active) {
         part = 0;
     } else if (active != 0) {
         SequenceSection* sec = (SequenceSection*)(ms->sections + ms->section * 0xd0);
-        if (!(sec->flags & 0x20) && active->partKind != 0x10) {
-            part = sec->parts[active->partKind];
+        if ((sec->flags & 0x20) || active->partKind == 0x10) {
+            part = (u16)GSmodelCenterNull(ms->model);
         } else {
-            part = GSmodelCenterNull(ms->model);
+            part = sec->parts[active->partKind];
         }
     } else {
         part = GSmodelCenterNull(ms->model);
@@ -307,18 +307,12 @@ void battleCameraDoSimple(void) {
 }
 
 void battleCameraInit(void* floor) {
-    u8 enable = 0;
-    g_mode = enable;
+    g_mode = 0;
     gActiveWazaSequenceCamera = 0;
     gLastSelectedIndex = -1;
     gLoopCameraWaitTime = 3.0f;
-    gBattleGridSimpleCamera = enable;
-    if (floor != 0) {
-        if (floorDataBiosGetFloorKind(floor) == 2) {
-            enable = 1;
-        }
-    }
-    g_enable_battle_camera = enable;
+    gBattleGridSimpleCamera = 0;
+    g_enable_battle_camera = floor != 0 && floorDataBiosGetFloorKind(floor) == 2;
 }
 
 void battleCameraStartRandom(u8 simple);
@@ -419,14 +413,17 @@ static inline void DoPreset(GSvec* t, GSvec* a, GSvec* b, f32 time, f32 fov) {
         cameraSetType(2);
         cameraSetPosition(a);
         cameraMovePosition(2, b, time);
+        cameraSetFov(fov);
+        cameraSetTargetPos(t);
+        cameraSetTargetOfs(&zeroVector);
     } else {
         cameraSetType(2);
         cameraSetPosition(b);
         cameraMovePosition(2, a, time);
+        cameraSetFov(fov);
+        cameraSetTargetPos(t);
+        cameraSetTargetOfs(&zeroVector);
     }
-    cameraSetFov(fov);
-    cameraSetTargetPos(t);
-    cameraSetTargetOfs(&zeroVector);
 }
 
 static inline void DoTracked(GSvec* t, GSvec* a, GSvec* b, f32 fov) {
@@ -445,21 +442,21 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     GSvec a;
     GSvec b;
     GSvec t;
-    int pattern;
+    u8 pattern;
     u8 nonTrainerActive;
-    int flags;
-    bool isTrainer;
     bool again;
+    bool isTrainer;
+    int flags;
     f32 dir;
     f32 d1;
     f32 d0;
     f32 dur;
-    f32 dist2;
-    f32 height;
-    f32 rot1;
     f32 rot2;
-    f32 fov1;
     f32 fov2;
+    f32 rot1;
+    f32 dist2;
+    f32 fov1;
+    f32 height;
     f32 dist1;
     f32 r;
     f32 lowA, highA, lowB, highB;
@@ -487,9 +484,7 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     again = true;
     while (again) {
         bool noParent = (seq == 0 || seq->hasParent == 0);
-        pattern = noParent ? 10 : 12;
-        pattern = (u16)HSD_Rand() % pattern;
-        pattern = (u8)pattern;
+        pattern = (u16)HSD_Rand() % (noParent ? 10 : 12);
         if (pattern != old_pos_pattern[0] && pattern != old_pos_pattern[1]) {
             again = false;
         }
@@ -501,11 +496,11 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     old_pos_pattern[0] = pattern;
     if (seq != 0 && seq->hasParent == 0) {
         switch (battleGridGetNumPokemonsForTrainer(seq)) {
-        case 2:
-            flags = 1;
-            break;
         case 1:
             flags = 7;
+            break;
+        case 2:
+            flags = 1;
             break;
         }
     }
@@ -514,42 +509,38 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     }
     switch (pattern) {
     case 0:
-        t.x = t.y = t.z = 0.0f;
+        t.z = t.y = t.x = 0.0f;
         a.x = -20.0f; a.y = 27.5f; a.z = 110.0f;
         b.x = 20.0f; b.y = 27.5f; b.z = 110.0f;
         DoPreset(&t, &a, &b, 4.0f, 60.0f);
         return;
     case 1:
-        t.x = t.y = t.z = 0.0f;
+        t.z = t.y = t.x = 0.0f;
         a.x = 110.0f; a.y = 27.5f; a.z = 0.0f;
         b.x = 110.0f; b.y = 27.5f; b.z = 20.0f;
         DoPreset(&t, &a, &b, 2.5f, 60.0f);
         return;
     case 2:
-        t.x = t.y = t.z = 0.0f;
+        t.z = t.y = t.x = 0.0f;
         a.x = -110.0f; a.y = 27.5f; a.z = 20.0f;
         b.x = -110.0f; b.y = 27.5f; b.z = 0.0f;
         DoPreset(&t, &a, &b, 2.5f, 60.0f);
         return;
     case 3:
-        t.x = t.y = t.z = 0.0f;
+        t.z = t.y = t.x = 0.0f;
         a.x = -65.0f; a.y = 27.5f; a.z = 100.0f;
         b.x = -100.0f; b.y = 27.5f; b.z = 65.0f;
         DoPreset(&t, &a, &b, 4.0f, 60.0f);
         return;
     case 4:
-        t.x = t.y = t.z = 0.0f;
+        t.z = t.y = t.x = 0.0f;
         a.x = 100.0f; a.y = 27.5f; a.z = 65.0f;
         b.x = 65.0f; b.y = 27.5f; b.z = 100.0f;
         DoPreset(&t, &a, &b, 4.0f, 60.0f);
         return;
     case 5:
-        if (isTrainer || nonTrainerActive) {
-            if (HSD_Randf() < 0.5f) {
-                dir = -1.0f;
-            } else {
-                dir = 1.0f;
-            }
+        if ((isTrainer || nonTrainerActive) && HSD_Randf() < 0.5f) {
+            dir = -1.0f;
         } else {
             dir = 1.0f;
         }
@@ -573,12 +564,8 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         DoTracked(&t, &a, &b, 30.0f);
         return;
     case 7:
-        if (isTrainer || nonTrainerActive) {
-            if (HSD_Randf() < 0.5f) {
-                dir = -1.0f;
-            } else {
-                dir = 1.0f;
-            }
+        if ((isTrainer || nonTrainerActive) && HSD_Randf() < 0.5f) {
+            dir = -1.0f;
         } else {
             dir = 1.0f;
         }
@@ -635,7 +622,8 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         }
         height = Lerp(params.heightMin, params.heightMax, HSD_Randf());
         if (seq->isEnemy != 0) {
-            rot1 = params.rotationBase - (params.rotationMax - params.rotationMin) * HSD_Randf();
+            rot1 = HSD_Randf();
+            rot1 *= params.rotationBase - (params.rotationMax - params.rotationMin);
         } else {
             rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
         }
@@ -646,8 +634,10 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         dist2 = dist1;
         height = Lerp(params.heightMin, params.heightMax, HSD_Randf());
         if (seq->isEnemy != 0) {
-            rot2 = params.rotationBase - (params.rotationMax - params.rotationMin) * HSD_Randf();
-            rot1 = params.rotationBase - (params.rotationMax - params.rotationMin) * HSD_Randf();
+            rot1 = HSD_Randf();
+            rot1 *= params.rotationBase - (params.rotationMax - params.rotationMin);
+            rot2 = HSD_Randf();
+            rot2 *= params.rotationBase - (params.rotationMax - params.rotationMin);
         } else {
             rot2 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
             rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
@@ -658,7 +648,8 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         dist2 = dist1;
         height = Lerp(params.heightMin, params.heightMax, HSD_Randf());
         if (seq->isEnemy != 0) {
-            rot1 = params.rotationBase - (params.rotationMax - params.rotationMin) * HSD_Randf();
+            rot1 = HSD_Randf();
+            rot1 *= params.rotationBase - (params.rotationMax - params.rotationMin);
         } else {
             rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
         }
@@ -667,7 +658,8 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     }
 
     {
-        f32 hsq = height * height;
+        f32 hsq = height;
+        hsq *= height;
         _wazaSequenceCameraGetFOVRange(&params, &lowA, &highA, WazaSqrtf(dist1 * dist1 + hsq));
         _wazaSequenceCameraGetFOVRange(&params, &lowB, &highB, WazaSqrtf(dist2 * dist2 + hsq));
     }
@@ -687,15 +679,16 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         if (fov2 > fov1) {
             f32 tmp = fov1;
             fov1 = fov2;
-            fov2 = tmp;
+            if (fov2 < tmp) fov2 = tmp;
         }
         break;
-    default:
+    case 0:    default:
         fov1 = Lerp(lowA, highA, HSD_Randf());
         fov2 = fov1;
         break;
     }
-    dur = 3.0f + HSD_Randf();
+    dur = HSD_Randf();
+    dur += 3.0f;
     cameraMoveStop();
     cameraSetType(7);
     fn_80196A14(1);
@@ -793,8 +786,8 @@ void battleCameraStartWaza(WazaSequence* waza) {
                     cameraPlayOffsetAnime(20000, waza->resource, 0, 0);
                     f = waza->flags;
                     if (f & 4) {
-                        pos.x = pos.y = pos.z = 0.0f;
-                        rot.x = rot.y = rot.z = 0.0f;
+                        pos.z = pos.y = pos.x = 0.0f;
+                        rot.z = rot.y = rot.x = 0.0f;
                         if (ms->isEnemy != 0 && (f & 0x02000000)) {
                             rot.y = 3.1415927f;
                         }
@@ -804,13 +797,13 @@ void battleCameraStartWaza(WazaSequence* waza) {
                                 scale.y = 1.0f;
                             }
                         } else {
-                            scale.x = scale.y = scale.z = 1.0f;
+                            scale.z = scale.y = scale.x = 1.0f;
                         }
                     } else {
                         ms->GetPosition(&pos);
                         ms->GetRotation(&rot);
                         if (waza->flags & 0x20000000) {
-                            scale.z = scale.y = scale.x = 1.0f;
+                            scale.x = scale.y = scale.z = 1.0f;
                         } else {
                             f32 s = ms->GetModelScale(true);
                             scale.z = s;

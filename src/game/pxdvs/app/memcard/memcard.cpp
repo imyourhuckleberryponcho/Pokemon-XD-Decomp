@@ -531,10 +531,9 @@ static u8 _memcardMsgOpen(MEMCARD_MSGTYPE type)
         case 1:
         case 2:
             msg = 0x7e;
-            if (_memcardStatusPtr->f60 != 0x32) {
-                msg = 0x6e;
+            if (_memcardStatusPtr->f60 == 0x32) {
+                break;
             }
-            break;
         default:
             msg = 0x6e;
             break;
@@ -902,8 +901,8 @@ static s32 _memcardExamineHeader()
     s32 i;
     s32 off = 0x28000;
     for (i = 0; i < 2; i++, off += 0x200) {
-        u8* h = (u8*)_memcardStatusPtr->buf50 + off;
         u8 ok = 0;
+        u8* h = (u8*)_memcardStatusPtr->buf50 + off;
         if (h[0] == 1 && h[1] == 1 && h[2] == 1) {
             ok = 1;
         }
@@ -957,10 +956,10 @@ static s32 _memcardExamineHeader()
                 }
             }
             memset(_memcardStatusPtr->buf50, 0, 0x28000);
-            _memcard_new_saveDataCrateFlag = 0;
             _memcardDuplicateSaveData_multi((u8*)_memcardStatusPtr->buf50 + 8);
             _memcard_new_saveDataCrateFlag = 1;
             _memcardStatusPtr->f2c = 0;
+            _memcard_new_saveDataCrateFlag = 0;
             _memcardStatusPtr->f20 = -1;
             return 0x24;
         } else {
@@ -1065,7 +1064,7 @@ u32 fn_801CC508() {
 }
 extern "C++" {
 static void _memcardDuplicateSaveData_multi(void* p0) {
-    s8 sp37;
+    u8 *var_r18_2;
     u8 sp28;
     s32 sp24;
     s32 sp20;
@@ -1128,15 +1127,20 @@ static void _memcardDuplicateSaveData_multi(void* p0) {
     u8 *temp_r3_9;
     u8 *temp_r4_2;
     u8 *temp_r6_3;
-    u8 *var_r18_2;
+    s8 sp37;
     u8 *var_r19_2;
     u8 *var_r21;
     u8 *var_r22;
     u8 *var_r24;
     u8 *var_r25;
 
-    if (*(s32 *)_memcardStatusPtr == 0xB) {
-        gamedatasaveSetStatus((Gamedata*)(NULL), 5U, floorGetNextFloorID());
+    switch (*(s32 *)_memcardStatusPtr) {
+
+    case 0xB:
+            gamedatasaveSetStatus((Gamedata*)(NULL), 5U, floorGetNextFloorID());
+
+        break;
+
     }
     var_r19 = 0;
     var_r18 = (unsigned short *)(&_memcard_encrypt_key);
@@ -1206,8 +1210,7 @@ static void _memcardDuplicateSaveData_multi(void* p0) {
     M2C_FIELD(p0, s16 *, 6) = HSD_Rand();
     temp_r7_2 = var_r8;
     var_r9 = 0;
-loop_8:
-    if (var_r9 < 0xF) {
+    while (var_r9 < 0xF) {
         temp_r0 = var_r9 + 1;
         temp_r4 = var_r9 + 2;
         *var_r8 = temp_r0;
@@ -1221,7 +1224,6 @@ loop_8:
         var_r9 += 5;
         temp_r7_2[temp_r6_2] = (u8) temp_r5;
         temp_r7_2[temp_r0_2] = temp_r3;
-        goto loop_8;
     }
     M2C_FIELD(p0, s16 *, 0x38) = 0;
     sp37 = -1;
@@ -1254,8 +1256,7 @@ loop_8:
     M2C_FIELD(p0, s32 *, 0x118) = (s32) M2C_FIELD(temp_r3_2, s32 *, 0x78);
     M2C_FIELD(p0, s32 *, 0x11C) = (s32) M2C_FIELD(temp_r3_2, s32 *, 0x7C);
     M2C_FIELD(p0, s32 *, 0x120) = (s32) M2C_FIELD(temp_r3_2, s32 *, 0x80);
-loop_55:
-    if (var_r27 != 0) {
+    while (var_r27 != 0) {
         var_r30 = HSD_Rand() % var_r27;
         var_r28 = &(&sp28)[var_r30];
         temp_r0_3 = *var_r28;
@@ -1442,17 +1443,14 @@ loop_20:
             }
         }
         var_r4_2 = &(&sp28)[var_r30];
-loop_53:
-        if (var_r30 < var_r27) {
+        while (var_r30 < var_r27) {
             temp_r3_10 = M2C_FIELD(var_r4_2, u8 *, 1);
             var_r4_2 += 1;
             var_r30 += 1;
             *var_r28 = temp_r3_10;
             var_r28 += 1;
-            goto loop_53;
         }
         var_r27 -= 1;
-        goto loop_55;
     }
 }
 }
@@ -1465,7 +1463,7 @@ static u32 _memcardCardOpen() {
     s32 saved_reg_r28;
     s32 sp120;
     s32 sp38;
-    s32 sp3C;
+    u32 sp3C;
     s32 spA4;
     s32 spA8;
     s32 unksp10;
@@ -1474,7 +1472,7 @@ static u32 _memcardCardOpen() {
     s32 spC;
     s32 sp8;
     s32 *temp_r28;
-    s32 *temp_r31;
+    s32 var_r30;
     s32 temp_r0;
     s32 temp_r29;
     s32 temp_r30;
@@ -1484,7 +1482,7 @@ static u32 _memcardCardOpen() {
     s32 var_r28;
     s32 var_r28_2;
     s32 var_r29;
-    s32 var_r30;
+    s32 *temp_r31;
     s32 var_r31;
     u32 var_r3;
     u8 var_r0;
@@ -1616,7 +1614,7 @@ block_28:
                     return 0x30U;
                 }
                 var_r3 = 0x19;
-                if ((s32) M2C_FIELD(_memcardStatusPtr, s32 *, 0) == 3) {
+                if ((s32) (u16)M2C_FIELD(_memcardStatusPtr, s32 *, 0) == 3) {
                     return 0x1CU;
                 }
                 /* Duplicate return node #82. Try simplifying control flow for better match */
@@ -1903,11 +1901,8 @@ static void _memcardJobMain(u32 p0, u32 p1) {
     _memcard_new_saveDataCrateFlag = 1;
 loop_1:
     temp_r0 = M2C_FIELD(_memcardStatusPtr, u32 *, 0xC);
-    if (temp_r0 > 0x32U) {
-        goto block_396;
-    }
-    switch ((&jtbl_4196)[temp_r0]) { case 0: goto sw1_c0; case 1: goto sw1_c1; case 2: goto sw1_c2; case 3: goto sw1_c3; case 4: goto sw1_c4; case 5: goto sw1_c5; case 6: goto sw1_c6; case 7: goto sw1_c7; case 8: goto sw1_c8; case 9: goto sw1_c9; case 10: goto sw1_c10; case 11: goto sw1_c11; case 12: goto sw1_c12; case 13: goto sw1_c13; case 14: goto sw1_c14; case 15: goto sw1_c15; case 16: goto sw1_c16; case 17: goto sw1_c17; case 18: goto sw1_c18; case 19: goto sw1_c19; case 20: goto sw1_c20; case 21: goto sw1_c21; case 22: goto sw1_c22; case 23: goto sw1_c23; case 24: goto sw1_c24; case 25: goto sw1_c25; case 26: goto sw1_c26; case 27: goto sw1_c27; case 28: goto sw1_c28; case 29: goto sw1_c29; case 30: goto sw1_c30; case 31: goto sw1_c31; case 32: goto sw1_c32; case 33: goto sw1_c33; case 34: goto sw1_c34; case 35: goto sw1_c35; case 36: goto sw1_c36; case 37: goto sw1_c37; case 38: goto sw1_c38; case 39: goto sw1_c39; case 40: goto sw1_c40; case 41: goto sw1_c41; case 42: goto sw1_c42; case 43: goto sw1_c43; case 44: goto sw1_c44; case 45: goto sw1_c45; case 46: goto sw1_c46; case 47: goto sw1_c47; default: break; }                 /* switch 1; unable to parse jump table */
-sw1_c0:;                                             /* switch 1 */
+    switch (temp_r0) {
+    case 0:
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x28) = 0;
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x60) = 0x32;
     M2C_FIELD(_memcardStatusPtr, u8 *, 0x40) = 0U;
@@ -1949,7 +1944,7 @@ block_14:
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x24) = 0;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 1U;
     goto block_396;
-sw1_c1:;                                             /* switch 1 */
+    case 1:
     var_r3 = CARDProbeEx(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14), (s32*)(_memcardStatusPtr + 0x18), (s32*)(_memcardStatusPtr + 0x1C));
     temp_r27 = var_r3;
     if (var_r3 != 0) {
@@ -1989,7 +1984,7 @@ block_25:
 block_26:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r4;
     goto block_396;
-sw1_c2:;                                             /* switch 1 */
+    case 2:
     var_r3_2 = CARDMountAsync(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14), (void*)(M2C_FIELD(_memcardStatusPtr, u8 **, 0x54)), (CARDCallback)((s32) _memcardCallback), (CARDCallback)(0));
     if (var_r3_2 != 0) {
         goto block_29;
@@ -2000,7 +1995,7 @@ block_29:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_2;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 3U;
     goto block_396;
-sw1_c3:;                                             /* switch 1 */
+    case 3:
     var_r3_3 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_3 == -1) {
         goto block_32;
@@ -2045,7 +2040,7 @@ block_43:
 block_44:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0;
     goto block_396;
-sw1_c4:;                                             /* switch 1 */
+    case 4:
     var_r3_4 = CARDCheckAsync(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14), (CARDCallback)(0));
     if (var_r3_4 != 0) {
         goto block_47;
@@ -2056,7 +2051,7 @@ block_47:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_4;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 5U;
     goto block_396;
-sw1_c5:;                                             /* switch 1 */
+    case 5:
     var_r3_5 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_5 == -1) {
         goto block_50;
@@ -2148,7 +2143,7 @@ block_76:
 block_77:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r4;
     goto block_396;
-sw1_c6:;                                             /* switch 1 */
+    case 6:
     if ((s32) M2C_FIELD(_memcardStatusPtr, s32 *, 4) == 0) {
         goto block_82;
     }
@@ -2172,7 +2167,7 @@ block_82:
 block_83:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5;
     goto block_396;
-sw1_c7:;                                             /* switch 1 */
+    case 7:
     GSgfxResetDisable(&jtbl_4196, (s32) var_r4);
     var_r3_6 = CARDFormatAsync(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14), (CARDCallback)(0));
     var_r4 = (u32) _memcardStatusPtr;
@@ -2194,7 +2189,7 @@ block_88:
 block_89:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0_2;
     goto block_396;
-sw1_c8:;                                             /* switch 1 */
+    case 8:
     var_r3_7 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_7 == -1) {
         goto block_92;
@@ -2233,11 +2228,11 @@ block_99:
 block_100:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5_2;
     goto block_396;
-sw1_c9:;                                             /* switch 1 */
+    case 9:
     var_r4 = (u32) _memcardStatusPtr;
     M2C_FIELD(var_r4, u32 *, 0xC) = _memcardCardOpen();
     goto block_396;
-sw1_c10:;                                            /* switch 1 */
+    case 10:
     if ((s32) M2C_FIELD(_memcardStatusPtr, s32 *, 4) != 0) {
         goto block_104;
     }
@@ -2253,7 +2248,7 @@ block_104:
 block_105:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5_3;
     goto block_396;
-sw1_c11:;                                            /* switch 1 */
+    case 11:
     GSgfxResetDisable(&jtbl_4196, (s32) var_r4);
     temp_r3_2 = pokecoloGetCountryCode();
     if (temp_r3_2 == 0) {
@@ -2282,7 +2277,7 @@ block_114:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_8;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0xCU;
     goto block_396;
-sw1_c12:;                                            /* switch 1 */
+    case 12:
     var_r3_9 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_9 == -1) {
         goto block_117;
@@ -2328,7 +2323,7 @@ block_128:
 block_129:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5_4;
     goto block_396;
-sw1_c13:;                                            /* switch 1 */
+    case 13:
     temp_r3_3 = pokecoloGetCountryCode();
     if (temp_r3_3 == 0) {
         goto block_134;
@@ -2356,7 +2351,7 @@ block_138:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_10;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0xEU;
     goto block_396;
-sw1_c14:;                                            /* switch 1 */
+    case 14:
     var_r3_11 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_11 == -1) {
         goto block_141;
@@ -2391,7 +2386,7 @@ block_148:
 block_149:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5_5;
     goto block_396;
-sw1_c15:;                                            /* switch 1 */
+    case 15:
     CARDGetAttributes(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14), M2C_FIELD(_memcardStatusPtr, s32 *, 0x90), (u8*)(&sp8));
     temp_r0_5 = sp8 | 0x18;
     sp8 = temp_r0_5;
@@ -2405,7 +2400,7 @@ block_152:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_12;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x10U;
     goto block_396;
-sw1_c16:;                                            /* switch 1 */
+    case 16:
     var_r3_13 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_13 == -1) {
         goto block_155;
@@ -2439,11 +2434,11 @@ block_162:
 block_163:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0_3;
     goto block_396;
-sw1_c17:;                                            /* switch 1 */
+    case 17:
     var_r4 = (u32) _memcardStatusPtr;
     M2C_FIELD(var_r4, u32 *, 0xC) = fn_801CC508();
     goto block_396;
-sw1_c18:;                                            /* switch 1 */
+    case 18:
     var_r5_6 = 0x6000;
     if ((u8) M2C_FIELD(_memcardStatusPtr, u8 *, 0x40) == 0) {
         goto block_167;
@@ -2460,7 +2455,7 @@ block_169:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_14;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x13U;
     goto block_396;
-sw1_c19:;                                            /* switch 1 */
+    case 19:
     var_r3_15 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_15 == -1) {
         goto block_172;
@@ -2500,7 +2495,7 @@ block_181:
 block_182:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0_4;
     goto block_396;
-sw1_c20:;                                            /* switch 1 */
+    case 20:
     temp_r27_2 = M2C_FIELD(_memcardStatusPtr, u8 **, 0x50);
     memset((void*)(temp_r27_2), 0, 0x2000U);
     var_r4 = 0;
@@ -2511,7 +2506,7 @@ sw1_c20:;                                            /* switch 1 */
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x20) = 0;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x15U;
     goto block_396;
-sw1_c21:;                                            /* switch 1 */
+    case 21:
     var_r3_16 = CARDWriteAsync((CARDFileInfo*)((CARDFileInfo *) (_memcardStatusPtr + 0x8C)), (void*)(M2C_FIELD(_memcardStatusPtr, u8 **, 0x50)), 0x2000, (M2C_FIELD(_memcardStatusPtr, s32 *, 0x20) * 0x28000) + 0x6000, (CARDCallback)(0));
     if (var_r3_16 != 0) {
         goto block_186;
@@ -2522,7 +2517,7 @@ block_186:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_16;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x16U;
     goto block_396;
-sw1_c22:;                                            /* switch 1 */
+    case 22:
     var_r3_17 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_17 == -1) {
         goto block_189;
@@ -2565,7 +2560,7 @@ block_198:
 block_199:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0_5;
     goto block_396;
-sw1_c23:;                                            /* switch 1 */
+    case 23:
     temp_r3_4 = CARDGetStatus(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14), M2C_FIELD(_memcardStatusPtr, s32 *, 0x90), (CARDStat*)((CARDStat *) (_memcardStatusPtr + 0xA0)));
     if (temp_r3_4 != 0) {
         goto block_204;
@@ -2607,7 +2602,7 @@ block_204:
 block_205:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0_6;
     goto block_396;
-sw1_c24:;                                            /* switch 1 */
+    case 24:
     var_r3_19 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_19 == -1) {
         goto block_208;
@@ -2654,10 +2649,10 @@ block_217:
 block_218:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5_7;
     goto block_396;
-sw1_c25:;                                            /* switch 1 */
+    case 25:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x1AU;
     goto block_396;
-sw1_c26:;                                            /* switch 1 */
+    case 26:
     var_r3_20 = CARDReadAsync((CARDFileInfo*)((CARDFileInfo *) (_memcardStatusPtr + 0x8C)), (void*)(M2C_FIELD(_memcardStatusPtr, u8 **, 0x50)), 0x4000, 0, (CARDCallback)(0));
     if (var_r3_20 != 0) {
         goto block_222;
@@ -2668,7 +2663,7 @@ block_222:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_20;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x1BU;
     goto block_396;
-sw1_c27:;                                            /* switch 1 */
+    case 27:
     var_r3_21 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     var_r29 = 0U;
     if (var_r3_21 == -1) {
@@ -2720,7 +2715,7 @@ block_236:
 block_237:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0_7;
     goto block_396;
-sw1_c28:;                                            /* switch 1 */
+    case 28:
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x30) = 0;
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x20) = 0;
     temp_r0_8 = M2C_FIELD(_memcardStatusPtr, s32 *, 0);
@@ -2756,7 +2751,7 @@ block_248:
 block_249:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r4;
     goto block_396;
-sw1_c29:;                                            /* switch 1 */
+    case 29:
     temp_r4 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x20);
     var_r3_22 = CARDReadAsync((CARDFileInfo*)((CARDFileInfo *) (_memcardStatusPtr + 0x8C)), (void*)(((temp_r4 << 9) + 0x30000 + M2C_FIELD(_memcardStatusPtr, u8 **, 0x50)) - 0x8000), 0x200, (temp_r4 * 0x28000) + 0x6000, (CARDCallback)(0));
     if (var_r3_22 != 0) {
@@ -2768,7 +2763,7 @@ block_252:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_22;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x1EU;
     goto block_396;
-sw1_c30:;                                            /* switch 1 */
+    case 30:
     var_r3_23 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_23 == -1) {
         goto block_255;
@@ -2811,14 +2806,14 @@ block_264:
 block_265:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0_8;
     goto block_396;
-sw1_c31:;                                            /* switch 1 */
+    case 31:
     var_r4 = (u32) _memcardStatusPtr;
     M2C_FIELD(var_r4, u32 *, 0xC) = _memcardExamineHeader();
     goto block_396;
-sw1_c32:;                                            /* switch 1 */
+    case 32:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x21U;
     goto block_396;
-sw1_c33:;                                            /* switch 1 */
+    case 33:
     var_r3_24 = CARDReadAsync((CARDFileInfo*)((CARDFileInfo *) (_memcardStatusPtr + 0x8C)), (void*)(M2C_FIELD(_memcardStatusPtr, u8 **, 0x50)), 0x28000, (M2C_FIELD(_memcardStatusPtr, s32 *, 0x20) * 0x28000) + 0x6000, (CARDCallback)(0));
     if (var_r3_24 != 0) {
         goto block_270;
@@ -2829,7 +2824,7 @@ block_270:
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_24;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x22U;
     goto block_396;
-sw1_c34:;                                            /* switch 1 */
+    case 34:
     var_r3_25 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_25 == -1) {
         goto block_273;
@@ -2863,15 +2858,15 @@ block_280:
 block_281:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r0_9;
     goto block_396;
-sw1_c35:;                                            /* switch 1 */
+    case 35:
     var_r4 = (u32) _memcardStatusPtr;
     M2C_FIELD(var_r4, u32 *, 0xC) = _memcardExamineDataPack();
     goto block_396;
-sw1_c36:;                                            /* switch 1 */
+    case 36:
     var_r4 = (u32) _memcardStatusPtr;
     M2C_FIELD(var_r4, u32 *, 0xC) = _memcardMergeDataPack();
     goto block_396;
-sw1_c37:;                                            /* switch 1 */
+    case 37:
     CARDGetSerialNo(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14), (u64*)(&sp18));
     temp_ret = gamedatasaveBiosGetPtr((Gamedata*)(savedataGetStatus((void*)(NULL), 1)));
     gamedatasaveBiosSetMemcardID((GamedataSave*)(temp_ret), (u64) (u32) (u64) temp_ret);
@@ -2953,7 +2948,7 @@ loop_297:
     }
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x26U;
     goto block_396;
-sw1_c38:;                                            /* switch 1 */
+    case 38:
     var_r3_26 = (s32 *)0x30000;
     var_r29_2 = 0x28000;
     if ((s32) M2C_FIELD(_memcardStatusPtr, s32 *, 0) != 8) {
@@ -2974,7 +2969,7 @@ block_303:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0x38) = 0U;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x27U;
     goto block_396;
-sw1_c39:;                                            /* switch 1 */
+    case 39:
     var_r3_28 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r3_28 == -1) {
         goto block_306;
@@ -3057,7 +3052,7 @@ block_327:
 block_328:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5_10;
     goto block_396;
-sw1_c40:;                                            /* switch 1 */
+    case 40:
     temp_r3_9 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x34);
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x34) = (s32) (temp_r3_9 - 1);
     if (temp_r3_9 == 0) {
@@ -3072,7 +3067,7 @@ block_331:
 block_332:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r4;
     goto block_396;
-sw1_c41:;                                            /* switch 1 */
+    case 41:
     temp_ret_5 = gbaCommandIsConnected(2);
     var_r4 = (u32) (u64) temp_ret_5;
     if (temp_ret_5 != 0) {
@@ -3098,7 +3093,7 @@ block_337:
 block_338:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r6_2;
     goto block_396;
-sw1_c42:;                                            /* switch 1 */
+    case 42:
     var_r27_2 = M2C_FIELD(_memcardStatusPtr, s32 *, 0x28);
     if (var_r27_2 == -1) {
         goto block_341;
@@ -3169,11 +3164,11 @@ block_357:
 block_358:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5_11;
     goto block_396;
-sw1_c43:;                                            /* switch 1 */
+    case 43:
     M2C_FIELD(_memcardStatusPtr, s32 *, 8) = -1;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x2CU;
     goto block_396;
-sw1_c44:;                                            /* switch 1 */
+    case 44:
     if ((u8) M2C_FIELD(_memcardStatusPtr, u8 *, 0x3E) == 0) {
         goto block_362;
     }
@@ -3226,20 +3221,17 @@ block_374:
 block_375:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r5_12;
     goto block_396;
-sw1_c45:;                                            /* switch 1 */
+    case 45:
     temp_r0_15 = M2C_FIELD(_memcardStatusPtr, s32 *, 0);
-    if ((u32) temp_r0_15 > 0xDU) {
-        goto block_389;
-    }
-    switch (temp_r0_15) { case 4: goto sw2_c4; case 5: goto sw2_c5; case 6: goto sw2_c6; case 7: goto sw2_c7; case 9: goto sw2_c9; case 10: goto sw2_c10; case 11: goto sw2_c11; case 13: goto sw2_c13; case 1: goto sw2_c1; case 0: goto sw2_c0; case 2: goto sw2_c2; case 3: goto sw2_c3; case 8: goto sw2_c8; case 12: goto sw2_c12; default: break; }                            /* switch 2; jump table: jtbl_4197 */
-sw2_c4:;                                             /* switch 2 */
-sw2_c5:;                                             /* switch 2 */
-sw2_c6:;                                             /* switch 2 */
-sw2_c7:;                                             /* switch 2 */
-sw2_c9:;                                             /* switch 2 */
-sw2_c10:;                                            /* switch 2 */
-sw2_c11:;                                            /* switch 2 */
-sw2_c13:;                                            /* switch 2 */
+        switch (temp_r0_15) { case 4: goto sw2_c4; case 5: goto sw2_c5; case 6: goto sw2_c6; case 7: goto sw2_c7; case 9: goto sw2_c9; case 10: goto sw2_c10; case 11: goto sw2_c11; case 13: goto sw2_c13; case 1: goto sw2_c1; case 0: goto sw2_c0; case 2: goto sw2_c2; case 3: goto sw2_c3; case 8: goto sw2_c8; case 12: goto sw2_c12; default: goto block_389; }                            /* switch 2; jump table: jtbl_4197 */
+sw2_c4:;
+sw2_c5:;
+sw2_c6:;
+sw2_c7:;
+sw2_c9:;
+sw2_c10:;
+sw2_c11:;
+sw2_c13:;
     if ((s32) M2C_FIELD(_memcardStatusPtr, s32 *, 8) == 4) {
         goto block_389;
     }
@@ -3247,7 +3239,7 @@ sw2_c13:;                                            /* switch 2 */
     var_r4 = 0x30;
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x10) = 0x32;
     goto block_390;
-sw2_c1:;                                             /* switch 2 */
+sw2_c1:;
     if ((s32) M2C_FIELD(_memcardStatusPtr, s32 *, 8) != -1) {
         goto block_389;
     }
@@ -3275,23 +3267,23 @@ block_388:
     var_r4 = 0x30;
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x10) = 0x2E;
     goto block_390;
-sw2_c0:;                                             /* switch 2 */
-sw2_c2:;                                             /* switch 2 */
-sw2_c3:;                                             /* switch 2 */
-sw2_c8:;                                             /* switch 2 */
-sw2_c12:;                                            /* switch 2 */
+sw2_c0:;
+sw2_c2:;
+sw2_c3:;
+sw2_c8:;
+sw2_c12:;
 block_389:
     var_r4 = 0x32;
 block_390:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = var_r4;
     goto block_396;
-sw1_c46:;                                            /* switch 1 */
+    case 46:
     var_r4 = 0x2F;
     M2C_FIELD(_memcardStatusPtr, s32 *, 4) = 8;
     M2C_FIELD(_memcardStatusPtr, s32 *, 0x10) = 0x2F;
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x30U;
     goto block_396;
-sw1_c47:;                                            /* switch 1 */
+    case 47:
     if ((s32) M2C_FIELD(_memcardStatusPtr, s32 *, 4) == 0) {
         goto block_394;
     }
@@ -3300,7 +3292,9 @@ block_394:
     M2C_FIELD(_memcardStatusPtr, u32 *, 0xC) = 0x32U;
     goto block_396;
     return;
+    }
 block_396:
+
     if ((s32) M2C_FIELD(_memcardStatusPtr, s32 *, 0x28) != -1) {
         goto loop_1;
     }

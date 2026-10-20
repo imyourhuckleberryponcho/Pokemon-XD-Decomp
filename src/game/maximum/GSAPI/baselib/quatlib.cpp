@@ -1,5 +1,5 @@
-// QuatSlerp: permuter hint (score 0) keeps theta/sinom as a two-element f32 array (sinom first); a natural form is
-// still needed. .sdata2 constant order also differs (see fcheck DATA).
+// QuatSlerp uses MSL's inline sinf/acosf wrappers (as Melee's quatlib.c); their return temporaries decide the float
+// registers. A dead-stripped function after QuatSlerp opened .sdata2 with 1.0F, 0.5F (placeholder at the end).
 // Compiled as C with deferred inlining (see configure.py), which emits functions and data in
 // reverse source order.
 #include <dolphin/mtx.h>
@@ -9,6 +9,8 @@
 double acos(double x);
 double cos(double x);
 double sin(double x);
+static inline float sinf(float x) { return (float)sin(x); }
+static inline float acosf(float x) { return (float)acos(x); }
 
 int EulerToQuat(Vec* euler, Quaternion* q) {
     f32 cx;
@@ -49,10 +51,10 @@ int QuatSlerp(Quaternion* p, Quaternion* q, Quaternion* out, f32 t) {
 
     if ((1.0F + cosom) > 1e-10F) {
         if ((1.0F - cosom) > 1e-10F) {
-            theta = acos(cosom);
-            sinom = sin(theta);
-            sp = (f32)sin((1.0F - t) * theta) / sinom;
-            sq = (f32)sin(t * theta) / sinom;
+            theta = acosf(cosom);
+            sinom = sinf(theta);
+            sp = sinf((1.0F - t) * theta) / sinom;
+            sq = sinf(t * theta) / sinom;
         } else {
             sq = t;
             sp = (f32)(1.0 - (f64)t);
@@ -68,8 +70,8 @@ int QuatSlerp(Quaternion* p, Quaternion* q, Quaternion* out, f32 t) {
         out->w = p->z;
 
         if (t < 0.5F) {
-            sp = sin((f32)(M_PI_2 * (1.0F - (t2 = 2.0F * t))));
-            sq = sin((f32)(M_PI_2 * t2));
+            sp = sinf((f32)(M_PI_2 * (1.0F - (2.0F * t))));
+            sq = sinf((f32)(M_PI_2 * (2.0F * t)));
             out->x = sp * p->x + sq * q->x;
             out->y = sp * p->y + sq * q->y;
             out->z = sp * p->z + sq * q->z;
@@ -77,8 +79,8 @@ int QuatSlerp(Quaternion* p, Quaternion* q, Quaternion* out, f32 t) {
         } else {
             t -= 0.5F;
             t2 = 2.0F * t;
-            sp = sin((f32)(M_PI_2 * (1.0F - t2)));
-            sq = sin((f32)(M_PI_2 * t2));
+            sp = sinf((f32)(M_PI_2 * (1.0F - t2)));
+            sq = sinf((f32)(M_PI_2 * t2));
             out->x = sp * p->x + sq * q->x;
             out->y = sp * p->y + sq * q->y;
             out->z = sp * p->z + sq * q->z;
@@ -87,4 +89,10 @@ int QuatSlerp(Quaternion* p, Quaternion* q, Quaternion* out, f32 t) {
     }
 
     return 1;
+}
+
+// Placeholder for a quatlib function that the linker dead-stripped (its 1.0F/0.5F constants open .sdata2).
+void QuatLib_StrippedPlaceholder(Quaternion* q, f32 s) {
+    q->w = 1.0F + s;
+    q->x = 0.5F * s;
 }

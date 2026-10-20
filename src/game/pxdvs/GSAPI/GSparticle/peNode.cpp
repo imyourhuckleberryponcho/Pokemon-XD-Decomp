@@ -145,7 +145,8 @@ void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx) {
 
     {
         f32 pz = b->pos.z * a->scale.z;
-        f32 py = b->pos.y * a->scale.y;
+        f32 py = a->scale.y;
+        py *= b->pos.y;
         f32 px = b->pos.x * a->scale.x;
         out->pos = vec3(px, py, pz);
     }
@@ -159,8 +160,8 @@ void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx) {
         out->rot = q;
     }
     {
-        f32 sz = b->scale.z * a->scale.z;
         f32 sy = b->scale.y * a->scale.y;
+        f32 sz = b->scale.z * a->scale.z;
         f32 sx = b->scale.x * a->scale.x;
         out->scale = vec3(sx, sy, sz);
     }
@@ -203,7 +204,7 @@ bool peNode::Update(peEmitterNode* e, f32 dt) {
             vecScale(&dirB, &dirA, speed * dt);
         }
         PSVECAdd(&vel, &dirB, &vel);
-        if (0.0f != params->drag) {
+        if (params->drag) {
             PSVECScale(&vel, &vel, 1.0f - params->drag);
         }
     }

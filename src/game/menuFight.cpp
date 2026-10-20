@@ -834,10 +834,10 @@ s32 menuFightOpenTop(FIGHT_TRAINER* trainer, u8* work, s32* cursor, s32 d)
     if (isImasugu()) {
         return 0;
     }
+    if (fightKind_CheckFightKind(0xf)) {
+        menuOpen(0xb5, 0);
+    }
     while (1) {
-        if (fightKind_CheckFightKind(0xf)) {
-            menuOpen(0xb5, 0);
-        }
         switch (work[0x17]) {
         case 0:
             result = menuOpenCustom(0x3a, 0, cursor, 0, d, 1, work);
@@ -1117,21 +1117,26 @@ s32 menuFightOpenPokemon(FIGHT_TRAINER* trainer, void* fop, u16 type, u8 cancel,
 
 s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
 {
+    TargetEntry* e;
     s32 result;
-    s32 id;
-    s32 other;
     s32 i;
+    s32 cursor;
+    s32 id;
+    s32 item;
+    u32 base;
+    s32 want;
+    s32 other;
     if (arg->tuusin == 0) {
         if (fightKind_CheckFightKind(0xd)) {
             result = 0;
         } else if (isImasugu()) {
-            u32 base = fightFloorGetStatus(0, 0, 0x35, 0);
+            base = fightFloorGetStatus(0, 0, 0x35, 0);
             if (fightFloorGetFightOutPokemonPtrToFightTrainerPtr(fightFloorGetNowPtr(), (void*)arg->user) == (void*)(base + 0x64)) {
-                other = 0xa2;
                 id = 0xa0;
+                other = 0xa2;
             } else {
-                other = 0x9f;
                 id = 0xa3;
+                other = 0x9f;
             }
             result = menuOpenCustom(id, 0, b, 0, c, 1, arg);
             menuCloseCustom(id, 2, c);
@@ -1139,15 +1144,13 @@ s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
                 menuClose(other);
             }
         } else {
-            s32 cursor;
-            TargetEntry* e;
             menuItemBiosSetSelectFlag(0x5c, 0x138, false);
             menuItemBiosSetSelectFlag(0x5c, 0x139, false);
             menuItemBiosSetSelectFlag(0x5c, 0x13a, false);
             menuItemBiosSetSelectFlag(0x5c, 0x13b, false);
             e = arg->entry;
             for (i = 0; i < 4; e++, i++) {
-                s32 item = targetItemID(e->menuId);
+                item = targetItemID(e->menuId);
                 if (item != 0) {
                     menuItemBiosSetSelectFlag(0x5c, item, true);
                 }
@@ -1160,7 +1163,6 @@ s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
                 }
             }
             result = menuOpenCustom(0x5c, 0, &cursor, 0, c, 1, arg);
-            s32 want;
             switch (result) {
             case 0x13a:
                 want = 0x38;
@@ -3397,11 +3399,8 @@ void menuFightDrawIPokemonStatus(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     }
     case 0x14d:
     case 0x182: {
-        s16 x;
-        u32 tok;
         msgctrlSetValue(0x37, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemon_GetTokuseiDataId(alloc->fightOut)))));
-        x = GSmsgGetRect(0x435a) >> 16;
-        GSmsgPrintRect(winSpriteGetLayerID(window, sprite), x, 0, sprite->w, sprite->h, color, 0x4277);
+        GSmsgPrintRect(winSpriteGetLayerID(window, sprite), (s16)(GSmsgGetRect(0x435a) >> 16), 0, sprite->w, sprite->h, color, 0x4277);
         break;
     }
     case 0x164:
@@ -3601,7 +3600,7 @@ void menuFightDrawTargetSecret(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
             winSpriteSetDisp(sprite, 1);
             return;
         }
-        if (sprite->id == targetSecretSpriteID(p->idB)) {
+        if ((u8)(targetSecretSpriteID(p->idB)) == sprite->id) {
             winSpriteSetDisp(sprite, 1);
             return;
         }

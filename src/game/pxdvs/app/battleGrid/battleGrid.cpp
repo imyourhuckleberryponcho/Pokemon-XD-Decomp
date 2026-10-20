@@ -62,9 +62,7 @@ static inline ModelSequence* ToModelInPlace(ModelSequence* seq) {
     if (seq == 0) {
         return 0;
     }
-    if (seq->m_kind != 1) {
-        seq = 0;
-    }
+    seq = seq->m_kind == 1 ? seq : 0;
     return seq;
 }
 
@@ -217,14 +215,14 @@ void battleGridStoreModelVisibilityFlags(void) {
 }
 
 void battleGridHideModelsExcept(NullSequence* seq) {
+    BattleGridEntry* g = gBattleGrid.entries;
     u16 idx = 0;
     ModelSequence* except = ToModel(seq);
-    BattleGridEntry* g = gBattleGrid.entries;
     u16 i;
     u16 j;
+    g = gBattleGrid.entries;
     battleGridResetModelVisibilityFlags();
     memset(gSavedVisibilityCodes, 0, 12);
-    g = gBattleGrid.entries;
     for (i = 0; i < 4; i++, g++) {
         if (g->slot != 0) {
             gSavedVisibilityCodes[idx] = g->slot->m_visible;
@@ -283,8 +281,9 @@ static inline void PlaceModel(ModelSequence* m, GSvec* pos, GSvec* rot, u8 mirro
 }
 
 void battleGridUpdate(void) {
+    enum TsE { TsE0 };
     u16 i;
-    u16 count = gBattleGrid.count;
+    enum TsE count = (enum TsE)(gBattleGrid.count);
     BattleGridEntry* g = gBattleGrid.entries;
     wazaSequenceSysGetActiveWazaNum();
     if (count != 0) {
@@ -306,9 +305,9 @@ void battleGridUpdate(void) {
         u16 b;
         u16 a;
 
-        g_max_model_size = -2;
         found = false;
         e = gBattleGrid.entries;
+        g_max_model_size = -2;
         for (a = 0; a < 4; a++, e++) {
             if (e->slot != 0) {
                 for (b = 0; b < 2; b++) {

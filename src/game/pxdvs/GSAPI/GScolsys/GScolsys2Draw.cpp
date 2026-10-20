@@ -279,8 +279,7 @@ static void drawWalkMdl(CCD_WALKMDL_HEAD* head, GSmtx* mtx, GSmtx* rot) {
         color.a = 0xC0;
         level = tri->attr.hi;
         color.g = (u8)(127.0f * ((f32)level / 15.0f) + 128.0f);
-        level = tri->attr.lo + 1;
-        if (level >= 16) {
+        if ((level = tri->attr.lo + 1) >= 16) {
             level = 0;
         }
         color.b = (u8)(255.0f * ((f32)level / 15.0f));

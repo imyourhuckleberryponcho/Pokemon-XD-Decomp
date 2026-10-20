@@ -173,8 +173,7 @@ static inline s32 pairAisyou(Pokemon* a, Pokemon* b) {
             if (x == 0 && y == 0) {
                 v = 2;
             } else {
-                u16 st = zokuseiGetWazaJoutai((u16)x, (u16)y);
-                v = jyoutaiLevel(st);
+                v = jyoutaiLevel((u16)(zokuseiGetWazaJoutai((u16)x, (u16)y)));
             }
             if (best < v) best = v;
         }
@@ -410,7 +409,7 @@ bool CReliveStage::isPokemonZokuseiAllUnique(bool withVisitor) {
 
 Pokemon* CReliveStage::heroWalkReliveCallBack(long steps, bool pay) {
     u32 cur;
-    if (getPassion() == 0) return 0;
+    if ((s16)getPassion() == 0) return 0;
     Pokemon* v = VISITOR_OR_NULL(this);
     if (v->getPokemonDataId() == 0xF9) return 0;
     u16 id = pokemonBiosGetDarkpokemonDataId(v);
@@ -583,7 +582,7 @@ void CReliveHall::debugPokemonSetup(long mode) {
             pokemonInitAry((u32)stageDancer(&stage[i], 0), 4);
             pokemonInit((u32)stageVisitor(&stage[i]));
         }
-        u16 base = 0;
+        u32 base = 0;
         for (s32 s = 0; s < 8; s++, base += 2) {
             s32 counts[10] = { 4, 3, 2, 1, 1, 1, 1, 1, 1, 0 };
             u16 id = base;
@@ -592,7 +591,7 @@ void CReliveHall::debugPokemonSetup(long mode) {
                 if (s == 0) pick = tempMaxTbl2294[d];
                 else if (s == 1) pick = tempMaxTbl2298[d];
                 else pick = id;
-                menuPocketDebugMakePokemonByID(*(Pokemon*)tmp, pick, false, 0.0f);
+                menuPocketDebugMakePokemonByID(*(Pokemon*)tmp, (u8)pick, false, 0.0f);
                 s32 slot = findEmptySlot(&stage[s]);
                 Pokemon* dst = stageDancer(&stage[s], slot);
                 memcpy(dst, tmp, 0xC4);
@@ -655,8 +654,7 @@ s32 reliveHallPokemonToAisyou(Pokemon* a, Pokemon* b) {
             if (x == 0 && y == 0) {
                 v = 2;
             } else {
-                u16 st = zokuseiGetWazaJoutai((u16)x, (u16)y);
-                v = jyoutaiLevel(st);
+                v = jyoutaiLevel((u16)(zokuseiGetWazaJoutai((u16)x, (u16)y)));
             }
             if (best < v) best = v;
         }

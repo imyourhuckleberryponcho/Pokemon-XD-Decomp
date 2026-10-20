@@ -284,7 +284,7 @@ void FlashMenu::Draw(tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
                     next = loopStart;
                     d = depth;
                     hdr = (FlashHeader*)data;
-                    for (i = 0; i < hdr->numDepth; i++, d++) {
+                    for (i = 0; i < hdr->numDepth; d++, i++) {
                         d->ratio = 0.0f;
                         d->clipDepth = 0;
                         d->place = 0;
@@ -301,6 +301,7 @@ void FlashMenu::Draw(tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
 }
 
 void FlashMenu::Update() {
+    SpriteTab* st;
     DepthEntry* d;
     FlashHeader* hdr;
     int i;
@@ -308,8 +309,7 @@ void FlashMenu::Update() {
     s32 off;
     if (dict != 0) {
         d = depth;
-        hdr = (FlashHeader*)data;
-        for (i = 0; i < hdr->numDepth; i++, d++) {
+        for (i = 0, hdr = (FlashHeader*)data; i < hdr->numDepth; i++, d++) {
             d->clipDepth = 0;
             d->place = 0;
             d->charId = 0;
@@ -317,10 +317,9 @@ void FlashMenu::Update() {
             flcalcUnitCxform(d->cxform);
             flcalcUnitMatrix2(d->matrix);
         }
-        off = 0;
-        for (i = 0; i < hdr->numChars; i++, off += 8) {
+        for (i = 0, off = 0; i < hdr->numChars; i++, off += 8) {
             for (j = 0; j < hdr->numDepth; j++) {
-                SpriteTab* st = (SpriteTab*)((u8*)sprites + off);
+                st = (SpriteTab*)((u8*)sprites + off);
                 st->depth[j].charId = 0;
                 st->depth[j].ratio = 0.0f;
                 st->depth[j].clipDepth = 0;
@@ -338,22 +337,23 @@ void FlashMenu::Update() {
 }
 
 void FlashMenu::Init(void* d, unsigned long arg) {
-    u16 nChars;
+    int j;
     u16 nDepth;
     FlashHeader* hdr;
     u8* p;
-    int i;
-    int j;
+    s32 i;
+    u16 nChars;
     s32 depthBytes;
     GSgfxLayerFindByID(7);
-    userArg = arg;
     GSprimSetup2DRender(0);
     GSprimSetBlendMode(1);
     dict = (CharEntry*)GSmemAlloc(0x640);
     nChars = defaultCount(AT(u16, d, 0x18));
-    nDepth = defaultCount(AT(u16, d, 0x1A));
+    userArg = arg;
+    nDepth = defaultCount(AT(u16, (u16)d, 0x1A));
     sprites = (SpriteTab*)GSmemAlloc(((nChars * 8) + 0x1F) & 0xFFFFFFE0);
-    depthBytes = nChars * 2;
+    depthBytes = nChars;
+    depthBytes *= 2;
     for (i = 0; i < nChars; i++) {
         sprites[i].depth = 0;
         sprites[i].depth = (DepthEntry*)new u8[nDepth << 6];
@@ -470,7 +470,7 @@ void FlashMenu::InitDataPointer() {
         c++;
         i++;
     }
-    for (i = 0; i < hdr->numDepth; i++, d++) {
+    for (i = 0; i < hdr->numDepth; d++, i++) {
         d->clipDepth = 0;
         d->place = 0;
         d->charId = 0;
@@ -479,8 +479,7 @@ void FlashMenu::InitDataPointer() {
         flcalcUnitCxform(d->cxform);
         flcalcUnitMatrix2(d->matrix);
     }
-    off = 0;
-    for (i = 0; i < hdr->numChars; i++, off += 8) {
+    for (i = 0, off = 0; i < hdr->numChars; i++, off += 8) {
         for (j = 0; j < hdr->numDepth; j++) {
             st = (SpriteTab*)((u8*)sprites + off);
             st->depth[j].charId = 0;
@@ -495,12 +494,14 @@ void FlashMenu::InitDataPointer() {
 }
 
 void FlashMenu::DrawText(_DEFINETEXT* t, FLASHMATRIXF* parent, FLASHMATRIXF* m, FLASHCXFORM* cx, u8 flags) {
+    u8* r;
     u8 mat[0x18];
     u8 mat2[0x18];
     u8 cxf[0x10];
     f32 scale[2];
     f32 trans[2];
     u8* rec = AT(u8*, t, 0x2C);
+    u8* font;
     u16 fontId = 0;
     s16 x = 0;
     s16 y = 0;
@@ -518,13 +519,13 @@ void FlashMenu::DrawText(_DEFINETEXT* t, FLASHMATRIXF* parent, FLASHMATRIXF* m, 
             if ((f & 8) != 0) fontId = AT(u16, r, 2);
             if ((f & 4) != 0) color = AT(s32, r, 0xC);
             if ((f & 1) != 0) x = AT(s16, r, 4) / 20;
-            if ((f & 2) != 0) y = AT(s16, r, 6) / 20;
+            if ((f & 2) != 0) y = AT(s16, (u16)r, 6) / 20;
             if ((f & 8) != 0) height = AT(u16, r, 8) / 20;
             break;
         }
         case 2: {
-            u8* r = AT(u8*, rec, 4);
-            u8* font = (u8*)dict[fontId].data;
+            r = AT(u8*, rec, 4);
+            font = (u8*)dict[fontId].data;
             if (font != 0) {
                 u8* glyph = AT(u8*, r, 4);
                 for (int i = 0; i < AT(s32, r, 0); i++, glyph += 8) {
@@ -534,7 +535,8 @@ void FlashMenu::DrawText(_DEFINETEXT* t, FLASHMATRIXF* parent, FLASHMATRIXF* m, 
                     flcalcMatrixCopy((FLASHMATRIXF*)mat, m);
                     if (parent != 0) flcalcMatrixCopy((FLASHMATRIXF*)mat2, parent);
                     else flcalcUnitMatrix((FLASHMATRIXF*)mat2);
-                    f32 sc = 0.0009765625f * (f32)adv;
+                    f32 sc = (f32)adv;
+                    sc *= 0.0009765625f;
                     scale[1] = sc;
                     scale[0] = sc;
                     flcalcMatrixScale((FLASHMATRIXF*)mat, (FLASHMATRIXF*)mat, scale);
@@ -542,11 +544,11 @@ void FlashMenu::DrawText(_DEFINETEXT* t, FLASHMATRIXF* parent, FLASHMATRIXF* m, 
                     trans[1] = (f32)y;
                     flcalcMatrixTranslate((FLASHMATRIXF*)mat, (FLASHMATRIXF*)mat, trans);
                     s32 cur = advance;
-                    advance += height;
                     AT(f32, mat, 0x10) += (f32)cur;
+                    advance += height;
                     u8* shape = AT(u8**, font, 0x1C)[AT(u16, glyph, 0)];
                     if (AT(u32, AT(u8*, shape, 0x18), 8) != 0) {
-                        vectorGraph(userArg, shape + 4, shape + 0xC, (_SHAPERECORD*)mat2, (FLASHMATRIXF*)mat, (FLASHMATRIXF*)cxf, (FLASHCXFORM*)(u32)flags, 0);
+                        vectorGraph((u16)userArg, shape + 4, shape + 0xC, (_SHAPERECORD*)mat2, (FLASHMATRIXF*)mat, (FLASHMATRIXF*)cxf, (FLASHCXFORM*)(u32)flags, 0);
                     }
                 }
             }
@@ -560,6 +562,7 @@ void FlashMenu::DrawText(_DEFINETEXT* t, FLASHMATRIXF* parent, FLASHMATRIXF* m, 
 }
 
 void FlashMenu::DrawSprite(_DEFINESPRITE* sp, FLASHMATRIXF* parent, FLASHCXFORM* cx, u16 depthIdx, u8 flags) {
+    enum TsE { TsE0 };
     u8 mat[0x18];
     u8 mat2[0x18];
     u8 cxf[0x10];
@@ -579,7 +582,7 @@ void FlashMenu::DrawSprite(_DEFINESPRITE* sp, FLASHMATRIXF* parent, FLASHCXFORM*
             flcalcMulCxform((FLASHCXFORM*)cxf, (FLASHCXFORM*)e->cxform, cx);
             e->flags = flags | e->flags | *e->place;
             if ((ch->type & 1) != 0) {
-                u8 fl = e->flags;
+                enum TsE fl = (enum TsE)(e->flags);
                 u8* ms = (u8*)ch->data;
                 memset(hdrBlend, 0, 0x1C);
                 u8* recs = AT(u8*, ms, 0xC);
@@ -621,7 +624,8 @@ void FlashMenu::DrawSprite(_DEFINESPRITE* sp, FLASHMATRIXF* parent, FLASHCXFORM*
             }
             if ((ch->type & 0x10) != 0) {
                 u8* et = (u8*)ch->data;
-                if (AT(u32, et, 0x1C) != 0) {
+                s32 cmpv = (u16)AT(u32, et, 0x1C);
+                if (cmpv != 0) {
                     f32 tmp[12];
                     s32 text = AT(s32, et, 4);
                     u16 kind = AT(u16, et, 0xE) / 20;
@@ -726,7 +730,8 @@ void FlashMenu::DrawSub(GSgfxLayerID id, tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
             }
             if ((ch->type & 0x10) != 0) {
                 u8* et = (u8*)ch->data;
-                if (AT(u32, et, 0x1C) != 0) {
+                s32 cmpv = (u16)AT(u32, et, 0x1C);
+                if (cmpv != 0) {
                     f32* tf = (f32*)mat;
                     s32 text = AT(s32, et, 4);
                     u16 kind = AT(u16, et, 0xE) / 20;
@@ -753,6 +758,9 @@ void FlashMenu::DrawSub(GSgfxLayerID id, tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
 }
 
 u8 FlashMenu::ParseTag(unsigned long tag, unsigned long len, bool a, bool b, bool c) {
+    s32 sid;
+    u8* t;
+    u8* x;
     u8 done = 0;
     if (tag != 0) pos += 8;
     switch (tag) {
@@ -767,7 +775,7 @@ u8 FlashMenu::ParseTag(unsigned long tag, unsigned long len, bool a, bool b, boo
         if (c != 0 && inSprite == 0) frame++;
         if (inSprite != 0) {
             spriteFrame = (u16)v;
-        } else if (a == 0 && (u16)v > (u16)curTime) {
+        } else if (a == 0 && (u16)v > curTime) {
             done = 1;
         }
         break;
@@ -793,7 +801,7 @@ u8 FlashMenu::ParseTag(unsigned long tag, unsigned long len, bool a, bool b, boo
             r = *t;
         }
         while (r != 0) {
-            u8* x = AT(u8*, r, 4);
+            x = AT(u8*, (u16)r, 4);
             if (x != 0 && AT(u32, data, 0x14) == 0 && relocate != 0) AT(u8*, r, 4) = (u8*)t + (u32)x;
             u8* n = AT(u8*, r, 8);
             if (n != 0) {
@@ -845,8 +853,8 @@ u8 FlashMenu::ParseTag(unsigned long tag, unsigned long len, bool a, bool b, boo
     case 28: {
         u16 v = AT(u16, data, pos);
         if (inSprite != 0) {
-            s32 sid = spriteId;
-            if (spriteFrame <= AT(u16*, depth[curDepth].names, 0)[(u16)sid]) {
+            sid = spriteId;
+            if (spriteFrame <= AT(u16*, depth[curDepth].names, 0)[sid]) {
                 DepthEntry* e = (DepthEntry*)((u8*)sprites[sid].depth + (v << 6));
                 e->clipDepth = 0;
                 e->place = 0;
@@ -869,7 +877,7 @@ u8 FlashMenu::ParseTag(unsigned long tag, unsigned long len, bool a, bool b, boo
         break;
     }
     case 36: {
-        u8* t = data + ((pos + 0x1F) & 0xFFFFFFE0);
+        t = data + ((pos + 0x1F) & 0xFFFFFFE0);
         if (c != 0) {
             void* tx;
             if (AT(u32, data, 0x14) == 0 && relocate != 0) {
@@ -929,12 +937,12 @@ u8 FlashMenu::ParseTag(unsigned long tag, unsigned long len, bool a, bool b, boo
             if (n != 0) {
                 while (n->next != 0) n = n->next;
                 LabelNode* nn = new LabelNode;
-                n->next = nn;
-                n->next->frame = frame;
                 n->next->name = (char*)*t;
+                n->next->frame = frame;
+                n->next = nn->next;
             } else {
                 LabelNode* nn = new LabelNode;
-                labels = nn;
+                if (labels < nn) labels = nn;
                 labels->frame = frame;
                 labels->name = (char*)*t;
             }
@@ -1007,7 +1015,7 @@ void FlashMenu::ParseDefineFont2Sub(_DEFINEFONT2* f) {
         } else {
             glyphs = AT(u8**, f, 0x1C);
         }
-        for (int i = 0; i < n; i++, glyphs++) {
+        for (int i = 0; i < n; glyphs++, i++) {
             u8* g;
             if (needFix()) {
                 g = (u8*)f + (u32)*glyphs;
@@ -1038,15 +1046,14 @@ void FlashMenu::ParseDefineMorphShapeSub(_DEFINEMORPHSHAPE* m) {
             }
             u8* r = base + ro;
             if ((r[0] & 0x10) != 0) {
-                u8 n = r[0x3C];
-                for (int i = 0; i < n; i++) {}
+                for (int i = 0; i < (u8)(r[0x3C]); i++) {}
             }
         }
     }
     if (needFix()) AT(u8*, m, 0x14) = (u8*)m + AT(u32, m, 0x14);
     u32 cnt = AT(u32, m, 0x10);
     if (cnt != 0) {
-        for (int i = 0; i < (s32)cnt; i++) {}
+        for (s32 i = 0; i < (s32)cnt; i++) {}
     }
     if (needFix()) AT(u8*, m, 0x1C) = (u8*)m + AT(u32, m, 0x1C);
     if (needFix()) AT(u8*, m, 0x24) = (u8*)m + AT(u32, m, 0x24);
@@ -1095,9 +1102,7 @@ void FlashMenu::ParsePlaceObject2Sub(_PLACEOBJECT2* p) {
         s32 dd = AT(u16, p, 8);
         if (inSprite != 0) {
             s32 sid = spriteId;
-            if (spriteFrame <= AT(u16*, depth[curDepth].names, 0)[(u16)sid]) {
-                sprites[sid].depth[dd].charId = (u16)ch;
-            }
+            sprites[sid].depth[dd].charId = spriteFrame > AT(u16*, depth[curDepth].names, 0)[(u16)sid] ? sprites[sid].depth[dd].charId : (u16)ch;
         } else {
             depth[dd].charId = (u16)ch;
         }
@@ -1142,6 +1147,7 @@ void FlashMenu::ParsePlaceObject2Sub(_PLACEOBJECT2* p) {
 }
 
 void FlashMenu::ParseDefineShapeSub(_DEFINESHAPE* s) {
+    enum TsE { TsE0 };
     u8* styles;
     if (needFix()) {
         styles = (u8*)s + AT(u32, s, 8);
@@ -1156,7 +1162,7 @@ void FlashMenu::ParseDefineShapeSub(_DEFINESHAPE* s) {
             for (int j = 0; j < n; j++) {}
         }
     }
-    s32 nLines = AT(s32, s, 0xC);
+    enum TsE nLines = (enum TsE)(AT(s32, s, 0xC));
     if (needFix()) AT(u8*, s, 0x10) = (u8*)s + AT(u32, s, 0x10);
     for (int i = 0; i < nLines; i++) {}
     u8* rec;
@@ -1168,7 +1174,7 @@ void FlashMenu::ParseDefineShapeSub(_DEFINESHAPE* s) {
     }
     dict[AT(u16, s, 0)].type = 2;
     dict[AT(u16, s, 0)].data = s;
-    while (AT(u8*, rec, 8) != 0) {
+    while ((u16)AT(u8*, rec, 8) != 0) {
         switch (rec[0]) {
         case 0:
             break;
@@ -1198,7 +1204,7 @@ void FlashMenu::ParseDefineShapeSub(_DEFINESHAPE* s) {
             } else {
                 d = AT(u8*, rec, 4);
             }
-            if (AT(s32, d, 4) != 0 && AT(s32, d, 8) == 0) {}
+            if ((u16)AT(s32, d, 4) != 0 && (u16)AT(s32, d, 8) == 0) {}
             break;
         }
         case 3:
@@ -1252,17 +1258,17 @@ void FlashMenu::BlendShapeRecord(_SHAPERECORD* out, _SHAPERECORD* a, _SHAPERECOR
             u8* rb = AT(u8*, pb, 4);
             u8* ro = AT(u8*, po, 4);
             AT(s32, ro, 0) = flcalcBlend(ra[0], rb[0], t);
-            AT(s32, ro, 4) = flcalcBlend(ra[4], rb[4], t);
+            AT(s32, (u16)ro, 4) = flcalcBlend(ra[4], rb[4], t);
             AT(s32, ro, 8) = flcalcBlend(ra[8], rb[8], t);
             AT(s32, ro, 0xC) = flcalcBlend(ra[0xC], rb[0xC], t);
             break;
         }
         }
         pa = AT(u8*, pa, 8);
-        po = AT(u8*, po, 8);
         if (skip == 0) pb = AT(u8*, pb, 8);
+        po = AT(u8*, po, 8);
         skip = 0;
-        if (AT(u32, pa, 8) == 0) loop = 0;
+        if (AT(u32, (u16)pa, 8) == 0) loop = 0;
     } while (loop != 0);
 }
 

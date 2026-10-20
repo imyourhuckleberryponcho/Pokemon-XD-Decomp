@@ -390,12 +390,14 @@ void floorUpdateFieldCamera() {
                         gCameraFOV += t * (fov - gCameraFOV);
                     } else {
                         u8 flip = 0;
-                        f32 s = t * 2.0f;
+                        f32 kc2246 = 2.0f;
+                        f32 s = t * kc2246;
                         if (s > 1.0f) {
                             flip = 1;
                             s = 2.0f - s;
                         }
-                        f32 c = std::cosf(1.5707964f * s);
+                        f32 kc2479 = 1.5707964f;
+                        f32 c = std::cosf(s * kc2479);
                         f32 e = std::pow(1.0f - c, gPowValue);
                         if (flip) {
                             e = 2.0f - e;

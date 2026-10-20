@@ -199,7 +199,7 @@ void menuPdaSearcher(void);
 MenuData* menuDataBiosGetPtr(s32 id);
 MenuItem* menuItemBiosGetPtr(s32 menu, s32 item);
 u32 windowGetCursorToItem(tagWINDOW_WORK* window);
-u16 windowGetKeyRepeat(void);
+s8 windowGetKeyRepeat(void);
 
 void msgctrlSetValue(s32 id, u32 value);
 s32 heroGetStatus(void* hero, s32 kind, s32 arg);
@@ -658,7 +658,8 @@ static void _SelectCursorCalcAngle(s8 idx) {
 }
 
 static s32 _SelectCursorCalcPositon(GSvec2* out) {
-    f32 d1 = (_menuPdaStatus.ang1 - _menuPdaStatus.ang0) * 0.0625f;
+    f32 d1 = (_menuPdaStatus.ang1 - _menuPdaStatus.ang0);
+    d1 *= 0.0625f;
     f32 d2 = (_menuPdaStatus.ang3 - _menuPdaStatus.ang2) * 0.0625f;
     s32 n;
     s32 i;
@@ -815,6 +816,8 @@ s32 menuPdaBackDrawTitleText(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             digit = value % 10;
             value /= 10;
             msgctrlSetValue(0x34, digit);
+ // NOTE: the original passes x without the (u16) cast (no clrlwi); without the cast the 0xFFFFFF00 constant
+ // is hoisted one instruction too early (99.44%), so the cast stays until that is solved.
             GSmsgPrint2(window->layer, (u16)x, 0, window->alpha | 0xFFFFFF00, 0x426F);
             x -= GSmsgGetRect(0x426F) >> 16;
         }

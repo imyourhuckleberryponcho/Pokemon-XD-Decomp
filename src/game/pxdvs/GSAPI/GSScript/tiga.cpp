@@ -626,9 +626,7 @@ bool TigaThread::checkSleepEnd()
 }
 
 void TigaThread::makeStateData(GSBinWriteStream* s)
-{
-    u32 v;
-    s32 i;
+{    s32 i;
     if (!(state & 0x10)) s->write32(state);
     else s->write32(0);
     s->writeFloat(sleep);
@@ -644,8 +642,7 @@ void TigaThread::makeStateData(GSBinWriteStream* s)
     for (i = 0; i < stackCount; i++) stack[i].makeStateData(s);
     s->write32(callCount);
     for (i = 0; i < callCount; i++) {
-        v = ((u32)&callStack[i] - (u32)ctx.callBase) >> 2;
-        s->write32(v);
+        s->write32((u32)(((u32)&callStack[i] - (u32)ctx.callBase) >> 2));
     }
     s->write8(timerIndex);
     s->writeFloat(waitTime);
@@ -1417,7 +1414,7 @@ s32 Tiga::execute(TigaThread* t)
         case 14: {
             int n = pc->a;
             int i;
-            for (i = 0; i < n; i++) {
+            for (i = 0; i < (u8)n; i++) {
                 t->ctx.sp->clear();
                 t->ctx.sp++;
             }
@@ -1558,7 +1555,7 @@ bool Tiga::execMethod(int type, int cmd, tigaVariant* args, tigaVariant* result)
             char buf2[0x100];
             const char* sub = args[0].getString(buf2);
             int i;
-            int len = strlen(sub);
+            unsigned long len = strlen(sub);
             i = 0;
             for (; *s; s++, i++) {
                 if (strncmp(s, sub, len) == 0) {
@@ -1739,8 +1736,9 @@ void Tiga::debugDump()
     GSprint(GSgfxLayerFindByName_C("debug menu"), 0x10, 0x40, 0xE0D0FFFF, "- : Line  sp  ");
     GSprint(GSgfxLayerFindByName_C("debug menu"), 0x10, 0x4C, 0xE0D0FFFF, "------------------");
     u32 sp;
-    s32 y = 0x58;
-    for (s32 i = 0; i < 8; i++, y += 0xC) {
+    s32 y;
+    s32 i;
+    for (i = 0, y = 0x58; i < 8; i++, y += 0xC) {
         TigaThread* t = threads[i];
         if (t->state == 0) {
             GSprint(GSgfxLayerFindByName_C("debug menu"), 0x10, y, 0xE0D0FFFF, "%d : --", i);

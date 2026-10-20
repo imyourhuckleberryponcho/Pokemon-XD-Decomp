@@ -110,28 +110,29 @@ static inline bool _isFloorB(u32 floor) {
     return false;
 }
 
-static inline s32 _pickEsaba(void) {
+static inline void _pickEsaba(u32& sel) {
     s32 candidates[3];
     s32 table[3] = {0x5A, 0x5B, 0x5C};
     s32 count = 0;
     s32 j;
     for (j = 0; j <= 2; j++) {
         if (esabaGetPokemonID(j) == 0) {
-            candidates[count] = j;
-            count++;
+            candidates[count++] = j;
         }
     }
     if (count == 0) {
-        return 0;
+        sel = 0;
+    } else {
+        u16 idx = (u16)HSD_Rand() % count;
+        sel = table[candidates[idx]];
     }
-    u16 idx = (u16)HSD_Rand() % count;
-    return table[candidates[idx]];
 }
 
 static inline void _setPlace(u32 place) {
     GSflagSet(undertakerdata->flagID, place);
     GSflagSet(undertakerdata->flagAway, 0);
-    GSflagSet(undertakerdata->flagSide, (u8)((u16)HSD_Rand() % 2));
+    u16 side = HSD_Rand();
+    GSflagSet(undertakerdata->flagSide, (u8)(side % 2));
     heroMoveInitEvent();
     heroMoveSetColision(1);
     GSthreadSwitch();
@@ -176,19 +177,20 @@ void underTakerCallBackFunc(s32 unused0, s32 unused1, u16 amount) {
                     }
                     GSflagSet(undertakerdata->flagLevel, (u16)level);
                 } else if (rnd < high) {
-                    u16 level = (u16)GSflagGet(undertakerdata->flagLevel);
+                    level = (u16)GSflagGet(undertakerdata->flagLevel);
                     if (level != 0) {
                         level--;
                     }
                     GSflagSet(undertakerdata->flagLevel, (u16)level);
                 }
-                total = (u16)(total - undertakerdata->threshold);
+                total = (total - undertakerdata->threshold) & 0xFFFF;
             }
             GSflagSet(undertakerdata->flagCounter, (u16)total);
         } else if (_isInRange()) {
             _disappearWithMessage();
         } else {
-            u32 away = (u16)GSflagGet(undertakerdata->flagAway) + amount;
+            u16 cur = GSflagGet(undertakerdata->flagAway);
+            u32 away = cur + amount;
             if ((u16)away >= undertakerdata->limit) {
                 _disappearWithMessage();
             }
@@ -240,7 +242,7 @@ static void _appearMirabo(void) {
     if (sel == undertakerdata->places[0].id) {
         floor = floorGetCurrent();
         if (!_isSpecialFloor(floor)) {
-            sel = _pickEsaba();
+            _pickEsaba(sel);
         }
     } else if (sel == undertakerdata->places[1].id) {
         floor = floorGetCurrent();
@@ -252,11 +254,11 @@ static void _appearMirabo(void) {
                 sel = 0;
             }
             if (sel == 0) {
-                sel = _pickEsaba();
+                _pickEsaba(sel);
             }
         }
     } else if (sel == undertakerdata->places[2].id) {
-        if (esabaGetPokemonID(0) == 0 || floor == sel) {
+        if (esabaGetPokemonID(0) != 0 || floor == sel) {
             floor = floorGetCurrent();
             if (_isSpecialFloor(floor)) {
                 sel = undertakerdata->places[0].id;
@@ -265,7 +267,7 @@ static void _appearMirabo(void) {
             }
         }
     } else if (sel == undertakerdata->places[3].id) {
-        if (esabaGetPokemonID(1) == 0 || floor == sel) {
+        if (esabaGetPokemonID(1) != 0 || floor == sel) {
             floor = floorGetCurrent();
             if (_isSpecialFloor(floor)) {
                 sel = undertakerdata->places[0].id;
@@ -274,7 +276,7 @@ static void _appearMirabo(void) {
             }
         }
     } else if (sel == undertakerdata->places[4].id) {
-        if (esabaGetPokemonID(2) == 0 || floor == sel) {
+        if (esabaGetPokemonID(2) != 0 || floor == sel) {
             floor = floorGetCurrent();
             if (_isSpecialFloor(floor)) {
                 sel = undertakerdata->places[0].id;
@@ -287,7 +289,7 @@ static void _appearMirabo(void) {
         _setPlace(sel);
     } else {
         GSflagSet(undertakerdata->flagCounter, 0);
-        GSflagSet(undertakerdata->flagLevel, undertakerdata->maxCount - 2);
+        GSflagSet(undertakerdata->flagLevel, (u16)(undertakerdata->maxCount - 2));
     }
 }
 

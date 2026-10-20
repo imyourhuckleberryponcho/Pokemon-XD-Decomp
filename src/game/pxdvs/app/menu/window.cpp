@@ -386,8 +386,8 @@ void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx, u16 key
         }
         spp->x = (s16)(x + info->offX);
         spp->y = (s16)(y + info->offY);
-        spp->w = w;
         spp->h = h;
+        spp->w = w;
         spp->u = val->u;
         spp->v = val->v;
         spp->uw = val->w;

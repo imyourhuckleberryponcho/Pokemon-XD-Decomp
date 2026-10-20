@@ -477,6 +477,14 @@ static inline void setBlendMode(int blend_mode)
             GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_ONE,
                            GX_LO_CLEAR);
             break;
+        case 2:
+            GXSetBlendMode(GX_BM_SUBTRACT, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA,
+                           GX_LO_CLEAR);
+            break;
+        case 3:
+            GXSetBlendMode(GX_BM_BLEND, GX_BL_DSTCLR, GX_BL_ZERO,
+                           GX_LO_CLEAR);
+            break;
         default:
             OSReport("Particle:setBlendMode:Unknown mode\n");
             break;
@@ -672,9 +680,9 @@ inline void psDispSubAPPSRTPoint(HSD_Particle* pp)
     Mtx srt;
     Vec3 v;
     Vec3 tv;
-    f32 vx, vy, vz;
     f32 lx, ly, lz;
     f32 px, py, pz;
+    f32 vx, vy, vz;
     u8 w;
 
     psSetCurrentMtx(GX_PNMTX0);
@@ -1384,24 +1392,23 @@ inline void psDispSub(HSD_Particle* pp, u8* texform)
 
 static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void* camera)
 {
-    HSD_Particle* pp;
-    u8* prevTex;
+    s32 linkNo;
     u32 prevTexEdge;
-    u32 prevMirror;
+    s32 alpha_compare_mode;
     u8 prevACmpParam1;
     u8 prevACmpParam2;
     s32 needs_setup;
+    HSD_Particle* pp;
+    u8* prevTex;
+    u32 prevMirror;
     u16* prevLut;
     HSD_TlutDesc tlutdesc;
     GXTexObj texObj;
     HSD_Particle* sorted_particles;
     HSD_Particle* non_edge_particles;
-    f32 y2;
     GXTlutObj gx_tlut_obj;
-    s32 alpha_compare_mode;
     s32 prev_tex_interp_near;
     u32 prev_kind;
-    s32 linkNo;
 
     alpha_compare_mode = 0;
     prev_tex_interp_near = 0;
@@ -1426,18 +1433,18 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                 HSD_PSFormGroup* form_group = NULL;
                 HSD_PSFormGroup** form_groups;
                 u8* form = NULL;
-                void* image;
-                u32 blend_mode;
+                GXTexFmt fmt;
+                int blend_mode;
                 u8 alpha0;
                 u8 alpha1;
-                GXTexWrapMode wrap_s;
-                GXTexWrapMode wrap_t;
-                f32 scale_s;
-                f32 scale_t;
-                GXTexFmt fmt;
-                u8** tex_table;
                 u32 width;
                 u32 height;
+                void* image;
+                GXTexWrapMode wrap_s;
+                f32 scale_s;
+                f32 scale_t;
+                GXTexWrapMode wrap_t;
+                u8** tex_table;
 
                 if ((sw == 1) && !(pp->kind & TexEdge)) {
                     break;
@@ -1448,9 +1455,6 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                     !(pp->kind & PS_FLAG_HIDDEN))
                 {
                     if (needs_setup != 0) {
-                        Mtx billboard_mtx = { { 1.0F, 0.0F, 0.0F, 0.0F },
-                                              { 0.0F, 1.0F, 0.0F, 0.0F },
-                                              { 0.0F, 0.0F, 1.0F, 0.0F } };
                         prevLut = NULL;
                         prevPointSize = -1;
                         prevTex = NULL;
@@ -1479,42 +1483,15 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                         HSD_CObjGetViewingMtx(HSD_CObjGetCurrent(), vmtx);
                         PSMTXInverse(vmtx, rvmtx);
                         {
-                            f32 w0;
-                            f32 x_offset;
-                            f32 x_scale;
-                            f32 w1;
-                            f32 y_offset;
-                            f32 y_scale;
-                            f32 w2;
-                            f32 w3;
-                            f32 y0;
-                            f32 y1;
-
                             if (0.0f == prj[0]) {
-                                x_scale = prj[1];
-                                x_offset = prj[2];
-                                w0 = vmtx[2][0];
-                                pvmtx[0][0] =
-                                    x_scale * vmtx[0][0] + x_offset * w0;
-                                w1 = vmtx[2][1];
-                                pvmtx[0][1] =
-                                    x_scale * vmtx[0][1] + x_offset * w1;
-                                w2 = vmtx[2][2];
-                                pvmtx[0][2] =
-                                    x_scale * vmtx[0][2] + x_offset * w2;
-                                w3 = vmtx[2][3];
-                                pvmtx[0][3] =
-                                    x_scale * vmtx[0][3] + x_offset * w3;
-                                y_scale = prj[3];
-                                y_offset = prj[4];
-                                y0 = y_offset * w0;
-                                y1 = y_offset * w1;
-                                y2 = y_offset * w2;
-                                pvmtx[1][0] = y_scale * vmtx[1][0] + y0;
-                                pvmtx[1][1] = y_scale * vmtx[1][1] + y1;
-                                pvmtx[1][2] = y_scale * vmtx[1][2] + y2;
-                                pvmtx[1][3] =
-                                    y_scale * vmtx[1][3] + (y_offset * w3);
+                                pvmtx[0][0] = prj[1] * vmtx[0][0] + prj[2] * vmtx[2][0];
+                                pvmtx[0][1] = prj[1] * vmtx[0][1] + prj[2] * vmtx[2][1];
+                                pvmtx[0][2] = prj[1] * vmtx[0][2] + prj[2] * vmtx[2][2];
+                                pvmtx[0][3] = prj[1] * vmtx[0][3] + prj[2] * vmtx[2][3];
+                                pvmtx[1][0] = prj[3] * vmtx[1][0] + prj[4] * vmtx[2][0];
+                                pvmtx[1][1] = prj[3] * vmtx[1][1] + prj[4] * vmtx[2][1];
+                                pvmtx[1][2] = prj[3] * vmtx[1][2] + prj[4] * vmtx[2][2];
+                                pvmtx[1][3] = prj[3] * vmtx[1][3] + prj[4] * vmtx[2][3];
                             } else {
                                 pvmtx[0][0] = prj[1] * vmtx[0][0] + prj[2];
                                 pvmtx[0][1] = prj[1] * vmtx[0][1] + prj[2];
@@ -1525,12 +1502,20 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                                 pvmtx[1][2] = prj[3] * vmtx[1][2] + prj[4];
                                 pvmtx[1][3] = prj[3] * vmtx[1][3] + prj[4];
                             }
- /// @todo Passing @c rvmtx directly swaps the first
- /// two axis loads.
-                            psUpdateBillboardAxes(*(const Mtx*) rvmtx);
+                            rx0 = rvmtx[0][0] + rvmtx[0][1];
+                            rx1 = rvmtx[0][0] - rvmtx[0][1];
+                            ry0 = rvmtx[1][0] + rvmtx[1][1];
+                            ry1 = rvmtx[1][0] - rvmtx[1][1];
+                            rz0 = rvmtx[2][0] + rvmtx[2][1];
+                            rz1 = rvmtx[2][0] - rvmtx[2][1];
                         }
                         GXLoadPosMtxImm(vmtx, GX_PNMTX0);
-                                        GXLoadPosMtxImm(billboard_mtx, GX_PNMTX1);
+                        {
+                            Mtx billboard_mtx = { { 1.0F, 0.0F, 0.0F, 0.0F },
+                                                  { 0.0F, 1.0F, 0.0F, 0.0F },
+                                                  { 0.0F, 0.0F, 1.0F, 0.0F } };
+                            GXLoadPosMtxImm(billboard_mtx, GX_PNMTX1);
+                        }
                         currentMtx = GX_PNMTX1;
                         psSetCurrentMtx(GX_PNMTX0);
                         GXEnableTexOffsets(GX_TEXCOORD0, GX_TRUE, GX_TRUE);
@@ -1567,8 +1552,8 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                         (prevACmpParam1 != alpha0) ||
                         (prevACmpParam2 != alpha1))
                     {
-                        prevACmpParam1 = alpha0;
                         alpha_compare_mode = pp->aCmpMode;
+                        prevACmpParam1 = alpha0;
                         prevACmpParam2 = alpha1;
                         GXSetAlphaCompare(
                             (alpha_compare_mode >> 3) & 7, prevACmpParam1,

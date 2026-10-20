@@ -114,19 +114,19 @@ static inline f32 mtxDeterminant(Mtx m)
 
 int HSD_MtxInverseConcat(Mtx inv, Mtx src, Mtx dst)
 {
-    f32 det;
+    f32 i02;
     f32 i11;
     f32 i10;
     f32 i01;
     f32 i00;
-    f32 i02;
+    f32 det;
+    f32 i12;
+    f32 i20;
     f32 i22;
-    f32 tx;
-    f32 tz;
     Mtx result;
     f32 i21;
-    f32 i20;
-    f32 i12;
+    f32 tx;
+    f32 tz;
     f32 ty;
 
     det = mtxDeterminant(inv);
@@ -138,9 +138,9 @@ int HSD_MtxInverseConcat(Mtx inv, Mtx src, Mtx dst)
     i00 = det * (inv[1][1] * inv[2][2] - inv[2][1] * inv[1][2]);
     i01 = det * -(inv[0][1] * inv[2][2] - inv[2][1] * inv[0][2]);
     i10 = det * -(inv[1][0] * inv[2][2] - inv[2][0] * inv[1][2]);
-    i02 = det * (inv[0][1] * inv[1][2] - inv[1][1] * inv[0][2]);
     i11 = det * (inv[0][0] * inv[2][2] - inv[2][0] * inv[0][2]);
     i12 = det * -(inv[0][0] * inv[1][2] - inv[1][0] * inv[0][2]);
+    i02 = det * (inv[0][1] * inv[1][2] - inv[1][1] * inv[0][2]);
     i20 = det * (inv[1][0] * inv[2][1] - inv[2][0] * inv[1][1]);
     i21 = det * -(-(inv[2][0] * inv[0][1] - inv[0][0] * inv[2][1]));
     i22 = det * (inv[0][0] * inv[1][1] - inv[1][0] * inv[0][1]);
@@ -153,15 +153,15 @@ int HSD_MtxInverseConcat(Mtx inv, Mtx src, Mtx dst)
         result[0][0] = i02 * src[2][0] + (i00 * src[0][0] + i01 * src[1][0]);
         result[0][1] = i02 * src[2][1] + (i00 * src[0][1] + i01 * src[1][1]);
         result[0][2] = i02 * src[2][2] + (i00 * src[0][2] + i01 * src[1][2]);
+        result[1][3] = i12 * src[2][3] + (i10 * src[0][3] + i11 * src[1][3]) + ty;
         result[0][3] = i02 * src[2][3] + (i00 * src[0][3] + i01 * src[1][3]) + tx;
+        result[2][3] = i22 * src[2][3] + (i20 * src[0][3] + i21 * src[1][3]) + tz;
         result[1][0] = i12 * src[2][0] + (i10 * src[0][0] + i11 * src[1][0]);
         result[1][1] = i12 * src[2][1] + (i10 * src[0][1] + i11 * src[1][1]);
         result[1][2] = i12 * src[2][2] + (i10 * src[0][2] + i11 * src[1][2]);
-        result[1][3] = i12 * src[2][3] + (i10 * src[0][3] + i11 * src[1][3]) + ty;
         result[2][0] = i22 * src[2][0] + (i20 * src[0][0] + i21 * src[1][0]);
         result[2][1] = i22 * src[2][1] + (i20 * src[0][1] + i21 * src[1][1]);
         result[2][2] = i22 * src[2][2] + (i20 * src[0][2] + i21 * src[1][2]);
-        result[2][3] = i22 * src[2][3] + (i20 * src[0][3] + i21 * src[1][3]) + tz;
         MTXCopy(result, dst);
     } else {
         dst[0][0] = i02 * src[2][0] + (i00 * src[0][0] + i01 * src[1][0]);

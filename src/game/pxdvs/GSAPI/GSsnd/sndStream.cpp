@@ -1,5 +1,6 @@
 // Not yet decompiled.
 #include <dolphin/types.h>
+#pragma pool_strings off
 // ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -23,16 +24,62 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 enum ASM { ASM_draft_dummy };
 struct SndStream;
 
+// stream work (stereo streams: a master and a child, each playing one channel)
+struct SndStreamCh {
+    u8 adpcm[0x2E];         // 0x00 ADPCM parameters
+    u8 busy[2];             // 0x2E per buffer half
+    u32 filled[2];          // 0x30 bytes copied into each buffer half
+    u32 x38;                // 0x38 resume offset
+    s32 state;              // 0x3C
+};
+struct SndStream {
+    SndStream* master;      // 0x00 (NULL on the master itself)
+    SndStream* child;       // 0x04
+    s32 state;              // 0x08
+    s32 stid;               // 0x0C
+    u8* buf;                // 0x10
+    u32 bufSize;            // 0x14
+    u32 x18;                // 0x18
+    u32 pos;                // 0x1C
+    u32 played;             // 0x20
+    u32 dataOfs;            // 0x24
+    u32 gid;                // 0x28
+    u32 fid;                // 0x2C
+    u32 sndId;              // 0x30 entry in snd_data
+    u16 fadeTime;           // 0x34
+    u8 unk36;
+    u8 vol;                 // 0x37
+    u8 targetVol;           // 0x38
+    u8 fadeFrame;           // 0x39
+    u8 startVol;            // 0x3A
+    u8 right;               // 0x3B
+    u8 done;                // 0x3C
+    u8 mute;                // 0x3D
+    u8 pause;               // 0x3E
+    u8 half;                // 0x3F
+    u8 unk40[8];
+    s32 frq;                // 0x48
+    u32 dataSize;           // 0x4C
+    u32 cacheEnd;           // 0x50
+    u8 unk54[8];
+    s32 loop;               // 0x5C
+    u32 headerOfs;          // 0x60
+    u8 unk64[0xD];
+    u8 looped;              // 0x71
+    u8 updated[2];          // 0x72 per channel
+    u32 loopStart;          // 0x74
+    u32 loopEnd;            // 0x78
+    u32 endPos;             // 0x7C
+    SndStreamCh ch[2];      // 0x80
+};
+
 extern "C" {
 // ---- draft declarations ----
-struct SndStream {
-    u8 _draft[1];
-};
 
 extern "C" {
 asm void DCFlushRange(register void* addr, register u32 nBytes);
 u32 GSfsysStreamGetCacheSize(void);
-s32 GSfsysStreamGetData(u32 gid, u32 id, u32 dst, u32 size, u32 offset, u32 a, u32 b, u32 c);
+u8 GSfsysStreamGetData(u32 gid, u32 id, u32 dst, u32 size, u32 offset, u32 a, u32 b, u32 c);
 asm BOOL OSDisableInterrupts(void);
 void OSReport(const char* msg, ...);
 asm BOOL OSRestoreInterrupts(register BOOL level);
@@ -40,19 +87,19 @@ static void _sndStreamARAMUpdate(void *p0, void *p1);
 u32 _sndStreamCallback(void*, u32, void*, u32, u32);
 void _sndStreamCtrl(SndStream* s, u32 mode);
 static void _sndStreamFadePostProcess(void *p0);
-void _sndStreamGetData(SndStream* s, void (*cb)());
-void _sndStreamGetDataCallback_ACTIVATE();
-void _sndStreamGetDataCallback_EXEC_UPDATE();
-void _sndStreamGetDataCallback_START();
-static u8 _sndStreamNibble_GetHeaderPos(u16 p0);
-u32 _sndStreamNibble_HeaderOFF2ON(u32 p0, s32 p1);
+BOOL _sndStreamGetData(SndStream* s, void (*cb)());
+void _sndStreamGetDataCallback_ACTIVATE(s32 result, s32 size, void* arg);
+void _sndStreamGetDataCallback_EXEC_UPDATE(s32 result, s32 size, SndStream* s);
+void _sndStreamGetDataCallback_START(s32 result, s32 size, SndStream* s);
+static u32 _sndStreamNibble_GetHeaderPos(u32 p0);
+u32 _sndStreamNibble_HeaderOFF2ON(u32 p0);
 u32 _sndStreamNibble_HeaderON2OFF(u32 v);
 void _sndStreamPrepareGetData(SndStream* s);
-static void _sndStreamPrepareGetDataCallback(u8 p0, u8 p1, void *p2);
-static void _sndStreamPrepareGetDataCallback_Exec(void *p0, void *p1, void *p2, u8 p3, u8 p4);
-static void _sndStreamPrepareGetData_Exec(void *p0, s32 p1);
-static void _sndStreamPrepareGetData_GetNewData(void *p0, void *p1, u8 p2);
-static void _sndStreamPrepareGetData_GetOldData(void *p0, s32 p1, void *p2);
+static void _sndStreamPrepareGetDataCallback(u8 result, u32 halfArg, void* arg);
+static void _sndStreamPrepareGetDataCallback_Exec(SndStream* s, SndStream* master, SndStreamCh* ch, u32 offset, u8 half);
+static void _sndStreamPrepareGetData_Exec(SndStream* s, SndStream* master, u8 half);
+static void _sndStreamPrepareGetData_GetNewData(SndStream* s, SndStream* master, u8 half);
+static void _sndStreamPrepareGetData_GetOldData(SndStream* s, SndStream* master, u8 half);
 void* memcpy(void* dst, const void* src, size_t n);
 void* memset(void* dst, int val, size_t n);
 s32 sndStreamADPCMParameter(s32, void*);
@@ -61,301 +108,262 @@ s32 sndStreamActivate(s32);
 void sndStreamDeactivate(u32 stid);
 s32 sndStreamFrq(s32, s32);
 s32 sndStreamMixParameterEx(s32, u8, s32, s32, s32, s32);
-s32 sndStreamMixParameterVolume(s32, s32, s32, s32, u8, f32, f32);
-extern s32 snd_data;
+s32 sndStreamMixParameterVolume(s32 stid, s32 vol, s32 pan, s32 span);
+struct SndDataEntry {
+    u8 unk0;
+    u8 vol;
+    u8 unk2[10];
+};
+extern SndDataEntry* snd_data;
 }
 
-void _sndStreamPrepareGetData(SndStream* p0) {
-    SndStream *temp_r0;
-    SndStream *var_r4;
-    s32 temp_r31;
+void _sndStreamPrepareGetData(SndStream* s) {
+    BOOL level;
+    SndStream* master;
 
-    temp_r31 = OSDisableInterrupts();
-    temp_r0 = M2C_FIELD(p0, SndStream **, 0);
-    if (temp_r0 != NULL) {
-        var_r4 = temp_r0;
+    level = OSDisableInterrupts();
+    if (s->master != NULL) {
+        master = s->master;
     } else {
-        var_r4 = p0;
+        master = s;
     }
-    if ((u8) M2C_FIELD(((u8*)(var_r4) + (M2C_FIELD(p0, u8 *, 0x3B) << 6) + M2C_FIELD(p0, u8 *, 0x3F)), u8 *, 0xAE) == 0) {
-        _sndStreamPrepareGetData_Exec(p0, (s32) var_r4);
+    if (master->ch[s->right].busy[s->half] == 0) {
+        _sndStreamPrepareGetData_Exec(s, master, s->half);
     }
-    OSRestoreInterrupts(temp_r31);
+    OSRestoreInterrupts(level);
 }
 }
 
 extern "C" {
-static void _sndStreamPrepareGetData_Exec(void *p0, s32 p1) {
-    s32 temp_r0;
-
-    temp_r0 = M2C_FIELD((p1 + (M2C_FIELD(p0, u8 *, 0x3B) << 6)), s32 *, 0xBC);
-    switch (temp_r0) {                              /* irregular */
+static void _sndStreamPrepareGetData_Exec(SndStream* s, SndStream* master, u8 half) {
+    switch (master->ch[s->right].state) {
     case 1:
-        _sndStreamPrepareGetData_GetNewData(p0, (u8 *) p1, M2C_ERROR(/* Read from unset register $r5 */));
-        return;
+        _sndStreamPrepareGetData_GetNewData(s, master, half);
+        break;
     case 3:
-        _sndStreamPrepareGetData_GetOldData(p0, p1, M2C_ERROR(/* Read from unset register $r5 */));
-        /* fallthrough */
-    case 2:
-        return;
+        _sndStreamPrepareGetData_GetOldData(s, master, half);
+        break;
     }
 }
 }
 
 extern "C" {
-static void _sndStreamPrepareGetData_GetOldData(void *p0, s32 p1, void *p2) {
-    u8 *temp_r5;
-
-    temp_r5 = (unsigned char *)(p1 + ((M2C_FIELD(p0, u8 *, 0x3B) << 6) + 0x80));
-    M2C_FIELD(temp_r5, s32 *, 0x3C) = 4;
-    _sndStreamPrepareGetDataCallback_Exec(p0, (u8 *) p1, temp_r5, (u8) M2C_FIELD(temp_r5, s32 *, 0x38), (u8) p2);
+static void _sndStreamPrepareGetData_GetOldData(SndStream* s, SndStream* master, u8 half) {
+    SndStreamCh* ch = &master->ch[s->right];
+    ch->state = 4;
+    _sndStreamPrepareGetDataCallback_Exec(s, master, ch, ch->x38, half);
 }
 }
 
 extern "C" {
-static void _sndStreamPrepareGetData_GetNewData(void *p0, void *p1, u8 p2) {
-    s32 temp_r30;
-    u32 var_r7;
-    u8 *temp_r31;
-    u8 *temp_r5;
+static void _sndStreamPrepareGetData_GetNewData(SndStream* s, SndStream* master, u8 half) {
+    SndStreamCh* ch;
+    s32 old;
+    u8* dst;
+    u32 offset;
 
-    temp_r31 = (u8*)(p1) + ((M2C_FIELD(p0, u8 *, 0x3B) << 6) + 0x80);
-    temp_r30 = M2C_FIELD(temp_r31, s32 *, 0x3C);
-    M2C_FIELD(temp_r31, s32 *, 0x3C) = 2;
-    temp_r5 = (unsigned char *)(M2C_FIELD(p0, s32 *, 0x10) + 0x10000);
-    if ((u32) M2C_FIELD(p0, u32 *, 0) != 0U) {
-        var_r7 = M2C_FIELD(p1, u32 *, 0x24) + ((u32) M2C_FIELD(p0, u32 *, 0x14) >> 1U);
+    ch = &master->ch[s->right];
+    old = ch->state;
+    ch->state = 2;
+    dst = s->buf + 0x10000;
+    if (s->master != NULL) {
+        offset = master->dataOfs + s->bufSize / 2;
     } else {
-        var_r7 = M2C_FIELD(p1, u32 *, 0x24);
+        offset = master->dataOfs;
     }
-    if (((s32) M2C_FIELD(p1, s32 *, 0x5C) == 0) && ((u32) M2C_FIELD(p0, u32 *, 0x1C) >= (u32) M2C_FIELD(p1, u32 *, 0x4C))) {
-        memset((void*)(temp_r5), 0, 0x8000U);
-        _sndStreamPrepareGetDataCallback(0U, (u8)p2, p0);
-        return;
-    }
-    if (GSfsysStreamGetData(M2C_FIELD(p1, u32 *, 0x28), M2C_FIELD(p1, u32 *, 0x2C), (u32) temp_r5, 0x8000U, var_r7, (u32) _sndStreamPrepareGetDataCallback, (u32) p2, (u32) p0) == 0) {
-        M2C_FIELD(temp_r31, s32 *, 0x3C) = temp_r30;
+    if (master->loop == 0 && s->pos >= master->dataSize) {
+        memset(dst, 0, 0x8000);
+        _sndStreamPrepareGetDataCallback(0, half, s);
+    } else if (!GSfsysStreamGetData(master->gid, master->fid, (u32)dst, 0x8000, offset, (u32)_sndStreamPrepareGetDataCallback, half, (u32)s)) {
+        ch->state = old;
     }
 }
 }
 
 extern "C" {
-static void _sndStreamPrepareGetDataCallback(u8 p0, u8 p1, void *p2) {
-    s32 temp_r4;
-    u32 temp_r0_2;
-    u32 temp_r3;
-    u32 temp_r5;
-    u8 *var_r30;
-    u8 *temp_r0;
-    u8 *var_r29;
-    u8 var_r27;
+static void _sndStreamPrepareGetDataCallback(u8 result, u32 halfArg, void* arg) {
+    SndStream* s = (SndStream*)arg;
+    SndStream* master;
+    SndStream* other;
+    SndStreamCh* ch;
+    u32 headerPos;
+    u8 half;
+    u32 pos;
+    u32 header;
+    u32 end;
 
-    temp_r0 = M2C_FIELD(p2, u8 **, 0);
-    if (temp_r0 != NULL) {
-        var_r30 = temp_r0;
-        var_r29 = (unsigned char *)(p2);
+    half = halfArg;
+
+    if (s->master != NULL) {
+        master = s->master;
+        other = s;
     } else {
-        var_r30 = (unsigned char *)(p2);
-        var_r29 = M2C_FIELD(p2, u8 **, 4);
+        master = s;
+        other = s->child;
     }
-    temp_r4 = M2C_FIELD(p2, u8 *, 0x3B) << 6;
-    temp_r3 = _sndStreamNibble_HeaderOFF2ON(M2C_FIELD(p2, u32 *, 0x1C), temp_r4);
-    temp_r5 = temp_r3 + 0x10000;
-    if (((s32) M2C_FIELD(var_r30, s32 *, 0x5C) == 1) && ((u8) M2C_FIELD(var_r30, u8 *, 0x71) == 1) && (temp_r0_2 = M2C_FIELD(var_r30, s32 *, 0x60) - 2, ((temp_r3 > temp_r0_2) == 0)) && (temp_r0_2 < temp_r5)) {
-        var_r27 = _sndStreamNibble_GetHeaderPos(temp_r0_2);
+    ch = &master->ch[s->right];
+    pos = _sndStreamNibble_HeaderOFF2ON(s->pos);
+    end = pos + 0x10000;
+    if (master->loop == 1 && master->looped == 1 && (header = master->headerOfs - 2, pos <= header) && header < end) {
+        headerPos = _sndStreamNibble_GetHeaderPos((u16)header);
     } else {
-        var_r27 = 0;
+        headerPos = 0;
     }
-    M2C_FIELD(p2, u32 *, 0x1C) = (u32) (M2C_FIELD(p2, u32 *, 0x1C) + ((u32) M2C_FIELD(p2, u32 *, 0x18) >> 1U));
-    if (((s32) M2C_FIELD(var_r30, s32 *, 0x5C) == 1) && ((u32) M2C_FIELD(p2, u32 *, 0x1C) >= (u32) M2C_FIELD(var_r30, u32 *, 0x78))) {
-        M2C_FIELD(p2, u32 *, 0x1C) = (u32) M2C_FIELD(var_r30, u32 *, 0x74);
-        M2C_FIELD(var_r30, u8 *, 0x71) = 1U;
+    s->pos += s->x18 / 2;
+    if (master->loop == 1 && s->pos >= master->loopEnd) {
+        s->pos = master->loopStart;
+        master->looped = 1;
     }
-    M2C_FIELD(p2, s8 *, 0x3C) = 1;
-    if (((u8) M2C_FIELD(var_r30, u8 *, 0x3C) != 0) && ((u8) M2C_FIELD(var_r29, u8 *, 0x3C) != 0)) {
-        M2C_FIELD(var_r30, u32 *, 0x24) = (u32) (M2C_FIELD(var_r30, u32 *, 0x24) + M2C_FIELD(var_r30, s32 *, 0x14));
-        if ((u32) M2C_FIELD(var_r30, u32 *, 0x24) >= (u32) (M2C_FIELD(var_r30, s32 *, 0x50) & 0x3FFFFFFE)) {
-            M2C_FIELD(var_r30, u32 *, 0x24) = 0U;
-        } else if ((u32) M2C_FIELD(var_r30, u32 *, 0x24) >= GSfsysStreamGetCacheSize()) {
-            M2C_FIELD(var_r30, u32 *, 0x24) = 0U;
+    s->done = 1;
+    if (master->done && other->done) {
+        master->dataOfs += master->bufSize;
+        if (master->dataOfs >= (master->cacheEnd & 0x3FFFFFFE)) {
+            master->dataOfs = 0;
+        } else if (master->dataOfs >= GSfsysStreamGetCacheSize()) {
+            master->dataOfs = 0;
         }
-        M2C_FIELD(var_r29, u8 *, 0x3C) = 0U;
-        M2C_FIELD(var_r30, u8 *, 0x3C) = 0U;
+        other->done = 0;
+        master->done = 0;
     }
-    _sndStreamPrepareGetDataCallback_Exec(p2, var_r30, var_r30 + (temp_r4 + 0x80), var_r27, p1);
+    _sndStreamPrepareGetDataCallback_Exec(s, master, ch, headerPos, half);
 }
 }
 
 extern "C" {
-static void _sndStreamPrepareGetDataCallback_Exec(void *p0, void *p1, void *p2, u8 p3, u8 p4) {
-    s32 temp_r8;
-    u32 var_r28;
-    u32 temp_r7;
-    u8 *temp_r31;
-    u8 *var_r3;
+static void _sndStreamPrepareGetDataCallback_Exec(SndStream* s, SndStream* master, SndStreamCh* ch, u32 offset, u8 half) {
+    u32 len = 0x8000 - offset;
+    u8* src = s->buf + 0x10000;
+    src += offset;
+    u32 cur = ch->filled[half];
+    u8* dst;
 
-    temp_r31 = (u8*)(p2) + ((p4 * 4) & 0x3FC);
-    var_r28 = 0x8000 - p3;
-    temp_r8 = M2C_FIELD(p0, s32 *, 0x10);
-    temp_r7 = M2C_FIELD((s32)temp_r31, u32 *, 0x30);
-    if (p4 != 0) {
-        var_r3 = (unsigned char *)(temp_r8 + (((u32) M2C_FIELD(p0, u32 *, 0x14) >> 1U) + temp_r7));
+    if (half) {
+        dst = s->buf + (s->bufSize / 2 + cur);
     } else {
-        var_r3 = (unsigned char *)(temp_r8 + temp_r7);
+        dst = s->buf + cur;
     }
-    if ((u32) (temp_r7 + var_r28) > -0x8000U) {
-        var_r28 = 0x8000 - temp_r7;
-        M2C_FIELD(p2, s32 *, 0x38) = (s32) (p3 + var_r28);
-        M2C_FIELD(p2, s32 *, 0x3C) = 3;
+    if (cur + len > 0x8000) {
+        len = 0x8000 - cur;
+        ch->x38 = offset + len;
+        ch->state = 3;
     } else {
-        M2C_FIELD(p2, s32 *, 0x38) = 0;
-        M2C_FIELD(p2, s32 *, 0x3C) = 1;
+        ch->x38 = 0;
+        ch->state = 1;
     }
-    memcpy((void*)(var_r3), (const void*)(temp_r8 + 0x10000 + p3), var_r28);
-    M2C_FIELD(temp_r31, u32 *, 0x30) = (u32) (M2C_FIELD(temp_r31, u32 *, 0x30) + var_r28);
-    if ((u32) M2C_FIELD(temp_r31, u32 *, 0x30) >= -0x8000U) {
-        M2C_FIELD(temp_r31, u32 *, 0x30) = 0U;
-        M2C_FIELD(((u8 *)p2 + p4), s8 *, 0x2E) = 1;
-        return;
+    memcpy(dst, src, len);
+    ch->filled[half] += len;
+    if (ch->filled[half] >= 0x8000) {
+        ch->filled[half] = 0;
+        ch->busy[half] = 1;
+    } else {
+        ch->busy[half] = 0;
     }
-    M2C_FIELD(((u8 *)p2 + p4), s8 *, 0x2E) = 0;
 }
 }
 
 extern "C" {
-static u8 _sndStreamNibble_GetHeaderPos(u16 p0) {
-    return (u32) ((f64) p0 * 0.5) & 0xFFFFFFF8;
+static u32 _sndStreamNibble_GetHeaderPos(u32 p0) {
+    f64 scale = 0.5;
+    return (u32)(p0 * scale) & 0xFFFFFFF8;
 }
 }
 
 extern "C" {
-u32 _sndStreamNibble_HeaderOFF2ON(u32 p0, s32 p1) {
-    return (u32) ((f64) p0 * 1.1428571428571428);
+u32 _sndStreamNibble_HeaderOFF2ON(u32 p0) {
+    f64 scale = 1.1428571428571428;
+    return (u32)(p0 * scale);
 }
 }
 
 extern "C" {
 u32 _sndStreamNibble_HeaderON2OFF(u32 p0) {
-    return (u32) ((f64) p0 * 0.875);
+    f64 scale = 0.875;
+    return (u32)(p0 * scale);
 }
 }
 
 extern "C" {
-u32 _sndStreamCallback(void* p0, u32 p1, void* p2, u32 p3, u32 p4) {
-    s32 spC;
-    s32 sp8;
-    f32 temp_f1;
-    f32 temp_f5;
-    f32 temp_f6;
-    f32 var_f31;
-    u8 temp_r4_2;
-    u32 temp_r0;
-    u32 var_r29;
-    u32 var_r30;
-    u8 temp_r3;
-    u8 temp_r4;
-    u16 temp_r6;
-    u8 temp_r7;
-    u8 temp_r7_2;
-    u8 *temp_r3_2;
-    u8 *var_r3;
-    u8 *var_r3_2;
+u32 _sndStreamCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
+    SndStream* s = (SndStream*)user;
+    SndStream* master;
+    SndStream* other;
+    f32 vol;
 
-    temp_r0 = M2C_FIELD(p4, u32 *, 0);
-    if (temp_r0 != 0) {
-        var_r30 = temp_r0;
-        var_r29 = p4;
+    if (s->master != NULL) {
+        master = s->master;
+        other = s;
     } else {
-        var_r30 = p4;
-        var_r29 = M2C_FIELD(p4, u32 *, 4);
+        master = s;
+        other = s->child;
     }
-    if ((p0 == NULL) && (p2 == NULL) && (p1 == 0) && (p3 == 0)) {
-        OSReport((const char*)("--- Drop Stream Voice!! ---\n"));
-        M2C_FIELD(var_r30, s32 *, 8) = 0xD;
-        M2C_FIELD(var_r29, s32 *, 8) = 0xD;
-        return 0U;
+    if (buf1 == NULL && buf2 == NULL && len1 == 0 && len2 == 0) {
+        OSReport("--- Drop Stream Voice!! ---\n");
+        master->state = 0xD;
+        other->state = 0xD;
+        return 0;
     }
-    temp_r3 = M2C_FIELD(p4, u8 *, 0x38);
-    if ((u8) M2C_FIELD(p4, u8 *, 0x37) != temp_r3) {
-        temp_r6 = M2C_FIELD(p4, u16 *, 0x34);
-        if (temp_r6 == 0) {
-            M2C_FIELD(p4, u8 *, 0x37) = temp_r3;
-            _sndStreamFadePostProcess((u8 *) p4);
+    if (s->vol != s->targetVol) {
+        if (s->fadeTime == 0) {
+            s->vol = s->targetVol;
+            _sndStreamFadePostProcess(s);
         } else {
-            temp_r7 = M2C_FIELD(p4, u8 *, 0x3A);
-            temp_r4 = M2C_FIELD(p4, u8 *, 0x39);
-            temp_f5 = (f32) temp_r3;
-            spC = (s32) temp_r7;
-            sp8 = 0x43300000;
-            temp_f6 = ((temp_f5 - (f32) temp_r7) / (f32) temp_r6) * (f32) (temp_r4 * 0x14);
-            M2C_FIELD(p4, u8 *, 0x39) = (u8) (temp_r4 + 1);
-            var_f31 = (f32) temp_r7 + temp_f6;
-            if ((temp_f6 > 0.0f) && (M2C_ERROR(/* unknown instruction: cror eq, gt, eq */), ((var_f31 == temp_f5) != 0))) {
-                var_f31 = temp_f5;
-                _sndStreamFadePostProcess((u8 *) p4);
-            } else if (temp_f6 < 0.0f) {
-                M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-                if (var_f31 == temp_f5) {
-                    var_f31 = temp_f5;
-                    _sndStreamFadePostProcess((u8 *) p4);
-                }
+            f32 target;
+            f32 step;
+            target = s->targetVol;
+            vol = s->startVol;
+            step = (target - s->startVol) / s->fadeTime;
+            step *= (s->fadeFrame++ * 20);
+            vol += step;
+            if (step > 0.0f && vol >= target) {
+                vol = target;
+                _sndStreamFadePostProcess(s);
+            } else if (step < 0.0f && vol <= target) {
+                vol = target;
+                _sndStreamFadePostProcess(s);
             }
-            M2C_FIELD(p4, u8 *, 0x37) = (u8) (s32) var_f31;
+            s->vol = vol;
         }
     }
-    if (((u8) M2C_FIELD(p4, u8 *, 0x3D) == 1) || ((u8) M2C_FIELD(p4, u8 *, 0x3E) == 1)) {
-        sndStreamMixParameterVolume(M2C_FIELD(p4, s32 *, 0xC), 0, 0, 0, M2C_ERROR(/* Read from unset register $r7 */), M2C_ERROR(/* Read from unset register $f1 */), M2C_ERROR(/* Read from unset register $f2 */));
+    if (s->mute == 1 || s->pause == 1) {
+        sndStreamMixParameterVolume(s->stid, 0, 0, 0);
     } else {
-        temp_r7_2 = M2C_FIELD(p4, u8 *, 0x37);
-        temp_f1 = (f32) temp_r7_2 * ((f32) M2C_FIELD((snd_data + (M2C_FIELD(p4, s32 *, 0x30) * 0xC)), u8 *, 1) * 0.0078125f);
-        sndStreamMixParameterVolume(M2C_FIELD(p4, s32 *, 0xC), (s32) temp_f1, 0, 0, temp_r7_2, temp_f1, M2C_BITWISE(f32, 4503599627370496.0));
+        sndStreamMixParameterVolume(s->stid, s->vol * (snd_data[s->sndId].vol * 0.0078125f), 0, 0);
     }
-    if ((s32) M2C_FIELD(p4, s32 *, 8) != 9) {
-        return 0U;
+    if (s->state != 9) {
+        return 0;
     }
-    if (((s32) M2C_FIELD(var_r30, s32 *, 0x5C) == 0) && ((u8) M2C_FIELD((var_r30 + M2C_FIELD(var_r30, u8 *, 0x3F)), u8 *, 0xAE) == 1) && ((u8) M2C_FIELD((var_r30 + M2C_FIELD(var_r29, u8 *, 0x3F)), u8 *, 0xEE) == 1) && ((u32) (p1 + (p3 + M2C_FIELD(p4, s32 *, 0x20))) >= (u32) M2C_FIELD(var_r30, u32 *, 0x7C))) {
-        sndStreamDeactivate(M2C_FIELD(var_r30, u32 *, 0xC));
-        M2C_FIELD(var_r30, s32 *, 8) = 0xA;
-        sndStreamDeactivate(M2C_FIELD(var_r29, u32 *, 0xC));
-        M2C_FIELD(var_r29, s32 *, 8) = 0xA;
-        return 0U;
+    if (master->loop == 0 && master->ch[0].busy[master->half] == 1 && master->ch[1].busy[other->half] == 1 &&
+        len1 + (len2 + s->played) >= master->endPos) {
+        sndStreamDeactivate(master->stid);
+        master->state = 0xA;
+        sndStreamDeactivate(other->stid);
+        other->state = 0xA;
+        return 0;
     }
-    if ((u32) (p1 + p3) < (u32) ((u32) M2C_FIELD(p4, u32 *, 0x18) >> 1U)) {
-        return 0U;
+    if (len1 + len2 < s->x18 / 2) {
+        return 0;
     }
-    temp_r4_2 = M2C_FIELD(var_r30, u8 *, 0x3F);
-    if (((u8) M2C_FIELD((var_r30 + temp_r4_2), u8 *, 0xAE) == 1) && ((u8) M2C_FIELD((var_r30 + M2C_FIELD(var_r29, u8 *, 0x3F)), u8 *, 0xEE) == 1)) {
-        if (temp_r4_2 != 0) {
-            var_r3 = M2C_FIELD(var_r30, u8 **, 0x10) + ((u32) M2C_FIELD(var_r30, u32 *, 0x14) >> 1U);
-        } else {
-            var_r3 = M2C_FIELD(var_r30, u8 **, 0x10);
+    if (master->ch[0].busy[master->half] == 1 && master->ch[1].busy[other->half] == 1) {
+        DCFlushRange(master->half ? master->buf + master->bufSize / 2 : master->buf, master->bufSize / 2);
+        _sndStreamARAMUpdate(master, &master->ch[master->right]);
+        master->updated[master->right] = 1;
+        master->played += s->x18 / 2;
+        if (master->loop == 1 && master->played >= master->loopEnd) {
+            master->played = master->loopStart;
         }
-        DCFlushRange((register void*)(var_r3), (u32) M2C_FIELD(var_r30, u32 *, 0x14) >> 1U);
-        _sndStreamARAMUpdate((void *)((u8 *) var_r30), (void *)(var_r30 + ((M2C_FIELD(var_r30, u8 *, 0x3B) << 6) + 0x80)));
-        M2C_FIELD((var_r30 + M2C_FIELD(var_r30, u8 *, 0x3B)), s8 *, 0x72) = 1;
-        M2C_FIELD(var_r30, u32 *, 0x20) = (u32) (M2C_FIELD(var_r30, u32 *, 0x20) + ((u32) M2C_FIELD(p4, u32 *, 0x18) >> 1U));
-        if (((s32) M2C_FIELD(var_r30, s32 *, 0x5C) == 1) && ((u32) M2C_FIELD(var_r30, u32 *, 0x20) >= (u32) M2C_FIELD(var_r30, u32 *, 0x78))) {
-            M2C_FIELD(var_r30, u32 *, 0x20) = (u32) M2C_FIELD(var_r30, u32 *, 0x74);
-        }
-        if ((u8) M2C_FIELD(var_r29, u8 *, 0x3F) != 0) {
-            var_r3_2 = M2C_FIELD(var_r29, u8 **, 0x10) + ((u32) M2C_FIELD(var_r29, u32 *, 0x14) >> 1U);
-        } else {
-            var_r3_2 = M2C_FIELD(var_r29, u8 **, 0x10);
-        }
-        DCFlushRange((register void*)(var_r3_2), (u32) M2C_FIELD(var_r29, u32 *, 0x14) >> 1U);
-        _sndStreamARAMUpdate((void *)((u8 *) var_r29), (void *)(var_r30 + ((M2C_FIELD(var_r29, u8 *, 0x3B) << 6) + 0x80)));
-        M2C_FIELD((var_r30 + M2C_FIELD(var_r29, u8 *, 0x3B)), s8 *, 0x72) = 1;
-        M2C_FIELD(var_r29, u32 *, 0x20) = (u32) (M2C_FIELD(var_r29, u32 *, 0x20) + ((u32) M2C_FIELD(p4, u32 *, 0x18) >> 1U));
-        if (((s32) M2C_FIELD(var_r30, s32 *, 0x5C) == 1) && ((u32) M2C_FIELD(var_r29, u32 *, 0x20) >= (u32) M2C_FIELD(var_r30, u32 *, 0x78))) {
-            M2C_FIELD(var_r29, u32 *, 0x20) = (u32) M2C_FIELD(var_r30, u32 *, 0x74);
+        DCFlushRange(other->half ? other->buf + other->bufSize / 2 : other->buf, other->bufSize / 2);
+        _sndStreamARAMUpdate(other, &master->ch[other->right]);
+        master->updated[other->right] = 1;
+        other->played += s->x18 / 2;
+        if (master->loop == 1 && other->played >= master->loopEnd) {
+            other->played = master->loopStart;
         }
     }
-    temp_r3_2 = (unsigned char *)(var_r30 + M2C_FIELD(p4, u8 *, 0x3B));
-    if ((u8) M2C_FIELD((s32)temp_r3_2, u8 *, 0x72) == 1) {
-        M2C_FIELD(temp_r3_2, u8 *, 0x72) = 0U;
-        return (u32) M2C_FIELD(p4, u32 *, 0x18) >> 1U;
+    if (master->updated[s->right] == 1) {
+        master->updated[s->right] = 0;
+        return s->x18 / 2;
     }
-    return 0U;
+    return 0;
 }
 }
 
@@ -386,94 +394,108 @@ void _sndStreamCtrl(SndStream* p0, u32 p1) {
 }
 
 extern "C" {
-void _sndStreamGetData(SndStream* p0, void (*p1)()) {
-    u8 temp_r4;
-    SndStream *var_r3;
-    s32 temp_r31;
-    SndStream *temp_r0;
-    u8 *var_r3_2;
+BOOL _sndStreamGetData(SndStream* s, void (*cb)()) {
+    BOOL level;
+    SndStream* master;
+    u8* buf;
 
-    temp_r31 = OSDisableInterrupts();
-    temp_r0 = M2C_FIELD(p0, SndStream **, 0);
-    if (temp_r0 != NULL) {
-        var_r3 = temp_r0;
+    level = OSDisableInterrupts();
+    if (s->master != NULL) {
+        master = s->master;
     } else {
-        var_r3 = p0;
+        master = s;
     }
-    temp_r4 = M2C_FIELD(p0, u8 *, 0x3F);
-    if ((u8) M2C_FIELD(((u8*)(var_r3) + (M2C_FIELD(p0, u8 *, 0x3B) << 6) + temp_r4), u8 *, 0xAE) == 0) {
-        OSRestoreInterrupts(temp_r31);
-        return;
+    if (master->ch[s->right].busy[s->half] == 0) {
+        OSRestoreInterrupts(level);
+        return FALSE;
     }
-    if (temp_r4 != 0) {
-        var_r3_2 = M2C_FIELD(p0, u8 **, 0x10) + ((u32) M2C_FIELD(p0, u32 *, 0x14) >> 1U);
+    if (s->half) {
+        buf = s->buf + s->bufSize / 2;
     } else {
-        var_r3_2 = M2C_FIELD(p0, u8 **, 0x10);
+        buf = s->buf;
     }
-    DCFlushRange((register void*)(var_r3_2), (u32) M2C_FIELD(p0, u32 *, 0x14) >> 1U);
-    if (p1 != NULL) {
-        ((s32 (*)(s32, s32, SndStream *)) p1)(0, 0, p0);
+    DCFlushRange(buf, s->bufSize / 2);
+    if (cb != NULL) {
+        ((void (*)(s32, s32, SndStream*))cb)(0, 0, s);
     }
-    OSRestoreInterrupts(temp_r31);
+    OSRestoreInterrupts(level);
+    return TRUE;
 }
 }
 
 extern "C" {
-void _sndStreamGetDataCallback_ACTIVATE() {
-    u8 *var_r31;
-    u8 temp_r7;
-    u8 *temp_r0_2;
-    u8 *temp_r30;
-    u8 *var_r29;
-    volatile s32 temp_r0;
-
-    temp_r30 = M2C_ERROR(/* Read from unset register $r5 */);
-    temp_r0 = M2C_FIELD(M2C_ERROR(/* Read from unset register $r5 */), s32 *, 8);
-    if (temp_r0 < 8) {
-        if (temp_r0 < 6) {
-            return;
-        }
-        temp_r0_2 = M2C_FIELD(temp_r30, u8 **, 0);
-        if (temp_r0_2 != NULL) {
-            var_r29 = temp_r0_2;
-            var_r31 = temp_r30;
+void _sndStreamGetDataCallback_ACTIVATE(s32 result, s32 size, void* arg) {
+    SndStream* child;
+    SndStream* s = (SndStream*)arg;
+    SndStream* master;
+    switch (s->state) {
+    case 6:
+    case 7:
+        if (s->master != NULL) {
+            master = s->master;
+            child = s;
         } else {
-            var_r29 = temp_r30;
-            var_r31 = M2C_FIELD(temp_r30, u8 **, 4);
+            master = s;
+            child = s->child;
         }
-        temp_r7 = M2C_FIELD(temp_r30, u8 *, 0x3B);
-        sndStreamMixParameterEx(M2C_FIELD(temp_r30, s32 *, 0xC), M2C_FIELD(temp_r30, u8 *, 0x37), 0x7F & ((s32) (-(s32) temp_r7 | temp_r7) >> 0x1F), 0, 0, 0);
-        sndStreamFrq(M2C_FIELD(temp_r30, s32 *, 0xC), M2C_FIELD(var_r29, s32 *, 0x48));
-        sndStreamADPCMParameter(M2C_FIELD(temp_r30, s32 *, 0xC), var_r29 + ((M2C_FIELD(temp_r30, u8 *, 0x3B) << 6) + 0x80));
-        M2C_FIELD(temp_r30, s32 *, 8) = 8;
-        if (((s32) M2C_FIELD(var_r29, s32 *, 8) == 8) && ((s32) M2C_FIELD(var_r31, s32 *, 8) == 8)) {
-            _sndStreamARAMUpdate(var_r29, var_r29 + ((M2C_FIELD(var_r29, u8 *, 0x3B) << 6) + 0x80));
-            sndStreamActivate(M2C_FIELD(var_r29, s32 *, 0xC));
-            M2C_FIELD(var_r29, s32 *, 8) = 9;
-            _sndStreamARAMUpdate(var_r31, var_r29 + ((M2C_FIELD(var_r31, u8 *, 0x3B) << 6) + 0x80));
-            sndStreamActivate(M2C_FIELD(var_r31, s32 *, 0xC));
-            M2C_FIELD(var_r31, s32 *, 8) = 9;
+        sndStreamMixParameterEx(s->stid, s->vol, s->right ? 0x7F : 0, 0, 0, 0);
+        sndStreamFrq(s->stid, master->frq);
+        sndStreamADPCMParameter(s->stid, &master->ch[s->right]);
+        s->state = 8;
+        if (master->state == 8 && child->state == 8) {
+            _sndStreamARAMUpdate(master, &master->ch[master->right]);
+            sndStreamActivate(master->stid);
+            master->state = 9;
+            _sndStreamARAMUpdate(child, &master->ch[child->right]);
+            sndStreamActivate(child->stid);
+            child->state = 9;
         }
+        break;
     }
 }
 }
 
 extern "C" {
-void _sndStreamGetDataCallback_START() { }
+void _sndStreamGetDataCallback_START(s32 result, s32 size, SndStream* s) {
+    SndStream* master;
+    SndStream* child;
+    switch (s->state) {
+    case 3:
+    case 4:
+        if (s->master != NULL) {
+            master = s->master;
+            child = s;
+        } else {
+            master = s;
+            child = s->child;
+        }
+        s->state = 5;
+        if (master->state == 5 && child->state == 5) {
+            _sndStreamARAMUpdate(master, &master->ch[master->right]);
+            master->state = 6;
+            _sndStreamARAMUpdate(child, &master->ch[child->right]);
+            child->state = 6;
+        }
+        break;
+    }
+}
 extern "C" {
-void _sndStreamGetDataCallback_EXEC_UPDATE() { }
-extern "C" {
-static void _sndStreamARAMUpdate(void *p0, void *p1) {
-    u32 var_r4;
-
-    if ((u8) M2C_FIELD((s32)p0, u8 *, 0x3F) != 0) {
-        var_r4 = (u32) M2C_FIELD(p0, u32 *, 0x18) >> 1U;
+void _sndStreamGetDataCallback_EXEC_UPDATE(s32 result, s32 size, SndStream* s) {
+    SndStream* master;
+    if (s->master != NULL) {
+        master = s->master;
     } else {
-        var_r4 = 0;
+        master = s;
     }
-    sndStreamARAMUpdate(M2C_FIELD(p0, s32 *, 0xC), var_r4, (u32) M2C_FIELD(p0, u32 *, 0x18) >> 1U, 0, 0);
-    M2C_FIELD(((u8 *)p1 + M2C_FIELD(p0, u8 *, 0x3F)), s8 *, 0x2E) = 0;
-    M2C_FIELD(p0, u8 *, 0x3F) = (u8) (M2C_FIELD(p0, u8 *, 0x3F) ^ 1);
+    _sndStreamARAMUpdate(s, &master->ch[s->right]);
+}
+extern "C" {
+static void _sndStreamARAMUpdate(void* p0, void* p1) {
+    SndStream* s = (SndStream*)p0;
+    SndStreamCh* ch = (SndStreamCh*)p1;
+    sndStreamARAMUpdate(s->stid, s->half ? s->x18 / 2 : 0, s->x18 / 2, 0, 0);
+    ch->busy[s->half] = 0;
+    s->half ^= 1;
 }
 }
 }

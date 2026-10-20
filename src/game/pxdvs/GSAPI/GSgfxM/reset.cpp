@@ -295,13 +295,14 @@ static u8 _resetDoFade(void* arg) {
     f32 w = 640.0f;
     f32 h = 480.0f;
     GSgfxVertex3f(zero, zero, zero);
-    GSgfxColor4u8(0, 0, 0, _resetFadeAlpha);
+    s32 alpha = _resetFadeAlpha;
+    GSgfxColor4u8(0, 0, 0, alpha);
     GSgfxVertex3f(w, zero, zero);
-    GSgfxColor4u8(0, 0, 0, _resetFadeAlpha);
+    GSgfxColor4u8(0, 0, 0, alpha);
     GSgfxVertex3f(zero, h, zero);
-    GSgfxColor4u8(0, 0, 0, _resetFadeAlpha);
+    GSgfxColor4u8(0, 0, 0, alpha);
     GSgfxVertex3f(w, h, zero);
-    GSgfxColor4u8(0, 0, 0, _resetFadeAlpha);
+    GSgfxColor4u8(0, 0, 0, alpha);
     layer->endSurface();
 
     if (_resetFadeAlpha == 0xFF) {
@@ -309,7 +310,8 @@ static u8 _resetDoFade(void* arg) {
         return 1;
     }
     f32 dt = GSgfxVideoGetLastRealRenderTime();
-    _resetFadeAlpha = (s32)(dt * (f32)(256 / GSgfxVideoGetVsyncRate()) + (f32)_resetFadeAlpha);
+    s32 rate = 256 / GSgfxVideoGetVsyncRate();
+    _resetFadeAlpha += rate * dt;
     if (_resetFadeAlpha > 0xFF) {
         _resetFadeAlpha = 0xFF;
     }

@@ -68,9 +68,11 @@ static s32 _menuCB_BattleResultTaisen(_MENUCBWORK* work) {
     static s32 msgB[2] = {0x4300, 0x4303};
     s32 v = -1;
     s32 result = fightGetFightResultId();
+    s32 state;
     u8 done = 0;
+    s32 busy;
     s32 ret;
-    u16 place;
+    s32 place;
     menuSetEnablePort(0);
     for (;;) {
         switch ((u16)result) {
@@ -211,44 +213,44 @@ static s32 _menuCB_BattleResultTaisen(_MENUCBWORK* work) {
         }
         winMsgClose(1);
         if (ret == -1 || ret == 0xA9) {
-            result = 0;
-            done = 1;
-            place = _menuCBResultGetHomePlace();
-            while (done) {
-                switch (result) {
+            state = 0;
+            busy = 1;
+            place = (u16)_menuCBResultGetHomePlace();
+            do {
+                switch (state) {
                 case 0:
                     if (place == 0) {
-                        result = 1;
+                        state = 1;
                     } else {
-                        result = 2;
+                        state = 2;
                     }
                     break;
                 case 1:
                     winMsgOpen(2, 0x442C, 1, 1);
                     winMsgClose(1);
-                    result = 4;
+                    state = 4;
                     break;
                 case 2:
                     winMsgOpen(2, 0x442D, 1, 1);
                     _menuCBResultCheckController1();
                     winMsgClose(1);
                     if (_menuCBResultCheckController1sub()) {
-                        result = 4;
+                        state = 4;
                     } else {
-                        result = 3;
+                        state = 3;
                     }
                     break;
                 case 3:
                     winMsgOpen(2, 0x4436, 1, 1);
                     _menuCBResultCheckController1();
                     winMsgClose(1);
-                    result = 4;
+                    state = 4;
                     break;
                 case 4:
-                    done = 0;
+                    busy = 0;
                     break;
                 }
-            }
+            } while (busy);
         }
         menuCBBattleStartResID = 0;
         return ret;

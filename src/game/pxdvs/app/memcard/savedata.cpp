@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#pragma pool_strings off
 // ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -35,6 +36,7 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
+typedef u16 char16;
 struct CReliveHall;
 struct Gamedata;
 struct Hero;
@@ -63,7 +65,20 @@ struct Hero {
     s16 pokemonGet(HeroPokemonGetParam*, bool);
 };
 struct HeroPokemonGetParam {
-    u8 _draft[1];
+    u8 trainerSexID;
+    u8 catchLevel;
+    u16 pokemonDataID;
+    u16 shadowPokemonDataID;
+    u16 friendLevel;
+    u16 move1;
+    u16 move2;
+    u16 move3;
+    u16 move4;
+    u32 trainerRnd;
+    char16* trainerNamePtr;
+    char16* nicknamePtr;
+    u32 catchFloorID;
+    u32 exp;
 };
 struct Mailbox {
     u8 _draft[1];
@@ -79,31 +94,31 @@ struct Savedata {
 };
 
 extern "C" {
-s32 GScharMakeFromSJIS(s32*, s32*);
+s32 GScharMakeFromSJIS(char16*, const char*);
 void GSflagClear(u32 level);
 void GSflagOn(u32 id);
-s32 darkpokemonValInit();
-void exribbonInit(u8* exribbon);
+s32 darkpokemonValInit(void* dark);
+void exribbonInit(void* exribbon);
 void gamedataCreate(Gamedata* ptr, u8 ver, u8 gen, u8 area, u8 langarea);
 void gamedataInit(void* ptr);
 void gamedatasaveSetStatus(Gamedata* ptr, u32 kind, u32 value);
-u16* heroBiosGetNamePtr(Hero* hero);
+char16* heroBiosGetNamePtr(Hero* hero);
 u32 heroBiosGetRnd(Hero* hero);
 u8 heroBiosGetSexDataId(Hero* hero);
-void heroCreate(Hero* hero, u32 name, u8 sex);
-void heroInit(Hero* hero);
+void heroCreate(Hero* hero, char16* name, u8 sex);
+void heroInit(void* hero);
 s32 heroItemAddItemDataId(Hero* hero, u32 itemID, u32 amount, u32 index);
 void heroSetStatus(Hero* hero, u32 selector, u32 value);
-void mailInitMailbox(Mailbox* box);
+void mailInitMailbox(void* box);
 void* memcpy(void* dst, const void* src, size_t n);
-void memoInit(Memo* memo);
+void memoInit(void* memo);
 void* memset(void* dst, int val, size_t n);
-s32 menuCB_RULE_INIT();
-s32 pcboxInit();
+s32 menuCB_RULE_INIT(void* rule);
+s32 pcboxInit(void* pcbox);
 s32 pokecoloGetCountryCode(void);
 s32 pokecoloGetLanguage(void);
 s32 pokecoloGetRomVersion(void);
-void pokemonBiosSetTokuseiFlag(Pokemon* poke, bool data);
+void pokemonBiosSetTokuseiFlag(Pokemon* poke, u8 data);
 u32 pokemonCreateRndFit(Pokemon* pokemon, s8 sex, s8 seikaku, s8 rare, u32 trainerRnd);
 void pokemonResetBasisStatus(Pokemon* pokemon);
 void pokemon_SetRnd(Pokemon* poke, u32 data);
@@ -129,7 +144,7 @@ void* savedataBiosGetYobi3Ptr(Savedata* savedata);
 void* savedataBiosGetYobi4Ptr(Savedata* savedata);
 void* savedataGetStatus(void* save, s32 kind);
 void savedataSetBattleDiskSellOut(u32 p0);
-s32 sodateyaInit();
+s32 sodateyaInit(void* sodateya);
 extern s32 jtbl_2134;
 }
 
@@ -137,146 +152,143 @@ extern s32 jtbl_2134;
 
 
 extern "C" {
-void savedataCreate(u32 p0, s32 *p1);
+void savedataCreate(void* save, char16* name);
 s32 savedataGetBattleDiskSellOut(u32 p0);
-void savedataInit(u32 p0);
+void savedataInit(void* save);
 extern s32 jtbl_2059;
 }
 
-void savedataSetBattleDiskSellOut(u32 p0) {
-    s32 temp_r6;
-    u8 *temp_r3;
-
-    temp_r3 = (unsigned char *)(savedataGetStatus((void*)(NULL), 0x18));
-    temp_r6 = (p0 >> 3U) & 0x1FFFFFFC;
-    *(temp_r3 + temp_r6) = *(temp_r3 + temp_r6) | (1 << (p0 & 0x1F));
+void savedataSetBattleDiskSellOut(u32 id) {
+    u32* bits = (u32*)savedataGetStatus(NULL, 0x18);
+    bits[id >> 5] |= 1 << (id & 0x1F);
 }
 extern "C" {
 #pragma push
 #pragma dont_inline on
-s32 savedataGetBattleDiskSellOut(u32 p0) { return 0; }
-extern "C" {
-void savedataCreate(u32 p0, s32 *p1) {
-    s32 sp40;
-    s32 sp3C;
-    s32 sp38;
-    u16 *sp30;
-    u32 sp2C;
-    u16 sp2A;
-    volatile u16 sp28;
-    volatile u16 sp26;
-    u16 sp24;
-    u16 sp22;
-    u16 sp20;
-    u16 sp1E;
-    u8 sp1D;
-    u8 sp1C;
-    s32 sp8;
-    Gamedata *temp_r30;
-    s32 var_r28_2;
-    s32 *var_r29;
-    s32 *var_r30_2;
-    Pokemon *temp_r29;
-    s32 *var_r28;
-    s32 temp_r0;
-    s32 temp_r3;
-    s32 temp_r6;
-    Hero *temp_r31;
-    s32 var_r30;
+s32 savedataGetBattleDiskSellOut(u32 id) {
+    u32* bits = (u32*)savedataGetStatus(NULL, 0x18);
+    return (bits[id >> 5] & (1 << (id & 0x1F))) != 0;
+}
+u8 pokecolo_savedata[0x287D0] __attribute__((aligned(32)));
+void* now_savedata_ptr;
 
-    var_r28 = p1;
-    memset((void*)(&sp1C), 0, 0x24U);
-    savedataInit(p0);
-    temp_r30 = (Gamedata *)(savedataGetStatus((void*)((u8 *) p0), 1));
-    temp_r3 = pokecoloGetCountryCode();
-    switch (temp_r3) {                              /* irregular */
+// One gift Pokemon of the Colosseum-save starter party (romVersion 1).
+struct StartPokemon {
+    u8 level;
+    u16 species;
+    u16 shadow;
+    u16 friendLevel;
+    u16 moves[4];
+    u32 floor;
+    u32 exp;
+    s8 sex;
+    s8 seikaku;
+    u8 tokusei;
+};
+
+extern "C" {
+void savedataCreate(void* save, char16* name) {
+    StartPokemon* sp2;
+    s32 i;
+    Gamedata* game;
+    Pokemon* pokemon;
+    char16 defName[10];
+    Hero* hero;
+    HeroPokemonGetParam param;
+    StartPokemon* sp;
+    s32 j;
+
+    memset(&param, 0, sizeof(param));
+    savedataInit(save);
+    game = (Gamedata*)savedataGetStatus(save, 1);
+    switch (pokecoloGetCountryCode()) {
     case 0:
-        gamedataCreate((Gamedata*)(temp_r30), 0xBU, 3U, 1U, 1U);
+        gamedataCreate(game, 0xB, 3, 1, 1);
         break;
     case 1:
-        gamedataCreate((Gamedata*)(temp_r30), 0xBU, 3U, 2U, 2U);
+        gamedataCreate(game, 0xB, 3, 2, 2);
         break;
     case 2:
-        gamedataCreate((Gamedata*)(temp_r30), 0xBU, 3U, 3U, 8U);
+        gamedataCreate(game, 0xB, 3, 3, 8);
         break;
     }
-    gamedatasaveSetStatus((Gamedata*)(temp_r30), 0xBU, pokecoloGetLanguage());
-    temp_r31 = (Hero *)(savedataGetStatus((void*)((u8 *) p0), 2));
-    if (var_r28 == NULL) {
-        GScharMakeFromSJIS(&sp8, &jtbl_2134);
-        var_r28 = &sp8;
+    gamedatasaveSetStatus(game, 0xB, pokecoloGetLanguage());
+    hero = (Hero*)savedataGetStatus(save, 2);
+    if (name == 0) {
+        GScharMakeFromSJIS(defName, "\x81\x40");
+        name = defName;
     }
-    heroCreate((Hero*)(temp_r31), (u32) var_r28, 0U);
+    heroCreate(hero, name, 0);
     if (pokecoloGetRomVersion() == 1) {
-        M2C_STRUCT_COPY((s32) &sp3C + 4, (s32) (&jtbl_2059 - 4) + 4, 0x70);
-        gamedatasaveSetStatus((Gamedata*)(temp_r30), 5U, 0x8AU);
-        gamedatasaveSetStatus((Gamedata*)(temp_r30), 7U, 0x8FU);
-        gamedatasaveSetStatus((Gamedata*)(temp_r30), 8U, 2U);
-        var_r29 = &sp40;
-        var_r30 = 0;
-        do {
-            sp1E = M2C_FIELD(var_r29, u16 *, 2);
-            sp20 = M2C_FIELD(var_r29, u16 *, 4);
-            sp1D = M2C_FIELD(var_r29, u8 *, 0);
-            sp22 = M2C_FIELD(var_r29, u16 *, 6);
-            sp24 = M2C_FIELD(var_r29, u16 *, 8);
-            sp26 = M2C_FIELD(var_r29, u16 *, 0xA);
-            sp28 = M2C_FIELD(var_r29, u16 *, 0xC);
-            sp2A = M2C_FIELD(var_r29, u16 *, 0xE);
-            sp1C = heroBiosGetSexDataId((Hero*)(temp_r31));
-            sp2C = heroBiosGetRnd((Hero*)(temp_r31));
-            temp_r6 = M2C_FIELD(var_r29, s32 *, 0x10);
-            temp_r0 = M2C_FIELD(var_r29, s32 *, 0x14);
-            sp30 = heroBiosGetNamePtr((Hero*)(temp_r31));
-            var_r29 += 0x1C;
-            sp38 = temp_r6;
-            sp3C = temp_r0;
-            ((Hero*)(temp_r31))->pokemonGet((HeroPokemonGetParam*)((HeroPokemonGetParam *) &sp1C), 1U);
-            var_r30 += 1;
-        } while (var_r30 < 4);
-        var_r30_2 = &sp40;
-        var_r28_2 = 0;
-        do {
-            temp_r29 = ((Hero*)(temp_r31))->getPokemon(var_r28_2);
-            pokemon_SetRnd((Pokemon*)(temp_r29), pokemonCreateRndFit((Pokemon*)(temp_r29), (s8) M2C_FIELD(var_r30_2, u8 *, 0x18), (s8) M2C_FIELD(var_r30_2, u8 *, 0x19), 0, heroBiosGetRnd((Hero*)(temp_r31))));
-            pokemonBiosSetTokuseiFlag((Pokemon*)(temp_r29), M2C_FIELD(var_r30_2, u8 *, 0x1A));
-            pokemonResetBasisStatus((Pokemon*)(temp_r29));
-            var_r28_2 += 1;
-            var_r30_2 += 0x1C;
-        } while (var_r28_2 < 4);
-        heroSetStatus((Hero*)(temp_r31), 0xCU, 0U);
-        heroItemAddItemDataId((Hero*)(temp_r31), 2U, 0x14U, -1U);
-        heroItemAddItemDataId((Hero*)(temp_r31), 0x15U, 0x14U, -1U);
-        heroItemAddItemDataId((Hero*)(temp_r31), 0x17U, 0xAU, -1U);
-        heroItemAddItemDataId((Hero*)(temp_r31), 0x18U, 5U, -1U);
-        ((Hero*)(temp_r31))->setBattleResumeFloorID(0x47U);
-        ((Hero*)(temp_r31))->setBattleResumeFloorIndex(0U);
-        ((Hero*)(temp_r31))->setHeroStyle(2U, 0U);
-        ((Hero*)(temp_r31))->setFollowerID(0U);
+        StartPokemon party[4] = {
+            {0x28, 0x2F, 0, 0, {0x93, 0xCA, 0xA, 0x4A}, 0, 0xFA00, 0, 0, 0},
+            {0x28, 0x189, 0, 0, {0x5D, 0x15F, 0xF7, 0x15B}, 0, 0x13880, 1, 0x12, 0},
+            {0x28, 0x65, 0, 0, {0xD1, 0x56, 0x81, 0x67}, 0, 0xFA00, 0, 0xC, 0},
+            {0x28, 0x155, 0, 0, {0x3E, 0x39, 0x22, 0x2D}, 0, 0xDD54, 1, 0x12, 0},
+        };
+        gamedatasaveSetStatus(game, 5, 0x8A);
+        gamedatasaveSetStatus(game, 7, 0x8F);
+        gamedatasaveSetStatus(game, 8, 2);
+        sp = party;
+        for (i = 0; i < 4; i++) {
+            param.pokemonDataID = sp->species;
+            param.shadowPokemonDataID = sp->shadow;
+            param.catchLevel = sp->level;
+            param.friendLevel = sp->friendLevel;
+            param.move1 = sp->moves[0];
+            param.move2 = sp->moves[1];
+            param.move3 = sp->moves[2];
+            param.move4 = sp->moves[3];
+            param.trainerSexID = heroBiosGetSexDataId(hero);
+            param.trainerRnd = heroBiosGetRnd(hero);
+            param.trainerNamePtr = heroBiosGetNamePtr(hero);
+            param.catchFloorID = sp->floor;
+            param.exp = sp->exp;
+            sp++;
+            hero->pokemonGet(&param, 1);
+        }
+        sp2 = party;
+        for (j = 0; j < 4; j++) {
+            pokemon = hero->getPokemon(j);
+            u32 rnd = pokemonCreateRndFit(pokemon, sp2->sex, sp2->seikaku, 0, heroBiosGetRnd(hero));
+            pokemon_SetRnd(pokemon, rnd);
+            pokemonBiosSetTokuseiFlag(pokemon, sp2->tokusei);
+            pokemonResetBasisStatus(pokemon);
+            sp2++;
+        }
+        heroSetStatus(hero, 0xC, 0);
+        heroItemAddItemDataId(hero, 2, 0x14, -1);
+        heroItemAddItemDataId(hero, 0x15, 0x14, -1);
+        heroItemAddItemDataId(hero, 0x17, 0xA, -1);
+        heroItemAddItemDataId(hero, 0x18, 5, -1);
+        hero->setBattleResumeFloorID(0x47);
+        hero->setBattleResumeFloorIndex(0);
+        hero->setHeroStyle(2, 0);
+        hero->setFollowerID(0);
         return;
     }
-    gamedatasaveSetStatus((Gamedata*)(temp_r30), 5U, 0x8AU);
-    gamedatasaveSetStatus((Gamedata*)(temp_r30), 7U, 0x8FU);
-    gamedatasaveSetStatus((Gamedata*)(temp_r30), 8U, 2U);
-    sp1E = 0x85;
-    sp20 = 0;
-    sp1D = 0xA;
-    sp22 = 0xD7;
-    sp24 = 0x21;
-    sp26 = 0x27;
-    sp28 = 0x2C;
-    sp2A = 0x1C;
-    sp1C = heroBiosGetSexDataId((Hero*)(temp_r31));
-    sp2C = heroBiosGetRnd((Hero*)(temp_r31));
-    sp30 = heroBiosGetNamePtr((Hero*)(temp_r31));
-    sp38 = 0;
-    sp3C = 0x4E2;
-    ((Hero*)(temp_r31))->pokemonGet((HeroPokemonGetParam*)((HeroPokemonGetParam *) &sp1C), 1U);
-    heroSetStatus((Hero*)(temp_r31), 0xCU, 0x1388U);
-    ((Hero*)(temp_r31))->setBattleResumeFloorID(0x8AU);
-    ((Hero*)(temp_r31))->setBattleResumeFloorIndex(2U);
-    ((Hero*)(temp_r31))->setHeroStyle(0U, 0U);
-    ((Hero*)(temp_r31))->setFollowerID(0U);
+    gamedatasaveSetStatus(game, 5, 0x8A);
+    gamedatasaveSetStatus(game, 7, 0x8F);
+    gamedatasaveSetStatus(game, 8, 2);
+    param.pokemonDataID = 0x85;
+    param.shadowPokemonDataID = 0;
+    param.catchLevel = 0xA;
+    param.friendLevel = 0xD7;
+    param.move1 = 0x21;
+    param.move2 = 0x27;
+    param.move3 = 0x2C;
+    param.move4 = 0x1C;
+    param.trainerSexID = heroBiosGetSexDataId(hero);
+    param.trainerRnd = heroBiosGetRnd(hero);
+    param.trainerNamePtr = heroBiosGetNamePtr(hero);
+    param.catchFloorID = 0;
+    param.exp = 0x4E2;
+    hero->pokemonGet(&param, 1);
+    heroSetStatus(hero, 0xC, 0x1388);
+    hero->setBattleResumeFloorID(0x8A);
+    hero->setBattleResumeFloorIndex(2);
+    hero->setHeroStyle(0, 0);
+    hero->setFollowerID(0);
 }
 }
 
@@ -285,6 +297,37 @@ void savedataCreate(u32 p0, s32 *p1) {
 
 }
 
+extern "C" {
+void savedataInit(void* save) {
+    u8 game[0x88];
+    u8 rule[0x364];
+
+    memcpy(game, savedataGetStatus(save, 1), 0x88);
+    memcpy(rule, savedataGetStatus(save, 0xE), 0x364);
+    memset(savedataGetStatus(0, 0), 0, 0x27FD0);
+    memcpy(savedataGetStatus(save, 1), game, 0x88);
+    memcpy(savedataGetStatus(save, 0xE), rule, 0x364);
+    gamedataInit(savedataGetStatus(save, 1));
+    heroInit(savedataGetStatus(save, 2));
+    pcboxInit(savedataGetStatus(save, 3));
+    if (save == 0 || save == savedataGetStatus(0, 0)) {
+        GSflagClear(1);
+        GSflagClear(2);
+        GSflagClear(3);
+        GSflagOn(0x3DE);
+    }
+    memset(savedataGetStatus(save, 0x18), 0, (u32)savedataGetStatus(save, 0x19) * 4);
+    memset(savedataGetStatus(save, 0x1B), 0, (u32)savedataGetStatus(save, 0x1C) * 4);
+    mailInitMailbox(savedataGetStatus(save, 0xA));
+    sodateyaInit(savedataGetStatus(save, 0xB));
+    menuCB_RULE_INIT(savedataGetStatus(save, 0xE));
+    memoInit(savedataGetStatus(save, 0xC));
+    darkpokemonValInit(savedataGetStatus(save, 0xF));
+    exribbonInit(savedataGetStatus(save, 0x10));
+    ((CReliveHall*)savedataGetStatus(save, 0x15))->init();
+}
+
+}
 extern "C" {
 extern "C" {
 extern "C" {

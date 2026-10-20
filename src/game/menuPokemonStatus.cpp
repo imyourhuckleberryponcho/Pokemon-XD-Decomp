@@ -158,7 +158,7 @@ void menuModelRender(MENU_MODEL*);
 void menuModelSetAngle(MENU_MODEL*, f32*);
 void menuModelSetSize(MENU_MODEL*, s16, s16, s16, s16);
 s32 menuPokemonGetJoutaiSpriteID(Pokemon*, s32);
-s32 menuSubGetPokemonSexForDisp(Pokemon*);
+u8 menuSubGetPokemonSexForDisp(Pokemon*);
 u8 pokemonBiosGetCatchBallId(Pokemon*);
 u8 pokemonCheckRare(Pokemon*);
 void* pokemonDataBiosGetPtr(u16);
@@ -546,6 +546,7 @@ bool menuPokemonStatusCtrl(tagWINDOW_WORK* win) {
 
 extern "C" {
 void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
+    s8 next;
     s32 dir = 0;
     s8 limit;
     u32 key;
@@ -593,7 +594,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
             st->state = 5;
             break;
         }
-        if (keys & 1) {
+        if ((u16)keys & 1) {
             dir = 1;
         } else if (keys & 2) {
             dir = 2;
@@ -610,8 +611,9 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
                         }
                     }
                     st->pokemon = next;
-                    u8* slot = (u8*)&_menuStatus;
-                    for (int i = 0; i < 4; i++, slot++) {
+                    int i;
+                    u8* slot;
+                    for (i = 0, slot = (u8*)&_menuStatus; i < 4; i++, slot++) {
                         slot[0x44] = 0;
                         if (next->isDarkPokemon()) {
                             DarkPokemon* dp = next->getDarkPokemon();
@@ -658,7 +660,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
         u16 keys = key;
         MenuStatus* ms = &_menuStatus;
         s8 pos = ms->cursor;
-        if (keys & 1) {
+        if ((u16)keys & 1) {
             pos--;
         } else if (keys & 2) {
             pos++;
@@ -678,13 +680,13 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
         break;
     }
     case 6: {
-        u16 keys = key;
+        int r;
         s8 cur = st->f1a;
         int row = cur % 9;
         int col = cur / 9;
         int c;
-        int r;
-        if (keys & 1) {
+        u16 keys = key;
+        if ((u16)keys & 1) {
             c = col;
             while (c-- > 0) {
                 r = row;
@@ -743,7 +745,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
                 }
             }
         }
-        s8 next = row + col * 9;
+        next = row + col * 9;
         if (next != cur) {
             menuPlaySe(win->menuId, 1);
             st->f1a = next;
@@ -1052,7 +1054,6 @@ void menuPokemonStatusDrawTitle(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     case 0x81E:
     case 0x264: {
         u32 sexMsg;
-        bool sex;
         if (sprite->itemId == 0x264) {
             name = (u32)GSmsgGetGSchar(pokemonGetStatus(0, (u16)pokemonGetStatus(pk, 0, 0x6E, 0), 1, 0));
         } else {
@@ -1064,8 +1065,7 @@ void menuPokemonStatusDrawTitle(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         msgctrlSetValue(0x37, name);
         GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color, 0x4277);
         GSmsgGetRect(0x4277);
-        sex = menuSubGetPokemonSexForDisp(pk);
-        switch (sex) {
+        switch (menuSubGetPokemonSexForDisp(pk)) {
         case 0:
             sexMsg = 0x9C5;
             break;
@@ -1849,7 +1849,7 @@ void menuPokemonStatusDrawWaza(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     case 0x1F7:
         n++;
     case 0x1F8: {
-        u16 wid = _menuPokemonStatusGetWazaDataID(pk, (s8)_menuStatus.cursor);
+        u16 wid = _menuPokemonStatusGetWazaDataID(pk, _menuStatus.cursor);
         switch (wazaDB_GetCompatible(wid)) {
         case 1: {
             u16 id;
@@ -1950,12 +1950,12 @@ void _menuPokemonStatusMakeRibbon(Pokemon* pokemon, RIBBON_WORK* work) {
         { 0xA8, 0x19, 1 }, { 0xA9, 0x1A, 1 }, { 0xAA, 0x1B, 1 }, { 0xAB, 0x1C, 1 },
         { 0xAC, 0x1D, 1 }, { 0xAD, 0x1E, 1 }, { 0xAE, 0x1F, 1 },
     };
-    int i;
-    int j;
+    u32 k;
+    s32 j;
     int n;
     int idx = 0;
     int count;
-    u32 k;
+    int i;
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 9; j++) {
             work->grid[j][i] = -1;
@@ -2138,7 +2138,7 @@ void menuPokemonStatusDrawRibbon(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         if (idx < 0) {
             break;
         }
-        s32 col = idx % 9;
+        volatile s32 col = idx % 9;
         windowDrawSprite(col * 30, (idx / 9) * 0x34, win, 0x366, 0, winSpriteGetLayerID(win, sprite));
         break;
     }

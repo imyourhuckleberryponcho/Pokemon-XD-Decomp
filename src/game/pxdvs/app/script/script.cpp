@@ -40,7 +40,7 @@ struct Pokemon {
 struct Hero {
     s32 getFollowerResID();
     u32 getHeroRnd() const;
-    s32 pokemonGet(HeroPokemonGetParam*, bool);
+    s16 pokemonGet(HeroPokemonGetParam*, bool);
     Pokemon* getPokemon(long, bool&);
     u8 getMeetDarkPokemonCount() const;
     void setMeetDarkPokemonCount(u8);
@@ -119,12 +119,12 @@ u8 pokemonBiosGetDarkFlag(Pokemon*);
 f32 pokemonGetDp(Pokemon*);
 s32 pokemonGetStatus(Pokemon*, s32, s32, s32);
 void etctoolSetPokemonNakigoe(u16);
-s32 heroPokemonGetBlacky(Hero*, s32);
-s32 heroPokemonGetEifie(Hero*, s32);
-s32 heroPokemonGetPrasle(Hero*, s32);
-s32 heroPokemonGetHouou(Hero*, s32);
-s32 heroPokemonGetPikachu(Hero*, s32);
-s32 heroPokemonGetCelebi(Hero*, s32);
+s16 heroPokemonGetBlacky(Hero*, s32);
+s16 heroPokemonGetEifie(Hero*, s32);
+s16 heroPokemonGetPrasle(Hero*, s32);
+s16 heroPokemonGetHouou(Hero*, s32);
+s16 heroPokemonGetPikachu(Hero*, s32);
+s16 heroPokemonGetCelebi(Hero*, s32);
 void* memset(void*, int, u32);
 u8 heroBiosGetSexDataId(Hero*);
 u32 heroBiosGetRnd(Hero*);
@@ -214,7 +214,7 @@ void peopleSetRotXYZ(s32, s32, f32, f32, f32);
 void peopleSetPos(s32, s32, GSvec*);
 void peopleSetSpeedRate(s32, s32, f32);
 void peopleWalkTo(s32, s32, s32, GSvec*);
-u8 peopleMoveCheck(s32, s32, s32);
+u8 peopleMoveCheck(u32, s32, s32);
 void peopleRotateToAngle(s32, s32, f32, f32);
 void peopleDetach(s32, s32, s32);
 void GSsndPlayNow(s32);
@@ -281,9 +281,9 @@ void peopleGetNeckPos(s32, s32, GSvec*);
 void peopleRotateToXYZ(s32, s32, f32, f32, f32, f32);
 
 static s32 _scriptEventColID = -1;
-static glowEffect* m_glow;
 static GSvec _vHizukiWalkkPos[3];
 static s32 _vHizukiWalkPosCount;
+static glowEffect* m_glow;
 void GSflagSet(s32, s32);
 u32 GSflagGet(s32);
 
@@ -399,7 +399,7 @@ void scriptPlayPokemonNakigoe(u16 id)
     etctoolSetPokemonNakigoe(id);
 }
 
-s32 scriptCatchPokemon(s32 kind)
+s16 scriptCatchPokemon(u8 kind)
 {
     static u16 rnd_status_id[6] = { 0x93, 0x94, 0x95, 0x96, 0x97, 0x98 };
     char16 nickname[0x20];
@@ -522,7 +522,7 @@ s32 scriptCatchPokemon(s32 kind)
     param.exp = pokemonGrowDataBiosGetExp(grow, param.catchLevel);
     if (param.pokemonDataID) {
         param.trainerRnd = (hero->getHeroRnd() & 0xFFFF0000) | (param.trainerRnd & 0xFFFF);
-        s32 slot = hero->pokemonGet(&param, true);
+        s16 slot = hero->pokemonGet(&param, true);
         if (param.shadowPokemonDataID) {
             bool found;
             Pokemon* pokemon = hero->getPokemon(slot, found);
@@ -606,7 +606,6 @@ s32 scriptCheckTemochiPokemon(Hero* hero)
     u8 used[6];
     int i;
     int j;
-    int k;
     Pokemon* pokemon;
     for (i = 0; i < 6; i++) {
         used[i] = 0;
@@ -632,9 +631,9 @@ s32 scriptCheckTemochiPokemon(Hero* hero)
         }
         used[j] = 1;
     }
-    for (k = 0; k < 6; k++) {
-        if (used[k] == 0) {
-            pokemon = (Pokemon*)heroGetStatus(hero, 3, k);
+    for (i = 0; i < 6; i++) {
+        if (used[i] == 0) {
+            pokemon = (Pokemon*)heroGetStatus(hero, 3, i);
             if (pokemon && pokemonCheckValid(pokemon)) {
                 return 1;
             }
@@ -1302,30 +1301,27 @@ static u32 _searchPeopleColiInfo(GSvec* center, f32 radius, PeopleRangeInfo_t* i
 
 static u8 _checkCrossPeople(GSvec* from, GSvec* to, GSvec* lineStart, GSvec* lineEnd)
 {
-    GSvec p2;
-    GSvec p1;
-    GSvec p0;
-    GSvec dirB;
-    GSvec dirA;
+    GSvec pos[3];
+    GSvec dir[2];
     GSvec cross;
     GSvec normal;
     f32 t;
-    p0.x = from->x;
-    p0.y = from->y;
-    p0.z = from->z;
-    p1.x = to->x;
-    p1.y = to->y;
-    p1.z = to->z;
-    p2.x = p1.x;
-    p2.y = p1.y;
-    p2.z = p1.z;
-    p2.y = 1.0f;
-    PSVECSubtract(&p0, &p1, &dirA);
-    PSVECNormalize(&dirA, &dirA);
-    PSVECSubtract(&p0, &p2, &dirB);
-    PSVECNormalize(&dirB, &dirB);
-    PSVECCrossProduct(&dirA, &dirB, &normal);
-    if (GScolsys2UtilGetCpPlaneLine(&cross, &t, &normal, &p0, lineStart, lineEnd) == 0) {
+    pos[0].x = from->x;
+    pos[0].y = from->y;
+    pos[0].z = from->z;
+    pos[1].x = to->x;
+    pos[1].y = to->y;
+    pos[1].z = to->z;
+    pos[2].x = pos[1].x;
+    pos[2].y = pos[1].y;
+    pos[2].z = pos[1].z;
+    pos[2].y = 1.0f;
+    PSVECSubtract(&pos[0], &pos[1], &dir[0]);
+    PSVECNormalize(&dir[0], &dir[0]);
+    PSVECSubtract(&pos[0], &pos[2], &dir[1]);
+    PSVECNormalize(&dir[1], &dir[1]);
+    PSVECCrossProduct(&dir[0], &dir[1], &normal);
+    if (GScolsys2UtilGetCpPlaneLine(&cross, &t, &normal, &pos[0], lineStart, lineEnd) == 0) {
         return 0;
     }
     if (t < 0.0f || t > 1.0f) {

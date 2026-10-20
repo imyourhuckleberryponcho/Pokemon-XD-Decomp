@@ -219,10 +219,10 @@ void GSinputResetRightSmoothing(s32 pad, s8 x, s8 y)
 {
     InputDevice* d = _inputFindDevice(pad);
     if (d) {
-        d->prevRX = x;
-        d->prevRY = y;
         d->smoothRX = x;
+        d->prevRY = y;
         d->smoothRY = y;
+        d->prevRX = x;
     }
 }
 
@@ -230,10 +230,10 @@ void GSinputResetLeftSmoothing(s32 pad, s8 x, s8 y)
 {
     InputDevice* d = _inputFindDevice(pad);
     if (d) {
-        d->prevLX = x;
-        d->prevLY = y;
         d->smoothLX = x;
+        d->prevLY = y;
         d->smoothLY = y;
+        d->prevLX = x;
     }
 }
 
@@ -547,8 +547,8 @@ static void _inputDoSmoothing(InputDevice* d, s8 tx, s8 ty, u8* px, u8* py, f32*
             *dx = ((f32) tx - *sx) / (f32) d->smoothRate;
             *dy = ((f32) ty - *sy) / (f32) d->smoothRate;
         } else if (d->smoothFunc == 1) {
-            *dx = ((f32) tx - *sx) / ((f32) d->smoothRate * 0.25f);
-            *dy = ((f32) ty - *sy) / ((f32) d->smoothRate * 0.25f);
+            *dx = ((f32) tx - *sx) / ((f32) d->smoothRate / 4.0f);
+            *dy = ((f32) ty - *sy) / ((f32) d->smoothRate / 4.0f);
         }
         d->smoothCount = 0;
     }

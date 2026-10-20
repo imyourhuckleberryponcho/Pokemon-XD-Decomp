@@ -425,7 +425,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
         if (d->flags & 0x10) {
             if (d->flags & 0x20) {
                 GSvec pts[21];
-                bool hits[21];
+                bool hits[57];
                 f32 step = 0.2f * d->sunRadius;
                 u16 j;
                 for (j = 0; j < 5; j++) {

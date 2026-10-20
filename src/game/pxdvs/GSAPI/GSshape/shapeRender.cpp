@@ -517,6 +517,7 @@ void GsShapeRender::FreeShapeRender() {
 }
 
 bool GsShapeRender::LoadShapeRender(void* file) {
+    tagGsFilePrimObjectEntry* entry;
     u8* base = (u8*)file;
     loaded = 0;
     FreeShapeRender();
@@ -541,7 +542,7 @@ bool GsShapeRender::LoadShapeRender(void* file) {
         GsKeyObject* key = &keys[i];
         key->entry = (tagGsFilePrimObjectEntry*)(base + keyOffsets[i]);
         key->frames = (tagGsFilePrimKeyFrame**)(base + key->entry->frameOffset);
-        tagGsFilePrimObjectEntry* entry = key->entry;
+        entry = key->entry;
         for (s32 j = 0; j < entry->count; j++) {
             tagGsFilePrimKeyFrame* kf = (tagGsFilePrimKeyFrame*)(base + (u32)key->frames[j]);
             key->frames[j] = kf;
@@ -621,8 +622,9 @@ bool GsShapeRender::LoadShapeRender(void* file) {
     u32* shapeOffsets = (u32*)(base + *(u32*)(shapeSec + 8));
     shapeCount = *(u32*)(shapeSec + 4);
     shapes = (GsShapeObject*)GSmemAlloc(shapeCount * 0x8A4);
-    bool needRefract = false;
-    for (s32 i = 0; i < shapeCount; i++) {
+    s32 i;
+    bool needRefract;
+    for (i = 0, needRefract = false; i < shapeCount; i++) {
         u8* sd = base + shapeOffsets[i];
         shapes[i].data = (GsShapeData*)sd;
         *(u32*)(sd + 0x10) += (u32)base;
@@ -657,9 +659,9 @@ bool GsShapeRender::LoadShapeRender(void* file) {
         GStextureSetWrap(texes[i].tex, 1, 1);
     }
     for (s32 i = 0; i < shapeCount; i++) {
-        GsShapeObject* s = &shapes[i];
-        s32 n = 0;
         s32 k = 0;
+        s32 n = 0;
+        GsShapeObject* s = &shapes[i];
         for (k = 0; k < s->data->texCount; k++) {
             n++;
             if (k < 2) {
@@ -686,8 +688,8 @@ bool GsShapeRender::LoadShapeRender(void* file) {
         s->texArray[1] = 0;
         s->texArray[2] = 0;
         s->texArray[3] = 0;
-        GSgfxVFCreate((GSgfxVF*)s->vf);
         GSgfxVFInit((GSgfxVF*)s->vf, attrs[3], attrs[2], attrs[1], attrs[0]);
+        GSgfxVFCreate((GSgfxVF*)s->vf);
         GSgfxVFSetElement((GSgfxVF*)s->vf, 9, 1, 4, 0);
         GSgfxVFSetElement((GSgfxVF*)s->vf, 0xB, 1, 5, 0);
         for (s32 k = 0; k < d->texCount; k++) {
@@ -767,6 +769,8 @@ void GsShapeRender::Update(f32 time, s16 id) {
         }
     }
     for (s32 i = 0; i < keyCount; i++) {
+        f32 ox;
+        GsShapeTexInfo* info;
         GSmtx* m;
         GsKeyObject* key = &keys[i];
         tagGsFilePrimObjectEntry* entry = key->entry;
@@ -775,7 +779,7 @@ void GsShapeRender::Update(f32 time, s16 id) {
         tagGsFilePrimKeyFrame* a;
         tagGsFilePrimKeyFrame* b;
         f32 t;
-        if (data->enabled == 0 || !key->GetFrameInterval(frame, a, b, t)) {
+        if (data->enabled == 0 || !key->GetFrameInterval((u16)frame, a, b, t)) {
             continue;
         }
         key->enabled = (a->visible != 0);
@@ -806,7 +810,7 @@ void GsShapeRender::Update(f32 time, s16 id) {
             shape->texArray[3] = 0;
         }
         bool deformKey = (entry->uvDeform == 1 && entry->uvDeformKey == 1);
-        bool twistKey = (entry->twist == 1 && entry->twistKey == 1);
+        u8 twistKey = (entry->twist == 1 && entry->twistKey == 1);
         if (deformKey == 1 || twistKey == 1 || entry->radius == 1 || entry->showAngle == 1) {
             if (deformKey == 1) {
                 key->GetDeformParameterU(paramU, a, b, t);
@@ -829,14 +833,14 @@ void GsShapeRender::Update(f32 time, s16 id) {
                 key->GetTwistParameter(paramTwist, a, b, t);
             }
             shape->DeformVertexCoord(deformKey != 0, paramU, paramV, entry->radius != 0, r0, r1,
-                                     entry->showAngle != 0, s0, s1, twistKey != 0, paramTwist);
+                                     entry->showAngle != 0, s0, s1, (bool)twistKey, paramTwist);
         }
         GsShapeAnimHeader* h = anim;
         key->GetShapeMatrix(&key->mtxA, &key->mtxB, (tagGsFilePrimObjectEntry*)data, h->orderCount, h->order, a, b, t);
         bool deformTex = (entry->uvDeform == 1 && entry->uvDeformKey == 0);
         bool twistTex = (entry->twist == 1 && entry->twistKey == 0);
-        bool deformOn = deformTex != 0;
         bool twistOn = twistTex != 0;
+        bool deformOn = deformTex != 0;
         for (u8 k = 0; k < data->texCount; k++) {
             if ((deformTex == 1 || twistTex == 1) && (refractTex == 0 || k != 0)) {
                 if (deformTex != 0) {
@@ -855,13 +859,13 @@ void GsShapeRender::Update(f32 time, s16 id) {
                 off.v[1] = off.v[1] * scl.v[1];
                 shape->WaveTextureCoord(k, off.v[0], off.v[1], &key->mtxA, false);
             }
-            GsShapeTexInfo* info = data->texInfo[k];
+            info = data->texInfo[k];
             if (data->mode == 8 && k == 0) {
                 memcpy(&key->texMtx[k], &mtxIdent, 0x30);
             } else if (entry->texAnim[k] == 1) {
                 volatile GsVec2 off = key->GetTextureOffset(a, b, t, k);
                 f32 oy = off.v[1];
-                f32 ox = off.v[0];
+                ox = off.v[0];
                 volatile GsVec2 scl = key->GetTextureScale(a, b, t, k);
                 f32 sy = scl.v[1];
                 f32 sx = scl.v[0];

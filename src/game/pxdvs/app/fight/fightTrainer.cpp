@@ -1199,8 +1199,9 @@ u8 fightTrainerCheckTrainerDataIdValid(u16 id, s32 allowNoAi) {
 }
 
 u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon, u32 unused, u16 darkId, u16 encountId) {
+    enum TsE { TsE0 };
     u16 rndKinds[6] = {0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
-    s8 sex;
+    enum TsE sex;
     u8 statusRnd[6];
     u8 statusEffort[6];
     u16 waza[4];
@@ -1242,7 +1243,7 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     random = deck->getRandomSetting() != 0;
     level = deck->getLevel();
     friendLevel = deck->getFriendLevel();
-    sex = deck->getSex();
+    sex = (enum TsE)(deck->getSex());
     seikaku = deck->getSeikakuID();
     tokusei = deck->getTokuseiFlag();
     item = deck->getHoldItem();
@@ -1269,7 +1270,8 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     heroRnd = heroBiosGetRnd(save);
     if (darkId != 0 && darkFlag == 1) {
         for (i = 0; i < 6; i++) {
-            pokemonSetStatus(pokemon, 0, rndKinds[i], 0, (u16)darkPokemonBiosGetStatusRnd(darkId, i));
+            s32 tmp4 = (u16)darkPokemonBiosGetStatusRnd(darkId, i);
+            pokemonSetStatus(pokemon, 0, rndKinds[i], 0, tmp4);
         }
         pokemon_SetRnd(pokemon, darkPokemonBiosGetRnd(darkId));
     }
@@ -1362,13 +1364,14 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
         pokemonSetDarkPokemonStatus(pokemon, darkId);
         if (darkFlag == 0) {
             rnd = pokemonCreateRndFit(pokemon, -1, -1, 0, heroRnd);
-            pokemon_SetRnd(pokemon, rnd);
             darkPokemonBiosSetRnd(darkId, rnd);
+            pokemon_SetRnd(pokemon, rnd);
             if (dark != 0) {
                 dark->setRnd(rnd);
             }
             for (i = 0; i < 6; i++) {
-                darkPokemonBiosSetStatusRnd(darkId, i, pokemonGetStatus(pokemon, 0, rndKinds[i], 0));
+                s32 tmp2 = pokemonGetStatus(pokemon, 0, rndKinds[i], 0);
+                darkPokemonBiosSetStatusRnd(darkId, i, tmp2);
             }
         }
     }
@@ -1709,7 +1712,9 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
     u16 item0;
     u16 item1;
 
-    heroBiosSetRnd(hero, heroGetStatus(0, 2, 0));
+    s32 tmp1 = heroGetStatus(0, 2, 0);
+
+    heroBiosSetRnd(hero, tmp1);
     switch (floorId) {
     case 0x39:
         esabaIndex = 0;
@@ -2007,7 +2012,8 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* her
                 p = heroBiosGetPokemonPtr(hero, i);
                 if (p != 0) {
                     pokemon_SetLevel(p, maxLevel);
-                    pokemon_SetExp(p, pokemonGetLevelToExp(p, maxLevel));
+                    s32 tmp1 = pokemonGetLevelToExp(p, maxLevel);
+                    pokemon_SetExp(p, tmp1);
                     pokemonResetBasisStatus(p);
                 }
             }

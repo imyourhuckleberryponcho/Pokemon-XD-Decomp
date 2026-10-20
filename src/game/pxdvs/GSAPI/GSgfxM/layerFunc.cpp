@@ -63,7 +63,7 @@ public: // draft
     void dlDraw(GSgfxDL*);
     void drawDodecaedron();
     void tgenFunc(unsigned char, GSgfxTgenFunc, GSgfxTgenSrc, GSmtx*, bool, GSmtx*);
-    static void cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, unsigned long, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
+    void cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, unsigned long, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
     void drawIcosahedron();
     void SetDistortionParams(float(*)[3], signed char);
     void beginSurface(unsigned short);
@@ -118,9 +118,6 @@ u16 GSgfxTokenMark_Sub();
 
 
 
-void GSgfxLayer::endSurface() {
-    gsgfx_layer_inPrimitive = 0;
-}
 
 extern "C++" {
 void GSgfxLayer::SetDistortionParams(float(*p0)[3], signed char p1) {
@@ -153,13 +150,13 @@ void GSgfxLayer::tunitIndTexMtx(GSgfxIndTexMtxID p0, float(*p1)[3], signed char 
     if ((u32) M2C_FIELD((this + (temp_r4 * 0xBC)), u32 *, 0x1818) != 0U) {
         if (temp_r30 != (s32) temp_r4) {
             M2C_FIELD(this, s32 *, 0x1994) = (s32) temp_r4;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
+            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) ((u8*)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC);
         }
         ((GSgfxLayer*)(this))->SetupFifo();
         GSgfx_GCWriteIndTexMtx(p0, (s32) p1, (s32) p2);
         if ((s32) M2C_FIELD(this, s32 *, 0x1994) != temp_r30) {
             M2C_FIELD(this, s32 *, 0x1994) = temp_r30;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
+            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) ((u8*)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC);
         }
         ((GSgfxLayer*)(this))->SetupFifo();
     }
@@ -167,6 +164,112 @@ void GSgfxLayer::tunitIndTexMtx(GSgfxIndTexMtxID p0, float(*p1)[3], signed char 
 }
 
 extern "C++" {
+
+
+extern "C++" {
+void GSgfxLayer::drawSphere(unsigned char p0) {
+    ((GSgfxLayer*)(this))->FlushState();
+    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
+    GXDrawSphere1(p0);
+    ((GSgfxLayer*)(this))->InvalidateState();
+}
+}
+
+
+
+
+
+
+
+
+
+
+extern "C++" {
+void GSgfxLayer::drawSphere(unsigned char p0, unsigned char p1) {
+    ((GSgfxLayer*)(this))->FlushState();
+    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
+    GXDrawSphere(p1, p0);
+    ((GSgfxLayer*)(this))->InvalidateState();
+}
+}
+}
+
+extern "C++" {
+void GSgfxLayer::tgenFunc(unsigned char p0, GSgfxTgenFunc p1, GSgfxTgenSrc p2, GSmtx* p3, bool p4, GSmtx* p5) {
+    f32 temp_f1;
+    f32 temp_f1_2;
+    s32 temp_r30;
+    s32 temp_r31;
+    int temp_r3;
+    u8 temp_r4_2;
+    u8 var_r5;
+    u8 *temp_r4;
+
+    temp_r4 = (unsigned char *)(this + temp_r31);
+    M2C_FIELD(temp_r4, s32 *, 0xC88) = 0;
+    temp_r31 = 0x18;
+    temp_r31 *= p0;
+    var_r5 = 0;
+    M2C_FIELD(temp_r4, s32 *, 0xC74) = p1;
+    M2C_FIELD(temp_r4, s32 *, 0xC78) = p2;
+    M2C_FIELD(temp_r4, u8 *, 0xC80) = p4;
+    if (p3 == NULL) {
+        M2C_FIELD(temp_r4, s32 *, 0xC7C) = 0x3C;
+    } else {
+        var_r5 = 1;
+        M2C_FIELD(temp_r4, s32 *, 0xC7C) = (s32) ((p0 * 3) + 0x1E);
+    }
+    if (p5 == NULL) {
+        M2C_FIELD((this + temp_r31), s32 *, 0xC84) = 0x7D;
+    } else {
+        var_r5 = 1;
+        M2C_FIELD((this + temp_r31), s32 *, 0xC84) = (s32) ((p0 * 3) + 0x40);
+    }
+    if (var_r5 == 1) {
+        temp_f1 = M2C_BITWISE(f32, ((GSgfxLayer*)(this))->SetupFifo());
+        if (p3 != NULL) {
+            if (p1 == 1) {
+                GXLoadTexMtxImm((const float (*)[4])&(temp_f1), (unsigned long)((u32) p3), (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC7C)));
+            } else {
+                GXLoadTexMtxImm((const float (*)[4])&(temp_f1), (unsigned long)((u32) p3), (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC7C)));
+            }
+        }
+        if (p5 != NULL) {
+            GXLoadTexMtxImm(M2C_ERROR(/* Read from unset register $f1 */), (u32) p3, (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC84)));
+        }
+        temp_r30 = M2C_FIELD(this, s32 *, 0x1994);
+        temp_r4_2 = temp_r30 == 0;
+        if ((u32) M2C_FIELD((this + (temp_r4_2 * 0xBC)), u32 *, 0x1818) != 0U) {
+            if (temp_r30 != (s32) temp_r4_2) {
+                M2C_FIELD(this, s32 *, 0x1994) = (s32) temp_r4_2;
+                M2C_FIELD(this, u8 **, 0x1990) = (u8 *) ((u8*)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC);
+            }
+            temp_f1_2 = M2C_BITWISE(f32, ((GSgfxLayer*)(this))->SetupFifo());
+            if (p3 != NULL) {
+                if (p1 == 1) {
+                    GXLoadTexMtxImm((const float (*)[4])&(temp_f1_2), (unsigned long)((u32) p3), (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC7C)));
+                } else {
+                    GXLoadTexMtxImm((const float (*)[4])&(temp_f1_2), (unsigned long)((u32) p3), (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC7C)));
+                }
+            }
+            if (p5 != NULL) {
+                GXLoadTexMtxImm(M2C_ERROR(/* Read from unset register $f1 */), (u32) p3, (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC84)));
+            }
+            if ((s32) M2C_FIELD(this, s32 *, 0x1994) != temp_r30) {
+                M2C_FIELD(this, s32 *, 0x1994) = temp_r30;
+                M2C_FIELD(this, u8 **, 0x1990) = (u8 *) ((u8*)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC);
+            }
+            ((GSgfxLayer*)(this))->SetupFifo();
+        }
+    }
+    temp_r3 = 1 << p0;
+    M2C_FIELD(this, s32 *, 0x16B0) = (s32) (M2C_FIELD(this, s32 *, 0x16B0) | temp_r3);
+    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 1);
+    M2C_FIELD(this, s32 *, 0x1768) = (s32) (M2C_FIELD(this, s32 *, 0x1768) | temp_r3);
+    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 1);
+}
+}
+
 extern "C++" {
 void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
     u8 *temp_r9;
@@ -177,7 +280,7 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
     s32 temp_r4;
     s32 temp_r4_2;
     s32 temp_r4_3;
-    u8 *temp_r10;
+    u8 *temp_r30;
     u8 *temp_r10_2;
     u8 *temp_r11;
     u8 *temp_r11_2;
@@ -185,7 +288,7 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
     u8 *temp_r12_2;
     u8 *temp_r29;
     u8 *temp_r29_2;
-    u8 *temp_r30;
+    u8 *temp_r10;
     u8 *temp_r31;
     s32 temp_r0_3;
     u8 *temp_r7_2;
@@ -197,10 +300,10 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
     if ((u32) p1 <= 7U) {
         switch (p1) {
         case 0:
-            temp_r0 = 1 << p0;
             temp_r29 = (unsigned char *)(this + (p0 * 0x14));
             temp_r9 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
             M2C_FIELD(temp_r29, s32 *, 0x1170) = 0;
+            temp_r0 = 1 << p0;
             M2C_FIELD(temp_r29, s32 *, 0x1174) = 0;
             M2C_FIELD(temp_r29, s32 *, 0x1178) = 0;
             M2C_FIELD(temp_r29, s8 *, 0x117C) = 1;
@@ -236,10 +339,10 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
             M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
             return;
         case 1:
-            temp_r0_2 = 1 << p0;
             temp_r29_2 = (unsigned char *)(this + (p0 * 0x14));
             temp_r9_2 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
             M2C_FIELD(temp_r29_2, s32 *, 0x1170) = 0;
+            temp_r0_2 = 1 << p0;
             M2C_FIELD(temp_r29_2, s32 *, 0x1174) = 0;
             M2C_FIELD(temp_r29_2, s32 *, 0x1178) = 0;
             M2C_FIELD(temp_r29_2, s8 *, 0x117C) = 1;
@@ -275,10 +378,10 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
             M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
             return;
         case 2:
-            temp_r0_3 = 1 << p0;
             temp_r31 = (unsigned char *)(this + (p0 * 0x14));
             temp_r10 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
             M2C_FIELD(temp_r31, s32 *, 0x1170) = 0;
+            temp_r0_3 = 1 << p0;
             M2C_FIELD(temp_r31, s32 *, 0x1174) = 0;
             M2C_FIELD(temp_r31, s32 *, 0x1178) = 0;
             M2C_FIELD(temp_r31, s8 *, 0x117C) = 1;
@@ -314,10 +417,10 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
             M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
             return;
         case 3:
-            temp_r0_4 = 1 << p0;
             temp_r11 = (unsigned char *)(this + (p0 * 0x14));
             temp_r7 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
             M2C_FIELD(temp_r11, s32 *, 0x1170) = 0;
+            temp_r0_4 = 1 << p0;
             M2C_FIELD(temp_r11, s32 *, 0x1174) = 0;
             M2C_FIELD(temp_r11, s32 *, 0x1178) = 0;
             M2C_FIELD(temp_r11, s8 *, 0x117C) = 1;
@@ -353,10 +456,10 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
             M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
             return;
         case 4:
-            temp_r0_5 = 1 << p0;
             temp_r11_2 = (unsigned char *)(this + (p0 * 0x14));
             temp_r7_2 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
             M2C_FIELD(temp_r11_2, s32 *, 0x1170) = 0;
+            temp_r0_5 = 1 << p0;
             M2C_FIELD(temp_r11_2, s32 *, 0x1174) = 0;
             M2C_FIELD(temp_r11_2, s32 *, 0x1178) = 0;
             M2C_FIELD(temp_r11_2, s8 *, 0x117C) = 1;
@@ -393,8 +496,8 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
             return;
         case 5:
             temp_r4 = 1 << p0;
-            temp_r12 = (unsigned char *)(this + (p0 * 0x14));
             temp_r8 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
+            temp_r12 = (unsigned char *)(this + (p0 * 0x14));
             M2C_FIELD(temp_r12, s32 *, 0x1170) = 0;
             M2C_FIELD(temp_r12, s32 *, 0x1174) = 0;
             M2C_FIELD(temp_r12, s32 *, 0x1178) = 0;
@@ -432,8 +535,8 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
             return;
         case 6:
             temp_r4_2 = 1 << p0;
-            temp_r12_2 = (unsigned char *)(this + (p0 * 0x14));
             temp_r8_2 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
+            temp_r12_2 = (unsigned char *)(this + (p0 * 0x14));
             M2C_FIELD(temp_r12_2, s32 *, 0x1170) = 0;
             M2C_FIELD(temp_r12_2, s32 *, 0x1174) = 0;
             M2C_FIELD(temp_r12_2, s32 *, 0x1178) = 0;
@@ -516,14 +619,14 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
 extern "C++" {
 void GSgfxLayer::cunitChannelGen(unsigned char p0, GSgfxCunitAlpha p1, GSgfxCunitSrc p2, GSgfxCunitSrc p3, unsigned long p4, GSgfxLight** p5, GSgfxLightType p6, GSgfxDiffuseFunc p7) {
     GSgfxLight **var_r4;
-    GSgfxLight **var_r5_2;
+    u8 *var_r3;
     s32 temp_r29;
     s32 temp_r4;
-    s32 temp_r4_2;
+    int temp_r4_2;
     s32 temp_r4_3;
     s32 var_ctr;
     s32 var_ctr_2;
-    s32 var_r27;
+    GSgfxLight **var_r5_2;
     s32 var_r28;
     u32 temp_r6;
     u32 temp_r6_2;
@@ -535,7 +638,7 @@ void GSgfxLayer::cunitChannelGen(unsigned char p0, GSgfxCunitAlpha p1, GSgfxCuni
     u32 var_r6_2;
     u8 var_r31;
     u8 *temp_r3;
-    u8 *var_r3;
+    s32 var_r27;
     u8 *var_r5;
 
     var_r28 = arg_sp8;
@@ -553,7 +656,7 @@ void GSgfxLayer::cunitChannelGen(unsigned char p0, GSgfxCunitAlpha p1, GSgfxCuni
     }
     if ((p1 == 0) || (p1 == 2)) {
         temp_r4 = p0 * 0x38;
-        var_r5 = (unsigned char *)(this_ + temp_r4);
+        var_r5 = (unsigned char *)(((s32)this) + temp_r4);
         M2C_FIELD(var_r5, u8 *, 0xDBC) = var_r31;
         M2C_FIELD(var_r5, s32 *, 0xDC0) = p2;
         M2C_FIELD(var_r5, s32 *, 0xDC4) = p3;
@@ -594,14 +697,14 @@ void GSgfxLayer::cunitChannelGen(unsigned char p0, GSgfxCunitAlpha p1, GSgfxCuni
                 var_ctr -= 1;
             } while (var_ctr != 0);
         } else {
-            memset((void*)(this_ + (temp_r4 + 0xDD4)), 0, 0x20U);
+            memset((void*)(((s32)this) + (temp_r4 + 0xDD4)), 0, 0x20U);
         }
         temp_r4_2 = 1 << p0;
-        M2C_FIELD(this_, s32 *, 0x16C0) = (s32) (M2C_FIELD(this_, s32 *, 0x16C0) | temp_r4_2);
-        M2C_FIELD(this_, s32 *, 0x1778) = (s32) (M2C_FIELD(this_, s32 *, 0x1778) | temp_r4_2);
+        M2C_FIELD(((s32)this), s32 *, 0x16C0) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x16C0) | temp_r4_2);
+        M2C_FIELD(((s32)this), s32 *, 0x1778) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x1778) | temp_r4_2);
     }
     if ((p1 == 1) || (p1 == 2)) {
-        temp_r3 = (unsigned char *)(this_ + (temp_r29 * 0x38));
+        temp_r3 = (unsigned char *)(((s32)this) + (temp_r29 * 0x38));
         M2C_FIELD(temp_r3, u8 *, 0xDBC) = var_r31;
         M2C_FIELD(temp_r3, s32 *, 0xDC0) = p2;
         M2C_FIELD(temp_r3, s32 *, 0xDC4) = p3;
@@ -611,7 +714,7 @@ void GSgfxLayer::cunitChannelGen(unsigned char p0, GSgfxCunitAlpha p1, GSgfxCuni
         if (var_r31 != 0) {
             var_r6_2 = 0U;
             var_r5_2 = p5;
-            var_r3 = (unsigned char *)(this_ + (p0 * 0x38));
+            var_r3 = (unsigned char *)(((s32)this) + (p0 * 0x38));
             var_ctr_2 = 2;
             do {
                 if (var_r6_2 < p4) {
@@ -643,23 +746,14 @@ void GSgfxLayer::cunitChannelGen(unsigned char p0, GSgfxCunitAlpha p1, GSgfxCuni
                 var_ctr_2 -= 1;
             } while (var_ctr_2 != 0);
         } else {
-            memset((void*)(this_ + ((p0 * 0x38) + 0xDD4)), 0, 0x20U);
+            memset((void*)(((s32)this) + ((p0 * 0x38) + 0xDD4)), 0, 0x20U);
         }
         temp_r4_3 = 1 << temp_r29;
-        M2C_FIELD(this_, s32 *, 0x16C0) = (s32) (M2C_FIELD(this_, s32 *, 0x16C0) | temp_r4_3);
-        M2C_FIELD(this_, s32 *, 0x1778) = (s32) (M2C_FIELD(this_, s32 *, 0x1778) | temp_r4_3);
+        M2C_FIELD(((s32)this), s32 *, 0x16C0) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x16C0) | temp_r4_3);
+        M2C_FIELD(((s32)this), s32 *, 0x1778) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x1778) | temp_r4_3);
     }
-    M2C_FIELD(this_, s32 *, 0x16A8) = (s32) (M2C_FIELD(this_, s32 *, 0x16A8) | 4);
-    M2C_FIELD(this_, s32 *, 0x1760) = (s32) (M2C_FIELD(this_, s32 *, 0x1760) | 4);
-}
-}
-
-extern "C++" {
-void GSgfxLayer::drawSphere(unsigned char p0) {
-    ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
-    GXDrawSphere1(p0);
-    ((GSgfxLayer*)(this))->InvalidateState();
+    M2C_FIELD(((s32)this), s32 *, 0x16A8) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x16A8) | 4);
+    M2C_FIELD(((s32)this), s32 *, 0x1760) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x1760) | 4);
 }
 }
 
@@ -745,96 +839,15 @@ void GSgfxLayer::dlDrawExt(unsigned char* p0, unsigned long p1) {
 }
 }
 
+void GSgfxLayer::endSurface() {
+    gsgfx_layer_inPrimitive = 0;
+}
+
 extern "C++" {
 void GSgfxLayer::beginSurface(unsigned short p0) {
     ((GSgfxLayer*)(this))->FlushState();
     *(s8 *)0xCC008000 = M2C_FIELD(this, s32 *, 0x1998) | M2C_FIELD(M2C_FIELD(this, u8 **, 0x199C), s32 *, 4);
-    *(s8 *)0xCC008000 = p0;
     gsgfx_layer_inPrimitive = 1;
-}
-}
-
-extern "C++" {
-void GSgfxLayer::drawSphere(unsigned char p0, unsigned char p1) {
-    ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
-    GXDrawSphere(p1, p0);
-    ((GSgfxLayer*)(this))->InvalidateState();
-}
-}
-}
-
-extern "C++" {
-void GSgfxLayer::tgenFunc(unsigned char p0, GSgfxTgenFunc p1, GSgfxTgenSrc p2, GSmtx* p3, bool p4, GSmtx* p5) {
-    f32 temp_f1;
-    f32 temp_f1_2;
-    s32 temp_r30;
-    s32 temp_r31;
-    s32 temp_r3;
-    u8 temp_r4_2;
-    u8 var_r5;
-    u8 *temp_r4;
-
-    temp_r4 = (unsigned char *)(this + temp_r31);
-    temp_r31 = p0 * 0x18;
-    var_r5 = 0;
-    M2C_FIELD(temp_r4, s32 *, 0xC74) = p1;
-    M2C_FIELD(temp_r4, s32 *, 0xC78) = p2;
-    M2C_FIELD(temp_r4, u8 *, 0xC80) = p4;
-    M2C_FIELD(temp_r4, s32 *, 0xC88) = 0;
-    if (p3 == NULL) {
-        M2C_FIELD(temp_r4, s32 *, 0xC7C) = 0x3C;
-    } else {
-        var_r5 = 1;
-        M2C_FIELD(temp_r4, s32 *, 0xC7C) = (s32) ((p0 * 3) + 0x1E);
-    }
-    if (p5 == NULL) {
-        M2C_FIELD((this + temp_r31), s32 *, 0xC84) = 0x7D;
-    } else {
-        var_r5 = 1;
-        M2C_FIELD((this + temp_r31), s32 *, 0xC84) = (s32) ((p0 * 3) + 0x40);
-    }
-    if (var_r5 == 1) {
-        temp_f1 = M2C_BITWISE(f32, ((GSgfxLayer*)(this))->SetupFifo());
-        if (p3 != NULL) {
-            if (p1 == 1) {
-                GXLoadTexMtxImm((const float (*)[4])&(temp_f1), (unsigned long)((u32) p3), (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC7C)));
-            } else {
-                GXLoadTexMtxImm((const float (*)[4])&(temp_f1), (unsigned long)((u32) p3), (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC7C)));
-            }
-        }
-        if (p5 != NULL) {
-            GXLoadTexMtxImm(M2C_ERROR(/* Read from unset register $f1 */), (u32) p3, (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC84)));
-        }
-        temp_r30 = M2C_FIELD(this, s32 *, 0x1994);
-        temp_r4_2 = temp_r30 == 0;
-        if ((u32) M2C_FIELD((this + (temp_r4_2 * 0xBC)), u32 *, 0x1818) != 0U) {
-            if (temp_r30 != (s32) temp_r4_2) {
-                M2C_FIELD(this, s32 *, 0x1994) = (s32) temp_r4_2;
-                M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
-            }
-            temp_f1_2 = M2C_BITWISE(f32, ((GSgfxLayer*)(this))->SetupFifo());
-            if (p3 != NULL) {
-                if (p1 == 1) {
-                    GXLoadTexMtxImm((const float (*)[4])&(temp_f1_2), (unsigned long)((u32) p3), (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC7C)));
-                } else {
-                    GXLoadTexMtxImm((const float (*)[4])&(temp_f1_2), (unsigned long)((u32) p3), (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC7C)));
-                }
-            }
-            if (p5 != NULL) {
-                GXLoadTexMtxImm(M2C_ERROR(/* Read from unset register $f1 */), (u32) p3, (GXTexMtxType)(M2C_FIELD((this + temp_r31), s32 *, 0xC84)));
-            }
-            if ((s32) M2C_FIELD(this, s32 *, 0x1994) != temp_r30) {
-                M2C_FIELD(this, s32 *, 0x1994) = temp_r30;
-                M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
-            }
-            ((GSgfxLayer*)(this))->SetupFifo();
-        }
-    }
-    temp_r3 = 1 << p0;
-    M2C_FIELD(this, s32 *, 0x16B0) = (s32) (M2C_FIELD((u8)this, s32 *, 0x16B0) | temp_r3);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 1);
-    M2C_FIELD(this, s32 *, 0x1768) = (s32) (M2C_FIELD(this, s32 *, 0x1768) | temp_r3);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 1);
+    *(s8 *)0xCC008000 = p0;
 }
 }

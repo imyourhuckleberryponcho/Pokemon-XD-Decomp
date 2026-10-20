@@ -172,7 +172,7 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
                                  const tagGsFilePrimKeyFrame* b, f32 t) const {
     volatile f32 rot[3];
     volatile f32 pivot[3];
-    f32 trans[3];
+    volatile f32 trans[3];
     volatile f32 scale[3];
     f32 it = 1.0f - t;
     int i;
@@ -207,10 +207,10 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
     f32 npx = -pivot[0];
     f32 npy = -pivot[1];
     f32 npz = -pivot[2];
-    f32 sx = scale[0], sy = scale[1], sz = scale[2];
+    f32 px = pivot[0], py = pivot[1], pz = pivot[2];
     f32 rx = rot[0], ry = rot[1], rz = rot[2];
     f32 tx = trans[0], ty = trans[1], tz = trans[2];
-    f32 px = pivot[0], py = pivot[1], pz = pivot[2];
+    f32 sx = scale[0], sy = scale[1], sz = scale[2];
     u8 identityScale = 1;
     memcpy(mtx, &mtxIdent, 0x30);
     for (int n = 0; n < count; n++, order++) {
@@ -314,10 +314,11 @@ bool GsKeyObject::GetGradationParameter(u8* kind, tagGScol4ub* out, const tagGsF
 
 bool GsKeyObject::GetTwistParameter(f32* out, const tagGsFilePrimKeyFrame* a, const tagGsFilePrimKeyFrame* b,
                                     f32 t) const {
-    u32 n = a->nTwist;
+    const f32* pb;
     const f32* pa = a->twist;
-    const f32* pb = b->twist;
-    for (u32 i = 0; i < n; i++) {
+    u32 i;
+    u32 n = a->nTwist;
+    for (i = 0, pb = b->twist; i < n; i++) {
         out[i] = (1.0f - t) * pa[i] + t * pb[i];
     }
     return true;
@@ -325,10 +326,11 @@ bool GsKeyObject::GetTwistParameter(f32* out, const tagGsFilePrimKeyFrame* a, co
 
 bool GsKeyObject::GetDeformParameterV(f32* out, const tagGsFilePrimKeyFrame* a, const tagGsFilePrimKeyFrame* b,
                                       f32 t) const {
-    u32 n = a->nDeformV;
+    const f32* pb;
     const f32* pa = a->deformV;
-    const f32* pb = b->deformV;
-    for (u32 i = 0; i < n; i++) {
+    u32 i;
+    u32 n = a->nDeformV;
+    for (i = 0, pb = b->deformV; i < n; i++) {
         out[i] = (1.0f - t) * pa[i] + t * pb[i];
     }
     return true;
@@ -336,10 +338,11 @@ bool GsKeyObject::GetDeformParameterV(f32* out, const tagGsFilePrimKeyFrame* a, 
 
 bool GsKeyObject::GetDeformParameterU(f32* out, const tagGsFilePrimKeyFrame* a, const tagGsFilePrimKeyFrame* b,
                                       f32 t) const {
-    u32 n = a->nDeformU;
+    const f32* pb;
     const f32* pa = a->deformU;
-    const f32* pb = b->deformU;
-    for (u32 i = 0; i < n; i++) {
+    u32 i;
+    u32 n = a->nDeformU;
+    for (i = 0, pb = b->deformU; i < n; i++) {
         out[i] = (1.0f - t) * pa[i] + t * pb[i];
     }
     return true;

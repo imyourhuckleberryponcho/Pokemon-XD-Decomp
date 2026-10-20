@@ -124,7 +124,7 @@ void menuPokemonUpdate(void);
 void menuScriptUsohachi2(void);
 s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial);
 void msgctrlSetValue(s32 id, s32 value);
-s8 pcboxGetNbPokemonBox();
+u8 pcboxGetNbPokemonBox();
 s8 pcboxGetPokemonBoxNbEmptySlot(void* base, s8 b);
 void pokemonAddDpFormPokemonDpFilterId(Pokemon* pokemon, u16 itemDataId, u16 filterId);
 u8 pokemonBiosGetLevel(Pokemon* poke);
@@ -679,11 +679,11 @@ s32 menuUseItemSkill(u32 item, s32* consume) {
 }
 
 static s32 wazaMachineProc(Pokemon* p, int machineNo) {
-    u8 slot;
+    s32 learned;
     int i;
     u32 waza;
     u16 wz;
-    s32 learned;
+    u8 slot;
     menuOffScreenSetPriority(0);
     if (pokemonIsDarkPokemon(p)) {
         dispMsg(0xC371);
@@ -883,9 +883,9 @@ u32 item_crane_memo_number = 5;
 
 s32 menuUseItemEventCraneMemo(u32 item, s32* consume) {
     u32 i;
-    CraneMemo* m = item_crane_memo;
     *consume = 0;
-    for (i = 0; i < item_crane_memo_number; i++, m++) {
+    for (i = 0; i < item_crane_memo_number; i++) {
+        CraneMemo* m = &item_crane_memo[i];
         if (m->item == item) {
             dispMsg(m->msg);
             return 2;
@@ -1002,10 +1002,10 @@ static void getLogMsgField(u16* out, int idx, ITEMUSE2POKEMON_LOG1* log, short n
         GSmsgMakeGScharStr(out, idx + 1, 0xC374);
         return;
     }
-    link = table[i].link;
     msg = table[i].msg;
     a = log[j].a;
     b = log[j].b;
+    link = table[i].link;
     if (link >= 0) {
         int i2 = i + 1;
         for (; i2 < 21; i2++) {

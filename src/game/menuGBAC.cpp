@@ -466,7 +466,8 @@ static u8 _check_langarea(u8 lang)
                 if (g != 0) {
                     void* a = gamedataBiosGetGamedataAtttestPtr(g);
                     if (a != 0) {
-                        if (lang == gamedataAttestBiosGetLangareaId(a)) {
+                        u8 area = gamedataAttestBiosGetLangareaId(a);
+                        if (area == lang) {
                             return 1;
                         }
                     }
@@ -576,8 +577,7 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
     }
     menuGBACSetRomVer(0, 0xFFFF);
     chp = chans;
-    gpn = gba_player_number;
-    for (i = 0; i < 4; i++, chp++, gpn++) {
+    for (i = 0, gpn = gba_player_number; i < 4; i++, chp++, gpn++) {
         ch = *chp;
         work->channel = ch;
         if (heroes != 0 && heroes[ch] != 0) {
@@ -813,10 +813,16 @@ s32 openMenuGBA(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
 
 void menuGBACSetRomVer(u16 ver, u16 idx)
 {
-    if (!((s32)idx >= 4 || (s32)idx < 0)) {
+    switch (idx) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
         GBA_ROM_VERSION_FLAG[idx] = ver;
-    } else {
+        break;
+    default:
         GBA_ROM_VERSION_FLAG[0] = GBA_ROM_VERSION_FLAG[1] = GBA_ROM_VERSION_FLAG[2] = GBA_ROM_VERSION_FLAG[3] = 0;
+        break;
     }
     if (idx == 0xFFFF) {
         gbaCommandSetKeyState(1, 0);

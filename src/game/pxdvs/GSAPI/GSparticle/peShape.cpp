@@ -31,6 +31,27 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define M2C_TRAP_IF(cond) (0)
 #define M2C_BREAK() (0)
 #define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
 #define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
 #define M2C_CARRY 0
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
@@ -53,10 +74,10 @@ struct Vec;
 struct _EmitParams;
 struct _peShape;
 struct peColorSpline;
-struct peContainer;
+class peContainer;
 struct peEmitterNode;
 struct peNode;
-struct peShapeContainer;
+class peShapeContainer;
 struct peShapeNode;
 struct peSpline;
 struct peXform;
@@ -94,7 +115,7 @@ struct Quaternion {
     u8 _draft[1];
 };
 struct Vec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 struct _EmitParams {
     u8 _draft[1];
@@ -105,15 +126,32 @@ struct _peShape {
 struct peColorSpline {
     u8 _draft[1];
 };
-struct peContainer {
-    u8 _draft[1];
+class peContainer {
+public:
+    peEmitterNode* emitter;  // 0x00
+    u32 unk4;                // 0x04
+    void* buffer;            // 0x08
+    peNode* freeList;        // 0x0c
+    peNode* activeList;      // 0x10
+    u16 count;               // 0x14
+    u16 maxCount;            // 0x16
+    u8 dirty;                // 0x18
+    u8 started;              // 0x19
+
+    peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
+    virtual ~peContainer();
+    virtual void Start();
+    virtual void PreUpdate();
+    virtual u16 Emit(unsigned short n) = 0;
+    virtual void Update(float dt) = 0;
+    virtual void Render() = 0;
+    virtual void Stop() = 0;
+
     s32 MoveNode(peNode*, peNode*);
     s32 RemoveAll();
-    u16 CreateNodes(unsigned short);
-    s32 SetLayerVisibility(GSgfxLayerID, bool);
-    ~peContainer();
     s32 RemoveNode(peNode*);
-    peContainer(peEmitterNode*, unsigned long, unsigned short);
+    u16 CreateNodes(unsigned short);
+    static void SetLayerVisibility(GSgfxLayerID, bool);
 };
 struct peEmitterNode {
     u8 _draft[1];
@@ -123,15 +161,17 @@ struct peNode {
     bool Update(peEmitterNode*, float);
     void Start(peEmitterNode*, _EmitParams*);
 };
-struct peShapeContainer {
-    u8 _draft[1];
-    void Update(float);
-    void Stop();
-    static u16 Emit(unsigned short);
-    ~peShapeContainer();
-    void Start();
-    void Render();
+class peShapeContainer : public peContainer {
+public:
+    _peShape* shape;  // 0x20
+
     peShapeContainer(peEmitterNode*, _peShape*, unsigned short);
+    virtual ~peShapeContainer();
+    virtual void Start();
+    virtual u16 Emit(unsigned short);
+    virtual void Update(float);
+    virtual void Render();
+    virtual void Stop();
 };
 struct peShapeNode {
     u8 _draft[1];
@@ -148,7 +188,7 @@ struct peXform {
 
 extern "C" {
 int EulerToQuat(Vec* euler, Quaternion* q);
-s32 GSboundAlwaysInView(s32);
+s32 GSboundAlwaysInView(u32 bound, s32 inView);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 f32 HSD_Randf(void);
 asm void PSMTXConcat(const register Mtx a, const register Mtx b, register Mtx ab);
@@ -178,30 +218,45 @@ extern Vec g_CameraPosition;
 extern u32 g_currentBound;
 extern GSgfxLayer* g_current_layer;
 extern _EmitParams* g_emitParams;
-extern s32 g_particle_debug_stats;
+struct ParticleDebugStats {
+    s32 unk0;
+    s32 unk4;
+    s32 unk8;
+    s32 unkC;
+    s32 unk10;
+    s32 unk14;
+    s32 unk18;
+    s32 unk1C;
+    s32 unk20;
+};
+extern ParticleDebugStats g_particle_debug_stats;
 extern s32 g_render_pass;
-extern s32 unitScaleVector;
+struct XdBlobC { u8 data[0xC]; };
+extern XdBlobC unitScaleVector;
 extern s32 jtbl_1954;
 extern s32 this_;
 extern s32 jtbl_1843;
 }
-s32 __vt__16peShapeContainer;
+// ---- draft declarations ----
+
+
+
 // ---- draft declarations ----
 
 
 
 void peShapeContainer::Stop() {
     if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x1C), s32 (**)(), 0x10)();
+        ((peContainer*)this)->PreUpdate();
         M2C_FIELD(this, u8 *, 0x19) = 0U;
         if (*M2C_FIELD(this, s32 **, 0x20) & 0x800000) {
-            ((peContainer*)((peContainer *)1))->SetLayerVisibility((GSgfxLayerID)(0), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
         if (*M2C_FIELD(this, s32 **, 0x20) & 0x01000000) {
-            ((peContainer*)((peContainer *)3))->SetLayerVisibility((GSgfxLayerID)(0), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)3, false);
         }
         if (*M2C_FIELD(this, s32 **, 0x20) & 0x02000000) {
-            ((peContainer*)((peContainer *)5))->SetLayerVisibility((GSgfxLayerID)(0), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)5, false);
         }
         ((peContainer*)((peContainer *) this))->RemoveAll();
     }
@@ -210,6 +265,67 @@ void peShapeContainer::Stop() {
 
 extern "C++" {
 extern "C++" {
+
+
+#define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
+// layer state dirty mark: the state word, its copy 0xB8 further, and the group masks at 0x16A8/0x1760
+static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
+    LAYER_FIELD(l, u32, off) |= bit;
+    LAYER_FIELD(l, u32, 0x16A8) |= sum;
+    LAYER_FIELD(l, u32, off + 0xB8) |= bit;
+    LAYER_FIELD(l, u32, 0x1760) |= sum;
+}
+
+static inline bool canRender(peShapeContainer* c) {
+    if (!M2C_FIELD(c, u8 *, 0x19)) {
+        return false;
+    }
+    u32 flags = M2C_FIELD(M2C_FIELD(c, _peShape **, 0x20), u32 *, 0);
+    if (M2C_FIELD(c, u16 *, 0x14) == 0) {
+        return false;
+    }
+    if (g_render_pass != 1) {
+        return false;
+    }
+    switch (M2C_FIELD(g_current_layer, s32 *, 0x28)) {
+    case 0:
+        if (flags & 0x200000) {
+            return true;
+        }
+        break;
+    case 2:
+        if (flags & 0x400000) {
+            return true;
+        }
+        if (!(flags & 0x03E00008)) {
+            return true;
+        }
+        break;
+    case 4:
+        if (flags & 8) {
+            return true;
+        }
+        break;
+    case 1:
+        if (flags & 0x800000) {
+            return true;
+        }
+        break;
+    case 3:
+        if (flags & 0x01000000) {
+            return true;
+        }
+        break;
+    case 5:
+        if (flags & 0x02000000) {
+            return true;
+        }
+        break;
+    default:
+        return false;
+    }
+    return false;
+}
 
 extern "C++" {
 void peShapeContainer::Render() {
@@ -244,84 +360,21 @@ void peShapeContainer::Render() {
     u8 var_r30;
     u8 var_r7_2;
 
-    temp_cr0_eq = (u8) M2C_FIELD(this, u8 *, 0x19) == 0;
-    if (temp_cr0_eq == 0) {
-        if (temp_cr0_eq != 0) {
-            var_r0 = 0;
-        } else {
-            temp_r4 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), s32 *, 0);
-            if ((u16) M2C_FIELD(this, u16 *, 0x14) == 0) {
-                var_r0 = 0;
-            } else if ((s32) g_render_pass != 1) {
-                var_r0 = 0;
-            } else {
-                temp_r0 = M2C_FIELD(g_current_layer, s32 *, 0x28);
-                switch (temp_r0) {                  /* switch 1; irregular */
-                case 0:                             /* switch 1 */
-                    if (temp_r4 & 0x200000) {
-                        var_r0 = 1;
-                    } else {
-block_31:
-                        var_r0 = 0;
-                    }
-                    break;
-                case 2:                             /* switch 1 */
-                    if (temp_r4 & 0x400000) {
-                        var_r0 = 1;
-                    } else if (!(temp_r4 & 0x03E00008)) {
-                        var_r0 = 1;
-                    } else {
-                        goto block_31;
-                    }
-                    break;
-                case 4:                             /* switch 1 */
-                    if (temp_r4 & 8) {
-                        var_r0 = 1;
-                    } else {
-                        goto block_31;
-                    }
-                    break;
-                case 1:                             /* switch 1 */
-                    if (temp_r4 & 0x800000) {
-                        var_r0 = 1;
-                    } else {
-                        goto block_31;
-                    }
-                    break;
-                case 3:                             /* switch 1 */
-                    if (temp_r4 & 0x01000000) {
-                        var_r0 = 1;
-                    } else {
-                        goto block_31;
-                    }
-                    break;
-                case 5:                             /* switch 1 */
-                    if (temp_r4 & 0x02000000) {
-                        var_r0 = 1;
-                    } else {
-                        goto block_31;
-                    }
-                    break;
-                default:                            /* switch 1 */
-                    var_r0 = 0;
-                    break;
-                }
-            }
-        }
-        if (var_r0 != 0) {
+    if (M2C_FIELD(this, u8 *, 0x19)) {
+        if (canRender(this)) {
             temp_r31 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), s32 *, 0);
             if (temp_r31 & 0x800) {
-                M2C_FIELD(g_current_layer, s32 *, 0xD8C) = 2;
-                M2C_FIELD(g_current_layer, s32 *, 0x16B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16B8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1770) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1770) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 2);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xD8C) = 2;
+                    layerMark(l, 2, 0x16B8, 2);
+                }
             } else {
-                M2C_FIELD(g_current_layer, s32 *, 0xD8C) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16B8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1770) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1770) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 2);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xD8C) = 0;
+                    layerMark(l, 2, 0x16B8, 2);
+                }
             }
             var_r8 = 0;
             if (temp_r31 & 0x40) {
@@ -338,57 +391,57 @@ block_31:
                 sp14 = temp_r9;
                 var_r30 = 1;
                 sp18 = M2C_FIELD(&jtbl_1954, GSgfxLight **, 0);
-                M2C_FIELD((u16)g_current_layer, s8 *, 0xEAC) = 1;
+                M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 1;
                 sp1C = M2C_FIELD(&jtbl_1954, GSgfxLight **, 4);
                 M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16CC) | 1);
                 sp18 = temp_r9;
                 M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
                 M2C_FIELD(g_current_layer, s32 *, 0x1784) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1784) | 1);
                 M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s8 *, 0xDB8) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x16BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16BC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 4);
-                M2C_FIELD(g_current_layer, s32 *, 0x1774) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1774) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 4);
-                M2C_FIELD(g_current_layer, s32 *, 0x1170) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1174) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1178) = 0;
-                M2C_FIELD(g_current_layer, s8 *, 0x117C) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x1180) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x12B0) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12B4) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12B8) = 0;
-                M2C_FIELD(g_current_layer, s8 *, 0x12BC) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x12C0) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0xF70) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0xF74) = 0xA;
-                M2C_FIELD(g_current_layer, s32 *, 0xF78) = 8;
-                M2C_FIELD(g_current_layer, s32 *, 0xF7C) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1544) = 0x1C;
-                M2C_FIELD(g_current_layer, s32 *, 0x1700) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1700) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x10);
-                M2C_FIELD(g_current_layer, s32 *, 0x17B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17B8) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x10);
-                M2C_FIELD(g_current_layer, s32 *, 0x1070) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x1074) = 6;
-                M2C_FIELD(g_current_layer, s32 *, 0x1078) = 4;
-                M2C_FIELD(g_current_layer, s32 *, 0x107C) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s8, 0xDB8) = 1;
+                    layerMark(l, 4, 0x16BC, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1170) = 0;
+                    LAYER_FIELD(l, s32, 0x1174) = 0;
+                    LAYER_FIELD(l, s32, 0x1178) = 0;
+                    LAYER_FIELD(l, s8, 0x117C) = 1;
+                    LAYER_FIELD(l, s32, 0x1180) = 0;
+                    layerMark(l, 8, 0x16DC, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x12B0) = 0;
+                    LAYER_FIELD(l, s32, 0x12B4) = 0;
+                    LAYER_FIELD(l, s32, 0x12B8) = 0;
+                    LAYER_FIELD(l, s8, 0x12BC) = 1;
+                    LAYER_FIELD(l, s32, 0x12C0) = 0;
+                    layerMark(l, 8, 0x16E0, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xF70) = 0xF;
+                    LAYER_FIELD(l, s32, 0xF74) = 0xA;
+                    LAYER_FIELD(l, s32, 0xF78) = 8;
+                    LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                    layerMark(l, 8, 0x16D4, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1544) = 0x1C;
+                    layerMark(l, 0x10, 0x1700, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1070) = 7;
+                    LAYER_FIELD(l, s32, 0x1074) = 6;
+                    LAYER_FIELD(l, s32, 0x1078) = 4;
+                    LAYER_FIELD(l, s32, 0x107C) = 7;
+                    layerMark(l, 8, 0x16D8, 1);
+                }
                 PSMTXMultVec((const Mtx)(g_CameraMatrix), (const Vec *)((const register Vec*)(M2C_FIELD(this, _peShape **, 0x20) + 0x5C)), (Vec *)((register Vec*)(&unksp20)));
                 temp_r0_2 = M2C_FIELD(sp14, s32 *, 4);
                 sp38 = unksp20;
@@ -417,56 +470,56 @@ block_48:
                     M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 2;
                     var_r30 = 2;
                     sp1C = temp_r11;
-                    M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16CC) | 1);
-                    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1784) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1784) | 1);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0xEBC) = 0xFF;
-                    M2C_FIELD(g_current_layer, s32 *, 0xEC0) = 0xFF;
-                    M2C_FIELD(g_current_layer, s32 *, 0xEC4) = 5;
-                    M2C_FIELD(g_current_layer, s32 *, 0x16D0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D0) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1788) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1788) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1184) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x1188) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x118C) = 0;
-                    M2C_FIELD(g_current_layer, s8 *, 0x1190) = 1;
-                    M2C_FIELD(g_current_layer, s32 *, 0x1194) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x12C4) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x12C8) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x12CC) = 0;
-                    M2C_FIELD(g_current_layer, s8 *, 0x12D0) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x12D4) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0xF80) = 0xF;
-                    M2C_FIELD(g_current_layer, s32 *, 0xF84) = 0xA;
-                    M2C_FIELD(g_current_layer, s32 *, 0xF88) = 0xC;
-                    M2C_FIELD(g_current_layer, s32 *, 0xF8C) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1080) = 7;
-                    M2C_FIELD(g_current_layer, s32 *, 0x1084) = 7;
-                    M2C_FIELD(g_current_layer, s32 *, 0x1088) = 7;
-                    M2C_FIELD(g_current_layer, s32 *, 0x108C) = 0;
-                    M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 2);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                    M2C_FIELD(g_current_layer, s8 *, 0xDB8) = 2;
-                    M2C_FIELD(g_current_layer, s32 *, 0x16BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16BC) | 1);
-                    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 4);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1774) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1774) | 1);
-                    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 4);
+                    {
+                        GSgfxLayer* l = g_current_layer;
+                        layerMark(l, 8, 0x16CC, 1);
+                    }
+                    {
+                        GSgfxLayer* l = g_current_layer;
+                        LAYER_FIELD(l, s32, 0xEBC) = 0xFF;
+                        LAYER_FIELD(l, s32, 0xEC0) = 0xFF;
+                        LAYER_FIELD(l, s32, 0xEC4) = 5;
+                        layerMark(l, 8, 0x16D0, 2);
+                    }
+                    {
+                        GSgfxLayer* l = g_current_layer;
+                        LAYER_FIELD(l, s32, 0x1184) = 0;
+                        LAYER_FIELD(l, s32, 0x1188) = 0;
+                        LAYER_FIELD(l, s32, 0x118C) = 0;
+                        LAYER_FIELD(l, s8, 0x1190) = 1;
+                        LAYER_FIELD(l, s32, 0x1194) = 0;
+                        layerMark(l, 8, 0x16DC, 2);
+                    }
+                    {
+                        GSgfxLayer* l = g_current_layer;
+                        LAYER_FIELD(l, s32, 0x12C4) = 0;
+                        LAYER_FIELD(l, s32, 0x12C8) = 0;
+                        LAYER_FIELD(l, s32, 0x12CC) = 0;
+                        LAYER_FIELD(l, s8, 0x12D0) = 0;
+                        LAYER_FIELD(l, s32, 0x12D4) = 0;
+                        layerMark(l, 8, 0x16E0, 2);
+                    }
+                    {
+                        GSgfxLayer* l = g_current_layer;
+                        LAYER_FIELD(l, s32, 0xF80) = 0xF;
+                        LAYER_FIELD(l, s32, 0xF84) = 0xA;
+                        LAYER_FIELD(l, s32, 0xF88) = 0xC;
+                        LAYER_FIELD(l, s32, 0xF8C) = 0;
+                        layerMark(l, 8, 0x16D4, 2);
+                    }
+                    {
+                        GSgfxLayer* l = g_current_layer;
+                        LAYER_FIELD(l, s32, 0x1080) = 7;
+                        LAYER_FIELD(l, s32, 0x1084) = 7;
+                        LAYER_FIELD(l, s32, 0x1088) = 7;
+                        LAYER_FIELD(l, s32, 0x108C) = 0;
+                        layerMark(l, 8, 0x16D8, 2);
+                    }
+                    {
+                        GSgfxLayer* l = g_current_layer;
+                        LAYER_FIELD(l, s8, 0xDB8) = 2;
+                        layerMark(l, 4, 0x16BC, 1);
+                    }
                     sp8 = 2;
                     ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(1U, (GSgfxCunitAlpha)(0), (GSgfxCunitSrc)(0), (GSgfxCunitSrc)(0), 1U, (GSgfxLight**)(&sp10), (GSgfxLightType)(0), (GSgfxDiffuseFunc)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)));
                     if (PSVECSquareMag((const register Vec*)(M2C_FIELD(this, _peShape **, 0x20) + 0x5C)) < 0.00001f) {
@@ -495,8 +548,7 @@ block_48:
                 }
                 var_r7_2 = 0;
                 M2C_FIELD(g_current_layer, u8 *, 0xD94) = var_r30;
-loop_62:
-                if (var_r7_2 < 8U) {
+                while (var_r7_2 < 8U) {
                     if (var_r7_2 < var_r30) {
                         temp_r9_2 = (var_r7_2 * 4) & 0x3FC;
                         *((u8*)(g_current_layer) + (temp_r9_2 + 0xD98)) = (unsigned char)(*(&sp18 + temp_r9_2));
@@ -504,73 +556,70 @@ loop_62:
                         *((u8*)(g_current_layer) + (((var_r7_2 * 4) & 0x3FC) + 0xD98)) = 0;
                     }
                     var_r7_2 += 1;
-                    goto loop_62;
                 }
-                M2C_FIELD(g_current_layer, s32 *, 0x16BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16BC) | 0x10);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 4);
-                M2C_FIELD(g_current_layer, s32 *, 0x1774) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1774) | 0x10);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 4);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    layerMark(l, 4, 0x16BC, 0x10);
+                }
             } else {
-                M2C_FIELD(g_current_layer, s8 *, 0xDB8) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16BC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 4);
-                M2C_FIELD(g_current_layer, s32 *, 0x1774) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1774) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 4);
-                M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16CC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1784) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1784) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0xEB0) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0xEB4) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0xEB8) = 0xFF;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D0) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1788) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1788) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1170) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1174) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1178) = 0;
-                M2C_FIELD(g_current_layer, s8 *, 0x117C) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x1180) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x12B0) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12B4) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12B8) = 0;
-                M2C_FIELD(g_current_layer, s8 *, 0x12BC) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x12C0) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s8, 0xDB8) = 0;
+                    layerMark(l, 4, 0x16BC, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s8, 0xEAC) = 1;
+                    layerMark(l, 8, 0x16CC, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xEB0) = 0;
+                    LAYER_FIELD(l, s32, 0xEB4) = 0;
+                    LAYER_FIELD(l, s32, 0xEB8) = 0xFF;
+                    layerMark(l, 8, 0x16D0, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1170) = 0;
+                    LAYER_FIELD(l, s32, 0x1174) = 0;
+                    LAYER_FIELD(l, s32, 0x1178) = 0;
+                    LAYER_FIELD(l, s8, 0x117C) = 1;
+                    LAYER_FIELD(l, s32, 0x1180) = 0;
+                    layerMark(l, 8, 0x16DC, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x12B0) = 0;
+                    LAYER_FIELD(l, s32, 0x12B4) = 0;
+                    LAYER_FIELD(l, s32, 0x12B8) = 0;
+                    LAYER_FIELD(l, s8, 0x12BC) = 1;
+                    LAYER_FIELD(l, s32, 0x12C0) = 0;
+                    layerMark(l, 8, 0x16E0, 1);
+                }
                 ((GSgfxLayer*)(g_current_layer))->tunitKRegSel(0U, (GSgfxTunitKReg)(0));
-                M2C_FIELD(g_current_layer, s32 *, 0xF70) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0xF74) = 0xE;
-                M2C_FIELD(g_current_layer, s32 *, 0xF78) = 8;
-                M2C_FIELD(g_current_layer, s32 *, 0xF7C) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1070) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x1074) = 6;
-                M2C_FIELD(g_current_layer, s32 *, 0x1078) = 4;
-                M2C_FIELD(g_current_layer, s32 *, 0x107C) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xF70) = 0xF;
+                    LAYER_FIELD(l, s32, 0xF74) = 0xE;
+                    LAYER_FIELD(l, s32, 0xF78) = 8;
+                    LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                    layerMark(l, 8, 0x16D4, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1070) = 7;
+                    LAYER_FIELD(l, s32, 0x1074) = 6;
+                    LAYER_FIELD(l, s32, 0x1078) = 4;
+                    LAYER_FIELD(l, s32, 0x107C) = 7;
+                    layerMark(l, 8, 0x16D8, 1);
+                }
             }
             M2C_FIELD(g_current_layer, GSgfxVF **, 0x199C) = GSgfxVFGetPredef(4);
             var_r30_2 = M2C_FIELD(this, peShapeNode **, 0x10);
-loop_67:
-            if (var_r30_2 != NULL) {
+            while (var_r30_2 != NULL) {
                 ((peShapeNode*)(var_r30_2))->Render((_peShape*)(M2C_FIELD(this, _peShape **, 0x20)));
                 var_r30_2 = M2C_FIELD(var_r30_2, peShapeNode **, 0x28);
-                goto loop_67;
             }
             particleEngineSetDefaultRenderState(1);
         }
@@ -646,6 +695,76 @@ void GSgfxLayer::tunitKRegSel(unsigned char p0, GSgfxTunitKReg p1) {
         return;
     }
 }
+extern "C++" {
+#pragma push
+#pragma dont_inline on
+// container fields: 0x0 emitter, 0x10 node list, 0x14 node count, 0x19 active, 0x20 shape;
+// nodes: 0x28 next, 0x2C previous, 0x84 depth
+#define PE_NEXT(n) (*(peNode**)((u8*)(n) + 0x28))
+#define PE_PREV(n) (*(peNode**)((u8*)(n) + 0x2C))
+#define PE_DEPTH(n) (*(f32*)((u8*)(n) + 0x84))
+
+void peShapeContainer::Update(float dt) {
+    peNode* node;
+    peNode* next;
+    peNode* pos;
+    peNode* prev;
+    f32 depth;
+
+    if (*((u8*)this + 0x19) == 0) {
+        return;
+    }
+    for (node = *(peNode**)((u8*)this + 0x10); node != NULL; node = next) {
+        next = PE_NEXT(node);
+        if (!((peShapeNode*)node)->Update(*(peEmitterNode**)this, *(_peShape**)((u8*)this + 0x20), dt)) {
+            ((peContainer*)this)->RemoveNode(node);
+        }
+    }
+    if (g_currentBound != 0 && *(peNode**)((u8*)this + 0x10) != NULL) {
+        GSboundAlwaysInView(g_currentBound, 1);
+    }
+    if (*((u8*)this + 0x19) != 0 && (**(u32**)((u8*)this + 0x20) & 0x80) && *(u16*)((u8*)this + 0x14) >= 2) {
+        for (node = PE_NEXT(*(peNode**)((u8*)this + 0x10)); node != NULL; node = next) {
+            depth = PE_DEPTH(node);
+            pos = node;
+            for (prev = PE_PREV(node); prev != NULL && PE_DEPTH(prev) < depth; prev = PE_PREV(prev)) {
+                pos = prev;
+            }
+            next = PE_NEXT(node);
+            if (pos != node) {
+                ((peContainer*)this)->MoveNode(node, pos);
+            }
+        }
+    }
+}
+extern "C++" {
+u16 peShapeContainer::Emit(unsigned short count) {
+    u16 var_r31;
+    _EmitParams *var_r30;
+    peShapeNode *var_r3;
+    peShapeNode *temp_r29;
+    u16 temp_r28;
+
+    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
+        return 0U;
+    }
+    var_r31 = ((peContainer*)this)->CreateNodes(count);
+    var_r30 = g_emitParams;
+    var_r3 = M2C_FIELD(this, peShapeNode **, 0x10);
+    temp_r28 = var_r31;
+    while (var_r31 != 0) {
+        temp_r29 = M2C_FIELD(var_r3, peShapeNode **, 0x28);
+        ((peShapeNode*)(var_r3))->Start((peEmitterNode*)(M2C_FIELD(this, peEmitterNode **, 0)), (_peShape*)(M2C_FIELD(this, _peShape **, 0x20)), (_EmitParams*)(var_r30));
+        var_r3 = temp_r29;
+        var_r31 -= 1;
+        var_r30 += 0x48;
+    }
+    return temp_r28;
+}
+}
+#pragma pop
+}
+
 extern "C++" {
 #pragma push
 #pragma dont_inline on
@@ -1250,29 +1369,6 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 #pragma peephole off
-u16 peShapeContainer::Emit(unsigned short p0) {
-    _EmitParams *var_r30;
-    peShapeNode *temp_r29;
-    peShapeNode *var_r3;
-    s32 temp_r28;
-    s32 var_r31;
-
-    if ((u8) M2C_FIELD(this_, u8 *, 0x19) == 0) {
-        return 0U;
-    }
-    var_r31 = ((peContainer*)((peContainer *) this_))->CreateNodes(p0);
-    var_r30 = g_emitParams;
-    var_r3 = M2C_FIELD(this_, peShapeNode **, 0x10);
-    temp_r28 = var_r31;
-    while (var_r31 != 0) {
-        temp_r29 = M2C_FIELD(var_r3, peShapeNode **, 0x28);
-        ((peShapeNode*)(var_r3))->Start((peEmitterNode*)(M2C_FIELD(this_, peEmitterNode **, 0)), (_peShape*)(M2C_FIELD(this_, _peShape **, 0x20)), (_EmitParams*)(var_r30));
-        var_r3 = temp_r29;
-        var_r31 -= 1;
-        var_r30 += 0x48;
-    }
-    return temp_r28;
-}
 #pragma peephole reset
 }
 
@@ -1281,13 +1377,13 @@ void peShapeContainer::Start() {
     if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
         M2C_FIELD(this, u8 *, 0x19) = 1U;
         if (*M2C_FIELD(this, s32 **, 0x20) & 0x800000) {
-            ((peContainer*)((peContainer *)1))->SetLayerVisibility((GSgfxLayerID)(1), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
         }
         if (*M2C_FIELD(this, s32 **, 0x20) & 0x01000000) {
-            ((peContainer*)((peContainer *)3))->SetLayerVisibility((GSgfxLayerID)(1), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)3, true);
         }
         if (*M2C_FIELD(this, s32 **, 0x20) & 0x02000000) {
-            ((peContainer*)((peContainer *)5))->SetLayerVisibility((GSgfxLayerID)(1), M2C_ERROR(/* Read from unset register $r5 */));
+            peContainer::SetLayerVisibility((GSgfxLayerID)5, true);
         }
     }
 }
@@ -1295,27 +1391,16 @@ void peShapeContainer::Start() {
 
 extern "C++" {
 peShapeContainer::~peShapeContainer() {
-    if (this != NULL) {
-        M2C_FIELD(this, s32 **, 0x1C) = &__vt__16peShapeContainer;
-        M2C_FIELD(&g_particle_debug_stats, s32 *, 4) = (s32) (M2C_FIELD(&g_particle_debug_stats, s32 *, 4) - 0x24);
-        M2C_FIELD(&g_particle_debug_stats, s32 *, 0x14) = (s32) (M2C_FIELD(&g_particle_debug_stats, s32 *, 0x14) - 0x24);
-        ((peContainer*)((peContainer *) this))->~peContainer();
-        if ((s16) M2C_ERROR(/* Read from unset register $r4 */) > 0) {
-            operator delete((void*)(this));
-        }
-    }
-    return;
+    g_particle_debug_stats.unk4 -= 0x24;
+    g_particle_debug_stats.unk14 -= 0x24;
 }
 }
 
 extern "C++" {
-peShapeContainer::peShapeContainer(peEmitterNode* p0, _peShape* p1, unsigned short p2) {
-    ((peContainer*)((peContainer *) this))->peContainer((peEmitterNode*)(p0), 0x9CU, p2);
-    M2C_FIELD(this, _peShape **, 0x20) = p1;
-    M2C_FIELD(this, s32 **, 0x1C) = &__vt__16peShapeContainer;
-    M2C_FIELD(&g_particle_debug_stats, s32 *, 4) = (s32) (M2C_FIELD(&g_particle_debug_stats, s32 *, 4) + 0x24);
-    M2C_FIELD(&g_particle_debug_stats, s32 *, 0x14) = (s32) (M2C_FIELD(&g_particle_debug_stats, s32 *, 0x14) + 0x24);
-    return;
+peShapeContainer::peShapeContainer(peEmitterNode* p0, _peShape* p1, unsigned short p2) : peContainer(p0, 0x9C, p2) {
+    shape = p1;
+    g_particle_debug_stats.unk4 += 0x24;
+    g_particle_debug_stats.unk14 += 0x24;
 }
 }
 
@@ -1498,7 +1583,8 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
             PSMTXQuat((Mtx)((s32) &sp8C), (const Quaternion *)((const register Quaternion*)(M2C_FIELD(this, peXform **, 0x20) + 0xC)));
             PSMTXMultVecSR((const Mtx)((s32) &sp8C), (const Vec *)((const register Vec*)((Vec *) &sp64)), (Vec *)((register Vec*)((Vec *) &sp64)));
         }
-        var_f2 = (sp64 * sp64) + (sp6C * sp6C);
+        var_f2 = (sp6C * sp6C);
+        var_f2 += (sp64 * sp64);
         if (var_f2 > 0.0f) {
             temp_f1 = __frsqrte(var_f2);
             temp_f1_2 = 0.5 * temp_f1 * -(((f64) var_f2 * (temp_f1 * temp_f1)) - 3.0);
@@ -1528,8 +1614,10 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
                 var_r0 = 4;
                 break;
             }
-            if (var_r0 == 1) {
-                var_f2 = __float_nan;
+            switch (var_r0) {
+            case 1:
+                    var_f2 = __float_nan;
+                break;
             }
         }
         sp80 = (f32) atan2(-sp68, (f64) var_f2);
@@ -1546,8 +1634,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
             if (var_f1_2 < 0.0f) {
                 var_f1_2 = -var_f1_2;
             }
-            M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-            if (var_f1_2 == 0.00001f) {
+            if (var_f1_2 <= 0.00001f) {
                 var_f1 = M2C_FIELD(temp_r3_3, f32 *, 4);
             } else {
                 var_f1 = peSplineGetValue((peSpline*)(temp_r3_3), temp_f31);
@@ -1562,8 +1649,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
             if (var_f1_4 < 0.0f) {
                 var_f1_4 = -var_f1_4;
             }
-            M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-            if (var_f1_4 == 0.00001f) {
+            if (var_f1_4 <= 0.00001f) {
                 var_f1_3 = M2C_FIELD(temp_r3_4, f32 *, 4);
             } else {
                 var_f1_3 = peSplineGetValue((peSpline*)(temp_r3_4), temp_f31);
@@ -1578,8 +1664,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
             if (var_f1_6 < 0.0f) {
                 var_f1_6 = -var_f1_6;
             }
-            M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-            if (var_f1_6 == 0.00001f) {
+            if (var_f1_6 <= 0.00001f) {
                 var_f1_5 = M2C_FIELD(temp_r3_5, f32 *, 4);
             } else {
                 var_f1_5 = peSplineGetValue((peSpline*)(temp_r3_5), temp_f31);
@@ -1604,8 +1689,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
         if (var_f1_8 < 0.0f) {
             var_f1_8 = -var_f1_8;
         }
-        M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-        if (var_f1_8 == 0.00001f) {
+        if (var_f1_8 <= 0.00001f) {
             var_f1_7 = M2C_FIELD(temp_r3_7, f32 *, 4);
         } else {
             var_f1_7 = peSplineGetValue((peSpline*)(temp_r3_7), temp_f31);
@@ -1620,8 +1704,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
         if (var_f1_10 < 0.0f) {
             var_f1_10 = -var_f1_10;
         }
-        M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-        if (var_f1_10 == 0.00001f) {
+        if (var_f1_10 <= 0.00001f) {
             var_f1_9 = M2C_FIELD(temp_r3_8, f32 *, 4);
         } else {
             var_f1_9 = peSplineGetValue((peSpline*)(temp_r3_8), temp_f31);
@@ -1636,15 +1719,14 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
         if (var_f1_11 < 0.0f) {
             var_f1_11 = -var_f1_11;
         }
-        M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-        if (var_f1_11 == 0.00001f) {
+        if (var_f1_11 <= 0.00001f) {
             var_f2_2 = M2C_FIELD(temp_r3_9, f32 *, 4);
         } else {
             var_f2_2 = peSplineGetValue((peSpline*)(temp_r3_9), temp_f31);
         }
     }
     sp88 = M2C_FIELD(this, f32 *, 0x80) * var_f2_2;
-    peColorSplineGetValue((u8*)(this + 0x98), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 0x4C)), temp_f31);
+    peColorSplineGetValue((u8*)((u8*)this + 0x98), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 0x4C)), temp_f31);
     spA = M2C_FIELD(this, u8 *, 0x98);
     M2C_FIELD(this, u8 *, 0x98) = sp14;
     sp9 = M2C_FIELD(this, u8 *, 0x99);
@@ -1659,8 +1741,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
         if (var_f1_12 < 0.0f) {
             var_f1_12 = -var_f1_12;
         }
-        M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
-        if (var_f1_12 == 0.00001f) {
+        if (var_f1_12 <= 0.00001f) {
 
         } else {
             peSplineGetValue((peSpline*)(temp_r3_10), temp_f31);
@@ -1711,16 +1792,16 @@ void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
     f32 sp10;
     f32 spC;
     f32 unksp8;
-    f32 sp1C;
-    f32 sp18;
+    volatile f32 sp1C;
+    volatile f32 sp18;
     f32 sp14;
     Vec *temp_r3;
     s32 temp_r31;
 
-    temp_r31 = M2C_FIELD(p1, s32 *, 0);
     ((peNode*)((peNode *) this))->Start((peEmitterNode*)(p0), (_EmitParams*)(p2));
     M2C_FIELD(this, s32 *, 0x88) = 0;
     PSVECScale((const register Vec*)(((u8*)(p1) + 0x28)), (register Vec*)(&unksp8), HSD_Randf());
+    temp_r31 = M2C_FIELD(p1, s32 *, 0);
     temp_r3 = (Vec *)(this + 0x78);
     M2C_FIELD(this, f32 *, 0x78) = unksp8;
     M2C_FIELD(this, f32 *, 0x7C) = spC;
@@ -1744,7 +1825,8 @@ void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
         EulerToQuat((Vec*)(((u8*)(p1) + 4)), (Quaternion*)(this + 0x68));
         if (temp_r31 & 0x1C7000) {
             if (temp_r31 & 0x1000) {
-                sp14 = 6.2831855f * HSD_Randf();
+                sp14 = HSD_Randf();
+                sp14 *= 6.2831855f;
             } else {
                 sp14 = 0.0f;
             }

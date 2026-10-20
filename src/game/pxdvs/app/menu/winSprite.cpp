@@ -575,8 +575,8 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             wsPos(sp->x, sp->y + sp->h);
             wsCol(r2, g2, b2, a);
             wsPos(sp->x, sp->y);
-            gfx->endSurface();
             wsCol(r2, g2, b2, a);
+            gfx->endSurface();
             break;
         }
         case 3: {
@@ -748,11 +748,11 @@ void winSpriteDrawTexture(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
         xy[4] = xy[6] = (f32)(px + width) - cxy[0];
     }
     if (sp->h < 0) {
-        xy[3] = xy[5] = (f32)py - cxy[1];
-        xy[1] = xy[7] = (f32)(py + height) - cxy[1];
-    } else {
-        xy[3] = xy[5] = (f32)(py + height) - cxy[1];
         xy[1] = xy[7] = (f32)py - cxy[1];
+        xy[3] = xy[5] = (f32)(py + height) - cxy[1];
+    } else {
+        xy[1] = xy[7] = (f32)(py + height) - cxy[1];
+        xy[3] = xy[5] = (f32)py - cxy[1];
     }
     if (sp->rot != 0.0f) {
         C_QUATRotAxisRad(&q, &yAxisVector, sp->rot);

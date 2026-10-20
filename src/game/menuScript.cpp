@@ -829,12 +829,15 @@ void menuScriptEeveeCtrl(tagWINDOW_WORK* w)
 
 static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite, CURSOR* c, POKEMON_DATA_dd_* pd)
 {
-    MenuItem* item = menuItemBiosGetPtr(0xAF, sprite->id);
+    u8 second;
+    int n2;
+    int n1;
+    volatile MenuItem* item = menuItemBiosGetPtr(0xAF, sprite->id);
     u8 tid = pokemonDataBiosGetTokuseiDataId(pd, 0);
     if (tid != 0) {
+        u32 k;
         u16* text = (u16*)GSmsgGetGSchar(pokemonTokuseiDataBiosGetDoc(pokemonTokuseiDataBiosGetPtr(tid)));
         u32 len = GSmsgGetCharLength(text);
-        u32 k;
         u16* buf1 = new u16[len + 2];
         u16* buf2 = new u16[len + 2];
         u16* name = buf1;
@@ -877,13 +880,13 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
             }
         } while (k < len);
         if (wrap) {
-            int spaces = 0;
-            int n1 = 0;
-            int n2 = 0;
-            u8 second = 0;
+            u16* p = text;
+            n1 = 0;
+            n2 = 0;
+            second = 0;
             u32 total = GSmsgGetCharLength(text);
             u32 idx = 0;
-            u16* p = text;
+            int spaces = 0;
             for (;; p++, idx++) {
                 u16 ch = *p;
                 if (ch == 0xFFFF) {
@@ -1177,8 +1180,8 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
 {
     CURSOR c = *(CURSOR*)&w->top;
     u16 n = _wazaOshieWazaNum(w);
-    WAZAOSHIEDEF* waza = _getWaza2Pointer(c.pos + c.top);
-    s32 layer = winSpriteGetLayerID(w, sprite);
+    volatile WAZAOSHIEDEF* waza = _getWaza2Pointer(c.pos + c.top);
+    int layer = winSpriteGetLayerID(w, sprite);
     u32 color = w->alpha | 0xFFFFFF00;
     switch (sprite->id) {
     case 0x6BB: case 0x6BC: case 0x6BD: case 0x6BE: case 0x6BF: case 0x6C0: case 0x6C1: case 0x6C2: case 0x6C3:
@@ -1203,7 +1206,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
             MenuItem* b = menuItemBiosGetPtr(w->menuID, sprite->id);
             spriteSetScissor(layer, a->x - b->x, a->y - b->y, a->w, a->h);
             s16 y = -c.top * 0x1F;
-            for (u16 i = 0; i < n; i++, y += 0x1F) {
+            for (u16 i = 0; i < n; y += 0x1F, i++) {
                 if (i >= c.top - 1 && i < c.top + 10) {
                     WAZAOSHIEDEF* p = _getWaza2Pointer(i);
                     if (p->id != 0) {
@@ -1211,7 +1214,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
                         if (w->menuID == 0xE4) {
                             msgctrlSetValue(0x50, 1000);
                             u32 r = GSmsgGetRect(0x4359);
-                            GSmsgPrint2(layer, sprite->w - (r >> 16), y, color, 0x4359);
+                            GSmsgPrint2(layer, sprite->w - (r >> 16), (u8)y, color, 0x4359);
                         } else if (p->flag) {
                             MenuSpriteVal* v = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0x241));
                             windowDrawSprite(b->w - v->x, y + (0x12 - v->w) / 2, w, 0x241, 0, layer);

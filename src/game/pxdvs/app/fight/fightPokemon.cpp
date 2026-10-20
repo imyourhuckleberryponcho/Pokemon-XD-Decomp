@@ -248,7 +248,7 @@ u16 pokemonGetSoubiItemSoubiDataId(Pokemon* p);
 u16 pokemonGetSoubiItemDataId(Pokemon* p);
 u8 fightOutPokemon_GetAbicntNimbleness(FightOutPokemon* fop);
 s32 heroGetStatus(void* hero, s32 id, s32 a);
-u32 fightAbicntDoKakeWaru(u16 id, u32 value);
+u32 fightAbicntDoKakeWaru(u8 id, u32 value);
 s16 fightPokemon_GetEntryId(FightPokemon* fp);
 s16 fightOutPokemon_GetIrekaeTargetEntryId(FightOutPokemon* fop);
 FightAction* fightOutPokemon_GetFightActionBuffPtr(FightOutPokemon* fop);
@@ -2010,15 +2010,20 @@ u8 fightOutPokemonCheckIrekaeReserveFightPokemon(FightOutPokemon* fop, FightPoke
     return 0;
 }
 
+// WIP (reglab 2026-10-19): the PARAMETER registers match the original only when the abicnt return type, the abicnt
+// local and fightAbicntDoKakeWaru's first parameter all have the same type (u8/u8/u8 gives fop r26, tenki r28, hero r25
+// exactly; the u16 prototype at the top of this file gives tenki r22). The original also masks abicnt (clrlwi r3,r24,24)
+// right before fightAbicntDoKakeWaru, which none of those combinations does yet.
 u32 fightOutPokemonGetNowNimbleness(FightOutPokemon* fop, u8 useBadge, u8 tenki, u16 hp, void* hero) {
+    extern u32 fightAbicntDoKakeWaru(u32 id, u32 value);
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);
     if (p == 0) {
         return 0;
     }
-    u8 abicnt = fightOutPokemon_GetAbicntNimbleness(fop);
+    u16 tokusei = fightOutPokemonGetTokuseiDataId(fop);
     u16 item = fightOutPokemonGetSoubiItemSoubiDataId(fop);
     s32 itemBuff = figthOutPokemonGetSoubiItemBuff(fop);
-    u16 tokusei = fightOutPokemonGetTokuseiDataId(fop);
+    u8 abicnt = fightOutPokemon_GetAbicntNimbleness(fop);
     u8 badge;
     if (hero != 0) {
         badge = heroGetStatus(hero, 0x11, 0) != 0;

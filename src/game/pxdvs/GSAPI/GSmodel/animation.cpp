@@ -250,13 +250,17 @@ inline int __fpclassifyf(f32 x) {
 // Inline helpers from HSD's jobj.h (asserts carry that header's line numbers).
 extern "C" {
 
+static inline bool HSD_JObjFlagIsClear(HSD_JObj* jobj, u32 f) {
+    return !(jobj->flags & f);
+}
+
 static inline s32 HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
     u8 result;
     if (!jobj) {
         __assert("jobj.h", 605, "jobj");
     }
     result = false;
-    if (!(jobj->flags & JOBJ_USER_DEF_MTX) && (jobj->flags & JOBJ_MTX_DIRTY)) {
+    if (HSD_JObjFlagIsClear(jobj, JOBJ_USER_DEF_MTX) && (jobj->flags & JOBJ_MTX_DIRTY)) {
         result = true;
     }
     return result;
@@ -677,7 +681,7 @@ static inline void modelAnimEnded(_GSmodel* model, s32 type, u32 stopFlag, u32 l
 }
 
 static inline void modelAdvanceFrame(_GSmodel* model, f32* frame, f32 step, s32* type, f32* end, u32 endFlag) {
-    if (step != 0.0f) {
+    if (step) {
         *frame += step;
         switch (*type) {
         case 0:
@@ -1679,6 +1683,7 @@ void modelCalculatePartMix(GSvec* value, GSvec* mix, u32 flags) {
     }
 }
 
+#pragma inline_max_size(600)
 static void _modelRecalcMatrixAll(HSD_JObj* jobj) {
     HSD_JObj* child;
 

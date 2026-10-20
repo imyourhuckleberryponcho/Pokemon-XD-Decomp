@@ -266,7 +266,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     MenuFightStatusAnim* anim = windowGetFreeWork(window);
     u32 color;
     s16 flag = 0;
-    s16 shown;
+    u32 barColor;
     s32 bar;
     s32 hp;
     void* trainer;
@@ -276,7 +276,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     GSgfxLayer* layer;
     f32 cur;
     f32 max;
-    u32 barColor;
+    s16 shown;
     u16 barID;
     s32 x;
     s16 from;
@@ -449,9 +449,9 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             } else {
                 barColor = 0x00800000;
             }
-            layer->primitive = 0x98;
             barColor |= window->colorAlpha;
             x = (s32)((max - 1.0f + (f32)(from * sprite->width)) / max);
+            layer->primitive = 0x98;
             layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
             layer->beginSurface(4);
             GXWGFifo.s16 = 0;
@@ -460,11 +460,11 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             GXWGFifo.s16 = x;
             GXWGFifo.s16 = 0;
             GXWGFifo.u32 = barColor;
-            GXWGFifo.s16 = 0;
             GXWGFifo.s16 = sprite->height;
             GXWGFifo.s16 = x;
             GXWGFifo.u32 = barColor;
             GXWGFifo.s16 = sprite->height;
+            GXWGFifo.s16 = 0;
             GXWGFifo.u32 = barColor;
             layer->endSurface();
         }
@@ -500,9 +500,9 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 windowDrawSprite2(0, 0, shown, sprite->height, color, window, 0x92, 0, winSpriteGetLayerID(window, sprite));
             } else if (anim->expDone != 0) {
                 windowDrawSprite2(0, 0, sprite->width, sprite->height, color, window, 0x92, 0, winSpriteGetLayerID(window, sprite));
-                layer->primitive = 0x80;
                 layer = GSgfxLayerFindByID(winSpriteGetLayerID(window, sprite));
                 c = (s32)(255.0f - 254.0f * cFlash);
+                layer->primitive = 0x80;
                 layer->colorCount = 6;
                 layer->colorMode = 0;
                 layer->flagsB |= 4;

@@ -120,6 +120,7 @@ void pcboxDebugPokemonSetupFull() {
 }
 
 void pcboxDebugPokemonSetup() {
+    Pokemon pk;
     PCBOX* pcbox = PCBOX::getPointer();
     for (int i = 0; i < 8; i++) {
         msgctrlSetValue(0x34, i + 1);
@@ -139,7 +140,6 @@ void pcboxDebugPokemonSetup() {
             }
         } else {
             for (int j = 0; j < 3; j++) {
-                Pokemon pk;
                 menuPocketDebugMakePokemonBySN(pk, sn++, j % 10 == 0, 0.1f);
                 PCBOX::getPointer()->setPokemonImpl(&pk, i, j);
             }

@@ -230,65 +230,51 @@ static void mkHBillBoardMtx(HSD_JObj* jobj, MtxPtr src, MtxPtr dst)
 
 static void mkBillBoardMtx(HSD_JObj* jobj, MtxPtr src, MtxPtr dst)
 {
-    Vec3 x, y, z, pos;
-    float sx, sy, sz, mag;
+    Vec3 ax, ay, az, pos;
+    f32 sx, sy, sz, mag;
 
-    sz = HSD_MtxColMag(src, 2);
     sx = HSD_MtxColMag(src, 0);
-    y.x = src[0][1];
-    y.y = src[1][1];
-    y.z = src[2][1];
-    sy = VECMag(&y);
-    pos.x = src[0][3];
-    pos.y = src[1][3];
-    pos.z = src[2][3];
+    sz = HSD_MtxColMag(src, 2);
+
+    HSD_MtxColVec(src, 1, &ay);
+    sy = VECMag(&ay);
+    HSD_MtxColVec(src, 3, &pos);
 
     if (jobj->flags & JOBJ_PBILLBOARD) {
-        mag = VECMag(&pos);
-        VECScale(&pos, &z, -1.0F / (EPS + mag));
+        VECScale(&pos, &az, -1.0F / (EPS + VECMag(&pos)));
     } else {
-        z.x = 0.0F;
-        z.y = 0.0F;
-        z.z = 1.0F;
+        az.x = 0.0F;
+        az.y = 0.0F;
+        az.z = 1.0F;
     }
-
-    VECScale(&y, &y, 1.0F / (sy + EPS));
-    VECCrossProduct(&y, &z, &x);
-    mag = VECMag(&x);
-    if (!(mag < EPS)) {
+    VECScale(&ay, &ay, 1.0F / (sy + EPS));
+    VECCrossProduct(&ay, &az, &ax);
+    mag = VECMag(&ax);
+    if (mag >= EPS) {
         sx /= mag;
-        VECCrossProduct(&z, &x, &y);
-        sy /= EPS + VECMag(&y);
-        dst[0][0] = sx * x.x;
-        dst[1][0] = sx * x.y;
-        dst[2][0] = sx * x.z;
-        dst[0][1] = sy * y.x;
-        dst[1][1] = sy * y.y;
-        dst[2][1] = sy * y.z;
+        VECCrossProduct(&az, &ax, &ay);
+        sy /= EPS + VECMag(&ay);
     } else {
-        float scale;
-
-        mag = sqrtf(z.x * z.x + z.z * z.z);
-        scale = -z.y / (EPS + mag);
-        y.x = z.x * scale;
-        y.y = EPS + mag;
-        y.z = z.z * scale;
-        VECCrossProduct(&y, &z, &x);
-        sx /= EPS + VECMag(&x);
-        dst[0][0] = sx * x.x;
-        dst[1][0] = sx * x.y;
-        dst[2][0] = sx * x.z;
-        dst[0][1] = y.x;
-        dst[1][1] = y.y;
-        dst[2][1] = y.z;
+        ay.y = EPS + sqrtf(az.x * az.x + az.z * az.z);
+        ay.x = az.x * (-az.y / ay.y);
+        ay.z = az.z * (-az.y / ay.y);
+        VECCrossProduct(&ay, &az, &ax);
+        sx /= EPS + VECMag(&ax);
     }
 
-    dst[0][2] = sz * z.x;
-    dst[1][2] = sz * z.y;
-    dst[2][2] = sz * z.z;
-    dst[0][3] = pos.x;
-    dst[1][3] = pos.y;
-    dst[2][3] = pos.z;
+    dst[0][0] = sx * ax.x;
+    dst[1][0] = sx * ax.y;
+    dst[2][0] = sx * ax.z;
+
+    dst[0][1] = sy * ay.x;
+    dst[1][1] = sy * ay.y;
+    dst[2][1] = sy * ay.z;
+
+    dst[0][2] = sz * az.x;
+    dst[1][2] = sz * az.y;
+    dst[2][2] = sz * az.z;
+
+    HSD_MtxSetColVec(dst, 3, &pos);
 }
 
 static void mkRBillBoardMtx(HSD_JObj* jobj, MtxPtr src, MtxPtr dst)

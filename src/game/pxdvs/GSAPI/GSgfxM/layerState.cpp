@@ -27,6 +27,27 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
+
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
 struct GXFogAdjTable;
 
 struct GSgfxVFArray {
@@ -469,13 +490,14 @@ struct GXFogAdjTable {
 extern "C" {
 void* GSgfxVideoGetViewport(f32, s32, s32, f32, f32, s32, s32, f32);
 inline void GSgfx_GCSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1);
-inline void GSgfx_GCSetAmbColor(s32 ch, u32* c);
+struct GSColor { u8 r; u8 g; u8 b; u8 a; };
+inline void GSgfx_GCSetAmbColor(s32 ch, GSColor c);
 inline void GSgfx_GCSetBlendMode(s32 type, s32 src, s32 dst, s32 lop);
 inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 lights, s32 diff, s32 attn);
 inline void GSgfx_GCSetFogRangeAdj(u8 en, u16 center, u32* adj);
 inline void GSgfx_GCSetIndTexCoordScale(s32 stage, s32 s, s32 t);
 inline void GSgfx_GCSetIndTexOrder(s32 stage, s32 coord, s32 map);
-inline void GSgfx_GCSetMatColor(s32 ch, u32* c);
+inline void GSgfx_GCSetMatColor(s32 ch, GSColor c);
 inline void GSgfx_GCSetProjection(s32 type, u32* p);
 inline void GSgfx_GCSetScissor(u16 x, u16 y, u16 w, u16 h, s32 xo, s32 yo);
 inline void GSgfx_GCSetTevAlphaIn(s32 stage, s32 a, s32 b, s32 c, s32 d);
@@ -502,6 +524,10 @@ extern "C++" {
 s32 GSgfxVideoSetViewport(float, float, float, float, bool);
 }
 
+// ---- draft declarations ----
+
+
+
 inline void GSIndSet(s32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, u8 ws, u8 wt, s32 addPrev, u8 utc, s32 alpha) {
     gsgfxState->indCmd[stage].indId = indId;
     gsgfxState->indCmd[stage].fmt = fmt;
@@ -518,15 +544,10 @@ inline void GSIndSet(s32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, u8 ws, u8 wt,
 struct XfCol { u32 r : 8; u32 g : 8; u32 b : 8; u32 a : 8; };
 inline void GSWriteXfColor(u32 reg, u32 v) {
     u8* p = (u8*)&v;
-    XfCol x;
-    x.g = p[1];
-    x.r = p[0];
-    x.b = p[2];
-    x.a = p[3];
     GX_WGPIPE.u8 = 0x10;
     GX_WGPIPE.u16 = 0;
     GX_WGPIPE.u16 = reg;
-    GX_WGPIPE.u32 = RAW(x);
+    GX_WGPIPE.u32 = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
 }
 }
 
@@ -655,8 +676,8 @@ void GSgfxLayer::SetupGPUState() {
     s32 sp6C;
     s32 sp68;                                       /* compiler-managed */
     u8 *var_r29;
-    s32 sp60;
-    s32 sp5C;
+    u8 temp_r5;
+    u8 *var_r3_3;
     f32 sp58;
     f32 sp54;
     f32 sp50;
@@ -686,7 +707,7 @@ void GSgfxLayer::SetupGPUState() {
     s32 temp_r11;
     s32 temp_r12_2;
     s32 temp_r12_3;
-    s32 temp_r24_2;
+    u8 *var_r3_4;
     s32 temp_r25;
     s32 temp_r3_3;
     s32 temp_r4_3;
@@ -753,7 +774,7 @@ void GSgfxLayer::SetupGPUState() {
     u8 temp_r4_7;
     u8 temp_r4_8;
     u8 temp_r4_9;
-    u8 temp_r5;
+    s32 sp60;
     u8 temp_r5_2;
     u8 temp_r5_3;
     u8 temp_r5_4;
@@ -785,11 +806,11 @@ void GSgfxLayer::SetupGPUState() {
     u8 *var_r29_2;
     u8 *var_r3;
     u8 *var_r3_2;
-    u8 *var_r3_3;
-    u8 *var_r3_4;
+    s32 sp5C;
+    s32 temp_r24_2;
     u8 *var_r3_5;
 
-    temp_r30 = (unsigned char *)(this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xB8) + 0x16A8));
+    temp_r30 = ((u8*)this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xB8) + 0x16A8));
     temp_r0 = M2C_FIELD(temp_r30, u32 *, 0);
     if (temp_r0 != 0) {
         temp_r31 = (unsigned char *)(this + 0xC70);
@@ -806,22 +827,19 @@ void GSgfxLayer::SetupGPUState() {
                 var_r29 = temp_r31;
                 var_r28 = 0;
                 var_r27 = 0;
-loop_17:
-                if (var_r28 < (s32) M2C_FIELD(this, u8 *, 0xC70)) {
+                while (var_r28 < (s32) M2C_FIELD(this, u8 *, 0xC70)) {
                     if (M2C_FIELD(temp_r30, u32 *, 8) & (1 << var_r28)) {
                         temp_r3 = M2C_FIELD(var_r29, u8 **, 0x18);
                         if (temp_r3 != NULL) {
                             M2C_FIELD(var_r29, s32 *, 4) = (s32) (M2C_FIELD(temp_r3, u8 *, 0x7C) + 2);
                         }
-                        temp_r3_2 = (unsigned char *)(gsgfxState + var_r27);
-                        if (((s32) M2C_FIELD(temp_r3_2, s32 *, 0x358) != (s32) M2C_FIELD(var_r29, s32 *, 4)) || ((s32) M2C_FIELD(temp_r3_2, s32 *, 0x35C) != (s32) M2C_FIELD(var_r29, s32 *, 8)) || ((u32) M2C_FIELD(temp_r3_2, u32 *, 0x360) != (u32) M2C_FIELD(var_r29, u32 *, 0xC)) || ((u8) M2C_FIELD(temp_r3_2, u8 *, 0x364) != (u8) M2C_FIELD(var_r29, u8 *, 0x10)) || ((u32) M2C_FIELD(temp_r3_2, u32 *, 0x368) != (u32) M2C_FIELD(var_r29, u32 *, 0x14))) {
+                        if (((s32) M2C_FIELD((temp_r3_2 = (unsigned char *)(gsgfxState + var_r27)), s32 *, 0x358) != (s32) M2C_FIELD(var_r29, s32 *, 4)) || ((s32) M2C_FIELD(temp_r3_2, s32 *, 0x35C) != (s32) M2C_FIELD(var_r29, s32 *, 8)) || ((u32) M2C_FIELD(temp_r3_2, u32 *, 0x360) != (u32) M2C_FIELD(var_r29, u32 *, 0xC)) || ((u8) M2C_FIELD(temp_r3_2, u8 *, 0x364) != (u8) M2C_FIELD(var_r29, u8 *, 0x10)) || ((u32) M2C_FIELD(temp_r3_2, u32 *, 0x368) != (u32) M2C_FIELD(var_r29, u32 *, 0x14))) {
                             GSgfx_GCWriteTexCoordGen(var_r28);
                         }
                     }
                     var_r29 += 0x18;
                     var_r28 += 1;
                     var_r27 += 0x14;
-                    goto loop_17;
                 }
                 M2C_FIELD(temp_r30, u32 *, 8) = 0U;
             }
@@ -844,10 +862,10 @@ loop_17:
                 var_r4 = 0;
                 var_r5 = 0;
                 var_r6 = 0;
-loop_34:
-                if (var_r4 < (s32) M2C_FIELD(this, u8 *, 0xC70)) {
+                while (var_r4 < (s32) M2C_FIELD(this, u8 *, 0xC70)) {
                     if ((M2C_FIELD(temp_r30, u32 *, 0xC) & (1 << var_r4)) && ((temp_r12 = M2C_FIELD(var_r3, u8 *, 0xD4), temp_r7 = gsgfxState + var_r6, temp_r24 = M2C_FIELD(var_r3, u8 *, 0xD5), (((u8) M2C_FIELD(temp_r7, u8 *, 0x40C) == temp_r12) == 0)) || ((u8) M2C_FIELD(temp_r7, u8 *, 0x40D) != temp_r24))) {
-                        temp_r11 = var_r5 + 0x1AD;
+                        temp_r11 = var_r5;
+                        temp_r11 += 0x1AD;
                         *((u8 *)gsgfxState + temp_r11) = (*((u8 *)gsgfxState + temp_r11) & ~4) | ((temp_r12 << 2) & 4);
                         *((u8 *)gsgfxState + temp_r11) = (*((u8 *)gsgfxState + temp_r11) & ~8) | ((temp_r24 << 3) & 8);
                         M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | (1 << var_r4));
@@ -858,7 +876,6 @@ loop_34:
                     var_r4 += 1;
                     var_r5 += 4;
                     var_r6 += 2;
-                    goto loop_34;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0xC) = 0U;
             }
@@ -922,14 +939,12 @@ loop_71:
                             temp_r4_6 = *var_r6_2;
                             if (temp_r4_6 != NULL) {
                                 var_r5_2 = 0;
-loop_69:
-                                if (var_r5_2 < 8U) {
+                                while (var_r5_2 < 8U) {
                                     temp_r0_2 = M2C_FIELD(temp_r4_6, s32 *, 4);
                                     if ((temp_r8 == temp_r0_2) || ((temp_r8 == 2) && (temp_r0_2 == 1))) {
                                         var_r7 |= 1 << M2C_FIELD(temp_r4_6, u8 *, 0x7C);
                                     }
                                     var_r5_2 += 1;
-                                    goto loop_69;
                                 }
                                 var_r6_2 += 4;
                                 goto loop_71;
@@ -948,30 +963,26 @@ loop_69:
             if ((u32) M2C_FIELD(temp_r30, u32 *, 0x1C) != 0) {
                 var_r25_2 = temp_r31;
                 var_r26 = 0;
-loop_82:
-                if (var_r26 < (s32) M2C_FIELD(temp_r31, u8 *, 0x148)) {
+                while (var_r26 < (s32) M2C_FIELD(temp_r31, u8 *, 0x148)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x1C) & (1 << var_r26)) {
                         sp30 = M2C_FIELD(var_r25_2, s32 *, 0x22C);
-                        GSgfx_GCSetAmbColor((long)(var_r26 + 4), (unsigned long *)(&sp30));
+                        GSgfx_GCSetAmbColor((long)(var_r26 + 4), *(GSColor*)&sp30);
                     }
                     var_r25_2 += 4;
                     var_r26 += 1;
-                    goto loop_82;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x1C) = 0U;
             }
             if ((u32) M2C_FIELD(temp_r30, u32 *, 0x20) != 0) {
                 var_r25_3 = temp_r31;
                 var_r26_2 = 0;
-loop_89:
-                if (var_r26_2 < (s32) M2C_FIELD(temp_r31, u8 *, 0x148)) {
+                while (var_r26_2 < (s32) M2C_FIELD(temp_r31, u8 *, 0x148)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x20) & (1 << var_r26_2)) {
                         sp2C = M2C_FIELD(var_r25_3, s32 *, 0x234);
-                        GSgfx_GCSetMatColor((long)(var_r26_2 + 4), (unsigned long *)(&sp2C));
+                        GSgfx_GCSetMatColor((long)(var_r26_2 + 4), *(GSColor*)&sp2C);
                     }
                     var_r25_3 += 4;
                     var_r26_2 += 1;
-                    goto loop_89;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x20) = 0U;
             }
@@ -989,70 +1000,60 @@ loop_89:
             if ((u32) M2C_FIELD(temp_r30, u32 *, 0x28) != 0) {
                 var_r25_4 = temp_r31;
                 var_r26_3 = 0;
-loop_101:
-                if (var_r26_3 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
+                while (var_r26_3 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x28) & (1 << var_r26_3)) {
                         GSgfx_GCSetTevOrder(var_r26_3, M2C_FIELD(var_r25_4, s32 *, 0x240), M2C_FIELD(var_r25_4, s32 *, 0x244), M2C_FIELD(var_r25_4, s32 *, 0x248));
                     }
                     var_r25_4 += 0xC;
                     var_r26_3 += 1;
-                    goto loop_101;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x28) = 0U;
             }
             if ((u32) M2C_FIELD(temp_r30, u32 *, 0x2C) != 0) {
                 var_r25_5 = temp_r31;
                 var_r26_4 = 0;
-loop_108:
-                if (var_r26_4 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
+                while (var_r26_4 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x2C) & (1 << var_r26_4)) {
                         GSgfx_GCSetTevColorIn(var_r26_4, M2C_FIELD(var_r25_5, s32 *, 0x300), M2C_FIELD(var_r25_5, s32 *, 0x304), M2C_FIELD(var_r25_5, s32 *, 0x308), M2C_FIELD(var_r25_5, s32 *, 0x30C));
                     }
                     var_r25_5 += 0x10;
                     var_r26_4 += 1;
-                    goto loop_108;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x2C) = 0U;
             }
             if ((u32) M2C_FIELD(temp_r30, u32 *, 0x30) != 0) {
                 var_r25_6 = temp_r31;
                 var_r26_5 = 0;
-loop_115:
-                if (var_r26_5 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
+                while (var_r26_5 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x30) & (1 << var_r26_5)) {
                         GSgfx_GCSetTevAlphaIn(var_r26_5, M2C_FIELD(var_r25_6, s32 *, 0x400), M2C_FIELD(var_r25_6, s32 *, 0x404), M2C_FIELD(var_r25_6, s32 *, 0x408), M2C_FIELD(var_r25_6, s32 *, 0x40C));
                     }
                     var_r25_6 += 0x10;
                     var_r26_5 += 1;
-                    goto loop_115;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x30) = 0U;
             }
             if ((u32) M2C_FIELD(temp_r30, u32 *, 0x34) != 0) {
                 var_r25_7 = temp_r31;
                 var_r26_6 = 0;
-loop_122:
-                if (var_r26_6 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
+                while (var_r26_6 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x34) & (1 << var_r26_6)) {
                         GSgfx_GCSetTevColorOp(var_r26_6, M2C_FIELD(var_r25_7, s32 *, 0x500), M2C_FIELD(var_r25_7, s32 *, 0x504), M2C_FIELD(var_r25_7, s32 *, 0x508), M2C_FIELD(var_r25_7, u8 *, 0x50C), M2C_FIELD(var_r25_7, s32 *, 0x510));
                     }
                     var_r25_7 += 0x14;
                     var_r26_6 += 1;
-                    goto loop_122;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x34) = 0U;
             }
             if ((u32) M2C_FIELD(temp_r30, u32 *, 0x38) != 0) {
                 var_r25_8 = temp_r31;
                 var_r26_7 = 0;
-loop_129:
-                if (var_r26_7 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
+                while (var_r26_7 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x38) & (1 << var_r26_7)) {
                         GSgfx_GCSetTevAlphaOp(var_r26_7, M2C_FIELD(var_r25_8, s32 *, 0x640), M2C_FIELD(var_r25_8, s32 *, 0x644), M2C_FIELD(var_r25_8, s32 *, 0x648), M2C_FIELD(var_r25_8, u8 *, 0x64C), M2C_FIELD(var_r25_8, s32 *, 0x650));
                     }
                     var_r25_8 += 0x14;
                     var_r26_7 += 1;
-                    goto loop_129;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x38) = 0U;
             }
@@ -1065,22 +1066,30 @@ loop_129:
                     temp_r0_3 = 1 << var_r4_2;
                     if (M2C_FIELD(temp_r30, u32 *, 0x3C) & temp_r0_3) {
                         if ((u32) M2C_FIELD(var_r3_2, u32 *, 0x780) == 0U) {
-                            temp_r9 = var_r5_3 + 0x2A6;
-                            temp_r10 = var_r5_3 + 0x2A4;
+                            temp_r9 = 0x2A6;
+                            temp_r9 += var_r5_3;
+                            temp_r10 = 0x2A4;
+                            temp_r10 += var_r5_3;
                             sp1C = M2C_FIELD(var_r3_2, s32 *, 0x784);
-                            temp_r8_2 = var_r5_3 + 0x2B6;
-                            temp_r7_2 = var_r5_3 + 0x2B4;
+                            temp_r8_2 = 0x2B6;
+                            temp_r8_2 += var_r5_3;
+                            temp_r7_2 = 0x2B4;
+                            temp_r7_2 += var_r5_3;
                             *((u8 *)gsgfxState + temp_r9) = (*((u8 *)gsgfxState + temp_r9) & ~0x7FF) | ((u8) sp1C & 0x7FF);
                             *((u8 *)gsgfxState + temp_r10) = (*((u8 *)gsgfxState + temp_r10) & ~0x7FF000) | ((unksp1F << 0xC) & 0x7FF000);
                             /* draft: crashed mwcc */ // *((u8 *)gsgfxState + temp_r8_2) = (*((u8 *)gsgfxState + temp_r8_2) & ~0x7FF) | (unksp1E & 0x7FF);
                             *((u8 *)gsgfxState + temp_r7_2) = (*((u8 *)gsgfxState + temp_r7_2) & ~0x7FF000) | ((unksp1D << 0xC) & 0x7FF000);
                             M2C_FIELD(gsgfxState, s32 *, 0x24) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x24) | temp_r0_3);
                         } else {
-                            temp_r10_2 = var_r5_3 + 0x2A6;
-                            temp_r12_2 = var_r5_3 + 0x2A4;
+                            temp_r10_2 = 0x2A6;
+                            temp_r10_2 += var_r5_3;
+                            temp_r12_2 = 0x2A4;
+                            temp_r12_2 += var_r5_3;
                             sp34 = M2C_FIELD(var_r3_2, s32 *, 0x784);
-                            temp_r8_3 = var_r5_3 + 0x2B6;
-                            temp_r7_3 = var_r5_3 + 0x2B4;
+                            temp_r8_3 = 0x2B6;
+                            temp_r8_3 += var_r5_3;
+                            temp_r7_3 = 0x2B4;
+                            temp_r7_3 += var_r5_3;
                             sp38 = M2C_FIELD(var_r3_2, s32 *, 0x788);
                             *((u8 *)gsgfxState + temp_r10_2) = (*((u8 *)gsgfxState + temp_r10_2) & ~0x7FF) | ((s16) sp34 & 0x7FF);
                             *((u8 *)gsgfxState + temp_r12_2) = (*((u8 *)gsgfxState + temp_r12_2) & ~0x7FF000) | (((unksp3A & 0x7FF) << 0xC) & 0x7FF000);
@@ -1190,17 +1199,18 @@ loop_129:
                 var_r3_3 = temp_r31;
                 var_r4_3 = 0;
                 var_r5_4 = 0;
-loop_187:
-                if (var_r4_3 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
+                while (var_r4_3 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x54) & (1 << var_r4_3)) {
                         temp_r9_2 = M2C_FIELD(var_r3_3, s32 *, 0x894);
                         if ((s32) *((u8*)(gsgfxState) + (var_r5_4 + 0xA24)) != temp_r9_2) {
                             temp_r10_3 = var_r4_3 >> 1;
                             if (var_r4_3 & 1) {
-                                temp_r6_3 = (temp_r10_3 * 4) + 0x204;
+                                temp_r6_3 = 0x204;
+                                temp_r6_3 += (temp_r10_3 * 4);
                                 *((u8 *)gsgfxState + temp_r6_3) = (*((u8 *)gsgfxState + temp_r6_3) & ~0x7C000) | ((temp_r9_2 << 0xE) & 0x7C000);
                             } else {
-                                temp_r6_4 = (temp_r10_3 * 4) + 0x206;
+                                temp_r6_4 = 0x206;
+                                temp_r6_4 += (temp_r10_3 * 4);
                                 *((u8 *)gsgfxState + temp_r6_4) = (*((u8 *)gsgfxState + temp_r6_4) & ~0x1F0) | ((temp_r9_2 << 4) & 0x1F0);
                             }
                             M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | (1 << temp_r10_3));
@@ -1210,7 +1220,6 @@ loop_187:
                     var_r3_3 += 4;
                     var_r4_3 += 1;
                     var_r5_4 += 4;
-                    goto loop_187;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x54) = 0U;
             }
@@ -1218,17 +1227,18 @@ loop_187:
                 var_r3_4 = temp_r31;
                 var_r4_4 = 0;
                 var_r5_5 = 0;
-loop_198:
-                if (var_r4_4 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
+                while (var_r4_4 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
                     if (M2C_FIELD(temp_r30, u32 *, 0x58) & (1 << var_r4_4)) {
                         temp_r9_3 = M2C_FIELD(var_r3_4, s32 *, 0x8D4);
                         if ((s32) *((u8*)(gsgfxState) + (var_r5_5 + 0xA64)) != temp_r9_3) {
                             temp_r10_4 = var_r4_4 >> 1;
                             if (var_r4_4 & 1) {
-                                temp_r6_5 = (temp_r10_4 * 4) + 0x205;
+                                temp_r6_5 = 0x205;
+                                temp_r6_5 += (temp_r10_4 * 4);
                                 *((u8 *)gsgfxState + temp_r6_5) = (*((u8 *)gsgfxState + temp_r6_5) & ~0xF8) | ((temp_r9_3 << 3) & 0xF8);
                             } else {
-                                temp_r6_6 = (temp_r10_4 * 4) + 0x206;
+                                temp_r6_6 = 0x206;
+                                temp_r6_6 += (temp_r10_4 * 4);
                                 *((u8 *)gsgfxState + temp_r6_6) = (*((u8 *)gsgfxState + temp_r6_6) & ~0x3E) | ((temp_r9_3 << 1) & 0x3E);
                             }
                             M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | (1 << temp_r10_4));
@@ -1238,7 +1248,6 @@ loop_198:
                     var_r3_4 += 4;
                     var_r4_4 += 1;
                     var_r5_5 += 4;
-                    goto loop_198;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x58) = 0U;
             }
@@ -1249,10 +1258,10 @@ loop_198:
                 var_r4_5 = 0;
                 var_r5_6 = 0;
                 var_r6_3 = 0;
-loop_208:
-                if (var_r4_5 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
+                while (var_r4_5 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
                     if ((M2C_FIELD(temp_r30, u32 *, 0x5C) & (1 << var_r4_5)) && ((temp_r24_2 = M2C_FIELD(var_r3_5, s32 *, 0x914), temp_r7_4 = gsgfxState + var_r6_3, temp_r25 = M2C_FIELD(var_r3_5, s32 *, 0x918), (((s32) M2C_FIELD(temp_r7_4, s32 *, 0xAA4) == temp_r24_2) == 0)) || ((s32) M2C_FIELD(temp_r7_4, s32 *, 0xAA8) != temp_r25))) {
-                        temp_r12_3 = var_r5_6 + 0x267;
+                        temp_r12_3 = 0x267;
+                        temp_r12_3 += var_r5_6;
                         *((u8 *)gsgfxState + temp_r12_3) = (*((u8 *)gsgfxState + temp_r12_3) & ~3) | (temp_r24_2 & 3);
                         *((u8 *)gsgfxState + temp_r12_3) = (*((u8 *)gsgfxState + temp_r12_3) & ~0xC) | ((temp_r25 << 2) & 0xC);
                         M2C_FIELD(gsgfxState, s32 *, 0x20) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x20) | (1 << var_r4_5));
@@ -1263,7 +1272,6 @@ loop_208:
                     var_r4_5 += 1;
                     var_r5_6 += 4;
                     var_r6_3 += 8;
-                    goto loop_208;
                 }
                 M2C_FIELD(temp_r30, u32 *, 0x5C) = 0U;
             }
@@ -1352,8 +1360,10 @@ loop_208:
             if (temp_r3_3 & 0x40) {
                 if ((u8) M2C_FIELD(temp_r31, u8 *, 0xA37) == 1) {
                     var_r24_2 = M2C_FIELD(temp_r31, s32 *, 0xA08);
-                    if (var_r24_2 == 0) {
-                        M2C_FIELD(temp_r31, u8 *, 0xA37) = 0U;
+                    switch (var_r24_2) {
+                    case 0:
+                            M2C_FIELD(temp_r31, u8 *, 0xA37) = 0U;
+                        break;
                     }
                 } else {
                     var_r24_2 = 0;
@@ -1610,9 +1620,7 @@ inline void GSgfx_GCSetTevIndWarp(s32 stage, u8 indId, u8 signMod, u8 wrap, u8 m
         w = 6;
     }
     int bias = 0;
-    if (signMod) {
-        bias = 7;
-    }
+    bias = !(signMod) ? bias : 7;
     GSIndSet(stage, indId, 0, bias, mtx, w, w, 0, 0, 0);
 }
 
@@ -1744,45 +1752,56 @@ inline void GSgfx_GCSetTevOrder(s32 stage, s32 coord, s32 map, s32 color) {
     }
 }
 
-inline void GSgfx_GCSetMatColor(s32 ch, u32* c) {
+
+
+
+inline void GSgfx_GCSetMatColor(s32 ch, GSColor c) {
     int idx = (ch - 4) * 5;
-    if (*(u32*)((u8*)gsgfxState + idx + 0x4c3) != *c || *((u8*)gsgfxState + idx + 0x4c2) == 1) {
-        u32 v = *c;
+    if (*(u32*)((u8*)gsgfxState + idx + 0x4c3) != RAW(c) || *((u8*)gsgfxState + idx + 0x4c2) == 1) {
+        u32 v = RAW(c);
+        u8* s = (u8*)gsgfxState;
+        *(u32*)(s + idx + 0x4c3) = v;
         GSWriteXfColor(0x100c + (ch & 1), v);
-        *(u32*)((u8*)gsgfxState + idx + 0x4c3) = v;
         *((u8*)gsgfxState + idx + 0x4c2) = 0;
     }
 }
 
-inline void GSgfx_GCSetAmbColor(s32 ch, u32* c) {
+inline void GSgfx_GCSetAmbColor(s32 ch, GSColor c) {
     int idx = (ch - 4) * 5;
-    if (*(u32*)((u8*)gsgfxState + idx + 0x4b9) != *c || *((u8*)gsgfxState + idx + 0x4b8) == 1) {
-        u32 v = *c;
+    if (*(u32*)((u8*)gsgfxState + idx + 0x4b9) != RAW(c) || *((u8*)gsgfxState + idx + 0x4b8) == 1) {
+        u32 v = RAW(c);
+        u8* s = (u8*)gsgfxState;
+        *(u32*)(s + idx + 0x4b9) = v;
         GSWriteXfColor(0x100a + (ch & 1), v);
-        *(u32*)((u8*)gsgfxState + idx + 0x4b9) = v;
         *((u8*)gsgfxState + idx + 0x4b8) = 0;
     }
 }
 
-inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 lights, s32 diff, s32 attn) {
-    if (gsgfxState->chan[chan].a != enable || gsgfxState->chan[chan].w[0] != amb || gsgfxState->chan[chan].w[1] != mat ||
-        gsgfxState->chan[chan].w[2] != lights || gsgfxState->chan[chan].w[3] != diff || gsgfxState->chan[chan].w[4] != attn) {
-        s32 d = diff;
-        if (attn == 0) {
-            d = 0;
+void GSgfx_GCSetChanCtrl(s32 p0, u8 p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6) {
+    s32 temp_r11;
+    s32 temp_r12;
+    s32 temp_r12_2;
+    s32 var_r27;
+    u8 *temp_r10;
+
+    temp_r12 = p0 * 0x18;
+    temp_r11 = (long)(((u8*)(gsgfxState) + 0x458));
+    if (((u8) *((u8 *)temp_r11 + temp_r12) != p1) || (temp_r10 = (unsigned char *)gsgfxState + temp_r12, (((s32) M2C_FIELD(temp_r10, s32 *, 0x45C) == p2) == 0)) || ((s32) M2C_FIELD(temp_r10, s32 *, 0x460) != p3) || ((s32) M2C_FIELD(temp_r10, s32 *, 0x464) != p4) || ((s32) M2C_FIELD(temp_r10, s32 *, 0x468) != p5) || ((s32) M2C_FIELD(temp_r10, s32 *, 0x46C) != p6)) {
+        var_r27 = p5;
+        if (p6 == 0) {
+            var_r27 = 0;
         }
-        GX_WGPIPE.u8 = 0x10;
-        GX_WGPIPE.u16 = 0;
-        GX_WGPIPE.u16 = (chan & 3) + 0x100e;
-        GX_WGPIPE.u32 = ((lights << 7) & 0x7800) | (((-attn | attn) >> 21) & 0x400) |
-                        ((((2 - attn) | (attn - 2)) >> 22) & 0x200) | (amb << 6) | ((lights * 4) & 0x3c) | mat |
-                        ((enable * 2) & 0x1fe) | (d << 7);
-        gsgfxState->chan[chan].a = enable;
-        gsgfxState->chan[chan].w[0] = amb;
-        gsgfxState->chan[chan].w[1] = mat;
-        gsgfxState->chan[chan].w[2] = lights;
-        gsgfxState->chan[chan].w[3] = diff;
-        gsgfxState->chan[chan].w[4] = attn;
+        *(s8 *)0xCC008000 = 0x10;
+        *(s8 *)0xCC008000 = 0;
+        *(s8 *)0xCC008000 = (s16) ((p0 & 3) + 0x100E);
+        temp_r12_2 = p0 * 0x18;
+        *(s8 *)0xCC008000 = (s32) (((p4 << 7) & 0x7800) | ((((u32) (-p6 | p6) >> 0x15U) & 0x400) | ((((u32) ((2 - p6) | (p6 - 2)) >> 0x16U) & 0x200) | ((p2 << 6) | (((p4 * 4) & 0x3C) | (p3 | ((p1 * 2) & 0x1FE))) | (var_r27 << 7)))));
+        *((u8 *)temp_r11 + temp_r12_2) = p1;
+        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x45C) = p2;
+        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x460) = p3;
+        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x464) = p4;
+        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x468) = p5;
+        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x46C) = p6;
     }
 }
 
@@ -1790,13 +1809,13 @@ inline void GSgfx_GCSetScissor(u16 x, u16 y, u16 w, u16 h, s32 xo, s32 yo) {
     if (gsgfxState->scis[0] != x || gsgfxState->scis[1] != y || gsgfxState->scis[2] != w || gsgfxState->scis[3] != h ||
         gsgfxState->scisOff[0] != xo || gsgfxState->scisOff[1] != yo) {
         gsgfxState->scis0.x = x + (xo + 0x156);
+        gsgfxState->scis[2] = w;
         gsgfxState->scis0.y = y + (yo + 0x156);
         gsgfxState->scis1.x = gsgfxState->scis0.x + (w - 1);
         gsgfxState->scis1.y = gsgfxState->scis0.y + (h - 1);
         gsgfxState->dirty |= 0x4000;
         gsgfxState->scis[0] = x;
         gsgfxState->scis[1] = y;
-        gsgfxState->scis[2] = w;
         gsgfxState->scis[3] = h;
         gsgfxState->scisOff[0] = xo;
         gsgfxState->scisOff[1] = yo;
@@ -1811,7 +1830,7 @@ inline void GSgfx_GCSetProjection(s32 type, u32* p) {
         diff = 0;
         if (gsgfxState->projCache[0] != p[0]) {
             diff = 1;
-        } else if (gsgfxState->projCache[1] != p[1]) {
+        } else if (p[1] != gsgfxState->projCache[1]) {
             diff = 1;
         } else if (gsgfxState->projCache[2] != p[2]) {
             diff = 1;
@@ -1944,8 +1963,7 @@ void GSgfxLayer::SetupRenderState() {
     r = &rs;
     d = &dirty[dirtyIdx];
     if ((d->groups & 4) && (d->lightDirty & 0x10)) {
-        n = r->lightCount;
-        for (i = 0; i < n; i++) {
+        for (i = 0, n = r->lightCount; i < n; i++) {
             r->lights[i]->Load(i);
         }
         d->lightDirty &= ~0x10;
@@ -1957,8 +1975,7 @@ void GSgfxLayer::SetupRenderState() {
     GSgfxTex** tp;
     dd = &dirty[dirtyIdx];
     if (dd->texMask != 0 && rs.texCount != 0) {
-        tp = (GSgfxTex**)dd;
-        for (j = 0; j < 8; j++, tp++) {
+        for (j = 0, tp = (GSgfxTex**)dd; j < 8; j++, tp++) {
             if (dd->texMask & (1 << j)) {
                 t = tp[0x98 / 4];
                 if (t->w == 0 || t->h == 0) {

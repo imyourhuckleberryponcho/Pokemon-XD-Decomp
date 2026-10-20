@@ -30,12 +30,28 @@ static void _menuFieldDrawItemSub(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
 
 extern "C" {
 
-extern u8 _openFieldMenu;
+static s32 barcolor = 0xC0C0D000;
+static f32 _cursorSec = 0.8f;
+static f32 _max_alpha = 255.0f;
+static f32 _min_alpha = 200.0f;
+static u8 _openFieldMenu;
+static f32 _fieldMenuTimer;
+static u32 _soundEnvID;
+static s32 _soundEnvVol;
+static f32 _menuFieldCursorAngle;
+static f32 _menuFiledAlpha[5];
 
 // ---- draft declarations ----
 struct GSvec {
-    u8 _draft[1];
+    f32 x, y, z;
     GSvec();
+};
+
+struct HeroMoveEvent {
+    GSvec pos[3];
+    u32 unk24[3];
+    u16 eventID; // 0x30
+    u16 pad32;
 };
 
 extern "C" {
@@ -44,26 +60,26 @@ u8 GSgfxVideoGetVsyncRate(void);
 s32 GSgfxVideoSetLockFrameRate(s32);
 void GSmodelAllPauseAnimation(void);
 void GSmodelAllUnpauseAnimation(void);
-u16 GSmsgGetRect(u32, u32);
+u32 GSmsgGetRect(u32);
 s32 GSmsgPrint2(s32, s16, s16, s32, u32);
 void GSsndPopVolumeALL(u32 time, u32 bgm, u32 se);
 void GSsndPushVolumeALL(s32 vol, s32 time, u32 bgm, u32 se);
 void GSthreadSwitch(void);
 s32 __construct_array(s32*, void*, s32, s32, s32);
-void fadeCheck(s32);
+s8 fadeCheck(bool);
 s32 floorEventExecScript(s32, u16);
 void floorFieldCameraPause();
 void floorFieldCameraUnpause();
 s32 fn_80233AB4();
 void heroMoveAddAutoEvent(s32, s32, s32, s32, s32);
-s32 heroMoveCheckEvent(s32*);
+s32 heroMoveCheckEvent(HeroMoveEvent*);
 void heroMoveInitEvent();
 void heroMoveTermEvent();
 void mailMainReceiveTerminate(void);
 void menuClose(s32 menuID);
 void menuCloseCustom(s32 menuID, s32, s32);
 void menuCloseSync(s32 menuID, s32);
-s32 menuCreateOffScreen(u8, f32, f32);
+void menuCreateOffScreen(f32, f32);
 s32 menuFieldMain(u8 p0);
 s32 menuFieldMainCtrl(void *p0);
 f32 menuGetLastTime();
@@ -76,7 +92,7 @@ void menuPdaOpen(void);
 s32 menuPocket2GetItemScript(u16);
 u16 menuPocket2Open(s32, s32*, s32);
 void menuPokemonOpen(s32, s32, s32);
-s32 menuReleaseOffScreen(u8, f32);
+void menuReleaseOffScreen(f32);
 void menuReport(void);
 s32 pokecoloGetRomVersion(void);
 s32 scriptContinueSave();
@@ -100,15 +116,6 @@ static void _menuFieldDrawItemSub(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p
 static void _menuFieldFlashCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2);
 static void _menuFieldMenuCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2);
 }
-static f32 _cursorSec = 0.8f;
-static f32 _fieldMenuTimer;
-static f32 _max_alpha = 255.0f;
-static f32 _menuFieldCursorAngle;
-static f32 _menuFiledAlpha[5];
-static f32 _min_alpha = 200.0f;
-static u32 _soundEnvID;
-static s32 _soundEnvVol;
-static s32 barcolor = 0xC0C0D000;
 void menuFieldDrawItem2(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     switch (sprite->id) {
     case 0x15:
@@ -226,8 +233,9 @@ static void _menuFieldMenuCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2
     s16 temp_r0;
 
     temp_r0 = M2C_FIELD(p0, s16 *, 0x9E);
+    s16 prev = M2C_FIELD(p0, s16 *, 0xA2);
     if (temp_r0 == p2) {
-        if ((s16) M2C_FIELD(p0, s16 *, 0xA2) != temp_r0) {
+        if (prev != temp_r0) {
             winAnimeCursor((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1));
             _fieldMenuTimer = 0.0f;
         }
@@ -254,24 +262,17 @@ static void _menuFieldFlashCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p
 
 extern "C++" {
 static void _menuFieldCursorCheck(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2) {
-    s16 temp_r28;
-    s32 var_r28;
-    u32 temp_r3;
-    u32 temp_r4;
-    u32 temp_r5;
-
-    temp_r28 = M2C_FIELD(p0, s16 *, 0x9E);
-    winSpriteSetDisp((tagSPRITE_WORK*)(p1), 0U);
-    temp_r3 = M2C_FIELD(p1, u32 *, 0x4C);
-    if (temp_r3 != 0) {
-        if (temp_r28 == p2) {
-            var_r28 = -0x0F0F0F01;
+    s32 color = M2C_FIELD(p0, s16 *, 0x9E);
+    winSpriteSetDisp(p1, 0U);
+    if (M2C_FIELD(p1, u32 *, 0x4C) != 0) {
+        if (p2 == color) {
+            color = 0xF0F0F0FF;
         } else {
-            var_r28 = -0x0F0F0F80;
+            color = 0xF0F0F080;
         }
-        temp_r4 = M2C_FIELD(p1, s16 *, 0x54) - (GSmsgGetRect(temp_r3, 0xF0F10000U) >> 0x10U);
-        temp_r5 = M2C_FIELD(p1, s16 *, 0x56) - (s16) GSmsgGetRect(M2C_FIELD(p1, u32 *, 0x4C), temp_r4);
-        GSmsgPrint2(M2C_FIELD(p0, s32 *, 0x1C), (s16) (((temp_r4 >> 0x1FU) + temp_r4) >> 1), (s16) (((s32) ((temp_r5 >> 0x1FU) + temp_r5) >> 1) - 2), var_r28, M2C_FIELD(p1, u32 *, 0x4C));
+        s16 x = (M2C_FIELD(p1, s16 *, 0x54) - (s16)(GSmsgGetRect(M2C_FIELD(p1, u32 *, 0x4C)) >> 16)) / 2;
+        s16 y = (M2C_FIELD(p1, s16 *, 0x56) - (s16)(u16)GSmsgGetRect(M2C_FIELD(p1, u32 *, 0x4C))) / 2 - 2;
+        GSmsgPrint2(M2C_FIELD(p0, s32 *, 0x1C), x, y, color, M2C_FIELD(p1, u32 *, 0x4C));
     }
 }
 }
@@ -308,12 +309,13 @@ static void _animAlpha(long p0) {
 
     temp_f1 = _fieldMenuTimer + ((3.1415927f * (2.0f * menuGetLastTime())) / _cursorSec);
     _fieldMenuTimer = temp_f1;
-    M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-    if (temp_f1 == 6.2831855f) {
+    if (temp_f1 >= 6.2831855f) {
         _fieldMenuTimer = temp_f1 - 6.2831855f;
     }
     temp_f31 = _max_alpha - _min_alpha;
-    var_f1 = (temp_f31 * ((1.0f + (f32) sin((f64) _fieldMenuTimer)) * 0.5f)) + _min_alpha;
+    f32 s = (1.0f + (f32) sin((f64) _fieldMenuTimer)) / 2.0f;
+    f32 v = temp_f31 * s;
+    var_f1 = _min_alpha + v;
     if (var_f1 > 255.0f) {
         var_f1 = 255.0f;
     }
@@ -323,44 +325,21 @@ static void _animAlpha(long p0) {
 
 extern "C" {
 s32 menuFieldMainCtrl(void *p0) {
-    f32 *temp_r3;
-    f32 *temp_r3_2;
-    u16 temp_r4;
-    u8 temp_r0;
-
-    temp_r0 = M2C_FIELD(p0, u8 *, 1);
-    switch (temp_r0) {                         /* irregular */
+    switch ((s8) M2C_FIELD(p0, u8 *, 1)) {
     case 0:
         if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
             winSeqSetMenu(M2C_FIELD(p0, s32 *, 4), 1U);
-            temp_r4 = M2C_FIELD(p0, u16 *, 0x9E);
+            int i;
+            s16 cur = M2C_FIELD(p0, s16 *, 0x9E);
             _fieldMenuTimer = 0.0f;
-            if (temp_r4 == 0) {
-                M2C_FIELD(_menuFiledAlpha, f32 *, 0) = 255.0f;
-            } else {
-                M2C_FIELD(_menuFiledAlpha, f32 *, 0) = 0.0f;
-            }
-            if (temp_r4 == 1) {
-                _menuFiledAlpha[1] = 255.0f;
-            } else {
-                _menuFiledAlpha[1] = 0.0f;
-            }
-            temp_r3 = &_menuFiledAlpha[1] + 4;
-            if (temp_r4 == 2) {
-                _menuFiledAlpha[2] = 255.0f;
-            } else {
-                _menuFiledAlpha[2] = 0.0f;
-            }
-            temp_r3_2 = temp_r3 + 4;
-            if (temp_r4 == 3) {
-                M2C_FIELD(temp_r3, f32 *, 4) = 255.0f;
-            } else {
-                M2C_FIELD(temp_r3, f32 *, 4) = 0.0f;
-            }
-            if (temp_r4 == 4) {
-                M2C_FIELD(temp_r3_2, f32 *, 4) = 255.0f;
-            } else {
-                M2C_FIELD(temp_r3_2, f32 *, 4) = 0.0f;
+            f32* alpha = _menuFiledAlpha;
+            for (i = 0; i < 5; i++) {
+                if (cur == i) {
+                    *alpha = 255.0f;
+                } else {
+                    *alpha = 0.0f;
+                }
+                alpha++;
             }
             M2C_FIELD(p0, u8 *, 2) = 1U;
         }
@@ -378,13 +357,9 @@ s32 menuFieldMainCtrl(void *p0) {
 
 extern "C" {
 s32 menuFieldMain(u8 p0) {
-    s32 saved_reg_r31;
-    s32 spA8;
-    s32 sp74;
-    s32 sp40;
-    s32 spC;
+    HeroMoveEvent events[4];
     s32 sp8;
-    s32 *var_r28;
+    HeroMoveEvent* var_r28;
     s32 temp_r29;
     s32 temp_r3_3;
     s32 temp_r3_4;
@@ -395,25 +370,15 @@ s32 menuFieldMain(u8 p0) {
     s32 temp_r3_6;
     u16 var_r31;
     u32 temp_r3_2;
-    u8 temp_r3;
-    u8 temp_r3_8;
 
-    var_r31 = saved_reg_r31;
-    __construct_array(&spC, __ct__5GSvecFv, 0, 0xC, 3);
-    __construct_array(&sp40, __ct__5GSvecFv, 0, 0xC, 3);
-    __construct_array(&sp74, __ct__5GSvecFv, 0, 0xC, 3);
-    __construct_array(&spA8, __ct__5GSvecFv, 0, 0xC, 3);
-    fadeCheck(0);
-    if ((s8) M2C_ERROR(/* Read from unset register $r3 */) != 0) {
+    if (fadeCheck(0) != 0) {
         return 0;
     }
-    temp_r29 = heroMoveCheckEvent(&spC);
-    var_r28 = &spC;
-    var_r27 = 0;
-    while (var_r27 < temp_r29) {
-        floorEventExecScript(4, M2C_FIELD(var_r28, u16 *, 0x30));
-        var_r28 += 0x34;
-        var_r27 += 1;
+    temp_r29 = heroMoveCheckEvent(events);
+    var_r28 = events;
+    for (var_r27 = 0; var_r27 < temp_r29; var_r27++) {
+        floorEventExecScript(4, var_r28->eventID);
+        var_r28++;
     }
     menuIntUnderTakerDispIconOff2();
     heroMoveInitEvent();
@@ -423,8 +388,7 @@ s32 menuFieldMain(u8 p0) {
     GSmodelAllPauseAnimation();
     _openFieldMenu = 1;
     GSthreadSwitch();
-    temp_r3 = GSgfxVideoGetVsyncRate();
-    menuCreateOffScreen(temp_r3, 20.0f / (f32) temp_r3, 50.0f);
+    menuCreateOffScreen(20.0f / GSgfxVideoGetVsyncRate(), 50.0f);
     while (menuGetOffScreenFlag() == 0) {
         GSthreadSwitch();
     }
@@ -448,73 +412,72 @@ s32 menuFieldMain(u8 p0) {
     switch ((s32) p0) {                             /* irregular */
     case 0:
         if (GSflagGet(0x30DU) == 0) {
-loop_22:
-            GSgfxVideoSetLockFrameRate(0);
-            M2C_FIELD(_menuFiledAlpha, f32 *, 0) = 255.0f;
-            _menuFiledAlpha[1] = 255.0f;
-            _menuFiledAlpha[2] = 255.0f;
-            _menuFiledAlpha[3] = 255.0f;
-            _menuFiledAlpha[4] = 255.0f;
-            temp_r3_3 = _menuFieldCheckCursor(menuOpen(var_r27_2, 1));
-            if (temp_r3_3 == 0) {
-                menuCloseCustom(var_r27_2, 0, 1);
-                menuPokemonOpen(1, 0, 0);
-                GSmodelAllPauseAnimation();
-block_32:
-                GSthreadSwitch();
-                goto loop_22;
-            }
-            if (temp_r3_3 == 1) {
-                menuCloseCustom(var_r27_2, 0, 1);
-                menuPdaOpen();
-                GSmodelAllPauseAnimation();
-                goto block_32;
-            }
-            if (temp_r3_3 == 2) {
-                menuCloseCustom(var_r27_2, 0, 1);
-                var_r31 = menuPocket2Open(0, &sp8, 0);
-                GSmodelAllPauseAnimation();
-                if (var_r31 != 0) {
+            while (1) {
+                GSgfxVideoSetLockFrameRate(0);
+                _menuFiledAlpha[0] = 255.0f;
+                _menuFiledAlpha[1] = 255.0f;
+                _menuFiledAlpha[2] = 255.0f;
+                _menuFiledAlpha[3] = 255.0f;
+                _menuFiledAlpha[4] = 255.0f;
+                temp_r3_3 = _menuFieldCheckCursor(menuOpen(var_r27_2, 1));
+                if (temp_r3_3 == 0) {
+                    menuCloseCustom(var_r27_2, 0, 1);
+                    menuPokemonOpen(1, 0, 0);
+                    GSmodelAllPauseAnimation();
+                } else if (temp_r3_3 == 1) {
+                    menuCloseCustom(var_r27_2, 0, 1);
+                    menuPdaOpen();
+                    GSmodelAllPauseAnimation();
+                } else if (temp_r3_3 == 2) {
+                    menuCloseCustom(var_r27_2, 0, 1);
+                    var_r31 = menuPocket2Open(0, &sp8, 0);
+                    GSmodelAllPauseAnimation();
+                    if (var_r31 == 0) {
+                        continue;
+                    }
                     temp_r3_4 = menuPocket2GetItemScript(var_r31);
-                    if ((u32) (temp_r3_4 + 0x10000) != -1U) {
+                    if ((u32)temp_r3_4 != 0xFFFFFFFF) {
                         heroMoveAddAutoEvent(temp_r3_4, (s32) var_r31, sp8, 0, 0);
                     }
+                    break;
+                } else if (temp_r3_3 == 3) {
+                    menuCloseCustom(var_r27_2, 0, 1);
+                    menuReport();
                 } else {
-                    goto loop_22;
+                    break;
                 }
-            } else if (temp_r3_3 == 3) {
-                menuCloseCustom(var_r27_2, 0, 1);
-                menuReport();
-                goto block_32;
+                GSthreadSwitch();
             }
         } else {
-loop_34:
-            GSgfxVideoSetLockFrameRate(0);
-            temp_r3_5 = menuOpen(var_r27_2, 1);
-            if (temp_r3_5 == 0) {
-                menuClose(var_r27_2);
-                menuPokemonOpen(1, 0, 0);
-                goto loop_34;
-            }
-            if (temp_r3_5 == 1) {
-                if (scriptContinueSave() == 1) {
-                    menuOffScreenRelease();
-                    _openFieldMenu = 0;
-                    GSthreadSwitch();
+            while (1) {
+                GSgfxVideoSetLockFrameRate(0);
+                temp_r3_5 = menuOpen(var_r27_2, 1);
+                if (temp_r3_5 == 0) {
+                    menuClose(var_r27_2);
+                    menuPokemonOpen(1, 0, 0);
+                } else if (temp_r3_5 == 1) {
+                    if (scriptContinueSave() == 1) {
+                        menuOffScreenRelease();
+                        _openFieldMenu = 0;
+                        GSthreadSwitch();
+                    }
+                } else {
+                    break;
                 }
-                goto loop_34;
             }
         }
         break;
     case 1:
-        temp_r3_6 = menuPocket2Open(0, &sp8, 0);
-        var_r31 = temp_r3_6;
+        var_r31 = menuPocket2Open(0, &sp8, 0);
         if (var_r31 != 0) {
-            temp_r3_7 = menuPocket2GetItemScript(temp_r3_6);
-            if ((u32) (temp_r3_7 + 0x10000) != -1U) {
+            temp_r3_7 = menuPocket2GetItemScript(var_r31);
+            if ((u32)temp_r3_7 != 0xFFFFFFFF) {
                 heroMoveAddAutoEvent(temp_r3_7, (s32) var_r31, sp8, 0, 0);
             }
         }
+        break;        break;
+    case 2:
+    case 3:
         break;
     }
     menuPocket2GetItemScript(var_r31);
@@ -524,8 +487,7 @@ loop_34:
     }
     GSthreadSwitch();
     menuClose(var_r27_2);
-    temp_r3_8 = GSgfxVideoGetVsyncRate();
-    menuReleaseOffScreen(temp_r3_8, 20.0f / (f32) temp_r3_8);
+    menuReleaseOffScreen(20.0f / GSgfxVideoGetVsyncRate());
     menuCloseSync(var_r27_2, 1);
     GSgfxVideoSetLockFrameRate(1);
     heroMoveTermEvent();

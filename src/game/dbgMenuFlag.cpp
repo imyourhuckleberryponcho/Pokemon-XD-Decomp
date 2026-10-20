@@ -207,7 +207,7 @@ void dbgMenuFlagCursor(FlagWindow* window) {
     s8 total = _dbgMenuFlagGetMenuNum(window, 0);
     s8 disp = menuDataBiosGetDispMax(window->menu);
     FlagCursorU u;
-    if (total < disp) {
+    if (total - 48 < disp) {
         disp = total;
     }
     u.raw = *(u32*)&window->cursor;

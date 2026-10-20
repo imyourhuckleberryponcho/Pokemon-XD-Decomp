@@ -257,8 +257,7 @@ void WS_SUBROUTINE_CALL(void) {
     case 5:
         break;
     case 6:
-        fp = get_exp_fight_pokemon_ptr;
-        if (fp) {
+        if ((fp = get_exp_fight_pokemon_ptr)) {
             void* trainer = fightFloorGetFightPokemonPtrToFightTrainerPtr(0, fp);
             if (trainer) {
                 o = fightTrainerCheckFightPokemonFightOut(trainer, fp);

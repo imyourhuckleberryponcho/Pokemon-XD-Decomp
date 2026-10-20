@@ -10,6 +10,27 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define M2C_TRAP_IF(cond) (0)
 #define M2C_BREAK() (0)
 #define M2C_SYNC() (0)
+#ifdef __cplusplus
+template <int N> struct M2C_Blob { u8 b[N]; };
+#define M2C_STRUCT_COPY(dst, src, size) (*(M2C_Blob<size>*)(dst) = *(M2C_Blob<size>*)(src))
+#else
+#define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
+#endif
+#define M2C_CARRY 0
+#define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
+#define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
+#endif
+
+// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+#ifndef M2C_MACROS_H
+#define M2C_MACROS_H
+typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
+#define M2C_FIELD(expr, type_ptr, offset) (*(type_ptr)((s8 *)(expr) + (offset)))
+#define M2C_BITWISE(type, expr) ((type)(u32)(expr))
+#define M2C_ERROR(desc) (0)
+#define M2C_TRAP_IF(cond) (0)
+#define M2C_BREAK() (0)
+#define M2C_SYNC() (0)
 #define M2C_STRUCT_COPY(dst, src, size) (*(dst) = *(src))
 #define M2C_CARRY 0
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
@@ -54,19 +75,98 @@ struct BlendState {
 
 class GSgfxLayer {
 public:
-    u8 pad0[0x1644];
+    u8 pad0[0xd88];
+    u8 fd88;              // 0xD88
+    s32 fd8c;             // 0xD8C
+    s32 fd90;             // 0xD90
+    u8 pad_d94[0x1644 - 0xd94];
     s32 blendOp;          // 0x1644
     s32 blendSrc;         // 0x1648
     s32 blendDst;         // 0x164C
     s32 blendLogic;       // 0x1650
-    u8 pad_1654[0x16a8 - 0x1654];
+    u8 f1654;
+    u8 f1655;
+    u8 colorUpdate;       // 0x1656
+    u8 alphaUpdate;
+    u8 zUpdate;
+    u8 pad_1659[3];
+    u8 zEnable;           // 0x165C
+    u8 pad_165d[3];
+    s32 zFunc;            // 0x1660
+    s32 f1664;
+    s32 f1668;
+    s32 f166c;
+    u8 f1670;
+    u8 f1671;
+    u8 f1672;
+    u8 pad_1673;
+    u8 f1674;             // 0x1674
+    u8 pad_1675[0x16a8 - 0x1675];
     u32 dirty16a8;
-    u8 pad_16ac[0x170c - 0x16ac];
+    u8 pad_16ac[0x16b8 - 0x16ac];
+    u32 dirty16b8;
+    u8 pad_16bc[0x170c - 0x16bc];
     u32 dirty170c;
     u8 pad_1710[0x1760 - 0x1710];
     u32 dirty1760;
-    u8 pad_1764[0x17c4 - 0x1764];
+    u8 pad_1764[0x1770 - 0x1764];
+    u32 dirty1770;
+    u8 pad_1774[0x17c4 - 0x1774];
     u32 dirty17c4;
+
+    inline void dirtyPE(u32 bit) {
+        dirty170c |= bit;
+        dirty16a8 |= 0x40;
+        dirty17c4 |= bit;
+        dirty1760 |= 0x40;
+    }
+    inline void dirtyRaster(u32 bit) {
+        dirty16b8 |= bit;
+        dirty16a8 |= 2;
+        dirty1770 |= bit;
+        dirty1760 |= 2;
+    }
+    inline void setColorUpdate(u8 color, u8 alpha, u8 z) {
+        colorUpdate = color;
+        alphaUpdate = alpha;
+        zUpdate = z;
+        dirtyPE(4);
+    }
+    inline void setZMode(u8 enable, s32 func) {
+        zEnable = enable;
+        zFunc = func;
+        dirtyPE(8);
+    }
+    inline void setAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1, u8 flag) {
+        f1664 = comp0;
+        f1670 = ref0;
+        f1668 = op;
+        f166c = comp1;
+        f1671 = ref1;
+        f1672 = flag;
+        dirtyPE(0x10);
+    }
+    inline void setDstAlpha(u8 enable, u8 alpha) {
+        f1654 = enable;
+        f1655 = alpha;
+        dirtyPE(2);
+    }
+    inline void setDither(u8 dither) {
+        f1674 = dither;
+        dirtyPE(0x20);
+    }
+    inline void setCullMode(s32 mode) {
+        fd8c = mode;
+        dirtyRaster(2);
+    }
+    inline void setFd90(s32 v) {
+        fd90 = v;
+        dirtyRaster(4);
+    }
+    inline void setFd88(u8 v) {
+        fd88 = v;
+        dirtyRaster(8);
+    }
     u8 pad_17c8[0x1818 - 0x17c8];
     BlendState blendTable[2];
     BlendState* curBlend;  // 0x1990
@@ -125,7 +225,7 @@ void* memset(void* dst, int val, size_t n);
 void particleEngineInit();
 void particleEnginePostUpdate();
 void particleEngineRender(void *p0);
-void particleEngineSetDefaultRenderState();
+void particleEngineSetDefaultRenderState(u8 tev);
 void particleEngineUpdate(f32 p0);
 s32 peBankRender(void*);
 s32 peBankUpdate(void*, f32);
@@ -149,10 +249,10 @@ s32 particleEnginePrepareUpdate(u32 p0);
 void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2);
 void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5);
 }
-static u8 blendedTexturesSetup_S1951;
-static u8 extensionSetup_S1948;
-static u8 init_S1949;
-static u8 init_S1952;
+// ---- draft declarations ----
+
+
+
 void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5) {
     s32 temp_r3_2;
     s32 temp_r4;
@@ -167,62 +267,23 @@ void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5)
         temp_r4_2 = (unsigned char *)(g_current_layer + temp_r4);
         M2C_FIELD(temp_r4_2, u8 **, 0x1740) = (unsigned char *)(p1);
         temp_r3_2 = 1 << p0;
-        M2C_FIELD(g_current_layer, s32 *, 0x173C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x173C) | temp_r3_2);
+        M2C_FIELD((s32)g_current_layer, s32 *, 0x173C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x173C) | temp_r3_2);
         M2C_FIELD(temp_r4_2, u8 **, 0x17F8) = (unsigned char *)(p1);
         M2C_FIELD(g_current_layer, s32 *, 0x17F4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17F4) | temp_r3_2);
     }
 }
+
 }
-void particleEngineSetDefaultRenderState() {
-    M2C_FIELD(g_current_layer, u8 *, 0x1656) = 1;
-    M2C_FIELD(g_current_layer, u8 *, 0x1657) = 1;
-    M2C_FIELD(g_current_layer, u8 *, 0x1658) = 0;
-    M2C_FIELD(g_current_layer, s32 *, 0x170C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x170C) | 4);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(g_current_layer, s32 *, 0x17C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17C4) | 4);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(g_current_layer, u8 *, 0x165C) = 1;
-    M2C_FIELD(g_current_layer, s32 *, 0x1660) = 1;
-    M2C_FIELD(g_current_layer, s32 *, 0x170C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x170C) | 8);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(g_current_layer, s32 *, 0x17C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17C4) | 8);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(g_current_layer, s32 *, 0x1664) = 7;
-    M2C_FIELD(g_current_layer, u8 *, 0x1670) = 0;
-    M2C_FIELD(g_current_layer, s32 *, 0x1668) = 0;
-    M2C_FIELD(g_current_layer, s32 *, 0x166C) = 7;
-    M2C_FIELD(g_current_layer, u8 *, 0x1671) = 0;
-    M2C_FIELD(g_current_layer, u8 *, 0x1672) = 1;
-    M2C_FIELD(g_current_layer, s32 *, 0x170C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x170C) | 0x10);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(g_current_layer, s32 *, 0x17C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17C4) | 0x10);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(g_current_layer, u8 *, 0x1654) = 0;
-    M2C_FIELD(g_current_layer, u8 *, 0x1655) = 0xFF;
-    M2C_FIELD(g_current_layer, s32 *, 0x170C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x170C) | 2);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(g_current_layer, s32 *, 0x17C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17C4) | 2);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(g_current_layer, u8 *, 0x1674) = 1;
-    M2C_FIELD(g_current_layer, s32 *, 0x170C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x170C) | 0x20);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(g_current_layer, s32 *, 0x17C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17C4) | 0x20);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(g_current_layer, s32 *, 0xD8C) = 2;
-    M2C_FIELD(g_current_layer, s32 *, 0x16B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16B8) | 2);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 2);
-    M2C_FIELD(g_current_layer, s32 *, 0x1770) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1770) | 2);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 2);
-    M2C_FIELD(g_current_layer, s32 *, 0xD90) = 0;
-    M2C_FIELD(g_current_layer, s32 *, 0x16B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16B8) | 4);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 2);
-    M2C_FIELD(g_current_layer, s32 *, 0x1770) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1770) | 4);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 2);
-    M2C_FIELD(g_current_layer, u8 *, 0xD88) = 0;
-    M2C_FIELD(g_current_layer, s32 *, 0x16B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16B8) | 8);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 2);
-    M2C_FIELD(g_current_layer, s32 *, 0x1770) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1770) | 8);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 2);
+void particleEngineSetDefaultRenderState(u8 tev) {
+    g_current_layer->setColorUpdate(1, 1, 0);
+    g_current_layer->setZMode(1, 1);
+    g_current_layer->setAlphaCompare(7, 0, 0, 7, 0, 1);
+    g_current_layer->setDstAlpha(0, 0xFF);
+    g_current_layer->setDither(1);
+    g_current_layer->setCullMode(2);
+    g_current_layer->setFd90(0);
+    g_current_layer->setFd88(0);
+    particleEngineSetupTevStages(tev, 0, 0);
     g_afterZWriteState = 0;
 }
 }
@@ -360,399 +421,404 @@ void particleEngineSetupBlendMode(u32 mode) {
     }
     }
 }
+
+#define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
+// layer state dirty mark: the state word, its copy 0xB8 further, and the group masks at 0x16A8/0x1760
+static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
+    LAYER_FIELD(l, u32, off) |= bit;
+    LAYER_FIELD(l, u32, 0x16A8) |= sum;
+    LAYER_FIELD(l, u32, off + 0xB8) |= bit;
+    LAYER_FIELD(l, u32, 0x1760) |= sum;
+}
+
 extern "C" {
 void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2) {
     s32 sp8;
 
-    if ((s8) init_S1949 == 0) {
-        extensionSetup_S1948 = 0;
-        init_S1949 = 1;
-    }
-    if ((s8) init_S1952 == 0) {
-        blendedTexturesSetup_S1951 = 0;
-        init_S1952 = 1;
-    }
-    if ((p0 != 0) || ((u8) extensionSetup_S1948 != p1) || ((u8) blendedTexturesSetup_S1951 != p2)) {
-        extensionSetup_S1948 = p1;
-        blendedTexturesSetup_S1951 = p2;
-        M2C_FIELD(g_current_layer, s8 *, 0xC70) = 1;
-        M2C_FIELD(g_current_layer, s32 *, 0x16AC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16AC) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x1764) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1764) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 1);
+    static u8 extensionSetup = 0;
+    static u8 blendedTexturesSetup = 0;
+
+    if ((p0 != 0) || ((u8) extensionSetup != p1) || ((u8) blendedTexturesSetup != p2)) {
+        extensionSetup = p1;
+        blendedTexturesSetup = p2;
+        {
+            GSgfxLayer* l = g_current_layer;
+            LAYER_FIELD(l, s8, 0xC70) = 1;
+            layerMark(l, 1, 0x16AC, 1);
+        }
         ((GSgfxLayer*)(g_current_layer))->tgenFunc(0U, (GSgfxTgenFunc)(1), (GSgfxTgenSrc)(4), (GSmtx*)(NULL), 0U, (GSmtx*)(NULL));
-        M2C_FIELD(g_current_layer, s8 *, 0x14B0) = 0;
-        M2C_FIELD(g_current_layer, s32 *, 0x16EC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16EC) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x80);
-        M2C_FIELD(g_current_layer, s32 *, 0x17A4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17A4) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x80);
-        M2C_FIELD(g_current_layer, s32 *, 0x1420) = 0;
-        M2C_FIELD(g_current_layer, s32 *, 0x16E8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E8) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-        M2C_FIELD(g_current_layer, s32 *, 0x17A0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17A0) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-        M2C_FIELD(g_current_layer, s8 *, 0xDB8) = 1;
-        M2C_FIELD(g_current_layer, s32 *, 0x16BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16BC) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 4);
-        M2C_FIELD(g_current_layer, s32 *, 0x1774) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1774) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 4);
+        {
+            GSgfxLayer* l = g_current_layer;
+            LAYER_FIELD(l, s8, 0x14B0) = 0;
+            layerMark(l, 0x80, 0x16EC, 1);
+        }
+        {
+            GSgfxLayer* l = g_current_layer;
+            LAYER_FIELD(l, s32, 0x1420) = 0;
+            layerMark(l, 8, 0x16E8, 1);
+        }
+        {
+            GSgfxLayer* l = g_current_layer;
+            LAYER_FIELD(l, s8, 0xDB8) = 1;
+            layerMark(l, 4, 0x16BC, 1);
+        }
         sp8 = 0;
         ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(0U, (GSgfxCunitAlpha)(2), (GSgfxCunitSrc)(1), (GSgfxCunitSrc)(1), 0U, (GSgfxLight**)(NULL), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)));
         if (p2 != 0) {
-            M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 3;
-            M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16CC) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1784) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1784) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1584) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1588) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1704) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1704) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x20);
-            M2C_FIELD(g_current_layer, s32 *, 0x17BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17BC) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x20);
-            M2C_FIELD(g_current_layer, s32 *, 0xEB0) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0xEB4) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0xEB8) = 4;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D0) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1788) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1788) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1170) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1174) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1178) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x117C) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1180) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x12B0) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12B4) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12B8) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x12BC) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12C0) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0xF70) = 0xF;
-            M2C_FIELD(g_current_layer, s32 *, 0xF74) = 0xA;
-            M2C_FIELD(g_current_layer, s32 *, 0xF78) = 8;
-            M2C_FIELD(g_current_layer, s32 *, 0xF7C) = 0xF;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1070) = 7;
-            M2C_FIELD(g_current_layer, s32 *, 0x1074) = 5;
-            M2C_FIELD(g_current_layer, s32 *, 0x1078) = 4;
-            M2C_FIELD(g_current_layer, s32 *, 0x107C) = 7;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x158C) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1590) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1704) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1704) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x20);
-            M2C_FIELD(g_current_layer, s32 *, 0x17BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17BC) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x20);
-            M2C_FIELD(g_current_layer, s32 *, 0xEBC) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0xEC0) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0xEC4) = 4;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D0) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1788) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1788) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1184) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1188) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x118C) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x1190) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1194) = 2;
-            M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x12C4) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12C8) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12CC) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x12D0) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12D4) = 2;
-            M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0xF80) = 0xF;
-            M2C_FIELD(g_current_layer, s32 *, 0xF84) = 0xA;
-            M2C_FIELD(g_current_layer, s32 *, 0xF88) = 8;
-            M2C_FIELD(g_current_layer, s32 *, 0xF8C) = 0xF;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1080) = 7;
-            M2C_FIELD(g_current_layer, s32 *, 0x1084) = 5;
-            M2C_FIELD(g_current_layer, s32 *, 0x1088) = 4;
-            M2C_FIELD(g_current_layer, s32 *, 0x108C) = 7;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1594) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1598) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1704) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1704) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x20);
-            M2C_FIELD(g_current_layer, s32 *, 0x17BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17BC) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x20);
-            M2C_FIELD(g_current_layer, s32 *, 0xEC8) = 0xFF;
-            M2C_FIELD(g_current_layer, s32 *, 0xECC) = 0xFF;
-            M2C_FIELD(g_current_layer, s32 *, 0xED0) = 0xFF;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D0) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1788) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1788) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1198) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x119C) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x11A0) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x11A4) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x11A8) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x12D8) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12DC) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12E0) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x12E4) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x12E8) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x150C) = 0xC;
-            M2C_FIELD(g_current_layer, s32 *, 0x16FC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16FC) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x10);
-            M2C_FIELD(g_current_layer, s32 *, 0x17B4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17B4) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x10);
-            M2C_FIELD(g_current_layer, s32 *, 0x154C) = 0x1C;
-            M2C_FIELD(g_current_layer, s32 *, 0x1700) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1700) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x10);
-            M2C_FIELD(g_current_layer, s32 *, 0x17B8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17B8) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x10);
-            M2C_FIELD(g_current_layer, s32 *, 0xF90) = 2;
-            M2C_FIELD(g_current_layer, s32 *, 0xF94) = 4;
-            M2C_FIELD(g_current_layer, s32 *, 0xF98) = 0xE;
-            M2C_FIELD(g_current_layer, s32 *, 0xF9C) = 0xF;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD((u8)g_current_layer, s32 *, 0x178C) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1090) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x1094) = 2;
-            M2C_FIELD(g_current_layer, s32 *, 0x1098) = 6;
-            M2C_FIELD(g_current_layer, s32 *, 0x109C) = 7;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s8, 0xEAC) = 3;
+                layerMark(l, 8, 0x16CC, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1584) = 0;
+                LAYER_FIELD(l, s32, 0x1588) = 0;
+                layerMark(l, 0x20, 0x1704, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0xEB0) = 0;
+                LAYER_FIELD(l, s32, 0xEB4) = 0;
+                LAYER_FIELD(l, s32, 0xEB8) = 4;
+                layerMark(l, 8, 0x16D0, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1170) = 0;
+                LAYER_FIELD(l, s32, 0x1174) = 0;
+                LAYER_FIELD(l, s32, 0x1178) = 0;
+                LAYER_FIELD(l, s8, 0x117C) = 0;
+                LAYER_FIELD(l, s32, 0x1180) = 1;
+                layerMark(l, 8, 0x16DC, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x12B0) = 0;
+                LAYER_FIELD(l, s32, 0x12B4) = 0;
+                LAYER_FIELD(l, s32, 0x12B8) = 0;
+                LAYER_FIELD(l, s8, 0x12BC) = 0;
+                LAYER_FIELD(l, s32, 0x12C0) = 1;
+                layerMark(l, 8, 0x16E0, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0xF70) = 0xF;
+                LAYER_FIELD(l, s32, 0xF74) = 0xA;
+                LAYER_FIELD(l, s32, 0xF78) = 8;
+                LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                layerMark(l, 8, 0x16D4, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1070) = 7;
+                LAYER_FIELD(l, s32, 0x1074) = 5;
+                LAYER_FIELD(l, s32, 0x1078) = 4;
+                LAYER_FIELD(l, s32, 0x107C) = 7;
+                layerMark(l, 8, 0x16D8, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x158C) = 0;
+                LAYER_FIELD(l, s32, 0x1590) = 0;
+                layerMark(l, 0x20, 0x1704, 2);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0xEBC) = 0;
+                LAYER_FIELD(l, s32, 0xEC0) = 1;
+                LAYER_FIELD(l, s32, 0xEC4) = 4;
+                layerMark(l, 8, 0x16D0, 2);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1184) = 0;
+                LAYER_FIELD(l, s32, 0x1188) = 0;
+                LAYER_FIELD(l, s32, 0x118C) = 0;
+                LAYER_FIELD(l, s8, 0x1190) = 0;
+                LAYER_FIELD(l, s32, 0x1194) = 2;
+                layerMark(l, 8, 0x16DC, 2);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x12C4) = 0;
+                LAYER_FIELD(l, s32, 0x12C8) = 0;
+                LAYER_FIELD(l, s32, 0x12CC) = 0;
+                LAYER_FIELD(l, s8, 0x12D0) = 0;
+                LAYER_FIELD(l, s32, 0x12D4) = 2;
+                layerMark(l, 8, 0x16E0, 2);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0xF80) = 0xF;
+                LAYER_FIELD(l, s32, 0xF84) = 0xA;
+                LAYER_FIELD(l, s32, 0xF88) = 8;
+                LAYER_FIELD(l, s32, 0xF8C) = 0xF;
+                layerMark(l, 8, 0x16D4, 2);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1080) = 7;
+                LAYER_FIELD(l, s32, 0x1084) = 5;
+                LAYER_FIELD(l, s32, 0x1088) = 4;
+                LAYER_FIELD(l, s32, 0x108C) = 7;
+                layerMark(l, 8, 0x16D8, 2);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1594) = 0;
+                LAYER_FIELD(l, s32, 0x1598) = 0;
+                layerMark(l, 0x20, 0x1704, 4);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0xEC8) = 0xFF;
+                LAYER_FIELD(l, s32, 0xECC) = 0xFF;
+                LAYER_FIELD(l, s32, 0xED0) = 0xFF;
+                layerMark(l, 8, 0x16D0, 4);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1198) = 0;
+                LAYER_FIELD(l, s32, 0x119C) = 0;
+                LAYER_FIELD(l, s32, 0x11A0) = 0;
+                LAYER_FIELD(l, s8, 0x11A4) = 1;
+                LAYER_FIELD(l, s32, 0x11A8) = 0;
+                layerMark(l, 8, 0x16DC, 4);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x12D8) = 0;
+                LAYER_FIELD(l, s32, 0x12DC) = 0;
+                LAYER_FIELD(l, s32, 0x12E0) = 0;
+                LAYER_FIELD(l, s8, 0x12E4) = 1;
+                LAYER_FIELD(l, s32, 0x12E8) = 0;
+                layerMark(l, 8, 0x16E0, 4);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x150C) = 0xC;
+                layerMark(l, 0x10, 0x16FC, 4);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x154C) = 0x1C;
+                layerMark(l, 0x10, 0x1700, 4);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0xF90) = 2;
+                LAYER_FIELD(l, s32, 0xF94) = 4;
+                LAYER_FIELD(l, s32, 0xF98) = 0xE;
+                LAYER_FIELD(l, s32, 0xF9C) = 0xF;
+                layerMark(l, 8, 0x16D4, 4);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1090) = 1;
+                LAYER_FIELD(l, s32, 0x1094) = 2;
+                LAYER_FIELD(l, s32, 0x1098) = 6;
+                LAYER_FIELD(l, s32, 0x109C) = 7;
+                layerMark(l, 8, 0x16D8, 4);
+            }
             if (p1 != 0) {
-                M2C_FIELD(g_current_layer, s32 *, 0x1504) = 0xD;
-                M2C_FIELD(g_current_layer, s32 *, 0x16FC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16FC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x10);
-                M2C_FIELD(g_current_layer, s32 *, 0x17B4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17B4) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x10);
-                M2C_FIELD(g_current_layer, s32 *, 0xF70) = 0xE;
-                M2C_FIELD(g_current_layer, s32 *, 0xF74) = 0xA;
-                M2C_FIELD(g_current_layer, s32 *, 0xF78) = 8;
-                M2C_FIELD(g_current_layer, s32 *, 0xF7C) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1508) = 0xD;
-                M2C_FIELD(g_current_layer, s32 *, 0x16FC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16FC) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x10);
-                M2C_FIELD(g_current_layer, s32 *, 0x17B4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17B4) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x10);
-                M2C_FIELD(g_current_layer, s32 *, 0xF80) = 0xE;
-                M2C_FIELD(g_current_layer, s32 *, 0xF84) = 0xA;
-                M2C_FIELD(g_current_layer, s32 *, 0xF88) = 8;
-                M2C_FIELD(g_current_layer, s32 *, 0xF8C) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1504) = 0xD;
+                    layerMark(l, 0x10, 0x16FC, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xF70) = 0xE;
+                    LAYER_FIELD(l, s32, 0xF74) = 0xA;
+                    LAYER_FIELD(l, s32, 0xF78) = 8;
+                    LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                    layerMark(l, 8, 0x16D4, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1508) = 0xD;
+                    layerMark(l, 0x10, 0x16FC, 2);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xF80) = 0xE;
+                    LAYER_FIELD(l, s32, 0xF84) = 0xA;
+                    LAYER_FIELD(l, s32, 0xF88) = 8;
+                    LAYER_FIELD(l, s32, 0xF8C) = 0xF;
+                    layerMark(l, 8, 0x16D4, 2);
+                }
             }
         } else {
             if (p1 != 0) {
-                M2C_FIELD(g_current_layer, s8 *, 0xDB8) = 2;
-                M2C_FIELD(g_current_layer, s32 *, 0x16BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16BC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 4);
-                M2C_FIELD(g_current_layer, s32 *, 0x1774) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1774) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 4);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s8, 0xDB8) = 2;
+                    layerMark(l, 4, 0x16BC, 1);
+                }
                 sp8 = 0;
                 ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(1U, (GSgfxCunitAlpha)(2), (GSgfxCunitSrc)(1), (GSgfxCunitSrc)(1), 0U, (GSgfxLight**)(NULL), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)));
-                M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 2;
-                M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16CC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1784) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1784) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1070) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x1074) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x1078) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x107C) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1584) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1588) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1704) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1704) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x20);
-                M2C_FIELD(g_current_layer, s32 *, 0x17BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17BC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x20);
-                M2C_FIELD(g_current_layer, s32 *, 0xEB0) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0xEB4) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0xEB8) = 4;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D0) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1788) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1788) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1170) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1174) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1178) = 0;
-                M2C_FIELD(g_current_layer, s8 *, 0x117C) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1180) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x12B0) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12B4) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12B8) = 0;
-                M2C_FIELD(g_current_layer, s8 *, 0x12BC) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12C0) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0xF70) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0xF74) = 0xA;
-                M2C_FIELD(g_current_layer, s32 *, 0xF78) = 8;
-                M2C_FIELD(g_current_layer, s32 *, 0xF7C) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1070) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x1074) = 5;
-                M2C_FIELD(g_current_layer, s32 *, 0x1078) = 4;
-                M2C_FIELD(g_current_layer, s32 *, 0x107C) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x158C) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1590) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1704) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1704) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x20);
-                M2C_FIELD(g_current_layer, s32 *, 0x17BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17BC) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x20);
-                M2C_FIELD(g_current_layer, s32 *, 0xEBC) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0xEC0) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0xEC4) = 5;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D0) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1788) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1788) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1184) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x1188) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x118C) = 0;
-                M2C_FIELD(g_current_layer, s8 *, 0x1190) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x1194) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x12C4) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12C8) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x12CC) = 0;
-                M2C_FIELD(g_current_layer, s8 *, 0x12D0) = 1;
-                M2C_FIELD(g_current_layer, s32 *, 0x12D4) = 0;
-                M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0xF80) = 0xA;
-                M2C_FIELD(g_current_layer, s32 *, 0xF84) = 0xF;
-                M2C_FIELD(g_current_layer, s32 *, 0xF88) = 8;
-                M2C_FIELD(g_current_layer, s32 *, 0xF8C) = 2;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1080) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x1084) = 5;
-                M2C_FIELD(g_current_layer, s32 *, 0x1088) = 4;
-                M2C_FIELD(g_current_layer, s32 *, 0x108C) = 7;
-                M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 2);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s8, 0xEAC) = 2;
+                    layerMark(l, 8, 0x16CC, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1070) = 7;
+                    LAYER_FIELD(l, s32, 0x1074) = 7;
+                    LAYER_FIELD(l, s32, 0x1078) = 7;
+                    LAYER_FIELD(l, s32, 0x107C) = 7;
+                    layerMark(l, 8, 0x16D8, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1584) = 0;
+                    LAYER_FIELD(l, s32, 0x1588) = 0;
+                    layerMark(l, 0x20, 0x1704, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xEB0) = 0;
+                    LAYER_FIELD(l, s32, 0xEB4) = 0;
+                    LAYER_FIELD(l, s32, 0xEB8) = 4;
+                    layerMark(l, 8, 0x16D0, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1170) = 0;
+                    LAYER_FIELD(l, s32, 0x1174) = 0;
+                    LAYER_FIELD(l, s32, 0x1178) = 0;
+                    LAYER_FIELD(l, s8, 0x117C) = 0;
+                    LAYER_FIELD(l, s32, 0x1180) = 1;
+                    layerMark(l, 8, 0x16DC, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x12B0) = 0;
+                    LAYER_FIELD(l, s32, 0x12B4) = 0;
+                    LAYER_FIELD(l, s32, 0x12B8) = 0;
+                    LAYER_FIELD(l, s8, 0x12BC) = 0;
+                    LAYER_FIELD(l, s32, 0x12C0) = 1;
+                    layerMark(l, 8, 0x16E0, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xF70) = 0xF;
+                    LAYER_FIELD(l, s32, 0xF74) = 0xA;
+                    LAYER_FIELD(l, s32, 0xF78) = 8;
+                    LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                    layerMark(l, 8, 0x16D4, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1070) = 7;
+                    LAYER_FIELD(l, s32, 0x1074) = 5;
+                    LAYER_FIELD(l, s32, 0x1078) = 4;
+                    LAYER_FIELD(l, s32, 0x107C) = 7;
+                    layerMark(l, 8, 0x16D8, 1);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x158C) = 0;
+                    LAYER_FIELD(l, s32, 0x1590) = 0;
+                    layerMark(l, 0x20, 0x1704, 2);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xEBC) = 0;
+                    LAYER_FIELD(l, s32, 0xEC0) = 0;
+                    LAYER_FIELD(l, s32, 0xEC4) = 5;
+                    layerMark(l, 8, 0x16D0, 2);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1184) = 0;
+                    LAYER_FIELD(l, s32, 0x1188) = 0;
+                    LAYER_FIELD(l, s32, 0x118C) = 0;
+                    LAYER_FIELD(l, s8, 0x1190) = 1;
+                    LAYER_FIELD(l, s32, 0x1194) = 0;
+                    layerMark(l, 8, 0x16DC, 2);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x12C4) = 0;
+                    LAYER_FIELD(l, s32, 0x12C8) = 0;
+                    LAYER_FIELD(l, s32, 0x12CC) = 0;
+                    LAYER_FIELD(l, s8, 0x12D0) = 1;
+                    LAYER_FIELD(l, s32, 0x12D4) = 0;
+                    layerMark(l, 8, 0x16E0, 2);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0xF80) = 0xA;
+                    LAYER_FIELD(l, s32, 0xF84) = 0xF;
+                    LAYER_FIELD(l, s32, 0xF88) = 8;
+                    LAYER_FIELD(l, s32, 0xF8C) = 2;
+                    layerMark(l, 8, 0x16D4, 2);
+                }
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s32, 0x1080) = 7;
+                    LAYER_FIELD(l, s32, 0x1084) = 5;
+                    LAYER_FIELD(l, s32, 0x1088) = 4;
+                    LAYER_FIELD(l, s32, 0x108C) = 7;
+                    layerMark(l, 8, 0x16D8, 2);
+                }
                 return;
             }
-            M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16CC) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1784) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1784) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1584) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1588) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1704) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1704) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x20);
-            M2C_FIELD(g_current_layer, s32 *, 0x17BC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17BC) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x20);
-            M2C_FIELD(g_current_layer, s32 *, 0xEB0) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0xEB4) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0xEB8) = 4;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D0) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1788) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1788) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1170) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1174) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x1178) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x117C) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x1180) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x16DC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16DC) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1794) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1794) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x12B0) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12B4) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x12B8) = 0;
-            M2C_FIELD(g_current_layer, s8 *, 0x12BC) = 1;
-            M2C_FIELD(g_current_layer, s32 *, 0x12C0) = 0;
-            M2C_FIELD(g_current_layer, s32 *, 0x16E0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16E0) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1798) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1798) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0xF70) = 0xF;
-            M2C_FIELD(g_current_layer, s32 *, 0xF74) = 0xA;
-            M2C_FIELD(g_current_layer, s32 *, 0xF78) = 8;
-            M2C_FIELD(g_current_layer, s32 *, 0xF7C) = 0xF;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D4) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x178C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x178C) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1070) = 7;
-            M2C_FIELD(g_current_layer, s32 *, 0x1074) = 5;
-            M2C_FIELD(g_current_layer, s32 *, 0x1078) = 4;
-            M2C_FIELD(g_current_layer, s32 *, 0x107C) = 7;
-            M2C_FIELD(g_current_layer, s32 *, 0x16D8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16D8) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-            M2C_FIELD(g_current_layer, s32 *, 0x1790) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1790) | 1);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s8, 0xEAC) = 1;
+                layerMark(l, 8, 0x16CC, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1584) = 0;
+                LAYER_FIELD(l, s32, 0x1588) = 0;
+                layerMark(l, 0x20, 0x1704, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0xEB0) = 0;
+                LAYER_FIELD(l, s32, 0xEB4) = 0;
+                LAYER_FIELD(l, s32, 0xEB8) = 4;
+                layerMark(l, 8, 0x16D0, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1170) = 0;
+                LAYER_FIELD(l, s32, 0x1174) = 0;
+                LAYER_FIELD(l, s32, 0x1178) = 0;
+                LAYER_FIELD(l, s8, 0x117C) = 1;
+                LAYER_FIELD(l, s32, 0x1180) = 0;
+                layerMark(l, 8, 0x16DC, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x12B0) = 0;
+                LAYER_FIELD(l, s32, 0x12B4) = 0;
+                LAYER_FIELD(l, s32, 0x12B8) = 0;
+                LAYER_FIELD(l, s8, 0x12BC) = 1;
+                LAYER_FIELD(l, s32, 0x12C0) = 0;
+                layerMark(l, 8, 0x16E0, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0xF70) = 0xF;
+                LAYER_FIELD(l, s32, 0xF74) = 0xA;
+                LAYER_FIELD(l, s32, 0xF78) = 8;
+                LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                layerMark(l, 8, 0x16D4, 1);
+            }
+            {
+                GSgfxLayer* l = g_current_layer;
+                LAYER_FIELD(l, s32, 0x1070) = 7;
+                LAYER_FIELD(l, s32, 0x1074) = 5;
+                LAYER_FIELD(l, s32, 0x1078) = 4;
+                LAYER_FIELD(l, s32, 0x107C) = 7;
+                layerMark(l, 8, 0x16D8, 1);
+            }
         }
     }
 }
@@ -767,8 +833,8 @@ void particleEngineRender(void *p0) {
     if ((u8 *) g_particleBanks != NULL) {
         g_current_layer = (GSgfxLayer *) p0;
         g_Camera = NULL;
-        g_render_pass = M2C_FIELD((u16)p0, s32 *, 0x1994);
-        particleEngineSetDefaultRenderState();
+        g_render_pass = M2C_FIELD(p0, s32 *, 0x1994);
+        particleEngineSetDefaultRenderState(1);
         while (var_r31 != NULL) {
             peBankRender(var_r31);
             var_r31 = M2C_FIELD(var_r31, u8 **, 0x164);

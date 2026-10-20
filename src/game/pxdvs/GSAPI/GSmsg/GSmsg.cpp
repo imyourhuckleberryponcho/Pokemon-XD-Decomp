@@ -2261,7 +2261,7 @@ static void _msgSetChar(MSG_TASK_WORK* t, u16 code)
         t->charW = (f32)t->fontW * t->scaleX + 2.0f;
     } else {
         u8 w = e->width;
-        _msgMakeTexture(t, (u8*)info + (info->dataOff + (e->bits & 0xFFFFFF)), w, e->height, (s8)(e->bits >> 24));
+        _msgMakeTexture(t, (u8*)info + (info->dataOff + (e->bits & 0xFFFFFF)), (u8)w, e->height, (e->bits >> 24));
         t->charW = (f32)(s16)w * t->scaleX;
     }
 }
@@ -3449,7 +3449,7 @@ s32 GScharMakeFromGBA(u16* dst, u8* src, s32 len, s32 lang)
         case 5:
         case 6:
         case 7:
-        case 8:
+        case 9:
         default:
             return gbaLoad(dst, src, len, lbl_802F2B88);
         }
@@ -3609,7 +3609,7 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
             break;
         }
         count += 2;
-        if (count > limit) {
+        if (limit < count) {
             out = outStart;
             break;
         }
@@ -3619,7 +3619,7 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
             u8 ctrl;
             ctrl = *t->ip++;
             count++;
-            if (count > limit) {
+            if (limit < count) {
                 out = outStart;
                 break;
             }
@@ -3630,7 +3630,7 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
             _msgCallCtrlFunc(t, ctrl);
             if (depth == t->depth) {
                 count += t->ip - p;
-                if (count > limit) {
+                if (limit < count) {
                     out = outStart;
                     break;
                 }
@@ -3639,7 +3639,7 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
                     out = (u16*)((u8*)out + 1);
                 }
             } else {
-                out = outStart;
+                if (out < outStart) out = outStart;
                 count = countStart;
             }
         }

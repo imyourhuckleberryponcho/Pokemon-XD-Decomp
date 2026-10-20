@@ -3,6 +3,9 @@
 #pragma pool_strings off
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
+#include <dolphin/gx/GXStruct.h>
+#define THP_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define THP_MIN(a, b) ((a) < (b) ? (a) : (b))
 // Non-volatile view of the GX write-gather FIFO: the original kept constants in
 // registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
@@ -34,12 +37,119 @@ public:
         *(u32*)((u8*)this + 0x1760) |= sum;
     }
 
+    inline void pixelUpdate(u8 color, u8 alpha, u8 z) {
+        colorUpdate = color;
+        alphaUpdate = alpha;
+        zUpdate = z;
+        mark(0x40, 0x170C, 4);
+    }
+    inline void zMode(u8 enable, u32 func) {
+        *((u8*)this + 0x165C) = enable;
+        *(u32*)((u8*)this + 0x1660) = func;
+        mark(0x40, 0x170C, 8);
+    }
+    inline void blendMode(int idx, u32 type, u32 src, u32 dst, u32 op) {
+        if (blendIdx != idx) {
+            blendIdx = idx;
+            curBlend = (u8*)this + blendIdx * 0xBC + 0x1818;
+        }
+        *(u32*)((u8*)this + 0x1644) = type;
+        *(u32*)((u8*)this + 0x1648) = src;
+        *(u32*)((u8*)this + 0x164C) = dst;
+        *(u32*)((u8*)this + 0x1650) = op;
+        mark(0x40, 0x170C, 1);
+    }
+    inline void numChans(u8 n) {
+        *((u8*)this + 0xDB8) = n;
+        mark(4, 0x16BC, 1);
+    }
+    inline void numTexGens(u8 n) {
+        *((u8*)this + 0xC70) = n;
+        mark(1, 0x16AC, 1);
+    }
+    inline void tevColorS10(u32 id, GXColorS10 c) {
+        *(u32*)((u8*)this + 0x13FC) = id;
+        *(s16*)((u8*)this + 0x1400) = THP_MIN(THP_MAX(c.r, -0x400), 0x3FF);
+        *(s16*)((u8*)this + 0x1402) = THP_MIN(THP_MAX(c.g, -0x400), 0x3FF);
+        *(s16*)((u8*)this + 0x1404) = THP_MIN(THP_MAX(c.b, -0x400), 0x3FF);
+        *(s16*)((u8*)this + 0x1406) = THP_MIN(THP_MAX(c.a, -0x400), 0x3FF);
+        mark(8, 0x16E4, 2);
+    }
+    inline void tevKColor(int id, GXColor c) {
+        *(GXColor*)((u8*)this + 0x14F4 + id * 4) = c;
+        mark(0x10, 0x16F8, 1 << id);
+    }
+    inline void tevSwapTable(int table, u32 r, u32 g, u32 b, u32 a) {
+        u32* p = (u32*)((u8*)this + 0x1604 + table * 0x10);
+        p[0] = r;
+        p[1] = g;
+        p[2] = b;
+        p[3] = a;
+        mark(0x20, 0x1708, 1 << table);
+    }
+ // TEV state setters (XD's GSgfxLayer keeps a shadow of the GX TEV state; one dirty bit per stage)
+    inline void tevNumStages(u8 n) {
+        *((u8*)this + 0xEAC) = n;
+        mark(8, 0x16CC, 1);
+    }
+    inline void tevOrder(int stage, u32 coord, u32 map, u32 color) {
+        u32* p = (u32*)((u8*)this + 0xEB0 + stage * 0xC);
+        p[0] = coord;
+        p[1] = map;
+        p[2] = color;
+        mark(8, 0x16D0, 1 << stage);
+    }
+    inline void tevColorIn(int stage, u32 a, u32 b, u32 c, u32 d) {
+        u32* p = (u32*)((u8*)this + 0xF70 + stage * 0x10);
+        p[0] = a;
+        p[1] = b;
+        p[2] = c;
+        p[3] = d;
+        mark(8, 0x16D4, 1 << stage);
+    }
+    inline void tevAlphaIn(int stage, u32 a, u32 b, u32 c, u32 d) {
+        u32* p = (u32*)((u8*)this + 0x1070 + stage * 0x10);
+        p[0] = a;
+        p[1] = b;
+        p[2] = c;
+        p[3] = d;
+        mark(8, 0x16D8, 1 << stage);
+    }
+    inline void tevColorOp(int stage, u32 op, u32 bias, u32 scale, u8 clamp, u32 reg) {
+        u8* p = (u8*)this + 0x1170 + stage * 0x14;
+        *(u32*)(p + 0x0) = op;
+        *(u32*)(p + 0x4) = bias;
+        *(u32*)(p + 0x8) = scale;
+        *(u8*)(p + 0xC) = clamp;
+        *(u32*)(p + 0x10) = reg;
+        mark(8, 0x16DC, 1 << stage);
+    }
+    inline void tevAlphaOp(int stage, u32 op, u32 bias, u32 scale, u8 clamp, u32 reg) {
+        u8* p = (u8*)this + 0x12B0 + stage * 0x14;
+        *(u32*)(p + 0x0) = op;
+        *(u32*)(p + 0x4) = bias;
+        *(u32*)(p + 0x8) = scale;
+        *(u8*)(p + 0xC) = clamp;
+        *(u32*)(p + 0x10) = reg;
+        mark(8, 0x16E0, 1 << stage);
+    }
+    inline void tevKColorSel(int stage, u32 sel) {
+        *(u32*)((u8*)this + 0x1504 + stage * 4) = sel;
+        mark(0x10, 0x16FC, 1 << stage);
+    }
+    inline void tevSwapMode(int stage, u32 ras, u32 tex) {
+        u32* p = (u32*)((u8*)this + 0x1584 + stage * 8);
+        p[0] = ras;
+        p[1] = tex;
+        mark(0x20, 0x1704, 1 << stage);
+    }
+
     u8 pad0[0x4];
     u32 flags;
     u8 pad8[0xd54 - 0x8];
     u32 projType;
     f32 proj[6];
-    u8 padD6C[0x1656 - 0xd6c];
+    u8 padD70[0x1656 - 0xd70];
     u8 colorUpdate;
     u8 alphaUpdate;
     u8 zUpdate;
@@ -110,7 +220,7 @@ u16 THPGXYuv2RgbDraw(u8* yData, u8* uData, u8* vData, s16 x, s16 y, u16 texW, u1
     GStexture texY;
     GStexture texU;
     GStexture texV;
-    GStextureCreateFromMemory(&texY, texW, texH, yData, 0x42, 0, 0);
+    GStextureCreateFromMemory(&texY, (u16)texW, (u16)texH, yData, 0x42, 0, 0);
     bindTexture(0, &texY);
     GStextureCreateFromMemory(&texU, (u16)((s16)texW >> 1), (u16)((s16)texH >> 1), uData, 0x42, 0, 0);
     bindTexture(1, &texU);
@@ -139,6 +249,7 @@ u16 THPGXYuv2RgbDraw(u8* yData, u8* uData, u8* vData, s16 x, s16 y, u16 texW, u1
     return thpLayer->tokenMark();
 }
 
+#pragma optimize_for_size on
 void THPGXYuv2RgbSetup(void) {
     u16 w, h;
     f32 m[16];
@@ -176,182 +287,62 @@ void THPGXYuv2RgbSetup(void) {
     LH(l, 0xd72) = 0;
     GSgfxVideoGetEFBSize((u16*)((u8*)l + 0xd74), (u16*)((u8*)l + 0xd76));
     l->mark(2, 0x16b8, 1);
-    thpLayer->colorUpdate = 1;
-    thpLayer->alphaUpdate = 0;
-    thpLayer->mark(0x40, 0x170C, 4);
-    thpLayer->zUpdate = 0;
-    W(0x165C) = 1;
-    W(0x1660) = 7;
-    thpLayer->mark(0x40, 0x170C, 8);
-    if (thpLayer->blendIdx != 0) {
-        thpLayer->blendIdx = 0;
-        thpLayer->curBlend = (u8*)thpLayer + thpLayer->blendIdx * 0xBC + 0x1818;
-    }
-    W(0x1644) = 0;
-    W(0x1648) = 1;
-    W(0x164C) = 1;
-    W(0x1650) = 5;
-    thpLayer->mark(0x40, 0x170C, 1);
-    W(0xDB8) = 0;
-    thpLayer->mark(4, 0x16BC, 1);
-    W(0xC70) = 2;
-    thpLayer->mark(1, 0x16AC, 1);
+    thpLayer->pixelUpdate(1, 0, 0);
+    thpLayer->zMode(1, 7);
+    thpLayer->blendMode(0, 0, 1, 1, 5);
+    thpLayer->numChans(0);
+    thpLayer->numTexGens(2);
     thpLayer->tgenFunc(0, (GSgfxTgenFunc)1, (GSgfxTgenSrc)4, 0, false, 0);
     thpLayer->tgenFunc(1, (GSgfxTgenFunc)1, (GSgfxTgenSrc)4, 0, false, 0);
     thpLayer->flags |= 0x10000000;
-    W(0xEAC) = 4;
-    thpLayer->mark(8, 0x16CC, 1);
-    W(0xEB0) = 1;
-    W(0xEB4) = 1;
-    W(0xEB8) = 0xFF;
-    thpLayer->mark(8, 0x16D0, 1);
-    W(0xF70) = 0xF;
-    W(0xF74) = 8;
-    W(0xF78) = 0xE;
-    W(0xF7C) = 2;
-    thpLayer->mark(8, 0x16D4, 1);
-    W(0x1170) = 0;
-    W(0x1174) = 0;
-    W(0x1178) = 0;
-    W(0x117C) = 0;
-    W(0x1180) = 0;
-    thpLayer->mark(8, 0x16DC, 1);
-    W(0x1070) = 7;
-    W(0x1074) = 4;
-    W(0x1078) = 6;
-    W(0x107C) = 1;
-    W(0x12B0) = 1;
-    thpLayer->mark(8, 0x16D8, 1);
-    W(0x12B4) = 0;
-    W(0x12B8) = 0;
-    W(0x12BC) = 0;
-    W(0x12C0) = 0;
-    thpLayer->mark(8, 0x16E0, 1);
+    thpLayer->tevNumStages(4);
+    thpLayer->tevOrder(0, 1, 1, 0xFF);
+    thpLayer->tevColorIn(0, 0xF, 8, 0xE, 2);
+    thpLayer->tevColorOp(0, 0, 0, 0, 0, 0);
+    thpLayer->tevAlphaIn(0, 7, 4, 6, 1);
+    thpLayer->tevAlphaOp(0, 1, 0, 0, 0, 0);
     thpLayer->tunitKRegSel(0, (GSgfxTunitKReg)0);
-    W(0x1584) = 0;
-    W(0x1588) = 0;
-    thpLayer->mark(0x20, 0x1704, 1);
-    W(0xEBC) = 1;
-    W(0xEC0) = 2;
-    W(0xEC4) = 0xFF;
-    thpLayer->mark(8, 0x16D0, 2);
-    W(0xF80) = 0xF;
-    W(0xF84) = 8;
-    W(0xF88) = 0xE;
-    W(0xF8C) = 0;
-    thpLayer->mark(8, 0x16D4, 2);
-    W(0x1184) = 0;
-    W(0x1188) = 0;
-    W(0x118C) = 1;
-    W(0x1190) = 0;
-    W(0x1194) = 0;
-    thpLayer->mark(8, 0x16DC, 2);
-    W(0x1080) = 7;
-    W(0x1084) = 4;
-    W(0x1088) = 6;
-    W(0x108C) = 0;
-    thpLayer->mark(8, 0x16D8, 2);
-    W(0x12C4) = 1;
-    W(0x12C8) = 0;
-    W(0x12CC) = 0;
-    W(0x12D0) = 0;
-    W(0x12D4) = 0;
-    thpLayer->mark(8, 0x16E0, 2);
-    W(0x158C) = 0;
+    thpLayer->tevSwapMode(0, 0, 0);
+    thpLayer->tevOrder(1, 1, 2, 0xFF);
+    thpLayer->tevColorIn(1, 0xF, 8, 0xE, 0);
+    thpLayer->tevColorOp(1, 0, 0, 1, 0, 0);
+    thpLayer->tevAlphaIn(1, 7, 4, 6, 0);
+    thpLayer->tevAlphaOp(1, 1, 0, 0, 0, 0);
     thpLayer->tunitKRegSel(1, (GSgfxTunitKReg)1);
-    W(0x1590) = 0;
-    thpLayer->mark(0x20, 0x1704, 2);
-    W(0xEC8) = 0;
-    W(0xECC) = 0;
-    W(0xED0) = 0xFF;
-    thpLayer->mark(8, 0x16D0, 4);
-    W(0xF90) = 0xF;
-    W(0xF94) = 8;
-    W(0xF98) = 0xC;
-    W(0xF9C) = 0;
-    thpLayer->mark(8, 0x16D4, 4);
-    W(0x1198) = 0;
-    W(0x119C) = 0;
-    W(0x11A0) = 0;
-    W(0x11A4) = 1;
-    W(0x11A8) = 0;
-    thpLayer->mark(8, 0x16DC, 4);
-    W(0x1090) = 4;
-    W(0x1094) = 7;
-    W(0x1098) = 7;
-    W(0x109C) = 0;
-    thpLayer->mark(8, 0x16D8, 4);
-    W(0x12D8) = 0;
-    W(0x12DC) = 0;
-    W(0x12E0) = 0;
-    W(0x12E4) = 1;
-    W(0x12E8) = 0;
-    thpLayer->mark(8, 0x16E0, 4);
-    W(0x1594) = 0;
-    W(0x1598) = 0;
-    thpLayer->mark(0x20, 0x1704, 4);
-    W(0xED4) = 0xFF;
-    W(0xED8) = 0xFF;
-    W(0xEDC) = 0xFF;
-    thpLayer->mark(8, 0x16D0, 8);
-    W(0xFA0) = 1;
-    W(0xFA4) = 0;
-    W(0xFA8) = 0xE;
-    W(0xFAC) = 0xF;
-    thpLayer->mark(8, 0x16D4, 8);
-    W(0x11AC) = 0;
-    W(0x11B0) = 0;
-    W(0x11B4) = 0;
-    W(0x11B8) = 1;
-    W(0x11BC) = 0;
-    thpLayer->mark(8, 0x16DC, 8);
-    W(0x10A0) = 7;
-    W(0x10A4) = 7;
-    W(0x10A8) = 7;
-    W(0x10AC) = 7;
-    thpLayer->mark(8, 0x16D8, 8);
-    W(0x12EC) = 0;
-    W(0x12F0) = 0;
-    W(0x12F4) = 0;
-    W(0x12F8) = 1;
-    W(0x12FC) = 0;
-    thpLayer->mark(8, 0x16E0, 8);
-    W(0x159C) = 0;
-    W(0x15A0) = 0;
-    thpLayer->mark(0x20, 0x1704, 8);
-    W(0x1510) = 0xE;
-    thpLayer->mark(0x10, 0x16FC, 8);
+    thpLayer->tevSwapMode(1, 0, 0);
+    thpLayer->tevOrder(2, 0, 0, 0xFF);
+    thpLayer->tevColorIn(2, 0xF, 8, 0xC, 0);
+    thpLayer->tevColorOp(2, 0, 0, 0, 1, 0);
+    thpLayer->tevAlphaIn(2, 4, 7, 7, 0);
+    thpLayer->tevAlphaOp(2, 0, 0, 0, 1, 0);
+    thpLayer->tevSwapMode(2, 0, 0);
+    thpLayer->tevOrder(3, 0xFF, 0xFF, 0xFF);
+    thpLayer->tevColorIn(3, 1, 0, 0xE, 0xF);
+    thpLayer->tevColorOp(3, 0, 0, 0, 1, 0);
+    thpLayer->tevAlphaIn(3, 7, 7, 7, 7);
+    thpLayer->tevAlphaOp(3, 0, 0, 0, 1, 0);
+    thpLayer->tevSwapMode(3, 0, 0);
+    thpLayer->tevKColorSel(3, 0xE);
     {
-        TevColorS10 c = {-90, 0, -114, 135};
-        W(0x13fc) = 1;
-        H(0x1400) = clampS10(c.r);
-        H(0x1402) = clampS10(c.g);
-        H(0x1404) = clampS10(c.b);
-        H(0x1406) = clampS10(c.a);
+        volatile GXColorS10 c = {-90, 0, -114, 135};
+        thpLayer->tevColorS10(1, c);
     }
-    thpLayer->mark(8, 0x16E4, 2);
     {
-        TevKColor k = {0, 0, 226, 88};
-        W(0x14F4) = *(u32*)&k;
+        GXColor k = {0, 0, 226, 88};
+        thpLayer->tevKColor(0, k);
     }
-    thpLayer->mark(0x10, 0x16F8, 1);
     {
-        TevKColor k = {179, 0, 0, 182};
-        W(0x14F8) = *(u32*)&k;
+        GXColor k = {179, 0, 0, 182};
+        thpLayer->tevKColor(1, k);
     }
-    thpLayer->mark(0x10, 0x16F8, 2);
     {
-        TevKColor k = {255, 0, 255, 128};
-        W(0x14FC) = *(u32*)&k;
+        GXColor k = {255, 0, 255, 128};
+        thpLayer->tevKColor(2, k);
     }
-    thpLayer->mark(0x10, 0x16F8, 4);
-    W(0x1604) = 0;
-    W(0x1608) = 1;
-    W(0x160C) = 2;
-    W(0x1610) = 3;
-    thpLayer->mark(0x20, 0x1708, 1);
+    thpLayer->tevSwapTable(0, 0, 1, 2, 3);
 }
 
+#pragma optimize_for_size reset
 void THPGXRestore(void) {
 }
 

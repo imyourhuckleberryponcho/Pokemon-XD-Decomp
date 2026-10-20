@@ -83,7 +83,8 @@ s32 GSgfx_GCWriteCopyTex(s16*, s32);
 void GSmtx44Ortho(Mtx44 m, f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
 s32 GStextureGetGXformat(GStexture* tex, u8 alpha);
 void* memcpy(void* dst, const void* src, size_t n);
-extern s32 mtxIdent;
+struct XdBlob30 { u8 data[0x30]; };
+extern XdBlob30 mtxIdent;
 extern s32 jtbl_1978;
 }
 extern "C++" {
@@ -100,7 +101,7 @@ GStexture* fbTexPtr__10GSgfxLayer;
 void GSgfxLayer::textureCopy(GSgfxLayerPass p0, GStexture* p1, bool p2, unsigned char* p3, bool p4, bool p5, bool p6) {
     if ((s32) M2C_FIELD(this, s32 *, 0x1994) != p0) {
         M2C_FIELD(this, s32 *, 0x1994) = p0;
-        M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
+        M2C_FIELD(this, u8 **, 0x1990) = (u8 *)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC;
     }
     ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(p1), p2, (unsigned char*)(p3), p4, p5, p6);
 }
@@ -114,13 +115,13 @@ void GSgfxLayer::EffectTextureCopy(GStexture* p0, bool p1, unsigned char* p2, bo
     s32 saved_reg_r28;
     s32 saved_reg_r29;
     u8 sp21;
-    s8 sp20;
-    s32 sp1C;
+    volatile s8 sp20;
+    volatile s32 sp1C;
     s32 sp18;
-    u16 sp14;
-    u16 sp12;
-    u16 sp10;
-    s16 spE;
+    volatile u16 sp14;
+    volatile u16 sp12;
+    volatile u16 sp10;
+    volatile s16 spE;
     s16 spC;
     u16 spA;
     u16 sp8;
@@ -128,7 +129,7 @@ void GSgfxLayer::EffectTextureCopy(GStexture* p0, bool p1, unsigned char* p2, bo
     u16 temp_r0_2;
     u16 temp_r0_3;
     u16 var_r3;
-    u16 var_r3_2;
+    u32 var_r3_2;
     u8 var_r26;
     u8 var_r27;
     u8 var_r28;
@@ -159,15 +160,11 @@ void GSgfxLayer::EffectTextureCopy(GStexture* p0, bool p1, unsigned char* p2, bo
 block_8:
         temp_r30 = (unsigned char *)(GSgfxVideoGetRenderMode());
         GSgfxVideoGetEFBSize((u16*)(&spA), (u16*)(&sp8));
-        var_r3 = spA;
-        temp_r0_2 = M2C_FIELD(p0, u16 *, 0);
-        if (temp_r0_2 < var_r3) {
+        if ((temp_r0_2 = M2C_FIELD(p0, u16 *, 0)) < (var_r3 = spA)) {
             var_r3 = temp_r0_2;
         }
         spA = var_r3;
-        var_r3_2 = sp8;
-        temp_r0_3 = M2C_FIELD(p0, u16 *, 2);
-        if (temp_r0_3 < var_r3_2) {
+        if ((temp_r0_3 = M2C_FIELD(p0, u16 *, 2)) < (var_r3_2 = sp8)) {
             var_r3_2 = temp_r0_3;
         }
         sp8 = var_r3_2;
@@ -260,48 +257,6 @@ block_8:
         }
         M2C_FIELD(this, s32 *, 4) = (s32) (M2C_FIELD(this, s32 *, 4) | 0x30000000);
     }
-}
-extern "C++" {
-void GSgfxLayer::PrepareDistortion() {
-    s32 sp10;
-    s32 spC;
-    s32 sp8;
-
-    sp10 = jtbl_1978;
-    if (!(M2C_FIELD(this, s32 *, 4) & 0x200) || ((u32) M2C_FIELD(this, u32 *, 0x19A4) != (u32)fbTexPtr__10GSgfxLayer)) {
-        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
-            M2C_FIELD(this, s32 *, 0x1994) = 1;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
-        }
-        M2C_FIELD(this, s32 *, 0x1604) = 2;
-        M2C_FIELD(this, s32 *, 0x1608) = 2;
-        M2C_FIELD(this, s32 *, 0x160C) = 2;
-        M2C_FIELD(this, s32 *, 0x1610) = 3;
-        M2C_FIELD(this, s32 *, 0x1708) = (s32) (M2C_FIELD(this, s32 *, 0x1708) | 1);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x20);
-        M2C_FIELD(this, s32 *, 0x17C0) = (s32) (M2C_FIELD(this, s32 *, 0x17C0) | 1);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x20);
-        spC = M2C_FIELD(this, s32 *, 0x19B4);
-        GSgfxVideoGetClearColor(&spC, 2);
-        sp8 = sp10;
-        GSgfxVideoSetClearColor(&sp8);
-        ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(fbTexPtr__10GSgfxLayer), 0U, (unsigned char*)(NULL), 1U, 1U, 0U);
-    }
-}
-}
-
-extern "C++" {
-void GSgfxLayer::PrepareFBCopy() {
-    if (!(M2C_FIELD(this, s32 *, 4) & 0x200) || ((u32) M2C_FIELD(this, u32 *, 0x19A4) != (u32)fbTexPtr__10GSgfxLayer)) {
-        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
-            M2C_FIELD(this, s32 *, 0x1994) = 1;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
-        }
-        ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(fbTexPtr__10GSgfxLayer), 0U, (unsigned char*)(NULL), 0U, 0U, 0U);
-    }
-}
-}
-
 }
 
 extern "C++" {
@@ -402,20 +357,20 @@ void GSgfxLayer::EffectScreenClear(bool p0, bool p1, bool p2) {
         ((GSgfxLayer*)(this))->beginSurface(4U);
         *(f32 *)0xCC008000 = 0.0f;
         *(f32 *)0xCC008000 = 0.0f;
-        *(f32 *)0xCC008000 = 29999.0f;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 640.0f;
-        *(f32 *)0xCC008000 = 0.0f;
         *(f32 *)0xCC008000 = 29999.0f;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0.0f;
+        *(f32 *)0xCC008000 = 29999.0f;
         *(f32 *)0xCC008000 = 480.0f;
+        *(f32 *)0xCC008000 = 0;
+        *(f32 *)0xCC008000 = 0;
+        *(f32 *)0xCC008000 = 0;
+        *(f32 *)0xCC008000 = 0;
+        *(f32 *)0xCC008000 = 0.0f;
         *(f32 *)0xCC008000 = 29999.0f;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0;
@@ -444,7 +399,7 @@ void GSgfxLayer::EffectDistortion() {
     s32 sp8;
     s32 *temp_r3;
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x16A7) != 0) {
+    if ((u8) M2C_FIELD((u16)this, u8 *, 0x16A7) != 0) {
         M2C_FIELD(this, u8 *, 0x16A7) = 0U;
         M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x40);
         M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x40);
@@ -453,7 +408,7 @@ void GSgfxLayer::EffectDistortion() {
     }
     if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
         M2C_FIELD(this, s32 *, 0x1994) = 1;
-        M2C_FIELD(this, u8 **, 0x1990) = (u8 *) (this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xBC) + 0x1818));
+        M2C_FIELD(this, u8 **, 0x1990) = (u8 *)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC;
     }
     ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(distTexPtr__10GSgfxLayer), 1U, (unsigned char*)(NULL), 0U, 0U, 0U);
     GSgfxVideoResetViewport(1U);
@@ -496,9 +451,9 @@ void GSgfxLayer::EffectDistortion() {
     M2C_FIELD(this, s32 *, 0x1668) = 0;
     M2C_FIELD(this, s32 *, 0x166C) = 7;
     M2C_FIELD(this, s8 *, 0x1671) = 0;
-    M2C_FIELD(this, s8 *, 0x1672) = 1;
     M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x10);
     M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
+    M2C_FIELD(this, s8 *, 0x1672) = 1;
     M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x10);
     M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
     M2C_FIELD(this, s32 *, 0xD90) = 0;
@@ -634,14 +589,14 @@ void GSgfxLayer::EffectDistortion() {
     ((GSgfxLayer*)(this))->beginSurface(4U);
     *(s16 *)0xCC008000 = 0;
     *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0;
     *(s16 *)0xCC008000 = 0x280;
     *(s16 *)0xCC008000 = 0;
+    *(s16 *)0xCC008000 = 0;
+    *(s16 *)0xCC008000 = 0;
     *(s16 *)0xCC008000 = 1;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0;
     *(s16 *)0xCC008000 = 0x1E0;
+    *(s16 *)0xCC008000 = 0;
+    *(s16 *)0xCC008000 = 0;
     *(s16 *)0xCC008000 = 0;
     *(s16 *)0xCC008000 = 1;
     *(s16 *)0xCC008000 = 0x280;
@@ -665,4 +620,51 @@ void GSgfxLayer::EffectDistortion() {
     GSgfxVideoResetViewport(0U);
 }
 }
+extern "C++" {
+#pragma push
+#pragma peephole off
+void GSgfxLayer::PrepareDistortion() {
+    volatile s32 sp10;
+    s32 spC;
+    s32 sp8;
+
+    sp10 = jtbl_1978;
+    if (!(M2C_FIELD(this, s32 *, 4) & 0x200) || ((u32) M2C_FIELD(this, u32 *, 0x19A4) != (u32)fbTexPtr__10GSgfxLayer)) {
+        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
+            M2C_FIELD(this, s32 *, 0x1994) = 1;
+            M2C_FIELD(this, u8 **, 0x1990) = (u8 *)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC;
+        }
+        M2C_FIELD(this, s32 *, 0x1604) = 2;
+        M2C_FIELD(this, s32 *, 0x1608) = 2;
+        M2C_FIELD(this, s32 *, 0x160C) = 2;
+        M2C_FIELD(this, s32 *, 0x1610) = 3;
+        M2C_FIELD(this, s32 *, 0x1708) = (s32) (M2C_FIELD(this, s32 *, 0x1708) | 1);
+        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x20);
+        M2C_FIELD(this, s32 *, 0x17C0) = (s32) (M2C_FIELD(this, s32 *, 0x17C0) | 1);
+        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x20);
+        spC = M2C_FIELD(this, s32 *, 0x19B4);
+        GSgfxVideoGetClearColor(&spC, 2);
+        sp8 = sp10;
+        GSgfxVideoSetClearColor(&sp8);
+        ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(fbTexPtr__10GSgfxLayer), 0U, (unsigned char*)(NULL), 1U, 1U, 0U);
+    }
+}
+#pragma pop
+}
+
+extern "C++" {
+void GSgfxLayer::PrepareFBCopy() {
+    if (!(M2C_FIELD(this, s32 *, 4) & 0x200) || ((u32) M2C_FIELD(this, u32 *, 0x19A4) != (u32)fbTexPtr__10GSgfxLayer)) {
+        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
+            M2C_FIELD(this, s32 *, 0x1994) = 1;
+            M2C_FIELD(this, u8 **, 0x1990) = (u8 *)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC;
+        }
+        ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(fbTexPtr__10GSgfxLayer), 0U, (unsigned char*)(NULL), 0U, 0U, 0U);
+    }
+}
+}
+
+}
+
+
 

@@ -63,9 +63,9 @@ struct tagWINDOW_WORK {
 
 extern "C" {
 u32 GSmsgGetRect(s32);
-s32 GSmsgPrint2(s32, s32, s32, s32);
+s32 GSmsgPrint2(s32 layer, s32 x, s32 y, s32 color, u32 msg);
 void* heroItemGetItemKindToItemAryPtr(Hero*, u8, u16*, u16*, u8*, u8*);
-u32 itemBiosGetNum(u8* p);
+u16 itemBiosGetNum(u8* p);
 u8 itemCheckValid(u32);
 u8 itemDataBiosGetKind(u8* p);
 u32 itemDataBiosGetName(u8* p);
@@ -74,11 +74,11 @@ u32 itemGetStatus(u32, u32, u32, u32);
 void menuClose(s32 menuID);
 void menuCloseSync(s32 menuID, s32);
 MenuItem* menuItemBiosGetPtr(s32 menuID, u32 index);
-void menuOpenCustom(s32 menuID, ...);
+s32 menuOpenCustom(s32 menuID, ...);
 s32 menuPocketColognCtrl(void *p0);
 s32 menuPocketColognCursor(void *p0);
 s32 menuPocketColognDrawCursor(void *p0, void *p1);
-s32 menuPocketColognDrawItemText(void *p0, void *p1);
+s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp);
 s32 menuPocketColognDrawLineCursor(void *p0, void *p1);
 u16 menuPocketCologne(s32 p0);
 void menuSubCursorAnimeInit(void);
@@ -98,10 +98,10 @@ extern s32 init;
 extern s32 jtbl_2066;
 }
 extern "C++" {
-static void getItemName(unsigned long p0);
-static u16 getItemNum(unsigned short p0);
+static u32 getItemName(unsigned long p0);
+static s32 getItemNum(unsigned short p0);
 static s32 getLineHeight(tagWINDOW_WORK* p0);
-static u16 getStockMax(unsigned short p0);
+static u32 getStockMax(unsigned short p0);
 static void makePocketCologneArg(POCKET_COLOGNE_ARG* p0, unsigned long p1);
 }
 static f32 ActMenuCursorBlinkTime;
@@ -110,7 +110,7 @@ static f32 ActMenuCursorBlinkTime;
 
 static s32 first_S1990;
 static u8 init_S1991;
-static u16 getItemNum(unsigned short p0) {
+static s32 getItemNum(unsigned short p0) {
     u8 *var_r30;
     s32 var_r29;
     s32 var_r28;
@@ -134,7 +134,7 @@ static u16 getItemNum(unsigned short p0) {
 }
 
 extern "C++" {
-static u16 getStockMax(unsigned short p0) {
+static u32 getStockMax(unsigned short p0) {
     u16 sp8;
 
     heroItemGetItemKindToItemAryPtr((Hero*)(NULL), itemDataBiosGetKind((u8*)(itemDataBiosGetPtr(p0))), (u16*)(NULL), (u16*)(&sp8), (u8*)(NULL), (u8*)(NULL));
@@ -143,8 +143,8 @@ static u16 getStockMax(unsigned short p0) {
 }
 
 extern "C++" {
-static void getItemName(unsigned long p0) {
-    itemDataBiosGetName((u8*)(itemDataBiosGetPtr((u16) p0)));
+static u32 getItemName(unsigned long item) {
+    return itemDataBiosGetName((u8*)itemDataBiosGetPtr((u16)item));
 }
 }
 
@@ -177,18 +177,18 @@ s32 menuPocketColognDrawCursor(void *p0, void *p1) {
     s32 sp28;
     s32 sp24;
     s32 sp20;
-    s32 sp1C;
+    volatile s32 sp1C;
     s32 sp18;
     f32 sp14;
     s32 sp10;
-    s32 sp8;
+    volatile s32 sp8;
     s32 temp_r9;
 
     sp1C = M2C_FIELD(&jtbl_2063, s32 *, 0);
     sp20 = M2C_FIELD(&jtbl_2063, s32 *, 4);
     sp24 = M2C_FIELD(&jtbl_2063, s32 *, 8);
     sp28 = M2C_FIELD(&jtbl_2063, s32 *, 0xC);
-    if ((s16) M2C_FIELD(p1, s16 *, 6) == (s32) (&sp1C)[M2C_FIELD(p0, s16 *, 0x9E)]) {
+    if ((s16) M2C_FIELD((u16)p1, s16 *, 6) == (s32) (&sp1C)[M2C_FIELD(p0, s16 *, 0x9E)]) {
         sp14 = M2C_FIELD(&jtbl_2066, f32 *, 0);
         sp18 = M2C_FIELD(&jtbl_2066, s32 *, 4);
         sp10 = -1;
@@ -205,63 +205,58 @@ s32 menuPocketColognDrawCursor(void *p0, void *p1) {
 }
 
 extern "C" {
-s32 menuPocketColognDrawItemText(void *p0, void *p1) {
-    s16 temp_r26;
-    s16 temp_r28;
-    s16 temp_r28_2;
-    s16 temp_r28_3;
-    s16 temp_r28_4;
-    s16 temp_r29;
-    s16 temp_r7;
-    s32 temp_r27;
-    s32 var_r6;
-    u16 temp_r3;
-    u32 temp_r4;
-    u8 *temp_r31;
+// cologne list: count at 0x14, 4-byte entries {u16 item, u16 pad} from +0x4
+struct ColognList {
+    struct {
+        u16 item;
+        u16 pad;
+    } entry[5];             // entry[0] is unused, items from entry[1]
+    s32 count;
+};
 
-    temp_r7 = M2C_FIELD(p1, s16 *, 6);
-    temp_r31 = M2C_FIELD(p0, u8 **, 0x68);
-    if (temp_r7 == 0x127) {
-        getItemName(0x200U);
-        temp_r28 = M2C_FIELD(menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x127U), s16 *, 0xA);
-        temp_r29 = (s16) (GSmsgGetRect(M2C_ERROR(/* Read from unset register $r3 */)) >> 0x10U);
-        temp_r4 = temp_r28 - temp_r29;
-        GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1)), (s32) ((temp_r4 >> 0x1FU) + temp_r4) >> 1, 0, -1);
+s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp) {
+    s16 id = *(s16*)((u8*)sp + 6);
+    ColognList* list = *(ColognList**)((u8*)win + 0x68);
+    s32 ids[4] = {0x130, 0x12F, 0x12E, 0x12D};
+    s32 i;
+    u32 name;
+    s16 base;
+    s16 width;
+
+    if (id == 0x127) {
+        u32 name;
+        s16 base;
+        s16 width;
+        name = getItemName(0x200);
+        base = *(s16*)((u8*)menuItemBiosGetPtr(*(s32*)((u8*)win + 4), 0x127) + 0xA);
+        width = GSmsgGetRect(name) >> 16;
+        GSmsgPrint2(winSpriteGetLayerID(win, sp), (base - width) / 2, 0, -1, name);
         return 0;
     }
-    var_r6 = 0;
-    if (temp_r7 != (s32) M2C_FIELD(&jtbl_2041, s32 *, 0)) {
-        var_r6 = 1;
-        if (temp_r7 != (s32) M2C_FIELD(&jtbl_2041, s32 *, 4)) {
-            var_r6 = 2;
-            if (temp_r7 != (s32) M2C_FIELD(&jtbl_2041, s32 *, 8)) {
-                var_r6 = 3;
-                if (temp_r7 != (s32) M2C_FIELD(&jtbl_2041, s32 *, 0xC)) {
-                    var_r6 = 4;
-                }
-            }
+    for (i = 0; i < 4; i++) {
+        if (id == ids[i]) {
+            break;
         }
     }
-    if ((var_r6 < 0) || (var_r6 >= (s32) M2C_FIELD(temp_r31, s32 *, 0x14))) {
+    if (i < 0 || i >= list->count) {
         return 0;
     }
-    temp_r27 = (var_r6 * 4) + 4;
-    temp_r3 = *(temp_r31 + temp_r27);
-    if (temp_r3 == 0) {
-
+    if (list->entry[i + 1].item == 0) {
+        name = 0x4295;
     } else {
-        getItemName((u32) temp_r3);
+        name = getItemName(list->entry[i + 1].item);
     }
-    GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1)), 0, 0, -1);
-    if ((u16) *(temp_r31 + temp_r27) != 0) {
-        temp_r26 = M2C_FIELD(menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x130U), s16 *, 0xA);
-        msgctrlSetValue(0x34, getStockMax(*(temp_r31 + temp_r27)));
-        temp_r28_2 = (s16) (GSmsgGetRect(0x426F) >> 0x10U);
-        temp_r28_3 = temp_r28_2 + (s16) (GSmsgGetRect(0x428F) >> 0x10U);
-        GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1)), temp_r26 - temp_r28_3, 0, -1);
-        msgctrlSetValue(0x34, getItemNum(*(temp_r31 + temp_r27)));
-        temp_r28_4 = (s16) (GSmsgGetRect(0x426F) >> 0x10U);
-        GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1)), temp_r26 - temp_r28_4, 0, -1);
+    GSmsgPrint2(winSpriteGetLayerID(win, sp), 0, 0, -1, name);
+    if (list->entry[i + 1].item != 0) {
+        base = *(s16*)((u8*)menuItemBiosGetPtr(*(s32*)((u8*)win + 4), 0x130) + 0xA);
+        s32 tmp1 = getStockMax(list->entry[i + 1].item);
+        msgctrlSetValue(0x34, tmp1);
+        width = (s16)(GSmsgGetRect(0x426F) >> 16);
+        width += (s16)(GSmsgGetRect(0x428F) >> 16);
+        GSmsgPrint2(winSpriteGetLayerID(win, sp), base - width, 0, -1, 0x428F);
+        msgctrlSetValue(0x34, getItemNum(list->entry[i + 1].item));
+        width = GSmsgGetRect(0x426F) >> 16;
+        GSmsgPrint2(winSpriteGetLayerID(win, sp), base - width, 0, -1, 0x426F);
     }
     return 0;
 }
@@ -285,14 +280,14 @@ s32 menuPocketColognCursor(void *p0) {
         if (var_r0 >= temp_r5) {
             var_r0 = temp_r5 - 1;
         }
-        M2C_FIELD(p0, s16 *, 0x9E) = (s16) var_r0;
+        M2C_FIELD(p0, s16 *, 0x9E) = (s8) var_r0;
     }
     if ((s32) (temp_r3 & 1) != 0) {
         var_r0_2 = M2C_FIELD(p0, s16 *, 0x9E) - 1;
         if (var_r0_2 < 0) {
             var_r0_2 = 0;
         }
-        M2C_FIELD(p0, s16 *, 0x9E) = (s16) var_r0_2;
+        M2C_FIELD(p0, s16 *, 0x9E) = (s8) var_r0_2;
     }
     if (temp_r4 != (s16) M2C_FIELD(p0, s16 *, 0x9E)) {
         menuSubCursorAnimeStart();
@@ -362,8 +357,7 @@ u16 menuPocketCologne(s32 p0) {
     }
     makePocketCologneArg((POCKET_COLOGNE_ARG*)(&unksp8), (u32) p0);
     temp_ret = windowGetActiveID();
-    menuOpenCustom(0x32, temp_ret, 0, 0, 1, 1, &unksp8, M2C_BITWISE(f32, temp_ret));
-    temp_r31_2 = M2C_ERROR(/* Read from unset register $r3 */);
+    temp_r31_2 = menuOpenCustom(0x32, temp_ret, 0, 0, 1, 1, &unksp8);
     menuClose(0x32);
     menuCloseSync(0x32, 1);
     if ((0 <= temp_r31_2) && (temp_r31_2 < sp1C)) {

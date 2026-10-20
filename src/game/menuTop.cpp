@@ -1,4 +1,4 @@
-// STATUS (dTop): 27/29 exact with extra_cflags=["-inline noauto"] (LAYOUT/CONST/CALLS/DATA OK). Left: menuTop (saved-register assignment differs: target state=r29 loop=r28 ids ptr=r30 yes=r27; permuter 240->200 only) and menuTopHookMssageWindow (sel lha goes to r0 instead of r3, 2 instrs). Source uses peephole off + pool_strings off + force_active (REL-only entry points).
+// menuTop: matching (extra_cflags=["-inline noauto"]). Source uses peephole off + pool_strings off + force_active (REL-only entry points).
 #include <dolphin/types.h>
 
 #pragma peephole off
@@ -58,7 +58,7 @@ void GSmsgPrint2(s32, s32, s32, s32, s32);
 u32 GSmsgGetRect(s32);
 void* menuItemBiosGetPtr(s32, s16);
 s32 pokecoloGetRomVersion();
-s16 menuTitleGetSelect();
+s16 menuTitleGetSelect(s32 sel);
 void menuTitleCursorAnime();
 void menuTitleCursorAnimeMain();
 u8 menuModelCheck(MenuModel*, s32);
@@ -199,7 +199,7 @@ void menuTopLoadHook() {
 void menuTopHookMssageWindow(tagWINDOW_WORK* w) {
     SelPair p = *(SelPair*)((u8*)w + 0x9C);
     if (pokecoloGetRomVersion() != 1 && p.sel >= 0) {
-        s16 idx = menuTitleGetSelect();
+        s16 idx = menuTitleGetSelect(p.sel);
         GSmsgPrint2(w->msgWin, 0, -8, w->colorA | ~0xFF, _menuTopMsgTable[idx]);
     }
 }
@@ -266,10 +266,15 @@ void fn_8002F668(tagWINDOW_WORK* w, tagSPRITE_WORK* s, s32 msg) {
 }
 
 s32 menuTop() {
-    s32 loop;
-    s32 state;
-    s8 firstFlag;
+    s16 j;
+    s32* p;
     s32* q;
+    s32 state;
+    s32 yes;
+    int n;
+    s8 firstFlag;
+    s32 loop;
+    s16 i;
     state = 0;
     loop = 1;
     firstFlag = 1;
@@ -286,10 +291,6 @@ s32 menuTop() {
         case 1: {
             _menuTopWork.stage = 1;
             s32 ids[5] = {0x44, 0x45, 0x46, 0x47, 0x48};
-            s32* p;
-            s16 i;
-            int n;
-            s16 j;
             q = ids;
             p = q;
             for (i = 0; i < 5; p++, i++) {
@@ -309,7 +310,7 @@ s32 menuTop() {
             int r = menuOpenCustom(0x116, windowGetActiveID(), &_menuTopWork, 0, 1, 1, &firstFlag);
             firstFlag = 0;
             if (r >= 0) {
-                u32 r = menuTitleGetSelect();
+                r = menuTitleGetSelect(r);
                 _menuTopWork.select = r;
             }
             if (r < 0) {
@@ -346,7 +347,6 @@ s32 menuTop() {
             break;
         }
         case 5: {
-            s32 yes;
             _menuTopClose(0x116);
             menuTitleCloseSelectAnime();
             if (pokecoloGetRomVersion() == 1) {

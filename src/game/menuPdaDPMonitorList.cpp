@@ -450,9 +450,9 @@ void menuPdaDPMList::ScrollBar(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
 void menuPdaDPMList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     CURSOR cursor = _getCursor();
     int n = count;
+    MenuItem* placeItem = menuItemBiosGetPtr(0x74, 0x49);
     MenuItem* base = menuItemBiosGetPtr(0x74, 0x4B);
     MenuItem* meter = menuItemBiosGetPtr(0x74, 0x4A);
-    MenuItem* placeItem = menuItemBiosGetPtr(0x74, 0x49);
     MenuItem* ball = menuItemBiosGetPtr(0x74, 0x45);
     MenuItem* area = menuItemBiosGetPtr(0x74, 0x48);
     MenuItem* self = menuItemBiosGetPtr(0x74, sprite->id);
@@ -478,7 +478,7 @@ void menuPdaDPMList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             u8 floor;
             u32 placeMsg = menuPdaDPMListGetDarkPokemonPlaceMsgID(i, &floor);
             msgctrlSetValue(0x37, name);
-            s32 yy = (s32)y;
+            int yy = (s32)y;
             GSmsgPrint2(window->layer, 0, yy, color1 | window->alpha, 0x4277);
             menuPdaDPMListDispRelive(window, sprite, meter->x - base->x, yy, i, window->alpha, 1);
             if (placeMsg != 0) {
@@ -592,9 +592,10 @@ s32 menuPdaDPMList::SortPlace() {
     darkPokemonWhere place;
     u8 floor;
     s32 total;
-    s32 n = 0;
+    s32 n;
     total = Sort(DPM_SORT_POKEMON);
     tempCount = 0;
+    n = 0;
     for (int i = 0; i < total; i++) {
         u16 did = GetDarkPokemonID(i);
         DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
@@ -631,8 +632,9 @@ s32 menuPdaDPMList::SortPlace() {
         }
     }
     for (int fl = 0; fl < 8; fl++) {
-        s32 n = 0;
-        for (int i = 0; i < total; i++) {
+        int i;
+        s32 n;
+        for (i = 0, n = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
             dark->getPlace(place, floor);

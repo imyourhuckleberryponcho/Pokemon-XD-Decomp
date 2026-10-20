@@ -174,7 +174,8 @@ void menuPcBoxDouguHikidashi(MENU_PCBOX_DOUGU_HIKIDASHI_MODE mode) {
 }
 
 static void hikidasu(int pos) {
-    u16 id = getItemIDFromMenuPos(pos);
+    enum TsE { TsE0 };
+    enum TsE id = (enum TsE)(getItemIDFromMenuPos(pos));
     s32 n;
     setExplanationMsgID(0x3BBD);
     if (getItemKind(id) != 5) {
@@ -442,17 +443,17 @@ static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color)
     s32 last;
     s32 scroll;
     s32 count;
-    s32 xAdj;
     s32 numW;
     u16 id;
     s32 row;
     s32 nameW;
     s32 first;
+    s32 xAdj;
     first = 0;
     last = 8;
     scroll = 0;
-    idx = CursorOfs;
     count = getNbItemSlot();
+    idx = CursorOfs;
     msgctrlSetValue(0x34, 999);
     nameW = (s16)(GSmsgGetRect(0x4270) >> 16);
     numW = nameW + (s16)(GSmsgGetRect(0x428F) >> 16);
@@ -475,7 +476,8 @@ static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color)
             if (name != 0) {
                 GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, y, color, name);
             }
-            if (getItemKind(id) != 5) {
+            s32 cmpv = getItemKind(id);
+            if (cmpv != 5) {
                 GSmsgPrint2(winSpriteGetLayerID(w, sp), xAdj, y, color, 0x428F);
                 msgctrlSetValue(0x34, getItemNumFromMenuPos(idx));
                 s16 w2 = GSmsgGetRect(0x4270) >> 16;
@@ -485,7 +487,7 @@ static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color)
     }
     if (row < last) {
         id = row * _getItemListLineHeight() - scroll;
-        GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, id, color, 0x3BBA);
+        GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, id, (u16)color, 0x3BBA);
     }
 }
 

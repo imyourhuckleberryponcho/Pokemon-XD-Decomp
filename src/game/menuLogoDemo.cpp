@@ -254,11 +254,11 @@ static void _menuSoundReadWave(u32 a, u32 b, u32 c, u32 d)
     static u8 stack[0x1000];
     static OSThread2 thread;
     static u32 arg[4];
+    _sound_wave_complete++;
     arg[0] = a;
     arg[1] = b;
     arg[2] = c;
     arg[3] = d;
-    _sound_wave_complete++;
     OSCreateThread(&thread, _menuSoundReadWaveThread, arg, stack + 0xffc, 0x1000, 0x10, 1);
     OSResumeThread(&thread);
 }

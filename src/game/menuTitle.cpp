@@ -70,12 +70,12 @@ struct tagWINDOW_WORK {
 };
 
 extern "C" {
-u32 FlashSystemGetFrameFromLabel(s32, s32*, s32);
-u32 FlashSystemGetNowFrame(s32, s32);
-s32 FlashSystemPlayAndWait(s32, s32*, s32*, s32);
+s32 FlashSystemGetFrameFromLabel(u32, char*);
+u32 FlashSystemGetNowFrame(u32);
+void FlashSystemPlayAndWait(u32, char*, char*);
 void FlashSystemSetLoopFlag(u32 id, s32 loop);
-s32 FlashSystemSetNowFrameLabel(s32, s32*, s32);
-s32 FlashSystemSetPlayFrameLabel(s32, s32*, s32*, s32);
+s32 FlashSystemSetNowFrameLabel(u32, char*);
+s32 FlashSystemSetPlayFrameLabel(u32, char*, char*);
 s32 GSfloorGetCurrentFloorGroupID(void);
 u8 GSfloorIsPop(void);
 void GSfsysFree(u32 id);
@@ -102,7 +102,7 @@ void GSthreadTerminate(GSthread* thread);
 void cameraPlayAnime(u32 group, u32 id, u8 loop, f32 frame);
 u8 cameraSetType(u8 type);
 void dbgMenuSetEnable(u8 enable);
-void fadeCheck(s32);
+s8 fadeCheck(bool);
 FightEncountData* fightEncountDataBiosGetPtr(u16 id);
 void fightEncountDataBiosSetDiskId(FightEncountData* data, u16 value);
 void fightEncountDataBiosSetFightTrainerDataId(FightEncountData* data, u8 index, u16 id);
@@ -115,7 +115,7 @@ void fn_800A392C();
 void fn_800A39A8();
 void fn_800A39E4();
 void fn_800A3A1C();
-void fn_800A3A48(s16 p0, u8 p1, f32 p2, f32 p3);
+void fn_800A3A48(u32 id, s16 anim, u8 loop, f32 frame);
 void fn_800A3B34(s32 p0, s32 p1, s32 p2);
 void fn_800A3BD4(s32 p0, s32 p1);
 u32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind);
@@ -123,7 +123,7 @@ s32 memcardTaskCall(s32, s32, s32);
 void menuCloseCustom(s32 menuID, s32, s32);
 MenuData* menuDataBiosGetPtr(s32 menuID);
 bool menuIsCheck(s32 menuID);
-void menuOpenCustom(s32 menuID, ...);
+s32 menuOpenCustom(s32 menuID, ...);
 void menuTitle();
 void menuTitleBattlePreReadCheck();
 void menuTitleBattleSelectFree();
@@ -171,7 +171,7 @@ static void _menuTitleClose2(long p0, unsigned long p1);
 static void _menuTitleNormalButton(tagWINDOW_WORK* p0);
 static void _menuTitlePreReadFightRegWzxData();
 static void _menuTitleSetSE(unsigned long p0);
-static void _selectMenu();
+static s32 _selectMenu();
 }
 static GSthread* _gsthread_ptr_fight_reg_wzx;
 static f32 _menuTitleAutoDemoCount;
@@ -191,20 +191,19 @@ void menuTitleOpenMenu() {
     s32 temp_ret;
 
     fn_800A39E4();
-    temp_ret = windowGetActiveID();
-    menuOpenCustom(0x11, temp_ret, 0, 0, 0, 0, M2C_BITWISE(f32, temp_ret));
+    menuOpenCustom(0x11, windowGetActiveID(), 0, 0, 0, 0);
 }
 }
 
 extern "C" {
 s16 menuTitleGetSelect(s32 p0) {
-    return M2C_FIELD(&_menuTitleWork[p0], s16 *, 0x40);
+    return _menuTitleWork[p0 + 0x20];
 }
 }
 
 extern "C" {
 void menuTitleSetSelect(s32 p0, s16 p1) {
-    M2C_FIELD(&_menuTitleWork[p0], s16 *, 0x40) = p1;
+    _menuTitleWork[p0 + 0x20] = p1;
 }
 }
 
@@ -216,33 +215,33 @@ void menuTitleFunc() {
 
     menuTitleCursorAnimeMain();
     temp_f1 = timeGetLastFrameSec();
-    temp_f2 = ((f32) temp_f1 * 0.5f) + _menuTitleFrameCount;
-    _menuTitleFrameSec = (f32) temp_f1;
+    temp_f2 = _menuTitleFrameCount;
+    temp_f2 += ((f32) temp_f1 * 0.5f);
+    _menuTitleFrameSec = temp_f1;
     _menuTitleFrameCount = temp_f2;
-    M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-    if (temp_f2 == 1.0f) {
+    if (temp_f2 >= 1.0f) {
         _menuTitleFrameCount = 0.0f;
     }
-    switch ((s32) _menuTitleStatus) {               /* irregular */
-    case 0x29:
-        _menuTitleFrameCount = 0.0f;
-        return;
-    default:
-        if (pokecoloGetRomVersion() != 1) {
-            temp_f1_2 = _menuTitleAutoDemoCount + _menuTitleFrameSec;
-            _menuTitleAutoDemoCount = temp_f1_2;
-            M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-            if (temp_f1_2 == 60.5f) {
-                _menuTitleAutoDemoCount = 0.0f;
-                if (((s32) _menuTitleStatus != 0x3E8) && (((s32) _menuTitleStatus >= 0x3E8) || ((s32) _menuTitleStatus != 0x1F))) {
-                    _menuTitleStatus = 0x28;
-                    menuTitleSetStartStatus(0);
+    if (_menuTitleStatus >= 0x1E) {
+        if (_menuTitleStatus == 0x29) {
+            _menuTitleFrameCount = 0.0f;
+        } else if (_menuTitleStatus != 0xC8) {
+            if (pokecoloGetRomVersion() != 1) {
+                _menuTitleAutoDemoCount = _menuTitleAutoDemoCount + _menuTitleFrameSec;
+                if (_menuTitleAutoDemoCount >= 60.5f) {
+                    _menuTitleAutoDemoCount = 0.0f;
+                    switch (_menuTitleStatus) {
+                    case 0x1F:
+                    case 0x3E8:
+                        break;
+                    default:
+                        _menuTitleStatus = 0x28;
+                        menuTitleSetStartStatus(0);
+                        break;
+                    }
                 }
             }
         }
-        /* fallthrough */
-    case 0xC8:
-        return;
     }
 }
 }
@@ -251,11 +250,10 @@ extern "C" {
 void menuTitleButton(void *p0) {
     u32 temp_r31;
 
-    fadeCheck(0);
-    if ((s8) M2C_ERROR(/* Read from unset register $r3 */) == 0) {
+    if (fadeCheck(0) == 0) {
         dbgMenuSetEnable(1U);
-        temp_r31 = FlashSystemGetFrameFromLabel((long)(0x1FE03000), (long *)("end"), (long)(M2C_ERROR(/* Read from unset register $r5 */)));
-        if (FlashSystemGetNowFrame(0x1FE03000, 0x1FE00000) >= temp_r31) {
+        temp_r31 = FlashSystemGetFrameFromLabel(0x1FE03000, "end");
+        if (FlashSystemGetNowFrame(0x1FE03000) >= temp_r31) {
             _menuTitleNormalButton((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0));
         }
     }
@@ -281,8 +279,8 @@ void menuTitleCursorAnime(void *p0, void *p1) {
     s32 temp_r0;
 
     if (p0 == windowSearchID(windowGetActiveID())) {
-        M2C_FIELD(p1, s32 *, 0x64) = -1;
         temp_r0 = _titleCursorTimer % 60;
+        M2C_FIELD(p1, s32 *, 0x64) = -1;
         if (temp_r0 < 0x1E) {
             M2C_FIELD(p1, u8 *, 0x67) = (u8) (M2C_FIELD(p1, u8 *, 0x67) - (s32) (128.0f * (f32) sin((f64) (3.14f * ((f32) temp_r0 / 30.0f)))));
         }
@@ -374,14 +372,14 @@ void menuTitle() {
         switch ((s32) _menuTitleStatus) {           /* irregular */
         case 0x0:
             FlashSystemSetLoopFlag(0x1FE03000U, 0);
-            FlashSystemSetPlayFrameLabel((long)(0x1FE03000), (long *)("start"), (long *)("end"), (long)(M2C_ERROR(/* Read from unset register $r6 */)));
-            FlashSystemSetNowFrameLabel((long)(0x1FE03000), (long *)("start"), (long)(M2C_ERROR(/* Read from unset register $r5 */)));
+            FlashSystemSetPlayFrameLabel(0x1FE03000, "start", "end");
+            FlashSystemSetNowFrameLabel(0x1FE03000, "start");
             _menuTitleStatus = 0x1E;
             break;
         case 0x1:
             FlashSystemSetLoopFlag(0x1FE03000U, 0);
-            FlashSystemSetPlayFrameLabel((long)(0x1FE03000), (long *)("back"), (long *)("end"), (long)(M2C_ERROR(/* Read from unset register $r6 */)));
-            FlashSystemSetNowFrameLabel((long)(0x1FE03000), (long *)("back"), (long)(M2C_ERROR(/* Read from unset register $r5 */)));
+            FlashSystemSetPlayFrameLabel(0x1FE03000, "back", "end");
+            FlashSystemSetNowFrameLabel(0x1FE03000, "back");
             _menuTitleStatus = 0x1E;
             break;
         case 0x28:
@@ -391,11 +389,9 @@ void menuTitle() {
             _menuTitleStatus = 0x20;
             break;
         case 0x20:
-            temp_ret = windowGetActiveID();
-            menuOpenCustom(0x11, temp_ret, 0, 0, 1, 0, M2C_BITWISE(f32, temp_ret));
-            if ((s32) M2C_ERROR(/* Read from unset register $r3 */) >= 0) {
+            if (menuOpenCustom(0x11, windowGetActiveID(), 0, 0, 1, 0) >= 0) {
                 FlashSystemSetLoopFlag(0x1FE03000U, 0);
-                FlashSystemSetPlayFrameLabel((long)(0x1FE03000), (long *)("end"), (long *)("window"), (long)(M2C_ERROR(/* Read from unset register $r6 */)));
+                FlashSystemSetPlayFrameLabel(0x1FE03000, "end", "window");
                 _menuTitleStatus = 0x1F;
                 _menuTitleTimer = 0.0f;
             }
@@ -405,9 +401,11 @@ void menuTitle() {
                 _menuTitleTimer += timeGetLastFrameSec();
                 GSthreadSwitch();
             }
-            FlashSystemSetPlayFrameLabel((long)(0x1FE03000), (long *)("window"), (long *)("window"), (long)(M2C_ERROR(/* Read from unset register $r6 */)));
-            FlashSystemSetNowFrameLabel((long)(0x1FE03000), (long *)("window"), (long)(M2C_ERROR(/* Read from unset register $r5 */)));
+            FlashSystemSetPlayFrameLabel(0x1FE03000, "window", "window");
+            FlashSystemSetNowFrameLabel(0x1FE03000, "window");
             _menuTitleStatus = 0xC8;
+            break;
+        case 0xC9:
             break;
         case 0xC8:
             if (pokecoloGetRomVersion() == 1) {
@@ -417,8 +415,8 @@ void menuTitle() {
             }
             if (var_r3 == -1) {
                 _menuTitleStatus = 0x20;
-                FlashSystemSetPlayFrameLabel((long)(0x1FE03000), (long *)("back"), (long *)("end"), (long)(M2C_ERROR(/* Read from unset register $r6 */)));
-                FlashSystemSetNowFrameLabel((long)(0x1FE03000), (long *)("back"), (long)(M2C_ERROR(/* Read from unset register $r5 */)));
+                FlashSystemSetPlayFrameLabel(0x1FE03000, "back", "end");
+                FlashSystemSetNowFrameLabel(0x1FE03000, "back");
             } else {
                 if (var_r3 != 3) {
                     savedataCreate(0, 0);
@@ -432,8 +430,8 @@ void menuTitle() {
             }
             break;
         case 0x29:
-            _selectMenu();
-            if (((s32) M2C_ERROR(/* Read from unset register $r3 */) < 0) || ((s32) M2C_ERROR(/* Read from unset register $r3 */) == 4)) {
+            s32 sel = _selectMenu();
+            if (sel < 0 || sel == 4) {
                 menuTitleCloseSelectAnime();
                 _menuTitleStatus = 1;
                 _menuTitleAutoDemoCount = 0.0f;
@@ -449,10 +447,10 @@ void menuTitle() {
 
 extern "C" {
 void fn_800A392C() {
-    fn_800A3A48(0x22141000, 0U, 0.0f, M2C_ERROR(/* Read from unset register $f2 */));
-    fn_800A3A48(0x22141001, 0U, 0.0f, M2C_ERROR(/* Read from unset register $f2 */));
-    fn_800A3A48(0x22141002, 0U, 0.0f, M2C_ERROR(/* Read from unset register $f2 */));
-    fn_800A3A48(0x22141003, 0U, 0.0f, M2C_ERROR(/* Read from unset register $f2 */));
+    fn_800A3A48(0x22141000, 0, 1, 0.0f);
+    fn_800A3A48(0x22141001, 0, 1, 0.0f);
+    fn_800A3A48(0x22141002, 0, 1, 0.0f);
+    fn_800A3A48(0x22141003, 0, 1, 0.0f);
 }
 }
 
@@ -478,37 +476,35 @@ void fn_800A3A1C() {
 }
 
 extern "C" {
-void fn_800A3A48(s16 p0, u8 p1, f32 p2, f32 p3) {
-    _GSmodel *temp_r3;
-
-    temp_r3 = (_GSmodel *)(GSresGetResourceAllGroup((u32) p0));
-    if (temp_r3 != NULL) {
-        GSmodelSetAnimIndex((_GSmodel*)(temp_r3), (u32) p1);
-        GSmodelSetAnimFrame((_GSmodel*)(temp_r3), p2);
-        GSmodelSetAnimRate((_GSmodel*)(temp_r3), 0.5f);
-        GSmodelGetAnimFrameCount((_GSmodel*)(temp_r3), (u32) (s16) p1);
-        if ((u8) M2C_ERROR(/* Read from unset register $r5 */) != 0) {
-            GSmodelSetAnimType((_GSmodel*)(temp_r3), 1);
+void fn_800A3A48(u32 id, s16 anim, u8 loop, f32 frame) {
+    _GSmodel* model = (_GSmodel*)GSresGetResourceAllGroup(id);
+    if (model != 0) {
+        GSmodelSetAnimIndex(model, (s32)anim);
+        GSmodelSetAnimFrame(model, frame);
+        GSmodelSetAnimRate(model, 0.5f);
+        GSmodelGetAnimFrameCount(model, anim);
+        if (loop != 0) {
+            GSmodelSetAnimType(model, 1);
         } else {
-            GSmodelSetAnimType((_GSmodel*)(temp_r3), 0);
+            GSmodelSetAnimType(model, 0);
         }
-        GSmodelStartAnimation((_GSmodel*)(temp_r3));
-        GSmodelSetForceUseFractionalFramesFlag((_GSmodel*)(temp_r3), 1U);
-        GSmodelSet60fpsAnimFlag((_GSmodel*)(temp_r3), 1U);
-        GSmodelSetVisibility((_GSmodel*)(temp_r3), 1U);
-        GSmodelSetBoundCheck((_GSmodel*)(temp_r3), 0U);
+        GSmodelStartAnimation(model);
+        GSmodelSetForceUseFractionalFramesFlag(model, 1U);
+        GSmodelSet60fpsAnimFlag(model, 1U);
+        GSmodelSetVisibility(model, 1U);
+        GSmodelSetBoundCheck(model, 0U);
     }
 }
 }
 
 extern "C" {
 void fn_800A3B34(s32 p0, s32 p1, s32 p2) {
-    s32 temp_cr0_eq;
+    u32 temp_cr0_eq;
     u32 *temp_r3;
 
     temp_r3 = (unsigned long *)(operator new(4U));
     if (temp_r3 != NULL) {
-        *temp_r3 = 0;
+        temp_r3 = 0;
     }
     ((WorldMapModel*)((WorldMapModel *) temp_r3))->SetModel((u32) p0, (u32) p1, p2);
     temp_cr0_eq = temp_r3 == NULL;
@@ -523,7 +519,7 @@ void fn_800A3B34(s32 p0, s32 p1, s32 p2) {
 
 extern "C" {
 void fn_800A3BD4(s32 p0, s32 p1) {
-    s32 temp_cr0_eq;
+    u32 temp_cr0_eq;
     u32 *temp_r3;
 
     temp_r3 = (unsigned long *)(operator new(4U));
@@ -549,14 +545,15 @@ u8 menuTitlePlayBGMWait(u8 p0) {
         return GSsndIsPlayingStream(0x5E2U);
     }
     var_f30 = 0.0f;
-loop_3:
-    if (GSsndIsPlayingStream(0x5E2U) != 1) {
-        var_f30 += timeGetLastFrameSec();
-        M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-        if (var_f30 != 2.0f) {
-            GSthreadSwitch();
-            goto loop_3;
+    while (1) {
+        if (GSsndIsPlayingStream(0x5E2U) == 1) {
+            break;
         }
+        var_f30 += timeGetLastFrameSec();
+        if (var_f30 >= 2.0f) {
+            break;
+        }
+        GSthreadSwitch();
     }
     return 1U;
 }
@@ -572,40 +569,37 @@ void menuTitlePlayBGM() {
 }
 
 extern "C++" {
-static void _selectMenu() {
+static s32 _selectMenu() {
     u32 temp_r29;
     u32 temp_r31;
 
-    FlashSystemSetPlayFrameLabel((long)(0x1FE03000), (long *)("menu_play"), (long *)("menu_end"), (long)(0x1FE00000));
+    FlashSystemSetPlayFrameLabel(0x1FE03000, "menu_play", "menu_end");
     FlashSystemSetLoopFlag(0x1FE03000U, 0);
-    FlashSystemSetNowFrameLabel((long)(0x1FE03000), (long *)("menu_play"), (long)(0x1FE00000));
-    temp_r29 = FlashSystemGetFrameFromLabel((long)(0x1FE03000), (long *)("menu_end"), (long)(0x1FE00000));
+    FlashSystemSetNowFrameLabel(0x1FE03000, "menu_play");
+    temp_r29 = FlashSystemGetFrameFromLabel(0x1FE03000, "menu_end");
     do {
-        temp_r31 = FlashSystemGetNowFrame(0x1FE03000, M2C_ERROR(/* Read from unset register $r4 */));
+        temp_r31 = FlashSystemGetNowFrame(0x1FE03000);
         GSthreadSwitch();
     } while (temp_r31 < temp_r29);
-    menuTop();
+    return menuTop();
 }
 }
 
 extern "C" {
 void menuTitleCloseSelectAnime() {
-    FlashSystemPlayAndWait((long)(0x1FE03000), (long *)("back_play"), (long *)("back_end"), (long)(0x1FE00000));
+    FlashSystemPlayAndWait(0x1FE03000, "back_play", "back_end");
 }
 }
 
 extern "C" {
 void menuTitleOpenSelectAnime2() {
-    s32 *temp_r3;
-
-    temp_r3 = (long *)("menu_end");
-    FlashSystemPlayAndWait(0x1FE03000, temp_r3, temp_r3, M2C_ERROR(/* Read from unset register $r6 */));
+    FlashSystemPlayAndWait(0x1FE03000, "menu_end", "menu_end");
 }
 }
 
 extern "C" {
 void menuTitleOpenSelectAnime() {
-    FlashSystemPlayAndWait((long)(0x1FE03000), (long *)("menu_play"), (long *)("menu_end"), (long)(0x1FE00000));
+    FlashSystemPlayAndWait(0x1FE03000, "menu_play", "menu_end");
 }
 }
 
@@ -684,9 +678,8 @@ void menuTitleInit() {
     _CreateThread();
     if (GSfloorIsPop() == 0) {
         _menuTitleStatus = 0;
-        temp_r0 = _menuTitleWorkPat + 1;
-        _menuTitleWorkPat = temp_r0;
-        if (temp_r0 >= 4) {
+        _menuTitleWorkPat++;
+        if (_menuTitleWorkPat >= 4) {
             _menuTitleWorkPat = 0;
         }
         M2C_FIELD(_menuTitleWork, f32 *, 0x10) = 300.0f;

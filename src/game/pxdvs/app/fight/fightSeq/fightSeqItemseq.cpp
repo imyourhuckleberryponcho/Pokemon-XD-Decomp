@@ -239,7 +239,8 @@ u8 fightSeqItemSeq_AddPoke(Pokemon* pokemon, u8 ball, FIGHT_TRAINER* trainer, He
         u16 percent = (hp * 100) / pokemon_GetMaxHp(pokemon);
         level = darkPokemonBiosGetLevel(pokemon_GetDarkpokemonDataId(pokemon));
         pokemon_SetLevel(pokemon, level);
-        pokemon_SetExp(pokemon, pokemonGetLevelToExp(pokemon, level));
+        s32 tmp1 = pokemonGetLevelToExp(pokemon, level);
+        pokemon_SetExp(pokemon, tmp1);
         pokemonResetBasisStatus(pokemon);
         u16 newHp = (percent * pokemon_GetMaxHp(pokemon)) / 100;
         if (newHp == 0 && hp != 0) {
