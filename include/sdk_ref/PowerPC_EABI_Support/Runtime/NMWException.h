@@ -42,4 +42,4 @@ extern void __unregister_fragment(int fragmentID);
 }
 #endif
 
-#endif // _NMWEXCEPTION
+#endif

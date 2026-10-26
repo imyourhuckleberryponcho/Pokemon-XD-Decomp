@@ -1,6 +1,6 @@
-// Not yet decompiled.
+
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -19,7 +19,7 @@ enum OSError { OSError_draft_dummy };
 enum OSErrorHandler { OSErrorHandler_draft_dummy };
 
 extern "C++" {
-// ---- draft declarations ----
+
 
 
 extern "C" {
@@ -42,34 +42,34 @@ static s32 _haltISIHandler();
 static void _haltProcessException();
 }
 static s32 _haltContext[0xB2];
-static s32 _haltExceptionType;
 static s8 _haltHandlerInstalled;
+static s32 _haltExceptionType;
 static s32 _haltOldDSIHandler;
 static s32 _haltISIHandler() {
-    M2C_ERROR(/* unknown instruction: mtsprg 0x1, $r3 */);
-    M2C_ERROR(/* unknown instruction: mfsrr0 $r3 */);
-    M2C_ERROR(/* unknown instruction: mtsprg 0x2, $r3 */);
-    M2C_ERROR(/* unknown instruction: mfsrr1 $r3 */);
-    M2C_ERROR(/* unknown instruction: mtsprg 0x3, $r3 */);
-    M2C_ERROR(/* unknown instruction: mfmsr $r3 */);
-    M2C_ERROR(/* unknown instruction: mtsrr1 $r3 */);
-    M2C_ERROR(/* unknown instruction: mtsrr0 $r3 */);
-    M2C_ERROR(/* unknown instruction: rfi */);
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
     return 3;
 }
 }
 
 extern "C++" {
 static s32 _haltAlignmentHandler() {
-    M2C_ERROR(/* unknown instruction: mtsprg 0x1, $r3 */);
-    M2C_ERROR(/* unknown instruction: mfsrr0 $r3 */);
-    M2C_ERROR(/* unknown instruction: mtsprg 0x2, $r3 */);
-    M2C_ERROR(/* unknown instruction: mfsrr1 $r3 */);
-    M2C_ERROR(/* unknown instruction: mtsprg 0x3, $r3 */);
-    M2C_ERROR(/* unknown instruction: mfmsr $r3 */);
-    M2C_ERROR(/* unknown instruction: mtsrr1 $r3 */);
-    M2C_ERROR(/* unknown instruction: mtsrr0 $r3 */);
-    M2C_ERROR(/* unknown instruction: rfi */);
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
+    M2C_ERROR( );
     return 5;
 }
 }
@@ -115,19 +115,19 @@ static void _haltProcessException() {
     s32 saved_reg_r29;
     s32 saved_reg_r30;
     s32 saved_reg_r31;
-    _haltExceptionType = M2C_ERROR(/* Read from unset register $r3 */);
-    M2C_FIELD(_haltContext, s32 *, 0) = M2C_ERROR(/* Read from unset register $r0 */);
+    _haltExceptionType = M2C_ERROR( );
+    M2C_FIELD(_haltContext, s32 *, 0) = M2C_ERROR( );
     _haltContext[1] = (s32) sp;
     _haltContext[2] = saved_reg_r2;
-    _haltContext[4] = M2C_ERROR(/* Read from unset register $r4 */);
-    _haltContext[5] = M2C_ERROR(/* Read from unset register $r5 */);
-    _haltContext[6] = M2C_ERROR(/* Read from unset register $r6 */);
-    _haltContext[7] = M2C_ERROR(/* Read from unset register $r7 */);
-    _haltContext[8] = M2C_ERROR(/* Read from unset register $r8 */);
-    _haltContext[9] = M2C_ERROR(/* Read from unset register $r9 */);
-    _haltContext[0xA] = M2C_ERROR(/* Read from unset register $r10 */);
-    _haltContext[0xB] = M2C_ERROR(/* Read from unset register $r11 */);
-    _haltContext[0xC] = M2C_ERROR(/* Read from unset register $r12 */);
+    _haltContext[4] = M2C_ERROR( );
+    _haltContext[5] = M2C_ERROR( );
+    _haltContext[6] = M2C_ERROR( );
+    _haltContext[7] = M2C_ERROR( );
+    _haltContext[8] = M2C_ERROR( );
+    _haltContext[9] = M2C_ERROR( );
+    _haltContext[0xA] = M2C_ERROR( );
+    _haltContext[0xB] = M2C_ERROR( );
+    _haltContext[0xC] = M2C_ERROR( );
     _haltContext[0xD] = saved_reg_r13;
     _haltContext[0xE] = saved_reg_r14;
     _haltContext[0xF] = saved_reg_r15;
@@ -147,23 +147,23 @@ static void _haltProcessException() {
     _haltContext[0x1D] = saved_reg_r29;
     _haltContext[0x1E] = saved_reg_r30;
     _haltContext[0x1F] = saved_reg_r31;
-    _haltContext[3] = M2C_ERROR(/* unknown instruction: mfsprg $r4, 0x1 */);
-    _haltContext[0x66] = M2C_ERROR(/* unknown instruction: mfsprg $r4, 0x2 */);
-    _haltContext[0x67] = M2C_ERROR(/* unknown instruction: mfsprg $r4, 0x3 */);
-    M2C_FIELD(_haltContext, f64 *, 0x90) = (f64) M2C_ERROR(/* Read from unset register $f0 */);
-    M2C_FIELD(_haltContext, f64 *, 0x98) = (f64) M2C_ERROR(/* Read from unset register $f1 */);
-    M2C_FIELD(_haltContext, f64 *, 0xA0) = (f64) M2C_ERROR(/* Read from unset register $f2 */);
-    M2C_FIELD(_haltContext, f64 *, 0xA8) = (f64) M2C_ERROR(/* Read from unset register $f3 */);
-    M2C_FIELD(_haltContext, f64 *, 0xB0) = (f64) M2C_ERROR(/* Read from unset register $f4 */);
-    M2C_FIELD(_haltContext, f64 *, 0xB8) = (f64) M2C_ERROR(/* Read from unset register $f5 */);
-    M2C_FIELD(_haltContext, f64 *, 0xC0) = (f64) M2C_ERROR(/* Read from unset register $f6 */);
-    M2C_FIELD(_haltContext, f64 *, 0xC8) = (f64) M2C_ERROR(/* Read from unset register $f7 */);
-    M2C_FIELD(_haltContext, f64 *, 0xD0) = (f64) M2C_ERROR(/* Read from unset register $f8 */);
-    M2C_FIELD(_haltContext, f64 *, 0xD8) = (f64) M2C_ERROR(/* Read from unset register $f9 */);
-    M2C_FIELD(_haltContext, f64 *, 0xE0) = (f64) M2C_ERROR(/* Read from unset register $f10 */);
-    M2C_FIELD(_haltContext, f64 *, 0xE8) = (f64) M2C_ERROR(/* Read from unset register $f11 */);
-    M2C_FIELD(_haltContext, f64 *, 0xF0) = (f64) M2C_ERROR(/* Read from unset register $f12 */);
-    M2C_FIELD(_haltContext, f64 *, 0xF8) = (f64) M2C_ERROR(/* Read from unset register $f13 */);
+    _haltContext[3] = M2C_ERROR( );
+    _haltContext[0x66] = M2C_ERROR( );
+    _haltContext[0x67] = M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0x90) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0x98) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xA0) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xA8) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xB0) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xB8) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xC0) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xC8) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xD0) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xD8) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xE0) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xE8) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xF0) = (f64) M2C_ERROR( );
+    M2C_FIELD(_haltContext, f64 *, 0xF8) = (f64) M2C_ERROR( );
     M2C_FIELD(_haltContext, f64 *, 0x100) = (f64) saved_reg_f14;
     M2C_FIELD(_haltContext, f64 *, 0x108) = (f64) saved_reg_f15;
     M2C_FIELD(_haltContext, f64 *, 0x110) = (f64) saved_reg_f16;
@@ -182,26 +182,26 @@ static void _haltProcessException() {
     M2C_FIELD(_haltContext, f64 *, 0x178) = (f64) saved_reg_f29;
     M2C_FIELD(_haltContext, f64 *, 0x180) = (f64) saved_reg_f30;
     M2C_FIELD(_haltContext, f64 *, 0x188) = (f64) saved_reg_f31;
-    M2C_FIELD(_haltContext, f64 *, 0x190) = (f64) M2C_ERROR(/* unknown instruction: mffs $f0 */);
+    M2C_FIELD(_haltContext, f64 *, 0x190) = (f64) M2C_ERROR( );
     M2C_SYNC();
-    M2C_ERROR(/* unknown instruction: mtfsb0 lt */);
-    M2C_ERROR(/* unknown instruction: mtfsb0 cr1gt */);
-    _haltContext[0x69] = M2C_ERROR(/* unknown instruction: mfspr $r4, GQR0 */);
-    _haltContext[0x6A] = M2C_ERROR(/* unknown instruction: mfspr $r4, GQR1 */);
-    _haltContext[0x6B] = M2C_ERROR(/* unknown instruction: mfspr $r4, GQR2 */);
-    _haltContext[0x6C] = M2C_ERROR(/* unknown instruction: mfspr $r4, GQR3 */);
-    _haltContext[0x6D] = M2C_ERROR(/* unknown instruction: mfspr $r4, GQR4 */);
-    _haltContext[0x6E] = M2C_ERROR(/* unknown instruction: mfspr $r4, GQR5 */);
-    _haltContext[0x6F] = M2C_ERROR(/* unknown instruction: mfspr $r4, GQR6 */);
-    _haltContext[0x70] = M2C_ERROR(/* unknown instruction: mfspr $r4, GQR7 */);
-    _haltContext[0x20] = M2C_ERROR(/* unknown instruction: mfcr $r4 */);
+    M2C_ERROR( );
+    M2C_ERROR( );
+    _haltContext[0x69] = M2C_ERROR( );
+    _haltContext[0x6A] = M2C_ERROR( );
+    _haltContext[0x6B] = M2C_ERROR( );
+    _haltContext[0x6C] = M2C_ERROR( );
+    _haltContext[0x6D] = M2C_ERROR( );
+    _haltContext[0x6E] = M2C_ERROR( );
+    _haltContext[0x6F] = M2C_ERROR( );
+    _haltContext[0x70] = M2C_ERROR( );
+    _haltContext[0x20] = M2C_ERROR( );
     _haltContext[0x21] = saved_reg_lr;
-    _haltContext[0x22] = M2C_ERROR(/* Read from unset register $ctr */);
-    _haltContext[0x23] = M2C_ERROR(/* unknown instruction: mfxer $r4 */);
+    _haltContext[0x22] = M2C_ERROR( );
+    _haltContext[0x23] = M2C_ERROR( );
     M2C_SYNC();
-    M2C_ERROR(/* unknown instruction: mtmsr $r4 */);
+    M2C_ERROR( );
     M2C_SYNC();
-    GSgfxHalt(_haltExceptionType, _haltContext, M2C_ERROR(/* unknown instruction: mfdsisr $r5 */), M2C_ERROR(/* unknown instruction: mfdar $r6 */), M2C_ERROR(/* Read from unset register $r7 */), M2C_ERROR(/* Read from unset register $r8 */), M2C_ERROR(/* Read from unset register $r9 */), M2C_ERROR(/* Read from unset register $r10 */), M2C_ERROR(/* Read from unset register $f1 */), M2C_ERROR(/* Read from unset register $f2 */), M2C_ERROR(/* Read from unset register $f3 */), M2C_ERROR(/* Read from unset register $f4 */), M2C_ERROR(/* Read from unset register $f5 */), M2C_ERROR(/* Read from unset register $f6 */), M2C_ERROR(/* Read from unset register $f7 */), M2C_ERROR(/* Read from unset register $f8 */));
+    GSgfxHalt(_haltExceptionType, _haltContext, M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ));
 }
 }
 
@@ -224,7 +224,7 @@ void OSPanic(s32 p0, s32 p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, f64
     s32 spC;
     s32 sp8;
 
-    if (M2C_ERROR(/* Read from unset register $cr0_eq */)) {
+    if (M2C_ERROR( )) {
         sp28 = p8;
         sp30 = p9;
         sp38 = p10;
@@ -264,7 +264,7 @@ void GSgfxHalt(s32 p0, s32 *p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, 
     s32 *spC;
     s32 sp8;
 
-    if (M2C_ERROR(/* Read from unset register $cr0_eq */)) {
+    if (M2C_ERROR( )) {
         sp28 = p8;
         sp30 = p9;
         sp38 = p10;

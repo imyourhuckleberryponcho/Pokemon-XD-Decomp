@@ -1,10 +1,10 @@
-// STATUS (dPart): default flags, LAYOUT OK. 4/8 exact (Stop, Update(container), dtor, ctor); Emit 99%, Render 97% (case layout +
-// callee-saved numbering), peModelNode::Start 98% (euler stores tail-merged), peModelNode::Update 96.8% (stack slot order of locals).
+
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
 
-/* XD's MSL <math.h> inlines (sqrtf with its NaN checks), as in particle/generator.cpp. */
+
 extern f32 __float_nan[];
 #define NAN (__float_nan[0])
 extern "C" {
@@ -72,75 +72,75 @@ struct Mtx34 {
 struct GSmtx;
 
 struct peXform {
-    Vec3 pos;    // 0x00
-    Quat rot;    // 0x0C
-    Vec3 scale;  // 0x1C
+    Vec3 pos;
+    Quat rot;
+    Vec3 scale;
 };
 
 struct peEmitParams {
-    u32 flags;  // 0x00
+    u32 flags;
 };
 
 struct peEmitterNode {
     u8 pad0[0x9C];
-    Vec3 dir;  // 0x9C
+    Vec3 dir;
     u8 padA8[0x54];
-    peEmitParams* params;  // 0xFC
+    peEmitParams* params;
 };
 
 struct _EmitParams {
-    f32 life;     // 0x00
-    f32 speed;    // 0x04
-    Vec3 pos;     // 0x08
-    Vec3 vel;     // 0x14
-    Vec3 xpos;    // 0x20
-    Quat xrot;    // 0x2C
-    Vec3 xscale;  // 0x3C
+    f32 life;
+    f32 speed;
+    Vec3 pos;
+    Vec3 vel;
+    Vec3 xpos;
+    Quat xrot;
+    Vec3 xscale;
 };
 
 struct HSD_JObj {
     u8 unk0[0x14];
-    u32 flags;  // 0x14
+    u32 flags;
     u8 unk18[0x2C];
-    f32 mtx[3][4];  // 0x44
+    f32 mtx[3][4];
 };
 
 struct peSpline {
-    u8 flags;  // 0x00
+    u8 flags;
     u8 pad1[3];
-    f32 value;  // 0x04
-    f32 time;   // 0x08
+    f32 value;
+    f32 time;
 };
 
-// A particle model definition.
+
 struct _peModel {
-    u32 flags;     // 0x00
-    f32 rotX;      // 0x04
-    f32 rotY;      // 0x08
-    f32 rotZ;      // 0x0C
-    Vec3 spin;     // 0x10
-    Vec3 base;     // 0x1C
-    Vec3 jitter;   // 0x28
-    peSpline* rotXSpline;    // 0x34
-    peSpline* rotYSpline;    // 0x38
-    peSpline* rotZSpline;    // 0x3C
-    peSpline* sclXSpline;    // 0x40
-    peSpline* sclYSpline;    // 0x44
-    peSpline* sclZSpline;    // 0x48
-    HSD_JObj* jobj;          // 0x4C (shape index + 1 when flags & 0x40)
-    f32 loopTime;            // 0x50
+    u32 flags;
+    f32 rotX;
+    f32 rotY;
+    f32 rotZ;
+    Vec3 spin;
+    Vec3 base;
+    Vec3 jitter;
+    peSpline* rotXSpline;
+    peSpline* rotYSpline;
+    peSpline* rotZSpline;
+    peSpline* sclXSpline;
+    peSpline* sclYSpline;
+    peSpline* sclZSpline;
+    HSD_JObj* jobj;
+    f32 loopTime;
 };
 
 class peNode {
 public:
-    f32 life0;  // 0x00
-    f32 life;   // 0x04
-    Vec3 pos;   // 0x08
-    Vec3 vel;   // 0x14
-    peXform* xform;  // 0x20
-    f32 speed;  // 0x24
-    peNode* prev;  // 0x28
-    peNode* next;  // 0x2C
+    f32 life0;
+    f32 life;
+    Vec3 pos;
+    Vec3 vel;
+    peXform* xform;
+    f32 speed;
+    peNode* prev;
+    peNode* next;
 
     bool Update(peEmitterNode* e, f32 dt);
     void Start(peEmitterNode* e, _EmitParams* p);
@@ -148,14 +148,14 @@ public:
 
 class peModelNode : public peNode {
 public:
-    peXform world;   // 0x30
-    u16 flip;        // 0x58
-    s16 instance;    // 0x5A
-    Quat spinQuat;   // 0x5C
-    Quat rotQuat;    // 0x6C
-    Vec3 offset;     // 0x7C
-    Vec3 spinRate;   // 0x88
-    f32 sortKey;     // 0x94
+    peXform world;
+    u16 flip;
+    s16 instance;
+    Quat spinQuat;
+    Quat rotQuat;
+    Vec3 offset;
+    Vec3 spinRate;
+    f32 sortKey;
 
     bool Update(peEmitterNode* e, _peModel* m, f32 dt);
     void Start(peEmitterNode* e, _peModel* m, _EmitParams* p);
@@ -169,28 +169,28 @@ public:
 
 struct GSgfxLayer {
     u8 pad0[0x28];
-    s32 id;  // 0x28
+    s32 id;
     u8 pad2C[0x19A0 - 0x2C];
-    GSgfxMatrixStack* matrixStack;  // 0x19A0
+    GSgfxMatrixStack* matrixStack;
     void InvalidateState();
 };
 
 struct GScamera {
     u8 pad0[8];
-    void* cobj;  // 0x08
+    void* cobj;
 };
 
 class peContainer {
 public:
-    void* emitter;  // 0x00 (peEmitterNode*)
+    void* emitter;
     u32 unk4;
-    void* buffer;      // 0x08
-    peNode* freeList;  // 0x0C
-    peNode* activeList;  // 0x10
-    u16 count;         // 0x14
-    u16 maxCount;      // 0x16
-    u8 dirty;          // 0x18
-    u8 started;        // 0x19
+    void* buffer;
+    peNode* freeList;
+    peNode* activeList;
+    u16 count;
+    u16 maxCount;
+    u8 dirty;
+    u8 started;
 
     peContainer(peEmitterNode* e, u32 nodeSize, u16 max);
     virtual ~peContainer();
@@ -209,7 +209,7 @@ public:
 
 class peModelContainer : public peContainer {
 public:
-    _peModel* model;  // 0x20
+    _peModel* model;
 
     peModelContainer(peEmitterNode* e, _peModel* m, u16 max);
     virtual ~peModelContainer();
@@ -221,11 +221,11 @@ public:
 
 struct ParticleDebugStats {
     u32 pad0;
-    u32 nodeMem;   // 0x04
+    u32 nodeMem;
     u32 pad8;
     u32 pad0c;
-    u32 shapeMem;  // 0x10
-    u32 total;     // 0x14
+    u32 shapeMem;
+    u32 total;
     u32 pad18[3];
 };
 extern ParticleDebugStats g_particle_debug_stats;
@@ -274,7 +274,7 @@ f32 peSplineGetValue(peSpline* s, f32 t);
 void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx);
 }
 
-// Inline helpers from HSD's jobj.h (asserts carry that header's line numbers).
+
 static inline bool HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
     bool result;
     if (!jobj) {
@@ -317,7 +317,7 @@ static inline f32 evalSpline(peSpline* s, f32 t) {
     return peSplineGetValue(s, t);
 }
 
-// Frees a shape instance and refreshes the shape memory statistics.
+
 static inline void freeShapeInstance(_peModel* m, peModelNode* n) {
     shapeFreePrimitiveInstance((u16)((s32)m->jobj - 1), n->instance);
     g_particle_debug_stats.shapeMem -= _primitive_instance_memory;
@@ -547,17 +547,25 @@ bool peModelNode::Update(peEmitterNode* e, _peModel* m, f32 dt) {
         PSQUATMultiply(&rotQuat, &q, &rotQuat);
     }
     fq.x = (flip & 1) ? -rotQuat.x : rotQuat.x;
-    fq.y = (flip & 2) ? -rotQuat.y : rotQuat.y;
-    fq.z = (flip & 4) ? -rotQuat.z : rotQuat.z;
-    local.rot.x = out.x;
+    if (flip & 2) {
+        fq.y = -rotQuat.y;
+    } else {
+        fq.y = rotQuat.y;
+    }
+    if (flip & 4) {
+        fq.z = -rotQuat.z;
+    } else {
+        fq.z = rotQuat.z;
+    }
+    fq.w = rotQuat.w;
     euler.x = offset.x * evalSpline(m->sclXSpline, t);
     euler.y = offset.y * evalSpline(m->sclYSpline, t);
     euler.z = offset.z * evalSpline(m->sclZSpline, t);
-    fq.w = rotQuat.w;
-    local.pos.y = pos.y;
     local.pos.x = pos.x;
-    PSQUATMultiply(&spinQuat, &fq, &out);
+    local.pos.y = pos.y;
     local.pos.z = pos.z;
+    PSQUATMultiply(&spinQuat, &fq, &out);
+    local.rot.x = out.x;
     local.rot.y = out.y;
     local.rot.z = out.z;
     local.rot.w = out.w;

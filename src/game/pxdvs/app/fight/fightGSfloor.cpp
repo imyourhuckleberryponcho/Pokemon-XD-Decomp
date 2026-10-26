@@ -20,7 +20,6 @@ struct GSmodelState {
     u8 data[0x6C];
 };
 
-// Callback context shared by the trainer/pokemon loops.
 struct GSfloorScan {
     u8 collect;
     u8 consume;

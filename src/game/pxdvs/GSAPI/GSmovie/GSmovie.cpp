@@ -1,9 +1,6 @@
-// DRAFT (dr_movie): all functions written, not yet exact. Source is written bottom-to-top
-// (functions come out in reverse source order), expected flags: -inline deferred.
 #pragma pool_strings off
 #include <dolphin/types.h>
 
-// ---------------------------------------------------------------- types
 struct THPHeader {
     char magic[4];
     u32 version;
@@ -63,74 +60,74 @@ struct THPAudioBuffer {
 };
 
 struct THPPlayer {
-    THPHeader header;                // 0x00
-    THPFrameCompInfo compInfo;       // 0x30
-    THPVideoInfo videoInfo;          // 0x44
-    THPAudioInfo audioInfo;          // 0x50
-    u8 cache[0x8000];                // 0x60
-    s32 open;                        // 0x8060
+    THPHeader header;
+    THPFrameCompInfo compInfo;
+    THPVideoInfo videoInfo;
+    THPAudioInfo audioInfo;
+    u8 cache[0x8000];
+    s32 open;
     s32 f8064;
     s32 f8068;
     s32 f806C;
     s32 f8070;
-    u8* thpWork;                     // 0x8074
-    u8 state;                        // 0x8078
-    u8 internalState;                // 0x8079
-    u8 playFlag;                     // 0x807A
-    u8 audioExist;                   // 0x807B
-    s32 dvdError;                    // 0x807C
-    s32 videoError;                  // 0x8080
-    u8 onMemory;                     // 0x8084
+    u8* thpWork;
+    u8 state;
+    u8 internalState;
+    u8 playFlag;
+    u8 audioExist;
+    s32 dvdError;
+    s32 videoError;
+    u8 onMemory;
     u8 f8085;
-    u8 paused;                       // 0x8086
-    u8 visible;                      // 0x8087
-    u8* movieData;                   // 0x8088
-    s32 initOffset;                  // 0x808C
-    s32 initReadSize;                // 0x8090
-    s32 initReadFrame;               // 0x8094
-    s64 retraceCount;                // 0x8098
-    s32 prevCount;                   // 0x80A0
-    s32 curCount;                    // 0x80A4
-    s32 videoDecodeCount;            // 0x80A8
-    s32 curAudioTrack;               // 0x80AC
-    s32 curVideoNumber;              // 0x80B0
-    s32 curAudioNumber;              // 0x80B4
+    u8 paused;
+    u8 visible;
+    u8* movieData;
+    s32 initOffset;
+    s32 initReadSize;
+    s32 initReadFrame;
+    s64 retraceCount;
+    s32 prevCount;
+    s32 curCount;
+    s32 videoDecodeCount;
+    s32 curAudioTrack;
+    s32 curVideoNumber;
+    s32 curAudioNumber;
     s16 f80B8;
     s16 f80BA;
-    THPTextureSet* dispTextureSet;   // 0x80BC
-    THPAudioBuffer* playAudioBuffer; // 0x80C0
-    THPReadBuffer readBuffer[10];    // 0x80C4
+    THPTextureSet* dispTextureSet;
+    THPAudioBuffer* playAudioBuffer;
+    THPReadBuffer readBuffer[10];
     s32 f8164;
     s32 f8168;
     s32 f816C;
-    THPTextureSet textureSet[3];     // 0x8170
+    THPTextureSet textureSet[3];
     s32 f81AC;
-    u32 textureSetIndex;             // 0x81B0
-    THPAudioBuffer audioBuffer[6];   // 0x81B4
+    u32 textureSetIndex;
+    THPAudioBuffer audioBuffer[6];
     s32 f8214;
     s32 f8218;
-    s32 sndStream0;                  // 0x821C
-    s32 sndStream1;                  // 0x8220
-    s16* audioWork0;                 // 0x8224
-    s16* audioWork1;                 // 0x8228
+    s32 sndStream0;
+    s32 sndStream1;
+    s16* audioWork0;
+    s16* audioWork1;
     u8 f822C[4];
     u8 f8230[0x50];
 };
 
 struct __GSmovieStreaming {
-    s32 state;          // 0x00
-    struct GStexture* tex; // 0x04
-    u32 id;             // 0x08
-    u16 x;              // 0x0C
-    u16 y;              // 0x0E
-    void* mem;          // 0x10
+    s32 state;
+    struct GStexture* tex;
+    u32 id;
+    u16 x;
+    u16 y;
+    void* mem;
     u8 f14;
     u8 f15;
-    u8 loop;            // 0x16
-    u8 startOffset;     // 0x17
-    u16 token;          // 0x18
+    u8 loop;
+    u8 startOffset;
+    u16 token;
     u8 f1A;
-    THPPlayer* player;  // 0x1C
+    THPPlayer* player;
 };
 
 enum GSgfxLayerPass {
@@ -164,7 +161,6 @@ public:
                             bool clearAlpha, bool clearDepth, GSgfxLayerID relative, GSgfxLayerOffset offset);
 };
 
-// ---------------------------------------------------------------- externs
 extern "C" {
 u8 GSfsysCancel(u32 id);
 s32 GSfsysReadStreaming(u32 id);
@@ -208,7 +204,6 @@ void _StreamInit(__GSmovieStreaming* s);
 void _StreamInitFillStreamBuffer(__GSmovieStreaming* s);
 }
 
-// ---------------------------------------------------------------- data
 static u8 _initFlag;
 static int _movieDaemonHDL;
 static u32 _maxStreaming;
@@ -230,7 +225,6 @@ static u8 _THPPlayerSetBuffer(__GSmovieStreaming* s);
 static void _movieStreamTHPPlayerPrepareGetDataCallback(s32, void* arg, s32);
 static void _PlayControl(u32);
 
-// ---------------------------------------------------------------- helpers
 static inline __GSmovieStreaming* _movieGetStream(u32 id) {
     __GSmovieStreaming* s;
     u32 i;
@@ -342,8 +336,9 @@ static inline void _movieStop(u32 id) {
             if (_movieValidScratch == 1) {
                 u32 i;
                 bool any = false;
+                __GSmovieStreaming* streams = _movieStreaming;
                 for (i = 0; i < _maxStreaming; i++) {
-                    if (_movieStreaming[i].state != 0) {
+                    if (streams[i].state != 0) {
                         any = true;
                     }
                 }
@@ -358,7 +353,6 @@ static inline void _movieStop(u32 id) {
     }
 }
 
-// ---------------------------------------------------------------- public API
 extern "C" {
 
 static inline bool _movieStreamingInit(void) {
@@ -490,7 +484,6 @@ s32 GSmoviePlayCheck(u32 id) {
     }
     return 1;
 }
-
 
 s32 GSmovieGetStatus(u32 id) {
     __GSmovieStreaming* s;
@@ -674,7 +667,6 @@ extern "C" void GSmovieStreamPostFunc(u32 id, u32 fileId) {
     }
 }
 
-// ---------------------------------------------------------------- daemon
 static inline bool _movieStreamCheckComponents(THPPlayer* p) {
     u32 i;
     p->audioExist = 0;
@@ -757,7 +749,6 @@ static void _movieDaemon() {
                     break;
                 }
                 if (!_movieStreamCheckComponents(s->player)) {
- // falls through to the buffer allocation with the player reset
                 }
                 THPPlayer* q = s->player;
                 s->mem = GSmemAllocAlignFromEnd(_THPPlayerCalcNeedMemory(q), 0x20);
@@ -790,7 +781,6 @@ static void _movieDaemon() {
                 _movieValidScratch = 1;
                 s->state = 2;
             }
- // fall through
             case 2: {
                 bool ok = _movieStreamPrepareStart(s);
                 if (!ok) {
@@ -808,7 +798,6 @@ static void _movieDaemon() {
                     break;
                 }
             }
- // fall through
             case 6: {
                 bool started = _movieReadStart(s);
                 if (started == 1) {

@@ -15,7 +15,6 @@ typedef struct {
 extern KaisuuData kaisuu_data[];
 extern u32 kaisuu_data_number;
 
-
 #ifdef __cplusplus
 }
 #endif

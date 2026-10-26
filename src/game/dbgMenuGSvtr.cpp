@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 extern "C" {
@@ -43,7 +42,6 @@ void dbgMenuGSvtrCaptureUpdate(void) {
     }
 }
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 s32 dbgMenuGSvtrCaptureSD(void) {

@@ -1,10 +1,7 @@
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
-// Non-volatile view of the GX write-gather FIFO: the original kept constants in
-// registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };

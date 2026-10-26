@@ -1,4 +1,3 @@
-// Draft (written from asm).
 #include <dolphin/types.h>
 
 #pragma peephole off
@@ -10,40 +9,40 @@ struct CursorPos {
 
 struct tagSPRITE_WORK {
     u8 pad0[0x6];
-    s16 id;        // 0x6
+    s16 id;
     u8 pad8[0x5F];
-    u8 alpha;      // 0x67
+    u8 alpha;
 };
 
 struct tagWINDOW_WORK {
     u8 pad0;
-    s8 state;          // 0x1
-    s8 seqSet;         // 0x2
+    s8 state;
+    s8 seqSet;
     u8 pad3;
-    s32 menuID;        // 0x4
+    s32 menuID;
     u8 pad8[0x14];
-    s32 layer;         // 0x1C
+    s32 layer;
     u8 pad20[0x73];
-    u8 alpha;          // 0x93
+    u8 alpha;
     u8 pad94[8];
-    CursorPos pos;     // 0x9C
+    CursorPos pos;
     u8 padA0[4];
-    u8 done;           // 0xA4
-    u8 cancel;         // 0xA5
+    u8 done;
+    u8 cancel;
 };
 
 struct TitleOptionWork {
-    s32 f0;     // 0x0
-    s32 f4;     // 0x4
-    s32 count;  // 0x8
-    s32 flag;   // 0xC
-    f32 rot;    // 0x10
-    f32 f14;    // 0x14
-    f32 amp;    // 0x18
-    f32 dt;     // 0x1C
-    f32 t;      // 0x20
-    f32 t2;     // 0x24
-    f32 speed;  // 0x28
+    s32 f0;
+    s32 f4;
+    s32 count;
+    s32 flag;
+    f32 rot;
+    f32 f14;
+    f32 amp;
+    f32 dt;
+    f32 t;
+    f32 t2;
+    f32 speed;
 };
 
 struct KeyInfo {

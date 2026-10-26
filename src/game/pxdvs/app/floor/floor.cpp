@@ -29,15 +29,15 @@ enum GSgfxFogType { GSFOG_0 };
 
 struct GSgfxLayer {
     u8 pad0[0x1678];
-    s32 fogType;       // 0x1678
-    f32 fogStart;      // 0x167c
-    f32 fogEnd;        // 0x1680
+    s32 fogType;
+    f32 fogStart;
+    f32 fogEnd;
     u8 pad1[0x168c - 0x1684];
-    GSgfxColAu8 fogColor; // 0x168c
+    GSgfxColAu8 fogColor;
     u8 pad2[0x16a4 - 0x1690];
-    u16 fogRange;      // 0x16a4
-    u8 fogRangeOn;     // 0x16a6
-    u8 fogOn;          // 0x16a7
+    u16 fogRange;
+    u8 fogRangeOn;
+    u8 fogOn;
     u32 dirty16a8;
     u8 pad3[0x170c - 0x16ac];
     u32 dirty170c;
@@ -52,27 +52,27 @@ struct GSgfxLayer {
 
 struct HSD_Archive;
 struct GSfloor_dd_ {
-    u8 area;        // 0x00
-    u8 kind;        // 0x01
-    u16 floorID;    // 0x02
-    u32 mapResID;   // 0x04
+    u8 area;
+    u8 kind;
+    u16 floorID;
+    u32 mapResID;
 };
 
 enum FloorStateMode { FSM_0, FSM_1, FSM_2 };
 enum FloorEnterMode { FEM_0, FEM_1, FEM_2 };
 
 struct FloorModuleInterface {
-    void (*create)(unsigned int, FloorEnterMode);                    // 0x00
-    void (*initialize)(unsigned int, FloorEnterMode);                // 0x04
-    void (*update)(unsigned int, FloorEnterMode);                    // 0x08
-    void (*unk0c)();                                                 // 0x0c
-    void (*finalize)(unsigned int, FloorEnterMode);                  // 0x10
-    void (*free)(unsigned int, FloorEnterMode);                      // 0x14
-    const char* (*getModuleName)();                                  // 0x18
-    void (*makeStateData)(FloorStateMode, void*, unsigned long);     // 0x1c
-    void (*restoreStateData)(FloorStateMode, void*, unsigned long);  // 0x20
-    unsigned long (*getStateSize)(FloorStateMode);                   // 0x24
-    unsigned long (*getUID)();                                       // 0x28
+    void (*create)(unsigned int, FloorEnterMode);
+    void (*initialize)(unsigned int, FloorEnterMode);
+    void (*update)(unsigned int, FloorEnterMode);
+    void (*unk0c)();
+    void (*finalize)(unsigned int, FloorEnterMode);
+    void (*free)(unsigned int, FloorEnterMode);
+    const char* (*getModuleName)();
+    void (*makeStateData)(FloorStateMode, void*, unsigned long);
+    void (*restoreStateData)(FloorStateMode, void*, unsigned long);
+    unsigned long (*getStateSize)(FloorStateMode);
+    unsigned long (*getUID)();
 };
 
 typedef void (*FloorUniqueFn)(GSfloor_dd_*, u32);
@@ -83,27 +83,27 @@ struct FloorUniqueFunc {
 };
 
 struct FLOOR_CHANGE_INFO {
-    u32 prevFloorID;     // 0x00
-    u32 nextFloorID;     // 0x04
-    u8 usePos;           // 0x08
-    u32 nextPosIndex;    // 0x0c
-    GSvec pos;           // 0x10
-    GSvec rot;           // 0x1c
-    u32 fadeIn;          // 0x28
-    u32 fadeOut;         // 0x2c
-    u8 fadeFlag;         // 0x30
+    u32 prevFloorID;
+    u32 nextFloorID;
+    u8 usePos;
+    u32 nextPosIndex;
+    GSvec pos;
+    GSvec rot;
+    u32 fadeIn;
+    u32 fadeOut;
+    u8 fadeFlag;
     u8 pad31[0x4c - 0x31];
-    u32 retFloor;        // 0x4c
-    u32 retPrevFloor;    // 0x50
-    u8 retArg;           // 0x54
-    u8 retValid;         // 0x55
-    u8 continueMode;     // 0x56
-    u8 dispScriptInfo;   // 0x57
-    u32 lightInfoA;      // 0x58
-    u32 lightInfoB;      // 0x5c
-    u8 humanColision;    // 0x60
-    u8 bgmFlag;          // 0x61
-    u8 envFlag;          // 0x62
+    u32 retFloor;
+    u32 retPrevFloor;
+    u8 retArg;
+    u8 retValid;
+    u8 continueMode;
+    u8 dispScriptInfo;
+    u32 lightInfoA;
+    u32 lightInfoB;
+    u8 humanColision;
+    u8 bgmFlag;
+    u8 envFlag;
     FLOOR_CHANGE_INFO();
 };
 
@@ -193,7 +193,7 @@ struct Tiga {
     u32 getNameToFuncId(const char*);
     void debugDump();
 };
-} // namespace GSscript
+}
 struct AppScript : GSscript::Tiga {
     void unload();
 };
@@ -544,7 +544,6 @@ inline void GSvec::set(f32 _x, f32 _y, f32 _z) {
 }
 
 FLOOR_CHANGE_INFO::FLOOR_CHANGE_INFO() {}
-
 
 void EvlogSet(s8 type, u32 value) {
     EvLog[evlog_start].type = type;
@@ -1998,7 +1997,6 @@ inline GSmtx GSmtx::makeIdentity() {
     PSMTXIdentity(&m);
     return m;
 }
-
 
 inline void GSgfxLayer::fog(bool on) {
     fogOn = on;

@@ -265,7 +265,8 @@ void memoDataSet(Memo* memo, void* pokemon) {
     m->count++;
 }
 
-void memoInit(Memo* memo) {
+void memoInit(Memo* memo_in) {
+    Memo* memo = memo_in;
     int i;
     if (memo == 0) {
         memo = (Memo*)savedataGetStatus(0, 0xC);

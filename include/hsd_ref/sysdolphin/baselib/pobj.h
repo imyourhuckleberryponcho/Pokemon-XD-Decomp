@@ -29,7 +29,7 @@ struct HSD_PObj {
         HSD_ShapeSet* shape_set;
         HSD_SList* envelope_list;
     } u;
-    HSD_AObj* aobj; // XD: PObjs carry their own animation object
+    HSD_AObj* aobj;
 };
 
 /// Envelopes of one vertex matrix, up to one with a null joint.
@@ -123,7 +123,7 @@ struct HSD_PObjInfo {
     void (*disp)(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode);
     void (*setup_mtx)(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx, u32 rendermode);
     s32 (*load)(HSD_PObj* pobj, HSD_PObjDesc* desc);
-    HSD_ObjUpdateFunc update; // XD
+    HSD_ObjUpdateFunc update;
 };
 
 extern HSD_PObjInfo hsdPObj;

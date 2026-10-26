@@ -1,8 +1,3 @@
-// STATUS (dFace): 20/25 exact (2356 of 5904 bytes). Needs extra_cflags ["-inline noauto"] (file order = asm order,
-// peephole off). Not exact (all register/schedule only): _menuFaceAddList (98.7%: locals' registers; the target keeps
-// the saved/moved entry in 6 separate locals and params in r28-r30), menuFaceLoadFromID/_Tool (98.5/95%: tex and arg
-// swapped, the "1" constant is shared by both stores), _menuFaceDispFromID/ID3 (98.8%: one cmplwi scheduled earlier;
-// the sprite copy is a member-wise copy() because the target copies fields 0x08 and 0x0C..0x47 separately).
 #include <dolphin/types.h>
 #pragma peephole off
 #pragma pool_strings off
@@ -26,23 +21,23 @@ struct SpriteBody {
 };
 
 struct tagSPRITE_WORK {
-    struct tagSPRITE_WORK* next; // 0x00
-    u8 kind;                     // 0x04
-    u8 flags;                    // 0x05
-    s16 id;                      // 0x06
-    s32 unk8;                    // 0x08
-    SpriteBody body;             // 0x0C
+    struct tagSPRITE_WORK* next;
+    u8 kind;
+    u8 flags;
+    s16 id;
+    s32 unk8;
+    SpriteBody body;
     s32 unk48;
     s32 unk4C;
-    s16 x;   // 0x50
-    s16 y;   // 0x52
-    s16 w;   // 0x54
-    s16 h;   // 0x56
-    u32 tex; // 0x58
-    s16 sx;  // 0x5C
-    s16 sy;  // 0x5E
-    s16 sw;  // 0x60
-    s16 sh;  // 0x62
+    s16 x;
+    s16 y;
+    s16 w;
+    s16 h;
+    u32 tex;
+    s16 sx;
+    s16 sy;
+    s16 sw;
+    s16 sh;
     s32 unk64;
     f32 unk68;
     f32 unk6C;
@@ -81,12 +76,12 @@ struct tagSPRITE_WORK {
 typedef Pokemon* (*FaceFn)(void*);
 
 struct FaceEntry {
-    u32 texID;  // 0x0
-    u16 faceId; // 0x4
-    u8 state;   // 0x6
-    s8 texIdx;  // 0x7
-    FaceFn fn;  // 0x8
-    void* arg;  // 0xC
+    u32 texID;
+    u16 faceId;
+    u8 state;
+    s8 texIdx;
+    FaceFn fn;
+    void* arg;
 };
 
 struct FaceRes {
@@ -320,7 +315,6 @@ s32 menuFaceLoadFromID(u16 id, FaceFn fn, void* arg) {
         return 1;
     }
 }
-
 
 u8 menuFaceCheckLoading() {
     int n = _menuFaceGetListNum();

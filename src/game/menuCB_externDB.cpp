@@ -1,12 +1,4 @@
-// WIP 121/142. GENERATED from build/scratch/cbx/g*.inc by assemble.py (edit snippets or stop regenerating).
-// STATUS: 121/142 functions exact (26.3 KB of 66.4 KB). Needs extra_cflags=["-inline noauto,deferred"]
-// (source is written bottom-to-top). Missing (not written yet): menuTool_Rule00_Ctrl, menuTool_tunaideGCEntry00_Ctrl, menuCB_Rule01_Disp,
-// menuCB_Rule02_Disp, menuCB_Rule00_Disp, menuCB_Tunaide02_Disp, menuCB_Tunaide01_3_Disp, menuCB_tunaideGCEntry_Disp/00/02/03/04 Disp(+_1),
-// menuCB_error00_Disp, menuCB_GBAConnect_Disp. Not exact: tunaide00_Ctrl (1 dead 'b'), tunaidePokemonSelect1_Ctrl (reg), Tunaide01_Disp (reg),
-// tunaideGCEntry01_Disp_Sub. Data (bss/sdata/jump tables) layout still differs until all functions exist.
-// Colosseum-battle menu "tool" callbacks (menuTool_*_Ctrl/Button, menuCB_*_Disp).
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -27,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -48,7 +39,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -69,7 +59,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -95,7 +84,6 @@ struct MenuWindow;
 struct tagSPRITE_WORK;
 struct tagWINDOW_WORK;
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
@@ -348,7 +336,7 @@ void menuCBMessageCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void menuCBMessageYCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void menuCB_RuleDispColorChenge(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void menuCB_RuleDispColorChenge_flag(tagWINDOW_WORK*, tagSPRITE_WORK*, bool);
-void menuCBRULE_EditNameDisp(s32);
+void menuCBRULE_EditNameDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 bool menuCB_GCStatusDispMode(tagSPRITE_WORK*, s32);
 void menuCBPokemonEntryDisp(tagSPRITE_WORK*);
 void menuCBPokemonEntryGCControlDisp(tagSPRITE_WORK*, s32);
@@ -430,8 +418,6 @@ public:
     static void systemUpdate(bool);
 };
 
-//---
-
 static const s32 PlayerNumber[5] = {0x20F, 0x20E, 0x20D, 0x20C, 0x20B};
 static const s32 Small_Face_Char[7] = {0x208, 0x209, 0x20A, 0x210, 0x211, 0x212, 0x213};
 static const s32 Big_Face_Char[7] = {0x201, 0x202, 0x203, 0x204, 0x205, 0x206, 0x207};
@@ -454,9 +440,7 @@ static const s32 Port_Icon_Char[2] = {0x3C8, 0x3C9};
 static const s32 MENU_ITEM_TOOL_TUNAIDE00_SETUMEI_2_Tbl[2] = {0x4371, 0x4372};
 static const s32 MENU_ITEM_TOOL_TUNAIDE01_BATTLE_A_Tbl[2] = {0x436F, 0x4370};
 
-
 extern "C" {
-// ---- draft declarations ----
 struct CBItem {
     u8 _draft[1];
 };
@@ -519,26 +503,17 @@ s32 spriteSetEnv(s32);
 void spriteSetOffset(s32, s16, s16);
 s32 spriteSetScissor(s32, s32, s32, s32, s32);
 s32 toolbattle_drawHeroID(s32, s32);
-s32 windowDrawSprite3(s16, s16, s16, s16, s32, void*, u16, s16);
+void windowDrawSprite3(s16, s16, s16, s16, u32, void*, u16, s16, s16, s16, s16, u32, s32);
 }
-static s32 _ruleCursol[5];
+static s32 field_anime[12];
 static s32 _ruleCursol2;
 static s32 _ruleTempBuff_DB[0x1F];
-static s32 field_anime;
-// ---- draft declarations ----
-
-
-
-// ---- draft declarations ----
-
+static s32 _ruleCursol[5];
 
 extern "C" {
 void menuCB_tunaideGCEntry04_Disp_1(void *p0, void *p1);
 void menuTool_tunaideGCEntry00_Ctrl(void *p0);
 }
-
-// ---- draft declarations ----
-
 
 extern "C" {
 void menuCB_GBAConnect_Disp(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
@@ -1363,7 +1338,7 @@ void menuCB_Tunaide01_Disp(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     case 0x84:
         if (_CB.unkB004 >= 3) {
             sprite->msg = 0;
-            menuCBRULE_EditNameDisp(_CB.unkB004);
+            menuCBRULE_EditNameDisp(window, sprite, _CB.unkB004);
         } else {
             sprite->msg = MENU_ITEM_TOOL_TUNAIDE01_RULE_A_Tbl[_CB.unkB004];
         }
@@ -1515,11 +1490,6 @@ void menuTool_tunaide01_4_Ctrl(tagWINDOW_WORK* window) {
 }
 extern "C" {
 void menuCB_Tunaide01_3_Disp(void *p0, void *p1) {
-    s32 sp18;
-    volatile s32 sp14;
-    s32 sp10;
-    volatile s32 spC;
-    s32 sp8;
     s16 temp_r0;
     s32 temp_r3;
     s32 temp_r3_2;
@@ -1531,99 +1501,89 @@ void menuCB_Tunaide01_3_Disp(void *p0, void *p1) {
             return;
         }
         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-        switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB114)) { /* switch 2; irregular */
-                case 1:                                     /* switch 2 */
+        if (M2C_FIELD(&_CB, s32 *, 0xB114) != 0) {
+        switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB114)) {
+                case 1:
                     M2C_FIELD(&field_anime, s16 *, 0) = 0;
                     M2C_FIELD(&field_anime, s16 *, 2) = 0;
                     M2C_FIELD(&field_anime, s16 *, 4) = 0x116;
                     M2C_FIELD(&field_anime, s16 *, 6) = 0;
                     M2C_FIELD(&field_anime, s32 *, 8) = -1;
+                    M2C_FIELD(&field_anime, u16 *, 0xC) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)];
                     M2C_FIELD(&field_anime, s16 *, 0xE) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x10) = 0xA7;
-                    M2C_FIELD(&field_anime, u16 *, 0xC) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)];
                     M2C_FIELD(&field_anime, s32 *, 0x14) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x18) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x1A) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x1C) = 0x116;
                     M2C_FIELD(&field_anime, s16 *, 0x1E) = 0xA7;
                     M2C_FIELD(&field_anime, s32 *, 0x20) = -1;
+                    M2C_FIELD(&field_anime, u16 *, 0x24) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xB000)];
                     M2C_FIELD(&field_anime, s16 *, 0x26) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x28) = 0;
-                    M2C_FIELD(&field_anime, u16 *, 0x24) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xB000)];
                     M2C_FIELD(&field_anime, s32 *, 0x2C) = 0;
                     M2C_FIELD(&_CB, s32 *, 0xB114) = 2;
                     return;
-                case 3:                                     /* switch 2 */
+                case 3:
                     M2C_FIELD(&field_anime, s16 *, 0) = 0;
-                    M2C_FIELD(&field_anime, s16 *, 0xE) = 0;
                     M2C_FIELD(&field_anime, s16 *, 2) = 0xA7;
                     M2C_FIELD(&field_anime, s16 *, 4) = 0x116;
                     M2C_FIELD(&field_anime, s16 *, 6) = 0;
                     M2C_FIELD(&field_anime, s32 *, 8) = -1;
-                    M2C_FIELD(&field_anime, s16 *, 0x10) = 0;
                     M2C_FIELD(&field_anime, u16 *, 0xC) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)];
+                    M2C_FIELD(&field_anime, s16 *, 0xE) = 0;
+                    M2C_FIELD(&field_anime, s16 *, 0x10) = 0;
                     M2C_FIELD(&field_anime, s32 *, 0x14) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x18) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x1A) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x1C) = 0x116;
                     M2C_FIELD(&field_anime, s16 *, 0x1E) = 0xA7;
                     M2C_FIELD(&field_anime, s32 *, 0x20) = -1;
+                    M2C_FIELD(&field_anime, u16 *, 0x24) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xB000)];
                     M2C_FIELD(&field_anime, s16 *, 0x26) = 0;
                     M2C_FIELD(&field_anime, s16 *, 0x28) = 0;
-                    M2C_FIELD(&field_anime, u16 *, 0x24) = (u16) BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xB000)];
                     M2C_FIELD(&field_anime, s32 *, 0x2C) = 0;
                     M2C_FIELD(&_CB, s32 *, 0xB114) = 4;
                     return;
-                case 2:                                     /* switch 2 */
-                    temp_r3 = M2C_FIELD(&field_anime, s16 *, 6);
-                    temp_r3 += 0xF;
-                    M2C_FIELD(&field_anime, s16 *, 6) = temp_r3;
-                    if (temp_r3 >= 0xA7) {
+                case 2:
+                    M2C_FIELD(&field_anime, s16 *, 6) += 0xF;
+                    if (M2C_FIELD(&field_anime, s16 *, 6) >= 0xA7) {
                         M2C_FIELD(&field_anime, s16 *, 6) = 0;
                         M2C_FIELD(&_CB, s32 *, 0xB114) = 0;
                         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
                         menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)])));
                     }
-                    M2C_FIELD(&field_anime, s16 *, 0x1A) = (s16) M2C_FIELD(&field_anime, s16 *, 6);
-                    M2C_FIELD(&field_anime, s16 *, 0x10) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
-                    M2C_FIELD(&field_anime, s16 *, 0x1E) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
+                    { s16 remaining = 0xA7 - M2C_FIELD(&field_anime, s16 *, 6);
+                    M2C_FIELD(&field_anime, s16 *, 0x1A) = M2C_FIELD(&field_anime, s16 *, 6);
+                    M2C_FIELD(&field_anime, s16 *, 0x10) = remaining;
+                    M2C_FIELD(&field_anime, s16 *, 0x1E) = (s16)(0xA7 - M2C_FIELD(&field_anime, s16 *, 6)); }
                     return;
-                case 4:                                     /* switch 2 */
-                    temp_r3_2 = M2C_FIELD(&field_anime, s16 *, 6) + 0xF;
-                    M2C_FIELD(&field_anime, s16 *, 6) = temp_r3_2;
-                    if (temp_r3_2 >= 0xA7) {
+                case 4:
+                    M2C_FIELD(&field_anime, s16 *, 6) += 0xF;
+                    if (M2C_FIELD(&field_anime, s16 *, 6) >= 0xA7) {
                         M2C_FIELD(&field_anime, s16 *, 6) = 0;
                         M2C_FIELD(&_CB, s32 *, 0xB114) = 0;
                         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
                         menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(BATTLE_FIELD_Char[M2C_FIELD(&_CB, s32 *, 0xAFFC)])));
                     }
-                    M2C_FIELD(&field_anime, s16 *, 0x28) = (s16) M2C_FIELD(&field_anime, s16 *, 6);
-                    M2C_FIELD(&field_anime, s16 *, 2) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
-                    M2C_FIELD(&field_anime, s16 *, 0x1E) = (s16) (0xA7 - M2C_FIELD(&field_anime, s16 *, 6));
+                    { s16 remaining = 0xA7 - M2C_FIELD(&field_anime, s16 *, 6);
+                    M2C_FIELD(&field_anime, s16 *, 0x28) = M2C_FIELD(&field_anime, s16 *, 6);
+                    M2C_FIELD(&field_anime, s16 *, 2) = remaining;
+                    M2C_FIELD(&field_anime, s16 *, 0x1E) = (s16)(0xA7 - M2C_FIELD(&field_anime, s16 *, 6)); }
                     return;
-                case 0:                                     /* switch 2 */
-                    return;
+                }
                 }
         break;
     case 0x2D9:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB114) != 0) {
-            sp8 = (s32) M2C_FIELD(&field_anime, s16 *, 0x10);
-            spC = (s32) M2C_FIELD(&field_anime, s16 *, 4);
-            sp10 = (s32) M2C_FIELD(&field_anime, s16 *, 6);
-            sp14 = M2C_FIELD(&field_anime, s32 *, 0x14);
-            sp18 = M2C_FIELD(p0, s32 *, 0x1C);
-            windowDrawSprite3(M2C_FIELD(&field_anime, s16 *, 0), M2C_FIELD(&field_anime, s16 *, 2), M2C_FIELD(&field_anime, s16 *, 4), M2C_FIELD(&field_anime, s16 *, 6), M2C_FIELD(&field_anime, s32 *, 8), p0, M2C_FIELD(&field_anime, u16 *, 0xC), M2C_FIELD(&field_anime, s16 *, 0xE));
+            s32 tmp3 = M2C_FIELD(&field_anime, s16 *, 6);
+            windowDrawSprite3(M2C_FIELD(&field_anime, s16 *, 0), M2C_FIELD(&field_anime, s16 *, 2), M2C_FIELD(&field_anime, s16 *, 4), tmp3, M2C_FIELD(&field_anime, s32 *, 8), p0, M2C_FIELD(&field_anime, u16 *, 0xC), M2C_FIELD(&field_anime, s16 *, 0xE), M2C_FIELD(&field_anime, s16 *, 0x10), M2C_FIELD(&field_anime, s16 *, 0x4), M2C_FIELD(&field_anime, s16 *, 0x6), M2C_FIELD(&field_anime, s32 *, 0x14), M2C_FIELD(p0, s32 *, 0x1C));
             return;
         }
         break;
     case 0x2D8:
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB114) != 0) {
-            sp8 = (s32) M2C_FIELD(&field_anime, s16 *, 0x28);
-            spC = (s32) M2C_FIELD(&field_anime, s16 *, 0x1C);
-            sp10 = (s32) M2C_FIELD(&field_anime, s16 *, 0x1E);
-            sp14 = M2C_FIELD(&field_anime, s32 *, 0x2C);
-            sp18 = M2C_FIELD(p0, s32 *, 0x1C);
-            windowDrawSprite3(M2C_FIELD(&field_anime, s16 *, 0x18), M2C_FIELD(&field_anime, s16 *, 0x1A), M2C_FIELD(&field_anime, s16 *, 0x1C), M2C_FIELD(&field_anime, s16 *, 0x1E), M2C_FIELD(&field_anime, s32 *, 0x20), p0, M2C_FIELD(&field_anime, u16 *, 0x24), M2C_FIELD(&field_anime, s16 *, 0x26));
+            windowDrawSprite3(M2C_FIELD(&field_anime, s16 *, 0x18), M2C_FIELD(&field_anime, s16 *, 0x1A), M2C_FIELD(&field_anime, s16 *, 0x1C), M2C_FIELD(&field_anime, s16 *, 0x1E), M2C_FIELD(&field_anime, s32 *, 0x20), p0, M2C_FIELD(&field_anime, u16 *, 0x24), M2C_FIELD(&field_anime, s16 *, 0x26), M2C_FIELD(&field_anime, s16 *, 0x28), M2C_FIELD(&field_anime, s16 *, 0x1c), M2C_FIELD(&field_anime, s16 *, 0x1e), M2C_FIELD(&field_anime, s32 *, 0x2c), M2C_FIELD(p0, s32 *, 0x1C));
             return;
         }
         break;
@@ -2083,7 +2043,7 @@ void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
     case 0x98:
     case 0xA4:
         var_r30 = 0;
-        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
+        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) != 0)) {
             var_r30 = 1;
         }
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30));
@@ -2177,11 +2137,7 @@ void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
     case 0x9D:
     case 0xA5:
     case 0xB1:
-        var_r30 = 0;
-        if (((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) || (toolbattle_trainerFace(0) == 0)) {
-            var_r30 = 1;
-        }
-        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(var_r30));
+        menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK*)p1, M2C_FIELD(&_CB, s32 *, 8) == 2);
         return;
         
         
@@ -2243,7 +2199,6 @@ void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
     }
 }
 }
-
 
 }
 
@@ -2708,7 +2663,6 @@ void menuCB_error00_Disp(void *p0, void *p1) {
 }
 }
 
-
 }
 
 extern "C" {
@@ -2786,7 +2740,6 @@ extern "C" {
 void menuTool_GBAConnect_Button(void) {
 }
 }
-
 
 extern "C" {
 void menuTool_BattleBA01_Ctrl(tagWINDOW_WORK* window) {
@@ -2958,7 +2911,6 @@ void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
         return;
     case 0xFD:
         M2C_FIELD(p1, s32 *, 0x4C) = 0x435E;
-        /* fallthrough */
     default:
         return;
     }
@@ -3826,17 +3778,15 @@ extern "C" {
 void menuTool_tunaideGCEntry00_Ctrl(void *p0) {
     s32 var_r29;
     s32 temp_r28;
-    volatile s32 temp_r29;
-    s32 saved_reg_r29;
 
     temp_r28 = M2C_FIELD(&_CB, s32 *, 0xB0F8);
     menuCB_DispEffect((tagWINDOW_WORK *)((s32 *) p0));
-    var_r29 = saved_reg_r29;
     menuSetStatus(M2C_FIELD(p0, s32 *, 4), 0x10);
     if ((s8) M2C_FIELD(p0, u8 *, 1) != 2) {
         goto block_362;
     }
-    if (pauseIsPause() != 0) {
+    s32 cmpv = pauseIsPause();
+    if (cmpv != 0) {
         goto block_362;
     }
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB150) == 0) {
@@ -4044,8 +3994,8 @@ block_64:
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) != 2) {
         goto block_66;
     }
-    temp_r29 = M2C_FIELD(&_CB, s32 *, 0xB0EC);
-    var_r29 = CReliveHall::getPointer()->getStage(temp_r29)->getDancerQuantity();
+    var_r29 = M2C_FIELD(&_CB, s32 *, 0xB0EC);
+    var_r29 = CReliveHall::getPointer()->getStage(var_r29)->getDancerQuantity();
 block_66:
     if ((s32) (windowGetKeyRepeat() & 1) == 0) {
         goto block_144;
@@ -4066,62 +4016,64 @@ block_71:
     }
     goto block_96;
 block_73:
-    if ((u32) M2C_FIELD(&_CB, s32 *, 0xB0F8) > 0x25U) {
-        goto block_82;
-    }
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) { case 37: goto sw1_c37; case 36: goto sw1_c36; case 31: goto sw1_c31; case 32: goto sw1_c32; case 33: goto sw1_c33; case 34: goto sw1_c34; case 35: goto sw1_c35; case 1: goto sw1_c1; case 3: goto sw1_c3; case 4: goto sw1_c4; case 5: goto sw1_c5; case 6: goto sw1_c6; case 7: goto sw1_c7; case 8: goto sw1_c8; case 9: goto sw1_c9; case 10: goto sw1_c10; case 11: goto sw1_c11; case 12: goto sw1_c12; case 13: goto sw1_c13; case 14: goto sw1_c14; case 15: goto sw1_c15; case 16: goto sw1_c16; case 17: goto sw1_c17; case 18: goto sw1_c18; case 19: goto sw1_c19; case 20: goto sw1_c20; case 21: goto sw1_c21; case 22: goto sw1_c22; case 23: goto sw1_c23; case 24: goto sw1_c24; case 25: goto sw1_c25; case 26: goto sw1_c26; case 27: goto sw1_c27; case 28: goto sw1_c28; case 29: goto sw1_c29; default: break; }        /* switch 1; jump table: jtbl_7913 */
-sw1_c37:;                                            /* switch 1 */
+    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
+    case 0: goto block_142;
+    case 2: goto block_142;
+    case 30: goto block_142;
+    default: goto block_82;
+    case 37:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 5;
     goto block_142;
-sw1_c36:;                                            /* switch 1 */
+    case 36:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
     goto block_142;
-sw1_c31:;                                            /* switch 1 */
+    case 31:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
     goto block_142;
-sw1_c32:;                                            /* switch 1 */
+    case 32:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1F;
     goto block_142;
-sw1_c33:;                                            /* switch 1 */
+    case 33:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x20;
     goto block_142;
-sw1_c34:;                                            /* switch 1 */
+    case 34:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x21;
     goto block_142;
-sw1_c35:;                                            /* switch 1 */
+    case 35:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x22;
     goto block_142;
-sw1_c1:;                                             /* switch 1 */
-sw1_c3:;                                             /* switch 1 */
-sw1_c4:;                                             /* switch 1 */
-sw1_c5:;                                             /* switch 1 */
-sw1_c6:;                                             /* switch 1 */
-sw1_c7:;                                             /* switch 1 */
-sw1_c8:;                                             /* switch 1 */
-sw1_c9:;                                             /* switch 1 */
-sw1_c10:;                                            /* switch 1 */
-sw1_c11:;                                            /* switch 1 */
-sw1_c12:;                                            /* switch 1 */
-sw1_c13:;                                            /* switch 1 */
-sw1_c14:;                                            /* switch 1 */
-sw1_c15:;                                            /* switch 1 */
-sw1_c16:;                                            /* switch 1 */
-sw1_c17:;                                            /* switch 1 */
-sw1_c18:;                                            /* switch 1 */
-sw1_c19:;                                            /* switch 1 */
-sw1_c20:;                                            /* switch 1 */
-sw1_c21:;                                            /* switch 1 */
-sw1_c22:;                                            /* switch 1 */
-sw1_c23:;                                            /* switch 1 */
-sw1_c24:;                                            /* switch 1 */
-sw1_c25:;                                            /* switch 1 */
-sw1_c26:;                                            /* switch 1 */
-sw1_c27:;                                            /* switch 1 */
-sw1_c28:;                                            /* switch 1 */
-sw1_c29:;                                            /* switch 1 */
+    case 1:
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 24:
+    case 25:
+    case 26:
+    case 27:
+    case 28:
+    case 29:
 block_82:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 1);
     goto block_142;
+    }
 block_83:
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 0x1E) {
         goto block_142;
@@ -4160,11 +4112,37 @@ block_95:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 6);
     goto block_142;
 block_96:
-    if ((u32) M2C_FIELD(&_CB, s32 *, 0xB0F8) > 0x25U) {
-        goto block_142;
-    }
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) { case 37: goto sw2_c37; case 36: goto sw2_c36; case 1: goto sw2_c1; case 2: goto sw2_c2; case 3: goto sw2_c3; case 4: goto sw2_c4; case 31: goto sw2_c31; case 32: goto sw2_c32; case 33: goto sw2_c33; case 34: goto sw2_c34; case 35: goto sw2_c35; default: break; }        /* switch 2; jump table: jtbl_7914 */
-sw2_c37:;                                            /* switch 2 */
+    { s32 stageIndex = M2C_FIELD(&_CB, s32 *, 0xB0EC);
+    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
+    case 0: goto block_142;
+    case 5: goto block_142;
+    case 6: goto block_142;
+    case 7: goto block_142;
+    case 8: goto block_142;
+    case 9: goto block_142;
+    case 10: goto block_142;
+    case 11: goto block_142;
+    case 12: goto block_142;
+    case 13: goto block_142;
+    case 14: goto block_142;
+    case 15: goto block_142;
+    case 16: goto block_142;
+    case 17: goto block_142;
+    case 18: goto block_142;
+    case 19: goto block_142;
+    case 20: goto block_142;
+    case 21: goto block_142;
+    case 22: goto block_142;
+    case 23: goto block_142;
+    case 24: goto block_142;
+    case 25: goto block_142;
+    case 26: goto block_142;
+    case 27: goto block_142;
+    case 28: goto block_142;
+    case 29: goto block_142;
+    case 30: goto block_142;
+    default: goto block_142;
+    case 37:
     if (var_r29 == 4) {
         goto block_108;
     }
@@ -4179,7 +4157,7 @@ sw2_c37:;                                            /* switch 2 */
     }
     goto block_142;
 block_103:
-    if (menuCBPokemonCheck(6U, ((M2C_FIELD(&_CB, s32 *, 0xB0EC) * 0x10000) & 0xFFFF0000) | 4) == 0) {
+    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
         goto block_105;
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
@@ -4196,7 +4174,7 @@ block_107:
 block_108:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
     goto block_142;
-sw2_c36:;                                            /* switch 2 */
+    case 36:
     if (var_r29 == 3) {
         goto block_121;
     }
@@ -4216,7 +4194,7 @@ block_114:
     }
     goto block_122;
 block_116:
-    if (menuCBPokemonCheck(6U, ((M2C_FIELD(&_CB, s32 *, 0xB0EC) * 0x10000) & 0xFFFF0000) | 4) == 0) {
+    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
         goto block_118;
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
@@ -4236,7 +4214,7 @@ block_121:
 block_122:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 3;
     goto block_142;
-sw2_c1:;                                             /* switch 2 */
+    case 1:
     if (var_r29 >= 4) {
         goto block_142;
     }
@@ -4245,7 +4223,7 @@ sw2_c1:;                                             /* switch 2 */
     }
     goto block_142;
 block_126:
-    if (menuCBPokemonCheck(6U, ((M2C_FIELD(&_CB, s32 *, 0xB0EC) * 0x10000) & 0xFFFF0000) | 4) == 0) {
+    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
         goto block_128;
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
@@ -4253,8 +4231,8 @@ block_126:
 block_128:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
     goto block_142;
-sw2_c2:;                                             /* switch 2 */
-    if (menuCBPokemonCheck(6U, ((M2C_FIELD(&_CB, s32 *, 0xB0EC) * 0x10000) & 0xFFFF0000) | 4) == 0) {
+    case 2:
+    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
         goto block_131;
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
@@ -4268,8 +4246,8 @@ block_131:
 block_133:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
     goto block_142;
-sw2_c3:;                                             /* switch 2 */
-    if (menuCBPokemonCheck(6U, ((M2C_FIELD(&_CB, s32 *, 0xB0EC) * 0x10000) & 0xFFFF0000) | 4) == 0) {
+    case 3:
+    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
         goto block_136;
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
@@ -4277,7 +4255,7 @@ sw2_c3:;                                             /* switch 2 */
 block_136:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
     goto block_142;
-sw2_c4:;                                             /* switch 2 */
+    case 4:
     if (var_r29 == 0) {
         goto block_142;
     }
@@ -4289,12 +4267,14 @@ sw2_c4:;                                             /* switch 2 */
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
     goto block_142;
-sw2_c31:;                                            /* switch 2 */
-sw2_c32:;                                            /* switch 2 */
-sw2_c33:;                                            /* switch 2 */
-sw2_c34:;                                            /* switch 2 */
-sw2_c35:;                                            /* switch 2 */
+    case 31:
+    case 32:
+    case 33:
+    case 34:
+    case 35:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 1);
+    }
+    }
 block_142:
     if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
         goto block_228;
@@ -4357,7 +4337,7 @@ block_163:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 1);
     goto block_226;
 block_164:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1E) {
+    if (M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1E) {
         goto block_168;
     }
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1B) {
@@ -4386,7 +4366,8 @@ block_173:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 6);
     goto block_226;
 block_174:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 4) {
+    { s32 stageIndex = M2C_FIELD(&_CB, s32 *, 0xB0EC);
+    if (M2C_FIELD(&_CB, s32 *, 0xB0F8) == 4) {
         goto block_214;
     }
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 4) {
@@ -4418,7 +4399,7 @@ block_182:
 block_185:
     goto block_226;
 block_186:
-    if (menuCBPokemonCheck(6U, ((M2C_FIELD(&_CB, s32 *, 0xB0EC) * 0x10000) & 0xFFFF0000) | 4) == 0) {
+    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
         goto block_188;
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
@@ -4469,7 +4450,7 @@ block_203:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
     goto block_226;
 block_204:
-    if (menuCBPokemonCheck(6U, ((M2C_FIELD(&_CB, s32 *, 0xB0EC) * 0x10000) & 0xFFFF0000) | 4) == 0) {
+    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
         goto block_206;
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
@@ -4530,6 +4511,7 @@ block_224:
     goto block_226;
 block_225:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 1);
+    }
 block_226:
     if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
         goto block_228;
@@ -4555,96 +4537,128 @@ block_233:
     }
     goto block_257;
 block_235:
-    if ((u32) M2C_FIELD(&_CB, s32 *, 0xB0F8) > 0x25U) {
-        goto block_289;
-    }
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) { case 37: goto sw3_c37; case 30: goto sw3_c30; case 31: goto sw3_c31; case 32: goto sw3_c32; case 33: goto sw3_c33; case 34: goto sw3_c34; case 35: goto sw3_c35; case 2: goto sw3_c2; case 3: goto sw3_c3; case 4: goto sw3_c4; case 5: goto sw3_c5; default: break; }        /* switch 3; jump table: jtbl_7915 */
-sw3_c37:;                                            /* switch 3 */
+    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
+    case 0: goto block_289;
+    case 1: goto block_289;
+    case 6: goto block_289;
+    case 7: goto block_289;
+    case 8: goto block_289;
+    case 9: goto block_289;
+    case 10: goto block_289;
+    case 11: goto block_289;
+    case 12: goto block_289;
+    case 13: goto block_289;
+    case 14: goto block_289;
+    case 15: goto block_289;
+    case 16: goto block_289;
+    case 17: goto block_289;
+    case 18: goto block_289;
+    case 19: goto block_289;
+    case 20: goto block_289;
+    case 21: goto block_289;
+    case 22: goto block_289;
+    case 23: goto block_289;
+    case 24: goto block_289;
+    case 25: goto block_289;
+    case 26: goto block_289;
+    case 27: goto block_289;
+    case 28: goto block_289;
+    case 29: goto block_289;
+    case 36: goto block_289;
+    default: goto block_289;
+    case 37:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
     goto block_289;
-sw3_c30:;                                            /* switch 3 */
+    case 30:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
     goto block_289;
-sw3_c31:;                                            /* switch 3 */
+    case 31:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 3;
     goto block_289;
-sw3_c32:;                                            /* switch 3 */
+    case 32:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
     goto block_289;
-sw3_c33:;                                            /* switch 3 */
+    case 33:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 5;
     goto block_289;
-sw3_c34:;                                            /* switch 3 */
-sw3_c35:;                                            /* switch 3 */
+    case 34:
+    case 35:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
     goto block_289;
-sw3_c2:;                                             /* switch 3 */
+    case 2:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
     goto block_289;
-sw3_c3:;                                             /* switch 3 */
+    case 3:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
     goto block_289;
-sw3_c4:;                                             /* switch 3 */
+    case 4:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
     goto block_289;
-sw3_c5:;                                             /* switch 3 */
+    case 5:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
     goto block_289;
-block_247:
-    if ((u32) M2C_FIELD(&_CB, s32 *, 0xB0F8) > 0x25U) {
-        goto block_256;
     }
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) { case 37: goto sw4_c37; case 30: goto sw4_c30; case 31: goto sw4_c31; case 32: goto sw4_c32; case 33: goto sw4_c33; case 34: goto sw4_c34; case 35: goto sw4_c35; case 1: goto sw4_c1; case 2: goto sw4_c2; case 3: goto sw4_c3; case 4: goto sw4_c4; case 5: goto sw4_c5; case 7: goto sw4_c7; case 8: goto sw4_c8; case 9: goto sw4_c9; case 10: goto sw4_c10; case 11: goto sw4_c11; case 13: goto sw4_c13; case 14: goto sw4_c14; case 15: goto sw4_c15; case 16: goto sw4_c16; case 17: goto sw4_c17; case 19: goto sw4_c19; case 20: goto sw4_c20; case 21: goto sw4_c21; case 22: goto sw4_c22; case 23: goto sw4_c23; case 25: goto sw4_c25; case 26: goto sw4_c26; case 27: goto sw4_c27; case 28: goto sw4_c28; case 29: goto sw4_c29; default: break; }        /* switch 4; jump table: jtbl_7916 */
-sw4_c37:;                                            /* switch 4 */
+block_247:
+    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
+    case 0: goto block_289;
+    case 6: goto block_289;
+    case 12: goto block_289;
+    case 18: goto block_289;
+    case 24: goto block_289;
+    case 36: goto block_289;
+    default: goto block_256;
+    case 37:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
     goto block_289;
-sw4_c30:;                                            /* switch 4 */
+    case 30:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 5;
     goto block_289;
-sw4_c31:;                                            /* switch 4 */
+    case 31:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0xB;
     goto block_289;
-sw4_c32:;                                            /* switch 4 */
+    case 32:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x11;
     goto block_289;
-sw4_c33:;                                            /* switch 4 */
+    case 33:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x17;
     goto block_289;
-sw4_c34:;                                            /* switch 4 */
+    case 34:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1D;
     goto block_289;
-sw4_c35:;                                            /* switch 4 */
+    case 35:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
     goto block_289;
-sw4_c1:;                                             /* switch 4 */
-sw4_c2:;                                             /* switch 4 */
-sw4_c3:;                                             /* switch 4 */
-sw4_c4:;                                             /* switch 4 */
-sw4_c5:;                                             /* switch 4 */
-sw4_c7:;                                             /* switch 4 */
-sw4_c8:;                                             /* switch 4 */
-sw4_c9:;                                             /* switch 4 */
-sw4_c10:;                                            /* switch 4 */
-sw4_c11:;                                            /* switch 4 */
-sw4_c13:;                                            /* switch 4 */
-sw4_c14:;                                            /* switch 4 */
-sw4_c15:;                                            /* switch 4 */
-sw4_c16:;                                            /* switch 4 */
-sw4_c17:;                                            /* switch 4 */
-sw4_c19:;                                            /* switch 4 */
-sw4_c20:;                                            /* switch 4 */
-sw4_c21:;                                            /* switch 4 */
-sw4_c22:;                                            /* switch 4 */
-sw4_c23:;                                            /* switch 4 */
-sw4_c25:;                                            /* switch 4 */
-sw4_c26:;                                            /* switch 4 */
-sw4_c27:;                                            /* switch 4 */
-sw4_c28:;                                            /* switch 4 */
-sw4_c29:;                                            /* switch 4 */
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+    case 5:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 23:
+    case 25:
+    case 26:
+    case 27:
+    case 28:
+    case 29:
 block_256:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 1);
     goto block_289;
+    }
 block_257:
+    { s32 stageIndex = M2C_FIELD(&_CB, s32 *, 0xB0EC);
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 4) {
         goto block_279;
     }
@@ -4654,12 +4668,12 @@ block_257:
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 1) {
         goto block_270;
     }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 1) {
+    if ((s32) (u16)M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 1) {
         goto block_262;
     }
     goto block_289;
 block_262:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 3) {
+    if ((s32) (u16)M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 3) {
         goto block_289;
     }
     goto block_276;
@@ -4697,8 +4711,10 @@ block_275:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
     goto block_289;
 block_276:
-    if (var_r29 == 4) {
-        goto block_278;
+    switch (var_r29) {
+    case 4:
+            goto block_278;
+        break;
     }
     goto block_289;
 block_278:
@@ -4725,13 +4741,14 @@ block_285:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
     goto block_289;
 block_286:
-    if (menuCBPokemonCheck(6U, ((M2C_FIELD(&_CB, s32 *, 0xB0EC) * 0x10000) & 0xFFFF0000) | 4) == 0) {
+    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
         goto block_288;
     }
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
     goto block_289;
 block_288:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
+    }
 block_289:
     if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
         goto block_359;
@@ -4758,83 +4775,117 @@ block_296:
     }
     goto block_318;
 block_298:
-    if ((u32) M2C_FIELD(&_CB, s32 *, 0xB0F8) > 0x25U) {
-        goto block_357;
-    }
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) { case 0: goto sw5_c0; case 1: goto sw5_c1; case 2: goto sw5_c2; case 3: goto sw5_c3; case 4: goto sw5_c4; case 5: goto sw5_c5; case 37: goto sw5_c37; case 36: goto sw5_c36; default: break; }        /* switch 5; jump table: jtbl_7917 */
-sw5_c0:;                                             /* switch 5 */
+    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
+    case 6: goto block_357;
+    case 7: goto block_357;
+    case 8: goto block_357;
+    case 9: goto block_357;
+    case 10: goto block_357;
+    case 11: goto block_357;
+    case 12: goto block_357;
+    case 13: goto block_357;
+    case 14: goto block_357;
+    case 15: goto block_357;
+    case 16: goto block_357;
+    case 17: goto block_357;
+    case 18: goto block_357;
+    case 19: goto block_357;
+    case 20: goto block_357;
+    case 21: goto block_357;
+    case 22: goto block_357;
+    case 23: goto block_357;
+    case 24: goto block_357;
+    case 25: goto block_357;
+    case 26: goto block_357;
+    case 27: goto block_357;
+    case 28: goto block_357;
+    case 29: goto block_357;
+    case 30: goto block_357;
+    case 31: goto block_357;
+    case 32: goto block_357;
+    case 33: goto block_357;
+    case 34: goto block_357;
+    case 35: goto block_357;
+    default: goto block_357;
+    case 0:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
     goto block_357;
-sw5_c1:;                                             /* switch 5 */
+    case 1:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
     goto block_357;
-sw5_c2:;                                             /* switch 5 */
+    case 2:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
     goto block_357;
-sw5_c3:;                                             /* switch 5 */
+    case 3:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1F;
     goto block_357;
-sw5_c4:;                                             /* switch 5 */
+    case 4:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x20;
     goto block_357;
-sw5_c5:;                                             /* switch 5 */
+    case 5:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x21;
     goto block_357;
-sw5_c37:;                                            /* switch 5 */
+    case 37:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x22;
     goto block_357;
-sw5_c36:;                                            /* switch 5 */
+    case 36:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
     goto block_357;
-block_308:
-    if ((u32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 5) > 0x20U) {
-        goto block_317;
     }
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) { case 5: goto sw6_c5; case 11: goto sw6_c11; case 17: goto sw6_c17; case 23: goto sw6_c23; case 29: goto sw6_c29; case 37: goto sw6_c37; case 36: goto sw6_c36; case 6: goto sw6_c6; case 7: goto sw6_c7; case 8: goto sw6_c8; case 9: goto sw6_c9; case 10: goto sw6_c10; case 12: goto sw6_c12; case 13: goto sw6_c13; case 14: goto sw6_c14; case 15: goto sw6_c15; case 16: goto sw6_c16; case 18: goto sw6_c18; case 19: goto sw6_c19; case 20: goto sw6_c20; case 21: goto sw6_c21; case 22: goto sw6_c22; case 24: goto sw6_c24; case 25: goto sw6_c25; case 26: goto sw6_c26; case 27: goto sw6_c27; case 28: goto sw6_c28; default: break; }        /* switch 6; jump table: jtbl_7918 */
-sw6_c5:;                                             /* switch 6 */
+block_308:
+    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
+    case 30: goto block_357;
+    case 31: goto block_357;
+    case 32: goto block_357;
+    case 33: goto block_357;
+    case 34: goto block_357;
+    case 35: goto block_357;
+    default: goto block_317;
+    case 5:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
     goto block_357;
-sw6_c11:;                                            /* switch 6 */
+    case 11:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1F;
     goto block_357;
-sw6_c17:;                                            /* switch 6 */
+    case 17:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x20;
     goto block_357;
-sw6_c23:;                                            /* switch 6 */
+    case 23:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x21;
     goto block_357;
-sw6_c29:;                                            /* switch 6 */
+    case 29:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x22;
     goto block_357;
-sw6_c37:;                                            /* switch 6 */
+    case 37:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x23;
     goto block_357;
-sw6_c36:;                                            /* switch 6 */
+    case 36:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
     goto block_357;
-sw6_c6:;                                             /* switch 6 */
-sw6_c7:;                                             /* switch 6 */
-sw6_c8:;                                             /* switch 6 */
-sw6_c9:;                                             /* switch 6 */
-sw6_c10:;                                            /* switch 6 */
-sw6_c12:;                                            /* switch 6 */
-sw6_c13:;                                            /* switch 6 */
-sw6_c14:;                                            /* switch 6 */
-sw6_c15:;                                            /* switch 6 */
-sw6_c16:;                                            /* switch 6 */
-sw6_c18:;                                            /* switch 6 */
-sw6_c19:;                                            /* switch 6 */
-sw6_c20:;                                            /* switch 6 */
-sw6_c21:;                                            /* switch 6 */
-sw6_c22:;                                            /* switch 6 */
-sw6_c24:;                                            /* switch 6 */
-sw6_c25:;                                            /* switch 6 */
-sw6_c26:;                                            /* switch 6 */
-sw6_c27:;                                            /* switch 6 */
-sw6_c28:;                                            /* switch 6 */
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 18:
+    case 19:
+    case 20:
+    case 21:
+    case 22:
+    case 24:
+    case 25:
+    case 26:
+    case 27:
+    case 28:
 block_317:
     M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 1);
     goto block_357;
+    }
 block_318:
     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 4) {
         goto block_348;
@@ -5031,367 +5082,365 @@ void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2, s32 n) {
         break;
     }
     temp_r3 = M2C_FIELD(p1, s16 *, 6);
-    switch (temp_r3) {                              /* switch 2 */
-    case 0x21F:                                     /* switch 2 */
+    switch (temp_r3) {
+    case 0x21F:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(temp_r31 == 0x24));
         menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(1U));
         return;
-    case 0x220:                                     /* switch 2 */
+    case 0x220:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(temp_r31 == 0x25));
         menuCB_Cursol_Disp_AlphaSet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (bool)(1U));
         return;
-    case 0x221:                                     /* switch 2 */
+    case 0x221:
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), temp_r31 == 0x1E);
         return;
-    case 0x222:                                     /* switch 2 */
+    case 0x222:
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), temp_r31 == 0x1F);
         return;
-    case 0x223:                                     /* switch 2 */
+    case 0x223:
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), temp_r31 == 0x20);
         return;
-    case 0x224:                                     /* switch 2 */
+    case 0x224:
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), temp_r31 == 0x21);
         return;
-    case 0x225:                                     /* switch 2 */
+    case 0x225:
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), temp_r31 == 0x22);
         return;
-    case 0x226:                                     /* switch 2 */
+    case 0x226:
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), temp_r31 == 0x23);
         return;
-    case 0x227:                                     /* switch 2 */
+    case 0x227:
         var_r5 = (n >= 2 && n <= 6 && temp_r31 == 4);
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5);
         return;
-    case 0x228:                                     /* switch 2 */
+    case 0x228:
         var_r5_2 = 0;
         if ((n == 3) && (temp_r31 == 0)) {
             var_r5_2 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_2);
         return;
-    case 0x229:                                     /* switch 2 */
+    case 0x229:
         var_r5_3 = 0;
         if ((n == 4) && (temp_r31 == 0)) {
             var_r5_3 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_3);
         return;
-    case 0x22A:                                     /* switch 2 */
+    case 0x22A:
         var_r5_4 = 0;
         if ((n == 4) && (temp_r31 == 1)) {
             var_r5_4 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_4);
         return;
-    case 0x22B:                                     /* switch 2 */
+    case 0x22B:
         var_r5_5 = 0;
         if ((n == 5) && (temp_r31 == 0)) {
             var_r5_5 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_5);
         return;
-    case 0x22D:                                     /* switch 2 */
+    case 0x22D:
         var_r5_6 = 0;
         if ((n == 5) && (temp_r31 == 1)) {
             var_r5_6 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_6);
         return;
-    case 0x22C:                                     /* switch 2 */
+    case 0x22C:
         var_r5_7 = 0;
         if ((n == 5) && (temp_r31 == 2)) {
             var_r5_7 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_7);
         return;
-    case 0x230:                                     /* switch 2 */
+    case 0x230:
         var_r5_8 = 0;
         if ((n == 6) && (temp_r31 == 0)) {
             var_r5_8 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_8);
         return;
-    case 0x231:                                     /* switch 2 */
+    case 0x231:
         var_r5_9 = 0;
         if ((n == 6) && (temp_r31 == 1)) {
             var_r5_9 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_9);
         return;
-    case 0x22E:                                     /* switch 2 */
+    case 0x22E:
         var_r5_10 = 0;
         if ((n == 6) && (temp_r31 == 2)) {
             var_r5_10 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_10);
         return;
-    case 0x22F:                                     /* switch 2 */
+    case 0x22F:
         var_r5_11 = 0;
         if ((n == 6) && (temp_r31 == 3)) {
             var_r5_11 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_11);
         return;
-    case 0x232:                                     /* switch 2 */
+    case 0x232:
         var_r5_12 = 0;
         if ((n == 0) && (temp_r31 == 0)) {
             var_r5_12 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_12);
         return;
-    case 0x233:                                     /* switch 2 */
+    case 0x233:
         var_r5_13 = 0;
         if ((n == 0) && (temp_r31 == 1)) {
             var_r5_13 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_13);
         return;
-    case 0x234:                                     /* switch 2 */
+    case 0x234:
         var_r5_14 = 0;
         if ((n == 0) && (temp_r31 == 2)) {
             var_r5_14 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_14);
         return;
-    case 0x235:                                     /* switch 2 */
+    case 0x235:
         var_r5_15 = 0;
         if ((n == 0) && (temp_r31 == 3)) {
             var_r5_15 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_15);
         return;
-    case 0x236:                                     /* switch 2 */
+    case 0x236:
         var_r5_16 = 0;
         if ((n == 0) && (temp_r31 == 4)) {
             var_r5_16 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_16);
         return;
-    case 0x237:                                     /* switch 2 */
+    case 0x237:
         var_r5_17 = 0;
         if ((n == 0) && (temp_r31 == 5)) {
             var_r5_17 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_17);
         return;
-    case 0x238:                                     /* switch 2 */
+    case 0x238:
         var_r5_18 = 0;
         if ((n == 1) && (temp_r31 == 0)) {
             var_r5_18 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_18);
         return;
-    case 0x239:                                     /* switch 2 */
+    case 0x239:
         var_r5_19 = 0;
         if ((n == 1) && (temp_r31 == 1)) {
             var_r5_19 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_19);
         return;
-    case 0x23A:                                     /* switch 2 */
+    case 0x23A:
         var_r5_20 = 0;
         if ((n == 1) && (temp_r31 == 2)) {
             var_r5_20 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_20);
         return;
-    case 0x23B:                                     /* switch 2 */
+    case 0x23B:
         var_r5_21 = 0;
         if ((n == 1) && (temp_r31 == 3)) {
             var_r5_21 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_21);
         return;
-    case 0x23C:                                     /* switch 2 */
+    case 0x23C:
         var_r5_22 = 0;
         if ((n == 1) && (temp_r31 == 4)) {
             var_r5_22 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_22);
         return;
-    case 0x23D:                                     /* switch 2 */
+    case 0x23D:
         var_r5_23 = 0;
         if ((n == 1) && (temp_r31 == 5)) {
             var_r5_23 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_23);
         return;
-    case 0x23E:                                     /* switch 2 */
+    case 0x23E:
         var_r5_24 = 0;
         if ((n == 1) && (temp_r31 == 6)) {
             var_r5_24 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_24);
         return;
-    case 0x23F:                                     /* switch 2 */
+    case 0x23F:
         var_r5_25 = 0;
         if ((n == 1) && (temp_r31 == 7)) {
             var_r5_25 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_25);
         return;
-    case 0x240:                                     /* switch 2 */
+    case 0x240:
         var_r5_26 = 0;
         if ((n == 1) && (temp_r31 == 8)) {
             var_r5_26 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_26);
         return;
-    case 0x241:                                     /* switch 2 */
+    case 0x241:
         var_r5_27 = 0;
         if ((n == 1) && (temp_r31 == 9)) {
             var_r5_27 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_27);
         return;
-    case 0x242:                                     /* switch 2 */
+    case 0x242:
         var_r5_28 = 0;
         if ((n == 1) && (temp_r31 == 0xA)) {
             var_r5_28 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_28);
         return;
-    case 0x243:                                     /* switch 2 */
+    case 0x243:
         var_r5_29 = 0;
         if ((n == 1) && (temp_r31 == 0xB)) {
             var_r5_29 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_29);
         return;
-    case 0x244:                                     /* switch 2 */
+    case 0x244:
         var_r5_30 = 0;
         if ((n == 1) && (temp_r31 == 0xC)) {
             var_r5_30 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_30);
         return;
-    case 0x245:                                     /* switch 2 */
+    case 0x245:
         var_r5_31 = 0;
         if ((n == 1) && (temp_r31 == 0xD)) {
             var_r5_31 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_31);
         return;
-    case 0x246:                                     /* switch 2 */
+    case 0x246:
         var_r5_32 = 0;
         if ((n == 1) && (temp_r31 == 0xE)) {
             var_r5_32 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_32);
         return;
-    case 0x247:                                     /* switch 2 */
+    case 0x247:
         var_r5_33 = 0;
         if ((n == 1) && (temp_r31 == 0xF)) {
             var_r5_33 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_33);
         return;
-    case 0x248:                                     /* switch 2 */
+    case 0x248:
         var_r5_34 = 0;
         if ((n == 1) && (temp_r31 == 0x10)) {
             var_r5_34 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_34);
         return;
-    case 0x249:                                     /* switch 2 */
+    case 0x249:
         var_r5_35 = 0;
         if ((n == 1) && (temp_r31 == 0x11)) {
             var_r5_35 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_35);
         return;
-    case 0x24A:                                     /* switch 2 */
+    case 0x24A:
         var_r5_36 = 0;
         if ((n == 1) && (temp_r31 == 0x12)) {
             var_r5_36 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_36);
         return;
-    case 0x24B:                                     /* switch 2 */
+    case 0x24B:
         var_r5_37 = 0;
         if ((n == 1) && (temp_r31 == 0x13)) {
             var_r5_37 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_37);
         return;
-    case 0x24C:                                     /* switch 2 */
+    case 0x24C:
         var_r5_38 = 0;
         if ((n == 1) && (temp_r31 == 0x14)) {
             var_r5_38 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_38);
         return;
-    case 0x24D:                                     /* switch 2 */
+    case 0x24D:
         var_r5_39 = 0;
         if ((n == 1) && (temp_r31 == 0x15)) {
             var_r5_39 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_39);
         return;
-    case 0x24E:                                     /* switch 2 */
+    case 0x24E:
         var_r5_40 = 0;
         if ((n == 1) && (temp_r31 == 0x16)) {
             var_r5_40 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_40);
         return;
-    case 0x24F:                                     /* switch 2 */
+    case 0x24F:
         var_r5_41 = 0;
         if ((n == 1) && (temp_r31 == 0x17)) {
             var_r5_41 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_41);
         return;
-    case 0x250:                                     /* switch 2 */
+    case 0x250:
         var_r5_42 = 0;
         if ((n == 1) && (temp_r31 == 0x18)) {
             var_r5_42 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_42);
         return;
-    case 0x251:                                     /* switch 2 */
+    case 0x251:
         var_r5_43 = 0;
         if ((n == 1) && (temp_r31 == 0x19)) {
             var_r5_43 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_43);
         return;
-    case 0x252:                                     /* switch 2 */
+    case 0x252:
         var_r5_44 = 0;
         if ((n == 1) && (temp_r31 == 0x1A)) {
             var_r5_44 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_44);
         return;
-    case 0x253:                                     /* switch 2 */
+    case 0x253:
         var_r5_45 = 0;
         if ((n == 1) && (temp_r31 == 0x1B)) {
             var_r5_45 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_45);
         return;
-    case 0x254:                                     /* switch 2 */
+    case 0x254:
         var_r5_46 = 0;
         if ((n == 1) && (temp_r31 == 0x1C)) {
             var_r5_46 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_46);
         return;
-    case 0x255:                                     /* switch 2 */
+    case 0x255:
         var_r5_47 = 0;
         if ((n == 1) && (temp_r31 == 0x1D)) {
             var_r5_47 = 1;
         }
         menuCB_GCEntryCursolDisp((CBWin*)((CBWin *) p0), (void*)(p1), var_r5_47);
-        /* fallthrough */
-    default:                                        /* switch 2 */
+    default:
         return;
     }
 }
 }
 
 }
-
 
 }
 
@@ -5405,149 +5454,149 @@ void menuCB_tunaideGCEntry00_Disp(s32 p0, void *p1) {
     s16 temp_r5;
 
     temp_r5 = M2C_FIELD(p1, s16 *, 6);
-    switch (temp_r5) {                              /* switch 1 */
-    case 0x54E:                                     /* switch 1 */
+    switch (temp_r5) {
+    case 0x54E:
         menuCB2DPokemonDisp((u8 *) p0, p1, 7, 0);
         return;
-    case 0x54F:                                     /* switch 1 */
+    case 0x54F:
         menuCB2DPokemonDisp((u8 *) p0, p1, 7, 1);
         return;
-    case 0x550:                                     /* switch 1 */
+    case 0x550:
         menuCB2DPokemonDisp((u8 *) p0, p1, 7, 2);
         return;
-    case 0x551:                                     /* switch 1 */
+    case 0x551:
         menuCB2DPokemonDisp((u8 *) p0, p1, 7, 3);
         return;
-    case 0x552:                                     /* switch 1 */
+    case 0x552:
         menuCB2DPokemonDisp((u8 *) p0, p1, 7, 4);
         return;
-    case 0x553:                                     /* switch 1 */
+    case 0x553:
         menuCB2DPokemonDisp((u8 *) p0, p1, 7, 5);
         return;
-    case 0x554:                                     /* switch 1 */
+    case 0x554:
         menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(0U));
         return;
-    case 0x555:                                     /* switch 1 */
+    case 0x555:
         menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(1U));
         return;
-    case 0x556:                                     /* switch 1 */
+    case 0x556:
         menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(2U));
         return;
-    case 0x557:                                     /* switch 1 */
+    case 0x557:
         menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(3U));
         return;
-    case 0x558:                                     /* switch 1 */
+    case 0x558:
         menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(4U));
         return;
-    case 0x559:                                     /* switch 1 */
+    case 0x559:
         menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(5U));
         return;
-    case 0x55A:                                     /* switch 1 */
+    case 0x55A:
         menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(0U), (long)(0U));
         return;
-    case 0x55E:                                     /* switch 1 */
+    case 0x55E:
         menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(1U), (long)(0U));
         return;
-    case 0x562:                                     /* switch 1 */
+    case 0x562:
         menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(2U), (long)(0U));
         return;
-    case 0x566:                                     /* switch 1 */
+    case 0x566:
         menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(3U), (long)(0U));
         return;
-    case 0x56A:                                     /* switch 1 */
+    case 0x56A:
         menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(4U), (long)(0U));
         return;
-    case 0x56E:                                     /* switch 1 */
+    case 0x56E:
         menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(5U), (long)(0U));
         return;
-    case 0x55B:                                     /* switch 1 */
+    case 0x55B:
         menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(0), (long)(0));
         return;
-    case 0x55F:                                     /* switch 1 */
+    case 0x55F:
         menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(1), (long)(0));
         return;
-    case 0x563:                                     /* switch 1 */
+    case 0x563:
         menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(2), (long)(0));
         return;
-    case 0x567:                                     /* switch 1 */
+    case 0x567:
         menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(3), (long)(0));
         return;
-    case 0x56B:                                     /* switch 1 */
+    case 0x56B:
         menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(4), (long)(0));
         return;
-    case 0x56F:                                     /* switch 1 */
+    case 0x56F:
         menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(5), (long)(0));
         return;
-    case 0x55C:                                     /* switch 1 */
+    case 0x55C:
         menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(0), (long)(0));
         return;
-    case 0x560:                                     /* switch 1 */
+    case 0x560:
         menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(1), (long)(0));
         return;
-    case 0x564:                                     /* switch 1 */
+    case 0x564:
         menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(2), (long)(0));
         return;
-    case 0x568:                                     /* switch 1 */
+    case 0x568:
         menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(3), (long)(0));
         return;
-    case 0x56C:                                     /* switch 1 */
+    case 0x56C:
         menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(4), (long)(0));
         return;
-    case 0x570:                                     /* switch 1 */
+    case 0x570:
         menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(5), (long)(0));
         return;
-    case 0x55D:                                     /* switch 1 */
+    case 0x55D:
         menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(0), (long)(0));
         return;
-    case 0x561:                                     /* switch 1 */
+    case 0x561:
         menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(1), (long)(0));
         return;
-    case 0x565:                                     /* switch 1 */
+    case 0x565:
         menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(2), (long)(0));
         return;
-    case 0x569:                                     /* switch 1 */
+    case 0x569:
         menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(3), (long)(0));
         return;
-    case 0x56D:                                     /* switch 1 */
+    case 0x56D:
         menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(4), (long)(0));
         return;
-    case 0x571:                                     /* switch 1 */
+    case 0x571:
         menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(5), (long)(0));
         return;
-    case 0x572:                                     /* switch 1 */
+    case 0x572:
         fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x435E));
         return;
-    case 0x573:                                     /* switch 1 */
+    case 0x573:
         fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x435F));
         return;
-    case 0x574:                                     /* switch 1 */
-        switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0)) { /* switch 2; irregular */
-        case 3:                                     /* switch 2 */
-        case 0:                                     /* switch 2 */
+    case 0x574:
+        switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0)) {
+        case 3:
+        case 0:
             menuCBGCEntryTitleDisp(p0, p1, 0x43EB, M2C_FIELD(&_CB, u8 **, 0xB158));
             break;
-        case 1:                                     /* switch 2 */
+        case 1:
             menuCBPCBOXTitleNameDisp(p0, p1, M2C_FIELD(&_CB, s32 *, 0xB0E8), M2C_FIELD(&_CB, u8 **, 0xB158));
             break;
-        case 2:                                     /* switch 2 */
+        case 2:
             menuCBReliveTitleNameDisp(p0, p1, MENU_ITEM_TOOL_SANKA00_RELIVE_TITLE_Tbl[M2C_FIELD(&_CB, s32 *, 0xB0EC)], M2C_FIELD(&_CB, u8 **, 0xB158));
             break;
         }
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB150) != 0) {
-            switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C)) { /* switch 3; irregular */
-            case 3:                                 /* switch 3 */
-            case 0:                                 /* switch 3 */
+            switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C)) {
+            case 3:
+            case 0:
                 menuCBGCEntryTitleDisp(p0, p1, 0x43EB, M2C_FIELD(&_CB, u8 **, 0xB154));
                 return;
-            case 1:                                 /* switch 3 */
+            case 1:
                 menuCBPCBOXTitleNameDisp(p0, p1, M2C_FIELD(&_CB, s32 *, 0xB160), M2C_FIELD(&_CB, u8 **, 0xB154));
                 return;
-            case 2:                                 /* switch 3 */
+            case 2:
                 menuCBReliveTitleNameDisp(p0, p1, MENU_ITEM_TOOL_SANKA00_RELIVE_TITLE_Tbl[M2C_FIELD(&_CB, s32 *, 0xB164)], M2C_FIELD(&_CB, u8 **, 0xB154));
                 break;
             }
         } else {
-        default:                                    /* switch 1 */
+        default:
             return;
         }
         break;
@@ -5673,6 +5722,8 @@ void menuCB_tunaideGCEntry01_Disp_DOWN(tagWINDOW_WORK* window, tagSPRITE_WORK* s
 static void menuCB_tunaideGCEntry01_Disp_Sub(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, u32 type, u32 sub) {
     switch (sprite->id) {
     case 0x575:
+        break;
+    case 0x57B:
     case 0x57C:
         menuCB2DPokemonItemDisp(sprite, type, sub);
         break;
@@ -5684,13 +5735,13 @@ static void menuCB_tunaideGCEntry01_Disp_Sub(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x583:
         menuCBPokemonNameOrg(window, type, sub, 0);
         break;
-    case 0x57F:
-    case 0x584:
-        menuCBPokemonLevel(window, type, sub, 0);
-        break;
     case 0x580:
     case 0x585:
         menuCBPokemonHP(window, type, sub, 0);
+        break;
+    case 0x57F:
+    case 0x584:
+        menuCBPokemonLevel(window, type, sub, 0);
         break;
     case 0x581:
     case 0x586:
@@ -5734,7 +5785,7 @@ void menuCB_tunaideGCEntry02_Disp(void *p0, void *p1) {
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 0x199:
     case 0x19A:
     case 0x19B:
@@ -5885,7 +5936,7 @@ void menuCB_tunaideGCEntry03_Disp(void *p0, void *p1) {
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 0x1C3:
         menuCB2DPokemonDisp(p0, p1, 4, 0);
         return;
@@ -5932,7 +5983,7 @@ void menuCB_tunaideGCEntry04_Disp(void *p0, void *p1) {
     spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 0x1CC:
         menuCB2DPokemonDisp(p0, p1, 6, ((temp_r28 * 0x10000) & 0xFFFF0000) | 4);
         return;
@@ -6656,7 +6707,7 @@ void menuTool_Rule00_Button(void) {
 extern "C" {
 void menuTool_Rule00_Ctrl(void * p0) {
     s16 temp_r30;
-    s32 temp_r0;
+    s32 temp_r7;
     s16 temp_r0_7;
     s16 temp_r0_8;
     s16 temp_r29;
@@ -6664,8 +6715,8 @@ void menuTool_Rule00_Ctrl(void * p0) {
     s16 temp_r29_3;
     s16 temp_r29_4;
     s16 temp_r0_5;
-    s16 temp_r3_2;
-    s16 temp_r3_3;
+    s32 temp_r3_2;
+    s32 temp_r3_3;
     s16 temp_r4;
     s16 temp_r4_2;
     s32 temp_r9;
@@ -6675,21 +6726,21 @@ void menuTool_Rule00_Ctrl(void * p0) {
     s32 temp_r0_4;
     s32 temp_r10;
     s32 temp_r11;
-    s32 temp_r3;
+    u16 temp_r3;
     s32 temp_r3_4;
     s32 temp_r3_5;
     s32 temp_r6;
-    s32 temp_r7;
+    s32 temp_r0;
     s32 temp_r8;
     s32 *var_r3;
     s32 var_ctr;
-    s32 var_ctr_2;
+    u8 *var_r7;
     u32 var_r5;
     u8 temp_r6_2;
     u8 temp_r7_2;
-    u8 *var_r7;
+    s32 var_ctr_2;
 
-    menuCB_DispEffect((tagWINDOW_WORK *)(0));
+    menuCB_DispEffect((tagWINDOW_WORK*)p0);
     menuSetStatus(M2C_FIELD(p0, s32 *, 4), 0x10);
     if (pauseIsPause() == 0) {
         menuCB_AlphaGet((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)));
@@ -6725,41 +6776,8 @@ void menuTool_Rule00_Ctrl(void * p0) {
                     }
 block_17:
                     if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
-                        var_r5 = 0U;
-                        var_r3 = _ruleTempBuff_DB;
-                        var_ctr = 7;
-                        do {
-                            temp_r11 = var_r5 + 0x53;
-                            temp_r10 = var_r5 + 0x54;
-                            temp_r9 = var_r5 + 0x55;
-                            *(M2C_FIELD(&_CB, u8 **, 0x9C78) + (var_r5 + 0x52)) = M2C_FIELD(var_r3, u8 *, 0x52);
-                            temp_r8 = var_r5 + 0x56;
-                            temp_r7 = var_r5 + 0x57;
-                            temp_r6 = var_r5 + 0x58;
-                            temp_r0 = var_r5 + 0x59;
-                            var_r5 += 8;
-                            *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r11) = M2C_FIELD(var_r3, u8 *, 0x53);
-                            *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r10) = M2C_FIELD(var_r3, u8 *, 0x54);
-                            *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r9) = M2C_FIELD(var_r3, u8 *, 0x55);
-                            *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r8) = M2C_FIELD(var_r3, u8 *, 0x56);
-                            *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r7) = M2C_FIELD(var_r3, u8 *, 0x57);
-                            *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r6) = M2C_FIELD(var_r3, u8 *, 0x58);
-                            temp_r7_2 = M2C_FIELD(var_r3, u8 *, 0x59);
-                            var_r3 += 8;
-                            *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r0) = temp_r7_2;
-                            var_ctr -= 1;
-                        } while (var_ctr != 0);
-                        var_r7 = (unsigned char *)(_ruleTempBuff_DB + var_r5);
-                        var_ctr_2 = 0x3E - var_r5;
-                        if (var_r5 < 0x3EU) {
-                            do {
-                                temp_r6_2 = M2C_FIELD(var_r7, u8 *, 0x52);
-                                temp_r0_2 = var_r5 + 0x52;
-                                var_r5 += 1;
-                                var_r7 += 1;
-                                *(M2C_FIELD(&_CB, u8 **, 0x9C78) + temp_r0_2) = temp_r6_2;
-                                var_ctr_2 -= 1;
-                            } while (var_ctr_2 != 0);
+                        for (var_r5 = 0; var_r5 < 0x3E; var_r5++) {
+                            M2C_FIELD(&_CB, u8 **, 0x9C78)[var_r5 + 0x52] = ((u8*)_ruleTempBuff_DB)[var_r5 + 0x52];
                         }
                         M2C_FIELD(&_CB, s32 *, 0xB118) = 1;
                         M2C_FIELD(&_CB, s32 *, 0xB02C) = 0;
@@ -6779,8 +6797,8 @@ block_17:
                             return;
                         }
                         menuCB_SE_Play(0x11);
-                        temp_r3 = (long)(M2C_FIELD(&_CB, s32 *, 0xB02C) + M2C_FIELD(&_CB, u8 **, 0x9C78) + 0x52);
-                        *(M2C_FIELD(&_CB, s32 **, 0xB028) + temp_r3) = *(M2C_FIELD(&_CB, s32 **, 0xB028) + temp_r3) ^ 1;
+                        temp_r3 = (long)((M2C_FIELD(&_CB, s32 *, 0xB02C) + (s32)M2C_FIELD(&_CB, u8 **, 0x9C78)) + 0x52);
+                        *(M2C_FIELD(&_CB, s32 *, 0xB028) + (u8*)temp_r3) ^= 1;
                         goto block_27;
                     }
 block_27:
@@ -6805,27 +6823,30 @@ block_27:
                             menuCB_SE_Play(0x10);
                         }
                     } else if ((s32) (windowGetKeyRepeat() & 4) != 0) {
-                        temp_r0_3 = M2C_FIELD(&_CB, s32 *, 0xB028) - 0xA;
+                        s32 currentCursor = M2C_FIELD(&_CB, s32 *, 0xB028);
+                        temp_r0_3 = currentCursor - 0xA;
                         _ruleCursol2 = temp_r0_3;
                         if (temp_r0_3 <= 0) {
                             _ruleCursol2 = 0;
                         }
-                        if ((s32) _ruleCursol2 != (s32) M2C_FIELD(&_CB, s32 *, 0xB028)) {
+                        if ((s32) _ruleCursol2 != currentCursor) {
                             menuCB_SE_Play(0x10);
                         }
                     } else if ((s32) (windowGetKeyRepeat() & 8) != 0) {
-                        temp_r0_4 = M2C_FIELD(&_CB, s32 *, 0xB028) + 0xA;
+                        s32 currentCursor = M2C_FIELD(&_CB, s32 *, 0xB028);
+                        temp_r0_4 = currentCursor + 0xA;
                         _ruleCursol2 = temp_r0_4;
                         if (temp_r0_4 >= 0x34) {
                             _ruleCursol2 = 0x34;
                         }
-                        if ((s32) _ruleCursol2 != (s32) M2C_FIELD(&_CB, s32 *, 0xB028)) {
+                        if ((s32) _ruleCursol2 != currentCursor) {
                             menuCB_SE_Play(0x10);
                         }
                     }
                 } else {
-                    switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C)) { /* switch 1; irregular */
-                    case 0x10:                      /* switch 1 */
+                    if (M2C_FIELD(&_CB, s32 *, 0xB11C) != 0) {
+switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C)) {
+                    case 0x10:
                         temp_r30 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0);
                         temp_r29 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2);
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
@@ -6852,24 +6873,24 @@ block_27:
                             return;
                         }
                         if ((s32) (windowGetKeyRepeat() & 1) != 0) {
-                            switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0)) { /* switch 2; irregular */
-                            case 0:                 /* switch 2 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) + 0x64);
+                            switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0)) {
+                            case 0:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) += 0x64;
                                 break;
-                            case 1:                 /* switch 2 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) + 0xA);
+                            case 1:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) += 0xA;
                                 break;
-                            case 2:                 /* switch 2 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) + 1);
+                            case 2:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) += 1;
                                 break;
-                            case 3:                 /* switch 2 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) + 0x64);
+                            case 3:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) += 0x64;
                                 break;
-                            case 4:                 /* switch 2 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) + 0xA);
+                            case 4:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) += 0xA;
                                 break;
-                            case 5:                 /* switch 2 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) + 1);
+                            case 5:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) += 1;
                                 break;
                             }
                             if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) >= 0x64) {
@@ -6884,24 +6905,24 @@ block_27:
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6);
                         }
                         if ((s32) (windowGetKeyRepeat() & 2) != 0) {
-                            switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0)) { /* switch 3; irregular */
-                            case 0:                 /* switch 3 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) - 0x64);
+                            switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0)) {
+                            case 0:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) -= 0x64;
                                 break;
-                            case 1:                 /* switch 3 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) - 0xA);
+                            case 1:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) -= 0xA;
                                 break;
-                            case 2:                 /* switch 3 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) - 1);
+                            case 2:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) -= 1;
                                 break;
-                            case 3:                 /* switch 3 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) - 0x64);
+                            case 3:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) -= 0x64;
                                 break;
-                            case 4:                 /* switch 3 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) - 0xA);
+                            case 4:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) -= 0xA;
                                 break;
-                            case 5:                 /* switch 3 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) - 1);
+                            case 5:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) -= 1;
                                 break;
                             }
                             if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) <= 1) {
@@ -6920,7 +6941,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x11:                      /* switch 1 */
+                    case 0x11:
                         temp_r29_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4);
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
@@ -6944,15 +6965,15 @@ block_27:
                             return;
                         }
                         if ((s32) (windowGetKeyRepeat() & 1) != 0) {
-                            switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4)) { /* switch 4; irregular */
-                            case 0:                 /* switch 4 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) + 0x64);
+                            switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4)) {
+                            case 0:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) += 0x64;
                                 break;
-                            case 1:                 /* switch 4 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) + 0xA);
+                            case 1:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) += 0xA;
                                 break;
-                            case 2:                 /* switch 4 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) + 1);
+                            case 2:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) += 1;
                                 break;
                             }
                             if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) <= (temp_r0_5 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)) {
@@ -6963,15 +6984,15 @@ block_27:
                             }
                         }
                         if ((s32) (windowGetKeyRepeat() & 2) != 0) {
-                            switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4)) { /* switch 5; irregular */
-                            case 0:                 /* switch 5 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) - 0x64);
+                            switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4)) {
+                            case 0:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) -= 0x64;
                                 break;
-                            case 1:                 /* switch 5 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) - 0xA);
+                            case 1:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) -= 0xA;
                                 break;
-                            case 2:                 /* switch 5 */
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) - 1);
+                            case 2:
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) -= 1;
                                 break;
                             }
                             if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) <= (temp_r0_7 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)) {
@@ -6986,7 +7007,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x12:                      /* switch 1 */
+                    case 0x12:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = (s16) M2C_FIELD(_ruleTempBuff_DB, s16 *, 0x14);
@@ -7021,15 +7042,15 @@ block_27:
                         } else {
                             temp_r29_3 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14);
                             if ((s32) (windowGetKeyRepeat() & 1) != 0) {
-                                switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8)) { /* switch 6; irregular */
-                                case 0:             /* switch 6 */
-                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) + 0xA);
+                                switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8)) {
+                                case 0:
+                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) += 0xA;
                                     if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) >= 0x63) {
                                         M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = 0x63;
                                     }
                                     break;
-                                case 1:             /* switch 6 */
-                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) + 1);
+                                case 1:
+                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) += 1;
                                     if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) >= 0x63) {
                                         M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = 0x63;
                                     }
@@ -7037,15 +7058,15 @@ block_27:
                                 }
                             }
                             if ((s32) (windowGetKeyRepeat() & 2) != 0) {
-                                switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8)) { /* switch 7; irregular */
-                                case 0:             /* switch 7 */
-                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) - 0xA);
+                                switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8)) {
+                                case 0:
+                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) -= 0xA;
                                     if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) <= 1) {
                                         M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = 1;
                                     }
                                     break;
-                                case 1:             /* switch 7 */
-                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) - 1);
+                                case 1:
+                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) -= 1;
                                     if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) <= 1) {
                                         M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) = 1;
                                     }
@@ -7058,7 +7079,7 @@ block_27:
                             }
                         }
                         break;
-                    case 0x13:                      /* switch 1 */
+                    case 0x13:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = (s16) M2C_FIELD(_ruleTempBuff_DB, s16 *, 0x16);
@@ -7093,15 +7114,15 @@ block_27:
                         } else {
                             temp_r29_4 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16);
                             if ((s32) (windowGetKeyRepeat() & 1) != 0) {
-                                switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC)) { /* switch 8; irregular */
-                                case 0:             /* switch 8 */
-                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) + 0xA);
+                                switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC)) {
+                                case 0:
+                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) += 0xA;
                                     if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) >= 0x63) {
                                         M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = 0x63;
                                     }
                                     break;
-                                case 1:             /* switch 8 */
-                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) + 1);
+                                case 1:
+                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) += 1;
                                     if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) >= 0x63) {
                                         M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = 0x63;
                                     }
@@ -7109,15 +7130,15 @@ block_27:
                                 }
                             }
                             if ((s32) (windowGetKeyRepeat() & 2) != 0) {
-                                switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC)) { /* switch 9; irregular */
-                                case 0:             /* switch 9 */
-                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) - 0xA);
+                                switch ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC)) {
+                                case 0:
+                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) -= 0xA;
                                     if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) <= 0xA) {
                                         M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = 0xA;
                                     }
                                     break;
-                                case 1:             /* switch 9 */
-                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = (s16) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) - 1);
+                                case 1:
+                                    M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) -= 1;
                                     if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) <= 0xA) {
                                         M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) = 0xA;
                                     }
@@ -7130,7 +7151,7 @@ block_27:
                             }
                         }
                         break;
-                    case 0x14:                      /* switch 1 */
+                    case 0x14:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) = (s16) M2C_FIELD(_ruleTempBuff_DB, s16 *, 0x1A);
@@ -7145,7 +7166,7 @@ block_27:
                         }
                         if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 4) != 0) {
                             M2C_FIELD(&_ruleCursol, s32 *, 0x10) = 0;
-                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 0) {
+                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != M2C_FIELD(&_ruleCursol, s32 *, 0x10)) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) = 0;
                                 menuCB_SE_Play(0x10);
                                 return;
@@ -7153,7 +7174,7 @@ block_27:
                         }
                         if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 8) != 0) {
                             M2C_FIELD(&_ruleCursol, s32 *, 0x10) = 1;
-                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 1) {
+                            if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != M2C_FIELD(&_ruleCursol, s32 *, 0x10)) {
                                 M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) = 1;
                                 menuCB_SE_Play(0x10);
                                 return;
@@ -7161,20 +7182,20 @@ block_27:
                         }
                         if (((s32) (windowGetKeyRepeat() & 1) != 0) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0)) {
                             if ((temp_r3_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A)) != 6) {
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) = (s16) (temp_r3_2 + 1);
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) += 1;
                                 menuCB_SE_Play(0x10);
                                 return;
                             }
                         }
                         if (((s32) (windowGetKeyRepeat() & 2) != 0) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0)) {
                             if ((temp_r3_3 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A)) != 1) {
-                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) = (s16) (temp_r3_3 - 1);
+                                M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) -= 1;
                                 menuCB_SE_Play(0x10);
                                 return;
                             }
                         }
                         break;
-                    case 0x20:                      /* switch 1 */
+                    case 0x20:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0xC);
@@ -7192,7 +7213,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x21:                      /* switch 1 */
+                    case 0x21:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) = (s32) _ruleTempBuff_DB[2];
@@ -7233,7 +7254,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x22:                      /* switch 1 */
+                    case 0x22:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0xD);
@@ -7251,7 +7272,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x30:                      /* switch 1 */
+                    case 0x30:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x19) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0x19);
@@ -7269,7 +7290,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x31:                      /* switch 1 */
+                    case 0x31:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xE) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0xE);
@@ -7287,7 +7308,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x32:                      /* switch 1 */
+                    case 0x32:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x10) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0x10);
@@ -7305,7 +7326,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x40:                      /* switch 1 */
+                    case 0x40:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x11) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0x11);
@@ -7323,7 +7344,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x41:                      /* switch 1 */
+                    case 0x41:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x12) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0x12);
@@ -7341,7 +7362,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x42:                      /* switch 1 */
+                    case 0x42:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xF) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0xF);
@@ -7359,7 +7380,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x43:                      /* switch 1 */
+                    case 0x43:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0x13) = (u8) M2C_FIELD(_ruleTempBuff_DB, u8 *, 0x13);
@@ -7377,7 +7398,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x50:                      /* switch 1 */
+                    case 0x50:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(&_CB, s32 *, 0xB030) = 1;
@@ -7398,7 +7419,7 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x51:                      /* switch 1 */
+                    case 0x51:
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB11C) = 0;
                             M2C_FIELD(&_CB, s32 *, 0xB034) = 1;
@@ -7419,7 +7440,8 @@ block_27:
                             return;
                         }
                         break;
-                    case 0x0:                       /* switch 1 */
+                    }
+                    } else {
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x820) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB010) = 1;
                             menuCB_SE_Play(0x12);
@@ -7452,29 +7474,29 @@ block_27:
                             if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x10) != 0) {
                                 menuCBRule_Copy(_ruleTempBuff_DB, M2C_FIELD(&_CB, u8 **, 0x9C78));
                                 M2C_FIELD(&_CB, s32 *, 0xB11C) = (s32) ((M2C_FIELD(&_CB, s32 *, 0xB118) + 1) * 0x10);
-                                switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB118)) { /* switch 10; irregular */
-                                case 0:             /* switch 10 */
+                                switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB118)) {
+                                case 0:
                                     M2C_FIELD(&_CB, s32 *, 0xB11C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB11C) + M2C_FIELD(&_CB, s32 *, 0xB014));
-                                    switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB014)) { /* switch 11; irregular */
-                                    case 1:                                    default:        /* switch 11 */
+                                    switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB014)) {
+                                    case 1:                                    default:
                                         M2C_FIELD(&_ruleCursol, s32 *, 0) = 0;
                                         M2C_FIELD(&_ruleCursol, s32 *, 4) = 0;
                                         break;
-                                    case 2:         /* switch 11 */
+                                    case 2:
                                         if ((s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) & 0x8000) != 0) {
                                             M2C_FIELD(&_ruleCursol, s32 *, 8) = 2;
                                         } else {
                                             M2C_FIELD(&_ruleCursol, s32 *, 8) = 0;
                                         }
                                         break;
-                                    case 3:         /* switch 11 */
+                                    case 3:
                                         if ((s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) & 0x8000) != 0) {
                                             M2C_FIELD(&_ruleCursol, s32 *, 0xC) = 2;
                                         } else {
                                             M2C_FIELD(&_ruleCursol, s32 *, 0xC) = 0;
                                         }
                                         break;
-                                    case 4:         /* switch 11 */
+                                    case 4:
                                         if ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) == 1) {
                                             M2C_FIELD(&_ruleCursol, s32 *, 0x10) = 1;
                                         } else {
@@ -7483,31 +7505,31 @@ block_27:
                                         break;
                                     }
                                     break;
-                                case 1:             /* switch 10 */
+                                case 1:
                                     M2C_FIELD(&_CB, s32 *, 0xB11C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB11C) + M2C_FIELD(&_CB, s32 *, 0xB018));
                                     break;
-                                case 2:             /* switch 10 */
+                                case 2:
                                     M2C_FIELD(&_CB, s32 *, 0xB11C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB11C) + M2C_FIELD(&_CB, s32 *, 0xB01C));
                                     break;
-                                case 3:             /* switch 10 */
+                                case 3:
                                     M2C_FIELD(&_CB, s32 *, 0xB11C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB11C) + M2C_FIELD(&_CB, s32 *, 0xB020));
                                     break;
-                                case 4:             /* switch 10 */
+                                case 4:
                                     M2C_FIELD(&_CB, s32 *, 0xB11C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB11C) + M2C_FIELD(&_CB, s32 *, 0xB024));
                                     break;
                                 }
                                 menuCB_SE_Play(0x11);
                             }
                             if ((s32) (windowGetKeyRepeat() & 1) != 0) {
-                                switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB118)) { /* switch 12; irregular */
-                                case 0:             /* switch 12 */
+                                switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB118)) {
+                                case 0:
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) != 0) {
                                         M2C_FIELD(&_CB, s32 *, 0xB014) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB014) - 1);
                                         menuCB_SE_Play(0x10);
                                         return;
                                     }
                                     break;
-                                case 1:             /* switch 12 */
+                                case 1:
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB018) == 0) {
                                         _menuCB_Rule_Page_Chenge_Init();
                                         M2C_FIELD(&_CB, s32 *, 0xB118) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB118) - 1);
@@ -7518,7 +7540,7 @@ block_27:
                                     M2C_FIELD(&_CB, s32 *, 0xB018) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB018) - 1);
                                     menuCB_SE_Play(0x10);
                                     return;
-                                case 2:             /* switch 12 */
+                                case 2:
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB01C) == 0) {
                                         _menuCB_Rule_Page_Chenge_Init();
                                         M2C_FIELD(&_CB, s32 *, 0xB118) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB118) - 1);
@@ -7529,7 +7551,7 @@ block_27:
                                     M2C_FIELD(&_CB, s32 *, 0xB01C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB01C) - 1);
                                     menuCB_SE_Play(0x10);
                                     return;
-                                case 3:             /* switch 12 */
+                                case 3:
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB020) == 0) {
                                         _menuCB_Rule_Page_Chenge_Init();
                                         M2C_FIELD(&_CB, s32 *, 0xB118) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB118) - 1);
@@ -7540,7 +7562,7 @@ block_27:
                                     M2C_FIELD(&_CB, s32 *, 0xB020) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB020) - 1);
                                     menuCB_SE_Play(0x10);
                                     return;
-                                case 4:             /* switch 12 */
+                                case 4:
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB024) == 0) {
                                         _menuCB_Rule_Page_Chenge_Init();
                                         M2C_FIELD(&_CB, s32 *, 0xB118) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB118) - 1);
@@ -7553,8 +7575,8 @@ block_27:
                                     return;
                                 }
                             } else if ((s32) (windowGetKeyRepeat() & 2) != 0) {
-                                switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB118)) { /* switch 13; irregular */
-                                case 0:             /* switch 13 */
+                                switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB118)) {
+                                case 0:
                                     M2C_FIELD(&_CB, s32 *, 0xB014) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB014) + 1);
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == 5) {
                                         M2C_FIELD(&_CB, s32 *, 0xB014) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB014) - 1);
@@ -7566,7 +7588,7 @@ block_27:
                                     }
                                     menuCB_SE_Play(0x10);
                                     return;
-                                case 1:             /* switch 13 */
+                                case 1:
                                     M2C_FIELD(&_CB, s32 *, 0xB018) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB018) + 1);
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB018) == 3) {
                                         M2C_FIELD(&_CB, s32 *, 0xB018) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB018) - 1);
@@ -7578,7 +7600,7 @@ block_27:
                                     }
                                     menuCB_SE_Play(0x10);
                                     return;
-                                case 2:             /* switch 13 */
+                                case 2:
                                     M2C_FIELD(&_CB, s32 *, 0xB01C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB01C) + 1);
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB01C) == 3) {
                                         M2C_FIELD(&_CB, s32 *, 0xB01C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB01C) - 1);
@@ -7590,7 +7612,7 @@ block_27:
                                     }
                                     menuCB_SE_Play(0x10);
                                     return;
-                                case 3:             /* switch 13 */
+                                case 3:
                                     M2C_FIELD(&_CB, s32 *, 0xB020) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB020) + 1);
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB020) == 4) {
                                         M2C_FIELD(&_CB, s32 *, 0xB020) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB020) - 1);
@@ -7602,7 +7624,7 @@ block_27:
                                     }
                                     menuCB_SE_Play(0x10);
                                     return;
-                                case 4:             /* switch 13 */
+                                case 4:
                                     M2C_FIELD(&_CB, s32 *, 0xB024) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB024) + 1);
                                     if ((s32) M2C_FIELD(&_CB, s32 *, 0xB024) == 3) {
                                         M2C_FIELD(&_CB, s32 *, 0xB024) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB024) - 1);
@@ -7613,7 +7635,7 @@ block_27:
                                 }
                             }
                         }
-                        break;
+                        
                     }
                 }
             }
@@ -7621,7 +7643,6 @@ block_27:
     }
 }
 }
-
 
 }
 
@@ -7640,7 +7661,7 @@ void menuCB_Rule00_Disp(void *p0, void *p1) {
 
     temp_r31 = (tagSPRITE_WORK *) p1;
     temp_r0 = M2C_FIELD(temp_r31, s16 *, 6);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 0x3AA:
         M2C_FIELD(temp_r31, s32 *, 0x4C) = 0;
         menuCBRULE_EditNameDispLarge((CBWin*)((CBWin *) p0), M2C_FIELD(&_CB, s32 *, 0xB004));
@@ -7707,7 +7728,6 @@ void menuCB_Rule00_Disp(void *p0, void *p1) {
     }
 }
 }
-
 
 static void menuCB_RuleCustomMainCursolColorChenge(tagSPRITE_WORK* sprite) {
     if (_CB.unkB11C != 0) {
@@ -8105,7 +8125,6 @@ void menuCB_Rule01_Disp(s32 p0, void *p1) {
 }
 }
 
-
 }
 
 extern "C" {
@@ -8252,7 +8271,6 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
     }
 }
 }
-
 
 }
 
@@ -8771,7 +8789,7 @@ void menuCB_tunaideGCEntry04_Disp_1(void *p0, void *p1) {
     temp_r29 = M2C_FIELD(&_CB, s32 *, 0xB164);
     temp_r3 = CReliveHall::getPointer()->getStage(temp_r29)->getDancerQuantity();
     temp_r4 = M2C_FIELD(p1, s16 *, 6);
-    switch (temp_r4) { case 0x5E2: goto sw0_c0x5E2; case 0x5E3: goto sw0_c0x5E3; case 0x5E4: goto sw0_c0x5E4; case 0x5E5: goto sw0_c0x5E5; case 0x5E6: goto sw0_c0x5E6; case 0x5E8: goto sw0_c0x5E8; case 0x5E7: goto sw0_c0x5E7; case 0x5EB: goto sw0_c0x5EB; case 0x5EC: goto sw0_c0x5EC; case 0x5E9: goto sw0_c0x5E9; case 0x5EA: goto sw0_c0x5EA; default: goto block_35; }                               /* jump table: jtbl_5783 */
+    switch (temp_r4) { case 0x5E2: goto sw0_c0x5E2; case 0x5E3: goto sw0_c0x5E3; case 0x5E4: goto sw0_c0x5E4; case 0x5E5: goto sw0_c0x5E5; case 0x5E6: goto sw0_c0x5E6; case 0x5E8: goto sw0_c0x5E8; case 0x5E7: goto sw0_c0x5E7; case 0x5EB: goto sw0_c0x5EB; case 0x5EC: goto sw0_c0x5EC; case 0x5E9: goto sw0_c0x5E9; case 0x5EA: goto sw0_c0x5EA; default: goto block_35; }
 sw0_c0x5E2:;
     menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 4);
     return;
@@ -8879,7 +8897,7 @@ void menuCB_tunaideGCEntry03_Disp_1(void *p0, void *p1) {
     spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
     if (((s32) M2C_FIELD(&_CB, s32 *, 0xB150) != 0) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C) == 0)) {
         temp_r0 = M2C_FIELD(p1, s16 *, 6);
-        switch (temp_r0) {                          /* irregular */
+        switch (temp_r0) {
         case 0x59D:
             menuCB2DPokemonDisp2(p0, p1, 4, 0);
             return;
@@ -9045,7 +9063,6 @@ block_35:
     return;
 }
 }
-
 
 }
 

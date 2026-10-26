@@ -1,7 +1,5 @@
-// STATUS: 5/8 exact; left: Check (id reg), InfoCursor+Cursor (u16 re-extension of key bits). LAYOUT+CONST OK, default flags + peephole off + pool_strings off.
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
@@ -175,7 +173,6 @@ void dbgMenuFlagInfoCursor(FlagWindow* window) {
     window->selection = u.c.top + u.c.pos;
 }
 
-
 static char* _dbgMenuFlagInfoGetMsg(s32 index) {
     static char buff[0x80];
     _dbgMenuFlagGetID(index);
@@ -219,7 +216,8 @@ void dbgMenuFlagCursor(FlagWindow* window) {
     if (repeat & 4) {
         u.c.pos = u.c.pos - (disp - 1);
     } else if (repeat & 8) {
-        u.c.pos = disp + u.c.pos - 1;
+        u16 rf_t = u.c.pos;
+        u.c.pos = disp + rf_t - 1;
     }
     if (u.c.pos < 0) {
         u.c.top += u.c.pos;
@@ -236,7 +234,8 @@ void dbgMenuFlagCursor(FlagWindow* window) {
             u.c.pos = 0;
         }
     }
-    *(u32*)&window->cursor = u.raw;
+    s16 rf_t = u.raw;
+    *(u32*)&window->cursor = rf_t;
     window->selection = u.c.top + (u.c.pos + 1);
 }
 

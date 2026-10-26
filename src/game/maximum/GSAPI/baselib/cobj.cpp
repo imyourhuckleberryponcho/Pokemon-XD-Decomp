@@ -1,8 +1,8 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Based on the Melee decomp's cobj.c and the Colosseum decomp's hsd_cobj.c
-// (Colosseum revision fd207bc8a541348f8f00046592c5dba4a75d8ec0, MIT; see
-// an extra update callback in the class info and a simpler HSD_CObjSetCurrent.
-// The original file name, used by the asserts.
+
+
+
+
+
 #define HSD_FILE_NAME "cobj.c"
 
 #include <sysdolphin/baselib/forward.h>
@@ -41,18 +41,18 @@ typedef struct _HSD_RectF32 {
 } HSD_RectF32;
 
 struct HSD_CObj {
-    /*  +0 */ HSD_Obj parent;
-    /*  +8 */ u32 flags;
-    /*  +C */ HSD_RectF32 viewport;
-    /* +1C */ Scissor scissor;
-    /* +24 */ HSD_WObj* eyepos;
-    /* +28 */ HSD_WObj* interest;
+ HSD_Obj parent;
+ u32 flags;
+ HSD_RectF32 viewport;
+ Scissor scissor;
+ HSD_WObj* eyepos;
+ HSD_WObj* interest;
     union {
-        /* +2C */ f32 roll;
-        /* +2C */ Vec3 up;
+ f32 roll;
+ Vec3 up;
     } u;
-    /* +38 */ f32 near;
-    /* +3C */ f32 far;
+ f32 near;
+ f32 far;
     union {
         struct {
             f32 fov;
@@ -71,10 +71,10 @@ struct HSD_CObj {
             f32 right;
         } ortho;
     } projection_param;
-    /* +50 */ u8 projection_type;
-    /* +54 */ Mtx view_mtx;
-    /* +84 */ HSD_AObj* aobj;
-    /* +88 */ Mtx* proj_mtx;
+ u8 projection_type;
+ Mtx view_mtx;
+ HSD_AObj* aobj;
+ Mtx* proj_mtx;
 };
 
 struct HSD_CameraDescCommon {
@@ -215,7 +215,7 @@ static inline f32 atan2f_check(f32 y, f32 x)
     return atan2f(y, x);
 }
 
-// .sbss comes out in reverse declaration order.
+
 static HSD_CObj* current;
 static HSD_ClassInfo* default_class;
 

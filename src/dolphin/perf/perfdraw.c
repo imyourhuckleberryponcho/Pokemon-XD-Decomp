@@ -579,7 +579,7 @@ void PERFDumpScreen(void) {
                         GXSetChanMatColor(GX_COLOR0A0, PERFEvents[id].color);
                         GXSetLineWidth(32, GX_TO_ZERO);
                         GXBegin(GX_LINES, GX_VTXFMT0, 2);
-                        !samples[s].cpuTimeStampStart; // needed to match
+                        !samples[s].cpuTimeStampStart;
                         GXPosition3f32(COORD(samples[s].cpuTimeStampStart), (f32) ((id + 1) * 7), -1.0f);
                         GXPosition3f32(COORD(samples[s].cpuTimeStampEnd), (f32) ((id + 1) * 7), -1.0f);
                         GXEnd();

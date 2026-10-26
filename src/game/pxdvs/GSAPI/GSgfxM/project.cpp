@@ -1,6 +1,3 @@
-// WIP (NonMatching): Setup functions match; in GSgfxProjectFast(List) the camera-vector loads
-// (inv[0..2][2], inv[0..2][3]) come out in a different order/registers. Aggregate init matches
-// Fast but turns into a template copy inside the FastList loop.
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
 
@@ -45,7 +42,6 @@ enum {
     PROJECT_PARTIAL,
 };
 
-// Projects one point to the screen. Points behind the camera come out mirrored with z = -1.
 static inline s32 _GSgfxProject(const Vec* in, Vec* out) {
     Vec camDir;
     Vec rel;
@@ -109,8 +105,8 @@ s32 GSgfxProjectFastList(const Vec* points, Vec* screen, u32 count) {
         Vec camDir;
         f32 depth;
 
-        VEC_SET(&camDir, g_projInvCameraMatrix[0][2], g_projInvCameraMatrix[1][2], g_projInvCameraMatrix[2][2]);
-        VEC_SET(&rel, g_projInvCameraMatrix[0][3], g_projInvCameraMatrix[1][3], g_projInvCameraMatrix[2][3]);
+        VEC_SET(&camDir, g_projInvCameraMatrix[0][1], g_projInvCameraMatrix[0][2], g_projInvCameraMatrix[1][2]);
+        VEC_SET(&rel, g_projInvCameraMatrix[0][4], g_projInvCameraMatrix[0][3], g_projInvCameraMatrix[1][3]);
         PSVECSubtract(in, &rel, &rel);
         depth = PSVECDotProduct(&camDir, &rel);
         if (depth <= -g_projProjectMatrix[2][3] && depth >= g_projProjectMatrix[2][3]) {

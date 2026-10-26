@@ -1,7 +1,6 @@
 #include <game/pxdvs/app/memcard/savedata.hpp>
 #include <game/pxdvs/app/pokemon/pokemonBios.hpp>
 
-// This unit was built optimizing for size (uses stmw/lmw).
 #pragma optimize_for_size on
 
 extern "C" {

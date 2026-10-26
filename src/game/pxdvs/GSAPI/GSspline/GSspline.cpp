@@ -1,9 +1,5 @@
 #include <dolphin/types.h>
 
-// WIP (GXXE01): free and add-control-point functions match. Create retains
-// 25 register/scheduling differences; keep this unit NonMatching until the
-// complete linked DOL is verified. Comparison: build/scratch/root-spline-compile.py.
-
 struct GSvec { f32 x, y, z; };
 struct GSspline {
     s32 interpolation, dataType;
@@ -16,7 +12,6 @@ struct GSspline {
     void* dataAllocation;
 };
 
-// The original unit retains diagnostics from its discarded spline evaluators.
 static const struct {
     char text0[60];
     char text1[44];

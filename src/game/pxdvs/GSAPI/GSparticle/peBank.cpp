@@ -1,6 +1,3 @@
-// STATUS (dPart): default flags (+pool_strings off pragma), LAYOUT OK. 13/19 exact; near-misses: _peConvertFileData 97.6% (callee-saved
-// register numbering only), peBankCreate 95%, peBankFreeFile 95%, peBankLoadFile 82%, peBankRender 99.6% (slw operand regs),
-// _peFreeInternalBankData 99.7% (bne/b layout).
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -22,9 +19,9 @@ public:
 
 struct GSgfxLayer {
     u8 pad0[0x28];
-    s32 id;  // 0x28
+    s32 id;
     u8 pad2C[0x19A0 - 0x2C];
-    GSgfxMatrixStack* matrixStack;  // 0x19A0
+    GSgfxMatrixStack* matrixStack;
 };
 
 struct HSD_Archive {
@@ -101,23 +98,22 @@ struct _EmitParams {
     }
 };
 
-// Emitter parameters of a particle effect.
 struct _particleData;
 struct _peEmitter {
-    u32 flags;           // 0x00
+    u32 flags;
     u8 pad4[8];
-    f32 base;            // 0x0C
-    f32 range;           // 0x10
+    f32 base;
+    f32 range;
     u8 pad14[8];
-    f32 mode;            // 0x1C
+    f32 mode;
     u8 pad20[0x138 - 0x20];
-    _particleData* children;  // 0x138
+    _particleData* children;
 };
 
 struct _peModelData {
-    u32 flags;  // 0x00
+    u32 flags;
     u8 pad4[0x48];
-    HSD_JObj* jobj;  // 0x4C
+    HSD_JObj* jobj;
 };
 
 struct _peDataBlock {
@@ -133,7 +129,7 @@ struct peEmitterNode {
     u32 f28;
     u32 f2c;
     u8 pad30[0xCC];
-    u32* flagsPtr;  // 0xFC
+    u32* flagsPtr;
     u32 f100;
 
     peEmitterNode() {
@@ -159,48 +155,47 @@ struct peBankParams {
 };
 
 struct _gpdResourceItem {
-    u8 id;        // 0x00
-    u8 flags;     // 0x01
-    u16 size;     // 0x02
-    s32 type;     // 0x04
-    void* data;   // 0x08
+    u8 id;
+    u8 flags;
+    u16 size;
+    s32 type;
+    void* data;
 };
 
 struct _gpdHeader {
-    u32 magic;     // 0x00
-    u32 version;   // 0x04
-    u16 dataCount; // 0x08
-    u16 count;     // 0x0A
-    u8 refCount;   // 0x0C
+    u32 magic;
+    u32 version;
+    u16 dataCount;
+    u16 count;
+    u8 refCount;
     u8 pad0d[3];
-    _gpdResourceItem items[1];  // 0x10
+    _gpdResourceItem items[1];
 };
 
-// A loaded particle effect instance.
 struct peBank {
-    _gpdHeader* file;      // 0x00
-    peEmitterNode node;    // 0x04
-    struct _particleData* data;  // 0x108
-    f32 params[10];        // 0x10C
-    u32 flags;             // 0x134
-    u32 renderMask;        // 0x138
-    u16 token;             // 0x13C
-    u16 maxParticles;      // 0x13E
+    _gpdHeader* file;
+    peEmitterNode node;
+    struct _particleData* data;
+    f32 params[10];
+    u32 flags;
+    u32 renderMask;
+    u16 token;
+    u16 maxParticles;
     GSbound* boundPtr() { return (GSbound*)((u8*)this + 0x140); }
-    u8 bound[0x20];        // 0x140
-    void* engine;          // 0x160
-    peBank* next;          // 0x164
+    u8 bound[0x20];
+    void* engine;
+    peBank* next;
 };
 
 struct _particleData {
     u32 pad0;
-    s32 type;      // 0x04
+    s32 type;
     union {
-        _peEmitter* emitter;  // 0x08
+        _peEmitter* emitter;
         _peModelData* model;
         _peDataBlock* block;
     };
-    _particleData* next;  // 0x0C
+    _particleData* next;
 };
 
 peBank* g_currentBank;
@@ -215,19 +210,17 @@ u16 g_maxEmitParams;
 peBank* g_emitParamsBank;
 
 struct ParticleDebugStats {
-    u32 emitMem;   // 0x00
-    u32 bankMem;   // 0x04
+    u32 emitMem;
+    u32 bankMem;
     u32 pad8;
     u32 pad0c;
-    u32 shapeMem;  // 0x10
-    u32 total;     // 0x14
+    u32 shapeMem;
+    u32 total;
     u32 pad18[3];
 };
 extern ParticleDebugStats g_particle_debug_stats;
 
-
 extern "C" {
-// Dolphin SDK OSFastCast.h (GQR3 is set up for u16 conversion).
 static inline u16 __OSf32tou16(register f32 inF) {
     f32 tmp;
     register f32* tmpPtr = &tmp;
@@ -249,7 +242,6 @@ inline f32 GSrandf() {
     return HSD_Randf();
 }
 }
-
 
 static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particleData* data, const char* name);
 static inline u16 _peBankCalculateMaxParticles(_particleData* data, f32 scale);
@@ -376,7 +368,6 @@ s32 peBankStart(peBank* bank) {
     return 1;
 }
 
-
 void peBankFree(peBank* bank) {
     if (bank != 0) {
         peBankStop(bank);
@@ -492,8 +483,8 @@ peBank* peBankCreate(_gpdHeader* file) {
                 operator delete[]((u8*)g_emitParams - 0x10);
             }
         }
-        g_emitParamsBank = bank;
         u16 m = ((bank->maxParticles + 9) / 10);
+        g_emitParamsBank = bank;
         m *= 10;
         g_maxEmitParams = m;
         g_emitParams = new _EmitParams[m];
@@ -510,7 +501,7 @@ void peBankFreeFile(_gpdHeader* file) {
     if (file->refCount == 0) {
         _gpdResourceItem* items = file->items;
         _peFreeInternalBankData((_particleData*)(items + file->count));
-        int n = file->count;
+        u32 n = file->count;
         _gpdResourceItem* it = items;
         for (; n != 0; it++, n--) {
             if ((it->flags & 0x40) == 0x40) {
@@ -545,6 +536,8 @@ void peBankFreeFile(_gpdHeader* file) {
 
 }
 
+#pragma push
+#pragma peephole off
 _gpdHeader* peBankLoadFile(_gpdHeader* file) {
     _gpdResourceItem* items = file->items;
     if (_peConvertFileData(file, items, (_particleData*)(items + file->count), (const char*)file)) {
@@ -552,6 +545,7 @@ _gpdHeader* peBankLoadFile(_gpdHeader* file) {
     }
     return 0;
 }
+#pragma pop
 
 }
 
@@ -605,7 +599,7 @@ static void _peFreeInternalBankData(_particleData* data) {
         if (m->flags & 0x40) {
             break;
         }
-        if (m->jobj != 0) {
+        if (!m->jobj) {
             HSD_JObjUnref(m->jobj);
             return;
         }
@@ -645,44 +639,44 @@ static inline void fix(u32* slot, u32 base) {
 }
 
 struct _peT1 {
-    u32 flags;  // 0x00
+    u32 flags;
     u8 p4[0x40];
     union {
         struct {
             f32 a, b, c, d;
         } f;
         s16 s[4];
-    } q;       // 0x44
-    s32 res;   // 0x54
+    } q;
+    s32 res;
 };
 
 struct _peT6 {
-    u32 flags;  // 0x00
+    u32 flags;
     u8 p4[0x18];
-    s32 res;    // 0x1C
+    s32 res;
 };
 
 struct _peT3 {
     u8 p0[0x60];
-    s32 res;    // 0x60
+    s32 res;
 };
 
 struct _peT2 {
-    u32 flags;  // 0x00
+    u32 flags;
     u8 p4[0x48];
-    s32 res;    // 0x4C
-    f32 endFrame;  // 0x50
-    f32 frame;     // 0x54
+    s32 res;
+    f32 endFrame;
+    f32 frame;
 };
 
 struct _peT4 {
-    u32 flags;  // 0x00
+    u32 flags;
     u8 p4[0x68];
-    u8 color[4];   // 0x6C
-    f32 shine;     // 0x70
-    s32 res;       // 0x74
-    GSgfxLight* diff;  // 0x78
-    GSgfxLight* spec;  // 0x7C
+    u8 color[4];
+    f32 shine;
+    s32 res;
+    GSgfxLight* diff;
+    GSgfxLight* spec;
 };
 
 static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particleData* data, const char* name) {
@@ -695,7 +689,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
     u32 n = h->count;
     u32 m = h->dataCount;
     _gpdResourceItem* it = items;
-    for (; n != 0; n--, it++) {
+    for (; n != 0; it++, n--) {
         u32 v = (u32)it->data;
         if (isOffset(v)) {
             v += (u32)name;
@@ -759,7 +753,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
         }
         }
     }
-    for (; m != 0; m--, data++) {
+    for (; m != 0; data++, m--) {
         fix((u32*)&data->emitter, (u32)name);
         fix((u32*)&data->next, (u32)name);
         void* p = data->emitter;
@@ -792,7 +786,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             _peT1* t = (_peT1*)p;
             u32 k = h->count;
             _gpdResourceItem* r = items;
-            for (; k != 0; k--, r++) {
+            for (; k != 0; r++, k--) {
                 if (t->res == r->id) {
                     if (r->type == 2) {
                         t->flags |= 0x100000;
@@ -836,7 +830,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             _peT6* t = (_peT6*)p;
             u32 k = h->count;
             _gpdResourceItem* r = items;
-            for (; k != 0; k--, r++) {
+            for (; k != 0; r++, k--) {
                 if (t->res == r->id) {
                     if (r->type == 2) {
                         t->flags |= 0x400;
@@ -866,7 +860,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             _peT3* t = (_peT3*)p;
             u32 k = h->count;
             _gpdResourceItem* r = items;
-            for (; k != 0; k--, r++) {
+            for (; k != 0; r++, k--) {
                 if (t->res == r->id) {
                     t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
                     break;
@@ -885,7 +879,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             _peT2* t = (_peT2*)p;
             u32 k = h->count;
             _gpdResourceItem* r = items;
-            for (; k != 0; k--, r++) {
+            for (; k != 0; r++, k--) {
                 if (t->res == r->id) {
                     if ((t->flags & 0x40) && r->type == 3) {
                         t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
@@ -949,7 +943,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             _peT4* t = (_peT4*)p;
             u32 k = h->count;
             _gpdResourceItem* r = items;
-            for (; k != 0; k--, r++) {
+            for (; k != 0; r++, k--) {
                 if (t->res == r->id) {
                     t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
                     break;

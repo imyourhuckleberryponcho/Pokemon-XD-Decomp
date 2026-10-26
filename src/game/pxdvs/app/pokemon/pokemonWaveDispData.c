@@ -1,7 +1,5 @@
 #include <dolphin/types.h>
 
-// Cry waveform shapes for the PDA memo display: a sample count followed by the samples.
-
 s8 wavedispdata_001_fushigidane[] = {
     28,
     8, 66, -6, -61, 16, 127, -28, -23, -90, 14, -65, -19, 71, -56, 65, -53,

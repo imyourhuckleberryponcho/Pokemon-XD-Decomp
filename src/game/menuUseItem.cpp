@@ -1,8 +1,5 @@
-// STATUS: all 33 functions written bottom-to-top (unit was built with -inline deferred).
-// Item-use handlers for the pocket menu (menuUseItem*).
 #include <dolphin/types.h>
 
-// Menu callbacks were built without the peephole optimizer.
 #pragma peephole off
 
 struct Hero {
@@ -635,16 +632,21 @@ static f32 unusedZero(f32 x) {
 }
 
 s32 menuUseItemSkill(u32 item, s32* consume) {
-    Pokemon* pokemon;
-    FightPokemon* fp;
-    s32 learned;
-    u8* data = itemDataBiosGetPtr(item);
-    u8 machine = itemDataBiosGetWazaMachineNo(data);
-    s32 msg;
-    u32 hiden;
+    u8* data;
     s32 yn;
+    u16 waza;
+    u8 machine;
+    s32 msg;
+    s32 learned;
+    Pokemon* pokemon;
     s32 slot;
-    u16 waza = itemDataBiosGetWazaIDByWazaMachineNo(machine);
+    u32 hiden;
+    FightPokemon* fp;
+
+    data = itemDataBiosGetPtr(item);
+    machine = itemDataBiosGetWazaMachineNo(data);
+
+    waza = itemDataBiosGetWazaIDByWazaMachineNo(machine);
     GSsndPlayNow(0x23);
     hiden = itemDataBiosGetHidenMachineNo(data);
     if ((u8)hiden != 0xFF) {
@@ -681,7 +683,7 @@ s32 menuUseItemSkill(u32 item, s32* consume) {
 static s32 wazaMachineProc(Pokemon* p, int machineNo) {
     s32 learned;
     int i;
-    u32 waza;
+    s8 waza;
     u16 wz;
     u8 slot;
     menuOffScreenSetPriority(0);
@@ -689,8 +691,8 @@ static s32 wazaMachineProc(Pokemon* p, int machineNo) {
         dispMsg(0xC371);
         return 0;
     }
-    i = 0;
     waza = itemDataBiosGetWazaIDByWazaMachineNo(machineNo);
+    i = 0;
     wz = waza;
     do {
         if (wz == pokemonBiosGetPokemonWazaDataId(p, i)) {
@@ -803,7 +805,7 @@ s32 menuUseItemBattleBall(u32 item, s32* consume) {
     Pokemon* pokemon;
     FightPokemon* fp;
     s32 empty = 0;
-    int stock = (u8)fightFloor_GetStockPokemonNum(0);
+    u8 stock = (u8)fightFloor_GetStockPokemonNum(0);
     int i;
     s8 boxes;
     u8 kind;

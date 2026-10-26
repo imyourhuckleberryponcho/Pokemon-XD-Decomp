@@ -1,10 +1,10 @@
-// STATUS: complete (18/18). MSL-style inline sinf/cosf (frsp into a temporary) fixed modifyDir.
-// Particle bytecode interpreter. Compiled as C with deferred inlining.
+
+
 #define HSD_FILE_NAME "psinterpret.c"
 
 #include <dolphin/types.h>
 
-/* XD's MSL <math.h> inlines (sqrtf with its NaN checks), not include/libc's. */
+
 #define _MATH_H_
 extern f32 __float_nan[];
 extern f32 __float_min[];
@@ -67,191 +67,191 @@ inline float atan2fInline(float y, float x)
 #include <sysdolphin/baselib/object.h>
 #include <sysdolphin/baselib/jobj.h>
 
-/*STRUCTS*/
+
 #define PS_NUM_LINK 16
 #define PS_NUM_BANK 64
 
-/* size: 0x1C */
+
 typedef struct _HSD_PSTexGroup {
-    u32 num;         /* 0x00 */
-    u32 fmt;         /* 0x04 */
-    u32 tlutfmt;     /* 0x08 */
-    u32 width;       /* 0x0C */
-    u32 height;      /* 0x10 */
-    u16 palnum;      /* 0x14 */
-    u16 palflag;     /* 0x16 */
-    u8* texTable[1]; /* 0x18 */
+    u32 num;
+    u32 fmt;
+    u32 tlutfmt;
+    u32 width;
+    u32 height;
+    u16 palnum;
+    u16 palflag;
+    u8* texTable[1];
 } HSD_PSTexGroup;
 
-/* size: 0x8 */
+
 typedef struct _HSD_PSFormGroup {
-    u32 num;          /* 0x00 */
-    u8* formTable[1]; /* 0x04 */
+    u32 num;
+    u8* formTable[1];
 } HSD_PSFormGroup;
 
-/* size: 0x40 */
+
 typedef struct _HSD_PSCmdList {
-    u16 type;      /* 0x00 */
-    u16 texGroup;  /* 0x02 */
-    u16 genLife;   /* 0x04 */
-    u16 life;      /* 0x06 */
-    u32 kind;      /* 0x08 */
-    f32 grav;      /* 0x0C */
-    f32 fric;      /* 0x10 */
-    f32 vx;        /* 0x14 */
-    f32 vy;        /* 0x18 */
-    f32 vz;        /* 0x1C */
-    f32 radius;    /* 0x20 */
-    f32 angle;     /* 0x24 */
-    f32 random;    /* 0x28 */
-    f32 size;      /* 0x2C */
-    f32 param1;    /* 0x30 */
-    f32 param2;    /* 0x34 */
-    f32 param3;    /* 0x38 */
-    u8 cmdList[1]; /* 0x3C */
+    u16 type;
+    u16 texGroup;
+    u16 genLife;
+    u16 life;
+    u32 kind;
+    f32 grav;
+    f32 fric;
+    f32 vx;
+    f32 vy;
+    f32 vz;
+    f32 radius;
+    f32 angle;
+    f32 random;
+    f32 size;
+    f32 param1;
+    f32 param2;
+    f32 param3;
+    u8 cmdList[1];
 } HSD_PSCmdList;
 
 struct HSD_Generator;
 
 typedef struct HSD_psAppSRT {
-    struct HSD_psAppSRT* next;                      /* 0x00 */
-    struct HSD_Generator* gp;                       /* 0x04 */
-    Vec translate;                                  /* 0x08 */
-    Vec rot;                                        /* 0x14 */
-    f32 x20;                                        /* 0x20 */
-    Vec scale;                                      /* 0x24 */
-    u8 status;                                      /* 0x30 */
-    u8 frameNum;                                    /* 0x31 */
-    u16 usedCount;                                  /* 0x32 */
-    Mtx mmtx;                                       /* 0x34 */
-    f32 ssx;                                        /* 0x64 */
-    f32 ssy;                                        /* 0x68 */
-    void (*freefunc)(struct HSD_psAppSRT* appsrt);  /* 0x6C */
-    u16 idnum;                                      /* 0x70 */
-    u8 x72;                                         /* 0x72 */
+    struct HSD_psAppSRT* next;
+    struct HSD_Generator* gp;
+    Vec translate;
+    Vec rot;
+    f32 x20;
+    Vec scale;
+    u8 status;
+    u8 frameNum;
+    u16 usedCount;
+    Mtx mmtx;
+    f32 ssx;
+    f32 ssy;
+    void (*freefunc)(struct HSD_psAppSRT* appsrt);
+    u16 idnum;
+    u8 x72;
 } HSD_psAppSRT;
 
-/* size: 0x94 */
+
 typedef struct HSD_Particle {
-    struct HSD_Particle* next;  /* 0x00 */
-    u32 kind;                   /* 0x04 */
-    u8 bank;                    /* 0x08 */
-    u8 texGroup;                /* 0x09 */
-    u8 poseNum;                 /* 0x0A */
-    u8 palNum;                  /* 0x0B */
-    u16 sizeCount;              /* 0x0C */
-    u16 primColCount;           /* 0x0E */
-    u16 envColCount;            /* 0x10 */
-    GXColor primCol;            /* 0x12 */
-    GXColor envCol;             /* 0x16 */
-    u16 cmdWait;                /* 0x1A */
-    u8 loopCount;               /* 0x1C */
-    u8 linkNo;                  /* 0x1D */
-    u16 idnum;                  /* 0x1E */
-    u8* cmdList;                /* 0x20 */
-    u16 cmdPtr;                 /* 0x24 */
-    u16 cmdMarkPtr;             /* 0x26 */
-    u16 cmdLoopPtr;             /* 0x28 */
-    u16 life;                   /* 0x2A */
-    Vec vel;                    /* 0x2C */
-    f32 grav;                   /* 0x38 */
-    f32 fric;                   /* 0x3C */
-    Vec pos;                    /* 0x40 */
-    f32 size;                   /* 0x4C */
-    f32 rotate;                 /* 0x50 */
-    u16 aCmpCount;              /* 0x54 */
-    u8 aCmpMode;                /* 0x56 */
-    u8 aCmpParam1;              /* 0x57 */
-    u8 aCmpParam2;              /* 0x58 */
-    u8 pJObjOfs;                /* 0x59 */
-    u16 matColCount;            /* 0x5A */
-    u16 ambColCount;            /* 0x5C */
-    u16 rotateCount;            /* 0x5E */
-    f32 sizeTarget;             /* 0x60 */
-    f32 rotateTarget;           /* 0x64 */
-    f32 x68;                    /* 0x68 */
-    u16 primColRemain;          /* 0x6C */
-    u16 envColRemain;           /* 0x6E */
-    GXColor primColTarget;      /* 0x70 */
-    GXColor envColTarget;       /* 0x74 */
-    u16 matColRemain;           /* 0x78 */
-    u16 ambColRemain;           /* 0x7A */
-    u16 aCmpRemain;             /* 0x7C */
-    u8 aCmpParam1Target;        /* 0x7E */
-    u8 aCmpParam2Target;        /* 0x7F */
-    u8 matRGB;                  /* 0x80 */
-    u8 matA;                    /* 0x81 */
-    u8 ambRGB;                  /* 0x82 */
-    u8 ambA;                    /* 0x83 */
-    u8 matRGBTarget;            /* 0x84 */
-    u8 matATarget;              /* 0x85 */
-    u8 ambRGBTarget;            /* 0x86 */
-    u8 ambATarget;              /* 0x87 */
-    f32 trail;                  /* 0x88 */
-    struct HSD_Generator* gen;  /* 0x8C */
-    HSD_psAppSRT* appsrt;       /* 0x90 */
+    struct HSD_Particle* next;
+    u32 kind;
+    u8 bank;
+    u8 texGroup;
+    u8 poseNum;
+    u8 palNum;
+    u16 sizeCount;
+    u16 primColCount;
+    u16 envColCount;
+    GXColor primCol;
+    GXColor envCol;
+    u16 cmdWait;
+    u8 loopCount;
+    u8 linkNo;
+    u16 idnum;
+    u8* cmdList;
+    u16 cmdPtr;
+    u16 cmdMarkPtr;
+    u16 cmdLoopPtr;
+    u16 life;
+    Vec vel;
+    f32 grav;
+    f32 fric;
+    Vec pos;
+    f32 size;
+    f32 rotate;
+    u16 aCmpCount;
+    u8 aCmpMode;
+    u8 aCmpParam1;
+    u8 aCmpParam2;
+    u8 pJObjOfs;
+    u16 matColCount;
+    u16 ambColCount;
+    u16 rotateCount;
+    f32 sizeTarget;
+    f32 rotateTarget;
+    f32 x68;
+    u16 primColRemain;
+    u16 envColRemain;
+    GXColor primColTarget;
+    GXColor envColTarget;
+    u16 matColRemain;
+    u16 ambColRemain;
+    u16 aCmpRemain;
+    u8 aCmpParam1Target;
+    u8 aCmpParam2Target;
+    u8 matRGB;
+    u8 matA;
+    u8 ambRGB;
+    u8 ambA;
+    u8 matRGBTarget;
+    u8 matATarget;
+    u8 ambRGBTarget;
+    u8 ambATarget;
+    f32 trail;
+    struct HSD_Generator* gen;
+    HSD_psAppSRT* appsrt;
 } HSD_Particle;
 
-/* size: 0xB4 */
+
 typedef struct HSD_Generator {
-    struct HSD_Generator* next; /* 0x00 */
-    u32 kind;                   /* 0x04 */
-    f32 random;                 /* 0x08 */
-    f32 count;                  /* 0x0C */
-    u16 genLife;                /* 0x10 */
-    u16 type;                   /* 0x12 */
-    u8 bank;                    /* 0x14 */
-    u8 linkNo;                  /* 0x15 */
-    u8 texGroup;                /* 0x16 */
-    u8 x17;                     /* 0x17 */
-    u16 idnum;                  /* 0x18 */
-    u16 life;                   /* 0x1A */
-    u8* cmdList;                /* 0x1C */
-    Vec pos;                    /* 0x20 */
-    Vec vel;                    /* 0x2C */
-    f32 grav;                   /* 0x38 */
-    f32 fric;                   /* 0x3C */
-    f32 size;                   /* 0x40 */
-    f32 radius;                 /* 0x44 */
-    f32 angle;                  /* 0x48 */
-    u32 numChild;               /* 0x4C */
-    HSD_psAppSRT* appsrt;       /* 0x50 */
+    struct HSD_Generator* next;
+    u32 kind;
+    f32 random;
+    f32 count;
+    u16 genLife;
+    u16 type;
+    u8 bank;
+    u8 linkNo;
+    u8 texGroup;
+    u8 x17;
+    u16 idnum;
+    u16 life;
+    u8* cmdList;
+    Vec pos;
+    Vec vel;
+    f32 grav;
+    f32 fric;
+    f32 size;
+    f32 radius;
+    f32 angle;
+    u32 numChild;
+    HSD_psAppSRT* appsrt;
     union {
         struct {
-            f32 minAngle; /* 0x54 */
-            f32 maxAngle; /* 0x58 */
-            f32 height;   /* 0x5C */
+            f32 minAngle;
+            f32 maxAngle;
+            f32 height;
         } cone;
         struct {
-            f32 x2; /* 0x54 */
-            f32 y2; /* 0x58 */
-            f32 z2; /* 0x5C */
+            f32 x2;
+            f32 y2;
+            f32 z2;
         } line;
         struct {
-            f32 vel; /* 0x54 */
+            f32 vel;
         } tornado;
         struct {
-            f32 x, y, z;    /* 0x54 */
-            f32 xx, xy, xz; /* 0x60 */
-            f32 yx, yy, yz; /* 0x6C */
-            f32 zx, zy, zz; /* 0x78 */
-            u16 flag;       /* 0x84 */
+            f32 x, y, z;
+            f32 xx, xy, xz;
+            f32 yx, yy, yz;
+            f32 zx, zy, zz;
+            u16 flag;
         } rect;
         struct {
-            f32 speed;    /* 0x54 */
-            f32 latMid;   /* 0x58 */
-            f32 latRange; /* 0x5C */
-            f32 lonMid;   /* 0x60 */
-            f32 lonRange; /* 0x64 */
+            f32 speed;
+            f32 latMid;
+            f32 latRange;
+            f32 lonMid;
+            f32 lonRange;
         } sphere;
     } aux;
-    void* camera;               /* 0x88 */
-    u16 posFlags;               /* 0x8C */
-    u16 gfxIdx;                 /* 0x8E */
-    Vec rot;                    /* 0x90 */
-    Vec scale;                  /* 0x9C */
-    HSD_JObj* jobj;             /* 0xA8 */
-    Vec scale2;                 /* 0xAC */
+    void* camera;
+    u16 posFlags;
+    u16 gfxIdx;
+    Vec rot;
+    Vec scale;
+    HSD_JObj* jobj;
+    Vec scale2;
 } HSD_Generator;
 
 
@@ -267,9 +267,9 @@ float tanf(float x);
 #define atan2f(y, x) atan2fInline(y, x)
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
-extern f32 HSD_Randf(void);          /* HSD_Randf */
-extern HSD_JObj* HSD_JObjAlloc(void);    /* HSD_JObjAlloc */
-extern void HSD_JObjUnref(HSD_JObj* jobj); /* HSD_JObjUnref */
+extern f32 HSD_Randf(void);
+extern HSD_JObj* HSD_JObjAlloc(void);
+extern void HSD_JObjUnref(HSD_JObj* jobj);
 extern void HSD_MtxSRT(Mtx m, Vec* scale, Vec* rot, Vec* trans, Vec* scale2);
 extern void PSMTXIdentity(Mtx m);
 extern void PSMTXScale(Mtx m, f32 x, f32 y, f32 z);
@@ -292,9 +292,9 @@ extern s32 psChangeParticleAppSRT(HSD_Particle* pp, HSD_psAppSRT* appsrt);
 extern s32 psAttachGeneratorAppSRT(HSD_Generator* gp, HSD_psAppSRT* appsrt);
 extern s32 psChangeGeneratorAppSRT(HSD_Generator* gp, HSD_psAppSRT* appsrt);
 
-extern u32* ptclref[PS_NUM_BANK];             /* bank references */
-extern HSD_PSTexGroup** psTexGroupArray[PS_NUM_BANK]; /* texture groups */
-extern HSD_JObj* psPointJObj[8];                  /* point JObjs */
+extern u32* ptclref[PS_NUM_BANK];
+extern HSD_PSTexGroup** psTexGroupArray[PS_NUM_BANK];
+extern HSD_JObj* psPointJObj[8];
 
 #define psBankRef ptclref
 #define psTexGroupArray psTexGroupArray
@@ -305,9 +305,9 @@ typedef union {
     f32 f;
 } PSFloatBytes;
 
-PSFloatBytes BYTEF32; /* getFloat's byte-assembly scratch (.sbss) */
+PSFloatBytes BYTEF32;
 
-/* Header inlines of jobj.h (assert lines as in XD). */
+
 static inline void HSD_JObjAddTx(HSD_JObj* jobj, f32 x)
 {
     HSD_ASSERT_IN("jobj.h", 1109, jobj);
@@ -337,7 +337,7 @@ static inline void HSD_JObjAddTz(HSD_JObj* jobj, f32 z)
 
 HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev);
 
-/* Defined in reverse address order (see the file header). */
+
 
 u8* getFloat(u8* cmdList, f32* val)
 {
@@ -358,8 +358,8 @@ u8* getTime(u8* cmdList, u16* val)
     return cmdList;
 }
 
-/* Turns the velocity by a random direction on a cone of half-angle `angle`
- * around the generator velocity plus an offset. */
+
+
 void modifyDirGenBase(HSD_Particle* pp, f32 angle, f32 x, f32 y, f32 z)
 {
     f32 vx;
@@ -406,8 +406,8 @@ void modifyDirGenBase(HSD_Particle* pp, f32 angle, f32 x, f32 y, f32 z)
     pp->vel.z = sy * (-vx * cx) - vy * sx + cy * (vz * cx);
 }
 
-/* Turns the velocity by a random direction on a cone of half-angle `angle`
- * around its current direction. */
+
+
 void modifyDir(HSD_Particle* pp, f32 angle)
 {
     f32 rnd;
@@ -453,7 +453,7 @@ void modifyDir(HSD_Particle* pp, f32 angle)
     pp->vel.z = sy * (-vx * cx) - vy * sx + cy * (vz * cx);
 }
 
-/* Aims the velocity at a JObj, keeping its speed. */
+
 void setVelToJObj(HSD_Particle* pp, HSD_JObj* jobj)
 {
     f32 dx;
@@ -481,7 +481,7 @@ void setVelToJObj(HSD_Particle* pp, HSD_JObj* jobj)
     pp->vel.z = dz * speed;
 }
 
-/* Pulls the particle towards a JObj; returns whether it arrived. */
+
 s32 applyForceJObj(HSD_Particle* pp, HSD_JObj* jobj, f32 force, f32 radius)
 {
     f32 dx;
@@ -510,7 +510,7 @@ s32 applyForceJObj(HSD_Particle* pp, HSD_JObj* jobj, f32 force, f32 radius)
     return 0;
 }
 
-/* Rotates the particle's velocity by the generator's local rotation. */
+
 void psApplyVelocityLocalRotation(HSD_Particle* pp)
 {
     Mtx rot_x;
@@ -535,7 +535,7 @@ void psApplyVelocityLocalRotation(HSD_Particle* pp)
     pp->vel.z = vel.z;
 }
 
-/* Transforms an offset by the generator's local rotation (and scale). */
+
 void psApplyOffsetLocalRotation(HSD_Particle* pp, Vec* ofs)
 {
     Mtx rot_x;
@@ -561,7 +561,7 @@ void psApplyOffsetLocalRotation(HSD_Particle* pp, Vec* ofs)
     PSMTXMultVec(rot_x, ofs, ofs);
 }
 
-/* Copies the rotation/scale block, flags and JObj of a parent generator. */
+
 void psCopyGeneratorData(HSD_Generator* gp, HSD_Generator* src)
 {
     if (src == NULL || gp == NULL) {
@@ -596,7 +596,7 @@ void HSD_MTXSRT(Mtx m, Vec* scale, Vec* rot, Vec* trans, Vec* scale2)
     HSD_MtxSRT(m, scale, rot, trans, scale2);
 }
 
-/* Adds a random offset to a colour component, clamped to 0 - 255. */
+
 inline u8 U8ClampAdd(u8 val, f32 add)
 {
     f32 f = val + add;
@@ -610,7 +610,7 @@ inline u8 U8ClampAdd(u8 val, f32 add)
     return f;
 }
 
-/* Freezes a running colour interpolation at its current value. */
+
 #define PS_FREEZE_COLOR(col, target, remain, count)                          \
     if ((count) != 0) {                                                        \
         s32 t = ((remain) << 16) / (count);                                    \
@@ -732,9 +732,9 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
                     op = cmd;
                 }
                 switch (op) {
-                /* RULE-EXCEPTION(title-path): uninitialized reads - 0x80/0x88/0x90/0x98
-                 * copy all three components although only the named ones were
-                 * read, exactly as retail does - see docs/RULE_EXCEPTIONS.md */
+
+
+
                 case 0x80: {
                     Vec pos;
 
@@ -1017,9 +1017,9 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
                 case 0xEF: {
                     id = *cmdList++ << 8;
                     id += *cmdList++;
-                    /* RULE-EXCEPTION(title-path): the kind byte reuses op (dead after
-                     * dispatch); only register allocation shows it is one variable -
-                     * see docs/RULE_EXCEPTIONS.md */
+
+
+
                     op = *cmdList++;
                     gp = psCreateGeneratorID(pp->linkNo, pp->bank, id);
                     if (gp != NULL) {
@@ -1087,9 +1087,9 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
                 case 0xF0: {
                     id = *cmdList++ << 8;
                     id += *cmdList++;
-                    /* RULE-EXCEPTION(title-path): the kind byte reuses op (dead after
-                     * dispatch); only register allocation shows it is one variable -
-                     * see docs/RULE_EXCEPTIONS.md */
+
+
+
                     op = *cmdList++;
                     if (psBankRef[pp->bank] != NULL) {
                         id = psBankRef[pp->bank][id];

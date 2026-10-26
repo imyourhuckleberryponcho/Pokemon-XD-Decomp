@@ -1,8 +1,6 @@
 #pragma peephole off
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
-// Non-volatile view of the GX write-gather FIFO: the original kept constants in
-// registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 #include <libc/string.h>
 
@@ -381,8 +379,6 @@ void fadeSetFunctionOnly(FadeHook hook) {
 }
 }
 
-// The original passes the type through a small inline here (found by the permuter): with a plain
-// `_fadeWork.type = type;` MWCC masks the parameter in place (r3) instead of into a new register.
 static inline u16 _fadeType(u16 type) {
     return type;
 }

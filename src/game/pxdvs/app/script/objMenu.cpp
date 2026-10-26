@@ -1,15 +1,8 @@
 #include <dolphin/types.h>
 
-// WIP (GXXE01): 28 instruction differences remain, all register choices in
-// message substitution and money/coupon/item menu calls. Keep NonMatching.
-// Scratch comparison: build/scratch/match_menu.py. Verify the full DOL before
-// marking this unit matching; normalized instruction diffs hide branch targets.
-
-// The retail unit uses separate strings and disables peephole optimization.
 #pragma pool_strings off
 #pragma peephole off
 
-// Script values are eight-byte tagged unions in the retail interpreter.
 struct Pokemon;
 struct Hero;
 struct GSvec { f32 x, y, z; };

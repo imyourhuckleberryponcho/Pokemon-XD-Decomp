@@ -1,4 +1,3 @@
-// GBA link-cable communication: JoyBoot upload, Pokemon fetch and battle/entry exchange with a GBA.
 #include <dolphin/types.h>
 #include <dolphin/os.h>
 #include <dolphin/dvd.h>
@@ -7,46 +6,46 @@
 #pragma pool_strings off
 
 struct AgbWork {
-    /* 0x00 */ s32 mode;
-    /* 0x04 */ u8 status;
-    /* 0x05 */ u8 pad5[3];
-    /* 0x08 */ s32 state;
-    /* 0x0C */ s32 active;
-    /* 0x10 */ volatile s32 jobType;
-    /* 0x14 */ volatile s32 ret;
-    /* 0x18 */ volatile s32 result;
-    /* 0x1C */ u32 w1C;
-    /* 0x20 */ u32 w20;
-    /* 0x24 */ s32 w24;
-    /* 0x28 */ u32 w28;
-    /* 0x2C */ u32 w2C;
-    /* 0x30 */ u32 w30;
-    /* 0x34 */ u32 w34;
-    /* 0x38 */ u32 w38;
-    /* 0x3C */ u32 w3C;
-    /* 0x40 */ u32 w40;
-    /* 0x44 */ s32 w44;
-    /* 0x48 */ s32 w48;
-    /* 0x4C */ s32 w4C;
-    /* 0x50 */ s32 w50;
-    /* 0x54 */ s32 w54;
-    /* 0x58 */ s32 w58;
-    /* 0x5C */ u32 index;
-    /* 0x60 */ u32 w60;
-    /* 0x64 */ u32 w64;
-    /* 0x68 */ s32 w68;
-    /* 0x6C */ u32 tick0;
-    /* 0x70 */ u32 limit0;
-    /* 0x74 */ u32 tick1;
-    /* 0x78 */ u32 limit1;
-    /* 0x7C */ u32 tick2;
-    /* 0x80 */ u32 limit2;
-    /* 0x84 */ s32 w84;
-    /* 0x88 */ s32 w88;
-    /* 0x8C */ u32* buf;
-    /* 0x90 */ u32 size;
-    /* 0x94 */ s32 arg;
-    /* 0x98 */ u32* out;
+ s32 mode;
+ u8 status;
+ u8 pad5[3];
+ s32 state;
+ s32 active;
+ volatile s32 jobType;
+ volatile s32 ret;
+ volatile s32 result;
+ u32 w1C;
+ u32 w20;
+ s32 w24;
+ u32 w28;
+ u32 w2C;
+ u32 w30;
+ u32 w34;
+ u32 w38;
+ u32 w3C;
+ u32 w40;
+ s32 w44;
+ s32 w48;
+ s32 w4C;
+ s32 w50;
+ s32 w54;
+ s32 w58;
+ u32 index;
+ u32 w60;
+ u32 w64;
+ s32 w68;
+ u32 tick0;
+ u32 limit0;
+ u32 tick1;
+ u32 limit1;
+ u32 tick2;
+ u32 limit2;
+ s32 w84;
+ s32 w88;
+ u32* buf;
+ u32 size;
+ s32 arg;
+ u32* out;
 };
 
 typedef void (*GBACallback)(s32 chan, s32 ret);
@@ -90,7 +89,6 @@ static u32 jbSize1;
 static u32 _gameName;
 static OSThread* _thread;
 
-// PROTOS-BEGIN
 static long AGB_Initialize(long ch);
 static void _AGB_Work_Clear(long ch);
 static void _job_type_clear(long ch, const char* name);
@@ -166,7 +164,6 @@ static void _getpokemon_09(long ch, long ret);
 static void _getpokemon_09s(long ch, long ret);
 static void _getpokemon_10(long ch, long ret);
 static void _getpokemon_11(long ch, long ret);
-// PROTOS-END
 static void _timer_set(long ch, u32 ms);
 static void _job_type_clear(long ch, const char* name);
 static void _AGB_Work_Clear(long ch);

@@ -2,8 +2,6 @@
 #include <game/pxdvs/app/memcard/savedata.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
-// Built with -O4,s (see configure.py).
-
 class DeckDarkPokemon {
 public:
     bool isScenarioPokemon() const;

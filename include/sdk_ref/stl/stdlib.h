@@ -4,7 +4,7 @@
 #include "types.h"
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/alloc.h"
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/arith.h"
@@ -15,6 +15,6 @@ extern "C" {
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

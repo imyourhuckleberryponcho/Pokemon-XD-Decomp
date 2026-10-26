@@ -1,4 +1,3 @@
-// WIP: Purification Chamber hologram viewer. 28/31 exact (needs -inline noauto,deferred; source is in REVERSE asm order). Remaining: stageAllModelLoad (register alloc), renderOffscreenData (register shift), drawAll (1 extra live register).
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 
@@ -406,7 +405,6 @@ inline void* operator new(unsigned long, void* p) { return p; }
 namespace {
 
 long localWindowTable[6] = { 0x71, 0x72, 0x88, 0xD0, 0x87, 0 };
-
 
 class CMenuHologram;
 CMenuHologram* pMenuHologram;
@@ -923,13 +921,13 @@ void CMenuHologram::renderOffscreenData()
             GXWGFifo.s16 = 480;
             fifoColor(0xFF, 0xFF, 0xFF, relivehall_data->alpha);
             GXWGFifo.u8 = 1;
-            GXWGFifo.u8 = 1;
             GXWGFifo.s16 = 0;
             GXWGFifo.s16 = 480;
             fifoColor(0xFF, 0xFF, 0xFF, relivehall_data->alpha);
             GXWGFifo.u8 = 0;
             GXWGFifo.u8 = 1;
             layer->endSurface();
+            GXWGFifo.u8 = 1;
         }
     }
 #undef LU8
@@ -1161,7 +1159,7 @@ void CMenuHologram::stageAllModelLoad()
     }
     for (int i = 0; i < dancers; i++) {
         ModelSlot* slot = modelPokemonLoad(i + 3);
-        int idx = plateIndexTbl[st][dancers][(dancers + i - stage->hit) % dancers + 1];
+        s16 idx = plateIndexTbl[st][dancers][(dancers + i - stage->hit) % dancers + 1];
         GSpart* part = GSmodelGetPart(models[1].model, ((u8*)relivehall_data)[idx + 6]);
         GSmodelAttachToGSpart(slot->model, part, 7, 0, 1);
         GSpartFree(part);
@@ -1189,8 +1187,7 @@ void CMenuHologram::stageAllModelLoad()
         GSmaterialEnableExtension(mat, 1);
     }
     for (int i = 0; i < dancers; i++) {
-        Pokemon* a = stage->getDancerPointer((i + 1) % dancers);
-        GSgfxColAu8 c = pokemonToAisyouColor(stage->getDancerPointer((u16)i), a);
+        GSgfxColAu8 c = pokemonToAisyouColor(stage->getDancerPointer((u16)i), (Pokemon*)(stage->getDancerPointer((i + 1) % dancers)));
         u8 pl = ((u8*)relivehall_data)[colorLineIndexTbl[st][dancers][(dancers + i - stage->hit) % dancers + 1] + 6];
         GSmaterial* mat = (GSmaterial*)((u8*)mats + (pl - 1) * 0x34);
         GSmaterialSetModulate(mat, &c);
@@ -1469,8 +1466,7 @@ void CMenuHologram::drawAll()
         if (state.current != 4 && state.current != 7) {
             flag = true;
         }
-        Pokemon* visitor = st->getVisitorPointer();
-        relivehallDrawStageInfoCursor((u16)stageCur, tempo, st->getDancerQuantity(), visitor, flag);
+        relivehallDrawStageInfoCursor(stageCur, tempo, st->getDancerQuantity(), (Pokemon*)(st->getVisitorPointer()), flag);
         info2.draw();
         localWindowDrawAll();
         menuDrawReliveUpdate();

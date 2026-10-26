@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct MailCursor {
@@ -8,7 +7,6 @@ struct MailCursor {
     s16 pos;
 };
 
-// Parameters handed to the mail menu window.
 struct MailMenuParam {
     u8 mode;
     void* unk4;

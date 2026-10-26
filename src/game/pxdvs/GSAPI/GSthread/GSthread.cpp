@@ -3,25 +3,25 @@
 #pragma pool_strings off
 
 struct GSthread {
-    GSthread* prev;        // 0x00
-    GSthread* next;        // 0x04
-    u8 active;             // 0x08
-    u8 blocked;            // 0x09
-    u8 sleeping;           // 0x0A
-    u8 affinity;           // 0x0B
-    u32 group;             // 0x0C
-    u32 stackSize;         // 0x10
-    u8 running;            // 0x14
-    u8 pending;            // 0x15
-    u8 usesFPU;            // 0x16
-    u8 autoStart;          // 0x17
-    u32 result;            // 0x18
-    void* entry;           // 0x1C
-    u32* stack;            // 0x20
-    u32* ctx;              // 0x24
-    s32 heap;              // 0x28
-    u32 savedLR;           // 0x2C
-    char name[0x20];       // 0x30
+    GSthread* prev;
+    GSthread* next;
+    u8 active;
+    u8 blocked;
+    u8 sleeping;
+    u8 affinity;
+    u32 group;
+    u32 stackSize;
+    u8 running;
+    u8 pending;
+    u8 usesFPU;
+    u8 autoStart;
+    u32 result;
+    void* entry;
+    u32* stack;
+    u32* ctx;
+    s32 heap;
+    u32 savedLR;
+    char name[0x20];
 };
 
 extern "C" {

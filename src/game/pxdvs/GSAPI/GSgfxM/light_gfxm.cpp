@@ -30,7 +30,6 @@ enum GSgfxLightType {
     GS_GFX_LIGHT_DIFFUSE,
 };
 
-// A GX hardware light; changed parameters are flagged dirty and sent to GX in Load().
 class GSgfxLight {
 public:
     GSgfxLight();
@@ -99,7 +98,6 @@ u32 GSgfxLight::Load(u8 id) {
         } else if (m_dirty & LIGHT_DIRTY_ATTN) {
             GXInitLightAttn(&m_obj, m_attn[0], m_attn[1], m_attn[2], m_attn[3], m_attn[4], m_attn[5]);
         }
- // fall through
     case GS_GFX_LIGHT_DIFFUSE:
         if (m_dirty & LIGHT_DIRTY_POS) {
             GXInitLightPos(&m_obj, m_pos.x, m_pos.y, m_pos.z);

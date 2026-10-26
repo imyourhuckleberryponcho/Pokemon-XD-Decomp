@@ -1,13 +1,9 @@
-// DRAFT (dr_movie): all functions written, not yet exact. GSgfxLayer is accessed by raw offsets (W/B/H macros)
-// for now; the original used the GSgfxLayer inline state setters (tevOrder/tevColorIn/... style).
 #pragma pool_strings off
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #include <dolphin/gx/GXStruct.h>
 #define THP_MAX(a, b) ((a) > (b) ? (a) : (b))
 #define THP_MIN(a, b) ((a) < (b) ? (a) : (b))
-// Non-volatile view of the GX write-gather FIFO: the original kept constants in
-// registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 
 struct GStexture {
@@ -87,7 +83,6 @@ public:
         p[3] = a;
         mark(0x20, 0x1708, 1 << table);
     }
- // TEV state setters (XD's GSgfxLayer keeps a shadow of the GX TEV state; one dirty bit per stage)
     inline void tevNumStages(u8 n) {
         *((u8*)this + 0xEAC) = n;
         mark(8, 0x16CC, 1);
@@ -185,7 +180,6 @@ GSgfxLayer* thpLayer;
 #define LF(l, o) (*(f32*)((u8*)(l) + (o)))
 #define F(o) (*(f32*)((u8*)thpLayer + (o)))
 
-// TEV S10 colour register: components are clamped to [-0x400, 0x3ff].
 static inline s16 clampS10(s16 v) {
     if (v < -0x400) {
         v = -0x400;
@@ -213,7 +207,6 @@ static inline void bindTexture(int slot, GStexture* t) {
     }
 }
 
-// ---------------------------------------------------------------- functions
 extern "C" {
 
 u16 THPGXYuv2RgbDraw(u8* yData, u8* uData, u8* vData, s16 x, s16 y, u16 texW, u16 texH, s16 polyW, s16 polyH) {

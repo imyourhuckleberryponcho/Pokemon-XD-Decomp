@@ -1,16 +1,9 @@
-// WIP: 66/87 functions exact. Needs extra_cflags=["-inline noauto,deferred"] (source is
-// written bottom-to-top). Not exact: menuPocket2Cursor (91%, reg alloc), _menuPocketLoop (extra hoisted constants),
-// _execActionMenu (stmw/reg), _selectItem (param regs), _actTukauNormal, _makeActMenu, _swapItemSlot,
-// _getItemIDFromMenuPos, menuPocketInputNumber, menuPocket2PrintNumMenu and small near-misses; .sdata2 float order
-// (2.0f/100/155 in DrawExchangeCursor) still differs.
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
 #include <game/shared/menu_work.h>
 
 enum GSgfxLayerID { GSgfxLayerID0 };
-
 
 struct MenuItem {
     u8 pad0[6];
@@ -106,29 +99,29 @@ static inline int nines(int n)
 }
 
 struct PocketData {
-    u8 open;            // 0x00
+    u8 open;
     u8 pad1[3];
-    s32 mode;           // 0x04
-    void* trainer;      // 0x08
-    Hero* hero;         // 0x0C
-    s32 pokeSlot;       // 0x10
-    s32 curPoke;        // 0x14
-    f32 tabScroll;      // 0x18
-    f32 listScroll;     // 0x1C
-    u8 scrollFlag;      // 0x20
+    s32 mode;
+    void* trainer;
+    Hero* hero;
+    s32 pokeSlot;
+    s32 curPoke;
+    f32 tabScroll;
+    f32 listScroll;
+    u8 scrollFlag;
     u8 pad21[3];
-    f32 roll;           // 0x24
-    u32 explMsg;        // 0x28
-    s32 result;         // 0x2C
-    s32 shop;           // 0x30
-    s32 number;         // 0x34
-    s32 exchangeFrom;   // 0x38
-    bool inList;        // 0x3C
+    f32 roll;
+    u32 explMsg;
+    s32 result;
+    s32 shop;
+    s32 number;
+    s32 exchangeFrom;
+    bool inList;
     u8 pad3d[3];
-    s32 tab;            // 0x40
-    s32 lastSlot;       // 0x44
-    f32 blink;          // 0x48
-    u8 resizeInit;      // 0x4C
+    s32 tab;
+    s32 lastSlot;
+    f32 blink;
+    u8 resizeInit;
     u8 pad4d[3];
 };
 
@@ -229,7 +222,6 @@ s32 menuPocketCologne(s32 a);
 void menuPtPlaySe(u32 id);
 void menuPocketToolFloatToZero(f32& v, f32 step);
 
-// forward declarations
 namespace {
 void _infoOnly(u32 msg);
 void _infoBeep(u32 msg);
@@ -692,7 +684,8 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
     }
     CursorPos set = pos;
     cursorBiosSetPos(TabTbl[w->cursor].cursorIdx, set);
-    if (prev.y != pos.y || prev.x != pos.x) {
+    u16 rf_t = prev.y;
+    if (pos.y != rf_t || pos.x != prev.x) {
         menuSubCursorAnimeStart();
     }
     if (Data.exchangeFrom < 0 && !moved) {
@@ -1565,8 +1558,8 @@ void _printItemKinomi(GSgfxLayerID layer, int x, int y, int tab, int pos)
     w += (s16)(GSmsgGetRect(0x428F) >> 16);
     GSmsgPrint2(layer, x + menuItemBiosGetPtr(0x2C, 0xB4)->w - w, y, -1, 0x428F);
     msgctrlSetValue(0x34, _getItemNumFromMenuPos(tab, pos));
-    s16 w2 = GSmsgGetRect(0x4270) >> 16;
-    GSmsgPrint2(layer, x + menuItemBiosGetPtr(0x2C, 0xB4)->w - w2 + 1, y, -1, 0x4270);
+    w = GSmsgGetRect(0x4270) >> 16;
+    GSmsgPrint2(layer, x + menuItemBiosGetPtr(0x2C, 0xB4)->w - w + 1, y, -1, 0x4270);
 }
 }
 

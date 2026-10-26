@@ -62,7 +62,6 @@ enum hex_scan_states {
 f64 atof(const char* str);
 f128 __strtold(int max_width, int (*ReadProc)(void*, int, int), void* ReadProcArg, int* chars_scanned, int* overflow);
 
-
 f128 __strtold(int max_width, int (*ReadProc)(void*, int, int), void* ReadProcArg, int* chars_scanned, int* overflow)
 {
 	int scan_state     = start;

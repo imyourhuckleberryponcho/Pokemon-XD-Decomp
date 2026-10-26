@@ -1,41 +1,5 @@
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/mbstring.h"
 
-// void mblen(void)
-// {
-// 	// UNUSED FUNCTION
-// }
-
-// void utf8_to_unicode(void)
-// {
-// 	// UNUSED FUNCTION
-// }
-
-
-// void mbrlen(void)
-// {
-// 	// UNUSED FUNCTION
-// }
-
-// void mbrtowc(void)
-// {
-// 	// UNUSED FUNCTION
-// }
-
-// void wcrtomb(void)
-// {
-// 	// UNUSED FUNCTION
-// }
-
-// void mbsrtowcs(void)
-// {
-// 	// UNUSED FUNCTION
-// }
-
-// void wcsrtombs(void)
-// {
-// 	// UNUSED FUNCTION
-// }
-
 inline static int unicode_to_UTF8(char* s, wchar_t wchar);
 inline int wctomb(char* s, wchar_t wchar);
 size_t wcstombs(char* s, const wchar_t* pwcs, size_t n);

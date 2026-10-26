@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -29,7 +27,6 @@ struct leafData;
 class leafEffect;
 
 extern "C++" {
-// ---- draft declarations ----
 struct GSbezier {
     u8 _draft[1];
 };
@@ -75,18 +72,18 @@ struct leafData {
 };
 class leafEffect : public GSeffect {
 public:
-    s32 unkC;            // 0x0c
-    _GSmodel* model;     // 0x10
-    f32 unk14;           // 0x14
-    f32 params[10];      // 0x18
-    f32 unk40;           // 0x40
-    f32 unk44;           // 0x44
-    f32 unk48;           // 0x48
-    s32 unk4C;           // 0x4c
-    u32 resID;           // 0x50
-    f32 unk54;           // 0x54
-    f32 unk58;           // 0x58
-    f32 unk5C;           // 0x5c
+    s32 unkC;
+    _GSmodel* model;
+    f32 unk14;
+    f32 params[10];
+    f32 unk40;
+    f32 unk44;
+    f32 unk48;
+    s32 unk4C;
+    u32 resID;
+    f32 unk54;
+    f32 unk58;
+    f32 unk5C;
 
     leafEffect(unsigned char**, float);
     virtual bool _start();
@@ -183,15 +180,14 @@ void leafEffect::_stop() {
 
 extern "C++" {
 bool leafEffect::_update(float p0) {
-    u32 sp20;
+    s32 sp24;
     volatile f32 v18[2];
     f32 unksp8;
-    s32 sp24;
+    u32 sp20;
     GSmaterial *var_r30;
     _GSmodel *temp_r31;
     f32 temp_f2;
     f32 temp_f30;
-    f32 temp_f30_2;
     f32 temp_f3;
     f32 var_f31;
     leafData *var_r30_2;
@@ -199,13 +195,13 @@ bool leafEffect::_update(float p0) {
     u32 var_r29_2;
     u32 var_r31;
     u8 *temp_r3;
+    f32 temp_f30_2;
 
     if ((u8 *) M2C_FIELD(this, u8 **, 0x10) == NULL) {
         return 0;
     }
     M2C_FIELD(this, f32 *, 0x44) = (f32) (M2C_FIELD(this, f32 *, 0x44) + p0);
-    M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-    if (M2C_FIELD(this, f32 *, 0x44) == M2C_FIELD(this, f32 *, 0x48)) {
+    if (M2C_FIELD(this, f32 *, 0x44) >= M2C_FIELD(this, f32 *, 0x48)) {
         return 0;
     }
     var_f31 = M2C_FIELD(this, f32 *, 0x34) * (f32) (u32) (p0 * (f32) GSgfxVideoGetVsyncRate());
@@ -238,8 +234,7 @@ bool leafEffect::_update(float p0) {
     while (var_r29_2 < (u32) M2C_FIELD(this, u32 *, 0x4C)) {
         if ((_GSmodel *) M2C_FIELD(var_r30_2, _GSmodel **, 0x58) != NULL) {
             M2C_FIELD(var_r30_2, f32 *, 0x54) = (f32) (M2C_FIELD(var_r30_2, f32 *, 0x54) + var_f31);
-            M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-            if (M2C_FIELD(var_r30_2, f32 *, 0x54) == 1.0f) {
+            if (M2C_FIELD(var_r30_2, f32 *, 0x54) >= 1.0f) {
                 ((leafEffect*)(this))->UpdateLeafData((leafData*)(var_r30_2));
             }
             GSbezierCalculateVector((Vec*)(v18), (GSbezier*)((GSbezier *) var_r30_2), M2C_FIELD(var_r30_2, f32 *, 0x54));
@@ -249,12 +244,12 @@ bool leafEffect::_update(float p0) {
                 M2C_FIELD(var_r30_2, _GSmodel **, 0x58) = NULL;
             } else {
                 temp_r31 = M2C_FIELD(var_r30_2, _GSmodel **, 0x58);
-                temp_f30_2 = M2C_FIELD(var_r30_2, f32 *, 0x50);
                 C_QUATSlerp((const Quaternion*)(((u8*)(var_r30_2) + 0x30)), (const Quaternion*)(((u8*)(var_r30_2) + 0x40)), (Quaternion*)(&unksp8), M2C_FIELD(var_r30_2, f32 *, 0x54));
                 PSMTXQuat((Mtx)((s32) &sp24), (const Quaternion *)((const register Quaternion*)(&unksp8)));
                 PSMTXScaleApply((const Mtx)((s32) &sp24), (Mtx)((s32) &sp24), (float)(temp_f30_2), (float)(temp_f30_2), (float)(temp_f30_2));
                 PSMTXTransApply((const Mtx)((s32) &sp24), (Mtx)((s32) &sp24), (float)(v18[0]), (float)(v18[1]), (float)(sp20));
                 GSmodelSetMatrix((_GSmodel*)(temp_r31), (Mtx)((s32) &sp24));
+                temp_f30_2 = M2C_FIELD(var_r30_2, f32 *, 0x50);
             }
         }
         var_r29_2 += 1;
@@ -347,23 +342,23 @@ void leafEffect::UpdateLeafData(leafData* p0) {
     Vec *temp_r31_2;
     Vec *temp_r31_3;
     f32 temp_f1;
-    f32 temp_f27;
-    f32 temp_f27_2;
+    f32 temp_f31_3;
+    f32 temp_f31_4;
     f32 temp_f30_2;
-    f32 temp_f28_2;
-    f32 temp_f28_3;
-    f32 temp_f29;
     f32 temp_f29_2;
     f32 temp_f29_3;
-    f32 temp_f30;
+    f32 temp_f29;
+    f32 temp_f28_2;
+    f32 temp_f28_3;
     f32 temp_f28;
+    f32 temp_f30;
     f32 temp_f30_3;
     f32 temp_f30_4;
     f32 temp_f30_5;
     f32 temp_f31;
     f32 temp_f31_2;
-    f32 temp_f31_3;
-    f32 temp_f31_4;
+    f32 temp_f27;
+    f32 temp_f27_2;
 
     M2C_FIELD(p0, f32 *, 0x54) = (f32) (M2C_FIELD(p0, f32 *, 0x54) - 1.0f);
     M2C_FIELD(p0, f32 *, 0x30) = (f32) M2C_FIELD((s32)p0, f32 *, 0x40);
@@ -377,8 +372,8 @@ void leafEffect::UpdateLeafData(leafData* p0) {
     temp_f31_2 = (f32) cos((f64) temp_f31);
     temp_f1 = (f32) cos((f64) temp_f30);
     spC = temp_f31_2;
-    sp10 = temp_f29 * temp_f28;
     sp8 = temp_f29 * temp_f1;
+    sp10 = temp_f29 * temp_f28;
     C_QUATRotAxisRad((Quaternion*)(((u8*)(p0) + 0x40)), (const Vec*)((Vec *) &sp8), 6.2831855f * HSD_Randf());
     temp_r31 = (Vec *)(((u8*)((u16)p0) + 0x18));
     M2C_FIELD(p0, f32 *, 0) = (f32) M2C_FIELD(p0, f32 *, 0xC);
@@ -395,7 +390,8 @@ void leafEffect::UpdateLeafData(leafData* p0) {
     temp_f27 = 6.2831855f * HSD_Randf();
     temp_f30_2 = 3.1415927f * HSD_Randf();
     temp_f28_2 = (f32) sin((f64) temp_f30_2);
-    temp_f31_3 = ((M2C_FIELD(this, f32 *, 0x24) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x20)) * M2C_FIELD(p0, f32 *, 0x50);
+    temp_f31_3 = ((M2C_FIELD(this, f32 *, 0x24) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x20));
+    temp_f31_3 *= M2C_FIELD(p0, f32 *, 0x50);
     temp_f29_2 = (f32) sin((f64) temp_f27);
     temp_f30_3 = (f32) cos((f64) temp_f30_2);
     M2C_FIELD(p0, f32 *, 0xC) = (f32) (temp_f28_2 * (f32) cos((f64) temp_f27));
@@ -408,7 +404,8 @@ void leafEffect::UpdateLeafData(leafData* p0) {
     temp_f27_2 = 6.2831855f * HSD_Randf();
     temp_f30_4 = 3.1415927f * HSD_Randf();
     temp_f28_3 = (f32) sin((f64) temp_f30_4);
-    temp_f31_4 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28)) * M2C_FIELD(p0, f32 *, 0x50);
+    temp_f31_4 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28));
+    temp_f31_4 *= M2C_FIELD(p0, f32 *, 0x50);
     temp_f29_3 = (f32) sin((f64) temp_f27_2);
     temp_f30_5 = (f32) cos((f64) temp_f30_4);
     M2C_FIELD(p0, f32 *, 0x24) = (f32) (temp_f28_3 * (f32) cos((f64) temp_f27_2));
@@ -436,9 +433,7 @@ s32 leafEffect::GenerateLeafData(leafData* p0) {
     f32 temp_f1;
     f32 temp_f1_2;
     f32 temp_f1_3;
-    f32 temp_f27;
     f32 temp_f27_2;
-    f32 temp_f27_3;
     f32 temp_f28;
     f32 temp_f28_2;
     f32 temp_f28_3;
@@ -454,22 +449,24 @@ s32 leafEffect::GenerateLeafData(leafData* p0) {
     f32 temp_f30_3;
     f32 temp_f30_4;
     f32 temp_f30_5;
-    f32 temp_f30_6;
+    f32 temp_f31_4;
     f32 temp_f30_7;
     f32 temp_f30_8;
     f32 temp_f30_9;
     f32 temp_f31;
     f32 temp_f31_2;
     f32 temp_f31_3;
-    f32 temp_f31_4;
+    f32 temp_f27;
     f32 temp_f31_6;
+    f32 temp_f27_3;
+    f32 temp_f30_6;
     f32 temp_f31_7;
 
     temp_ret = GSmodelClone((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x10)));
     M2C_FIELD(p0, _GSmodel **, 0x58) = temp_ret;
     temp_r3 = M2C_FIELD(p0, _GSmodel **, 0x58);
     if (temp_r3 == NULL) {
-        GSlogWrite((const char*)("_leaffxGenerateLeafData: Could not create leaf clone model.\n"), (u32) (u64) temp_ret, M2C_BITWISE(f32, temp_ret));
+        GSlogWrite((const char*)("_leaffxGenerateLeafData: Could not create leaf clone model.\n"), (u32) (u64) temp_ret, M2C_BITWISE(f32, (s32)temp_ret));
         return 0;
     }
     GSmodelSetVisibility((_GSmodel*)(temp_r3), 1U);
@@ -483,8 +480,8 @@ s32 leafEffect::GenerateLeafData(leafData* p0) {
     temp_f31_2 = (f32) cos((f64) temp_f31);
     temp_f1 = (f32) cos((f64) temp_f30);
     sp18 = temp_f31_2;
-    sp1C = temp_f29 * temp_f28;
     sp14 = temp_f29 * temp_f1;
+    sp1C = temp_f29 * temp_f28;
     C_QUATRotAxisRad((Quaternion*)(((u8*)((s32)p0) + 0x30)), (const Vec*)((Vec *) &sp14), 6.2831855f * HSD_Randf());
     temp_f31_3 = 6.2831855f * HSD_Randf();
     temp_f30_2 = 3.1415927f * HSD_Randf();
@@ -493,14 +490,15 @@ s32 leafEffect::GenerateLeafData(leafData* p0) {
     temp_f30_3 = (f32) cos((f64) temp_f30_2);
     temp_f1_2 = (f32) cos((f64) temp_f31_3);
     spC = temp_f30_3;
-    sp10 = temp_f28_2 * temp_f29_2;
     sp8 = temp_f28_2 * temp_f1_2;
+    sp10 = temp_f28_2 * temp_f29_2;
     C_QUATRotAxisRad((Quaternion*)(((u8*)(p0) + 0x40)), (const Vec*)((Vec *) &sp8), 6.2831855f * HSD_Randf());
     temp_r31 = (Vec *)(((u8*)(p0) + 0x18));
     M2C_FIELD(p0, f32 *, 0) = (f32) M2C_FIELD(this, f32 *, 0x54);
     M2C_FIELD(p0, f32 *, 4) = (f32) M2C_FIELD(this, f32 *, 0x58);
     M2C_FIELD(p0, f32 *, 8) = (f32) M2C_FIELD(this, f32 *, 0x5C);
-    temp_f31_4 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28)) * M2C_FIELD(p0, f32 *, 0x50);
+    temp_f31_4 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28));
+    temp_f31_4 *= M2C_FIELD(p0, f32 *, 0x50);
     temp_f27 = 6.2831855f * HSD_Randf();
     temp_f30_4 = 3.1415927f * HSD_Randf();
     temp_f28_3 = (f32) sin((f64) temp_f30_4);
@@ -527,7 +525,8 @@ s32 leafEffect::GenerateLeafData(leafData* p0) {
     temp_f27_3 = 6.2831855f * HSD_Randf();
     temp_f30_8 = 3.1415927f * HSD_Randf();
     temp_f28_5 = (f32) sin((f64) temp_f30_8);
-    temp_f31_7 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28)) * M2C_FIELD(p0, f32 *, 0x50);
+    temp_f31_7 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28));
+    temp_f31_7 *= M2C_FIELD(p0, f32 *, 0x50);
     temp_f29_5 = (f32) sin((f64) temp_f27_3);
     temp_f30_9 = (f32) cos((f64) temp_f30_8);
     M2C_FIELD(p0, f32 *, 0x24) = (f32) (temp_f28_5 * (f32) cos((f64) temp_f27_3));

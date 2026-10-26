@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 extern "C" {
@@ -24,7 +23,6 @@ void menuClose(s32 menuID);
 
 static void sndPlay(u16 id, BOOL bgm);
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 s32 dbgMenuSoundTestChangeSE(s32 item) {

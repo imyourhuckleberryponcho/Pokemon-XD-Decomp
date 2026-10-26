@@ -10,7 +10,6 @@ struct MailData {
     u32 openFlag;
 };
 
-// The player's mailbox in the save data.
 struct Mailbox {
     u16 ids[32];
     u16 count;
@@ -45,7 +44,6 @@ static inline s32 mailGetIDInMailbox(int index) {
     return box->ids[index];
 }
 
-// Byte index into Mailbox::unread for a mail id, or -1.
 static inline int mailGetUnreadBit(int id, u8& mask) {
     if (id < 0 || id >= 32) {
         return -1;

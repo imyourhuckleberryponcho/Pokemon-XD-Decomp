@@ -1,9 +1,6 @@
 #include <dolphin/types.h>
 #pragma pool_strings off
 
-// Trainer/Pokemon deck tables, loaded from a "DECK" chunk file (deckRegister).
-// The unit was built with -inline deferred: functions are written here in reverse object order.
-
 class CChank {
 public:
     char* m_data;
@@ -112,7 +109,7 @@ public:
     void setSelectRandomPokemon(bool value);
     bool getSelectRandomPokemon() const;
 
-    u8 selectRandomPokemon : 1;      // 0x00
+    u8 selectRandomPokemon : 1;
     u8 notSameWeekPoint : 1;
     u8 order : 1;
     u8 selectAceBoss : 1;
@@ -120,7 +117,7 @@ public:
     u8 attrDetermination : 1;
     u8 abilityDetermination : 1;
     u8 calcWazaDamage : 1;
-    u8 selectRandomDefence : 1;      // 0x01
+    u8 selectRandomDefence : 1;
     u8 selectRandomWaza : 1;
     u8 respectWazaAssmntVal : 1;
     u8 respectRole : 1;
@@ -129,20 +126,20 @@ public:
     u8 respectPokemonCondJuge : 1;
     u8 unk1_0 : 1;
     u8 unk2[2];
-    DeckStatusDetermVal statusDetermVal[8];  // 0x04
-    u8 statusDetermValTotalMax;      // 0x0C
-    u8 statusDetermValTotalMin;      // 0x0D
-    u8 pokeChgRate;                  // 0x0E
-    u8 itemUseRate;                  // 0x0F
-    u8 hitRate;                      // 0x10
-    u8 annihilateDetermRate;         // 0x11
-    u8 lowHPDetermRate;              // 0x12
-    u8 lastPPDetermRate;             // 0x13
-    u8 attrTypeID[2];                // 0x14
-    u8 attrTypeParam[2];             // 0x16
-    u16 wazaKindID[2];               // 0x18
-    u8 wazaKindParam[2];             // 0x1C
-    u8 totalCorrection;              // 0x1E
+    DeckStatusDetermVal statusDetermVal[8];
+    u8 statusDetermValTotalMax;
+    u8 statusDetermValTotalMin;
+    u8 pokeChgRate;
+    u8 itemUseRate;
+    u8 hitRate;
+    u8 annihilateDetermRate;
+    u8 lowHPDetermRate;
+    u8 lastPPDetermRate;
+    u8 attrTypeID[2];
+    u8 attrTypeParam[2];
+    u16 wazaKindID[2];
+    u8 wazaKindParam[2];
+    u8 totalCorrection;
     u8 unk1F;
 };
 
@@ -161,17 +158,17 @@ public:
     u8 getSnatchRatio() const;
     u8 getWorth() const;
 
-    u8 worth;                 // 0x00
-    u8 snatchRatio;           // 0x01
-    u8 playerLevel;           // 0x02
-    u8 scenarioPokemon : 1;   // 0x03
+    u8 worth;
+    u8 snatchRatio;
+    u8 playerLevel;
+    u8 scenarioPokemon : 1;
     u8 unk3 : 7;
-    u32 deckPokemonID;        // 0x04
-    u16 initDarkPoint;        // 0x08
-    u16 bonusExp;             // 0x0A
-    u16 darkWaza[4];          // 0x0C
-    u8 revers;                // 0x14
-    u8 underTakerFlag;        // 0x15
+    u32 deckPokemonID;
+    u16 initDarkPoint;
+    u16 bonusExp;
+    u16 darkWaza[4];
+    u8 revers;
+    u8 underTakerFlag;
     u8 unk16[2];
 };
 
@@ -242,21 +239,21 @@ public:
         }
     }
 
-    u16 pokemonID;            // 0x00
-    u8 level;                 // 0x02
-    u8 friendLevel;           // 0x03
-    u16 holdItem;             // 0x04
-    u8 role;                  // 0x06
-    u8 keyPlayer;             // 0x07
-    u8 statusRnd[6];          // 0x08
-    u8 statusEffort[6];       // 0x0E
-    u16 wazaID[4];            // 0x14
+    u16 pokemonID;
+    u8 level;
+    u8 friendLevel;
+    u16 holdItem;
+    u8 role;
+    u8 keyPlayer;
+    u8 statusRnd[6];
+    u8 statusEffort[6];
+    u16 wazaID[4];
     u8 unk1C;
-    u8 comboPartnerAll;       // 0x1D
-    u8 seikakuID : 5;         // 0x1E
+    u8 comboPartnerAll;
+    u8 seikakuID : 5;
     u8 sex : 2;
     u8 tokuseiFlag : 1;
-    u8 randomSetting : 1;     // 0x1F
+    u8 randomSetting : 1;
     u8 unk1F : 7;
 };
 
@@ -301,20 +298,20 @@ public:
         return (darkPokemonFlags & (1 << index)) != 0;
     }
 
-    u16 msgOffset;            // 0x00
+    u16 msgOffset;
     u8 unk2[2];
-    u8 darkPokemonFlags;      // 0x04
-    u8 trainerKind;           // 0x05
-    u16 trainerName;          // 0x06
-    u16 trainerItem[4];       // 0x08
-    u16 trainerPKX;           // 0x10
-    u16 introWZX;             // 0x12
-    u16 trainerMsg[4];        // 0x14
-    u16 pokemonDataID[6];     // 0x1C
-    u16 aiID;                 // 0x28
-    u16 fixedActionID;        // 0x2A
-    u16 comboID[4];           // 0x2C
-    u8 comboActive[4];        // 0x34
+    u8 darkPokemonFlags;
+    u8 trainerKind;
+    u16 trainerName;
+    u16 trainerItem[4];
+    u16 trainerPKX;
+    u16 introWZX;
+    u16 trainerMsg[4];
+    u16 pokemonDataID[6];
+    u16 aiID;
+    u16 fixedActionID;
+    u16 comboID[4];
+    u8 comboActive[4];
 };
 
 struct FightEncountData;

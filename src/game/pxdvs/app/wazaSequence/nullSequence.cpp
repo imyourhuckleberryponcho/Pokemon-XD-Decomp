@@ -30,7 +30,6 @@ public:
     WazaSequence* m_prev;
 };
 
-// A group of move animations ("sequences") sharing one transform.
 class NullSequence {
 public:
     NullSequence();

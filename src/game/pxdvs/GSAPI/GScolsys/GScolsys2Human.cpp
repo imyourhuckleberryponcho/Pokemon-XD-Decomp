@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -46,7 +43,6 @@ struct Vec;
 struct tagPeopleWork;
 
 extern "C" {
-// ---- draft declarations ----
 struct GSCOLSYS2_HUMAN {
     u8 _draft[1];
 };
@@ -56,7 +52,6 @@ struct GSgfxVF {
 struct GSvec {
     f32 x, y, z;
 };
-// floor hit returned by GScolsys2WalkGetHeight
 struct GSwalkHit {
     f32 height;
     u8 unk4[8];
@@ -117,15 +112,11 @@ static u8 checkCollisionHeadToHead(GSCOLSYS2_HUMAN* p0, GSCOLSYS2_HUMAN* p1, GSv
 static u8 checkCollision(GSCOLSYS2_HUMAN* p0, int p1, GSvec* p2, GSvec* p3, GSvec* p4);
 }
 
-// ---- draft declarations ----
-
-
 extern "C" {
 f32 GScolsys2HumanGetWalkHeight(void *p0);
 inline double fabs(double x) { return __fabs(x); }
 }
 
-// MSL <math.h> inlines (sqrtf with its NaN checks)
 inline int __fpclassifyf(float x)
 {
     switch ((*(s32*) &x) & 0x7F800000) {
@@ -176,7 +167,6 @@ struct HumanFloor {
     HumanEvent events[48];
 };
 
-// Shared by GScolsys2HumanCollision and GScolsys2HumanEnable (shape of Colosseum's GScolsys2HumanGetEvent).
 static inline s32 GScolsys2HumanGetEvent(s32 index, HumanEvent** out)
 {
     HumanFloor* floor;
@@ -208,14 +198,14 @@ f32 GScolsys2HumanGetHumanRadius(s32 index) {
 
 extern "C" {
 void GScolsys2HumanDispColision() {
-    f32 sp18;
+    volatile f32 sp18;
     f32 sp14;
-    f32 sp10;
-    volatile s32 sp8;
+    volatile f32 sp10;
+    f32 temp_f28;
     volatile f32 temp_f26;
     f32 temp_f27;
     f32 temp_f27_2;
-    f32 temp_f28;
+    volatile s32 sp8;
     f32 temp_f28_2;
     f32 temp_f4;
     s32 var_r29;
@@ -239,13 +229,13 @@ void GScolsys2HumanDispColision() {
             temp_r3_2 = M2C_FIELD(var_r28, u16 *, 0x10);
             if ((temp_r3_2 & 1) && !(temp_r3_2 & 2)) {
                 sp18 = 0.0f;
-                sp14 = 0.0f;
                 sp10 = 0.0f;
                 peopleGetPos(M2C_FIELD(var_r28, s32 *, 0), M2C_FIELD(var_r28, s32 *, 4), (GSvec*)((GSvec *) &sp10));
                 GSgfxSetPrimitiveType(0xA0U);
                 GSgfxBeginSurface(0x12U);
                 GSgfxVertex3f(sp10, 0.1f + sp14, sp18);
                 GSgfxColor4u8(0U, 0x7FU, 0x7FU, 0xC0U);
+                sp14 = 0.0f;
                 var_r29 = 0;
                 do {
                     temp_f27 = (f32) var_r29;
@@ -325,7 +315,7 @@ static u8 checkCollisionHeadToHead(GSCOLSYS2_HUMAN* p0, GSCOLSYS2_HUMAN* p1, GSv
     }
     temp_f2 = M2C_FIELD(p2, f32 *, 4);
     temp_f1_5 = M2C_FIELD(temp_r3_2, f32 *, 4);
-    if ((temp_f1_5 >= (temp_f2 + M2C_FIELD(p1, f32 *, 0xC))) || (M2C_ERROR(/* unknown instruction: cror eq, lt, eq */), (((temp_f1_5 + M2C_FIELD(p0, f32 *, 0xC)) == temp_f2) != 0))) {
+    if ((temp_f1_5 >= (temp_f2 + M2C_FIELD(p1, f32 *, 0xC))) || (M2C_ERROR( ), (((temp_f1_5 + M2C_FIELD(p0, f32 *, 0xC)) == temp_f2) != 0))) {
         return 0;
     }
 block_29:
@@ -430,7 +420,6 @@ static u8 checkCollision(GSCOLSYS2_HUMAN* human, int index, GSvec* start, GSvec*
 }
 
 extern "C" {
-// One collision "human" slot of the current floor (48 of them at floor+0xA00, flag 1 = in use, 2 = disabled).
 
 s32 GScolsys2HumanCollision(int index, s32 start, s32 end, s32 result) {
     HumanEvent* event;

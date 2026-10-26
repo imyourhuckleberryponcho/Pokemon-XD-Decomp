@@ -8,11 +8,6 @@ void floorWaitForChange(void);
 
 static u32 Parameter;
 
-/*
- * --INFO--
- * Address:	802399D4
- * Size:	00003C
- */
 void d2presentOpen(u32 param) {
     Parameter = param;
     GSfloorPush(0x16);

@@ -1,4 +1,3 @@
-// Draft (written from asm). Needs -inline deferred (source is bottom-to-top).
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
 #include <dolphin/gx/GXVert.h>
@@ -63,7 +62,7 @@ struct GsShapeAnimHeader {
     u32 frameCount;
     u32 fps;
     u8 unkC[8];
-    u8 flag;  // 0x14
+    u8 flag;
 };
 
 class GsShapeRender {
@@ -82,7 +81,7 @@ public:
 
     u8 loaded;
     u8 pad1[0x13];
-    GsShapeAnimHeader* anim;  // 0x14
+    GsShapeAnimHeader* anim;
     u8 pad18[0x964 - 0x18];
 };
 

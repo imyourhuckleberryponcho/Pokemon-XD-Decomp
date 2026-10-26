@@ -75,7 +75,6 @@ GSgfxState* gsgfxState;
 
 static void _gfxScratchNotify(GSscratchNotify notify, void* mem, unsigned char);
 
-// Moves the graphics state into the locked cache scratch memory.
 extern "C" void GSgfxRelocToScratch(void) {
     GSgfxState* state = (GSgfxState*)GSscratchAlloc(0xC, _gfxScratchNotify);
     memcpy(state, gsgfxState, sizeof(GSgfxState));

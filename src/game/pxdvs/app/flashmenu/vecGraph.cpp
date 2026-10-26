@@ -1,10 +1,4 @@
-// STATUS (rough draft, rd_vecg): 12/12 functions, 1 exact, byte-weighted ~62%, default flags (+pool_strings off).
-// Weakest: vecExec 36% (target frame 0x140 vs ours 0x180: fewer GSvec2 temporaries), gradientline 44%,
-// SBscan 67% (target pushes line vertices via psq_l of an s16 pair -> f32 pair; we convert via ints),
-// calcVecRect 69%, SBline 84%, getUV 89%. Flash struct types reconstructed from offsets only.
-// LAYOUT: .sdata2 constants differ (psq_l scale constants missing), .data/.bss names OK.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -33,10 +27,6 @@ double cos(double);
 double acos(double);
 extern unsigned long __float_nan[];
 }
-
-// ---- draft declarations ----
-
-
 
 static inline int vgFPClassify(f32 x) {
     switch ((*(s32*)&x) & 0x7f800000) {
@@ -100,15 +90,15 @@ struct _LINESTYLEARRAY {
 };
 
 struct SHAPEDATA {
-    u8 flags;        // 0x00
+    u8 flags;
     u8 pad01[3];
-    s32 x;           // 0x04
-    s32 y;           // 0x08
-    u8 line;         // 0x0C
-    u8 fill;         // 0x0D
-    u8 lineWidth;    // 0x0E
+    s32 x;
+    s32 y;
+    u8 line;
+    u8 fill;
+    u8 lineWidth;
     u8 pad0F[5];
-    u32 newStyles;   // 0x14
+    u32 newStyles;
 };
 
 struct _SHAPERECORD {
@@ -124,28 +114,28 @@ struct VEC_RECT {
 };
 
 struct VEC_GRAPH_DATA {
-    s32 on[2];        // 0x00 fill / line enabled
-    s32 idx[2];       // 0x08
-    s32 width[2];     // 0x10
-    s16 minX, minY, maxX, maxY; // 0x18
-    s16 cx, cy, w, h; // 0x20
-    s32 color;        // 0x28
-    s32 cxform;       // 0x2C
-    s32 color2;       // 0x30
-    u32 numStyles;    // 0x34
-    u8* styles;       // 0x38
-    s32 f3C;          // 0x3C
-    u8* grad;         // 0x40
-    s32 gx;           // 0x44
-    s32 gy;           // 0x48
-    f32 gScale;       // 0x4C
-    f32 gAngle;       // 0x50
-    f32 sinA;         // 0x54
-    f32 cosA;         // 0x58
-    f32 sinB;         // 0x5C
-    f32 cosB;         // 0x60
-    u32 palette[0x100]; // 0x64
-    s16 cross[0x800];   // 0x464
+    s32 on[2];
+    s32 idx[2];
+    s32 width[2];
+    s16 minX, minY, maxX, maxY;
+    s16 cx, cy, w, h;
+    s32 color;
+    s32 cxform;
+    s32 color2;
+    u32 numStyles;
+    u8* styles;
+    s32 f3C;
+    u8* grad;
+    s32 gx;
+    s32 gy;
+    f32 gScale;
+    f32 gAngle;
+    f32 sinA;
+    f32 cosA;
+    f32 sinB;
+    f32 cosB;
+    u32 palette[0x100];
+    s16 cross[0x800];
 };
 
 struct LPOINT {
@@ -202,7 +192,6 @@ static void getUV(GSvec2* a, GSvec2* b, GSvec2* c, FLASHMATRIXF* m, FLASHMATRIXF
 static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2* pts, VEC_GRAPH_DATA* d, FLASHCXFORM* cx);
 static _SHAPERECORD* SpriteCode(u32, _SHAPERECORD* rec, u16 id, FLASHMATRIXF* mf, FLASHMATRIX* m, long x, long y, VEC_GRAPH_DATA* d, FLASHCXFORM* cx);
 
-// push one line vertex (color + x,y) into the batch list
 static inline void lListPush(u32 color, s16 x, s16 y) {
     if (lList[0] >= 0x200) {
         if (debugstep == 0x1229) {
@@ -244,7 +233,7 @@ static void SBscan(void) {
             lPoint[0].n = 0;
             x = (s16)(vecRect.x0 / 8);
             u32* p = row + x;
-            for (; x <= vecRect.x1 / 8; x++, p++) {
+            for (; x <= vecRect.x1 / 8; p++, x++) {
                 if (*p != 0) SBdec(*p, x, gVecDat.numStyles);
             }
             for (u32 i = 0; i < gVecDat.numStyles; i++) {
@@ -276,8 +265,6 @@ static void SBscan(void) {
     }
 }
 
-
-// toggle/set the coverage bit(s) of pixel (x, y) in the scanline buffer
 static inline void plot(s16 x, s16 y) {
     s16 px = x;
     if (px < 0) px = 0;
@@ -298,8 +285,6 @@ static inline void plot(s16 x, s16 y) {
     }
 }
 
-
-// build the gradient palette between control points
 static inline void buildGradient(VEC_GRAPH_DATA* d) {
     s16 i = 0;
     s32 off = 0;
@@ -332,15 +317,6 @@ static inline void buildGradient(VEC_GRAPH_DATA* d) {
     for (; n < 0x100; n++) memcpy(&d->palette[n], &prev, 4);
 }
 
-
-
-
-// pick the quad corner that is closest to the origin, then compute normalized UVs
-
-
-
-
-
 extern "C++" {
 static void SBdec(u32 p0, s16 p1, u32 p2) {
     s32 *var_r7;
@@ -351,14 +327,14 @@ static void SBdec(u32 p0, s16 p1, u32 p2) {
     s32 temp_r0_2;
     s32 temp_r0_3;
     s32 temp_r12;
-    u32 var_ctr;
-    u32 var_ctr_2;
+    s32 *var_r9;
+    u8 *var_r10_3;
     u32 var_ctr_3;
     u32 var_ctr_4;
     u8 *var_r10;
     u8 *var_r10_2;
-    u8 *var_r10_3;
-    s32 *var_r9;
+    u32 var_ctr_2;
+    u32 var_ctr;
     u8 temp_r4;
     u8 temp_r4_2;
     u8 temp_r6;
@@ -565,8 +541,8 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long idx) {
             }
         } else {
             u8* st = styles + (idx << 7);
-            s32 sx = AT(s32, st, 8);
             f32 sy = (f32)AT(s32, st, 0xC);
+            s32 sx = AT(s32, st, 8);
             d->gx = AT(s32, st, 0x18) / 20 - d->cx;
             f32 fx = (f32)sx;
             len = fx * fx + sy * sy;
@@ -650,7 +626,7 @@ static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2*
     GSvec2 uv[4];
     FLASHMATRIXF mm;
     s16 add[4];
-    u8 col[4];
+    u8 col[5];
     if (tex != 0) {
         mm.a = (f32)m->a / 1310720.0f;
         mm.b = (f32)m->b / 1310720.0f;
@@ -664,8 +640,8 @@ static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2*
         s16 a3 = (s16)cx->bb;
         s16 a4 = (s16)cx->ab;
         col[3] = (u8)((cx->ra * 0xFF) >> 8);
-        col[0] = (u8)((cx->ga * 0xFF) >> 8);
         col[1] = (u8)((cx->ba * 0xFF) >> 8);
+        col[0] = (u8)((cx->ga * 0xFF) >> 8);
         col[2] = (u8)((cx->aa * 0xFF) >> 8);
         add[1] = a2;
         add[2] = a3;
@@ -722,27 +698,27 @@ static void getUV(GSvec2* out, GSvec2* uv, GSvec2* pts, FLASHMATRIXF* mat, FLASH
 extern "C++" {
 #pragma peephole off
 static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
-    s32 var_ctr_2;
+    s32 sp24;
     s32 sp1C;
-    s32 sp20;
+    volatile s32 sp20;
     u8 sp34[4];
     s32 sp30;
     s32 sp2C;
     s32 sp28;
-    s32 sp24;
-    s16 sp16;
+    s32 var_ctr_2;
+    s32 var_r20;
     s16 sp14;
     volatile s16 sp12;
     s16 sp10;
     s16 spE;
     s16 spC;
-    s16 spA;
+    volatile s16 spA;
     s16 sp8;
     s16 *var_r23;
     s16 *var_r5;
     s16 *var_r6;
     s16 temp_r0_2;
-    s16 temp_r0_4;
+    u32 temp_r6;
     s16 temp_r7;
     s16 var_r3;
     s16 var_r3_2;
@@ -751,17 +727,17 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
     s32 temp_r25;
     s32 temp_r9;
     s32 sp18;
-    s32 var_r20;
+    volatile s16 sp16;
     s32 var_r31;
     s32 var_r4;
-    s32 var_r8;
+    u16 var_r8;
     u32 temp_r0_5;
     u32 temp_r0_6;
     u32 temp_r3;
     u32 temp_r4;
     u32 temp_r4_2;
     u32 temp_r4_3;
-    u32 temp_r6;
+    s16 temp_r0_4;
     s32 temp_r0;
     s32 var_ctr;
 
@@ -826,9 +802,9 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
         }
     }
     memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp30), 4U);
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
     var_r20 = 0;
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
     *lList += 1;
 loop_40:
     if (var_r20 < var_r31) {
@@ -856,9 +832,9 @@ loop_40:
             }
         }
         memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp2C), 4U);
-        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
         sp28 = temp_r25;
-        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
         spC = p2;
         temp_r4_2 = *lList + 1;
         *lList = temp_r4_2;
@@ -874,11 +850,11 @@ loop_40:
             }
         }
         memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp28), 4U);
-        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
         var_r23 += 2;
         var_r20 += 1;
-        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR(/* psq_l unimplemented */);
         *lList += 1;
+        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
         goto loop_40;
     }
     var_r3_2 = sp18;
@@ -904,8 +880,8 @@ loop_40:
         }
     }
     memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp24), 4U);
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR(/* psq_l unimplemented */);
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
+    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
     *lList += 1;
 }
 #pragma peephole reset
@@ -924,38 +900,36 @@ static void getCrossPoint(long p0, short p1, short p2, short p3, short p4, short
     s16 temp_r5_2;
     s16 var_r10;
     s32 var_r11;
-    s16 var_r11_2;
+    s32 var_r11_2;
     s16 var_r5;
     s32 temp_r4;
-    s32 temp_r5;
+    u32 temp_r5;
     s32 temp_r8;
     s32 var_ctr;
     s32 var_ctr_2;
     s32 var_r8;
     u8 *var_r3;
-    f32 temp_f6;
 
     temp_r8 = p2 - p5;
     temp_r5 = p3 - p5;
-    temp_r4 = p1 - p4;
-    temp_f6 = M2C_FIELD(p6, f32 *, 0x54);
     temp_f8 = M2C_FIELD(p6, f32 *, 0x58);
-    temp_r10 = (s16) ((temp_f8 * (f32) temp_r4) - (temp_f6 * (f32) temp_r8));
-    temp_r5_2 = (s16) ((temp_f8 * (f32) temp_r4) - (temp_f6 * (f32) temp_r5));
-    M2C_FIELD(&vecRect, s16 *, 2) = (s16) ((temp_f6 * (f32) temp_r4) + (temp_f8 * (f32) temp_r8));
+    temp_r10 = (s16) ((temp_f8 * (f32) temp_r4) - ((M2C_FIELD(p6, f32 *, 0x54)) * (f32) temp_r8));
+    temp_r5_2 = (s16) ((temp_f8 * (f32) temp_r4) - ((M2C_FIELD(p6, f32 *, 0x54)) * (f32) temp_r5));
+    temp_r4 = p1 - p4;
     M2C_FIELD(&vecRect, s16 *, 4) = temp_r5_2;
+    M2C_FIELD(&vecRect, s16 *, 2) = (s16) (((M2C_FIELD(p6, f32 *, 0x54)) * (f32) temp_r4) + (temp_f8 * (f32) temp_r8));
     M2C_FIELD(&vecRect, s16 *, 0) = temp_r10;
-    M2C_FIELD(&vecRect, s16 *, 6) = (s16) ((temp_f6 * (f32) temp_r4) + (temp_f8 * (f32) temp_r5));
+    M2C_FIELD(&vecRect, s16 *, 6) = (s16) (((M2C_FIELD(p6, f32 *, 0x54)) * (f32) temp_r4) + (temp_f8 * (f32) temp_r5));
     if (temp_r5_2 > temp_r10) {
         var_r5 = temp_r5_2 - temp_r10;
     } else {
         var_r5 = temp_r10 - temp_r5_2;
     }
     M2C_FIELD(&vecRect, s16 *, 0xC) = var_r5;
-    if ((s16) M2C_FIELD(&vecRect, s16 *, 6) > (s16) M2C_FIELD(&vecRect, s16 *, 2)) {
-        var_r11 = M2C_FIELD(&vecRect, s16 *, 6) - M2C_FIELD(&vecRect, s16 *, 2);
-    } else {
+    if (!((s16) M2C_FIELD(&vecRect, s16 *, 6) > (s16) M2C_FIELD(&vecRect, s16 *, 2))) {
         var_r11 = M2C_FIELD(&vecRect, s16 *, 2) - M2C_FIELD(&vecRect, s16 *, 6);
+    } else {
+        var_r11 = M2C_FIELD(&vecRect, s16 *, 6) - M2C_FIELD(&vecRect, s16 *, 2);
     }
     M2C_FIELD(&vecRect, s16 *, 0xE) = var_r11;
     if (((s16) M2C_FIELD(&vecRect, s16 *, 0xC) == 0) || (var_r11 == 0)) {
@@ -1006,10 +980,11 @@ static void getCrossPoint(long p0, short p1, short p2, short p3, short p4, short
         var_ctr_2 = 0x100;
         do {
             temp_r10_2 = (M2C_FIELD(p6, s32 *, 0x48) + var_r8) - p5;
-            if (temp_r10_2 > (s16) M2C_FIELD(&vecRect, s16 *, 2)) {
-                var_r11_2 = temp_r10_2 - M2C_FIELD(&vecRect, s16 *, 2);
-            } else {
+            if (!(temp_r10_2 > (s16) M2C_FIELD(&vecRect, s16 *, 2))) {
                 var_r11_2 = M2C_FIELD(&vecRect, s16 *, 2) - temp_r10_2;
+            } else {
+                var_r11_2 = temp_r10_2;
+                var_r11_2 -= M2C_FIELD(&vecRect, s16 *, 2);
             }
             temp_f3 = (f32) var_r11_2 / (f32) M2C_FIELD(&vecRect, s16 *, 0xE);
             if ((s16) M2C_FIELD(&vecRect, s16 *, 0) < (s16) M2C_FIELD(&vecRect, s16 *, 4)) {
@@ -1035,15 +1010,15 @@ static void getCrossPoint(long p0, short p1, short p2, short p3, short p4, short
 }
 
 static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHAPERECORD* rec, FLASHMATRIXF* parent, FLASHMATRIXF* mat, FLASHCXFORM* cx) {
-    GSvec2 cur;
-    GSvec2 next;
-    GSvec2 ctl;
-    GSvec2 seg[6];
     GSvec2 bez;
     GSvec2 bezPrev;
+    GSvec2 next;
+    GSvec2 seg[7];
+    GSvec2 cur;
+    GSvec2 ctl;
     FLASHMATRIXF m;
     u8 inLine = 0;
-    u8 loop = 1;
+    u32 loop = 1;
     switch (fills->count) {
     case 0:
             void* t = fills->list;
@@ -1063,7 +1038,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             loop = 0;
             break;
         case 1: {
-            SHAPEDATA* sd = (SHAPEDATA*)rec->data;
+            volatile SHAPEDATA* sd = (SHAPEDATA*)rec->data;
             inLine = 0;
             if ((sd->flags & 1) != 0) {
                 x = sd->x;
@@ -1101,10 +1076,10 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             if ((sd->flags & 0x10) != 0 && sd->newStyles != 0) {
                 SBscan();
                 gVecDat.minY = 0x7FFF;
-                gVecDat.minX = 0x7FFF;
                 gVecDat.maxY = -0x8000;
-                gVecDat.maxX = -0x8000;
+                gVecDat.minX = 0x7FFF;
                 memset(scanline_buffer, 0, 0x25800);
+                gVecDat.maxX = -0x8000;
                 gVecDat.styles = (u8*)sd->newStyles;
                 gVecDat.idx[1] = 0;
                 gVecDat.idx[0] = 0;
@@ -1135,8 +1110,8 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
                             }
                             u8* st = gVecDat.styles;
                             st += (si << 7);
-                            inLine = 1;
                             rec = SpriteCode(a0, rec, (u16)((u16*)rec)[4], mat, (FLASHMATRIX*)(st + 0x68), (u16)x, y, &gVecDat, cx);
+                            inLine = 1;
                         }
                     }
                 }
@@ -1265,8 +1240,8 @@ extern "C" void vectorGraph(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lin
                     AT(s32, l, 0x1994) = 1;
                     AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
                 }
-                AT(s32, l, 0x1644) = _type;
                 AT(s32, l, 0x1648) = _src;
+                AT(s32, l, 0x1644) = _type;
                 AT(s32, l, 0x164C) = _dst;
                 AT(s32, l, 0x1650) = 5;
             }
@@ -1277,9 +1252,9 @@ extern "C" void vectorGraph(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lin
         }
         GSprimSetQuadVertexOrder(1);
         gVecDat.on[0] = 0;
-        gVecDat.idx[0] = -1;
-        gVecDat.width[0] = -1;
         gVecDat.on[1] = 0;
+        gVecDat.width[0] = -1;
+        gVecDat.idx[0] = -1;
         gVecDat.idx[1] = -1;
         gVecDat.width[1] = -1;
         gVecDat.numStyles = fills->count;

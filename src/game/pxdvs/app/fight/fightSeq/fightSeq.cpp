@@ -1,8 +1,4 @@
-// WIP: 44/67 exact. GENERATED from build/scratch/son-fseq/ pieces by assemble.py
-// (edit the pieces or regenerate deliberately). Missing: 4 jump-table functions, damage calcs, data tables.
-// WIP: battle sequence helpers (Colosseum shared-function batch).
 #include <dolphin/types.h>
-
 
 struct FightOutPokemon {
     u8 pad[1];
@@ -328,7 +324,6 @@ static u8 _fightSeqInitFightOutPokemonJoutaiUserFightTargetId(FightOutPokemon*, 
 static u8 _fightSeqCheckFightOutPokemonJoutaiUserFightTargetId(FightOutPokemon*, FightOutPokemon*, u16, u16);
 static s32 _fightSeqSideJoutaiCheckSub(void*, u16, void*);
 static s32 _fightSeqSideJoutaiCheckSubSawagu(void*, u16, void*);
-
 
 extern "C" {
 void fightSeq_ClearUserWork(void) {
@@ -1100,7 +1095,7 @@ s32 fightSeqFightOutPokemonTokuseiCheckWazaHitAfter(FightOutPokemon* attacker, F
     s16 speDamage;
     u16 attackerTokusei;
     u16 defenderTokusei;
-    u32 waza;
+    u16 waza;
     u16 iryoku;
     u32 zokusei;
     u8 dageki;
@@ -1840,6 +1835,7 @@ u8 fightSeqAttackPokemonJoutaiCheck(void) {
     u8 result = 0;
     u8 type = fightFloor_GetFightType(0);
     do {
+    enum TsE { TsE0 };
         switch (fightseq_attack_pokemon_joutai_check_buff) {
         case 0:
             fightOutPokemonInitJoutaiDataId(p, 0x15);
@@ -1858,12 +1854,12 @@ u8 fightSeqAttackPokemonJoutaiCheck(void) {
                     volatile u8 early = tokusei == 0x30;
                     s8 now = (early + 1);
                     now += fightOutPokemonGetNowKaisuuJoutaiDataId(p, 8);
-                    u16 cmpv = fightOutPokemonGetKaisuuJoutaiDataId(p, 8);
-                    if (cmpv <= now) {
+                    enum TsE cmpv = (enum TsE)(fightOutPokemonGetKaisuuJoutaiDataId(p, 8));
+                    if (now >= cmpv) {
                         fightOutPokemonInitJoutaiDataId(p, 8);
                         fightOutPokemonInitJoutaiDataId(p, 0x17);
                     } else {
-                        fightOutPokemonSetNowKaisuuJoutaiDataId(p, 8, (u8)now);
+                        fightOutPokemonSetNowKaisuuJoutaiDataId(p, 8, now);
                     }
                     if ((u16)fightOutPokemonIsJoutaiDataId(p, 8) == 1) {
                         if (waza != 0xAD && waza != 0xD6) {
@@ -2327,32 +2323,34 @@ static s32 _fightSeqSideJoutaiCheckSub(void* arg, u16 id, void* userData) {
     SIDE_END
     SIDE_BEGIN
     if (fightOutPokemonIsJoutaiDataId(p, 0x3E) == 1) {
-        s32 damage = fightOutPokemonMaxHpWaruValue(p, 0x10);
+        u8 damage = fightOutPokemonMaxHpWaruValue(p, 0x10);
         damage = ((HSD_Rand() % 3) + damage) - 1;
         if (damage <= 0) {
             damage = 1;
         }
-        fightWaza_SetDamage(waza, (u16)damage);
+        fightWaza_SetDamage(waza, damage);
         fightSeq_CallWazaSeq(WAZA_Revers);
     }
     SIDE_END
     SIDE_BEGIN
-    if (fightOutPokemonIsJoutaiDataId(p, 0xB) == 1) {
+    u32 dc_okemonIsJoutaiDataId = fightOutPokemonIsJoutaiDataId(p, 0xB);
+    if (dc_okemonIsJoutaiDataId == 1) {
         s8 now;
         fightFloorLoopValidFightOutPokemon(0, _fightSeqSideJoutaiCheckSubSawagu, 0, 0);
         fightFloor_SetAttackPokemonPtr(0, p);
         now = fightOutPokemonGetNowKaisuuJoutaiDataId(p, 0xB);
-        if ((s8)(now + 1) >= fightOutPokemonGetKaisuuJoutaiDataId(p, 0xB)) {
+        s32 cmpv = fightOutPokemonGetKaisuuJoutaiDataId(p, 0xB);
+        if (cmpv <= (s8)(now + 1)) {
             fightOutPokemonInitJoutaiDataId(p, 0xB);
         } else {
             fightOutPokemonSetNowKaisuuJoutaiDataId(p, 0xB, now + 1);
         }
-        if (fightOutPokemonCheckNoAttackFlag(p) != 1 && fightOutPokemonIsJoutaiDataId(p, 0xB) == 1) {
+        if (!(fightOutPokemonCheckNoAttackFlag(p) != 1 && dc_okemonIsJoutaiDataId == 1)) {
+            ServerWork[5] = 1;
+            fightOutPokemonInitJoutaiKeep(p);
+        } else {
             fightOutPokemonWriteJoutaiDataId(p, 0x22, 0);
             ServerWork[5] = 0;
-        } else {
-            fightOutPokemonInitJoutaiKeep(p);
-            ServerWork[5] = 1;
         }
         fightSeq_CallWazaSeq(WAZA_Sawagu);
     }
@@ -2360,7 +2358,8 @@ static s32 _fightSeqSideJoutaiCheckSub(void* arg, u16 id, void* userData) {
     SIDE_BEGIN
     if (fightOutPokemonIsJoutaiDataId(p, 0xD) == 1) {
         s8 now = fightOutPokemonGetNowKaisuuJoutaiDataId(p, 0xD);
-        if ((s8)(now + 1) >= fightOutPokemonGetKaisuuJoutaiDataId(p, 0xD)) {
+        s32 cmpv = fightOutPokemonGetKaisuuJoutaiDataId(p, 0xD);
+        if (cmpv <= (s8)(now + 1)) {
             fightOutPokemonInitJoutaiDataId(p, 0xD);
         } else {
             fightOutPokemonSetNowKaisuuJoutaiDataId(p, 0xD, now + 1);
@@ -2416,7 +2415,8 @@ static s32 _fightSeqSideJoutaiCheckSub(void* arg, u16 id, void* userData) {
     SIDE_BEGIN
     if (fightOutPokemonIsJoutaiDataId(p, 0x1D) == 1) {
         s8 now = fightOutPokemonGetNowKaisuuJoutaiDataId(p, 0x1D);
-        if ((s8)(now + 1) >= fightOutPokemonGetKaisuuJoutaiDataId(p, 0x1D)) {
+        s32 cmpv = fightOutPokemonGetKaisuuJoutaiDataId(p, 0x1D);
+        if (cmpv <= (s8)(now + 1)) {
             fightOutPokemonInitJoutaiDataId(p, 0x1D);
         } else {
             fightOutPokemonSetNowKaisuuJoutaiDataId(p, 0x1D, now + 1);
@@ -2426,7 +2426,8 @@ static s32 _fightSeqSideJoutaiCheckSub(void* arg, u16 id, void* userData) {
     SIDE_BEGIN
     if (fightOutPokemonIsJoutaiDataId(p, 0x24) == 1) {
         s8 now = fightOutPokemonGetNowKaisuuJoutaiDataId(p, 0x24);
-        if ((s8)(now + 1) >= fightOutPokemonGetKaisuuJoutaiDataId(p, 0x24)) {
+        s32 cmpv = fightOutPokemonGetKaisuuJoutaiDataId(p, 0x24);
+        if (cmpv <= (s8)(now + 1)) {
             fightOutPokemonInitJoutaiDataId(p, 0x24);
         } else {
             fightOutPokemonSetNowKaisuuJoutaiDataId(p, 0x24, now + 1);
@@ -2436,7 +2437,8 @@ static s32 _fightSeqSideJoutaiCheckSub(void* arg, u16 id, void* userData) {
     SIDE_BEGIN
     if (fightOutPokemonIsJoutaiDataId(p, 0x30) == 1) {
         s8 now = fightOutPokemonGetNowKaisuuJoutaiDataId(p, 0x30);
-        if ((s8)(now + 1) >= fightOutPokemonGetKaisuuJoutaiDataId(p, 0x30)) {
+        s32 cmpv = fightOutPokemonGetKaisuuJoutaiDataId(p, 0x30);
+        if (cmpv <= (s8)(now + 1)) {
             fightOutPokemonInitJoutaiDataId(p, 0x30);
         } else {
             fightOutPokemonSetNowKaisuuJoutaiDataId(p, 0x30, now + 1);
@@ -2446,7 +2448,8 @@ static s32 _fightSeqSideJoutaiCheckSub(void* arg, u16 id, void* userData) {
     SIDE_BEGIN
     if (fightOutPokemonIsJoutaiDataId(p, 0x26) == 1) {
         s8 now = fightOutPokemonGetNowKaisuuJoutaiDataId(p, 0x26);
-        if ((s8)(now + 1) >= fightOutPokemonGetKaisuuJoutaiDataId(p, 0x26)) {
+        s32 cmpv = fightOutPokemonGetKaisuuJoutaiDataId(p, 0x26);
+        if (cmpv <= (s8)(now + 1)) {
             fightOutPokemonInitJoutaiDataId(p, 0x26);
             if (fightOutPokemonIsJoutaiNormal(p) == 1 && tokusei != 0x48 && tokusei != 0xF && fightSeqSawaguCheck(p) == 0 && fightSeqRegulationOverTwoCheck(8, p) != 1 && fightOutPokemonCheckWriteJoutaiDataId(p, 8) == 2) {
                 fightOutPokemonWriteJoutaiDataId(p, 8, 0);
@@ -2494,8 +2497,8 @@ void fightSeqFloorJoutaiCheck(void) {
     void* side;
     u8 tenkou;
     FightOutPokemon* weatherPokemon;
-    u16 i;
-    if ((s16)fightGetFightResultId() != 0) {
+    u8 i;
+    if (fightGetFightResultId() != 0) {
         return;
     }
     tenkou = fightFloorGetNowTenkouDataId(0, 0);
@@ -2515,7 +2518,7 @@ void fightSeqFloorJoutaiCheck(void) {
             if (fightSideIsJoutaiDataId(side, 0x48) == 1) {
                 s8 max = fightSideGetKaisuuJoutaiDataId((FightOutPokemon*)side, 0x48);
                 enum TsE now = (enum TsE)(fightSideGetNowKaisuuJoutaiDataId((FightOutPokemon*)side, 0x48) + 1);
-                if (now < max) {
+                if (now - 48 < max) {
                     fightSideSetNowKaisuuJoutaiDataId((FightOutPokemon*)side, 0x48, now);
                 } else {
                     fightSideInitJoutaiDataId(side, 0x48);

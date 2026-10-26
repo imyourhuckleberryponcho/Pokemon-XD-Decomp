@@ -7,12 +7,12 @@ typedef struct DVDFileInfo {
 
 typedef struct GSDVDWork GSDVDWork;
 struct GSDVDWork {
-    u8 active;            // 0x00
+    u8 active;
     u8 pad[3];
-    DVDFileInfo fileInfo; // 0x04
-    void (*callback)(s32, GSDVDWork*); // 0x40
-    void* addr;           // 0x44
-    u32 length;           // 0x48
+    DVDFileInfo fileInfo;
+    void (*callback)(s32, GSDVDWork*);
+    void* addr;
+    u32 length;
 };
 
 typedef struct InAddr {
@@ -88,7 +88,6 @@ static void _freeDvdWork(GSDVDWork* work);
 static GSDVDWork* _getNewDvdWork(void);
 static void _initDvdWork(void);
 static void* _dvdDoMalloc(u32 size);
-
 
 u32 GSdvdFstRefresh(void) {
     return 0;
@@ -177,7 +176,6 @@ static void _errorTask_State_None(s32 state) {
         break;
     }
 }
-
 
 void GSdvdSetErrorMsg(u32 coverOpen, u32 noDisc, u32 wrongDisc, u32 retry, u32 fatal) {
     _errorMsg_CoverOpen = coverOpen;

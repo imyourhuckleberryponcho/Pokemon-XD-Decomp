@@ -1,4 +1,3 @@
-// Debug menu units were built without the peephole optimizer.
 #include <dolphin/types.h>
 
 #pragma peephole off
@@ -93,7 +92,6 @@ void dbgMenuPokemonEditButton(PokemonEditWindow* window) {
 
 }
 
-
 extern "C" {
 void pokemonSetStatus(void*, u16, u16, u16, u32);
 void pokemonCreate(void*, u16, u8, void*);
@@ -156,7 +154,6 @@ static s32 pokemon_edit_value;
 struct SavedPokemon {
     u8 bytes[0xC4];
 };
-
 
 extern "C" {
 static s32 dbgMenuPokemonEditSubGetTotalEffort(void* pokemon);

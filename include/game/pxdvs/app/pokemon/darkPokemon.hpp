@@ -8,7 +8,7 @@ enum darkPokemonStatus { darkPokemonStatus0, darkPokemonStatus1, darkPokemonStat
 enum darkPokemonSnatchWho { darkPokemonSnatchWho0, darkPokemonSnatchWho1, darkPokemonSnatchWho2, darkPokemonSnatchWho3 };
 
 struct DarkPokemon {
-    u8 unk0x0[60]; // 0x0, temp until struct figured out
+    u8 unk0x0[60];
     void setPlace(darkPokemonWhere, u8);
     u32 getWalkCount() const;
     void setWalkCount(u32 count);

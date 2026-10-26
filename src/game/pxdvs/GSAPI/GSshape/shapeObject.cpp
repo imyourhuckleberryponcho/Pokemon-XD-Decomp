@@ -1,11 +1,5 @@
-// WIP (NonMatching): GS shape objects (GsShapeObject). 12 of 29 functions exact; all others written.
-// SetStateTexture is fully reconstructed (84%: register allocation left; the original keeps kalpha[1] in a
-// saved register from the array copy). The konst-selection writes are inline field stores in the target,
-// while the tunit*/texSelect helpers are real calls (dont_inline around the function).
-// Weak constant order in .sdata2 not yet checked against the target.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -31,7 +25,6 @@ struct Vec;
 #define fabsf(x) __fabsf(x)
 extern f32 __float_nan[];
 #define NAN (__float_nan[0])
-
 
 struct GStexture {
     u8 unk0[7];
@@ -374,38 +367,6 @@ public:
     void* drawBuf[256];
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 extern "C" {
 f32 PSVECSquareMag(const Vec3* v);
 void PSMTXCopy(const f32 src[3][4], f32 dst[3][4]);
@@ -414,10 +375,6 @@ void GXProject(f32 x, f32 y, f32 z, const f32 mv[3][4], const f32* proj, const f
 f32* GSgfxMatrixGetPtr(int which);
 }
 
-
-
-
-// ---- draft declarations ----
 struct Vec {
     u8 _draft[1];
 };
@@ -561,6 +518,7 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
 
 void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStexture* override) {
     const int kcolor[4] = {12, 13, 14, 15};
+    enum TsE { TsE0 };
     const int kalpha[4] = {28, 29, 30, 31};
     int kalphaLast = kalpha[1];
     u8 stage = 0;
@@ -576,8 +534,8 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
         if (info->filter) {
             mip = 2;
         }
-        int mag = 1;
-        mag = !(info->filterB) ? mag : 2;
+        enum TsE mag = (enum TsE)(1);
+        mag = (enum TsE)(!(info->filterB) ? mag : 2);
         int min = 1;
         if (info->filter) {
             min = 2;
@@ -615,10 +573,10 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
             if (t->info->mode != 0) {
                 bool s1 = stage + 1;
                 u32 s2 = stage + 2;
-                KCOLOR(stage, kcolor[map * 2]);
                 KALPHA(stage, kalpha[map * 2]);
                 KCOLOR(s1, kcolor[map * 2 + 1]);
                 KALPHA(s1, kalpha[map * 2 + 1]);
+                KCOLOR(stage, kcolor[map * 2]);
                 KALPHA(s2, kalphaLast);
                 l->texSelect(map, tex);
                 l->tunitMapping(stage, map, map, 0);
@@ -899,10 +857,10 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
 #pragma pop
 
 void GsShapeObject::SetStateMode(GSgfxLayer* l) {
-    u8 zw = data->unk6;
+    s16 zw = data->unk6;
     u8 zr = data->unk5;
     bool a = zw != 0;
-    bool b = zr != 0;
+    s8 b = zr != 0;
     u8 mode = data->mode;
     if (mode == 8) {
         b = true;
@@ -911,7 +869,8 @@ void GsShapeObject::SetStateMode(GSgfxLayer* l) {
     l->zCompare(b, 1);
     l->pixelMode(1, 1, a);
     l->setCullMode(data->cull);
-    if (mode == 10 && data->texCount >= 2) {
+    u32 rf_t = data->texCount;
+    if (mode == 10 && rf_t >= 2) {
         u8 k = data->texInfo[1]->kind;
         switch (k) {
         case 2:
@@ -972,23 +931,26 @@ void GsShapeObject::MakeShapeGfxDL() {
 }
 
 void GsShapeObject::DrawShapeGfx(GSgfxLayer* layer, s16 s, u8 c) {
+    u16 b;
+    u16 a;
     u16 i;
-    u16 verts = data->vertCount;
-    u16 n = data->cols + 1;
+    u16 base0;
     u16 texN = data->texCount;
-    bool ok = SetupVF(verts);
+    u16 n = data->cols + 1;
+    bool ok = SetupVF(data->vertCount);
+    u16 j;
+    u16 k;
+    u16 base1;
     if (ok) {
         layer->curVF = (GSgfxVF*)vf;
         layer->primType = 0x98;
         for (i = 0; i < data->rows; i++) {
-            u16 base0 = i * n;
+            base0 = i * n;
             layer->beginSurface(n * 2);
-            u16 base1 = (i + 1) * n;
-            u16 j;
+            base1 = (i + 1) * n;
             for (j = 0; j < n; j++) {
-                u16 a = j + base0;
-                u16 b = j + base1;
-                u16 k;
+                a = j + base0;
+                b = j + base1;
                 GXWGFifo.u16 = a;
                 GXWGFifo.u16 = a;
                 for (k = 0; k < texN; k++) {
@@ -1075,6 +1037,7 @@ static inline f32 rimFactor(Vec3* n, Vec3* v, f32 sharp) {
 
 extern "C++" {
 bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f) {
+    int iu;
     f32* proj = GSgfxMatrixGetPtr(4);
     int layer = 0;
     f32 projArr[7];
@@ -1087,8 +1050,8 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
     projArr[5] = proj[10];
     projArr[6] = proj[11];
     vp[0] = 0.0f;
-    vp[1] = 0.0f;
     vp[2] = 640.0f;
+    vp[1] = 0.0f;
     vp[3] = 480.0f;
     vp[4] = 0.0f;
     vp[5] = 1.0f;
@@ -1127,27 +1090,29 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
         } else if (v < 0.0f) {
             v -= (f32)((int)v - 1);
         }
-        int lastCol = cols1 - 1;
-        int y = 0;
+        int y;
+        int lastCol;
+        lastCol = cols1 - 1;
+        y = 0;
         int base = 0;
-        int iu = (int)(u * data->cols) % data->cols;
+        iu = (int)(u * data->cols) % data->cols;
         int iv = (int)(v * data->rows) % data->rows;
         f32 fu = data->cols * (u - (f32)iu / data->cols);
         f32 fv = (v - (f32)iv / data->rows);
         fv *= data->rows;
         fu = fu - (f32)(int)fu;
         fv = fv - (f32)(int)fv;
-        f32 w00 = fu * fv;
-        f32 w10 = (1.0f - fu) * fv;
         f32 w01 = fu * (1.0f - fv);
         f32 w11 = (1.0f - fu) * (1.0f - fv);
+        f32 w00 = fv * fu;
+        f32 w10 = (1.0f - fu) * fv;
         for (; y < rows1; y++) {
-            int o = base * 12;
             int o2 = base * 8;
+            int o = base * 12;
             int x;
             for (x = 0; x < cols1; x++) {
-                u16 c = data->cols;
                 u16 r = data->rows;
+                u16 c = data->cols;
                 int a = (x + iu) % c;
                 int b = (y + iv) % r;
                 Vec3 p;
@@ -1162,14 +1127,14 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
                     if (b == rows1 - 1) {
                         p = pos[k];
                     } else {
-                        int k2 = k + cols1;
-                        p = bilerp(pos, k2 + 1, k2, k - 1, k, w00, w10, w01, w11);
+                        int k2 = cols1 + k;
+                        p = bilerp(pos, k2 + 1, (u16)k2, k - 1, k, w00, w10, w01, w11);
                     }
                 } else if (b == rows1 - 1) {
                     int k2 = k - cols1;
                     p = bilerp(pos, k2 + 1, k2, k + 1, k, w00, w10, w01, w11);
                 } else {
-                    int k2 = k + cols1;
+                    int k2 = cols1 + k;
                     p = bilerp(pos, k2 + 1, k2, k + 1, k, w00, w10, w01, w11);
                 }
                 PSMTXMultVecSR(tmp, &p, &p);
@@ -1199,8 +1164,8 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
                     q[0] += p.x;
                     q[1] += p.y;
                 }
-                o += 12;
                 o2 += 8;
+                o += 12;
             }
             base += cols1;
         }
@@ -1224,11 +1189,15 @@ bool GsShapeObject::ShadeVertexColor(GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f, boo
     PSMTXConcat(m1->m, m, m);
     PSMTXConcat(m3->m, m, m);
     Vec3* normals = data->pos2;
-    int i = 0;
+    Vec3* pos;
     u8* col = (u8*)colArray;
-    int o = 0;
-    int n = data->vertCount;
-    Vec3* pos = (Vec3*)data->pos;
+    int i;
+    int o;
+    o = 0;
+    i = 0;
+    int n;
+    n = data->vertCount;
+    pos = (Vec3*)data->pos;
     for (; i < n; i++, normals++, pos++, col += 4, o += 4) {
         Vec3 nIn;
         Vec3 pIn;
@@ -1461,7 +1430,6 @@ static inline f32 fastCos(f32 x) {
     return c;
 }
 
-
 bool GsShapeObject::WaveTextureCoord(u32 idx, f32 u, f32 v, const GSmtx* m, bool keep) {
     int x;
     f32* out = (f32*)texArray[idx];
@@ -1584,15 +1552,7 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
 bool GsShapeObject::DeformVertexCoordSphere(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                             bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C);
 
-
-
-
-
 void GsShapeObject::SetVertexColorAlpha(int mode, int type, f32 f, bool b);
-
-
-
-
 
 extern "C++" {
 bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
@@ -1601,13 +1561,15 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
     if (out == 0) {
         return false;
     }
-    int cols1 = data->cols + 1;
-    int rows1 = data->rows + 1;
+    int rows1;
+    int cols1;
+    cols1 = data->cols + 1;
+    rows1 = data->rows + 1;
     if (!own) {
         f2 = data->sizeY;
         f1 = data->sizeX;
     }
-    if (!angOwn) {
+    if (angOwn != 0) {
         f3 = data->angle;
         f4 = data->angle2;
     }
@@ -1636,7 +1598,7 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
         start2 = 0.5f * (360.0f - f4);
     }
     int i;
-    for (i = 0; i < rows1; i++, B++) {
+    for (s32 i = 0; i < rows1; B++, i++) {
         int j;
         f32 t;
         const f32* a = A;
@@ -1645,7 +1607,9 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
         } else {
             t = (f32)i / (f32)(rows1 - 1);
         }
-        f32 a2 = f4 * 0.017453292f * t + (start2 + 180.0f) * 0.017453292f;
+        f32 kc977 = 0.017453292f;
+        f32 kc1011 = 180.0f;
+        f32 a2 = f4 * kc977 * t + (start2 + kc1011) * 0.017453292f;
         f32 radius = f2 * fastCos(a2) + f1;
         for (j = 0; j < cols1; j++, a++, out++) {
             f32 u;
@@ -1654,18 +1618,19 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
             } else {
                 u = (f32)j / (f32)(cols1 - 1);
             }
-            f32 ang = f3 * 0.017453292f * u + (start + 90.0f) * 0.017453292f;
-            f32 sn;
+            f32 kc1352 = 0.017453292f;
+            f32 ang = f3 * kc1352 * u + (start + 90.0f) * 0.017453292f;
             f32 cs;
-            if (j == 0 || j == cols1 - 1) {
+            f32 sn;
+            if (j == 0 || cols1 == j - 1) {
                 sn = (f32)sin(ang);
                 cs = (f32)cos(ang);
             } else {
                 fastSinCos(ang, &sn, &cs);
             }
             out->z = f2 * fastSin(a2);
+            out->y = sn * radius;
             out->x = radius * cs;
-            out->y = radius * sn;
         }
     }
     return true;
@@ -1679,13 +1644,13 @@ bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p
     f64 sp30;
     f64 sp28;
     f64 sp20;
-    f32 spC;                                        /* compiler-managed */
-    f32 sp8;                                        /* compiler-managed */
+    f32 spC;
+    f32 sp8;
     f32 *var_r27;
-    f32 *var_r28;
-    f32 *var_r29;
+    s32 var_r26;
+    s32 var_r25;
     f32 temp_f0;
-    f32 temp_f1;
+    s32 temp_r24;
     f32 temp_f23;
     f32 temp_f31;
     f32 temp_f4;
@@ -1708,12 +1673,12 @@ bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p
     f32 var_f4;
     f32 var_f4_2;
     s32 temp_r23;
-    s32 temp_r24;
-    s32 var_r25;
-    s32 var_r26;
+    u8 *var_r22;
+    f32 *var_r29;
+    f32 *var_r28;
     u8 *temp_r11;
     u8 *temp_r12;
-    u8 *var_r22;
+    f32 temp_f1;
 
     var_f24 = saved_reg_f24;
     var_f3 = p7;
@@ -1731,7 +1696,7 @@ bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p
 
     } else {
         var_f3 = M2C_FIELD(temp_r11, f32 *, 0x5C);
-        var_f4 = M2C_FIELD(temp_r11, f32 *, 0x60);
+        var_f4 = M2C_FIELD((u16)temp_r11, f32 *, 0x60);
     }
     if (var_f3 < 0.00001f) {
         var_f3 = 0.00001f;
@@ -1750,7 +1715,7 @@ bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p
     } else {
         var_f29 = 0.5f * (360.0f - var_f3);
     }
-    if ((u8) M2C_FIELD(temp_r11, u8 *, 0xCF) == 0) {
+    if ((u8) M2C_FIELD((u16)temp_r11, u8 *, 0xCF) == 0) {
         var_f27 = 0.017453292f * (0.5f * -var_f4);
     } else {
         f32 kc1768 = 1.5707964f;
@@ -1791,7 +1756,7 @@ bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p
         if (var_f1 < -1.5707964f) {
             var_f0_2 = -3.1415927f - var_f1;
         } else {
-            M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
+            M2C_ERROR( );
             if (var_f1 == 1.5707964f) {
                 var_f0_2 = var_f1;
             } else {
@@ -1839,7 +1804,7 @@ bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p
                 if (var_f4_2 < -1.5707964f) {
                     var_f0_6 = -3.1415927f - var_f4_2;
                 } else {
-                    M2C_ERROR(/* unknown instruction: cror eq, lt, eq */);
+                    M2C_ERROR( );
                     if (var_f4_2 == 1.5707964f) {
                         var_f0_6 = var_f4_2;
                     } else {
@@ -1873,15 +1838,16 @@ bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p
 
 bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                             bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C) {
+    int j;
     f32 q;
     Vec3* out = (Vec3*)posArray;
     if (out == 0) {
         return false;
     }
-    Vec3* normals = 0;
     int cols1 = data->cols + 1;
     int rows1 = data->rows + 1;
     f32 scale;
+    Vec3* normals = 0;
     if (!own) {
         f1 = data->sizeX;
         f2 = data->sizeY;
@@ -1896,12 +1862,12 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
     f32 height = data->height;
     f32 hh = height * height;
     f32 len = sqrtf(hh + diff * diff);
-    u8 flags = data->unkCC;
+    volatile u8 flags = data->unkCC;
     f32 qh = 0.25f * hh;
-    f32 shrink = 1.0f - 2.0f / (f32)data->cols;
+    f32 shrink = 1.0f;
+    shrink -= 2.0f / (f32)data->cols;
     int i;
     for (i = 0; i < rows1; i++, B++, C++) {
-        int j;
         f32 t;
         if (scaled == 1) {
             scale = 1.0f + *C;
@@ -1911,7 +1877,7 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
         } else {
             t = (f32)i / (f32)(rows1 - 1);
         }
-        for (j = 0; j < cols1; j++) {
+        for (j = 0; j < (u8)cols1; j++) {
             const f32* a = &A[j];
             f32 u;
             if (useUV) {
@@ -1921,8 +1887,11 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
             }
             f32 inv = 1.0f - u;
             f32 w = u;
-            f32 ang = 0.017453292f * (f4 - f3) * u + 0.017453292f * f3;
-            f32 z0 = data->pitchA * inv + data->pitchB * u;
+            f32 ang = f3;
+            ang += 0.017453292f * (f4 - f3) * u;
+            ang *= 0.017453292f;
+            f32 z0 = data->pitchA * inv;
+            z0 += data->pitchB * u;
             f32 sn;
             f32 cs;
             f32 r;
@@ -1948,7 +1917,8 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
             } else {
                 f32 w2 = z0 / len;
                 f32 v2 = (u - 0.5f) * (1.0f - w2) + 0.5f;
-                f32 m = w2 * t + -(0.5f * w2 - v2);
+                f32 m = -(0.5f * w2 - v2);
+                m += w2 * t;
                 if (flags == 2) {
                     m = ((m - 0.5f) * shrink) + 0.5f;
                     r = f1 * (1.0f - m) + f2 * m;
@@ -1964,7 +1934,7 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
                     r *= scale;
                 }
                 fastSinCos(ang, &sn, &cs);
-                f32 hz = height * w2;
+                f32 hz = w2 * height;
                 out->x = r * cs;
                 out->y = r * sn;
                 out->z = hz * t + (height * v2 - 0.5f * hz);
@@ -2219,8 +2189,8 @@ void GsShapeObject::SetVertexColorAlpha(int mode, int type, f32 f, bool b) {
                 for (j = 0; j < cols; j++) {
                     u8 a = src->a;
                     f32 s = (a / 255.0f) * f;
-                    dst->r = (u8)(s * src->r);
                     dst->g = (u8)(s * src->g);
+                    dst->r = (u8)(s * src->r);
                     dst->b = (u8)(src->b * s);
                     dst->a = a;
                     dst++;

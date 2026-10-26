@@ -1,4 +1,3 @@
-// Flash menu system wrapper (slot table of FlashMenu instances). Built with #pragma peephole off.
 #include <dolphin/types.h>
 #pragma peephole off
 
@@ -33,7 +32,6 @@ struct FlashEntry {
 
 static FlashEntry _flashmenu[10];
 
-// find the slot of an active flash menu by its id
 static inline int flashIndex(u32 id) {
     for (int i = 0; i < 10; i++) {
         if (_flashmenu[i].menu != 0 && id == _flashmenu[i].id) return i;

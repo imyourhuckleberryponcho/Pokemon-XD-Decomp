@@ -1,5 +1,3 @@
-// STATUS (dGfx): 8/9 exact. Default flags (pool_strings off). _resetDoFade (98.7%): only the lwz placement/register numbers of the fade-alpha load in the vertex writes
-// and the fmadds operand order differ.
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -11,7 +9,6 @@ void* memcpy(void* dst, const void* src, unsigned long n);
 typedef f32 Mtx44[4][4];
 
 struct GSgfxVF;
-
 
 struct GSgfxCol {
     u8 r, g, b, a;
@@ -91,8 +88,6 @@ public:
     (l)->dirty[1].words[word] |= (bits); \
     (l)->dirty[1].groups |= (group);
 
-
-// The write-gather pipe vertex data is sent through.
 #define GX_WGPIPE (*(volatile union { u8 u8; s16 s16; f32 f32; }*)0xCC008000)
 
 static inline void GSgfxVertex3f(f32 x, f32 y, f32 z) {
@@ -229,13 +224,11 @@ static u8 _resetDoFade(void* arg) {
         return 1;
     }
 
- // pixel mode
     layer->colorUpdate = 1;
     layer->alphaUpdate = 0;
     layer->dither = 0;
     GFX_DIRTY(layer, 24, 4, 0x40)
 
- // orthographic projection
     Mtx44 ortho;
     GSmtx44Ortho(ortho, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
     layer->projType = 1;
@@ -259,7 +252,6 @@ static u8 _resetDoFade(void* arg) {
     }
     GFX_DIRTY(layer, 0, 0x20, 1)
 
- // blend mode
     if (layer->blendIndex != 1) {
         layer->blendIndex = 1;
         layer->blendSet = &layer->blendSets[layer->blendIndex];
@@ -269,11 +261,9 @@ static u8 _resetDoFade(void* arg) {
     layer->blendDst = 5;
     layer->blendLogicOp = 5;
     GFX_DIRTY(layer, 24, 1, 0x40)
- // z compare
     layer->zEnable = 0;
     layer->zFunc = 3;
     GFX_DIRTY(layer, 24, 8, 0x40)
- // alpha compare
     layer->alphaComp0 = 7;
     layer->alphaRef0 = 0;
     layer->alphaOp = 0;
@@ -281,7 +271,6 @@ static u8 _resetDoFade(void* arg) {
     layer->alphaRef1 = 0;
     layer->alphaCompareOff = 1;
     GFX_DIRTY(layer, 24, 0x10, 0x40)
- // cull mode
     layer->cullMode = 0;
     GFX_DIRTY(layer, 3, 2, 2)
     layer->unkD90 = 1;
@@ -295,8 +284,11 @@ static u8 _resetDoFade(void* arg) {
     f32 w = 640.0f;
     f32 h = 480.0f;
     GSgfxVertex3f(zero, zero, zero);
+    GX_WGPIPE.u8 = 0;
+    GX_WGPIPE.u8 = 0;
+    GX_WGPIPE.u8 = 0;
     s32 alpha = _resetFadeAlpha;
-    GSgfxColor4u8(0, 0, 0, alpha);
+    GX_WGPIPE.u8 = alpha;
     GSgfxVertex3f(w, zero, zero);
     GSgfxColor4u8(0, 0, 0, alpha);
     GSgfxVertex3f(zero, h, zero);

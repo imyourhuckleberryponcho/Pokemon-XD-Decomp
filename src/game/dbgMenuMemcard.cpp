@@ -1,9 +1,9 @@
 #include <dolphin/types.h>
 
-// Debug menu: load/save the game state from/to files on the host PC (DVD emulation).
+
 #pragma peephole off
 #pragma pool_strings off
-// Nothing references these debug functions; keep them anyway.
+
 #pragma force_active on
 
 typedef struct GSdvdFile GSdvdFile;
@@ -43,7 +43,7 @@ static void* dbgMenuSaveData;
 #define SAVEDATA_SIZE 0x27FD0
 #define SAVEDATA_BODY_SIZE 0x27FC0
 
-// Slots 0-4 are full debug saves (DSV1), 5-9 raw save data (DSV2).
+
 #pragma dont_inline on
 static u8 _memcard_debug_type_check(s32 slot) {
     switch (slot) {
@@ -85,7 +85,7 @@ s32 dbgMenuMemcardDebugLoad(void* menu, s32 slot) {
         memcard_debug_Load2();
     }
 
- // Region-specific game settings.
+
     status = savedataGetStatus(NULL, 1);
     switch (pokecoloGetCountryCode()) {
     case 0:

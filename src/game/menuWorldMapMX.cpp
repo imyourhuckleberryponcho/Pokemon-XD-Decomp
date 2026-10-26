@@ -1,4 +1,3 @@
-// Pokemon XD world map menu (WorldMap). Needs extra_cflags -inline noauto,deferred (source is bottom-to-top).
 #include <dolphin/types.h>
 #pragma peephole off
 
@@ -181,7 +180,6 @@ struct WorldMapState {
     u8 pad91[3];
 };
 
-
 extern "C" {
 extern WorldMapData* worldmapXD_data;
 extern s32* worldmapXD_data_number;
@@ -285,7 +283,6 @@ void menuButtonNormal(tagWINDOW_WORK*);
 void menuCursorNormal(tagWINDOW_WORK*, s32);
 }
 class WorldMap;
-// ---- data (in original order) ----
 
 static MoveAnime _animeTable_A[4] = {
     { 0x20C30400, 0x20C31000, 0, 1, 0x20BF1800 },
@@ -1464,9 +1461,10 @@ void WorldMap::Release() {
 void WorldMap::ControlPad(tagWINDOW_WORK* window) {
     windowGetKeyInfo();
     u16 key = windowGetKeyRepeat();
-    s16 index = _cursor_index[st->cursorNow];
     s32 dir = -1;
-    if (fadeCheck(0) == 0 && cursorMoving != 1 && st->moveFlag != 1) {
+    unsigned int index = _cursor_index[st->cursorNow];
+    
+    if (((fadeCheck(0) == 0) && (cursorMoving != 1)) && (st->moveFlag != 1)) {
         GetModelID(index);
         if (key == 8) {
             dir = 0;

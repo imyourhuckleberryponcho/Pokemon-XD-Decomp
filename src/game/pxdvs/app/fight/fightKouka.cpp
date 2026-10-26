@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Built with -O4,s (see configure.py).
 #pragma dont_inline on
 
 struct FightKoukaData;

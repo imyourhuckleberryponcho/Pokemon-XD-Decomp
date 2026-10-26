@@ -1,5 +1,3 @@
-// Draft (NonMatching): needs extra_cflags -inline deferred (source is bottom-to-top). 4 of 12 exact; others 80-99%.
-// Draft: GS shape renderer (GsShapeRender). Struct layouts derived from the asm; WIP, not matching.
 #include <dolphin/types.h>
 
 struct tagGScol4ub {
@@ -22,7 +20,6 @@ enum GSgfxLayerPass {};
 enum GSgfxTgenFunc {};
 enum GSgfxTgenSrc {};
 
-// Animation key frame / key object (see shapeAnim.cpp).
 struct tagGsFilePrimKeyFrame {
     u8 unk0[4];
     u32 time;
@@ -457,8 +454,8 @@ void GsShapeRender::FreeShapeRender() {
     s32 id = 0;
     do {
         if (used[id] == 1) {
-            for (i = 0; i < shapeCount; i++) {
-                if (shapes[i].FreeShapeDrawBuffer(id) == 1) {
+            for (i = 0; id < shapeCount; i++) {
+                if (shapes[i].FreeShapeDrawBuffer(i) == 1) {
                     GsShapeData* d = shapes[0].data;
                     s32 size = d->vertCount * (d->texCount * 8 + 0x10) * 2;
                     instancedMemory -= size;
@@ -537,8 +534,8 @@ bool GsShapeRender::LoadShapeRender(void* file) {
     u32* keyOffsets = (u32*)(base + ah->keyOffset);
     keyCount = ah->keyCount;
     keys = (GsKeyObject*)GSmemAlloc(anim->keyCount * 0x12C);
-    u32 maxUV_U = 0, maxUV_V = 0, maxTw = 0, maxGr = 0;
-    for (u32 i = 0; i < keyCount; i++) {
+    u16 maxUV_U = 0, maxUV_V = 0, maxTw = 0, maxGr = 0;
+    for (int i = 0; i < keyCount; i++) {
         GsKeyObject* key = &keys[i];
         key->entry = (tagGsFilePrimObjectEntry*)(base + keyOffsets[i]);
         key->frames = (tagGsFilePrimKeyFrame**)(base + key->entry->frameOffset);
@@ -623,7 +620,7 @@ bool GsShapeRender::LoadShapeRender(void* file) {
     shapeCount = *(u32*)(shapeSec + 4);
     shapes = (GsShapeObject*)GSmemAlloc(shapeCount * 0x8A4);
     s32 i;
-    bool needRefract;
+    volatile bool needRefract;
     for (i = 0, needRefract = false; i < shapeCount; i++) {
         u8* sd = base + shapeOffsets[i];
         shapes[i].data = (GsShapeData*)sd;
@@ -679,8 +676,10 @@ bool GsShapeRender::LoadShapeRender(void* file) {
         s->numTev = n;
     }
     for (s32 i = 0; i < shapeCount; i++) {
-        GsShapeObject* s = &shapes[i];
-        GsShapeData* d = s->data;
+        GsShapeData* d;
+        GsShapeObject* s;
+        s = &shapes[i];
+        d = s->data;
         s32 attrs[4] = {13, 14, 15, 16};
         s->posArray = 0;
         s->colArray = 0;
@@ -867,8 +866,10 @@ void GsShapeRender::Update(f32 time, s16 id) {
                 f32 oy = off.v[1];
                 ox = off.v[0];
                 volatile GsVec2 scl = key->GetTextureScale(a, b, t, k);
-                f32 sy = scl.v[1];
-                f32 sx = scl.v[0];
+                f32 sx;
+                f32 sy;
+                sy = scl.v[1];
+                sx = scl.v[0];
                 m = &key->texMtx[k];
                 if (a->texAnim[k] != 0) {
                     if (info->kind == 0) {
@@ -1122,7 +1123,6 @@ void GsShapeRender::FreeShapeRenderDrawBuffer(s16 id) {
     }
     u8 other = (bufIndex == 0);
     s16* b = (s16*)this + other;
- // freeCount[other], addressed from the object base (matches retail codegen)
     if (b[0x560 / 2] >= 0x100) {
         bufIndex = other;
         FlushFreeList();

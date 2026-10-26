@@ -1,12 +1,5 @@
-// pokemon.cpp was built with "-inline deferred" (extra_cflags in configure.py): MWCC then emits
-// functions in REVERSE source order, so the definitions below are written last-to-first and
-// .rodata comes out in parse order (matching the retail layout).
 #include <global.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
-
-// NOTE: pokemon.hpp / pokemonBios.hpp / pokemonDB.hpp are not included here: several of their
-// prototypes (pokemonInit(u32), pokemonBiosSetHp(Pokemon*, s16), pokemon_GetPokemonDataId -> u32,
-// pokemonGetStatus -> u16, ...) disagree with the types the retail code was compiled with.
 
 struct PokemonData;
 struct ItemData;
@@ -57,24 +50,24 @@ struct FightJoutai {
 };
 
 struct MenuPokemonStatus {
-    char16 name[11]; // 0x0
+    char16 name[11];
     u8 pad16;
-    u8 level; // 0x17
-    u16 maxHp; // 0x18
-    u16 hp; // 0x1a
+    u8 level;
+    u16 maxHp;
+    u16 hp;
     union {
         u32 exp;
         f32 dp;
-    } barMax; // 0x1c
+    } barMax;
     union {
         u32 exp;
         f32 dp;
-    } barNow; // 0x20
-    u16 joutaiSpriteId; // 0x24
-    u16 faceId; // 0x26
-    u8 sex; // 0x28
-    u8 dark; // 0x29
-    u16 itemDataId; // 0x2a
+    } barNow;
+    u16 joutaiSpriteId;
+    u16 faceId;
+    u8 sex;
+    u8 dark;
+    u16 itemDataId;
 };
 
 struct EffortEntry {
@@ -84,21 +77,20 @@ struct EffortEntry {
 };
 
 struct MenuWazaStatusEntry {
-    char16* name; // 0x0
-    char16* zokuseiName; // 0x4
-    u16 zokusei; // 0x8
-    u8 maxPp; // 0xa
-    u8 pp; // 0xb
+    char16* name;
+    char16* zokuseiName;
+    u16 zokusei;
+    u8 maxPp;
+    u8 pp;
 };
 
 struct MenuWazaStatus {
-    char16* nickname; // 0x0
-    MenuWazaStatusEntry waza[4]; // 0x4
+    char16* nickname;
+    MenuWazaStatusEntry waza[4];
     u8 pad[0x48 - 0x34];
 };
 
 extern "C" {
-// pokemonDB accessors
 u16 figthOutPokemonGetPokemonDataId(FightOutPokemon*);
 u32 pokemonDB_GetShout(u16);
 u16 pokemon_GetPokemonDataId(Pokemon*);
@@ -217,7 +209,6 @@ u16 pokemonDB_GetGetWazaDataId(u16, u16);
 void pokemonDB_SetMitaFlag(u16, bool);
 void pokemonDB_SetTukamaetaFlag(u16, bool);
 
-// other systems
 u32 HSD_Rand(void);
 void* memset(void*, int, u32);
 void GScharCpy(char16*, const char16*);
@@ -309,7 +300,6 @@ u32 fightWaza_GetHitDamage(FightWaza*);
 extern u32* pokemon_data_number;
 extern u16 spriteTbl[][2];
 
-// generated accessor prototypes (types taken from the retail call sites)
 s16 fightOutPokemonBiosGetDamageAtkValue(FightOutPokemon*);
 s16 fightOutPokemonBiosGetDamageSpeValue(FightOutPokemon*);
 s16 fightOutPokemonBiosGetGamanDamageValue(FightOutPokemon*);
@@ -689,8 +679,6 @@ void* pokemonBiosGetNicknameOrgPtr(Pokemon*);
 void* pokemonBiosGetNicknamePtr(Pokemon*);
 void* pokemonDataBiosGetName(PokemonData*);
 
-
-// this unit
 u16 fightOutPokemon_GetKanseiSndId(FightOutPokemon*);
 s32 pokemonGetWazaCount(Pokemon*);
 void pokemonWazaForget(Pokemon*, u32);

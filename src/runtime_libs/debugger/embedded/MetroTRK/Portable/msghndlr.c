@@ -45,7 +45,6 @@ inline DSError TRKStandardACK(MessageBuffer* buffer, MessageCommandID commandID,
 
 void OutputData(void* data, int length)
 {
-	// u8 byte;
 	int i;
 	u8* datapointer = data;
 
@@ -297,7 +296,6 @@ DSError TRKDoReadRegisters(MessageBuffer* b)
 	MWTRACE(4, "DoReadRegisters : Error extended2 regs 0x%08x\n", error);
 	MWTRACE(4, "DoReadRegisters : Buffer length 0x%08x\n", b->length);
 
-	// Check if there was an error, and respond accordingly
 	if (error != DS_NoError) {
 		int replyError;
 		switch (error) {
@@ -325,7 +323,6 @@ DSError TRKDoReadRegisters(MessageBuffer* b)
 
 		return TRKStandardACK(b, DSMSG_ReplyACK, replyError);
 	} else {
-		// No error, send ack
 		return TRKSendACK(b);
 	}
 }
@@ -365,7 +362,6 @@ DSError TRKDoWriteRegisters(MessageBuffer* b)
 		error = TRKTargetAccessExtended2(firstRegister, lastRegister, b, &registersLength, FALSE);
 		break;
 	default:
-		// invalid option
 		error = DS_UnsupportedError;
 		break;
 	}
@@ -381,7 +377,6 @@ DSError TRKDoWriteRegisters(MessageBuffer* b)
 		error                 = TRKAppendBuffer(b, (u8*)&local_50, sizeof(CommandReply));
 	}
 
-	// Check if there was an error, and respond accordingly
 	if (error != DS_NoError) {
 		switch (error) {
 		case DS_UnsupportedError:
@@ -411,12 +406,10 @@ DSError TRKDoWriteRegisters(MessageBuffer* b)
 
 		return TRKStandardACK(b, DSMSG_ReplyACK, replyError);
 	} else {
-		// No error, send ack
 		return TRKSendACK(b);
 	}
 }
 
-// Not called anywhere (stripped by the linker), but its string stays in the pool.
 void TRKDoFlushCache(void)
 {
 	MWTRACE(1, "DoFlushCache unimplemented!!!\n");

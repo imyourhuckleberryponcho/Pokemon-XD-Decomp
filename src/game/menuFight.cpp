@@ -1,5 +1,4 @@
 #pragma defer_codegen on
-// Work in progress: pokemon XD menuFight.
 #include <dolphin/types.h>
 #include "game/shared/menu_work.h"
 
@@ -95,7 +94,6 @@ static inline s32 targetCursor1pB(s32 menuID)
     }
     return -1;
 }
-
 
 enum GSinputDevice { GSINPUT_DUMMY = 0, GSINPUT_1 = 1 };
 class DarkPokemon {
@@ -640,14 +638,6 @@ s32 menuFightGetStatus(void);
 bool menuFightChkOpenBall(s32 id);
 }
 
-
-
-
-
-
-
-
-
 static inline u8 zokuseiOf(void* data);
 
 struct StatusAlloc {
@@ -1182,9 +1172,9 @@ s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
             }
             result = -1;
             e = arg->entry;
-            for (i = 0; i < 4; e++, i++) {
-                if (want == e->menuId) {
-                    result = i;
+            for (int index = 0; index < 4; e++, index++) {
+                if (want == (s32)e->menuId) {
+                    result = index;
                     if (fightKind_CheckFightKind(0xf)) {
                         menuClose(0xb5);
                     }
@@ -1317,13 +1307,13 @@ static u16 _menuFightGetRightStickInfo(long port, bool update)
     u16 ret = 0;
     int idx;
     if (port != 0) {
-        idx = 1;
+        port = 1;
     } else {
-        idx = 0;
+        port = 0;
     }
     s8 y;
     s8 x;
-    if (idx == 0) {
+    if (port == 0) {
         y = GSinputGetRightStickYData(1, 0);
         x = GSinputGetRightStickXData(1, 0);
     } else {
@@ -1345,14 +1335,14 @@ static u16 _menuFightGetRightStickInfo(long port, bool update)
             }
         }
         if (update) {
-            if (ret == oldKeyInfo[idx]) {
+            if (ret == oldKeyInfo[port]) {
                 ret = 0;
             } else {
-                oldKeyInfo[idx] = ret;
+                oldKeyInfo[port] = ret;
             }
         }
     } else {
-        oldKeyInfo[idx] = 0;
+        oldKeyInfo[port] = 0;
     }
     return ret;
 }

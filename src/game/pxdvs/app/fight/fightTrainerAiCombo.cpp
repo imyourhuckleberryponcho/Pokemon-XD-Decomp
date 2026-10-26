@@ -1,4 +1,3 @@
-// DRAFT (2026-10-18, drafter): fixed-action and combo AI. Unit order is asm order; see notes in the report.
 #include <dolphin/types.h>
 
 struct FIGHT_TRAINER;
@@ -12,7 +11,6 @@ struct FightOutPokemon {
     u32 data[548];
 };
 
-// One candidate combo attack: two attackers, their two targets, the moves and the evaluated values.
 struct AI_ALLWAZA_VALID_TBL {
     FightOutPokemon* poke[2];
     FightOutPokemon* target[2];
@@ -87,7 +85,7 @@ u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(FIGHT_FLOOR*, FIGHT_TRAINER*,
 s16 fightTrainerAiAddValueByAddsubDataId(s16, FIGHT_TRAINER*, u16);
 u8 wazaIsWazaTypeId(u16, u8);
 s32 fightAi_ThreatEnemyValue(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon*, s8, u8, s32, s32);
-u8 fightAi_HitCheckWazaAboutJoutaiAndType(FIGHT_TRAINER*, FightOutPokemon*, u16);
+u8 fightAi_HitCheckWazaAboutJoutaiAndType(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon*, u16);
 u8 fightAi_GetTokuseiHaveFlag(FIGHT_TRAINER*, FightOutPokemon*, u16);
 u32 fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(FIGHT_TRAINER*, FightOutPokemon*);
 u32 fightTrainerAiGetFightOutPokemonAbiCntPhyDef(FIGHT_TRAINER*, FightOutPokemon*);
@@ -141,7 +139,6 @@ FixAiShell fixAiShell[17] = {
     {0, {fixAct_v09_1, 0}},
 };
 
-// Fixed-action script data (indexed by the deck's fixed action id).
 u8 fixAct_v02_1[5] = {1, 3, 2, 3, 7};
 u8 fixAct_v04_1[5] = {1, 5, 1, 5, 6};
 u8 fixAct_v04_2[5] = {1, 5, 2, 5, 6};
@@ -232,7 +229,7 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
     s32 t;
     FightOutPokemon* poke;
     u8 idx;
-    u8 a;
+    int a;
     u8 cnt[2] = {0, 0};
 
     enc = fightEncountDataBiosGetPtr(fightFloor_GetEncountDataId(0));
@@ -249,8 +246,8 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
     for (i = 0; i < 2; i++) {
         if (acts[i] != 0) {
             for (k = 0; k < 10; k++) {
-                u8 v = acts[i][k];
                 cnt[i]++;
+                u8 v = acts[i][k];
                 if (v == 6) {
                     break;
                 }
@@ -296,7 +293,7 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
                 fightOutPokemon_SetFixAiWaza(poke, a);
             }
         }
-        if (b == 0) {
+        if (b) {
             fightOutPokemon_SetFixAiWaza(poke, 6);
         } else if (b >= 0 && b < 6) {
             fightOutPokemon_SetFixAiDef(poke, b);
@@ -417,16 +414,18 @@ s16 fightAiCombo_GetAllWazaTableDefValue(FIGHT_TRAINER* t, FightOutPokemon** foe
 }
 
 static void _GetAllWazaTableValue_StatusUpWaza(FIGHT_TRAINER* t, AI_ALLWAZA_VALID_TBL* tbl, s16* pval) {
-    s16 val = *pval;
+    StatusWazaEntry* e;
     u8 i;
     u8 j;
+    s16 val = *pval;
+    int cur;
+    u16 rf_t;
 
     for (i = 0; i < 2; i++) {
         if (tbl->poke[i] != 0) {
             for (j = 0; j < 14; j++) {
-                StatusWazaEntry* e = &statusUpWazaTbl[j];
+                e = &statusUpWazaTbl[j];
                 if (tbl->waza[i] == e->waza && tbl->poke[i] != 0) {
-                    int cur;
                     switch (e->kind) {
                     case 1:
                         cur = fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(t, tbl->poke[i]);
@@ -450,7 +449,8 @@ static void _GetAllWazaTableValue_StatusUpWaza(FIGHT_TRAINER* t, AI_ALLWAZA_VALI
                         cur = fightTrainerAiGetFightOutPokemonAbiCntAvd(t, tbl->poke[i]);
                         break;
                     }
-                    if (cur + e->limit > 12) {
+                    rf_t = e->limit;
+                    if ((u8)cur + rf_t > 12) {
                         val = 0;
                     }
                 }
@@ -513,7 +513,8 @@ static void _GetAllWazaTableValue_StatusDownWaza(FIGHT_TRAINER* t, FightOutPokem
                                 num = 2;
                                 break;
                             }
-                            if (cur - (e->limit - 1) > 0) {
+                            u8 rf_t = e->limit;
+                            if (cur - (rf_t - 1) > 0) {
                                 val = 0;
                             }
                             for (m = 0; m < num; m++) {
@@ -558,7 +559,8 @@ static void _GetAllWazaTableValue_StatusDownWaza(FIGHT_TRAINER* t, FightOutPokem
                                     num = 2;
                                     break;
                                 }
-                                if (cur - (e->limit - 1) > 0) {
+                                u8 rf_t = e->limit;
+                                if (cur - (rf_t - 1) > 0) {
                                     val = 0;
                                 }
                                 for (m = 0; m < num; m++) {
@@ -701,14 +703,14 @@ static void _GetAllWazaTableValue_IryokuWaza(FIGHT_TRAINER* t, FightOutPokemon**
                 switch (tbl->mode[i]) {
                 case 0:
                 case 1:
-                    if (tbl->target[i] != 0 && (u16)fightAi_HitCheckWazaAboutJoutaiAndType(t, tbl->poke[i], tbl->waza[i]) == 0) {
+                    if (tbl->target[i] != 0 && (u16)fightAi_HitCheckWazaAboutJoutaiAndType(t, tbl->poke[i], tbl->target[i], tbl->waza[i]) == 0) {
                         val = 0;
                     }
                     break;
                 case 2:
                     hits = 0;
                     for (k = 0; k < 2; k++) {
-                        if (foes[k] != 0 && (u16)fightAi_HitCheckWazaAboutJoutaiAndType(t, tbl->poke[i], tbl->waza[i]) == 0) {
+                        if (foes[k] != 0 && (u16)fightAi_HitCheckWazaAboutJoutaiAndType(t, tbl->poke[i], foes[k], tbl->waza[i]) == 0) {
                             hits = 1;
                             break;
                         }
@@ -732,11 +734,11 @@ s16 fightAiCombo_GetAllWazaValueTable(AI_ALLWAZA_VALID_TBL* tbl, s16 base, FIGHT
 }
 
 s16 fightAiCombo_GetAllWazaMaxValueTable(AI_ALLWAZA_VALID_TBL* tbls, u8 num, s16 base, FIGHT_TRAINER* t, FightOutPokemon** ary, FightOutPokemon** foes, AI_ALLWAZA_VALID_TBL* out, s8 mode) {
-    u8 best[40];
-    s16 values[80];
+    u8 best[0x40];
+    s16 values[0x40];
     s16 maxVal = 0;
     u8 i;
-    u8 bestNum = 0;
+    u8 bestNum;
 
     for (i = 0; i < num; i++) {
         if (tbls != 0) {

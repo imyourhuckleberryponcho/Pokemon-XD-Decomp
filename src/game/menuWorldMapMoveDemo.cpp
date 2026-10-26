@@ -48,7 +48,6 @@ static WorldMapMoveDemo* pMoveDemo;
 
 extern "C" {
 
-// Kept via FORCEACTIVE in config/GXXE01/module/ldscript.lcf (used from REL modules).
 void menuWorldMapMoveDemoExit(void) {
     if (pMoveDemo != NULL) {
         delete pMoveDemo;

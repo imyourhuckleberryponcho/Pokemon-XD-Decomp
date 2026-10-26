@@ -5,59 +5,59 @@ struct FightWazaJoutai {
 };
 
 struct FightWaza {
-    u8 wazaBanme;               // 0x00
-    u16 motoWazaDataId;         // 0x02
-    u16 useWazaDataId;          // 0x04
-    u16 targetDataId;           // 0x06
-    FightWazaJoutai joutai[9];  // 0x08
-    u8 critical;                // 0x98
-    u8 damageValue;             // 0x99
-    s32 damage;                 // 0x9C
-    s32 hitDamage;              // 0xA0
-    u16 iryoku;                 // 0xA4
-    u16 zokusei;                // 0xA6
-    u8 kaisuu;                  // 0xA8
-    u8 autoMakeFlag;            // 0xA9
+    u8 wazaBanme;
+    u16 motoWazaDataId;
+    u16 useWazaDataId;
+    u16 targetDataId;
+    FightWazaJoutai joutai[9];
+    u8 critical;
+    u8 damageValue;
+    s32 damage;
+    s32 hitDamage;
+    u16 iryoku;
+    u16 zokusei;
+    u8 kaisuu;
+    u8 autoMakeFlag;
 };
 
 struct WazaData {
-    u8 pri;                // 0x00
-    u8 pp;                 // 0x01
-    u8 zokuseiDataId;      // 0x02
-    u8 rangeId;            // 0x03
-    u8 avg;                // 0x04
-    u8 addFightKoukaAvg;   // 0x05
-    u8 dageki;             // 0x06
-    u8 mamoru;             // 0x07
-    u8 majikku;            // 0x08
-    u8 yokodori;           // 0x09
-    u8 oumugaesi;          // 0x0A
-    u8 oujanosirusi;       // 0x0B
+    u8 pri;
+    u8 pp;
+    u8 zokuseiDataId;
+    u8 rangeId;
+    u8 avg;
+    u8 addFightKoukaAvg;
+    u8 dageki;
+    u8 mamoru;
+    u8 majikku;
+    u8 yokodori;
+    u8 oumugaesi;
+    u8 oujanosirusi;
     u8 unkC[4];
-    u8 bouon;              // 0x10
+    u8 bouon;
     u8 unk11;
-    u8 hidenFlag;          // 0x12
-    u8 darkWazaKind;       // 0x13
-    u8 riskFlag;           // 0x14
-    u8 compatible;         // 0x15
+    u8 hidenFlag;
+    u8 darkWazaKind;
+    u8 riskFlag;
+    u8 compatible;
     u8 unk16[2];
-    s16 iryoku;            // 0x18
+    s16 iryoku;
     u8 unk1A[2];
-    u16 seqId;             // 0x1C
-    u16 wazaFuncDataId;    // 0x1E
-    u32 name;              // 0x20
+    u16 seqId;
+    u16 wazaFuncDataId;
+    u32 name;
     u8 unk24[0xC];
-    u32 wazawzxdataId;     // 0x30
-    u8 typeId[3];          // 0x34
+    u32 wazawzxdataId;
+    u8 typeId[3];
 };
 
 struct WazaFuncData {
-    void* aiValue;              // 0x00
-    void* aiHit;                // 0x04
-    void* aiDamage;             // 0x08
-    void* aiDamageFightPokemon; // 0x0C
-    void* wzxType;              // 0x10
-    void* wzxVariation;         // 0x14
+    void* aiValue;
+    void* aiHit;
+    void* aiDamage;
+    void* aiDamageFightPokemon;
+    void* wzxType;
+    void* wzxVariation;
 };
 
 extern "C" {

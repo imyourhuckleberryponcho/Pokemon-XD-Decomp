@@ -1,4 +1,3 @@
-// STATUS (cleanup, 2026-10-18): 5/6 exact; _lensFlareRender written fully, 99.0% (remaining: float/GPR reg numbering of cam/c2, fifo base r3 vs r4 in glow quads, 0x20 stack bytes). LAYOUT/CONST/CALLS/DATA OK.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/string.h>
@@ -190,7 +189,6 @@ void PSMTXRotRad(f32 (*m)[4], char axis, f32 rad);
 void PSMTXTransApply(const f32 (*src)[4], f32 (*dst)[4], f32 x, f32 y, f32 z);
 double atan2(double y, double x);
 }
-
 
 static LensFlare* _lfLensFlarePtrs[4];
 static bool gModuleInited;

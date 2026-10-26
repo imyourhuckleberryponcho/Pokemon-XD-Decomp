@@ -1,7 +1,3 @@
-// QuatSlerp uses MSL's inline sinf/acosf wrappers (as Melee's quatlib.c); their return temporaries decide the float
-// registers. A dead-stripped function after QuatSlerp opened .sdata2 with 1.0F, 0.5F (placeholder at the end).
-// Compiled as C with deferred inlining (see configure.py), which emits functions and data in
-// reverse source order.
 #include <dolphin/mtx.h>
 
 #define M_PI_2 1.5707963267948966
@@ -91,7 +87,6 @@ int QuatSlerp(Quaternion* p, Quaternion* q, Quaternion* out, f32 t) {
     return 1;
 }
 
-// Placeholder for a quatlib function that the linker dead-stripped (its 1.0F/0.5F constants open .sdata2).
 void QuatLib_StrippedPlaceholder(Quaternion* q, f32 s) {
     q->w = 1.0F + s;
     q->x = 0.5F * s;

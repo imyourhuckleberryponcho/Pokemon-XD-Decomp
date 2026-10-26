@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 #pragma pool_strings off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +20,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -47,7 +45,6 @@ struct Pokemon;
 struct Savedata;
 
 extern "C" {
-// ---- draft declarations ----
 struct CReliveHall {
     u8 _draft[1];
     s32 init();
@@ -148,9 +145,6 @@ s32 sodateyaInit(void* sodateya);
 extern s32 jtbl_2134;
 }
 
-// ---- draft declarations ----
-
-
 extern "C" {
 void savedataCreate(void* save, char16* name);
 s32 savedataGetBattleDiskSellOut(u32 p0);
@@ -172,7 +166,6 @@ s32 savedataGetBattleDiskSellOut(u32 id) {
 u8 pokecolo_savedata[0x287D0] __attribute__((aligned(32)));
 void* now_savedata_ptr;
 
-// One gift Pokemon of the Colosseum-save starter party (romVersion 1).
 struct StartPokemon {
     u8 level;
     u16 species;

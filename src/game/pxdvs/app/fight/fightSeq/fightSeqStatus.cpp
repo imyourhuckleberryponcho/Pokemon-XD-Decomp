@@ -1,7 +1,6 @@
 #include <dolphin/types.h>
 
 #pragma pack(push, 1)
-// Arguments of the WS_STATUS_* move-sequence commands, as laid out in the script data.
 struct WsStatusCmd {
     u8 opcode;
     u8 side;

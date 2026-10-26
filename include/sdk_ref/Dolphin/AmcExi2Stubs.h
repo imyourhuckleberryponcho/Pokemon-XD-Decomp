@@ -5,12 +5,10 @@
 #include "Dolphin/os.h"
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
-// EXI callback function pointer type
 typedef __OSInterruptHandler AmcEXICallback;
 
-// EXI error codes
 typedef enum {
 	AMC_EXI_NO_ERROR = 0,
 	AMC_EXI_UNSELECTED
@@ -28,6 +26,6 @@ BOOL AMC_IsStub(void);
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

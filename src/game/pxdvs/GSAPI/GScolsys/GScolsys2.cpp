@@ -19,9 +19,9 @@ struct CCD_BLOCK {
 };
 
 struct CCD_RECORD {
-    f32 pos[3];        // 0x00
-    f32 rot[3];        // 0x0C
-    f32 scale[3];      // 0x18
+    f32 pos[3];
+    f32 rot[3];
+    f32 scale[3];
     CCD_BLOCK* block24;
     CCD_BLOCK* block28;
     CCD_BLOCK* block2C;
@@ -37,10 +37,10 @@ struct CCD_FILEHEAD {
 };
 
 struct GSCOLSYS2_OBJ {
-    f32 pos[3];   // 0x00
-    f32 rot[3];   // 0x0C
-    f32 scale[3]; // 0x18
-    u16 flags;    // 0x24
+    f32 pos[3];
+    f32 rot[3];
+    f32 scale[3];
+    u16 flags;
     GSCOLSYS2_OBJ() {}
 };
 

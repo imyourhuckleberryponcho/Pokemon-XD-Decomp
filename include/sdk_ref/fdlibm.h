@@ -3,7 +3,6 @@
 
 #include "types.h"
 
-/* @(#)fdlibm.h 1.5 04/04/22 */
 /**
  * ====================================================
  * Copyright (C) 2004 by Sun Microsystems, Inc. All rights reserved.
@@ -16,10 +15,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
-
-/* Sometimes it's necessary to define __LITTLE_ENDIAN explicitly
-   but these catch some common cases. */
+#endif
 
 #if defined(i386) || defined(i486) || defined(intel) || defined(x86) || defined(i86pc) || defined(__alpha) || defined(__osf__)
 #define __LITTLE_ENDIAN
@@ -37,16 +33,7 @@ extern "C" {
 #define __LOp(x) *(1 + (int*)x)
 #endif
 
-// TODO: should __STDC__ actually be defined?
-// #ifdef __STDC__
 #define __P(p) p
-// #else
-// #define __P(p) ()
-// #endif
-
-/**
- * ANSI/POSIX
- */
 
 extern int signgam;
 
@@ -57,13 +44,6 @@ enum fdversion { fdlibm_ieee = -1, fdlibm_svid, fdlibm_xopen, fdlibm_posix };
 #define _LIB_VERSION_TYPE enum fdversion
 #define _LIB_VERSION      _fdlib_version
 
-/* if global variable _LIB_VERSION is not desirable, one may
- * change the following to be a constant by:
- *	#define _LIB_VERSION_TYPE const enum version
- * In that case, after one initializes the value _LIB_VERSION (see
- * s_lib_version.c) during compile time, it cannot be modified
- * in the middle of a program
- */
 extern _LIB_VERSION_TYPE _LIB_VERSION;
 
 #define _IEEE_  fdlibm_ieee
@@ -81,11 +61,6 @@ struct exception {
 
 #define HUGE MAXFLOAT
 
-/**
- * set X_TLOSS = pi*2**52, which is possibly defined in <values.h>
- * (one may replace the following line by "#include <values.h>")
- */
-
 #define X_TLOSS 1.41484755040568800000e+16
 
 #define DOMAIN    1
@@ -95,9 +70,6 @@ struct exception {
 #define TLOSS     5
 #define PLOSS     6
 
-/**
- * ANSI/POSIX
- */
 extern f64 acos __P((f64));
 extern f64 asin __P((f64));
 extern f64 atan __P((f64));
@@ -155,35 +127,21 @@ extern f64 scalb __P((f64, f64));
 
 extern int matherr __P((struct exception*));
 
-/**
- * IEEE Test Vector
- */
 extern f64 significand __P((f64));
 
-/**
- * Functions callable from C, intended to support IEEE arithmetic.
- */
 extern f64 copysign __P((f64, f64));
 extern int ilogb __P((f64));
 extern f64 rint __P((f64));
 extern f64 scalbn __P((f64, int));
 
-/**
- * BSD math library entry points
- */
 extern f64 expm1 __P((f64));
 extern f64 log1p __P((f64));
 
-/**
- * Reentrant version of gamma & lgamma; passes signgam back by reference
- * as the second argument; user must allocate space for signgam.
- */
 #ifdef _REENTRANT
 extern f64 gamma_r __P((f64, int*));
 extern f64 lgamma_r __P((f64, int*));
-#endif /* _REENTRANT */
+#endif
 
-/* ieee style elementary functions */
 extern f64 __ieee754_sqrt __P((f64));
 extern f64 __ieee754_acos __P((f64));
 extern f64 __ieee754_acosh __P((f64));
@@ -216,7 +174,6 @@ extern f64 __ieee754_scalb __P((f64, int));
 extern f64 __ieee754_scalb __P((f64, f64));
 #endif
 
-/* fdlibm kernel function */
 extern f64 __kernel_standard __P((f64, f64, int));
 extern f64 __kernel_sin __P((f64, f64, int));
 extern f64 __kernel_cos __P((f64, f64));
@@ -225,6 +182,6 @@ extern int __kernel_rem_pio2 __P((f64*, f64*, int, int, int, const int*));
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

@@ -1,13 +1,6 @@
-// STATUS (wSub1): flags: -inline noauto (as configured), peephole off, pool_strings off. 89/113 exact; LAYOUT/CONST/CALLS/DATA OK.
-// All functions are written. Inexact (see fcheck): BallDisp 76.7 / BallAnaDisp 85.4 / BatuMark 76.1 (address-calc order: target adds
-// _CB+0x10000 first), drawHeroID 84.4 (digit CSE), HPBarDispSet 88.2 (same address-calc issue), TYPE2 92.6, 2DPokemonDisp/Disp2 94-96
-// (register order), Item_ErrorSet 95.3 (idx/sum regs), and ~15 functions at 97-99.9% (register or branch-shape only).
-// Pokemon XD menu callbacks for the Colosseum battle sub screens (rules, entry, errors).
-// WIP: see per-function status via fcheck.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 
-// Menu callbacks were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
@@ -441,8 +434,6 @@ struct CBKeyInfo {
     u16 buttons;
 };
 
-
-// prototypes for functions defined below
 extern "C" {
 void fn_8007E5AC(CBWin* a, CBMsgWin* w);
 s32 fn_8007E634(s32 msg);
@@ -1414,10 +1405,10 @@ void menuCB_GCEntry_ItemGiveJob() {
     u8 slot;
     u8* hero;
     u16 chosen;
-    u32 idx;
-    s8 answer;
+    int answer;
     u16 cur;
     void* nick;
+    u32 idx;
     p = menuCBPokemonPtrGet(_CB.unkB1D4, _CB.unkB1D8);
     nick = pokemonBiosGetNicknamePtr(p);
     hero = _CB.hero;
@@ -1681,31 +1672,31 @@ void menuCB_TUNAIDE01_Rule_SELECT(void) {
 
 void menuCB_GCEntry_OkPushErrorCheck(void) {
     void* hero;
-    u32 i;
     u32 j;
+    u32 i;
     for (i = 0; i < 6; i++) {
         toolBattleRuleErrorFlagClear(0, i);
     }
     hero = (u8*)&_CB + 0xA65C;
     menuCBRule_ErrorFlagSet(hero, 0);
-    for (i = 0; i < 6; i++) {
-        if (menuCB_Trainer_Error_Check(i, 8)) {
+    for (u32 i_loop = 0; i_loop < 6; i_loop++) {
+        if (menuCB_Trainer_Error_Check(i_loop, 8)) {
             _CB.unkB1DC = 0x43A9;
             _CB.unkB0FC = 2;
             return;
         }
-        if (menuCB_Trainer_Error_Check(i, 9)) {
-            _CB.unkB1E0 = i + 1;
+        if (menuCB_Trainer_Error_Check(i_loop, 9)) {
+            _CB.unkB1E0 = i_loop + 1;
             _CB.unkB1DC = 0x4410;
             _CB.unkB0FC = 2;
             return;
         }
-        if (menuCB_Trainer_Error_Check(i, 10)) {
+        if (menuCB_Trainer_Error_Check(i_loop, 10)) {
             _CB.unkB1DC = 0x43AB;
             _CB.unkB0FC = 2;
             return;
         }
-        if (menuCB_Trainer_Error_Check(i, 11)) {
+        if (menuCB_Trainer_Error_Check(i_loop, 11)) {
             _CB.unkB1DC = 0x43AC;
             _CB.unkB0FC = 2;
             return;
@@ -1793,7 +1784,8 @@ void menuCBPokemonEntryBallAnaDisp(CBItem* item, s32 player, u32 idx) {
 
 void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
     enum TsE { TsE0 };
-    u16 max = menuCBBios_ParticipationPokemonMax();
+    s8* flag;
+    u16 max = (u16)menuCBBios_ParticipationPokemonMax();
     u16 num = toolentryTaisenGetPokemonNum(player);
     enum TsE order = (enum TsE)(toolentryTaisengetEtnryPokemonOrderNum(player));
     num = num < max ? num : max;
@@ -1811,7 +1803,7 @@ void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
         return;
     }
     if (pauseIsPause()) {
-        s8* flag = &CBB.on[player][idx];
+        flag = &CBB.on[player][idx];
         if (*flag != 1) {
             winSpriteSetDisp(item, 0);
             *flag = 0;
@@ -2565,7 +2557,7 @@ void menuCB2DPokemonDisp(CBWin* win, CBItem* item, u32 type, u32 index) {
     CAnt* a;
     Pokemon* p = menuCBPokemonPtrGet(type, index);
     u32 i = menuCBPokemonGetIndex(type, index);
-    CAntPos pos;
+    volatile CAntPos pos;
     if (i == 0x1E) {
         _menuCB2DPokemonNewSet(0);
         _menuCB2DPokemonNewSet(1);
@@ -2577,7 +2569,8 @@ void menuCB2DPokemonDisp(CBWin* win, CBItem* item, u32 type, u32 index) {
         if (i < 0x1E) {
             spriteSetScissor(win->layer, 0x12, 0x51, 0x180, 0x140);
         }
-        pos.x = item->x + win->x8C + 0x20;
+        u16 rf_t = item->x;
+        pos.x = rf_t + win->x8C + 0x20;
         pos.y = item->y + 0x20;
         a = &ant[i];
         a->initByPokemonAndSetColorAnimationInAny(p);
@@ -2765,12 +2758,14 @@ void menuCB_PrintXP(CBWin* win, s32 player) {
 
 void menuCBBattleStartDispTrainerFaceSub(CBWin* win, CBItem* item, s32 idx) {
     u8 alpha = win->alpha;
-    GSgfxLayer* layer = GSgfxLayerFindByID(win->layer);
-    GStexture* tex = _menuCBBattleStartWork.ent[idx].tex;
+    GStexture* tex;
+    GSgfxLayer* layer;
+    layer = GSgfxLayerFindByID(win->layer);
+    tex = (0, _menuCBBattleStartWork.ent[idx].tex);
     if (tex != 0) {
         layer->primitive = 0x98;
         layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 1, 1, 4));
-        if (layer->tex1740 != tex || layer->tex17F8 != tex || tex->flag != 0) {
+        if (((layer->tex1740 != tex) || (layer->tex17F8 != tex)) || (tex->flag != 0)) {
             layer->tex1740 = tex;
             layer->f173C |= 1;
             layer->tex17F8 = tex;
@@ -2966,7 +2961,6 @@ void toolBattleRuleErrorFlagClear(s32 player, u32 idx) {
     *(s32*)&_CB.err[player][idx] = 0;
 }
 
-// ---- wSub1 new functions (batch 1) ----
 u8 menuCB_Trainer_Error_Check(u32 player, s32 idx) {
     switch (idx) {
     case 0:

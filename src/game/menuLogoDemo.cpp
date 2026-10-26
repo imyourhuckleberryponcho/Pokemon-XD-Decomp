@@ -1,8 +1,9 @@
-// WIP (smallmenu, 2026-10-15): 59/62 exact. Needs -inline noauto,deferred (source bottom-to-top); LAYOUT/CONST/CALLS/DATA OK. Non-exact: _setTextureWindow, _menuSoundReadWave (regs), fn_80085E88 (jumptable symbol name only).
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
 #include <game/shared/menu_work.h>
+
+#pragma force_active on
 
 struct GStexture;
 struct GSvec2 {
@@ -575,7 +576,8 @@ static void _setTextureWindow(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, GStexture* 
     col.v[0] = 0xff;
     col.v[1] = 0xff;
     col.v[2] = 0xff;
-    a = (u16)(w->alpha * sp->alpha) / 255;
+    a = (u16)(w->alpha * sp->alpha);
+    a /= 255;
     if (a > 255) {
         a = 255;
     }

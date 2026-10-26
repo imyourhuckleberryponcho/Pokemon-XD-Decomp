@@ -1,4 +1,3 @@
-// STATUS: 5/6 exact, LAYOUT OK, CONST OK; left: _stop (callee-saved reg numbering of the model loop locals)
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -56,7 +55,6 @@ public:
     virtual ~GSeffect();
 };
 
-// Full-screen color filter, or a modulation color applied to the models of the current floor.
 class filterEffect : public GSeffect {
 public:
     virtual ~filterEffect();

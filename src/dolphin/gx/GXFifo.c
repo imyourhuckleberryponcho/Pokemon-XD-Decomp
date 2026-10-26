@@ -150,7 +150,7 @@ void GXInitFifoLimits(GXFifoObj* fifo, u32 hiWatermark, u32 loWatermark) {
 
 #define GX_SET_PI_REG(offset, val) (*(volatile u32*)((volatile u32*)(__piReg) + (offset)) = val)
 
-// NONMATCHING DEBUG
+
 void GXSetCPUFifo(GXFifoObj* fifo) {
     __GXFifoObj* realFifo = (__GXFifoObj*)fifo;
     BOOL enabled = OSDisableInterrupts();
@@ -561,7 +561,7 @@ u32 GXResetOverflowCount(void) {
     return oldcount;
 }
 
-// NONMATCHING
+
 volatile void* GXRedirectWriteGatherPipe(void* ptr) {
     u32 reg = 0;
     BOOL enabled = OSDisableInterrupts();
@@ -593,7 +593,7 @@ volatile void* GXRedirectWriteGatherPipe(void* ptr) {
     return (volatile void *)GXFIFO_ADDR;
 }
 
-// NONMATCHING
+
 void GXRestoreWriteGatherPipe(void) {
     u32 reg = 0;
     u32 i;

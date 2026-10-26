@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -42,7 +39,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -83,7 +79,6 @@ struct peSpline;
 struct peXform;
 
 extern "C++" {
-// ---- draft declarations ----
 struct GSgfxLayer {
     u8 _draft[1];
     s32 drawIcosahedron();
@@ -128,15 +123,15 @@ struct peColorSpline {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;  // 0x00
-    u32 unk4;                // 0x04
-    void* buffer;            // 0x08
-    peNode* freeList;        // 0x0c
-    peNode* activeList;      // 0x10
-    u16 count;               // 0x14
-    u16 maxCount;            // 0x16
-    u8 dirty;                // 0x18
-    u8 started;              // 0x19
+    peEmitterNode* emitter;
+    u32 unk4;
+    void* buffer;
+    peNode* freeList;
+    peNode* activeList;
+    u16 count;
+    u16 maxCount;
+    u8 dirty;
+    u8 started;
 
     peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
     virtual ~peContainer();
@@ -163,7 +158,7 @@ struct peNode {
 };
 class peShapeContainer : public peContainer {
 public:
-    _peShape* shape;  // 0x20
+    _peShape* shape;
 
     peShapeContainer(peEmitterNode*, _peShape*, unsigned short);
     virtual ~peShapeContainer();
@@ -237,13 +232,6 @@ extern s32 jtbl_1954;
 extern s32 this_;
 extern s32 jtbl_1843;
 }
-// ---- draft declarations ----
-
-
-
-// ---- draft declarations ----
-
-
 
 void peShapeContainer::Stop() {
     if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
@@ -266,9 +254,7 @@ void peShapeContainer::Stop() {
 extern "C++" {
 extern "C++" {
 
-
 #define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
-// layer state dirty mark: the state word, its copy 0xB8 further, and the group masks at 0x16A8/0x1760
 static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
     LAYER_FIELD(l, u32, off) |= bit;
     LAYER_FIELD(l, u32, 0x16A8) |= sum;
@@ -328,18 +314,20 @@ static inline bool canRender(peShapeContainer* c) {
 }
 
 extern "C++" {
+#pragma push
+#pragma optimize_for_size on
 void peShapeContainer::Render() {
     f32 sp24;
-    f32 sp28;
-    volatile f32 unksp20;
-    f32 sp40;
-    f32 sp3C;
-    f32 sp38;
-    f32 sp34;
     volatile f32 sp30;
     f32 sp2C;
+    volatile f32 sp28;
+    volatile f32 sp3C;
+    f32 sp38;
+    f32 sp34;
     GSgfxLight *sp1C;
+    volatile f32 unksp20;
     GSgfxLight *sp18;
+    volatile f32 sp40;
     GSgfxLight *sp14;
     GSgfxLight *sp10;
     s32 sp8;
@@ -362,7 +350,7 @@ void peShapeContainer::Render() {
 
     if (M2C_FIELD(this, u8 *, 0x19)) {
         if (canRender(this)) {
-            temp_r31 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), s32 *, 0);
+            temp_r31 = M2C_FIELD(M2C_FIELD((s32)this, _peShape **, 0x20), s32 *, 0);
             if (temp_r31 & 0x800) {
                 {
                     GSgfxLayer* l = g_current_layer;
@@ -381,19 +369,18 @@ void peShapeContainer::Render() {
                 var_r8 = 2;
             }
             var_r7 = 0;
-            if (temp_r31 & 0x20) {
-                var_r7 = 2;
-            }
-            particleEngineSetupTexture(0, M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), s32 *, 0x74), 0, 0, var_r7, var_r8);
+            var_r7 = !(temp_r31 & 0x20) ? var_r7 : 2;
+            u16 tmp1 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), s32 *, 0x74);
+            particleEngineSetupTexture(0, tmp1, 0, 0, var_r7, var_r8);
             particleEngineSetupBlendMode(2);
             if (temp_r31 & 0x200) {
                 temp_r9 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), GSgfxLight **, 0x78);
-                sp14 = temp_r9;
                 var_r30 = 1;
                 sp18 = M2C_FIELD(&jtbl_1954, GSgfxLight **, 0);
                 M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 1;
+                sp14 = temp_r9;
                 sp1C = M2C_FIELD(&jtbl_1954, GSgfxLight **, 4);
-                M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16CC) | 1);
+                M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD((u16)g_current_layer, s32 *, 0x16CC) | 1);
                 sp18 = temp_r9;
                 M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
                 M2C_FIELD(g_current_layer, s32 *, 0x1784) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1784) | 1);
@@ -447,23 +434,23 @@ void peShapeContainer::Render() {
                 sp38 = unksp20;
                 sp3C = sp24;
                 sp40 = sp28;
-                switch (temp_r0_2) {                /* switch 2; irregular */
-                case 2:                             /* switch 2 */
+                switch (temp_r0_2) {
+                case 2:
                     M2C_FIELD(sp14, f32 *, 0xC) = unksp20;
                     M2C_FIELD(sp14, f32 *, 0x10) = sp24;
                     M2C_FIELD(sp14, f32 *, 0x14) = sp28;
-                default:                            /* switch 2 */
+                default:
 block_48:
                     M2C_FIELD(sp14, u16 *, 0) = (u16) (M2C_FIELD(sp14, u16 *, 0) | 2);
                     break;
-                case 1:                             /* switch 2 */
-                    M2C_FIELD(sp14, f32 *, 0xC) = unksp20;
+                case 1:
                     M2C_FIELD(sp14, f32 *, 0x10) = sp24;
+                    M2C_FIELD(sp14, f32 *, 0xC) = unksp20;
                     M2C_FIELD(sp14, f32 *, 0x14) = sp28;
                     goto block_48;
                 }
                 sp8 = 2;
-                ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(0U, (GSgfxCunitAlpha)(0), (GSgfxCunitSrc)(0), (GSgfxCunitSrc)(0), 1U, (GSgfxLight**)(&sp14), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)));
+                ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(0U, (GSgfxCunitAlpha)(0), (GSgfxCunitSrc)(0), (GSgfxCunitSrc)(0), 1U, (GSgfxLight**)(&sp14), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR( )));
                 if (temp_r31 & 0x400) {
                     temp_r11 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), GSgfxLight **, 0x7C);
                     sp10 = temp_r11;
@@ -521,7 +508,7 @@ block_48:
                         layerMark(l, 4, 0x16BC, 1);
                     }
                     sp8 = 2;
-                    ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(1U, (GSgfxCunitAlpha)(0), (GSgfxCunitSrc)(0), (GSgfxCunitSrc)(0), 1U, (GSgfxLight**)(&sp10), (GSgfxLightType)(0), (GSgfxDiffuseFunc)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)));
+                    ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(1U, (GSgfxCunitAlpha)(0), (GSgfxCunitSrc)(0), (GSgfxCunitSrc)(0), 1U, (GSgfxLight**)(&sp10), (GSgfxLightType)(0), (GSgfxDiffuseFunc)(M2C_ERROR( )));
                     if (PSVECSquareMag((const register Vec*)(M2C_FIELD(this, _peShape **, 0x20) + 0x5C)) < 0.00001f) {
                         sp2C = 0.0f;
                         sp30 = -1.0f;
@@ -529,8 +516,8 @@ block_48:
                     } else {
                         temp_r5 = M2C_FIELD(this, _peShape **, 0x20);
                         sp30 = -M2C_FIELD(temp_r5, f32 *, 0x60);
-                        sp2C = -M2C_FIELD((u16)temp_r5, f32 *, 0x5C);
                         sp34 = -M2C_FIELD(temp_r5, f32 *, 0x64);
+                        sp2C = -M2C_FIELD((u16)temp_r5, f32 *, 0x5C);
                         PSVECNormalize((const register Vec*)((Vec *) &sp2C), (register Vec*)((Vec *) &sp2C));
                     }
                     PSMTXMultVecSR((const Mtx)(g_CameraMatrix), (const Vec *)((const register Vec*)((Vec *) &sp2C)), (Vec *)((register Vec*)((Vec *) &sp2C)));
@@ -539,10 +526,10 @@ block_48:
                         if (temp_r0_3 < 0) {
 
                         } else {
-                            M2C_FIELD(sp10, f32 *, 0x18) = sp2C;
+                            M2C_FIELD((u16)sp10, f32 *, 0x18) = sp2C;
                             M2C_FIELD(sp10, f32 *, 0x1C) = sp30;
-                            M2C_FIELD(sp10, f32 *, 0x20) = sp34;
                             M2C_FIELD(sp10, u16 *, 0) = (u16) (M2C_FIELD(sp10, u16 *, 0) | 4);
+                            M2C_FIELD(sp10, f32 *, 0x20) = sp34;
                         }
                     }
                 }
@@ -625,6 +612,7 @@ block_48:
         }
     }
 }
+#pragma pop
 }
 void GSgfxLayer::tunitKRegSel(unsigned char p0, GSgfxTunitKReg p1) {
     u8 *temp_r5_2;
@@ -636,7 +624,7 @@ void GSgfxLayer::tunitKRegSel(unsigned char p0, GSgfxTunitKReg p1) {
     u8 *temp_r5_3;
     s32 temp_r6_3;
 
-    switch (p1) {                                   /* irregular */
+    switch (p1) {
     case 0:
         temp_r5 = (unsigned char *)(this + ((p0 * 4) & 0x3FC));
         M2C_FIELD(temp_r5, s32 *, 0x1504) = 0xC;
@@ -698,8 +686,6 @@ void GSgfxLayer::tunitKRegSel(unsigned char p0, GSgfxTunitKReg p1) {
 extern "C++" {
 #pragma push
 #pragma dont_inline on
-// container fields: 0x0 emitter, 0x10 node list, 0x14 node count, 0x19 active, 0x20 shape;
-// nodes: 0x28 next, 0x2C previous, 0x84 depth
 #define PE_NEXT(n) (*(peNode**)((u8*)(n) + 0x28))
 #define PE_PREV(n) (*(peNode**)((u8*)(n) + 0x2C))
 #define PE_DEPTH(n) (*(f32*)((u8*)(n) + 0x84))
@@ -1407,11 +1393,11 @@ peShapeContainer::peShapeContainer(peEmitterNode* p0, _peShape* p1, unsigned sho
 extern "C++" {
 void peShapeNode::Render(_peShape* p0) {
     volatile f32 unksp50;
-    volatile s32 sp20;
+    volatile s32 sp10;
     s32 sp1C;
-    s32 sp18;
+    volatile s32 sp18;
     s32 sp14;
-    s32 sp10;
+    volatile s32 sp20;
     s32 spC;
     s32 sp8;
     s32 temp_r31;
@@ -1521,12 +1507,12 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
     f32 spC0;
     f32 spBC;
     s32 sp8C;
-    f32 sp88;
-    f32 sp84;
+    volatile f32 sp88;
+    volatile f32 sp84;
     f32 sp80;
     f32 sp7C;
     f32 sp78;
-    f32 sp74;
+    volatile f32 sp74;
     f32 sp70;
     f32 sp6C;
     f32 sp68;
@@ -1595,7 +1581,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
         } else {
             sp1C = var_f2;
             temp_r3_2 = M2C_BITWISE(s32, sp1C) & 0x7F800000;
-            switch (temp_r3_2) {                    /* irregular */
+            switch (temp_r3_2) {
             case 0x7F800000:
                 if (M2C_BITWISE(s32, sp1C) & 0x7FFFFF) {
                     var_r0 = 1;
@@ -1789,16 +1775,16 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
 extern "C++" {
 #pragma optimize_for_size on
 void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
-    f32 sp10;
-    f32 spC;
-    f32 unksp8;
-    volatile f32 sp1C;
     volatile f32 sp18;
+    f32 spC;
     f32 sp14;
+    volatile f32 sp1C;
+    volatile f32 unksp8;
     Vec *temp_r3;
     s32 temp_r31;
+    volatile f32 sp10;
 
-    ((peNode*)((peNode *) this))->Start((peEmitterNode*)(p0), (_EmitParams*)(p2));
+    ((peNode*)((peNode *) this))->Start((peEmitterNode*)((u16)p0), (_EmitParams*)(p2));
     M2C_FIELD(this, s32 *, 0x88) = 0;
     PSVECScale((const register Vec*)(((u8*)(p1) + 0x28)), (register Vec*)(&unksp8), HSD_Randf());
     temp_r31 = M2C_FIELD(p1, s32 *, 0);
@@ -1837,8 +1823,8 @@ void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
                 sp18 = 0.0f;
             }
             if (temp_r31 & 0x4000) {
-                sp1C = 6.2831855f;
                 sp1C *= HSD_Randf();
+                sp1C = 6.2831855f;
             } else {
                 sp1C = 0.0f;
             }

@@ -11,6 +11,6 @@ static inline InputIterator find_if(InputIterator first, InputIterator last, Pre
 	return first;
 }
 
-} // namespace std
+}
 
 #endif

@@ -1,6 +1,4 @@
-// Partial: small wrappers; the rest of the unit is not written yet.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -39,10 +37,7 @@ void* GSmemAllocClrHeap(s32 heap, u32 size);
 void GSmemFreeHeap(s32 heap, void* ptr);
 void GSmemShrinkHeap(s32 heap, void* ptr, u32 size);
 
-
 extern "C" {
-// ---- draft declarations ----
-
 
 extern "C" {
 s32 GSmemCheckHeap(s32 p0);
@@ -134,7 +129,6 @@ void GSmemDumpHeap(s32 heap) {
 }
 }
 
-
 u32 GSmemGetHeapFreeSize(s32 heap, s32 a, u32* out) {
     return OSGetHeapFreeSize(heap, a, out);
 }
@@ -177,7 +171,6 @@ void* GSmemAllocHeap(s32 heap, u32 size) {
 s32 GSmemSetAllocMethodHeap(s32 heap, s32 method) {
     return OSSetAllocMethodHeap(heap, method);
 }
-
 
 u16 GSmemGetCurrentLayer(void) {
     return _currentLayer;
@@ -223,7 +216,6 @@ void* GSmemInit(void* start, void* end, s32 maxHeaps) {
 }
 #pragma optimize_for_size reset
 }
-
 
 u8 GSmemIsInitialized(void) {
     return _memInitialized;

@@ -1,9 +1,9 @@
-// HSD tobj.c (sysdolphin baselib). Ported from the Melee decomp (doldecomp/melee, sysdolphin/baselib/tobj.c) and the
-// Built with -lang=c -inline deferred: source order is the reverse of the asm. HSD_TlutAlloc, HSD_TObjTevAlloc and
-// HSD_Index2TexMap are real (non-inline) functions that the retail link dead-stripped; they exist to reproduce the
-// string order in .sdata2.
+
+
+
+
 #define HSD_FILE_NAME "tobj.c"
-/* The original did not pull in libc math.h (its inline sqrtf would add weak constants). */
+
 #define _MATH_H_
 #define fabs(x) __fabs(x)
 #include <sysdolphin/baselib/tobj.h>

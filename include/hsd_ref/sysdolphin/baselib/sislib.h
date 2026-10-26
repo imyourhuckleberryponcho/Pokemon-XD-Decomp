@@ -33,7 +33,7 @@ struct HSD_Text {
     f32 box_size_x; ///< text box size x
     f32 box_size_y; ///< text box size y
     Vec4 x14;
-    Vec2 font_size; ///< font size, 1.0 being 100% of the screen?
+    Vec2 font_size;
     GXColor bg_color;
     GXColor text_color;
     Vec2 x34;

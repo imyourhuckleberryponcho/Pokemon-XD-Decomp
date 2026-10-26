@@ -1,15 +1,12 @@
-// Menu off-screen layer: captures the back framebuffer into a texture and draws it back with a fade.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
-// The original wrote this quad through a NON-volatile view of the GX FIFO: the 0.0f/1.0f texcoords stay in
-// registers and the u8 alpha is stored without re-narrowing (the volatile GXWGFifo reloads/narrows each write).
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 
 #pragma peephole off
 
 struct GStexture {
     u8 unk0[7];
-    u8 dirty; // 0x07
+    u8 dirty;
 };
 
 struct GSgfxVF;
@@ -21,10 +18,9 @@ struct GSgfxLayerViewState {
 
 struct GSgfxLayerView {
     u8 unk0[4];
-    GSgfxLayerViewState* state; // 0x04
+    GSgfxLayerViewState* state;
 };
 
-// Only the render-state fields this file touches; the inline state setters are written out.
 class GSgfxLayer {
 public:
     void setRenderStateAndSelect(GSgfxVF* vf);
@@ -32,57 +28,57 @@ public:
     void endSurface();
 
     u8 unk0[0x28];
-    s32 renderMode;       // 0x28
+    s32 renderMode;
     u8 unk2C[0xD54 - 0x2C];
-    s32 projType;         // 0xD54
-    f32 proj[6];          // 0xD58
+    s32 projType;
+    f32 proj[6];
     u8 unkD70[0xD8C - 0xD70];
-    s32 fogType;          // 0xD8C
+    s32 fogType;
     u8 unkD90[0x1644 - 0xD90];
-    s32 blendType;        // 0x1644
-    s32 blendSrc;         // 0x1648
-    s32 blendDst;         // 0x164C
-    s32 blendOp;          // 0x1650
+    s32 blendType;
+    s32 blendSrc;
+    s32 blendDst;
+    s32 blendOp;
     u8 unk1654[2];
-    u8 zCompare;          // 0x1656
-    u8 zWrite;            // 0x1657
-    u8 zFunc;             // 0x1658
+    u8 zCompare;
+    u8 zWrite;
+    u8 zFunc;
     u8 unk1659[3];
-    u8 alphaCompare;      // 0x165C
+    u8 alphaCompare;
     u8 unk165D[3];
-    s32 cullMode;         // 0x1660
+    s32 cullMode;
     u8 unk1664[0x1684 - 0x1664];
-    f32 zNear;            // 0x1684
-    f32 zFar;             // 0x1688
+    f32 zNear;
+    f32 zFar;
     u8 unk168C[0x16A6 - 0x168C];
-    u8 zUpdate;           // 0x16A6
-    u8 zEnable;           // 0x16A7
-    u32 dirty16A8;        // 0x16A8
-    u32 dirty16AC;        // 0x16AC
+    u8 zUpdate;
+    u8 zEnable;
+    u32 dirty16A8;
+    u32 dirty16AC;
     u8 unk16B0[0x16B8 - 0x16B0];
-    u32 dirty16B8;        // 0x16B8
+    u32 dirty16B8;
     u8 unk16BC[0x170C - 0x16BC];
-    u32 dirty170C;        // 0x170C
+    u32 dirty170C;
     u8 unk1710[0x173C - 0x1710];
-    u32 texDirty;         // 0x173C
-    GStexture* texture;   // 0x1740
+    u32 texDirty;
+    GStexture* texture;
     u8 unk1744[0x1760 - 0x1744];
-    u32 dirty1760;        // 0x1760
-    u32 dirty1764;        // 0x1764
+    u32 dirty1760;
+    u32 dirty1764;
     u8 unk1768[0x1770 - 0x1768];
-    u32 dirty1770;        // 0x1770
+    u32 dirty1770;
     u8 unk1774[0x17C4 - 0x1774];
-    u32 dirty17C4;        // 0x17C4
+    u32 dirty17C4;
     u8 unk17C8[0x17F4 - 0x17C8];
-    u32 texDirty2;        // 0x17F4
-    GStexture* texture2;  // 0x17F8
+    u32 texDirty2;
+    GStexture* texture2;
     u8 unk17FC[0x1818 - 0x17FC];
-    u8 surfaces[2][0xBC]; // 0x1818
-    void* curSurface;     // 0x1990
-    s32 curSurfaceIdx;    // 0x1994
-    u32 vtxFlags;         // 0x1998
+    u8 surfaces[2][0xBC];
+    void* curSurface;
+    s32 curSurfaceIdx;
+    u32 vtxFlags;
     u8 unk199C[4];
-    GSgfxLayerView* view; // 0x19A0
+    GSgfxLayerView* view;
 };
 
 typedef bool (*GSgfxBackFBCallback)(GStexture* texture, u32 frame, void* user);

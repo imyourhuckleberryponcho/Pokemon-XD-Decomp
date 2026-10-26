@@ -1,6 +1,6 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's shadow.c (headers: include/hsd_ref).
-// The original file name, used by the asserts.
+
+
+
 #define HSD_FILE_NAME "shadow.c"
 
 #include <sysdolphin/baselib/shadow.h>
@@ -537,7 +537,7 @@ int HSD_ViewingRectCheck(HSD_ViewingRect* rect)
     return result;
 }
 
-// Dead-stripped in the retail build; only its assert string survives in .rodata.
+
 static void unusedAssertHolder(float a)
 {
     HSD_ASSERT(0, a > 0.0F);

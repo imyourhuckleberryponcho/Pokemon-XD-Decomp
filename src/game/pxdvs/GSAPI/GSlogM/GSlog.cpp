@@ -1,4 +1,3 @@
-// Source order is bottom-to-top (-inline deferred).
 #include <dolphin/types.h>
 #pragma pool_strings off
 #include <libc/stdarg.h>
@@ -257,7 +256,6 @@ void logVsnprintf_float(char* output, u32 capacity, char* format, va_list args) 
     *dst = 0;
 }
 
-
 static void logVsnprintfDead(char* output, u32 capacity, char* format, va_list args) {
     static char fmtbuf[16];
     static char cvtbuf[16];
@@ -274,7 +272,6 @@ static void logWriteDead(const char* fmt, ...) {
     _logOutputBuf[0xFF] = 0;
     logVsnprintf_float(_logTimeStampBuf, 0x14, "%d/%02d %d:%02d:%02d] ", args);
 }
-
 
 void GSlogWrite(const char* fmt, ...);
 

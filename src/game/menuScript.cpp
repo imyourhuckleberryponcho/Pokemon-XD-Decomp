@@ -1,8 +1,3 @@
-// WIP: 49/56 functions exact. Needs extra_cflags=["-inline noauto,deferred"] (source is
-// written bottom-to-top). Not exact: _menuScriptTokuseiSetumei (regs), menuScriptWazaOshieHook (extra inline-copy
-// regs), _checkWaza2 (loop regs), menuScriptInfoRelive (regs), _menuScriptReadMail/_menuScriptPdaAddFunc (float
-// regs, same as menuShopOpen), menuScriptEeveeHook (one store order).
-// menus opened from event scripts (written from asm).
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
@@ -847,8 +842,9 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
         do {
             int spaces = 0;
             int prev = n;
-            u16* src = text;
+            u16* src;
             u16* dst = buf1;
+            src = text;
             k = 0;
             n++;
             for (;;) {
@@ -875,7 +871,8 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
             if (width <= item->w) {
                 best = n;
             }
-            if (!(item->w >= width)) {
+            s8 rf_t = item->w;
+            if (!(rf_t >= width)) {
                 wrap = 1;
             }
         } while (k < len);

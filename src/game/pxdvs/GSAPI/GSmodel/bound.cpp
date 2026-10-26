@@ -77,7 +77,6 @@ void GSmodelRecalculateBound(GSmodel* model) {
     }
     GSboundReset(&model->bound);
 
- // Measure the model untransformed, then restore its transform.
     saved5D8 = model->unk5D8;
     model->unk5D8 = 0;
     translate = model->translate;

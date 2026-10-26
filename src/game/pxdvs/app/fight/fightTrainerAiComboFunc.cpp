@@ -1,8 +1,3 @@
-// WIP: 23/51 exact; needs extra_cflags=["-O4,s"]. Combo evaluators fightAiCombo_*.
-// Tricks: (u64)p5 cast and 'int r = HSD_Rand()' local reproduce the original register allocation;
-// all loops of a function use ONE u8 variable in the exact Whezaabooru-family functions.
-// Tricks: keep per-iteration pointers (e = &tbl[k]) unnamed unless the target keeps them in a register; fightAi_getAnotherPokeNo is
-// s8 (written as ?:(s8)-1:(s8)0 so no extsb); AllWazaValid = a[4], waza[2], mode[2] at 0x16. Not yet written: Batontatti_*, rest of Irekae family.
 #include <dolphin/types.h>
 
 struct FIGHT_TRAINER;
@@ -29,7 +24,6 @@ struct AllWazaValid {
     u8 mode[2];
     u8 data[0x14];
 };
-
 
 extern "C" {
 extern s8 ai_allwaza_valid_work;
@@ -1179,7 +1173,8 @@ s32 fightAiCombo_Ibaru_Irekae_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16 cnt
         cur = fightAiCombo_GetAllWazaValueTable(&tbl[k], val, t, ary, oppAry, -1);
         for (j = 0; j < (u8)ai_allwaza_valid_work; j++) {
             if (tbl[k].waza[j] == 0xCF) {
-                if (wazaDB_GetFightTrainerAiWazaHitFuncPtr(tbl[k].waza[j])(t, (FightOutPokemon*)tbl[k].a[j], tbl[k].waza[j], (FightOutPokemon*)tbl[k].a[2 + j]) == 0) {
+                s16 rf_t = tbl[k].a[j];
+                if (wazaDB_GetFightTrainerAiWazaHitFuncPtr(tbl[k].waza[j])(t, (FightOutPokemon*)rf_t, tbl[k].waza[j], (FightOutPokemon*)tbl[k].a[2 + j]) == 0) {
                     cur = 0;
                 }
                 if (fightTrainerAiIsFightOutPokemonTokuseiDataId(t, (FightOutPokemon*)tbl[k].a[2 + (s8)fightAi_getAnotherPokeNo(j)], 0x14) == 1
@@ -1340,7 +1335,6 @@ s32 fightAiCombo_Horobinouta_Irekae2_2(FIGHT_TRAINER* t, FightOutPokemon** ary, 
     return 0;
 }
 
-
 s32 fightAiCombo_Honoo_Irekae_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16 cnt, FightOutPokemon** oppAry, u16 oppCnt, AllWazaValid* out, u8 bonus) {
     AllWazaValid tbl[0x40];
     FightPokemon* irekae[6];
@@ -1466,6 +1460,7 @@ s32 fightAiCombo_Honoo_Irekae_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16 cnt
 }
 
 s32 fightAiCombo_Dokudoku_Karagenki_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16 cnt, FightOutPokemon** oppAry, u16 oppCnt, AllWazaValid* out, u8 bonus) {
+    u8 k;
     AllWazaValid* e;
     s16 best;
     u8 num;
@@ -1473,7 +1468,6 @@ s32 fightAiCombo_Dokudoku_Karagenki_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u
     AllWazaValid tbl[0x40];
     u8 buf[0x40];
     s32 val;
-    u8 k;
     u8 j;
     u8 n;
     int rnd;
@@ -1515,7 +1509,8 @@ s32 fightAiCombo_Dokudoku_Karagenki_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u
                 if (fightAi_GetTokuseiHaveFlag(t, (FightOutPokemon*)e->a[j], 0x3E) == 2 || fightAi_GetTokuseiHaveFlag(t, (FightOutPokemon*)e->a[j], 0x3F) == 2) {
                     cur += 10;
                 }
-                if (wazaDB_GetFightTrainerAiWazaHitFuncPtr(e->waza[(s8)fightAi_getAnotherPokeNo(j)])(t, (FightOutPokemon*)e->a[(s8)fightAi_getAnotherPokeNo(j)],
+                s8 rf_t = e->waza[(s8)fightAi_getAnotherPokeNo(j)];
+                if (wazaDB_GetFightTrainerAiWazaHitFuncPtr(rf_t)(t, (FightOutPokemon*)e->a[(s8)fightAi_getAnotherPokeNo(j)],
                         e->waza[(s8)fightAi_getAnotherPokeNo(j)], (FightOutPokemon*)e->a[2 + (s8)fightAi_getAnotherPokeNo(j)]) == 0) {
                     cur = 0;
                 }
@@ -1543,24 +1538,25 @@ s32 fightAiCombo_Dokudoku_Karagenki_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u
 }
 
 s32 fightAiCombo_Horobinouta_Irekae_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16 cnt, FightOutPokemon** oppAry, u16 oppCnt, AllWazaValid* out, u8 bonus) {
-    s32 val;
-    AllWazaValid tbl[0x40];
-    FightPokemon* irekae[6];
-    u8 buf[0x40];
-    u8 num;
-    u8 i;
     s16 best;
-    s16 cur;
-    u8 n;
-    u8 flagB;
-    u8 k;
     u8 j;
+    u8 buf[0x40];
+    s16 id;
     u8 flagA;
-    u8 found;
-    u16 irekaeNum;
+    u8 k;
+    u8 i;
     s8 another;
+    u8 num;
+    AllWazaValid tbl[0x40];
+    u8 n;
+    s32 val;
+    s16 cur;
+    u16 irekaeNum;
+    FightPokemon* irekae[6];
     u16 rnd;
+    u8 flagB;
     u8 pct;
+    u8 found;
 
     found = 0;
     num = 0;
@@ -1642,7 +1638,7 @@ s32 fightAiCombo_Horobinouta_Irekae_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u
     if (best != 0 && best + bonus > pct) {
         for (i = 0; i < irekaeNum; i++) {
             if (fightTrainerAiIsFightPokemonTokuseiDataId(t, irekae[i], 0x17) != 0) {
-                s16 id = fightPokemon_GetEntryId(irekae[i]);
+                id = fightPokemon_GetEntryId(irekae[i]);
                 if (id >= 0) {
                     if (fightFloorCheckFightActionFightOutPokemonIrekaeSelect(0, (FightOutPokemon*)out->a[(s8)another], 0) != 0) {
                         return 0;
@@ -1658,7 +1654,6 @@ s32 fightAiCombo_Horobinouta_Irekae_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u
     }
     return 0;
 }
-
 
 s32 fightAiCombo_Konoyubitomare_Kiaipanti_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16 cnt, FightOutPokemon** oppAry, u16 oppCnt, s32 p5, u8 bonus) {
     AllWazaValid tbl[0x40];
@@ -2761,7 +2756,8 @@ s32 fightAiCombo_StatusUp_Batontatti_1(FIGHT_TRAINER* t, FightOutPokemon** ary, 
         for (k = 0; k < 0x40; k++) {
             fightAi_InitAllWazaValidSub(&tbl[k]);
         }
-        num = 0;
+        num;
+        m = 0;
         for (m = 0; m < 0xE; m++) {
             fightAi_AllWazaValid_AddComboList(t, tbl, &num, 1, statusUpWazaTbl[m].waza, 0, 0);
         }
@@ -3651,17 +3647,17 @@ s32 fightAiCombo_Daibakuhatu_Koraeru_2(FIGHT_TRAINER* t, FightOutPokemon** ary, 
 }
 
 s32 fightAiCombo_Nemurase_Yumekui_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16 cnt, FightOutPokemon** oppAry, u16 oppCnt, AllWazaValid* out, u8 bonus) {
-    AllWazaValid tbl[0x40];
+    u8 count;
     u8 buf[0x40];
     u8 num;
     u8 i;
     u8 k;
     u8 j;
-    u8 count;
+    u8 n;
     s16 best;
     s32 val;
     s16 cur;
-    u8 n;
+    AllWazaValid tbl[0x40];
     u16 rnd;
     u8 pct;
 

@@ -7,8 +7,8 @@
 
 #include "BuildSettings.h"
 
-// r2 is 8051E360
-// r13 is 8051C680
+
+
 
 typedef int BOOL;
 typedef unsigned int uint;
@@ -50,13 +50,13 @@ typedef u16 wchar_t;
 
 #define USHORT_MAX (65535)
 
-// Basic defines to allow newer-like C++ code to be written
+
 #define TRUE    1
 #define FALSE   0
 #define NULL    ((void*)0)
 #define nullptr 0
 
-// Maximum length of a path in engine
+
 #define PATH_MAX (256)
 
 #define SET_FLAG(x, val)     (x |= (val))
@@ -96,12 +96,12 @@ typedef u16 wchar_t;
 #define FAST_COPY(dst, src, size) memcpy((dst), (src), (size))
 #endif
 
-// byte-matching hack to force something to hang around longer
-// in MWCC's register allocation steps
+
+
 #ifdef __MWERKS__
 #define BUMP_VAR(value) asm { mr value, value }
 #else
 #define BUMP_VAR(value) ((void)0)
 #endif
 
-#endif // _TYPES_H
+#endif

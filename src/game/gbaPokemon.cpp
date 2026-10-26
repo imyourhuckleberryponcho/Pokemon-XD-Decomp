@@ -1,6 +1,4 @@
-// WIP: not started yet. See build/GXXE01/asm/game/gbaPokemon.s
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -22,7 +20,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #endif
 
 #pragma peephole off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -43,7 +40,6 @@ struct GamedataAttest;
 struct Pokemon;
 
 extern "C" {
-// ---- draft declarations ----
 struct Attest {
     u8 _draft[1];
 };
@@ -228,8 +224,6 @@ extern "C" {
 extern "C" {
 
 extern "C" {
-// ---- draft declarations ----
-
 
 extern "C" {
 void gbaPokemonFromGC(void *p0, void *p1);
@@ -239,13 +233,13 @@ void gbaPokemonToGC(Pokemon* pokemon, GBAPokemon* gbaPokemon);
 void gbaPokemonFromGC(void *p0, void *p1) {
     s32 unksp11;
     u8 sp13;
-    u8 sp12;
-    u16 sp10;                                       /* compiler-managed */
+    volatile u8 sp12;
+    u16 sp10;
     u8 spF;
-    u16 spE;                                        /* compiler-managed */
-    s32 spC;                                        /* compiler-managed */
+    u16 spE;
+    s32 spC;
     u8 spB;
-    u16 spA;                                        /* compiler-managed */
+    u16 spA;
     volatile u8 sp9;
     u8 sp8;
     GamedataAttest *temp_r3;
@@ -253,23 +247,22 @@ void gbaPokemonFromGC(void *p0, void *p1) {
     s32 temp_r3_4;
     s32 temp_r3_5;
     s32 var_ctr;
-    s32 var_r28;
+    u16 var_r28;
     u8 *var_r27;
     u16 *var_r27_2;
     u16 *var_r31_2;
     u16 var_r26;
-    u16 var_r29;
     u8 temp_r0;
-    u8 temp_r0_10;
+    bool temp_r0_10;
     u8 temp_r0_11;
     u8 temp_r0_12;
     u8 temp_r0_13;
     u8 temp_r0_14;
-    u8 temp_r0_15;
-    u8 temp_r0_16;
+    s32 temp_r0_15;
+    s32 temp_r0_16;
     u8 temp_r0_17;
     u8 temp_r0_2;
-    u8 temp_r0_3;
+    s32 temp_r0_3;
     u8 temp_r0_4;
     u8 temp_r0_5;
     u8 temp_r0_6;
@@ -278,6 +271,7 @@ void gbaPokemonFromGC(void *p0, void *p1) {
     u8 temp_r0_9;
     u8 temp_r3_2;
     s32 var_r31;
+    u16 var_r29;
 
     var_r29 = 0;
     memset((void*)(p1), 0, 0x64U);
@@ -286,59 +280,59 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         M2C_FIELD(p1, u32 *, 4) = _swap32(pokemonBiosGetCatchTrainerRnd((Pokemon*)((Pokemon *) p0)));
         temp_r3 = (GamedataAttest *)(pokemonBiosGetAttest((Pokemon*)((Pokemon *) p0)));
         temp_r3_2 = gamedataAttestBiosGetVerId((GamedataAttest*)(temp_r3));
-        switch (temp_r3_2) {                        /* switch 1 */
-        case 8:                                     /* switch 1 */
+        switch (temp_r3_2) {
+        case 8:
             sp10 = (sp10 & ~0x780) | 0x80;
             break;
-        case 9:                                     /* switch 1 */
+        case 9:
             sp10 = (sp10 & ~0x780) | 0x100;
             break;
-        case 10:                                    /* switch 1 */
+        case 10:
             sp10 = (sp10 & ~0x780) | 0x180;
             break;
-        case 1:                                     /* switch 1 */
+        case 1:
             sp10 = (sp10 & ~0x780) | 0x200;
             break;
-        case 2:                                     /* switch 1 */
+        case 2:
             sp10 = (sp10 & ~0x780) | 0x280;
             break;
-        case 11:                                    /* switch 1 */
+        case 11:
             sp10 |= 0x780;
             break;
-        default:                                    /* switch 1 */
+        default:
             sp10 &= ~0x780;
             break;
         }
-        switch ((u8)(gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3)))) {                        /* switch 2 */
-        case 1:                                     /* switch 2 */
+        switch ((u8)(gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3)))) {
+        case 1:
             M2C_FIELD(p1, s8 *, 0x12) = 1;
             break;
-        case 2:                                     /* switch 2 */
+        case 2:
             M2C_FIELD(p1, s8 *, 0x12) = 2;
             break;
-        case 3:                                     /* switch 2 */
+        case 3:
             M2C_FIELD(p1, s8 *, 0x12) = 5;
             break;
-        case 4:                                     /* switch 2 */
+        case 4:
             M2C_FIELD(p1, s8 *, 0x12) = 3;
             break;
-        case 5:                                     /* switch 2 */
+        case 5:
             M2C_FIELD(p1, s8 *, 0x12) = 4;
             break;
-        case 6:                                     /* switch 2 */
+        case 6:
             M2C_FIELD(p1, s8 *, 0x12) = 7;
             break;
-        case 8:                                     /* switch 2 */
+        case 8:
             M2C_FIELD(p1, s8 *, 0x12) = 2;
             break;
-        case 9:                                     /* switch 2 */
+        case 9:
             M2C_FIELD(p1, s8 *, 0x12) = 2;
             break;
-        default:                                    /* switch 2 */
+        default:
             M2C_FIELD(p1, s8 *, 0x12) = 0;
             break;
         }
-        M2C_FIELD(p1, u8 *, 0x13) = (u8) (M2C_FIELD(p1, u8 *, 0x13) | 2);
+        M2C_FIELD((u16)p1, u8 *, 0x13) = (u8) (M2C_FIELD(p1, u8 *, 0x13) | 2);
         M2C_FIELD(p1, u8 *, 0x13) = (u8) ((M2C_FIELD(p1, u8 *, 0x13) & ~4) | (((pokemonBiosGetTamagoFlag((Pokemon*)((Pokemon *) p0)) != 0) << 2) & 4));
         M2C_FIELD(p1, u8 *, 0x13) = (u8) ((M2C_FIELD(p1, u8 *, 0x13) & ~0xF8) | ((pokemonBiosGetFlagAmari((Pokemon*)((Pokemon *) p0)) << 3) & 0xF8));
         M2C_FIELD(p1, u8 *, 0x13) = (u8) ((M2C_FIELD(p1, u8 *, 0x13) & ~1) | ((pokemonBiosGetFuseiFlag((Pokemon*)((Pokemon *) p0)) != 0) & 1));
@@ -353,9 +347,9 @@ void gbaPokemonFromGC(void *p0, void *p1) {
             memset((void*)((u8*)(p1) + (temp_r3_5 + 0x15)), 0, 6 - temp_r3_5);
         }
         M2C_FIELD(p1, u8 *, 0x1B) = pokemonBiosGetPcboxMark((Pokemon*)((Pokemon *) p0));
-        M2C_FIELD(p1, s16 *, 0x1E) = _swap16(pokemonBiosGetAmari((Pokemon*)((Pokemon *) p0)));
-        M2C_FIELD(p1, s16 *, 0x20) = _swap16(pokemonBiosGetPokemonDataId((Pokemon*)((Pokemon *) p0)));
-        M2C_FIELD(p1, s16 *, 0x22) = _swap16(pokemonBiosGetItemDataId((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x1E) = _swap16(pokemonBiosGetAmari((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x20) = _swap16(pokemonBiosGetPokemonDataId((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x22) = _swap16(pokemonBiosGetItemDataId((Pokemon*)((Pokemon *) p0)));
         M2C_FIELD(p1, u32 *, 0x24) = _swap32(pokemonBiosGetExp((Pokemon*)((Pokemon *) p0)));
         M2C_FIELD(p1, u8 *, 0x29) = pokemonBiosGetFriend((Pokemon*)((Pokemon *) p0));
         M2C_FIELD(p1, u16 *, 0x2A) = pokemonBiosGetPara1Amari((Pokemon*)((Pokemon *) p0));
@@ -364,8 +358,8 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         var_r26 = 0;
         M2C_FIELD(p1, u8 *, 0x28) = 0U;
         do {
-            M2C_FIELD(var_r27, s16 *, 0x2C) = _swap16(pokemonBiosGetPokemonWazaDataId((Pokemon*)((Pokemon *) p0), (u32) var_r26));
             var_r27 += 2;
+            M2C_FIELD(var_r27, u16 *, 0x2C) = _swap16(pokemonBiosGetPokemonWazaDataId((Pokemon*)((Pokemon *) p0), (u32) var_r26));
             M2C_FIELD(p1, u8 *, 0x28) = (u8) (M2C_FIELD(p1, u8 *, 0x28) | (pokemonBiosGetPokemonWazaPpCount((Pokemon*)((Pokemon *) p0), (u32) var_r26) << var_r31));
             *((u8*)(p1) + (var_r26 + 0x34)) = pokemonBiosGetPokemonWazaPp((Pokemon*)((Pokemon *) p0), (u32) var_r26);
             var_r31 += 2;
@@ -391,11 +385,11 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         sp10 = (temp_r0 & ~0x80) | ((pokemonBiosGetCatchTrainerSex((Pokemon*)((Pokemon *) p0)) << 7) & 0x80);
         spF = (spF & ~0x1F) | (pokemonBiosGetMaxHpRnd((Pokemon*)((Pokemon *) p0)) & 0x1F);
         spE = (spE & ~0x3E0) | ((pokemonBiosGetPhyAtkRnd((Pokemon*)((Pokemon *) p0)) << 5) & 0x3E0);
+        spC = temp_r0_2;
         spE = ((u8) spE & ~0x7C) | ((pokemonBiosGetPhyDefRnd((Pokemon*)((Pokemon *) p0)) << 2) & 0x7C);
         spC = (spC & ~0xF8000) | ((pokemonBiosGetNimblenessRnd((Pokemon*)((Pokemon *) p0)) << 0xF) & 0xF8000);
         spC = ((u16) spC & ~0x1F0) | ((pokemonBiosGetSpeAtkRnd((Pokemon*)((Pokemon *) p0)) << 4) & 0x1F0);
-        temp_r0_2 = ((u8) spC & ~0x3E) | ((pokemonBiosGetSpeDefRnd((Pokemon*)((Pokemon *) p0)) << 1) & 0x3E);
-        spC = temp_r0_2;
+        temp_r0_2 = (spC & ~0x3E) | ((pokemonBiosGetSpeDefRnd((Pokemon*)((Pokemon *) p0)) << 1) & 0x3E);
         temp_r0_3 = (temp_r0_2 & ~0x40) | (((pokemonBiosGetTamagoFlag((Pokemon*)((Pokemon *) p0)) != 0) << 6) & 0x40);
         spC = temp_r0_3;
         spC = (temp_r0_3 & ~0x80) | (((pokemonBiosGetTokuseiFlag((Pokemon*)((Pokemon *) p0)) != 0) << 7) & 0x80);
@@ -404,16 +398,16 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         spB = (temp_r0_4 & ~0x38) | ((pokemonBiosGetBeautifulMedal((Pokemon*)((Pokemon *) p0)) << 3) & 0x38);
         spA = (spA & ~0x1C0) | ((pokemonBiosGetCuteMedal((Pokemon*)((Pokemon *) p0)) << 6) & 0x1C0);
         temp_r0_5 = ((u8) spA & ~0xE) | ((pokemonBiosGetCleverMedal((Pokemon*)((Pokemon *) p0)) << 1) & 0xE);
+        sp9 = temp_r0_7;
         spA = temp_r0_5;
         temp_r0_6 = (temp_r0_5 & ~0x70) | ((pokemonBiosGetStrongMedal((Pokemon*)((Pokemon *) p0)) << 4) & 0x70);
+        sp9 = temp_r0_9;
         spA = temp_r0_6;
         spA = (temp_r0_6 & ~0x80) | (((pokemonBiosGetChampRibbon((Pokemon*)((Pokemon *) p0)) != 0) << 7) & 0x80);
-        temp_r0_7 = (sp9 & ~1) | ((pokemonBiosGetWinningRibbon((Pokemon*)((Pokemon *) p0)) != 0) & 1);
-        sp9 = temp_r0_7;
-        temp_r0_8 = (temp_r0_7 & ~2) | (((pokemonBiosGetVictoryRibbon((Pokemon*)((Pokemon *) p0)) != 0) << 1) & 2);
         sp9 = temp_r0_8;
+        temp_r0_7 = (sp9 & ~1) | ((pokemonBiosGetWinningRibbon((Pokemon*)((Pokemon *) p0)) != 0) & 1);
+        temp_r0_8 = (temp_r0_7 & ~2) | (((pokemonBiosGetVictoryRibbon((Pokemon*)((Pokemon *) p0)) != 0) << 1) & 2);
         temp_r0_9 = (temp_r0_8 & ~4) | (((pokemonBiosGetBromideRibbon((Pokemon*)((Pokemon *) p0)) != 0) << 2) & 4);
-        sp9 = temp_r0_9;
         temp_r0_10 = (temp_r0_9 & ~8) | (((pokemonBiosGetGanbaRibbon((Pokemon*)((Pokemon *) p0)) != 0) << 3) & 8);
         sp9 = temp_r0_10;
         temp_r0_11 = (temp_r0_10 & ~0x10) | (((pokemonBiosGetMarineRibbon((Pokemon*)((Pokemon *) p0)) != 0) << 4) & 0x10);
@@ -436,16 +430,16 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         M2C_FIELD(p1, s32 *, 0x50) = (s32) (_swap32((u32) gbaPokemonConditonFromGC(p0)) | temp_r31_2);
         M2C_FIELD(p1, u8 *, 0x54) = pokemonBiosGetLevel((Pokemon*)((Pokemon *) p0));
         M2C_FIELD(p1, u8 *, 0x55) = pokemonBiosGetMailId((Pokemon*)((Pokemon *) p0));
-        M2C_FIELD(p1, s16 *, 0x58) = _swap16(pokemonBiosGetMaxHp((Pokemon*)((Pokemon *) p0)));
-        M2C_FIELD(p1, s16 *, 0x56) = _swap16(pokemonBiosGetHp((Pokemon*)((Pokemon *) p0)));
-        M2C_FIELD(p1, s16 *, 0x5A) = _swap16(pokemonBiosGetPhyAtk((Pokemon*)((Pokemon *) p0)));
-        M2C_FIELD(p1, s16 *, 0x5C) = _swap16(pokemonBiosGetPhyDef((Pokemon*)((Pokemon *) p0)));
-        M2C_FIELD(p1, s16 *, 0x5E) = _swap16(pokemonBiosGetNimbleness((Pokemon*)((Pokemon *) p0)));
-        M2C_FIELD(p1, s16 *, 0x60) = _swap16(pokemonBiosGetSpeAtk((Pokemon*)((Pokemon *) p0)));
-        M2C_FIELD(p1, s16 *, 0x62) = _swap16(pokemonBiosGetSpeDef((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x58) = _swap16(pokemonBiosGetMaxHp((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x56) = _swap16(pokemonBiosGetHp((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x5A) = _swap16(pokemonBiosGetPhyAtk((Pokemon*)((Pokemon *) p0)));
+        var_r31_2 = (unsigned short *)(((u8*)(p1) + 0x20));
+        M2C_FIELD(p1, u16 *, 0x5C) = _swap16(pokemonBiosGetPhyDef((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x5E) = _swap16(pokemonBiosGetNimbleness((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x60) = _swap16(pokemonBiosGetSpeAtk((Pokemon*)((Pokemon *) p0)));
+        M2C_FIELD(p1, u16 *, 0x62) = _swap16(pokemonBiosGetSpeDef((Pokemon*)((Pokemon *) p0)));
         M2C_FIELD(p1, u32 *, 0x44) = _swap32((u32) sp10);
         M2C_FIELD(p1, u32 *, 0x48) = _swap32((u32) spC);
-        var_r31_2 = (unsigned short *)(((u8*)(p1) + 0x20));
         M2C_FIELD(p1, u32 *, 0x4C) = _swap32((u32) sp8);
         var_r27_2 = var_r31_2;
         var_r28 = 0;
@@ -454,7 +448,7 @@ void gbaPokemonFromGC(void *p0, void *p1) {
             var_r27_2 += 2;
             var_r28 += 1;
         } while (var_r28 < 0x18);
-        M2C_FIELD(p1, s16 *, 0x1C) = _swap16(var_r29);
+        M2C_FIELD(p1, u16 *, 0x1C) = _swap16(var_r29);
         var_ctr = 2;
         do {
             M2C_FIELD(var_r31_2, s32 *, 0) = (s32) (M2C_FIELD(var_r31_2, s32 *, 0) ^ (M2C_FIELD(p1, u32 *, 0) ^ M2C_FIELD(p1, u32 *, 4)));
@@ -473,24 +467,24 @@ void gbaPokemonFromGC(void *p0, void *p1) {
 
 extern "C" {
 void gbaPokemonToGC(Pokemon* p0, GBAPokemon* p1) {
-    s32 unksp11;
+    u16 *var_r3;
     s32 unksp12;
     s32 unksp13;
     volatile s32 unksp9;
-    volatile s32 unkspA;
+    u32 sp14;
     s32 unkspB;
     s32 unkspE;
     volatile s32 unkspF;
-    u16 sp14;
+    volatile s32 unkspA;
     u32 sp10;
     u32 spC;
-    u32 sp8;
+    volatile u32 sp8;
     GBAPokemon *var_r28_2;
     s32 var_ctr;
     s32 var_r27;
     s32 var_r29_3;
     u16 *var_r29;
-    u16 *var_r3;
+    s32 unksp11;
     u16 var_r27_3;
     u32 temp_r0;
     u8 temp_r0_2;
@@ -527,57 +521,57 @@ void gbaPokemonToGC(Pokemon* p0, GBAPokemon* p1) {
         sp8 = _swap32(M2C_FIELD(p1, u32 *, 0x4C));
         pokemonBiosSetRnd((Pokemon*)(p0), _swap32(M2C_FIELD(p1, u32 *, 0)));
         pokemonBiosSetCatchTrainerRnd((Pokemon*)(p0), _swap32(M2C_FIELD(p1, u32 *, 4)));
-        temp_r0 = ((u16) sp10 >> 7U) & 0xF;
-        switch (temp_r0) {                          /* switch 1 */
-        case 1:                                     /* switch 1 */
+        temp_r0 = (sp10 >> 7U) & 0xF;
+        switch (temp_r0) {
+        case 1:
             var_r27_2 = 8;
             break;
-        case 2:                                     /* switch 1 */
+        case 2:
             var_r27_2 = 9;
             break;
-        case 3:                                     /* switch 1 */
+        case 3:
             var_r27_2 = 0xA;
             break;
-        case 4:                                     /* switch 1 */
+        case 4:
             var_r27_2 = 1;
             break;
-        case 5:                                     /* switch 1 */
+        case 5:
             var_r27_2 = 2;
             break;
-        case 15:                                    /* switch 1 */
+        case 15:
             var_r27_2 = 0xB;
             break;
-        default:                                    /* switch 1 */
+        default:
             var_r27_2 = 0;
             break;
         }
         temp_r0_2 = M2C_FIELD(p1, u8 *, 0x12);
-        switch (temp_r0_2) {                        /* switch 2 */
-        case 1:                                     /* switch 2 */
+        switch (temp_r0_2) {
+        case 1:
             var_r28 = 1;
             var_r29_2 = 1;
             break;
-        case 2:                                     /* switch 2 */
+        case 2:
             var_r28 = 2;
             var_r29_2 = 2;
             break;
-        case 3:                                     /* switch 2 */
+        case 3:
             var_r28 = 3;
             var_r29_2 = 4;
             break;
-        case 4:                                     /* switch 2 */
+        case 4:
             var_r28 = 3;
             var_r29_2 = 5;
             break;
-        case 5:                                     /* switch 2 */
+        case 5:
             var_r28 = 3;
             var_r29_2 = 3;
             break;
-        case 7:                                     /* switch 2 */
+        case 7:
             var_r28 = 3;
             var_r29_2 = 6;
             break;
-        default:                                    /* switch 2 */
+        default:
             var_r28 = 0;
             var_r29_2 = 0;
             break;
@@ -621,17 +615,17 @@ void gbaPokemonToGC(Pokemon* p0, GBAPokemon* p1) {
         pokemonBiosSetClever((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x41));
         pokemonBiosSetStrong((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x42));
         pokemonBiosSetFur((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x43));
-        pokemonBiosSetMaxHpEffort((Pokemon*)(p0), (u16) M2C_FIELD(p1, u8 *, 0x38));
+        pokemonBiosSetMaxHpEffort((Pokemon*)(p0), (u16) M2C_FIELD((u16)p1, u8 *, 0x38));
         pokemonBiosSetPokerus((Pokemon*)(p0), unksp13);
         pokemonBiosSetCatchFloorId((Pokemon*)(p0), (u16) unksp12);
         pokemonBiosSetCatchLevel((Pokemon*)(p0), unksp11 & 0x7F);
-        pokemonBiosSetCatchBallId((Pokemon*)(p0), ((u8) sp10 >> 3U) & 0xF);
         pokemonBiosSetCatchTrainerSex((Pokemon*)(p0), ((u8) sp10 >> 7U) & 1);
         pokemonBiosSetMaxHpRnd((Pokemon*)(p0), unkspF & 0x1F);
         pokemonBiosSetPhyAtkRnd((Pokemon*)(p0), (unkspE >> 5U) & 0x1F);
-        pokemonBiosSetPhyDefRnd((Pokemon*)(p0), (unkspE >> 2U) & 0x1F);
         pokemonBiosSetNimblenessRnd((Pokemon*)(p0), (spC >> 0xFU) & 0x1F);
+        pokemonBiosSetPhyDefRnd((Pokemon*)(p0), (unkspE >> 2U) & 0x1F);
         pokemonBiosSetSpeAtkRnd((Pokemon*)(p0), ((u16) spC >> 4U) & 0x1F);
+        pokemonBiosSetCatchBallId((Pokemon*)(p0), (sp10 >> 3U) & 0xF);
         pokemonBiosSetSpeDefRnd((Pokemon*)(p0), ((u8) spC >> 1U) & 0x1F);
         pokemonBiosSetTamagoFlag((Pokemon*)(p0), (((u8) spC >> 6U) & 1) != 0);
         pokemonBiosSetTokuseiFlag((Pokemon*)(p0), (((u8) spC >> 7U) & 1) != 0);
@@ -648,9 +642,9 @@ void gbaPokemonToGC(Pokemon* p0, GBAPokemon* p1) {
         pokemonBiosSetMarineRibbon((Pokemon*)(p0), ((unksp9 >> 4U) & 1) != 0);
         pokemonBiosSetLandRibbon((Pokemon*)(p0), ((unksp9 >> 5U) & 1) != 0);
         pokemonBiosSetSkyRibbon((Pokemon*)(p0), ((unksp9 >> 6U) & 1) != 0);
-        pokemonBiosSetCountryRibbon((Pokemon*)(p0), ((unksp9 >> 7U) & 1) != 0);
+        pokemonBiosSetEarthRibbon((Pokemon*)(p0), ((sp8 >> 1U) & 1) != 0);
         pokemonBiosSetNationalRibbon((Pokemon*)(p0), ((u8) sp8 & 1) != 0);
-        pokemonBiosSetEarthRibbon((Pokemon*)(p0), (((u8) sp8 >> 1U) & 1) != 0);
+        pokemonBiosSetCountryRibbon((Pokemon*)(p0), ((unksp9 >> 7U) & 1) != 0);
         pokemonBiosSetWorldRibbon((Pokemon*)(p0), (((u8) sp8 >> 2U) & 1) != 0);
         pokemonBiosSetAmariRibbon((Pokemon*)(p0), ((u8) sp8 >> 3U) & 0xF);
         pokemonBiosSetEventGetFlag((Pokemon*)(p0), (((u8) sp8 >> 7U) & 1) != 0);

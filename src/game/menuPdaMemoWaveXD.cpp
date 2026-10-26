@@ -1,7 +1,6 @@
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct GSgfxVF;
@@ -313,7 +312,6 @@ u8 pdaMemoNakigoe::NakigoeCheck() {
     return playing;
 }
 
-// Non-volatile view of the GX FIFO: the original kept both converted coordinates in registers.
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 static inline void dlPos(s16 x, s16 y) { GXFifoNV.s16 = x; GXFifoNV.s16 = y; }
 static void _drawLine(GSgfxLayerID layerID, GSvec* a, GSvec* b, float width) {

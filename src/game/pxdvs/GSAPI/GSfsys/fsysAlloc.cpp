@@ -4,7 +4,6 @@
 
 #define ALIGN32(x) (((x) + 0x1F) & ~0x1F)
 
-// One cached piece of an archive in the cache heap.
 struct FsysCacheManage {
     u8 unk0[0xC];
     void* addr;
@@ -99,7 +98,6 @@ void* _fsysMemAllocCache(Fsys* fsys, u32 id, u32 size, u32 arg) {
     return addr;
 }
 
-// Frees the oldest cache entries, all from the same group.
 static bool _fsysFreeFreshCacheGroup(u32 group) {
     u32 lastGroup;
     bool freed = false;
@@ -122,7 +120,6 @@ static bool _fsysFreeFreshCacheGroup(u32 group) {
     return freed;
 }
 
-// Frees old cache entries until `size` bytes (plus a reserve) are free.
 static bool _fsysFreeFreshCache(u32 group, u32 size) {
     FsysCacheManage* manage;
     for (;;) {

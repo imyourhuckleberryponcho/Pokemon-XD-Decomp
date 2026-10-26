@@ -301,7 +301,10 @@ void fightMain(void) {
         while (fightGetFightResultId() == 0) {
             turn = fight_action_data_turn;
             fightMainDebugMenu();
-            if (fightGetFightResultId() == 0) {
+            if (fightGetFightResultId() != 0) {
+                break;
+            }
+            {
                 if (fightFloorIsUseFightTimerAll(0) == 1 && fightTimerAllIsOver() == 1) {
                     menuFightOpenTimeup();
                     if (fightFloorIsNowEncountHostEnemyPokemonKime(0) == 0 &&
@@ -313,6 +316,7 @@ void fightMain(void) {
                     }
                     fightFloorSetTimeOutAllFightResult(0);
                     fightMainWaitFrame(0xB4);
+                    break;
                 } else if (deckDataVirtualDB_GetTurnLimit(diskId) != 0 &&
                            ((limit = deckDataVirtualDB_GetTurnLimit(diskId)),
                             (s32)fightFloor_GetTurnCount(0) > limit)) {
@@ -320,6 +324,7 @@ void fightMain(void) {
                     fightMenuOpenInfoMenu(0);
                     fightSetFightResultId(7);
                     fightMainWaitFrame(0x64);
+                    break;
                 } else {
                     if (fightFloorIsUseFightTimerCommand(0) == 1) {
                         fightTimerCommandInit();
@@ -334,7 +339,7 @@ void fightMain(void) {
                         fightMainWaitFrame(0x258);
                     }
                     fightActionDispFifoAll();
-                    fightActionCreateAndFlowFifo(act, 0, 0, 7, 0, turn);
+                    fightActionCreateAndFlowFifo(&fight_action, 0, 0, 7, 0, fight_action_data_turn);
                     while (1) {
                         if (menuFightChkSeq() == 0) {
                             break;
@@ -354,11 +359,11 @@ void fightMain(void) {
                     if (fightGetFightResultId() != 0) {
                         break;
                     }
-                    fightActionCreateAndFlowFifo(act, 0, 0, 0xB, 0, turn);
+                    fightActionCreateAndFlowFifo(&fight_action, 0, 0, 0xB, 0, fight_action_data_turn);
                     if (fightGetFightResultId() != 0) {
                         break;
                     }
-                    fightActionCreateAndFlowFifo(act, 0, 0, 0xD, 0, turn);
+                    fightActionCreateAndFlowFifo(&fight_action, 0, 0, 0xD, 0, fight_action_data_turn);
                     if (fightGetFightResultId() != 0) {
                         break;
                     }

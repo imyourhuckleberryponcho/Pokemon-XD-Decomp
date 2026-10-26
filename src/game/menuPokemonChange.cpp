@@ -1,11 +1,5 @@
-// STATUS: 71/78 functions exact. Needs extra_cflags=["-inline noauto,deferred"]
-// (source is written bottom-to-top). Not exact: selectItemHookPrime (96.7%, extra CSE'd m_sel[player] address
-// register), pokmonSelectCheck (same CSE issue), setMenuByTbl, selectPokemonMenuOpen, requestPokemonFaceLoad,
-// stateFunctionSaveReport (1 instr), bgDrawFadeIsLive (bool return).
-// Pokemon exchange menu (CMenuPokemonChange).
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };
@@ -435,7 +429,7 @@ public:
 
 CMenuPokemonChange MenuPokemonChange;
 
-} // namespace
+}
 
 namespace {
 
@@ -468,7 +462,7 @@ s32 _getPokemonState(Pokemon* pokemon, enumPlayerIndex player)
     return 4;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -488,7 +482,7 @@ u8 _isPokemonItemExchangeOk(Pokemon* pokemon, enumPlayerIndex player)
     return 1;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -497,7 +491,7 @@ bool _pokemonChangeGetHinsi(Pokemon* pokemon)
     return pokemon->getHp() == 0;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -512,7 +506,7 @@ bool _isPokemonBattleAble(Pokemon* pokemon, enumPlayerIndex player)
     return !_pokemonChangeGetHinsi(pokemon);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -521,7 +515,7 @@ bool _isPokemonValid(Pokemon* pokemon, enumPlayerIndex player)
     return _getPokemonState(pokemon, player) != 0;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -530,7 +524,7 @@ bool _isPokemonExchangeAble(Pokemon* pokemon, enumPlayerIndex player)
     return _getPokemonState(pokemon, player) == 7;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -545,7 +539,7 @@ s32 _getQuantityBattleAbleWoIt(Hero* hero, s32 skip, enumPlayerIndex player)
     return count;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -558,7 +552,7 @@ void _menuWait(f32 time)
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -568,7 +562,7 @@ void _pokemonChangeFadeOut(f32 time)
     fadeCheck(1);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -577,7 +571,7 @@ void _pokemonChangeFadeIn(f32 time)
     fadeSetToBlackInIfBlack(time);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -596,7 +590,7 @@ void _menuSetMsg(s32 window, u16 itemId, u32 value)
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -605,7 +599,7 @@ void _setInfo(u32 value)
     _menuSetMsg(0xD5, 0x61E, value);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -640,7 +634,7 @@ s32 _actionSelect2or3(u32 a, u32 b, u32 c)
     return result[value];
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -656,7 +650,7 @@ void CMenuPokemonChange::init()
     _pokemonChangeFadeIn(0.3f);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -670,7 +664,7 @@ void CMenuPokemonChange::bgModelLoad()
     GSmodelSetVisibility(m_bgGSmodel, 0);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -679,7 +673,7 @@ void CMenuPokemonChange::bgModelRelease()
     scriptModelClose(m_bgModel);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -705,7 +699,7 @@ void CMenuPokemonChange::main()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -801,7 +795,7 @@ void CMenuPokemonChange::loop()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -810,7 +804,7 @@ Pokemon* _cbMenuPokemonStatus(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, s32 p
     return MenuPokemonChange.pokemonStatusCallback(pokemon, type, (enumPlayerIndex)player);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -822,7 +816,7 @@ void CMenuPokemonChange::menuPokemonStatusExecute(enumPlayerIndex player)
     m_sel[player] = m_cursor;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -839,7 +833,7 @@ s32 CMenuPokemonChange::pokemonStatusSearch(s32 start, s32 step)
     return index;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -857,7 +851,7 @@ Pokemon* CMenuPokemonChange::pokemonStatusCallback(Pokemon* pokemon, MENU_POKEMO
     return getPokemonByIndex(m_cursor);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -875,7 +869,7 @@ void* pokemonChangeRequestPokemonFaceLoadCallBack(void* data)
     return list[index];
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -898,7 +892,7 @@ void CMenuPokemonChange::requestPokemonFaceLoad()
     menuFaceLoad(0, pokemonChangeRequestPokemonFaceLoadCallBack, stPokemonListFace);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -909,7 +903,7 @@ s16 _selectDisplay_2p_offset()
     return b->x - a->x;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -955,7 +949,7 @@ void CMenuPokemonChange::setMenuByTbl(s32* tbl)
     memcpy(m_menuTbl, tbl, (count + 1) * 4);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -973,7 +967,7 @@ void CMenuPokemonChange::bgDrawFadeOut()
     window->alpha = 0xFF;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -982,7 +976,7 @@ bool CMenuPokemonChange::bgDrawFadeIsLive()
     return windowSearchID(0xDF) ? true : false;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -991,7 +985,7 @@ void CMenuPokemonChange::bgDrawFadeIn()
     bgDrawFadeIn(0.3f);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1010,7 +1004,7 @@ void CMenuPokemonChange::bgDrawFadeIn(f32 time)
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1047,7 +1041,7 @@ void CMenuPokemonChange::menuStateChange(enumMenuState state)
     m_flagC51 = 0;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1062,7 +1056,7 @@ void CMenuPokemonChange::oneMenuLoad(s32 id)
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1073,7 +1067,7 @@ void CMenuPokemonChange::waitMenuOpen()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1084,7 +1078,12 @@ s32 CMenuPokemonChange::selectPokemonMenuOpen()
     MenuDataBios* data = menuDataBiosGetPtr(0xD6);
     MenuItemBios* item = menuItemBiosGetPtr(0xD6, data->first);
     for (s32 i = 0; i < 2; i++) {
-        Hero* hero = (i == 0) ? m_hero0 : (Hero*)m_hero1;
+        Hero* hero;
+        if (i == 0) {
+            hero = m_hero0;
+        } else {
+            hero = (Hero*)m_hero1;
+        }
         for (s32 j = 0; j < 6; j++) {
             item->valid = _isPokemonValid(hero->getPokemon(j), (enumPlayerIndex)player);
             item = menuItemBiosGetPtr(0xD6, item->next);
@@ -1106,7 +1105,7 @@ s32 CMenuPokemonChange::selectPokemonMenuOpen()
     return 0xD6;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1122,7 +1121,7 @@ s32 CMenuPokemonChange::getQuantityHeroPokemon(enumPlayerIndex player)
     return i;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1131,7 +1130,7 @@ s32 CMenuPokemonChange::getQuantityAllPokemon()
     return getQuantityHeroPokemon(PLAYER_1) + getQuantityHeroPokemon(PLAYER_2);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1156,7 +1155,7 @@ void CMenuPokemonChange::ctrlHook(tagWINDOW_WORK* window)
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1210,7 +1209,7 @@ void CMenuPokemonChange::selectDrawHook(tagWINDOW_WORK* window)
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1219,7 +1218,7 @@ void CMenuPokemonChange::selectItemHook(tagWINDOW_WORK* window, tagSPRITE_WORK* 
     selectItemHookPrime(window, sprite, sprite->itemId);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1233,7 +1232,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     u32 color;
     Hero* hero = (player == 0) ? m_hero0 : (Hero*)m_hero1;
     Pokemon* pokemon = getSelPokemon((enumPlayerIndex)player);
-    u32 pulse;
+    u8 pulse;
     u32 msg;
     bool visible;
     u8 windowAlpha = window->alpha;
@@ -1345,8 +1344,10 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x619:
     case 0x61A: {
         s32 index = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x615);
-        Pokemon* target = hero->getPokemon(index);
-        u32 msg = 0x4277;
+        u32 msg;
+        Pokemon* target;
+        target = hero->getPokemon(index);
+        msg = 0x4277;
         switch (_getPokemonState(target, (enumPlayerIndex)player)) {
         case 1:
             msgctrlSetValue(0x37, GSmsgGetGSchar(0x56C));
@@ -1365,7 +1366,8 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         if (msg != 0) {
             u32 rect = GSmsgGetRect(msg);
             s16 rectW = rect >> 16;
-            s16 x = (s16)(sprite->w / 2 - rectW / 2);
+            u32 rf_t = sprite->w;
+            s16 x = (s16)(rf_t / 2 - rectW / 2);
             GSmsgPrint2(window->msgHandle, x - 1, 0, color, 0x4277);
             winSpriteSetDisp(sprite, 1);
         } else {
@@ -1586,7 +1588,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1602,7 +1604,7 @@ void CMenuPokemonChange::stateFunctionCheckconnection()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1611,7 +1613,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon2Reset()
     m_sel[1] = getQuantityHeroPokemon(PLAYER_1);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1622,7 +1624,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemonStart()
     setState(m_state.current + 1);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1647,7 +1649,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon1Main()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1676,7 +1678,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon1Selected()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1695,7 +1697,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon1Chanceld()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1712,7 +1714,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon1CheckStatus()
     setState(8);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1724,7 +1726,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon1PokeExChange()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1748,7 +1750,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon2Main()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1781,7 +1783,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon2Selected()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1806,7 +1808,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon2CheckStatus()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1817,7 +1819,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon2PokeExChange()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1829,7 +1831,7 @@ void CMenuPokemonChange::stateFunctionSelectPokemon2DecideAfterWait()
     setState(0x11);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1893,7 +1895,7 @@ done:
     menuSetEnablePort(1);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1920,7 +1922,7 @@ void CMenuPokemonChange::stateFunctionExChangeStart()
     setState(0x13);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1957,7 +1959,7 @@ void CMenuPokemonChange::stateFunctionExChangeMain()
     setState(0x14);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1979,7 +1981,7 @@ void CMenuPokemonChange::stateFunctionExChangeOK()
     setState(0x15);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -1997,7 +1999,7 @@ void CMenuPokemonChange::_pokemonChangeEvolutionEffect(Pokemon* pokemon, MENU_PO
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2042,7 +2044,7 @@ void CMenuPokemonChange::stateFunctionEvolution()
     setState(0x16);
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2102,7 +2104,7 @@ void CMenuPokemonChange::stateFunctionSaveReport()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2118,7 +2120,7 @@ u8 CMenuPokemonChange::gbaConnectionCheckIsError()
     return 0;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2137,7 +2139,7 @@ void CMenuPokemonChange::stateFunctionCheckNext()
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2156,7 +2158,7 @@ void CMenuPokemonChange::stateFunctionError(Pokemon* pokemon, u32 msg)
     }
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2173,7 +2175,7 @@ u8 CMenuPokemonChange::isPokemonLookAbleStatus(s32 index)
     return 1;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2194,7 +2196,7 @@ u8 CMenuPokemonChange::pokmonSelectCheck(enumPlayerIndex player)
     return 0;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2230,7 +2232,7 @@ u8 CMenuPokemonChange::pokemonExchangeCheck(enumPlayerIndex player)
     return 1;
 }
 
-} // namespace
+}
 
 namespace {
 
@@ -2277,7 +2279,7 @@ u8 _isTemochiPokemonCheck()
     return 1;
 }
 
-} // namespace
+}
 
 extern "C" {
 void menuPokemonChange()

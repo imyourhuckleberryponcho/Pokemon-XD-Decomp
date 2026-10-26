@@ -1,9 +1,5 @@
 #include <dolphin/types.h>
 
-// WIP (GXXE01, -O4,s): five helpers match (2,816 bytes). The main selector
-// remains 739/735 instructions with register/spill differences. Keep NonMatching.
-// Verification: build/scratch/sol-irekae-verification.txt.
-
 struct FIGHT_TRAINER;
 struct FightPokemon;
 struct Pokemon;
@@ -129,7 +125,6 @@ s32 fightTrainerAiSelectFightActionIrekae(FIGHT_TRAINER* trainer, FightOutPokemo
     return 1;
 }
 
-// The action target and mode are accepted by the common selection interface.
 s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8, FightOutPokemon* pokemon)
 {
     FightPokemon* candidate;
@@ -160,7 +155,7 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
     }
     s32 maxAffinity = -65535;
     u16 minId = 65535;
-    int maxSpeed = 0;
+    u32 maxSpeed = 0;
     for (u8 i = 0; i < count; i++) {
         candidate = candidates[i];
         if (candidate != 0 && fightPokemon_GetEntryId(candidate) >= 0) {
@@ -184,8 +179,10 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
             }
         }
     }
-    s32 partyCountLong = partyCount;
-    s32 reviseLong = revise;
+    s32 reviseLong;
+    s32 partyCountLong;
+    partyCountLong = partyCount;
+    reviseLong = revise;
     s32 reviseRange = revise * 2 + 1;
     for (u8 i = 0; i < count; i++) {
         candidate = candidates[i];

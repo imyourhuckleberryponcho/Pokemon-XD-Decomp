@@ -1,4 +1,3 @@
-// Floor data accessors (floordata table, 0x40 bytes per floor).
 #include <dolphin/types.h>
 
 #pragma peephole off
@@ -8,13 +7,12 @@ struct GSvec {
     void set(f32 x, f32 y, f32 z);
 };
 
-// Per-floor graphics description (shadow / sun / fog model ids).
 struct FloorGfxInfo {
-    u32 sunResID;           // 0x00
-    u32 shadowLightID;      // 0x04
-    u32 shadowRecive[8];    // 0x08
-    u32 secondaryRender[3]; // 0x28
-    u32 fogModel[3];        // 0x34
+    u32 sunResID;
+    u32 shadowLightID;
+    u32 shadowRecive[8];
+    u32 secondaryRender[3];
+    u32 fogModel[3];
 };
 
 struct FloorGfxHolder {
@@ -64,25 +62,25 @@ struct FloorFieldCameraHolder {
 };
 
 struct FloorData {
-    u8 area;                             // 0x00
-    u8 kind;                             // 0x01
-    u16 floorID;                         // 0x02
-    u32 mapResID;                        // 0x04
-    FloorGfxHolder* gfx;                 // 0x08
-    FloorCharHolder* chars;              // 0x0C
-    FloorPosHolder* positions;           // 0x10
-    FloorFieldCameraHolder* fieldCamera; // 0x14
-    u32 placeName;                       // 0x18
-    u32 preFunc;                         // 0x1C
-    u32 mainFunc;                        // 0x20
-    u32 postFunc;                        // 0x24
-    u32 unk28;                           // 0x28
-    u32 groupID[5];                      // 0x2C, indexed by language
+    u8 area;
+    u8 kind;
+    u16 floorID;
+    u32 mapResID;
+    FloorGfxHolder* gfx;
+    FloorCharHolder* chars;
+    FloorPosHolder* positions;
+    FloorFieldCameraHolder* fieldCamera;
+    u32 placeName;
+    u32 preFunc;
+    u32 mainFunc;
+    u32 postFunc;
+    u32 unk28;
+    u32 groupID[5];
 };
 
 struct FloorTresure {
     u8 unk0[4];
-    u16 floorID; // 0x04
+    u16 floorID;
     u8 unk6[0x16];
 };
 
@@ -469,4 +467,4 @@ s32 fn_801231D4(void) {
     }
 }
 
-}  // extern "C"
+}

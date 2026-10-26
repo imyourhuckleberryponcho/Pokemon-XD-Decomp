@@ -5,7 +5,6 @@
 
 #include "musyx/sal.h"
 
-// In Pokemon XD's MSL, powf is an inline wrapper around the double-precision pow.
 double pow(double x, double y);
 #define powf(x, y) ((float)pow((x), (y)))
 
@@ -30,8 +29,8 @@ static void DLdelete(_SND_REVHI_DELAYLINE* delayline) { salFree(delayline->input
 bool ReverbHICreate(_SND_REVHI_WORK* rev, f32 coloration, f32 time, f32 mix, f32 damping,
                     f32 preDelay, f32 crosstalk) {
   static int lens[] = {1789, 1999, 2333, 433, 149, 47, 73, 67};
-  unsigned char i; // r31
-  unsigned char k; // r29
+  unsigned char i;
+  unsigned char k;
   if (coloration < 0.f || coloration > 1.f || time < 0.01f || time > 10.f || mix < 0.f ||
       mix > 1.f || crosstalk < 0.f || crosstalk > 1.f || damping < 0.f || damping > 1.f ||
       preDelay < 0.f || preDelay > 0.1f) {
@@ -85,7 +84,7 @@ bool ReverbHICreate(_SND_REVHI_WORK* rev, f32 coloration, f32 time, f32 mix, f32
 
 bool ReverbHIModify(struct _SND_REVHI_WORK* rv, float coloration, float time, float mix,
                     float damping, float preDelay, float crosstalk) {
-  u8 i; // r30
+  u8 i;
 
   if (coloration < 0.f || coloration > 1.f || time < 0.01f || time > 10.f || mix < 0.f ||
       mix > 1.f || crosstalk < 0.f || crosstalk > 1.f || damping < 0.f || damping > 1.f ||
@@ -125,8 +124,6 @@ static const float value0_3 = 0.3f;
 static const float value0_6 = 0.6f;
 static const double i2fMagic = 4.503601774854144E15;
 
-/* clang-format off */
-/* TODO: Properly rework these to use input arguments and cleanup ASM */
 static asm void DoCrossTalk(s32* a, s32* b, f32 start, f32 end) {
   nofralloc
   stwu r1, -0x30(r1)
@@ -236,14 +233,11 @@ L_00000710:
   blr  
 }
 #else
-/* clang-format on */
 static void DoCrossTalk(s32* a, s32* b, f32 start, f32 end) {
- // TODO: Reimplement in C
 }
 #endif
 
 #ifdef __MWERKS__
-/* clang-format off */
 static asm void HandleReverb(s32* sptr, SND_AUX_REVERBHI* rv, s32 k) {
   nofralloc
   stwu r1, -0xc0(r1)
@@ -599,10 +593,8 @@ L_00000C6C:
   addi r1, r1, 0xc0
   blr
 }
-/* clang-format on */
 #else
 static void HandleReverb(s32* sptr, SND_AUX_REVERBHI* rv, s32 k) {
- // TODO: Reimplement in C
 }
 #endif
 

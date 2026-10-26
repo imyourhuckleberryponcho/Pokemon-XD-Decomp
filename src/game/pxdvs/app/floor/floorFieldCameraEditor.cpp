@@ -1,7 +1,3 @@
-// STATUS (dFFCE): needs extra_cflags=["-inline off"] (weak GSgfxLayer setters stay out-of-line) + peephole off (in file).
-// 16/18 exact. floorUpdateFieldCameraEditor 99.45% (f29/f30 swap: radius vs sin in the quad branch), GSvecCopy 98.3%
-// (load order x,y,z,... not reproduced). LAYOUT: target has the weak methods in later .text sections (after GetFloorID); we emit them
-// right after Update. floorFieldCameraEditorUnused is a placeholder that pulls 1.0f into .sdata2 first (stripped function).
 #include <dolphin/types.h>
 #pragma peephole off
 
@@ -175,7 +171,7 @@ public:
 namespace std {
 __declspec(weak) float cosf(float);
 __declspec(weak) float sinf(float);
-} // namespace std
+}
 
 struct FieldCameraState {
     u8 toggle;
@@ -300,7 +296,6 @@ fail:
     floorReleaseFieldCameraEditor();
 }
 
-// Placeholder for a function the linker stripped; it pulled 1.0f into .sdata2 first.
 f32 floorFieldCameraEditorUnused() { return 1.0f; }
 
 void floorUpdateFieldCameraEditor() {
@@ -375,9 +370,9 @@ void floorUpdateFieldCameraEditor() {
                             l->beginSurface(4);
                             f32 rc = r * c;
                             r = s * r;
-                            s = s * w;
+                            s = s * s;
                             c = w * c;
-                            l->vertex3f(pos.x + rc + s, 0.1f + (pos.y - ofs.y), (pos.z - r) + c);
+                            l->vertex3f(pos.x + rc + s, 0.1f + (pos.y - ofs.y), (pos.z - r) + s);
                             l->color4u8(0x80, 0x80, 0x80, 0x80);
                             l->vertex3f((pos.x - rc) + s, 0.1f + (pos.y - ofs.y), pos.z + r + c);
                             l->color4u8(0x80, 0x80, 0x80, 0x80);

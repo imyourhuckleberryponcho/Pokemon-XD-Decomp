@@ -1,7 +1,5 @@
-// STATUS: 7/8 exact (Taisen 98%: ret var lands in r26 instead of r27); LAYOUT+CONST OK, default flags + peephole off.
 #include <dolphin/types.h>
 
-// Menu callbacks were built without the peephole optimizer.
 #pragma peephole off
 
 struct _MENUCBWORK {

@@ -14,7 +14,6 @@ public:
     DarkPokemon* getDarkPokemon();
 };
 
-// Daycare save block (savedata kind 0xB).
 struct Sodateya {
     u8 active;
     u8 level;

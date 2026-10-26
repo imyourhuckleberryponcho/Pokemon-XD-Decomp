@@ -1,6 +1,6 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's texp.c (headers: include/hsd_ref).
-// The original file name, used by the asserts.
+
+
+
 #define HSD_FILE_NAME "texp.c"
 
 #include <sysdolphin/baselib/texp.h>

@@ -9,7 +9,6 @@ enum {
     GAPP_TYPE_VSYNC,
 };
 
-// A "game application" job: a callback run every frame, in the background or on vsync.
 struct Gapp {
     Gapp* prev;
     Gapp* next;
@@ -60,7 +59,6 @@ static inline void _gappRun(s32 type) {
     _gappCurrentGapp = NULL;
 }
 
-// Inserts into the run list, sorted by priority.
 static inline void _gappInsert(Gapp* gapp) {
     Gapp* next;
     Gapp* pos = _gappListTop;
@@ -174,7 +172,6 @@ int GSgappCreate(s32 type, u8 priority, void* arg, GSgappFunc func) {
     } else {
         BOOL intr = OSDisableInterrupts();
         if (gapp->type == GAPP_TYPE_BACKGROUND) {
- // Background jobs are linked in by the idle thread.
             gapp->next = _gappCreateBGJobRequestListTop;
             _gappCreateBGJobRequestListTop = gapp;
         } else {

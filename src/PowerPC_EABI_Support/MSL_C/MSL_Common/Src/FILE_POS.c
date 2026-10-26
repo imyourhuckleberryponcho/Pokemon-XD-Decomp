@@ -8,7 +8,6 @@
 #include "PowerPC_EABI_Support/MSL_C/MSL_Common/FILE_POS.h"
 #include "errno.h"
 
-// define standard C file pointer location names
 #define SEEK_SET (0)
 #define SEEK_CUR (1)
 #define SEEK_END (2)
@@ -55,7 +54,7 @@ int fseek(FILE* stream, u32 offset, int whence)
 {
 	int code;
 	__begin_critical_region(stdin_access);
-	code = _fseek(stream, offset, whence); // 0 if successful, -1 if error
+	code = _fseek(stream, offset, whence);
 	__end_critical_region(stdin_access);
 	return code;
 }

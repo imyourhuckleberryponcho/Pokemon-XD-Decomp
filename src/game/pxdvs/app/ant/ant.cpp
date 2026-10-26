@@ -1,7 +1,3 @@
-// STATUS: 9/20 exact with extra_cflags ["-inline deferred"] (written bottom-to-top). LAYOUT/CONST/CALLS OK; DATA differs only in
-// .sdata2 constant order (target's first constant is 1.0f; probably a dead-stripped earlier function used it first).
-// Not exact: dispTexture 98.8%, allRequestCancel 97.3% (base pointer register), setAnimation/use/drawAndUpdate* /initByPokemon*
-// ~86-87%, draw 3004B 82%. Data format guesses: CAnt is 0x34 bytes.
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 
 extern "C" {
@@ -110,25 +106,32 @@ struct CAnt {
 f32 CAnt::colorAnimationTimeDark;
 f32 CAnt::colorAnimationTimeReliveReady;
 
-static inline int antFindOrAlloc(u32 key) {
-    int idx = -1;
+static inline int antFind(u32 key) {
     for (int i = 0; i < 240; i++) {
         if (_pokeDance.e[i].key == 0) break;
-        if (_pokeDance.e[i].key == key) {
-            idx = i;
-            break;
-        }
+        if (_pokeDance.e[i].key == key) return i;
     }
+    return -1;
+}
+
+static inline int antFindOrAlloc(u32 key) {
+    int idx = antFind(key);
     if (idx == -1) {
-        idx = 0;
-        for (int k = 0; k < 240; k++) {
+        for (idx = 0; idx < 240; idx++) {
             if (_pokeDance.e[idx].key == 0) break;
-            idx++;
         }
-        memset(&_pokeDance.e[idx], 0, sizeof(PokeDanceEntry));
-        _pokeDance.e[idx].key = key;
+        PokeDanceEntry* e = &_pokeDance.e[idx];
+        memset(e, 0, sizeof(PokeDanceEntry));
+        e->key = key;
     }
     return idx;
+}
+
+static inline void antMarkUsed(u32 key) {
+    if (key != 0) {
+        int idx = antFindOrAlloc(key);
+        _pokeDance.e[idx].use = 1;
+    }
 }
 
 static inline void* antLookup(u32 key) {
@@ -143,7 +146,6 @@ inline void* CAnt::getRes() {
     return res;
 }
 
-// one step of the animation script
 inline void CAnt::step() {
     wait = 0.0f;
     timer = 0.0f;
@@ -265,7 +267,8 @@ void dispTexture(GStexture* tex, f32 x, f32 y, int sx, int sy, int w, int h, GSg
     GSgfxVertex2s16(px, py);
     GSgfxColor4u8(r, g, b, a);
     GSgfxTexCoord2f(u0, v0);
-    int qx = px + w;
+    int qx = px;
+    qx += w;
     GSgfxVertex2s16(qx, py);
     GSgfxColor4u8(r, g, b, a);
     GSgfxTexCoord2f(u1, v0);
@@ -408,9 +411,8 @@ void CAnt::initByPokemonAndSetColorAnimationInReliveHallVisitor(Pokemon* p) {
 }
 
 void CAnt::use() {
-    if (key != 0) {
-        int idx = antFindOrAlloc((u16)key);
-        _pokeDance.e[idx].use = 1;
+    if (isValid()) {
+        antMarkUsed(key);
     }
 }
 
@@ -458,8 +460,8 @@ void CAnt::draw(PocketVec<short> off) {
             } else {
                 col.a = 0x80;
             }
-            col.g = (s8)((f32)colorWhite.g * t + (f32)colorPurple.g * u);
             col.b = (s8)((f32)colorWhite.b * t + (f32)colorPurple.b * u);
+            col.g = (s8)((f32)colorWhite.g * t + (f32)colorPurple.g * u);
             col.r = (s8)((f32)colorWhite.r * t + (f32)colorPurple.r * u);
             break;
         }

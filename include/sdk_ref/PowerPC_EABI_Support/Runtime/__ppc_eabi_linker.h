@@ -69,4 +69,4 @@ DECL_SECT(".init") extern char _e_PPC_EMB_sdata0[];
 DECL_SECT(".init") extern char _f_PPC_EMB_sbss0[];
 DECL_SECT(".init") extern char _e_PPC_EMB_sbss0[];
 
-#endif // __PPC_EABI_LINKER
+#endif

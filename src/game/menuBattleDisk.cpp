@@ -1,9 +1,3 @@
-// WIP: Battle Disc menu, written from asm.
-// STATUS: 22/27 functions exact; LAYOUT/CONST/CALLS/DATA OK with the unit's default flags (no extra_cflags).
-// Not exact (register allocation only, structure matches): fn_8009E6B8 (cursor search, 98%), drawPkmPanel (98.7%),
-// menuBattleDiskMain (97.7%), loadPkmFace (99.1%, p/r register swap), menuBattleDiskInit (99.4%, loop reg swap).
-// Switch tables: MWCC emits compare trees (not jump tables) when label counts are sparse; ContentsDraw needs the
-// 0x779..0x7B5 / 0x751-0x752 labels to reproduce the target tree.
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
@@ -53,38 +47,38 @@ public:
 };
 
 struct DISK_ENTRY {
-    u8 id;       // 0x00
+    u8 id;
     u8 pad1;
-    u16 itemId;  // 0x02
-    u32 name;    // 0x04
-    u32 doc;     // 0x08
-    u32 expl1;   // 0x0C
-    u32 expl2;   // 0x10
-    u32 title;   // 0x14
+    u16 itemId;
+    u32 name;
+    u32 doc;
+    u32 expl1;
+    u32 expl2;
+    u32 title;
 };
 
 struct BDISK {
-    s16 f0;                // 0x00
-    s16 f2;                // 0x02
-    s16 f4;                // 0x04
-    s16 f6;                // 0x06
-    s16 mode;              // 0x08
-    s16 count;             // 0x0A
-    s16 row;               // 0x0C
-    s16 scrollY;           // 0x0E
-    s16 scrollTarget;      // 0x10
-    s16 savedCursor;       // 0x12
-    s16 cursor;            // 0x14
-    u8 pokeNum;            // 0x16
-    u8 selectId;           // 0x17
-    u16 result;            // 0x18
-    u16 f1a;               // 0x1A
-    u16 f1c;               // 0x1C
+    s16 f0;
+    s16 f2;
+    s16 f4;
+    s16 f6;
+    s16 mode;
+    s16 count;
+    s16 row;
+    s16 scrollY;
+    s16 scrollTarget;
+    s16 savedCursor;
+    s16 cursor;
+    u8 pokeNum;
+    u8 selectId;
+    u16 result;
+    u16 f1a;
+    u16 f1c;
     u8 pad1e[2];
-    f32 timer;             // 0x20
-    s32 docMenu;           // 0x24
-    DISK_ENTRY disks[60];  // 0x28
-    Hero hero[2];          // 0x5C8
+    f32 timer;
+    s32 docMenu;
+    DISK_ENTRY disks[60];
+    Hero hero[2];
     u8 pad18b8[8];
     BDISK() {
         count = row = scrollTarget = savedCursor = scrollY = 0;
@@ -92,7 +86,6 @@ struct BDISK {
 };
 
 BDISK gBDisk;
-
 
 extern "C" u32 heroGetPokeomCount(Hero* hero);
 static inline bool isMine() {
@@ -233,7 +226,6 @@ void winMsgOpen(s8 type, void* msg, bool a, bool b);
 void winMsgClose(bool flag);
 }
 
-// Move the cursor in the disc list by the held direction (nearest item in that direction).
 extern "C" void fn_8009E6B8(tagWINDOW_WORK* w, bool pad);
 
 extern "C" {
@@ -248,9 +240,9 @@ s32 fn_8009E664(tagWINDOW_WORK* w) {
 
 void fn_8009E6B8(tagWINDOW_WORK* win, bool pad) {
     MenuItem* item;
+    int idx;
     MenuItem* from;
     int up, down, left, right;
-    int idx;
     int xr, yr;
     tagWINDOW_WORK* w = win;
     MenuData* data;
@@ -429,7 +421,6 @@ s32 fn_8009EA68(tagWINDOW_WORK* w) {
     }
     return 0;
 }
-
 
 s32 BattleDiskStatus(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     Pokemon* pk;
@@ -719,7 +710,6 @@ s32 BattleDiskBorADraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             gBDisk.f1c = FlashSystemGetEndFrame(0x1F353000);
             break;
         }
- // fall through
     case 0x877:
     case 0x878:
     case 0x879:
@@ -1268,8 +1258,8 @@ void menuBattleDiskMain(void) {
             }
             sel += gBDisk.row;
             int res = menuOpen(0xE8, 1);
-            faceOut = 0;
             u8 id = gBDisk.disks[sel].id;
+            faceOut = 0;
             fightEncountDataBiosSetDiskId(fightEncountDataBiosGetPtr(0xE), id);
             fightTrainerCreateFightTrainerDataIdToHero((u8)deckDataVirtualDB_GetAllyDeck(id), 0, hero0, 0xE);
             fightTrainerCreateFightTrainerDataIdToHero((u8)deckDataVirtualDB_GetEnemyDeck(id), 0, hero1, 0xE);
@@ -1341,7 +1331,7 @@ void menuBattleDiskMain(void) {
                     menuItemBiosSetSelectFlag(0x109, cBattleDisk::mContentsCurIdx[i], ok);
                 }
                 menuOpen(0x109, 0);
-                bool inner = true;
+                int inner = true;
                 while (inner) {
                     GSthreadSwitch();
                     if (windowGetKeyInfo()->trg & 0x10) {
@@ -1434,7 +1424,6 @@ void menuBattleDiskMain(void) {
         floorSetFadeScript(0, 0);
     }
 }
-
 
 void menuBattleDiskInit(void) {
     int j;

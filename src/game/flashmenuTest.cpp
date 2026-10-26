@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Test menu built without the peephole optimizer.
 #pragma peephole off
 
 struct FlashTestItem {
@@ -53,7 +52,6 @@ s32 fn_8000FDA8(void* window, FlashTestItem* item) {
     return 0;
 }
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 void fn_8000FF78(void) {

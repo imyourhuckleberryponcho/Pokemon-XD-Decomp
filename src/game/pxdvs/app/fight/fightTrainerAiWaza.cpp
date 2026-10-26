@@ -1,4 +1,3 @@
-// Trainer AI: waza (move) selection, move/defender scoring and the damage/hit/value dispatchers.
 #include <dolphin/types.h>
 
 struct FIGHT_TRAINER;
@@ -396,10 +395,11 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
 
 static s32 _fightTrainerAiWazaSubDefensePokemon(FIGHT_TRAINER* trainer, FightOutPokemon* pokemon, u16 wazaCount, u16* wazaId,
                                                 u16 partyCount, FightOutPokemon** party, FightOutPokemon** outTarget, s16* outSlot) {
+    s32 threat[8];
     u16 waza;
     s32 maxDamage[8];
     FightOutPokemon* enemies[8];
-    s16 slots[6];
+    s16 slots[7];
     u8 canKo[8];
     u8 hitAny[8];
     s16 slot;
@@ -413,7 +413,6 @@ static s32 _fightTrainerAiWazaSubDefensePokemon(FIGHT_TRAINER* trainer, FightOut
     u16 j;
     u8 flag;
     FightOutPokemon* enemy;
-    s32 threat[8];
 
     aiId = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
     revise = fightTrainerAiDB_GetLastValueRevise(aiId);
@@ -528,8 +527,8 @@ static s32 _fightTrainerAiWazaSubDefensePokemon(FIGHT_TRAINER* trainer, FightOut
     for (i = 0; i < 8; i++) {
         threat[i] = 0;
         maxDamage[i] = 0;
-        hitAny[i] = 0;
         canKo[i] = 0;
+        hitAny[i] = 0;
     }
     {
         s32 best = 0;
@@ -537,8 +536,8 @@ static s32 _fightTrainerAiWazaSubDefensePokemon(FIGHT_TRAINER* trainer, FightOut
             FightOutPokemon* target = party[i];
             if (target != 0 && fightOutPokemonGetFightEntryId(target) >= 0) {
                 u16 hp = fightTrainerAiGetFightOutPokemonNowHp(trainer, target);
-                s32 top = 0;
-                for (j = 0; j < wazaCount; j++) {
+                s32 top;
+                for (j = 0, top = 0; j < wazaCount; j++) {
                     waza = wazaId[j];
                     if (waza != 0 && waza != 0x176) {
                         u8 hit = fightTrainerAiWazaDoWazaHitFunc(trainer, pokemon, waza, target);

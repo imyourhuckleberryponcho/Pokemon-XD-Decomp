@@ -1,5 +1,3 @@
-// NonMatching: loadCamera matches; loadModel only differs in register allocation
-// (target: index=r27, archive=r28, scene=r29, arg1=r30, arg2=r31).
 #include <dolphin/types.h>
 
 #pragma pool_strings off

@@ -6,8 +6,6 @@ typedef u8 exaction_type;
 #define EXACTION_ENDBIT 0x80
 #define EXACTION_MASK   0x7F
 
-// EXAction structs
-
 #define EXACTION_ENDOFLIST 0
 #define EXACTION_BRANCH    1
 
@@ -177,8 +175,6 @@ typedef struct ex_catchblock_32 {
 	s32 catch_pcoffset;
 	s32 cinfo_ref;
 } ex_catchblock_32;
-
-// Other structs
 
 typedef struct ExceptionRangeSmall {
 	u16 start;

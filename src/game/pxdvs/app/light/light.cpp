@@ -6,7 +6,6 @@ enum FloorEnterMode {
     FLOOR_ENTER_MODE_0
 };
 
-// Callbacks a floor (map) module registers with the floor system.
 struct FloorModuleInterface {
     u32 unk0;
     void (*initialize)(unsigned int groupID, FloorEnterMode mode);

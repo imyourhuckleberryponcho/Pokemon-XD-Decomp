@@ -9,8 +9,6 @@ struct GSbezier {
 
 extern "C" {
 
-// Unknown function that was dead-stripped from the final link. It used 1.0f,
-// which puts that constant first in .sdata2.
 f32 GSbezierOneMinus(f32 t) { return 1.0f - t; }
 
 void GSbezierCalculateVector(Vec* out, GSbezier* bezier, f32 t) {

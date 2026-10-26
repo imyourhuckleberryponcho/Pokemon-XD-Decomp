@@ -1,4 +1,3 @@
-// Kyogre travel sequence; verified against the GXXE01 retail executable.
 #include <dolphin/types.h>
 #pragma peephole off
 struct _GSparticleGen;
@@ -63,7 +62,6 @@ static bool _AnimeLoop=true, _testExitFlag=true;
 static f32 _glowstrngth=1.f;
 static u8 _glowwidth=20, _glowblend=1, _glownormalize=1, _glowsamples=1;
 static f32 _fadeFrame=40.f, _fadeTime=.7f;
-
 
 kyogreMoveDemo::~kyogreMoveDemo() { Release(); }
 kyogreMoveDemo::kyogreMoveDemo() { Init(); }

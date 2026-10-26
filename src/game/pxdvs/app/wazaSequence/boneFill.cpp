@@ -1,5 +1,3 @@
-// WIP (NonMatching): only _update differs: the original keeps `model` in r31 and the loop's
-// induction pointers in r30/r29; every declaration order tried gives model r29.
 #include <dolphin/types.h>
 
 struct GSgfxLayer;
@@ -72,7 +70,6 @@ public:
     virtual ~GSeffect();
 };
 
-// Particle generator stretched between two null joints of the owner's model.
 class boneFillEffect : public GSeffect {
 public:
     boneFillEffect(_GSparticleBank* bank, enumNullJointName from, enumNullJointName to, f32 length);

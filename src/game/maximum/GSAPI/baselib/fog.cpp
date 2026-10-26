@@ -1,4 +1,3 @@
-// Compiled as C with deferred inlining (see configure.py).
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
@@ -104,8 +103,6 @@ void HSD_FogSet(HSD_Fog* fog) {
     }
 }
 
-// Stand-in for fog functions that were dead-stripped from the final link; their 0.0F and
-// 1.0F constants come first in .sdata2 in the original.
 void HSD_FogInitDefaults(HSD_Fog* fog) {
     fog->start = 0.0F;
     fog->end = 1.0F;

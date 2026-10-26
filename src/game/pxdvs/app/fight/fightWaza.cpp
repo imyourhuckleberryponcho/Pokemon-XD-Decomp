@@ -1,7 +1,5 @@
 #include <dolphin/types.h>
 
-// Built with -O4,s (see configure.py).
-
 struct FightWaza;
 struct Sequence;
 struct WazaSequence;
@@ -80,7 +78,6 @@ u32 fightWazaDoEffectFunc(u32 wazaID, u32 a, u32 b, u32 c) {
     return typeFunc(wazaID, a, b, c, variationFunc(wazaID, a, b, c));
 }
 
-// Mixed status: two or more of the 0x41-0x47 states at once.
 u8 fightWazaIsMix(FightWaza* waza) {
     u16 ids[7] = { 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47 };
     u16 i;

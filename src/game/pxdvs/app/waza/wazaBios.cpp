@@ -1,4 +1,3 @@
-// Scratch port of direct WazaData bios accessors from Colosseum waza.c.
 #include <dolphin/types.h>
 extern "C" {
 extern u32* waza_data_number;
@@ -305,12 +304,7 @@ u32 wazaDataBiosGetName(u8* ptr) {
     return *(u32*)(&ptr[0x20]);
 }
 
-
-
 void* wazaDataBiosGetPtr(u16 idx) { if ((u32)idx >= *waza_data_number) { return waza_data; } return waza_data + (u32)idx * 0x38; }
 void* wazaFuncDataBiosGetPtr(u16 idx) { if ((u32)idx >= waza_func_data_number) { return NULL; } return waza_func_data + (u32)idx * 0x18; }
 }
-
-
-
 

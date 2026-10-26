@@ -9,7 +9,7 @@
 #include <dolphin/types.h> // IWYU pragma: export
 #include <sys/types.h>     // IWYU pragma: export
 
-// XD: types the Melee headers expect from their own SDK headers.
+
 #ifndef _UINTPTR_T_DEFINED
 #define _UINTPTR_T_DEFINED
 typedef unsigned long uintptr_t;
@@ -34,7 +34,7 @@ typedef signed long intptr_t;
 /// @deprecated Use #true instead.
 #undef TRUE
 
-/// The underlying type of an @c enum, used as a placeholder
+
 typedef int enum_t;
 
 /// A @c void callback with no arguments.

@@ -3,7 +3,6 @@
 #include <dolphin/types.h>
 #include <libc/stdarg.h>
 
-// Menu item record (MENU_ITEM), XD layout.
 struct MenuItem {
     u8 selectable : 1;
     u8 last : 1;
@@ -27,7 +26,6 @@ struct MenuItem {
 struct MenuWindow;
 typedef void (*MenuWindowCallback)(MenuWindow*);
 
-// Static menu definition (MENU_DATA), XD layout.
 struct MenuData {
     u8 f0a : 3;
     u8 f0b : 2;
@@ -67,7 +65,6 @@ struct MenuSprite {
     u8 seq[0x3c];
 };
 
-// Open window (tagWINDOW_WORK), XD layout.
 struct MenuWindow {
     s8 flags;
     s8 phase;
@@ -107,7 +104,6 @@ struct KeyInfo {
     s8 timer[16];
 };
 
-// Block-copied snapshot of a KeyInfo (the original copies it as raw words).
 struct KeyInfoRaw {
     u8 data[26];
 };
@@ -230,24 +226,20 @@ void menuCursorNormal(MenuWindow* window, u8 useSub);
 u8 menuCursorCmp(MenuCursor* a, MenuCursor* b);
 u8 menuSetEnablePort(u8 enable);
 
-// Return last error
 s32 menuGetLastError(void) {
     return winSysWork.lastError;
 }
 
-// Check if offscreen is enabled
 void menuGetOffScreenFlag(void) {
     menuOffScreenCheckEnable(0);
 }
 
-// Release offscreen with fade
 void menuReleaseOffScreen(f32 time) {
     menuOffScreenFadeSet(0.0f, time);
     menuOffScreenFadeSync(1);
     menuOffScreenRelease();
 }
 
-// Create offscreen
 void menuCreateOffScreen(f32 arg0, f32 arg1) {
     menuOffScreenCreate(1);
     menuOffScreenSetDisp(1);
@@ -255,7 +247,6 @@ void menuCreateOffScreen(f32 arg0, f32 arg1) {
     menuOffScreenFadeSet(arg1, arg0);
 }
 
-// Count selectable items
 s32 menuGetSelectItemNum(s32 id) {
     s32 count = 0;
     const MenuData* data;
@@ -281,7 +272,6 @@ s32 menuGetSelectItemNum(s32 id) {
     return count;
 }
 
-// Get cursor index from item ID
 s32 menuGetCursorFromItemID(s32 id, u32 itemId) {
     const MenuData* data;
     const MenuItem* item;
@@ -314,7 +304,6 @@ s32 menuGetCursorFromItemID(s32 id, u32 itemId) {
     return -2;
 }
 
-// Get display flag
 bool menuGetDisp(s32 id) {
     MenuWindow* window = windowSearchID(id);
     if (window == 0) {
@@ -323,7 +312,6 @@ bool menuGetDisp(s32 id) {
     return (window->flags & 2) != 0;
 }
 
-// Set display flag
 void menuSetDisp(s32 id, u8 enable) {
     MenuWindow* window = windowSearchID(id);
 
@@ -337,7 +325,6 @@ void menuSetDisp(s32 id, u8 enable) {
     }
 }
 
-// Get cursor item ID
 s32 menuGetCursorItemID(s32 id) {
     const MenuData* data;
     const MenuItem* item;
@@ -373,7 +360,6 @@ s32 menuGetCursorItemID(s32 id) {
     return 0;
 }
 
-// Set cursor position
 s32 menuSetCursor(s32 id, s8 cursor) {
     MenuWindow* window = windowSearchID(id);
 
@@ -385,7 +371,6 @@ s32 menuSetCursor(s32 id, s8 cursor) {
     return 0;
 }
 
-// Get cursor position
 s32 menuGetCursor(s32 id) {
     MenuWindow* window = windowSearchID(id);
     if (window != 0) {
@@ -394,7 +379,6 @@ s32 menuGetCursor(s32 id) {
     return -1;
 }
 
-// Close menu with sync
 s32 menuCloseSync(s32 id, u8 wait) {
     if (wait) {
         for (;;) {
@@ -413,12 +397,10 @@ s32 menuCloseSync(s32 id, u8 wait) {
     return 0;
 }
 
-// Close floor menu
 void menuCloseFloor(void) {
     windowClose(0, 4);
 }
 
-// Close menu
 void menuClose(s32 id) {
     if (id == 0) {
         id = windowGetActiveID();
@@ -426,7 +408,6 @@ void menuClose(s32 id) {
     menuCloseCustom(id, 0, 0);
 }
 
-// Close menu custom
 s32 menuCloseCustom(s32 id, u32 flags, u8 wait) {
     MenuWindow* window = windowSearchID(id);
     if (window == 0) {
@@ -437,17 +418,14 @@ s32 menuCloseCustom(s32 id, u32 flags, u8 wait) {
     return 0;
 }
 
-// Check menu exists
 s32 menuIsCheck(s32 id) {
     return windowSearchID(id) != 0;
 }
 
-// Open menu
 void menuOpen(s32 menu_id, u8 check_cursor) {
     menuOpenCustom(menu_id, windowGetActiveID(), 0, 0, check_cursor, 0);
 }
 
-// Open menu custom
 s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...) {
     va_list args;
     MenuWindow* window;
@@ -477,7 +455,6 @@ s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags,
     return value;
 }
 
-// Set menu position
 void menuSetPosition(s32 id, s16 x, s16 y) {
     MenuWindow* window = windowSearchID(id);
 
@@ -488,7 +465,6 @@ void menuSetPosition(s32 id, s16 x, s16 y) {
     window->y = y;
 }
 
-// Menu daemon/main loop
 void menuDaemon(void) {
     MenuWindow* node;
     u8 doFade = 1;
@@ -694,26 +670,22 @@ void menuDaemon(void) {
     GSgfxLayerSetActive(2);
 }
 
-// Get total time
 f32 menuGetTotalTime(void) {
     return _currentAddTime;
 }
 
-// Get last frame time
 f32 menuGetLastTime(void) {
     return _currentTime;
 }
 
-}  // extern "C"
+}
 
-// Get last time helper
 static f64 _gettLastTime(void) {
     return timeGetLastFrameSec();
 }
 
 extern "C" {
 
-// Menu button handler
 void menuButtonNormal(MenuWindow* node) {
     u16 keys;
     if (node != 0) {
@@ -728,14 +700,13 @@ void menuButtonNormal(MenuWindow* node) {
     }
 }
 
-// Move cursor to nearest selectable item
 void menuCursorNormal(MenuWindow* window, u8 useSub) {
     MenuItem* current;
-    int right;
     int left;
     int down;
-    int up;
+    int right;
     s8 index;
+    int up;
     int xRange;
     int yRange;
     MenuData* data;
@@ -1006,7 +977,6 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
     }
 }
 
-// Play sound effect
 void menuPlaySe(s32 id, s32 event) {
     void* se;
     u16 snd;
@@ -1021,9 +991,8 @@ void menuPlaySe(s32 id, s32 event) {
     }
 }
 
-}  // extern "C"
+}
 
-// Get AGB key info
 static u8 _menuGetAgbKeyInfo(s32 port, u16* keys) {
     s32 device;
     u16 buttons;
@@ -1051,7 +1020,6 @@ static u8 _menuGetAgbKeyInfo(s32 port, u16* keys) {
     return 1;
 }
 
-// Get GC key info (left stick + buttons into keys, right stick into keys2)
 static u8 _menuGetGcKeyInfo(s32 port, u16* keys, u16* keys2) {
     s32 padIds[4] = { 1, 2, 3, 4 };
     u16 result = 0;
@@ -1127,19 +1095,18 @@ static u8 _menuGetGcKeyInfo(s32 port, u16* keys, u16* keys2) {
     return 1;
 }
 
-// Update key info structure
 static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
     KeyInfo* k1;
     u16 bit;
     s32 port;
-    MenuWindow* window;
+    u16 keys;
     KeyInfo* k2;
     u16 keys2;
     s32 i;
     u16 repeat;
     u16 held;
     u16 pressed;
-    u16 keys;
+    MenuWindow* window;
     u16 repeat2;
     u8 type;
     u16 held2;
@@ -1148,8 +1115,8 @@ static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
         k2 = &winSysWork2.port[port];
         k1 = &winSysWork.port[port];
         connect_bak[port] = connect[port];
-        keys2 = 0;
         keys = 0;
+        keys2 = 0;
         if (_menuGetGcKeyInfo(port, &keys, &keys2) == 0) {
             if (_menuGetAgbKeyInfo(port, &keys) == 0) {
                 keys = 0;
@@ -1196,7 +1163,6 @@ static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
             connect[port] = type;
             break;
         }
-
 
         k1->up = k1->on;
         pressed = (k1->up ^ 0xFFFF) & keys;
@@ -1273,7 +1239,6 @@ static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
 
 extern "C" {
 
-// Get key info for a specific port
 void menuGetKeyInfo(KeyInfoRaw* out, s32 port) {
     KeyInfo info;
     u8 mask;
@@ -1293,7 +1258,6 @@ void menuGetKeyInfo(KeyInfoRaw* out, s32 port) {
     *out = *(KeyInfoRaw*)&info;
 }
 
-// Set menu status
 s32 menuSetStatus(s32 id, u8 status) {
     MenuWindow* window = windowSearchID(id);
     if (window == 0) {
@@ -1303,7 +1267,6 @@ s32 menuSetStatus(s32 id, u8 status) {
     return 1;
 }
 
-// Compare two cursors
 u8 menuCursorCmp(MenuCursor* a, MenuCursor* b) {
     if ((a->p.base == b->p.base) && (a->p.offset == b->p.offset)) {
         return 0;
@@ -1311,19 +1274,16 @@ u8 menuCursorCmp(MenuCursor* a, MenuCursor* b) {
     return 1;
 }
 
-// Get enabled port
 u8 menuGetEnablePort(void) {
     return winSysWork.enablePort;
 }
 
-// Set enabled port
 u8 menuSetEnablePort(u8 enable) {
     u8 old = winSysWork.enablePort;
     winSysWork.enablePort = enable;
     return old;
 }
 
-// Initialize menu system
 void menuInit(u16 windowCount) {
     s32 i;
 
@@ -1351,4 +1311,4 @@ void menuInit(u16 windowCount) {
     FlashSystemInitAll();
 }
 
-}  // extern "C"
+}

@@ -1,6 +1,6 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's aobj.c (headers: include/hsd_ref).
-// The original file name, used by the asserts.
+
+
+
 #define HSD_FILE_NAME "aobj.c"
 
 #include <sysdolphin/baselib/aobj.h>
@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <sysdolphin/baselib/cobj.h> // IWYU pragma: keep
+#include <sysdolphin/baselib/cobj.h>
 #include <sysdolphin/baselib/debug.h>
 #include <sysdolphin/baselib/dobj.h>
 #include <sysdolphin/baselib/fog.h>
@@ -28,7 +28,7 @@
 
 static HSD_ObjAllocData alloc_data;
 
-// (deferred mode emits these in reverse order)
+
 static s32 nb_deadanim;
 static s32 nb_activeanim;
 static HSD_SList* endcallback_list;
@@ -38,7 +38,7 @@ inline void HSD_AObjStopAnim(HSD_AObj* aobj, void* obj, HSD_ObjUpdateFunc func);
 static inline f32 getLoopedFrame(HSD_AObj* aobj);
 double fmod(double x, double y);
 
-// XD's GSmem pool allocator.
+
 void* GSmemGetSysdolAllocator(s32 size);
 s32 GSmemGetFreePool(void* pool);
 void* GSmemAllocPool(void* pool);
@@ -99,12 +99,12 @@ inline void HSD_AObjStopAnim(HSD_AObj* aobj, void* obj, HSD_ObjUpdateFunc func)
 
 static inline f32 getLoopedFrame(HSD_AObj* aobj)
 {
- // XD: plain double fmod instead of Melee's inline fmodf.
+
     return aobj->rewind_frame + fmod(aobj->curr_frame - aobj->rewind_frame,
                                      aobj->end_frame - aobj->rewind_frame);
 }
 
-// XD: AObjs come from GSmem's fixed-size pool when one is set up (not cleared there).
+
 inline HSD_AObj* HSD_AObjAlloc(void)
 {
     HSD_AObj* new;
@@ -373,7 +373,7 @@ void HSD_AObjInterpretAnim(HSD_AObj* aobj, void* obj,
         HSD_FObjInterpretAnimAll(aobj->fobj, obj, update_func, rate);
     }
 
- // XD: no automatic stop at the end frame here (Melee stops non-looping anims).
+
     if (aobj->flags & AOBJ_NO_ANIM) {
         nb_deadanim += 1;
     } else {

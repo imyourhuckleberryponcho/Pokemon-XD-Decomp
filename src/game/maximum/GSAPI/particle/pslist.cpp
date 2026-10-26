@@ -1,7 +1,7 @@
-// STATUS: ALL 6 functions exact, LAYOUT OK, CONST OK, data identical. Needs extra_cflags=["-lang=c", "-inline deferred"] in configure.py.
-// Particle link lists (free list, active list per link, sorting by blend/z mode).
-// Compiled as C with deferred inlining: functions and data come out in reverse source order.
-// Compare the Melee decomp's psdisp.c particleSort (doldecomp/melee).
+
+
+
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -11,11 +11,11 @@
 
 typedef struct HSD_Particle HSD_Particle;
 struct HSD_Particle {
-    /* 0x00 */ HSD_Particle* next;
-    /* 0x04 */ u32 kind;
-    /* 0x08 */ u8 pad08[0x15];
-    /* 0x1D */ u8 linkNo;
-    /* 0x1E */ u8 pad1E[0x94 - 0x1E];
+ HSD_Particle* next;
+ u32 kind;
+ u8 pad08[0x15];
+ u8 linkNo;
+ u8 pad1E[0x94 - 0x1E];
 };
 
 typedef struct {

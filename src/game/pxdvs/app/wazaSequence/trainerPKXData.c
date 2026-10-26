@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Model resource IDs (a, b) per entry.
 typedef struct PkxEntry {
     u32 a;
     u32 b;

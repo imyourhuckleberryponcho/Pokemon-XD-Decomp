@@ -1,5 +1,3 @@
-// Message-control commands (msgctrl): written in reverse order (the unit was built with
-// -inline deferred, functions come out last-defined first).
 #include <dolphin/types.h>
 #pragma peephole off
 
@@ -534,7 +532,6 @@ void* msgctrlItem2()
 }
 
 extern "C" {
-
 
 u16* msgctrlDigit()
 {

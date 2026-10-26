@@ -1,11 +1,9 @@
 #include <dolphin/types.h>
 
-// AppScript: the game's script object (command handlers for the game-specific
-// script classes, extension functions and methods).
-// STATUS: 34/36 exact. Left: fncPrintf (its 0x100 zero buffer template must be
-// the first .rodata object; the original created it earlier in the file) and execExtendGlobalFunction
-// (0x99 PSVECDistance argument order/register, 0x9B/0x9D argument scheduling).
 #pragma pool_strings off
+struct PrintBuffer { char bytes[0x100]; };
+static const PrintBuffer emptyPrintBuffer = { 0 };
+
 #pragma peephole off
 
 struct GSvec { f32 x, y, z; };
@@ -948,7 +946,7 @@ s32 AppScript::andFlagTest(GSscript::tigaVariant* args)
 
 s32 AppScript::fncPrintf(GSscript::tigaVariant* args)
 {
-    char buf[0x100] = { 0 };
+    PrintBuffer storage = emptyPrintBuffer;
     int len = 0;
     int argn = 1;
     const char* fmt;
@@ -958,28 +956,28 @@ s32 AppScript::fncPrintf(GSscript::tigaVariant* args)
             fmt++;
             if (*fmt == 'd' || *fmt == 'D') {
                 if (args[argn].type == 1) {
-                    len = sprintf(buf, "%s%d", buf, args[argn].getInteger());
+                    len = sprintf(storage.bytes, "%s%d", storage.bytes, args[argn].getInteger());
                 } else {
                     GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
                     return 0;
                 }
             } else if (*fmt == 'f' || *fmt == 'F') {
                 if (args[argn].type == 2) {
-                    len = sprintf(buf, "%s%f", buf, args[argn].getSingle());
+                    len = sprintf(storage.bytes, "%s%f", storage.bytes, args[argn].getSingle());
                 } else {
                     GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
                     return 0;
                 }
             } else if (*fmt == 's' || *fmt == 'S') {
                 if (args[argn].type == 3) {
-                    len = sprintf(buf, "%s%s", buf, args[argn].getString(stringBuffer));
+                    len = sprintf(storage.bytes, "%s%s", storage.bytes, args[argn].getString(stringBuffer));
                 } else {
                     GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
                     return 0;
                 }
             } else if (*fmt == 'c' || *fmt == 'C') {
                 if (args[argn].type == 3) {
-                    len = sprintf(buf, "%s%c", buf, args[argn].getString(stringBuffer));
+                    len = sprintf(storage.bytes, "%s%c", storage.bytes, args[argn].getString(stringBuffer));
                 } else {
                     GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
                     return 0;
@@ -987,7 +985,7 @@ s32 AppScript::fncPrintf(GSscript::tigaVariant* args)
             } else if (*fmt == 'v' || *fmt == 'V') {
                 if (args[argn].type == 4) {
                     GSvec* v = args[argn].getVector();
-                    len = sprintf(buf, "%s x:%f y:%f z:%f", buf, v->x, v->y, v->z);
+                    len = sprintf(storage.bytes, "%s x:%f y:%f z:%f", storage.bytes, v->x, v->y, v->z);
                 } else {
                     GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
                     return 0;
@@ -995,7 +993,7 @@ s32 AppScript::fncPrintf(GSscript::tigaVariant* args)
             } else if (*fmt == 'p' || *fmt == 'P') {
                 if (args[argn].type == 0x23) {
                     ScriptPeople* people = (ScriptPeople*)args[argn].getObject(0x23, "people not access");
-                    len = sprintf(buf, "%s grpID:%d resID:%d", buf, people->group, people->object);
+                    len = sprintf(storage.bytes, "%s grpID:%d resID:%d", storage.bytes, people->group, people->object);
                 } else {
                     GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
                     return 0;
@@ -1005,23 +1003,23 @@ s32 AppScript::fncPrintf(GSscript::tigaVariant* args)
         } else if (*fmt == '\\') {
             fmt++;
             if (*fmt == 'n') {
-                sprintf(buf, "%s\n", buf);
-                GSlogWrite(buf);
+                sprintf(storage.bytes, "%s\n", storage.bytes);
+                GSlogWrite(storage.bytes);
                 for (int i = 0; i < 0x100; i++) {
-                    buf[i] = 0;
+                    storage.bytes[i] = 0;
                 }
                 len = 0;
             } else if (*fmt == 't') {
-                len = sprintf(buf, "%s\t", buf);
+                len = sprintf(storage.bytes, "%s\t", storage.bytes);
             }
         } else {
-            buf[len] = *fmt;
+            storage.bytes[len] = *fmt;
             len++;
         }
     }
-    if (buf[len] != '\n' && len != 0) {
-        buf[len] = '\n';
-        GSlogWrite(buf);
+    if (storage.bytes[len] != '\n' && len != 0) {
+        storage.bytes[len] = '\n';
+        GSlogWrite(storage.bytes);
     }
     return 0;
 }

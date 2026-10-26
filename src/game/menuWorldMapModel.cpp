@@ -1,6 +1,3 @@
-// STATUS (dWMM): 20/21 exact (2408 of 4012 bytes), LAYOUT/CONST/CALLS/DATA OK with unit default flags (peephole off, pool_strings off).
-// Left: renderOffscreenData 99.7% - target keeps the alpha int in r30 and stores it with stb directly (no clrlwi), and uses
-// r0 (not r4) for the constant 1 in the blend setup; tried u8/s32/u32/mask/cast variants and fifo inline signatures.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)

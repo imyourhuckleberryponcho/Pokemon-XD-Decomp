@@ -929,7 +929,7 @@ void GXInvalidateTexRegion(GXTexRegion* region) {
     }
     __GXFlushTextureState();
 
-    reg0; reg1; r;  // needed to match
+    reg0; reg1; r;
 }
 
 void GXInvalidateTexAll(void) {
@@ -1110,7 +1110,7 @@ void GXPreLoadEntireTexture(GXTexObj* tex_obj, GXTexRegion* region) {
     }
     __GXFlushTextureState();
 
- // needed to match debug
+
     maxLevelIndex; maxLevelIndex; base; base; base; tmem1; tmem1; tmem2; tmem2;
 }
 

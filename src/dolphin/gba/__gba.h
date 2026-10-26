@@ -20,20 +20,20 @@ typedef struct GBASecParams {
 } GBASecParams;
 
 typedef struct GBAControl {
-    /* 0x00 */ u8 output[5];
-    /* 0x05 */ u8 input[5];
-    /* 0x0C */ s32 outputBytes;
-    /* 0x10 */ s32 inputBytes;
-    /* 0x14 */ u8* status;
-    /* 0x18 */ u8* ptr;
-    /* 0x1C */ GBACallback callback;
-    /* 0x20 */ s32 ret;
-    /* 0x24 */ OSThreadQueue threadQueue;
-    /* 0x30 */ OSTime delay;
-    /* 0x38 */ GBATransferCallback proc;
-    /* 0x3C */ u8 bootInfo[0xBC];
-    /* 0xF8 */ GBASecParams* param;
-    /* 0xFC */ u8 padFC[4];
+ u8 output[5];
+ u8 input[5];
+ s32 outputBytes;
+ s32 inputBytes;
+ u8* status;
+ u8* ptr;
+ GBACallback callback;
+ s32 ret;
+ OSThreadQueue threadQueue;
+ OSTime delay;
+ GBATransferCallback proc;
+ u8 bootInfo[0xBC];
+ GBASecParams* param;
+ u8 padFC[4];
 } GBAControl;
 
 extern GBAControl __GBA[4];

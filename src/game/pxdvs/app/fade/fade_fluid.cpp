@@ -84,7 +84,6 @@ public:
     GSlayerCam* cam;
 };
 
-
 struct GSvec {
     f32 x, y, z;
     void set(f32 a, f32 b, f32 c) {
@@ -185,6 +184,8 @@ extern "C" {
 
 void fadeFluidDispSecond(int layerID, GStexture* tex, f32 progress, f32 blend) {
     enum TsE { TsE0 };
+    u32 row1;
+    u32 row0;
     GSgfxLayer* layer = GSgfxLayerFindByID(layerID);
     GSvec interpolated;
     GSvec to;
@@ -249,36 +250,38 @@ void fadeFluidDispSecond(int layerID, GStexture* tex, f32 progress, f32 blend) {
     FadeFluidWork* work = &_fadeFluidWork;
     f32 xScale = work->xScale;
     f32 yScale = work->yScale;
-    u32 stride = work->columns;
+    unsigned int stride = work->columns;
     stride += 1;
     for (y = 0; y < work->rows; y++) {
         layer->primType = 0x98;
+        row0 = stride;
         layer->beginSurface(stride * 2);
-        u32 row0 = stride;
         row0 *= y;
-        u32 row1 = (y + 1) * stride;
-        for (x = 0; x < stride; x++) {
-            GSvec* p0 = &work->heightPage[_fadeFluidSw][x + row0];
+        row1 = (y + 1) * stride;
+        for (x = 0; x < (u8)stride; x++) {
             GSvec2* t0 = &work->texCoord[x + row0];
-            GSvec* p1 = &work->heightPage[_fadeFluidSw][x + row1];
-            GSvec2* t1 = &work->texCoord[x + row1];
-            GXWGFifo.f32 = p0->x * xScale;
+            GSvec* p1;
+            GSvec2* t1;
+            t1 = &work->texCoord[x + row1];
+            p1 = &work->heightPage[_fadeFluidSw][x + row1];
+            GSvec* p0 = &work->heightPage[_fadeFluidSw][x + row0];
             GXWGFifo.f32 = p0->y * yScale;
+            GXWGFifo.u8 = 0xFF;
+            GXWGFifo.u8 = 0xFF;
+            GXWGFifo.u8 = 0xFF;
             GXWGFifo.f32 = p0->z * xScale;
-            GXWGFifo.u8 = 0xFF;
-            GXWGFifo.u8 = 0xFF;
-            GXWGFifo.u8 = 0xFF;
+            GXWGFifo.f32 = p0->x * xScale;
+            GXWGFifo.f32 = p1->y * yScale;
             GXWGFifo.u8 = (u8)alpha;
             GXWGFifo.f32 = t0->x;
             GXWGFifo.f32 = t0->y;
-            GXWGFifo.f32 = p1->x * xScale;
-            GXWGFifo.f32 = p1->y * yScale;
             GXWGFifo.f32 = p1->z * xScale;
+            GXWGFifo.f32 = p1->x * xScale;
+            GXWGFifo.f32 = t1->x;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = (u8)alpha;
-            GXWGFifo.f32 = t1->x;
             GXWGFifo.f32 = t1->y;
         }
         layer->endSurface();
@@ -287,6 +290,10 @@ void fadeFluidDispSecond(int layerID, GStexture* tex, f32 progress, f32 blend) {
 
 void fadeFluidDisp(GStexture* tex, f32 progress, f32 blend) {
     enum TsE { TsE0 };
+    GSvec2* t0;
+    u32 row1;
+    GSvec* p0;
+    u32 row0;
     GSgfxLayer* layer = GSgfxLayerFindByID(7);
     GSvec interpolated;
     GSvec to;
@@ -354,33 +361,33 @@ void fadeFluidDisp(GStexture* tex, f32 progress, f32 blend) {
     u32 stride = work->columns + 1;
     layer->primType = 0x98;
     for (y = 0; y < work->rows; y++) {
-        layer->beginSurface(stride * 2);
-        u32 row0 = stride;
+        row0 = stride;
         row0 *= y;
-        u32 row1 = (y + 1) * stride;
-        for (x = 0; x < stride; x++) {
-            GSvec* p0 = &work->heightPage[_fadeFluidSw][x + row0];
-            GSvec2* t0 = &work->texCoord[x + row0];
+        layer->beginSurface(stride * 2);
+        row1 = (y + 1) * stride;
+        for (x = 0; x < (u8)stride; x++) {
+            p0 = &work->heightPage[_fadeFluidSw][x + row0];
             GSvec* p1 = &work->heightPage[_fadeFluidSw][x + row1];
             GSvec2* t1 = &work->texCoord[x + row1];
-            GXWGFifo.f32 = p0->x * xScale;
+            t0 = &work->texCoord[x + row0];
             GXWGFifo.f32 = p0->y * yScale;
-            GXWGFifo.f32 = p0->z * xScale;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = (u8)alpha;
-            GXWGFifo.f32 = t0->x;
             GXWGFifo.f32 = t0->y;
+            GXWGFifo.f32 = p0->x * xScale;
+            GXWGFifo.f32 = t0->x;
+            GXWGFifo.f32 = p0->z * xScale;
             GXWGFifo.f32 = p1->x * xScale;
             GXWGFifo.f32 = p1->y * yScale;
-            GXWGFifo.f32 = p1->z * xScale;
+            GXWGFifo.f32 = t1->x;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = 0xFF;
             GXWGFifo.u8 = (u8)alpha;
-            GXWGFifo.f32 = t1->x;
             GXWGFifo.f32 = t1->y;
+            GXWGFifo.f32 = p1->z * xScale;
         }
         layer->endSurface();
     }
@@ -567,6 +574,8 @@ void fadeFluidQuit(void) {
     fluid4->texCoord = 0;
 }
 
+inline float fadeFluidInitInline(f32 arg0) { return 2.0f * arg0; }
+
 void fadeFluidInit(u32 columns, u32 rows, f32 cellSize, f32 calcStep, f32 waveLimit, f32 timeStep) {
     FadeFluidWork* fluid = &_fadeFluidWork;
     u32 pointCount;
@@ -603,7 +612,7 @@ void fadeFluidInit(u32 columns, u32 rows, f32 cellSize, f32 calcStep, f32 waveLi
     _fadeFluidWork.timeStep = timeStep;
     fadeFluidCalcParms(calcStep);
 
-    velocity = 2.0f * cellSize;
+    velocity = fadeFluidInitInline(cellSize);
     texStepX = 1.0f / (f32)_fadeFluidWork.columns;
     texStepY = 1.0f / (f32)fluid->rows;
     index = 0;

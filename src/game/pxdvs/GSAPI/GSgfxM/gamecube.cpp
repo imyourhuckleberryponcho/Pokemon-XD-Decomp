@@ -1,7 +1,4 @@
-// WIP (NonMatching): game's own GX register writers (BP/CP/XF commands built with bitfield structs).
-// Game's own GX register writer (Dolphin GX BP/CP/XF commands built from bitfield structs).
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -22,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-
 extern "C" void* memset(void* dst, int c, unsigned long n);
 
 struct GlobalRegState {
@@ -30,20 +26,20 @@ struct GlobalRegState {
 };
 
 struct CopyReq {
-    u16 left;     // 0x00
-    u16 top;      // 0x02
-    u16 width;    // 0x04
-    u16 height;   // 0x06
-    u16 dstWidth; // 0x08
+    u16 left;
+    u16 top;
+    u16 width;
+    u16 height;
+    u16 dstWidth;
     u16 pad0a;
-    u32 clamp;    // 0x0c
+    u32 clamp;
     u32 f10;
     u32 f14;
-    f32 gamma;    // 0x18
-    u8 clear;     // 0x1c
-    u8 r, g, b, a; // 0x1d..0x20
+    f32 gamma;
+    u8 clear;
+    u8 r, g, b, a;
     u8 pad21[3];
-    u32 z; // 0x24
+    u32 z;
 };
 
 struct RegPeCtrl {
@@ -80,28 +76,28 @@ struct RegClearZ {
     u32 id : 8;
     u32 z : 24;
 };
-struct RegSrc {  // 0x49 / 0x4a
+struct RegSrc {
     u32 id : 8;
     u32 pad : 4;
     u32 y : 10;
     u32 x : 10;
 };
-struct RegYScale {  // 0x4e
+struct RegYScale {
     u32 id : 8;
     u32 pad : 15;
     u32 scale : 9;
 };
-struct RegStride {  // 0x4d
+struct RegStride {
     u32 id : 8;
     u32 pad : 14;
     u32 stride : 10;
 };
-struct RegDest {  // 0x4b
+struct RegDest {
     u32 id : 8;
     u32 pad : 3;
     u32 addr : 21;
 };
-struct RegCopyCmd {  // 0x52
+struct RegCopyCmd {
     u32 id : 8;
     u32 pad : 9;
     u32 f14 : 1;
@@ -113,7 +109,7 @@ struct RegCopyCmd {  // 0x52
     u32 pad2 : 5;
     u32 clamp : 2;
 };
-struct RegMsLoc {  // 0x01..0x04
+struct RegMsLoc {
     u32 id : 8;
     u32 y2 : 4;
     u32 x2 : 4;
@@ -122,14 +118,14 @@ struct RegMsLoc {  // 0x01..0x04
     u32 y0 : 4;
     u32 x0 : 4;
 };
-struct RegCoeff {  // 0x53 / 0x54
+struct RegCoeff {
     u32 id : 8;
     u32 c3 : 6;
     u32 c2 : 6;
     u32 c1 : 6;
     u32 c0 : 6;
 };
-struct RegCopyTexCmd {  // 0x52 as built by the texture copy
+struct RegCopyTexCmd {
     u32 id : 8;
     u32 pad23 : 7;
     u32 b16 : 1;
@@ -147,10 +143,10 @@ struct RegCopyTexCmd {  // 0x52 as built by the texture copy
 struct CopyTexReq {
     u16 left, top, width, height, dstWidth;
     u16 pad;
-    s32 fmt;     // 0x0c
-    u32 clamp;   // 0x10
-    u8 mip;      // 0x14
-    u8 clear;    // 0x15
+    s32 fmt;
+    u32 clamp;
+    u8 mip;
+    u8 clear;
 };
 struct RegFog0 { u32 id : 8; u32 pad : 4; u32 a : 20; };
 struct RegFog1 { u32 id : 8; u32 bm : 24; };
@@ -206,130 +202,129 @@ struct TevOrderCache { s32 a, b, c; };
 struct TevInCache { s32 a, b, c, d; };
 struct TevOpCache { s32 op, bias, scale; u8 clamp; s32 reg; };
 struct GSState {
-    u32 dirty;            // 0x00
-    u32 dTref;            // 0x04
-    u32 dIref;            // 0x08
-    u32 d0c;              // 0x0c  coord size dirty
-    u32 d10;              // 0x10  texture dirty
-    u32 d14;              // 0x14  tlut dirty
-    u32 dKsel;            // 0x18
-    u32 dTevc;            // 0x1c
-    u32 dTeva;            // 0x20
-    u32 dKcolA;           // 0x24
-    u32 dKcolB;           // 0x28
-    u32 indDirty;         // 0x2c
-    RegGenMode genMode;   // 0x30
-    RegZMode zmode;       // 0x34
-    RegCMode0 cmode0;     // 0x38
-    RegCMode1 cmode1;     // 0x3c
-    RegPeCtrl peCtrl;     // 0x40
-    Reg r44;              // 0x44
-    Reg r48;              // 0x48
-    Reg scis0;            // 0x4c
-    Reg scis1;            // 0x50
-    u32 xf1005;           // 0x54
-    RegTref tref[8];      // 0x58
-    RegIref iref;         // 0x78
-    Reg ras1ss0;          // 0x7c
-    Reg ras1ss1;          // 0x80
-    RegId24 texMode0[8];  // 0x84
-    RegId24 texMode1[8];  // 0xa4
-    RegTexImg0 texImg0[8]; // 0xc4
-    RegTexImg texImg1[8]; // 0xe4
-    RegTexImg texImg2[8]; // 0x104
-    RegId24 texImg3[8];   // 0x124
-    RegTlutW texTlut[8];  // 0x144
-    TlutCache tlutCache[8]; // 0x164
-    RegTlutLoad0 tlutLoad0; // 0x1a4
-    RegTlutLoad1 tlutLoad1; // 0x1a8
-    RegSu suS[8];         // 0x1ac
-    RegSu suT[8];         // 0x1cc
-    RegX22 r1ec;          // 0x1ec
-    RegMatIdxA matIdxA;   // 0x1f0
-    RegMatIdxB matIdxB;   // 0x1f4
-    Reg r1f8;             // 0x1f8
-    Reg r1fc;             // 0x1fc
-    Reg r200;             // 0x200
-    RegKsel ksel[8];      // 0x204
-    Reg tevc[16];         // 0x224
-    Reg teva[16];         // 0x264
-    RegKcol kcolA0[4];        // 0x2a4
-    RegKcol kcolA1[4];        // 0x2b4
-    RegKcol kcolB0[4];        // 0x2c4
-    RegKcol kcolB1[4];        // 0x2d4
-    RegFog0 fog0;         // 0x2e4
-    RegFog1 fog1;         // 0x2e8
-    RegFog2 fog2;         // 0x2ec
-    RegFog3 fog3;         // 0x2f0
-    Reg r2f4;             // 0x2f4
-    Reg r2f8;             // 0x2f8
-    Reg rangeAdj[5];      // 0x2fc
-    RegIndCmd indCmd[16]; // 0x310
-    Reg r350;             // 0x350
-    RegX68 r354;          // 0x354
-    TexGenCache texGen[8]; // 0x358
-    u8 c3f8;              // 0x3f8
+    u32 dirty;
+    u32 dTref;
+    u32 dIref;
+    u32 d0c;
+    u32 d10;
+    u32 d14;
+    u32 dKsel;
+    u32 dTevc;
+    u32 dTeva;
+    u32 dKcolA;
+    u32 dKcolB;
+    u32 indDirty;
+    RegGenMode genMode;
+    RegZMode zmode;
+    RegCMode0 cmode0;
+    RegCMode1 cmode1;
+    RegPeCtrl peCtrl;
+    Reg r44;
+    Reg r48;
+    Reg scis0;
+    Reg scis1;
+    u32 xf1005;
+    RegTref tref[8];
+    RegIref iref;
+    Reg ras1ss0;
+    Reg ras1ss1;
+    RegId24 texMode0[8];
+    RegId24 texMode1[8];
+    RegTexImg0 texImg0[8];
+    RegTexImg texImg1[8];
+    RegTexImg texImg2[8];
+    RegId24 texImg3[8];
+    RegTlutW texTlut[8];
+    TlutCache tlutCache[8];
+    RegTlutLoad0 tlutLoad0;
+    RegTlutLoad1 tlutLoad1;
+    RegSu suS[8];
+    RegSu suT[8];
+    RegX22 r1ec;
+    RegMatIdxA matIdxA;
+    RegMatIdxB matIdxB;
+    Reg r1f8;
+    Reg r1fc;
+    Reg r200;
+    RegKsel ksel[8];
+    Reg tevc[16];
+    Reg teva[16];
+    RegKcol kcolA0[4];
+    RegKcol kcolA1[4];
+    RegKcol kcolB0[4];
+    RegKcol kcolB1[4];
+    RegFog0 fog0;
+    RegFog1 fog1;
+    RegFog2 fog2;
+    RegFog3 fog3;
+    Reg r2f4;
+    Reg r2f8;
+    Reg rangeAdj[5];
+    RegIndCmd indCmd[16];
+    Reg r350;
+    RegX68 r354;
+    TexGenCache texGen[8];
+    u8 c3f8;
     u8 pad3f9[3];
-    u8 sizeW0;            // 0x3fc
+    u8 sizeW0;
     u8 pad3fd[3];
-    s32 sizeOff0;         // 0x400
-    u8 sizeW1;            // 0x404
+    s32 sizeOff0;
+    u8 sizeW1;
     u8 pad405[3];
-    s32 sizeOff1;         // 0x408
-    u8 coordScale[16];    // 0x40c
-    s32 c41c;             // 0x41c
+    s32 sizeOff1;
+    u8 coordScale[16];
+    s32 c41c;
     u8 pad420[0x438 - 0x420];
-    u8 c438;              // 0x438
+    u8 c438;
     u8 pad439[3];
-    s32 c43c;             // 0x43c
-    s32 c440;             // 0x440
-    u16 scis[4];          // 0x444
-    s32 scisOff[2];       // 0x44c
-    u8 c454;              // 0x454
+    s32 c43c;
+    s32 c440;
+    u16 scis[4];
+    s32 scisOff[2];
+    u8 c454;
     u8 pad455[3];
-    ChanCache chan[4];    // 0x458
-    u8 ambMat[4][5];      // 0x4b8
-    TevOrderCache tevOrder[16]; // 0x4cc
-    u8 c58c[2];           // 0x58c
+    ChanCache chan[4];
+    u8 ambMat[4][5];
+    TevOrderCache tevOrder[16];
+    u8 c58c[2];
     u8 pad58e[2];
-    TevInCache colorIn[16]; // 0x590
-    TevInCache alphaIn[16]; // 0x690
-    TevOpCache colorOp[16]; // 0x790
-    TevOpCache alphaOp[16]; // 0x8d0
-    u8 kcolFlag[4][5];    // 0xa10
-    s32 cA24[80];         // 0xa24
-    u8 indStatus[16];     // 0xb64
-    s32 cB74[20];         // 0xb74
-    u8 cBC4[2];           // 0xbc4
+    TevInCache colorIn[16];
+    TevInCache alphaIn[16];
+    TevOpCache colorOp[16];
+    TevOpCache alphaOp[16];
+    u8 kcolFlag[4][5];
+    s32 cA24[80];
+    u8 indStatus[16];
+    s32 cB74[20];
+    u8 cBC4[2];
     u8 padbc6[2];
-    s32 cBC8[3];          // 0xbc8
-    u8 cBD4[2];           // 0xbd4
+    s32 cBC8[3];
+    u8 cBD4[2];
     u8 padbd6[2];
-    s32 cBD8[3];          // 0xbd8
-    u8 cBE4;              // 0xbe4
+    s32 cBD8[3];
+    u8 cBE4;
     u8 padbe5[3];
-    s32 cBE8;             // 0xbe8
-    u8 cBEC;              // 0xbec
+    s32 cBE8;
+    u8 cBEC;
     u8 padbed[3];
-    u8 c_bf0;             // 0xbf0
+    u8 c_bf0;
     u8 cBF1[3];
-    u32 c_fogType;        // 0xbf4
-    f32 c_fogStart;       // 0xbf8
-    f32 c_fogEnd;         // 0xbfc
-    f32 c_fogNear;        // 0xc00
-    f32 c_fogFar;         // 0xc04
-    u8 cC08;              // 0xc08
+    u32 c_fogType;
+    f32 c_fogStart;
+    f32 c_fogEnd;
+    f32 c_fogNear;
+    f32 c_fogFar;
+    u8 cC08;
     u8 padc09[4];
-    u8 cC0D;              // 0xc0d
-    u16 cC0E;             // 0xc0e
+    u8 cC0D;
+    u16 cC0E;
     u8 padc10[0xc24 - 0xc10];
-    f32 vp[6];            // 0xc24
-    s32 cC3C;             // 0xc3c
+    f32 vp[6];
+    s32 cC3C;
 };
 #define RAW(r) (*(u32*)&(r))
 
 extern "C" {
-
 
 u32 GSgfx_GCTmemRegions[16] = {0x00000000, 0x00080000, 0x00010000, 0x00088000, 0x00020000, 0x00090000, 0x00030000, 0x00098000,
                                0x00040000, 0x000A0000, 0x00050000, 0x000A8000, 0x00060000, 0x000B0000, 0x00070000, 0x000B8000};
@@ -348,9 +343,6 @@ static u8 _gcDefaultVFilt[7] = {0, 0, 0x15, 0x16, 0x15, 0, 0};
 static void* _gcLastTlutObj;
 static s32 _gcLastTlutName;
 GlobalRegState _gcGlobalRegState;
-
-// ---- draft declarations ----
-
 
 extern "C" {
 void GSgfxVideoGetEFBSize(u16* w, u16* h);
@@ -552,7 +544,8 @@ void GSgfx_GCWriteCopyTex(CopyTexReq* req, u32 dest) {
         gsgfxState->dirty |= 0x10;
     }
     if (req->clear == 1) {
-        u8 z = gsgfxState->c_bf0;
+        s32 rf_t = gsgfxState->c_bf0;
+        u8 z = rf_t;
         if (z != 0) {
             gsgfxState->peCtrl.zcomploc = 0;
             savedZ = z;
@@ -633,8 +626,8 @@ void GSgfx_GCWriteCopyFilter(u8 aa, u8* pat, u8 vf, u8* vfilt) {
         ms.x0 = pat[j];
         ms.y0 = pat[j + 1];
         ms.x1 = pat[j + 2];
-        ms.x2 = pat[j + 4];
         ms.y1 = pat[j + 2];
+        ms.x2 = pat[j + 4];
         ms.y2 = pat[j + 4];
         WrFifo(RAW(ms));
     }
@@ -645,8 +638,8 @@ void GSgfx_GCWriteCopyFilter(u8 aa, u8* pat, u8 vf, u8* vfilt) {
     co.c3 = vfilt[3];
     WrFifo(RAW(co));
     co.c0 = vfilt[4];
-    co.c1 = vfilt[5];
     co.id = 0x54;
+    co.c1 = vfilt[5];
     co.c2 = vfilt[6];
     co.c3 = 0;
     WrFifo(RAW(co));
@@ -725,6 +718,8 @@ static inline void SetTevIndirect(u32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, 
     gsgfxState->indStatus[stage] = 2;
 }
 
+inline int GSgfx_GCWriteTevIndBumpSTInline(unsigned int arg0) { return arg0 + 1; }
+
 void GSgfx_GCWriteTevIndBumpST(unsigned int stage, bool indId, s32 mtx) {
     int selS, selT;
     switch (mtx) {
@@ -744,7 +739,7 @@ void GSgfx_GCWriteTevIndBumpST(unsigned int stage, bool indId, s32 mtx) {
         return;
     }
     SetTevIndirect(stage, (u16)indId, 0, 3, selS, 6, 6, 0, 0, 0);
-    SetTevIndirect(stage + 1, indId, 0, 3, selT, 6, 6, 1, 0, 0);
+    SetTevIndirect(GSgfx_GCWriteTevIndBumpSTInline(stage), indId, 0, 3, selT, 6, 6, 1, 0, 0);
     SetTevIndirect(stage + 2, indId, 0, 0, 0, 0, 0, 1, 0, 0);
 }
 
@@ -801,7 +796,8 @@ void GSgfx_GCWriteTevIndTile(u32 stage, u8 indId, u16 sizeS, u16 sizeT, u16 spac
     default: return;
     }
     m[0] = spaceS * (1.0f / 1024.0f);
-    m[4] = spaceT * (1.0f / 1024.0f);
+    f32 kc471 = 1.0f;
+    m[4] = spaceT * (kc471 / 1024.0f);
     m[1] = 0.0f;
     m[2] = 0.0f;
     m[3] = 0.0f;
@@ -814,7 +810,6 @@ void GSgfx_GCWriteTevIndTile(u32 stage, u8 indId, u16 sizeS, u16 sizeT, u16 spac
     WrIndTexMtx(id, m, 10);
     SetTevIndirect(stage, (u16)indId, fmt, bias, mtx, ws, wt, 0, 1, alpha);
 }
-
 
 void GSgfx_GCWriteIndTexMtx(u32 mtx, f32* m, s32 scale) {
     switch (mtx) {
@@ -1132,14 +1127,11 @@ void GSgfx_GCWriteVtxDesc(VtxDescEntry* list) {
 #define ST32(o) (*(u32*)((u8*)gsgfxState + (o)))
 #define STF(o) (*(f32*)((u8*)gsgfxState + (o)))
 
-
-// Copy the width/height of texture map `map` into the scale registers of coord `coord`.
 static inline void UpdateCoordSize(u32 coord, u32 map) {
     gsgfxState->suS[coord].half = *(u16*)((u8*)&gsgfxState->texImg0[map & 7] + 2) & 0x3ff;
     gsgfxState->suT[coord].half = (*(u32*)&gsgfxState->texImg0[map & 7] >> 10) & 0x3ff;
 }
 
-// Write every dirty shadow register to the GX FIFO.
 void GSgfx_GCFlushState(void) {
     int i, j;
     gsgfxState->r1ec.b22 = _gcGlobalRegState.b0;
@@ -1175,7 +1167,8 @@ void GSgfx_GCFlushState(void) {
         GSState* st = gsgfxState;
         if (st->d0c != 0) {
             for (i = 0, j = 0; i < st->genMode.nInd; i++, j += 8) {
-                if (st->d0c & (1 << *(s32*)((u8*)gsgfxState + 0xb74 + j))) {
+                s16 rf_t = st->d0c;
+                if (rf_t & (1 << *(s32*)((u8*)gsgfxState + 0xb74 + j))) {
                     s32 coord = *(s32*)((u8*)gsgfxState + 0xb74 + j);
                     UpdateCoordSize(coord, *(u32*)((u8*)gsgfxState + 0xb78 + j));
                 }
@@ -1331,8 +1324,8 @@ void GSgfx_GCFlushState(void) {
         }
         if (st->dirty & 0x2000000) {
             FIFO8 = 0x10;
-            FIFO16 = 0;
             FIFO16 = 0x103f;
+            FIFO16 = 0;
             FIFO32 = st->genMode.nTex;
         }
         if (st->dirty & 0x4000000) {
@@ -1365,8 +1358,8 @@ void GSgfx_GCFlushState(void) {
                 FIFO32 = RAW(st->matIdxA);
             } else {
                 FIFO8 = 0x10;
-                FIFO16 = 0;
                 FIFO16 = 0x1019;
+                FIFO16 = 0;
                 FIFO32 = RAW(st->matIdxB);
             }
         }
@@ -1374,7 +1367,6 @@ void GSgfx_GCFlushState(void) {
     gsgfxState->dirty = 0;
 }
 
-// Mark every cached hardware-state value as unknown (0xFE fill) so the next set always writes.
 void GSgfx_GCInvalidateState(void) {
     int i;
     for (i = 0; i < 8; i++) {
@@ -1477,7 +1469,6 @@ void GSgfx_GCInvalidateState(void) {
     gsgfxState->cC0D = 0xFE;
 }
 
-
 static inline void GSgfx_GCWriteCullMode(s32 mode) {
     static const u8 cm2hw[4] = {0, 2, 1, 3};
     gsgfxState->c43c = mode;
@@ -1486,10 +1477,6 @@ static inline void GSgfx_GCWriteCullMode(s32 mode) {
     gsgfxState->c43c = mode;
 }
 
-// Resets the GX state to its defaults (GXInit-like). Sections reconstructed so far: texgen defaults, tex-gen count,
-// line width / point size, texcoord scale, coplanar / cull / clip mode, channel count.
-// TODO: scissor + viewport, channel controls and colors, TEV order / stages / swap tables / konsts, indirect setup,
-// fog, blend/alpha/z-mode (large inlined GCWrite* helpers; see the asm).
 void GSgfx_GCReset() {
     s32 unksp11;
     s32 unksp12;
@@ -1545,7 +1532,7 @@ void GSgfx_GCReset() {
     s32 temp_r11_5;
     s32 temp_r11_6;
     s32 temp_r11_7;
-    s32 temp_r11_8;
+    u16 temp_r11_8;
     s32 temp_r11_9;
     s32 temp_r12;
     s32 temp_r12_2;
@@ -1638,7 +1625,7 @@ void GSgfx_GCReset() {
     s32 var_r5_2;
     s32 var_r5_3;
     s32 var_r5_4;
-    s32 var_r5_5;
+    volatile s32 var_r5_5;
     s32 var_r6;
     s32 var_r6_2;
     s32 var_r6_3;
@@ -1667,11 +1654,11 @@ void GSgfx_GCReset() {
     sp1C = jtbl_1415;
     do {
         temp_r5 = var_r18 + 4;
-        *((u8*)(gsgfxState) + (var_r17 + 0x358)) = 1;
-        *((u8*)(gsgfxState) + (var_r17 + 0x35C)) = temp_r5;
-        *((u8*)(gsgfxState) + (var_r17 + 0x360)) = 0x3C;
+        *(s32*)((u8*)gsgfxState + var_r17 + 0x358) = 1;
+        *(s32*)((u8*)gsgfxState + var_r17 + 0x35C) = temp_r5;
+        *(s32*)((u8*)gsgfxState + var_r17 + 0x360) = 0x3C;
         *((u8*)(gsgfxState) + (var_r17 + 0x364)) = 0;
-        *((u8*)(gsgfxState) + (var_r17 + 0x368)) = 0x7D;
+        *(s32*)((u8*)gsgfxState + var_r17 + 0x368) = 0x7D;
         GSgfx_GCWriteTexCoordGen((unsigned long)(var_r18), (long)(1), (long)(temp_r5), (unsigned long)(0x3C), (unsigned char)(0), (unsigned long)(0x7D));
         var_r18 += 1;
         var_r17 += 0x14;
@@ -1783,9 +1770,9 @@ void GSgfx_GCReset() {
     M2C_FIELD(gsgfxState, f32 *, 0xC24) = 0.0f;
     M2C_FIELD(gsgfxState, f32 *, 0xC28) = 0.0f;
     spA = M2C_FIELD(gsgfxState, u16 *, 0x448);
-    M2C_FIELD(gsgfxState, f32 *, 0xC2C) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+    M2C_FIELD(gsgfxState, f32 *, 0xC2C) = (f32) M2C_ERROR( );
     sp8 = M2C_FIELD(gsgfxState, u16 *, 0x44A);
-    M2C_FIELD(gsgfxState, f32 *, 0xC30) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+    M2C_FIELD(gsgfxState, f32 *, 0xC30) = (f32) M2C_ERROR( );
     M2C_FIELD(gsgfxState, f32 *, 0xC34) = 0.0f;
     M2C_FIELD(gsgfxState, f32 *, 0xC38) = 1.0f;
     M2C_FIELD(gsgfxState, u32 *, 0xC3C) = 1U;
@@ -2080,14 +2067,14 @@ void GSgfx_GCReset() {
         temp_r12_6 = var_r8_3 + 0x2D4;
         temp_r9_6 = var_r7_3 + 0xA11;
         temp_r4_2 = var_r7_3 + 0xA10;
-        /* draft: crashed mwcc */ // *((u8 *)gsgfxState + temp_r11_7) = (*((u8 *)gsgfxState + temp_r11_7) & ~0x7FF) | ((u8) sp10 & 0x7FF);
+
         var_r6_4 = 0;
         var_r3_3 += 5;
         var_r5_3 += 1;
         var_r7_3 += 5;
         var_r8_3 += 4;
         *((u8 *)gsgfxState + temp_r19_3) = (*((u8 *)gsgfxState + temp_r19_3) & ~0x7FF000) | ((unksp13 << 0xC) & 0x7FF000);
-        /* draft: crashed mwcc */ // *((u8 *)gsgfxState + temp_r17_2) = (*((u8 *)gsgfxState + temp_r17_2) & ~0x7FF) | (unksp12 & 0x7FF);
+
         *((u8 *)gsgfxState + temp_r12_6) = (*((u8 *)gsgfxState + temp_r12_6) & ~0x7FF000) | ((unksp11 << 0xC) & 0x7FF000);
         M2C_FIELD(gsgfxState, s32 *, 0x28) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x28) | temp_r10_7);
         *((u8 *)gsgfxState + temp_r9_6) = sp20;
@@ -2111,7 +2098,7 @@ void GSgfx_GCReset() {
         temp_r5_4 = var_r6_4 * 4;
         M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | (1 << temp_r0_5));
         *((u8*)(gsgfxState) + (temp_r5_4 + 0xA24)) = 0xC;
-        *((u8*)(gsgfxState) + (var_r3_4 + 0xA64)) = 0x1C;
+        *((u8*)((u16)gsgfxState) + (var_r3_4 + 0xA64)) = 0x1C;
         if (temp_r12_7 != 0) {
             temp_r8_9 = (temp_r0_5 * 4) + 0x205;
             *((u8 *)gsgfxState + temp_r8_9) = (*((u8 *)gsgfxState + temp_r8_9) & ~0xF8) | 0xE0;
@@ -2214,7 +2201,7 @@ void GSgfx_GCReset() {
     do {
         *((u8*)(gsgfxState) + (var_r4_6 + 0xB74)) = var_r5_5;
         *((u8*)(gsgfxState) + (var_r4_6 + 0xB78)) = var_r5_5;
-        switch (var_r5_5) {                         /* irregular */
+        switch (var_r5_5) {
         case 0:
             M2C_FIELD(gsgfxState, u8 *, 0x7B) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x7B) & ~7) | (var_r5_5 & 7));
             M2C_FIELD(gsgfxState, u8 *, 0x7B) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x7B) & ~0x38) | ((var_r5_5 << 3) & 0x38));
@@ -2340,7 +2327,7 @@ void GSgfx_GCReset() {
     M2C_FIELD(gsgfxState, f32 *, 0xC00) = 0.0f;
     M2C_FIELD(gsgfxState, f32 *, 0xC04) = 1000.0f;
     M2C_FIELD(gsgfxState, s32 *, 0xC09) = sp20;
-    GSgfx_GCWriteFog((unsigned long)(0), (float)(u32)(gsgfxState), (float)(sp20), (float)(u32)(gsgfxState), (float)(0x11));
+    GSgfx_GCWriteFog(0, 0.0f, 1000.0f, 0.0f, 1000.0f);
     spC = sp20;
     M2C_FIELD(gsgfxState, u8 *, 0x2F5) = (u8) spC;
     M2C_FIELD(gsgfxState, u8 *, 0x2F6) = unkspD;
@@ -2498,8 +2485,8 @@ void GSgfx_GCInitState(void) {
     gsgfxState->kcolB1[2].f = 1;
     RAW(gsgfxState->kcolB0[3]) = 0;
     RAW(gsgfxState->kcolB1[3]) = 0;
-    gsgfxState->kcolB0[3].id = 0xe6;
     gsgfxState->kcolB1[3].id = 0xe7;
+    gsgfxState->kcolB0[3].id = 0xe6;
     gsgfxState->kcolB0[3].f = 1;
     gsgfxState->kcolB1[3].f = 1;
     RAW(gsgfxState->r1fc) = 0;
@@ -2578,4 +2565,4 @@ void GSgfx_GCFirstInit(void) {
     _gcGlobalRegState.b3 = 0;
     _gcGlobalRegState.b4 = 0;
 }
-} // extern C
+}

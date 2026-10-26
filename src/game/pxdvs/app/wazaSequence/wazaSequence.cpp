@@ -1,4 +1,3 @@
-// Draft (dr4). WazaSequence: one move animation made of "entries" (camera, model, particle, ...).
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -20,7 +19,6 @@ enum GSmodelAnimType {
     GS_ANIM_TYPE_1
 };
 
-// From the Dolphin SDK's OSFastCast.h (GQR3 is set up for u16 conversion).
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
     asm { psq_l ret, 0(arg), 1, 3 }
@@ -94,7 +92,6 @@ public:
     SequenceEntry* m_next;
 };
 
-// Parses/owns the header of a sequence file while its entries are loaded.
 class MainSequenceEntry {
 public:
     MainSequenceEntry(WazaSequence* seq, u8** data);
@@ -158,7 +155,6 @@ public:
     u8 pad[0x3c - 0x28];
 };
 
-// File header of a move animation sequence.
 struct WazaHeader {
     u16 distortion;
     u16 section;
@@ -199,6 +195,7 @@ public:
     SequenceEntry* GetEntryFromID(u8 id);
     bool Update(f32 dt);
     void ApplyStop();
+    inline void ApplyStopInline();
     void Start(bool camera);
     void SetRenderCamera(_GScamera* camera);
     static int GetNumVariations(u16 wazaID, u16 kind);
@@ -401,6 +398,7 @@ void WazaSequence::Unload(u8* data) {
 }
 
 WazaSequence::WazaSequence(NullSequence* owner, u16 wazaID, u8 kind, u8 variation) {
+    ModelSequence* owner_c = (ModelSequence*)owner;
     m_time = 0.0f;
     m_duration = 0.0f;
     m_flags = 0;
@@ -429,7 +427,7 @@ WazaSequence::WazaSequence(NullSequence* owner, u16 wazaID, u8 kind, u8 variatio
         u16 resID;
         switch (owner->m_kind) {
         case 1:
-                ms = (ModelSequence*)owner;
+                ms = owner_c;
             break;
         }
         resID = wazaSequenceSysGetResourceID(ms, wazaID, kind, variation);
@@ -461,7 +459,7 @@ WazaSequence::WazaSequence(NullSequence* owner, u16 wazaID, u8 kind, u8 variatio
 
 WazaSequence::~WazaSequence() {
     if (m_active) {
-        ApplyStop();
+        ApplyStopInline();
     }
     if (m_entries != 0) {
         delete m_entries;
@@ -530,7 +528,7 @@ void WazaSequence::Start(bool camera) {
     GSgfxLayer* layer;
 
     if (m_active) {
-        ApplyStop();
+        ApplyStopInline();
     }
     wazaSequenceSysApplyStop();
     e = m_entries;
@@ -574,7 +572,12 @@ void WazaSequence::Start(bool camera) {
     g_LastStartedWaza = Update(0.0f) ? this : 0;
 }
 
-void WazaSequence::ApplyStop() {
+static inline void resetWazaModelLayer(_GSmodel* model) {
+    s32 layers[1] = {2};
+    GSmodelSetRenderLayer(model, 1, layers);
+}
+
+inline void WazaSequence::ApplyStopInline() {
     ModelSequence* ms;
     SequenceEntry* e;
     GSgfxLayer* layer;
@@ -594,8 +597,44 @@ void WazaSequence::ApplyStop() {
                 ms->DoDefaultAnimation(GS_ANIM_TYPE_1, false);
             }
             if ((m_flags & 2) && g_EnableModelLayerChange) {
-                s32 layers[1] = {2};
-                GSmodelSetRenderLayer(model, 1, layers);
+                resetWazaModelLayer(model);
+            }
+        }
+        for (e = m_entries; e != 0; e = e->m_next) {
+            e->Stop(true);
+        }
+        distmtx[0][1] = distmtx[1][1] = 0.5f;
+        for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = layer->m_next) {
+            if (layer->m_kind == 1) {
+                layer->SetDistortionParams(distmtx, 0);
+            }
+        }
+        m_active = 0;
+        m_started = 0;
+    }
+}
+
+void WazaSequence::ApplyStop() {
+    ModelSequence* ms;
+    GSgfxLayer* layer;
+    SequenceEntry* e;
+
+    m_finished = 0;
+    if (m_active) {
+        if (g_LastStartedWaza == this) {
+            g_LastStartedWaza = 0;
+        }
+        ms = AsModel(m_owner);
+        if (ms != 0) {
+            _GSmodel* model = ms->m_model;
+            if (m_flags & 0x08000000) {
+                GSmodelLinkToGSparticleBank(model, ms->m_particle);
+            }
+            if (ms->m_busy == 0) {
+                ms->DoDefaultAnimation(GS_ANIM_TYPE_1, false);
+            }
+            if ((m_flags & 2) && g_EnableModelLayerChange) {
+                resetWazaModelLayer(model);
             }
         }
         for (e = m_entries; e != 0; e = e->m_next) {
@@ -649,10 +688,10 @@ bool WazaSequence::Update(f32 dt) {
             }
             break;
         case 1:
-            if (e->Update(dt)) {
-                running++;
-            } else {
+            if (!e->Update(dt)) {
                 e->Stop(false);
+            } else {
+                running++;
             }
             break;
         case 3:
@@ -826,4 +865,4 @@ bool WazaSequence_IsActive(WazaSequence* seq) {
     return false;
 }
 
-}  // extern "C"
+}

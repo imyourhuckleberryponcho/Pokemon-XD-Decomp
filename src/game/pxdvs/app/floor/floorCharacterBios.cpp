@@ -1,7 +1,5 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
 #pragma peephole off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -22,7 +20,6 @@ struct PeopleInfo;
 struct floorCharacter_dd_;
 
 extern "C" {
-// ---- draft declarations ----
 struct FloorCharInfo {
     u8 _draft[1];
 };
@@ -36,25 +33,24 @@ struct GSvec {
     f32 x, y, z;
 };
 struct floorCharacter_dd_ {
-    u8 visible : 1;     // 0x00
+    u8 visible : 1;
     u8 flag6 : 1;
     u8 flag5 : 1;
     u8 flag4 : 1;
     u8 flag3 : 1;
     u8 flag2 : 1;
-    u8 kind : 3;        // 0x01
+    u8 kind : 3;
     u8 mode : 2;
     u8 mode2 : 2;
-    u8 unk2;            // 0x02
-    u8 unk3;            // 0x03
-    s16 unk4;           // 0x04
-    u16 angle;          // 0x06
-    u16 resID;          // 0x08
-    u32 unkC;           // 0x0C
-    u32 unk10;          // 0x10
-    u32 unk14;          // 0x14
-    f32 x, y, z;        // 0x18
-
+    u8 unk2;
+    u8 unk3;
+    s16 unk4;
+    u16 angle;
+    u16 resID;
+    u32 unkC;
+    u32 unk10;
+    u32 unk14;
+    f32 x, y, z;
 
 };
 
@@ -87,7 +83,6 @@ PeopleInfo* peopleInfoBiosGetPtrFromIndex(u32 index);
 }
 static floorCharacter_dd_ _globalCharacter[3];
 void GSvecSet(GSvec* v, f32 x, f32 y, f32 z);
-// first byte of a floor character: bit 7 = visible
 struct FloorCharFlags {
     u8 visible : 1;
 };

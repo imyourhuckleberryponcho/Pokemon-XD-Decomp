@@ -1,11 +1,7 @@
-// STATUS (fadeport): skeleton of the whole unit in asm order. Only the small helpers and the
-// *_Init hook installers are real code; every other function is an empty stub (return type guessed).
 #pragma pool_strings off
 #pragma peephole off
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
-// Non-volatile view of the GX write-gather FIFO: the original kept constants in
-// registers and stored narrowed values without re-narrowing, which the volatile GXWGFifo does not.
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
 #include <dolphin/mtx.h>
 #include <libc/string.h>
@@ -22,7 +18,6 @@ struct GStexture {
 struct GSvec {
     f32 x, y, z;
 };
-
 
 struct BlendState {
     u8 pad[0xbc];
@@ -549,7 +544,7 @@ static bool fadeEffectHookFunction_virtual_hexa_decay(GSgfxLayerID id, bool pend
 }
 
 static void _fadeVirtualHexaDecayRibbonDraw(GSgfxLayer* layer, GStexture* t, f32 alphaf) {
-    int a = (s32)(255.0f * alphaf);
+    u8 a = (255.0f * alphaf);
     f32 mtx[16];
     GSmtx44Ortho(mtx, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
     layer->projType = 1;
@@ -634,36 +629,44 @@ static void _fadeVirtualHexaDecayRibbonDraw(GSgfxLayer* layer, GStexture* t, f32
         for (i = 0; i < n; i++, r++) {
             s16 x0 = r->a;
             s16 y0 = r->b;
-            f32 u0 = (f32)(x0 + 21) / 640.0f;
-            s16 y1 = y0 + r->d;
             s16 x1 = x0 + r->c;
+            s16 y1 = y0 + r->d;
+            f32 u0 = (f32)(x0 + 21) / 640.0f;
             f32 v0 = (f32)y0 / 480.0f;
             f32 u1 = (f32)(x1 - 19) / 640.0f;
             f32 v1 = (f32)y1 / 480.0f;
-            GXPosition2s16(x0, y0);
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = 0xFF;
-            GXPosition2f32(u0, v0);
-            GXPosition2s16(x1, y0);
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = 0xFF;
-            GXPosition2f32(u1, v0);
-            GXPosition2s16(x1, y1);
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = 0xFF;
-            GXPosition2f32(u1, v1);
-            GXPosition2s16(x0, y1);
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = a;
-            GXWGFifo.u8 = 0xFF;
-            GXPosition2f32(u0, v1);
+            GXFifoNV.s16 = x0;
+            GXFifoNV.s16 = y0;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = 0xFF;
+            GXFifoNV.f32 = u0;
+            GXFifoNV.f32 = v0;
+            GXFifoNV.s16 = x1;
+            GXFifoNV.s16 = y0;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = 0xFF;
+            GXFifoNV.f32 = u1;
+            GXFifoNV.f32 = v0;
+            GXFifoNV.s16 = x1;
+            GXFifoNV.s16 = y1;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = 0xFF;
+            GXFifoNV.f32 = u1;
+            GXFifoNV.f32 = v1;
+            GXFifoNV.s16 = x0;
+            GXFifoNV.s16 = y1;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = a;
+            GXFifoNV.u8 = 0xFF;
+            GXFifoNV.f32 = u0;
+            GXFifoNV.f32 = v1;
         }
         layer->endSurface();
     }
@@ -1005,9 +1008,9 @@ static void _fadeVirtualHexaDecayLineDraw(GSgfxLayer* layer, f32 alphaf) {
                         } else {
                             k = 2;
                         }
-                        f32 px = p[1];
                         f32 py = p[2];
                         p += 2;
+                        f32 px = p[1];
                         GXWGFifo.s16 = px;
                         GXWGFifo.s16 = py;
                         GXWGFifo.u8 = a;
@@ -1069,10 +1072,12 @@ static void _fadeVirtualHexaDecayLineUpdate() {
                     next[0] = fl * kc717 + prev[0];
                     next[1] = fl * side2 + prev[1];
                     break;
-                case 2:
-                    next[0] = prev[0] - 0.8660254f * fl;
+                case 2: {
+                    f32 scale = 0.8660254f;
+                    next[0] = prev[0] - fl * scale;
                     next[1] = fl * side2 + prev[1];
                     break;
+                }
                 }
             }
             while (e->len > 20 && e->count < 34) {
@@ -1087,14 +1092,18 @@ static void _fadeVirtualHexaDecayLineUpdate() {
                     next[0] = prev[0];
                     next[1] = (f32)sgn * fl + prev[1];
                     break;
-                case 1:
-                    next[0] = 0.8660254f * fl + prev[0];
+                case 1: {
+                    f32 scale = 0.8660254f;
+                    next[0] = fl * scale + prev[0];
                     next[1] = fl * side2 + prev[1];
                     break;
-                case 2:
-                    next[0] = prev[0] - 0.8660254f * fl;
+                }
+                case 2: {
+                    f32 scale = 0.8660254f;
+                    next[0] = prev[0] - fl * scale;
                     next[1] = fl * side2 + prev[1];
                     break;
+                }
                 }
             }
             if (e->x < 9.0f) {
@@ -1293,13 +1302,13 @@ static bool fadeEffectHookFunction_distortion_strip_yoko(GSgfxLayerID id, bool p
     }
     f32 kc3709 = 255.0f;
     f32 fa = kc3709 * fade;
-    u8 flag = _fadeEffectWork.unk0C % 2 == 0 ? 1 : 0;
-    int alphaA;
     int alphaB;
+    int alphaA;
+    u8 flag = _fadeEffectWork.unk0C % 2 == 0 ? 1 : 0;
     if (flag) {
-        alphaA = (s32)fa;
         f32 kc3890 = 1.0f;
         alphaB = (s32)(fa * kc3890);
+        alphaA = (s32)fa;
     } else {
         alphaB = (s32)fa;
         f32 kc3993 = 1.0f;
@@ -1330,11 +1339,16 @@ static bool fadeEffectHookFunction_distortion_strip_yoko(GSgfxLayerID id, bool p
 
 static void _fadeDistortionStripDoYoko() {
     enum TsE { TsE0 };
+    f32 jitter;
     s16* p;
-    int cols = _fadeDistortionWork.cols;
-    int rows = _fadeDistortionWork.rows;
+    f32* t;
+    int y;
+    int rows;
     s16* pos = _fadeDistortionWork.pos;
-    f32* tex = _fadeDistortionWork.tex;
+    f32* tex;
+    int cols = _fadeDistortionWork.cols;
+    rows = _fadeDistortionWork.rows;
+    tex = _fadeDistortionWork.tex;
     if (pos == 0 || tex == 0) {
         return;
     }
@@ -1342,30 +1356,29 @@ static void _fadeDistortionStripDoYoko() {
         u16 mode = _fadeEffectWork.unk0C;
         enum TsE dir = (enum TsE)(mode < 2 ? 1 : 0);
         s16 speed = mode % 2 == 0 ? 5 : -5;
-        volatile f32 width = (f32)_fadeDistortionWork.width;
         f32 height = (f32)_fadeDistortionWork.height;
-        f32 jitter = 0.5f / height;
-        int y;
+        volatile f32 width = (f32)_fadeDistortionWork.width;
+        jitter = 0.5f / height;
         int x;
-        for (y = 0; y < rows; y++) {
+        for (y = 0; y < (u8)rows; y++) {
             int odd = y % 2;
             p = pos;
-            f32* t = tex;
+            t = tex;
             for (x = 0; x < cols; x++) {
                 if (dir) {
                     if (odd == 0) {
                         if (p[1] < _fadeEffectWork.frame * 18) {
-                            p[0] = p[0] + speed;
+                            p[0] += speed;
                         }
                     } else {
                         if (p[1] < _fadeEffectWork.frame * 27) {
-                            p[0] = p[0] + speed;
+                            p[0] += speed;
                         }
                     }
                 } else {
                     if (odd == 0) {
                         if (p[1] > 480 - _fadeEffectWork.frame * 18) {
-                            p[0] = p[0] + speed;
+                            p[0] += speed;
                         }
                     } else {
                         if (p[1] > 480 - _fadeEffectWork.frame * 27) {
@@ -1373,8 +1386,9 @@ static void _fadeDistortionStripDoYoko() {
                         }
                     }
                 }
-                t[0] = (f32)p[0] / width;
-                u32 s = fadeRandInline(2) != 0 ? -1 : 1;
+                u32 rf_t = p[0];
+                t[0] = (f32)rf_t / width;
+                int s = fadeRandInline(2) != 0 ? -1 : 1;
                 t[1] = (f32)p[1] / height + jitter * (f32)s;
                 p = p + 2;
                 pos = pos + 2;
@@ -1510,12 +1524,12 @@ static bool fadeEffectHookFunction_distortion_strip_tate(GSgfxLayerID id, bool p
     f32 kc3709 = 255.0f;
     f32 fa = kc3709 * fade;
     u8 flag = _fadeEffectWork.unk0C < 2 ? 1 : 0;
-    int alphaA;
     int alphaB;
+    int alphaA;
     if (flag) {
-        alphaA = (s32)fa;
         f32 kc3885 = 1.0f;
         alphaB = (s32)(fa * kc3885);
+        alphaA = (s32)fa;
     } else {
         alphaB = (s32)fa;
         f32 kc3988 = 1.0f;
@@ -1528,7 +1542,8 @@ static bool fadeEffectHookFunction_distortion_strip_tate(GSgfxLayerID id, bool p
         for (x = 0; x < cols; x++) {
             int a = y * cols + x;
             int b = (y - 1) * cols + x;
-            GXPosition3s16(pos[a * 2], pos[a * 2 + 1], 0);
+            s32 rf_t = pos[a * 2 + 1];
+            GXPosition3s16(pos[a * 2], rf_t, 0);
             GXColor4u8(0xFF, 0xFF, 0xFF, alphaA);
             GXPosition2f32(tp[a * 2], flag ? tp[a * 2 + 1] : 1.0f);
             GXPosition3s16(pos[b * 2], pos[b * 2 + 1], 0);
@@ -1542,10 +1557,12 @@ static bool fadeEffectHookFunction_distortion_strip_tate(GSgfxLayerID id, bool p
 
 static void _fadeDistortionStripDoTate() {
     s16* p;
-    int rows = _fadeDistortionWork.rows;
     s16* pos = _fadeDistortionWork.pos;
-    f32* tex = _fadeDistortionWork.tex;
+    f32* tex;
+    int y;
     int cols = _fadeDistortionWork.cols;
+    int rows = _fadeDistortionWork.rows;
+    tex = _fadeDistortionWork.tex;
     if (pos == 0 || tex == 0) {
         return;
     }
@@ -1553,28 +1570,27 @@ static void _fadeDistortionStripDoTate() {
     u32 dir = mode % 2 == 0 ? 1 : 0;
     s16 speed = mode < 2 ? 5 : -5;
     f32 width = (f32)_fadeDistortionWork.width;
-    f32 height = (f32)_fadeDistortionWork.height;
-    f32 jitter = 0.5f / width;
-    int y;
+    volatile f32 jitter = 0.5f / width;
     int x;
-    for (y = 0; y < rows; y++) {
+    f32 height = (f32)_fadeDistortionWork.height;
+    for (y = 0; y < (u8)rows; y++) {
         p = pos;
         f32* t = tex;
         for (x = 0; x < cols; x++) {
             if (dir) {
                 if (x % 2 == 0) {
                     if (p[0] < _fadeEffectWork.frame * 16) {
-                        p[1] = p[1] + speed;
+                        p[1] += speed;
                     }
                 } else {
                     if (p[0] < _fadeEffectWork.frame * 24) {
-                        p[1] = p[1] + speed;
+                        p[1] += speed;
                     }
                 }
             } else {
                 if (x % 2 == 0) {
                     if (p[0] > 640 - _fadeEffectWork.frame * 16) {
-                        p[1] = p[1] + speed;
+                        p[1] += speed;
                     }
                 } else {
                     if (p[0] > 640 - _fadeEffectWork.frame * 24) {
@@ -1582,7 +1598,7 @@ static void _fadeDistortionStripDoTate() {
                     }
                 }
             }
-            s32 s = fadeRandInline(2) != 0 ? -1 : 1;
+            u32 s = fadeRandInline(2) != 0 ? -1 : 1;
             t[0] = (f32)p[0] / width + jitter * (f32)s;
             t[1] = (f32)p[1] / height;
             p = p + 2;
@@ -1605,6 +1621,7 @@ static void _fadeDistortionStripQuit() {
 }
 
 static void _fadeDistortionStripInit(int cols, int rows) {
+    int y;
     f32 v;
     int n = cols * rows;
     _fadeDistortionWork.cols = cols;
@@ -1620,9 +1637,8 @@ static void _fadeDistortionStripInit(int cols, int rows) {
     f32 invX = 1.0f / (f32)(cols - 1);
     f32 invY = 1.0f / (f32)(rows - 1);
     if (pos != 0 && tex != 0) {
-        int y;
         int x;
-        for (y = 0; y < rows; y++) {
+        for (y = 0; y < (u8)rows; y++) {
             s16* p = pos;
             f32* t = tex;
             int py = (s32)(stepY * (f32)y);
@@ -1630,7 +1646,7 @@ static void _fadeDistortionStripInit(int cols, int rows) {
             for (x = 0; x < cols; x++) {
                 p[0] = (stepX * (f32)x);
                 p[1] = py;
-                if (x == cols - 1 && rows > 2) {
+                if (cols == x - 1 && rows > 2) {
                     p[0] += 1;
                 } else if (y == rows - 1 && cols > 2) {
                     p[1] += 1;
@@ -1885,12 +1901,12 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
     *(u32*)((u8*)layer + 0x119c) = 0;
     *(u32*)((u8*)layer + 0x11a0) = 0;
     *(u8*)((u8*)layer + 0x11a4) = 0;
-    *(u32*)((u8*)layer + 0x11a8) = 0;
+    *(u32*)((u8*)layer + 0xf90) = 15;
     *(u32*)((u8*)layer + 0x16dc) |= 0x4;
     *(u32*)((u8*)layer + 0x16a8) |= 0x8;
     *(u32*)((u8*)layer + 0x1794) |= 0x4;
-    *(u32*)((u8*)layer + 0xf90) = 15;
     *(u32*)((u8*)layer + 0x1760) |= 0x8;
+    *(u32*)((u8*)layer + 0x11a8) = 0;
     *(u32*)((u8*)layer + 0xf94) = 8;
     *(u32*)((u8*)layer + 0xf98) = 0;
     *(u32*)((u8*)layer + 0xf9c) = 15;
@@ -1906,9 +1922,9 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
     *(u32*)((u8*)layer + 0x16e0) |= 0x4;
     *(u32*)((u8*)layer + 0x16a8) |= 0x8;
     *(u32*)((u8*)layer + 0x1798) |= 0x4;
+    *(u32*)((u8*)layer + 0x1094) = 5;
     *(u32*)((u8*)layer + 0x1760) |= 0x8;
     *(u32*)((u8*)layer + 0x1090) = 7;
-    *(u32*)((u8*)layer + 0x1094) = 5;
     *(u32*)((u8*)layer + 0x1098) = 0;
     *(u32*)((u8*)layer + 0x109c) = 7;
     *(u32*)((u8*)layer + 0x16d8) |= 0x4;
@@ -1919,7 +1935,7 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
         c.x = 320.0f;
         c.y = 240.0f;
         c.z = 0.0f;
-        int a = (s32)(255.0f * (1.0f - fadeSqrtf(progress)));
+        u8 a = (255.0f * (1.0f - fadeSqrtf(progress)));
         u8 aa = a;
         if (aa > _fadeEffectWork.unk0E || aa == 0) {
             return pending;
@@ -1940,8 +1956,10 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
         out.x = out.x - c.x;
         out.y = out.y - c.y;
         f32 u0 = (320.0f - out.x) / 640.0f;
-        f32 u1 = (320.0f + out.x) / 640.0f;
-        f32 v0 = (240.0f - out.y) / 480.0f;
+        f32 v0;
+        f32 u1;
+        u1 = (320.0f + out.x) / 640.0f;
+        v0 = (240.0f - out.y) / 480.0f;
         f32 v1 = (240.0f + out.y) / 480.0f;
         layer->beginSurface(4);
         v.x = -128.0f;
@@ -1972,8 +1990,8 @@ static bool fadeEffectHookFunction_trainer_second(GSgfxLayerID id, bool pending,
         GXFifoNV.u8 = a;
         GXFifoNV.f32 = 0.99f;
         GXFifoNV.f32 = 0.01f;
-        GXFifoNV.f32 = v0;
         GXFifoNV.f32 = u1;
+        GXFifoNV.f32 = v0;
         v.x = -128.0f;
         v.y = 128.0f;
         v.z = 0.0f;
@@ -2241,8 +2259,9 @@ static void _fadeTearOffDraw(GSgfxLayer* layer, u8 alpha, int frame) {
     GXFifoNV.f32 = fy;
     layer->endSurface();
     layer->beginSurface(3);
-    GXFifoNV.s16 = (s16)(x0 + frame * 2);
-    GXFifoNV.s16 = (s16)(frame * 2);
+    int twice = frame * 2;
+    GXFifoNV.s16 = (s16)(x0 + twice);
+    GXFifoNV.s16 = (s16)(twice);
     GXFifoNV.s16 = zero;
     GXFifoNV.u8 = 0xFF;
     GXFifoNV.u8 = 0xFF;
@@ -2250,8 +2269,8 @@ static void _fadeTearOffDraw(GSgfxLayer* layer, u8 alpha, int frame) {
     GXFifoNV.u8 = half;
     GXFifoNV.f32 = fx;
     GXFifoNV.f32 = fzero;
-    GXFifoNV.s16 = (s16)(frame * 2 + 640);
-    GXFifoNV.s16 = (s16)(frame * 2);
+    GXFifoNV.s16 = (s16)(twice + 640);
+    GXFifoNV.s16 = (s16)(twice);
     GXFifoNV.s16 = zero;
     GXFifoNV.u8 = 0xFF;
     GXFifoNV.u8 = 0xFF;
@@ -2259,8 +2278,8 @@ static void _fadeTearOffDraw(GSgfxLayer* layer, u8 alpha, int frame) {
     GXFifoNV.u8 = half;
     GXFifoNV.f32 = fone;
     GXFifoNV.f32 = fzero;
-    GXFifoNV.s16 = (s16)(frame * 2 + 640);
-    GXFifoNV.s16 = (s16)(y0 + frame * 2);
+    GXFifoNV.s16 = (s16)(twice + 640);
+    GXFifoNV.s16 = (s16)(y0 + twice);
     GXFifoNV.s16 = zero;
     GXFifoNV.u8 = 0xFF;
     GXFifoNV.u8 = 0xFF;
@@ -3036,6 +3055,7 @@ static void _fadeDistortionInit() {
 }
 
 static bool fadeEffectHookFunction_four_ball(GSgfxLayerID id, bool pending, f32 elapsed, f32 duration, f32 hookElapsed, f32 hookDuration, void* tex) {
+    FADE_EFFECT_BALL* ball = _fadeEffectBall;
     GSgfxLayer* layer = GSgfxLayerFindByID(id);
     if (layer == 0) {
         return pending;
@@ -3068,15 +3088,14 @@ static bool fadeEffectHookFunction_four_ball(GSgfxLayerID id, bool pending, f32 
     _fadeEffectSnapshotFadeFunction(layer, t, &c, 1.0f, 0.0f, progress, hprogress);
     _fadeEffectStartTexture(layer, _fadeEffectWork.tex0);
     f32 inv = 1.0f - progress;
-    int alpha0 = (s32)(255.0f * inv);
-    FADE_EFFECT_BALL* ball = _fadeEffectBall;
+    s32 alpha0 = (s32)(255.0f * inv);
     f32 value = _fadeEffectWork.value;
     f32 turn[2];
     f32 move[2];
     turn[0] = 360.0f * (value / 408.40704f);
-    turn[1] = -turn[0];
     move[0] = value;
     move[1] = -value;
+    turn[1] = -turn[0];
     GSvec p;
     int g;
     int i;
@@ -3504,7 +3523,7 @@ static void _disp_blur_ball(GSgfxLayer* layer, GSvec* pos, f32 xEnd, f32 angle, 
 
 static bool fadeEffectHookFunction_dist_ball(GSgfxLayerID id, bool pending, f32 elapsed, f32 duration, f32 hookElapsed, f32 hookDuration, void* tex) {
     GSgfxLayer* layer;
-    FadeEffectWork* w = &_fadeEffectWork;
+    volatile FadeEffectWork* w = &_fadeEffectWork;
     layer = GSgfxLayerFindByID(id);
     if (layer == 0) {
         return pending;
@@ -3525,7 +3544,8 @@ static bool fadeEffectHookFunction_dist_ball(GSgfxLayerID id, bool pending, f32 
     }
     f32 progress = elapsed / duration;
     if (timeGetLastFrameTime() != 0) {
-        w->frame++;
+        s32 rf_t = w->frame;
+        rf_t++;
         GSgfxBeginBackFBCapture(t, _myBackFB, 0);
     } else {
         GSgfxEndBackFBCapture(t);
@@ -3942,7 +3962,7 @@ static bool fadeEffectHookFunction_slide_ball(GSgfxLayerID id, bool pending, f32
     c.y = 240.0f;
     c.z = 0.0f;
     _fadeEffectSnapshotFadeFunction(layer, t, &c, 1.0f, 0.0f, progress, 0.0f);
-    int alpha = (s32)(255.0f * (1.0f - progress));
+    u8 alpha = (s32)(255.0f * (1.0f - progress));
     f32 mtx[16];
     GSmtx44Ortho(mtx, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
     layer->projType = 1;
@@ -4092,7 +4112,7 @@ static bool fadeEffectHookFunction_slide_ball(GSgfxLayerID id, bool pending, f32
     }
     layer->primType = 0x80;
     layer->beginSurface(0x60);
-    alpha = (u8)alpha;
+    alpha = alpha;
     e = _fadeEffectBound;
     for (i = 0; i < 12; e++, i++) {
         f32 xe;
@@ -4128,8 +4148,10 @@ static void _fadeEffectSlideBallInit() {
     _fadeEffectWork.tex1 = GSresGetResourceAllGroup(0xEBD1200);
     _fadeEffectWork.unk0C = 0;
     _fadeEffectWork.frame = 0;
-    u32 side = fadeRandInline(2) == 0 ? 1 : 0;
-    FADE_EFFECT_BOUND* e = _fadeEffectBound;
+    FADE_EFFECT_BOUND* e;
+    u32 side;
+    side = fadeRandInline(2) == 0 ? 1 : 0;
+    e = _fadeEffectBound;
     int i;
     for (i = 0; i < 12; e++, i++) {
         if (side == 1) {
@@ -5411,8 +5433,8 @@ static bool _fadeEffectFunction_UDLR_Main(GSgfxLayer* layer, bool pending, f32 e
         v.y = 240.0f + _fadeEffectWork.value;
         break;
     }
-    f32 t = (f32)_fadeEffectWork.frame / (45.0f * (1.0f - progress) + 1.0f);
     v.z = 0.0f;
+    f32 t = (f32)_fadeEffectWork.frame / (45.0f * (1.0f - progress) + 1.0f);
     _fadeEffectSnapshotFadeFunction(layer, tex, &v, 1.0f, t, progress, 0.4f);
     switch (_fadeEffectWork.unk0C) {
     case 1:
@@ -5424,7 +5446,8 @@ static bool _fadeEffectFunction_UDLR_Main(GSgfxLayer* layer, bool pending, f32 e
         v.y = 1.5f * _fadeEffectWork.value + 240.0f;
         break;
     }
-    _fadeEffectSnapshotFadeFunction(layer, tex, &v, 1.0f, t * -1.5f, progress, 0.4f);
+    f32 multiplier = -1.5f;
+    _fadeEffectSnapshotFadeFunction(layer, tex, &v, 1.0f, t * multiplier, progress, 0.4f);
     if (timeGetLastFrameTime() != 0) {
         GSgfxBeginBackFBCapture(tex, _myBackFB, 0);
     } else {

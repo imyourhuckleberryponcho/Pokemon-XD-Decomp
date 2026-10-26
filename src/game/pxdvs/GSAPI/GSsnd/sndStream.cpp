@@ -1,7 +1,5 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
 #pragma pool_strings off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -24,57 +22,55 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 enum ASM { ASM_draft_dummy };
 struct SndStream;
 
-// stream work (stereo streams: a master and a child, each playing one channel)
 struct SndStreamCh {
-    u8 adpcm[0x2E];         // 0x00 ADPCM parameters
-    u8 busy[2];             // 0x2E per buffer half
-    u32 filled[2];          // 0x30 bytes copied into each buffer half
-    u32 x38;                // 0x38 resume offset
-    s32 state;              // 0x3C
+    u8 adpcm[0x2E];
+    u8 busy[2];
+    u32 filled[2];
+    u32 x38;
+    s32 state;
 };
 struct SndStream {
-    SndStream* master;      // 0x00 (NULL on the master itself)
-    SndStream* child;       // 0x04
-    s32 state;              // 0x08
-    s32 stid;               // 0x0C
-    u8* buf;                // 0x10
-    u32 bufSize;            // 0x14
-    u32 x18;                // 0x18
-    u32 pos;                // 0x1C
-    u32 played;             // 0x20
-    u32 dataOfs;            // 0x24
-    u32 gid;                // 0x28
-    u32 fid;                // 0x2C
-    u32 sndId;              // 0x30 entry in snd_data
-    u16 fadeTime;           // 0x34
+    SndStream* master;
+    SndStream* child;
+    s32 state;
+    s32 stid;
+    u8* buf;
+    u32 bufSize;
+    u32 x18;
+    u32 pos;
+    u32 played;
+    u32 dataOfs;
+    u32 gid;
+    u32 fid;
+    u32 sndId;
+    u16 fadeTime;
     u8 unk36;
-    u8 vol;                 // 0x37
-    u8 targetVol;           // 0x38
-    u8 fadeFrame;           // 0x39
-    u8 startVol;            // 0x3A
-    u8 right;               // 0x3B
-    u8 done;                // 0x3C
-    u8 mute;                // 0x3D
-    u8 pause;               // 0x3E
-    u8 half;                // 0x3F
+    u8 vol;
+    u8 targetVol;
+    u8 fadeFrame;
+    u8 startVol;
+    u8 right;
+    u8 done;
+    u8 mute;
+    u8 pause;
+    u8 half;
     u8 unk40[8];
-    s32 frq;                // 0x48
-    u32 dataSize;           // 0x4C
-    u32 cacheEnd;           // 0x50
+    s32 frq;
+    u32 dataSize;
+    u32 cacheEnd;
     u8 unk54[8];
-    s32 loop;               // 0x5C
-    u32 headerOfs;          // 0x60
+    s32 loop;
+    u32 headerOfs;
     u8 unk64[0xD];
-    u8 looped;              // 0x71
-    u8 updated[2];          // 0x72 per channel
-    u32 loopStart;          // 0x74
-    u32 loopEnd;            // 0x78
-    u32 endPos;             // 0x7C
-    SndStreamCh ch[2];      // 0x80
+    u8 looped;
+    u8 updated[2];
+    u32 loopStart;
+    u32 loopEnd;
+    u32 endPos;
+    SndStreamCh ch[2];
 };
 
 extern "C" {
-// ---- draft declarations ----
 
 extern "C" {
 asm void DCFlushRange(register void* addr, register u32 nBytes);
@@ -310,8 +306,8 @@ u32 _sndStreamCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
             f32 target;
             f32 step;
             target = s->targetVol;
-            vol = s->startVol;
             step = (target - s->startVol) / s->fadeTime;
+            vol = s->startVol;
             step *= (s->fadeFrame++ * 20);
             vol += step;
             if (step > 0.0f && vol >= target) {
@@ -375,7 +371,7 @@ static void _sndStreamFadePostProcess(void *p0) {
 
 extern "C" {
 void _sndStreamCtrl(SndStream* p0, u32 p1) {
-    switch ((s32) (u8) p1) {                        /* irregular */
+    switch ((s32) (u8) p1) {
     case 1:
         M2C_FIELD(p0, s32 *, 8) = 0xA;
         return;

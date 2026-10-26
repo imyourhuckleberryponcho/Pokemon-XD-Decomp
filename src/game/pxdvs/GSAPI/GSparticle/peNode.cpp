@@ -1,6 +1,3 @@
-// STATUS: default flags, LAYOUT OK, CONST OK. Start exact (188 B). Update 99.07% (only stack
-// slot order of inline-helper temporaries differs), peNodeTransformsConcat 90.5% (float register numbering
-// and the Quat copy order). Not linkable yet.
 #include <dolphin/types.h>
 
 struct Vec3 {
@@ -28,46 +25,45 @@ struct Mtx34 {
     f32 m[3][4];
 };
 
-// Transform block (position, rotation, scale) referenced by a node.
 struct peXform {
-    Vec3 pos;    // 0x00
-    Quat rot;    // 0x0C
-    Vec3 scale;  // 0x1C
+    Vec3 pos;
+    Quat rot;
+    Vec3 scale;
 };
 
 struct peEmitParams {
-    u32 flags;   // 0x00
+    u32 flags;
     u8 pad4[0x9C];
-    f32 drag;    // 0xA0
-    f32 bounce;  // 0xA4
-    f32 force;   // 0xA8
+    f32 drag;
+    f32 bounce;
+    f32 force;
 };
 
 struct peEmitterNode {
     u8 pad0[0x9C];
-    Vec3 dir;    // 0x9C
+    Vec3 dir;
     u8 padA8[0x54];
-    peEmitParams* params; // 0xFC
+    peEmitParams* params;
 };
 
 struct _EmitParams {
-    f32 life;    // 0x00
-    f32 speed;   // 0x04
-    Vec3 pos;    // 0x08
-    Vec3 vel;    // 0x14
-    Vec3 xpos;   // 0x20
-    Quat xrot;   // 0x2C
-    Vec3 xscale; // 0x3C
+    f32 life;
+    f32 speed;
+    Vec3 pos;
+    Vec3 vel;
+    Vec3 xpos;
+    Quat xrot;
+    Vec3 xscale;
 };
 
 class peNode {
 public:
-    f32 life0;   // 0x00
-    f32 life;    // 0x04
-    Vec3 pos;    // 0x08
-    Vec3 vel;    // 0x14
-    peXform* xform; // 0x20
-    f32 speed;   // 0x24
+    f32 life0;
+    f32 life;
+    Vec3 pos;
+    Vec3 vel;
+    peXform* xform;
+    f32 speed;
 
     bool Update(peEmitterNode* e, f32 dt);
     void Start(peEmitterNode* e, _EmitParams* p);
@@ -214,7 +210,7 @@ bool peNode::Update(peEmitterNode* e, f32 dt) {
         dirB = vec3(pos.x * xform->scale.x, pos.y * xform->scale.y, pos.z * xform->scale.z);
         rotateForward(&dirB, xform);
         PSVECAdd(&dirB, &xform->pos, &dirB);
-        if (dirB.y < 0.0f) {
+        if (dirB.y <= 0.0f) {
             dirB.y = 0.0f;
             PSVECSubtract(&dirB, &xform->pos, &dirB);
             rotateInverse(&dirB, xform);

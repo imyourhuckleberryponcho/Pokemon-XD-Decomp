@@ -148,7 +148,7 @@ struct HSD_MObjInfo {
     /* +48 */ void (*setup_tev)(HSD_MObj* mobj, HSD_TObj* tobj,
                                 u32 rendermode);
     /* +4C */ HSD_ObjUpdateFunc update;
-    /* +50 */ void (*unset)(HSD_MObj* mobj, u32 rendermode);
+ void (*unset)(HSD_MObj* mobj, u32 rendermode);
 };
 
 #define HSD_MOBJ(o) ((HSD_MObj*) (o))

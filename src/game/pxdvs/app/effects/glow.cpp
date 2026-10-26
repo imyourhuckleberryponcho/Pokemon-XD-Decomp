@@ -1,4 +1,3 @@
-// STATUS: 2/5 exact (dtor, ctor); _render 99.6%, _renderScale 87%, _renderOffset 82% (registers/stack temps); LAYOUT OK, CONST OK
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/string.h>
@@ -145,7 +144,6 @@ public:
     virtual ~GSeffect();
 };
 
-// From the Dolphin SDK's OSFastCast.h (GQR2 is set up for u8 conversion).
 static inline f32 __OSu8tof32(register const u8* arg) {
     register f32 ret;
     asm { psq_l ret, 0(arg), 1, 2 }
@@ -167,7 +165,6 @@ static inline u8 OSf32tou8(f32 in) {
     return out;
 }
 
-// Glow: re-draws a copy of the screen with several offset passes (box/gaussian-like blur).
 class glowEffect : public GSeffect {
 public:
     glowEffect();
@@ -312,7 +309,6 @@ void glowEffect::_render(GSgfxLayer* layer, GSgfxLayerPass pass) {
     }
 }
 
-// One vertex: s16 position, white color with alpha, then texture coordinates.
 static inline void _glowHead(s16 x, s16 y, u8 alpha) {
     GXWGFifo.s16 = x;
     GXWGFifo.s16 = y;
@@ -521,12 +517,12 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
     *(u32*)((u8*)layer + 0x1784) |= 1;
     layer->dirty1760 |= 8;
     for (i = 0; (u8)i < 2; i++) {
-        u8 stage = (u8)i;
+        u32 stage = (u8)i;
         bool last;
         u32 bit;
-        u32 v;
-        u8* a;
         u8* b;
+        u8* a;
+        u32 v;
         u8* c;
         layer->tgenFunc(i, (GSgfxTgenFunc)1, (GSgfxTgenSrc)(stage + 4), 0, false, 0);
         last = false;
@@ -576,21 +572,21 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
         }
         *(u32*)(b + 0xf70) = 8;
         *(u32*)(b + 0xf74) = 0xf;
+        v = 7;
         *(u32*)(b + 0xf78) = 0xf;
         *(u32*)(b + 0xf7c) = v;
         *(u32*)((u8*)layer + 0x16d4) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x178c) |= bit;
         layer->dirty1760 |= 8;
-        v = 7;
         if ((u8)i == 0) {
             v = 0;
         }
         *(u32*)(b + 0x1070) = 7;
+        *(u32*)((u8*)layer + 0x16d8) |= bit;
         *(u32*)(b + 0x1074) = 5;
         *(u32*)(b + 0x1078) = 4;
         *(u32*)(b + 0x107c) = v;
-        *(u32*)((u8*)layer + 0x16d8) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x1790) |= bit;
         layer->dirty1760 |= 8;

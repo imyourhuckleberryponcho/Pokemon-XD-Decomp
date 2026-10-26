@@ -1,4 +1,3 @@
-// Written from the XD asm (Colosseum's versions differ).
 #include <dolphin/types.h>
 
 #pragma auto_inline off
@@ -852,7 +851,6 @@ void CriticalCheckHikaePokemon(void* hikae) {
     u16 defMonsno;
     u16 item;
     u8 tokuseiFlag;
-
 
     attack = fightTargetGetPtrAsNowFightType(0x11, 0);
     fightOutPokemonGetTokuseiDataId(attack);

@@ -1,5 +1,3 @@
-// Draft (NonMatching): GsKeyObject animation. 1 of 16 exact, rest 77-98%. Default flags give LAYOUT OK.
-// Draft: GS shape key-frame animation (GsKeyObject). Struct layouts derived from the asm.
 #include <dolphin/types.h>
 
 struct tagGScol4ub {
@@ -147,7 +145,6 @@ inline double fabs(double x) {
     return __fabs(x);
 }
 
-// Evaluates a Bezier curve whose points are (time, value) pairs, three pairs per segment.
 static inline f32 bezier(const f32* pts, u8 count, f32 t) {
     s32 n = (count - 1) / 3 + 1;
     s32 k;
@@ -160,10 +157,14 @@ static inline f32 bezier(const f32* pts, u8 count, f32 t) {
     if (k == n)
         return pts[(n - 1) * 6 + 1];
     const f32* seg = pts + (k - 1) * 6;
-    f32 u = (t - seg[0]) / (pts[k * 6] - seg[0]);
-    f32 iu = 1.0f - u;
-    f32 iu2 = iu * iu;
-    f32 u2 = u * u;
+    f32 u2;
+    f32 iu;
+    f32 iu2;
+    f32 u;
+    u = (t - seg[0]) / (pts[k * 6] - seg[0]);
+    iu = 1.0f - u;
+    iu2 = iu * iu;
+    u2 = u * u;
     return seg[7] * (u2 * u) + (seg[5] * (3.0f * u2 * iu) + (seg[1] * (iu2 * iu) + seg[3] * (3.0f * u * iu2)));
 }
 
@@ -349,8 +350,10 @@ bool GsKeyObject::GetDeformParameterU(f32* out, const tagGsFilePrimKeyFrame* a, 
 }
 
 bool GsKeyObject::GetLinearParameterV(f32* out, const tagGsFilePrimKeyFrame* a) {
-    u32 n = a->nDeformV;
+    u32 n;
     f32 last = (f32)(n - 1);
+    s16 rf_t = a->nDeformV;
+    n = rf_t;
     for (u32 i = 0; i < n; i++) {
         out[i] = (f32)i / last;
     }
@@ -358,8 +361,10 @@ bool GsKeyObject::GetLinearParameterV(f32* out, const tagGsFilePrimKeyFrame* a) 
 }
 
 bool GsKeyObject::GetLinearParameterU(f32* out, const tagGsFilePrimKeyFrame* a) {
-    u32 n = a->nDeformU;
+    u32 n;
     f32 last = (f32)(n - 1);
+    s16 rf_t = a->nDeformU;
+    n = rf_t;
     for (u32 i = 0; i < n; i++) {
         out[i] = (f32)i / last;
     }
@@ -378,6 +383,8 @@ tagGScol4ub GsKeyObject::GetTextureColorLow(const tagGsFilePrimKeyFrame* a, cons
         col.a = src[3];
         return col;
     }
+    const u8* av = a->texColorLow[idx];
+    const u8* bv = b->texColorLow[idx];
     f32 it = 1.0f - t;
     for (int i = 0; i < 4; i++) {
         if (a->nTexColorLow[idx][i] != 0) {
@@ -388,7 +395,7 @@ tagGScol4ub GsKeyObject::GetTextureColorLow(const tagGsFilePrimKeyFrame* a, cons
                 v[i] = 255.0f;
             }
         } else {
-            v[i] = it * (f32)a->texColorLow[idx][i] + t * (f32)b->texColorLow[idx][i];
+            v[i] = it * (f32)av[i] + t * (f32)bv[i];
         }
     }
     col.r = (s8)v[0];
@@ -410,6 +417,8 @@ tagGScol4ub GsKeyObject::GetTextureColor(const tagGsFilePrimKeyFrame* a, const t
         col.a = src[3];
         return col;
     }
+    const u8* av = a->texColor[idx];
+    const u8* bv = b->texColor[idx];
     f32 it = 1.0f - t;
     for (int i = 0; i < 4; i++) {
         if (a->nTexColor[idx][i] != 0) {
@@ -420,7 +429,7 @@ tagGScol4ub GsKeyObject::GetTextureColor(const tagGsFilePrimKeyFrame* a, const t
                 v[i] = 255.0f;
             }
         } else {
-            v[i] = it * (f32)a->texColor[idx][i] + t * (f32)b->texColor[idx][i];
+            v[i] = it * (f32)av[i] + t * (f32)bv[i];
         }
     }
     col.r = (s8)v[0];
@@ -434,12 +443,14 @@ GsVec2 GsKeyObject::GetTextureOffset(const tagGsFilePrimKeyFrame* a, const tagGs
                                    u32 idx) const {
     GsVec2 r;
     f32* v = r.v;
+    const f32* av = a->texOffset[idx];
+    const f32* bv = b->texOffset[idx];
     f32 it = 1.0f - t;
     for (int i = 0; i < 2; i++) {
         if (a->nTexOffset[idx][i] != 0) {
             v[i] = header->rangeTexOffset * bezier(a->cTexOffset[idx][i], a->nTexOffset[idx][i], t);
         } else {
-            v[i] = it * a->texOffset[idx][i] + t * b->texOffset[idx][i];
+            v[i] = it * av[i] + t * bv[i];
         }
     }
     return r;
@@ -449,12 +460,14 @@ GsVec2 GsKeyObject::GetTextureScale(const tagGsFilePrimKeyFrame* a, const tagGsF
                                   u32 idx) const {
     GsVec2 r;
     f32* v = r.v;
+    const f32* av = a->texScale[idx];
+    const f32* bv = b->texScale[idx];
     f32 it = 1.0f - t;
     for (int i = 0; i < 2; i++) {
         if (a->nTexScale[idx][i] != 0) {
             v[i] = header->rangeTexScale * bezier(a->cTexScale[idx][i], a->nTexScale[idx][i], t);
         } else {
-            v[i] = it * a->texScale[idx][i] + t * b->texScale[idx][i];
+            v[i] = it * av[i] + t * bv[i];
         }
     }
     return r;

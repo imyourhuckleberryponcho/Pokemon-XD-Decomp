@@ -1,8 +1,5 @@
-// menuCB_Rule: all 40 functions match (linked).
-// Tool-battle rule checks (menuCBRule_*) for the Colosseum-style menus.
 #include <dolphin/types.h>
 
-// Menu callbacks were built without the peephole optimizer.
 #pragma peephole off
 
 struct Hero;
@@ -12,7 +9,6 @@ struct Pokemon {
 struct WazaData;
 
 #pragma pack(push, 1)
-// one tool-battle rule (0x90 bytes, misaligned s32 members)
 struct CBRule {
     s16 a0, a2, a4, a6;
     s32 a8;
@@ -28,7 +24,6 @@ struct CBRule {
 };
 #pragma pack(pop)
 
-// per-slot error flags (4 bytes), bit n = field an / bn
 struct ErrEntry {
     u8 a7 : 1, a6 : 1, a5 : 1, a4 : 1, a3 : 1, a2 : 1, a1 : 1, a0 : 1;
     u8 b7 : 1, b6 : 1, b5 : 1, b4 : 1, b3 : 1, b2 : 1, b1 : 1, b0 : 1;
@@ -37,12 +32,12 @@ struct ErrEntry {
 
 struct _MENUCBWORK {
     u8 pad0[0xC];
-    s32 ruleType;           // 0x0C
+    s32 ruleType;
     u8 pad10[0x9918 - 0x10];
-    CBRule rule[6];         // 0x9918
+    CBRule rule[6];
     u8 pad9C78[4];
     u8 pad9C7C[8];
-    ErrEntry err[4][6];     // 0x9C84
+    ErrEntry err[4][6];
     u8 padrest[0xB5F4 - 0x9CE4];
 };
 

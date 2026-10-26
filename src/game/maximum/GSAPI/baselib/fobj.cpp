@@ -1,6 +1,6 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's fobj.c (headers: include/hsd_ref).
-// The original file name, used by the asserts.
+
+
+
 #define HSD_FILE_NAME "fobj.c"
 
 #include <sysdolphin/baselib/fobj.h>
@@ -16,7 +16,7 @@ HSD_ObjAllocData alloc_data;
 
 static void dumpObjAlloc(HSD_ObjAllocData* data, char* msg);
 
-// XD's GSmem pool allocator.
+
 void* GSmemGetSysdolAllocator(s32 size);
 s32 GSmemGetFreePool(void* pool);
 void* GSmemAllocPool(void* pool);
@@ -341,7 +341,7 @@ inline void FObjUpdateAnim(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_upda
         }
         break;
     default:
- // XD ignores unsupported modes instead of calling back with unset data.
+
         return;
     }
     obj_update(obj, fobj->obj_type, &fobjdata);
@@ -434,8 +434,8 @@ static inline u32 FObjLoadData(HSD_FObj* fobj)
     }
 }
 
-// Keep calls to the interpreter out of the small stop/flush helpers. Without
-// this, deferred inlining changes HSD_FObjStopAnimAll's generated call sequence.
+
+
 #pragma dont_inline on
 void HSD_FObjInterpretAnim(HSD_FObj* fobj, void* obj,
                            HSD_ObjUpdateFunc obj_update, f32 rate)
@@ -503,7 +503,7 @@ void HSD_FObjInterpretAnimAll(void* fobj, void* obj,
     }
 }
 
-// XD: debug hook for the allocator statistics (empty in this build).
+
 static void dumpObjAlloc(HSD_ObjAllocData* data, char* msg) {}
 
 HSD_FObj* HSD_FObjLoadDesc(HSD_FObjDesc* desc)
@@ -523,7 +523,7 @@ HSD_FObj* HSD_FObjLoadDesc(HSD_FObjDesc* desc)
     return NULL;
 }
 
-// XD: FObjs come from GSmem's fixed-size pool when one is set up (not cleared there).
+
 HSD_FObj* HSD_FObjAlloc(void)
 {
     HSD_FObj* new;

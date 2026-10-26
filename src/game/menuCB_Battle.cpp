@@ -1,7 +1,5 @@
-// STATUS: 2/3 exact (InitBattle 99.7%: select-table prologue regs + rank load regs); LAYOUT+CONST OK, default flags + peephole off.
 #include <dolphin/types.h>
 
-// Menu callbacks were built without the peephole optimizer.
 #pragma peephole off
 
 struct Hero {
@@ -132,7 +130,7 @@ s32 menuCB_InitBattle(BattleWork* work) {
     s32 encId = 0;
     s8 count;
     int baseA;
-    s8 baseB;
+    u16 baseB;
     u32 bgm;
     u32 floorId;
     Hero hero;

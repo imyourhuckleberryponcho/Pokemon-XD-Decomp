@@ -2,7 +2,6 @@
 
 extern "C" int memcmp(const void* a, const void* b, unsigned long n);
 
-// Every chunk starts with this header; the payload (sub-chunks) follows it.
 struct ChankHeader {
     char id[4];
     s32 size;

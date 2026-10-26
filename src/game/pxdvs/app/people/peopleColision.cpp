@@ -1,4 +1,3 @@
-// Draft (written from asm).
 #include <dolphin/types.h>
 
 struct GSvec {
@@ -7,7 +6,7 @@ struct GSvec {
 
 struct PeopleWork {
     u8 unk0[0x1C];
-    u32 modelResID;  // 0x1C
+    u32 modelResID;
 };
 
 struct PeopleInfo;

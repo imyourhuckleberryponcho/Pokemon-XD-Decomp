@@ -7,12 +7,12 @@
 class Hero;
 
 struct PokemonStatusRnd {
-  u8 maxHp; // 0x0
-  u8 phyAtk; // 0x1
-  u8 phyDef; // 0x2
-  u8 speAtk; // 0x3
-  u8 speDef; // 0x4
-  u8 nimbleness; // 0x0
+  u8 maxHp;
+  u8 phyAtk;
+  u8 phyDef;
+  u8 speAtk;
+  u8 speDef;
+  u8 nimbleness;
 
   void setNimbleness(u8 data);
   void setSpeDef(u8 data);
@@ -70,76 +70,72 @@ union PokemonFlags {
   u8 allBits;
 };
 
-// Waza ("technique") means a move
 #define MAX_WAZA 4
 struct PokemonWaza {
   u16 dataId;
-  u8 pp; // 0x2
-  u8 ppCount; // 0x3
+  u8 pp;
+  u8 ppCount;
 };
 
 struct Pokemon {
-  u16 dataID; // 0x0
-  u16 itemDataID; // 0x2
-  u16 hp; // 0x4
-  u16 friendLevel; // 0x6
-  u16 catchFloorId; // 0x8
-  u16 amari; // 0xa
-  u16 para1Amari; // 0xc
-  u8 catchLevel; // 0xe
-  u8 catchBallId; // 0xf
-  u8 catchTrainerSex; // 0x10
-  u8 level; // 0x11
-  u8 fur; // 0x12
-  u8 pokerus; // 0x13
-  u8 pcboxMark; // 0x14
-  u8 mailId; // 0x15
-  u8 condition; // 0x16
-  u8 conditionCount; // 0x17
-  u8 conditionTurn; // 0x18
-  u8 conditionTurnNow; // 0x19
+  u16 dataID;
+  u16 itemDataID;
+  u16 hp;
+  u16 friendLevel;
+  u16 catchFloorId;
+  u16 amari;
+  u16 para1Amari;
+  u8 catchLevel;
+  u8 catchBallId;
+  u8 catchTrainerSex;
+  u8 level;
+  u8 fur;
+  u8 pokerus;
+  u8 pcboxMark;
+  u8 mailId;
+  u8 condition;
+  u8 conditionCount;
+  u8 conditionTurn;
+  u8 conditionTurnNow;
   u8 flagAmari;
-  s8 unk1[2]; // temporary until Pokemon struct is figured out
-  PokemonFlags flags; // 0x1d
-  u32 exp; // 0x20
-  u32 catchTrainerRnd; // 0x24
-  u32 rnd; // 0x28
-  u32 conditionAmari; // 0x2c
+  s8 unk1[2];
+  PokemonFlags flags;
+  u32 exp;
+  u32 catchTrainerRnd;
+  u32 rnd;
+  u32 conditionAmari;
 
-  u32 eventGetFlag; // 0x30
-  Attest attest; // 0x34
+  u32 eventGetFlag;
+  Attest attest;
 
- // Are these wide strings maybe?
-  char catchTrainerName[11]; // 0x38, 11 chars
-  s8 unk2[11]; // temporary until Pokemon struct is figured out
-  char nickname[11]; // 0x4e, 11 chars
-  s8 unk3[11]; // temporary until Pokemon struct is figured out
-  char nicknameOrg[11]; // 0x64, 11 chars
-  s8 unk4[11]; // temporary until Pokemon struct is figured out
+  char catchTrainerName[11];
+  s8 unk2[11];
+  char nickname[11];
+  s8 unk3[11];
+  char nicknameOrg[11];
+  s8 unk4[11];
 
-  Ribbon ribbon; // 0x7c
-  PokemonWaza wazas[MAX_WAZA]; // 0x80
-  u16 maxHp; // 0x90
-  u16 phyAtk; //0x92
-  u16 phyDef; //0x94
-  u16 speAtk; //0x96
-  u16 speDef; //0x98
-  u16 nimbleness; //0x9a
-  u16 maxHpEffort; //0x9c
-  u16 phyAtkEffort; //0x9e
-  u16 phyDefEffort; //0xa0
-  u16 speAtkEffort; //0xa2
-  u16 speDefEffort; //0xa4
-  u16 nimblenessEffort; //0xa6
-  PokemonStatusRnd statusRnd; // 0xa8
-  ExpandStatus expandStatus[MAX_EXPAND_STATUS]; // 0xae
-  u16 fightTrainerPokemonDataId; // 0xb8
-  u16 darkPokemonDataID; // 0xba
-  u8 comboPartnerAll; // 0xbc
-  s8 unk5[7]; // temporary until Pokemon struct is figured out
+  Ribbon ribbon;
+  PokemonWaza wazas[MAX_WAZA];
+  u16 maxHp;
+  u16 phyAtk;
+  u16 phyDef;
+  u16 speAtk;
+  u16 speDef;
+  u16 nimbleness;
+  u16 maxHpEffort;
+  u16 phyAtkEffort;
+  u16 phyDefEffort;
+  u16 speAtkEffort;
+  u16 speDefEffort;
+  u16 nimblenessEffort;
+  PokemonStatusRnd statusRnd;
+  ExpandStatus expandStatus[MAX_EXPAND_STATUS];
+  u16 fightTrainerPokemonDataId;
+  u16 darkPokemonDataID;
+  u8 comboPartnerAll;
+  s8 unk5[7];
 
-
- // Setters/getters
   u16 getAmari() const;
   u8 getPcboxMark() const;
   u16 getPara1Amari() const;
@@ -234,8 +230,6 @@ struct Pokemon {
   static bool isRareParam(u32, u32);
   bool isRare() const;
   u8 getSeikaku() const;
-
-
 
   bool isHatena() const;
   Pokemon * getPokemon(Hero *, s32);

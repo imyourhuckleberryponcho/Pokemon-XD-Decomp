@@ -1,4 +1,4 @@
-// GSmodel animation blending between two joint trees.
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -18,16 +18,16 @@ typedef struct _HSD_JObj HSD_JObj;
 
 struct _HSD_JObj {
     u8 unk0[0x8];
-    HSD_JObj* next;     // 0x08
-    HSD_JObj* parent;   // 0x0C
-    HSD_JObj* child;    // 0x10
-    u32 flags;          // 0x14
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
     u8 unk18[0x4];
-    Quaternion rotate;  // 0x1C
-    GSvec scale;        // 0x2C
-    GSvec translate;    // 0x38
+    Quaternion rotate;
+    GSvec scale;
+    GSvec translate;
     u8 unk44[0x38];
-    HSD_AObj* aobj;     // 0x7C
+    HSD_AObj* aobj;
 };
 
 #define JOBJ_MTX_DIRTY (1 << 6)
@@ -43,18 +43,18 @@ struct _HSD_SceneModelSet {
 };
 
 struct _GSmodel {
-    u32 flags;                // 0x000
-    _GSmodel* next;           // 0x004
-    _HSD_SceneModelSet* set;  // 0x008
-    HSD_JObj* jobj;           // 0x00C
-    HSD_JObj* blendJObj;      // 0x010
-    HSD_JObj* blendDest;      // 0x014
+    u32 flags;
+    _GSmodel* next;
+    _HSD_SceneModelSet* set;
+    HSD_JObj* jobj;
+    HSD_JObj* blendJObj;
+    HSD_JObj* blendDest;
     u8 unk18[0xB0];
     struct {
         u8 unk0[0x18];
         HSD_AObj* aobj;
-    } partMix[12];            // 0x0C8
-    f32 blendFactor;          // 0x218
+    } partMix[12];
+    f32 blendFactor;
 };
 
 extern "C" {
@@ -80,7 +80,7 @@ static void _modelIntpJObj(HSD_JObj* a, HSD_JObj* b, HSD_JObj* dst, f32 t);
 void modelIntpJObjRotate(HSD_JObj* a, HSD_JObj* b, HSD_JObj* dst, f32 t, GSvec* mix, u32 mixFlags);
 static void _modelSetRotateEulerToQuatAll(HSD_JObj* jobj);
 
-// Inline helpers from HSD's jobj.h (asserts carry that header's line numbers).
+
 static inline bool HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
     bool result;
     if (!jobj) {

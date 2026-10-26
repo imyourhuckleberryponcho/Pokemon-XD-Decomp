@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Species with an alternate (rare) model: species ID and its model resource IDs.
 typedef struct RareEntry {
     u16 id;
     u8 pad[2];

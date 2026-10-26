@@ -1,10 +1,8 @@
 #include <dolphin/types.h>
 
-// The retail unit uses separate strings and disables peephole optimization.
 #pragma pool_strings off
 #pragma peephole off
 
-// Script values are eight-byte tagged unions in the retail interpreter.
 struct Pokemon;
 struct Hero;
 struct GSvec;
@@ -50,7 +48,6 @@ public:
     s32 cmpHero(int, GSscript::tigaVariant*, GSscript::tigaVariant*);
 };
 
-// Explicit linkage for game classes whose complete headers are not reconstructed here.
 extern "C" {
 Hero* getHeroPtr__4HeroFv();
 Pokemon* getPokemon__4HeroFl(Hero*, s32);
@@ -148,7 +145,6 @@ s32 AppScript::cmpHero(int command, GSscript::tigaVariant* args, GSscript::tigaV
         s32 b = args[2].getInteger();
         s32 c = args[3].getInteger();
         s32 d = args[4].getInteger();
- // Keep both conversions: they determine the retail argument setup.
         u16 firstArgument = (u16)a;
         result->setInteger(scriptHeroCtrlElevator((s32)firstArgument, b, c, d));
         break;
@@ -206,7 +202,6 @@ s32 AppScript::cmpHero(int command, GSscript::tigaVariant* args, GSscript::tigaV
         s32 a = args[1].getInteger();
         s32 b = args[2].getInteger();
         heroSetFollowerWithID(a, b);
- // The retail command intentionally falls through to the snatch count.
     }
     case 0x31: result->setInteger(darkPokemonGetSnatchSuccessNum()); break;
     case 0x32: heroMoveSlowStop(); break;

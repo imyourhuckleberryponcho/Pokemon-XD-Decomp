@@ -1,4 +1,3 @@
-// Item battle sequence commands (ball throw, catching). Written from the XD asm.
 #include <dolphin/types.h>
 
 struct Pokemon;
@@ -286,8 +285,10 @@ extern "C" {
 void WS_BALL_THROW(void) {
     u32 threshold;
     u32 value;
-    u8 bonus = 0;
+    u8 bonus;
     u8 rate = 0;
+    u8 shakes;
+    bonus = 0;
     u8 work[8];
     fightFloor_GetEncountDataId(0);
     fightSeq_GetWazaSeq();
@@ -295,7 +296,6 @@ void WS_BALL_THROW(void) {
     FightOutPokemon* attacker = fightTargetGetPtrAsNowFightType(0x11, 0);
     FightItem* item = fightOutPokemon_GetFightItemPtr(attacker);
     fightItem_GetCount(item);
-    u8 shakes;
     u16 ball = fightItem_GetItemDataId(item);
     FightOutPokemon* target = fightTargetGetPtrAsNowFightType(0x12, 0);
     Pokemon* pokemon = fightOutPokemonGetPokemonPtr(target);

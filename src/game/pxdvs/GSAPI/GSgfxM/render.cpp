@@ -1,11 +1,9 @@
-// STATUS (dGfx): 15/16 exact. Default flags. GSgfxRender (97.9%): only instruction scheduling of the _renderFifoList[0] field stores differs.
 #include <dolphin/types.h>
 
 class GSgfxLayer;
 struct GSgfx_GCFifoObj;
 struct GXFifoObj;
 
-// One entry of the per-frame list of fifo blocks that still have to be sent to the GPU.
 struct GSgfxRenderFifoItem {
     GSgfx_GCFifoObj* fifo;
     void* start;

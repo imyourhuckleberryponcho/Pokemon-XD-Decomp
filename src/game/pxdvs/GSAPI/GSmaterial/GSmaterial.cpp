@@ -11,38 +11,38 @@ struct HSD_TExp {
 struct HSD_PEDesc;
 
 struct HSD_ImageDesc {
-    void* image_ptr; // 0x0
-    u16 width; // 0x4
-    u16 height; // 0x6
-    u32 format; // 0x8
-    u32 mipmap; // 0xc
-    f32 minLOD; // 0x10
-    f32 maxLOD; // 0x14
+    void* image_ptr;
+    u16 width;
+    u16 height;
+    u32 format;
+    u32 mipmap;
+    f32 minLOD;
+    f32 maxLOD;
 };
 
 struct HSD_TObj {
     u8 pad0[0x8];
-    HSD_TObj* next; // 0x8
+    HSD_TObj* next;
     u8 pad1[0x50 - 0xC];
-    f32 blending; // 0x50
+    f32 blending;
     u8 pad2[0x58 - 0x54];
-    HSD_ImageDesc* imagedesc; // 0x58
+    HSD_ImageDesc* imagedesc;
 };
 
 struct HSD_Material {
     u8 pad[0xC];
-    f32 alpha; // 0xc
+    f32 alpha;
 };
 
 struct GSmaterial;
 
 struct HSD_MObj {
     u8 pad0[0x8];
-    HSD_TObj* tobj; // 0x8
-    HSD_Material* mat; // 0xc
-    HSD_PEDesc* pe; // 0x10
+    HSD_TObj* tobj;
+    HSD_Material* mat;
+    HSD_PEDesc* pe;
     u8 pad1[0x20 - 0x14];
-    GSmaterial* user; // 0x20
+    GSmaterial* user;
 };
 
 struct HSD_TObjDesc {
@@ -50,39 +50,39 @@ struct HSD_TObjDesc {
     f32 scale[3];
     u32 mid[5];
     u8 wrap[4];
-    u32 flags; // 0x40
-    f32 blending; // 0x44
-    u32 magFilt; // 0x48
-    HSD_ImageDesc* imagedesc; // 0x4c
+    u32 flags;
+    f32 blending;
+    u32 magFilt;
+    HSD_ImageDesc* imagedesc;
     u32 tail[3];
 };
 
 struct HSD_MObjInfo {
     void (*init)(void);
     u32 classInfo[14];
-    void* setup; // 0x3c
-    int (*load)(HSD_MObj*, void*); // 0x40
-    HSD_TExp* (*make_texp)(HSD_MObj*, HSD_TObj*, HSD_TExp**); // 0x44
-    void* setup_tev; // 0x48
-    void* unk4c; // 0x4c
-    void* unk50; // 0x50
+    void* setup;
+    int (*load)(HSD_MObj*, void*);
+    HSD_TExp* (*make_texp)(HSD_MObj*, HSD_TObj*, HSD_TExp**);
+    void* setup_tev;
+    void* unk4c;
+    void* unk50;
 };
 
 struct GSmaterial {
-    u16 savedAlpha; // 0x0
-    u16 extensions; // 0x2
-    u32 savedFlags; // 0x4
-    HSD_MObj* mobj; // 0x8
-    GXColor modulate; // 0xc
-    u8 channels[4]; // 0x10
-    HSD_TObj* envTObj; // 0x14
-    HSD_ImageDesc* envImage; // 0x18
-    GStexture* envTexture; // 0x1c
-    s32 envType; // 0x20
-    s32 envMode; // 0x24
-    f32 envBlend; // 0x28
-    HSD_ImageDesc* savedImage; // 0x2c
-    HSD_PEDesc* savedPE; // 0x30
+    u16 savedAlpha;
+    u16 extensions;
+    u32 savedFlags;
+    HSD_MObj* mobj;
+    GXColor modulate;
+    u8 channels[4];
+    HSD_TObj* envTObj;
+    HSD_ImageDesc* envImage;
+    GStexture* envTexture;
+    s32 envType;
+    s32 envMode;
+    f32 envBlend;
+    HSD_ImageDesc* savedImage;
+    HSD_PEDesc* savedPE;
 };
 
 #define GSMATERIAL_UNSET ((void*)0xFEFEFEFE)
@@ -271,7 +271,6 @@ static inline void _matRemoveEnvMap(GSmaterial* material)
     }
     material->envTexture = 0;
 }
-
 
 void GSmaterialDisableExtension(GSmaterial* material, u32 extensions)
 {

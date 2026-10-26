@@ -1,4 +1,3 @@
-// WIP (NonMatching): only GSgfxBackFBDoFrame differs (99.3%): fb/i/pass register order.
 #include <dolphin/types.h>
 
 struct GStexture;
@@ -23,7 +22,6 @@ void GStextureUnlockImage(GStexture* texture);
 
 typedef bool (*GSgfxBackFBCallback)(GStexture* texture, u32 frame, void* user);
 
-// A texture the back framebuffer is copied into every frame while capturing.
 struct GSgfxBackFB {
     u8 active;
     GStexture* texture;
@@ -116,17 +114,19 @@ bool GSgfxBeginBackFBCapture(GStexture* texture, GSgfxBackFBCallback callback, v
 }
 
 void GSgfxBackFBDoFrame(GSgfxLayer* layer) {
+    GSgfxBackFB* fb;
     unsigned long size;
     unsigned long used;
     u32 i;
-    GSgfxBackFB* fb;
     GSgfxLayerPass pass;
+    GSgfxLayerPass selectedPass;
 
     if (!_backFBIsCapturing) {
         return;
     }
     layer->GetFifoSize(&size, &used);
-    pass = used != 0 ? (GSgfxLayerPass)1 : GS_GFX_LAYER_PASS_0;
+    selectedPass = used != 0 ? (GSgfxLayerPass)1 : GS_GFX_LAYER_PASS_0;
+    pass = selectedPass;
     for (i = 0, fb = gfxBackFBList; i < BACK_FB_MAX; i++, fb++) {
         if (fb->active == 1) {
             layer->textureCopy(pass, fb->texture, true, NULL, false, false, false);

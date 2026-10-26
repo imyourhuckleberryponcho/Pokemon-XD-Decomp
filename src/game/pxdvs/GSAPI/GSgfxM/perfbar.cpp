@@ -1,6 +1,3 @@
-// STATUS (dGfx): 9/11 exact. Default flags (pool_strings off). Left: GSgfxPerfbarRender (98.5%: saved-register numbering of the
-// pointer aliases/loop vars and 3 stack slots) and GSgfxPerfbarInit (97.8%: order of the 16 zero stores to _perfPERFMtx).
-// Its function-local static (GSgfxPerfColorToGSgfxCol) is a weak duplicate of the one in character.cpp.
 #include <dolphin/types.h>
 #pragma pool_strings off
 #include <dolphin/os.h>
@@ -86,7 +83,6 @@ public:
     (l)->dirty[1].words[word] |= (bits); \
     (l)->dirty[1].groups |= (group);
 
-// One frame worth of CPU and GPU timing samples.
 struct PerfFrame {
     OSTime cpuStart;
     f32 cpuTotal;
@@ -169,8 +165,6 @@ static inline PerfFrame* perfLast() {
     return &_perfLastFrame;
 }
 
-
-// From the precompiled GS header (only its function-local static is emitted here).
 extern "C" {
 inline GSgfxCol* GSgfxPerfColorToGSgfxCol(u32 color) {
     static GSgfxCol c;
@@ -221,14 +215,12 @@ void GSgfxPerfbarRender(GSgfxLayer* layer) {
     GSprimSetTextSize(10.0f, 10.0f);
     GSprimSetTextWidth(1.0f);
 
- // blend mode
     layer->blendType = 1;
     layer->blendSrc = 4;
     layer->blendDst = 5;
     layer->blendLogicOp = 5;
     GFX_DIRTY(layer, 24, 1, 0x40)
 
- // orthographic projection
     Mtx44 ortho;
     GSmtx44Ortho(ortho, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
     layer->projType = 1;
@@ -252,16 +244,13 @@ void GSgfxPerfbarRender(GSgfxLayer* layer) {
     }
     GFX_DIRTY(layer, 0, 0x20, 1)
 
- // pixel mode
     layer->colorUpdate = 1;
     layer->alphaUpdate = 0;
     layer->dither = 0;
     GFX_DIRTY(layer, 24, 4, 0x40)
- // z compare
     layer->zEnable = 0;
     layer->zFunc = 3;
     GFX_DIRTY(layer, 24, 8, 0x40)
- // alpha compare
     layer->alphaComp0 = 7;
     layer->alphaRef0 = 0;
     layer->alphaOp = 0;
@@ -269,7 +258,6 @@ void GSgfxPerfbarRender(GSgfxLayer* layer) {
     layer->alphaRef1 = 0;
     layer->alphaCompareOff = 1;
     GFX_DIRTY(layer, 24, 0x10, 0x40)
- // cull mode
     layer->cullMode = 0;
     GFX_DIRTY(layer, 3, 2, 2)
     layer->unkD90 = 1;

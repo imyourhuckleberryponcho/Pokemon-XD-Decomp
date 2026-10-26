@@ -58,7 +58,6 @@ GSgfxVF* GSgfxVFGetPredef(s32 id);
 u8 menuSubAnimAlpha(tagWINDOW_WORK* window);
 void winSpriteSetDisp(tagSPRITE_WORK* sprite, s32 disp);
 
-// Fades the selected entry's alpha in and all others out.
 void menuPdaSubCalcAlpha(f32* alpha, s32 count, s32 selected) {
     f32 step = 255.0f * timeGetLastFrameSec();
     f32 fadeIn = step / 0.1f;
@@ -96,7 +95,6 @@ void menuPdaSubInitAlpha(f32* alpha, s32 count, s32 selected) {
     }
 }
 
-// Moves *pos towards target; jumps faster when far away.
 void menuPdaSubCalcPositon(f32* pos, f32 target, f32 speed) {
     f32 cur;
     f32 diff;
@@ -117,7 +115,6 @@ void menuPdaSubCalcPositon(f32* pos, f32 target, f32 speed) {
     }
 }
 
-// Draws the scroll bar thumb for a list showing `visible` of `total` entries from *top.
 void menuPdaSubScrollBar(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32 menuID, s32 itemID, u32 color, s32 total,
                          s32 visible, s16* top) {
     GSgfxLayer* layer = GSgfxLayerFindByID(winSpriteGetLayerID(window, sprite));
@@ -171,7 +168,6 @@ void menuPdaSubScrollBar(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32 men
     layer->endSurface();
 }
 
-// Shows the up (or down) arrow only when the list can scroll that way.
 void menuPdaSubCheckUpDownCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s16* top, s32 total, s32 visible,
                                  u8 isUp) {
     sprite->alpha = menuSubAnimAlpha(window);

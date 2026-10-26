@@ -1,4 +1,4 @@
-// GSmodel core: model list, render module, transforms and loading.
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -15,13 +15,13 @@ typedef f32 Mtx[3][4];
 
 struct HSD_JObj {
     u8 unk0[0x14];
-    u32 flags;        // 0x14
+    u32 flags;
     u8 unk18[0x4];
-    GSvec rotate;     // 0x1C
-    f32 rotateW;      // 0x28
-    GSvec scale;      // 0x2C
-    GSvec translate;  // 0x38
-    Mtx mtx;          // 0x44
+    GSvec rotate;
+    f32 rotateW;
+    GSvec scale;
+    GSvec translate;
+    Mtx mtx;
 };
 
 struct _HSD_Joint {
@@ -48,7 +48,7 @@ struct GSboundAnimHeader;
 
 struct GSbound {
     u8 unk0[0x10];
-    GSboundAnimHeader* animHeader; // 0x10
+    GSboundAnimHeader* animHeader;
     u8 unk14[0xC];
 };
 
@@ -56,9 +56,9 @@ struct HSD_CObj;
 
 struct GScamera {
     u8 unk0[0x8];
-    HSD_CObj* cobj;   // 0x08
+    HSD_CObj* cobj;
     u8 unkC[0x60];
-    GSvec position;   // 0x6C
+    GSvec position;
 };
 
 struct GSmaterial {
@@ -72,71 +72,71 @@ struct GSpart {
 };
 
 struct _GSmodel {
-    u32 flags;                // 0x000
-    _GSmodel* next;           // 0x004
-    _HSD_SceneModelSet* set;  // 0x008
-    HSD_JObj* jobj;           // 0x00C
-    HSD_JObj* jobj10;         // 0x010
-    HSD_JObj* jobj14;         // 0x014
-    GSvec position;           // 0x018
-    GSvec rotation;           // 0x024
-    GSvec scale;              // 0x030
-    GSbound bound;            // 0x03C
-    GScamera* camera;         // 0x05C
-    u16 flags2;               // 0x060
-    u16 token;                // 0x062
-    u8 layers[8];             // 0x064
-    u32 animCount;            // 0x06C
-    u32 texAnimCount;         // 0x070
-    s32 animType;             // 0x074
-    s32 animIndex;            // 0x078
+    u32 flags;
+    _GSmodel* next;
+    _HSD_SceneModelSet* set;
+    HSD_JObj* jobj;
+    HSD_JObj* jobj10;
+    HSD_JObj* jobj14;
+    GSvec position;
+    GSvec rotation;
+    GSvec scale;
+    GSbound bound;
+    GScamera* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
+    s32 animType;
+    s32 animIndex;
     u8 unk7C[4];
-    f32 animFrame;            // 0x080
+    f32 animFrame;
     u8 unk84[0x2C];
-    s32 texAnimIndex;         // 0x0B0
+    s32 texAnimIndex;
     u8 unkB4[0x14];
     struct {
         u8 unk0[0x18];
         u32 unk18;
-    } mixA[12];               // 0x0C8
+    } mixA[12];
     u8 unk218[4];
-    u8 unk21C;                // 0x21C
-    u8 unk21D;                // 0x21D
+    u8 unk21C;
+    u8 unk21D;
     u8 unk21E[2];
-    u32 unk220;               // 0x220
+    u32 unk220;
     u8 unk224[4];
     struct {
         u32 unk0;
         u8 unk4[0x34];
-    } mixB[16];               // 0x228
-    s32 attachMode;           // 0x5A8
-    _GSmodel* attachModel;    // 0x5AC
-    u32 attachIndex;          // 0x5B0
-    GSvec attachPosition;     // 0x5B4
-    GSvec attachRotation;     // 0x5C0
-    GSvec attachScale;        // 0x5CC
-    void* particleBank;       // 0x5D8
-    u32 particleAttachMode;   // 0x5DC
-    GSmaterial* materials;    // 0x5E0
-    u32 materialCount;        // 0x5E4
-    u32 unk5E8;               // 0x5E8
-    u32 unk5EC;               // 0x5EC
-    u32 unk5F0;               // 0x5F0
-    f32 unk5F4;               // 0x5F4
-    u32 unk5F8;               // 0x5F8
-    f32 unk5FC;               // 0x5FC
-    u8 unk600[4];             // 0x600
-    f32 unk604;               // 0x604
-    u8 unk608[4];             // 0x608
-    f32 unk60C;               // 0x60C
-    u16 unk610;               // 0x610
-    u8 unk612;                // 0x612
-    u8 unk613;                // 0x613
-    u32 unk614;               // 0x614
-    u32 unk618;               // 0x618
-    u32 unk61C;               // 0x61C
-    s32 vertexCount;          // 0x620
-    s32 polygonCount;         // 0x624
+    } mixB[16];
+    s32 attachMode;
+    _GSmodel* attachModel;
+    u32 attachIndex;
+    GSvec attachPosition;
+    GSvec attachRotation;
+    GSvec attachScale;
+    void* particleBank;
+    u32 particleAttachMode;
+    GSmaterial* materials;
+    u32 materialCount;
+    u32 unk5E8;
+    u32 unk5EC;
+    u32 unk5F0;
+    f32 unk5F4;
+    u32 unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    u32 unk614;
+    u32 unk618;
+    u32 unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
 static inline bool MODEL_FLAG(struct _GSmodel* model, u32 flag);
@@ -147,11 +147,11 @@ enum GSgfxLayerPass {
 };
 
 struct GSgfxLayerState {
-    u32 dirty;        // 0x00
+    u32 dirty;
     u8 unk4[0xC];
-    u32 dirty10;      // 0x10
+    u32 dirty10;
     u8 unk14[0x50];
-    u32 dirty64;      // 0x64
+    u32 dirty64;
     u8 unk68[0x50];
 };
 
@@ -189,25 +189,25 @@ public:
     }
 
     u8 unk0[0x4];
-    u32 m_flags;            // 0x04
+    u32 m_flags;
     u8 unk8[0x20];
-    s32 m_id;               // 0x28
-    s32 m_mode;             // 0x2C
+    s32 m_id;
+    s32 m_mode;
     u8 unk30[0xD40];
-    u16 m_scissorX;         // 0xD70
-    u16 m_scissorY;         // 0xD72
-    u16 m_scissorW;         // 0xD74
-    u16 m_scissorH;         // 0xD76
-    f32 m_viewportX;        // 0xD78
-    f32 m_viewportY;        // 0xD7C
-    f32 m_viewportW;        // 0xD80
-    f32 m_viewportH;        // 0xD84
+    u16 m_scissorX;
+    u16 m_scissorY;
+    u16 m_scissorW;
+    u16 m_scissorH;
+    f32 m_viewportX;
+    f32 m_viewportY;
+    f32 m_viewportW;
+    f32 m_viewportH;
     u8 unkD88[0x8];
-    u32 m_unkD90;           // 0xD90
+    u32 m_unkD90;
     u8 unkD94[0x912];
-    u8 m_zUpdate;           // 0x16A6
-    u8 m_zCompare;          // 0x16A7
-    GSgfxLayerState m_state[2]; // 0x16A8
+    u8 m_zUpdate;
+    u8 m_zCompare;
+    GSgfxLayerState m_state[2];
 };
 
 struct GSgfxRenderModule {
@@ -315,7 +315,7 @@ static u8 _invalidateVtxTex;
 
 static _GSmodel* _modelLoad(_HSD_SceneModelSet* set, _HSD_Joint* joint, GSboundAnimHeader* header);
 
-// Inline helpers from HSD's jobj.h (asserts carry that header's line numbers).
+
 static inline bool HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
     bool result;
     if (!jobj) {
@@ -432,7 +432,7 @@ static inline void _destroyLinkedParticles(_GSmodel* model) {
     }
 }
 
-// From the Dolphin SDK's OSFastCast.h (GQR3 is set up for u16 conversion).
+
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
     asm { psq_l ret, 0(arg), 1, 3 }

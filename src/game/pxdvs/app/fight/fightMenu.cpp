@@ -231,12 +231,18 @@ void fightMenuCloseInfoMenu(u8 wait)
         fightMenuAllFightTrainerCloseStatusMenu(1);
         fightMenuAllFightOutPokemonCloseStatusMenu(1);
         if (fightFloorIsUseFightTimerCommand(0) == 1) {
-            while (menuFightCloseCheckCountDown()) {
+            while (1) {
+                if (!(menuFightCloseCheckCountDown())) {
+                    break;
+                }
                 GSthreadSwitch();
             }
         }
         if (fightFloorIsUseFightTimerAll(0) == 1) {
-            while (menuFightCloseCheckTotalTimer()) {
+            while (1) {
+                if (!(menuFightCloseCheckTotalTimer())) {
+                    break;
+                }
                 GSthreadSwitch();
             }
         }
@@ -309,7 +315,10 @@ void fightMenuAllFightOutPokemonCloseStatusMenu(u8 wait)
 {
     fightFloorLoopValidFightOutPokemon(0, _fightMenuAllFightOutPokemonCloseStatusMenuSub, 0, 0);
     if (wait == 1) {
-        while (fightFloorLoopValidFightOutPokemon(0, _fightMenuAllFightOutPokemonCloseStatusMenuSubCloseCheck, 0, 0) != 1) {
+        while (1) {
+            if (fightFloorLoopValidFightOutPokemon(0, _fightMenuAllFightOutPokemonCloseStatusMenuSubCloseCheck, 0, 0) == 1) {
+                break;
+            }
             GSthreadSwitch();
         }
     }
@@ -504,8 +513,8 @@ u32 fightMenuFightTrainerAgbHeroOpenMenu(FIGHT_TRAINER* trainer, u16 id)
     FightOutPokemon* target;
     u16 i;
     u32 num;
-    s8 wazaIdx;
-    u32 gbaWork;
+    FightSide* s;
+    u16 trainerNum;
     u16 waza;
     s32 action;
     u16 prev;
@@ -514,10 +523,10 @@ u32 fightMenuFightTrainerAgbHeroOpenMenu(FIGHT_TRAINER* trainer, u16 id)
     u32 wazaTarget;
     u16 cnt;
     u16 k;
-    s32 gba;
-    u16 trainerNum;
+    s8 wazaIdx;
+    u32 gbaWork;
     FIGHT_TRAINER* tr;
-    FightSide* s;
+    s32 gba;
     u8 found;
     s16 change;
 
@@ -668,7 +677,8 @@ s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer,
     fightTypeDataBiosGetPtr(id);
     num = fightTypeDataBiosGetFightoutPokemonNum();
     for (i = 0; i < num; i++) {
-        if (fightTrainerGetStatus(trainer, 0, 0x46, i) == target) {
+        s32 cmpv = fightTrainerGetStatus(trainer, 0, 0x46, i);
+        if (cmpv == target) {
             break;
         }
     }

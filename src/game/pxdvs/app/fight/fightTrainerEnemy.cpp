@@ -1,8 +1,5 @@
 #include <dolphin/types.h>
 
-// Built with -O4,s (see configure.py).
-
-// What the AI remembers about one opposing Pokemon.
 struct TrainerEnemyPokemon {
     s16 fightEntryId;
     u8 unk2;
@@ -73,7 +70,6 @@ bool fightTrainerEnemyPokemonRegistAry(TrainerEnemyPokemon* ary, u16 num, s16 id
     return true;
 }
 
-// id < 0 finds a free slot.
 TrainerEnemyPokemon* fightTrainerEnemyPokemonSearchAry(TrainerEnemyPokemon* ary, u16 num, s16 id) {
     TrainerEnemyPokemon* p;
     u16 i;

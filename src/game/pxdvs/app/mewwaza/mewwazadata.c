@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Move pool for the Mew move selector: move ID plus category flags.
 typedef struct MewWazaEntry {
     u16 waza;
     u16 flags;
@@ -104,7 +103,6 @@ MewWazaEntry mWazaTbl[] = {
     {0x0000, 0x0000},
 };
 
-// Move template: slot kind (category 1-3), then 4 move IDs (0x80xx = pool selector).
 typedef struct TemplateData {
     u16 valid;
     u16 kind;

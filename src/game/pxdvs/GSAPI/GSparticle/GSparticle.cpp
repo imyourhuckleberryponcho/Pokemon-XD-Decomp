@@ -1,6 +1,4 @@
-// Partial: only the bank activation flags are written so far.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -42,7 +39,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -83,14 +79,12 @@ struct _HSD_JObj;
 
 struct GSparticleBank {
     u8 unk0[4];
-    u8 inactive; // 0x04
+    u8 inactive;
 };
 
 extern "C" {
 
-
 extern "C++" {
-// ---- draft declarations ----
 struct GScamera {
     u8 _draft[1];
 };
@@ -263,23 +257,19 @@ static void _particlePreUpdate(float p0);
 static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1);
 static void _particleUpdateAttachment(_GSparticleGen* p0);
 }
-static u8 _invalidateTex;
-static u8 _invalidateVtx;
-static u32 _particleBankStructCount;
-static u8* _particleBankStructList;
-static u8 _particlePALFrameCount;
-GScamera* g_particle_cameras[4];
 u32 g_particle_cameras_count;
-// ---- draft declarations ----
-
+static u8* _particleBankStructList;
+static u32 _particleBankStructCount;
+static u8 _particlePALFrameCount;
+static u8 _invalidateVtx;
+GScamera* g_particle_cameras[4];
+static u8 _invalidateTex;
 
 extern "C" {
 void GSparticleInit(u32 p0);
 }
 static u8 init_S2345;
 static f32 sysdolRemain_S2344;
-// ---- draft declarations ----
-
 
 extern "C" {
 u8* GSparticleLoad(void *p0);
@@ -320,10 +310,9 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
             M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
         }
         temp_r0 = M2C_FIELD(p0, s32 *, 0x28);
-        switch (temp_r0) {                          /* irregular */
+        switch (temp_r0) {
         case 4:
             var_r29 = 2;
-            /* fallthrough */
         case 2:
             if ((p1 == 1) && (psDispHasRenderData(var_r29) == 1)) {
                 M2C_FIELD(p0, s32 *, 0xD90) = 0;
@@ -366,7 +355,6 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
                     GScameraLoadActiveCameraMatrix((GSgfxLayerID)(M2C_FIELD(p0, s32 *, 0x28)));
                 }
             }
-            /* fallthrough */
         case 0:        default:
         case 3:
         case 5:
@@ -480,31 +468,30 @@ extern "C++" {
 extern "C++" {
 #pragma optimize_for_size on
 
-
 extern "C++" {
 static void _particlePreUpdate(float p0) {
     GScamera **var_r3;
-    GScamera *temp_r3;
+    s32 var_r31 = 0;
     GScamera *temp_r3_7;
-    GScamera *var_r25_2;
+    u8 var_r4;
     _GSparticleGen *var_r25;
-    _GSparticleGen *var_r27;
+    u32 var_r30;
     f32 temp_f1;
     s32 temp_cr0_eq;
     s32 temp_cr0_eq_2;
-    s32 temp_r28;
-    s32 var_r31;
+    GScamera *temp_r3;
     u32 temp_r3_5;
     u32 var_ctr;
     u32 var_r25_3;
     u32 var_r27_2;
     u32 var_r29_2;
-    u32 var_r30;
+    s32 temp_r28;
+    _GSparticleGen *var_r27;
     u8 *temp_r26;
     u8 temp_r3_6;
     u8 temp_r3_8;
-    u8 var_r29;
-    u8 var_r4;
+    u32 var_r29;
+    GScamera *var_r25_2;
     u8 *temp_r3_2;
     u8 *temp_r3_3;
     u8 *temp_r3_4;
@@ -515,7 +502,6 @@ static void _particlePreUpdate(float p0) {
     }
     temp_r28 = GSgfxPerfbarCPUEntry(0x800080);
     memset((void*)(g_particle_cameras), 0, 0x10U);
-    var_r31 = 0;
     var_r30 = 0U;
     g_particle_cameras_count = 0;
     while (var_r30 < (u32) _particleBankStructCount) {
@@ -605,8 +591,7 @@ loop_28:
     var_r27_2 = (u32) p0;
     temp_f1 = sysdolRemain_S2344 + (p0 - (f32) var_r27_2);
     sysdolRemain_S2344 = temp_f1;
-    M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-    if (temp_f1 == 1.0f) {
+    if (temp_f1 >= 1.0f) {
         temp_r3_5 = (u32) temp_f1;
         var_r27_2 += temp_r3_5;
         sysdolRemain_S2344 -= (f32) temp_r3_5;
@@ -631,13 +616,13 @@ loop_28:
         }
     }
     temp_r3_8 = GSgfxVideoGetVsyncRate();
-    particleEngineUpdate(temp_r3_8, p0 / (f32) temp_r3_8);
+    particleEngineUpdate((u16)temp_r3_8, p0 / (f32) temp_r3_8);
     psDispBeginFrame();
     GSgfxPerfbarCPUEntry(temp_r28);
 }
 }
 static void _particleUpdateAttachment(_GSparticleGen* p0) {
-    s32 unksp74;
+    f32 var_f1_3;
     f32 sp1C;
     f32 sp20;
     f32 sp24;
@@ -685,7 +670,7 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
     f32 var_f1_14;
     f32 var_f1_15;
     f32 temp_f2;
-    f32 var_f1_3;
+    u32 unksp74;
     f32 var_f1_4;
     f32 var_f1_5;
     f32 var_f1_6;
@@ -693,7 +678,6 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
     f32 var_f1_8;
     f32 var_f1_9;
     s32 temp_r0;
-    u8 *temp_r3_10;
     u8 *temp_r3_11;
     u8 *temp_r3_12;
     u8 *temp_r3_13;
@@ -729,9 +713,9 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
         GSvecTransformQuat((GSvec*)(&unksp58), (const GSquat*)(&unksp64), (const GSvec*)(((u8*)(p0) + 0x10)));
         PSVECAdd((const register Vec*)(v8C), (const register Vec*)(&unksp58), (register Vec*)(v8C));
         PSVECAdd((const register Vec*)(v80), (const register Vec*)(((u8*)(p0) + 0x1C)), (register Vec*)(v80));
-        unksp74 *= M2C_FIELD(p0, f32 *, 0x28);
         sp78 *= M2C_FIELD(p0, f32 *, 0x2C);
         sp7C *= M2C_FIELD(p0, f32 *, 0x30);
+        unksp74 *= M2C_FIELD(p0, f32 *, 0x28);
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
             temp_r3_2 = M2C_FIELD(p0, u8 **, 0x38);
             if (temp_r3_2 != NULL) {
@@ -952,12 +936,11 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
             case 5:
                 if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
                     EulerToQuat((Vec*)(v80), (Quaternion*)(&unksp18));
-                    temp_r3_10 = M2C_FIELD(p0, u8 **, 0x38);
-                    if (temp_r3_10 != NULL) {
-                        M2C_FIELD(temp_r3_10, f32 *, 0x118) = unksp18;
-                        M2C_FIELD(temp_r3_10, f32 *, 0x11C) = sp1C;
-                        M2C_FIELD(temp_r3_10, f32 *, 0x120) = sp20;
-                        M2C_FIELD(temp_r3_10, f32 *, 0x124) = sp24;
+                    if ((M2C_FIELD(p0, u8 **, 0x38)) != NULL) {
+                        M2C_FIELD((M2C_FIELD(p0, u8 **, 0x38)), f32 *, 0x118) = unksp18;
+                        M2C_FIELD((M2C_FIELD(p0, u8 **, 0x38)), f32 *, 0x11C) = sp1C;
+                        M2C_FIELD((M2C_FIELD(p0, u8 **, 0x38)), f32 *, 0x120) = sp20;
+                        M2C_FIELD((M2C_FIELD(p0, u8 **, 0x38)), f32 *, 0x124) = sp24;
                     }
                 } else {
                     temp_r4_9 = M2C_FIELD(p0, u8 **, 0x38);
@@ -1355,7 +1338,6 @@ void GSparticleSetRandomVelocityScaling(void *p0, u8 p1) {
     temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r5 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
- // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
                 } else {
@@ -1375,7 +1357,6 @@ void GSparticleSetNodeScaling(void *p0, u8 p1) {
     temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r5 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
- // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
                 } else {
@@ -1395,7 +1376,6 @@ void GSparticleSetTornadoScaling(void *p0, u8 p1, u8 p2) {
     temp_r6 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r6 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
- // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
             if (temp_r6 != NULL) {
                 if (p1 != 0) {
                 } else {
@@ -1415,7 +1395,6 @@ void GSparticleSetParticleTextureScaling(void *p0, u8 p1) {
     temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r5 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
- // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
                 } else {
@@ -1435,7 +1414,6 @@ void GSparticleSetOffsetRotationInLocal(void *p0, u8 p1, u8 p2) {
     temp_r6 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r6 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
- // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
             if (temp_r6 != NULL) {
                 if (p1 != 0) {
                 } else {
@@ -1455,7 +1433,6 @@ void GSparticleSetVelocityRotationInLocal(void *p0, u8 p1) {
     temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
     if (temp_r5 != NULL) {
         if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
- // not supported for this generator type (same checks as GSparticleSetGeneratorVisibility)
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
                 } else {
@@ -1827,9 +1804,9 @@ void GSparticleDetachGeneratorFromGSpart(void *p0, u8 p1) {
 
 extern "C" {
 void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4, u8 p5) {
-    f32 sp14;
-    volatile f32 sp10;
     volatile f32 spC;
+    volatile f32 sp10;
+    f32 sp14;
     f32 sp8;
     u8 *temp_r3;
     u8 *temp_r3_2;
@@ -1875,8 +1852,8 @@ void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4,
                 sp10 = M2C_FIELD(temp_r3_2, f32 *, 0x120);
                 sp14 = M2C_FIELD(temp_r3_2, f32 *, 0x124);
             } else {
-                spC = 0.0f;
                 sp10 = 0.0f;
+                spC = 0.0f;
                 sp8 = 0.0f;
                 sp14 = 1.0f;
             }
@@ -1958,9 +1935,9 @@ GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* p0, s32 p1, s32 p
     s32 var_r3_2;
     u8 *var_r4;
     s32 var_r4_2;
-    u8 temp_r0;
-    u8 temp_r0_2;
-    u8 temp_r0_3;
+    s8 temp_r0;
+    s8 temp_r0_2;
+    s8 temp_r0_3;
     u8 temp_r5;
     u8 *var_r5;
     s32 var_ctr_2;
@@ -2138,22 +2115,22 @@ void GSparticleFree(GSparticleBank* p0) {
 }
 extern "C" {
 u8* GSparticleLoad(void *p0) {
-    ModelBank *temp_r3;
+    bool var_r30;
     ModelBank *temp_r4;
     ModelBank *temp_r4_2;
     ModelBank *temp_ret;
     f32 temp_f1;
     s32 temp_r4_3;
-    u16 temp_r5;
+    s32 temp_r5;
     u32 var_ctr;
     u32 var_ctr_2;
     u8 *var_r29;
     u8 *var_r4;
-    u8 var_r0;
-    u8 var_r30;
+    s32 var_r0;
+    ModelBank *temp_r3;
 
     var_r29 = _particleBankStructList;
-    var_ctr = _particleBankStructCount;
+    if (var_ctr < _particleBankStructCount) var_ctr = _particleBankStructCount;
     if ((u32) _particleBankStructCount > 0U) {
 loop_1:
         if ((u8) *var_r29 == 0) {
@@ -2196,15 +2173,17 @@ loop_9:
 block_12:
             var_r0 = 0;
         }
-        if (var_r0 == 0) {
+        if (var_r0) {
 
         } else {
             var_r30 += 1;
             goto loop_16;
         }
     }
-    if (var_r30 == 0xFF) {
-        return NULL;
+    switch (var_r30) {
+    case 0xFF:
+            return NULL;
+        break;
     }
     M2C_FIELD(var_r29, s32 *, 0x10) = 0;
     M2C_FIELD(var_r29, ModelBank **, 0xC) = NULL;
@@ -2252,7 +2231,7 @@ block_12:
         return NULL;
     }
     temp_r4_3 = M2C_FIELD(p0, s32 *, 0);
-    switch (temp_r4_3) {                            /* irregular */
+    switch (temp_r4_3) {
     case 0x47505430:
         GSlogWrite((const char*)(&jtbl_1991 + 0x6C), temp_r4_3, temp_f1);
         GSlogWrite((const char*)(&jtbl_1991 + 0xC8));
@@ -2454,6 +2433,5 @@ loop_4:
 }
 }
 }
-
 
 }

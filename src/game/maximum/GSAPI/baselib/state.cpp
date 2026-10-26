@@ -1,8 +1,3 @@
-// WIP (NonMatching): only HSD_SetupPEMode differs, in the register numbers chosen for the
-// inlined HSD_StateSet* variables (same instructions otherwise).
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order, and the HSD_StateSet* functions defined later are inlined into HSD_SetupPEMode.
-// Based on the Melee decomp's state.c; XD's channel setup differs (local channel tables).
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -398,8 +393,8 @@ void HSD_StateSetDstAlpha(s32 enable, u8 alpha) {
     u8 on = enable ? TRUE : FALSE;
     if (state_enable_dst_alpha != on || state_dst_alpha != alpha) {
         GXSetDstAlpha(on, alpha);
-        state_enable_dst_alpha = on;
         state_dst_alpha = alpha;
+        state_enable_dst_alpha = on;
     }
 }
 
@@ -412,7 +407,7 @@ void HSD_StateSetZCompLoc(s32 before_tex) {
 }
 
 void HSD_StateSetDither(s32 dither) {
-    u8 on = dither ? TRUE : FALSE;
+    u32 on = dither ? TRUE : FALSE;
     if (state_dither != on) {
         GXSetDither(on);
         state_dither = on;

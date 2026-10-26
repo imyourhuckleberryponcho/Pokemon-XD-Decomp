@@ -1,5 +1,3 @@
-// WIP (NonMatching): pachiruEffectFree/Create match; _pachiruEffectCreateTexture (Colosseum port) is 98%:
-// only saved-register choice differs (width/texture/image). Declaration order and flags tried, no effect.
 #include <dolphin/types.h>
 
 struct GStexture;
@@ -7,7 +5,6 @@ struct GSmaterial;
 struct GSmodel;
 struct GSpart;
 
-// Material of the Pachirisu model whose texture gets randomized spots.
 struct PachiruEffect {
     GSmaterial* material;
     GStexture* texture;
@@ -35,7 +32,6 @@ void DCFlushRange(void* addr, u32 size);
 void GSlogWrite(const char* fmt, ...);
 }
 
-// Where the four spots go on the base texture (x, y).
 static u8 gPachiruCoords[4][2] = { { 0x06, 0x07 }, { 0x5B, 0x06 }, { 0x1E, 0x41 }, { 0x44, 0x41 } };
 
 static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spot, unsigned long seed);
@@ -92,7 +88,6 @@ bool pachiruEffectCreate(PachiruEffect* effect, GSmodel* model, u32 seed) {
 
 }
 
-// original's register allocation needs, e.g. `scratch` holds the copy size and later the spot width.
 static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spot, unsigned long seed) {
     u16* srcImage;
     GStexture* texture;

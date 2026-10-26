@@ -1,6 +1,5 @@
 #include "../../../../PowerPC_EABI_Support/msl_types.h"
 
-
 int memcmp(const void* __s1, const void* __s2, size_t __n);
 u8* __memrchr(u8* s, u8 c, size_t n);
 void* memchr(u8* s, int c, size_t n);

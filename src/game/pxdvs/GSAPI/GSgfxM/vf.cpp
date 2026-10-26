@@ -1,6 +1,4 @@
-// Partial: only the small vertex-format getters are written so far.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -40,14 +37,13 @@ struct GSgfxLayer;
 struct GSgfxVF;
 
 struct GSgfxVF {
-    u16 flags;        // 0x00
-    u8 colorCount;    // 0x02
-    u8 textureCount;  // 0x03
+    u16 flags;
+    u8 colorCount;
+    u8 textureCount;
 };
 
 extern "C" {
 
-// ---- draft declarations ----
 struct GSgfxLayer {
     u8 _draft[1];
     void ResetVertexFormat(GSgfxVF*);
@@ -75,8 +71,6 @@ static u32 _vfAllocIndex;
 static u8 _vfElemTable[1];
 static s32 _vfLocal[0x110];
 static struct _struct__vfPredefFmt_0x440 _vfPredefFmt[9];
-// ---- draft declarations ----
-
 
 extern "C" {
 void GSgfxVFRemoveElement(void *p0, s32 p1);
@@ -91,21 +85,21 @@ u8 GSgfxVFGetColorCount(GSgfxVF* vf) {
 }
 extern "C" {
 void GSgfxVFSetArray(GSgfxVF* p0, s32 p1, s32 p2, void* p3, s32 p4, s32 p5) {
-    s32 *var_r5_2;
+    u8 *var_r5_3;
     s32 *var_r9;
     s32 *var_r9_2;
     s32 temp_r0;
-    s32 temp_r0_3;
-    s32 temp_r0_4;
+    u32 temp_r0_3;
+    u32 var_r10;
     u32 temp_r11;
     u32 temp_r0_5;
     u32 var_ctr;
     u8 *var_r9_3;
-    u32 var_r10;
+    s32 temp_r0_4;
     u32 var_r5_4;
     u8 *var_r10_2;
     u8 *var_r5;
-    u8 *var_r5_3;
+    s32 *var_r5_2;
     u32 var_ctr_2;
 
     if ((p3 != NULL) || ((u32) (p5 + 0x10000) == -1U) || ((p3 != NULL) && ((u32) p5 != 0U))) {
@@ -121,7 +115,7 @@ loop_8:
             goto loop_8;
         }
         M2C_FIELD(var_r9, s32 *, 4) = p2;
-        var_r5 = ((u8*)(p0) + 0x290);
+        var_r5 = ((u8*)((s32)p0) + 0x290);
 loop_14:
         if ((M2C_FIELD(var_r5, s32 *, 4)) == 0xFF) {
             var_r5 = NULL;
@@ -132,8 +126,8 @@ loop_14:
             goto loop_14;
         }
         if (var_r5 == NULL) {
-            var_r10 = 0;
             var_r5_2 = (long *)(_vfElemTable);
+            var_r10 = 0;
 loop_21:
             temp_r0_3 = *var_r5_2;
             if (temp_r0_3 == 0xFF) {
@@ -150,10 +144,10 @@ loop_32:
             if (var_r10 == 0) {
                 var_r10_2 = NULL;
             } else {
-                temp_r0_4 = M2C_FIELD(var_r9_2, s32 *, -4);
                 var_r9_2 -= 4;
                 var_r5_3 = ((u8*)(p0) + 0x290);
                 var_r10 -= 1;
+                temp_r0_4 = M2C_FIELD(var_r9_2, s32 *, -4);
 loop_28:
                 temp_r11 = M2C_FIELD(var_r5_3, s32 *, 4);
                 if (temp_r11 == 0xFF) {
@@ -179,8 +173,8 @@ loop_28:
             }
             var_r5_4 = (u32) ((var_r9_3 + 0x10) - var_r10_2) >> 4U;
             if (var_r9_3 >= var_r10_2) {
-                temp_r0_5 = var_r5_4 >> 3U;
                 var_ctr = temp_r0_5;
+                temp_r0_5 = var_r5_4 >> 3U;
                 if (temp_r0_5 != 0) {
                     do {
                         M2C_FIELD(var_r9_3, s32 *, 0x14) = (s32) M2C_FIELD(var_r9_3, s32 *, 4);
@@ -241,6 +235,8 @@ block_43:
 }
 extern "C" {
 void GSgfxVFRemoveElement(void *p0, s32 p1) {
+    goto loop_4;
+    goto loop_28;
     u8 *var_r5_2;
     u8 *var_r5_3;
     s32 *var_r6_2;
@@ -260,9 +256,9 @@ void GSgfxVFRemoveElement(void *p0, s32 p1) {
     u8 var_r7;
     u8 *temp_r5;
     u8 *var_r4;
-    u8 *var_r5;
     s32 *var_r5_5;
     s32 *var_r6;
+    u8 *var_r5;
 
     var_r6 = (long *)(((u8*)(p0) + 0x1B8));
     var_r7 = 0;
@@ -274,13 +270,12 @@ loop_4:
 
     } else {
         var_r6 += 8;
-        goto loop_4;
     }
     if (var_r6 != NULL) {
         var_r5 = (unsigned char *)(var_r6 + 8);
 loop_9:
         if ((s32) M2C_FIELD(var_r6, s32 *, 0) != 0xFF) {
-            M2C_FIELD(var_r6, s32 *, 0) = M2C_FIELD(var_r5, s32 *, 0);
+            M2C_FIELD(var_r6, s32 *, 0) = M2C_FIELD((u16)var_r5, s32 *, 0);
             temp_r0_2 = M2C_FIELD(var_r5, s32 *, 4);
             var_r5 += 8;
             M2C_FIELD(var_r6, s32 *, 4) = temp_r0_2;
@@ -323,7 +318,6 @@ loop_28:
 
         } else {
             var_r5_3 += 0x10;
-            goto loop_28;
         }
         if (var_r5_3 != NULL) {
             var_r4 = var_r5_3 + 0x10;
@@ -396,7 +390,7 @@ loop_62:
                 }
             }
         }
-        M2C_FIELD(p0, u16 *, 0) = (u16) (M2C_FIELD(p0, u16 *, 0) | 6);
+        M2C_FIELD((u16)p0, u16 *, 0) = (u16) (M2C_FIELD((u16)p0, u16 *, 0) | 6);
     }
 }
 }
@@ -407,6 +401,7 @@ extern "C" {
 extern "C" {
 void GSgfxVFSetElement(GSgfxVF* p0, s32 p1, s32 p2, s32 p3, s32 p4) {
     goto loop_4;
+    goto loop_68;
     s32 *var_r3;
     s32 *var_r3_2;
     s32 *var_r4;
@@ -424,7 +419,7 @@ void GSgfxVFSetElement(GSgfxVF* p0, s32 p1, s32 p2, s32 p3, s32 p4) {
     s32 temp_r0_4;
     s32 temp_r0_5;
     s32 temp_r0_7;
-    s32 temp_r3;
+    volatile s32 temp_r3;
     s32 temp_r3_2;
     s32 temp_r6;
     s32 temp_r7;
@@ -438,7 +433,7 @@ void GSgfxVFSetElement(GSgfxVF* p0, s32 p1, s32 p2, s32 p3, s32 p4) {
     u32 var_r4_3;
     u32 var_r5_3;
     u32 var_r6;
-    u8 var_r3_4;
+    bool var_r3_4;
     u8 var_r4_6;
     u8 var_r5_6;
     u8 *temp_r4;
@@ -644,13 +639,12 @@ loop_64:
         if (var_r5_5 != NULL) {
             var_r4_6 += 1;
             M2C_FIELD(p0, u8 *, 2) = (u8) (M2C_FIELD(p0, u8 *, 2) + 1);
-            goto loop_68;
         }
     }
     var_r5_6 = 0;
 loop_78:
     if (var_r5_6 < 8U) {
-        var_r4_7 = (long *)(((u8*)(p0) + 8));
+        var_r4_7 = (long *)(((u8*)((u8)p0) + 8));
 loop_74:
         temp_r3_2 = *var_r4_7;
         if (temp_r3_2 == 0xFF) {
@@ -686,7 +680,6 @@ loop_85:
 }
 
 extern "C" {
-// vertex format elements: 8-byte {type, data} entries at +0x1B8, terminated by type 0xFF
 struct GSgfxVFElement {
     s32 type;
     s32 data;
@@ -724,7 +717,6 @@ void GSgfxVFFree(GSgfxVF* vf) {
 
 }
 
-
 u32 GSgfxVFIsUsed(GSgfxVF* vf) {
     return vf->flags & 1;
 }
@@ -736,9 +728,9 @@ GSgfxVF* GSgfxVFGetPredef(s32 p0) {
 
 extern "C" {
 void GSgfxVFCreate(GSgfxVF* p0) {
-    s32 var_ctr;
-    s32 var_ctr_2;
-    s32 var_ctr_3;
+    u16 var_ctr;
+    u16 var_ctr_2;
+    u16 var_ctr_3;
     u32 temp_r6;
     u32 var_r0;
     u8 *var_r4;
@@ -781,7 +773,7 @@ void GSgfxVFCreate(GSgfxVF* p0) {
     var_ctr = 0x1B - 0x18;
     if (0x18 < 0x1B) {
         do {
-            M2C_FIELD(var_r6, s32 *, 8) = 0xFF;
+            M2C_FIELD((u16)var_r6, s32 *, 8) = 0xFF;
             var_r6 += 0x10;
             var_ctr -= 1;
         } while (var_ctr != 0);
@@ -864,22 +856,22 @@ void GSgfxVFInit(GSgfxVF* p0) {
 
 extern "C" {
 s32* GSgfxVFBuildTemp(s32 p0, s32 p1, u8 p2, s32 p3, u8 p4, s32 p5, u8 p6, s32 p7, s32 p8, s32 arg_sp8) {
+    s32 temp_r8;
     u32 var_ctr_2;
     s32 *var_r12;
-    s32 temp_r26;
+    s32 temp_r3_2;
     s32 temp_r29;
     s32 temp_r30;
     s32 temp_r31;
     s32 temp_r3;
-    s32 temp_r3_2;
+    s32 temp_r4_2;
     s32 temp_r3_3;
     s32 temp_r4;
-    s32 temp_r4_2;
+    s32 temp_r26;
     s32 temp_r6;
-    s32 temp_r8;
-    s32 var_ctr_3;
-    s32 var_r24;
     s32 var_r24_2;
+    s32 var_r24;
+    s32 var_ctr_3;
     s32 *var_r11;
     s8 var_ctr;
 
@@ -907,7 +899,7 @@ s32* GSgfxVFBuildTemp(s32 p0, s32 p1, u8 p2, s32 p3, u8 p4, s32 p5, u8 p6, s32 p
     _vfLocal[0x6E] = 9;
     _vfLocal[0x6F] = 1;
     if (p2 == 1) {
-        switch (p3) {                               /* irregular */
+        switch (p3) {
         case 0:
             _vfLocal[7] = 0;
             _vfLocal[6] = 0xA;
@@ -923,7 +915,7 @@ s32* GSgfxVFBuildTemp(s32 p0, s32 p1, u8 p2, s32 p3, u8 p4, s32 p5, u8 p6, s32 p
         var_r11 += 0x10;
         _vfLocal[0x71] = 1;
         var_r12 += 8;
-        M2C_FIELD(_vfLocal, s8 *, 0x24) = 0;
+        M2C_FIELD((u16)_vfLocal, s8 *, 0x24) = 0;
     }
     var_r24 = 0;
     var_ctr = p4;
@@ -970,7 +962,6 @@ s32* GSgfxVFBuildTemp(s32 p0, s32 p1, u8 p2, s32 p3, u8 p4, s32 p5, u8 p6, s32 p
                     temp_r3_2 = var_r24_2 + 0x14;
                     var_r24_2 += 8;
                     M2C_FIELD(var_r11, s8 *, 0xC) = 0;
-                    M2C_FIELD(var_r12, s32 *, 0) = temp_r26;
                     M2C_FIELD(var_r12, s32 *, 4) = 1;
                     M2C_FIELD(var_r11, s32 *, 0x10) = temp_r29;
                     M2C_FIELD(var_r11, s32 *, 0x14) = p7;
@@ -981,6 +972,7 @@ s32* GSgfxVFBuildTemp(s32 p0, s32 p1, u8 p2, s32 p3, u8 p4, s32 p5, u8 p6, s32 p
                     M2C_FIELD(var_r11, s32 *, 0x20) = temp_r30;
                     M2C_FIELD(var_r11, s32 *, 0x24) = p7;
                     M2C_FIELD(var_r11, s32 *, 0x28) = arg_sp8;
+                    M2C_FIELD(var_r12, s32 *, 0) = temp_r26;
                     M2C_FIELD(var_r11, s8 *, 0x2C) = 0;
                     M2C_FIELD(var_r12, s32 *, 0x10) = temp_r30;
                     M2C_FIELD(var_r12, s32 *, 0x14) = 1;
@@ -1007,14 +999,14 @@ s32* GSgfxVFBuildTemp(s32 p0, s32 p1, u8 p2, s32 p3, u8 p4, s32 p5, u8 p6, s32 p
                     M2C_FIELD(var_r11, s32 *, 0x68) = arg_sp8;
                     M2C_FIELD(var_r11, s8 *, 0x6C) = 0;
                     M2C_FIELD(var_r12, s32 *, 0x30) = temp_r4_2;
-                    M2C_FIELD(var_r12, s32 *, 0x34) = 1;
                     M2C_FIELD(var_r11, s32 *, 0x70) = temp_r3_2;
+                    M2C_FIELD(var_r12, s32 *, 0x34) = 1;
                     M2C_FIELD(var_r11, s32 *, 0x74) = p7;
                     M2C_FIELD(var_r11, s32 *, 0x78) = arg_sp8;
                     M2C_FIELD(var_r11, s8 *, 0x7C) = 0;
                     var_r11 += 0x80;
-                    M2C_FIELD(var_r12, s32 *, 0x38) = temp_r3_2;
                     M2C_FIELD(var_r12, s32 *, 0x3C) = 1;
+                    M2C_FIELD(var_r12, s32 *, 0x38) = temp_r3_2;
                     var_r12 += 0x40;
                     var_ctr_2 -= 1;
                 } while (var_ctr_2 != 0);
@@ -1030,8 +1022,8 @@ s32* GSgfxVFBuildTemp(s32 p0, s32 p1, u8 p2, s32 p3, u8 p4, s32 p5, u8 p6, s32 p
                 M2C_FIELD(var_r11, s32 *, 8) = arg_sp8;
                 M2C_FIELD(var_r11, s8 *, 0xC) = 0;
                 var_r11 += 0x10;
-                M2C_FIELD(var_r12, s32 *, 0) = temp_r3_3;
                 M2C_FIELD(var_r12, s32 *, 4) = 1;
+                M2C_FIELD(var_r12, s32 *, 0) = temp_r3_3;
                 var_r12 += 8;
                 var_ctr_3 -= 1;
             } while (var_ctr_3 != 0);
@@ -1167,6 +1159,5 @@ void GSgfxVFInit() {
     M2C_FIELD(_vfLocal, s16 *, 0) = (s16) (M2C_FIELD(_vfLocal, s16 *, 0) | 6);
 }
 }
-
 
 }

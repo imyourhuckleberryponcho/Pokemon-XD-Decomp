@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -40,7 +38,6 @@ struct Vec;
 struct _GSmodel;
 
 extern "C++" {
-// ---- draft declarations ----
 struct GScamera {
     u8 _draft[1];
 };
@@ -56,7 +53,7 @@ struct GSgfxLayer {
 };
 struct GSgfxLayerConfig {
     u8 _draft[1];
-    void Remove(GSgfxLayerID);
+    static void Remove(GSgfxLayerID);
     s32 Add(char*, unsigned long, unsigned long, unsigned long, GSgfxLayerType, bool, bool, bool, GSgfxLayerID, GSgfxLayerOffset);
 };
 struct GSgfxMatrixStack {
@@ -108,7 +105,7 @@ int GSgfxLayerFindByID(int id);
 GSgfxLayer* GSgfxLayerFindByName(const char* name);
 s32 GSgfxPerfbarCPUEntry(s32);
 void GSgfxVFCreate(GSgfxVF* vf);
-s32 GSgfxVFFree();
+void GSgfxVFFree(GSgfxVF*);
 void GSgfxVFInit(GSgfxVF* vf);
 void GSgfxVFSetArray(GSgfxVF* vf, s32, s32, void*, s32, s32);
 void GSgfxVFSetElement(GSgfxVF* vf, s32, s32, s32, s32);
@@ -372,7 +369,7 @@ loop_9:
 
 extern "C++" {
 static void _modelDrawDistortionSub(_GSmodel* p0, GSgfxLayer* p1, GSmtx* p2, GSvec* p3) {
-    s32 sp30;
+    volatile f32 sp28;
     s32 sp34;
     s32 sp38;
     s32 sp3C;
@@ -397,12 +394,12 @@ static void _modelDrawDistortionSub(_GSmodel* p0, GSgfxLayer* p1, GSmtx* p2, GSv
     s32 sp6C;
     s32 sp68;
     s32 sp64;
-    s32 sp60;
+    volatile s32 sp60;
     s32 sp5C;
-    s32 sp2C;
-    volatile f32 sp28;
     volatile f32 sp18;
     s32 sp14;
+    s32 sp2C;
+    volatile s32 sp30;
     f32 sp10;
     f32 spC;
     f32 sp8;
@@ -430,7 +427,7 @@ static void _modelDrawDistortionSub(_GSmodel* p0, GSgfxLayer* p1, GSmtx* p2, GSv
                 }
                 temp_f31 = 1.0f / var_f1;
                 memset((void*)(&sp14), 0, 0x18U);
-                temp_r3_2 = M2C_FIELD(p0, u8 *, 0x613);
+                temp_r3_2 = M2C_FIELD((s32)p0, u8 *, 0x613);
                 if (temp_r3_2 & 1) {
                     if (temp_r3_2 & 4) {
                         sp18 = -0.5f * temp_f31;
@@ -456,7 +453,7 @@ static void _modelDrawDistortionSub(_GSmodel* p0, GSgfxLayer* p1, GSmtx* p2, GSv
                 ((GSgfxMatrixStack*)(M2C_FIELD(p1, GSgfxMatrixStack **, 0x19A0)))->pushMult((GSmtx*)(&unksp8C));
                 PSMTXConcat((const Mtx)((s32) p2), (const Mtx)(M2C_FIELD(M2C_FIELD(p1, GSgfxMatrixStack **, 0x19A0), s32 *, 4) + 4), (Mtx)((s32) &sp2C));
                 sp5C = sp2C;
-                sp60 = sp30;
+                if (sp60 < sp30) sp60 = sp30;
                 sp64 = sp34;
                 sp68 = sp38;
                 sp6C = sp3C;
@@ -482,7 +479,6 @@ static void _modelDrawDistortionSub(_GSmodel* p0, GSgfxLayer* p1, GSmtx* p2, GSv
 extern "C" {
 void GSmodelFreeDistortion(void *p0) {
     GSgfxLayer *temp_r3;
-    GSgfxLayer *temp_r3_4;
     GSgfxLayer *temp_ret;
     s32 temp_r4;
     u8 temp_r3_3;
@@ -491,7 +487,7 @@ void GSmodelFreeDistortion(void *p0) {
     temp_r4 = M2C_FIELD(p0, s32 *, 0);
     if ((u32) ((temp_r4 & 0x80000) + 0xFFF80000) == 0U) {
         M2C_FIELD(p0, s32 *, 0) = (s32) (temp_r4 & 0xFFF7FFFF);
-        temp_r3 = GSgfxLayerFindByName((const char*)("model distortion"));
+        temp_r3 = GSgfxLayerFindByName((const char*)g_distortion_layer_name);
         if (temp_r3 != NULL) {
             ((GSgfxLayer*)(temp_r3))->SetLayerVisibility(0U);
         }
@@ -506,16 +502,16 @@ void GSmodelFreeDistortion(void *p0) {
         if ((u8) g_distortion_layer_ref_count != 0) {
             g_distortion_layer_ref_count--;
             if (g_distortion_layer_ref_count == 0) {
-                temp_ret = GSgfxLayerFindByName((const char*)("model distortion"));
-                temp_r3_4 = temp_ret;
-                if (temp_r3_4 != NULL) {
-                    ((GSgfxLayerConfig*)(M2C_FIELD(temp_r3_4, GSgfxLayerConfig **, 0x28)))->Remove((GSgfxLayerID)((s32) (u32) (u64) temp_ret));
+                temp_ret = GSgfxLayerFindByName((const char*)g_distortion_layer_name);
+                if (temp_ret != NULL) {
+                    GSgfxLayerConfig::Remove(M2C_FIELD(temp_ret, GSgfxLayerID *, 0x28));
                 }
             }
         }
     }
-    if ((u8 *) M2C_FIELD(p0, u8 **, 0x61C) != NULL) {
-        GSgfxVFFree();
+    GSgfxVF* vf = M2C_FIELD(p0, GSgfxVF **, 0x61C);
+    if (vf != NULL) {
+        GSgfxVFFree(vf);
         operator delete((void*)(M2C_FIELD(p0, u8 **, 0x61C)));
         M2C_FIELD(p0, u8 **, 0x61C) = NULL;
     }
@@ -567,7 +563,7 @@ void GSmodelCreateDistortion(void *p0, u16 p1, u8 p2, u8 p3) {
                             if (var_r28 == NULL) {
                                 sp8 = 2;
                                 spC = 2;
-                                temp_r3_3 = (GSgfxLayer *)(GSgfxLayerFindByID(((GSgfxLayerConfig*)((GSgfxLayerConfig *) "model distortion"))->Add((char*)(NULL), 0x1400U, 2U, 4U, (GSgfxLayerType)(0), 0U, 0U, M2C_ERROR(/* Unable to find stack arg 0x0 in block */), (GSgfxLayerID)(M2C_ERROR(/* Unable to find stack arg 0x4 in block */)), (GSgfxLayerOffset)(M2C_ERROR(/* Unable to find stack arg 0x8 in block */)))));
+                                temp_r3_3 = (GSgfxLayer *)(GSgfxLayerFindByID(((GSgfxLayerConfig*)((GSgfxLayerConfig *) "model distortion"))->Add((char*)(NULL), 0x1400U, 2U, 4U, (GSgfxLayerType)(0), 0U, 0U, M2C_ERROR( ), (GSgfxLayerID)(M2C_ERROR( )), (GSgfxLayerOffset)(M2C_ERROR( )))));
                                 var_r28 = temp_r3_3;
                                 if (var_r28 != NULL) {
                                     ((GSgfxLayer*)(temp_r3_3))->SetLayerVisibility(0U);
@@ -624,12 +620,12 @@ void GSmodelEnableDistortion(void *p0) {
 
 extern "C++" {
 void modelDustUpdate(_GSmodel* p0) {
-    u32 sp24;
+    s32 unksp20;
     s32 sp30;
     s32 unksp14;
-    s32 unksp20;
-    s32 unksp2C;
     volatile f32 sp10;
+    s32 unksp2C;
+    u32 sp24;
     f32 spC;
     f32 sp8;
     GSpart *temp_r3;

@@ -2,7 +2,6 @@
 
 struct GSthread;
 
-// A countdown timer driven by its own thread (limit in seconds).
 struct FightTimer {
     bool over;
     u8 infinite;
@@ -35,7 +34,6 @@ void fightTimerThreadFunc(FightTimer* timer);
 static FightTimer gCommandTimer;
 static FightTimer gBattleTimer;
 
-// Unknown function that was dead-stripped from the final link; it put 0.0f and 60.0f first in .sdata2.
 f32 fightTimerSecondsToFrames(f32 seconds) {
     if (seconds < 0.0f) {
         return 0.0f;
@@ -144,7 +142,6 @@ void fightTimerTerminate(FightTimer* timer) {
     timer->infinite = 0;
 }
 
-// A negative limit means no time limit.
 #pragma dont_inline on
 void fightTimerInit(FightTimer* timer, f32 limit) {
     if (timer->thread != NULL) {

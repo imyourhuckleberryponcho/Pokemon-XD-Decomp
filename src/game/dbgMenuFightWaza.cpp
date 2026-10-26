@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 struct WazaData {

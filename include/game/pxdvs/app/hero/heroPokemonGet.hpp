@@ -4,17 +4,17 @@
 #include <global.h>
 
 struct HeroPokemonGetParam {
-  u8 trainerSexID;         // 0x0
-  u8 catchLevel;           // 0x1
-  u16 pokemonDataID;       // 0x2
-  u16 shadowPokemonDataID; // 0x4
-  u16 friendLevel;         // 0x6
-  u16 moves[4];            // 0x8
-  u32 trainerRnd;          // 0x10
-  char16 *trainerNamePtr;  // 0x14
-  char16 *nicknamePtr;     // 0x18
-  u32 catchFloorID;        // 0x1C
-  u32 exp;                 // 0x20
+  u8 trainerSexID;
+  u8 catchLevel;
+  u16 pokemonDataID;
+  u16 shadowPokemonDataID;
+  u16 friendLevel;
+  u16 moves[4];
+  u32 trainerRnd;
+  char16 *trainerNamePtr;
+  char16 *nicknamePtr;
+  u32 catchFloorID;
+  u32 exp;
 };
 
 #endif

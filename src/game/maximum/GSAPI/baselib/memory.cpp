@@ -1,4 +1,4 @@
-// Compiled as C (see configure.py): struct copies only match C codegen.
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off

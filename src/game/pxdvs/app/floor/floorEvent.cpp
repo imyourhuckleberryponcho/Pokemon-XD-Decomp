@@ -13,44 +13,44 @@ struct GSpart;
 struct GSthread;
 
 struct FloorEventTresure {
-    u8 kind : 3;     // 0x00
+    u8 kind : 3;
     u8 type : 3;
     u8 pad0 : 2;
-    u8 count;        // 0x01
+    u8 count;
     u8 pad1[2];
-    u16 floorID;     // 0x04
-    u16 eventFlag;   // 0x06
+    u16 floorID;
+    u16 eventFlag;
     u8 pad2[4];
-    u32 item;        // 0x0C
+    u32 item;
     u8 pad3[0xC];
 };
 
 struct FloorEventDoor {
-    s8 openAnim;     // 0x00
-    s8 closeAnim;    // 0x01
-    s8 openEndAnim;  // 0x02
-    s8 closeEndAnim; // 0x03
+    s8 openAnim;
+    s8 closeAnim;
+    s8 openEndAnim;
+    s8 closeEndAnim;
     u8 pad4;
-    s8 altAnimA;     // 0x05
-    s8 altAnimB;     // 0x06
-    u8 doorType;     // 0x07
-    u8 partIndex;    // 0x08
+    s8 altAnimA;
+    s8 altAnimB;
+    u8 doorType;
+    u8 partIndex;
     u8 pad9;
-    s16 collisionId; // 0x0A
+    s16 collisionId;
     u8 padC[2];
-    u16 openFlag;    // 0x0E
-    u16 closeFlag;   // 0x10
+    u16 openFlag;
+    u16 closeFlag;
     u8 pad12[2];
-    u32 resourceId;  // 0x14
+    u32 resourceId;
 };
 
 struct FloorEventEntry {
-    u8 type;         // 0x00
+    u8 type;
     u8 pad1;
-    u16 floorID;     // 0x02
-    u32 arg;         // 0x04
-    u32 script;      // 0x08
-    u32 args[4];     // 0x0C
+    u16 floorID;
+    u32 arg;
+    u32 script;
+    u32 args[4];
 };
 
 struct PlayMEParam {

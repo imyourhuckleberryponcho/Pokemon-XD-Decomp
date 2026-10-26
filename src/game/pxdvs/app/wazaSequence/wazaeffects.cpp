@@ -2,7 +2,6 @@
 
 #define ALIGN32(x) (((u32)(x) + 0x1F) & ~0x1F)
 
-// Animation keys (16 bytes each) follow an effect's parameters in the sequence data.
 #define LOAD_KEYS(data, num)          m_hasKeys = 1;                    m_keys = *(data);                 m_keyNum = (num);                 m_time = 0.0f;                    m_keyIndex = 0;                   *(data) += m_keyNum * 16;
 
 struct _GSparticleBank;
@@ -202,7 +201,6 @@ void EffectEntry::filterEffectLoad(u8** data) {
         break;
     case 1:
         mono = true;
- // fall through
     case 2:
         if ((effect->flags & 1) == 1) {
             invert = true;

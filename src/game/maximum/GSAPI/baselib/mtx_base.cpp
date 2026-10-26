@@ -1,10 +1,10 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's mtx.c (headers: include/hsd_ref).
+
+
 #define HSD_FILE_NAME "mtx.c"
 
-// XD's HSD_MtxInverseConcat returns int; hide the header's void prototype.
+
 #define HSD_MtxInverseConcat HSD_MtxInverseConcat_hdr
-// Keep libc math.h out: its extern-inline sqrtf/sqrt would emit unused .sdata2 constants.
+
 #define _MATH_H_
 double sin(double x);
 double cos(double x);
@@ -71,7 +71,7 @@ static inline int mtxFpClassify(f32 x)
     return 4;
 }
 
-// MSL math.h inline sqrtf, inlined into this file.
+
 static inline f32 mtxSqrtf(f32 x)
 {
     static const f64 _half = .5;
@@ -140,7 +140,8 @@ int HSD_MtxInverseConcat(Mtx inv, Mtx src, Mtx dst)
     i10 = det * -(inv[1][0] * inv[2][2] - inv[2][0] * inv[1][2]);
     i11 = det * (inv[0][0] * inv[2][2] - inv[2][0] * inv[0][2]);
     i12 = det * -(inv[0][0] * inv[1][2] - inv[1][0] * inv[0][2]);
-    i02 = det * (inv[0][1] * inv[1][2] - inv[1][1] * inv[0][2]);
+    i02 = (inv[0][1] * inv[1][2] - inv[1][1] * inv[0][2]);
+    i02 *= det;
     i20 = det * (inv[1][0] * inv[2][1] - inv[2][0] * inv[1][1]);
     i21 = det * -(-(inv[2][0] * inv[0][1] - inv[0][0] * inv[2][1]));
     i22 = det * (inv[0][0] * inv[1][1] - inv[1][0] * inv[0][1]);
@@ -153,8 +154,8 @@ int HSD_MtxInverseConcat(Mtx inv, Mtx src, Mtx dst)
         result[0][0] = i02 * src[2][0] + (i00 * src[0][0] + i01 * src[1][0]);
         result[0][1] = i02 * src[2][1] + (i00 * src[0][1] + i01 * src[1][1]);
         result[0][2] = i02 * src[2][2] + (i00 * src[0][2] + i01 * src[1][2]);
-        result[1][3] = i12 * src[2][3] + (i10 * src[0][3] + i11 * src[1][3]) + ty;
         result[0][3] = i02 * src[2][3] + (i00 * src[0][3] + i01 * src[1][3]) + tx;
+        result[1][3] = i12 * src[2][3] + (i10 * src[0][3] + i11 * src[1][3]) + ty;
         result[2][3] = i22 * src[2][3] + (i20 * src[0][3] + i21 * src[1][3]) + tz;
         result[1][0] = i12 * src[2][0] + (i10 * src[0][0] + i11 * src[1][0]);
         result[1][1] = i12 * src[2][1] + (i10 * src[0][1] + i11 * src[1][1]);
@@ -297,7 +298,7 @@ void HSD_MtxGetRotationMtx(Mtx m, Mtx out, char a, char b)
     out[2][3] = 0;
 }
 
-/// These parameters may not be right
+
 void HSD_MtxGetTranslate(Mtx mat, Vec3* vec)
 {
     vec->x = mat[0][3];
@@ -402,8 +403,8 @@ void HSD_MtxGetScale(Mtx m, Vec3* scale)
     }
 }
 
-// Placeholders for two functions the linker stripped from the retail DOL: their double
-// literals (-1.0 and 0.0) sit in .sdata2 ahead of the sqrt/epsilon constants.
+
+
 f32 mtxStrippedFlip(f32 v)
 {
     return (f32) (v * -1.0);
@@ -479,9 +480,9 @@ void HSD_MtxSRT(Mtx m, Vec3* vec1, Vec3* vec2, Vec3* vec3, Vec3* vec4)
         f32 temp2 = recipSafe(vec4->y);
         f32 temp3 = recipSafe(vec4->z);
 
-        vec1y_2 *= vec4->y * temp1;
-        vec1z_2 *= vec4->z * temp1;
         vec1x_1 *= vec4->x * temp2;
+        vec1z_2 *= vec4->z * temp1;
+        vec1y_2 *= vec4->y * temp1;
         vec1z_1 *= vec4->z * temp2;
         vec1x *= vec4->x * temp3;
         vec1y *= vec4->y * temp3;
@@ -528,7 +529,7 @@ void HSD_MtxSRTQuat(Mtx arg0, Vec3* arg1, Quaternion* arg2, Vec3* arg3,
     arg0[2][3] = arg3->z;
 }
 
-/// might be a fakematch?
+
 void HSD_MtxScaledAdd(Mtx arg0, Mtx arg1, Mtx arg2, f32 arg3)
 {
     f32* arr0 = (&arg0[0][0]);

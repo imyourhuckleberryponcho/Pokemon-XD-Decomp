@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-// needed for matching release
+
 #define DVD_ASSERTMSGLINE(line, cond, msg) \
     if (!(cond)) \
         OSPanic(__FILE__, line, msg)

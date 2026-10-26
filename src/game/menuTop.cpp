@@ -1,4 +1,3 @@
-// menuTop: matching (extra_cflags=["-inline noauto"]). Source uses peephole off + pool_strings off + force_active (REL-only entry points).
 #include <dolphin/types.h>
 
 #pragma peephole off

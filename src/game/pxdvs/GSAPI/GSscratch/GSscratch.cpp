@@ -1,7 +1,5 @@
 #include <dolphin/types.h>
 
-// GSscratchInit contains hand-written asm in the original (stack switch), kept as inline asm.
-
 struct ScratchBlock {
     u8 index;
     u8 count;
@@ -203,7 +201,6 @@ s32 GSscratchInit(u8 stackSize)
     u8 remaining;
     s32 i;
 
- // The caller's return address is kept so the routine can return on the new stack.
     asm {
         mflr r3
         stw r3, _scratchInitLR
@@ -233,8 +230,6 @@ s32 GSscratchInit(u8 stackSize)
     if (stackSize == 0) {
         return 1;
     }
- // Hand-written in the original: move the stack into the reserved scratch blocks
- // and return straight to the caller on it (the epilogue below is skipped).
     asm {
         lwz r3, _scratchPadBase
         lwz r5, _stackSize

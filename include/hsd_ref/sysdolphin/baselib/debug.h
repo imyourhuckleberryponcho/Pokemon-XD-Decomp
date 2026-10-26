@@ -13,13 +13,13 @@ ATTRIBUTE_NORETURN void __assert(const char*, u32, const char*);
 void HSD_LogInit(void);
 ATTRIBUTE_NORETURN void HSD_Panic(const char*, u32, const char*);
 
-/// @todo Take @c file as another arg, ignore it if not `MUST_MATCH`.
-// XD: ports define HSD_FILE_NAME ("x.c") so the assert string is a plain literal.
+
+
 #ifndef HSD_FILE_NAME
 #define HSD_FILE_NAME __FILE__
 #endif
 
-// XD: asserts inside header inlines name the header itself.
+
 #define HSD_ASSERT_IN(file, line, cond)                                           ((cond) ? ((void) 0) : __assert(file, line, #cond))
 
 #ifdef MUST_MATCH

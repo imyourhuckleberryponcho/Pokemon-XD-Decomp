@@ -91,7 +91,7 @@ inline typename iterator_traits<InputIterator>::difference_type distance(InputIt
 	return __distance(first, last, typename iterator_traits<InputIterator>::iterator_category());
 }
 
-} // namespace std
+}
 #endif
 
 #endif

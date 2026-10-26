@@ -1,10 +1,8 @@
-
 #include "musyx/adsr.h"
 #include "musyx/synth_dbtab.h"
 
 #include <float.h>
 
-// In Pokemon XD's MSL, powf is an inline wrapper around the double-precision pow.
 double pow(double x, double y);
 static inline float msl_powf(float x, float y) { return pow(x, y); }
 #define powf msl_powf
@@ -17,7 +15,7 @@ static u32 adsrGetIndex(ADSR_VARS* adsr) {
 u32 adsrConvertTimeCents(s32 tc) { return 1000.f * powf(2.f, 1.2715658e-08f * tc); }
 
 static u32 salChangeADSRState(ADSR_VARS* adsr) {
-  u32 VoiceDone; // r30
+  u32 VoiceDone;
   VoiceDone = FALSE;
 
   switch (adsr->mode) {
@@ -154,9 +152,9 @@ bool adsrRelease(ADSR_VARS* adsr) {
 }
 
 u32 adsrHandle(ADSR_VARS* adsr, u16* adsr_start, u16* adsr_delta) {
-  s32 old_volume; // r29
-  bool VoiceDone; // r28
-  s32 vDelta;     // r27
+  s32 old_volume;
+  bool VoiceDone;
+  s32 vDelta;
 
   VoiceDone = FALSE;
 
@@ -210,7 +208,7 @@ u32 adsrHandle(ADSR_VARS* adsr, u16* adsr_start, u16* adsr_delta) {
   return VoiceDone;
 }
 u32 adsrHandleLowPrecision(ADSR_VARS* adsr, u16* adsr_start, u16* adsr_delta) {
-  u8 i; // r31
+  u8 i;
 
   for (i = 0; i < 15; ++i) {
     if (adsrHandle(adsr, adsr_start, adsr_delta)) {

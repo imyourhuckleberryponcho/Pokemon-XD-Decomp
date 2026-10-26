@@ -1,7 +1,6 @@
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 
-// Menu units were built without the peephole optimizer.
 #pragma peephole off
 
 struct GSgfxVF;
@@ -266,13 +265,13 @@ static void _menuSubDrawCursorBackSub(GSgfxLayerID layer, s32 x, s32 y, s32 w, s
             idA = 0x1F6;
             idB = 0x1F7;
         }
+        mid = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(idB));
         side = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(idA));
         c = color | a;
-        mid = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(idB));
         midW = w - side->w - side->w;
-        windowDrawSprite2(x, y, side->w, side->h, c, 0, idA, 0, layer);
+        windowDrawSprite2((u8)x, y, side->w, side->h, c, 0, idA, 0, layer);
         x1 = x + side->w;
-        windowDrawSprite2(x1, y, midW, mid->h, c, 0, idB, 0, layer);
+        windowDrawSprite2((u8)x1, y, midW, mid->h, c, 0, idB, 0, layer);
         windowDrawSprite2(x1 + midW, (u8)y, side->w, side->h, c, 0, idA, 1, layer);
     }
 }
@@ -697,9 +696,9 @@ void menuSubDrawTile(s32 layer, s32 x, s32 y, s32 w, s32 h, u8* color) {
 
 void menuSubDrawSimpleWindow(s32 layer, s32 x, s32 y, s32 w, s32 h) {
     s16 x0;
-    s16 y0;
+    s32 y0;
     s32 x1;
-    s16 y1;
+    s32 y1;
     GSgfxLayer* gfx = GSgfxLayerFindByID(layer);
 
     if (gfx != 0) {
@@ -707,15 +706,16 @@ void menuSubDrawSimpleWindow(s32 layer, s32 x, s32 y, s32 w, s32 h) {
         gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
         gfx->beginSurface(4);
         x0 = x - 10;
-        y0 = y - 10;
+        y0 = y;
+        y0 -= 10;
         GXWGFifo.s16 = x0;
         GXWGFifo.s16 = y0;
-        x1 += x;
         x1 = (w + 10);
+        x1 += x;
         y1 = y;
-        y1 += (h + 10);
         GXWGFifo.u32 = 0xC0;
         GXWGFifo.s16 = x1;
+        y1 += (h + 10);
         GXWGFifo.s16 = y0;
         GXWGFifo.u32 = 0xC0;
         GXWGFifo.s16 = x0;
@@ -734,7 +734,8 @@ void menuSubDrawSimpleWindow(s32 layer, s32 x, s32 y, s32 w, s32 h) {
         gfx->primitive = 0xB0;
         gfx->beginSurface(5);
         x0 = x - 10;
-        y0 = y - 10;
+        y0 = y;
+        y0 -= 10;
         GXWGFifo.s16 = x0;
         GXWGFifo.s16 = y0;
         GXWGFifo.s32 = -1;

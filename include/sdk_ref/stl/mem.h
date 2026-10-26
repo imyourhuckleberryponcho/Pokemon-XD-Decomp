@@ -6,7 +6,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
 int memcmp(const void*, const void*, size_t);
 void* memchr(u8*, int, size_t);
@@ -16,6 +16,6 @@ void* memset(void* dest, int val, size_t count);
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

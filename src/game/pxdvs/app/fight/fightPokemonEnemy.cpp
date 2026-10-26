@@ -1,7 +1,5 @@
 #include <dolphin/types.h>
 
-// Built with -O4,s (see configure.py).
-
 struct FightOutPokemon;
 struct Pokemon;
 

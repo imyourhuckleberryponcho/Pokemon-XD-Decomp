@@ -1,13 +1,13 @@
-// Adapted from the Melee decomp's sysdolphin/baselib/bytecode.c for XD.
-// Compiled as C with deferred inlining; verified against the GXXE01 retail DOL.
-// Keep the original assertion file name and XD's assertion line numbers.
+
+
+
 #define HSD_FILE_NAME "bytecode.c"
 
 #include <sysdolphin/baselib/bytecode.h>
 
 #include <Runtime/platform.h>
 
-// XD uses the MSL float wrappers around the double-precision math routines.
+
 double sin(double);
 double cos(double);
 double tan(double);
@@ -104,7 +104,7 @@ float HSD_ByteCodeEval(u8* bytecode, const f32* args, s32 nb_args)
     for (;;) {
         if (operand_count > 0) {
             operand_count--;
- // The explicit byte mask preserves XD's rotate-and-insert sequence.
+
             operand = (operand << 8);
             operand = (operand & 0xffffff00) | (*bytecode & 0xff);
             bytecode++;
@@ -154,7 +154,7 @@ float HSD_ByteCodeEval(u8* bytecode, const f32* args, s32 nb_args)
                 break;
             case 0xFF:
                 HSD_Panic(HSD_FILE_NAME, 323, "not yet implemented.\n");
-                /* fallthrough */
+
             default:
                 HSD_Panic(HSD_FILE_NAME, 326, "unexpected byte code.\n");
                 break;

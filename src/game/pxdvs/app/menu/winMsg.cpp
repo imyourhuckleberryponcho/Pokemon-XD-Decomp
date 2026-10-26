@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct tagWINDOW_WORK {
@@ -188,7 +187,8 @@ s32 winMsgCtrl(tagWINDOW_WORK* w)
     case 2:
         switch (w->seqSet) {
         case 0:
-                GSmsgExec(fw->msg, fw->b4, fw->b5);
+                s32 rf_t = fw->b4;
+                GSmsgExec(fw->msg, rf_t, fw->b5);
                 w->seqSet = 1;
             break;
         }
@@ -349,8 +349,8 @@ s32 winMsgOpen(s8 type, void* msg, bool a, bool b)
 
 static s32 _winMsgOpenSub(s8 type, void* msg, bool a, bool b, bool c, u8 d, bool e)
 {
-    u8 flags = 0;
     s32 parentID;
+    u8 flags = 0;
     if (_winMsgGetMenuID(type) == 0) {
         return 0;
     }
@@ -372,7 +372,7 @@ static s32 _winMsgOpenSub(s8 type, void* msg, bool a, bool b, bool c, u8 d, bool
     if (c) {
         flags |= 2;
     }
-    return menuOpenCustom(_winMsgGetMenuID((u16)type), parentID, 0, e ? 2 : 0, a, 3, msg, flags, (u32)d);
+    return menuOpenCustom(_winMsgGetMenuID((u16)type), (u8)parentID, 0, e ? 2 : 0, a, 3, msg, flags, (u32)d);
 }
 
 static s32 _winMsgGetMenuID(s8 type)

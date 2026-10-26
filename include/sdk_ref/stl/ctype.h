@@ -35,7 +35,6 @@ inline int isprintable(int c)
 {
 	return (int)(__ctype_map[(u8)c] & __printable);
 }
-// added underscore to avoid naming conflicts
 inline int _tolower(int c)
 {
 	return (c == -1 ? -1 : (int)__lower_map[(u8)c]);

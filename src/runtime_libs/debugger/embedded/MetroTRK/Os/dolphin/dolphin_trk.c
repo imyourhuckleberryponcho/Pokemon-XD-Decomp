@@ -269,12 +269,6 @@ ASM void InitMetroTRK(void)
 	*/
 	cmpwi r3, 1
 	bne initCommTableSuccess
-	/*
-	BUG: The code probably originally reloaded gTRKCPUState here, but
-	as is it will read the returned value of InitMetroTRKCommTable
-	as a TRKCPUState struct pointer, causing the CPU to return to
-	a garbage code address.
-	*/
 	lwz r4, ProcessorState_PPC.Default.LR(r3)
 	mtlr r4
 	lmw r0, ProcessorState_PPC.Default.GPR(r3) //Restore the gprs
@@ -303,11 +297,10 @@ ASM void InitMetroTRK_BBA(void)
 	stw r4, ProcessorState_PPC.Default.PC(r3)
 	mfcr r4
 	stw r4, ProcessorState_PPC.Default.CR(r3)
-	//Turn on external interrupts
 	mfmsr r4
 	ori r3, r4, (1 << (31 - 16))
 	mtmsr r3
-	mtsrr1 r4 //Copy original msr to srr1
+	mtsrr1 r4
 	//Save misc registers to gTRKCPUState
 	bl TRKSaveExtended1Block
 	lis r3, gTRKCPUState@h
@@ -317,24 +310,12 @@ ASM void InitMetroTRK_BBA(void)
 	li r0, 0
 	mtspr  0x3f2, r0
 	mtspr 0x3f5, r0
-	//Restore the stack pointer
 	lis r1, _db_stack_addr@h
 	ori r1, r1, _db_stack_addr@l
 	li r3, 2
-	bl InitMetroTRKCommTable //Initialize comm table as BBA hardware
-	/*
-	If InitMetroTRKCommTable returned 1 (failure), something went wrong
-	or whatever reason. If everything goes as expected, we proceed with
-	starting up TRK.
-	*/
+	bl InitMetroTRKCommTable
 	cmpwi r3, 1
 	bne initCommTableSuccess
-	/*
-	BUG: The code probably originally reloaded gTRKCPUState here, but
-	as is it will read the returned value of InitMetroTRKCommTable
-	as a TRKCPUState struct pointer, causing the CPU to return to
-	a garbage code address.
-	*/
 	lwz r4, ProcessorState_PPC.Default.LR(r3)
 	mtlr r4
 	lmw r0, ProcessorState_PPC.Default.GPR(r3)

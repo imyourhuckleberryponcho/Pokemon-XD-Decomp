@@ -6,7 +6,6 @@ struct GSresID;
 
 namespace GSscript {
 
-// A script call argument.
 class tigaVariant {
 public:
     void setInteger(long value);
@@ -29,7 +28,7 @@ public:
     void unblockThread(long handle);
 };
 
-} // namespace GSscript
+}
 
 using namespace GSscript;
 
@@ -188,7 +187,6 @@ void floorUnblockScriptThread(long handle) {
     }
 }
 
-// Script functions 0x0596xxxx live in the common script.
 int floorGetScriptMode(u32 func) {
     if ((func & 0xFFFF0000) == 0x05960000) {
         return SCRIPT_MODE_COMMON;
@@ -201,7 +199,6 @@ int floorGetScriptMode(u32 func) {
 
 }
 
-// Defined after its callers, so it was emitted as a weak function instead of being inlined.
 inline void tigaVariant::setPeople(GSresID* res) {
     type = 0x23;
     value = res;

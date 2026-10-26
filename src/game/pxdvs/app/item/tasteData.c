@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Per-nature flavor preference: -1 dislikes, 0 neutral, 1 likes.
 typedef struct TasteData {
     u32 msgId;
     s8 nature[25];

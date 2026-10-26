@@ -2,7 +2,6 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
-// Pocket/menu helper tools. Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct MenuPtWorkSound {
@@ -289,12 +288,9 @@ double cos(double);
 double fmod(double, double);
 double sin(double);
 
-/* MSL-style float math wrappers: callers expand them inline (frsp into a temporary). */
 static inline float msl_sinf(float x) { return (float) sin(x); }
 static inline float msl_cosf(float x) { return (float) cos(x); }
 }
-
-
 
 template <typename T>
 struct PocketVec {
@@ -444,11 +440,12 @@ void CMenuPokemonCursor::draw()
             short off = (short)(5.0f * pulse);
             if (off > 4) off = 4;
             short x1 = p.x + off + 4;
-            short y1 = p.y + off + 4;
-            menuPtSpriteDrawColor(0x216, (u16)x1, y1, w, h, col);
+            u16 rf_t = p.y;
+            short y1 = rf_t + off + 4;
+            menuPtSpriteDrawColor(0x216, (u16)x1, (u16)y1, w, h, col);
             short x2 = p.x + 0x32 - off;
-            menuPtSpriteDrawColor(0x216, x2, y1, -w, h, col);
             short y2 = p.y + 0x32 - off;
+            menuPtSpriteDrawColor(0x216, x2, y1, -w, h, col);
             menuPtSpriteDrawColor(0x216, x2, y2, -w, -h, col);
             menuPtSpriteDrawColor(0x216, x1, y2, w, -h, col);
         } else {
@@ -842,7 +839,6 @@ void CMetaMenu::systemFadeOutKeepAfterFloorPush()
     GSthreadSwitch();
     fadeSet(3, 0.0f);
 }
-
 
 void CMetaMenu::alphaFadeDraw()
 {

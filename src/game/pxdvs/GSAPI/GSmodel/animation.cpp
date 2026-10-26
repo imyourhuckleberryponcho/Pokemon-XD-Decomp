@@ -1,4 +1,4 @@
-// GSmodel skeletal/texture animation control.
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -17,21 +17,21 @@ struct _HSD_AObj {
     u32 flags;
     f32 curr_frame;
     f32 rewind_frame;
-    f32 end_frame;      // 0x0C
+    f32 end_frame;
 };
 typedef _HSD_AObj HSD_AObj;
 
 struct HSD_AObjDesc {
     u32 flags;
-    f32 end_frame;      // 0x04
+    f32 end_frame;
 };
 
 struct _HSD_AnimJoint {
-    _HSD_AnimJoint* child;  // 0x00
-    _HSD_AnimJoint* next;   // 0x04
-    HSD_AObjDesc* aobjdesc; // 0x08
-    void* robj;             // 0x0C
-    u32 flags;              // 0x10
+    _HSD_AnimJoint* child;
+    _HSD_AnimJoint* next;
+    HSD_AObjDesc* aobjdesc;
+    void* robj;
+    u32 flags;
 };
 typedef _HSD_AnimJoint HSD_AnimJoint;
 
@@ -49,18 +49,18 @@ typedef struct _HSD_JObj HSD_JObj;
 
 struct _HSD_JObj {
     u8 unk0[0x8];
-    HSD_JObj* next;     // 0x08
-    HSD_JObj* parent;   // 0x0C
-    HSD_JObj* child;    // 0x10
-    u32 flags;          // 0x14
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
     u8 unk18[0x4];
-    GSvec rotate;       // 0x1C
-    f32 rotateW;        // 0x28
-    GSvec scale;        // 0x2C
-    GSvec translate;    // 0x38
-    Mtx mtx;            // 0x44
+    GSvec rotate;
+    f32 rotateW;
+    GSvec scale;
+    GSvec translate;
+    Mtx mtx;
     u8 unk74[0x8];
-    HSD_AObj* aobj;     // 0x7C
+    HSD_AObj* aobj;
 };
 
 #define JOBJ_MTX_DIRTY (1 << 6)
@@ -80,81 +80,81 @@ struct _HSD_SceneModelSet {
 
 struct GSpart {
     u8 unk0[0x8];
-    HSD_JObj* jobj;     // 0x08
+    HSD_JObj* jobj;
 };
 
 struct GSmodelPartMix {
-    s32 type;           // 0x00
-    u32 index;          // 0x04
+    s32 type;
+    u32 index;
     u8 unk8[0x8];
-    f32 frame;          // 0x10
-    f32 endFrame;       // 0x14
-    HSD_AObj* aobj;     // 0x18
+    f32 frame;
+    f32 endFrame;
+    HSD_AObj* aobj;
 };
 
 struct GSmodelPartAnim {
-    s32 type;           // 0x00
-    s32 partIndex;      // 0x04
-    f32 (*callback)(GSpart* part, s32 type, void* arg, GSvec* out); // 0x08
-    void* arg;          // 0x0C
-    u32 mixFlags;       // 0x10
-    GSvec baseTranslate; // 0x14
-    GSvec baseRotate;   // 0x20
-    GSvec baseScale;    // 0x2C
+    s32 type;
+    s32 partIndex;
+    f32 (*callback)(GSpart* part, s32 type, void* arg, GSvec* out);
+    void* arg;
+    u32 mixFlags;
+    GSvec baseTranslate;
+    GSvec baseRotate;
+    GSvec baseScale;
 };
 
 struct _GSmodel {
-    u32 flags;                // 0x000
-    _GSmodel* next;           // 0x004
-    _HSD_SceneModelSet* set;  // 0x008
-    HSD_JObj* jobj;           // 0x00C
-    HSD_JObj* blendJObj;      // 0x010
-    HSD_JObj* blendDest;      // 0x014
-    GSvec position;           // 0x018
-    GSvec rotation;           // 0x024
-    GSvec scale;              // 0x030
-    u8 bound[0x20];           // 0x03C
-    void* camera;             // 0x05C
-    u16 flags2;               // 0x060
-    u16 token;                // 0x062
-    u8 layers[8];             // 0x064
-    u32 animCount;            // 0x06C
-    u32 texAnimCount;         // 0x070
-    s32 animType;             // 0x074
-    u32 animIndex;            // 0x078
-    f32 animRate;             // 0x07C
-    f32 animFrame;            // 0x080
-    f32 animReqFrame;         // 0x084
-    f32 animEndFrame;         // 0x088
-    HSD_AObj* animAObj;       // 0x08C
-    s32 blendAnimType;        // 0x090
-    u32 blendAnimIndex;       // 0x094
-    f32 blendAnimRate;        // 0x098
-    f32 blendAnimFrame;       // 0x09C
-    f32 blendAnimReqFrame;    // 0x0A0
-    f32 blendAnimEndFrame;    // 0x0A4
-    HSD_AObj* blendAnimAObj;  // 0x0A8
-    s32 texAnimType;          // 0x0AC
-    u32 texAnimIndex;         // 0x0B0
-    f32 texAnimRate;          // 0x0B4
-    f32 texAnimFrame;         // 0x0B8
-    f32 texAnimReqFrame;      // 0x0BC
-    f32 texAnimEndFrame;      // 0x0C0
-    HSD_AObj* texAnimAObj;    // 0x0C4
-    GSmodelPartMix partMix[12]; // 0x0C8
-    f32 blendFactor;          // 0x218
-    u8 unk21C;                // 0x21C
-    u8 texAnimDirty;          // 0x21D
+    u32 flags;
+    _GSmodel* next;
+    _HSD_SceneModelSet* set;
+    HSD_JObj* jobj;
+    HSD_JObj* blendJObj;
+    HSD_JObj* blendDest;
+    GSvec position;
+    GSvec rotation;
+    GSvec scale;
+    u8 bound[0x20];
+    void* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
+    s32 animType;
+    u32 animIndex;
+    f32 animRate;
+    f32 animFrame;
+    f32 animReqFrame;
+    f32 animEndFrame;
+    HSD_AObj* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    HSD_AObj* blendAnimAObj;
+    s32 texAnimType;
+    u32 texAnimIndex;
+    f32 texAnimRate;
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    HSD_AObj* texAnimAObj;
+    GSmodelPartMix partMix[12];
+    f32 blendFactor;
+    u8 unk21C;
+    u8 texAnimDirty;
     u8 unk21E[2];
-    void* animEndedCallback;  // 0x220
-    void* animEndedCallbackArg; // 0x224
-    GSmodelPartAnim partAnim[16]; // 0x228
-    s32 attachMode;           // 0x5A8
-    _GSmodel* attachModel;    // 0x5AC
-    u32 attachIndex;          // 0x5B0
-    GSvec attachPosition;     // 0x5B4
-    GSvec attachRotation;     // 0x5C0
-    GSvec attachScale;        // 0x5CC
+    void* animEndedCallback;
+    void* animEndedCallbackArg;
+    GSmodelPartAnim partAnim[16];
+    s32 attachMode;
+    _GSmodel* attachModel;
+    u32 attachIndex;
+    GSvec attachPosition;
+    GSvec attachRotation;
+    GSvec attachScale;
 };
 
 #define MODEL_ROOT_NULL 0x20000
@@ -224,7 +224,7 @@ static void _modelGetAObjFunc(HSD_AObj* aobj, void* arg);
 static void _jobjAddAnimAll(HSD_JObj* jobj, HSD_AnimJoint* animjoint, _HSD_MatAnimJoint* matanim, _HSD_ShapeAnimJoint* shapeanim);
 static void _modelSetLoopFlag(HSD_AObj* aobj, u32 loop);
 
-// From MSL's math_api.h.
+
 inline int __fpclassifyf(f32 x) {
     switch ((*(s32*)&x) & 0x7f800000) {
     case 0x7f800000: {
@@ -247,7 +247,7 @@ inline int __fpclassifyf(f32 x) {
 
 #define isnan(x) (__fpclassifyf(x) == 1)
 
-// Inline helpers from HSD's jobj.h (asserts carry that header's line numbers).
+
 extern "C" {
 
 static inline bool HSD_JObjFlagIsClear(HSD_JObj* jobj, u32 f) {
@@ -461,7 +461,7 @@ static inline HSD_JObj* modelGetRootJObj(_GSmodel* model) {
     return jobj;
 }
 
-// Part animations driven by the model pause while the main animation is retimed.
+
 static inline void modelPausePartAnims(_GSmodel* model) {
     if (model->flags & 0x80000000) {
         for (int i = 0; i < 8; i++) {
@@ -751,7 +751,7 @@ static void _modelGetAnimFrameCountCB(HSD_AnimJoint* joint, void** arg, int) {
 
 extern "C" {
 
-// Never inlined into its callers in the original.
+
 #pragma dont_inline on
 void GSmodelForceAnimTransformUpdate(_GSmodel* model) {
     u32 perf;
@@ -1403,7 +1403,7 @@ static inline u8 modelRunsAt60fps(_GSmodel* model) {
     return 0;
 }
 
-// Drives the AObjs so they land exactly on the frame computed by GSmodelAdvanceAnimation.
+
 static inline void modelSyncAObjRate(_GSmodel* model, HSD_JObj** jobj, u32 mask, f32* framePtr, f32* reqFramePtr, f32* endPtr, s32* typePtr) {
     u8 is60fps = modelRunsAt60fps(model);
     f32 rate = 0.0f;

@@ -1,10 +1,3 @@
-// Shop menu (Poke Mart, vending machine, coupon exchange, battle disk shop).
-// STATUS: 60/72 exact; LAYOUT/CONST/CALLS/DATA OK.
-// Needs extra_cflags=["-inline noauto,deferred"] (source is written bottom-to-top).
-// Not exact: couponExchangeMain, menuShopDrawListText, _getBattleDiskShopID, menuShopNumDrawBuyNum,
-// menuShopCtrl, menuShopOpen, menuShopNumDrawCursor, menuShopDrawPointEmblem, menuShopDrawHaveWaku(Back),
-// setDefMenuItem (register allocation / operand order only).
-// Skip libc/stdarg.h: the target's va_list is a NAMED struct (__va_list_struct in mangled names).
 #define _STDARG_H_
 struct __va_list_struct {
     char gpr;
@@ -24,7 +17,6 @@ extern "C" void* __va_arg(va_list, unsigned char);
 
 struct Hero;
 
-
 struct VPC_BOX {
     u8 pad0[0x758];
     s32 f758;
@@ -38,24 +30,24 @@ enum MENU_SHOP_MSG_CODE { SHOP_MSG0 };
 
 struct SHOP_MENU_ARG {
     int index;
-    u16 item;        // 0x04
+    u16 item;
     u16 pad6;
-    u16* goods;      // 0x08
+    u16* goods;
     int count;
-    f32* curPos;     // 0x10
-    int* isScroll;   // 0x14
-    f32* rollUpTime; // 0x18
-    u8 mode;         // 0x1C
-    u8 flags;        // 0x1D
+    f32* curPos;
+    int* isScroll;
+    f32* rollUpTime;
+    u8 mode;
+    u8 flags;
     u8 pad1E[2];
-    VPC_BOX box;     // 0x20
+    VPC_BOX box;
 };
 
 struct NUM_MENU_ARG {
-    s32 max;    // 0x00
-    s32 price;  // 0x04
+    s32 max;
+    s32 price;
     int* value;
-    s32 coupon; // 0x0C
+    s32 coupon;
 };
 
 struct SHOP_DATA {
@@ -1045,7 +1037,8 @@ extern "C" {
 int menuShopDrawPointEmblem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     bool show = false;
     SHOP_MENU_ARG* arg = (SHOP_MENU_ARG*)w->params[0];
-    if (sp->id == 0x6F && (arg->flags & 1) == 0 && (arg->mode == 2 || arg->mode == 3 || arg->mode == 4)) {
+    s8 rf_t = sp->id;
+    if (rf_t == 0x6F && (arg->flags & 1) == 0 && (arg->mode == 2 || arg->mode == 3 || arg->mode == 4)) {
         show = true;
     }
     winSpriteSetDisp(sp, show);
@@ -1170,7 +1163,8 @@ int menuShopNumDrawCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     if (c < 0 || c >= 2) {
         return 0;
     }
-    if (NumWinItem[c].cursorID == sp->id) {
+    s32 rf_t = NumWinItem[c].cursorID;
+    if (rf_t == sp->id) {
         sp->alpha = 0xFF;
     } else {
         sp->alpha = 0;

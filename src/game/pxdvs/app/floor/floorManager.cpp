@@ -1,9 +1,3 @@
-// STATUS: 122/123 exact with -inline off; .text order OK. makeSaveData: registers only (data/p coalescing).
-// Blocker: .data order (target __vt__12FloorManager before mainThread's jump table). Findings 2026-10-15:
-// MWCC emits vtables at EOF; only code still deferred at EOF (-inline deferred or #pragma defer_codegen on)
-// is generated after them. But full deferral emits the FloorStackList/Tiga/... weak inlines right after
-// their callers, while the target has them at the end. Reversed+deferred variant (data OK, weak order wrong):
-// build/scratch/floorManager_defer_variant.cpp (122/123, uses #pragma defer_codegen on/off).
 #include <dolphin/types.h>
 
 #pragma peephole off
@@ -87,7 +81,7 @@ public:
     virtual ~Tiga();
 };
 
-} // namespace GSscript
+}
 
 class AppScript : public GSscript::Tiga {
 public:
@@ -637,28 +631,34 @@ SaveHeader* FloorManager::getStateData(StateDataPtr* ptr) {
     return header;
 }
 
-// Original had a script-loading routine here that the linker stripped; it keeps the string alive.
 static void _floorScriptLoadError() {
     GSlogWrite("Script load error.");
 }
 
 u8 FloorManager::makeSaveData(u8** data, u32* size) {
+    void* pushState;
+    u32 stateSize;
+    u8* p;
+    u32 pushSize;
+    SaveHeader* header;
+    GSscript::Tiga* script;
+
     if (data == 0 || size == 0) {
         return 0;
     }
-    GSscript::Tiga* script = m_stacks->getBottomOfStack()->getScriptModule();
+    script = m_stacks->getBottomOfStack()->getScriptModule();
     if (script == 0) {
         return 0;
     }
-    u32 stateSize = script->getStateSize();
+    stateSize = script->getStateSize();
     GSBinWriteStream stream(stateSize);
     script->makeStateData(&stream);
-    void* pushState = m_modules->makePushState(FLOOR_STATE_MODE_3);
-    u32 pushSize = m_modules->getPushStateSize();
+    pushState = m_modules->makePushState(FLOOR_STATE_MODE_3);
+    pushSize = m_modules->getPushStateSize();
     *size = 0x20 + stateSize + pushSize;
     *data = (u8*)GSmemAllocClr(*size);
-    u8* p = *data;
-    SaveHeader* header = (SaveHeader*)p;
+    p = *data;
+    header = (SaveHeader*)p;
     if (m_maxSize < *size) {
         m_maxSize = *size;
         m_maxID = getCurrentFloorID();
@@ -679,7 +679,7 @@ u8 FloorManager::makeSaveData(u8** data, u32* size) {
     }
     GSlogWrite("------------------------------------\n");
     GSlogWrite("header size       = %dbytes\n", 0x20);
-    GSlogWrite("script state size = %dbytes\n", (u16)stateSize);
+    GSlogWrite("script state size = %dbytes\n", stateSize);
     GSlogWrite("system state size = %dbytes\n", pushSize);
     GSlogWrite("total             = %dbytes(max %d)\n", *size, m_maxSize);
     return 1;
@@ -1087,7 +1087,6 @@ FloorManager::FloorManager() {
 
 extern "C" void* GSmemAlloc(u32 size);
 
-// Inline members defined after their callers: emitted as weak out-of-line functions.
 inline void FloorStackList::freeResource(unsigned long group, unsigned long id) {
     getCurrentStack()->freeResource(group, id);
 }

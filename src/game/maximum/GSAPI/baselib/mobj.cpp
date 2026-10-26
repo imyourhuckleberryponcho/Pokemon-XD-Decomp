@@ -1,4 +1,4 @@
-// Partial XD material port from Colosseum hsd_mobj.c, revision fd207bc8a541348f8f00046592c5dba4a75d8ec0.
+
 #include <sysdolphin/baselib/mobj.h>
 #include <sysdolphin/baselib/debug.h>
 #pragma pool_strings off

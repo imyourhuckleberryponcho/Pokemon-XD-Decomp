@@ -1,4 +1,3 @@
-// No threads to guard against on GameCube: these do nothing.
 void __end_critical_region(int region) {}
 
 void __begin_critical_region(int region) {}

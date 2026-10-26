@@ -1,6 +1,4 @@
-// Partial: particleEngineSetupBlendMode (stitched from GSprimSetBlendMode); the rest is not written yet.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -37,7 +34,6 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -76,23 +72,23 @@ struct BlendState {
 class GSgfxLayer {
 public:
     u8 pad0[0xd88];
-    u8 fd88;              // 0xD88
-    s32 fd8c;             // 0xD8C
-    s32 fd90;             // 0xD90
+    u8 fd88;
+    s32 fd8c;
+    s32 fd90;
     u8 pad_d94[0x1644 - 0xd94];
-    s32 blendOp;          // 0x1644
-    s32 blendSrc;         // 0x1648
-    s32 blendDst;         // 0x164C
-    s32 blendLogic;       // 0x1650
+    s32 blendOp;
+    s32 blendSrc;
+    s32 blendDst;
+    s32 blendLogic;
     u8 f1654;
     u8 f1655;
-    u8 colorUpdate;       // 0x1656
+    u8 colorUpdate;
     u8 alphaUpdate;
     u8 zUpdate;
     u8 pad_1659[3];
-    u8 zEnable;           // 0x165C
+    u8 zEnable;
     u8 pad_165d[3];
-    s32 zFunc;            // 0x1660
+    s32 zFunc;
     s32 f1664;
     s32 f1668;
     s32 f166c;
@@ -100,7 +96,7 @@ public:
     u8 f1671;
     u8 f1672;
     u8 pad_1673;
-    u8 f1674;             // 0x1674
+    u8 f1674;
     u8 pad_1675[0x16a8 - 0x1675];
     u32 dirty16a8;
     u8 pad_16ac[0x16b8 - 0x16ac];
@@ -169,9 +165,9 @@ public:
     }
     u8 pad_17c8[0x1818 - 0x17c8];
     BlendState blendTable[2];
-    BlendState* curBlend;  // 0x1990
-    s32 curBlendIdx;       // 0x1994
-public: // draft
+    BlendState* curBlend;
+    s32 curBlendIdx;
+public:
     s32 cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, unsigned long, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
     s32 tgenFunc(unsigned char, GSgfxTgenFunc, GSgfxTgenSrc, GSmtx*, bool, GSmtx*);
 };
@@ -180,9 +176,7 @@ extern "C" {
 
 extern GSgfxLayer* g_current_layer;
 
-
 extern "C" {
-// ---- draft declarations ----
 struct GScamera {
     u8 _draft[1];
 };
@@ -231,17 +225,15 @@ s32 peBankRender(void*);
 s32 peBankUpdate(void*, f32);
 extern s32 init;
 }
+void* g_particleBanks;
 GScamera* g_Camera;
 s32 g_CameraMatrix;
-static s8 g_afterZWriteState;
-void* g_particleBanks;
-s32 g_particle_debug_stats;
 s32 g_render_pass;
+s32 g_particle_debug_stats;
+static s8 g_afterZWriteState;
 extern "C" {
 
 extern "C" {
-// ---- draft declarations ----
-
 
 extern "C" {
 s32 particleEnginePrepareRender(u32 p0);
@@ -249,9 +241,6 @@ s32 particleEnginePrepareUpdate(u32 p0);
 void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2);
 void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5);
 }
-// ---- draft declarations ----
-
-
 
 void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5) {
     s32 temp_r3_2;
@@ -263,14 +252,15 @@ void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5)
     GStextureSetFilter((GStexture*)((GStexture *) p1), p4, p5, 0U);
     temp_r4 = (p0 * 4) & 0x3FC;
     temp_r3 = (unsigned char *)(g_current_layer + temp_r4);
-    if (((u32) M2C_FIELD(temp_r3, u32 *, 0x1740) != (u32)(p1)) || ((u32) M2C_FIELD(temp_r3, u32 *, 0x17F8) != (u32)(p1)) || ((u8) M2C_FIELD(p1, u8 *, 7) != 0)) {
-        temp_r4_2 = (unsigned char *)(g_current_layer + temp_r4);
-        M2C_FIELD(temp_r4_2, u8 **, 0x1740) = (unsigned char *)(p1);
-        temp_r3_2 = 1 << p0;
-        M2C_FIELD((s32)g_current_layer, s32 *, 0x173C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x173C) | temp_r3_2);
-        M2C_FIELD(temp_r4_2, u8 **, 0x17F8) = (unsigned char *)(p1);
-        M2C_FIELD(g_current_layer, s32 *, 0x17F4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17F4) | temp_r3_2);
+    if (!((u32) M2C_FIELD(temp_r3, u32 *, 0x1740) != (u32)(p1)) || ((u32) M2C_FIELD(temp_r3, u32 *, 0x17F8) != (u32)(p1)) || ((u8) M2C_FIELD(p1, u8 *, 7) != 0)) {
+        return;
     }
+    temp_r4_2 = (unsigned char *)(g_current_layer + temp_r4);
+    M2C_FIELD(temp_r4_2, u8 **, 0x1740) = (unsigned char *)(p1);
+    temp_r3_2 = 1 << p0;
+    M2C_FIELD((s32)g_current_layer, s32 *, 0x173C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x173C) | temp_r3_2);
+    M2C_FIELD(temp_r4_2, u8 **, 0x17F8) = (unsigned char *)(p1);
+    M2C_FIELD(g_current_layer, s32 *, 0x17F4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17F4) | temp_r3_2);
 }
 
 }
@@ -423,7 +413,6 @@ void particleEngineSetupBlendMode(u32 mode) {
 }
 
 #define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
-// layer state dirty mark: the state word, its copy 0xB8 further, and the group masks at 0x16A8/0x1760
 static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
     LAYER_FIELD(l, u32, off) |= bit;
     LAYER_FIELD(l, u32, 0x16A8) |= sum;
@@ -463,7 +452,7 @@ void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2) {
             layerMark(l, 4, 0x16BC, 1);
         }
         sp8 = 0;
-        ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(0U, (GSgfxCunitAlpha)(2), (GSgfxCunitSrc)(1), (GSgfxCunitSrc)(1), 0U, (GSgfxLight**)(NULL), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)));
+        ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(0U, (GSgfxCunitAlpha)(2), (GSgfxCunitSrc)(1), (GSgfxCunitSrc)(1), 0U, (GSgfxLight**)(NULL), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR( )));
         if (p2 != 0) {
             {
                 GSgfxLayer* l = g_current_layer;
@@ -657,7 +646,7 @@ void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2) {
                     layerMark(l, 4, 0x16BC, 1);
                 }
                 sp8 = 0;
-                ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(1U, (GSgfxCunitAlpha)(2), (GSgfxCunitSrc)(1), (GSgfxCunitSrc)(1), 0U, (GSgfxLight**)(NULL), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)));
+                ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(1U, (GSgfxCunitAlpha)(2), (GSgfxCunitSrc)(1), (GSgfxCunitSrc)(1), 0U, (GSgfxLight**)(NULL), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR( )));
                 {
                     GSgfxLayer* l = g_current_layer;
                     LAYER_FIELD(l, s8, 0xEAC) = 2;
@@ -695,9 +684,9 @@ void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2) {
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x12B0) = 0;
                     LAYER_FIELD(l, s32, 0x12B4) = 0;
                     LAYER_FIELD(l, s32, 0x12B8) = 0;
+                    LAYER_FIELD(l, s32, 0x12B0) = 0;
                     LAYER_FIELD(l, s8, 0x12BC) = 0;
                     LAYER_FIELD(l, s32, 0x12C0) = 1;
                     layerMark(l, 8, 0x16E0, 1);
@@ -901,7 +890,7 @@ void particleEngineUpdate(f32 p0) {
 }
 extern "C" {
 s32 particleEnginePrepareUpdate(u32 p0) {
-    f32 sp10;
+    s32 sp14;
     s32 sp18;
     s32 sp1C;
     s32 sp20;
@@ -919,7 +908,7 @@ s32 particleEnginePrepareUpdate(u32 p0) {
     f32 sp94;
     f32 sp98;
     f32 spC;
-    f32 unksp8;
+    u8 *temp_r4;
     f32 sp74;
     s32 sp70;
     s32 sp6C;
@@ -933,11 +922,11 @@ s32 particleEnginePrepareUpdate(u32 p0) {
     s32 sp4C;
     s32 sp48;
     s32 sp44;
-    s32 sp14;
+    f32 sp10;
     Vec *temp_r28;
     Vec *temp_r3;
     u32 var_r28;
-    u8 *temp_r4;
+    f32 unksp8;
 
     var_r28 = p0;
     if (GScameraIsValid((GScamera*)((GScamera *) p0)) == 0) {
@@ -975,13 +964,13 @@ s32 particleEnginePrepareUpdate(u32 p0) {
     M2C_FIELD(temp_r28, f32 *, 4) = sp84;
     M2C_FIELD(temp_r28, f32 *, 8) = sp94;
     M2C_FIELD(&g_particle_debug_stats, f32 *, 0x3C) = sp78;
-    M2C_FIELD(temp_r3, f32 *, 4) = sp88;
-    M2C_FIELD(temp_r3, f32 *, 8) = sp98;
-    PSVECNormalize((const register Vec*)(temp_r3), (register Vec*)(temp_r3));
+    M2C_FIELD((u16)temp_r3, f32 *, 4) = sp88;
+    M2C_FIELD((u16)temp_r3, f32 *, 8) = sp98;
+    PSVECNormalize((const register Vec*)((u16)temp_r3), (register Vec*)(temp_r3));
     PSVECNormalize((const register Vec*)(temp_r28), (register Vec*)(temp_r28));
     M2C_FIELD(&g_particle_debug_stats, f32 *, 0x48) = (f32) -M2C_FIELD(&g_particle_debug_stats, f32 *, 0x48);
-    M2C_FIELD(temp_r28, f32 *, 4) = (f32) -M2C_FIELD(temp_r28, f32 *, 4);
     M2C_FIELD(temp_r28, f32 *, 8) = (f32) -M2C_FIELD(temp_r28, f32 *, 8);
+    M2C_FIELD(temp_r28, f32 *, 4) = (f32) -M2C_FIELD(temp_r28, f32 *, 4);
     M2C_FIELD(temp_r4, f32 *, 4) = spC;
     PSVECCrossProduct((const register Vec*)(temp_r28), (const register Vec*)(&g_particle_debug_stats + 0x3C), (register Vec*)(&unksp8));
     temp_r4 = (unsigned char *)(&g_particle_debug_stats + 0x30);
@@ -1025,6 +1014,5 @@ static void __sinit_particleEngine_cpp() {
 }
 }
 }
-
 
 }

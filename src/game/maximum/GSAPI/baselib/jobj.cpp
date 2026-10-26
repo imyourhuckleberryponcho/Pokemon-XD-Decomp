@@ -1,12 +1,12 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's jobj.c (headers: include/hsd_ref); XD's
-// HSD revision differs in places (checked against the XD asm).
+
+
+
 #define HSD_FILE_NAME "jobj.c"
 
-// XD's MSL <math.h> inlines (sqrtf with its NaN checks) instead of include/libc's math.h.
+
 #include <dolphin/types.h>
-// The recursive tree walkers (SetFlagsAll, ClearFlagsAll, ReqAnimAllByFlags, ...) expand into themselves as
-// deep as retail only with this inlining size budget.
+
+
 #pragma inline_max_size(600)
 #define _MATH_H_
 
@@ -54,8 +54,8 @@ inline float sqrtf(float x)
     return x;
 }
 
-// Local copy of XD's object.h (differs from the Melee decomp's: ref_INC has no NULL
-// check, iref_CNT does not count the creator's reference).
+
+
 #include <sysdolphin/baselib/forward.h>
 #include <sysdolphin/baselib/class.h>
 #include <sysdolphin/baselib/debug.h>
@@ -176,10 +176,10 @@ static inline void iref_INC(void* o)
     HSD_ASSERT_IN("object.h", 158, HSD_OBJ(o)->ref_count_individual != 0);
 }
 
-// end of object.h
 
-// Local copy of XD's jobj.h (a different revision of the Melee decomp's header:
-// its inline asserts use XD's line numbers).
+
+
+
 #define _jobj_h_
 
 #include <Runtime/platform.h>
@@ -285,43 +285,43 @@ static inline void iref_INC(void* o)
 #define HSD_JOBJ_METHOD(o) HSD_JOBJ_INFO((o)->object.parent.class_info)
 
 typedef struct HSD_JObj {
-    /*  +0 */ HSD_Obj object;
-    /*  +8 */ HSD_JObj* next;
-    /*  +C */ HSD_JObj* parent;
-    /* +10 */ HSD_JObj* child;
-    /* +14 */ u32 flags;
-    /* +18 */ union HSD_JObj_u {
+ HSD_Obj object;
+ HSD_JObj* next;
+ HSD_JObj* parent;
+ HSD_JObj* child;
+ u32 flags;
+ union HSD_JObj_u {
         HSD_SList* ptcl;
         struct HSD_DObj* dobj;
         HSD_Spline* spline;
     } u;
-    /* +1C */ Quaternion rotate;
-    /* +2C */ Vec3 scale;
-    /* +38 */ Vec3 translate;
-    /* +44 */ Mtx mtx;
-    /* +74 */ Vec3* scl;
-    /* +78 */ MtxPtr envelopemtx;
-    /* +7C */ HSD_AObj* aobj;
-    /* +80 */ HSD_RObj* robj;
-    /* +84 */ HSD_IDKey id;
+ Quaternion rotate;
+ Vec3 scale;
+ Vec3 translate;
+ Mtx mtx;
+ Vec3* scl;
+ MtxPtr envelopemtx;
+ HSD_AObj* aobj;
+ HSD_RObj* robj;
+ HSD_IDKey id;
 } HSD_JObj;
 ASSERT_SIZE(struct HSD_JObj, 0x88);
 
 typedef struct HSD_Joint {
-    /* +0 */ char* class_name;
-    /* +4 */ u32 flags;
-    /* +8 */ HSD_Joint* child;
-    /* +C */ HSD_Joint* next;
-    /* +10 */ union HSD_Joint_u {
+ char* class_name;
+ u32 flags;
+ HSD_Joint* child;
+ HSD_Joint* next;
+ union HSD_Joint_u {
         HSD_DObjDesc* dobjdesc DAT_IF(!(flags & (JOBJ_PTCL | JOBJ_SPLINE)));
         HSD_Spline* spline DAT_IF((flags & JOBJ_SPLINE) != 0);
         HSD_SList* ptcl DAT_IF((flags & JOBJ_PTCL) != 0);
     } u;
-    /* +14 */ Vec3 rotation;
-    /* +20 */ Vec3 scale;
-    /* +2C */ Vec3 position;
-    /* +38 */ MtxPtr mtx;
-    /* +3C */ HSD_RObjDesc* robjdesc;
+ Vec3 rotation;
+ Vec3 scale;
+ Vec3 position;
+ MtxPtr mtx;
+ HSD_RObjDesc* robjdesc;
 } HSD_Joint;
 
 typedef struct HSD_JObjInfo {
@@ -332,7 +332,7 @@ typedef struct HSD_JObjInfo {
     void (*disp)(HSD_JObj* jobj, Mtx vmtx, Mtx pmtx, HSD_TrspMask trsp_mask,
                  u32 rendermode);
     void (*release_child)(HSD_JObj* jobj);
-    void (*update)(void* obj, enum_t type, HSD_ObjData* val); // XD
+    void (*update)(void* obj, enum_t type, HSD_ObjData* val);
 } HSD_JObjInfo;
 
 extern HSD_JObjInfo hsdJObj;
@@ -416,7 +416,7 @@ static inline bool HSD_JObjMtxIsDirty(HSD_JObj* jobj)
     return result;
 }
 
-/// @todo Non-static inline
+
 #if !defined(__MWERKS__)
 static
 #endif
@@ -428,7 +428,7 @@ static
     HSD_JObjSetupMatrixSub(jobj);
 }
 
-// XD: an inline function (emitted out of line where it is not inlined).
+
 static inline void HSD_JObjSetMtxDirty(HSD_JObj* jobj)
 {
     if (jobj == NULL || HSD_JObjMtxIsDirty(jobj)) {
@@ -437,7 +437,7 @@ static inline void HSD_JObjSetMtxDirty(HSD_JObj* jobj)
     HSD_JObjSetMtxDirtySub(jobj);
 }
 
-/// @todo See #lb_800117F4
+
 static inline void HSD_JObjSetRotation(HSD_JObj* jobj, Quaternion* rotate)
 {
     HSD_ASSERT_IN("jobj.h", 618, jobj);
@@ -725,8 +725,8 @@ static inline void HSD_JObjGetTranslation(HSD_JObj* jobj, Vec3* translate)
     *translate = jobj->translate;
 }
 
-///@todo Likely fake but needed by vi0502 as there is a usage of
-/// HSD_JObjGetTranslation that lacks the 2nd assert
+
+
 static inline void HSD_JObjGetTranslation2(HSD_JObj* jobj, Vec3* translate)
 {
     HSD_ASSERT_IN("jobj.h", 979, jobj);
@@ -911,7 +911,7 @@ void HSD_JObjAddAnim(HSD_JObj*, HSD_AnimJoint* an_joint,
 static void HSD_JObjWalkTree0(HSD_JObj* jobj, HSD_JObjWalkTreeCallback cb,
                        f32** cb_args);
 
-// end of jobj.h
+
 
 #include <string.h>
 
@@ -928,7 +928,7 @@ static void HSD_JObjWalkTree0(HSD_JObj* jobj, HSD_JObjWalkTreeCallback cb,
 #include <sysdolphin/baselib/robj.h>
 #include <sysdolphin/baselib/spline.h>
 #include <dolphin/mtx.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
+
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -955,7 +955,7 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 static void JObjInfoInit(void);
 HSD_JObjInfo hsdJObj = { JObjInfoInit };
 
-// .sbss comes out in reverse declaration order.
+
 static HSD_JObj* current_jobj;
 static void (*ptcltgt_callback)(HSD_JObj*, s32);
 static void (*jsound_callback)(s32);
@@ -1029,7 +1029,7 @@ static void JObjRelease(HSD_Class* o);
 static void JObjAmnesia(HSD_ClassInfo* info);
 static void JObjInfoInit(void);
 
-// ---- draft declarations ----
+
 
 
 static inline bool HSD_JObjMtxIsDirty(HSD_JObj* jobj);
@@ -1199,7 +1199,7 @@ static inline HSD_JObj* jobj_get_effector(HSD_JObj* jobj)
     return NULL;
 }
 
-// XD: inlined into both IK resolvers.
+
 static inline HSD_JObj* jobj_get_effector_checked(HSD_JObj* eff)
 {
     eff = jobj_get_effector(eff);
@@ -1710,8 +1710,8 @@ void HSD_JObjSetDefaultClass(HSD_ClassInfo* info)
     default_class = info;
 }
 
-// XD's original file had a function here that the linker removed; this stand-in only
-// reproduces the strings it left behind (in their original order).
+
+
 void HSD_JObjUnusedRootCheck(HSD_JObj* jobj_root, HSD_JObj* jp)
 {
     HSD_ASSERT(0, jobj_root);
@@ -1967,8 +1967,8 @@ HSD_JObj* HSD_JObjAlloc(void)
     return jobj;
 }
 
-// XD's original file had a debug dump function here that the linker removed; this
-// stand-in only reproduces the strings it left behind (in their original order).
+
+
 void HSD_JObjUnusedDump(HSD_JObj* jobj, s32 depth, s32 index)
 {
     OSReport("jobj[%d,%d]", depth, index);
@@ -2036,8 +2036,8 @@ HSD_JObj* HSD_JObjGetCurrent(void)
     return current_jobj;
 }
 
-/// @todo Variables @c var_f27 and @c var_f28 are used uninitialized
-/// whenever 'if' condition is false.
+
+
 static void resolveIKJoint1(HSD_JObj* jobj)
 {
     HSD_JObj* robj_4;
@@ -2374,24 +2374,24 @@ void HSD_JObjSetupMatrixSub(HSD_JObj* jobj)
 #pragma push
 #pragma auto_inline off
 void HSD_JObjSetMtxDirtySub(HSD_JObj* p0) {
-    HSD_JObj *var_r25;
+    s32 var_r3_6;
     u8 *var_r31;
-    s32 temp_r4_2;
-    s32 temp_r4_3;
+    s32 var_r3_4;
+    s32 var_r3_5;
     s32 temp_r4_4;
     s32 temp_r4_5;
     s32 temp_r4_6;
     s32 var_r3;
     s32 var_r3_2;
     s32 var_r3_3;
-    s32 var_r3_4;
-    s32 var_r3_5;
-    s32 var_r3_6;
-    u8 *var_r26;
-    u8 *var_r27;
-    u8 *var_r28;
-    u8 *var_r29;
+    s32 temp_r4_2;
+    s32 temp_r4_3;
+    HSD_JObj *var_r25;
     u8 *var_r30;
+    u8 *var_r29;
+    u8 *var_r28;
+    u8 *var_r27;
+    u8 *var_r26;
     s32 temp_r4;
 
     M2C_FIELD(p0, s32 *, 0x14) = (s32) (M2C_FIELD(p0, s32 *, 0x14) | 0x40);
@@ -2430,7 +2430,7 @@ void HSD_JObjSetMtxDirtySub(HSD_JObj* p0) {
                                                 if (var_r30 == NULL) {
                                                     __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
                                                 }
-                                                temp_r4_3 = M2C_FIELD(var_r30, s32 *, 0x14);
+                                                temp_r4_3 = M2C_FIELD((s32)var_r30, s32 *, 0x14);
                                                 var_r3_3 = 0;
                                                 if (!(temp_r4_3 & 0x800000) && (temp_r4_3 & 0x40)) {
                                                     var_r3_3 = 1;
@@ -2444,7 +2444,7 @@ void HSD_JObjSetMtxDirtySub(HSD_JObj* p0) {
                                                                 if (var_r29 == NULL) {
                                                                     __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
                                                                 }
-                                                                temp_r4_4 = M2C_FIELD(var_r29, s32 *, 0x14);
+                                                                temp_r4_4 = M2C_FIELD((s32)var_r29, s32 *, 0x14);
                                                                 var_r3_4 = 0;
                                                                 if (!(temp_r4_4 & 0x800000) && (temp_r4_4 & 0x40)) {
                                                                     var_r3_4 = 1;
@@ -2458,7 +2458,7 @@ void HSD_JObjSetMtxDirtySub(HSD_JObj* p0) {
                                                                                 if (var_r28 == NULL) {
                                                                                     __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
                                                                                 }
-                                                                                temp_r4_5 = M2C_FIELD(var_r28, s32 *, 0x14);
+                                                                                temp_r4_5 = M2C_FIELD((s32)var_r28, s32 *, 0x14);
                                                                                 var_r3_5 = 0;
                                                                                 if (!(temp_r4_5 & 0x800000) && (temp_r4_5 & 0x40)) {
                                                                                     var_r3_5 = 1;
@@ -2472,7 +2472,7 @@ void HSD_JObjSetMtxDirtySub(HSD_JObj* p0) {
                                                                                                 if (var_r26 == NULL) {
                                                                                                     __assert((const char*)("jobj.h"), 0x25DU, (const char*)("jobj"));
                                                                                                 }
-                                                                                                temp_r4_6 = M2C_FIELD(var_r26, s32 *, 0x14);
+                                                                                                temp_r4_6 = M2C_FIELD((s32)var_r26, s32 *, 0x14);
                                                                                                 var_r3_6 = 0;
                                                                                                 if (!(temp_r4_6 & 0x800000) && (temp_r4_6 & 0x40)) {
                                                                                                     var_r3_6 = 1;

@@ -1,4 +1,3 @@
-// Field camera control (camera.cpp).
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -147,9 +146,6 @@ extern s32 _hModuleField;
 extern f32 __float_nan[];
 }
 
-// ---------------------------------------------------------------------------
-// Small interpolation helper used for every animated camera value.
-
 static inline void _cameraLerp(f32* out, const f32* start, const f32* end, f32 t) {
     f32 d = *end - *start;
     d *= t;
@@ -176,62 +172,62 @@ public:
     void setAcceleration(f32 rate);
     const T* getCurrentPos() const;
 
-    s32 mState;       // 0x00
-    bool mMove;       // 0x04
-    bool mFirst;      // 0x05
-    bool mAccel;      // 0x06
-    bool mAccelStart; // 0x07
-    bool mAccelEnd;   // 0x08
-    f32 mSpeed;       // 0x0C
-    f32 mAccelRate;   // 0x10
-    f32 mDecelTime;   // 0x14
-    f32 mTime;        // 0x18
-    f32 mCount;       // 0x1C
+    s32 mState;
+    bool mMove;
+    bool mFirst;
+    bool mAccel;
+    bool mAccelStart;
+    bool mAccelEnd;
+    f32 mSpeed;
+    f32 mAccelRate;
+    f32 mDecelTime;
+    f32 mTime;
+    f32 mCount;
     T mStart;
     T mEnd;
     T mCurrent;
 };
 
 struct CameraWork {
-    u8 type;                               // 0x000
-    u8 moving;                             // 0x001
-    u8 prevType;                           // 0x002
-    u8 flags;                              // 0x003
-    GSvec position;                        // 0x004
-    GSvec rotation;                        // 0x010
-    GSvec targetPos;                       // 0x01C
-    GSvec targetOfs;                       // 0x028
-    u32 targetGroup;                       // 0x034
-    u32 targetID;                          // 0x038
-    s32 targetPart;                        // 0x03C
-    f32 height;                            // 0x040
-    f32 distance;                          // 0x044
-    f32 fov;                               // 0x048
-    f32 lockY;                             // 0x04C
-    CameraAnimation<f32> fovAnim;          // 0x050
-    CameraAnimation<GSvec> targetPosAnim;  // 0x07C
-    CameraAnimation<GSvec> targetOfsAnim;  // 0x0C0
-    CameraAnimation<GSvec> positionAnim;   // 0x104
-    CameraAnimation<GSvec> rotationAnim;   // 0x148
-    u32 animGroup;                         // 0x18C
-    u32 animID;                            // 0x190
-    GSvec offsetPos;                       // 0x194
-    GSvec offsetRot;                       // 0x1A0
-    GSvec offsetScale;                     // 0x1AC
-    GSvec partTargetOfs;                   // 0x1B8
+    u8 type;
+    u8 moving;
+    u8 prevType;
+    u8 flags;
+    GSvec position;
+    GSvec rotation;
+    GSvec targetPos;
+    GSvec targetOfs;
+    u32 targetGroup;
+    u32 targetID;
+    s32 targetPart;
+    f32 height;
+    f32 distance;
+    f32 fov;
+    f32 lockY;
+    CameraAnimation<f32> fovAnim;
+    CameraAnimation<GSvec> targetPosAnim;
+    CameraAnimation<GSvec> targetOfsAnim;
+    CameraAnimation<GSvec> positionAnim;
+    CameraAnimation<GSvec> rotationAnim;
+    u32 animGroup;
+    u32 animID;
+    GSvec offsetPos;
+    GSvec offsetRot;
+    GSvec offsetScale;
+    GSvec partTargetOfs;
 };
 
 struct FloorCamera {
-    s32 state;          // 0x00
-    u32 floorID;        // 0x04
-    f32 defHeight;      // 0x08
-    f32 defDistance;    // 0x0C
-    f32 defRotY;        // 0x10
-    f32 defFov;         // 0x14
-    f32 height;         // 0x18
-    f32 distance;       // 0x1C
-    f32 rotY;           // 0x20
-    f32 fov;            // 0x24
+    s32 state;
+    u32 floorID;
+    f32 defHeight;
+    f32 defDistance;
+    f32 defRotY;
+    f32 defFov;
+    f32 height;
+    f32 distance;
+    f32 rotY;
+    f32 fov;
 };
 
 static CameraWork _cameraWork;
@@ -372,8 +368,6 @@ static void _cameraPadMoveUpdate(_GScamera* cam);
 
 extern "C" {
 
-// Placeholder for a function the linker stripped from the retail DOL. It only exists so the
-// .sdata2 float constants come out in the original order (0, 30, 1 before everything else).
 void cameraStrippedDefaults(void) {
     pCamWork->offsetPos.set(0.0f, 0.0f, 0.0f);
     pCamWork->fov = 30.0f;
@@ -1245,7 +1239,6 @@ void cameraSetGScamera(_GScamera* src) {
     cameraSetHeight(height);
     cameraSetDistance(distance);
     cameraSetRotY(rotY);
- // Same clamp as cameraSetFov, written out here in the original.
     if (setFov < 3.0f) {
         setFov = 3.0f;
     }
@@ -1372,9 +1365,6 @@ static void _cameraMakeStateData(FloorStateMode mode, void* data, unsigned long 
         GScameraPushState(cam, buf + sizeof(CameraWork));
     }
 }
-
-// ---------------------------------------------------------------------------
-// CameraAnimation<T> (instantiated for f32 and GSvec; emitted weak at the end).
 
 template <typename T>
 CameraAnimation<T>::CameraAnimation() {

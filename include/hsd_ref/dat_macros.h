@@ -1,19 +1,3 @@
-/** @file
- * Annotations describing how archive data is laid out, for the parts a C
- * declaration cannot express: how many elements a pointer refers to, and
- * which member of a union is valid.
- *
- * They expand to nothing for every compiler except clang with
- * @c DAT_ANNOTATIONS defined, where they become @c btf_decl_tag attributes
- * that clang emits into DWARF as @c DW_TAG_LLVM_annotation. The arguments are
- * kept as written, so constants are resolved by name through the DWARF macro
- * table.
- *
- * Union members are tested in declaration order; the first match is valid.
- * A condition that can't be evaluated stops the search, so a last member
- * marked @c DAT_IF(true) is a catch-all for the others. If every member has a
- * condition and none holds, the union is unused.
- */
 #ifndef DOLDECOMP_DAT_MACROS_H
 #define DOLDECOMP_DAT_MACROS_H
 
@@ -62,12 +46,6 @@
 /// bindings shadow outer ones.
 #define DAT_BIND(name, value) DAT_TAG("bind(" #name ", " #value ")")
 
-/// Bind @p name to the result of matching the tuple @p values against the
-/// remaining arguments: @c (pattern, ...): value cases, ending with
-/// @c _: value. Cases are comma-separated.
-/// Patterns are constants, @c | alternatives, or @c _ to ignore a tuple
-/// component. The first matching case supplies the binding, with the same
-/// scope as #DAT_BIND.
 #define DAT_MATCH(name, values, ...)                                          \
     DAT_TAG("bind(" #name ", (match " #values " { " #__VA_ARGS__ " }))")
 

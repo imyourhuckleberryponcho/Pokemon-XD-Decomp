@@ -1,4 +1,3 @@
-
 #include "musyx/assert.h"
 #include "musyx/hardware.h"
 #include "musyx/s3d.h"
@@ -85,7 +84,7 @@ static MEM_DATA* GetLayerAddr(u16 id, POOL_DATA* pool) {
 }
 
 static void InsertData(u16 id, void* data, u8 dataType, u32 remove) {
-  MEM_DATA* m; // r30
+  MEM_DATA* m;
 
   switch (dataType) {
   case 0:
@@ -154,7 +153,7 @@ static void InsertData(u16 id, void* data, u8 dataType, u32 remove) {
 }
 
 static void ScanIDList(u16* ref, void* data, u8 dataType, u32 remove) {
-  u16 id; // r30
+  u16 id;
 
   while (*ref != 0xFFFF) {
     if ((*ref & 0x8000)) {
@@ -240,7 +239,7 @@ void sndSetSampleDataUploadCallback(void* (*callback)(u32, u32), u32 chunckSize)
 }
 
 bool sndPushGroup(void* prj_data, u16 gid, void* samples, void* sdir, void* pool) {
-  GROUP_DATA* g; // r31
+  GROUP_DATA* g;
   MUSY_ASSERT_MSG(prj_data != NULL, "Project data pointer is NULL");
   MUSY_ASSERT_MSG(sdir != NULL, "Sample directory pointer is NULL");
 
@@ -273,18 +272,6 @@ bool sndPushGroup(void* prj_data, u16 gid, void* samples, void* sdir, void* pool
   return FALSE;
 }
 
-/*
-
-
-
-
-
-
-
-
-
-
-*/
 bool sndPopGroup() {
   GROUP_DATA* g;
   SDIR_DATA* sdir;
@@ -321,27 +308,12 @@ bool sndPopGroup() {
   return 1;
 }
 
-/*
-
-
-
-
-
-
-
-
-
-
-
-
-*/
-
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
 u32 sndStackGetSize() { return 0x618; }
 
 u32 sndStackAdd(void* stackWorkMem, u32 aramBase, u32 aramSize) {
-  GSTACK_INST* gs; // r31
-  u32 id;          // r30
+  GSTACK_INST* gs;
+  u32 id;
 
   MUSY_ASSERT_MSG(sndActive != FALSE, "Sound system is not initialized.");
   MUSY_ASSERT_MSG((aramBase & 31) == 0, "ARAM area base must be 32-byte aligned.");
@@ -369,8 +341,8 @@ u32 sndStackAdd(void* stackWorkMem, u32 aramBase, u32 aramSize) {
 }
 
 u32 sndStackRemove(u32 id) {
-  GSTACK_INST* gs;  // r31
-  GSTACK_INST* lgs; // r29
+  GSTACK_INST* gs;
+  GSTACK_INST* lgs;
 
   MUSY_ASSERT_MSG(sndActive != FALSE, "Sound system is not initialized.");
   MUSY_ASSERT_MSG(id != -2, "Default sound stack cannot be removed.");
@@ -390,7 +362,7 @@ u32 sndStackRemove(u32 id) {
 }
 
 u32 sndStackSetCurrent(u32 id) {
-  GSTACK_INST* gs; // r31
+  GSTACK_INST* gs;
 
   MUSY_ASSERT_MSG(sndActive != FALSE, "Sound system is not initialized.");
   for (gs = gsRoot; gs != NULL; gs = gs->next) {
@@ -403,7 +375,7 @@ u32 sndStackSetCurrent(u32 id) {
 }
 
 u32 sndStackGetARAMAddressRange(u32 id, u32* start, u32* end) {
-  GSTACK_INST* gs; // r31
+  GSTACK_INST* gs;
 
   MUSY_ASSERT_MSG(sndActive != FALSE, "Sound system is not initialized.");
   for (gs = gsRoot; gs != NULL; gs = gs->next) {
@@ -417,7 +389,7 @@ u32 sndStackGetARAMAddressRange(u32 id, u32* start, u32* end) {
 }
 
 u32 sndStackGetAvailableSampleMemory(unsigned long id) {
-  GSTACK_INST* gs; // r31
+  GSTACK_INST* gs;
 
   MUSY_ASSERT_MSG(sndActive != FALSE, "Sound system is not initialized.");
   for (gs = gsRoot; gs != NULL; gs = gs->next) {
@@ -498,7 +470,6 @@ u32 seqPlaySong(u16 sgid, u16 sid, void* arrfile, SND_PLAYPARA* para, u8 irq_cal
   return 0xffffffff;
 }
 
-/* XD: sndSeqPlayEx gets its own inlined copy of the song search. */
 static inline u32 _seqPlaySong(u16 sgid, u16 sid, void* arrfile, SND_PLAYPARA* para, u8 irq_call, u8 studio) {
   int i;
   GROUP_DATA* g;

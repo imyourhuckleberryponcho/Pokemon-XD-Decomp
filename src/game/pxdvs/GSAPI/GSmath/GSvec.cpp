@@ -1,4 +1,3 @@
-// WIP (NonMatching): GSvecTransformQuat register/operand order differs (permuter best 425).
 #include <dolphin/types.h>
 
 struct GSquat {
@@ -24,7 +23,6 @@ GSvec unitScaleVector(1.0f, 1.0f, 1.0f);
 
 extern "C" {
 
-// Quaternion to Euler angles (radians).
 void GSvecMakeFromQuat(GSvec* out, const GSquat* q) {
     f32 x = q->x;
     f32 y = q->y;
@@ -41,23 +39,30 @@ void GSvecMakeFromQuat(GSvec* out, const GSquat* q) {
     out->z = atan(2.0f * (w * x + y * z) / (zz + (ww - xx - yy)));
 }
 
-// Rotates v by q (q * v * conj(q)).
 void GSvecTransformQuat(GSvec* out, const GSquat* q, const GSvec* v) {
-    f32 qy = q->y;
-    f32 vx = v->x;
-    f32 qw = q->w;
-    f32 qz = q->z;
-    f32 vy = v->y;
-    f32 qx = q->x;
-    f32 vz = v->z;
-    f32 b = qz * vx + vy * qw - vz * qx;
-    f32 c = qx * vy + vz * qw - vx * qy;
-    f32 d = qy * vy + vx * qx + vz * qz;
-    f32 a = qy * vz + vx * qw - vy * qz;
+    f32 vx;
+    f32 d;
+    f32 qz;
+    f32 qw;
+    f32 vy;
+    f32 vz;
+    f32 qx;
+    f32 qy;
+    vy = v->y;
+    qy = q->y;
+    vz = v->z;
+    qx = q->x;
+    vx = v->x;
+    qz = q->z;
+    qw = q->w;
+    f32 a = vx * qw + qy * vz - vy * qz;
+    f32 b = vy * qw + qz * vx - vz * qx;
+    f32 c = vz * qw + qx * vy - vx * qy;
+    d = vx * qx + qy * vy + vz * qz;
 
-    out->x = qx * d + a * qw + qy * c - b * qz;
-    out->y = qy * d + b * qw + qz * a - c * qx;
-    out->z = qz * d + c * qw + qx * b - a * qy;
+    out->x = a * qw + qx * d + qy * c - b * qz;
+    out->y = b * qw + qy * d + qz * a - c * qx;
+    out->z = c * qw + qz * d + qx * b - a * qy;
 }
 
 }

@@ -1,5 +1,3 @@
-// WIP (NonMatching): logic complete; WaitForClear*/IfClearedReset/Mark_Sub differ only in which
-// saved register holds the token vs. the pointer.
 #include <dolphin/types.h>
 
 struct GSgfxRenderWaitData {
@@ -17,7 +15,6 @@ u16 GXReadDrawSync(void);
 void GXSetDrawSync(u16 token);
 }
 
-// Callback run when the GPU passes a token within [first, last].
 struct TokenRegister {
     u16 first;
     u16 last;
@@ -34,7 +31,6 @@ static u8 _tokenRegisterCount;
 
 static void _tokenDrawSyncCallback(unsigned short token);
 
-// Tokens wrap around at _tokenMaximum, so "passed" depends on where the frame's range ends.
 static inline bool _tokenPassed(u16 token, u16 gpu) {
     u16 end = _tokenFrameEnd;
     if (end > gpu) {
@@ -70,7 +66,7 @@ static inline bool _tokenIsValid(u16 token) {
 }
 
 static inline bool _tokenIsPending(u16 token) {
-    u16 start;
+    u32 start;
     u16 end;
     if (token == 0 || token >= _tokenMaximum) {
         return false;

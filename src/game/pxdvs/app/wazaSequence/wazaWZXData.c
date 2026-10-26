@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Move animation sequence resources per move ID.
 typedef struct WazaWzxEntry {
     u16 res[3];
 } WazaWzxEntry;

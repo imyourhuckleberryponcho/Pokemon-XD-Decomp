@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -47,7 +44,6 @@ struct GStexture;
 enum Mtx44 { Mtx44_draft_dummy };
 
 extern "C++" {
-// ---- draft declarations ----
 struct GSgfxLayer {
     u8 _draft[1];
     void FlushState();
@@ -94,9 +90,6 @@ s32 GSgfxVideoResetViewport(bool);
 static s32 _layerTexCopyDefaultFilter = 0x08080A0C;
 GStexture* distTexPtr__10GSgfxLayer;
 GStexture* fbTexPtr__10GSgfxLayer;
-// ---- draft declarations ----
-
-
 
 void GSgfxLayer::textureCopy(GSgfxLayerPass p0, GStexture* p1, bool p2, unsigned char* p3, bool p4, bool p5, bool p6) {
     if ((s32) M2C_FIELD(this, s32 *, 0x1994) != p0) {
@@ -109,33 +102,33 @@ void GSgfxLayer::textureCopy(GSgfxLayerPass p0, GStexture* p1, bool p2, unsigned
 
 extern "C++" {
 void GSgfxLayer::EffectTextureCopy(GStexture* p0, bool p1, unsigned char* p2, bool p3, bool p4, bool p5) {
-    s32 saved_reg_r25;
+    u16 sp8;
     s32 saved_reg_r26;
     s32 saved_reg_r27;
     s32 saved_reg_r28;
     s32 saved_reg_r29;
-    u8 sp21;
+    volatile u8 sp21;
     volatile s8 sp20;
     volatile s32 sp1C;
     s32 sp18;
     volatile u16 sp14;
-    volatile u16 sp12;
-    volatile u16 sp10;
-    volatile s16 spE;
     s16 spC;
+    volatile u16 sp12;
+    volatile s16 spE;
+    volatile u16 sp10;
     u16 spA;
-    u16 sp8;
-    s32 var_r25;
+    s32 saved_reg_r25;
+    u8 *temp_r30;
     u16 temp_r0_2;
     u16 temp_r0_3;
     u16 var_r3;
     u32 var_r3_2;
-    u8 var_r26;
-    u8 var_r27;
-    u8 var_r28;
-    u8 var_r29;
     u8 var_r31;
-    u8 *temp_r30;
+    u8 var_r29;
+    u8 var_r28;
+    u8 var_r27;
+    u8 var_r26;
+    s32 var_r25;
 
     var_r25 = saved_reg_r25;
     var_r26 = saved_reg_r26;
@@ -215,8 +208,8 @@ block_8:
             GSgfx_GCWriteCopyFilter(M2C_FIELD(temp_r30, u8 *, 0x19), temp_r30 + 0x1A, 0, NULL);
         }
         spC = 0;
-        spE = 0;
         sp10 = spA;
+        spE = 0;
         sp12 = sp8;
         sp14 = spA;
         sp18 = GStextureGetGXformat((GStexture*)(p0), 0U);
@@ -272,7 +265,7 @@ void GSgfxLayer::EffectScreenClear(bool p0, bool p1, bool p2) {
 
     if ((p0 != 0) || (p1 != 0) || (p2 != 0)) {
         if (p0 == 1) {
-            M2C_FIELD(this, s8 *, 0x1656) = 1;
+            M2C_FIELD((u16)this, s8 *, 0x1656) = 1;
         } else {
             M2C_FIELD(this, s8 *, 0x1656) = 0;
         }
@@ -366,18 +359,18 @@ void GSgfxLayer::EffectScreenClear(bool p0, bool p1, bool p2) {
         *(f32 *)0xCC008000 = 0.0f;
         *(f32 *)0xCC008000 = 29999.0f;
         *(f32 *)0xCC008000 = 480.0f;
-        *(f32 *)0xCC008000 = 0;
+        *(f32 *)0xCC008000 = 640.0f;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0.0f;
+        *(f32 *)0xCC008000 = 0;
+        *(f32 *)0xCC008000 = 480.0f;
+        *(f32 *)0xCC008000 = 0;
+        *(f32 *)0xCC008000 = 0;
+        *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 29999.0f;
         *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 640.0f;
-        *(f32 *)0xCC008000 = 480.0f;
         *(f32 *)0xCC008000 = 29999.0f;
         *(f32 *)0xCC008000 = 0;
         *(f32 *)0xCC008000 = 0;
@@ -621,8 +614,6 @@ void GSgfxLayer::EffectDistortion() {
 }
 }
 extern "C++" {
-#pragma push
-#pragma peephole off
 void GSgfxLayer::PrepareDistortion() {
     volatile s32 sp10;
     s32 spC;
@@ -649,7 +640,6 @@ void GSgfxLayer::PrepareDistortion() {
         ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(fbTexPtr__10GSgfxLayer), 0U, (unsigned char*)(NULL), 1U, 1U, 0U);
     }
 }
-#pragma pop
 }
 
 extern "C++" {
@@ -665,6 +655,4 @@ void GSgfxLayer::PrepareFBCopy() {
 }
 
 }
-
-
 

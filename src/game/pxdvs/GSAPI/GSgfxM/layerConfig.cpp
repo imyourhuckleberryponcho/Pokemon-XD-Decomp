@@ -80,7 +80,6 @@ static inline GSgfxLayer* FindLayer(GSgfxLayerID id) {
     return NULL;
 }
 
-// Layer IDs 8-15 are handed out to layers created at run time.
 static inline GSgfxLayerID FindFreeID() {
     u32 id;
     for (id = 8; id < 16; id++) {
@@ -130,7 +129,6 @@ GSgfxLayerID GSgfxLayerConfig::Add(char* name, u32 width, u32 height, u32 count,
     GSgfxLayer* layer = GSgfxLayerFindByName(name);
     GSgfxLayer* rel;
 
- // Recreate a layer of the same name if its size changed.
     if (layer != NULL) {
         if (ROUND_UP_32(width) != layer->width || ROUND_UP_32(height) != layer->height ||
             ROUND_UP_32(count) != ((u32)layer->items->last - (u32)layer->items->first) / 0x30 + 1) {
@@ -185,7 +183,6 @@ GSgfxLayerID GSgfxLayerConfig::Add(char* name, u32 width, u32 height, u32 count,
     return layer->id;
 }
 
-// Replaces all layers with the ones in the table (terminated by id -1).
 void GSgfxLayerConfig::Setup(_GSgfxLayerData* data) {
     GSgfxLayer* layer;
     GSgfxLayer* prev;

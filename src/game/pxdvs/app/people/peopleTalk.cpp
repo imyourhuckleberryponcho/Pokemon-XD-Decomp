@@ -1,4 +1,3 @@
-// Draft (written from asm).
 #include <dolphin/types.h>
 #pragma pool_strings off
 extern "C" double __fabs(double x);
@@ -9,34 +8,34 @@ struct GSvec {
 };
 
 struct PeopleWork {
-    u8 active;              // 0x0
+    u8 active;
     u8 pad1[0xC];
-    u8 flagD;               // 0xD
+    u8 flagD;
     u8 pad2[6];
-    u32 group;              // 0x14
-    u32 id;                 // 0x18
-    u32 modelResID;         // 0x1C
+    u32 group;
+    u32 id;
+    u32 modelResID;
     u8 pad3[0x20];
-    f32 angleY;             // 0x40
+    f32 angleY;
     u8 pad4[0x5C];
-    u8 rotating;            // 0xA0
-    u8 neckHold;            // 0xA1
+    u8 rotating;
+    u8 neckHold;
     u8 padA2[2];
-    f32 savedAngle;         // 0xA4
+    f32 savedAngle;
     u8 padA8[0x1C];
-    u8 neckFlag;            // 0xC4
+    u8 neckFlag;
     u8 padC5[3];
-    f32 neckPos[3];         // 0xC8
+    f32 neckPos[3];
     u8 padD4[0x18];
-    f32 neckSaved[3];       // 0xEC
+    f32 neckSaved[3];
     u8 padF8[0x80];
-    f32 talkDistance;       // 0x178
+    f32 talkDistance;
 };
 
 struct PeopleInfo;
 struct FloorBgmMask {
     u8 pad[4];
-    u8 maskOn;  // 0x4
+    u8 maskOn;
     void startMask();
     void endMask();
     void setVolumeRate(f32);
@@ -96,7 +95,6 @@ u8 gimmickBoxIsPushBoxFloor();
 bool GScolsys2HitCollision(GSvec* start, GSvec* end, f32 radius, GSvec* hitOut);
 void GSlogWritef(const char* fmt, ...);
 }
-
 
 static f32 _talkWindowCloseDelay;
 static PeopleTalkRes _peopleTalkRes;

@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Script camera commands (0x10..0x3F). Same interpreter layout as objFloor/objHero.
 #pragma pool_strings off
 #pragma peephole off
 

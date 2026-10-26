@@ -1,10 +1,6 @@
-// WIP: menuFightDrawParam is ~95.7% (remaining diffs: r25/r26 register allocation of temps, a few
-// clrlwi in the flash-color/sprite-tint code). menuFightDrawDarkPanel register order differs.
-// menuFightStatusPercent is an unreferenced placeholder: its constants (0.0f, 100.0f) fix the .sdata2 order.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 
-// Menu units were built without the peephole optimizer.
 #pragma peephole off
 
 struct MenuFightStatusState {
@@ -250,7 +246,6 @@ void menuFightStatusSetHP(s32 id, s16 hp) {
     }
 }
 
-
 }
 
 static void menuUpdateStatusTime(void);
@@ -287,7 +282,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     s32 hit;
     s32 item;
     u32 t;
-    s32 val;
+    u8 val;
     f32 sv;
 
     menuFightDrawCheckDark(window, sprite);
@@ -454,18 +449,14 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             layer->primitive = 0x98;
             layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
             layer->beginSurface(4);
-            GXWGFifo.s16 = 0;
-            GXWGFifo.s16 = 0;
-            GXWGFifo.u32 = barColor;
-            GXWGFifo.s16 = x;
-            GXWGFifo.s16 = 0;
-            GXWGFifo.u32 = barColor;
-            GXWGFifo.s16 = sprite->height;
-            GXWGFifo.s16 = x;
-            GXWGFifo.u32 = barColor;
-            GXWGFifo.s16 = sprite->height;
-            GXWGFifo.s16 = 0;
-            GXWGFifo.u32 = barColor;
+            GXPosition2s16(0, 0);
+            GXColor1u32(barColor);
+            GXPosition2s16(0, x);
+            GXColor1u32(barColor);
+            GXPosition2s16(0, sprite->height);
+            GXColor1u32(barColor);
+            GXPosition2s16(x, sprite->height);
+            GXColor1u32(barColor);
             layer->endSurface();
         }
         if (cur <= 0.0f) {
@@ -511,30 +502,14 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 layer->flagsC |= 1;
                 layer->setRenderStateAndSelect(GSgfxVFGetPredef(3));
                 layer->beginSurface(4);
-                GXWGFifo.s16 = 0;
-                GXWGFifo.s16 = 0;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.s16 = sprite->width;
-                GXWGFifo.s16 = 0;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.s16 = sprite->width;
-                GXWGFifo.s16 = sprite->height;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.s16 = sprite->height;
-                GXWGFifo.s16 = 0;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
-                GXWGFifo.u8 = c;
+                GXPosition2s16(0, 0);
+                GXColor4u8(c, c, c, c);
+                GXPosition2s16(sprite->width, 0);
+                GXColor4u8(c, c, c, c);
+                GXPosition2s16(sprite->width, sprite->height);
+                GXColor4u8(c, c, c, c);
+                GXPosition2s16(0, sprite->height);
+                GXColor4u8(c, c, c, c);
                 layer->endSurface();
                 cFlash += timeGetLastFrameSec();
                 if (1.0 <= cFlash) {
@@ -649,9 +624,9 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             t = (u32)(100.0f * menuStatusTime) % 100;
             sprite->color = 0xFFFFFFFF;
             sv = sin(3.14f * (0.01f * (f32)t));
-            val = (s32)(200.0f * sv);
-            sprite->rgba[1] = sprite->rgba[1] - val;
-            sprite->rgba[2] = sprite->rgba[2] - val;
+            val = (200.0f * sv);
+            sprite->rgba[1] -= val;
+            sprite->rgba[2] -= val;
             if (hit != 0) {
                 if (flag != 0) {
                     if (fightFloorGetStatus(0, 0, 0x32, 0) != 0) {

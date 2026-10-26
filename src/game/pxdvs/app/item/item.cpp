@@ -1,7 +1,3 @@
-// STATUS: 13/13 functions, 8 exact; remaining 5 differ only in register allocation (98-99.8%).
-// LAYOUT/CONST/CALLS/DATA OK with default flags (-inline deferred breaks function order).
-// Helpers are static inline mirrors of the original's inlines (itemCV = item validity check, itemAt = &ary[i]
-// as an rvalue; itemIs does its own null check before itemCV).
 #include <dolphin/types.h>
 
 struct ITEM {
@@ -288,21 +284,21 @@ void itemReplace(void* a, void* b) {
     itemSwapI((ITEM*)a, (ITEM*)b);
 }
 
-s32 itemDecItemDataIdAry(ITEM* ary, u16 n, u16 id, u32 cnt, s16 slot, u16 unused, u8 mode) {
+s32 itemDecItemDataIdAry(ITEM* ary, u16 n, u16 id, u32 cnt_in, s16 slot, u16 unused, u8 mode) {
+    u32 cnt = cnt_in;
     if (ary == 0) return -1;
     if (!itemIdOk(id)) return -1;
     u8 sort = 0;
     if (slot < 0) {
         cnt &= 0xFFFF;
-        while (1) {
+        do {
             ITEM* p = itemFindAny(ary, n, id);
             if (p == 0) break;
             s32 r = itemDecOne(p, id, cnt);
             if (r < 0) return r;
             if (!itemOk(p)) sort = 1;
             cnt = r;
-            if (r <= 0) break;
-        }
+        } while ((s32)cnt > 0);
     } else {
         ITEM* p = ary + slot;
         cnt = itemDecOne(p, id, cnt);
@@ -361,8 +357,7 @@ s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, 
     return rem;
 }
 
-u16 itemGetQuantityInAry(void* aryv, u16 n, u16 id, u16 unused) {
-    ITEM* ary = (ITEM*)aryv;
+s32 itemGetQuantityInAry(ITEM* ary, u16 n, u16 id, u16 unused) {
     if (ary == 0) return 0;
     if (!itemIdOk(id)) return 0;
     s32 total = 0;
@@ -421,12 +416,14 @@ static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
             ITEM* p;
             for (i = 0, p = ary; i < (int)(n - 1); p++, i++) {
                 if (itemOk(p)) {
-                    int j = i + 1;
-                    ITEM* q = ary + j;
-                    for (; j < (int)n; j++, q++) {
+                    ITEM* q;
+                    int j;
+                    j = i + 1;
+                    q = ary + j;
+                    for (; j < (int)n; q++, j++) {
                         if (itemOk(q)) {
                             u16 a = item_GetItemDataId(p);
-                            if (a > item_GetItemDataId(q)) itemSwapI(p, q);
+                            if (item_GetItemDataId(q) < a) itemSwapI(p, q);
                         }
                     }
                 }

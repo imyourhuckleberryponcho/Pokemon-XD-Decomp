@@ -1,8 +1,8 @@
-// GSmodel parsing: walks a model's joint tree like HSD_JObjDispAll and hands every
-// PObj (with its view/position/envelope matrices) to a user callback instead of drawing.
-// WIP: built with -inline deferred (target function order = reverse source order). DObjDisp/LoadEnvelopeMatrix are
-// real functions; the target also inlines DObjDisp into JObjDispSub (not reproduced yet: dont_inline around
-// JObjDispSub also stops inlining inside it) and calls HSD_JObjMtxIsDirty only from JObjDispAll.
+
+
+
+
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -18,48 +18,48 @@ typedef struct _HSD_DObj HSD_DObj;
 typedef struct _HSD_PObj HSD_PObj;
 
 struct HSD_Envelope {
-    HSD_Envelope* next;   // 0x00
-    HSD_JObj* jobj;       // 0x04
-    f32 weight;           // 0x08
+    HSD_Envelope* next;
+    HSD_JObj* jobj;
+    f32 weight;
 };
 
 struct HSD_SList {
-    HSD_SList* next;      // 0x00
-    void* data;           // 0x04
+    HSD_SList* next;
+    void* data;
 };
 
 struct _HSD_PObj {
     u8 unk0[0x4];
-    HSD_PObj* next;       // 0x04
+    HSD_PObj* next;
     u8 unk8[0x4];
-    u16 flags;            // 0x0C
+    u16 flags;
     u8 unkE[0x6];
     union {
         HSD_JObj* jobj;
         HSD_SList* envelope_list;
-    } u;                  // 0x14
+    } u;
 };
 
 struct _HSD_DObj {
     u8 unk0[0x4];
-    HSD_DObj* next;       // 0x04
+    HSD_DObj* next;
     u8 unk8[0x4];
-    HSD_PObj* pobj;       // 0x0C
+    HSD_PObj* pobj;
     u8 unk10[0x4];
-    u32 flags;            // 0x14
+    u32 flags;
 };
 
 struct _HSD_JObj {
     u8 unk0[0x8];
-    HSD_JObj* next;       // 0x08
-    HSD_JObj* parent;     // 0x0C
-    HSD_JObj* child;      // 0x10
-    u32 flags;            // 0x14
-    HSD_DObj* dobj;       // 0x18
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
+    HSD_DObj* dobj;
     u8 unk1C[0x28];
-    GSmtx mtx;            // 0x44
+    GSmtx mtx;
     u8 unk74[0x4];
-    GSmtx* envelopemtx;   // 0x78
+    GSmtx* envelopemtx;
 };
 
 #define JOBJ_HIDDEN (1 << 4)
@@ -102,7 +102,7 @@ void PSMTXInverse(const GSmtx* src, GSmtx* inv);
 void PSMTXConcat(const GSmtx* a, const GSmtx* b, GSmtx* ab);
 void PSMTXCopy(const GSmtx* src, GSmtx* dst);
 
-// Inline helpers from HSD's jobj.h (asserts carry that header's line numbers).
+
 static inline s32 HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
     u8 result;
     if (!jobj) {
@@ -124,21 +124,23 @@ static inline void HSD_JObjSetupMatrix(HSD_JObj* jobj) {
 
 }
 
-static void _modelParseLoadEnvelopeMatrix(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pmtx, GSmtx* mtxStack) {
+static void _modelParseLoadEnvelopeMatrix(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pmtx, GSmtx* mtxStack_in) {
+    GSmtx * mtxStack;
     GSmtx node;
     GSmtx mtx;
     GSmtx tmp;
-    GSmtx* nodeMtx;
     GSmtx* src;
     HSD_SList* list;
     HSD_JObj* jobj;
     int i;
+    GSmtx* nodeMtx;
 
     jobj = HSD_JObjGetCurrent();
     HSD_PObjClearMtxMark(0, 2);
     nodeMtx = _HSD_mkEnvelopeModelNodeMtx(jobj, &node);
     list = pobj->u.envelope_list;
-    for (i = 0; i < 10 && list != 0; i++, list = list->next, mtxStack++) {
+    mtxStack = mtxStack_in;
+    for (i = 0; (i < 10) && (list != 0); i++, list = list->next, mtxStack++) {
         HSD_Envelope* envelope = (HSD_Envelope*)list->data;
 
         if (envelope == 0) {

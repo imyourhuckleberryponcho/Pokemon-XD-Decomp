@@ -1,9 +1,9 @@
 #include "types.h"
 
-s32 InitializeUART(u32);                      /* extern */
-s32 OSGetConsoleType();                       /* extern */
-s32 WriteUARTN(s32, s32);                     /* extern */
-s32 __TRK_write_console(s32, s32, s32*, s32); /* extern */
+s32 InitializeUART(u32);
+s32 OSGetConsoleType();
+s32 WriteUARTN(s32, s32);
+s32 __TRK_write_console(s32, s32, s32*, s32);
 
 WEAKFUNC BOOL __write_console(s32 arg0, s32 arg1, s32* arg2, s32 arg3);
 

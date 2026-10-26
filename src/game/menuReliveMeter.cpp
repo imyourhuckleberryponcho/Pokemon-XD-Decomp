@@ -1,7 +1,3 @@
-// WIP: the five entry/helper functions match (540 bytes). The 3,704-byte
-// renderer remains NonMatching: arithmetic reassociation and register allocation
-// still differ (121 strict instruction differences). Uses -O4,p and peephole off.
-
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #pragma peephole off
@@ -84,13 +80,11 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
     if (scale < 50) gap /= 2;
     color.r = color.g = color.b = 0;
     color.a = alpha;
- // Black border enclosing five gauge segments.
     rect(layer, x, (u16)y, width*5+(gap*4+2+x), height+y+2, color);
-    color.r = color.g = color.b = 117;
+    color.b = color.r = color.g = 117;
     color.a = alpha;
     s32 i;
     for (i = 0; i < 5; i++) rect(layer, i*(width+gap)+x+1, y+1, i*(width+gap)+x+1+width, height+y+1, color);
- // Filled bars use a purple body with lighter/darker horizontal edges.
     if (current) {
         s32 percent = current*100/initial;
         bars = percent/20+1;
@@ -134,7 +128,6 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
         }
     } else {
         color.r = color.g = color.b = 255;
- // When the gauge reaches zero, pulse the white meter with elapsed time.
         f32 a = 150.0f*(1.0f+(f32)sin(6.2831855f*meterCount));
         if (a >= max_alpha) a = max_alpha;
         u16 opacity = (u16)a*alpha/255;

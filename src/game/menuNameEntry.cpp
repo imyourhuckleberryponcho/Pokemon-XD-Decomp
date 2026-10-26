@@ -1,12 +1,7 @@
-// STATUS: 55/56 functions exact; LAYOUT/CONST/CALLS/DATA OK.
-// Needs extra_cflags=["-inline noauto,deferred"] (source is written bottom-to-top).
-// Not exact: backNameCursor 97.0% (register choice: n/name/offset/zero temps; many variants tried).
-// Name entry menu (player / Pokemon / box names).
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #include <game/shared/menu_work.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
@@ -39,22 +34,21 @@ public:
     void endSurface();
 };
 
-// Per-run name entry state (lives on the stack of inputName, or is the select-list record).
 struct NAME_ENTRY_ARG {
-    u16 defName[12];            // 0x00
-    u16* name;                  // 0x18
-    s32 mode;                   // 0x1C
-    s32 param;                  // 0x20
-    s32* sheet;                 // 0x24
-    s32* curX;                  // 0x28
-    s32* curY;                  // 0x2C
-    f32* animTime;              // 0x30
-    s32* nameCurX;              // 0x34
-    s32* defSheetCurPosX;       // 0x38
-    s32* defSheetCurPosY;       // 0x3C
-    s32* defNamePokemonCurPosX; // 0x40
-    s32* defNameBoxCurPosX;     // 0x44
-    s32* defNameTrainerCurPosX; // 0x48
+    u16 defName[12];
+    u16* name;
+    s32 mode;
+    s32 param;
+    s32* sheet;
+    s32* curX;
+    s32* curY;
+    f32* animTime;
+    s32* nameCurX;
+    s32* defSheetCurPosX;
+    s32* defSheetCurPosY;
+    s32* defNamePokemonCurPosX;
+    s32* defNameBoxCurPosX;
+    s32* defNameTrainerCurPosX;
 };
 
 struct MODE_DATA {
@@ -72,15 +66,15 @@ struct SHEET_DATA {
 };
 
 struct BALL_WORK {
-    s32 active;   // 0x00
-    f32 x;        // 0x04
-    f32 y;        // 0x08
-    f32 scale;    // 0x0C
-    f32 maxScale; // 0x10
-    s32 color;    // 0x14
-    u8 alpha;     // 0x18
-    f32 time;     // 0x1C
-    f32 life;     // 0x20
+    s32 active;
+    f32 x;
+    f32 y;
+    f32 scale;
+    f32 maxScale;
+    s32 color;
+    u8 alpha;
+    f32 time;
+    f32 life;
 };
 
 struct MENU_MODEL {
@@ -91,12 +85,12 @@ struct MENU_MODEL {
 };
 
 struct NAME_ENTRY_WORK {
-    u16 name[12]; // 0x00
-    s32 mode;     // 0x18
-    s32 param;    // 0x1C
-    s32 result;   // 0x20
-    s32 fadeOut;  // 0x24
-    s32 onFloor;  // 0x28
+    u16 name[12];
+    s32 mode;
+    s32 param;
+    s32 result;
+    s32 fadeOut;
+    s32 onFloor;
     s32 pad2C;
 };
 
@@ -176,7 +170,6 @@ static void putGScharL(GSgfxLayerID, int, int, unsigned long, unsigned short);
 static u16 getCharSheet(SHEET, int, int);
 static int getSpchar(unsigned short);
 
-
 extern "C" {
 u8 GSsndPlayNow(u32);
 s32 winMsgOpen(s8, void*, bool, bool);
@@ -246,7 +239,6 @@ u16* pokemonBiosGetNicknamePtr(Pokemon*);
 void pcboxSetPokemonBoxName(void*, s8, u16*);
 u16* pcboxGetPokemonBoxName(void*, s8);
 }
-
 
 #define DRAW_TITLE(msg)                                                         {                                                                               tw = GSmsgGetRect(msg) >> 16;                                           s32 layer = winSpriteGetLayerID(w, sp);                                     s32 d = sp->w - tw;                                                         GSmsgPrint2(layer, d / 2, 0, w->alpha | ~0xFF, msg);                    }
 

@@ -1,9 +1,9 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's displayfunc.c (headers: include/hsd_ref).
-// The original file name, used by the asserts.
+
+
+
 #define HSD_FILE_NAME "displayfunc.c"
 
-// XD's MSL <math.h> inlines (sqrtf with its NaN checks) instead of include/libc's math.h.
+
 #include <dolphin/types.h>
 #define _MATH_H_
 

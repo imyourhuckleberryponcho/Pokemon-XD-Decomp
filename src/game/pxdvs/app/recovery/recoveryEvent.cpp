@@ -58,7 +58,6 @@ void _recoveryEventSetME(unsigned long id, unsigned long arg1, unsigned char vol
 static u32 _recoveryPauseBGM(unsigned long time);
 static void _recoveryEventSetSE(unsigned long id);
 
-// Ball model for each kind of Poke Ball.
 static u32 _recoveryTestBallTable[13] = {
     0x02E50400, 0x02E60400, 0x02E50400, 0x02EC0400, 0x02B70400, 0x18740400, 0x02E70400,
     0x02C10400, 0x18730400, 0x02EA0400, 0x02ED0400, 0x18720400, 0x02E90400,

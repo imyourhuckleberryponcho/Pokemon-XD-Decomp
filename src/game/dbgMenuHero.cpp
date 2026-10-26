@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 struct Pokemon {
@@ -19,11 +18,9 @@ s32 dbgMenuPokemonEditSub(Pokemon* pokemon, s32, s32, s32, s32, s32);
 void heroCatchPokemon(void* hero, Pokemon* pokemon, s32, s32, s32);
 Pokemon* heroGetStatus(void* hero, s32, s32);
 
-// Originally function-local statics of dbgMenuHeroPokemonAdd (pokemon$1318, firstFlag$1319).
 static Pokemon pokemon;
 static u8 firstFlag = 1;
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 s32 dbgMenuHeroCreateItem(void) {

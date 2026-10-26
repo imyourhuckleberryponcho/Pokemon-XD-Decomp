@@ -13,8 +13,6 @@ u32 fightFloorGetStatus(s32, s32, s32, s32);
 void* fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void* target, u16 id);
 }
 
-// Single-use helper (as in the Colosseum decomp): its s16 return lets the first value go straight to its
-// saved register instead of through r0.
 static inline s16 koukaGetBaseValue(u32 id) {
     return koukaDataBiosGetValue(id, 0);
 }

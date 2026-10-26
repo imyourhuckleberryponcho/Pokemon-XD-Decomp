@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -42,7 +39,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -78,7 +74,6 @@ class peRenderContainer;
 struct peSpline;
 
 extern "C++" {
-// ---- draft declarations ----
 struct GSbound {
     u8 _draft[1];
 };
@@ -111,15 +106,15 @@ struct peColorSpline {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;  // 0x00
-    u32 unk4;                // 0x04
-    void* buffer;            // 0x08
-    peNode* freeList;        // 0x0c
-    peNode* activeList;      // 0x10
-    u16 count;               // 0x14
-    u16 maxCount;            // 0x16
-    u8 dirty;                // 0x18
-    u8 started;              // 0x19
+    peEmitterNode* emitter;
+    u32 unk4;
+    void* buffer;
+    peNode* freeList;
+    peNode* activeList;
+    u16 count;
+    u16 maxCount;
+    u8 dirty;
+    u8 started;
 
     peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
     virtual ~peContainer();
@@ -147,17 +142,17 @@ struct peParticleNode {
     u8 _draft[1];
     void UpdateRenderData(peEmitterNode*, _peParticle*, char*, float);
     void Render(_peParticle*, GSgfxDL*, char*);
-    static void Start(peEmitterNode*, _peParticle*, GSgfxDL*, _EmitParams*);
+    void Start(peEmitterNode*, _peParticle*, GSgfxDL*, _EmitParams*);
 };
 class peRenderContainer : public peContainer {
 public:
-    u8 swapPending;  // 0x20
-    u8 cur;          // 0x21
-    u32 bufSize;     // 0x24
-    u8 dl[2][0x10];  // 0x28
-    u8* bufA;        // 0x48
-    u8* bufB;        // 0x4c
-    u16 tokens[2];   // 0x50
+    u8 swapPending;
+    u8 cur;
+    u32 bufSize;
+    u8 dl[2][0x10];
+    u8* bufA;
+    u8* bufB;
+    u16 tokens[2];
 
     peRenderContainer(peEmitterNode*, unsigned long, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
     virtual ~peRenderContainer();
@@ -169,9 +164,9 @@ public:
 };
 class peParticleContainer : public peRenderContainer {
 public:
-    peNode** sorted;     // 0x54
-    _peParticle* data;   // 0x58
-    f32 uv[8];           // 0x5c
+    peNode** sorted;
+    _peParticle* data;
+    f32 uv[8];
 
     peParticleContainer(peEmitterNode*, _peParticle*, unsigned short);
     virtual ~peParticleContainer();
@@ -266,7 +261,6 @@ struct ParticleDebugStats {
 };
 extern ParticleDebugStats g_particle_debug_stats;
 
-// From the Dolphin SDK's OSFastCast.h (GQR5 is set up for s16 conversion).
 static inline f32 __OSs16tof32(register const s16* arg) {
     register f32 ret;
     asm { psq_l ret, 0(arg), 1, 5 }
@@ -286,21 +280,14 @@ extern Vec zAxisVector;
 extern s32 this_;
 }
 extern "C++" {
-// ---- draft declarations ----
-
-
-
-// ---- draft declarations ----
-
-
 
 void peParticleContainer::Stop() {
-    u8 *temp_r8;
+    u8 *var_r9;
     s32 temp_cr0_eq;
     s32 var_r4;
     u32 temp_r30;
     s16 *var_r7;
-    u8 *var_r9;
+    u8 *temp_r8;
 
     if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
         ((peContainer*)this)->PreUpdate();
@@ -388,14 +375,13 @@ peParticleContainer::~peParticleContainer() {
 extern "C++" {
 extern "C++" {
 
-
 extern "C++" {
 #pragma push
 #pragma dont_inline on
 extern "C++" {
 void peParticleContainer::Update(float p0) {
     peNode *var_r31;
-    f32 temp_f31;
+    u32 var_r4;
     f32 var_f1;
     f32 var_f1_2;
     peEmitterNode *temp_r28;
@@ -405,7 +391,7 @@ void peParticleContainer::Update(float p0) {
     s16 *var_r6;
     s32 temp_cr0_eq;
     s8 *temp_r26;
-    u32 var_r4;
+    f32 temp_f31;
     u8 var_r0;
     u8 *temp_r7;
 
@@ -457,9 +443,9 @@ void peParticleContainer::Update(float p0) {
                     var_r4 -= 1;
                     switch (temp_cr0_eq) {
                     case 0:
-                            M2C_FIELD(var_r6, s16 *, 0) = 0xFFFF;
-                            M2C_FIELD((u16)var_r6, s16 *, 2) = 0xFFFF;
-                            M2C_FIELD(var_r6, s16 *, 4) = 0xFFFF;
+                            M2C_FIELD(var_r6, u16 *, 0) = 0xFFFF;
+                            M2C_FIELD((u16)var_r6, u16 *, 2) = 0xFFFF;
+                            M2C_FIELD(var_r6, u16 *, 4) = 0xFFFF;
                             var_r6 += 6;
                             if ((u32) (((u32) M2C_FIELD(M2C_FIELD(this, _peParticle **, 0x58), u32 *, 0) >> 0x19U) & 1) != 0) {
                                 *var_r6 = 0xFFFF;
@@ -495,25 +481,25 @@ void peParticleContainer::DepthSort() {
     s32 temp_r0;
     s32 temp_r8_2;
     enum TsE temp_r8_3;
-    s32 var_r11;
+    u8 *temp_r5;
     s32 var_r12;
     s32 var_r4_2;
-    s32 var_r5;
-    u32 var_r6;
+    u8 *temp_r5_2;
     s32 var_r8;
-    u16 temp_r8;
     u16 var_r9;
     u32 temp_r0_2;
     u32 temp_r9;
     u8 var_r0;
-    u8 var_r31;
+    u8 *var_r4;
     u8 *temp_r10;
-    u8 *temp_r5;
-    u8 *temp_r5_2;
+    s32 var_r11;
+    u32 var_r6;
     u8 *temp_r6;
     u8 *temp_r9_2;
     u8 *var_r11_2;
-    u8 *var_r4;
+    u8 var_r31;
+    s32 var_r5;
+    u16 temp_r8;
 
     if (((u8) M2C_FIELD(this, u8 *, 0x19) != 0) && (*M2C_FIELD(this, u32 **, 0x58) & 0x80000) && ((u16) M2C_FIELD(this, u16 *, 0x14) >= 2U) && ((u32) M2C_FIELD(this, u32 *, 0x54) != 0U)) {
         var_r31 = 0;
@@ -535,8 +521,8 @@ loop_19:
                         var_r6 = -1;
                     } else {
                         temp_r5 = M2C_FIELD(var_r4, u8 **, -4);
-                        var_r4 = var_r4 - 4;
-                        var_r6 = var_r6 - 1;
+                        var_r4 -= 4;
+                        var_r6 -= 1;
                         if ((u8) M2C_FIELD(temp_r5, u8 *, 0x36) != 0) {
 
                         } else {
@@ -546,8 +532,8 @@ loop_19:
                 }
                 if (var_r6 >= 0) {
                     temp_f0 = M2C_FIELD(temp_r10, f32 *, 0x4C);
-                    temp_r5_2 = (unsigned char *)(*((u8 *)temp_r9 + (var_r6 * 4)));
                     temp_f1 = M2C_FIELD(temp_r5_2, f32 *, 0x4C);
+                    temp_r5_2 = (unsigned char *)(*((u8 *)temp_r9 + (var_r6 * 4)));
                     if (temp_f1 == temp_f0) {
                         var_r0 = 0;
                     } else if ((u16) M2C_FIELD(temp_r5_2, u16 *, 0x32) < (u16) M2C_FIELD(temp_r10, u16 *, 0x32)) {
@@ -566,14 +552,14 @@ loop_19:
                 }
                 *((u8 *)temp_r9 + (var_r12 * 4)) = (unsigned char)(temp_r10);
             }
-            var_r8 = var_r8 + 4;
-            var_r11 = var_r11 + 1;
+            var_r8 += 4;
+            var_r11 += 1;
         }
         if (var_r31 != 0) {
             var_r5 = 0;
             var_r4_2 = 0;
-            temp_r0_2 = ((u32) *M2C_FIELD(this, u32 **, 0x58) >> 0x19U) & 1;
             temp_r6 = (unsigned char *)((u8*)this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
+            temp_r0_2 = ((u32) *M2C_FIELD(this, u32 **, 0x58) >> 0x19U) & 1;
             while (var_r5 < (s32) M2C_FIELD(this, u16 *, 0x16)) {
                 temp_r9_2 = (unsigned char *)(*(M2C_FIELD(this, u32 **, 0x54) + var_r4_2));
                 if (((u8) M2C_FIELD(temp_r9_2, u8 *, 0x36) != 0) && ((u16) M2C_FIELD(temp_r9_2, u16 *, 0x32) != (u16) var_r5)) {
@@ -587,29 +573,29 @@ loop_19:
                     var_r9 = 0;
                     if (temp_r0_2 != 0) {
                         while (var_r9 < 4U) {
-                            temp_r7 = (var_r9 * 2) & 0xFFFE;
                             temp_r8_2 = var_r9 * 3;
+                            temp_r7 = (var_r9 * 2) & 0xFFFE;
                             var_r9 += 1;
                             M2C_FIELD(var_r11_2, s16 *, 0) = (s16) (temp_r8 + temp_r8_2);
                             M2C_FIELD(var_r11_2, u16 *, 2) = temp_r8;
                             M2C_FIELD(var_r11_2, u16 *, 4) = temp_r8;
                             M2C_FIELD(var_r11_2, s16 *, 6) = temp_r7;
-                            var_r11_2 = var_r11_2 + 8;
+                            var_r11_2 += 8;
                         }
                     } else {
                         while (var_r9 < 4U) {
-                            temp_r7_2 = (var_r9 * 2) & 0xFFFE;
                             temp_r8_3 = (enum TsE)(var_r9 * 3);
-                            var_r9 = var_r9 + 1;
+                            temp_r7_2 = (var_r9 * 2) & 0xFFFE;
+                            var_r9 += 1;
                             M2C_FIELD(var_r11_2, s16 *, 0) = (s16) (temp_r8 + temp_r8_3);
                             M2C_FIELD(var_r11_2, u16 *, 2) = temp_r8;
                             M2C_FIELD(var_r11_2, s16 *, 4) = temp_r7_2;
-                            var_r11_2 = var_r11_2 + 6;
+                            var_r11_2 += 6;
                         }
                     }
                 }
-                var_r4_2 = var_r4_2 + 4;
-                var_r5 = var_r5 + 1;
+                var_r4_2 += 4;
+                var_r5 += 1;
             }
             M2C_FIELD(temp_r6, u16 *, 0) = (u16) (M2C_FIELD(temp_r6, u16 *, 0) | 2);
             M2C_FIELD(this, s8 *, 0x18) = 1;
@@ -723,7 +709,7 @@ void peParticleContainer::Render() {
                     wrapT = 2;
                 }
                 s32 wrapS = 0;
-                u16 tmp1 = M2C_FIELD(data, s32 *, 0x54);
+                u32 tmp1 = M2C_FIELD(data, s32 *, 0x54);
                 particleEngineSetupTexture(0, tmp1, (flags >> 12) & 3, (flags >> 14) & 3, wrapS, (u16)wrapT);
                 wrapS = !(flags & 0x80) ? wrapS : 2;
                 g_current_layer->dlDraw((GSgfxDL*)dl[cur]);
@@ -776,10 +762,14 @@ peParticleContainer::peParticleContainer(peEmitterNode* p0, _peParticle* p1, uns
 
     *sorted = 0;
     data = p1;
-    u0 = OSs16tof32(M2C_FIELD(data, s16 *, 0x44)) * scale;
-    v0 = OSs16tof32(M2C_FIELD(data, s16 *, 0x46)) * scale;
-    u1 = OSs16tof32(M2C_FIELD(data, s16 *, 0x48)) * scale;
-    v1 = OSs16tof32(M2C_FIELD(data, s16 *, 0x4A)) * scale;
+    u0 = OSs16tof32(M2C_FIELD(data, s16 *, 0x44));
+    u0 *= scale;
+    v0 = OSs16tof32(M2C_FIELD(data, s16 *, 0x46));
+    v0 *= scale;
+    u1 = OSs16tof32(M2C_FIELD(data, s16 *, 0x48));
+    u1 *= scale;
+    v1 *= scale;
+    v1 = OSs16tof32(M2C_FIELD(data, s16 *, 0x4A));
     uv[0] = u1;
     uv[1] = v1;
     uv[2] = u0;
@@ -807,8 +797,8 @@ peParticleContainer::peParticleContainer(peEmitterNode* p0, _peParticle* p1, uns
 
 extern "C++" {
 void peParticleNode::Render(_peParticle* p0, GSgfxDL* p1, char* p2) {
-    s32 sp10;
-    s32 sp14;
+    u32 temp_r31;
+    volatile s32 sp14;
     s32 unksp21;
     s32 unksp22;
     s32 unksp23;
@@ -817,10 +807,10 @@ void peParticleNode::Render(_peParticle* p0, GSgfxDL* p1, char* p2) {
     u8 sp25;
     volatile u8 sp24;
     s32 sp20;
-    s32 sp1C;
-    s32 sp18;
+    volatile s32 sp1C;
+    volatile s32 sp18;
     s16 spC;
-    s16 spA;
+    volatile s16 spA;
     u16 sp8;
     f32 temp_f1;
     f32 temp_f30;
@@ -838,18 +828,18 @@ void peParticleNode::Render(_peParticle* p0, GSgfxDL* p1, char* p2) {
     u16 var_r4;
     u32 temp_r24;
     u32 temp_r29;
-    u32 temp_r31;
     u8 var_r28;
     u8 *var_r5;
+    s32 sp10;
 
-    temp_r31 = M2C_FIELD(p0, u32 *, 0);
     var_r28 = M2C_FIELD(this, u8 *, 0x34);
     temp_r30 = M2C_FIELD(p0, s32 **, 0x54);
     temp_r29 = (temp_r31 >> 0x19U) & 1;
+    temp_r31 = M2C_FIELD(p0, u32 *, 0);
     if ((p2 != NULL) && ((s32) (M2C_FIELD(p1, u16 *, 0) & 1) == 1)) {
         if (temp_r31 & 0x400000) {
             spC = (s16) *temp_r30;
-            temp_f1 = M2C_ERROR(/* psq_l unimplemented */);
+            temp_f1 = M2C_ERROR( );
             temp_r24 = (temp_r31 >> 0x17U) & 1;
             var_f2 = temp_f1;
             if (temp_r24 != 0) {
@@ -862,14 +852,14 @@ void peParticleNode::Render(_peParticle* p0, GSgfxDL* p1, char* p2) {
                 var_f1 = M2C_FIELD(p0, f32 *, 0x30) * (var_f2 * (1.0f - (M2C_FIELD(this, f32 *, 4) / M2C_FIELD(this, f32 *, 0))));
             }
             spA = (s16) var_r28;
-            temp_f30 = (f32) fmod((f64) (var_f1 + M2C_ERROR(/* psq_l unimplemented */)), (f64) var_f2);
+            temp_f30 = (f32) fmod((f64) (var_f1 + M2C_ERROR( )), (f64) var_f2);
             var_r28 = (u8) (u16) (sp14 % (u16) *temp_r30);
             if (temp_r24 != 0) {
                 sp8 = (u16) var_r28;
                 sp27 = sp10;
                 sp26 = sp10;
                 sp25 = sp10;
-                sp24 = sp10;
+                if (sp24 < sp10) sp24 = sp10;
                 M2C_FIELD(g_current_layer, s32 *, 0x14F4) = (s32) sp24;
                 sp1C = (s32) sp24;
                 M2C_FIELD(g_current_layer, s32 *, 0x16F8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16F8) | 1);
@@ -884,7 +874,7 @@ void peParticleNode::Render(_peParticle* p0, GSgfxDL* p1, char* p2) {
                     sp27 = unksp23;
                     M2C_FIELD(g_current_layer, s32 *, 0x14F8) = (s32) sp24;
                     sp18 = (s32) sp24;
-                    M2C_FIELD(g_current_layer, s32 *, 0x16F8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16F8) | 2);
+                    M2C_FIELD((u16)g_current_layer, s32 *, 0x16F8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16F8) | 2);
                     M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x10);
                     M2C_FIELD(g_current_layer, s32 *, 0x17B0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17B0) | 2);
                     M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x10);
@@ -948,79 +938,88 @@ loop_30:
 }
 #pragma pop
 }
-void peParticleNode::Start(peEmitterNode* p0, _peParticle* p1, GSgfxDL* p2, _EmitParams* p3) {
-    s32 spC;
-    volatile s16 sp8;
-    f32 temp_f1;
-    s16 temp_r0;
-    s16 temp_r0_2;
-    s32 temp_r3;
-    s32 temp_r3_2;
-    u16 temp_r4;
-    u16 var_r7;
-    u32 temp_r28;
-    u32 temp_r31;
-    u8 *var_r5;
+static inline f32 __peS16tof32(register const s16* arg) {
+    register f32 ret;
+    asm { psq_l ret, 0(arg), 1, 3 }
+    return ret;
+}
 
-    temp_r28 = M2C_FIELD(p2, u32 *, 0);
-    temp_r31 = (temp_r28 >> 0x19U) & 1;
-    if ((s32) (M2C_FIELD(p3, u16 *, 0) & 1) == 1) {
-        ((peNode*)((peNode *) p0))->Start((peEmitterNode*)((peEmitterNode *) p1), (_EmitParams*)(M2C_ERROR(/* Read from unset register $r7 */)));
-        M2C_FIELD(p0, u8 *, 0x35) = 0U;
-        M2C_FIELD(p0, s8 *, 0x36) = 1;
-        temp_f1 = HSD_Randf();
-        M2C_FIELD(p0, f32 *, 0x38) = (f32) (M2C_FIELD(p2, f32 *, 0xC) * temp_f1);
-        M2C_FIELD(p0, f32 *, 0x3C) = (f32) (M2C_FIELD(p2, f32 *, 0x10) * temp_f1);
-        M2C_FIELD(p0, f32 *, 0x38) = (f32) (M2C_FIELD(p0, f32 *, 0x38) + M2C_FIELD(p2, f32 *, 4));
-        M2C_FIELD(p0, f32 *, 0x3C) = (f32) (M2C_FIELD(p0, f32 *, 0x3C) + M2C_FIELD(p2, f32 *, 8));
-        if (temp_r28 & 0x40) {
-            M2C_FIELD(p0, f32 *, 0x40) = (f32) (6.2831855f * HSD_Randf());
+static inline f32 peS16tof32(s16 in) {
+    s16 tmp = in;
+    return __peS16tof32(&tmp);
+}
+
+static inline void __peF32tou8(register f32 arg, volatile register u8* out) {
+    asm { psq_st arg, 0(out), 1, 2 }
+}
+
+static inline u8 peF32tou8(f32 in) {
+    u32 out;
+    __peF32tou8(in, (u8*)&out);
+    return *(u8*)&out;
+}
+
+void peParticleNode::Start(peEmitterNode* emitter, _peParticle* particle, GSgfxDL* dl, _EmitParams* params) {
+    u32 flags;
+    u32 quad;
+    f32 r;
+    u16 offset;
+    u16 base;
+    u16* idx;
+    u16 i;
+
+    flags = M2C_FIELD(particle, u32*, 0);
+    quad = (flags >> 25) & 1;
+    if ((M2C_FIELD(dl, u16*, 0) & 1) == 1) {
+        ((peNode*)this)->Start(emitter, params);
+        M2C_FIELD(this, u8*, 0x35) = 0;
+        M2C_FIELD(this, u8*, 0x36) = 1;
+        r = HSD_Randf();
+        M2C_FIELD(this, f32*, 0x38) = M2C_FIELD(particle, f32*, 0xC) * r;
+        M2C_FIELD(this, f32*, 0x3C) = M2C_FIELD(particle, f32*, 0x10) * r;
+        M2C_FIELD(this, f32*, 0x38) += M2C_FIELD(particle, f32*, 4);
+        M2C_FIELD(this, f32*, 0x3C) += M2C_FIELD(particle, f32*, 8);
+        if (flags & 0x40) {
+            M2C_FIELD(this, f32*, 0x40) = 6.2831855f * HSD_Randf();
         } else {
-            M2C_FIELD(p0, f32 *, 0x40) = 0.0f;
+            M2C_FIELD(this, f32*, 0x40) = 0.0f;
         }
-        if ((temp_r28 & 0x20) && (HSD_Randf() < 0.5f)) {
-            M2C_FIELD(p0, u8 *, 0x35) = (u8) (M2C_FIELD(p0, u8 *, 0x35) | 1);
+        if ((flags & 0x20) && HSD_Randf() < 0.5f) {
+            M2C_FIELD(this, u8*, 0x35) |= 1;
         }
-        M2C_FIELD(p0, f32 *, 0x44) = (f32) M2C_FIELD(p2, f32 *, 0x24);
-        M2C_FIELD(p0, f32 *, 0x48) = (f32) ((M2C_FIELD(p2, f32 *, 0x2C) * HSD_Randf()) + M2C_FIELD(p2, f32 *, 0x28));
-        if ((u32) ((temp_r28 & 0x300000) + 0xFFD00000) == 0U) {
-            sp8 = (s16) *M2C_FIELD(p2, s32 **, 0x54);
-            HSD_Randf();
-            M2C_FIELD(p0, u8 *, 0x34) = spC;
+        M2C_FIELD(this, f32*, 0x44) = M2C_FIELD(particle, f32*, 0x24);
+        M2C_FIELD(this, f32*, 0x48) = M2C_FIELD(particle, f32*, 0x2C) * HSD_Randf() + M2C_FIELD(particle, f32*, 0x28);
+        if ((flags & 0x300000) == 0x300000) {
+            f32 count = peS16tof32(*M2C_FIELD(particle, s32**, 0x54));
+            M2C_FIELD(this, u8*, 0x34) = peF32tou8(count * HSD_Randf());
         } else {
-            M2C_FIELD(p0, u8 *, 0x34) = 0U;
+            M2C_FIELD(this, u8*, 0x34) = 0;
         }
-        temp_r4 = (u8) ((temp_r31 != 0) + 0xD);
-        temp_r4 *= M2C_FIELD((u16)p0, u16 *, 0x30);
-        if (M2C_FIELD(p3, u16 *, 0) & 1) {
-            var_r5 = (unsigned char *)(M2C_FIELD(p3, s32 *, 4) + ((((M2C_FIELD(p0, u16 *, 0x32) * 4) & 0xFFFC) * M2C_FIELD(p3, u16 *, 2)) + 3));
+        offset = M2C_FIELD(this, u16*, 0x32) * 4;
+        base = M2C_FIELD(this, u16*, 0x30) * (u8)((quad != 0) + 13);
+        if (M2C_FIELD(dl, u16*, 0) & 1) {
+            idx = (u16*)(M2C_FIELD(dl, u8**, 4) + offset * M2C_FIELD(dl, u16*, 2) + 3);
         } else {
-            var_r5 = NULL;
+            idx = NULL;
         }
-        var_r7 = 0;
-        if (temp_r31 != 0) {
-            while (var_r7 < 4U) {
-                temp_r0 = (var_r7 * 2) & 0xFFFE;
-                temp_r3 = var_r7 * 3;
-                var_r7 += 1;
-                M2C_FIELD(var_r5, s16 *, 0) = (s16) (temp_r4 + temp_r3);
-                M2C_FIELD(var_r5, u16 *, 2) = temp_r4;
-                M2C_FIELD(var_r5, u16 *, 4) = temp_r4;
-                M2C_FIELD(var_r5, s16 *, 6) = temp_r0;
-                var_r5 += 8;
+        i = 0;
+        if (quad != 0) {
+            for (; i < 4; i++) {
+                idx[0] = base + i * 3;
+                idx[1] = base;
+                idx[2] = base;
+                idx[3] = i * 2;
+                idx += 4;
             }
         } else {
-            while (var_r7 < 4U) {
-                temp_r0_2 = (var_r7 * 2) & 0xFFFE;
-                temp_r3_2 = var_r7 * 3;
-                var_r7 += 1;
-                M2C_FIELD(var_r5, s16 *, 0) = (s16) (temp_r4 + temp_r3_2);
-                M2C_FIELD(var_r5, u16 *, 2) = temp_r4;
-                M2C_FIELD(var_r5, s16 *, 4) = temp_r0_2;
-                var_r5 += 6;
+            for (; i < 4; i++) {
+                idx[0] = base + i * 3;
+                idx[1] = base;
+                idx[2] = i * 2;
+                idx += 3;
             }
         }
-        M2C_FIELD(p3, u16 *, 0) = (u16) (M2C_FIELD(p3, u16 *, 0) | 2);
+        M2C_FIELD(dl, u16*, 0) |= 2;
     }
 }
 }
@@ -1109,7 +1108,7 @@ void peParticleNode::UpdateRenderData(peEmitterNode* p0, _peParticle* p1, char* 
     f32 sp170;
     f32 sp16C;
     f32 sp168;
-    f32 sp164;
+    volatile f32 sp164;
     f32 sp160;
     f32 sp15C;
     f32 sp158;
@@ -1171,11 +1170,11 @@ void peParticleNode::UpdateRenderData(peEmitterNode* p0, _peParticle* p1, char* 
     u8 *var_r26;
 
     temp_r5 = M2C_FIELD(this, Vec **, 0x20);
+    sp150 = M2C_FIELD(this, f32 *, 8) * M2C_FIELD(temp_r5, f32 *, 0x1C);
     temp_r27 = M2C_FIELD(p1, u32 *, 0);
     temp_r29 = (temp_r27 >> 0x19U) & 1;
     sp154 = M2C_FIELD(this, f32 *, 0xC) * M2C_FIELD(temp_r5, f32 *, 0x20);
     sp158 = M2C_FIELD(this, f32 *, 0x10) * M2C_FIELD(temp_r5, f32 *, 0x24);
-    sp150 = M2C_FIELD(this, f32 *, 8) * M2C_FIELD(temp_r5, f32 *, 0x1C);
     PSMTXQuat((Mtx)((s32) &sp438), (const Quaternion *)((const register Quaternion*)(((u8*)(temp_r5) + 0xC))));
     PSMTXMultVecSR((const Mtx)((s32) &sp438), (const Vec *)((const register Vec*)((Vec *) &sp150)), (Vec *)((register Vec*)((Vec *) &sp150)));
     PSVECAdd((const register Vec*)((Vec *) &sp150), (const register Vec*)(M2C_FIELD(this, Vec **, 0x20)), (register Vec*)((Vec *) &sp150));
@@ -1426,8 +1425,8 @@ void peParticleNode::UpdateRenderData(peEmitterNode* p0, _peParticle* p1, char* 
     if (temp_r27_2 != 0) {
         PSVECAdd((const register Vec*)((Vec *) &sp15C), (const register Vec*)((Vec *) &sp168), (register Vec*)((Vec *) &sp15C));
     }
-    PSVECAdd((const register Vec*)((Vec *) &sp15C), (const register Vec*)((Vec *) &sp150), (register Vec*)((Vec *) &sp15C));
     M2C_FIELD(var_r26, f32 *, 0x24) = sp15C;
+    PSVECAdd((const register Vec*)((Vec *) &sp15C), (const register Vec*)((Vec *) &sp150), (register Vec*)((Vec *) &sp15C));
     M2C_FIELD(var_r26, f32 *, 0x28) = sp160;
     M2C_FIELD(var_r26, f32 *, 0x2C) = sp164;
     if ((GSbound *) g_currentBound != NULL) {

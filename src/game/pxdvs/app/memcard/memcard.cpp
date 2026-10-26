@@ -1,6 +1,4 @@
-// Memory card save/load state machine over the Dolphin CARD API.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -43,7 +40,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #endif
 
 #pragma pool_strings off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -90,11 +86,11 @@ void gamedatasaveSetStatus(void* ptr, u32 kind, u32 value);
 
 struct MemcardStatus {
     volatile s32 kind;
-    s32 msgType;       // 0x04
-    s32 result;        // 0x08
-    s32 state;         // 0x0c
-    s32 resumeState;   // 0x10
-    s32 arg14;         // 0x14
+    s32 msgType;
+    s32 result;
+    s32 state;
+    s32 resumeState;
+    s32 arg14;
     s32 sectorSize;
     s32 memSize;
     s32 f20;
@@ -102,21 +98,21 @@ struct MemcardStatus {
     s32 f28;
     s32 f2c;
     s32 f30;
-    s32 delay;         // 0x34
+    s32 delay;
     u8 pad38[0x3c - 0x38];
     u8 cbDone;
     u8 f3d;
     u8 f3e;
     u8 f3f;
     u8 f40;
-    u8 valid;          // 0x41
+    u8 valid;
     u8 pad42[0x50 - 0x42];
     void* buf50;
     void* buf54;
-    void* savedata;    // 0x58
+    void* savedata;
     s32 f5c;
     s32 f60;
-    int gapp;          // 0x64
+    int gapp;
 };
 
 static u8 _memcardStatusBuf[0x210] __attribute__((aligned(8)));
@@ -136,16 +132,11 @@ u64 gamedatasaveBiosGetMemcardID(GamedataSave* save);
 GamedataSave* gamedatasaveBiosGetPtr(void* gamedata);
 }
 
-
-
-
-
 enum MEMCARD_MSGTYPE {
     MSG_M13 = -13, MSG_M9 = -9, MSG_M8 = -8, MSG_M6 = -6, MSG_M5 = -5, MSG_M4 = -4, MSG_M3 = -3, MSG_M2 = -2,
     MSG_0 = 0, MSG_1, MSG_2, MSG_3, MSG_4, MSG_5, MSG_6, MSG_7, MSG_8, MSG_9, MSG_10,
     MSG_11, MSG_12, MSG_13, MSG_14, MSG_15, MSG_16, MSG_17, MSG_18, MSG_19
 };
-// ---- draft declarations ----
 struct CARDFileInfo {
     u8 _draft[1];
 };
@@ -213,16 +204,9 @@ static void _memcardJobMain(unsigned long p0, unsigned long p1);
 static s32 _memcardMergeDataPack();
 }
 
-// ---- draft declarations ----
-
-
 extern "C" {
 extern s32 jtbl_3110;
 }
-
-// ---- draft declarations ----
-
-
 
 static inline void _memcardKeyStep(u16* key)
 {
@@ -248,8 +232,6 @@ static void _memcardStoreSaveData_multi(void* data);
 static void _memcardDuplicateSaveData_multi(void* data);
 static u8 _memcard_Decryption(void* data);
 static void _memcard_Encryption(void* data);
-
-
 
 extern "C" {
 
@@ -790,7 +772,6 @@ static void _memcardCallback(long, long)
     _memcardStatusPtr->cbDone = 1;
 }
 
-
 struct _MemcardSector {
     s32 v;
     u8 pad[0x1fc];
@@ -814,7 +795,6 @@ static inline u8 _memcardCheckSum(u8* pack)
     }
     return 1;
 }
-
 
 static s32 _memcardExamineDataPack()
 {
@@ -860,7 +840,8 @@ static s32 _memcardExamineDataPack()
             return 0x24;
         }
     }
-    s32 idx = _memcardStatusPtr->f20;
+    s32 rf_t = _memcardStatusPtr->f20;
+    s32 idx = rf_t;
     ((_MemcardSector*)((u8*)_memcardStatusPtr->buf50 + 0x28004))[idx].v = 0;
     return 0x1f;
 }
@@ -1017,7 +998,7 @@ u32 fn_801CC508() {
         if ((temp_r3 >= 0) && (temp_r3 < 3)) {
             strcpy((char*)(temp_r30), (const char*)(&_memcardBannerImage + 0x3A44));
             strcpy((char*)(temp_r30 + 0x20), (const char*)(&_memcardBannerImage + 0x3A50));
-            M2C_FIELD(temp_r30, s8 *, 3) = -0x17;
+            M2C_FIELD((u16)temp_r30, s8 *, 3) = -0x17;
             M2C_FIELD(temp_r30, s8 *, 0x2A) = (s8) ((((sp18 + 1) / 10) % 10) + 0x30);
             M2C_FIELD(temp_r30, s8 *, 0x2B) = (s8) (((sp18 + 1) % 10) + 0x30);
             M2C_FIELD(temp_r30, s8 *, 0x2D) = (s8) (((sp14 / 10) % 10) + 0x30);
@@ -1028,15 +1009,15 @@ u32 fn_801CC508() {
     } else {
         strcpy((char*)(temp_r30), (const char*)(&_memcardBannerImage + 0x3A1C));
         strcpy((char*)(temp_r30 + 0x20), (const char*)(&_memcardBannerImage + 0x3A2C));
-        M2C_FIELD(temp_r30, s8 *, 0x2F) = (s8) (((sp1C / 10) % 10) + 0x30);
-        M2C_FIELD(temp_r30, s8 *, 0x30) = (s8) ((sp1C % 10) + 0x30);
         M2C_FIELD(temp_r30, s8 *, 0x32) = (s8) ((((sp18 + 1) / 10) % 10) + 0x30);
+        M2C_FIELD(temp_r30, s8 *, 0x2F) = (s8) (((sp1C / 10) % 10) + 0x30);
         M2C_FIELD(temp_r30, s8 *, 0x33) = (s8) (((sp18 + 1) % 10) + 0x30);
         M2C_FIELD(temp_r30, s8 *, 0x35) = (s8) (((sp14 / 10) % 10) + 0x30);
         M2C_FIELD(temp_r30, s8 *, 0x36) = (s8) ((sp14 % 10) + 0x30);
+        M2C_FIELD(temp_r30, s8 *, 0x30) = (s8) ((sp1C % 10) + 0x30);
     }
-    memcpy((void*)(temp_r30 + 0x40), (const void*)(&_memcardBannerImage), 0x1800U);
     memcpy((void*)(temp_r30 + 0x1840), (const void*)(&_memcardBannerImage + 0x1800), 0x2200U);
+    memcpy((void*)(temp_r30 + 0x40), (const void*)(&_memcardBannerImage), 0x1800U);
     var_r4 = temp_r30;
     var_ctr = 0xE9;
     do {
@@ -1056,8 +1037,8 @@ u32 fn_801CC508() {
         M2C_FIELD(temp_r30, s32 *, 0x3A40) = (s32) (M2C_FIELD(temp_r30, s32 *, 0x3A40) + M2C_FIELD(var_r4, s32 *, 0x34));
         M2C_FIELD(temp_r30, s32 *, 0x3A40) = (s32) (M2C_FIELD(temp_r30, s32 *, 0x3A40) + M2C_FIELD(var_r4, s32 *, 0x38));
         temp_r0 = M2C_FIELD(var_r4, s32 *, 0x3C);
-        var_r4 += 0x40;
         M2C_FIELD(temp_r30, s32 *, 0x3A40) = (s32) (M2C_FIELD(temp_r30, s32 *, 0x3A40) + temp_r0);
+        var_r4 += 0x40;
         var_ctr -= 1;
     } while (var_ctr != 0);
     return 0x12U;
@@ -1078,8 +1059,8 @@ static void _memcardDuplicateSaveData_multi(void* p0) {
     u8 *sp8;
     s16 temp_r0_2;
     s16 temp_r5;
-    s16 temp_r6_2;
-    u16 var_r29;
+    u8 *var_r19_2;
+    u32 var_r29;
     s16 var_r30;
     s16 var_r9;
     s32 temp_r3_7;
@@ -1128,7 +1109,7 @@ static void _memcardDuplicateSaveData_multi(void* p0) {
     u8 *temp_r4_2;
     u8 *temp_r6_3;
     s8 sp37;
-    u8 *var_r19_2;
+    s16 temp_r6_2;
     u8 *var_r21;
     u8 *var_r22;
     u8 *var_r24;
@@ -1285,7 +1266,7 @@ static void _memcardDuplicateSaveData_multi(void* p0) {
                     M2C_FIELD(var_r24, s32 *, 4) = (s32) M2C_FIELD(var_r25, s32 *, 4);
                     M2C_STRUCT_COPY(var_r24, var_r25, 0xA);
 loop_20:
-                    memcpy((void*)(var_r21), (const void*)(var_r22), 0xC4U);
+                    memcpy((void*)((u16)var_r21), (const void*)(var_r22), 0xC4U);
                     var_r21 += 0xC4;
                     var_r22 += 0xC4;
                     if (var_r21 < (u8 *) (var_r24 + 0x170C)) {
@@ -1460,30 +1441,30 @@ loop_20:
 
 extern "C++" {
 static u32 _memcardCardOpen() {
-    s32 saved_reg_r28;
-    s32 sp120;
+    s32 unkspE8;
+    volatile s32 sp120;
     s32 sp38;
     u32 sp3C;
     s32 spA4;
-    s32 spA8;
+    u32 spA8;
     s32 unksp10;
     s32 unksp7C;
-    s32 unkspE8;
+    s32 saved_reg_r28;
     s32 spC;
     s32 sp8;
-    s32 *temp_r28;
+    s32 temp_r29;
     s32 var_r30;
     s32 temp_r0;
-    s32 temp_r29;
+    s32 var_r31;
+    s32 *temp_r31;
     s32 temp_r30;
     s32 temp_r3;
     s32 temp_r3_2;
     s32 temp_r3_3;
     s32 var_r28;
-    s32 var_r28_2;
     s32 var_r29;
-    s32 *temp_r31;
-    s32 var_r31;
+    s32 var_r28_2;
+    s32 *temp_r28;
     u32 var_r3;
     u8 var_r0;
     u8 var_r0_2;
@@ -1502,22 +1483,22 @@ loop_33:
                 var_r29 = CARDGetStatus(temp_r30, var_r28_2, (CARDStat*)(&unksp10));
                 if (var_r29 == 0) {
                     temp_r3_2 = pokecoloGetCountryCode();
-                    switch (temp_r3_2) {            /* switch 2; irregular */
-                    case 0:                         /* switch 2 */
+                    switch (temp_r3_2) {
+                    case 0:
                         if ((strcmp((const char*)(&unksp10), (const char*)("PokemonXD")) == 0) && (sp38 == (u32) *"GXXJ") && (sp3C == (s16) *"01")) {
                             var_r0 = 1;
                         } else {
                             goto block_53;
                         }
                         break;
-                    case 1:                         /* switch 2 */
+                    case 1:
                         if ((strcmp((const char*)(&unksp10), (const char*)("PokemonXD")) == 0) && (sp38 == (u32) *"GXXE") && (sp3C == (s16) *"01")) {
                             var_r0 = 1;
                         } else {
                             goto block_53;
                         }
                         break;
-                    case 2:                         /* switch 2 */
+                    case 2:
                         if ((strcmp((const char*)(&unksp10), (const char*)("PokemonXD")) == 0) && (sp38 == (u32) *"GXXP") && (sp3C == (s16) *"01")) {
                             var_r0 = 1;
                         } else {
@@ -1557,22 +1538,22 @@ loop_5:
             var_r30 = CARDGetStatus(temp_r29, var_r31, (CARDStat*)(&unksp7C));
             if (var_r30 == 0) {
                 temp_r3_3 = pokecoloGetCountryCode();
-                switch (temp_r3_3) {                /* switch 1; irregular */
-                case 0:                             /* switch 1 */
+                switch (temp_r3_3) {
+                case 0:
                     if ((strcmp((const char*)(&unksp7C), (const char*)("PokemonXD")) == 0) && (spA4 == (u32) *"GXXJ") && (spA8 == (s16) *"01")) {
                         var_r0_2 = 1;
                     } else {
                         goto block_25;
                     }
                     break;
-                case 1:                             /* switch 1 */
+                case 1:
                     if ((strcmp((const char*)(&unksp7C), (const char*)("PokemonXD")) == 0) && (spA4 == (u32) *"GXXE") && (spA8 == (s16) *"01")) {
                         var_r0_2 = 1;
                     } else {
                         goto block_25;
                     }
                     break;
-                case 2:                             /* switch 1 */
+                case 2:
                     if ((strcmp((const char*)(&unksp7C), (const char*)("PokemonXD")) == 0) && (spA4 == (u32) *"GXXP") && (spA8 == (s16) *"01")) {
                         var_r0_2 = 1;
                     } else {
@@ -1602,8 +1583,8 @@ block_28:
         }
         var_r28 = var_r30;
     }
-    switch (var_r28) {                              /* switch 3; irregular */
-    case 0:                                         /* switch 3 */
+    switch (var_r28) {
+    case 0:
         M2C_FIELD(_memcardStatusPtr, s8 *, 0x3E) = 1;
         var_r28 = CARDGetStatus(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14), M2C_FIELD(_memcardStatusPtr, s32 *, 0x90), (CARDStat*)(&unkspE8));
         if (var_r28 == 0) {
@@ -1617,16 +1598,15 @@ block_28:
                 if ((s32) (u16)M2C_FIELD(_memcardStatusPtr, s32 *, 0) == 3) {
                     return 0x1CU;
                 }
-                /* Duplicate return node #82. Try simplifying control flow for better match */
                 return var_r3;
             }
+            sp8 += 1;
             var_r28 = -4;
             spC += 0x56000;
-            sp8 += 1;
-        case -4:                                    /* switch 3 */
+        case -4:
             temp_r0 = M2C_FIELD(_memcardStatusPtr, s32 *, 0);
-            switch (temp_r0) {                      /* switch 4; irregular */
-            case 1:                                 /* switch 4 */
+            switch (temp_r0) {
+            case 1:
                 if (spC < 0x56000) {
                     var_r28 = -9;
                     goto block_81;
@@ -1638,13 +1618,13 @@ block_28:
                 M2C_FIELD(_memcardStatusPtr, s32 *, 4) = 6;
                 M2C_FIELD(_memcardStatusPtr, s32 *, 0x10) = 0xA;
                 return 0x30U;
-            case 9:                                 /* switch 4 */
+            case 9:
                 M2C_FIELD(_memcardStatusPtr, s32 *, 4) = 2;
                 M2C_FIELD(_memcardStatusPtr, s32 *, 0x10) = 0xB;
                 return 0x30U;
             }
         } else {
-        default:                                    /* switch 3 */
+        default:
 block_81:
             var_r3 = 0x2B;
             M2C_FIELD(_memcardStatusPtr, s32 *, 4) = var_r28;
@@ -1655,11 +1635,11 @@ block_81:
 }
 }
 
-
 static s32 _memcardMergeDataPack()
 {
+    void* save;
     u8* data = (u8*)_memcardStatusPtr->buf50 + 8;
-    void* save = _memcardGetMultiSaveDataToSTRUCT(data, 1);
+    save = _memcardGetMultiSaveDataToSTRUCT(data, 1);
     switch (_memcardStatusPtr->kind) {
     case 9:
         _memcardDuplicateSaveData_multi(data);
@@ -1705,9 +1685,9 @@ static u8 _memcard_Decryption(void* data)
     u32 sums[10];
     u32 stored[4];
     int i;
+    sums[2] = 0;
     sums[0] = 0;
     sums[1] = 0;
-    sums[2] = 0;
     sums[3] = 0;
     _memcard_encrypt_key[0] = d[0];
     _memcard_encrypt_key[1] = d[1];
@@ -1721,9 +1701,9 @@ static u8 _memcard_Decryption(void* data)
         _memcardKeyStep(_memcard_encrypt_key);
     }
     stored[2] = d[6] | (d[7] << 16);
-    stored[0] = d[10] | (d[11] << 16);
-    stored[1] = d[8] | (d[9] << 16);
     stored[3] = d[4] | (d[5] << 16);
+    stored[1] = d[8] | (d[9] << 16);
+    stored[0] = d[10] | (d[11] << 16);
     d[10] = 0;
     d[11] = 0;
     d[8] = 0;
@@ -1733,38 +1713,41 @@ static u8 _memcard_Decryption(void* data)
     d[4] = 0;
     d[5] = 0;
     _memcardSumBlocks(d, sums);
-    return sums[0] == stored[0] && sums[1] == stored[1] && sums[2] == stored[2] && sums[3] == stored[3];
+    if (sums[0] == stored[0] && sums[1] == stored[1] && sums[2] == stored[2] && sums[3] == stored[3]) {
+        return 1;
+    }
+    return 0;
 }
 
 static void _memcard_Encryption(void* data)
 {
     u16* d = (u16*)data;
-    u32 sums[4];
+    u32 sums[8];
     volatile int i;
-    sums[0] = 0;
     sums[1] = 0;
     sums[2] = 0;
     sums[3] = 0;
+    sums[0] = 0;
     _memcard_encrypt_key[0] = d[0];
     _memcard_encrypt_key[1] = d[1];
     _memcard_encrypt_key[2] = d[2];
     _memcard_encrypt_key[3] = d[3];
-    d[10] = 0;
     d[11] = 0;
     d[8] = 0;
     d[9] = 0;
     d[6] = 0;
-    d[7] = 0;
+    d[10] = 0;
     d[4] = 0;
     d[5] = 0;
     _memcardSumBlocks(d, sums);
     d[10] = sums[0];
-    d[11] = sums[0] >> 16;
-    d[8] = sums[1];
-    d[9] = sums[1] >> 16;
-    d[6] = sums[2];
-    d[7] = sums[2] >> 16;
     d[4] = sums[3];
+    d[7] = 0;
+    d[9] = sums[1] >> 16;
+    d[7] = sums[2] >> 16;
+    d[6] = sums[2];
+    d[8] = sums[1];
+    d[11] = sums[0] >> 16;
     d[5] = sums[3] >> 16;
     for (i = 4; i < 0x13FE8; i += 4) {
         d[i] = d[i] + _memcard_encrypt_key[0];
@@ -1779,7 +1762,7 @@ static void _memcardJobMain(u32 p0, u32 p1) {
     s32 var_r31;
     s32 saved_reg_r31;
     s32 unksp14;
-    s32 unksp24;
+    volatile s32 unksp24;
     u64 sp20;
     u64 sp18;
     u64 sp10;
@@ -1816,7 +1799,7 @@ static void _memcardJobMain(u32 p0, u32 p1) {
     s32 temp_r5_4;
     s32 temp_ret_3;
     s32 temp_ret_7;
-    s32 var_ctr;
+    u16 var_ctr;
     s32 var_ctr_2;
     s32 var_r27_2;
     s32 var_r28;
@@ -2128,8 +2111,10 @@ block_71:
     if (temp_r0_4 >= 9) {
         goto block_76;
     }
-    if (temp_r0_4 == 1) {
-        goto block_75;
+    switch (temp_r0_4) {
+    case 1:
+            goto block_75;
+        break;
     }
     goto block_76;
 block_75:
@@ -2770,7 +2755,7 @@ block_252:
     }
     goto block_256;
 block_255:
-    var_r3_23 = CARDGetResultCode(M2C_FIELD(_memcardStatusPtr, s32 *, 0x14));
+    var_r3_23 = CARDGetResultCode(M2C_FIELD((u16)_memcardStatusPtr, s32 *, 0x14));
     var_r4 = (u32) _memcardStatusPtr;
     M2C_FIELD(var_r4, s32 *, 0x28) = var_r3_23;
 block_256:
@@ -3223,7 +3208,7 @@ block_375:
     goto block_396;
     case 45:
     temp_r0_15 = M2C_FIELD(_memcardStatusPtr, s32 *, 0);
-        switch (temp_r0_15) { case 4: goto sw2_c4; case 5: goto sw2_c5; case 6: goto sw2_c6; case 7: goto sw2_c7; case 9: goto sw2_c9; case 10: goto sw2_c10; case 11: goto sw2_c11; case 13: goto sw2_c13; case 1: goto sw2_c1; case 0: goto sw2_c0; case 2: goto sw2_c2; case 3: goto sw2_c3; case 8: goto sw2_c8; case 12: goto sw2_c12; default: goto block_389; }                            /* switch 2; jump table: jtbl_4197 */
+        switch (temp_r0_15) { case 4: goto sw2_c4; case 5: goto sw2_c5; case 6: goto sw2_c6; case 7: goto sw2_c7; case 9: goto sw2_c9; case 10: goto sw2_c10; case 11: goto sw2_c11; case 13: goto sw2_c13; case 1: goto sw2_c1; case 0: goto sw2_c0; case 2: goto sw2_c2; case 3: goto sw2_c3; case 8: goto sw2_c8; case 12: goto sw2_c12; default: goto block_389; }
 sw2_c4:;
 sw2_c5:;
 sw2_c6:;
@@ -3301,8 +3286,6 @@ block_396:
     return;
 }
 }
-
-
 
 extern "C" {
 void memcard_debug_Load(void* data)

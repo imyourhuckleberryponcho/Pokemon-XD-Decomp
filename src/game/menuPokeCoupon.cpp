@@ -20,7 +20,7 @@ struct MenuPokeCouponWork {
 
 static MenuPokeCouponWork _menuPokeCouponWork = { POKECOUPONREFER_INVALID };
 
-// Nothing references these, but the original link kept them.
+
 #pragma force_active on
 
 void menuPokeCouponExit(void) { _menuPokeCouponWork.m_eRefer = POKECOUPONREFER_INVALID; }

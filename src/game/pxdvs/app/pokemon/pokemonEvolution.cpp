@@ -340,5 +340,3 @@ extern "C" u16 pokemonEvolutionCheck(Pokemon* pokemon, s32 mode, u16 item,
     return result;
 }
 
-
-

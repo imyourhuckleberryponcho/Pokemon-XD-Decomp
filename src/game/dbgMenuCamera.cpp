@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 extern "C" {
@@ -12,7 +11,6 @@ void menuSetPosition(s32 menuID, s32 x, s32 y);
 void cameraResetFloor(void);
 void cameraSetType(s32 type);
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 s32 dbgMenuCameraResetFloor(void) {

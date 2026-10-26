@@ -1,6 +1,4 @@
-// GSprim 2D primitives: quads, lines and point lists written straight into the GX FIFO.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -126,7 +124,6 @@ static inline void primLine2D(GXColor c0, GXColor c1, f32 x0, f32 y0, f32 x1, f3
     primData.layer->endSurface();
 }
 
-
 static inline void primVtxV2C(GSvec2 p, GXColor c) {
     GXWGFifo.f32 = p.x;
     GXWGFifo.f32 = p.y;
@@ -166,7 +163,6 @@ static inline void primSetTexture(GStexture* tex) {
 #define PRIM_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define PRIM_CLAMP_S10(x) PRIM_MIN(PRIM_MAX(x, -0x400), 0x3FF)
 
-// layer state dirty marks (state word + its copy 0xB8 further, plus the group masks)
 static inline void primMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
     PRIM_U32(l, off) |= bit;
     l->dirty16a8 |= sum;
@@ -249,7 +245,6 @@ void GSprimDraw2DTexQuad4VCA(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor* col
     GXTexCoord2f32(uv[3].x, uv[3].y);
     primData.layer->endSurface();
 }
-
 
 void GSprimDraw2DTexQuad4V(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor color) {
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(6));

@@ -1,5 +1,3 @@
-// DRAFT (NonMatching): first complete pass of all 17 functions. Written bottom-to-top for
-// -inline deferred (AddPoint is inlined into GetShadowVolume although it is defined later).
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
 #include <dolphin/gx/GXVert.h>
@@ -68,15 +66,15 @@ public:
 };
 
 struct GSbound {
-    /* 0x00 */ u16 flags;
-    /* 0x02 */ u16 type;
-    /* 0x04 */ void* data;
-    /* 0x08 */ f32 minX;
-    /* 0x0C */ f32 minY;
-    /* 0x10 */ f32 minZ;
-    /* 0x14 */ f32 maxX;
-    /* 0x18 */ f32 maxY;
-    /* 0x1C */ f32 maxZ;
+ u16 flags;
+ u16 type;
+ void* data;
+ f32 minX;
+ f32 minY;
+ f32 minZ;
+ f32 maxX;
+ f32 maxY;
+ f32 maxZ;
 };
 
 struct BoundAnim {
@@ -113,7 +111,6 @@ void GSboundDraw(GSbound* b, GSgfxLayer* layer);
 extern "C" void GSboundGetSize(GSbound* b, Vec* size, bool scale, bool rot);
 extern "C" void GSboundAddPoint(GSbound* b, f32 x, f32 y, f32 z);
 
-// Unused in the retail build (stripped), but its body is inlined into IsInViewFast.
 static inline void _boundGenPointList(Vec* points, Vec* mm)
 {
     points[0].x = mm[0].x;
@@ -240,7 +237,6 @@ void GSboundAddPoint(GSbound* b, f32 x, f32 y, f32 z)
 
 }
 
-// 2 = fully on screen, 0 = fully off one side, 1 = partly. (Also the source of the -1.0f constant.)
 static s32 _boundIsInScreenView(Vec* screen)
 {
     s32 i;
@@ -766,8 +762,8 @@ void GSboundGetSize(GSbound* b, Vec* size, bool scale, bool rot)
     sy = size->y;
     sz = size->z;
     PSMTXMultVec(m, size, size);
-    for (i = 0; i < 3; i++) {
-        f32* p = &v.x + i;
+    for (s32 i_loop = 0; i_loop < 3; i_loop++) {
+        f32* p = &v.x + i_loop;
         v.x = sx;
         v.y = sy;
         v.z = sz;
@@ -988,7 +984,7 @@ void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
     maxA = 0.0f;
     maxB = 0.0f;
     cp = c;
-    for (i = 0; i < 4; i++, cp++) {
+    for (s32 i_loop = 0; i_loop < 4; i_loop++, cp++) {
         PSMTXMultVec(m, cp, cp);
         if (PSVECDotProduct(cp, &right) > 0.0f) {
             a = PSVECDotProduct(cp, &right);

@@ -30,7 +30,6 @@ enum GSmodelAnimType {
     GS_ANIM_TYPE_1
 };
 
-// From the Dolphin SDK's OSFastCast.h (GQR3 is set up for u16 conversion).
 static inline u16 __OSf32tou16(register f32 inF) {
     u16 tmp;
     register u16* tmpPtr = &tmp;
@@ -49,7 +48,6 @@ struct MotionEntry {
     s32 index;
 };
 
-// One animation section (0xD0 bytes). Section 16 holds the alternate (flying) motion set.
 struct MotionSection {
     u8 pad0[4];
     s32 count;
@@ -63,8 +61,6 @@ struct ColorInfo {
     s32 swap[4];
     u8 mod[4];
 };
-
-
 
 struct PkxEntry {
     u32 a;
@@ -351,7 +347,6 @@ public:
     static void Unload(u8* data);
     static int Load(u8* data, u32 id, u32 variant);
 
- // First motion entry of a section that has a non-zero type.
     static int FirstMotion(const MotionSection* s) {
         const MotionEntry* m = s->motions;
         for (int i = s->count; i > 0; i--, m++) {
@@ -362,7 +357,6 @@ public:
         return 0;
     }
 
- // Idle motion of the current state (flying uses the alternate set when present).
     int IdleMotion() const {
         const MotionSection* s = m_sections;
         if ((m_flags & 1) && m_modelID > 0x10) {
@@ -528,7 +522,6 @@ static inline _GSmodel* _wazaSequenceSysLoadModel(void* res) {
     }
     return model;
 }
-
 
 static inline bool isValidSequence(NullSequence* seq) {
     NullSequence* p = g_Sequences;
@@ -1200,7 +1193,6 @@ static inline void _wazaSequenceSysReleaseAll() {
         g_SoundListener = 0;
     }
 }
-
 
 extern "C" {
 

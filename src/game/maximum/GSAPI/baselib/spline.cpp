@@ -1,6 +1,3 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Based on the Melee decomp's spline.c; XD has a separate splArcLength (Simpson's
-// rule over one segment) that splArcLengthGetParameter calls.
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -28,7 +25,6 @@ extern int __float_nan[];
 #define FP_NORMAL 4
 #define FP_SUBNORMAL 5
 
-// MSL math.h inlines.
 static inline int __fpclassifyf(float x) {
     switch ((*(int*)&x) & 0x7f800000) {
     case 0x7f800000:
@@ -194,7 +190,6 @@ static inline f32 splArcLengthPolynomial(const f32 coeffs[5], f32 t) {
     return sqrtf(result);
 }
 
-// Arc length of one segment between start and end (Simpson's rule, 8 steps).
 f32 splArcLength(const f32 coeffs[5], f32 start, f32 end) {
     f32 dx = (end - start) / 8.0F;
     f32 sum = 0.0F;

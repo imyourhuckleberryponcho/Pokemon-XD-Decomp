@@ -1,9 +1,7 @@
-// WIP: written from asm (siblings: menuPdaMailXD, menuPdaMemo*XD, menuPdaDPMonitor*, menuPdaMailList.XD)
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/stdio.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
@@ -66,7 +64,6 @@ enum PDATOP_MENU_RES {
     PDATOP_END = 4
 };
 
-// Shared state of the PDA menu (0x6C bytes).
 struct PdaStatus {
     s32 cur;
     s32 sub;
@@ -199,7 +196,7 @@ void menuPdaSearcher(void);
 MenuData* menuDataBiosGetPtr(s32 id);
 MenuItem* menuItemBiosGetPtr(s32 menu, s32 item);
 u32 windowGetCursorToItem(tagWINDOW_WORK* window);
-s8 windowGetKeyRepeat(void);
+u32 windowGetKeyRepeat(void);
 
 void msgctrlSetValue(s32 id, u32 value);
 s32 heroGetStatus(void* hero, s32 kind, s32 arg);
@@ -780,7 +777,6 @@ static void _SelectCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s8 idx
     }
 }
 
-// Unknown function that was dead-stripped from the final link; its 1.0f constant fixes the .sdata2 order.
 static f32 _menuPdaUnusedOne(f32 v) {
     return v + 1.0f;
 }
@@ -815,8 +811,6 @@ s32 menuPdaBackDrawTitleText(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             digit = value % 10;
             value /= 10;
             msgctrlSetValue(0x34, digit);
- // NOTE: the original passes x without the (u16) cast (no clrlwi); without the cast the 0xFFFFFF00 constant
- // is hoisted one instruction too early (99.44%), so the cast stays until that is solved.
             GSmsgPrint2(window->layer, (u16)x, 0, window->alpha | 0xFFFFFF00, 0x426F);
             x -= GSmsgGetRect(0x426F) >> 16;
         }
@@ -1201,6 +1195,7 @@ s32 menuPdaCursorCtrl(tagWINDOW_WORK* window) {
     h = 0xC;
     repeat = windowGetKeyRepeat();
     up = repeat & 1;
+    PdaStatus* status = &_menuPdaStatus;
     down = repeat & 2;
     do {
         count = 0;
@@ -1217,10 +1212,10 @@ s32 menuPdaCursorCtrl(tagWINDOW_WORK* window) {
             }
             if (window->cursor > 0) {
                 window->cursor--;
-                _menuPdaStatus.arrived = 0;
+                status->arrived = 0;
             } else {
                 window->cursor = count - 1;
-                _menuPdaStatus.arrived = 1;
+                status->arrived = 1;
             }
         } else if (down) {
             for (;;) {
@@ -1234,10 +1229,10 @@ s32 menuPdaCursorCtrl(tagWINDOW_WORK* window) {
             }
             if (window->cursor < (s16)count - 1) {
                 window->cursor++;
-                _menuPdaStatus.arrived = 0;
+                status->arrived = 0;
             } else {
                 window->cursor = 0;
-                _menuPdaStatus.arrived = 1;
+                status->arrived = 1;
             }
         }
         if (window->prevCursor != window->cursor) {

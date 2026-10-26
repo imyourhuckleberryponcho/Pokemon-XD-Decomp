@@ -1,5 +1,3 @@
-// Written from the asm; built with -inline noauto (see configure.py).
-// Called only from REL code: keep the functions alive for the linker.
 #pragma force_active on
 #include <dolphin/types.h>
 
@@ -7,23 +5,23 @@
 #pragma pool_strings off
 
 struct ToolBattleCB {
-    s32 result;           // 0x0
-    s32 mode;             // 0x4
-    s32 kind;             // 0x8
+    s32 result;
+    s32 mode;
+    s32 kind;
     u8 pad0C[0xAFFC - 0xC];
-    s32 afFC;             // 0xAFFC
+    s32 afFC;
     u8 padB000[0xB140 - 0xB000];
-    s32 flashB140;        // 0xB140
+    s32 flashB140;
     u8 padB144[0xB170 - 0xB144];
-    s32 flashB170;        // 0xB170
-    s32 flashB174;        // 0xB174
-    s32 flashB178;        // 0xB178
+    s32 flashB170;
+    s32 flashB174;
+    s32 flashB178;
     u8 padB17C[8];
-    s32 battleActive;     // 0xB184
+    s32 battleActive;
     u8 padB188[0xB19C - 0xB188];
-    s32 disconnected;     // 0xB19C
+    s32 disconnected;
     u8 padB1A0[0xB1E4 - 0xB1A0];
-    s16 timer;            // 0xB1E4
+    s16 timer;
     u8 padB1E6[0xB5F8 - 0xB1E6];
 };
 

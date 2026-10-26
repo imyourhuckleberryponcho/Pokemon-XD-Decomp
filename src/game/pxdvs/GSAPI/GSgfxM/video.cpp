@@ -1,9 +1,3 @@
-// STATUS (cVid): 25/32 exact with extra_cflags=["-inline noauto"]. `#pragma opt_common_subs off` (= -opt nocse) is needed
-// (target recomputes &_videoState after calls). Volatile hints that match: xfbCount, cur, lockRate, lockCount, vsyncCount,
-// vsyncCB, efbHeightParam, _videoOneShotPostCB (ISR-shared). Not exact: SetupNextFrame 96.9 (register order), CopyEFBToXFB 96.5,
-// FindFree/SetXFBReady 98.6 (unused findXFBByState result keeps `bne;b` in target; e/now register order), GetClearColor 94.6
-// (target loads r,g,b,a ascending), Init 90.9 (i/st/ptr register order), UpdateViewport 89.3 (load scheduling). LAYOUT: the weak
-// pixel-format statics (GSgfx_GCWritePixelFmt) duplicate layer.cpp's, so .sdata differs in fcheck until the linker dedupes them.
 #include <dolphin/types.h>
 #include <dolphin/os.h>
 
@@ -38,7 +32,6 @@ struct GSgfxRenderWaitData {
     s32 perfEntry;
 };
 
-// Request block for the EFB -> XFB copy (layout shared with gamecube.cpp).
 #pragma pack(push, 1)
 struct CopyReq {
     u16 left;
@@ -63,7 +56,6 @@ struct GSgfxXFB {
     void* buf;
 };
 
-// The first 0x3C bytes are a GXRenderModeObj (copied from the mode list).
 struct GSgfxVideoState {
     u32 viTVmode;
     u16 fbWidth;
@@ -176,11 +168,9 @@ static bool _videoSetupRenderMode(GSgfxVideoMode mode, GSgfxVideoFrame frame, bo
 static void _videoPostRetraceFunc(u32 count);
 static void _videoPreRetraceFunc(u32 count);
 
-// The write-gather pipe vertex data is sent through.
 #define GX_WGPIPE (*(volatile union { u8 u8; u16 u16; f32 f32; }*)0xCC008000)
 
 extern "C" {
-// From the precompiled GS header (only the function-local statics are emitted here; the real ones live in layer.cpp).
 inline void GSgfx_GCWritePixelFmt(int fmt) {
     static u8 pxf2hw[8] = {0, 1, 2, 3, 4, 4, 4, 5};
     static u8 yuvmap[4] = {0, 1, 2, 2};

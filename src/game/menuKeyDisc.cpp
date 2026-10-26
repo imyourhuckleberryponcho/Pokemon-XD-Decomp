@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 extern "C" {

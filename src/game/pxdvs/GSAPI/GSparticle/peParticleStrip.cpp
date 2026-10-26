@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -57,7 +54,6 @@ class peRenderContainer;
 struct peSpline;
 
 extern "C++" {
-// ---- draft declarations ----
 struct GSbound {
     u8 _draft[1];
 };
@@ -88,15 +84,15 @@ struct peColorSpline {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;  // 0x00
-    u32 unk4;                // 0x04
-    void* buffer;            // 0x08
-    peNode* freeList;        // 0x0c
-    peNode* activeList;      // 0x10
-    u16 count;               // 0x14
-    u16 maxCount;            // 0x16
-    u8 dirty;                // 0x18
-    u8 started;              // 0x19
+    peEmitterNode* emitter;
+    u32 unk4;
+    void* buffer;
+    peNode* freeList;
+    peNode* activeList;
+    u16 count;
+    u16 maxCount;
+    u8 dirty;
+    u8 started;
 
     peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
     virtual ~peContainer();
@@ -115,13 +111,13 @@ public:
 };
 class peRenderContainer : public peContainer {
 public:
-    u8 swapPending;  // 0x20
-    u8 cur;          // 0x21
-    u32 bufSize;     // 0x24
-    u8 dl[2][0x10];  // 0x28
-    u8* bufA;        // 0x48
-    u8* bufB;        // 0x4c
-    u16 tokens[2];   // 0x50
+    u8 swapPending;
+    u8 cur;
+    u32 bufSize;
+    u8 dl[2][0x10];
+    u8* bufA;
+    u8* bufB;
+    u16 tokens[2];
 
     peRenderContainer(peEmitterNode*, unsigned long, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
     virtual ~peRenderContainer();
@@ -133,9 +129,9 @@ public:
 };
 class peParticleStripContainer : public peRenderContainer {
 public:
-    _peParticleStrip* data;  // 0x54
-    u32 unk58;               // 0x58
-    u8 unk5C;                // 0x5c
+    _peParticleStrip* data;
+    u32 unk58;
+    u8 unk5C;
 
     peParticleStripContainer(peEmitterNode*, _peParticleStrip*, unsigned short);
     virtual ~peParticleStripContainer();
@@ -198,11 +194,9 @@ extern GSgfxVF g_vertex_format;
 extern s32 this_;
 }
 #pragma optimize_for_size on
-// ---- draft declarations ----
-
-
 
 void peParticleStripContainer::RearrangeIndices() {
+    u8 *temp_r9_2;
     u8 *var_r6;
     s16 spA;
     volatile s16 sp8;
@@ -211,23 +205,22 @@ void peParticleStripContainer::RearrangeIndices() {
     f32 var_f1;
     f32 var_f2;
     s16 var_r7;
-    s16 var_r8;
+    u32 temp_r12;
     s32 temp_r28;
     s32 temp_r28_2;
     s32 temp_r29_2;
     s32 temp_r29_3;
     s32 var_r26;
+    s32 var_r24;
+    u8 *temp_r30;
     s32 temp_r29;
-    u16 temp_r5;
-    u16 var_r24_2;
-    u32 temp_r12;
+    s16 var_r8;
     u32 temp_r6;
     u8 temp_r9;
     u8 var_r0;
-    s32 var_r24;
+    u16 var_r24_2;
     u8 var_r4;
-    u8 *temp_r30;
-    u8 *temp_r9_2;
+    u16 temp_r5;
     u8 *var_r26_2;
     s16 spC;
 
@@ -240,18 +233,18 @@ void peParticleStripContainer::RearrangeIndices() {
         if (temp_r5 >= 2U) {
             if (temp_r6 & 0x10000) {
                 spC = temp_r5 - 1;
-                var_f1 = 1.0f / M2C_ERROR(/* psq_l unimplemented */);
+                var_f1 = 1.0f / M2C_ERROR( );
             } else {
                 var_f1 = M2C_FIELD(M2C_FIELD(M2C_FIELD(this, u8 **, 0), u8 **, 0xFC), f32 *, 8);
             }
             if (temp_r12 != 0) {
-                var_r4 = 0xC;
-                var_r24 = 8;
                 var_r0 = 0x30;
+                var_r24 = 8;
+                var_r4 = 0xC;
             } else {
-                var_r4 = 0xB;
-                var_r24 = 6;
                 var_r0 = 0x2C;
+                var_r24 = 6;
+                var_r4 = 0xB;
             }
             temp_r9 = M2C_FIELD(this, u8 *, 0x21);
             var_r6 = M2C_FIELD(this, u8 **, 0x10);
@@ -269,13 +262,13 @@ void peParticleStripContainer::RearrangeIndices() {
                 var_r26_2 = (unsigned char *)(var_r26 + ((var_r7 * 2) & 0x1FFFE));
                 if (temp_r12 != 0) {
                     while (var_r24_2 < 2U) {
-                        temp_r29_2 = (var_r24_2 * 2) & 0x1FFFE;
                         temp_r28 = var_r24_2 * 3;
+                        temp_r29_2 = (var_r24_2 * 2) & 0x1FFFE;
                         var_r24_2 += 1;
-                        M2C_FIELD(var_r26_2, s16 *, 0) = (s16) (temp_r29 + temp_r28);
+                        M2C_FIELD(var_r26_2, s16 *, 0) = (s16) (temp_r28 + temp_r29);
                         M2C_FIELD(var_r26_2, u16 *, 2) = temp_r29;
+                        M2C_FIELD(var_r26_2, s16 *, 6) = (s16) (temp_r29_2 + temp_r29);
                         M2C_FIELD(var_r26_2, u16 *, 4) = temp_r29;
-                        M2C_FIELD(var_r26_2, s16 *, 6) = (s16) (temp_r29 + temp_r29_2);
                         var_r26_2 += 8;
                     }
                 } else {
@@ -284,17 +277,17 @@ void peParticleStripContainer::RearrangeIndices() {
                         temp_r28_2 = var_r24_2 * 3;
                         var_r24_2 += 1;
                         M2C_FIELD(var_r26_2, s16 *, 0) = (s16) (temp_r29 + temp_r28_2);
+                        M2C_FIELD(var_r26_2, s16 *, 4) = (s16) (temp_r29_3 + temp_r29);
                         M2C_FIELD(var_r26_2, u16 *, 2) = temp_r29;
-                        M2C_FIELD(var_r26_2, s16 *, 4) = (s16) (temp_r29 + temp_r29_3);
                         var_r26_2 += 6;
                     }
                 }
                 if ((u32) ((temp_r6 >> 0x11U) & 1) != 0) {
                     spA = (M2C_FIELD(this, u16 *, 0x14) - var_r8) - 1;
-                    var_f2 = M2C_ERROR(/* psq_l unimplemented */);
+                    var_f2 = M2C_ERROR( );
                 } else {
                     sp8 = var_r8;
-                    var_f2 = M2C_ERROR(/* psq_l unimplemented */);
+                    var_f2 = M2C_ERROR( );
                 }
                 if ((u32) ((temp_r6 >> 0xFU) & 1) != 0) {
                     temp_f0 = -((var_f2 * var_f1) - 1.0f);
@@ -315,7 +308,6 @@ void peParticleStripContainer::RearrangeIndices() {
         }
     }
 }
-
 
 #pragma optimize_for_size reset
 }
@@ -377,7 +369,6 @@ loop_14:
 }
 
 #define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
-// layer state dirty mark: the state word, its copy 0xB8 further, and the group masks at 0x16A8/0x1760
 static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
     LAYER_FIELD(l, u32, off) |= bit;
     LAYER_FIELD(l, u32, 0x16A8) |= sum;
@@ -505,7 +496,7 @@ void peParticleStripContainer::Render() {
                 temp_r29_2 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 **, 0x1C);
                 if (temp_r31 & 0x1000) {
                     spC = (s16) *temp_r29_2;
-                    var_f29 = M2C_ERROR(/* psq_l unimplemented */);
+                    var_f29 = M2C_ERROR( );
                     temp_r26 = (temp_r31 >> 0xDU) & 1;
                     particleEngineSetupTevStages(0, temp_r30, temp_r26);
                     if (temp_r26 != 0) {
@@ -517,7 +508,7 @@ void peParticleStripContainer::Render() {
                         var_f1 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), f32 *, 4) * (var_f29 * (1.0f - (M2C_FIELD(this, f32 *, 0x58) / M2C_FIELD(M2C_FIELD(M2C_FIELD(this, u8 **, 0), u8 **, 0xFC), f32 *, 0x28))));
                     }
                     spA = (s16) var_r28_2;
-                    temp_f30 = (f32) fmod((f64) (var_f1 + M2C_ERROR(/* psq_l unimplemented */)), (f64) var_f29);
+                    temp_f30 = (f32) fmod((f64) (var_f1 + M2C_ERROR( )), (f64) var_f29);
                     var_r28_2 = (u8) (u16) (sp14 % (u16) *temp_r29_2);
                     if (temp_r26 != 0) {
                         sp8 = (u16) var_r28_2;
@@ -637,23 +628,23 @@ loop_16:
 
 extern "C++" {
 u16 peParticleStripContainer::Emit(unsigned short count) {
-    volatile f32 sp10;
-    f32 sp14;
-    volatile f32 sp1C;
-    f32 sp20;
-    f32 unksp18;
     f32 unkspC;
+    f32 sp14;
+    f32 unksp18;
+    f32 sp20;
+    volatile f32 sp10;
+    volatile f32 sp1C;
     s16 sp8;
     _EmitParams *var_r29;
     f32 temp_f31;
     peEmitterNode *temp_r4;
     peNode *var_r28;
-    s32 temp_r23;
+    peNode *temp_r27;
     u16 temp_r26;
     u16 temp_r3;
     u16 var_r30;
     u8 *temp_r24;
-    peNode *temp_r27;
+    s32 temp_r23;
 
     if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
         return 0U;
@@ -664,17 +655,17 @@ u16 peParticleStripContainer::Emit(unsigned short count) {
     var_r28 = M2C_FIELD(this, peNode **, 0x10);
     temp_r26 = var_r30;
     while (var_r30 != 0) {
-        temp_r4 = M2C_FIELD(this, peEmitterNode **, 0);
         temp_r27 = M2C_FIELD(var_r28, peNode **, 0x28);
         sp8 = (M2C_FIELD(temp_r4, u16 *, 0x4A) + temp_r3) - var_r30;
         temp_r24 = M2C_FIELD(this, u8 **, 0x54);
+        temp_r4 = M2C_FIELD(this, peEmitterNode **, 0);
         temp_r23 = 0x28;
         temp_r23 += (M2C_FIELD(this, u8 *, 0x21) * 0x10);
-        temp_f31 = M2C_FIELD(M2C_FIELD(temp_r4, u8 **, 0xFC), f32 *, 8) * M2C_ERROR(/* psq_l unimplemented */);
+        temp_f31 = M2C_FIELD(M2C_FIELD(temp_r4, u8 **, 0xFC), f32 *, 8) * M2C_ERROR( );
         if ((s32) (*((u8 *)count + temp_r23) & 1) == 1) {
             ((peNode*)(var_r28))->Start((peEmitterNode*)(temp_r4), (_EmitParams*)(var_r29));
             if (M2C_FIELD(temp_r24, s32 *, 0) & 0x02000000) {
-                PSVECScale((const register Vec*)(temp_r24 + 0x20), (register Vec*)(&unksp18), 10.0f * ((temp_f31 * M2C_FIELD(temp_r24, f32 *, 0x30)) + M2C_FIELD(temp_r24, f32 *, 0x2C)));
+                PSVECScale((const register Vec*)(temp_r24 + 0x20), (register Vec*)(&unksp18), 10.0f * ((M2C_FIELD(temp_r24, f32 *, 0x30) * temp_f31) + M2C_FIELD(temp_r24, f32 *, 0x2C)));
                 M2C_FIELD(var_r28, f32 *, 0x34) = unksp18;
                 M2C_FIELD(var_r28, f32 *, 0x38) = sp1C;
                 M2C_FIELD(var_r28, f32 *, 0x3C) = sp20;
@@ -759,14 +750,14 @@ peParticleStripContainer::peParticleStripContainer(peEmitterNode* p0, _peParticl
 
 extern "C++" {
 void peParticleStripNode::UpdateRenderData(peEmitterNode* p0, _peParticleStrip* p1, char* p2, float p3) {
-    s32 sp10;
+    s32 sp80;
     s32 sp14;
-    s32 sp18;
+    volatile s32 sp18;
     s32 sp24;
     s32 sp28;
     s32 spC;
     f32 unksp20;
-    s32 sp80;
+    s32 sp10;
     s32 sp50;
     f32 sp4C;
     f32 sp48;
@@ -777,20 +768,20 @@ void peParticleStripNode::UpdateRenderData(peEmitterNode* p0, _peParticleStrip* 
     f32 sp34;
     f32 sp30;
     f32 sp2C;
-    u8 sp1F;
-    u8 sp1E;
-    u8 sp1D;
+    volatile u8 sp1F;
+    volatile u8 sp1E;
+    volatile u8 sp1D;
     u8 sp1C;
     u8 spA;
-    u8 sp9;
+    bool sp9;
     u8 sp8;
     Vec *temp_r5;
     Vec *temp_r5_2;
     f32 var_f1;
     peSpline *temp_r3;
     u32 temp_r27;
-    u32 temp_r30;
     u8 *var_r31;
+    u32 temp_r30;
 
     temp_r5 = M2C_FIELD(this, Vec **, 0x20);
     temp_r27 = M2C_FIELD(p1, u32 *, 0);

@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// A weighted camera setup for a move animation: two shots of four weights plus parameters.
 struct WazaCameraPattern {
     f32 weight;
     f32 shot0Weights[4];

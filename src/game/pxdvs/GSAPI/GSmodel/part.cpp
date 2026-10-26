@@ -35,7 +35,6 @@ s32 GSmodelGetPartCount(_GSmodel* model) {
     _modelCurPartIdx = 0;
     _modelDestPartIdx = -1;
     HSD_JObjWalkTree(model->jobj, _modelFindJObj, NULL);
- // Models with an attached null have one extra joint.
     if ((model->flags & 0x20000) == 0x20000) {
         _modelCurPartIdx--;
     }

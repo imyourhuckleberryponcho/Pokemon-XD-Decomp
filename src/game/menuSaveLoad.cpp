@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct tagWINDOW_WORK {
@@ -168,7 +167,6 @@ void menuSaveload::Main() {
     }
 }
 
-// Asks before overwriting a save from a different playthrough.
 bool menuSaveload::ComfirmOverwriting() {
     int ok = TRUE;
     void* backup = memcardMemAllocForSavedata();

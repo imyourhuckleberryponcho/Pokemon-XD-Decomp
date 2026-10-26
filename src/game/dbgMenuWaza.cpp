@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 struct WazaViewerData {
@@ -24,7 +23,6 @@ void GSfloorPush(s32 floorID);
 void GSfloorPop(void);
 void GSthreadSwitch(void);
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 s32 dbgMenuWazaDebugStop(void) {

@@ -1,12 +1,8 @@
 #include <dolphin/types.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
-// Nothing references these debug menu entries directly; keep the linker from stripping them.
 #pragma force_active on
-
-// This unit needs "-inline noauto" (extra_cflags in configure.py).
 
 struct Pokemon {
     u8 unk0[0xC4];
@@ -145,7 +141,6 @@ static void testEvolution(void);
 static s32 _getWorldMapFlagData(s32);
 static void _setWorldMapFlagData(s32, s32);
 
-// Data (order matters for the link).
 u16 _testEncount[0x1C] = {0x57, 0x58, 0x59, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F, 0x60, 0x61, 0x62, 0x63, 0x64,
                           0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, 0x70, 0x71, 0x72};
 static u32 _undertakerFloorID[8];
@@ -153,7 +148,6 @@ static DbgWorldMapData _debugWorldMapData;
 static u32 _undertakerFloorCount;
 static s32 _esabaPlace;
 static u16 _esabaSelectPokemon;
-// (The retail .sbss/.sdata2 end in a few bytes of alignment padding; the linker adds it.)
 
 enum D2PRESENT_MODE { D2PRESENT_0, D2PRESENT_1, D2PRESENT_2 };
 static void testD2Present(D2PRESENT_MODE);

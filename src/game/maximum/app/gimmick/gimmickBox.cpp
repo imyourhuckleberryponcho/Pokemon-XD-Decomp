@@ -1,9 +1,3 @@
-// STATUS (rough draft, rd_gb): 52/52 functions, 28 exact, byte-weighted ~89.7%.
-// NEEDS FLAGS: extra_cflags=["-O0", "-inline off", "-str reuse,nopool,noreadonly"] (unit is a DEBUG build: every pd.x
-// access reloads the base; strings land in .sdata/.data). With these, function order and .data/.bss/.sbss LAYOUT match.
-// Remaining diffs: .sdata2 3.3333333f literal (0x40555556 vs ours 0x40555555 -> try (10.0f/3.0f) forms), Jump 83%,
-// CanJump 89%, RoatateKenToBoxPushRotationReady 55% (switch layout), GetPeopleNum 64%, SetJumpPosYs 62%.
-// Two dead-stripped dummy users (gimmickBoxUnusedFmod/Copy) reproduce the weak-function placement of fmodf/GSvec copy-ctor.
 #include <dolphin/types.h>
 
 struct GSvec {
@@ -16,24 +10,24 @@ struct GSvec {
 struct GSmodel;
 
 struct tagPeopleWork {
-    u8 active;      // 0x00
+    u8 active;
     u8 pad1[3];
     u8 pad4[4];
-    GSmodel* model; // 0x08
+    GSmodel* model;
     u8 pad0C[2];
-    u8 rotateFlag;  // 0x0E
+    u8 rotateFlag;
     u8 pad0F[0x0D];
-    u32 id;         // 0x1C
+    u32 id;
     u8 pad20[8];
-    f32 f28;        // 0x28
+    f32 f28;
     u8 pad2C[0x14];
-    f32 targetAngle; // 0x40
-    f32 turnSpeed;   // 0x44
-    s32 motion;      // 0x48
+    f32 targetAngle;
+    f32 turnSpeed;
+    s32 motion;
     u8 pad4C[0xC];
-    f32 f58;         // 0x58
+    f32 f58;
     u8 pad5C[0xD0];
-    f32 f12C;        // 0x12C
+    f32 f12C;
 };
 
 enum M_STICK_DIRECTION {
@@ -116,40 +110,39 @@ f32 fmodf(f32 a, f32 b);
 }
 
 struct GimmickBoxPushData {
-    u8 f0;              // 0x00
+    u8 f0;
     f32 f4;
-    GSvec boxPos;       // 0x08
-    GSvec kenPos;       // 0x14
-    GSvec kenRot;       // 0x20
-    f32 pushStartFrame; // 0x2C
-    f32 pushFrame;      // 0x30
-    f32 pushEndFrame;   // 0x34
-    f32 jumpFrame;      // 0x38
-    f32 walkFrame;      // 0x3C
-    tagPeopleWork* ken; // 0x40
-    void* kenInfo;      // 0x44
-    tagPeopleWork* box; // 0x48
-    s32 direction;      // 0x4C
-    GSvec target;       // 0x50
-    f32 progress;       // 0x5C
-    f32 pushStartFrames; // 0x60
-    f32 pushEndFrames;  // 0x64
-    f32 jumpFrames;     // 0x68
-    f32 walkFrames;     // 0x6C
-    f32 jumpY[50];      // 0x70
-    f32 boxRadius;      // 0x138
-    f32 kenRadius;      // 0x13C
-    f32 pushDist;       // 0x140
-    f32 pushOffset;     // 0x144
-    s32 peopleNum;      // 0x148
-    u8 moving;          // 0x14C
-    u8 walking;         // 0x14D
-    u8 ready;           // 0x14E
-    u8 jumping;         // 0x14F
-    s32 mode;           // 0x150
-    f32 jumpBaseY;      // 0x154
-    f32 jumpAngle;      // 0x158
-
+    GSvec boxPos;
+    GSvec kenPos;
+    GSvec kenRot;
+    f32 pushStartFrame;
+    f32 pushFrame;
+    f32 pushEndFrame;
+    f32 jumpFrame;
+    f32 walkFrame;
+    tagPeopleWork* ken;
+    void* kenInfo;
+    tagPeopleWork* box;
+    s32 direction;
+    GSvec target;
+    f32 progress;
+    f32 pushStartFrames;
+    f32 pushEndFrames;
+    f32 jumpFrames;
+    f32 walkFrames;
+    f32 jumpY[50];
+    f32 boxRadius;
+    f32 kenRadius;
+    f32 pushDist;
+    f32 pushOffset;
+    s32 peopleNum;
+    u8 moving;
+    u8 walking;
+    u8 ready;
+    u8 jumping;
+    s32 mode;
+    f32 jumpBaseY;
+    f32 jumpAngle;
 
     GimmickBoxPushData() {
         f0 = 0;
@@ -502,7 +495,6 @@ static void _gimmickBoxGetDirection(M_STICK_DIRECTION dir, f32* x, f32* z, f32* 
     if (ang != 0) *ang = fa;
 }
 
-// the original had a (dead-stripped) user of fmodf here, which is what places the weak fmodf at this spot
 static f32 gimmickBoxUnusedFmod(f32 a) {
     return std::fmodf(a, 6.2831855f);
 }
@@ -536,8 +528,10 @@ static f32 _gimmickBoxGetFixDistanceBoxAndPeople(f32 fx, f32 fz) {
     f32 dz = fz - rz;
     f32 len = std::sqrtf((dx * dx) + (dz * dz));
     if (len == 0.0f) len = 1.0f;
-    f32 ex = rx + ((dx * pd.boxRadius) / len);
-    f32 ez = rz + ((dz * pd.boxRadius) / len);
+    f32 ez;
+    f32 ex;
+    ex = rx + ((dx * pd.boxRadius) / len);
+    ez = rz + ((dz * pd.boxRadius) / len);
     rx = std::sqrtf((ex * ex) + (ez * ez));
     return rx;
 }
@@ -604,7 +598,6 @@ static u8 _gimmickBoxIsJumpOK(GSvec* p) {
     return 0;
 }
 
-// dead-stripped user in the original: makes the weak copy-ctor appear before _gimmickBoxJump
 static void gimmickBoxUnusedCopy(GSvec* a) {
     GSvec b(*a);
     (void)b;
@@ -616,7 +609,6 @@ inline GSvec::GSvec(const GSvec& o) {
     z = o.z;
 }
 
-// probe the walk height at sp28v; run `act` if it is a normal floor that is not under a box
 #define JUMP_PROBE(act)                                               sp28v.y = pd.kenPos.y;                                            sp28v.y = GScolsys2HumanGetWalkHighest(&sp28v);                   {                                                                     u8 near = std::fabsf((pd.kenPos.y - sp28v.y) - 10.0f) < 3.0f;         sp28v.y = 10.0f;                                                  u8 on = _gimmickBoxIsOnBoxPos(&sp28v);                            if (near != 0 && on == 0) {                                           act;                                                          }                                                             }
 
 static void _gimmickBoxJump() {

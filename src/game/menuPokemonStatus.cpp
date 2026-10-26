@@ -1,13 +1,5 @@
-// STATUS: 22/31 functions exact (3160 bytes). Needs extra_cflags=["-inline noauto,deferred"]
-// (source is written bottom-to-top; LAYOUT of .text and .data tables confirms it).
-// Not exact: Button 99.2% (grid index add order), Sub 99.2% (wazaGetStatus arg shuffle), ChangeSubMenu 99.1%
-// (id/i register swap), Cursor 94.7% (registers in ribbon grid navigation), DrawRibbon 93.9% (n=idx%9 hoist),
-// MakeRibbon 82.6% (target keeps loop guards "li r3,0; cmpwi r3,9; bge" around unrolled clears),
-// DrawWaza/DrawStatus/DrawTitle are EMPTY STUBS (not reconstructed, 4084/3220/2048 bytes).
-// Pokemon summary screen (menuPokemonStatus).
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct CURSOR {
@@ -215,7 +207,6 @@ s32 _menuPokemonStatusCheckWazaItem(tagWINDOW_WORK*, tagSPRITE_WORK*);
 static MenuStatus _menuStatus;
 static MENU_MODEL _menuModel;
 
-
 static s32 ribbon_id_tbl[32] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6,
@@ -238,7 +229,6 @@ struct RibbonMap {
     u8 max;
 };
 
-// Forward declarations (the file is written bottom-to-top: -inline noauto,deferred).
 extern "C" {
 void menuPokemonStatusClose(void);
 }
@@ -729,7 +719,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
                 }
             }
         } else if (keys & 4) {
-            bool found = false;
+            int found = false;
             for (c = col; c >= 0; c--) {
                 r = (c == col) ? row - 1 : 8;
                 for (; r >= 0; r--) {
@@ -801,8 +791,7 @@ void menuPokemonStatusButton(tagWINDOW_WORK* win) {
             if (st->ribbon.count > 0) {
                 s8 i = 0;
                 while (i < 0x24) {
-                    s8* row = st->ribbon.grid[i % 9];
-                    if (row[i / 9] >= 0) {
+                    if (*((s8*)st->ribbon.grid + (i % 9) * 4 + i / 9) >= 0) {
                         break;
                     }
                     i++;
@@ -1148,7 +1137,8 @@ bool _menuPokemonStatusCheckDanny(Pokemon* pokemon) {
 extern "C" {
 void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     u16 id;
-    u32 place;
+    u16 place;
+    s32 x;
     MenuStatus* st = &_menuStatus;
     Pokemon* pk = st->pokemon;
     void* pdata;
@@ -1384,7 +1374,6 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         break;
     }
     case 0x261: {
-        s32 x;
         if (pokemonIsDarkPokemon(pk) == 1) {
             msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(0x3AD4));
         } else {
@@ -1416,7 +1405,7 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             u32 base = pokemonGetLevelToExp(pk, lv);
             u32 range = next - base;
             u32 have = pokemonGetStatus(pk, 0, 0x79, 0) - base;
-            u32 num = range + have * sprite->w;
+            s16 num = range + have * sprite->w;
             s16 w = (num - 1) / range;
             windowDrawSprite2(0, 0, w, sprite->h, color, win, 0xF6, 0, winSpriteGetLayerID(win, sprite));
         }

@@ -1,14 +1,14 @@
-// STATUS: 8/12 exact (MakePolygon 97.7%, APPSRTPoint 98%, PointTrail 97.7%: float register allocation only; _psDispParticlesSub 90.6%). MSL-style inline sinf/cosf/tanf fixed psDispSubAppSRT.
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's psdisp.c (headers: include/hsd_ref).
-// The original file name, used by the asserts.
+
+
+
+
 #define HSD_FILE_NAME "psdisp.c"
 
 #include <sysdolphin/baselib/psdisp.h>
 
 #include <string.h>
 
-/* XD's MSL <math.h> inlines (sqrtf with its NaN checks), not include/libc's. */
+
 #define _MATH_H_
 extern f32 __float_nan[];
 extern f32 __float_min[];
@@ -92,7 +92,7 @@ inline float atan2fInline(float y, float x)
 
 #pragma pool_strings off
 
-/* Fast float -> s16 conversion (GQR6), as in the SDK's OSFastCast.h. */
+
 static inline void __OSf32tos16(register f32 arg, volatile register s16* out)
 {
     asm { psq_st arg, 0(out), 1, 6 }
@@ -107,7 +107,7 @@ static inline s16 OSf32tos16(f32 in)
 
 #define psPosition3(x, y, z)     GXPosition3s16(OSf32tos16(x), OSf32tos16(y), OSf32tos16(z))
 
-/* RGBA4 vertex colour. */
+
 #define psColorRGBA4(r, g, b, a)     GXColor1u16((((r) << 8) & 0xF000) | (((g) << 4) & 0xF00) | ((b) & 0xF0) | (((a) >> 4) & 0xF))
 void HSD_MtxGetRotationMtx(Mtx m, Mtx out, char a, char b);
 extern int __float_epsilon[];
@@ -119,7 +119,7 @@ extern int __float_epsilon[];
 typedef struct { f32 x, y; } Vec2;
 
 
-/* Orphaned static data of the original (kept so .data/.rodata/.sbss match). */
+
 static u8 billboard_tex0_u8[] ATTRIBUTE_ALIGN(32) = {
     0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
     0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
@@ -201,8 +201,8 @@ void psDispStrippedC(void* o)
     ref_INC(o);
 }
 
-/* The original had two more functions here that the linker stripped; they left
- * these identity SRT constants behind in .rodata. */
+
+
 void psDispStrippedA(Mtx out)
 {
     Vec3 scale = { 1.0F, 1.0F, 1.0F };
@@ -317,8 +317,8 @@ inline static void calcTornadoLastPos(HSD_Particle* pp, f32* x, f32* y, f32* z)
     *z = -px * cosa * sinb - py * sina + pz * cosa * cosb + gp->pos.z;
 }
 
-/* Separate inline: its nested calcTornadoLastPos expansion creates its locals after the
- * direct expansion's, which gives the original register order. */
+
+
 inline static void calcTornadoLastPosAPPSRT(HSD_Particle* pp, f32* x, f32* y, f32* z)
 {
     Mtx mtx;
@@ -505,9 +505,9 @@ static inline void psMaskAbsF32(f32* value)
     *(s32*) value &= 0x7FFFFFFF;
 }
 
-/* AppSRT tests its magnitudes through these: the compare temp then belongs
- * to this expansion (one inline level below the caller), which is where the
- * retail frame keeps it. */
+
+
+
 static inline bool psMaskAbsLtF32(f32 value, f32 limit)
 {
     psMaskAbsF32(&value);
@@ -520,9 +520,9 @@ static inline bool psMaskAbsGtF32(f32 value, f64 limit)
     return value > limit;
 }
 
-/* psDispSub tests its magnitudes through the value helper instead: the retail
- * frame keeps those compare temps one inline level deeper than AppSRT's, after
- * psDispSubMakePolygon's own locals. */
+
+
+
 static inline bool psAbsLtF32(f32 value, f32 limit)
 {
     return fabs(value) < limit;
@@ -1583,8 +1583,8 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                         }
                     }
 
-                    /* particle.h declares psFormGroupArray as int[]; it holds
-                     * HSD_PSFormGroup** in XD. */
+
+
                     form_groups = (HSD_PSFormGroup**) psFormGroupArray[pp->bank];
                     if (form_groups != NULL &&
                         (form_group = form_groups[pp->texGroup]) != NULL
@@ -1657,7 +1657,7 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                                         tlutdesc.lut = palettes[0];
                                     }
                                     if (tlutdesc.lut != prevLut) {
-                                        tlutdesc.fmt = (GXTlutFmt) (u8)
+                                        tlutdesc.fmt = (GXTlutFmt)
                                                            tex_group->tlutfmt;
                                         tlutdesc.tlut_name = GX_TLUT0;
                                         tlutdesc.n_entries =
@@ -1678,7 +1678,7 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                             case GX_TF_C4:
                             case GX_TF_C8:
                                 GXInitTexObjCI(&texObj, image, width, height,
-                                               fmt, (u16)wrap_s, wrap_t, GX_FALSE,
+                                               fmt, wrap_s, wrap_t, GX_FALSE,
                                                GX_TLUT0);
                                 break;
                             case GX_TF_I4:
@@ -1696,13 +1696,11 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                                 HSD_ASSERT(0x7AD, 0);
                                 break;
                             }
-                            prev_tex_interp_near = pp->kind & TexInterpNear;
                             GXInitTexObjLOD(
                                 &texObj,
-                                (prev_tex_interp_near != 0) ? GX_NEAR
+                                ((prev_tex_interp_near = pp->kind & TexInterpNear) != 0) ? GX_NEAR
                                                             : GX_LINEAR,
-                                (pp->kind & TexInterpNear) ? GX_NEAR
-                                                           : GX_LINEAR,
+                                (GXTexFilter)(((pp->kind >> 9) & 1) ^ 1),
                                 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE,
                                 GX_ANISO_1);
                             GXLoadTexObj(&texObj, GX_TEXMAP0);

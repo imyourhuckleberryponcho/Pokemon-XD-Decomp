@@ -1,9 +1,3 @@
-// STATUS: 27/36 exact with extra_cflags ["-inline", "noauto,deferred"] (25 without); LAYOUT/CONST/CALLS/DATA all OK with the flags.
-// File is written bottom-to-top (deferred). Aisyou helper exists twice on purpose: exported reliveHallPokemonToAisyou plus a
-// static inline copy used by the callers (target inlines it). VISITOR_OR_NULL is a macro (the target recomputes this+0x310).
-// Not exact: debugPokemonSetup 89% ((mode != 1) hoisting), isReliveReadyDarkLugiaExist 88%, heroWalkReliveCallBack 93%
-// (cur register), getReliveGiveStageQuantity 96%, getPassionWoBonus 97%, getState 98.7% (pair-sum register allocation:
-// inlined aisyou x/y/st registers), getTempo 99.5%, checkWithBackupSet 99.8%, reliveHallPokemonToAisyou 99.6%.
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
@@ -11,12 +5,12 @@ enum FootStepCounter { FOOTSTEP_0 };
 
 struct FlagEtcData {
     u8 pad[0x428];
-    u32 reliveOpenFlag; // 0x428
+    u32 reliveOpenFlag;
 };
 
 struct ReliveHallData {
     u16 a0;
-    u16 steps; // 0x02
+    u16 steps;
 };
 
 extern "C" {
@@ -61,7 +55,7 @@ class CReliveStage {
 public:
     u8 dancer[4][0xC4];
     u8 visitor[0xC4];
-    s8 hit; // 0x3D4
+    s8 hit;
     u8 pad3D5[3];
 
     s32 getState();
@@ -124,7 +118,6 @@ static inline CReliveHall* hallPtr() {
     return (CReliveHall*)savedataGetStatus(savedataGetStatus(0, 0), 0x15);
 }
 
-// Pokemon pointer if it is a valid slot, else 0
 static inline Pokemon* validOrNull(Pokemon* p) {
     return pokemonCheckValid(p) ? p : 0;
 }
@@ -150,8 +143,6 @@ static inline s32 jyoutaiLevel(u16 st) {
     }
     return 0x7B;
 }
-
-// compatibility ("aisyou") of two Pokemon, by their types
 
 static inline s32 pairAisyou(Pokemon* a, Pokemon* b) {
     Pokemon* ps[2];
@@ -181,7 +172,6 @@ static inline s32 pairAisyou(Pokemon* a, Pokemon* b) {
     return best;
 }
 
-// tempo points for one neighbouring pair
 static inline s32 pairScore(s32 n, s32 rel) {
     s32 add;
     switch (rel) {
@@ -510,18 +500,19 @@ s32 CReliveHall::getReliveReadyVisitorQuantity() {
 }
 
 bool CReliveHall::isReliveReadyDarkLugiaExist() {
-    for (u32 i = 0; i < 9; i++) {
+    u32 i;
+    for (i = 0; i < 9; i++) {
         Pokemon* v = VISITOR_OR_NULL(&stage[i]);
-        if (v == 0 || v->getPokemonDataId() != 0xF9) continue;
-        for (u32 s = 0; s < 9; s++) {
-            CReliveStage* st = &stage[s];
-            s32 n = countDancers(st);
-            s32 sum = pairSum(st, n);
-            if (sum + _tempoBase[n] != 0x60) return false;
-        }
-        return true;
+        if (v != 0 && v->getPokemonDataId() == 0xF9) break;
     }
-    return false;
+    if (i >= 9) return false;
+    for (u32 s = 0; s < 9; s++) {
+        CReliveStage* st = &stage[s];
+        s32 n = countDancers(st);
+        s32 sum = pairSum(st, n);
+        if (sum + _tempoBase[n] != 0x60) return false;
+    }
+    return true;
 }
 
 CReliveHall* CReliveHall::getPointer() {

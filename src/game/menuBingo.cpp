@@ -1,13 +1,3 @@
-// WIP (pass snF + snG, 2026-10-15): Battle Bingo menu (cBingo class + menu draw callbacks), written from asm.
-// STATUS: see fcheck. Exact: the 7 menuBattleDeBingo* getters/entry (except GetEpoint 92.8%), TopDraw, 4 twin Ctrl
-// callbacks, fn_80091B98, menuBingoExit, loadPkmFace. All 8 former stubs are now written (85-95%): SheetBtn, Main,
-// setStepMessage, MessageDraw, PokemonDraw, dispPanel, PanelDraw, dispOpenPanel. Data/layout (jump tables, .rodata
-// tables, strings, .sdata2) matches the target (fcheck LAYOUT/CONST/DATA OK).
-// Notes: gBingo is the cBingo instance (this = &gBingo in all cBingo members); helpers that the target uses via `this`
-// (noPanelFlagged/countLines/pkmState/canMove) are cBingo members. getF12e() returns int: the target compares that
-// byte with cmpwi (an `int x = field` copy). The inlined findPokemonOrder (14 entries, unrolled 7x2) and lineDone
-// differ slightly in register use (target keeps k and the result in r0). Open: register allocation of the big
-// functions (PokemonDraw base/layer regs, dispPanel param regs, MessageDraw wants 4 saved regs), SheetBtn call order.
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
@@ -81,9 +71,9 @@ public:
 
 struct BingoPokemon {
     Pokemon pkm;
-    u8 point;  // 0xC4
-    u8 order;  // 0xC5
-    u8 flag;   // 0xC6
+    u8 point;
+    u8 order;
+    u8 flag;
     u8 pad;
 };
 
@@ -97,36 +87,36 @@ struct BingoPanel {
 
 class cBingo {
 public:
-    u32 save;              // 0x00
-    BINGO_DATA_dd_* sheet; // 0x04
-    BingoPanel panel[16];  // 0x08
-    BingoPanel shuf[16];   // 0x88
+    u32 save;
+    BINGO_DATA_dd_* sheet;
+    BingoPanel panel[16];
+    BingoPanel shuf[16];
     s32 f108;
     u8 f10c;
-    u8 lineState[10];      // 0x10D
-    u8 lineFlag[10];       // 0x117
+    u8 lineState[10];
+    u8 lineFlag[10];
     u8 f121;
-    u8 mode;               // 0x122
+    u8 mode;
     u8 pad123;
     s32 f124;
-    u8 f128;               // 0x128
-    u8 ball;               // 0x129
-    u8 epoint;             // 0x12A
-    u8 f12b;               // 0x12B
-    u8 f12c;               // 0x12C
-    u8 f12d;               // 0x12D
-    u8 f12e;               // 0x12E
-    u8 f12f;               // 0x12F
-    u8 f130;               // 0x130
+    u8 f128;
+    u8 ball;
+    u8 epoint;
+    u8 f12b;
+    u8 f12c;
+    u8 f12d;
+    u8 f12e;
+    u8 f12f;
+    u8 f130;
     u8 pad131[3];
-    s32 f134;              // 0x134
-    s32 f138;              // 0x138
-    u32 f13c;              // 0x13C
-    f32 f140;              // 0x140
+    s32 f134;
+    s32 f138;
+    u32 f13c;
+    f32 f140;
     s32 f144;
     u8 f148;
     u8 pad149[3];
-    u32 color;             // 0x14C
+    u32 color;
 
     void setStepMessage();
     void dispPanel(u32 n, tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
@@ -434,13 +424,11 @@ static inline f32 sinfInline(f32 x) {
     return (f32)sin(x);
 }
 
-
 static inline u8 selectRank() {
     if (BIOS->isSelect(8)) return 2;
     if (BIOS->isSelect(5)) return 1;
     return 0;
 }
-
 
 static inline bool hasGrid1() {
     for (u32 i = 0; i < 16; i++) {
@@ -451,7 +439,6 @@ static inline bool hasGrid1() {
     }
     return false;
 }
-
 
 static inline u16 faceKey(cBingo* self, BingoPanel* p, u32 n) {
     void* pdata = mPokemon[p->idx].pkm.getPokemonDataPtr();
@@ -465,8 +452,6 @@ static inline u16 faceKeyShuf(cBingo* self, BingoPanel* q) {
     return cBingo::ClosePanelIdx[pokemonDataBiosGetZokuseiDataId(pdata, (u16)(type % 18))];
 }
 
-
-
 extern "C" {
 
 u8 menuBattleDeBingoGetMode(void) {
@@ -479,7 +464,7 @@ u8 menuBattleDeBingoGetMball(void) {
 
 u8 menuBattleDeBingoGetEpoint(void) {
     int total = 0;
-    int i = 0;
+    u32 i = 0;
     while (i < 4) {
         int j = findPokemonOrder(i + 1);
         if (j != -1) {
@@ -514,12 +499,14 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     BingoPokemon* q;
     u32 n = 0;
     menuSubCalcColor();
-    int cur = findPokemonOrder(gBingo.f12c + 1);
+    u32 rf_t = gBingo.f12c;
+    int cur = findPokemonOrder(rf_t + 1);
     BingoPokemon* p = &mPokemon[cur];
     s32 layer = winSpriteGetLayerID(w, sp);
     switch (sp->id) {
     case 0x5EE: {
-        int i = findPokemonOrder(gBingo.f12c + 1);
+        u32 rf_t = gBingo.f12c;
+        int i = findPokemonOrder(rf_t + 1);
         u32 waza = wazaGetStatus(0, BIOS->getPanelWaza(gBingo.sheet, i), 1, 0);
         if (waza != 0) {
             sp->msgID = 0xDB39;
@@ -530,7 +517,8 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         break;
     }
     case 0x5ED: {
-        int i = findPokemonOrder(gBingo.f12c + 1);
+        u32 rf_t = gBingo.f12c;
+        int i = findPokemonOrder(rf_t + 1);
         u32 key = zokuseiBiosGetSpriteID(wazaDB_GetZokuseiDataId(BIOS->getPanelWaza(gBingo.sheet, i)));
         if (key != 0) {
             windowDrawSprite(0, 0, w, key, 0, layer);
@@ -538,7 +526,8 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         break;
     }
     case 0x5EB: {
-        int i = findPokemonOrder(gBingo.f12c + 1);
+        u32 rf_t = gBingo.f12c;
+        int i = findPokemonOrder(rf_t + 1);
         u32 tok = BIOS->getPanelTokusei(gBingo.sheet, i);
         u32 id = pokemonDB_GetTokuseiDataId(pokemon_GetPokemonDataId(p), tok);
         if (id != 0) {
@@ -1013,25 +1002,25 @@ s32 menuBingoPanelDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 s32 menuBingoScoreDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     u32 n = 0;
     switch (sp->id) {
-    case 0x584:
-        n++;
-    case 0x583:
-        n++;
-    case 0x582:
-        n++;
-    case 0x581:
-        n++;
-    case 0x580:
-        n++;
-    case 0x57F:
-        n++;
-    case 0x57E:
-        n++;
-    case 0x57D:
+    case 0x57B:
         n++;
     case 0x57C:
         n++;
-    case 0x57B:
+    case 0x57D:
+        n++;
+    case 0x57E:
+        n++;
+    case 0x57F:
+        n++;
+    case 0x580:
+        n++;
+    case 0x581:
+        n++;
+    case 0x582:
+        n++;
+    case 0x583:
+        n++;
+    case 0x584:
         winSpriteSetDisp(sp, false);
         {
             u32 lines = gBingo.countLines();
@@ -1048,25 +1037,25 @@ s32 menuBingoScoreDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             }
         }
         break;
-    case 0x58E:
-        n++;
-    case 0x58D:
-        n++;
-    case 0x58C:
-        n++;
-    case 0x58B:
-        n++;
-    case 0x58A:
-        n++;
-    case 0x589:
-        n++;
-    case 0x588:
-        n++;
-    case 0x587:
+    case 0x585:
         n++;
     case 0x586:
         n++;
-    case 0x585: {
+    case 0x587:
+        n++;
+    case 0x588:
+        n++;
+    case 0x589:
+        n++;
+    case 0x58A:
+        n++;
+    case 0x58B:
+        n++;
+    case 0x58C:
+        n++;
+    case 0x58D:
+        n++;
+    case 0x58E: {
         u32 score = ((bingo_bios*)&gBingo)->getScore(gBingo.sheet, n);
         s32 layer = winSpriteGetLayerID(w, sp);
         if (gBingo.mode != 0) {
@@ -1109,7 +1098,7 @@ s32 menuBingoPkmDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             int limit = hasGrid1() ? 4 : 3;
             u32 next = k;
             next += 1;
-            if (limit > next) {
+            if (next < limit) {
                 if (next == 3 && limit == 4) {
                     if (gBingo.f121 != 0) {
                         winSpriteSetDisp(sp, true);
@@ -1129,7 +1118,7 @@ s32 menuBingoPkmDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         k++;
     case 0x540: {
         winSpriteSetDisp(sp, false);
-        int cnt = 0;
+        u32 cnt = 0;
         do {
             if (findPokemonOrder(cnt + 1) == -1) break;
             cnt++;
@@ -1413,7 +1402,7 @@ s32 menuBingoSheetBtn(tagWINDOW_WORK* w) {
             } else {
                 gBingo.panel[self->f134].flag = 1;
                 u8 idx = gBingo.panel[self->f134].idx;
-                int i = countPokemon();
+                u16 i = countPokemon();
                 BingoPokemon* bp = &mPokemon[idx];
                 bp->order = i + 1;
                 bp->point = 2;
@@ -1427,11 +1416,11 @@ s32 menuBingoSheetBtn(tagWINDOW_WORK* w) {
     case 2: {
         if (!(trg & 0x10)) break;
         volatile u32 cnt = gBingo.countLines();
-        u8 n = cnt;
+        u32 n = cnt;
         gBingo.ball = bingo_bios::getStaticBall();
         if (n == 10) {
             gBingo.f108 = 2;
-            gBingo.epoint = gBingo.epoint + (u8)(n - gBingo.f12d);
+            gBingo.epoint += (u8)(n - gBingo.f12d);
             break;
         }
         stepAdvanceSe(w);
@@ -1442,7 +1431,7 @@ s32 menuBingoSheetBtn(tagWINDOW_WORK* w) {
         u8 n = cnt;
         if (n == 10) {
             gBingo.f108 = 2;
-            gBingo.epoint = gBingo.epoint + (u8)(n - gBingo.f12d);
+            gBingo.epoint += (u8)(n - gBingo.f12d);
             break;
         }
         int d = n - gBingo.f12d;
@@ -1498,7 +1487,7 @@ s32 menuBingoSheetBtn(tagWINDOW_WORK* w) {
             int j = findPokemonOrder(gBingo.f12c + 1);
             if (j >= 0) {
                 mPokemon[j].flag += 1;
-                if (gBingo.epoint != 0) gBingo.epoint = gBingo.epoint - 1;
+                if (gBingo.epoint != 0) gBingo.epoint -= 1;
             }
             gBingo.f124 = -1;
             if (gBingo.epoint == 0) {
@@ -1619,7 +1608,7 @@ s32 menuBingoSheetBtn(tagWINDOW_WORK* w) {
                 int i;
                 u32 cnt;
                 for (i = 0, cnt = 0; i < 10; i++) {
-                    u8 d = gBingo.lineDone(i);
+                    u8 d = gBingo.lineDone((u16)i);
                     if (d) cnt++;
                     gBingo.lineState[i] = d;
                     gBingo.lineFlag[i] = 0;
@@ -1675,6 +1664,8 @@ s32 menuBingoSheetCur(tagWINDOW_WORK* w) {
 
 s32 menuBingoSheetCtrl(tagWINDOW_WORK* w) {
     enum TsE { TsE0 };
+    const u32* ids;
+    s8 i;
     u32 group = floorGetCurrentGroupID();
     if (group == (u32)fn_80091B98()) {
         switch (w->state) {
@@ -1688,8 +1679,6 @@ s32 menuBingoSheetCtrl(tagWINDOW_WORK* w) {
                 if (sub) {
                     u32* alloc = windowGetAllocPtr(sub);
                     enum TsE n = (enum TsE)(windowGetParam(sub, 2));
-                    s8 i;
-                    const u32* ids;
                     u8 same = 1;
                     for (i = 0, ids = cBingo::MenuBingoMsgIdx; i < n; i++, alloc++, ids++) {
                         if (*alloc != *ids) {
@@ -1821,11 +1810,12 @@ void menuBingoExit(void) {}
 
 void menuBingoMain(void) {
     const u32* top = cBingo::TopCurIdx;
-    u32 again = 1;
+    u32 again;
     int ok = 0;
     int res = 0;
     int st;
-    if (GSfloorGetCurrent() != 0x388) {
+    u32 cmpv = GSfloorGetCurrent();
+    if (cmpv != 0x388) {
         res = gBingo.f134;
         menuOpenCustom(0xC8, 0, &res, 2, 0, 0);
         while (windowGetKeyInfo()->trg != 0x20) {
@@ -1839,7 +1829,8 @@ void menuBingoMain(void) {
         return;
     }
     cBingo* self = &gBingo;
-    s32* pos = &gBingo.f134;
+    volatile s32* pos = &gBingo.f134;
+    again = 1;
     while ((u16)again) {
         gBingo.f138 = 0;
         gBingo.f134 = 0;
@@ -1945,7 +1936,7 @@ void menuBingoMain(void) {
             if (ok < 0) {
                 u8 cur = BIOS->getNo(gBingo.sheet);
                 cur -= 1;
-                u8 idx;
+                u32 idx;
                 do {
                     if (cur != 0) {
                         --cur;
@@ -1957,10 +1948,10 @@ void menuBingoMain(void) {
                 self->SetupSheet(idx);
             } else {
                 u8 cur = BIOS->getNo(gBingo.sheet) - 1;
-                u8 idx;
+                u32 idx;
                 do {
                     if (cur < 10) {
-                        cur = cur + 1;
+                        ++cur;
                     } else {
                         cur = 0;
                     }
@@ -1972,7 +1963,7 @@ void menuBingoMain(void) {
             menuOpen(0xC7, 0);
             menuOpen(0xC9, 0);
             menuOpen(0xCA, 0);
-            menuOpenCustom(0xC8, 0, pos, 0, 0, 0);
+            menuOpenCustom(0xC8, 0, (s32)pos, 0, 0, 0);
             winSeqSetMenu(0xC7, 0x1A5);
             winSeqSetMenu(0xC9, 0x1A9);
             winSeqSetMenu(0xC8, 0x1AD);
@@ -1997,8 +1988,8 @@ void menuBingoMain(void) {
                     }
                     self->makeRandomSheet();
                 }
-                gBingo.mode = again;
                 again = 0;
+                gBingo.mode = again;
                 for (u32 i = 0; i < 10; i++) {
                     if (BIOS->isClear(i)) again++;
                 }
@@ -2081,7 +2072,7 @@ void menuBingoMain(void) {
                 {
                     u32 a = FlashSystemGetFrameFromLabel(0x1F573000, "clear_start");
                     u32 b = FlashSystemGetFrameFromLabel(0x1F573000, "clear_end");
-                    while (a != b) {
+                    while (b != a) {
                         GSthreadSwitch();
                         a = FlashSystemGetNowFrame(0x1F573000);
                     }
@@ -2106,10 +2097,10 @@ void menuBingoMain(void) {
                     if (gBingo.mode == 0) {
                         gBingo.f13c = 0xDAF9;
                     } else {
-                        if (canMoveAny()) {
-                            gBingo.f13c = 0xDAF9;
-                        } else {
+                        if (!(canMoveAny())) {
                             gBingo.f13c = 0xDB37;
+                        } else {
+                            gBingo.f13c = 0xDAF9;
                         }
                     }
                     GSthreadSwitch();
@@ -2168,17 +2159,16 @@ void cBingo::setStepMessage() {
     switch (f144) {
     case 1: {
         f148 = countPokemon();
-        BingoPanel* p = &panel[f134];
-        if (p->state != 0) {
+        if (panel[f134].state != 0) {
             int g = -1;
-            if (p->state != 0) g = BIOS->getGridGrid(sheet, p->idx);
+            if (panel[f134].state != 0) g = ((bingo_bios*)this)->getGridGrid(sheet, panel[f134].idx);
             if (g != 1) break;
             if (f124 == 0) break;
             f13c = 0xDAEA;
             f130 = 0;
             bool open = panel[f134].flag != 0 ? true : false;
             if (!open && panel[f134].state != 0) {
-                switch (BIOS->getGridGrid(sheet, panel[f134].idx)) {
+                switch (((bingo_bios*)this)->getGridGrid(sheet, panel[f134].idx)) {
                 case 1:
                     ball++;
                     bingo_bios::setStaticBall(ball);
@@ -2211,7 +2201,7 @@ void cBingo::setStepMessage() {
             {
                 u32 a = FlashSystemGetFrameFromLabel(0x1F573000, "ball_start");
                 u32 b = FlashSystemGetFrameFromLabel(0x1F573000, "ball_end");
-                while (a != b) {
+                while (b != a) {
                     GSthreadSwitch();
                     a = FlashSystemGetNowFrame(0x1F573000);
                 }
@@ -2227,7 +2217,7 @@ void cBingo::setStepMessage() {
                 menuOpen(0xC7, 0);
                 menuOpen(0xC9, 0);
                 menuOpen(0xCA, 0);
-                if (!noPanelFlagged()) {
+                if (noPanelFlagged()) {
                     s32 tmp = f138;
                     f138 = f134;
                     f134 = tmp;
@@ -2281,10 +2271,14 @@ void cBingo::setStepMessage() {
                 break;
             }
         } else {
-            if (f130 >= 5 || f130 < 3) {
-                f13c = 0xDAEA;
-            } else {
+            switch (f130) {
+            case 3:
+            case 4:
                 f13c = 0xDAF4;
+                break;
+            default:
+                f13c = 0xDAEA;
+                break;
             }
         }
         break;
@@ -2319,7 +2313,7 @@ void cBingo::setStepMessage() {
                 {
                     u32 a = FlashSystemGetFrameFromLabel(0x1F573000, "poke2_start");
                     u32 b = FlashSystemGetFrameFromLabel(0x1F573000, "poke2_end");
-                    while (a != b) {
+                    while (b != a) {
                         GSthreadSwitch();
                         a = FlashSystemGetNowFrame(0x1F573000);
                     }
@@ -2654,7 +2648,7 @@ void cBingo::dispPkmPanel(u32 n, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     idx = findPokemonOrder(n + 1);
     if (idx >= 0) {
         xoff = 0;
-        int cnt = 0;
+        u32 cnt = 0;
         do {
             if (findPokemonOrder(cnt + 1) == -1) break;
             cnt++;
@@ -2703,10 +2697,10 @@ void cBingo::dispPkmPanel(u32 n, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         GSvec2 pos;
         pos.y = 14.0f;
         pos.x = (f32)(xoff + 14);
+        sp->h = 0x2A;
         u16 face = pokemonDataBiosGetStatusFaceMenuSpriteId(mPokemon[idx].pkm.getPokemonDataPtr(), 0);
         u8 save[0x78];
         memcpy(save, sp, 0x78);
-        sp->h = 0x2A;
         sp->w = 0x2A;
         menuFaceDispFromID2(w, sp, (u16)face, &pos);
         memcpy(sp, save, 0x78);
@@ -2784,7 +2778,7 @@ void cBingo::makeRandomSheet() {
         shuf[i].scale = -1.0f;
     }
     for (int i = 0; i < 16; i++) {
-        int j = (u16)HSD_Rand() % 16;
+        s16 j = (u16)HSD_Rand() % 16;
         BingoPanel tmp;
         tmp = shuf[i];
         shuf[i] = shuf[j];
@@ -2839,8 +2833,10 @@ void cBingo::SetupSheet(u32 n) {
         q->idx = i;
         q->flag = 0;
     }
-    u32 status = gamedataGetStatus(0, 1);
-    u8 level = ((bingo_bios*)this)->getLevel(sheet);
+    u8 level;
+    u32 status;
+    status = gamedataGetStatus(0, 1);
+    level = ((bingo_bios*)this)->getLevel(sheet);
     pokemonCreate(&mPokemon[0], ((bingo_bios*)this)->getPanelNo(sheet, 0), level, status);
     mPokemon[0].point = 2;
     mPokemon[0].order = 1;

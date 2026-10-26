@@ -1,9 +1,3 @@
-// STATUS: NOT linkable yet. Needs extra_cflags=["-inline noauto,deferred"]; source is written
-// bottom-to-top (the object has drawHitMdl, drawWalkMdl, makeDisplayListFixedObj, GScolsys2Draw in that
-// order) and needs the inline_depth/inline_max_size pragmas so drawObj is expanded into both callers.
-// fcheck with those flags: LAYOUT OK, CONST OK; drawHitMdl 99.84%, drawWalkMdl 98.98%, GScolsys2Draw
-// 98.41%, makeDisplayListFixedObj 98.11%. Remaining diffs: only saved-register numbering and stack slot
-// order of the face-drawing inline expansions (and two swapped hoisted lbz in drawHitMdl).
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/string.h>
@@ -45,13 +39,13 @@ struct CCD_WALKMDL_HEAD : CCD_TRI_GROUP {};
 
 struct CCD_DRAW_OBJ {
     u8 unk0[0x24];
-    CCD_WALKMDL_HEAD* walk;  // 0x24
-    CCD_HITMDL_HEAD* hit;    // 0x28
+    CCD_WALKMDL_HEAD* walk;
+    CCD_HITMDL_HEAD* hit;
     CCD_TRI_GROUP* group2C;
     CCD_TRI_GROUP* group30;
     CCD_HITMDL_HEAD* hit34;
     CCD_TRI_GROUP* group38;
-    u16 flags;               // 0x3C
+    u16 flags;
     u8 pad3E[2];
 };
 
@@ -73,9 +67,9 @@ struct GScolsysLayer {
 struct GScolsys2Data {
     u32 unk0;
     GScolsysLayer layers[1];
-    u32 cur;     // 0xDC4
-    void* buf;   // 0xDC8
-    void* dl;    // 0xDCC
+    u32 cur;
+    void* buf;
+    void* dl;
 };
 
 struct ColsysDL {
@@ -153,8 +147,8 @@ static inline void drawObj(CCD_DRAW_OBJ* obj, GSmtx* mtx, GSmtx* rot) {
         if (group != 0) {
             Color4 color = {0xFF, 0xFF, 0x00, 0xC0};
             Vec3 v;
-            u8* tri = group->data;
             u32 i;
+            u8* tri = group->data;
             GSgfxDLPrimitiveType(0x90);
             for (i = 0; i < group->count; i++, tri += 0x34) {
                 int j;

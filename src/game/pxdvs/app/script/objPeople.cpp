@@ -1,7 +1,5 @@
 #include <dolphin/types.h>
 
-// Script people commands (0x10..0x72). Unlike objFloor/objHero, the tigaVariant
-// getters were not inlined here: they are emitted as weak functions after cmpPeople.
 #pragma pool_strings off
 #pragma peephole off
 

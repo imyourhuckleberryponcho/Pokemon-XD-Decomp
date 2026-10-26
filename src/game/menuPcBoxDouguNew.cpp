@@ -1,4 +1,3 @@
-// STATUS (dMenu): needs extra_cflags=["-inline noauto,deferred"] (bottom-to-top source). 26/30 exact (3556 of 5460 bytes; LAYOUT/CONST/CALLS/DATA OK); open: printItemListDougu (reg alloc of color/locals), HikidashiCursor (ofs/cur reg swap), hikidasu/suteru (id masking), getItemIDFromMenuPos (caller mask), Hikidashi (loop shape).
 #include <dolphin/types.h>
 #include <game/shared/menu_work.h>
 
@@ -74,13 +73,11 @@ static s32 CursorPos;
 static f32 _RollUpTime;
 static s32 NumValue;
 
-
 static s32 menuPcBoxDouguConfirm(void);
 static s32 _getItemListLineHeight(void);
 static void setExplanationMsgID(u32);
 static void hikidasu(int pos);
 static void suteru(int pos);
-
 
 #define W90(w) (*(u32*)(w)->color)
 extern "C" {
@@ -131,7 +128,6 @@ s32 menuPcBoxDouguConfirmDrawCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 static s32 _getItemListLineHeight(void) {
     return 0x22;
 }
-
 
 static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color);
 static u32 getItemNameMsg(u16 id);
@@ -439,6 +435,7 @@ s32 menuPcBoxDouguHikidasuDrawItemText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 }
 
 static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color) {
+    s16 w2;
     s32 idx;
     s32 last;
     s32 scroll;
@@ -476,18 +473,18 @@ static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color)
             if (name != 0) {
                 GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, y, color, name);
             }
-            s32 cmpv = getItemKind(id);
+            u32 cmpv = getItemKind(id);
             if (cmpv != 5) {
                 GSmsgPrint2(winSpriteGetLayerID(w, sp), xAdj, y, color, 0x428F);
                 msgctrlSetValue(0x34, getItemNumFromMenuPos(idx));
-                s16 w2 = GSmsgGetRect(0x4270) >> 16;
+                w2 = GSmsgGetRect(0x4270) >> 16;
                 GSmsgPrint2(winSpriteGetLayerID(w, sp), 0x11A - w2, y, color, 0x4270);
             }
         }
     }
     if (row < last) {
-        id = row * _getItemListLineHeight() - scroll;
-        GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, id, (u16)color, 0x3BBA);
+        id = row * _getItemListLineHeight();
+        GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, (id - scroll), (u16)color, 0x3BBA);
     }
 }
 

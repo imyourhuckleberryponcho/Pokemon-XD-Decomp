@@ -1,5 +1,5 @@
-// Compiled as C with deferred inlining (see configure.py), which emits functions in
-// reverse source order.
+
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -66,8 +66,8 @@ HSD_SList* HSD_SListPrepend(HSD_SList* list, void* data) {
     return prev;
 }
 
-// Stand-in for list functions that were dead-stripped from the final link; it makes the
-// "prev" assert string come before "list" in .sdata2, as in the original.
+
+
 HSD_SList* HSD_SListAllocAndPrepend(HSD_SList* list, void* data) {
     HSD_SList* prev = (HSD_SList*)HSD_ObjAlloc(&s_alloc_data);
     if (prev == NULL) {

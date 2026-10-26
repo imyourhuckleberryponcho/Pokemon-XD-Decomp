@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Variation-specific move animations: variation, move ID and its resources.
 typedef struct WazaExtWzxEntry {
     u8 variation;
     u8 pad1;

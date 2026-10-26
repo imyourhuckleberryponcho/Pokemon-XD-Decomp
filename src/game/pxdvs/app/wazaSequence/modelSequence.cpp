@@ -30,7 +30,6 @@ enum GSmodelAnimType {
     GS_ANIM_TYPE_1
 };
 
-// From the Dolphin SDK's OSFastCast.h (GQR3 is set up for u16 conversion).
 static inline u16 __OSf32tou16(register f32 inF) {
     u16 tmp;
     register u16* tmpPtr = &tmp;
@@ -49,7 +48,6 @@ struct MotionEntry {
     s32 index;
 };
 
-// One animation section (0xD0 bytes). Section 16 holds the alternate (flying) motion set.
 struct MotionSection {
     u8 pad0[4];
     s32 count;
@@ -63,8 +61,6 @@ struct ColorInfo {
     s32 swap[4];
     u8 mod[4];
 };
-
-
 
 struct PkxEntry {
     u32 a;
@@ -327,7 +323,6 @@ public:
     static void Unload(u8* data);
     static int Load(u8* data, u32 id, u32 variant);
 
- // First motion entry of a section that has a non-zero type.
     static int FirstMotion(const MotionSection* s) {
         const MotionEntry* m = s->motions;
         for (int i = s->count; i > 0; i--, m++) {
@@ -338,7 +333,6 @@ public:
         return 0;
     }
 
- // Idle motion of the current state (flying uses the alternate set when present).
     int IdleMotion() const {
         const MotionSection* s = m_sections;
         if ((m_flags & 1) && m_modelID > 0x10) {
@@ -398,7 +392,6 @@ public:
     GSparticleGen* m_sleepGen;
 };
 
-// ---
 void _eyeAnimEnded(_GSmodel* model, _GSmodelAnimCBData* data) {
     u8 matched = 0;
     s32 flags = data->flags;
@@ -462,7 +455,6 @@ void _eyeAnimEnded(_GSmodel* model, _GSmodelAnimCBData* data) {
     }
 }
 
-// ---
 void _mouthAnimEnded(_GSmodel* model, _GSmodelAnimCBData* data) {
     s32 flags = data->flags;
     if (((flags & 8) || (flags & 2)) && !(flags & 4)) {
@@ -507,7 +499,6 @@ void _mouthAnimEnded(_GSmodel* model, _GSmodelAnimCBData* data) {
     }
 }
 
-// ---
 void _sequenceModelAnimEndedCallback(_GSmodel* model, _GSmodelAnimCBData* data) {
     s32 flags = data->flags;
     if ((flags & 1) && !(flags & 8) && !(flags & 4)) {
@@ -518,7 +509,8 @@ void _sequenceModelAnimEndedCallback(_GSmodel* model, _GSmodelAnimCBData* data) 
         {
             if (model == seq->m_model && (seq->m_flags & 4) != 4) {
                 MotionSection* section = &seq->m_sections[seq->m_section];
-                u16 timer = seq->m_timer;
+                s32 rf_t = seq->m_timer;
+                u16 timer = rf_t;
                 if (timer != 0) {
                     seq->m_timer = timer - 1;
                     seq->DoDefaultAnimation(GS_ANIM_TYPE_0, false);
@@ -550,14 +542,12 @@ void _sequenceModelAnimEndedCallback(_GSmodel* model, _GSmodelAnimCBData* data) 
     }
 }
 
-// ---
 void sequenceAnimEndCallback(_GSmodel* model, _GSmodelAnimCBData* data) {
     _sequenceModelAnimEndedCallback(model, data);
     _eyeAnimEnded(model, data);
     _mouthAnimEnded(model, data);
 }
 
-// ---
 ModelSequence* New_ModelSequence(u16 id) {
     ModelSequence* seq = new ModelSequence(id);
     if (seq == 0) {
@@ -572,7 +562,6 @@ ModelSequence* New_ModelSequence(u16 id) {
     return seq;
 }
 
-// ---
 ModelSequence* New_ModelSequence(u16 id, u32 variant, bool rare) {
     ModelSequence* seq = new ModelSequence(id, variant, rare);
     if (seq == 0) {
@@ -587,14 +576,12 @@ ModelSequence* New_ModelSequence(u16 id, u32 variant, bool rare) {
     return seq;
 }
 
-// ---
 extern "C" {
 int ModelSequence_Load(u8* data, u32 id, u32 variant) {
     return ModelSequence::Load(data, id, variant);
 }
 }
 
-// ---
 #pragma dont_inline on
 int ModelSequence::Load(u8* data, u32 id, u32 variant) {
     PkxHeader* hdr = (PkxHeader*)data;
@@ -628,7 +615,6 @@ int ModelSequence::Load(u8* data, u32 id, u32 variant) {
 }
 #pragma dont_inline reset
 
-// ---
 void ModelSequence::Unload(u8* data) {
     PkxHeader* hdr = (PkxHeader*)data;
     if (hdr->model != 0) {
@@ -641,7 +627,6 @@ void ModelSequence::Unload(u8* data) {
     }
 }
 
-// ---
 ModelSequence::ModelSequence(u16 id) {
     m_unk3C = 0;
     m_seed = 0;
@@ -715,7 +700,6 @@ ModelSequence::ModelSequence(u16 id) {
     }
 }
 
-// ---
 ModelSequence::ModelSequence(u16 id, u32 variant, bool rare) {
     u32 resA;
     u32 resB;
@@ -843,13 +827,11 @@ ModelSequence::ModelSequence(u16 id, u32 variant, bool rare) {
     }
 }
 
-// ---
 ModelSequence::~ModelSequence() {
     FreeAllWaza();
     FreeData();
 }
 
-// ---
 void ModelSequence::GetPosition(GSvec* pos) {
     if (m_model != 0) {
         GSmodelGetPosition(m_model, pos);
@@ -860,7 +842,6 @@ void ModelSequence::GetPosition(GSvec* pos) {
     pos->z = m_position.z;
 }
 
-// ---
 void ModelSequence::GetRotation(GSvec* rot) {
     if (m_model != 0) {
         GSmodelGetRotation(m_model, rot);
@@ -871,7 +852,6 @@ void ModelSequence::GetRotation(GSvec* rot) {
     rot->z = m_rotation.z;
 }
 
-// ---
 void ModelSequence::GetScale(GSvec* scale) {
     if (m_model != 0) {
         GSmodelGetScale(m_model, scale);
@@ -882,14 +862,12 @@ void ModelSequence::GetScale(GSvec* scale) {
     scale->z = m_scale.z;
 }
 
-// ---
 void ModelSequence::ResetPosition() {
     if (m_model != 0) {
         GSmodelSetPosition(m_model, &m_position);
     }
 }
 
-// ---
 void ModelSequence::SetPosition(GSvec* pos) {
     m_position.x = pos->x;
     m_position.y = pos->y;
@@ -899,14 +877,12 @@ void ModelSequence::SetPosition(GSvec* pos) {
     }
 }
 
-// ---
 void ModelSequence::ResetRotation() {
     if (m_model != 0) {
         GSmodelSetRotation(m_model, &m_rotation);
     }
 }
 
-// ---
 void ModelSequence::SetRotation(GSvec* rot) {
     m_rotation.x = rot->x;
     m_rotation.y = rot->y;
@@ -922,14 +898,12 @@ void ModelSequence::SetRotation(GSvec* rot) {
     }
 }
 
-// ---
 void ModelSequence::ResetScale() {
     if (m_model != 0) {
         GSmodelSetScale(m_model, &m_scale);
     }
 }
 
-// ---
 void ModelSequence::SetScale(GSvec* scale) {
     m_scale.x = scale->x;
     m_scale.y = scale->y;
@@ -939,14 +913,12 @@ void ModelSequence::SetScale(GSvec* scale) {
     }
 }
 
-// ---
 void ModelSequence::SetVisibility(bool visible) {
     bool changed = m_visible != visible;
     m_visible = visible;
     UpdateVisibility(changed);
 }
 
-// ---
 u8 ModelSequence::LoadData(u8* data) {
     GSpart* part;
     s32 list;
@@ -1032,12 +1004,12 @@ u8 ModelSequence::LoadData(u8* data) {
         m_unkAC = archive;
         memcpy(m_unkA8, body, ALIGN32(hdr->size));
         DCFlushRange(m_unkA8, ALIGN32(hdr->size));
-        HSD_ArchiveParse(archive, (u8*)m_unkA8, hdr->size);
+        s16 rf_t = hdr->size;
+        HSD_ArchiveParse(archive, (u8*)m_unkA8, rf_t);
     }
     loadModel(archive, 0x4E20, 0, resID);
     GSresIsUniqueID(0x4E20, resID, 0);
-    m_model = (_GSmodel*)GSresGetResource(0x4E20, resID);
-    if (m_model == 0) {
+    if ((m_model = (_GSmodel*)GSresGetResource(0x4E20, resID)) == 0) {
         return 0;
     }
     GSmodelSetGroundPlane(m_model, 0, 0.0f);
@@ -1108,7 +1080,6 @@ u8 ModelSequence::LoadData(u8* data) {
     return 1;
 }
 
-// ---
 void ModelSequence::FreeData() {
     ModelSequence* parent = m_parent;
     if (parent != 0 && parent->m_unk61 != 0) {
@@ -1177,7 +1148,6 @@ void ModelSequence::FreeData() {
     m_model = 0;
 }
 
-// ---
 void ModelSequence::DestroyParticles(bool children, bool restart) {
     if (m_unk98 != 0) {
         GSparticleDestroyAllGenerators(m_unk98, children);
@@ -1191,7 +1161,6 @@ void ModelSequence::DestroyParticles(bool children, bool restart) {
     }
 }
 
-// ---
 void ModelSequence::UpdateVisibility(bool changed) {
     if (m_model != 0) {
         GSmodelSetVisibility(m_model, m_visible);
@@ -1215,7 +1184,6 @@ void ModelSequence::UpdateVisibility(bool changed) {
     }
 }
 
-// ---
 void ModelSequence::SetStatus(u8 status) {
     switch (status) {
     case 1:
@@ -1230,7 +1198,6 @@ void ModelSequence::SetStatus(u8 status) {
     }
 }
 
-// ---
 void ModelSequence::ResetStatus(u8 status) {
     switch (status) {
     case 1:
@@ -1245,7 +1212,6 @@ void ModelSequence::ResetStatus(u8 status) {
     }
 }
 
-// ---
 void ModelSequence::DoModelAnimation(int section) {
     if (section == 0) {
         DoDefaultAnimation(GS_ANIM_TYPE_1, false);
@@ -1274,7 +1240,6 @@ void ModelSequence::DoModelAnimation(int section) {
     }
 }
 
-// ---
 void ModelSequence::SetInitFlags() {
     WakeUp();
     UnFreeze();
@@ -1283,7 +1248,6 @@ void ModelSequence::SetInitFlags() {
     m_flags = 0;
 }
 
-// ---
 void ModelSequence::SetDefaultFlags() {
     WakeUp();
     UnFreeze();
@@ -1291,7 +1255,6 @@ void ModelSequence::SetDefaultFlags() {
     SetVisibility(true);
 }
 
-// ---
 void ModelSequence::SetFlags(u8 flags) {
     if (flags & 2) {
         Sleep();
@@ -1311,7 +1274,6 @@ void ModelSequence::SetFlags(u8 flags) {
     m_flags = flags;
 }
 
-// ---
 f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec* out) {
     ModelSequence* seq = (ModelSequence*)user;
     out->x = seq->m_look.x;
@@ -1320,9 +1282,9 @@ f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec
     return 1.0f;
 }
 
-// ---
 void ModelSequence::UpdateLookAt() {
     if (m_unk61 != 0) {
+        GSvec projCopy;
         GSvec step;
         GSvec dir;
         ModelSequence* target = m_unk78;
@@ -1342,13 +1304,13 @@ void ModelSequence::UpdateLookAt() {
             }
             f32* mtx = GSmodelGetMatrixPtr(m_model);
             GSvec right;
-            right.x = mtx[0];
             right.y = mtx[4];
             right.z = mtx[8];
+            right.x = mtx[0];
             PSVECNormalize(&right, &right);
             GSvec up;
-            up.x = mtx[1];
             up.y = mtx[5];
+            up.x = mtx[1];
             up.z = mtx[9];
             PSVECNormalize(&up, &up);
             GSvec myPos;
@@ -1363,7 +1325,7 @@ void ModelSequence::UpdateLookAt() {
             f32 pitch = -(f32)asin(dotUp);
             GSvec proj;
             PSVECScale(&up, &proj, dotUp);
-            GSvec projCopy = proj;
+            projCopy = proj;
             PSVECSubtract(&dir, &projCopy, &dir);
             PSVECNormalize(&dir, &dir);
             f32 dotRight = PSVECDotProduct(&right, &dir);
@@ -1398,7 +1360,6 @@ void ModelSequence::UpdateLookAt() {
     }
 }
 
-// ---
 void ModelSequence::Update(f32 dt) {
     if (m_unk64 != 0 && m_unk62 != 0) {
         void* camera = m_camera ? m_camera : GScameraGetActiveCamera();
@@ -1463,7 +1424,6 @@ void ModelSequence::Update(f32 dt) {
     }
 }
 
-// ---
 void ModelSequence::Talk() {
     if (m_talkAnim->enabled != 0 && !(m_flags & 0x40)) {
         wazaSequenceSysPartAnimationStart(m_model, m_talkAnim);
@@ -1471,7 +1431,6 @@ void ModelSequence::Talk() {
     }
 }
 
-// ---
 void ModelSequence::DoAnimation(int index, enumSectionMotionType type, bool restart) {
     f32 frame = 0.0f;
     s32 animType;
@@ -1519,7 +1478,6 @@ void ModelSequence::DoAnimation(int index, enumSectionMotionType type, bool rest
     GSmodelStartAnimation(m_model);
 }
 
-// ---
 void ModelSequence::DoDefaultAnimation(GSmodelAnimType type, bool restart) {
     if (!(m_flags & 8) && !(m_flags & 4)) {
         GSmodelSetAnimEndedCallback(m_model, sequenceAnimEndCallback, this);
@@ -1544,7 +1502,6 @@ void ModelSequence::DoDefaultAnimation(GSmodelAnimType type, bool restart) {
     }
 }
 
-// ---
 void ModelSequence::Sleep() {
     if (!(m_flags & 2)) {
         if (m_sleepAnim->enabled != 0 && m_mouthState != 2) {
@@ -1577,7 +1534,6 @@ void ModelSequence::Sleep() {
     }
 }
 
-// ---
 void ModelSequence::WakeUp() {
     if (m_flags & 2) {
         if (m_wakeAnim->enabled != 0 && m_mouthState == 2) {
@@ -1593,7 +1549,6 @@ void ModelSequence::WakeUp() {
     }
 }
 
-// ---
 void ModelSequence::Freeze() {
     if (!(m_flags & 4)) {
         m_flags |= 4;
@@ -1622,7 +1577,6 @@ void ModelSequence::Freeze() {
     }
 }
 
-// ---
 void ModelSequence::UnFreeze() {
     if (m_flags & 4) {
         m_flags ^= 4;
@@ -1634,7 +1588,6 @@ void ModelSequence::UnFreeze() {
     }
 }
 
-// ---
 void ModelSequence::Fly(bool) {
     if (!(m_flags & 1)) {
         m_flags |= 1;
@@ -1642,7 +1595,6 @@ void ModelSequence::Fly(bool) {
     }
 }
 
-// ---
 void ModelSequence::Land() {
     if (m_flags & 1) {
         m_flags &= ~1;
@@ -1651,7 +1603,6 @@ void ModelSequence::Land() {
     }
 }
 
-// ---
 void ModelSequence::CopyState(ModelSequence* src) {
     SetInitFlags();
     if (src != 0) {
@@ -1673,7 +1624,6 @@ void ModelSequence::CopyState(ModelSequence* src) {
     }
 }
 
-// ---
 void ModelSequence::LinkWithWazaSequence(WazaSequence* seq) {
     if (seq == 0) {
         m_section = 0;
@@ -1693,7 +1643,6 @@ void ModelSequence::LinkWithWazaSequence(WazaSequence* seq) {
     }
 }
 
-// ---
 GSpart* ModelSequence::GetPart(enumNullJointName joint) {
     MotionSection* section = &m_sections[m_section];
     s32 index;
@@ -1711,7 +1660,6 @@ GSpart* ModelSequence::GetPart(enumNullJointName joint) {
     return 0;
 }
 
-// ---
 bool ModelSequence::ModelMotionStart() {
     if (m_flags & 8) {
         return false;
@@ -1766,7 +1714,6 @@ bool ModelSequence::ModelMotionStart() {
     return true;
 }
 
-// ---
 static inline f32 SizeScale(const ModelSequence* seq) {
     switch (seq->m_modelSize) {
     case -2:

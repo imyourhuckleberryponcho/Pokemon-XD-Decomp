@@ -1,7 +1,7 @@
 #ifndef _HSD_CLASS_H
 #define _HSD_CLASS_H
 
-// HSD (HAL sysdolphin) class system, shared by the baselib object files.
+
 #include <dolphin/types.h>
 
 #ifdef __cplusplus

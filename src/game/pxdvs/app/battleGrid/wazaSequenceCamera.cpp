@@ -69,7 +69,6 @@ f32 gCurrentFOV = 30.0f;
 s32 gLastMotionType = 5;
 f32 gCurrentFOVTime;
 
-
 extern "C" double atan2(double y, double x);
 
 struct WazaCameraPattern {
@@ -92,8 +91,6 @@ struct TemplateExpFileHeader {
 static inline f32 Lerp(f32 a, f32 b, f32 t) {
     return a + (b - a) * t;
 }
-
-
 
 static inline f32 WazaSqrtf(f32 x) {
     if (x > 0.0f) {
@@ -137,7 +134,6 @@ static inline f32 WazaSqrtf(f32 x) {
     return x;
 }
 
-
 struct FOVTiming {
     s32 count;
     u8 pad4[8];
@@ -152,7 +148,6 @@ struct FOVShot {
     u8 flags;
     u8 timingMode;
 };
-
 
 static inline void FovRange(wazaSequenceCameraParams* params, f32 radius, f32* lowFov, f32* highFov) {
     f32 span = 0.75f * params->size;
@@ -205,7 +200,6 @@ static inline void FovMix(u8 choice, f32* mixStart, f32* mixEnd) {
         *mixEnd = 1.0f;
     }
 }
-
 
 extern "C" void cameraMoveRotationXYZ(int, f32 x, f32 y, f32 z, f32 time);
 
@@ -411,9 +405,6 @@ inline void _wazaSequenceCameraDoAcrossPosition(TemplateExpFileHeader* header, w
     params->middleLength = 0.5f * (params->nearLength + params->farLength);
 }
 
-// NXXJ01.map: the Whaloh/Fixed/Still/Around/Across/GetDistance/GetHeight helpers above were real
-// functions inlined here (UNUSED in the map). Remaining diff: saved-register order (target: timing r29,
-// params r30, reverse r31) and the Still case computing its lerps as (max - min) * rand + min.
 void _wazaSequenceCameraDoPosition(ModelSequence* modelSequence, wazaSequenceCameraParams* params,
                                    f32 scale, bool reverse) {
     TemplateExpFileHeader* timing =
@@ -442,7 +433,6 @@ void _wazaSequenceCameraDoPosition(ModelSequence* modelSequence, wazaSequenceCam
         break;
     }
 }
-
 
 void _wazaSequenceCameraDoDollyPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
                                         f32 scale, bool reverse) {
@@ -538,7 +528,6 @@ void _wazaSequenceCameraDoDollyPosition(TemplateExpFileHeader* header, wazaSeque
     params->middleLength = WazaSqrtf(distance0 * distance0 + height * height);
     params->farLength = WazaSqrtf(farDistance * farDistance + height * height);
 }
-
 
 void _wazaSequenceCameraDoFOV(ModelSequence* modelSequence, wazaSequenceCameraParams* params,
                               int flags, f32 scale) {
@@ -663,7 +652,6 @@ void _wazaSequenceCameraDoFOV(ModelSequence* modelSequence, wazaSequenceCameraPa
     }
 }
 
-
 void _wazaSequenceCameraGetFOVRange(wazaSequenceCameraParams* params, f32* lowFov, f32* highFov,
                                     f32 radius) {
     f32 span = 0.75f * params->size;
@@ -687,7 +675,6 @@ void _wazaSequenceCameraGetFOVRange(wazaSequenceCameraParams* params, f32* lowFo
         *highFov = 85.0f;
     }
 }
-
 
 f32 _wazaSequenceCameraSelectDuration(u8 mode, f32* thresholds, f32 duration) {
     f32 random;
@@ -783,7 +770,6 @@ f32 _wazaSequenceCameraSelectDuration(u8 mode, f32* thresholds, f32 duration) {
     }
     return duration;
 }
-
 
 static inline void SelectRandomMotion(s32* motion, f32 interval, u8 m0, u8 m1, u8 m2, u8 m3) {
     for (;;) {
@@ -895,7 +881,6 @@ void _wazaSequenceCameraSelectMotion(ModelSequence* modelSequence, WazaSequence*
     interval = 1.0f / (f32)count;
     SelectRandomMotion(motion, interval, option0, option1, option2, option3);
 }
-
 
 void _wazaSequenceCameraCalculateParams(ModelSequence* modelSequence, int flags,
                                         wazaSequenceCameraParams* params) {

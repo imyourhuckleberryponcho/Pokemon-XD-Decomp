@@ -49,7 +49,6 @@ u8 fightTrainerAiSelectFightActionItem(FIGHT_TRAINER* trainer, FightOutPokemon* 
     u16 items[30];
     FightOutPokemon* active[8];
     fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
- // Preserve the retail flag logic: both initialization and the loop write zero.
     allStatsHigh = 0;
     itemCount = fightTrainerGetTemotiNormalItemDataIdAry(trainer, items, 30, 1);
     if (itemCount == 0) return 0;
@@ -105,7 +104,6 @@ u8 fightTrainerAiSelectFightActionItem(FIGHT_TRAINER* trainer, FightOutPokemon* 
         if (values[selected] > 0) break;
     }
     if (selected >= itemCount) return 0;
- // Retail checks the maximum-index result but keeps the first positive entry.
     if (fightTrainerAiGetValueAryMaxBanme(values, itemCount, 1) < 0) return 0;
     u16 item = items[selected];
     if (item == 0) return 0;

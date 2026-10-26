@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// This unit was built optimizing for size (uses stmw/lmw).
 #pragma optimize_for_size on
 
 struct FightItem;

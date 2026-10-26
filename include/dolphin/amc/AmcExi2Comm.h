@@ -39,8 +39,6 @@ void EXI2_Init(volatile unsigned char **inputPendingPtrRef, EXICallback monitorC
 // ---------------------------------------------------------------------------
 void		EXI2_EnableInterrupts( void );
 
-
-
 // ---------------------------------------------------------------------------
 //
 // int EXI2_Poll( void );
@@ -50,8 +48,6 @@ void		EXI2_EnableInterrupts( void );
 //
 // ---------------------------------------------------------------------------
 int			EXI2_Poll( void );
-
-
 
 // ---------------------------------------------------------------------------
 //
@@ -64,8 +60,6 @@ int			EXI2_Poll( void );
 // ---------------------------------------------------------------------------
 AmcExiError	EXI2_ReadN( void *bytes, unsigned long length);
 
-
-
 // ---------------------------------------------------------------------------
 //
 // AmcExiError EXI2_WriteN( const void *bytes, unsigned long length );
@@ -76,8 +70,6 @@ AmcExiError	EXI2_ReadN( void *bytes, unsigned long length);
 //
 // ---------------------------------------------------------------------------
 AmcExiError	EXI2_WriteN( const void *bytes, unsigned long length);
-
-
 
 // ---------------------------------------------------------------------------
 //
@@ -90,8 +82,6 @@ AmcExiError	EXI2_WriteN( const void *bytes, unsigned long length);
 // ---------------------------------------------------------------------------
 void		EXI2_Reserve( void );
 
-
-
 // ---------------------------------------------------------------------------
 //
 // void EXI2_Unreserve( void );
@@ -102,8 +92,6 @@ void		EXI2_Reserve( void );
 //
 // ---------------------------------------------------------------------------
 void		EXI2_Unreserve( void );
-
-
 
 // ---------------------------------------------------------------------------
 //

@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Item IDs usable in Colosseum battles (item tool list).
 extern "C" {
 
 u16 itemtoolbattle[] = {

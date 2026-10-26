@@ -1,7 +1,5 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
 #pragma peephole off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -19,8 +17,6 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 enum ASM { ASM_draft_dummy };
 
 extern "C" {
-// ---- draft declarations ----
-
 
 extern "C" {
 void flcalcBezier3(void *p0, void *p1, f32 p2);
@@ -55,11 +51,11 @@ void flcalcBezier3(void *p0, void *p1, f32 p2) {
 
 extern "C" {
 void flcalcConvFlashMatrix(void *p0, void *p1) {
-    M2C_FIELD((u16)p0, f32 *, 0) = (f32) ((f32) M2C_FIELD((u16)p1, s32 *, 0) / 65536.0f);
-    M2C_FIELD(p0, f32 *, 4) = (f32) ((f32) M2C_FIELD(p1, s32 *, 4) / 65536.0f);
+    M2C_FIELD(p0, f32 *, 4) = (f32) ((f32) M2C_FIELD((u8)p1, s32 *, 4) / 65536.0f);
     M2C_FIELD(p0, f32 *, 8) = (f32) ((f32) M2C_FIELD(p1, s32 *, 8) / 65536.0f);
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0xC) / 65536.0f);
+    M2C_FIELD((u16)p0, f32 *, 0) = (f32) ((f32) M2C_FIELD((u16)p1, s32 *, 0) / 65536.0f);
     M2C_FIELD(p0, f32 *, 0x10) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0x10) / 20.0f);
+    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0xC) / 65536.0f);
     M2C_FIELD(p0, f32 *, 0x14) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0x14) / 20.0f);
 }
 }
@@ -72,8 +68,8 @@ s32 flcalcBlendColor(u8 p0, u8 p1, f32 p2) {
     f32 temp_f3;
 
     temp_f3 = (f32) (p0 >> 0x18U);
-    temp_f30 = (f32) p0;
     temp_f29 = (f32) (u8) (p0 >> 0x10U);
+    temp_f30 = (f32) p0;
     temp_f28 = (f32) (u8) (p0 >> 8U);
     return ((u32) ((p2 * ((f32) (u8) (p1 >> 8U) - temp_f28)) + temp_f28) << 8) | (((u32) ((p2 * ((f32) (u8) (p1 >> 0x10U) - temp_f29)) + temp_f29) << 0x10) | ((u32) ((p2 * ((f32) p1 - temp_f30)) + temp_f30) | ((u32) ((p2 * ((f32) (p1 >> 0x18U) - temp_f3)) + temp_f3) << 0x18)));
 }
@@ -86,12 +82,11 @@ s32 flcalcBlend(s32 p0, s32 p1, f32 p2) {
 }
 
 extern "C" {
-// Flash colour transform: per channel a multiplier (0x100 = 1.0) and an additive term
 struct FlCxform {
-    s16 aMul, aAdd;     // 0x0
-    s16 rMul, rAdd;     // 0x4
-    s16 gMul, gAdd;     // 0x8
-    s16 bMul, bAdd;     // 0xC
+    s16 aMul, aAdd;
+    s16 rMul, rAdd;
+    s16 gMul, gAdd;
+    s16 bMul, bAdd;
 };
 
 void flcalcCreateCxform(void* p0, u32 color) {
@@ -121,8 +116,8 @@ s32 flcalcMultiTransformColor(void *p0, u8 p1) {
     var_r5 = ((u32) ((p1 >> 0x18U) * M2C_FIELD(p0, s16 *, 4)) >> 8U);
     var_r5 += M2C_FIELD((u8)p0, s16 *, 6);
     var_r5 = var_r5 < 0xFFU ? var_r5 : 0xFF;
-    var_r6 = ((u32) ((u8) (p1 >> 0x10U) * M2C_FIELD(p0, s16 *, 8)) >> 8U);
-    var_r6 += M2C_FIELD(p0, s16 *, 0xA);
+    var_r6 = ((u32) ((u8) (p1 >> 0x10U) * M2C_FIELD((u16)p0, s16 *, 8)) >> 8U);
+    var_r6 += M2C_FIELD((u16)p0, s16 *, 0xA);
     var_r6 = var_r6 < 0xFFU ? var_r6 : 0xFF;
     var_r4 = ((u32) ((u8) (p1 >> 8U) * M2C_FIELD(p0, s16 *, 0xC)) >> 8U);
     var_r4 += M2C_FIELD(p0, s16 *, 0xE);
@@ -245,7 +240,6 @@ void flcalcMatrixScale(void *p0, void *p1, void *p2) {
 }
 
 extern "C" {
-// Flash 2x3 matrix {a, b, c, d, tx, ty}
 struct FlMatrix {
     f32 a, b, c, d;
     f32 tx, ty;

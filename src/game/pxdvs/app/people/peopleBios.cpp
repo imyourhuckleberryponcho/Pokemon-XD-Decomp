@@ -1,4 +1,3 @@
-// All 31 functions match GXXE01.
 #include <dolphin/types.h>
 
 struct PeopleWork {
@@ -45,8 +44,6 @@ void gimmickBoxPop();
 void* getHeroPtr__4HeroFv();
 u32 getFollowerGrpID__4HeroFv(void*);
 u32 getFollowerResID__4HeroFv(void*);
-
-// Restores saved people and model state in two passes so attachment targets exist.
 
 void peopleBiosSetTresureID(PeopleWork* work, u32 id);
 bool peopleBiosCheckFlag(PeopleWork* work, u32 flags);

@@ -392,7 +392,6 @@ asm void OSInitContext(register OSContext* context, register u32 pc, register u3
     stw     r0,  OS_CONTEXT_CR(context)
     stw     r0,  OS_CONTEXT_XER(context)
 
-
     stw     r2,  OS_CONTEXT_R2(context)
     stw     r13, OS_CONTEXT_R13(context)
 

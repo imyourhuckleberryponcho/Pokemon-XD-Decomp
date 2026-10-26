@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// One cache block of _fsysBlockByteSize bytes, chained into per-file lists.
 struct FsysBlock {
     FsysBlock* prev;
     FsysBlock* next;
@@ -24,7 +23,6 @@ u32 _fsysBlockByteSize;
 
 BOOL _fsysFreeBlock(FsysBlock** list, u8 all);
 
-// Moves the last block of `from` to the end of `to`.
 void _fsysMoveBlock(FsysBlock** from, FsysBlock** to) {
     FsysBlock* block;
     FsysBlock* last;
@@ -57,7 +55,6 @@ void _fsysMoveBlock(FsysBlock** from, FsysBlock** to) {
     OSRestoreInterrupts(intr);
 }
 
-// Puts `block` (and the blocks chained after it) in front of the list.
 void _fsysAddBlock(FsysBlock** list, FsysBlock* block) {
     FsysBlock* head;
     FsysBlock* last;
@@ -88,7 +85,6 @@ void _fsysFreeBlockAll(FsysBlock** list) {
     }
 }
 
-// Frees the first block of the list, or the last one if `first` is 0.
 BOOL _fsysFreeBlock(FsysBlock** list, u8 first) {
     FsysBlock* block;
     BOOL intr = OSDisableInterrupts();

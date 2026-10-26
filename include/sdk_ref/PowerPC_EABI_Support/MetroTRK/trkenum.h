@@ -5,17 +5,14 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
-//////////// TRK ENUMS /////////////
-// Hardware types.
 typedef enum {
 	HARDWARE_AMC_DDH = 0,
 	HARDWARE_GDEV    = 1,
 	HARDWARE_BBA     = 2,
 } HardwareType;
 
-// DS Error returns.
 typedef enum {
 	DS_NoError        = 0x0,
 	DS_StepError      = 0x1,
@@ -40,21 +37,18 @@ typedef enum {
 	DS_Error800 = 0x800,
 } DSError;
 
-// Where to read/write.
 typedef enum {
 	DS_Stdin  = 0,
 	DS_Stdout = 1,
 	DS_Stderr = 2,
 } DSFileHandle;
 
-// IO returns.
 typedef enum {
 	DS_IONoError = 0,
 	DS_IOError   = 1,
 	DS_IOEOF     = 2,
 } DSIOResult;
 
-// Message command IDs
 typedef enum {
 	DSMSG_Ping        = 0x0,
 	DSMSG_Connect     = 0x1,
@@ -87,7 +81,6 @@ typedef enum {
 	DSMSG_ReplyNAK = 0xFF,
 } MessageCommandID;
 
-// Register commands.
 typedef enum {
 	DSREG_Default   = 0,
 	DSREG_FP        = 1,
@@ -95,7 +88,6 @@ typedef enum {
 	DSREG_Extended2 = 3,
 } DSMessageRegisterOptions;
 
-// Step commands.
 typedef enum {
 	DSSTEP_IntoCount = 0x0,
 	DSSTEP_IntoRange = 0x1,
@@ -137,10 +129,10 @@ typedef enum {
 } ReceiverState;
 
 typedef enum {
-	DSMSGMEMORY_Segmented     = 0x01, /* non-flat addr space */
-	DSMSGMEMORY_Extended      = 0x02, /* > 32-bit data addr */
-	DSMSGMEMORY_Protected     = 0x04, /* non-user memory */
-	DSMSGMEMORY_Userview      = 0x08, /* breakpoints are invisible */
+	DSMSGMEMORY_Segmented     = 0x01,
+	DSMSGMEMORY_Extended      = 0x02,
+	DSMSGMEMORY_Protected     = 0x04,
+	DSMSGMEMORY_Userview      = 0x08,
 	DSMSGMEMORY_Space_program = 0x00,
 	DSMSGMEMORY_Space_data    = 0x40,
 	DSMSGMEMORY_Space_io      = 0x80
@@ -169,13 +161,13 @@ typedef enum {
 	UART_NoError            = 0,
 	UART_UnknownBaudRate    = 1,
 	UART_ConfigurationError = 2,
-	UART_BufferOverflow     = 3, // specified buffer was too small
-	UART_NoData             = 4, // no data available from polling
+	UART_BufferOverflow     = 3,
+	UART_NoData             = 4,
 } UARTErrorOptions;
 
 typedef enum {
-	kBaudHWSet  = -1,  // use HW settings such as DIP switches
-	kBaud300    = 300, // valid baud rates
+	kBaudHWSet  = -1,
+	kBaud300    = 300,
 	kBaud600    = 600,
 	kBaud1200   = 1200,
 	kBaud1800   = 1800,
@@ -192,10 +184,8 @@ typedef enum {
 	kBaud230400 = 230400
 } UARTBaudRate;
 
-////////////////////////////////////
-
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

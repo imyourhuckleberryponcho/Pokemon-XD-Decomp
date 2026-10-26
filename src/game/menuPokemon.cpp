@@ -1,5 +1,3 @@
-// STATUS (snC): ~21/33 exact with extra_cflags=["-inline noauto,deferred"] (written bottom-to-top). DATA: .sdata2 constant order of DrawItem (3.14/30/128) differs, so DOL check would fail until solved.
-// Pokemon list menu (menuPokemon). Written bottom-to-top: -inline noauto,deferred.
 #include <dolphin/types.h>
 #include <game/shared/menu_work.h>
 
@@ -32,27 +30,27 @@ struct PanelInfo {
 };
 
 struct MenuPokemonWork {
-    u8 kind;           // 0x00
-    bool canCancel;    // 0x01
-    u8 f2;             // 0x02
-    u8 f3;             // 0x03
-    s8 side;           // 0x04
-    s8 prevSel;        // 0x05
-    s8 sel;            // 0x06
-    s8 f7;             // 0x07
-    s8 swapSel;        // 0x08
-    u8 pad9[3];        // 0x09
-    s32 mode;          // 0x0C
-    FIGHT_TRAINER* trainer; // 0x10
-    u8 f14;            // 0x14
-    u8 f15;            // 0x15
-    u16 itemSel;       // 0x16
-    u8 listKind;       // 0x18
-    u8 f19;            // 0x19
-    u8 pad1A[2];       // 0x1A
-    s32 f1C;           // 0x1C
-    s32 result;        // 0x20
-    u8 f24;            // 0x24
+    u8 kind;
+    bool canCancel;
+    u8 f2;
+    u8 f3;
+    s8 side;
+    s8 prevSel;
+    s8 sel;
+    s8 f7;
+    s8 swapSel;
+    u8 pad9[3];
+    s32 mode;
+    FIGHT_TRAINER* trainer;
+    u8 f14;
+    u8 f15;
+    u16 itemSel;
+    u8 listKind;
+    u8 f19;
+    u8 pad1A[2];
+    s32 f1C;
+    s32 result;
+    u8 f24;
     u8 pad25[3];
 };
 
@@ -528,7 +526,7 @@ static s32 _menuPokemonActionGive(s8 index, s16 slot, u16 item, u16* outItem) {
         if (heroItemDecItemDataId(hero, item, 1, slot) != 0) {
             winMsgOpen(2, (void*)0x3ACF, 1, 1);
         } else if (heroItemCheckAddItemDataId(hero, have) <= 0) {
-            heroItemAddItemDataId(hero, item, 1, -1);
+            heroItemAddItemDataId(hero, (s32)item, 1, -1);
             winMsgOpen(2, (void*)0x3ACF, 1, 1);
         } else {
             u16 old;
@@ -538,8 +536,8 @@ static s32 _menuPokemonActionGive(s8 index, s16 slot, u16 item, u16* outItem) {
                 *outItem = old;
             }
             pokemonDoItemSoubi(pokemon, item, 1);
-            msgctrlSetValue(0x2E, item);
             msgctrlSetValue(0x2D, old);
+            msgctrlSetValue(0x2E, item);
             winMsgOpen(2, (void*)0x3ACB, 1, 0);
         }
     } else if (heroItemDecItemDataId(hero, item, 1, slot) == 0) {
@@ -645,7 +643,9 @@ static s32 _menuPokemonOpen(u8 kind, u8 a, u8 b, u16 sel, FIGHT_TRAINER* trainer
     case 8:
     default: {
         u32 rate = GSgfxVideoGetVsyncRate();
-        menuCreateOffScreen(rate, 20.0f / rate, 50.0f);
+        f32 duration = rate;
+        duration = 20.0f / duration;
+        menuCreateOffScreen(rate, duration, 50.0f);
         while (menuGetOffScreenFlag() == 0) {
             GSthreadSwitch();
         }
@@ -662,7 +662,9 @@ static s32 _menuPokemonOpen(u8 kind, u8 a, u8 b, u16 sel, FIGHT_TRAINER* trainer
         floorWaitForChange();
         if (_menuPokemon.f3 == 2) {
             u32 rate = GSgfxVideoGetVsyncRate();
-            menuReleaseOffScreen(rate, 20.0f / rate);
+            f32 duration = rate;
+            duration = 20.0f / duration;
+            menuReleaseOffScreen(rate, duration);
         }
     } else {
         _menuPokemonSub(kind, sel, trainer);
@@ -1203,7 +1205,8 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         break;
     case 0x13A:
     case 0x145:
-        winSpriteSetDisp(sp, info->unk2A != 0);
+        s16 rf_t = info->unk2A;
+        winSpriteSetDisp(sp, rf_t != 0);
         break;
     case 0x136:
     case 0x141:

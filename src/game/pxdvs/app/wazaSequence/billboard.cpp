@@ -1,4 +1,3 @@
-// STATUS: 5/5 exact, LAYOUT OK, CONST OK; needs extra_cflags -inline deferred (source bottom-to-top)
 #include <dolphin/types.h>
 
 struct GSgfxLayer;
@@ -94,7 +93,6 @@ struct BillboardData {
     s32 animType;
 };
 
-// Camera-facing quad: a model and/or particle generator placed in front of the camera.
 class billboardEffect : public GSeffect {
 public:
     billboardEffect(u8** stream);

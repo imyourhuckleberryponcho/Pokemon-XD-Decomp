@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 typedef struct FloorChange {
@@ -272,7 +271,6 @@ s32 dbgMenuGetLayerID(void);
 void GSprint(s32 layer, s32 x, s32 y, s32 color, const char* fmt, ...);
 void GSthreadSwitch(void);
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 s32 dbgMenuFloorChange(s32 floorID) {

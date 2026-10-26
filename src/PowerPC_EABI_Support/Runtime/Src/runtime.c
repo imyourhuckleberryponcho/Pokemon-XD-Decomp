@@ -4,7 +4,6 @@
 extern "C" {
 #endif
 
-/* macros for GPR/FPR resting and saving */
 #define SAVE_FPR(reg)    _savefpr_##reg
 #define RESTORE_FPR(reg) _restfpr_##reg
 #define SAVE_GPR(reg)    _savegpr_##reg
@@ -689,7 +688,6 @@ around:
 #endif // clang-format on
 }
 
-
 ASM void __cvt_sll_flt(void) {
 #ifdef __MWERKS__ // clang-format off
 	nofralloc
@@ -862,5 +860,4 @@ func_end:
 #ifdef __cplusplus
 }
 #endif
-
 

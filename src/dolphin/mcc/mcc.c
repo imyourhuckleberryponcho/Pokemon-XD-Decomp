@@ -890,7 +890,6 @@ int MCCNotify(MCC_CHANNEL chID, u32 notify) {
     int unused[3]; // fake but blah
 #endif
 
-
     mccDebugPrint("MCCNotify\n");
     if (!gMccInitialized) {
         gLastError = 1;

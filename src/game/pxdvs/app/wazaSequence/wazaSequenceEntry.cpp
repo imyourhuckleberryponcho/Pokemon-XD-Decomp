@@ -1,6 +1,4 @@
-// Partial: only the empty / trivial entry methods are written so far.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -42,7 +39,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -63,7 +59,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -129,24 +124,24 @@ public:
     virtual void Stop(bool);
     virtual void SetRenderCamera(_GScamera* camera);
 
-    u8 unk04;                         // 0x04
-    u8 unk05;                         // 0x05
-    u8 unk06;                         // 0x06
-    u8 unk07;                         // 0x07
-    u8 unk08;                         // 0x08
-    u8 unk09;                         // 0x09
-    u16 unk0A;                        // 0x0a
-    enumSequenceEntryDataType type;   // 0x0c
-    u8 unk10;                         // 0x10
-    u8 unk11;                         // 0x11
-    u16 unk12;                        // 0x12
-    u8* params;                       // 0x14
-    s32 unk18;                        // 0x18
-    f32 unk1C;                        // 0x1c
-    f32 unk20;                        // 0x20
-    SequenceEntry* child;             // 0x24
-    s32 unk28;                        // 0x28
-    WazaSequence* seq;                // 0x2c
+    u8 unk04;
+    u8 unk05;
+    u8 unk06;
+    u8 unk07;
+    u8 unk08;
+    u8 unk09;
+    u16 unk0A;
+    enumSequenceEntryDataType type;
+    u8 unk10;
+    u8 unk11;
+    u16 unk12;
+    u8* params;
+    s32 unk18;
+    f32 unk1C;
+    f32 unk20;
+    SequenceEntry* child;
+    s32 unk28;
+    WazaSequence* seq;
 
     SequenceEntry(enumSequenceEntryDataType, WazaSequence*, unsigned char**);
     void Link();
@@ -155,7 +150,7 @@ public:
 class EventEntry : public SequenceEntry {
 public:
     bool Update(f32 time);
-public: // draft
+public:
     static s32 Load(unsigned char**);
     s32 Start();
     ~EventEntry();
@@ -163,7 +158,6 @@ public: // draft
     EventEntry(WazaSequence*, unsigned char**);
 };
 
-// ---- draft declarations ----
 class CameraEntry : public SequenceEntry {
 public:
     void Stop(bool);
@@ -174,8 +168,35 @@ public:
     static s32 Load(unsigned char**);
     s32 Start();
 };
+struct EffectKey {
+    union {
+        struct {
+            u8 from[4];
+            u8 to[4];
+        } color;
+        struct {
+            f32 from;
+            f32 to;
+        } value;
+    };
+    f32 duration;
+    u32 unk0C;
+};
+
 class EffectEntry : public SequenceEntry {
 public:
+    GSeffect* m_effect;
+    union {
+        EffectKey* m_keys;
+        f32 m_elapsed;
+    };
+    f32 m_time;
+    u8 m_keyCount;
+    u8 m_curKey;
+    u8 unk3E[2];
+    u8 m_keyed;
+    u8 m_type;
+
     void blurEffectLoad(unsigned char**);
     ~EffectEntry();
     void End();
@@ -322,11 +343,11 @@ struct _GSmodel {
     u8 _draft[1];
 };
 struct billboardEffect {
-    u8 _draft[1];
+    u8 _draft[0x28];
     billboardEffect(unsigned char**);
 };
 struct leafEffect {
-    u8 _draft[1];
+    u8 _draft[0x60];
     leafEffect(unsigned char**, float);
 };
 
@@ -433,55 +454,23 @@ u32 wazaSequenceSysGetModelShadowLight();
 s32 wazaSequenceSysGetModelShadowList();
 }
 GSthread* gSoundThread;
-// ---- draft declarations ----
-
 
 extern "C" {
 extern s32 jtbl_2422;
 }
 
-// ---- draft declarations ----
-
-
-
-
-
-
 extern "C++" {
-
-
-
-
-
 
 extern "C++" {
 extern "C++" {
-
 
 }
 }
-
-
-
-
-
-
-
-
-
-
 
 extern "C++" {
 #pragma push
 #pragma dont_inline on
 extern "C++" {
-
-
-
-
-
-
-
 
 #pragma pop
 }
@@ -489,8 +478,6 @@ extern "C++" {
 
 }
 
-
-
 extern "C++" {
 
 extern "C++" {
@@ -500,25 +487,14 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 
-
+extern "C++" {
+extern "C++" {
 
 extern "C++" {
 extern "C++" {
 
-
 extern "C++" {
 extern "C++" {
-
-
-
-
-
-
-
-
-extern "C++" {
-extern "C++" {
-
 
 extern "C++" {
 extern "C++" {
@@ -527,18 +503,11 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 
-
 extern "C++" {
 extern "C++" {
 
-
 extern "C++" {
 extern "C++" {
-
-
-extern "C++" {
-extern "C++" {
-
 
 extern "C++" {
 extern "C++" {
@@ -546,28 +515,25 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 
+extern "C++" {
+extern "C++" {
 
 extern "C++" {
-// ---- draft declarations ----
-
-
 
 static void _wazaCameraInitShake(WazaSequence* p0, int p1) {
-    volatile f32 sp14;
-    volatile f32 sp1C;
-    f32 sp18;
-    s32 unksp8;
+    GSvec pos;
+    GSvec rot;
     GSpart *temp_r3;
 
     if ((p0 == NULL) || ((u32) M2C_FIELD(p0, u32 *, 0x1C) != 0U)) {
         gCameraShakeModel = NULL;
         return;
     }
-    sp14 = 0.0f;
-    sp18 = 0.0f;
-    sp1C = 0.0f;
-    cameraSetOffsetPosition((GSvec*)((GSvec *) &sp14));
-    cameraSetOffsetRotation((GSvec*)((GSvec *) &sp14));
+    pos.x = 0.0f;
+    pos.y = 0.0f;
+    pos.z = 0.0f;
+    cameraSetOffsetPosition(&pos);
+    cameraSetOffsetRotation(&pos);
     if ((s32) (p1 & 9) == 9) {
         gCameraShakeModel = M2C_FIELD(&gCameraShakeModels, _GSmodel **, 0);
     } else if ((s32) (p1 & 0x11) == 0x11) {
@@ -597,10 +563,10 @@ static void _wazaCameraInitShake(WazaSequence* p0, int p1) {
         GSmodelStartAnimation((_GSmodel*)(gCameraShakeModel));
         temp_r3 = GSmodelGetPart((_GSmodel*)(gCameraShakeModel), 1);
         if (temp_r3 != NULL) {
-            GSpartGetTransform((GSpart*)(temp_r3), (GSvec*)((GSvec *) &sp14), (GSvec*)(&unksp8), (GSvec*)(NULL));
-            PSVECScale((const register Vec*)((Vec *) &sp14), (register Vec*)((Vec *) &sp14), 2.5f);
-            cameraSetOffsetPosition((GSvec*)((GSvec *) &sp14));
-            cameraSetOffsetRotation((GSvec*)(&unksp8));
+            GSpartGetTransform((GSpart*)(temp_r3), &pos, &rot, (GSvec*)(NULL));
+            PSVECScale((const Vec*)&pos, (Vec*)&pos, 2.5f);
+            cameraSetOffsetPosition(&pos);
+            cameraSetOffsetRotation(&rot);
             GSpartFree((GSpart*)(temp_r3));
         }
     }
@@ -718,7 +684,7 @@ CameraEntry::CameraEntry(WazaSequence* p0, unsigned char** p1)
     *p1 = temp_r3 + 0xC;
     M2C_FIELD(this, s32 *, 0x30) = (s32) M2C_FIELD(temp_r3, s32 *, 0);
     temp_r0 = M2C_FIELD(this, s32 *, 0x30);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 0:
         M2C_FIELD(this, f32 *, 0x34) = (f32) M2C_FIELD(temp_r3, f32 *, 4);
         break;
@@ -824,21 +790,21 @@ ModelEntry::ModelEntry(WazaSequence* p0, unsigned char** p1)
     }
     M2C_FIELD(this, s32 *, 0x38) = (s32) M2C_FIELD(temp_r31, s32 *, 0);
     temp_r0 = M2C_FIELD(temp_r31, s32 *, 4);
-    switch (temp_r0) {                              /* switch 1; irregular */
-    case 0:                                         /* switch 1 */
+    switch (temp_r0) {
+    case 0:
         M2C_FIELD(this, s32 *, 0x34) = 0;
         break;
-    case 1:                                         /* switch 1 */
+    case 1:
         M2C_FIELD(this, s32 *, 0x34) = 1;
         break;
     }
     M2C_FIELD(this, s32 *, 0x40) = (s32) M2C_FIELD(temp_r31, s32 *, 8);
     temp_r0_2 = M2C_FIELD(temp_r31, s32 *, 0xC);
-    switch (temp_r0_2) {                            /* switch 2; irregular */
-    case 0:                                         /* switch 2 */
+    switch (temp_r0_2) {
+    case 0:
         M2C_FIELD(this, s32 *, 0x3C) = 0;
         break;
-    case 1:                                         /* switch 2 */
+    case 1:
         M2C_FIELD(this, s32 *, 0x3C) = 1;
         break;
     }
@@ -1100,8 +1066,57 @@ block_21:
 }
 }
 
+struct EffectEntryHeader {
+    u32 type;
+    f32 time;
+    u32 unk08;
+};
 
-EffectEntry::EffectEntry(WazaSequence* p0, unsigned char** p1) : SequenceEntry((enumSequenceEntryDataType)4, p0, p1) { }
+EffectEntry::EffectEntry(WazaSequence* p0, unsigned char** p1) : SequenceEntry((enumSequenceEntryDataType)4, p0, p1) {
+    EffectEntryHeader* hdr;
+    f32* end;
+
+    M2C_FIELD(this, GSeffect**, 0x30) = NULL;
+    M2C_FIELD(this, u32*, 0x34) = 0;
+    M2C_FIELD(this, f32*, 0x38) = 0.0f;
+    M2C_FIELD(this, u8*, 0x3C) = 0;
+    M2C_FIELD(this, u8*, 0x3D) = 0;
+    M2C_FIELD(this, u8*, 0x40) = 0;
+    hdr = (EffectEntryHeader*)*p1;
+    M2C_FIELD(this, u8*, 0x41) = hdr->type;
+    M2C_FIELD(this, f32*, 0x38) = hdr->time;
+    *p1 += sizeof(EffectEntryHeader);
+    switch (hdr->type) {
+    case 0:
+        filterEffectLoad(p1);
+        break;
+    case 6:
+        envMapEffectLoad(p1);
+        break;
+    case 7:
+        blurEffectLoad(p1);
+        break;
+    case 5:
+        M2C_FIELD(this, GSeffect**, 0x30) = (GSeffect*)new leafEffect(p1, hdr->time);
+        M2C_FIELD(this, u8*, 0x3D) = 1;
+        M2C_FIELD(this, u8*, 0x3C) = 0;
+        break;
+    case 9:
+        M2C_FIELD(this, GSeffect**, 0x30) = (GSeffect*)new billboardEffect(p1);
+        M2C_FIELD(this, u8*, 0x3D) = 0;
+        M2C_FIELD(this, u8*, 0x3C) = 0;
+        break;
+    case 1:
+        boneFillEffectLoad(p1);
+        M2C_FIELD(this, u8*, 0x3D) = 0;
+        M2C_FIELD(this, u8*, 0x3C) = 0;
+        break;
+    }
+    end = (f32*)params + unk08;
+    if (end[-1] < 0.00001f) {
+        end[-1] = hdr->time;
+    }
+}
 
 extern "C++" {
 EffectEntry::~EffectEntry() {
@@ -1242,7 +1257,7 @@ bool CameraEntry::Update(float p0) {
 
     M2C_FIELD(this, f32 *, 0x20) = (f32) (M2C_FIELD(this, f32 *, 0x20) + p0);
     temp_r0 = M2C_FIELD(this, s32 *, 0x30);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 0:
         if ((M2C_FIELD(this, f32 *, 0x20) - M2C_FIELD(this, f32 *, 0x1C)) >= M2C_FIELD(this, f32 *, 0x34)) {
             M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), s8 *, 0x15) = 1;
@@ -1313,12 +1328,12 @@ void ModelEntry::SetRenderCamera(_GScamera* camera) {
 
 extern "C++" {
 s32 ModelEntry::Start() {
-    volatile f32 sp14;
+    f32 sp30;
     s32 unksp24;
     s32 unksp18;
     f32 sp38;
     volatile f32 sp34;
-    f32 sp30;
+    volatile f32 sp14;
     s32 unkspC;
     f32 sp10;
     s32 sp8;
@@ -1354,29 +1369,29 @@ s32 ModelEntry::Start() {
         return 1;
     }
     temp_r0 = M2C_FIELD(this, u8 *, 0x11);
-    switch (temp_r0) {                              /* switch 1 */
-    case 1:                                         /* switch 1 */
+    switch (temp_r0) {
+    case 1:
         var_r31 = 1;
         break;
-    case 2:                                         /* switch 1 */
+    case 2:
         var_r31 = 2;
         break;
-    case 3:                                         /* switch 1 */
+    case 3:
         var_r31 = 3;
         break;
-    case 4:                                         /* switch 1 */
+    case 4:
         var_r31 = 4;
         break;
-    case 5:                                         /* switch 1 */
+    case 5:
         var_r31 = 5;
         break;
-    case 6:                                         /* switch 1 */
+    case 6:
         var_r31 = 6;
         break;
-    case 7:                                         /* switch 1 */
+    case 7:
         var_r31 = 7;
         break;
-    default:                                        /* switch 1 */
+    default:
         var_r31 = 0;
         break;
     }
@@ -1455,20 +1470,20 @@ s32 ModelEntry::Start() {
                     M2C_FIELD(this, s8 *, 0x4B) = 1;
                     GSpartFree((GSpart*)(temp_r27_3));
                     if ((u32) var_r31 <= 7U) {
-                        switch (var_r31) {          /* switch 2 */
-                        case 1:                     /* switch 2 */
-                        case 6:                     /* switch 2 */
+                        switch (var_r31) {
+                        case 1:
+                        case 6:
                             GSmodelSetRotation((_GSmodel*)(var_r28), (GSvec*)(&unksp24));
                             break;
-                        case 2:                     /* switch 2 */
-                        case 5:                     /* switch 2 */
+                        case 2:
+                        case 5:
                             GSmodelSetPosition((_GSmodel*)(var_r28), (GSvec*)(&unksp18));
                             break;
-                        case 3:                     /* switch 2 */
+                        case 3:
                             GSmodelSetRotation((_GSmodel*)(var_r28), (GSvec*)(&unksp24));
                             GSmodelSetPosition((_GSmodel*)(var_r28), (GSvec*)(&unksp18));
                             break;
-                        case 0:                     /* switch 2 */
+                        case 0:
                             GSmodelSetRotation((_GSmodel*)(var_r28), (GSvec*)(&unksp24));
                             GSmodelSetPosition((_GSmodel*)(var_r28), (GSvec*)(&unksp18));
                             break;
@@ -1504,25 +1519,25 @@ block_68:
                     GSmodelAttachToGSpart((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSpart*)(var_r30_2), var_r31, ((u16) M2C_FIELD(this, u16 *, 0xA) >> 1U) & 1, 1U);
                     M2C_FIELD(this, s8 *, 0x4B) = 1;
                     if ((u32) var_r31 <= 7U) {
-                        switch (var_r31) {          /* switch 3 */
-                        case 4:                     /* switch 3 */
+                        switch (var_r31) {
+                        case 4:
                             GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &sp30));
                             break;
-                        case 1:                     /* switch 3 */
+                        case 1:
                             GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &sp30));
                             GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp24));
                             break;
-                        case 5:                     /* switch 3 */
+                        case 5:
                             GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp18));
                             break;
-                        case 2:                     /* switch 3 */
+                        case 2:
                             GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &sp30));
                             GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp18));
                             break;
-                        case 6:                     /* switch 3 */
+                        case 6:
                             GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp24));
                             break;
-                        case 3:                     /* switch 3 */
+                        case 3:
                             GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp18));
                             GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp24));
                             break;
@@ -1554,8 +1569,7 @@ block_68:
             M2C_FIELD(this, s32 *, 0x38) = -1;
         }
     }
-    temp_r3_7 = M2C_FIELD(this, s32 *, 0x40);
-    if (((s32) M2C_FIELD(this, s32 *, 0x38) != temp_r3_7) && (temp_r3_7 >= 0)) {
+    if (((s32) M2C_FIELD(this, s32 *, 0x38) != (temp_r3_7 = M2C_FIELD(this, s32 *, 0x40))) && (temp_r3_7 >= 0)) {
         u8 cmpv = GSmodelCanTexAnimate((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)));
         if (cmpv != 0) {
             GSmodelSetTexAnimIndex((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (u32) M2C_FIELD(this, s32 *, 0x40));
@@ -1581,11 +1595,11 @@ block_68:
 
 extern "C++" {
 bool ModelEntry::Update(float p0) {
-    s32 unksp14;
     s32 unksp20;
-    s32 unksp8;
-    volatile s32 temp_r0;
+    s32 unksp14;
     volatile s32 temp_r0_2;
+    volatile s32 temp_r0;
+    s32 unksp8;
     s32 temp_r3;
     u32 var_r30;
     u32 var_r3;
@@ -1615,8 +1629,8 @@ bool ModelEntry::Update(float p0) {
             }
             var_r30 = GSmodelHasAnimationEnded((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)));
         } else {
-            M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-            var_r30 = ((u32) M2C_ERROR(/* unknown instruction: mfcr $r0 */) >> 0x1DU) & 1;
+            M2C_ERROR( );
+            var_r30 = ((u32) M2C_ERROR( ) >> 0x1DU) & 1;
         }
     }
     if (((s32) M2C_FIELD(this, s32 *, 0x38) != (temp_r3 = M2C_FIELD(this, s32 *, 0x40))) && (temp_r3 >= 0)) {
@@ -1626,8 +1640,8 @@ bool ModelEntry::Update(float p0) {
             }
             var_r3 = GSmodelHasTexAnimationEnded((_GSmodel*)(M2C_FIELD((u16)this, _GSmodel **, 0x4C)));
         } else {
-            M2C_ERROR(/* unknown instruction: cror eq, gt, eq */);
-            var_r3 = ((u32) M2C_ERROR(/* unknown instruction: mfcr $r0 */) >> 0x1DU) & 1;
+            M2C_ERROR( );
+            var_r3 = ((u32) M2C_ERROR( ) >> 0x1DU) & 1;
         }
         var_r4 = 0;
         if (((u8) var_r30 != 0) && ((u8) var_r3 != 0)) {
@@ -1667,10 +1681,10 @@ void ModelEntry::Stop(bool p0) {
         }
     } else {
 block_4:
-        M2C_FIELD(this, s32 *, 0x18) = 2;
+        M2C_FIELD((u16)this, s32 *, 0x18) = 2;
         temp_r3 = M2C_FIELD(this, _GSmodel **, 0x4C);
         if (temp_r3 != NULL) {
-            var_r30 = M2C_FIELD(M2C_FIELD(this, s8 **, 0x2C), ModelSequence **, 0x24);
+            var_r30 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), ModelSequence **, 0x24);
             if ((s32) M2C_FIELD(var_r30, s32 *, 8) == 1) {
 
             } else {
@@ -1682,14 +1696,14 @@ block_4:
             GSmodelStopAnimation((_GSmodel*)(temp_r3));
             GSmodelStopTexAnimation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)));
             GSmodelSetVisibility((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), 0U);
-            if ((var_r29 != NULL) && ((s8) M2C_FIELD(this, s8 *, 0x4A) != 0)) {
+            if ((var_r29 != NULL) && ((u8) M2C_FIELD(this, u8 *, 0x4A) != 0)) {
                 GSmodelGetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp20));
                 GSmodelGetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp14));
                 GSmodelGetPosition((_GSmodel*)(var_r29), (GSvec*)(&unksp8));
                 PSVECSubtract((const register Vec*)(&unksp8), (const register Vec*)(&unksp20), (register Vec*)(&unksp8));
-                M2C_FIELD(var_r30, s8 *, 0x58) = 0;
-                if ((s8) M2C_FIELD(this, s8 *, 0x4B) != 0) {
-                    M2C_FIELD(this, s8 *, 0x4B) = 0U;
+                M2C_FIELD(var_r30, u8 *, 0x58) = 0;
+                if ((u8) M2C_FIELD(this, u8 *, 0x4B) != 0) {
+                    M2C_FIELD(this, u8 *, 0x4B) = 0U;
                     GSmodelDetachFromGSpart((_GSmodel*)(var_r29), 0U);
                 }
                 ((ModelSequence*)(var_r30))->ResetPosition();
@@ -1702,7 +1716,7 @@ block_4:
                     GSmodelAddNull((_GSmodel*)(var_r29), (Vec*)(&unksp8), (Vec*)(NULL), (Vec*)(NULL));
                 }
             }
-            if ((s8) M2C_FIELD(this, s8 *, 0x4B) != 0) {
+            if ((u8) M2C_FIELD(this, u8 *, 0x4B) != 0) {
                 GSmodelDetachFromGSpart((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), 0U);
             }
             GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &zeroVector));
@@ -1726,7 +1740,7 @@ s32 ParticleEntry::Start() {
     s32 unksp14;
     s32 unksp20;
     volatile f32 sp10;
-    s32 var_r31;
+    s32 temp_r30_3;
     f32 sp8;
     GSpart *var_r27;
     GSparticleGenerator *temp_r3_3;
@@ -1738,7 +1752,7 @@ s32 ParticleEntry::Start() {
     f32 temp_f1;
     s32 temp_r27;
     s32 temp_r29;
-    s32 temp_r30_3;
+    s32 var_r31;
     f32 spC;
     u16 temp_r3_4;
     u32 temp_r0_2;
@@ -1759,29 +1773,29 @@ s32 ParticleEntry::Start() {
         return 1;
     }
     temp_r0 = M2C_FIELD(this, u8 *, 0x11);
-    switch (temp_r0) {                              /* switch 1 */
-    case 1:                                         /* switch 1 */
+    switch (temp_r0) {
+    case 1:
         var_r31 = 1;
         break;
-    case 2:                                         /* switch 1 */
+    case 2:
         var_r31 = 2;
         break;
-    case 3:                                         /* switch 1 */
+    case 3:
         var_r31 = 3;
         break;
-    case 4:                                         /* switch 1 */
+    case 4:
         var_r31 = 4;
         break;
-    case 5:                                         /* switch 1 */
+    case 5:
         var_r31 = 5;
         break;
-    case 6:                                         /* switch 1 */
+    case 6:
         var_r31 = 6;
         break;
-    case 7:                                         /* switch 1 */
+    case 7:
         var_r31 = 7;
         break;
-    default:                                        /* switch 1 */
+    default:
         var_r31 = 0;
         break;
     }
@@ -1855,9 +1869,9 @@ s32 ParticleEntry::Start() {
             GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
         } else {
             spC = 1.0f;
-            sp10 = 1.0f;
             sp8 = 1.0f;
             GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
+            sp10 = 1.0f;
         }
         M2C_FIELD(this, s32 *, 0x18) = 1;
         M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
@@ -1892,23 +1906,20 @@ block_60:
             GSparticleAttachGeneratorToGSpart((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)((u32) var_r27), (long)(var_r31), (long)(((u16) M2C_FIELD(this, u16 *, 0xA) >> 1U) & 1), (long)(1), (long)(((u32) M2C_FIELD(this, u32 *, 0x34) >> 1U) & 1));
             M2C_FIELD(this, s32 *, 0x40) = 1;
             if ((u32) var_r31 <= 7U) {
-                switch (var_r31) {                  /* switch 2 */
-                case 1:                             /* switch 2 */
+                switch (var_r31) {
+                case 1:
                     GSparticleSetGeneratorRotation((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)(&unksp14));
-                    /* fallthrough */
-                case 4:                             /* switch 2 */
+                case 4:
                     GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
                     break;
-                case 2:                             /* switch 2 */
+                case 2:
                     GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
-                    /* fallthrough */
-                case 5:                             /* switch 2 */
+                case 5:
                     GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)(&unksp20));
                     break;
-                case 3:                             /* switch 2 */
+                case 3:
                     GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)(&unksp20));
-                    /* fallthrough */
-                case 6:                             /* switch 2 */
+                case 6:
                     GSparticleSetGeneratorRotation((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)(&unksp14));
                     break;
                 }
@@ -1940,7 +1951,7 @@ bool ParticleEntry::Update(float p0) {
         M2C_FIELD(this, u32 *, 0x3C) = 0U;
         return 0;
     }
-    if (((s32) M2C_FIELD((M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), u8 **, 0x24)), s32 *, 8) != 1) && !(M2C_FIELD(this, u16 *, 0xA) & 4) && ((s32) M2C_FIELD(this, s32 *, 0x40) == 0)) {
+    if (((s32) M2C_FIELD((M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), u8 **, 0x24)), s32 *, 8) != 1) && !(M2C_FIELD(this, u16 *, 0xA) & 4) && ((s32) (u16)M2C_FIELD(this, s32 *, 0x40) == 0)) {
         M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetPosition((f32*)&unksp20);
         M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetRotation((f32*)&sp14);
         M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetScale((f32*)&sp8);
@@ -2166,7 +2177,7 @@ block_11:
             var_r0 = 0xFF;
         }
         M2C_FIELD(temp_r5, u8 *, 0x1C) = var_r0;
-    case 9:
+    case 1:
 block_59:
         if (((GSeffect*)(M2C_FIELD((u16)this, GSeffect **, 0x30)))->Start() == 0) {
             return 0;
@@ -2234,144 +2245,124 @@ block_52:
         M2C_FIELD(temp_r30, f32 *, 0x5C) = v8[2];
         M2C_FIELD(temp_r30, f32 *, 0x14) = var_f31;
         goto block_59;
-    case 1:
-        M2C_FIELD(M2C_FIELD(this, GSeffect **, 0x30), u8 *, 0x14) = (unsigned char)(var_r30);
+    case -1:
+    case 2:
+    case 3:
+    case 4:
+    case 8:
+        M2C_FIELD(M2C_FIELD((u8)this, GSeffect **, 0x30), u8 *, 0x14) = (unsigned char)(var_r30);
         goto block_59;
-    case -1:    default:
-        return 0;
-    }
-}
-}
-
-extern "C++" {
-bool EffectEntry::Update(f32 p0) {
-    enum TsE { TsE0 };
-    GSeffect *temp_r12;
-    GSeffect *temp_r4;
-    f32 temp_f1;
-    f32 temp_f1_2;
-    f32 temp_f1_3;
-    f32 temp_f2;
-    f32 temp_f2_2;
-    f32 temp_f2_3;
-    f32 temp_f5;
-    f32 var_f4;
-    s32 temp_r0;
-    s32 temp_r0_2;
-    enum TsE temp_r5;
-    u32 temp_r5_2;
-    s32 temp_r4_2;
-    u8 temp_r4_3;
-    u8 var_r3;
-    u8 var_r3_2;
-    u8 *temp_r11;
-
-    M2C_FIELD(this, f32 *, 0x20) = (f32) (M2C_FIELD(this, f32 *, 0x20) + p0);
-    temp_r4 = M2C_FIELD(this, GSeffect **, 0x30);
-    if (temp_r4 == NULL) {
-        return 0;
-    }
-    if ((u8) M2C_FIELD(temp_r4, u8 *, 0) == 0) {
-        return 0;
-    }
-    if ((u8) M2C_FIELD(this, u8 *, 0x40) != 0) {
-        if (((u32) M2C_FIELD(this, u32 *, 0x34) == 0U) || ((u8) M2C_FIELD(this, u8 *, 0x3C) == 0)) {
-            return 0;
-        }
-        M2C_FIELD(this, f32 *, 0x38) = (f32) (M2C_FIELD(this, f32 *, 0x38) + p0);
-        if (M2C_FIELD((M2C_FIELD(this, u32 *, 0x34) + (M2C_FIELD(this, u8 *, 0x3D) * 0x10)), f32 *, 8) >= 0.0f) {
-loop_14:
-            temp_f1 = *(M2C_FIELD(this, u32 **, 0x34) + ((M2C_FIELD(this, u8 *, 0x3D) * 0x10) + 8));
-            if (M2C_FIELD(this, f32 *, 0x38) < temp_f1) {
-                goto block_15;
-            }
-            M2C_FIELD(this, f32 *, 0x38) = (f32) (M2C_FIELD(this, f32 *, 0x38) - temp_f1);
-            M2C_FIELD(this, u8 *, 0x3D) = (u8) (M2C_FIELD(this, u8 *, 0x3D) + 1);
-            temp_r4_2 = M2C_FIELD(this, u8 *, 0x3D);
-            if (temp_r4_2 >= (u8) M2C_FIELD(this, u8 *, 0x3C)) {
-                ((GSeffect*)(M2C_FIELD(this, GSeffect **, 0x30)))->Stop();
-                return 0;
-            }
-            if (*(M2C_FIELD(this, u32 **, 0x34) + (((temp_r4_2 * 0x10) & 0xFF0) + 8)) < 0.0f) {
-                M2C_FIELD(this, f32 *, 0x38) = 0.0f;
-block_15:
-                if (M2C_FIELD((M2C_FIELD(this, u32 *, 0x34) + (M2C_FIELD(this, u8 *, 0x3D) * 0x10)), f32 *, 8) > 0.0f) {
-
-                }
-                goto block_25;
-            }
-            goto loop_14;
-        }
-        M2C_FIELD(this, s32 *, 0x18) = 3;
-        goto block_25;
-    }
-    M2C_FIELD(this, u32 *, 0x34) = (f32) (M2C_BITWISE(f32, M2C_FIELD(this, u32 *, 0x34)) + p0);
-    if ((u8) M2C_FIELD(this, u8 *, 0x3C) != 0) {
-        M2C_FIELD(this, s32 *, 0x18) = 3;
-        goto block_25;
-    }
-    if ((u8) M2C_FIELD(this, u8 *, 0x3D) != 0) {
-        if (M2C_BITWISE(f32, M2C_FIELD(this, u32 *, 0x34)) >= M2C_FIELD(this, f32 *, 0x38)) {
-            return 0;
-        }
-        goto block_25;
-    }
-block_25:
-    temp_r4_3 = M2C_FIELD(this, u8 *, 0x41);
-    switch (temp_r4_3) {
-    case 0:
-        var_f4 = M2C_ERROR(/* Read from unset register $f3 */);
-        temp_r12 = M2C_FIELD(this, GSeffect **, 0x30);
-        temp_r11 = (unsigned char *)(M2C_FIELD(this, u32 *, 0x34) + (M2C_FIELD(this, u8 *, 0x3D) * 0x10));
-        if (M2C_ERROR(/* Read from unset register $f3 */) < 0.0f) {
-            var_f4 = 0.0f;
-        }
-        if (var_f4 > 1.0f) {
-            var_f4 = 1.0f;
-        }
-        var_r3 = 0;
-        temp_f2 = (f32) M2C_FIELD(temp_r11, u8 *, 0);
-        M2C_FIELD(temp_r12, s8 *, 0x19) = (s8) ((var_f4 * ((f32) M2C_FIELD((u16)temp_r11, u8 *, 4) - temp_f2)) + temp_f2);
-        temp_f5 = (f32) M2C_FIELD(temp_r11, u8 *, 1);
-        temp_f2_2 = (f32) M2C_FIELD(temp_r11, u8 *, 2);
-        temp_f2_3 = (f32) M2C_FIELD(temp_r11, u8 *, 3);
-        M2C_FIELD(temp_r12, s8 *, 0x1A) = (s8) ((var_f4 * ((f32) M2C_FIELD(temp_r11, u8 *, 5) - temp_f5)) + temp_f5);
-        M2C_FIELD(temp_r12, s8 *, 0x1B) = (s8) ((var_f4 * ((f32) M2C_FIELD(temp_r11, u8 *, 6) - temp_f2_2)) + temp_f2_2);
-        if (((u8) M2C_FIELD(temp_r12, u8 *, 0x18) == 0) || ((u8) M2C_FIELD(temp_r12, u8 *, 0x14) != 0)) {
-            var_r3 = 1;
-        }
-        var_r3_2 = 0xFF;
-        if (var_r3 != 0) {
-            var_r3_2 = (u8) ((var_f4 * ((f32) M2C_FIELD(temp_r11, u8 *, 7) - temp_f2_3)) + temp_f2_3);
-        }
-        M2C_FIELD(temp_r12, u8 *, 0x1C) = var_r3_2;
-    case 1:
-    case 5:
     case 9:
-block_40:
-        return 1;
-    case 6:
-        temp_r5 = (enum TsE)(M2C_FIELD(this, u32 *, 0x34));
-        temp_r0 = 0x10;
-        temp_r0 *= M2C_FIELD(this, u8 *, 0x3D);
-        temp_f1_2 = *((u8 *)temp_r5 + temp_r0);
-        M2C_FIELD(M2C_FIELD(this, GSeffect **, 0x30), u8 *, 0x18) = (f32) ((M2C_ERROR(/* Read from unset register $f3 */) * (M2C_FIELD((temp_r5 + temp_r0), f32 *, 4) - temp_f1_2)) + temp_f1_2);
-        goto block_40;
-    case 7:
-        temp_r5_2 = M2C_FIELD(this, u32 *, 0x34);
-        temp_r0_2 = 0x10;
-        temp_r0_2 *= M2C_FIELD(this, u8 *, 0x3D);
-        temp_f1_3 = *((u8 *)temp_r5_2 + temp_r0_2);
-        M2C_FIELD(M2C_FIELD(this, GSeffect **, 0x30), u8 *, 0x18) = (f32) ((M2C_ERROR(/* Read from unset register $f3 */) * (M2C_FIELD((temp_r5_2 + temp_r0_2), f32 *, 4) - temp_f1_3)) + temp_f1_3);
-        goto block_40;
     default:
         return 0;
     }
 }
 }
 
+extern "C++" {
+inline u8 EffectLerp(f32 t, f32 from, f32 to) {
+    return t * (to - from) + from;
+}
+
+bool EffectEntry::Update(f32 dt) {
+    f32 t;
+
+    unk20 += dt;
+    if (m_effect == NULL) {
+        return false;
+    }
+    if (!m_effect->m_active) {
+        return false;
+    }
+    if (m_keyed) {
+        if (m_keys == NULL || m_keyCount == 0) {
+            return false;
+        }
+        m_time += dt;
+        if (m_keys[m_curKey].duration >= 0.0f) {
+            while (m_time >= m_keys[m_curKey].duration) {
+                m_time -= m_keys[m_curKey].duration;
+                m_curKey++;
+                if (m_curKey >= m_keyCount) {
+                    m_effect->Stop();
+                    return false;
+                }
+                if (m_keys[m_curKey].duration < 0.0f) {
+                    m_time = 0.0f;
+                    break;
+                }
+            }
+            if (m_keys[m_curKey].duration > 0.0f) {
+                t = m_time / m_keys[m_curKey].duration;
+            } else {
+                t = 1.0f;
+            }
+        } else {
+            unk18 = 3;
+        }
+    } else {
+        t = 1.0f;
+        m_elapsed += dt;
+        if (m_keyCount != 0) {
+            unk18 = 3;
+        } else if (m_curKey != 0) {
+            if (m_elapsed >= m_time) {
+                return false;
+            }
+            t = m_elapsed / m_time;
+        }
+    }
+    switch (m_type) {
+    case 0: {
+        EffectKey* key = &m_keys[m_curKey];
+        u8* fx = (u8*)m_effect;
+        f32 a = t;
+        bool useAlpha;
+        u8 r, g, b, alpha;
+
+        if (t < 0.0f) {
+            a = 0.0f;
+        }
+        if (a > 1.0f) {
+            a = 1.0f;
+        }
+        r = EffectLerp(a, key->color.from[0], key->color.to[0]);
+        g = EffectLerp(a, key->color.from[1], key->color.to[1]);
+        b = EffectLerp(a, key->color.from[2], key->color.to[2]);
+        alpha = EffectLerp(a, key->color.from[3], key->color.to[3]);
+        fx[0x19] = r;
+        fx[0x1A] = g;
+        fx[0x1B] = b;
+        useAlpha = false;
+        if (fx[0x18] == 0 || fx[0x14] != 0) {
+            useAlpha = true;
+        }
+        fx[0x1C] = useAlpha ? alpha : 0xFF;
+        break;
+    }
+    case 6: {
+        EffectKey* key = &m_keys[m_curKey];
+        *(f32*)((u8*)m_effect + 0x18) = t * (key->value.to - key->value.from) + key->value.from;
+        break;
+    }
+    case 7: {
+        EffectKey* key = &m_keys[m_curKey];
+        *(f32*)((u8*)m_effect + 0x18) = t * (key->value.to - key->value.from) + key->value.from;
+        break;
+    }
+    case 1:
+    case 5:
+    case 9:
+        break;
+    case -1:
+    default:
+        return false;
+    }
+    return true;
+}
+}
+
 void EffectEntry::End() {
- // 0x34 key table (16-byte keys, start time at +8), 0x3C key count, 0x3D current key, 0x40 active
     u8* keys;
     if (*((u8*)this + 0x40) != 0 && *(u8**)((u8*)this + 0x34) != NULL) {
         if (*((u8*)this + 0x3C) != 0) {
@@ -2432,7 +2423,7 @@ s32 SoundEntry::Start() {
     }
     if (temp_r3 & 2) {
         temp_r0 = temp_r3 & 0xC;
-        switch (temp_r0) {                          /* irregular */
+        switch (temp_r0) {
         case 4:
             var_f31 = -1.0f;
             break;
@@ -2548,65 +2539,64 @@ void SoundEntry::Stop(bool p0) {
 }
 
 s32 EventEntry::Start() {
-    ModelSequence *temp_r5;
-    ModelSequence *var_r3;
-    u32 temp_r0;
+    ModelSequence* target = M2C_FIELD(seq, ModelSequence**, 0x24);
+    ModelSequence* model;
 
-    temp_r5 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), ModelSequence **, 0x24);
-    if ((s32) M2C_FIELD(temp_r5, s32 *, 8) == 1) {
-        var_r3 = temp_r5;
+    if (M2C_FIELD(target, s32*, 8) == 1) {
+        model = target;
     } else {
-        var_r3 = NULL;
+        model = NULL;
     }
-    temp_r0 = M2C_FIELD(this, u32 *, 0x30);
-    switch (temp_r0) {
+    switch (M2C_FIELD(this, u32*, 0x30)) {
     case 0:
-        if (var_r3 != NULL) {
-            ((ModelSequence*)(var_r3))->Sleep();
+        if (model != NULL) {
+            model->Sleep();
         }
-block_22:
-        M2C_FIELD(this, s32 *, 0x18) = 1;
-        M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
-        return 1;
+        break;
     case 1:
-        if (var_r3 != NULL) {
-            ((ModelSequence*)(var_r3))->WakeUp();
+        if (model != NULL) {
+            model->WakeUp();
         }
-        goto block_22;
+        break;
     case 2:
-        M2C_FIELD(M2C_FIELD(temp_r5, u8 **, 0), s32 (**)(ModelSequence *, s32), 0x28)(temp_r5, 0);
-        goto block_22;
+        target->SetVisibility(false);
+        break;
     case 3:
-        M2C_FIELD(M2C_FIELD(temp_r5, u8 **, 0), s32 (**)(ModelSequence *, s32), 0x28)(temp_r5, 1);
-        goto block_22;
+        target->SetVisibility(true);
+        break;
     case 4:
-        if (var_r3 != NULL) {
-            GSmodelRemoveNull((_GSmodel*)(M2C_FIELD(var_r3, _GSmodel **, 0x94)));
+        if (model != NULL) {
+            GSmodelRemoveNull(M2C_FIELD(model, _GSmodel**, 0x94));
         }
-        goto block_22;
+        break;
     case 5:
-        if (var_r3 != NULL) {
-            ((ModelSequence*)(var_r3))->Fly(0U);
+        if (model != NULL) {
+            model->Fly(false);
         }
-        goto block_22;
+        break;
     case 6:
-        if (var_r3 != NULL) {
-            ((ModelSequence*)(var_r3))->Land();
+        if (model != NULL) {
+            model->Land();
         }
-        goto block_22;
+        break;
     case 7:
-        if (var_r3 != NULL) {
-            ((ModelSequence*)(var_r3))->Freeze();
+        if (model != NULL) {
+            model->Freeze();
         }
-        goto block_22;
+        break;
+    case 8:
+        break;
     case 9:
-        if (var_r3 != NULL) {
-            ((ModelSequence*)(var_r3))->UnFreeze();
+        if (model != NULL) {
+            model->UnFreeze();
         }
-        goto block_22;
+        break;
     default:
         return 0;
     }
+    unk18 = 1;
+    unk20 = unk1C;
+    return 1;
 }
 extern "C++" {
 void EffectEntry::Unload(unsigned char** p0) {
@@ -2681,7 +2671,6 @@ void EffectEntry::Unload(unsigned char** p0) {
             M2C_FIELD(temp_r30_3, GSparticleBank **, 0xC) = NULL;
         }
         *p0 = &(*p0)[(M2C_FIELD(temp_r30_3, s32 *, 8) + 0x1F) & 0xFFFFFFE0];
-        /* fallthrough */
     default:
         return;
     }
@@ -2690,7 +2679,7 @@ void EffectEntry::Unload(unsigned char** p0) {
 
 extern "C++" {
 void SequenceEntry::Link() {
-    u8 sp8;
+    volatile u8 sp8;
     SequenceEntry *temp_r3_4;
     SequenceEntry *temp_r3_5;
     SequenceEntry *var_r31;
@@ -2717,7 +2706,7 @@ void SequenceEntry::Link() {
             M2C_FIELD(this, f32 *, 0x1C) = (f32) *(M2C_FIELD(var_r4, s32 **, 0x9C) + ((M2C_FIELD(temp_r3_3, u8 *, 0x13) * 0xD0) + 0xC + (M2C_FIELD(this, u8 *, 7) * 4)));
         } else {
             sp8 = M2C_FIELD(this, u8 *, 7);
-            M2C_FIELD(this, f32 *, 0x1C) = (f32) M2C_ERROR(/* psq_l unimplemented */);
+            M2C_FIELD(this, f32 *, 0x1C) = (f32) M2C_ERROR( );
         }
     }
     M2C_FIELD(this, f32 *, 0x1C) = (f32) (M2C_FIELD(this, f32 *, 0x1C) - *(M2C_FIELD(this, s32 **, 0x14) + (M2C_FIELD(this, u8 *, 6) * 4)));
@@ -2754,7 +2743,6 @@ loop_19:
     M2C_FIELD(this, SequenceEntry **, 0x28) = NULL;
 }
 }
-
 
 bool EventEntry::Update(f32 time) {
     return false;

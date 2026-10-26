@@ -1,4 +1,3 @@
-// STATUS: 11/11 exact, LAYOUT+CONST OK with extra_cflags=["-O4,s"] (needs configure.py flag; link it).
 #include <dolphin/types.h>
 
 struct FIGHT_FLOOR;

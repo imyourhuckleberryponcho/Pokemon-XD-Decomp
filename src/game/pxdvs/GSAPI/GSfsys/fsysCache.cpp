@@ -1,5 +1,3 @@
-// fsysCache: all 27 functions match (linked). The retail code has bare `return;` statements in value
-// functions (garbage return value) inside doubled null checks; kept as-is for matching.
 #include <dolphin/types.h>
 #include <dolphin/arq.h>
 
@@ -10,18 +8,18 @@ struct FsysTag {
 };
 
 struct FsysCacheManage {
-    FsysCacheManage* prev;   // 0x00
-    FsysCacheManage* next;   // 0x04
-    u8 used;                 // 0x08
-    u8 type;                 // 0x09
-    u8 locked;               // 0x0A
+    FsysCacheManage* prev;
+    FsysCacheManage* next;
+    u8 used;
+    u8 type;
+    u8 locked;
     u8 pad0B;
-    void* addr;              // 0x0C
-    u32 size;                // 0x10
-    u32 prio;                // 0x14
-    u32 uniqueID;            // 0x18
-    u32 group;               // 0x1C
-    u32 id;                  // 0x20
+    void* addr;
+    u32 size;
+    u32 prio;
+    u32 uniqueID;
+    u32 group;
+    u32 id;
 };
 
 struct Fsys {
@@ -34,19 +32,19 @@ struct Fsys {
 struct FsysResHeader;
 
 struct FsysArqTrans {
-    FsysArqTrans* prev;            // 0x00
-    FsysArqTrans* next;            // 0x04
-    u8 used;                       // 0x08
+    FsysArqTrans* prev;
+    FsysArqTrans* next;
+    u8 used;
     u8 pad9[3];
-    ARQRequest request;            // 0x0C
-    void (*callback)(u32);         // 0x2C
-    Fsys* fsys;                    // 0x30
-    FsysResHeader* res;            // 0x34
-    u32 arg0;                      // 0x38
-    u32 arg1;                      // 0x3C
-    u32 arg2;                      // 0x40
-    void* dst;                     // 0x44
-    u32 size;                      // 0x48
+    ARQRequest request;
+    void (*callback)(u32);
+    Fsys* fsys;
+    FsysResHeader* res;
+    u32 arg0;
+    u32 arg1;
+    u32 arg2;
+    void* dst;
+    u32 size;
 };
 
 extern "C" {

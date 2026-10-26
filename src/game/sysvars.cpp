@@ -6,7 +6,6 @@
 
 struct GSgfxLayer;
 
-// Debug settings that can be passed on the command line as "name-value:name-value...".
 struct SystemVars {
     s32 debugSysvars;
     s32 gsMemSize;
@@ -110,7 +109,6 @@ static sysvarsFuncEntry _sysvarsFuncList[] = {
 
 extern "C" {
 
-// Shows all settings on screen for 15 seconds.
 void sysvarsShowDebug(void) {
     GXColor bgColor = { 0, 0, 0, 0xFF };
     GXColor textColor = { 0xFF, 0xFF, 0xFF, 0xFF };

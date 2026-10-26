@@ -1,5 +1,5 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's lobj.c (headers: include/hsd_ref).
+
+
 #define HSD_FILE_NAME "lobj.c"
 
 #include <sysdolphin/baselib/lobj.h>
@@ -8,7 +8,7 @@
 
 #include <sysdolphin/baselib/aobj.h>
 #include <sysdolphin/baselib/class.h>
-#include <sysdolphin/baselib/cobj.h> // IWYU pragma: keep
+#include <sysdolphin/baselib/cobj.h>
 #include <sysdolphin/baselib/forward.h>
 #include <sysdolphin/baselib/list.h>
 #include <sysdolphin/baselib/object.h>
@@ -21,7 +21,7 @@
 
 static void LObjInfoInit(void);
 
-// XD's class info has one more method than the Melee one: update.
+
 typedef struct XD_LObjInfo {
     HSD_LObjInfo parent;
     void (*update)(void* obj, enum_t type, HSD_ObjData* val);
@@ -441,7 +441,7 @@ HSD_LObj* HSD_LObjGetActiveByIndex(s32 idx)
     }
 }
 
-/// @private
+
 static inline void LObjRemoveAnimOne(HSD_LObj* lobj)
 {
     if (lobj != NULL) {
@@ -861,8 +861,9 @@ void HSD_LObjSetupInit(HSD_CObj* cobj)
                 f32 cutoff = lobj->u.spot.cutoff;
                 f32 ref_dist = lobj->u.spot.ref_dist;
                 f32 ref_br = lobj->u.spot.ref_br;
-                u32 dist_func = lobj->u.spot.dist_func;
+                u32 dist_func;
                 u32 spot_func = lobj->u.spot.spot_func;
+                dist_func = lobj->u.spot.dist_func;
                 if (ref_dist < __float_epsilon[0]) {
                     ref_dist = __float_epsilon[0];
                 }
@@ -1011,8 +1012,8 @@ HSD_LObj* HSD_LObjGetCurrentByType(u16 flags)
     return NULL;
 }
 
-/* The original also had a non-inlined, unreferenced copy of HSD_LightID2Index here
-   (linker-stripped); it keeps the "0" assert string / literal numbering in order. */
+
+
 u32 HSD_LightID2IndexDead(GXLightID id)
 {
     u32 index;
@@ -1185,7 +1186,7 @@ void HSD_LObjAddAnimAll(HSD_LObj* lobj, HSD_LightAnim* lanim)
 static void LObjRelease(HSD_Class* o)
 {
     HSD_LObj* lobj = HSD_LOBJ(o);
- ///@todo Unused stack
+
     u8 _[8];
 
     HSD_AObjRemove(lobj->aobj);

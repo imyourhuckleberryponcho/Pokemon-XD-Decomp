@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 extern "C" {
@@ -19,7 +18,6 @@ u32 GSinputButtonsPressed(s32 pad);
 bool menuSubOpenNumberInputDigit(s32, s32* value);
 void menuSubKeyWait(void);
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 s32 dbgMenuMsgTest(s32, s32 item) {

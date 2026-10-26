@@ -212,14 +212,15 @@ void WS_TOKUSEI_SET(void) {
 }
 
 void WS_SUBROUTINE_CALL(void) {
-    FightOutPokemon* def; // @decl
-    FightOutPokemon* o; // @decl
-    u32 move; // @decl
-    u8* cmd; // @decl
-    FightOutPokemon* r; // @decl
-    FightOutPokemon* p; // @decl
-    u8 fightType; // @decl
-    FightPokemon* fp; // @decl
+    FightOutPokemon* def;
+    FightOutPokemon* o;
+    u32 id;
+    u32 move;
+    u8* cmd;
+    FightOutPokemon* r;
+    FightOutPokemon* p;
+    u8 fightType;
+    FightPokemon* fp;
     fightType = fightFloor_GetFightType(0);
     cmd = (u8*)fightSeq_GetWazaSeq();
     p = fightTargetGetPtrAsNowFightType(cmd[1], 0);
@@ -263,7 +264,7 @@ void WS_SUBROUTINE_CALL(void) {
                 o = fightTrainerCheckFightPokemonFightOut(trainer, fp);
                 if (o) {
                     if (fightOutPokemonIsJoutaiDataId(o, 0x36) == 1) {
-                        u32 id = fightOutPokemonGetIdBuffJoutaiDataId(o, 0x36);
+                        id = fightOutPokemonGetIdBuffJoutaiDataId(o, 0x36);
                         if (pokemonSearchWazaDataId(fightOutPokemonGetPokemonPtr(o), id) < 0) {
                             fightOutPokemonInitJoutaiDataId(o, 0x36);
                         }
@@ -288,17 +289,17 @@ struct ItemUseEntry {
 
 void WS_STATUS_RECOVER(void) {
     ItemUseEntry entries[33];
-    Pokemon* pk; // @decl
-    void* waza; // @decl
-    s32 amount; // @decl
-    s32 hp; // @decl
-    FightOutPokemon* p; // @decl
-    FightPokemon* fp; // @decl
-    u8 itemType; // @decl
-    s16 count; // @decl
-    FightPokemon* moto; // @decl
-    u16 item; // @decl
-    void* seq; // @decl
+    Pokemon* pk;
+    void* waza;
+    s32 amount;
+    s32 hp;
+    FightOutPokemon* p;
+    FightPokemon* fp;
+    u8 itemType;
+    s16 count;
+    FightPokemon* moto;
+    u16 item;
+    void* seq;
     amount = 0;
     fightSeq_GetWazaSeq();
     p = fightTargetGetPtrAsNowFightType(0x11, 0);
@@ -604,13 +605,13 @@ void WS_OKODUKAI_CALC(void) {
     void* hero;
     u8 maxLevel;
     u8 fightoutNum;
-    u16 mult; // @decl
-    FightPokemon* fp1; // @decl
-    void* enemy; // @decl
-    FightPokemon* fp2; // @decl
-    s32 j; // @decl
-    s32 money; // @decl
-    s32 i; // @decl
+    u16 mult;
+    FightPokemon* fp1;
+    void* enemy;
+    FightPokemon* fp2;
+    s32 j;
+    s32 money;
+    s32 i;
     cmd = (u8*)fightSeq_GetWazaSeq();
     fightoutNum = fightFloor_GetFightTypeFightoutPokemonNum(0);
     if (!fightFloor_GetFightKindGetOkaneFlag(0)) {
@@ -699,11 +700,11 @@ void WS_WAZAAKIRAME_CHECK(void) {
 }
 
 void WS_WAZAWASURE_CHECK(void) {
-    u8* cmd; // @decl
-    s32 slot; // @decl
-    u32 wazaId; // @decl
+    u8* cmd;
+    s32 slot;
+    u32 wazaId;
     void* name;
-    Pokemon* pokemon; // @decl
+    Pokemon* pokemon;
     pokemon = fightPokemonGetPokemonPtr(get_exp_fight_pokemon_ptr);
     cmd = (u8*)fightSeq_GetWazaSeq();
     if (fightMenuYesNo() == 1) {
@@ -732,11 +733,11 @@ void WS_WAZAWASURE_CHECK(void) {
 }
 
 void WS_WAZAOBOE_CHECK(void) {
-    void* jumpA; // @decl
-    void* jumpB; // @decl
-    FightPokemon* fp; // @decl
-    u8 level; // @decl
-    Pokemon* pokemon; // @decl
+    void* jumpA;
+    void* jumpB;
+    FightPokemon* fp;
+    u8 level;
+    Pokemon* pokemon;
     u8* cmd;
     s8 result;
     fp = get_exp_fight_pokemon_ptr;
@@ -902,12 +903,12 @@ void WS_POKE_RESHUFFLE_WAIT(void) {
 
 void WS_POKE_RESHUFFLE(void) {
     u16 entry;
-    void* jump; // @decl
-    FightOutPokemon* p; // @decl
-    void* trainer; // @decl
-    u8* cmd; // @decl
-    s16 sel; // @decl
-    u8 fightType; // @decl
+    void* jump;
+    FightOutPokemon* p;
+    void* trainer;
+    u8* cmd;
+    s16 sel;
+    u8 fightType;
     fightType = fightFloor_GetFightType(0);
     cmd = (u8*)fightSeq_GetWazaSeq();
     jump = *(void**)(cmd + 2);
@@ -955,13 +956,13 @@ void WS_RESHUFFLE_CHECK(void) {
 
 void WS_APPEAR_EFFECT_WAIT(void) {
     u8* cmd;
-    FightOutPokemon* p; // @decl
-    void* buff; // @decl
-    void* trainer; // @decl
-    u8 fightType; // @decl
-    u8 mode; // @decl
-    Pokemon* pokemon; // @decl
-    u32 encountId; // @decl
+    FightOutPokemon* p;
+    void* buff;
+    void* trainer;
+    u8 fightType;
+    u8 mode;
+    Pokemon* pokemon;
+    u32 encountId;
     fightType = fightFloor_GetFightType(0);
     cmd = (u8*)fightSeq_GetWazaSeq();
     mode = cmd[2];
@@ -1015,14 +1016,14 @@ void WS_APPEAR_EFFECT_WAIT(void) {
 
 void WS_APPEAR_EFFECT(void) {
     u8* cmd;
-    u8 mode; // @decl
-    FightOutPokemon* p; // @decl
-    void* buff; // @decl
-    void* trainer; // @decl
-    FightPokemon* moto; // @decl
-    void* createSeq; // @decl
-    void* seq; // @decl
-    s32 irekae; // @decl
+    u8 mode;
+    FightOutPokemon* p;
+    void* buff;
+    void* trainer;
+    FightPokemon* moto;
+    void* createSeq;
+    void* seq;
+    s32 irekae;
     cmd = (u8*)fightSeq_GetWazaSeq();
     mode = cmd[2];
     p = fightTargetGetPtrAsNowFightType(cmd[1], 0);

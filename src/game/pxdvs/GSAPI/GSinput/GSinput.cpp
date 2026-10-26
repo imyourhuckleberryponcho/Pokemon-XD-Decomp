@@ -1,4 +1,3 @@
-// DRAFT (NonMatching): first complete pass of all functions.
 #include <dolphin/types.h>
 #include <dolphin/pad.h>
 #include <dolphin/si.h>
@@ -8,7 +7,6 @@ void* memcpy(void* dst, const void* src, unsigned long n);
 void* memset(void* dst, int c, unsigned long n);
 }
 
-/* XD's MSL <math.h> inlines (sqrtf with its NaN checks), not include/libc's. */
 #define _MATH_H_
 extern f32 __float_nan[];
 #define NAN (__float_nan[0])
@@ -54,40 +52,40 @@ u8 GSgfxVideoGetVsyncRate(void);
 f32 GSgfxVideoGetLastRenderTime(void);
 
 struct InputDevice {
-    /* 0x00 */ s32 id;
-    /* 0x04 */ s32 subType;
-    /* 0x08 */ s32 clamping;
-    /* 0x0C */ s32 connState;
-    /* 0x10 */ u8 smoothRate;
-    /* 0x11 */ u8 smoothCount;
-    /* 0x14 */ s32 smoothFunc;
-    /* 0x18 */ s32 repeatState;
-    /* 0x1C */ u32 repeatButtons;
-    /* 0x20 */ u32 repeatOut;
-    /* 0x24 */ f32 repeatTimer;
-    /* 0x28 */ PADStatus raw;
-    /* 0x34 */ PADStatus cur;
-    /* 0x40 */ u32 prevButtons;
-    /* 0x44 */ u8 prevLX;
-    /* 0x45 */ u8 prevLY;
-    /* 0x46 */ u8 prevRX;
-    /* 0x47 */ u8 prevRY;
-    /* 0x48 */ f32 deltaLX;
-    /* 0x4C */ f32 deltaLY;
-    /* 0x50 */ f32 deltaRX;
-    /* 0x54 */ f32 deltaRY;
-    /* 0x58 */ f32 smoothLX;
-    /* 0x5C */ f32 smoothLY;
-    /* 0x60 */ f32 smoothRX;
-    /* 0x64 */ f32 smoothRY;
-    /* 0x68 */ u8 outLX;
-    /* 0x69 */ u8 outLY;
-    /* 0x6A */ u8 outRX;
-    /* 0x6B */ u8 outRY;
-    /* 0x6C */ s32 motorMode;
-    /* 0x70 */ u32 motorValue;
-    /* 0x74 */ u32 motorFrames;
-    /* 0x78 */ u8 motorStep;
+ s32 id;
+ s32 subType;
+ s32 clamping;
+ s32 connState;
+ u8 smoothRate;
+ u8 smoothCount;
+ s32 smoothFunc;
+ s32 repeatState;
+ u32 repeatButtons;
+ u32 repeatOut;
+ f32 repeatTimer;
+ PADStatus raw;
+ PADStatus cur;
+ u32 prevButtons;
+ u8 prevLX;
+ u8 prevLY;
+ u8 prevRX;
+ u8 prevRY;
+ f32 deltaLX;
+ f32 deltaLY;
+ f32 deltaRX;
+ f32 deltaRY;
+ f32 smoothLX;
+ f32 smoothLY;
+ f32 smoothRX;
+ f32 smoothRY;
+ u8 outLX;
+ u8 outLY;
+ u8 outRX;
+ u8 outRY;
+ s32 motorMode;
+ u32 motorValue;
+ u32 motorFrames;
+ u8 motorStep;
 };
 
 static InputDevice _inputData[4];

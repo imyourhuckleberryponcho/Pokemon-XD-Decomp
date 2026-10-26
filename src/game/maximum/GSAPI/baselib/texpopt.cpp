@@ -1,6 +1,3 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's texpdag.c (headers: include/hsd_ref).
-// The original file name, used by the asserts.
 #define HSD_FILE_NAME "texpopt.c"
 
 #include <sysdolphin/baselib/texpdag.h>
@@ -14,9 +11,7 @@
 
 #pragma pool_strings off
 
-
 #define HSD_TEXP_MAX_NUM 32
-
 
 struct Clear {
     HSD_TExp* exp;
@@ -158,7 +153,6 @@ static int SimplifySrc(HSD_TExp* arg0)
                                     arg0->tev.a_in[i].sel);
                         HSD_TExpUnref(src, sel);
                         result = true;
-                        /* fallthrough */
                     case HSD_TE_TEV:
                         if (i == 3 && src->tev.a_clamp != 0 &&
                             src->tev.a_range == 1)
@@ -1039,8 +1033,6 @@ static int SimplifyByMerge(HSD_TExp* arg0)
     return result;
 }
 
-// XD addition: works out whether a TEV stage's colour/alpha result can leave the
-// 0..1 range (sets c_range/a_range), from its inputs, op, bias and scale.
 static void CalcTevRange(HSD_TExp* texp)
 {
     int i;
@@ -1150,7 +1142,6 @@ alpha:
     texp->tev.a_range = range > 0x100;
 }
 
-
 int HSD_TExpSimplify(HSD_TExp* texp_)
 {
     HSD_TExp* texp = (HSD_TExp*) texp_;
@@ -1173,7 +1164,6 @@ int HSD_TExpSimplify(HSD_TExp* texp_)
 
 int HSD_TExpSimplify2(HSD_TExp* texp_)
 {
-/// @todo Redundant cast and assignment matches
 #ifdef MUST_MATCH
     HSD_TExp* texp = (HSD_TExp*) texp_;
 #else
@@ -1196,7 +1186,6 @@ int HSD_TExpSimplify2(HSD_TExp* texp_)
                 } else if (texp->tev.kcsel != src_exp->tev.kcsel) {
                     break;
                 }
-                /* fallthrough */
             case HSD_TE_IMM:
                 texp->tev.c_in[i] = src_exp->tev.c_in[3];
                 HSD_TExpRef(texp->tev.c_in[i].exp, texp->tev.c_in[i].sel);
@@ -1216,7 +1205,6 @@ int HSD_TExpSimplify2(HSD_TExp* texp_)
                 } else if (texp->tev.kasel != src_exp->tev.kasel) {
                     break;
                 }
-                /* fallthrough */
             case HSD_TE_IMM:
                 texp->tev.a_in[i] = src_exp->tev.a_in[3];
                 HSD_TExpRef(texp->tev.a_in[i].exp, texp->tev.a_in[i].sel);

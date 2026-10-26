@@ -19,7 +19,6 @@ struct GSgfxTevOp {
     u32 reg;
 };
 
-// Pending state changes; every setter marks a word and a group bit in both copies.
 struct GSgfxDirty {
     u32 groups;
     u32 words[36];
@@ -102,7 +101,6 @@ struct GSgfxState {
     (l)->dirty[1].words[word] |= (bits); \
     (l)->dirty[1].groups |= (group);
 
-// The write-gather pipe vertex data is sent through.
 #define GX_WGPIPE (*(volatile union { u8 u8; s16 s16; f32 f32; }*)0xCC008000)
 
 extern "C" {

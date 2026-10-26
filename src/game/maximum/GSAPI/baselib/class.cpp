@@ -1,6 +1,6 @@
-// hsdIsDescendantOf: the tmp copy reproduces the original register use (found with decomp-permuter).
-// Compiled as C with deferred inlining (see configure.py), which emits functions and data in
-// reverse source order.
+
+
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off

@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -43,7 +40,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #endif
 
 #pragma pool_strings off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -73,7 +69,6 @@ struct PeopleWork;
 struct Vec;
 
 extern "C++" {
-// ---- draft declarations ----
 struct FloorData {
     u8 _draft[1];
 };
@@ -178,22 +173,16 @@ extern "C++" {
 void GSprimSetup3DRender(GSgfxLayer* layer);
 }
 
-// ---- draft declarations ----
-
-
-
-// ---- draft declarations ----
-
 struct _struct_widthArray_S2051_0x8 {
      f32 unk0;                             
      f32 unk4;                             
 };
 static struct _struct_widthArray_S2051_0x8 widthArray_S2051[4] = { { -1.0f, -1.0f }, { 1.0f, -1.0f }, { 1.0f, 1.0f }, { -1.0f, 1.0f } };
 void LightEditor::editDirection(GSlight* p0) {
-    s32 sp30;
-    s32 sp34;
-    s32 sp3C;
-    s32 sp40;
+    s32 var_r29;
+    s32 var_r30;
+    volatile s32 sp3C;
+    volatile s32 sp40;
     s32 sp44;
     s32 sp48;
     s32 sp4C;
@@ -202,11 +191,11 @@ void LightEditor::editDirection(GSlight* p0) {
     s32 sp58;
     s32 sp5C;
     s32 sp60;
-    s32 sp64;
+    volatile s32 sp64;
     s32 unksp14;
     volatile s32 spC8;
-    s32 spC4;
-    s32 spC0;
+    volatile s32 spC4;
+    f32 sp2C;
     s32 spBC;
     s32 spB8;
     s32 spB4;
@@ -214,38 +203,38 @@ void LightEditor::editDirection(GSlight* p0) {
     s32 spAC;
     s32 spA8;
     s32 spA4;
-    s32 spA0;
-    s32 sp9C;
+    volatile s32 spA0;
+    volatile s32 sp9C;
     s32 sp98;
     s32 sp68;
     s32 sp38;
-    f32 sp2C;
+    s32 spC0;
     f32 sp28;
-    f32 sp24;
+    volatile f32 sp24;
     f32 sp20;
-    f32 sp10;
+    volatile f32 sp10;
     f32 spC;
     volatile f32 sp8;
-    f32 temp_f30;
+    u32 sp30;
     f32 temp_f31;
     f32 temp_f31_2;
-    f32 var_f28;
     s32 temp_r28_2;
     s32 temp_r28_3;
-    s32 var_r29;
-    s32 var_r30;
+    f32 temp_f30;
+    s32 sp34;
+    f32 var_f28;
 
     temp_f31 = GSgfxVideoGetLastRenderTime();
     var_f28 = 1000.0f;
     temp_r28_2 = GSinputButtonsPressed(1) & (u32)(GSinputButtonsChanged(1));
     temp_r28_3 = peopleBiosGetMaxNum();
-    var_r30 = (s8) M2C_FIELD(this, u8 *, 4);
+    var_r30 = (u8) M2C_FIELD(this, u8 *, 4);
     if (temp_r28_2 & 0x20) {
         var_r29 = 0;
 loop_7:
         if (var_r29 < temp_r28_3) {
             var_r30 += 1;
-            if (var_r30 >= temp_r28_3) {
+            if (temp_r28_3 <= var_r30) {
                 var_r30 = 0;
             }
             if (peopleBiosGetState((PeopleWork*)(peopleBiosGetWorkPtr((s32) var_r30))) == 3U) {
@@ -268,10 +257,10 @@ loop_7:
     if (!(GSinputButtonsPressed(1) & 0x40)) {
         var_f28 = 1000.0f * 4.0f;
     }
-    sp20 = sp2C;
-    sp24 = sp30;
     sp28 = sp34;
+    sp24 = sp30;
     PSVECNormalize((const register Vec*)((Vec *) &sp20), (register Vec*)((Vec *) &sp20));
+    sp20 = sp2C;
     sp8 = 0.0f;
     spC = 1.0f;
     sp10 = 0.0f;
@@ -316,22 +305,22 @@ void LightEditor::editPosition(GSlight* p0) {
     s32 sp34;
     u32 unksp14;
     u8 unksp5C[sizeof(s32) + 64];
-    f32 sp70;
-    f32 sp6C;
-    f32 sp68;
-    f32 sp58;
-    f32 sp54;
     f32 sp50;
+    f32 sp2C;
+    f32 sp6C;
+    volatile f32 sp28;
+    f32 sp20;
+    f32 sp54;
     f32 sp4C;
-    f32 sp48;
+    volatile f32 sp48;
     f32 sp44;
     f32 sp40;
     f32 sp3C;
     f32 sp38;
-    f32 sp2C;
-    volatile f32 sp28;
+    f32 sp70;
+    f32 sp68;
     f32 sp24;
-    f32 sp20;
+    f32 var_f30;
     f32 sp8;
     GScamera *temp_r3;
     GScamera *temp_r3_2;
@@ -343,9 +332,9 @@ void LightEditor::editPosition(GSlight* p0) {
     f32 var_f0;
     f32 var_f1;
     f32 temp_f27;
-    f32 var_f30;
+    f32 sp58;
     f32 var_f31;
-    u8 temp_r0;
+    s8 temp_r0;
 
     temp_f30 = GSgfxVideoGetLastRenderTime();
     var_f31 = 64.0f;
@@ -357,11 +346,11 @@ void LightEditor::editPosition(GSlight* p0) {
     sp28 = 0.0f;
     PSVECCrossProduct((const register Vec*)((Vec *) &sp2C), (const register Vec*)((Vec *) &sp20), (register Vec*)(&unksp14));
     PSVECCrossProduct((const register Vec*)((Vec *) &sp2C), (const register Vec*)(&unksp14), (register Vec*)((Vec *) &sp20));
+    sp48 = 0.0f;
     sp50 = 0.0f;
     sp54 = 0.0f;
     sp58 = 0.0f;
     sp44 = 0.0f;
-    sp48 = 0.0f;
     sp4C = 0.0f;
     sp38 = 0.0f;
     sp3C = 0.0f;
@@ -392,22 +381,22 @@ void LightEditor::editPosition(GSlight* p0) {
     sp54 = sp18;
     sp58 = sp1C;
     PSVECScale((const register Vec*)((Vec *) &sp50), (register Vec*)((Vec *) &sp50), var_f29 / var_f31);
-    sp44 = sp20;
     sp48 = sp24;
     sp4C = sp28;
     PSVECScale((const register Vec*)((Vec *) &sp44), (register Vec*)((Vec *) &sp44), temp_f28 / var_f31);
     sp38 = sp2C;
+    sp44 = sp20;
     sp3C = sp30;
     sp40 = sp34;
     PSVECScale((const register Vec*)((Vec *) &sp38), (register Vec*)((Vec *) &sp38), -temp_f30_2 / var_f31);
     PSVECAdd((const register Vec*)((Vec *) &sp50), (const register Vec*)((Vec *) &sp44), (register Vec*)(&unksp5C));
-    PSVECAdd((const register Vec*)(&unksp5C), (const register Vec*)((Vec *) &sp38), (register Vec*)(&unksp5C));
     PSVECAdd((const register Vec*)((Vec *) &sp68), (const register Vec*)(&unksp5C), (register Vec*)((Vec *) &sp68));
-    if ((s32) M2C_FIELD(this, u8 *, 1) == 2) {
-        temp_r0 = M2C_FIELD(this, u8 *, 2);
+    PSVECAdd((const register Vec*)(&unksp5C), (const register Vec*)((Vec *) &sp38), (register Vec*)(&unksp5C));
+    if ((s32) M2C_FIELD(this, s8 *, 1) == 2) {
+        temp_r0 = M2C_FIELD(this, s8 *, 2);
         var_r29 = NULL;
         var_f30 = 0.1f;
-        switch ((u8) temp_r0) {                     /* irregular */
+        switch ((s8) temp_r0) {
         case 0:
             var_r29 = &sp68;
             break;
@@ -431,8 +420,8 @@ void LightEditor::editPosition(GSlight* p0) {
         }
     }
     if (GSinputButtonsRepeat(1) & 0x10) {
-        M2C_FIELD(this, u8 *, 3) = (u8) ((u8) M2C_FIELD(this, u8 *, 3) == 0);
-        if ((u8) M2C_FIELD(this, u8 *, 3) != 0) {
+        M2C_FIELD(this, s8 *, 3) = (s8) ((s8) M2C_FIELD(this, s8 *, 3) == 0);
+        if ((s8) M2C_FIELD(this, s8 *, 3) != 0) {
             peopleGetPos(0, 0x64, (GSvec*)((GSvec *) &sp68));
             sp6C += 18.0f;
         } else {
@@ -456,33 +445,33 @@ void LightEditor::editType(GSlight* p0) {
         temp_r30 = GSlightGetType((GSlight*)((u16)p0));
         var_r29 = 0xFF;
         if (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x400) {
-            switch (temp_r30) {                     /* switch 1; irregular */
-            case 0:                                 /* switch 1 */
+            switch (temp_r30) {
+            case 0:
                 var_r29 = 3;
                 break;
-            case 1:                                 /* switch 1 */
+            case 1:
                 var_r29 = 0;
                 break;
-            case 2:                                 /* switch 1 */
+            case 2:
                 var_r29 = 1;
                 break;
-            case 3:                                 /* switch 1 */
+            case 3:
                 var_r29 = 2;
                 break;
             }
         }
         if (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x800) {
-            switch (temp_r30) {                     /* switch 2; irregular */
-            case 0:                                 /* switch 2 */
+            switch (temp_r30) {
+            case 0:
                 var_r29 = 1;
                 break;
-            case 1:                                 /* switch 2 */
+            case 1:
                 var_r29 = 2;
                 break;
-            case 2:                                 /* switch 2 */
+            case 2:
                 var_r29 = 3;
                 break;
-            case 3:                                 /* switch 2 */
+            case 3:
                 var_r29 = 0;
                 break;
             }
@@ -499,20 +488,20 @@ void LightEditor::editCommand() {
     f32 sp1C;
     f32 sp20;
     volatile f32 sp9;
-    f32 spA;
+    f32 sp18;
     f32 unksp24;
     f32 unksp8;
-    f32 sp18;
+    f32 spA;
     f32 spC;
-    GSlight *temp_r26;
+    u8 temp_ret;
     s32 *var_r29;
-    f32 var_f1;
+    s32 var_r28;
     s32 temp_r3;
     s32 var_r27;
     s8 *temp_r4;
-    u8 temp_r31_2;
-    u8 temp_ret;
-    s32 var_r28;
+    f32 var_f1;
+    GSlight *temp_r26;
+    bool temp_r31_2;
 
     temp_r4 = (signed char *)("lightinfo.txt");
     ((GSstreamFileOutput*)(&unksp24))->GSstreamFileOutput();
@@ -520,7 +509,7 @@ void LightEditor::editCommand() {
         ((GSstreamFileOutput*)(&unksp24))->~GSstreamFileOutput();
         return;
     }
-    temp_ret = ((GSstreamFileOutput*)(&unksp24))->open((const char*)(temp_r4));
+    temp_ret = ((GSstreamFileOutput*)(&unksp24))->open((const char*)((u16)temp_r4));
     if (temp_ret == 0) {
         ((GSstreamFileOutput*)(&unksp24))->~GSstreamFileOutput();
         return;
@@ -532,7 +521,7 @@ void LightEditor::editCommand() {
         temp_r31_2 = GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)(floorDataBiosGetCurrentPtr()))) == temp_r26;
         var_r28 = 0;
         temp_r3 = GSlightGetType((GSlight*)(temp_r26));
-        switch (temp_r3) {                          /* irregular */
+        switch (temp_r3) {
         case 0:
             var_r29 = (long *)("Amb");
             break;
@@ -573,16 +562,16 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 void LightEditor::editUpdate() {
-    s32 unksp10;
+    u32 sp8;
     s32 sp14;
     u8 sp12;
     u8 sp11;
     s32 var_r29;
-    u32 sp8;
+    s32 unksp10;
     GSgfxLayer *temp_r3_6;
     GSlight *temp_r3_3;
     f32 temp_f1;
-    s32 temp_r30;
+    u16 temp_r30;
     s32 temp_r31;
     s32 temp_r3;
     s32 temp_r3_7;
@@ -629,12 +618,12 @@ void LightEditor::editUpdate() {
             temp_r31 = GSlightGetType((GSlight*)(temp_r3_3));
             if (temp_r3 & 2) {
                 temp_r3_4 = M2C_FIELD(this, u8 *, 1);
-                switch (temp_r3_4) {           /* switch 1; irregular */
-                case 0:                             /* switch 1 */
+                switch (temp_r3_4) {
+                case 0:
                     M2C_FIELD(this, u8 *, 1) = 1U;
                     M2C_FIELD(this, u8 *, 2) = 0U;
                     break;
-                case 1:                             /* switch 1 */
+                case 1:
                     M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) > 2) {
                         if (temp_r31 == 0) {
@@ -645,8 +634,8 @@ void LightEditor::editUpdate() {
                         M2C_FIELD(this, u8 *, 2) = 0U;
                     }
                     break;
-                case 2:                             /* switch 1 */
-                    M2C_FIELD(this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
+                case 2:
+                    M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) > 2) {
                         M2C_FIELD(this, u8 *, 1) = 0U;
                         M2C_FIELD(this, u8 *, 2) = 0U;
@@ -656,8 +645,8 @@ void LightEditor::editUpdate() {
             }
             if (temp_r3 & 1) {
                 temp_r3_5 = M2C_FIELD(this, u8 *, 1);
-                switch (temp_r3_5) {           /* switch 2; irregular */
-                case 0:                             /* switch 2 */
+                switch (temp_r3_5) {
+                case 0:
                     if (temp_r31 == 0) {
                         M2C_FIELD(this, u8 *, 1) = 1U;
                         M2C_FIELD(this, u8 *, 2) = 2U;
@@ -666,17 +655,17 @@ void LightEditor::editUpdate() {
                     }
                     M2C_FIELD(this, u8 *, 2) = 2U;
                     break;
-                case 1:                             /* switch 2 */
-                    M2C_FIELD(this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) - 1);
+                case 1:
+                    M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) - 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) < 0) {
                         M2C_FIELD(this, u8 *, 1) = 0U;
                         M2C_FIELD(this, u8 *, 2) = 0U;
                     }
                     break;
-                case 2:                             /* switch 2 */
-                    M2C_FIELD(this, u8 *, 2) = (u8) (M2C_FIELD(this, u8 *, 2) - 1);
+                case 2:
+                    M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) - 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) < 0) {
-                        M2C_FIELD(this, u8 *, 1) = 1U;
+                        M2C_FIELD((u8)this, u8 *, 1) = 1U;
                         M2C_FIELD(this, u8 *, 2) = 2U;
                     }
                     break;
@@ -687,14 +676,14 @@ void LightEditor::editUpdate() {
             if ((s32) M2C_FIELD(this, u8 *, 1) == 1) {
                 GSlightGetColor((GSlight*)(temp_r3_3), (GXColor*)(&unksp10));
                 temp_r0 = M2C_FIELD(this, u8 *, 2);
-                switch ((s8) temp_r0) {             /* switch 3; irregular */
-                case 0:                             /* switch 3 */
+                switch ((s8) temp_r0) {
+                case 0:
                     var_r30 = (unsigned char *)(&unksp10);
                     break;
-                case 1:                             /* switch 3 */
+                case 1:
                     var_r30 = &sp11;
                     break;
-                case 2:                             /* switch 3 */
+                case 2:
                     var_r30 = &sp12;
                     break;
                 }
@@ -786,15 +775,14 @@ extern "C++" {
 extern "C++" {
 void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
     f32 sp1C;
-    volatile f32 sp20;
-    volatile s32 sp9;
-    volatile s32 spA;
-    s32 unksp8;
-    f32 sp18;
-    f32 spC;
     s32 *var_r8;
+    volatile s32 sp9;
+    f32 sp18;
+    u8 unksp8;
+    volatile s32 spA;
+    volatile f32 sp20;
     s32 temp_r3;
-    s32 temp_r3_2;
+    u8 var_r29;
     s32 temp_ret;
     s32 var_r24;
     s32 var_r3;
@@ -806,13 +794,14 @@ void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
     s32 var_r6_6;
     s32 var_r6_8;
     bool temp_r31;
-    u8 var_r29;
+    s32 temp_r3_2;
     u8 var_r3_2;
     u8 var_r3_3;
     u8 var_r6_2;
     u8 var_r6_4;
     u8 var_r6_7;
     u8 var_r6_9;
+    f32 spC;
 
     var_r29 = 0;
     temp_r31 = GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)(floorDataBiosGetCurrentPtr()))) == p0;
@@ -827,7 +816,7 @@ void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
         GSlightCanAnimate((GSlight*)(p0));
         temp_ret = GSlightGetType((GSlight*)(p0));
         temp_r3_2 = temp_ret;
-        switch (temp_r3_2) {                        /* irregular */
+        switch (temp_r3_2) {
         case 0:
             var_r8 = (long *)("Amb");
             break;
@@ -856,7 +845,11 @@ void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
         var_r6_3 = var_r6_2 == 0 ? var_r6_3 : var_r3;
         GSprint(temp_r3, p1 + 0x34, p2, var_r6_3, (const char*)("(%02x,"), unksp8);
         var_r6_4 = 0;
-        var_r6_4 = !(((s32) M2C_FIELD(this, u8 *, 2) == 1) && ((s32) M2C_FIELD(this, u8 *, 1) == 1)) ? var_r6_4 : 1;
+        if (!(((s32) M2C_FIELD(this, u8 *, 2) == 1) && ((s32) M2C_FIELD(this, u8 *, 1) == 1))) {
+            var_r6_4 = var_r6_4;
+        } else {
+            var_r6_4 = 1;
+        }
         var_r6_5 = -1;
         var_r6_5 = var_r6_4 == 0 ? var_r6_5 : var_r3;
         GSprint(temp_r3, p1 + 0x5B, p2, var_r6_5, (const char*)("%02x,"), sp9);
@@ -895,7 +888,7 @@ void LightEditor::dispInfo(GSlight* p0, long p1, long p2, bool p3) {
 
 extern "C++" {
 void LightEditor::dispLightModel(GSlight* p0, bool p1) {
-    f32 sp44;
+    f32 var_f31;
     f32 sp9;
     f32 spA;
     f32 unksp8;
@@ -919,7 +912,7 @@ void LightEditor::dispLightModel(GSlight* p0, bool p1) {
     f32 temp_f4_2;
     f32 temp_f4_3;
     f32 var_f0;
-    f32 var_f31;
+    f32 sp44;
     s32 temp_r3_3;
     struct _struct_widthArray_S2051_0x8 *temp_r11;
     struct _struct_widthArray_S2051_0x8 *temp_r11_2;
@@ -1077,20 +1070,20 @@ void LightEditor::dispLightModel(GSlight* p0, bool p1) {
                 *(f32 *)0xCC008000 = temp_f4;
                 *(f32 *)0xCC008000 = (var_f31 * temp_r4_4->unk0) + sp40;
                 *(f32 *)0xCC008000 = (var_f31 * temp_r4_4->unk4) + sp44;
-                *(f32 *)0xCC008000 = unksp8;
                 *(f32 *)0xCC008000 = sp9;
                 *(f32 *)0xCC008000 = spA;
                 *(f32 *)0xCC008000 = 0xFF;
+                *(f32 *)0xCC008000 = unksp8;
                 temp_f4_2 = sp40 - var_f31;
                 *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk0) + sp3C;
                 *(f32 *)0xCC008000 = temp_f3_2;
-                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk4) + sp44;
                 *(f32 *)0xCC008000 = unksp8;
                 *(f32 *)0xCC008000 = sp9;
                 *(f32 *)0xCC008000 = spA;
                 *(f32 *)0xCC008000 = 0xFF;
                 *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[1].unk0) + sp3C;
                 *(f32 *)0xCC008000 = temp_f3_2;
+                *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051->unk4) + sp44;
                 *(f32 *)0xCC008000 = (var_f31 * widthArray_S2051[1].unk4) + sp44;
                 *(f32 *)0xCC008000 = unksp8;
                 *(f32 *)0xCC008000 = sp9;

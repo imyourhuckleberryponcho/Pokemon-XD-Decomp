@@ -6,7 +6,6 @@ enum FootStepCounter {
     FOOT_STEP_COUNTER_0
 };
 
-// State of the "you've got mail" notification.
 struct MailReceiveWork {
     s32 active;
     s32 timer;
@@ -84,7 +83,6 @@ void mailMainReceiveStart(void) {
 
 }
 
-// Whether mail `id` should arrive now; rnd < 0 skips the random chance.
 static int chkMailSend(int id, f32 rnd) {
     u8 cntCond;
     u16 cntValue;

@@ -1,4 +1,4 @@
-// Compiled as C with deferred inlining (see configure.py).
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off

@@ -120,7 +120,6 @@ extern "C" {
 
 extern u8 fight_action_data_waza[];
 
-// fightPokemonBios / fightOutPokemonBios accessors
 FightPokemon* fightOutPokemon_GetFightPokemonPtr(FightOutPokemon* fop);
 FightPokemon* fightOutPokemon_GetMotoFightPokemonPtr(FightOutPokemon* fop);
 FightPokemon* fightOutPokemon_GetFightPokemonHensinBuffPtr(FightOutPokemon* fop);
@@ -138,7 +137,6 @@ void fightOutPokemonEnemyBiosSetDamage(FightOutPokemonEnemy* enemy, s32 damage);
 u16 fightOutPokemonEnemyBiosGetOumuWazaDataId(FightOutPokemonEnemy* enemy);
 void fightOutPokemonEnemyBiosSetOumuWazaDataId(FightOutPokemonEnemy* enemy, u16 id);
 
-// pokemon
 s32 pokemonGetStatus(void* p, s32 a, u16 id, s32 b);
 void pokemonSetStatus(void* p, s32 a, u16 id, s32 b, s32 value);
 void pokemonBiosCopy(Pokemon* dst, Pokemon* src);
@@ -450,7 +448,6 @@ u8 GSmodelGetVisibility(GSmodel* model);
 void GSmodelSetVisibility(GSmodel* model, u8 visible);
 void fightMainWaitFrame(s32 frames);
 
-// this unit
 void fightOutPokemonRegWzxFree(FightOutPokemon* fop);
 void fightOutPokemonSetVisibility(FightOutPokemon* fop, u8 visible);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon* fop, u16 id);
@@ -2010,10 +2007,6 @@ u8 fightOutPokemonCheckIrekaeReserveFightPokemon(FightOutPokemon* fop, FightPoke
     return 0;
 }
 
-// WIP (reglab 2026-10-19): the PARAMETER registers match the original only when the abicnt return type, the abicnt
-// local and fightAbicntDoKakeWaru's first parameter all have the same type (u8/u8/u8 gives fop r26, tenki r28, hero r25
-// exactly; the u16 prototype at the top of this file gives tenki r22). The original also masks abicnt (clrlwi r3,r24,24)
-// right before fightAbicntDoKakeWaru, which none of those combinations does yet.
 u32 fightOutPokemonGetNowNimbleness(FightOutPokemon* fop, u8 useBadge, u8 tenki, u16 hp, void* hero) {
     extern u32 fightAbicntDoKakeWaru(u32 id, u32 value);
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);

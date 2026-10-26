@@ -1,13 +1,8 @@
-//
-// NOTE for configure.py: this unit needs extra_cflags=["-inline noauto,deferred"]; functions
-// are written in REVERSE order of the final object.
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
-
 
 struct GSgfxVF;
 struct GStexture {
@@ -628,7 +623,6 @@ static inline void wsCol(u8 r, u8 g, u8 b, u8 a)
     GXWGFifo.u8 = b;
     GXWGFifo.u8 = a;
 }
-
 
 void winSpriteDrawTexture(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 {

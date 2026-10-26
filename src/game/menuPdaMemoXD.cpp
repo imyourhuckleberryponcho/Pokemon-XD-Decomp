@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct CURSOR {
@@ -200,7 +199,8 @@ void menuPdaMemoBackHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         }
         break;
     case 0xBA:
-        if ((u16)menuPdaMemoXDGetItem() == 1) {
+        u8 cmpv = (u16)menuPdaMemoXDGetItem();
+        if (cmpv == 1) {
             menuPdaMemoListDispPokemonModel(window, sprite, 2);
         }
         break;
@@ -239,7 +239,8 @@ void menuPdaMemoBackHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 winSpriteSetDisp(sprite, 0);
             }
         } else if (sprite->id >= 0xB1) {
-            if ((u16)menuPdaMemoXDGetItem() == 0) {
+            s32 cmpv = menuPdaMemoXDGetItem();
+            if (cmpv == 0) {
                 winSpriteSetDisp(sprite, 1);
             } else {
                 winSpriteSetDisp(sprite, 0);
@@ -285,9 +286,10 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     if (pMemo == 0) {
         return 0;
     }
-    switch (sprite->id) {
+    switch ((s8)sprite->id) {
     case 0xFD:
         pMemo->PokemonType(window, sprite, (MEMO_CONTENTS*)pMemo, 0);
+        CURSOR* cursor = window->contents->cursor;
         break;
     case 0xFE:
         pMemo->PokemonType(window, sprite, (MEMO_CONTENTS*)pMemo, 1);
@@ -358,10 +360,9 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
         break;
     case 0x159: {
-        CURSOR* cursor = window->contents->cursor;
         enum TsE mon = (enum TsE)((u16)(u32)pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(cursor->pos + cursor->top)));
         u32 first = pokemonDataBiosGetTokuseiDataId(0, 0);
-        u8 second = pokemonDataBiosGetTokuseiDataId((void*)mon, 1);
+        u32 second = pokemonDataBiosGetTokuseiDataId((void*)mon, 1);
         if (second == first) {
             second = 0;
         }
@@ -526,12 +527,15 @@ unsigned short menuPdaMemoXD::GetAisyouIndex(unsigned short index) {
 
 void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, MEMO_CONTENTS* contents,
                                           unsigned short slot) {
+    u8 second;
+    int n2;
+    int n1;
     CURSOR* c = contents->cursor;
     u16 mon = (u16)(u32)pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
     MenuItem* item = menuItemBiosGetPtr(0x7E, sprite->id);
     GSmsgGetGSchar(0x3BBC);
     volatile u8 first = pokemonDataBiosGetTokuseiDataId((void*)mon, 0);
-    u8 tid = pokemonDataBiosGetTokuseiDataId((void*)mon, slot);
+    u16 tid = pokemonDataBiosGetTokuseiDataId((void*)mon, slot);
     if (slot != 0 && tid == first) {
         tid = 0;
     }
@@ -582,9 +586,9 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
         } while (k < len);
         if (wrap) {
             u16* p = text;
-            int n1 = 0;
-            int n2 = 0;
-            u8 second = 0;
+            n1 = 0;
+            n2 = 0;
+            second = 0;
             u32 total = GSmsgGetCharLength(text);
             u32 idx = 0;
             int spaces = 0;
@@ -632,7 +636,7 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
 void menuPdaMemoXD::PokemonTokusei(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, MEMO_CONTENTS* contents,
                                    unsigned short slot) {
     CURSOR* c = contents->cursor;
-    u16 mon = (u16)(u32)pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
+    u32 mon = (u16)(u32)pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
     u32 first = pokemonDataBiosGetTokuseiDataId(0, 0);
     u32 tokusei = pokemonDataBiosGetTokuseiDataId((void*)mon, slot);
     if (slot == 0) {
@@ -644,7 +648,8 @@ void menuPdaMemoXD::PokemonTokusei(tagWINDOW_WORK* window, tagSPRITE_WORK* sprit
         }
     } else if (tokusei != 0 && tokusei != first) {
         void* data = pokemonTokuseiDataBiosGetPtr(tokusei);
-        msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(data)));
+        s32 tmp1 = (u32)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(data));
+        msgctrlSetValue(0x37, tmp1);
         GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
     }
 }

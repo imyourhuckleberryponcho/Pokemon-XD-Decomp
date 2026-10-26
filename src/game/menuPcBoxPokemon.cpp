@@ -2,7 +2,6 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
-// Pokemon PC box menu. Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 class Hero {
@@ -1317,7 +1316,7 @@ bool CMenuPokemonLeave::cursorMoveDown(long& idx)
     if (a >= 1 && a <= 2) {
         idx = 0;
     } else {
-        long b = idx;
+        s16 b = idx;
         if (b >= 0x22) {
             if ((a - 10) % 6 <= 2) {
                 idx = 1;
@@ -1568,8 +1567,10 @@ void CMenuPokemonLeave::animationStateUpdate()
         f32 t = animState.time / 0.2f;
         for (int i = cursor->index - 4; i < 6; i++) {
             if (temochiAnt[i].a0 != 0) {
-                PocketVec<short> a = getTemochiSlotPosition(i);
-                PocketVec<short> b = getTemochiSlotPosition(i + 1);
+                PocketVec<short> a;
+                PocketVec<short> b;
+                a = getTemochiSlotPosition(i);
+                b = getTemochiSlotPosition(i + 1);
                 temochiAnt[i].pos = lerpPos(b, a, t);
             }
         }
@@ -1693,7 +1694,8 @@ void CMenuPokemonLeave::drawStatusArea()
         GSmsgPrint2(w->layer, w->x + sp->x, w->y + sp->y, -1, nameId);
         sp = menuPtSpriteWorkGetByItemID(w, 0x3DB, 0);
         msgctrlSetValue(0x34, p->getLevel());
-        GSmsgPrint2(w->layer, sp->x + 0x24 + w->x, w->y + sp->y, -1, lvId);
+        u16 rf_t = sp->x;
+        GSmsgPrint2(w->layer, rf_t + 0x24 + w->x, w->y + sp->y, -1, lvId);
         if (p->isDarkPokemon()) {
             sp = menuPtSpriteWorkGetByItemID(w, 0x4CE, 0);
             menuDrawReliveMeter3(p, w->x + sp->x, w->y + sp->y, sp->w, sp->h, 0xFF, w->layer);

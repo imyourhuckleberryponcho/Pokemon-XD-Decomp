@@ -7,13 +7,13 @@ struct GSvec {
 typedef f32 GSmtx[3][4];
 
 struct CCD_TRI {
-    GSvec verts[3];  // 0x00
-    GSvec normal;    // 0x24
-    u8 surface : 4;  // 0x30
+    GSvec verts[3];
+    GSvec normal;
+    u8 surface : 4;
     u8 attr : 4;
-    u8 layer : 4;    // 0x31
+    u8 layer : 4;
     u8 subLayer : 4;
-    u16 id;          // 0x32
+    u16 id;
 };
 
 struct CCD_GRID_CELL {
@@ -22,16 +22,16 @@ struct CCD_GRID_CELL {
 };
 
 struct CCD_GRID {
-    CCD_TRI* tris;        // 0x00
-    u32 numTris;          // 0x04
-    CCD_GRID_CELL* cells; // 0x08
-    u32* indices;         // 0x0C
-    u16 cellsX;           // 0x10
-    u16 cellsZ;           // 0x12
-    f32 cellWidth;        // 0x14
-    f32 cellDepth;        // 0x18
-    f32 minX;             // 0x1C
-    f32 minZ;             // 0x20
+    CCD_TRI* tris;
+    u32 numTris;
+    CCD_GRID_CELL* cells;
+    u32* indices;
+    u16 cellsX;
+    u16 cellsZ;
+    f32 cellWidth;
+    f32 cellDepth;
+    f32 minX;
+    f32 minZ;
 };
 
 struct CCD_TRILIST {
@@ -41,9 +41,9 @@ struct CCD_TRILIST {
 
 struct CCD_OBJ {
     u8 unk0[0x24];
-    void* walk;      // 0x24
+    void* walk;
     u8 unk28[0x14];
-    u16 flags;       // 0x3C
+    u16 flags;
     u8 unk3E[2];
 };
 
@@ -73,8 +73,6 @@ static bool getCpPolyVec(GSvec* out, GSvec* point, GSvec* vertices, GSvec* plane
 
 #define COL_ABS(x) ((x) > 0.0f ? (x) : -(x))
 
-/* Which side of the edge (x,z)->(ex,ez) the point (px,pz) is on; the edge deltas are written in
- * place, which gives retail's float-register order. */
 static inline f32 colEdgeSide(f32 ez, f32 ex, f32 z, f32 x, f32 pz, f32 px)
 {
     ez -= z;
@@ -82,7 +80,6 @@ static inline f32 colEdgeSide(f32 ez, f32 ex, f32 z, f32 x, f32 pz, f32 px)
     return ex * (pz - z) - ez * (px - x);
 }
 
-/* Append the height of a hit point to the list unless it already holds it. */
 static inline bool addHit(GSwalkHit* list, s32 count, GSvec* cp, CCD_TRI* tri) {
     s32 i;
 
@@ -111,7 +108,6 @@ static inline bool addHit(GSwalkHit* list, s32 count, GSvec* cp, CCD_TRI* tri) {
     return true;
 }
 
-/* Collect the walk heights under a point from a movable object's triangle list. */
 static inline s32 collectList(GSwalkHit* list, GSvec* point, CCD_TRILIST* tris, GSmtx matrix, GSmtx normalMatrix) {
     GSvec verts[3];
     GSvec normal;
@@ -137,7 +133,6 @@ static inline s32 collectList(GSwalkHit* list, GSvec* point, CCD_TRILIST* tris, 
     return count;
 }
 
-/* Collect the walk heights under a point from a fixed model's grid. */
 static inline s32 collectGrid(GSwalkHit* list, GSvec* point, CCD_GRID* grid) {
     GSvec cp;
     CCD_TRI* tri;

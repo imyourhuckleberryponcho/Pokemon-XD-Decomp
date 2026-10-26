@@ -1,13 +1,11 @@
 #include <dolphin/types.h>
 #include <libc/stdarg.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
 struct tagWINDOW_WORK;
 
-// One entry of the menu item table (MENU_ITEM).
 struct MENU_ITEM_dd_ {
     u8 selectable : 1;
     u8 last : 1;
@@ -71,7 +69,6 @@ struct MENU_SPRITE_VAL {
     u32 tex;
 };
 
-// Window sprite node (a winSprite list entry).
 struct tagSPRITE_WORK {
     u8 pad0[4];
     u8 kind;
@@ -289,8 +286,10 @@ void windowDrawSpriteCursor(s16 x, s16 y, u32 color0, void* ctx, u16 key, u32 fl
 {
     tagSPRITE_WORK sp;
     tagWINDOW_WORK ctxbuf;
-    tagSPRITE_WORK* spp = &sp;
-    s32 i = 0;
+    s32 i;
+    tagSPRITE_WORK* spp;
+    spp = &sp;
+    i = 0;
     MENU_SPRITE_VAL* val;
     MENU_SPRITE* info;
 
@@ -321,7 +320,8 @@ void windowDrawSpriteCursor(s16 x, s16 y, u32 color0, void* ctx, u16 key, u32 fl
         }
         if (i == 0) {
             spp->x = (s16)(x + info->offX);
-            spp->y = (s16)(y + info->offY);
+            s32 rf_t = info->offY;
+            spp->y = (s16)(y + rf_t);
         } else {
             spp->x = (s16)(x + (info->offX + (s32)off[0]));
             spp->y = (s16)(y + (info->offY + (s32)off[1]));
@@ -355,8 +355,9 @@ void windowDrawSpriteCursor(s16 x, s16 y, u32 color0, void* ctx, u16 key, u32 fl
     }
 }
 
-void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx, u16 key, u32 flags, s32 layer)
+void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx_in, u16 key, u32 flags, s32 layer)
 {
+    void* ctx = ctx_in;
     tagSPRITE_WORK sp;
     tagWINDOW_WORK ctxbuf;
     tagSPRITE_WORK* spp = &sp;
@@ -386,8 +387,8 @@ void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx, u16 key
         }
         spp->x = (s16)(x + info->offX);
         spp->y = (s16)(y + info->offY);
-        spp->h = h;
         spp->w = w;
+        spp->h = h;
         spp->u = val->u;
         spp->v = val->v;
         spp->uw = val->w;
@@ -623,12 +624,14 @@ void windowCloseMain(tagWINDOW_WORK* w)
 
 s32 windowClose(tagWINDOW_WORK* w, u32 flags)
 {
+    tagWINDOW_WORK* a;
     tagWINDOW_WORK* d;
     tagWINDOW_WORK* c;
-    tagWINDOW_WORK* a;
     bool found = false;
-    bool setClose = (flags & 4) != 0;
-    u32 chain = flags & 2;
+    u32 chain;
+    bool setClose;
+    setClose = (flags & 4) != 0 ? 1 : 0;
+    chain = flags & 2;
 
     if (chain == 0) {
         for (c = winSysWork.head; c != 0; c = c->next) {

@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Per-move handler table: AI value/hit/damage callbacks and battle-animation (WZX) callbacks.
 typedef void (*WazaFunc)(void);
 
 typedef struct WazaFuncData {

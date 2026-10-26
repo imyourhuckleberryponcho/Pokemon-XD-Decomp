@@ -1,4 +1,4 @@
-// GSmodel extensions: material helpers and root/center null joints.
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -9,15 +9,15 @@ struct Vec {
 
 struct HSD_JObj {
     u8 unk0[0x8];
-    HSD_JObj* next;   // 0x08
-    HSD_JObj* parent; // 0x0C
-    HSD_JObj* child;  // 0x10
-    u32 flags;        // 0x14
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
     u8 unk18[0x4];
-    Vec rotate;       // 0x1C
-    f32 rotateW;      // 0x28
-    Vec scale;        // 0x2C
-    Vec translate;    // 0x38
+    Vec rotate;
+    f32 rotateW;
+    Vec scale;
+    Vec translate;
 };
 
 #define JOBJ_MTX_DIRTY (1 << 6)
@@ -28,32 +28,32 @@ struct HSD_JObj {
 struct GStexture;
 
 struct GSmaterial {
-    u16 alpha;        // 0x00
-    u16 unk2;         // 0x02
+    u16 alpha;
+    u16 unk2;
     u8 unk4[0xC];
-    u8 channel[4];    // 0x10
-    u32 unk14;        // 0x14
-    u32 unk18;        // 0x18
-    u32 unk1C;        // 0x1C
+    u8 channel[4];
+    u32 unk14;
+    u32 unk18;
+    u32 unk1C;
     u8 unk20[0xC];
-    GStexture* tex2C; // 0x2C
-    GStexture* tex30; // 0x30
+    GStexture* tex2C;
+    GStexture* tex30;
 };
 
 struct GSbound;
 
 struct _GSmodel {
-    u32 flags;        // 0x000
+    u32 flags;
     u8 unk4[0x8];
-    HSD_JObj* root;   // 0x00C
+    HSD_JObj* root;
     u8 unk10[0x2C];
-    u8 bound[0x20];   // 0x03C
+    u8 bound[0x20];
     u8 unk5C[0x18];
-    s32 animType;     // 0x074
-    s32 animIndex;    // 0x078
+    s32 animType;
+    s32 animIndex;
     u8 unk7C[0x564];
-    GSmaterial* materials; // 0x5E0
-    u32 materialCount;     // 0x5E4
+    GSmaterial* materials;
+    u32 materialCount;
 };
 
 #define MODEL_CENTER_NULL 0x10000
@@ -111,7 +111,7 @@ void GSmaterialSetFlags(GSmaterial* mat, u32 flags);
 
 void modelUpdateCenterNull(_GSmodel* model);
 
-// Inline helpers from HSD's jobj.h (asserts carry that header's line numbers).
+
 static inline HSD_JObj* HSD_JObjGetChild(HSD_JObj* jobj) {
     if (jobj == 0) {
         return 0;

@@ -1,10 +1,8 @@
 #include <dolphin/types.h>
 
-// The retail unit uses separate strings and disables peephole optimization.
 #pragma pool_strings off
 #pragma peephole off
 
-// Script values are eight-byte tagged unions in the retail interpreter.
 struct Pokemon;
 struct Hero;
 struct GSvec { f32 x, y, z; };

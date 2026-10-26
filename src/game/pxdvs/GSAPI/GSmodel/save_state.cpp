@@ -80,7 +80,7 @@ f32 GSmodelGetAnimRate(_GSmodel* model);
 f32 fn_800F2298(_GSmodel* model);
 }
 
-// Inline accessors from HSD's jobj.h (their asserts carry that file's line numbers).
+
 static inline f32 HSD_JObjGetRotationX(HSD_JObj* jobj) {
     if (!jobj) {
         __assert("jobj.h", 748, "jobj");

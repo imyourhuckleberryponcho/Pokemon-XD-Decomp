@@ -13,7 +13,6 @@ double cos(double x);
 double acos(double x);
 int __fpclassifyf(float x);
 
-// Inline copy of __fpclassifyf (the out-of-line one is emitted at the end).
 static inline int __fpclassifyf_inline(float x) {
     switch ((*(int*)&x) & 0x7f800000) {
     case 0x7f800000:

@@ -77,8 +77,8 @@ typedef enum CardCmdType {
     /* 0x03 */ CARD_CMD_UNK_0x03, ///< No producer or handler identified.
     /* 0x04 */ CARD_CMD_CLEAR_BUF,
     /* 0x05 */ CARD_CMD_VERIFY_BLOCK,
- /// After queued verification, changes result 2 to 0 and otherwise sets
- /// result 1. Subsequent write commands skip their work when result is 1.
+
+
     /* 0x06 */ CARD_CMD_CHECK_VERIFIED,
     /* 0x07 */ CARD_CMD_CREATE_FILE,
     /* 0x08 */ CARD_CMD_SET_STATUS,
@@ -99,8 +99,8 @@ typedef enum CardCmdType {
     /* 0x11 */ CARD_CMD_SCAN_FILE,
 } CardCmdType;
 
-/// CARD_CMD_WRITE_BLOCK: 0x20-byte block header followed by size bytes of
-/// data; the remaining bytes in the block are cleared.
+
+
 typedef struct CardWriteArgs {
     /* 0x00 */ s32 file_idx;
     /* 0x04 */ s32 phys;
@@ -136,9 +136,9 @@ typedef struct CardVerifyArgs {
     /* 0x18 */ s32 size;
 } CardVerifyArgs;
 
-/// CARD_CMD_READ_SECTOR, CARD_CMD_WRITE_SECTOR: transfer through sector_buf.
-/// Reads verify the checksum; writes regenerate it and record block_id/seq
-/// for phys.
+
+
+
 typedef struct CardSectorArgs {
     /* 0x00 */ s32 x0;
     /* 0x04 */ s32 phys;

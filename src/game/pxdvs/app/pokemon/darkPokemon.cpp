@@ -1,8 +1,4 @@
-// Matching. Dark Pokemon records + iteration over scenario dark Pokemon with function-local listener classes
-// (openDarkPokeInfo). Their compiler-numbered names ($39/$29/$19/$6) are mapped onto the target names in
-// config/GXXE01/symbols.txt (retail numbers 2060.., a precompiled header shifted its counter).
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -23,7 +19,6 @@ enum darkPokemonWhere { darkPokemonWhere_draft_dummy };
 struct darkpokemonIterateListener;
 
 extern "C" {
-// ---- draft declarations ----
 struct DarkPokemon {
     u8 _draft[1];
     f32 getDarkPoint() const;
@@ -40,8 +35,6 @@ struct DeckDarkPokemon {
     u8 getWorth() const;
 };
 }
-// Callback interface of darkpokemonScenarioPokemonIterate: exec is called for every scenario dark Pokemon
-// and stops the iteration when it returns 0.
 class darkpokemonIterateListener {
 public:
     virtual u8 exec(u32 index, DeckDarkPokemon* deck, DarkPokemon* dark) = 0;

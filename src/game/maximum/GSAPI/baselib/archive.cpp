@@ -1,6 +1,3 @@
-// Matching. Locate() helper inlined as in the Melee decomp.
-// Compiled as C with deferred inlining (see configure.py), which emits functions and data in
-// reverse source order.
 #include <dolphin/types.h>
 #include <dolphin/os.h>
 

@@ -1,6 +1,6 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Ported from the Melee decomp's pobj.c (headers: include/hsd_ref).
-// The original file name, used by the asserts.
+
+
+
 #define HSD_FILE_NAME "pobj.c"
 
 #include <sysdolphin/baselib/pobj.h>
@@ -638,14 +638,14 @@ static s32 PObjLoad(HSD_PObj* pobj, HSD_PObjDesc* desc)
         HSD_Panic(HSD_FILE_NAME, 0x229, "pobj: unexected type.\n");
     }
 
- // _HSD_NeedCacheInvalidate(HSD_CACHE_VTX); // NOTE: This does not exist in
- // Melee's sysdolphin, but is a potential optimization
+
+
 
     return 0;
 }
 
-/* Not referenced by the retail game (stripped by the linker), but its assert
-   string sits in .rodata between the neighbouring functions' strings. */
+
+
 void HSD_PObjSetDefaultClass(HSD_PObjInfo* info)
 {
     if (info != NULL) {
@@ -1321,7 +1321,7 @@ static void SetupSharedVtxModelMtx(HSD_PObj* pobj, Mtx vmtx, Mtx pmtx,
     if (flags | SETUP_JOINT1)
 #endif
     {
- ///@todo Unused stack
+
         u8 _[4];
         HSD_JObjSetupMatrix(pobj->u.jobj);
         PSMTXConcat(vmtx, pobj->u.jobj->mtx, m);

@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Move animation resource groups: group ID and resource ID per entry.
 typedef struct WazaResourceEntry {
     u32 groupID;
     u32 resID;

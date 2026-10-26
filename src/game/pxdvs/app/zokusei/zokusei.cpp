@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -39,7 +36,6 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 struct PokemonData;
 
 extern "C" {
-// ---- draft declarations ----
 struct PokemonData {
     u8 _draft[1];
 };
@@ -56,9 +52,6 @@ s32 zokuseiGetWazaJoutai_PokemonId(u16 p0, u16 p1);
 extern u32* pokemon_data_number;
 extern u32* zokusei_data_number;
 }
-
-// ---- draft declarations ----
-
 
 extern "C" {
 s32 zokuseiGetWazaJoutaiAsDefenseZokuseiAry(u16 type, u16* arr, u16 count);

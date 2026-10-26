@@ -1,4 +1,3 @@
-// STATUS: 6/6 exact, LAYOUT OK, CONST OK (default flags)
 #include <dolphin/types.h>
 
 struct BlendState {
@@ -108,7 +107,6 @@ void GSprimSetLineWidth(f32 w) {
     primData.f4 = 0;
 }
 
-
 void GSprimSetBlendMode(s32 mode) {
     switch (mode) {
     case 0: {
@@ -177,7 +175,6 @@ void GSprimSetBlendMode(s32 mode) {
     }
     }
 }
-
 
 }
 

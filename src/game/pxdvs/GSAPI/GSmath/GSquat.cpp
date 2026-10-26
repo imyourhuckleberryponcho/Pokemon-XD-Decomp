@@ -6,5 +6,4 @@ struct GSquat {
     f32 x, y, z, w;
 };
 
-// The identity rotation.
 GSquat zeroQuaternion(0.0f, 0.0f, 0.0f, 1.0f);

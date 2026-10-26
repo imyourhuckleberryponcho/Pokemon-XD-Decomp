@@ -1,5 +1,3 @@
-// 2D sprite environment for a graphics layer: per-layer offset/scale, scissor box and the orthographic-looking
-// perspective camera used to draw menu sprites.
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
 

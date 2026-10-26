@@ -1,14 +1,5 @@
-// STATUS: 55/64 exact (9,936 of ~21,900 bytes), CONST OK, .data/.rodata/.sdata2
-// LAYOUT OK. Needs extra_cflags=["-inline noauto,deferred"]; functions are written in REVERSE asm order.
-// Not exact yet (all register-allocation / scheduling only): execute 99.2% (loop-top `sp` lives in r25
-// instead of r6, case 4 scope 2 temps, case 14 zero constants), Tiga::restoreStateData 96.3% (stream/union
-// stack slots: target has an unexplained 4-byte hole at sp+0x10), TigaThread::restoreStateData 93.5%,
-// setTpcChank 99.7% (base/offset regs swapped), debugDump 98.9% (callee-saved reg numbering),
-// getPresetVar 87% (zero reg shared with the type store), tigaErrMessage (target keeps a dead
-// lwz+cmplwi), execMethod 99.9% (0x23/0x24 li/or regs), TigaThread::makeStateData 99.9%.
 #include <dolphin/types.h>
 
-// GSscript interpreter core: the Tiga virtual machine, its threads and object manager.
 #pragma pool_strings off
 
 struct GSvec {
@@ -452,7 +443,6 @@ struct ChankRec {
     u8 data[1];
 };
 
-// The original reported the message through a debug print that is stripped from retail.
 void tigaErrMessage(const char* msg)
 {
     if (Tiga::m_cpCurrentObject != 0) {
@@ -642,7 +632,8 @@ void TigaThread::makeStateData(GSBinWriteStream* s)
     for (i = 0; i < stackCount; i++) stack[i].makeStateData(s);
     s->write32(callCount);
     for (i = 0; i < callCount; i++) {
-        s->write32((u32)(((u32)&callStack[i] - (u32)ctx.callBase) >> 2));
+        pcIdx = (u32)(((u32)&callStack[i] - (u32)ctx.callBase) >> 2);
+        s->write32(pcIdx);
     }
     s->write8(timerIndex);
     s->writeFloat(waitTime);
@@ -772,6 +763,8 @@ void Tiga::unmappingScript()
     objManager.clear();
 }
 
+inline u8 * setTpcChankInline(ChankRec * arg0) { return ((u8 *)arg0) + 0x10; }
+
 s32 Tiga::setTpcChank(CChank* c)
 {
     if (c == 0) {
@@ -788,7 +781,7 @@ s32 Tiga::setTpcChank(CChank* c)
     h->id = 1;
     head = h->data;
     ChankRec* r = (ChankRec*)c->searchChankID("CODE", 0);
-    if (r == 0) return 0;
+    if (0 == r) return 0;
     codes = (TPCCode*)r->data;
     r = (ChankRec*)c->searchChankID("GVAR", 0);
     if (r == 0) return 0;
@@ -821,7 +814,7 @@ s32 Tiga::setTpcChank(CChank* c)
     }
     r = (ChankRec*)c->searchChankID("ARRY", 0);
     if (r != 0) {
-        u8* base = (u8*)r + 0x10;
+        u8 * base = setTpcChankInline(r);
         int i = 0;
         arrayCount = *(s32*)base;
         arrays = (tigaArrayFixed**)(base + 0x10);
@@ -1525,13 +1518,15 @@ bool Tiga::execMethod(int type, int cmd, tigaVariant* args, tigaVariant* result)
         case 0x23: {
             int a = args[0].getInteger();
             int b = args[1].getInteger();
-            result->setInteger(a | b);
+            a = a | b;
+            result->setInteger(a);
             break;
         }
         case 0x24: {
             int a = args[0].getInteger();
             int b = args[1].getInteger();
-            result->setInteger(a & ~b);
+            a = a & ~b;
+            result->setInteger(a);
             break;
         }
         case 0x1E: {

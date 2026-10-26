@@ -225,7 +225,6 @@ typedef union
     PPC_GQR_t   f;
 } PPC_GQR_u;
 
-
 #define DMA_U_ADDR_MASK             0xFFFFFFE0  // Start addr in memory
 #define DMA_U_LEN_U_MASK            0x0000001F  // lines to transfer (U)
 
@@ -248,7 +247,6 @@ typedef union
     PPC_DMA_U_t     f;
 } PPC_DMA_U_u;
 
-
 typedef struct
 {
     u32 lcAddr      :27;
@@ -258,13 +256,11 @@ typedef struct
     u32 dmaFlush    :1;
 } PPC_DMA_L_t;
 
-
 typedef union
 {
     u32             val;
     PPC_DMA_L_t     f;
 } PPC_DMA_L_u;
-
 
 #define WPAR_ADDR                   0xFFFFFFE0  // 32byte gather address
 #define WPAR_BNE                    0x00000001  // Buffer not empty (R)
@@ -351,7 +347,7 @@ typedef union
 #define MMCR0_PMC1_ITLB_CYCLE       0x00000180  // # of cycles spent performing table search op. for the ITLB
 #define MMCR0_PMC1_L2_HIT           0x000001C0  // # of access that hit the L2.
 #define MMCR0_PMC1_EA               0x00000200  // # of valid instruction EAs delivered to the memory subsystem
-#define MMCR0_PMC1_IABR             0x00000240  // # of time the address of an instruction matches the IABR
+#define MMCR0_PMC1_IABR             0x00000240
 #define MMCR0_PMC1_L1_MISS          0x00000280  // # of loads that miss the L1
 #define MMCR0_PMC1_Bx_UNRESOLVED    0x000002C0  // # of branches that are unresolved when processed
 #define MMCR0_PMC1_Bx_STALL_CYCLE   0x00000300  // # of cycles that dispatcher stalls due to a second
@@ -425,7 +421,7 @@ typedef union
 #define FPSCR_OX            0x10000000  // Overflow exception
 #define FPSCR_UX            0x08000000  // Underflow exception
 #define FPSCR_ZX            0x04000000  // Zero divide exception
-#define FPSCR_XX            0x02000000  // Inexact exception
+#define FPSCR_XX            0x02000000
 #define FPSCR_VXSNAN        0x01000000  // SNaN
 #define FPSCR_VXISI         0x00800000  // Infinity - Infinity
 #define FPSCR_VXIDI         0x00400000  // Infinity / Infinity
@@ -441,7 +437,7 @@ typedef union
 #define FPSCR_OE            0x00000040  // Overflow exception enable
 #define FPSCR_UE            0x00000020  // Underflow exception enable
 #define FPSCR_ZE            0x00000010  // Zero divide exception enable
-#define FPSCR_XE            0x00000008  // Inexact exception enable
+#define FPSCR_XE            0x00000008
 #define FPSCR_NI            0x00000004  // Non-IEEE mode
 #endif
 
@@ -452,7 +448,7 @@ typedef union
 #define FPSCR_OX_BIT        3           // Overflow exception
 #define FPSCR_UX_BIT        4           // Underflow exception
 #define FPSCR_ZX_BIT        5           // Zero divide exception
-#define FPSCR_XX_BIT        6           // Inexact exception
+#define FPSCR_XX_BIT        6
 #define FPSCR_VXSNAN_BIT    7           // SNaN
 #define FPSCR_VXISI_BIT     8           // Infinity - Infinity
 #define FPSCR_VXIDI_BIT     9           // Infinity / Infinity
@@ -468,7 +464,7 @@ typedef union
 #define FPSCR_OE_BIT        25          // Overflow exception enable
 #define FPSCR_UE_BIT        26          // Underflow exception enable
 #define FPSCR_ZE_BIT        27          // Zero divide exception enable
-#define FPSCR_XE_BIT        28          // Inexact exception enable
+#define FPSCR_XE_BIT        28
 #define FPSCR_NI_BIT        29          // Non-IEEE mode
 #endif
 

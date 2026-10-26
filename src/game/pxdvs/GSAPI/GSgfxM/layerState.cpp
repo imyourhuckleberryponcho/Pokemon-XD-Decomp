@@ -1,13 +1,4 @@
-// STATUS (wLayer): NonMatching, default flags. 20/35 exact (see fcheck). Weak GSgfx_GCSet* helpers are `inline` here and only
-// emitted because of the _emitTbl address table at the END of the file (temporary: SetupGPUState, their only caller, is not
-// written yet; once it is, drop the table). Compare indices use a separate `u32 ss = stage` (stops CSE of stage*N, matches).
-// Not exact: SetupGPUState (not written, 5392 bytes), SetupRenderState (99%: matrix-helper register numbers, light/VF CSE),
-// SetTevOrder 98%, IndTexCoordScale 98.6%, Projection/Scissor/KColor/ChanCtrl/Mat+AmbColor/TevInd{irect,BumpXYZ,Warp}
-// (the Ind* ones want params converted to u8 up front, i.e. a different inline shape). Layout: LoadHWState is inlined into
-// SetupRenderState in the target yet emitted AFTER it (likely -inline deferred with source in asm order; untested).
-// WIP (NonMatching): GSgfxLayer render state. Not done: SetupRenderState, SetupGPUState and the weak GSgfx_GCSet* helpers.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -28,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -184,7 +174,6 @@ void* memset(void*, int, u32);
 void* memcpy(void*, const void*, u32);
 }
 
-
 struct RegBlend { u32 id : 8; u32 pad : 8; u32 pad2 : 3; u32 lop : 1; u32 sub : 1; u32 src : 3; u32 dst : 3; u32 pad3 : 3; u32 logic : 1; u32 blend : 1; };
 struct RegSS { u32 id : 8; u32 pad : 8; u32 t1 : 4; u32 s1 : 4; u32 t0 : 4; u32 s0 : 4; };
 struct RegAlphaCmp { u32 id : 8; u32 op : 2; u32 comp1 : 3; u32 comp0 : 3; u32 ref1 : 8; u32 ref0 : 8; };
@@ -229,28 +218,28 @@ struct RegClearZ {
     u32 id : 8;
     u32 z : 24;
 };
-struct RegSrc {  // 0x49 / 0x4a
+struct RegSrc {
     u32 id : 8;
     u32 pad : 4;
     u32 y : 10;
     u32 x : 10;
 };
-struct RegYScale {  // 0x4e
+struct RegYScale {
     u32 id : 8;
     u32 pad : 15;
     u32 scale : 9;
 };
-struct RegStride {  // 0x4d
+struct RegStride {
     u32 id : 8;
     u32 pad : 14;
     u32 stride : 10;
 };
-struct RegDest {  // 0x4b
+struct RegDest {
     u32 id : 8;
     u32 pad : 3;
     u32 addr : 21;
 };
-struct RegCopyCmd {  // 0x52
+struct RegCopyCmd {
     u32 id : 8;
     u32 pad : 9;
     u32 f14 : 1;
@@ -262,7 +251,7 @@ struct RegCopyCmd {  // 0x52
     u32 pad2 : 5;
     u32 clamp : 2;
 };
-struct RegMsLoc {  // 0x01..0x04
+struct RegMsLoc {
     u32 id : 8;
     u32 y2 : 4;
     u32 x2 : 4;
@@ -271,14 +260,14 @@ struct RegMsLoc {  // 0x01..0x04
     u32 y0 : 4;
     u32 x0 : 4;
 };
-struct RegCoeff {  // 0x53 / 0x54
+struct RegCoeff {
     u32 id : 8;
     u32 c3 : 6;
     u32 c2 : 6;
     u32 c1 : 6;
     u32 c0 : 6;
 };
-struct RegCopyTexCmd {  // 0x52 as built by the texture copy
+struct RegCopyTexCmd {
     u32 id : 8;
     u32 pad23 : 7;
     u32 b16 : 1;
@@ -296,10 +285,10 @@ struct RegCopyTexCmd {  // 0x52 as built by the texture copy
 struct CopyTexReq {
     u16 left, top, width, height, dstWidth;
     u16 pad;
-    s32 fmt;     // 0x0c
-    u32 clamp;   // 0x10
-    u8 mip;      // 0x14
-    u8 clear;    // 0x15
+    s32 fmt;
+    u32 clamp;
+    u8 mip;
+    u8 clear;
 };
 struct RegFog0 { u32 id : 8; u32 pad : 4; u32 a : 20; };
 struct RegFog1 { u32 id : 8; u32 bm : 24; };
@@ -354,126 +343,126 @@ struct TevOrderCache { s32 a, b, c; };
 struct TevInCache { s32 a, b, c, d; };
 struct TevOpCache { s32 op, bias, scale; u8 clamp; s32 reg; };
 struct GSState {
-    u32 dirty;            // 0x00
-    u32 dTref;            // 0x04
-    u32 dIref;            // 0x08
-    u32 d0c;              // 0x0c  coord size dirty
-    u32 d10;              // 0x10  texture dirty
-    u32 d14;              // 0x14  tlut dirty
-    u32 dKsel;            // 0x18
-    u32 dTevc;            // 0x1c
-    u32 dTeva;            // 0x20
-    u32 dKcolA;           // 0x24
-    u32 dKcolB;           // 0x28
-    u32 indDirty;         // 0x2c
-    RegGenMode genMode;   // 0x30
-    RegZMode zmode;       // 0x34
-    RegBlend cmode0;      // 0x38
-    RegCMode1 cmode1;     // 0x3c
-    RegPeCtrl peCtrl;     // 0x40
-    Reg r44;              // 0x44
-    Reg r48;              // 0x48
-    RegScis scis0;        // 0x4c
-    RegScis scis1;        // 0x50
-    u32 xf1005;           // 0x54
-    RegTref tref[8];      // 0x58
-    RegIref iref;         // 0x78
-    RegSS ras1ss[2];      // 0x7c
-    RegId24 texMode0[8];  // 0x84
-    RegId24 texMode1[8];  // 0xa4
-    RegTexImg0 texImg0[8]; // 0xc4
-    RegTexImg texImg1[8]; // 0xe4
-    RegTexImg texImg2[8]; // 0x104
-    RegId24 texImg3[8];   // 0x124
-    RegTlutW texTlut[8];  // 0x144
-    TlutCache tlutCache[8]; // 0x164
-    RegTlutLoad0 tlutLoad0; // 0x1a4
-    RegTlutLoad1 tlutLoad1; // 0x1a8
-    RegSu suS[8];         // 0x1ac
-    RegSu suT[8];         // 0x1cc
-    RegX22 r1ec;          // 0x1ec
-    RegMatIdxA matIdxA;   // 0x1f0
-    RegMatIdxB matIdxB;   // 0x1f4
-    RegAlphaCmp alphaCmp; // 0x1f8
-    Reg r1fc;             // 0x1fc
-    Reg r200;             // 0x200
-    RegKsel ksel[8];      // 0x204
-    RegTevC tevc[16];     // 0x224
-    RegTevA teva[16];     // 0x264
-    RegKcol kcolA0[4];        // 0x2a4
-    RegKcol kcolA1[4];        // 0x2b4
-    RegKcol kcolB0[4];        // 0x2c4
-    RegKcol kcolB1[4];        // 0x2d4
-    RegFog0 fog0;         // 0x2e4
-    RegFog1 fog1;         // 0x2e8
-    RegFog2 fog2;         // 0x2ec
-    RegFog3 fog3;         // 0x2f0
-    Reg r2f4;             // 0x2f4
-    RegFogRange fogRange; // 0x2f8
-    RegRangeAdj rangeAdj[5]; // 0x2fc
-    RegIndCmd indCmd[16]; // 0x310
-    Reg r350;             // 0x350
-    RegX68 r354;          // 0x354
-    TexGenCache texGen[8]; // 0x358
-    u8 c3f8;              // 0x3f8
+    u32 dirty;
+    u32 dTref;
+    u32 dIref;
+    u32 d0c;
+    u32 d10;
+    u32 d14;
+    u32 dKsel;
+    u32 dTevc;
+    u32 dTeva;
+    u32 dKcolA;
+    u32 dKcolB;
+    u32 indDirty;
+    RegGenMode genMode;
+    RegZMode zmode;
+    RegBlend cmode0;
+    RegCMode1 cmode1;
+    RegPeCtrl peCtrl;
+    Reg r44;
+    Reg r48;
+    RegScis scis0;
+    RegScis scis1;
+    u32 xf1005;
+    RegTref tref[8];
+    RegIref iref;
+    RegSS ras1ss[2];
+    RegId24 texMode0[8];
+    RegId24 texMode1[8];
+    RegTexImg0 texImg0[8];
+    RegTexImg texImg1[8];
+    RegTexImg texImg2[8];
+    RegId24 texImg3[8];
+    RegTlutW texTlut[8];
+    TlutCache tlutCache[8];
+    RegTlutLoad0 tlutLoad0;
+    RegTlutLoad1 tlutLoad1;
+    RegSu suS[8];
+    RegSu suT[8];
+    RegX22 r1ec;
+    RegMatIdxA matIdxA;
+    RegMatIdxB matIdxB;
+    RegAlphaCmp alphaCmp;
+    Reg r1fc;
+    Reg r200;
+    RegKsel ksel[8];
+    RegTevC tevc[16];
+    RegTevA teva[16];
+    RegKcol kcolA0[4];
+    RegKcol kcolA1[4];
+    RegKcol kcolB0[4];
+    RegKcol kcolB1[4];
+    RegFog0 fog0;
+    RegFog1 fog1;
+    RegFog2 fog2;
+    RegFog3 fog3;
+    Reg r2f4;
+    RegFogRange fogRange;
+    RegRangeAdj rangeAdj[5];
+    RegIndCmd indCmd[16];
+    Reg r350;
+    RegX68 r354;
+    TexGenCache texGen[8];
+    u8 c3f8;
     u8 pad3f9[3];
-    u8 sizeW0;            // 0x3fc
+    u8 sizeW0;
     u8 pad3fd[3];
-    s32 sizeOff0;         // 0x400
-    u8 sizeW1;            // 0x404
+    s32 sizeOff0;
+    u8 sizeW1;
     u8 pad405[3];
-    s32 sizeOff1;         // 0x408
-    u8 coordScale[16];    // 0x40c
-    s32 c41c;             // 0x41c
-    u32 projCache[6];     // 0x420
-    u8 c438;              // 0x438
+    s32 sizeOff1;
+    u8 coordScale[16];
+    s32 c41c;
+    u32 projCache[6];
+    u8 c438;
     u8 pad439[3];
-    s32 c43c;             // 0x43c
-    s32 c440;             // 0x440
-    u16 scis[4];          // 0x444
-    s32 scisOff[2];       // 0x44c
-    u8 c454;              // 0x454
+    s32 c43c;
+    s32 c440;
+    u16 scis[4];
+    s32 scisOff[2];
+    u8 c454;
     u8 pad455[3];
-    ChanCache chan[4];    // 0x458
-    u8 ambMat[4][5];      // 0x4b8
-    TevOrderCache tevOrder[16]; // 0x4cc
-    u8 c58c[2];           // 0x58c
+    ChanCache chan[4];
+    u8 ambMat[4][5];
+    TevOrderCache tevOrder[16];
+    u8 c58c[2];
     u8 pad58e[2];
-    TevInCache colorIn[16]; // 0x590
-    TevInCache alphaIn[16]; // 0x690
-    TevOpCache colorOp[16]; // 0x790
-    TevOpCache alphaOp[16]; // 0x8d0
-    u8 kcolFlag[4][5];    // 0xa10
-    s32 cA24[64];         // 0xa24
-    s32 swapCache[4][4];  // 0xb24
-    u8 indStatus[16];     // 0xb64
-    s32 indOrder[4][2];   // 0xb74
-    s32 indScale[4][2];   // 0xb94
-    s32 blendCache[4];    // 0xbb4
-    u8 cBC4[2];           // 0xbc4
+    TevInCache colorIn[16];
+    TevInCache alphaIn[16];
+    TevOpCache colorOp[16];
+    TevOpCache alphaOp[16];
+    u8 kcolFlag[4][5];
+    s32 cA24[64];
+    s32 swapCache[4][4];
+    u8 indStatus[16];
+    s32 indOrder[4][2];
+    s32 indScale[4][2];
+    s32 blendCache[4];
+    u8 cBC4[2];
     u8 padbc6[2];
-    AlphaCache alphaCache; // 0xbc8
+    AlphaCache alphaCache;
 
-    s32 cBD8[3];          // 0xbd8
-    u8 cBE4;              // 0xbe4
+    s32 cBD8[3];
+    u8 cBE4;
     u8 padbe5[3];
-    s32 cBE8;             // 0xbe8
-    u8 cBEC;              // 0xbec
+    s32 cBE8;
+    u8 cBEC;
     u8 padbed[3];
-    u8 c_bf0;             // 0xbf0
+    u8 c_bf0;
     u8 cBF1[3];
-    u32 c_fogType;        // 0xbf4
-    f32 c_fogStart;       // 0xbf8
-    f32 c_fogEnd;         // 0xbfc
-    f32 c_fogNear;        // 0xc00
-    f32 c_fogFar;         // 0xc04
-    u8 cC08;              // 0xc08
+    u32 c_fogType;
+    f32 c_fogStart;
+    f32 c_fogEnd;
+    f32 c_fogNear;
+    f32 c_fogFar;
+    u8 cC08;
     u8 padc09[4];
-    u8 cC0D;              // 0xc0d
-    u16 cC0E;             // 0xc0e
-    W5 rangeCache;    // 0xc10
-    f32 vp[6];            // 0xc24
-    s32 cC3C;             // 0xc3c
+    u8 cC0D;
+    u16 cC0E;
+    W5 rangeCache;
+    f32 vp[6];
+    s32 cC3C;
 };
 
 #define RAW(r) (*(u32*)&(r))
@@ -482,7 +471,6 @@ u8* _layerStateLastHWState;
 #define GX_WGPIPE (*(volatile union { u8 u8; u16 u16; u32 u32; f32 f32; }*)0xCC008000)
 
 extern "C" {
-// ---- draft declarations ----
 struct GXFogAdjTable {
     u8 _draft[1];
 };
@@ -523,10 +511,6 @@ extern s32 jtbl_1693;
 extern "C++" {
 s32 GSgfxVideoSetViewport(float, float, float, float, bool);
 }
-
-// ---- draft declarations ----
-
-
 
 inline void GSIndSet(s32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, u8 ws, u8 wt, s32 addPrev, u8 utc, s32 alpha) {
     gsgfxState->indCmd[stage].indId = indId;
@@ -657,7 +641,6 @@ void GSgfxLayer::ResetVertexFormat(GSgfxVF* vf) {
 
 extern "C" {
 
-
 extern "C++" {
 void GSgfxLayer::SetupGPUState() {
     f32 sp10;
@@ -671,21 +654,21 @@ void GSgfxLayer::SetupGPUState() {
     s32 unksp36;
     s32 unksp3A;
     f32 sp78;
-    s32 sp74;                                       /* compiler-managed */
+    s32 sp74;
     s32 sp70;
     s32 sp6C;
-    s32 sp68;                                       /* compiler-managed */
+    s32 sp68;
     u8 *var_r29;
     u8 temp_r5;
     u8 *var_r3_3;
-    f32 sp58;
-    f32 sp54;
+    u8 *var_r25_2;
+    volatile f32 sp54;
     f32 sp50;
     s32 sp4C;
     f32 sp48;
-    f32 sp44;
+    volatile f32 sp44;
     s32 sp40;
-    f32 sp3C;
+    volatile f32 sp3C;
     s32 sp38;
     s32 sp34;
     s32 sp30;
@@ -794,7 +777,7 @@ void GSgfxLayer::SetupGPUState() {
     u8 *var_r25_10;
     u8 *var_r25_11;
     u8 *var_r25_12;
-    u8 *var_r25_2;
+    f32 sp58;
     u8 *var_r25_3;
     u8 *var_r25_4;
     u8 *var_r25_5;
@@ -864,9 +847,9 @@ void GSgfxLayer::SetupGPUState() {
                 var_r6 = 0;
                 while (var_r4 < (s32) M2C_FIELD(this, u8 *, 0xC70)) {
                     if ((M2C_FIELD(temp_r30, u32 *, 0xC) & (1 << var_r4)) && ((temp_r12 = M2C_FIELD(var_r3, u8 *, 0xD4), temp_r7 = gsgfxState + var_r6, temp_r24 = M2C_FIELD(var_r3, u8 *, 0xD5), (((u8) M2C_FIELD(temp_r7, u8 *, 0x40C) == temp_r12) == 0)) || ((u8) M2C_FIELD(temp_r7, u8 *, 0x40D) != temp_r24))) {
+                        *((u8 *)gsgfxState + temp_r11) = (*((u8 *)gsgfxState + temp_r11) & ~4) | ((temp_r12 << 2) & 4);
                         temp_r11 = var_r5;
                         temp_r11 += 0x1AD;
-                        *((u8 *)gsgfxState + temp_r11) = (*((u8 *)gsgfxState + temp_r11) & ~4) | ((temp_r12 << 2) & 4);
                         *((u8 *)gsgfxState + temp_r11) = (*((u8 *)gsgfxState + temp_r11) & ~8) | ((temp_r24 << 3) & 8);
                         M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | (1 << var_r4));
                         *((u8*)(gsgfxState) + (var_r6 + 0x40C)) = temp_r12;
@@ -1077,7 +1060,7 @@ loop_71:
                             temp_r7_2 += var_r5_3;
                             *((u8 *)gsgfxState + temp_r9) = (*((u8 *)gsgfxState + temp_r9) & ~0x7FF) | ((u8) sp1C & 0x7FF);
                             *((u8 *)gsgfxState + temp_r10) = (*((u8 *)gsgfxState + temp_r10) & ~0x7FF000) | ((unksp1F << 0xC) & 0x7FF000);
-                            /* draft: crashed mwcc */ // *((u8 *)gsgfxState + temp_r8_2) = (*((u8 *)gsgfxState + temp_r8_2) & ~0x7FF) | (unksp1E & 0x7FF);
+
                             *((u8 *)gsgfxState + temp_r7_2) = (*((u8 *)gsgfxState + temp_r7_2) & ~0x7FF000) | ((unksp1D << 0xC) & 0x7FF000);
                             M2C_FIELD(gsgfxState, s32 *, 0x24) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x24) | temp_r0_3);
                         } else {
@@ -1406,7 +1389,7 @@ loop_71:
                 sp70 = M2C_FIELD(&jtbl_1693, s32 *, 0x34);
                 sp74 = M2C_FIELD(&jtbl_1693, s32 *, 0x38);
                 sp78 = M2C_FIELD(&jtbl_1693, f32 *, 0x3C);
-                temp_r3_6 = (unsigned char *)(GSgfxVideoGetViewport(M2C_ERROR(/* Read from unset register $f1 */), M2C_FIELD(&jtbl_1693, s32 *, 0x38), M2C_FIELD(&jtbl_1693, s32 *, 0x34), M2C_ERROR(/* Read from unset register $f2 */), M2C_ERROR(/* Read from unset register $f3 */), M2C_FIELD(&jtbl_1693, s32 *, 0x30), M2C_FIELD(&jtbl_1693, s32 *, 0x2C), M2C_ERROR(/* Read from unset register $f4 */)));
+                temp_r3_6 = (unsigned char *)(GSgfxVideoGetViewport(M2C_ERROR( ), M2C_FIELD(&jtbl_1693, s32 *, 0x38), M2C_FIELD(&jtbl_1693, s32 *, 0x34), M2C_ERROR( ), M2C_ERROR( ), M2C_FIELD(&jtbl_1693, s32 *, 0x30), M2C_FIELD(&jtbl_1693, s32 *, 0x2C), M2C_ERROR( )));
                 if ((s32) M2C_FIELD(temp_r31, s32 *, 0xE4) == 0) {
                     sp3C = M2C_FIELD(temp_r31, f32 *, 0xE8);
                     sp44 = M2C_FIELD(temp_r31, f32 *, 0xEC);
@@ -1752,9 +1735,6 @@ inline void GSgfx_GCSetTevOrder(s32 stage, s32 coord, s32 map, s32 color) {
     }
 }
 
-
-
-
 inline void GSgfx_GCSetMatColor(s32 ch, GSColor c) {
     int idx = (ch - 4) * 5;
     if (*(u32*)((u8*)gsgfxState + idx + 0x4c3) != RAW(c) || *((u8*)gsgfxState + idx + 0x4c2) == 1) {
@@ -1866,7 +1846,6 @@ inline void GSgfx_GCSetProjection(s32 type, u32* p) {
 
 }
 
-
 void GSgfxLayer::LoadHWState() {
     if (_layerStateLastHWState != hwState) {
         if (_layerStateLastHWState != 0) {
@@ -1876,7 +1855,6 @@ void GSgfxLayer::LoadHWState() {
         _layerStateLastHWState = hwState;
     }
 }
-
 
 extern "C" {
 void GSgfx_GCInvalidateState();
@@ -2004,7 +1982,8 @@ void GSgfxLayer::SetupRenderState() {
             v->last = vf;
         }
         if (v->vf[vf->fmt] != vf || (vf->flags & 2)) {
-            GSgfx_GCWriteVtxAttrFmt(vf->fmt, vf->attrFmt);
+            s16 rf_t = vf->fmt;
+            GSgfx_GCWriteVtxAttrFmt(rf_t, vf->attrFmt);
             v->vf[vf->fmt] = vf;
         }
         GSgfxVFArray* a = vf->arrays;

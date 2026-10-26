@@ -1,5 +1,3 @@
-// Matching (-opt level=0: optimizer off; a local that receives the final call result before returning it takes
-// the top saved register, see _memAllocCallback).
 #include <dolphin/types.h>
 
 class GSmemPoolAllocator {
@@ -18,7 +16,6 @@ void HSD_SetInitParameter(s32 param, ...);
 GSmemPoolAllocator* GSmemGetSysdolAllocator(u32 size);
 }
 
-// Small sysdolphin (HSD) allocations come from fixed-size pools; larger ones from the heap.
 GSmemPoolAllocator* _Sysdol8Allocator;
 GSmemPoolAllocator* _Sysdol12Allocator;
 GSmemPoolAllocator* _Sysdol20Allocator;

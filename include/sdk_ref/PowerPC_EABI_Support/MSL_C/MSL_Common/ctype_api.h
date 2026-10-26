@@ -5,7 +5,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
 extern u8 __ctype_map[256];
 extern u8 __lower_map[256];
@@ -29,6 +29,6 @@ extern u8 __upper_map[256];
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

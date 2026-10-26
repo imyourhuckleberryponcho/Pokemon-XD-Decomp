@@ -78,7 +78,6 @@ inline DSError TRKReadBuffer1_ui32(MessageBuffer* buffer, u32* data)
 	}
 
 	return err;
-	// UNUSED FUNCTION
 }
 
 DSError TRKInitializeMessageBuffers(void)
@@ -185,8 +184,6 @@ DSError TRKAppendBuffer(MessageBuffer* msg, const void* data, size_t length)
 
 	bytesLeft = 0x880 - msg->position;
 
-	// If there isn't enough space left in the buffer, change the number
-	// of bytes to append to the remaining number of bytes
 	if (bytesLeft < length) {
 		error  = DS_MessageBufferOverflow;
 		length = bytesLeft;
@@ -210,7 +207,7 @@ DSError TRKAppendBuffer(MessageBuffer* msg, const void* data, size_t length)
 DSError TRKReadBuffer(MessageBuffer* msg, void* data, size_t length)
 {
 	DSError error = DS_NoError;
-	uint bytesLeft; // this has to be uint not u32 to match lmfao.
+	uint bytesLeft;
 
 	// Return if no bytes to read
 	if (length == 0) {
@@ -219,8 +216,6 @@ DSError TRKReadBuffer(MessageBuffer* msg, void* data, size_t length)
 
 	bytesLeft = msg->length - msg->position;
 
-	// If the number of bytes to read exceeds the buffer length, change
-	// the length to the remaining number of bytes
 	if (length > bytesLeft) {
 		error  = DS_MessageBufferReadError;
 		length = bytesLeft;

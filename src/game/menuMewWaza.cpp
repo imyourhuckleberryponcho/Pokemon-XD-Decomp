@@ -1,7 +1,5 @@
-// WIP (NonMatching): only the load order of the spriteSetOffset y math differs now.
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct MewWazaWindow {

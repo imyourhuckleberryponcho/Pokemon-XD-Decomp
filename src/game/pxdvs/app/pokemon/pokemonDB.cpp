@@ -51,14 +51,14 @@ void fightWazaInitJoutai(FightWaza*);
 }
 
 struct ComboPartnerBits {
-    u8 b10 : 1; // 0x80
-    u8 b00 : 1; // 0x40
-    u8 b11 : 1; // 0x20
-    u8 b01 : 1; // 0x10
-    u8 b12 : 1; // 0x08
-    u8 b02 : 1; // 0x04
-    u8 b13 : 1; // 0x02
-    u8 b03 : 1; // 0x01
+    u8 b10 : 1;
+    u8 b00 : 1;
+    u8 b11 : 1;
+    u8 b01 : 1;
+    u8 b12 : 1;
+    u8 b02 : 1;
+    u8 b13 : 1;
+    u8 b03 : 1;
 };
 
 extern "C" {
@@ -68,99 +68,98 @@ u8 pokemonWazaCheckValid(Pokemon* poke, u32 wazaNum);
 void GScharLenCpy(void* dst, const void* src, s32 len);
 }
 
-
 struct FightPokemon {
-    Pokemon* motoPokemon; // 0x0
-    Pokemon pokemonBuff; // 0x4
-    FightJoutai fightJoutai[1]; // 0xC8
-    s16 entryId; // 0xD8
-    u8 catchEntryFlag; // 0xDA
-    u8 levelUpFlag; // 0xDB
-    u8 darkOutFlag; // 0xDC
-    u8 hokakuFlag; // 0xDD
+    Pokemon* motoPokemon;
+    Pokemon pokemonBuff;
+    FightJoutai fightJoutai[1];
+    s16 entryId;
+    u8 catchEntryFlag;
+    u8 levelUpFlag;
+    u8 darkOutFlag;
+    u8 hokakuFlag;
     u8 unkDE[0x22];
-    u32 aiDamage[0x40][2]; // 0x100
+    u32 aiDamage[0x40][2];
 };
 
 struct FightOutPokemon {
-    FightPokemon* motoFightPokemon; // 0x0
-    FightPokemon* fightPokemon; // 0x4
-    FightPokemon fightPokemonHensinBuff; // 0x8
-    FightJoutai fightoutJoutai[0x34]; // 0x308
-    FightWaza fightWaza; // 0x648
-    FightWaza keepFightWaza; // 0x6F4
-    FightItem fightItem; // 0x7A0
-    Sequence* sequence; // 0x7AC
-    u8 abicntPhyAtk; // 0x7B0
-    u8 abicntPhyDef; // 0x7B1
-    u8 abicntSpeAtk; // 0x7B2
-    u8 abicntSpeDef; // 0x7B3
-    u8 abicntNimbleness; // 0x7B4
-    u8 abicntAverage; // 0x7B5
-    u8 abicntAvoid; // 0x7B6
+    FightPokemon* motoFightPokemon;
+    FightPokemon* fightPokemon;
+    FightPokemon fightPokemonHensinBuff;
+    FightJoutai fightoutJoutai[0x34];
+    FightWaza fightWaza;
+    FightWaza keepFightWaza;
+    FightItem fightItem;
+    Sequence* sequence;
+    u8 abicntPhyAtk;
+    u8 abicntPhyDef;
+    u8 abicntSpeAtk;
+    u8 abicntSpeDef;
+    u8 abicntNimbleness;
+    u8 abicntAverage;
+    u8 abicntAvoid;
     u8 unk7B7[0x5];
-    u16 fightoutTurnCount; // 0x7BC
-    s16 meetEnemyFightPokemonEntryId[12]; // 0x7BE
+    u16 fightoutTurnCount;
+    s16 meetEnemyFightPokemonEntryId[12];
     u8 unk7D6[0x2];
-    FightAction fightActionBuff; // 0x7D8
-    u16 zokuseiDataId[2]; // 0x808
-    u16 tokuseiDataId; // 0x80C
+    FightAction fightActionBuff;
+    u16 zokuseiDataId[2];
+    u16 tokuseiDataId;
     u8 unk80E[0x2];
-    WazaMenuCur wazaMenuCur; // 0x810
-    u8 comboFuncId; // 0x814
-    u8 fixAiWaza; // 0x815
-    u8 fixAiDef; // 0x816
+    WazaMenuCur wazaMenuCur;
+    u8 comboFuncId;
+    u8 fixAiWaza;
+    u8 fixAiDef;
     u8 unk817[0x1];
-    u16 sketchWazaDataId; // 0x818
-    u16 lastSelectWazaDataId; // 0x81A
-    u16 lastUseWazaDataId; // 0x81C
-    u16 lastReceiveWazaTargetDataId; // 0x81E
-    u16 hitWazaDataId; // 0x820
-    u16 hitWazaZokuseiDataId; // 0x822
-    s16 gamanDamageValue; // 0x824
-    u16 gamanDamageTargetId; // 0x826
-    u16 oumuWazaDataId; // 0x828
-    u16 oumuWazaAllyDataId; // 0x82A
-    u8 namakeFlag; // 0x82C
-    u8 successCnt; // 0x82D
-    u16 usedItemDataId; // 0x82E
-    u16 stockItemDataId; // 0x830
+    u16 sketchWazaDataId;
+    u16 lastSelectWazaDataId;
+    u16 lastUseWazaDataId;
+    u16 lastReceiveWazaTargetDataId;
+    u16 hitWazaDataId;
+    u16 hitWazaZokuseiDataId;
+    s16 gamanDamageValue;
+    u16 gamanDamageTargetId;
+    u16 oumuWazaDataId;
+    u16 oumuWazaAllyDataId;
+    u8 namakeFlag;
+    u8 successCnt;
+    u16 usedItemDataId;
+    u16 stockItemDataId;
     u8 unk832[0x2];
-    s16 damageAtkValue; // 0x834
-    u16 damageAtkTargetId; // 0x836
-    s16 damageSpeValue; // 0x838
-    u16 damageSpeTargetId; // 0x83A
-    u8 mahiNoAttackFlag; // 0x83C
-    u8 konranMyselfAttackFlag; // 0x83D
-    u8 outWazaKoukanaiFlag; // 0x83E
-    u8 tameWazaFlag; // 0x83F
-    u8 itemNigeruFlag; // 0x840
-    u8 huuinNoAttackFlag; // 0x841
-    u8 meroMeroNoAttackFlag; // 0x842
-    u8 kanashibariNoAttackFlag; // 0x843
-    u8 chouhatsuNoAttackFlag; // 0x844
-    u8 ichamonNoAttackFlag; // 0x845
-    u8 hirumuNoAttackFlag; // 0x846
-    u8 passPpdecFlag; // 0x847
-    u8 fightActionFlag; // 0x848
-    u8 doClearbodyFlag; // 0x849
-    u8 receivesWazaHiraishinFlag; // 0x84A
-    u8 vanishoffFlag; // 0x84B
-    u8 doIkakuFlag; // 0x84C
-    u8 doTraceFlag; // 0x84D
-    u8 noPressureFlag; // 0x84E
-    u8 irekaetaFlag; // 0x84F
-    u8 itemKoraetaFlag; // 0x850
+    s16 damageAtkValue;
+    u16 damageAtkTargetId;
+    s16 damageSpeValue;
+    u16 damageSpeTargetId;
+    u8 mahiNoAttackFlag;
+    u8 konranMyselfAttackFlag;
+    u8 outWazaKoukanaiFlag;
+    u8 tameWazaFlag;
+    u8 itemNigeruFlag;
+    u8 huuinNoAttackFlag;
+    u8 meroMeroNoAttackFlag;
+    u8 kanashibariNoAttackFlag;
+    u8 chouhatsuNoAttackFlag;
+    u8 ichamonNoAttackFlag;
+    u8 hirumuNoAttackFlag;
+    u8 passPpdecFlag;
+    u8 fightActionFlag;
+    u8 doClearbodyFlag;
+    u8 receivesWazaHiraishinFlag;
+    u8 vanishoffFlag;
+    u8 doIkakuFlag;
+    u8 doTraceFlag;
+    u8 noPressureFlag;
+    u8 irekaetaFlag;
+    u8 itemKoraetaFlag;
     u8 unk851[0x3];
-    u32 kaigaraDamageValue; // 0x854
-    s16 myselfDamageAtkValue; // 0x858
-    u16 myselfDamageAtkTargetId; // 0x85A
-    s16 myselfDamageSpeValue; // 0x85C
-    u16 myselfDamageSpeTargetId; // 0x85E
-    u8 kizetuFlag; // 0x860
-    u8 unk861; // 0x861
-    s16 irekaeTargetEntryId; // 0x862
-    FightOutPokemonEnemy enemy[4]; // 0x864
+    u32 kaigaraDamageValue;
+    s16 myselfDamageAtkValue;
+    u16 myselfDamageAtkTargetId;
+    s16 myselfDamageSpeValue;
+    u16 myselfDamageSpeTargetId;
+    u8 kizetuFlag;
+    u8 unk861;
+    s16 irekaeTargetEntryId;
+    FightOutPokemonEnemy enemy[4];
 };
 
 extern "C" {

@@ -1,4 +1,3 @@
-// STATUS: 5/8 exact (CallBack 98.8%, _appearMirabo 95.7%, SetPlace 92%: register order and rand%2 scheduling); LAYOUT+CONST OK, default flags.
 #include <dolphin/types.h>
 
 struct UnderTakerPlace {

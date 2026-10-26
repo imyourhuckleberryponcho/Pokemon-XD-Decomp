@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 #pragma opt_unroll_loops off
 
@@ -523,9 +522,9 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     CURSOR cursor = _getCursor();
     int count = memoDataGetCount(0);
     int layer = winSpriteGetLayerID(window, sprite);
-    MenuItem* base = menuItemBiosGetPtr(0x78, 0xF1);
     MenuItem* type1 = menuItemBiosGetPtr(0x78, 0xEF);
     MenuItem* type2 = menuItemBiosGetPtr(0x78, 0xF0);
+    MenuItem* base = menuItemBiosGetPtr(0x78, 0xF1);
     MenuItem* area = menuItemBiosGetPtr(0x78, 0xEE);
     MenuItem* self = menuItemBiosGetPtr(0x78, sprite->id);
     int textLayer = layer;
@@ -544,7 +543,7 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             msgctrlSetValue(0x37, name);
             GSmsgPrint2(textLayer, 0, (s32)(y + offset), window->alpha | ~0xFF, 0x4277);
             u16 type = pokemonGetStatus(0, pokemonGetStatus(mon, 0, 0x6E, 0), 0x16, 0);
-            s32 sprID = zokuseiBiosGetSmallSpriteID(type);
+            u16 sprID = zokuseiBiosGetSmallSpriteID(type);
             windowDrawSprite2(type1->x - base->x, (s32)y, type1->width, type1->height, window->alpha | ~0xFF, window,
                               sprID, 0, layer);
             u16 type2ID = pokemonGetStatus(0, pokemonGetStatus(mon, 0, 0x6E, 0), 0x16, 1);
@@ -805,8 +804,10 @@ void pdaMemoList::Cursor(tagWINDOW_WORK* window) {
     CURSOR c = _getCursor();
     c.top = window->top;
     c.pos = window->pos;
-    int count = memoDataGetCount(0);
-    int visible = 8;
+    int visible;
+    int count;
+    count = memoDataGetCount(0);
+    visible = 8;
     if (count < 8) {
         visible = count;
     }

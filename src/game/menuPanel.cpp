@@ -1,4 +1,3 @@
-// STATUS (snC): 10/16 exact with extra_cflags=["-inline noauto"]. Not exact: DrawSelect/2 (reg alloc), CursorSelect/2 (reg alloc), CtrlSelect2 (clrlwi), DecimalInput (s64 reg pair).
 #include <dolphin/types.h>
 #include <game/shared/menu_work.h>
 
@@ -158,26 +157,25 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
     enum TsE { TsE0 };
     u32* items;
     enum TsE maxCount;
-    CURSOR cur;
+    u32* p;
+    s32 i;
     u8 type;
     s32 vis;
     s32 width;
     s32 maxH;
     s32 maxW;
-    s32 i;
-    s32 y;
+    CURSOR cur = *(CURSOR*)&w->top;
     s32 h;
     s32 count;
-    u32* p;
     s32 off;
     s32 total;
     SpriteVal* sv;
     int top;
     f32 pos[2];
     s32 color;
+    s32 y;
     total = 0;
     maxH = 0;
-    cur = *(CURSOR*)&w->top;
     off = _DrawSelectOffset;
     maxW = 0;
     type = windowGetParam(w, 0);
@@ -188,7 +186,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
     if (vis > maxCount) {
         vis = maxCount;
     }
-    for (i = 0, p = items; i < count; i++, p++) {
+    for (i = 0, p = items; i < count; p++, i++) {
         u32 rect = GSmsgGetRect(*p);
         if (maxH < (s32)(rect >> 16)) {
             maxH = rect >> 16;
@@ -222,7 +220,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
     }
     top = cur.top;
     p = items;
-    for (i = 0, y = 1; i < vis; i++, p++) {
+    for (i = 0, y = 1; i < vis; p++, i++) {
         if (*p != 0) {
             h = off + (GSmsgGetRect(items[top + i]) & 0xFFFF);
         } else {
@@ -238,7 +236,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
         y += h;
     }
     p = items;
-    for (i = 0, y = 1; i < vis; i++, p++) {
+    for (i = 0, y = 1; i < vis; p++, i++) {
         if (*p != 0) {
             h = off + (GSmsgGetRect(items[top + i]) & 0xFFFF);
             GSmsgPrint2(w->layer, 0x1A, y, w->alpha | ~0xFF, items[top + i]);

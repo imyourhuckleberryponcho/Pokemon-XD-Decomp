@@ -28,7 +28,7 @@ s32 GBAReadAsync(s32 chan, u8* dst, u8* status, GBACallback callback)
 s32 GBARead(s32 chan, u8* dst, u8* status)
 {
     GBAControl* gba = &__GBA[chan];
-    u8* buffer = dst; // unused; keeps the retail stack frame size
+    u8* buffer = dst;
     s32 ret;
 
     ret = GBAReadAsync(chan, dst, status, __GBASyncCallback);

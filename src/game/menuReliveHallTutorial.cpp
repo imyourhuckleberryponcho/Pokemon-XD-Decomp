@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Purification Chamber tutorial: scripted button sequences and message timing.
 #pragma peephole off
 
 struct CState {
@@ -33,7 +32,6 @@ class CMetaMenu {
     u8 updated, reserved32D;
     u16 cachedInput;
 public:
- // Preserve the retail virtual-table slots following the menu's data members.
     virtual void reservedVirtual0();
     virtual u8 tutorialReady();
     virtual void reservedVirtual2();

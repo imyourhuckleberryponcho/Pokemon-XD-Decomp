@@ -317,9 +317,12 @@ static BOOL Link(OSModuleInfo* newModule, void* bss, BOOL fixed) {
     return TRUE;
 }
 
+
+#pragma force_active on
 BOOL OSLink(OSModuleInfo* newModule, void* bss) {
     return Link(newModule, bss, FALSE);
 }
+#pragma force_active off
 
 BOOL OSLinkFixed(OSModuleInfo* newModule, void* bss) {
     ASSERTLINE(400, newModule->version <= OS_MODULE_VERSION && 3 <= newModule->version);

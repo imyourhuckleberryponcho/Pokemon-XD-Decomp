@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -56,7 +53,6 @@ class peRenderContainer;
 struct peSpline;
 
 extern "C++" {
-// ---- draft declarations ----
 struct GSbound {
     u8 _draft[1];
 };
@@ -84,15 +80,15 @@ struct _peDistortion {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;  // 0x00
-    u32 unk4;                // 0x04
-    void* buffer;            // 0x08
-    peNode* freeList;        // 0x0c
-    peNode* activeList;      // 0x10
-    u16 count;               // 0x14
-    u16 maxCount;            // 0x16
-    u8 dirty;                // 0x18
-    u8 started;              // 0x19
+    peEmitterNode* emitter;
+    u32 unk4;
+    void* buffer;
+    peNode* freeList;
+    peNode* activeList;
+    u16 count;
+    u16 maxCount;
+    u8 dirty;
+    u8 started;
 
     peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
     virtual ~peContainer();
@@ -111,13 +107,13 @@ public:
 };
 class peRenderContainer : public peContainer {
 public:
-    u8 swapPending;  // 0x20
-    u8 cur;          // 0x21
-    u32 bufSize;     // 0x24
-    u8 dl[2][0x10];  // 0x28
-    u8* bufA;        // 0x48
-    u8* bufB;        // 0x4c
-    u16 tokens[2];   // 0x50
+    u8 swapPending;
+    u8 cur;
+    u32 bufSize;
+    u8 dl[2][0x10];
+    u8* bufA;
+    u8* bufB;
+    u16 tokens[2];
 
     peRenderContainer(peEmitterNode*, unsigned long, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
     virtual ~peRenderContainer();
@@ -129,8 +125,8 @@ public:
 };
 class peDistortionContainer : public peRenderContainer {
 public:
-    _peDistortion* data;  // 0x54
-    f32 uv[8];            // 0x58
+    _peDistortion* data;
+    f32 uv[8];
 
     peDistortionContainer(peEmitterNode*, _peDistortion*, unsigned short);
     virtual ~peDistortionContainer();
@@ -236,9 +232,6 @@ extern XdBlobC xAxisVector;
 extern s32 yAxisVector;
 extern s32 this_;
 }
-// ---- draft declarations ----
-
-
 
 void peDistortionContainer::Stop() {
     u8 *var_r6;
@@ -290,7 +283,6 @@ loop_13:
 }
 
 #define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
-// layer state dirty mark: the state word, its copy 0xB8 further, and the group masks at 0x16A8/0x1760
 static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
     LAYER_FIELD(l, u32, off) |= bit;
     LAYER_FIELD(l, u32, 0x16A8) |= sum;
@@ -333,7 +325,7 @@ static inline bool canRender(peDistortionContainer* c) {
 
 extern "C++" {
 void peDistortionContainer::Render() {
-    GSgfxVF *var_r31;
+    u8 *temp_r29;
     s32 temp_cr0_eq;
     s32 temp_r0;
     u8 *temp_r4_2;
@@ -342,7 +334,7 @@ void peDistortionContainer::Render() {
     u32 temp_r4;
     s32 temp_r0_2;
     u8 var_r0;
-    u8 *temp_r29;
+    GSgfxVF *var_r31;
     s32 var_r7;
 
     if (M2C_FIELD(this, u8 *, 0x19)) {
@@ -393,11 +385,11 @@ void peDistortionContainer::Render() {
             }
             var_r7 = !(temp_r31 & 0x20) ? var_r7 : 2;
             particleEngineSetupTexture(0, M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 *, 0x60), temp_r31 & 3, (temp_r31 >> 2U) & 3, var_r7, var_r8);
+            temp_r29 = M2C_FIELD((this + (temp_r0_2 * 4)), u8 **, 0x48);
             var_r7 = 0;
             temp_r0_2 = M2C_FIELD(this, u8 *, 0x21);
             temp_r4_2 = (unsigned char *)(this + ((temp_r0_2 * 0x10) + 0x28));
-            temp_r29 = M2C_FIELD((this + (temp_r0_2 * 4)), u8 **, 0x48);
-            if (M2C_FIELD(temp_r4_2, u16 *, 0) & 1) {
+            if (M2C_FIELD((s16)temp_r4_2, s16 *, 0) & 1) {
                 var_r31 = M2C_FIELD(temp_r4_2, GSgfxVF **, 0xC);
             } else {
                 var_r31 = NULL;
@@ -413,8 +405,6 @@ void peDistortionContainer::Render() {
 }
 
 extern "C++" {
-
-
 
 extern "C++" {
 extern "C++" {
@@ -486,9 +476,9 @@ loop_25:
                 temp_cr0_eq = var_r4 == 0;
                 var_r4 -= 1;
                 if (temp_cr0_eq == 0) {
-                    M2C_FIELD(var_r5, s16 *, 0) = 0xFFFF;
-                    M2C_FIELD(var_r5, s16 *, 2) = 0xFFFF;
-                    M2C_FIELD(var_r5, s16 *, 4) = 0xFFFF;
+                    M2C_FIELD(var_r5, u16 *, 0) = 0xFFFF;
+                    M2C_FIELD(var_r5, u16 *, 2) = 0xFFFF;
+                    M2C_FIELD(var_r5, u16 *, 4) = 0xFFFF;
                     var_r5 += 6;
                     goto loop_25;
                 }
@@ -505,16 +495,16 @@ extern "C++" {
 u16 peDistortionContainer::Emit(unsigned short p0) {
     u8 *temp_r31;
     f32 temp_f1;
-    peNode *temp_r27;
-    peNode *var_r28;
+    u16 var_r30;
     s32 temp_r24;
-    s32 *temp_r23;
-    s32 temp_r26;
+    _EmitParams *var_r29;
     u16 temp_r4;
     u16 temp_r8;
-    u32 var_r30;
-    _EmitParams *var_r29;
+    s32 *temp_r23;
     u8 *var_r9;
+    peNode *var_r28;
+    peNode *temp_r27;
+    u16 temp_r26;
 
     if ((u8) M2C_FIELD(((s32)this), u8 *, 0x19) == 0) {
         return 0U;
@@ -525,11 +515,11 @@ u16 peDistortionContainer::Emit(unsigned short p0) {
     temp_r26 = var_r30;
     while (var_r30 != 0) {
         temp_r23 = M2C_FIELD(((s32)this), s32 **, 0x54);
-        temp_r27 = M2C_FIELD(var_r28, peNode **, 0x28);
+        temp_r27 = M2C_FIELD((u16)var_r28, peNode **, 0x28);
         temp_r31 = (unsigned char *)(((s32)this) + ((M2C_FIELD(((s32)this), u8 *, 0x21) * 0x10) + 0x28));
         temp_r24 = M2C_FIELD(temp_r23, s32 *, 0);
         if ((s32) (M2C_FIELD(temp_r31, u16 *, 0) & 1) == 1) {
-            ((peNode*)(var_r28))->Start((peEmitterNode*)(M2C_FIELD(((s32)this), peEmitterNode **, 0)), (_EmitParams*)(var_r29));
+            ((peNode*)((u16)var_r28))->Start((peEmitterNode*)(M2C_FIELD(((s32)this), peEmitterNode **, 0)), (_EmitParams*)(var_r29));
             temp_f1 = HSD_Randf();
             M2C_FIELD(var_r28, f32 *, 0x34) = (f32) (M2C_FIELD(temp_r23, f32 *, 0xC) * temp_f1);
             M2C_FIELD(var_r28, f32 *, 0x38) = (f32) (M2C_FIELD(temp_r23, f32 *, 0x10) * temp_f1);
@@ -656,7 +646,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
     f32 sp84;
     s32 sp8C;
     s32 sp90;
-    s32 spA4;
+    volatile s32 spA4;
     s32 spA8;
     s32 unksp104;
     s32 unksp14;
@@ -705,7 +695,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
     f32 sp11C;
     f32 sp118;
     f32 sp114;
-    f32 sp100;
+    volatile f32 sp100;
     f32 spFC;
     f32 spF8;
     f32 spD4;
@@ -717,7 +707,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
     f32 spBC;
     f32 spB8;
     u8 sp13;
-    s8 sp12;
+    volatile s8 sp12;
     s8 sp11;
     s8 sp10;
     f32 spC;
@@ -771,12 +761,12 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
             PSVECNormalize((const register Vec*)((Vec *) &sp150), (register Vec*)((Vec *) &sp150));
             PSVECCrossProduct((const register Vec*)((Vec *) &sp120), (const register Vec*)((Vec *) &sp150), (register Vec*)(&unkspAC));
         } else {
+            sp158 = M2C_FIELD(&g_CameraSideDir, f32 *, 8);
             sp144 = M2C_FIELD(&g_CameraUpDir, f32 *, 0);
             sp148 = M2C_FIELD(&g_CameraUpDir, f32 *, 4);
             sp14C = M2C_FIELD(&g_CameraUpDir, f32 *, 8);
             sp150 = M2C_FIELD(&g_CameraSideDir, f32 *, 0);
             sp154 = M2C_FIELD(&g_CameraSideDir, f32 *, 4);
-            sp158 = M2C_FIELD(&g_CameraSideDir, f32 *, 8);
         }
     } else {
         sp150 = M2C_FIELD(&xAxisVector, f32 *, 0);
@@ -790,8 +780,8 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, ch
             temp_f30 = M2C_FIELD(this, f32 *, 0x14);
             var_f2 = (temp_f30 * temp_f30) + (temp_f29 * temp_f29);
             var_f2 = sqrtf(var_f2);
-            spF8 = (f32) atan2(-M2C_FIELD(this, f32 *, 0x18), (f64) var_f2);
             temp_f1_4 = (f32) atan2((f64) temp_f30, (f64) temp_f29);
+            spF8 = (f32) atan2(-M2C_FIELD(this, f32 *, 0x18), (f64) var_f2);
             sp100 = 0.0f;
             spFC = temp_f1_4;
             EulerToQuat((Vec*)((Vec *) &spF8), (Quaternion*)(&unksp104));

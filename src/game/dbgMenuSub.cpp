@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
@@ -237,8 +236,6 @@ s32 dbgMenuScreenFilterHi(void) {
     return 0;
 }
 
-// The original linked these debug display routines but nothing references them anymore;
-// only their strings survive in .rodata. Keep them (dead-stripped by the linker) for layout.
 static void dbgMenuDeadMemDisp(void) {
     GSlogWrite("CacheMemory : %.2fkb / %.2fkb");
     GSlogWrite("  - Largest : %.2fkb");

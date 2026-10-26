@@ -1,8 +1,6 @@
 #include "../../../PowerPC_EABI_Support/msl_types.h"
 
-// These run before the game's .text is copied into place, so they live in .init.
 #pragma section code_type ".init"
-
 
 void* memset(void* dst, int val, size_t n);
 void __fill_mem(void* dst, int val, u32 n);

@@ -1,4 +1,3 @@
-// STATUS: 7/7 exact, LAYOUT OK, CONST OK (default flags)
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/string.h>
@@ -95,7 +94,6 @@ struct GSlayerCam {
     u32* data;
 };
 
-
 extern "C" {
 void GSmtx44Ortho(f32* mtx, f32, f32, f32, f32, f32, f32);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
@@ -145,8 +143,6 @@ public:
     virtual ~GSeffect();
 };
 
-// Motion blur: either blends the back framebuffer over the screen, or re-draws a model with
-// its previous animation frames at increasing alpha.
 class blurEffect : public GSeffect {
 public:
     blurEffect(bool useFramebuffer);
@@ -168,7 +164,6 @@ public:
     f32 m_strength;
 };
 
-// From the Dolphin SDK's OSFastCast.h (GQR2 is set up for u8 conversion).
 static inline void __OSf32tou8(register f32 arg, volatile register u8* out) {
     asm { psq_st arg, 0(out), 1, 2 }
 }

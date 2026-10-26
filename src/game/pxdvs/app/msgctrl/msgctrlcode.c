@@ -2,7 +2,6 @@
 
 typedef struct MsgCtrl MsgCtrl;
 
-// Message control-code table: per code a flag byte and its handler.
 typedef struct MsgCtrlCode {
     u8 flags;
     u8 pad[3];

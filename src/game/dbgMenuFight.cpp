@@ -1,7 +1,5 @@
-// re-matched against the XD object.
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
@@ -106,7 +104,6 @@ extern u32* zokusei_data_number;
 extern u32 deck_group_data_number;
 extern u32 deck_group_data[];
 
-// Real functions (from fightEncountBios) and static helpers.
 void* fightEncountDataBiosGetPtr(u16 id);
 u32 fightEncountDataBiosGetFightKind(void*);
 void fightEncountDataBiosSetFightKind(void*, u8);
@@ -180,7 +177,6 @@ void dbgMenuFightSetFightPokeStMenuOpenFlag(u8);
 u8 dbgMenuFightGetFightPokeStMenuOpenFlag(void);
 s32 dbgMenuGetGsinputMsgId(s32);
 
-// Data (order matters for the link).
 static u8 _msg_speed = 5;
 static u16 _dbgmenu_fight_waza_edit_waza_data_id = 1;
 static u16 _dbgmenu_fight_deck_data_id = 1;

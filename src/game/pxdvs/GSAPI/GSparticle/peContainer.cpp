@@ -1,6 +1,3 @@
-// STATUS (dPart): needs extra_cflags -inline deferred (source written bottom-to-top; LAYOUT OK). 12/16 exact;
-// peRenderContainer ctor 86% (reg alloc of locals + debug-stat add order), PreUpdate 97% (dl[cur].flags|=2 form),
-// peContainer ctor 98% (stats pointer/0xa8 constant register). Not linkable until those are exact.
 #include <dolphin/types.h>
 
 extern "C" {
@@ -20,10 +17,10 @@ enum GSgfxPrimType { GS_PRIM_DUMMY };
 struct GSgfxVF;
 
 struct GSgfxDL {
-    u16 flags;  // 0x00
-    u16 count;  // 0x02
-    u8* data;   // 0x04
-    u32 size;   // 0x08
+    u16 flags;
+    u16 count;
+    u8* data;
+    u32 size;
     u32 pad;
 
     bool valid() const { return (flags & 1) == 1; }
@@ -67,21 +64,21 @@ struct peEmitterNode {
 class peNode {
 public:
     u8 pad[0x28];
-    peNode* prev;  // 0x28
-    peNode* next;  // 0x2c
+    peNode* prev;
+    peNode* next;
 };
 
 class peContainer {
 public:
-    peEmitterNode* emitter;  // 0x00
-    u32 unk4;                // 0x04
-    void* buffer;            // 0x08
-    peNode* freeList;        // 0x0c
-    peNode* activeList;      // 0x10
-    u16 count;               // 0x14
-    u16 maxCount;            // 0x16
-    u8 dirty;                // 0x18
-    u8 started;              // 0x19
+    peEmitterNode* emitter;
+    u32 unk4;
+    void* buffer;
+    peNode* freeList;
+    peNode* activeList;
+    u16 count;
+    u16 maxCount;
+    u8 dirty;
+    u8 started;
 
     peContainer(peEmitterNode* e, u32 nodeSize, u16 max);
     virtual ~peContainer();
@@ -101,13 +98,13 @@ public:
 
 class peRenderContainer : public peContainer {
 public:
-    u8 swapPending;  // 0x20
-    u8 cur;          // 0x21
-    u32 bufSize;     // 0x24
-    GSgfxDL dl[2];   // 0x28
-    u8* bufA;        // 0x48
-    u8* bufB;        // 0x4c
-    u16 tokens[2];   // 0x50
+    u8 swapPending;
+    u8 cur;
+    u32 bufSize;
+    GSgfxDL dl[2];
+    u8* bufA;
+    u8* bufB;
+    u16 tokens[2];
 
     peRenderContainer(peEmitterNode* e, u32 nodeSize, u16 max, GSgfxVF* vf, GSgfxPrimType prim, u8 vertsPerNode,
                       u8 bytesPerVert, bool dbl);
@@ -121,6 +118,7 @@ public:
 };
 
 peContainer::peContainer(peEmitterNode* e, u32 nodeSize, u16 max) {
+    u8* e_c = (u8*)e;
     emitter = e;
     unk4 = 0;
     buffer = 0;
@@ -153,7 +151,7 @@ peContainer::peContainer(peEmitterNode* e, u32 nodeSize, u16 max) {
             *(u8**)((u8*)node + 0x20) = cur;
             cur += 0x28;
         } else {
-            *(u8**)((u8*)node + 0x20) = (u8*)e + 0xa8;
+            *(u8**)((u8*)node + 0x20) = e_c + 0xa8;
         }
         node->next = prevNode;
         if (prevNode) {

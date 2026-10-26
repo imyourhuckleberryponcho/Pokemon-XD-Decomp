@@ -4,30 +4,9 @@
 #define THP_DECODER_QUANT_ONLY
 #define THP_DECODER_CORE_ONLY
 #define THP_DECODER_MIDDLE_ONLY
-/**
- * @file THP_range_801E1B54.c
- * @brief THP player wrapper, 0x801E1B54 - 0x801E5548, plus shared decoder
- * source used by THPDec_range_801E5548.c.
- *
- * The player and decoder ranges are separate original translation units.
- * Besides the sdata/callee/static-linkage boundary at THPVideoDecode, the
- * player range matches GC/1.3 while the decoder range matches GC/1.2.5n.
- *
- * Transcribed 2026-07-02 from Nintendo's redistributable THP video/audio
- * decoder library. Cross-game corpus (simindex, ext corpus) shows every
- * function in this unit at 0.99-1.00 similarity, exact size match, and
- * 100% match against src/dolphin/thp/THPDec.c + THPAudio.c in marioparty4,
- * sfa, smstrikers, and metroidprime decomps. This file is a direct port of
- * that shared SDK source, adapted only for local type/decl availability
- * (no dolphin/thp.h, dolphin/os/OSFastCast.h, or dolphin/os.h yet exist in
- * this tree, so the minimal pieces needed are declared locally below
- * rather than growing the shared include tree from this unit).
- */
 #include "dolphin/types.h"
 #include "dolphin/PPCArch.h"
 
-/* ---- locked-cache / cache primitives (defined in src/dolphin/os/OSCache.c,
- * not yet declared in dolphin/os/OSCache.h) ---- */
 extern void DCZeroRange(void *addr, u32 nBytes);
 extern void LCQueueWait(u32 threshold);
 extern u32 LCStoreData(void *destAddr, void *srcAddr, u32 nBytes);
@@ -39,8 +18,6 @@ extern void LCLoadData(void *destAddr, void *srcAddr, u32 nBlocks);
 #define ATTRIBUTE_ALIGN(num) __attribute__((aligned(num)))
 #endif
 
-/* ---- THP types (mirrors dolphin/thp.h / dolphin/thp/THPAudio.h from the
- * reference SDK; kept local to this unit) ---- */
 typedef u8 THPSample;
 typedef s16 THPCoeff;
 typedef f32 THPQuantTab[64];
@@ -101,11 +78,6 @@ typedef struct THPAudioDecodeInfo {
 } THPAudioDecodeInfo;
 
 #if defined(THP_DECODER_EXTERNAL_DATA)
-/*
- * The active data splits already own the decoder state and constants. Exact
- * text-only decoder islands must reference those canonical symbols instead of
- * emitting duplicate private sections from this shared SDK source.
- */
 extern THPHuffmanTab *lbl_8047B4A0 ATTRIBUTE_ALIGN(32);
 extern THPHuffmanTab *lbl_8047B4C0 ATTRIBUTE_ALIGN(32);
 extern THPHuffmanTab *lbl_8047B4E0 ATTRIBUTE_ALIGN(32);
@@ -303,7 +275,6 @@ s32 THPVideoDecode(void *file, void *tileY, void *tileU, void *tileV, void *work
                 all_done = TRUE;
             }
             else if (status == 216) {
- // empty but required for match
             }
             else {
                 goto _err_unsupported_marker;
@@ -602,17 +573,14 @@ static inline void __THPGQRSetup(void)
 {
     register u32 tmp1, tmp2;
 
- // clang-format off
     asm {
         mfspr   tmp1, GQR5;
         mfspr   tmp2, GQR6;
     }
- // clang-format on
 
     __THPOldGQR5 = tmp1;
     __THPOldGQR6 = tmp2;
 
- // clang-format off
 	asm {
         li      r3, 0x0007
         oris    r3, r3, 0x0007
@@ -621,7 +589,6 @@ static inline void __THPGQRSetup(void)
         oris    r3, r3, 0x3D04
         mtspr   GQR6, r3
     }
- // clang-format on
 }
 
 static inline void __THPGQRRestore(void)
@@ -630,12 +597,10 @@ static inline void __THPGQRRestore(void)
     tmp1 = __THPOldGQR5;
     tmp2 = __THPOldGQR6;
 
- // clang-format off
 	asm {
         mtspr   GQR5, tmp1;
         mtspr   GQR6, tmp2;
     }
- // clang-format on
 }
 #endif
 
@@ -752,7 +717,6 @@ inline void __THPInverseDCTNoYPos(register THPCoeff *in, register u32 xPos)
 
     {
         register u32 itmp0, itmp1, itmp2, itmp3;
- // clang-format off
         asm {
             li          itmp2, 8
             mtctr       itmp2
@@ -911,7 +875,6 @@ inline void __THPInverseDCTNoYPos(register THPCoeff *in, register u32 xPos)
         _loopEnd:
 
         }
- // clang-format on
     }
 
     ws = &__THPIDCTWorkspace[0];
@@ -923,7 +886,6 @@ inline void __THPInverseDCTNoYPos(register THPCoeff *in, register u32 xPos)
         register u32 itmp0, off0, off1;
         register THPSample *out0, *out1;
 
- // clang-format off
 		asm {
             psq_l       tmp10, 8*0*sizeof(f32)(ws), 0, 0
             slwi        xPos, xPos, 2
@@ -1038,7 +1000,6 @@ inline void __THPInverseDCTNoYPos(register THPCoeff *in, register u32 xPos)
             psq_st      tmp20, 0(out1), 0, 6
             psq_st      tmp21, 8(out1), 0, 6
         }
- // clang-format on
     }
 }
 
@@ -1060,7 +1021,6 @@ inline void __THPInverseDCTY8(register THPCoeff *in, register u32 xPos)
     {
         register u32 itmp0, itmp1, itmp2, itmp3;
 
- // clang-format off
 		asm {
             li          itmp2, 8
             mtctr       itmp2
@@ -1219,7 +1179,6 @@ inline void __THPInverseDCTY8(register THPCoeff *in, register u32 xPos)
         _loopEnd:
 
         }
- // clang-format on
     }
 
     ws = &__THPIDCTWorkspace[0];
@@ -1231,7 +1190,6 @@ inline void __THPInverseDCTY8(register THPCoeff *in, register u32 xPos)
         register u32 itmp0, off0, off1;
         register THPSample *out0, *out1;
 
- // clang-format off
 		asm {
             psq_l       tmp10, 8*0*sizeof(f32)(ws), 0, 0
             slwi off0, wid, 3;
@@ -1349,7 +1307,6 @@ inline void __THPInverseDCTY8(register THPCoeff *in, register u32 xPos)
             psq_st      tmp21, 8(out1), 0, 6
 
         }
- // clang-format on
     }
 }
 
@@ -1423,7 +1380,6 @@ inline s32 __THPHuffDecodeTab(register THPFileInfo *info, register THPHuffmanTab
     register u32 increment;
     register s32 tmp;
 
- // clang-format off
 	asm
     {
         lwz     cnt, info->cnt;
@@ -1440,7 +1396,6 @@ inline s32 __THPHuffDecodeTab(register THPFileInfo *info, register THPHuffmanTab
         add     cnt, cnt, increment;
         stw     cnt, info->cnt;
     }
- // clang-format on
 _done:
     return code;
 
@@ -1452,7 +1407,6 @@ _done:
         maxcodebase = (u32) & (h->maxCode);
         cnt += 5;
 
- // clang-format off
 		asm {
             li          tmp2, sizeof(s32)*(5);
             li          code, 5;
@@ -1497,13 +1451,11 @@ _done:
             addi        code, code, 1
             bgt     __WHILE_START;
         }
- // clang-format on
     }
 _FCEB_Done:
     info->cnt = cnt;
     return (h->Vij[(s32)(tmp + h->valPtr[code])]);
 
- // clang-format off
 	asm
     {
       _notEnoughBits:
@@ -1525,10 +1477,8 @@ _FCEB_Done:
         stw     code, info->cnt;
         bgt     _FailedCheckNoBits1;
     }
- // clang-format on
     return tmp;
 
- // clang-format off
 	asm
     {
       _1bitleft:
@@ -1544,14 +1494,12 @@ _FCEB_Done:
         beq     _Read4;
 
     }
- // clang-format on
     return tmp;
 
 _Read4 : {
     register u32 maxcodebase = (u32) & (h->maxCode);
     register u32 tmp2;
 
- // clang-format off
 	asm
     {
             li      cnt, sizeof(s32)*5;
@@ -1572,7 +1520,6 @@ _Read4 : {
             bgt     __DR4_WHILE_START;
 
     }
- // clang-format on
 }
 
     info->cnt = cnt;
@@ -1580,7 +1527,6 @@ __CODE_PLUS_VP_CNT:
     return (h->Vij[(s32)(code + h->valPtr[cnt])]);
 
 _getfullword:
- // clang-format off
 	asm
     {
         lwzu    cb, 4(tmp);
@@ -1596,21 +1542,18 @@ _getfullword:
 
         stw     increment, info->cnt;
     }
- // clang-format on
     return (s32)cnt;
 
 _FailedCheckEnoughbits_Updated:
 
     cnt = 5;
     do {
- // clang-format off
         asm
         {
             subfic  tmp, cnt, 31;
             addi    cnt, cnt, 1;
             srw     code, cb, tmp;
         }
- // clang-format on
     } while (code > h->maxCode[cnt]);
 
     info->cnt = cnt + 1;
@@ -1626,7 +1569,6 @@ _FailedCheckNoBits1 :
     code = (s32)(cb & (~mask));
     mask = (u32) & (h->maxCode);
 
- // clang-format off
 	asm
     {
             lwz     tmp, info->c;
@@ -1657,7 +1599,6 @@ _FailedCheckNoBits1 :
             bgt     __FCNB1_WHILE_START;
 
     }
- // clang-format on
 }
 
     info->cnt = (u32)tmp;
@@ -1819,7 +1760,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                 register u32 tmp;
                 register u32 cnt1;
                 register u32 tmp1;
- // clang-format off
                 asm {
                         lwz      cnt,info->cnt;
                         subfic   code,cnt,33;
@@ -1836,9 +1776,7 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                         subfic   v,t,32;
                         srw      diff,cnt,v;
                 }
- // clang-format on
 
- // clang-format off
 				asm
                 {
                     b _DoneDIFF;
@@ -1856,7 +1794,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                     srw diff, v, tmp;
                 _DoneDIFF:
                 }
- // clang-format on
             }
 
             if (__cntlzw((u32)diff) > 32 - t) {
@@ -1878,21 +1815,18 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
         register s32 tmp;
         register THPHuffmanTab *h = Yachuff;
 
- // clang-format off
 		asm
         {
             lwz     cnt, info->cnt;
             addi    increment, h, 32;
             lwz     cb, info->currByte;
         }
- // clang-format on
 
         for (k = 1; k < 64; k++)
         {
             register s32 ssss;
             register s32 rrrr;
 
- // clang-format off
 			asm {
                 addi    code, cnt, 4;
                 cmpwi   cnt, 28;
@@ -1907,7 +1841,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                 add     cnt, cnt, code;
                 b       _DoneDecodeTab;
             }
- // clang-format on
 
             {
                 register u32 maxcodebase;
@@ -1916,7 +1849,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
             _FailedCheckEnoughBits:
                 cnt += 5;
                 maxcodebase = (u32) & (h->maxCode);
- // clang-format off
 				asm {
                     li          tmp2, sizeof(s32)*(5);
                     li          code, 5;
@@ -1962,14 +1894,12 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                     addi    code, code, 1
                     bgt     __WHILE_START;
                 }
- // clang-format on
             }
         _FCEB_Done:
             ssss = (h->Vij[(s32)(tmp + h->valPtr[code])]);
             goto _DoneDecodeTab;
 
         _notEnoughBits:
- // clang-format off
 			asm
             {
                 cmpwi   cnt, 33;
@@ -1989,12 +1919,10 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                 cmpwi   code, 33;
                 bgt     _FailedCheckNoBits1;
             }
- // clang-format on
             cnt = (u32)code;
             goto _DoneDecodeTab;
 
         _getfullword : {
- // clang-format off
 			asm
             {
                     lwzu    cb, 4(tmp);
@@ -2006,21 +1934,18 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                     addi    cnt, tmp, 1
                     beq     _FailedCheckEnoughbits_Updated;
             }
- // clang-format on
         }
             goto _DoneDecodeTab;
 
         _FailedCheckEnoughbits_Updated:
             ssss = 5;
             do {
- // clang-format off
 				asm
                 {
                     subfic  tmp, ssss, 31;
                     addi    ssss, ssss, 1;
                     srw     code, cb, tmp;
                 }
- // clang-format on
             } while (code > h->maxCode[ssss]);
 
             cnt = (u32)(ssss + 1);
@@ -2029,7 +1954,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
             goto _DoneDecodeTab;
 
         _1bitleft:
- // clang-format off
 			asm {
                 lwzu    cb, 4(tmp);
 
@@ -2041,7 +1965,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                 beq     _Read4;
 
             }
- // clang-format on
 
             goto _DoneDecodeTab;
 
@@ -2049,7 +1972,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
             register u32 maxcodebase = (u32) & (h->maxCode);
             register u32 tmp2;
 
- // clang-format off
 			asm {
                     li  cnt, sizeof(s32)*5;
                     add     maxcodebase, maxcodebase, cnt;
@@ -2069,7 +1991,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                     bgt     __DR4_WHILE_START;
 
             }
- // clang-format on
         }
             ssss = (h->Vij[(s32)(code + h->valPtr[cnt])]);
             goto _DoneDecodeTab;
@@ -2083,7 +2004,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
             code = (s32)(cb & (~mask));
             mask = (u32) & (h->maxCode);
 
- // clang-format off
 			asm {
                     lwz     tmp, info->c;
                     subfic  tmp2, cnt, 33;
@@ -2112,20 +2032,17 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                     bgt     __FCNB1_WHILE_START;
 
             }
- // clang-format on
             ssss = (h->Vij[(s32)(code + h->valPtr[tmp3])]);
         }
 
             goto _DoneDecodeTab;
 
         _DoneDecodeTab:
- // clang-format off
 			asm {
                 andi.   rrrr, ssss, 15;
                 srawi   ssss, ssss, 4;
                 beq     _RECV_SSSS_ZERO;
             }
- // clang-format on
 
             {
                 k += ssss;
@@ -2133,7 +2050,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                     register s32 v;
                     register u32 cnt1;
                     register u32 tmp1;
- // clang-format off
 					asm
                     {
                         subfic   code,cnt,33;
@@ -2145,8 +2061,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                         subfic   v,rrrr,32;
                         srw      ssss,tmp1,v;
                     }
- // clang-format on
- // clang-format off
 					asm
                     {
                         b _RECVDone;
@@ -2163,7 +2077,6 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                         srw ssss, v, tmp;
                     _RECVDone:
                     }
- // clang-format on
                 }
 
                 if (__cntlzw((u32)ssss) > 32 - rrrr) {
@@ -2183,12 +2096,10 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                 k += 15;
             };
 
- // clang-format off
 			asm
             {
               _RECV_END:
             }
- // clang-format on
         }
         info->cnt = cnt;
         info->currByte = cb;
@@ -2218,7 +2129,6 @@ static void __THPHuffDecodeDCTCompU(register THPFileInfo *info, THPCoeff *block)
     __dcbz((void *)block, 64);
 
     if (t) {
- // clang-format off
 		asm
         {
             lwz      cnt,info->cnt;
@@ -2233,9 +2143,7 @@ static void __THPHuffDecodeDCTCompU(register THPFileInfo *info, THPCoeff *block)
             subfic   v,t,32;
             srw      diff,cnt,v;
         }
- // clang-format on
 
- // clang-format off
 		asm
         {
             b _DoneDIFF;
@@ -2253,7 +2161,6 @@ static void __THPHuffDecodeDCTCompU(register THPFileInfo *info, THPCoeff *block)
             srw diff, v, tmp;
         _DoneDIFF:
         }
- // clang-format on
 
         if (__cntlzw((u32)diff) > 32 - t) {
             diff += ((0xFFFFFFFF << t) + 1);
@@ -2271,7 +2178,6 @@ static void __THPHuffDecodeDCTCompU(register THPFileInfo *info, THPCoeff *block)
 
         if (ssss) {
             k += rrrr;
- // clang-format off
 			asm
             {
                 lwz      cnt,info->cnt;
@@ -2286,9 +2192,7 @@ static void __THPHuffDecodeDCTCompU(register THPFileInfo *info, THPCoeff *block)
                 subfic   v,ssss,32;
                 srw      rrrr,cnt,v;
             }
- // clang-format on
 
- // clang-format off
 			asm
             {
                 b _Done;
@@ -2306,7 +2210,6 @@ static void __THPHuffDecodeDCTCompU(register THPFileInfo *info, THPCoeff *block)
                 srw rrrr, v, tmp;
             _Done:
             }
- // clang-format on
 
             if (__cntlzw((u32)rrrr) > 32 - ssss) {
                 rrrr += ((0xFFFFFFFF << ssss) + 1);
@@ -2346,7 +2249,6 @@ static void __THPHuffDecodeDCTCompV(register THPFileInfo *info, THPCoeff *block)
     __dcbz((void *)block, 64);
 
     if (t) {
- // clang-format off
 		asm
         {
             lwz      cnt,info->cnt;
@@ -2361,9 +2263,7 @@ static void __THPHuffDecodeDCTCompV(register THPFileInfo *info, THPCoeff *block)
             subfic   v,t,32;
             srw      diff,cnt,v;
         }
- // clang-format on
 
- // clang-format off
 		asm
         {
             b _DoneDIFF;
@@ -2381,7 +2281,6 @@ static void __THPHuffDecodeDCTCompV(register THPFileInfo *info, THPCoeff *block)
             srw diff, v, tmp;
         _DoneDIFF:
         }
- // clang-format on
 
         if (__cntlzw((u32)diff) > 32 - t) {
             diff += ((0xFFFFFFFF << t) + 1);
@@ -2401,7 +2300,6 @@ static void __THPHuffDecodeDCTCompV(register THPFileInfo *info, THPCoeff *block)
         if (ssss) {
             k += rrrr;
 
- // clang-format off
 			asm
             {
                 lwz      cnt,info->cnt;
@@ -2419,9 +2317,7 @@ static void __THPHuffDecodeDCTCompV(register THPFileInfo *info, THPCoeff *block)
                 subfic   v,ssss,32;
                 srw      rrrr,cnt,v;
             }
- // clang-format on
 
- // clang-format off
 			asm
             {
                 b _Done;
@@ -2439,7 +2335,6 @@ static void __THPHuffDecodeDCTCompV(register THPFileInfo *info, THPCoeff *block)
                 srw rrrr, v, tmp;
             _Done:
             }
- // clang-format on
 
             if (__cntlzw((u32)rrrr) > 32 - ssss) {
                 rrrr += ((0xFFFFFFFF << ssss) + 1);
@@ -2481,7 +2376,6 @@ BOOL THPInit(void)
     __THPLCWork672[2] = base;
     base += 0xA80;
 
- // clang-format off
     asm {
         li      r3, 0x0004
         oris    r3, r3, 0x0004
@@ -2499,11 +2393,10 @@ BOOL THPInit(void)
         oris    r3, r3, 0x0007
         mtspr   GQR5, r3
     }
- // clang-format on
 
     __THPInitFlag = TRUE;
     return TRUE;
 }
 #endif
 
-#endif // THP_PLAYER_ONLY
+#endif

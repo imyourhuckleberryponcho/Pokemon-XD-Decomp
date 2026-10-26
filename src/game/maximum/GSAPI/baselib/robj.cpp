@@ -1,8 +1,8 @@
-// Ported from the Melee decomp's robj.c (headers: include/hsd_ref); compiled as C with
-// deferred inlining: functions come out in reverse source order.
+
+
 #define HSD_FILE_NAME "robj.c"
 
-// XD's MSL <math.h> inlines (sqrtf with its NaN checks) instead of include/libc's math.h.
+
 #include <dolphin/types.h>
 #define _MATH_H_
 
@@ -53,7 +53,7 @@ inline float sqrtf(float x)
 
 #include <sysdolphin/baselib/debug.h>
 
-// XD's jobj.h has its inline asserts on different lines than the Melee header copy.
+
 #undef HSD_ASSERT_IN
 #define XD_JOBJ_H_LINE(line) ((line) == 564 ? 605 : (line) == 1144 ? 1148 : (line))
 #define HSD_ASSERT_IN(file, line, cond)                                           ((cond) ? ((void) 0) : __assert(file, XD_JOBJ_H_LINE(line), #cond))
@@ -644,7 +644,7 @@ HSD_RObj* HSD_RObjLoadDesc(HSD_RObjDesc* robjdesc)
 
 void HSD_RObjRemove(HSD_RObj* robj)
 {
- // s32 flags;
+
 
     if (robj != NULL) {
         switch (robj->flags & ROBJ_TYPE_MASK) {
@@ -703,7 +703,7 @@ static void expEvaluate(HSD_Exp* exp, u32 type, void* obj,
     HSD_JObj* jobj;
     Vec3 scale;
     float temp_f31;
-    Quaternion sp2C; // 16 bytes in XD: the scale vector sits 4 bytes higher on the stack (Melee: Vec3 + u8 _[4])
+    Quaternion sp2C;
     HSD_ObjData sp1C;
     HSD_RObj* robj = (HSD_RObj*) obj;
 

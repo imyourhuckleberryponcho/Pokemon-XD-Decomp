@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Built-in script object methods: tarray, vector and thread.
 #pragma pool_strings off
 
 struct GSvec {

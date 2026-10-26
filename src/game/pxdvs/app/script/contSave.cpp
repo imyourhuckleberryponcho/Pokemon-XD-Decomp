@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// This unit was built optimizing for size (uses stmw/lmw) and without the peephole optimizer.
 #pragma optimize_for_size on
 #pragma peephole off
 

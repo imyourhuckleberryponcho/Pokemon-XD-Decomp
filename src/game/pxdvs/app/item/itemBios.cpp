@@ -1,6 +1,3 @@
-// itemBios: all 89 functions match GXXE01 (itemParamConvertOrigFormat written from asm 2026-10-15).
-// Source: src/game/people/people_data_r51_801431AC_suffix.c
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0
 #include <dolphin/types.h>
 
 extern "C" {
@@ -59,7 +56,6 @@ typedef struct ItemParamDataRef {
     u8 spAttackEffortUp;
 } ItemParamDataRef;
 
-// Field descriptor of the original (packed) item parameter format.
 typedef struct ItemParamOrigDesc {
     s32 id;
     s32 offset;
@@ -67,39 +63,6 @@ typedef struct ItemParamOrigDesc {
     s32 type;
 } ItemParamOrigDesc;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Source: src/game/people/people_item_getters_exact_80143C50.c
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0; MIT license above.
 typedef struct ItemBiosDataRef {
     u16 itemDataId;
     u16 num;
@@ -140,64 +103,6 @@ typedef struct ItemDataBiosRef {
     u8 padding_27;
 } ItemDataBiosRef;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Sources: src/game/people/people_item_effort_exact_80143718.c and
-// people_data_candidate_801436F0.c, people_data_candidate_80143778.c,
-// people_data_candidate_801437B8.c, people_data_candidate_801437F8.c,
-// people_data_candidate_80143A44.c.
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0; MIT license above.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Sources: src/game/people/people_item_getters_exact_80143C50.c,
-// people_item_tail_exact_80144064.c, and people_data.c.
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0; MIT license above.
 extern u32 item_waza_machine_no_number;
 extern u32 item_ball_data_number;
 extern u8 item_ball_data[];
@@ -205,15 +110,6 @@ extern u32* item_data_index_number;
 extern u16* item_data_index;
 extern u32* item_data_prime_number;
 extern u8* item_data_prime;
-
-
-
-
-
-
-
-
-
 
 void itemParamConvertOrigFormat(ItemParamDataRef* dst, u8* src) {
     ItemParamOrigDesc desc[32] = {
@@ -690,8 +586,6 @@ returnSixteen:
     return 0x16;
 }
 
-// Source: src/game/people/people_item_friend_exact_8014369C.c
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0; MIT license above.
 s8 itemParamGetFriend3Up(u8* data) {
     if (data == NULL) return 0;
     return (s8)data[7];
@@ -739,8 +633,6 @@ s32 itemParamGetEvolutionFlag(const ItemParamDataRef* item) {
     return (-bitValue | bitValue) >> 31;
 }
 
-// Source: src/game/people/people_item_ppup_exact_801437A0.c
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0; MIT license above.
 u8 itemParamGetPPUp(u8* p) {
     if (p == NULL) {
         return 0;
@@ -754,8 +646,6 @@ s32 itemParamGetPPSelectFlag(const ItemParamDataRef* item) {
     return (-bitValue | bitValue) >> 31;
 }
 
-// Source: src/game/people/people_item_hpup_exact_801437E0.c
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0; MIT license above.
 u8 itemParamGetHPUp(u8* p) {
     if (p == NULL) {
         return 0;
@@ -833,8 +723,6 @@ s32 itemParamGetGuardFlag(const ItemParamDataRef* item) {
     return (-bitValue | bitValue) >> 31;
 }
 
-// Source: src/game/people/people_item_battle_boost_exact_801439B8.c
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0; MIT license above.
 u8 itemParamGetSpAttackUp(u8* p) {
     if (p == NULL) return 0;
     return p[0x2] & 0xF;
@@ -872,8 +760,6 @@ s32 itemParamGetMeromeroFlag(const ItemParamDataRef* item) {
     return (-bitValue | bitValue) >> 31;
 }
 
-// Source: src/game/people/people_item_tables_setters_exact_80143A94.c
-// Revision: fd207bc8a541348f8f00046592c5dba4a75d8ec0; MIT license above.
 u8* itemParamGetPtr(u8 idx) {
     u8* result = &item_param[idx * 16];
     if (idx < item_param_number) return result;
@@ -1221,7 +1107,4 @@ u8* itemDataBiosGetPtr(u16 index) {
 }
 
 }
-
-
-
 

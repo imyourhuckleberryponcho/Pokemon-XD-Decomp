@@ -1,4 +1,4 @@
-// GSpart: handles to a joint (part) of a GSmodel; animation slots, part mixing, materials.
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -17,7 +17,7 @@ struct _HSD_AObj {
     u32 flags;
     f32 curr_frame;
     f32 rewind_frame;
-    f32 end_frame; // 0x0C
+    f32 end_frame;
 };
 typedef _HSD_AObj HSD_AObj;
 
@@ -27,15 +27,15 @@ struct _HSD_AObjDesc {
 };
 
 struct _HSD_AnimJoint {
-    _HSD_AnimJoint* child;      // 0x00
-    _HSD_AnimJoint* next;       // 0x04
-    _HSD_AObjDesc* aobjdesc;    // 0x08
+    _HSD_AnimJoint* child;
+    _HSD_AnimJoint* next;
+    _HSD_AObjDesc* aobjdesc;
 };
 
 struct _HSD_MatAnimJoint {
     _HSD_MatAnimJoint* child;
     _HSD_MatAnimJoint* next;
-    void* matanim;              // 0x08
+    void* matanim;
 };
 
 struct _HSD_ShapeAnimJoint {
@@ -47,41 +47,41 @@ struct _HSD_MObj;
 struct _HSD_TObj;
 
 struct _HSD_MatAnim {
-    _HSD_MatAnim* next;     // 0x00
-    void* aobjdesc;         // 0x04
-    void* texanim;          // 0x08
+    _HSD_MatAnim* next;
+    void* aobjdesc;
+    void* texanim;
 };
 
 struct _HSD_DObj {
     u8 unk0[4];
-    _HSD_DObj* next;        // 0x04
-    _HSD_MObj* mobj;        // 0x08
+    _HSD_DObj* next;
+    _HSD_MObj* mobj;
 };
 
 struct _HSD_MObj {
     u8 unk0[8];
-    _HSD_TObj* tobj;        // 0x08
+    _HSD_TObj* tobj;
 };
 
 struct _HSD_TObj {
     u8 unk0[0x64];
-    HSD_AObj* aobj;         // 0x64
+    HSD_AObj* aobj;
 };
 
 struct _HSD_JObj {
     u8 unk0[8];
-    _HSD_JObj* next;        // 0x08
-    _HSD_JObj* parent;      // 0x0C
-    _HSD_JObj* child;       // 0x10
-    u32 flags;              // 0x14
-    _HSD_DObj* dobj;        // 0x18
-    GSvec rotate;           // 0x1C
-    f32 rotateW;            // 0x28
-    GSvec scale;            // 0x2C
-    GSvec translate;        // 0x38
-    Mtx mtx;                // 0x44
+    _HSD_JObj* next;
+    _HSD_JObj* parent;
+    _HSD_JObj* child;
+    u32 flags;
+    _HSD_DObj* dobj;
+    GSvec rotate;
+    f32 rotateW;
+    GSvec scale;
+    GSvec translate;
+    Mtx mtx;
     u8 unk74[8];
-    HSD_AObj* aobj;         // 0x7C
+    HSD_AObj* aobj;
 };
 typedef _HSD_JObj HSD_JObj;
 typedef _HSD_DObj HSD_DObj;
@@ -104,58 +104,58 @@ struct _HSD_SceneModelSet {
 
 struct GSmaterial {
     u8 unk0[8];
-    HSD_MObj* mobj;     // 0x08
+    HSD_MObj* mobj;
     u8 unkC[0x28];
 };
 
 struct GSmodelPartMix {
-    s32 type;           // 0x00
-    u32 index;          // 0x04
-    f32 rate;           // 0x08
-    f32 frame;          // 0x0C
-    f32 reqFrame;       // 0x10
-    f32 endFrame;       // 0x14
-    HSD_AObj* aobj;     // 0x18
+    s32 type;
+    u32 index;
+    f32 rate;
+    f32 frame;
+    f32 reqFrame;
+    f32 endFrame;
+    HSD_AObj* aobj;
 };
 
 struct GSmodelPartAnim {
-    s32 type;           // 0x00
-    u32 partIndex;      // 0x04
-    void* callback;     // 0x08
-    void* arg;          // 0x0C
-    u32 mixFlags;       // 0x10
-    GSvec baseTranslate; // 0x14
-    GSvec baseRotate;   // 0x20
-    GSvec baseScale;    // 0x2C
+    s32 type;
+    u32 partIndex;
+    void* callback;
+    void* arg;
+    u32 mixFlags;
+    GSvec baseTranslate;
+    GSvec baseRotate;
+    GSvec baseScale;
 };
 
 struct _GSmodel {
-    u32 flags;                // 0x000
+    u32 flags;
     u8 unk4[4];
-    _HSD_SceneModelSet* set;  // 0x008
+    _HSD_SceneModelSet* set;
     u8 unkC[0x70];
-    f32 animRate;             // 0x07C
+    f32 animRate;
     u8 unk80[0x34];
-    f32 texAnimRate;          // 0x0B4
+    f32 texAnimRate;
     u8 unkB8[0x10];
-    GSmodelPartMix partMix[8];  // 0x0C8
-    GSmodelPartMix texPartMix[4]; // 0x1A8
+    GSmodelPartMix partMix[8];
+    GSmodelPartMix texPartMix[4];
     u8 unk218[4];
-    u8 animDirty;             // 0x21C
-    u8 texAnimDirty;          // 0x21D
+    u8 animDirty;
+    u8 texAnimDirty;
     u8 unk21E[10];
-    GSmodelPartAnim partAnim[16]; // 0x228
+    GSmodelPartAnim partAnim[16];
     u8 unk5A8[0x38];
-    GSmaterial* materials;    // 0x5E0
-    u32 materialCount;        // 0x5E4
+    GSmaterial* materials;
+    u32 materialCount;
 };
 
 struct GSpart {
-    u8 inUse;       // 0x00
+    u8 inUse;
     u8 pad;
-    u16 index;      // 0x02
-    _GSmodel* model; // 0x04
-    HSD_JObj* jobj; // 0x08
+    u16 index;
+    _GSmodel* model;
+    HSD_JObj* jobj;
 };
 
 extern "C" {
@@ -261,7 +261,7 @@ void GSpartFree(GSpart* part);
 
 
 
-// Inline helpers from HSD's jobj.h (asserts carry that header's line numbers).
+
 static inline bool HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
     bool result;
     if (!jobj) {
@@ -370,7 +370,7 @@ static inline HSD_DObj* partGetDObj(GSpart* part) {
     return 0;
 }
 
-// Walks the DObj list: returns the index-th material and reports the list length through count.
+
 static inline HSD_MObj* partFindMaterial(HSD_DObj* dobj, u32 index, u32* count) {
     u32 i = 0;
 

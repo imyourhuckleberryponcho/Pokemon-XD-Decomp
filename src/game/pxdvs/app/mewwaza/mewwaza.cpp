@@ -1,4 +1,3 @@
-// Mew move teacher quiz: asks Mew-themed questions, scores personality points and picks a move template.
 #include <dolphin/types.h>
 
 struct MEWPOINTS {
@@ -93,13 +92,12 @@ static inline void _scale(MEWPOINTS* mp, u8 sel, u32 rem, s32 base) {
                 return;
             }
         }
-        s16 b = mp->b;
-        if (b < 0) {
-            b = -b;
+        if ((mp->b) < 0) {
+            (mp->b) = -(mp->b);
         }
         s32 ac2 = c < 0 ? -c : c;
-        if (ac2 > b) {
-            s16 ad = (enum TsE)(mp->d);
+        if (ac2 > (mp->b)) {
+            int ad = (enum TsE)(mp->d);
             if (ad < 0) {
                 ad = (enum TsE)(-ad);
             }
@@ -172,7 +170,7 @@ static s32 _mewSequence(MEWPOINTS* mp) {
     x = HSD_Rand() & 3;
     y = x;
     while (x == y) {
-        y = HSD_Rand() & 3;
+        x = HSD_Rand() & 3;
     }
     q2[1] = mewans2[y];
     q2[0] = mewans2[x];
@@ -211,7 +209,7 @@ static s32 _mewSequence(MEWPOINTS* mp) {
     {
         TemplateData* t = _getWazaFromTmpl(_tmplSelect(mp), mp);
         s32 mid;
-        s8 yn;
+        int yn;
         if (t == 0) {
             return -1;
         }
@@ -226,8 +224,8 @@ static s32 _mewSequence(MEWPOINTS* mp) {
         winMsgClose(1);
         menuOpen((u16)mid, 0);
         yn = menuSubOpenYesNo(1, 0x196, 0xc0, 0);
-        menuClose(mid);
-        menuCloseSync(mid, 1);
+        menuClose((u16)mid);
+        menuCloseSync((u16)mid, 1);
         heroMoveTermEvent();
         return yn;
     }
@@ -405,17 +403,17 @@ static s32 _tmplSelect(MEWPOINTS* mp) {
     }
     {
         enum TsE t = (enum TsE)(mp->b);
-        if (t < 0) {
+        if ((s16)t < 0) {
             t = (enum TsE)(-t);
         }
         mp->a = mp->a + t;
         t = (enum TsE)(mp->c);
-        if (t < 0) {
+        if ((s16)t < 0) {
             t = (enum TsE)(-t);
         }
         mp->a = mp->a + t;
         t = (enum TsE)(mp->d);
-        if (t < 0) {
+        if ((s16)t < 0) {
             t = (enum TsE)(-t);
         }
         mp->a = mp->a + t;
@@ -446,12 +444,12 @@ static TemplateData* _getWazaFromTmpl(long idx, MEWPOINTS* mp) {
         chance = 100;
         if (mp->state == 1) {
             if (RAND16() % 100 < 30) {
-                return &tbl[10 + RAND16() % 3];
+                return tbl + 10 + RAND16() % 3;
             }
         }
         if (mp->state == 2) {
             if (RAND16() % 100 < 30) {
-                return &tbl[7 + RAND16() % 3];
+                return tbl + 7 + RAND16() % 3;
             }
         }
         break;
@@ -474,7 +472,7 @@ static TemplateData* _getWazaFromTmpl(long idx, MEWPOINTS* mp) {
         chance = 70;
         break;
     }
-    if (chance == 100 || chance > RAND16() % 100) {
+    if (chance == 100 || chance > (s32)(RAND16() % 100)) {
         count = 0;
         for (e = tbl; e->valid != 0; e++) {
             if (e->kind == kind) {

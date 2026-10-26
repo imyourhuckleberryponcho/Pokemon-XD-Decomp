@@ -1,5 +1,3 @@
-// The UDP connection is not available on GameCube.
-
 __declspec(weak) int udp_cc_initialize(void* flagOut, void* inputPendingPtrOut) {
     return -1;
 }

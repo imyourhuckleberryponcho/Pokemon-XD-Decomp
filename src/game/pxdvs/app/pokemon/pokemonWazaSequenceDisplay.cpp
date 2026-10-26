@@ -3,7 +3,6 @@
 struct Pokemon;
 struct Sequence;
 
-// One move whose animation should be preloaded.
 struct SequenceWaza {
     u16 wazaID;
     u16 kind;
@@ -52,7 +51,6 @@ BOOL loadSequence(Sequence** out, Pokemon* pokemon, SequenceWaza* wazas, s32 num
     return TRUE;
 }
 
-// Unknown function that was dead-stripped from the final link; it used its own 0.0f constant.
 f32 pokemonWazaSequenceDisplayZero(void) {
     return 0.0f;
 }

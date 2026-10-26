@@ -1,7 +1,4 @@
-// STATUS (snC): 12/23 exact with extra_cflags=["-inline noauto"]. Stubs (empty): menuCB_PokemonEntry, ButtonTask_20041006, EntCheck, EntCheckGBA. WIP: DeoxysParamCustom 72%, TexWorkInit 66%, WorkInit 92%.
-// Pokemon entry screen for battle (menuCB_PokemonEntry).
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -22,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -43,7 +39,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 struct Hero;
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -76,24 +71,24 @@ struct PokemonEntryFace {
 };
 
 struct PokemonEntryWork {
-    s32 f0;                       // 0x00
-    bool entryFlag[4];            // 0x04
-    s8 trainerKind[4];            // 0x08
-    s32 fC;                       // 0x0C
-    u8 pad10[0x1C];               // 0x10
-    s32 f2C;                      // 0x2C
-    PokemonEntryFace faces[4][6]; // 0x30
-    s32 f150;                     // 0x150
-    s32 f154;                     // 0x154
-    u8 readFlag;                  // 0x158
-    u8 pad159[7];                 // 0x159
-    f32 track[4][12];             // 0x160 (player * 0x30)
-    f32 f220;                     // 0x220
-    s32 f224;                     // 0x224
-    u8 pad228[4];                 // 0x228
-    u8 connected;                 // 0x22C
-    u8 pad22D[3];                 // 0x22D
-    s32 f230;                     // 0x230
+    s32 f0;
+    bool entryFlag[4];
+    s8 trainerKind[4];
+    s32 fC;
+    u8 pad10[0x1C];
+    s32 f2C;
+    PokemonEntryFace faces[4][6];
+    s32 f150;
+    s32 f154;
+    u8 readFlag;
+    u8 pad159[7];
+    f32 track[4][12];
+    f32 f220;
+    s32 f224;
+    u8 pad228[4];
+    u8 connected;
+    u8 pad22D[3];
+    s32 f230;
 };
 
 struct GCBEntry {
@@ -209,7 +204,6 @@ static u8 _menuCBPokemonEntryAllPlayer(void);
 static Pokemon* _menuCBPokemonEntryLoadCallBack(void* flag);
 static PokemonEntryFace* _menuCBPokemonEntryGetFaceBase(long player, long slot);
 
-// ---- draft declarations ----
 struct KeyInfo {
     u8 _draft[1];
 };
@@ -217,8 +211,6 @@ struct tagWINDOW_WORK {
     u8 _draft[1];
 };
 
-
-// ---- draft declarations ----
 struct Hero {
     u8 _draft[1];
 };
@@ -229,9 +221,6 @@ void menuCBPokemonEntryButtonTask_20041006();
 extern "C++" {
 static void _menuCB_DeoxysParamCustom(Pokemon* pokemon, u16 player);
 }
-
-// ---- draft declarations ----
-
 
 extern "C" {
 s32 menuCB_PokemonEntry();
@@ -247,19 +236,19 @@ static void _menuCB_DeoxysParamCustom(Pokemon* pokemon, u16 player) {
     u32 b4 = pokemonGetStatus(pokemon, 0, 0x98, 0);
     int e0 = pokemonGetStatus(pokemon, 0, 0x8E, 0);
     int e1 = pokemonGetStatus(pokemon, 0, 0x8F, 0);
-    u32 e2 = pokemonGetStatus(pokemon, 0, 0x90, 0);
+    int e2 = pokemonGetStatus(pokemon, 0, 0x90, 0);
     u32 e3 = pokemonGetStatus(pokemon, 0, 0x91, 0);
     int e4 = pokemonGetStatus(pokemon, 0, 0x92, 0);
     u32 s0 = (level * (b0 + (_GBA_DeokisisuParamTable[_menuCB_pokemonGetDeoxysSel(player, false)][0] * 2 + e0 / 4))) / 100;
-    u32 s1 = (level * (b1 + (_GBA_DeokisisuParamTable[_menuCB_pokemonGetDeoxysSel(player, false)][1] * 2 + e1 / 4))) / 100;
+    volatile u32 s1 = (level * (b1 + (_GBA_DeokisisuParamTable[_menuCB_pokemonGetDeoxysSel(player, false)][1] * 2 + e1 / 4))) / 100;
     u32 s2 = (level * (b2 + (_GBA_DeokisisuParamTable[_menuCB_pokemonGetDeoxysSel(player, false)][2] * 2 + e2 / 4))) / 100;
-    u32 s3 = (level * (b3 + (_GBA_DeokisisuParamTable[_menuCB_pokemonGetDeoxysSel(player, false)][3] * 2 + e3 / 4))) / 100;
-    u32 s4 = (level * (b4 + (_GBA_DeokisisuParamTable[_menuCB_pokemonGetDeoxysSel(player, false)][4] * 2 + e4 / 4))) / 100;
-    u16 r0 = pokemonAdjustValueBySeikaku(seikaku, 0x88, s0 + 5);
-    u16 r1 = pokemonAdjustValueBySeikaku(seikaku, 0x89, s1 + 5);
+    volatile u32 s3 = (level * (b3 + (_GBA_DeokisisuParamTable[_menuCB_pokemonGetDeoxysSel(player, false)][3] * 2 + e3 / 4))) / 100;
+    u32 s4 = (level * (b4 + (_GBA_DeokisisuParamTable[_menuCB_pokemonGetDeoxysSel((u8)player, false)][4] * 2 + e4 / 4))) / 100;
+    u32 r0 = pokemonAdjustValueBySeikaku(seikaku, 0x88, s0 + 5);
+    volatile u16 r1 = pokemonAdjustValueBySeikaku(seikaku, 0x89, s1 + 5);
     u16 r2 = pokemonAdjustValueBySeikaku(seikaku, 0x8A, s2 + 5);
-    u16 r3 = pokemonAdjustValueBySeikaku(seikaku, 0x8B, s3 + 5);
-    u16 r4 = pokemonAdjustValueBySeikaku(seikaku, 0x8C, s4 + 5);
+    volatile u16 r3 = pokemonAdjustValueBySeikaku(seikaku, 0x8B, s3 + 5);
+    u32 r4 = pokemonAdjustValueBySeikaku(seikaku, 0x8C, s4 + 5);
     pokemonBiosSetPhyAtk(pokemon, r0);
     pokemonBiosSetPhyDef(pokemon, r1);
     pokemonBiosSetSpeAtk(pokemon, r2);
@@ -271,7 +260,7 @@ s32 menuCB_PokemonEntry() {
     Hero *temp_r27;
     s32 *var_r6;
     s32 *var_r7;
-    Pokemon *temp_r3;
+    u8 *temp_r4;
     s32 temp_r28;
     s32 temp_ret;
     s32 var_ctr;
@@ -281,7 +270,7 @@ s32 menuCB_PokemonEntry() {
     s32 var_r29;
     s32 var_r8;
     u16 var_r30;
-    u8 *temp_r4;
+    Pokemon *temp_r3;
     u8 *temp_r4_2;
     u8 *temp_r4_3;
     u8 *temp_r4_4;
@@ -297,13 +286,13 @@ s32 menuCB_PokemonEntry() {
     M2C_FIELD(&_CB, s32 *, 0xB104) = -1;
     M2C_FIELD(&_CB, s32 *, 0xB108) = 0;
     M2C_FIELD(&_CB, s32 *, 0xAFE0) = 0;
+    var_r28 = 0;
     M2C_FIELD(&_CB, s32 *, 0xB060) = 0;
     M2C_FIELD(&_CB, s32 *, 0xB110) = 2;
     M2C_FIELD(&_CB, s32 *, 0xB1A0) = 0;
     menuCB_SE_Play((long)(0x14), (long)(0), (long)(0));
     menuOpen(0xC6, 0);
     menuOpen(0xC5, 0);
-    var_r28 = 0;
     do {
         if ((s32) M2C_FIELD(&_CB, s32 *, 0xB108) == 1) {
             if (var_r28 == 0) {
@@ -348,11 +337,11 @@ s32 menuCB_PokemonEntry() {
         return 0xA9;
     }
     do {
-        GSthreadSwitch();
         var_r6 = (long *)(&_CB);
         var_r7 = (long *)(&_CB);
         var_r8 = 0;
         var_ctr = 4;
+        GSthreadSwitch();
 loop_19:
         if ((s8) M2C_FIELD(var_r6, u8 *, 0xB488) == 1) {
             var_r8 += M2C_FIELD(var_r7, s16 *, 0xB458);
@@ -495,7 +484,6 @@ void menuCBPokemonEntryButtonTask_20041006() {
 #pragma pop
 }
 
-
 static u8 _menuCB_pokemonGetDeoxysSel(u16 player, bool flag) {
     u8 sel = 0;
     u16 slot = *(u32*)((u8*)_CB + player * 0x1320 + 0x3C) - 1;
@@ -526,7 +514,6 @@ static u8 _menuCB_pokemonGetDeoxysSel(u16 player, bool flag) {
 }
 
 extern "C" {
-
 
 }
 
@@ -676,7 +663,6 @@ block_13:
 }
 }
 
-
 static s32 _menuCBPokemonEntryButtonCheck(u32 buttons, long player) {
     s32 r = -1;
     s32 num = toolentryTaisenGetPokemonNum(player);
@@ -780,7 +766,7 @@ static void _menuCBPokemonEntryWorkInit(void) {
     }
     i = 0;
     do {
-        toolentryTaisenInitPokemonOrder(i);
+        toolentryTaisenInitPokemonOrder(pad);
         i++;
     } while (i < 4);
     _menuCBPokemonEntryWork();

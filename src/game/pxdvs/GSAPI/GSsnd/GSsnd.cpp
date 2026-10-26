@@ -6,7 +6,6 @@ struct SVec {
     f32 x, y, z;
 };
 
-// MusyX
 typedef struct {
     void* (*malloc)(u32 size);
     void (*free)(void* ptr);
@@ -170,7 +169,6 @@ struct SndRevH {
 };
 
 extern "C" {
-// game / SDK
 void* GSmemAllocAlign(u32 size, u32 align);
 void GSmemFree(void* p);
 void GSlogWrite(const char* fmt, ...);
@@ -197,7 +195,6 @@ u32 ARGetDMAStatus();
 u32 ARQGetChunkSize();
 void PSVECSubtract(const SVec* a, const SVec* b, SVec* out);
 
-// MusyX
 u8 sndCheckEmitter(void* em);
 u32 sndEmitterVoiceID(void* em);
 u8 sndRemoveEmitter(void* em);
@@ -238,7 +235,6 @@ void sndAuxCallbackReverbHI(u8 reason, void* info, void* user);
 u8 sndAuxCallbackPrepareReverbHI(void* rev);
 u8 sndAuxCallbackUpdateSettingsReverbHI(void* rev);
 
-// sndStream.cpp
 u32 _sndStreamCallback(void*, u32, void*, u32, u32);
 void _sndStreamCtrl(SndStream* s, u32 mode);
 void _sndStreamGetData(SndStream* s, void (*cb)());
@@ -248,7 +244,6 @@ void _sndStreamGetDataCallback_EXEC_UPDATE();
 void _sndStreamPrepareGetData(SndStream* s);
 u32 _sndStreamNibble_HeaderON2OFF(u32 v);
 
-// this unit
 u8 GSsndClose(u32 id);
 u8 GSsndStop(u32 id, s32 time, u32 unused);
 u8 GSsndOpen(u32 id, u32 a, u32 b);
@@ -263,7 +258,6 @@ void GSsndSetOutputMode(s32 mode);
 u32 GSsndGetOutputMode();
 void GSsndSetVolume(s32 vol, s32 time, u32 a, u32 b);
 
-// snd data tables (other units)
 extern u32* snd_data_number;
 extern SndData* snd_data;
 extern u32* snd_file_number;
@@ -294,7 +288,6 @@ static u32 _maxSndWork;
 static u32 _revH_now_parm_id;
 static u32 _maxSoundID;
 static SndRevH _revH;
-// function-local in the original (no init guard there), kept at file scope
 static f32 expParam = 1.0f;
 
 static SndStream* _sndGetStream(u32 key);
@@ -338,7 +331,6 @@ static void _sndInitParms(SndData* d, SndWork* w);
 static void _sndDoFree(void* p);
 static void* _sndDoMalloc(u32 size);
 
-// Defined early on purpose: the original's anonymous hooks constant sits first in .sdata2.
 static inline SND_HOOKS _sndMakeHooks() {
     SND_HOOKS hooks = {_sndDoMalloc, _sndDoFree};
     return hooks;
@@ -1915,4 +1907,4 @@ static void* _sndDoMalloc(u32 size) {
     return GSmemAllocAlign(size, 0x20);
 }
 
-} // extern "C"
+}

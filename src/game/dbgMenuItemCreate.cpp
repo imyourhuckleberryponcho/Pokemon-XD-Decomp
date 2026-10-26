@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 #pragma dont_inline on
 
@@ -25,8 +24,6 @@ void menuCloseCustom(s32 menuID, s32, s32);
 void menuCloseSync(s32 menuID, s32);
 void heroItemAddItemDataId(void* hero, u16 id, u16 num, s32);
 
-// Originally a function-local static in menuDbgItemCreate (initFlag$1274); declared here
-// so it is laid out before Num/ItemID like in the original.
 static BOOL initFlag;
 static s32 Num;
 static s32 ItemID;

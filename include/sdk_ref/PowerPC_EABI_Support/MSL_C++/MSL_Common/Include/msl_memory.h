@@ -29,6 +29,6 @@ inline T* uninitialized_copy(T* first, T* last, T* d_first)
 	return __uninitialized_copy_helper<T, 0, 1>::uninitialized_copy(first, last, d_first);
 }
 
-} // namespace std
+}
 
 #endif

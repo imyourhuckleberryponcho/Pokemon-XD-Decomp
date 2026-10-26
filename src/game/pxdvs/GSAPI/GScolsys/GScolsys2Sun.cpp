@@ -1,5 +1,3 @@
-// WIP (NonMatching): logic is complete; register allocation and stack layout still differ in all
-// three functions (the original keeps the parameters in the highest registers in the Array/Sun loops).
 #include <dolphin/types.h>
 
 struct GSvec {
@@ -43,7 +41,6 @@ bool GScolsys2UtilGetCpPlaneLine(GSvec* cp, f32* t, GSvec* normal, GSvec* tri, G
 bool GScolsy2UtilChkInTri(GSvec* p, GSvec* tri, GSvec* normal);
 }
 
-// Returns -1 if any segment can't be tested, else whether any new segment hit the triangle.
 static int getCpSegPolyArray(bool* hits, GSvec* start, GSvec* ends, unsigned long num, GSvec* tri, GSvec* normal) {
     u32 i;
     bool hit = false;
@@ -106,10 +103,10 @@ bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
     head = GScolsys2GetCCDFileHead();
     obj = head->objs;
     for (i = 0; i < head->numObjs; i++, obj++) {
-        bool enable;
+        GSmtx rot;
         u32 j;
         GSmtx mtx;
-        GSmtx rot;
+        bool enable;
         GSvec normal;
         GSvec verts[3];
         ColTri* tri;

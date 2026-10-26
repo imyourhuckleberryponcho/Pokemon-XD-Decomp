@@ -2,8 +2,6 @@
 
 #pragma peephole off
 
-// One offscreen render target: a movie or an animated model drawn into a texture that
-// replaces a texture of a floor model.
 struct OffscreenData {
     u8 isMovie;
     u8 anim;
@@ -64,7 +62,6 @@ static void* _offCam;
 
 extern "C" {
 
-// Plays a movie into a texture of a floor model.
 u8 floorMoviePlay(u32 movie, s32 arg1, int loop, u32 targetResID, u16 width, u16 height) {
     _floorFreeOffscreenData();
     _offData = &_userOffData;
@@ -88,7 +85,6 @@ u8 floorMoviePlay(u32 movie, s32 arg1, int loop, u32 targetResID, u16 width, u16
 }
 
 void floorOffscreenPlayWait(void) {
- // Only movies can be waited for.
     if (_offData == NULL || _offMdl != NULL) {
         return;
     }
@@ -99,7 +95,6 @@ GStexture* floorGetActiveOffscreenTexture(void) {
     return _offTex;
 }
 
-// Switches to the floor's offscreen entry with this index.
 u8 floorSetOffscreenIndex(s32 index) {
     u32 i;
     u8 found;
@@ -150,7 +145,6 @@ void floorReleaseOffscreen(void) {
 }
 
 void floorUpdateOffscreen(void) {
- // Movies update themselves; models need their animation pushed.
     if (_offData == NULL || _offMdl == NULL) {
         return;
     }

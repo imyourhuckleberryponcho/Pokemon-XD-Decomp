@@ -1,28 +1,24 @@
-// STATUS: default flags, LAYOUT OK, CONST OK. peSplineGetValue 96.3% (float register numbering
-// of w/u2 in the Hermite case), peColorSplineGetValue 95.9% (integer register numbering of count/keys/idx).
-// Uses the SDK OSFastCast u8<->f32 inlines (psq_l/psq_st with GQR2). Not linkable yet.
 #include <dolphin/types.h>
 
 struct peColorSpline {
-    u8 count;    // 0x0
-    u8 index;    // 0x1
+    u8 count;
+    u8 index;
     u8 pad2[2];
-    u8 cur[3];   // 0x4
+    u8 cur[3];
     u8 pad7;
-    f32 lastT;   // 0x8
-    u8 keys[1][4]; // 0xC: count RGBA keys, then count f32 times, then count f32 inverse intervals
+    f32 lastT;
+    u8 keys[1][4];
 };
 
 struct peSpline {
-    u8 flags;    // 0x0: bits 0-1 type, bit 2 allows overshoot below zero
-    u8 count;    // 0x1
+    u8 flags;
+    u8 count;
     u8 pad2[2];
-    f32 cur;     // 0x4
-    f32 lastT;   // 0x8
-    f32 data[1]; // 0xC
+    f32 cur;
+    f32 lastT;
+    f32 data[1];
 };
 
-// From the Dolphin SDK's OSFastCast.h (GQR2 is set up for u8 conversion).
 static inline f32 __OSu8tof32(register const u8* arg) {
     register f32 ret;
     asm { psq_l ret, 0(arg), 1, 2 }
@@ -166,7 +162,7 @@ f32 peSplineGetValue(peSpline* s, f32 t) {
             }
         }
         f32* q = p + n;
-        f32* d = data + i;
+        volatile f32* d = data + i;
         f32* r = q + n;
         t = t * *q;
         switch (type) {
@@ -179,7 +175,12 @@ f32 peSplineGetValue(peSpline* s, f32 t) {
             f32 h01 = b - a;
             f32 h00 = 1.0f - h01;
             f32 h10 = t + c;
-            f32 lo = (s->flags & 4) ? -1.0f : 0.0f;
+            f32 lo;
+            if (s->flags & 4) {
+                lo = -1.0f;
+            } else {
+                lo = 0.0f;
+            }
             f32 v = hermite(d[0], d[1], r[0], r[n], h00, h01, h10, a, w);
             if (v < lo) {
                 v = lo;

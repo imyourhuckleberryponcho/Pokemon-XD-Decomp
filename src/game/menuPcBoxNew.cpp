@@ -1,8 +1,6 @@
-// STATUS (dPcBox): 36/36 exact (fcheck LAYOUT/CONST/CALLS/DATA OK). Flags needed: -inline noauto (peephole off in source).
 #include <dolphin/types.h>
 
 #pragma peephole off
-// Some entry points are only called from REL code: keep them in the DOL.
 #pragma force_active on
 
 extern "C" {

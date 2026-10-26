@@ -6,7 +6,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
 #define SQUARE(v)                       ((v) * (v))
 #define IS_WITHIN_CIRCLE(x, z, radius)  ((SQUARE(x) + SQUARE(z)) < SQUARE(radius))
@@ -117,12 +117,6 @@ inline f128 fabsl(f128 x)
 	return __fabs((f64)x);
 }
 
-/**
- * kludges for emulating inlined f versions of funcs.
- * Replace these with tanf/sinf/cosf once we have library support in the build chain.
- * If my theory is correct, those functions will become inlined by code using libDolphin as a library.
- */
-
 inline f32 tanf_kludge(f32 __x)
 {
 	return tan((f64)__x);
@@ -138,7 +132,7 @@ inline f32 cosf_kludge(f32 __x)
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 static inline f32 dolsqrtf(f32 x)
 {

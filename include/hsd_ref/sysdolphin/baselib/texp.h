@@ -7,7 +7,6 @@
 
 #include <dolphin/gx/GXEnum.h>
 
-// XD: not in XD's GX headers.
 typedef int GXTevClampMode;
 
 #define HSD_TEXP_RAS ((HSD_TExp*) -2)
@@ -82,7 +81,7 @@ typedef struct _HSD_TevConf {
     GXTevSwapSel tex_swap;
     GXTevKColorSel kcsel;
     GXTevKAlphaSel kasel;
-    u32 swap[4]; // XD only
+    u32 swap[4];
 } HSD_TevConf;
 
 typedef struct HSD_TExpRes {
@@ -165,7 +164,7 @@ typedef struct _HSD_TETev {
     u8 kcsel;
     u8 kasel;
     u8 xd_pad22[2];
-    s32 swap[4]; // XD: 0x10 more bytes than Melee before c_in
+    s32 swap[4];
     HSD_TEArg c_in[4];
     HSD_TEArg a_in[4];
     HSD_TObj* tex;

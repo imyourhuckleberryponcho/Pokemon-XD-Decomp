@@ -1,4 +1,3 @@
-// WIP: written from asm
 #include <dolphin/types.h>
 #pragma pool_strings off
 
@@ -151,7 +150,6 @@ void GSsndStreamPostFunc(u32, u32);
 s32 GSsndStreamPreFunc(void);
 u32 _fsysStreamGetCacheSize(void);
 s32 _fsysStreamGetData(FsysWork*, u32, u32, u32, u32, u32, u32, u32);
-
 
 static FsysWork* _fsysGetWork(u32 id, u8 flag);
 FsysResHeader* _fsysGetResHeader(FsysWork* work, u32 index);
@@ -416,12 +414,15 @@ s32 GSfsysStreamMoviePreFunc(u32 arg) {
     return 0;
 }
 
+#pragma push
+#pragma optimize_for_size on
 s32 GSfsysStreamMovieHeaderPostFunc(void) {
     if (!_initFlag) {
         return 0;
     }
     return 0;
 }
+#pragma pop
 
 s32 GSfsysStreamMovieHeaderPreFunc(void) {
     if (_initFlag == 0) {
@@ -444,12 +445,15 @@ s32 GSfsysStreamPreFunc(u32 arg) {
     return 0;
 }
 
+#pragma push
+#pragma optimize_for_size on
 s32 GSfsysStreamHeaderPostFunc(void) {
     if (!_initFlag) {
         return 0;
     }
     return 0;
 }
+#pragma pop
 
 s32 GSfsysStreamHeaderPreFunc(void) {
     if (_initFlag == 0) {
@@ -707,7 +711,7 @@ static u8 _fsysRequest(s32 type, u32 id, u32 idx, s8 flag, s32 a, s32 b, s32 c, 
     if (_initFlag == 0) {
         return 0;
     }
-    if (type < 0 || prio >= 6) { // retail checks prio here, not type
+    if (type < 0 || prio >= 6) {
         return 0;
     }
     if (prio < 0 || prio >= 3) {

@@ -1,7 +1,6 @@
 #ifndef _FDLIBM_H
 #define _FDLIBM_H
 
-// Sun fdlibm 5.3 helpers (big-endian: the high word comes first).
 #define __HI(x) *(int*)&x
 #define __LO(x) *(1 + (int*)&x)
 

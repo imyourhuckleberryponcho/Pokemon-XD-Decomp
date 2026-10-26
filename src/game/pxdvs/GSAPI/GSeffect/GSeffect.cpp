@@ -20,7 +20,6 @@ void GSgfxRenderModuleRegister(u8 priority, GSgfxRenderModule* module, void* use
 
 extern "C" u8 GSgfxVideoGetVsyncRate(void);
 
-// Base class of all effects; every live effect is kept in g_effects_list.
 class GSeffect {
 public:
     bool m_active;

@@ -3,7 +3,6 @@
 
 #pragma pool_strings off
 
-// The save format stores selected fields from the live people work structure.
 struct GSvec { f32 x, y, z; };
 struct GSmodel;
 struct PeopleState {
@@ -69,7 +68,6 @@ public:
     u8 read8() { return *current++; }
     u16 read16() { u16 n = ((u16)current[0] << 8) | (u16)current[1]; current += 2; return n; }
     u32 read32() { u8* p = current; u32 n = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]; current += 4; return n; }
- // The original scalar conversion storage is eight-byte aligned.
     f32 readFloat() { union { u32 n; f32 f; f64 align; } value; value.n = read32(); return value.f; }
     void read(void* dst, u32 n) { memcpy(dst, current, n); current += n; }
     s32 tell() const { return current - begin; }
@@ -185,7 +183,6 @@ static void _peopleRestoreAnywaySaveData(GSBinReadStream* stream) {
             }
             state->speed = stream->readFloat();
             state->motion = stream->read8();
- // Both speed fields are present in the original save format.
             state->speed = stream->readFloat();
             stream->read(&state->position, sizeof(GSvec));
             stream->read(&state->destination, sizeof(GSvec));
@@ -210,7 +207,6 @@ static void _peopleRestoreAnywaySaveData(GSBinReadStream* stream) {
                 GSmodelSetRotation(model, GSmodelGetRotationPtr(model));
                 peopleSetDisp(state->groupID, state->peopleID, state->display);
             } else {
- // Preserve the original repeated assignments when no model exists.
                 state->angle = stream->readFloat(); state->angle = stream->readFloat();
                 state->angle = stream->readFloat(); state->angle = stream->readFloat();
             }

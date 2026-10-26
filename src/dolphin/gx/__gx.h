@@ -175,8 +175,8 @@ do { \
 
 #define GET_REG_FIELD(reg, size, shift) ((int)((reg) >> (shift)) & ((1 << (size)) - 1))
 
-// TODO: reconcile reg macro differences
-// this one is needed to match non GX libs
+
+
 #define OLD_SET_REG_FIELD(line, reg, size, shift, val) \
 do { \
     ASSERTMSGLINE(line, ((u32)(val) & ~((1 << (size)) - 1)) == 0, "GX Internal: Register field out of range"); \

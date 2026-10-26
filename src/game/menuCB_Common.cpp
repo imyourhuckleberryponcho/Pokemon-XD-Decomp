@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Menu callbacks were built without the peephole optimizer.
 #pragma peephole off
 
 struct CBTrainer {
@@ -36,7 +35,6 @@ struct MenuStackEntry {
     s32 cursor;
 };
 
-// Stack of open menus (id + saved cursor), the current menu at stack[depth].
 struct MenuStack {
     MenuStackEntry stack[8];
     s32 depth;

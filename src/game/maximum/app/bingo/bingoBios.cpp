@@ -1,14 +1,12 @@
 #include <game/pxdvs/app/memcard/savedata.hpp>
 
-// Built with -O4,s (see configure.py).
-
 struct BINGO_PANEL_dd_ {
     u8 type;
     u8 tokusei;
     u8 unk2[2];
     u16 no;
     u16 waza;
-    u16 hosei; // kind << 12 | val
+    u16 hosei;
 };
 
 struct BINGO_GRID_dd_ {

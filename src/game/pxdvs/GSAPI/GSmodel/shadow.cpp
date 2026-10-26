@@ -1,4 +1,4 @@
-// STATUS: all 24 functions written, 13/24 exact, LAYOUT OK, CONST OK (default flags). Not exact: RenderDebug 99.9% (Vec size local sits above the vertex temps), RenderMarukage 99.3% (fifo/color regs), Update 98.8% (zero-reg hoist in slot clear loop), AddAsNewReceiver 98.2% (r/slot reg swap), Render 97.9% (stack local order, loop-var regs), plus FreeAllShadowTextures 96.7, FindValidReceiveModel 95.5, GetLightToGroundIntersect 93.9, SetShadowFlag 90.8, Prepare 90.5, Init 88.2.
+
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
 #include <dolphin/gx/GXVert.h>
@@ -17,15 +17,15 @@ struct GStexture {
 };
 struct HSD_CObj;
 struct HSD_Shadow {
-    struct ShadowNode* objects; // 0x0
-    HSD_CObj* cobj; // 0x4
-    void* tex; // 0x8
+    struct ShadowNode* objects;
+    HSD_CObj* cobj;
+    void* tex;
     u8 pad0c[0x20 - 0xc];
-    u8 intensity; // 0x20
+    u8 intensity;
 };
 struct ShadowNode {
-    ShadowNode* next; // 0x0
-    void* jobj; // 0x4
+    ShadowNode* next;
+    void* jobj;
 };
 struct HSD_ViewingRect {
     u8 pad0[0x40];
@@ -52,30 +52,30 @@ public:
 
 struct ShadowTexInfo {
     u8 pad0[0x58];
-    u32* image; // 0x58
+    u32* image;
 };
 
 struct ShadowObj {
     u8 pad0[8];
-    ShadowTexInfo* tex; // 0x8
+    ShadowTexInfo* tex;
 };
 
 struct ShadowReceive {
-    _GSmodel* model; // 0x0
-    GSlight* light; // 0x4
-    _GSmodel* receivers[16]; // 0x8
-    u32 sizeMin; // 0x48
-    u32 sizeMax; // 0x4C
-    u8 active; // 0x50
+    _GSmodel* model;
+    GSlight* light;
+    _GSmodel* receivers[16];
+    u32 sizeMin;
+    u32 sizeMax;
+    u8 active;
     u8 pad51;
-    u16 unk52; // 0x52
-    HSD_Shadow* shadow; // 0x54
+    u16 unk52;
+    HSD_Shadow* shadow;
 };
 
 struct GScameraShadow {
     u8 pad0[0x6c];
     f32 x;
-    f32 y; // 0x70
+    f32 y;
     f32 z;
 };
 
@@ -84,40 +84,40 @@ struct ShadowVolume {
 };
 
 struct _GSmodel {
-    u32 flags; // 0x0
-    _GSmodel* next; // 0x4
+    u32 flags;
+    _GSmodel* next;
     u8 pad8[0x1c - 8];
-    f32 groundY; // 0x1C
+    f32 groundY;
     u8 pad20[0x28 - 0x20];
-    f32 rotY; // 0x28
+    f32 rotY;
     u8 pad2c[0x30 - 0x2c];
-    GSvec scale; // 0x30
-    u8 bound[0x20]; // 0x3C
-    GScameraShadow* camera; // 0x5C
-    u16 flags2; // 0x60
-    u16 token; // 0x62
+    GSvec scale;
+    u8 bound[0x20];
+    GScameraShadow* camera;
+    u16 flags2;
+    u16 token;
     u8 pad64[0x5e8 - 0x64];
-    u32 shadowSurfaceCount; // 0x5E8
-    void* shadowSurfaces; // 0x5EC
-    GSlight* shadowLight; // 0x5F0
-    f32 groundPlane; // 0x5F4
+    u32 shadowSurfaceCount;
+    void* shadowSurfaces;
+    GSlight* shadowLight;
+    f32 groundPlane;
 };
 
 struct HSD_MObj {
     u8 pad0[4];
-    u32 flags; // 0x4
+    u32 flags;
 };
 
 struct HSD_DObj {
     u8 pad0[4];
-    HSD_DObj* next; // 0x4
-    HSD_MObj* mobj; // 0x8
+    HSD_DObj* next;
+    HSD_MObj* mobj;
 };
 
 struct _HSD_JObj {
     u8 pad0[0x14];
-    u32 flags; // 0x14
-    HSD_DObj* dobj; // 0x18
+    u32 flags;
+    HSD_DObj* dobj;
 };
 typedef _HSD_JObj HSD_JObj;
 
@@ -656,15 +656,15 @@ void modelShadowRender(GSgfxLayer* layer)
                             f32 e;
 
                             GSboundGetSize((GSbound*)m->bound, &size, 1, 1);
-                            largest = size.x;
-                            if (size.y > largest) {
+                            if (size.y > (largest = size.x)) {
                                 largest = size.y;
                             }
                             if (size.z > largest) {
                                 largest = size.z;
                             }
                             n = (u32)(f32)ceil(largest);
-                            e = _modelShadowBoundExpansion + (f32)n;
+                            e = _modelShadowBoundExpansion;
+                            e += (f32)n;
                             if (e > 0.1f) {
                                 HSD_ViewingRectAddRect(&rect, &tmp, e, -e, -e, e);
                             }

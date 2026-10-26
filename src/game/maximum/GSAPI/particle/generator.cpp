@@ -1,12 +1,12 @@
-// STATUS: complete (13/13). Keys to matching generateParticle: MSL-style inline sinf/cosf/fabs (not
-// macros or (f32) casts).
-// Particle generators (XD's older design: own active/free/standby lists). Compiled as C with
-// deferred inlining: functions come out in reverse source order.
+
+
+
+
 #define HSD_FILE_NAME "generator.c"
 
 #include <dolphin/types.h>
 
-/* XD's MSL <math.h> inlines (sqrtf with its NaN checks), not include/libc's. */
+
 #define _MATH_H_
 extern f32 __float_nan[];
 extern f32 __float_min[];
@@ -467,12 +467,12 @@ static f32 generateParticle(HSD_Generator* gp)
         }
     }
 
-    /*
-     * Even angular spacing. In both disc/cone cases retail divides into a
-     * scratch register, copies it to angle_step and seeds cur_angle from the
-     * scratch copy (fdivs f0; fmr f30,f0; fmadds f31,f0,...): the step is a
-     * value of its own, not angle_step read back.
-     */
+
+
+
+
+
+
     if (gp->angle < 0.0f) {
         switch (gp->type & 0xF) {
         case 0:

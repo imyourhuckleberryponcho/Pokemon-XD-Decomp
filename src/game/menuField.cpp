@@ -1,7 +1,5 @@
-// Partial: menuFieldDrawItem2 (stitched) and trivial accessors; the rest of the unit is not written yet.
 #include <dolphin/types.h>
 #include <game/shared/menu_work.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -41,7 +39,6 @@ static s32 _soundEnvVol;
 static f32 _menuFieldCursorAngle;
 static f32 _menuFiledAlpha[5];
 
-// ---- draft declarations ----
 struct GSvec {
     f32 x, y, z;
     GSvec();
@@ -50,7 +47,7 @@ struct GSvec {
 struct HeroMoveEvent {
     GSvec pos[3];
     u32 unk24[3];
-    u16 eventID; // 0x30
+    u16 eventID;
     u16 pad32;
 };
 
@@ -265,14 +262,14 @@ static void _menuFieldCursorCheck(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p
     s32 color = M2C_FIELD(p0, s16 *, 0x9E);
     winSpriteSetDisp(p1, 0U);
     if (M2C_FIELD(p1, u32 *, 0x4C) != 0) {
-        if (p2 == color) {
+        if (color == p2) {
             color = 0xF0F0F0FF;
         } else {
             color = 0xF0F0F080;
         }
-        s16 x = (M2C_FIELD(p1, s16 *, 0x54) - (s16)(GSmsgGetRect(M2C_FIELD(p1, u32 *, 0x4C)) >> 16)) / 2;
+        p2 = (s16)((M2C_FIELD(p1, s16 *, 0x54) - (s16)(GSmsgGetRect(M2C_FIELD(p1, u32 *, 0x4C)) >> 16)) / 2);
         s16 y = (M2C_FIELD(p1, s16 *, 0x56) - (s16)(u16)GSmsgGetRect(M2C_FIELD(p1, u32 *, 0x4C))) / 2 - 2;
-        GSmsgPrint2(M2C_FIELD(p0, s32 *, 0x1C), x, y, color, M2C_FIELD(p1, u32 *, 0x4C));
+        GSmsgPrint2(M2C_FIELD(p0, s32 *, 0x1C), p2, y, color, M2C_FIELD(p1, u32 *, 0x4C));
     }
 }
 }
@@ -409,7 +406,7 @@ s32 menuFieldMain(u8 p0) {
         var_r27_2 = 0x70;
     }
     fn_80233AB4();
-    switch ((s32) p0) {                             /* irregular */
+    switch ((s32) p0) {
     case 0:
         if (GSflagGet(0x30DU) == 0) {
             while (1) {
@@ -504,7 +501,6 @@ GSvec::GSvec() {
 }
 }
 
-
 u8 menuFieldIsOpen(void) {
     return _openFieldMenu;
 }
@@ -531,6 +527,5 @@ static u8 _menuFieldCheckPDA() {
     return GSflagGet(0x3F1U) != 0;
 }
 }
-
 
 }

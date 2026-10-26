@@ -6,11 +6,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
-
-// int __fpclassifyf(f32);
-// int __signbitd(f64);
-// int __fpclassifyd(f64);
+#endif
 
 inline int __fpclassifyf(f32 x)
 {
@@ -60,6 +56,6 @@ inline int __fpclassifyd(f64 x)
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

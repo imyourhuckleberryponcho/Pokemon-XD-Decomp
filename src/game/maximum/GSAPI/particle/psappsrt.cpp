@@ -1,6 +1,3 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Particle "application SRT" blocks (extra transform shared by generators and
-// particles). Compare the Melee decomp's psappsrt.c; XD keeps its own free list instead.
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -49,7 +46,6 @@ void* memset(void* dst, int val, unsigned long n);
 extern u16 numActivePSAppSRT;
 extern u16 numPeakPSAppSRT;
 
-// Declared in reverse: this file's data comes out in reverse source order.
 static HSD_psAppSRT* freeAppSRT;
 static u16 psSizeofAppSRT;
 

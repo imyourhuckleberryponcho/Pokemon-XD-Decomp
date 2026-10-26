@@ -1,17 +1,15 @@
-// floorsound: matching. The weak FloorBgmMask inlines (changeMode, isEnable) come after __sinit in the
-// original, so __sinit is written by hand (see the end of the file).
 #include <dolphin/types.h>
 #pragma pool_strings off
 #pragma peephole off
 
 struct floorsound_dd_ {
-    u8 kind;     // 0x0
-    u8 volume;   // 0x1
-    u16 floorId; // 0x2
-    u16 sndId;   // 0x4
-    u16 time;    // 0x6
-    u16 envFade; // 0x8
-    u16 flagId;  // 0xA
+    u8 kind;
+    u8 volume;
+    u16 floorId;
+    u16 sndId;
+    u16 time;
+    u16 envFade;
+    u16 flagId;
 };
 
 class FloorBgmMask {
@@ -39,17 +37,17 @@ public:
     void changeMode(BgmMaskMode mode);
     u8 isEnable();
 
-    BgmMaskMode mode; // 0x0
-    u8 enable;        // 0x4
-    u8 curVolume;     // 0x5
-    u8 baseVolume;    // 0x6
-    u8 maskVolume;    // 0x7
-    u32 bgmId;        // 0x8
-    f32 volumeRate;   // 0xC
-    f32 fadeInTime;   // 0x10
-    f32 fadeOutTime;  // 0x14
-    f32 timer;        // 0x18
-    f32 keepTime;     // 0x1C
+    BgmMaskMode mode;
+    u8 enable;
+    u8 curVolume;
+    u8 baseVolume;
+    u8 maskVolume;
+    u32 bgmId;
+    f32 volumeRate;
+    f32 fadeInTime;
+    f32 fadeOutTime;
+    f32 timer;
+    f32 keepTime;
 };
 
 extern "C" {
@@ -72,8 +70,6 @@ extern floorsound_dd_* floorsoundTbl;
 }
 
 static u8 _displaySndFlag;
-// _bgmMask is constructed by a hand-written __sinit (see the end of the file): the original's static
-// initializer comes BEFORE the weak FloorBgmMask inlines, but MWCC always emits its own __sinit last.
 static u32 _bgmMaskStorage[sizeof(FloorBgmMask) / 4];
 #define _bgmMask (*(FloorBgmMask*)_bgmMaskStorage)
 

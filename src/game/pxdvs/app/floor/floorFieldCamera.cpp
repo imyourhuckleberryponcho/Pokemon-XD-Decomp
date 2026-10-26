@@ -33,20 +33,20 @@ struct FloorModuleInterface {
 };
 
 struct FieldCamera {
-    u8 kind;        // 0x00
+    u8 kind;
     u8 pad1[3];
-    f32 posX;       // 0x04
-    f32 posY;       // 0x08
-    f32 posZ;       // 0x0C
-    f32 distance;   // 0x10
-    f32 height;     // 0x14
-    f32 rotY;       // 0x18
-    f32 radius;     // 0x1C
-    f32 ratio;      // 0x20
-    f32 angle;      // 0x24
-    f32 powValue;   // 0x28
-    f32 blendTime;  // 0x2C
-    f32 fov;        // 0x30
+    f32 posX;
+    f32 posY;
+    f32 posZ;
+    f32 distance;
+    f32 height;
+    f32 rotY;
+    f32 radius;
+    f32 ratio;
+    f32 angle;
+    f32 powValue;
+    f32 blendTime;
+    f32 fov;
 };
 struct FieldCameraHeader {
     u32* count;
@@ -96,7 +96,7 @@ __declspec(weak) float cosf(float);
 __declspec(weak) float atan2f(float, float);
 __declspec(weak) float sinf(float);
 inline float sqrtf(float);
-} // namespace std
+}
 #pragma dont_inline reset
 
 extern "C" {
@@ -391,21 +391,21 @@ void floorUpdateFieldCamera() {
                     } else {
                         u8 flip = 0;
                         f32 kc2246 = 2.0f;
-                        f32 s = t * kc2246;
-                        if (s > 1.0f) {
+                        t *= kc2246;
+                        if (t > 1.0f) {
                             flip = 1;
-                            s = 2.0f - s;
+                            t = 2.0f - t;
                         }
                         f32 kc2479 = 1.5707964f;
-                        f32 c = std::cosf(s * kc2479);
+                        f32 c = std::cosf(kc2479 * t);
                         f32 e = std::pow(1.0f - c, gPowValue);
                         if (flip) {
                             e = 2.0f - e;
                         }
+                        e *= 0.5f;
                         gCameraHeight = e * (height - gCameraInitHeight) + gCameraInitHeight;
                         gCameraDistance = e * (distance - gCameraInitDistance) + gCameraInitDistance;
                         gCameraRotY = e * (rotY - gCameraInitRotY) + gCameraInitRotY;
-                        e = e * 0.5f;
                         gCameraFOV = e * (fov - gCameraInitFOV) + gCameraInitFOV;
                     }
                 }
@@ -678,7 +678,6 @@ static void _floorFieldCameraDetectMode() {
     g_updateMode = 1;
 }
 
-// Inline helpers defined after their callers.
 inline s32 GSBinWriteStream::getWriteSize() const { return current - begin; }
 inline void GSBinWriteStream::writeFloat(f32 n) {
     union { u32 i; f32 f; } v;
@@ -772,8 +771,6 @@ inline GSBinWriteStream::GSBinWriteStream(void* data, u32 length) {
     writing = 1;
 }
 
-
-
 #pragma dont_inline on
 namespace std {
 __declspec(weak) float pow(float x, float y) { return powf(x, y); }
@@ -781,7 +778,7 @@ __declspec(weak) float powf(float x, float y) { return (float)::pow((double)x, (
 __declspec(weak) float cosf(float x) { return (float)::cos((double)x); }
 __declspec(weak) float atan2f(float y, float x) { return (float)::atan2((double)y, (double)x); }
 __declspec(weak) float sinf(float x) { return (float)::sin((double)x); }
-} // namespace std
+}
 #pragma dont_inline reset
 
 extern "C" {
@@ -810,8 +807,6 @@ inline void GSvec2Set(GSvec2* v, f32 x, f32 z) {
 inline void GSmtxMakeYRotation(GSmtx* m, f32 angle) { PSMTXRotRad(m, 'Y', angle); }
 }
 
-
-
 namespace std {
 inline float sqrtf(float x) {
     if (x > 0.0f) {
@@ -827,4 +822,4 @@ inline float sqrtf(float x) {
     }
     return x;
 }
-} // namespace std
+}

@@ -65,103 +65,103 @@ struct tagPeopleWork {
     s32 getRunMotion();
     s32 getWalkMotion();
 
-    u8 used;              // 0x00
-    u8 saveFlags;         // 0x01
+    u8 used;
+    u8 saveFlags;
     u8 pad02[2];
-    u32 searchID;         // 0x04
-    _GSmodel* model;      // 0x08
-    u8 active;            // 0x0C
-    u8 display;           // 0x0D
-    u8 rotating;          // 0x0E
-    u8 flagF;             // 0x0F
-    u32 flags;            // 0x10
-    u32 groupID;          // 0x14
-    u32 peopleID;         // 0x18
-    u32 objectID;         // 0x1C
-    f32 walkRate;         // 0x20
-    f32 runRate;          // 0x24
-    f32 curRate;          // 0x28
-    f32 f2C;              // 0x2C
-    f32 idleFrames;       // 0x30
-    f32 walkFrames;       // 0x34
-    f32 f38;              // 0x38
-    f32 runFrames;        // 0x3C
-    f32 angle;            // 0x40
-    f32 angleSpeed;       // 0x44
-    s32 motion;           // 0x48
-    u16 scriptHandle;     // 0x4C
+    u32 searchID;
+    _GSmodel* model;
+    u8 active;
+    u8 display;
+    u8 rotating;
+    u8 flagF;
+    u32 flags;
+    u32 groupID;
+    u32 peopleID;
+    u32 objectID;
+    f32 walkRate;
+    f32 runRate;
+    f32 curRate;
+    f32 f2C;
+    f32 idleFrames;
+    f32 walkFrames;
+    f32 f38;
+    f32 runFrames;
+    f32 angle;
+    f32 angleSpeed;
+    s32 motion;
+    u16 scriptHandle;
     u8 pad4E[2];
-    s32 humanID;          // 0x50
-    u8 moveType;          // 0x54
-    u8 mode;              // 0x55
-    u8 paused;            // 0x56
-    u8 prevMoveType;      // 0x57
-    f32 speed;            // 0x58
-    GSvec startPos;       // 0x5C
-    GSvec destPos;        // 0x68
-    u16 pointCount;       // 0x74
-    u16 pointIndex;       // 0x76
-    GSvec* points;        // 0x78
-    u8 f7C;               // 0x7C
+    s32 humanID;
+    u8 moveType;
+    u8 mode;
+    u8 paused;
+    u8 prevMoveType;
+    f32 speed;
+    GSvec startPos;
+    GSvec destPos;
+    u16 pointCount;
+    u16 pointIndex;
+    GSvec* points;
+    u8 f7C;
     u8 pad7D[3];
-    GSvec basePos;        // 0x80
-    f32 randRadius;       // 0x8C
-    f32 timer;            // 0x90
-    f32 timeBase;         // 0x94
-    f32 timeRange;        // 0x98
-    u8 motionType;        // 0x9C
+    GSvec basePos;
+    f32 randRadius;
+    f32 timer;
+    f32 timeBase;
+    f32 timeRange;
+    u8 motionType;
     u8 pad9D[0xB];
-    GSvec savedPos;       // 0xA8
-    GSvec lastPos;        // 0xB4
-    u8 neckReg;           // 0xC0
-    u8 neckF1;            // 0xC1
-    u8 neckF2;            // 0xC2
-    u8 neckF3;            // 0xC3
-    u8 neckMode;          // 0xC4
+    GSvec savedPos;
+    GSvec lastPos;
+    u8 neckReg;
+    u8 neckF1;
+    u8 neckF2;
+    u8 neckF3;
+    u8 neckMode;
     u8 padC5[3];
-    GSvec neckTarget;     // 0xC8
-    GSvec neckGoal;       // 0xD4
-    GSvec neckCur;        // 0xE0
-    GSvec neckSaved;      // 0xEC
-    u32 neckGroupID;      // 0xF8
-    u32 neckPeopleID;     // 0xFC
-    f32 neckSpeed;        // 0x100
-    f32 neckSpeedMax;     // 0x104
-    f32 neckThreshold;    // 0x108
-    u8 chestReg;          // 0x10C
+    GSvec neckTarget;
+    GSvec neckGoal;
+    GSvec neckCur;
+    GSvec neckSaved;
+    u32 neckGroupID;
+    u32 neckPeopleID;
+    f32 neckSpeed;
+    f32 neckSpeedMax;
+    f32 neckThreshold;
+    u8 chestReg;
     u8 pad10D[3];
-    GSvec chestRot;       // 0x110
-    s32 attachGroupID;    // 0x11C
-    s32 attachID;         // 0x120
-    s32 attachPart;       // 0x124
-    f32 blendT;           // 0x128
-    f32 blendStep;        // 0x12C
-    f32 f130;             // 0x130
-    f32 startAngle;       // 0x134
-    f32 f138;             // 0x138
-    u8 chestUnreg;        // 0x13C
-    u8 waitAnim;          // 0x13D
-    u8 ownsRes;           // 0x13E
-    u8 animEnded;         // 0x13F
-    s32 followState;      // 0x140
+    GSvec chestRot;
+    s32 attachGroupID;
+    s32 attachID;
+    s32 attachPart;
+    f32 blendT;
+    f32 blendStep;
+    f32 f130;
+    f32 startAngle;
+    f32 f138;
+    u8 chestUnreg;
+    u8 waitAnim;
+    u8 ownsRes;
+    u8 animEnded;
+    s32 followState;
     u8 pad144[8];
-    u8 f14C;              // 0x14C
-    u8 f14D;              // 0x14D
+    u8 f14C;
+    u8 f14D;
     u8 pad14E[2];
-    f32 f150;             // 0x150
-    u8 blend;             // 0x154
-    u8 manualAnim;        // 0x155
+    f32 f150;
+    u8 blend;
+    u8 manualAnim;
     u8 pad156[6];
-    u8 running;           // 0x15C
-    u8 slowDown;          // 0x15D
+    u8 running;
+    u8 slowDown;
     u8 pad15E[2];
-    f32 moveDist;         // 0x160
-    s32 motionTable[5];   // 0x164
-    f32 talkDistance;     // 0x178
+    f32 moveDist;
+    s32 motionTable[5];
+    f32 talkDistance;
     u8 pad17C[2];
-    u8 collFlags;         // 0x17E
-    u8 f17F;              // 0x17F
-    f32 rotRate;          // 0x180
+    u8 collFlags;
+    u8 f17F;
+    f32 rotRate;
     u8 pad184[0x1B0 - 0x184];
 };
 
@@ -211,7 +211,6 @@ void peopleUpdateAnimation(tagPeopleWork* work, u8 byHero);
 f32 peopleGetBlendFactor(f32 value, f32 lo, f32 hi);
 f32 peopleVecCalcRotY(GSvec* a, GSvec* b, f32 base);
 
-// bios
 s32 peopleBiosGetMaxNum();
 tagPeopleWork* peopleBiosGetWorkPtr(s32 index);
 tagPeopleWork* peopleBiosGetNewWork();
@@ -278,7 +277,6 @@ void peopleViewerDisplayRandWalk();
 bool peopleViewerIsCheckNpc(tagPeopleWork* work);
 void peopleViewerThread();
 
-// game libs
 bool GScolsys2HitCollision(GSvec* start, GSvec* end, GSvec* hitOut, f32 radius);
 bool GScolsys2HitNpcCollision(GSvec* start, GSvec* end, GSvec* hitOut, f32 radius);
 s32 GScolsys2HumanAddCurrentFloor(s32* id, HumanCollInfo* info);
@@ -764,36 +762,37 @@ static void _peopleLoadThread() {
 }
 
 static void _peopleEnterFloor(unsigned int groupID, FloorEnterMode mode) {
-    if (floorDataBiosGetFloorKind(floorDataBiosGetCurrentPtr()) != 2 && (mode == 0 || mode == 1 || mode == 3)) {
-        m_bPeopleOpenWithModel = 1;
-        peopleTalkEnterFloor();
-        if (groupID == 0xFA1) {
-            floorCreateThread(0x40, 0, 1, peopleViewerThread);
-        }
-        for (s32 i = 0; i < peopleBiosGetMaxNum(); i++) {
-            tagPeopleWork* work = peopleBiosGetWorkPtr(i);
-            if (work) {
-                work->f138 = 0.0f;
-            }
-        }
-        peopleViewerSetPlaySpeedRate(1.0f);
-        m_hero_move = 1;
-        gimmickBoxFloorInit();
-        switch (HSD_Rand() % 3) {
-        case 0:
-            m_before_special_effect = 0x13;
-            break;
-        case 1:
-            m_before_special_effect = 0x14;
-            break;
-        default:
-            m_before_special_effect = 0x15;
-            break;
-        }
-        m_hero_idling_time = 0.0f;
-        m_hero_next_special_idling_time = 4.0f * HSD_Randf() + 8.0f;
-        peopleSetMotion(0, 0x64, 3, false, 1);
+    if (!(floorDataBiosGetFloorKind(floorDataBiosGetCurrentPtr()) != 2 && (mode == 0 || mode == 1 || mode == 3))) {
+        return;
     }
+    m_bPeopleOpenWithModel = 1;
+    peopleTalkEnterFloor();
+    if (groupID == 0xFA1) {
+        floorCreateThread(0x40, 0, 1, peopleViewerThread);
+    }
+    for (s32 i = 0; i < peopleBiosGetMaxNum(); i++) {
+        tagPeopleWork* work = peopleBiosGetWorkPtr(i);
+        if (work) {
+            work->f138 = 0.0f;
+        }
+    }
+    peopleViewerSetPlaySpeedRate(1.0f);
+    m_hero_move = 1;
+    gimmickBoxFloorInit();
+    switch (HSD_Rand() % 3) {
+    case 0:
+        m_before_special_effect = 0x13;
+        break;
+    case 1:
+        m_before_special_effect = 0x14;
+        break;
+    default:
+        m_before_special_effect = 0x15;
+        break;
+    }
+    m_hero_idling_time = 0.0f;
+    m_hero_next_special_idling_time = 4.0f * HSD_Randf() + 8.0f;
+    peopleSetMotion(0, 0x64, 3, false, 1);
 }
 
 extern "C" {
@@ -1066,8 +1065,6 @@ void peopleInitEvent(u32 groupID, u32 peopleID) {
     peopleSetFlagOn(groupID, peopleID, 0x80000000);
 }
 
-
-
 bool peopleUnblockMoveScript(u32 searchID) {
     tagPeopleWork* work = peopleSearchID(searchID);
     if (!work) {
@@ -1149,9 +1146,7 @@ bool peopleStartWalkRandom(u32 groupID, u32 peopleID, f32 radius) {
         GSmodelGetFrameCount(model, &count, &blendCount);
         f32 frame = GSmodelGetAnimFrame(model);
         f32 rate1 = 0.0f;
-        if (count > 0.0f) {
-            rate1 = frame / count;
-        }
+        rate1 = count <= 0.0f ? rate1 : frame / count;
         f32 rate2 = 0.0f;
         if (blendCount > 0.0f) {
             rate2 = frame / blendCount;
@@ -1270,6 +1265,8 @@ void peopleSetSpeedRate(u32 groupID, u32 peopleID, f32 rate) {
 }
 }
 
+#pragma push
+#pragma optimize_for_size on
 static void _peopleMoveRotate(tagPeopleWork* work) {
     GSvec rot;
     f32 dir, step, diffStart, diffNow, rotateStep, scale, time;
@@ -1341,6 +1338,7 @@ static void _peopleMoveRotate(tagPeopleWork* work) {
         peopleBiosSetRot(work, &rot);
     }
 }
+#pragma pop
 
 static f32 _peopleGetDiffAngleFixForNeck(f32 a, f32 b, tagPeopleWork*) {
     return _peopleGetDiffAngle(a, b);
@@ -1813,11 +1811,12 @@ static void _peopleAnimEndCallback(_GSmodel* model, _GSmodelAnimCBData* data) {
 
 static void _peopleExecAnimEndCallBack(tagPeopleWork* work) {
     _GSmodelAnimCBData data;
-    s32 blendIndex, index;
+    s32 index, blendIndex;
     GSmodelGetAnimIndex(work->model, &index, &blendIndex);
+    s32 selected = blendIndex;
     data.index = index;
-    if (blendIndex != -1) {
-        data.index = blendIndex;
+    if (selected != -1) {
+        data.index = selected;
     }
     data.user = work;
     _peopleAnimEndCallback(work->model, &data);
@@ -1836,16 +1835,16 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
     f32 playRate = peopleViewerGetPlaySpeedRate(work);
     if (!(playRate < 0.00001f) || !(playRate > -0.00001f)) {
         f32 realSpeed = speed / playRate;
+        f32 rate1 = 0.0f;
         GSmodelGetAnimIndex(model, &index, &blendIndex);
         GSmodelGetFrameCount(model, &count, &blendCount);
         f32 frame = GSmodelGetAnimFrame(model);
-        f32 rate1 = 0.0f;
         if (count > 1.0f) {
             rate1 = frame / count;
         }
         first = rate1;
         f32 rate2 = 0.0f;
-        if (blendCount > 0.0f) {
+        if (blendCount > 1.0f) {
             rate2 = frame / blendCount;
         }
         second = rate2;
@@ -2466,13 +2465,16 @@ void peopleMoveNeckAngleWorld(u32 groupID, u32 peopleID, f32 yaw, f32 pitch, f32
 }
 
 void peopleMoveNeckAngle(u32 groupID, u32 peopleID, f32 yaw, f32 pitch, f32 speed) {
+    f32 c;
     PeopleNeckInfo info;
     tagPeopleWork* work = peopleGet(groupID, peopleID);
     if (work && _getNeck(work, &info)) {
+        f32 s;
         f32 yawRad = 0.017453292f * yaw;
-        f32 pitchRad = 0.017453292f * pitch;
-        f32 s = sin(yawRad);
-        f32 c = cos(yawRad);
+        f32 pitchRad;
+        pitchRad = 0.017453292f * pitch;
+        s = sin(yawRad);
+        c = cos(yawRad);
         f32 sp = sin(pitchRad);
         work->neckTarget.y = -(1000000.0f * sp - info.pos.y);
         work->neckTarget.z = 1000000.0f * c + info.pos.z;
@@ -2903,9 +2905,10 @@ s32 peopleSetMotion(u32 groupID, u32 peopleID, s32 motion, s32 frame, bool loop)
     if (!work) {
         return 0;
     }
-    u8 manual = work->manualAnim;
+    s32 rf_t = work->manualAnim;
+    u8 manual = rf_t;
     bool changed = _peopleSetMotionMain(groupID, peopleID, motion, frame, loop);
-    return manual & changed;
+    return changed & manual;
 }
 }
 
@@ -3295,10 +3298,12 @@ s32 peopleOpen(u32 groupID, u32 peopleID, u32 objectID) {
     work->timer = 0.0f;
     work->timeBase = 5.0f;
     work->timeRange = 3.0f;
-    work->timer = work->timeRange * (2.0f * HSD_Randf() - 1.0f) + work->timeBase;
+    f32 jitter = 2.0f * HSD_Randf() - 1.0f;
+    f32 one = 1.0f;
+    work->timer = work->timeRange * jitter + work->timeBase;
     work->chestReg = 0;
     work->angleSpeed = 0.0f;
-    work->rotRate = 1.0f;
+    work->rotRate = one;
     work->neckMode = 0;
     work->neckSpeed = 0.07853982f;
     work->neckGoal.x = 0.0f;
@@ -3370,6 +3375,7 @@ bool peopleChangeModel(tagPeopleWork* work, u32 groupID, u32 peopleID, u32 objec
 bool peopleSetInfo(tagPeopleWork* work, u32 groupID, u32 peopleID, u32 objectID) {
     s32 index, blendIndex;
     f32 count, blendCount;
+    void* lightID;
     GSlight* light;
     work->groupID = groupID;
     work->peopleID = peopleID;
@@ -3409,8 +3415,8 @@ bool peopleSetInfo(tagPeopleWork* work, u32 groupID, u32 peopleID, u32 objectID)
     }
     if (work->model) {
         floorDataBiosGetCurrentPtr();
-        s32 shadowIndex = heroIsPlayerPeople(groupID, peopleID) != 1;
-        void* lightID = floorDataBiosGetShadowLightID(floorDataBiosGetCurrentPtr());
+        s32 shadowIndex = heroIsPlayerPeople(groupID, peopleID) == 1 ? 0 : 1;
+        lightID = (void*)floorDataBiosGetShadowLightID(floorDataBiosGetCurrentPtr());
         if (lightID) {
             light = (GSlight*)GSresGetResource(floorGetCurrentGroupID(), (u32)lightID);
         } else {
@@ -3470,8 +3476,8 @@ bool peopleSetInfo(tagPeopleWork* work, u32 groupID, u32 peopleID, u32 objectID)
         work->setAnimFrame(frames * HSD_Randf());
         GSmodelRecalculateBound(work->model);
     }
-    work->neckSpeedMax = 0.07853982f;
     work->neckSpeed = 0.07853982f;
+    work->neckSpeedMax = 0.07853982f;
     work->neckF2 = 0;
     work->neckReg = 0;
     work->neckCur.x = 0.0f;
@@ -3670,12 +3676,13 @@ struct WalkHit {
 
 static bool _peopleAdjustPositionSub(tagPeopleWork* work, GSvec* pos, GSvec* saved) {
     GSvec hit, hiNew, hiOld, newPos, oldPos;
+    f32 h;
     WalkHit hits[8];
     GSvec events[10];
     GSvec events2[10];
     GSvec events3[10];
-    GSvec events4[3];
-    f32 radius;
+    GSvec events4[10];
+    volatile f32 radius;
     if (peopleBiosCheckFlag(work, 0x700)) {
         newPos.x = pos->x;
         newPos.y = pos->y;
@@ -3686,9 +3693,9 @@ static bool _peopleAdjustPositionSub(tagPeopleWork* work, GSvec* pos, GSvec* sav
         hiNew = newPos;
         hiOld = oldPos;
         f32 kc515 = 6.0f;
-        hiNew.y = newPos.y + kc515;
         f32 kc577 = 6.0f;
         hiOld.y = oldPos.y + kc577;
+        hiNew.y = newPos.y + kc515;
         if (peopleInfoBiosGetPtr(work->objectID) == 0) {
             radius = 3.0f;
         } else {
@@ -3731,15 +3738,15 @@ static bool _peopleAdjustPositionSub(tagPeopleWork* work, GSvec* pos, GSvec* sav
             s32 n = GScolsys2WalkGetHeight(&newPos, &hits[0].height);
             if (n >= 2) {
                 f32 kc2292 = 1000000.0f;
-                f32 best = -kc2292;
                 WalkHit* p = hits;
                 bool found = false;
                 f32 kc2440 = 1000000.0f;
                 f32 highest = -kc2440;
                 s32 left = n;
+                f32 best = -kc2292;
                 if (n > 0) {
                     do {
-                        f32 h = p->height;
+                        h = p->height;
                         if (highest < h) {
                             highest = h;
                         }
@@ -3801,9 +3808,9 @@ static void _peopleUpdateNeck(tagPeopleWork* work, f32 dist) {
     f32 pitch;
     PeopleNeckInfo info;
     f32 frame = 30.0f * _getLastFrameSec();
-    if (work) {
-        bool mode = work->neckMode;
-        if (mode != 1) {
+    if ((u16)work) {
+        int mode = work->neckMode;
+        if ((u8)mode != 1) {
             if (mode < 1) {
                 if (mode < 0) {
                     goto finish;

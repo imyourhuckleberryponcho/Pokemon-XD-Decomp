@@ -1,6 +1,4 @@
-// Partial: only preReliveInit is written so far.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -50,16 +47,14 @@ struct WazaSequence;
 
 struct PreReliveParameter {
     u32 unk0;
-    s32 index; // 0x04
+    s32 index;
 };
 
 static PreReliveParameter pParameter;
 
 extern "C" {
 
-
 extern "C++" {
-// ---- draft declarations ----
 struct DeckDarkPokemon {
     u8 _draft[1];
     u16 getBonusExp() const;
@@ -197,16 +192,14 @@ void menuPtStopSound(MenuPtWorkSound* s);
 static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2);
 void reliveCeremonyFromHologram(Pokemon* p0, unsigned long p1);
 }
-static s32 hokoraParticleGen;
+static Pokemon* mParameter;
 static s32 hologramPigeonReliveWazaSeqTbl;
 static s32 hologramReliveWazaSeqTbl;
-static u8 isHokoraParticleLoaded;
 static s32 keepRelivePatternIsHologram;
-static Pokemon* mParameter;
+static s32 hokoraParticleGen;
+static u8 isHokoraParticleLoaded;
 static SequenceWaza noWazaSeqTbl;
 static SequenceWaza normalReliveWazaSeqTbl;
-// ---- draft declarations ----
-
 
 extern "C" {
 void fn_80233AB4();
@@ -326,7 +319,7 @@ static u8 _expRecover(Pokemon* pokemon, unsigned long gainExp) {
     s16 spDefense;
     s16 speed;
     s16 hp;
-    u32 newLevel;
+    u8 newLevel;
     u8 levelUp;
     u32 exp;
     u8 wazaIndex;
@@ -429,34 +422,34 @@ static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2) {
     WazaSequence *temp_r27;
     WazaSequence *temp_r3;
     WazaSequence *temp_r3_11;
-    WazaSequence *temp_r3_6;
-    WazaSequence *temp_r3_7;
+    s32 var_r28_3;
+    s32 var_r25_2;
     WazaSequence *temp_r3_8;
     f32 var_f30;
     f32 var_f30_2;
     f32 var_f30_3;
     f32 var_f30_4;
-    s32 var_r25_2;
+    WazaSequence *temp_r3_7;
     s32 var_r26_2;
     s32 var_r27;
     s32 var_r27_3;
     s32 var_r28_2;
-    s32 var_r28_3;
-    s32 temp_r25_2;
+    WazaSequence *temp_r3_6;
+    u16 var_r26;
     u16 *var_r4;
     u16 temp_r3_10;
-    s32 temp_r3_2;
+    u16 temp_r3_2;
     u16 temp_r3_3;
     u16 temp_r3_4;
-    s32 temp_r3_5;
-    s32 var_ctr;
     s32 var_r25;
-    u16 var_r26;
+    s32 temp_r25_2;
     u32 temp_r25;
     u32 temp_r26;
     f32 sp54;
     u8 var_r0;
     u8 var_r5;
+    s32 var_ctr;
+    s32 temp_r3_5;
     keepRelivePatternIsHologram = 0;
     var_r30 = NULL;
     switch (p0) {
@@ -480,7 +473,7 @@ static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2) {
         }
         pokemonAllKaihuku((Pokemon*)(p1));
         temp_r3_3 = pokemonBiosGetDarkpokemonDataId((Pokemon*)(p1));
-        darkPokemonBiosSetReliveFlag(temp_r3_3);
+        darkPokemonBiosSetReliveFlag((u16)temp_r3_3);
         if (pokemonIsJoutaiDataId((Pokemon*)(p1), 0x3EU) != 0) {
             pokemonInitJoutaiDataId((Pokemon*)(p1), 0x3EU);
         }
@@ -519,7 +512,7 @@ static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2) {
             var_r25_2 = 0;
             while (var_r25_2 < var_r28_3) {
                         soundOpenPlayME(0x3C7U, 0U, 0xFFU);
-                        msgctrlSetValue(0x39, (u32) pokemonBiosGetPokemonWazaDataId((Pokemon*)(p1), (u32) (u16) var_r25_2));
+                        msgctrlSetValue(0x39, (u32) pokemonBiosGetPokemonWazaDataId((Pokemon*)(p1), (u32) var_r25_2));
                         winMsgOpenField((void*)((var_r25_2 == (var_r28_3 - 1)) + 0xC54E), 1U, 0U);
                         var_r25_2 += 1;
                     }
@@ -746,6 +739,5 @@ static void __sinit_pokemonRelive_cpp() {
 }
 }
 }
-
 
 }

@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -22,7 +20,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #endif
 
 #pragma peephole off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -44,7 +41,6 @@ struct tagSPRITE_WORK;
 struct tagWINDOW_WORK;
 
 extern "C++" {
-// ---- draft declarations ----
 struct Hero {
     u8 _draft[1];
 };
@@ -105,8 +101,6 @@ static u32 getStockMax(unsigned short p0);
 static void makePocketCologneArg(POCKET_COLOGNE_ARG* p0, unsigned long p1);
 }
 static f32 ActMenuCursorBlinkTime;
-// ---- draft declarations ----
-
 
 static s32 first_S1990;
 static u8 init_S1991;
@@ -174,21 +168,21 @@ static s32 getLineHeight(tagWINDOW_WORK* p0) {
 
 extern "C" {
 s32 menuPocketColognDrawCursor(void *p0, void *p1) {
-    s32 sp28;
+    s32 temp_r9;
     s32 sp24;
     s32 sp20;
     volatile s32 sp1C;
     s32 sp18;
     f32 sp14;
     s32 sp10;
+    volatile s32 sp28;
     volatile s32 sp8;
-    s32 temp_r9;
 
     sp1C = M2C_FIELD(&jtbl_2063, s32 *, 0);
     sp20 = M2C_FIELD(&jtbl_2063, s32 *, 4);
     sp24 = M2C_FIELD(&jtbl_2063, s32 *, 8);
     sp28 = M2C_FIELD(&jtbl_2063, s32 *, 0xC);
-    if ((s16) M2C_FIELD((u16)p1, s16 *, 6) == (s32) (&sp1C)[M2C_FIELD(p0, s16 *, 0x9E)]) {
+    if ((s16) M2C_FIELD((u16)p1, s16 *, 6) == (s32) (&sp1C)[M2C_FIELD((u16)p0, s16 *, 0x9E)]) {
         sp14 = M2C_FIELD(&jtbl_2066, f32 *, 0);
         sp18 = M2C_FIELD(&jtbl_2066, s32 *, 4);
         sp10 = -1;
@@ -205,12 +199,11 @@ s32 menuPocketColognDrawCursor(void *p0, void *p1) {
 }
 
 extern "C" {
-// cologne list: count at 0x14, 4-byte entries {u16 item, u16 pad} from +0x4
 struct ColognList {
     struct {
         u16 item;
         u16 pad;
-    } entry[5];             // entry[0] is unused, items from entry[1]
+    } entry[5];
     s32 count;
 };
 
@@ -302,7 +295,7 @@ s32 menuPocketColognCtrl(void *p0) {
     u8 temp_r0;
 
     temp_r0 = M2C_FIELD(p0, u8 *, 1);
-    switch ((s8) temp_r0) {                         /* irregular */
+    switch ((s8) temp_r0) {
     case 0:
         if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
             winSeqSetMenu(0x32, 0x60U);

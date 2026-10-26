@@ -1,9 +1,5 @@
 #include <dolphin/types.h>
 
-// Script helpers for plain models and people opened from scripts.
-// STATUS: 12/15 exact. SetMotion/SetMotionRate: clrlwi of the loop flag is
-// scheduled after the r5/r6 moves (target: before); SetParticle: see fcheck.
-// Built with -inline deferred: functions are written in reverse object order.
 #pragma peephole off
 
 struct _GSmodel;

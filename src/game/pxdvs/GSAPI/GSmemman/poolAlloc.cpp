@@ -1,6 +1,3 @@
-// WIP (NonMatching): like sysdolmem (same GSmemman library), the original keeps values in saved
-// registers needlessly and spills/reloads parameters (e.g. GSmemAllocPool saves r31 unused).
-// Flags, compiler versions, optimization pragmas and `register` did not reproduce it.
 #include <dolphin/types.h>
 
 extern "C" {
@@ -8,7 +5,6 @@ void* GSmemAllocClr(u32 size);
 void* memset(void* dst, int c, unsigned long n);
 }
 
-// Fixed-size cell allocator; free cells are chained through their first word.
 class GSmemPoolAllocator {
 public:
     void dump();
@@ -66,9 +62,12 @@ void GSmemFreePool(GSmemPoolAllocator* pool, void* cell) {
     }
 }
 
+#pragma push
+#pragma peephole off
 void* GSmemAllocPool(GSmemPoolAllocator* pool) {
     return pool->allocCell();
 }
+#pragma pop
 
 GSmemPoolAllocator* GSmemCreatePool(unsigned long num, unsigned long size) {
     int i;
@@ -160,7 +159,6 @@ void GSmemPoolAllocator::init(unsigned long num, unsigned long size) {
     *(u8**)prev = NULL;
 }
 
-// Data address breakpoint (used to catch writes to freed cells in debug builds).
 static void _setDabr(unsigned long addr) {}
 
 static unsigned long _getDabr() {

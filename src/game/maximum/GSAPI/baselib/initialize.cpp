@@ -1,5 +1,5 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order, and functions defined later can be inlined into earlier ones.
+
+
 #include <dolphin/types.h>
 #include <libc/stdarg.h>
 
@@ -96,7 +96,7 @@ static s32 _HSD_MemCheckOwnDefaultCB(void* ptr);
 static HSD_MemReport memReport;
 static OSHeapHandle hsd_heap = -1;
 
-// Declared in reverse: this file's data comes out in reverse source order.
+
 static s32 shown;
 static s32 iparam_memory_callbacks;
 static s32 iparam_heap_size;
@@ -172,7 +172,7 @@ static inline void _HSD_CreateHeap(void) {
     HSD_ObjSetHeap(memReport.heap, NULL);
 }
 
-// Not called in XD (removed by the linker); only its message string is left in the game.
+
 void HSD_InitReportMissingArgument(void) {
     OSReport("missing argument.\n");
 }
@@ -222,14 +222,14 @@ static s32 _HSD_MemCheckOwnDefaultCB(void* ptr) {
     return own;
 }
 
-// The default heap callbacks may only be used when the game didn't install its own.
+
 static inline void _HSD_MemCheckDefault(void) {
     if (iparam_memory_callbacks) {
         __assert("initialize.c", 255, "!iparam_memory_callbacks");
     }
 }
 
-// Not called in XD (removed by the linker); its table is still in the game's data.
+
 OSHeapHandle HSD_CreateMainHeap(void* lo, void* hi) {
     s32 i;
     void (*cb_table[])(void* lo, void* hi) = {
@@ -292,7 +292,7 @@ typedef struct HSD_ObjDumpStat_types {
     char* label;
 } HSD_ObjDumpStat_types;
 
-// Not called in XD (removed by the linker); its table is still in the game's data.
+
 void HSD_ObjDumpStat(void) {
     HSD_ObjDumpStat_types types[] = {
         {HSD_AObjGetAllocData, "aobj"},     {HSD_FObjGetAllocData, "fobj"},

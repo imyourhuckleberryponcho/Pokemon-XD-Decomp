@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -21,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -42,7 +39,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -83,7 +79,6 @@ struct peSpline;
 struct peXform;
 
 extern "C++" {
-// ---- draft declarations ----
 struct GSvec {
     u8 _draft[1];
 };
@@ -122,15 +117,15 @@ struct peColorSpline {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;  // 0x00
-    u32 unk4;                // 0x04
-    void* buffer;            // 0x08
-    peNode* freeList;        // 0x0c
-    peNode* activeList;      // 0x10
-    u16 count;               // 0x14
-    u16 maxCount;            // 0x16
-    u8 dirty;                // 0x18
-    u8 started;              // 0x19
+    peEmitterNode* emitter;
+    u32 unk4;
+    void* buffer;
+    peNode* freeList;
+    peNode* activeList;
+    u16 count;
+    u16 maxCount;
+    u8 dirty;
+    u8 started;
 
     peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
     virtual ~peContainer();
@@ -148,7 +143,7 @@ public:
 };
 class peEmitterContainer : public peContainer {
 public:
-    _peEmitter* data;  // 0x20
+    _peEmitter* data;
     peEmitterContainer(peEmitterNode* e, _peEmitter* em, unsigned short n);
     virtual ~peEmitterContainer();
     virtual void Stop();
@@ -298,7 +293,6 @@ inline peEmitterContainer::peEmitterContainer(peEmitterNode* e, _peEmitter* em, 
     g_particle_debug_stats.unk14 += 0x24;
 }
 
-
 extern s32 g_render_pass;
 struct XdBlobC { u8 data[0xC]; };
 extern XdBlobC unitScaleVector;
@@ -307,13 +301,6 @@ extern s32 this_;
 extern "C++" {
 void* operator new(unsigned long);
 }
-// ---- draft declarations ----
-
-
-
-// ---- draft declarations ----
-
-
 
 void peEmitterContainer::Stop() {
     u8 *var_r31;
@@ -376,62 +363,57 @@ u8 peEmitterContainer::DoRender() {
     if (temp_r4 & 0x80000000) {
         return 0U;
     }
-    switch ((s32) g_render_pass) {                  /* switch 1; irregular */
-    case 0:                                         /* switch 1 */
+    switch ((s32) g_render_pass) {
+    case 0:
         if (!(temp_r4 & 0x800)) {
             return 0U;
         }
 block_15:
         temp_r0 = M2C_FIELD(g_current_layer, s32 *, 0x28);
-        switch (temp_r0) {                          /* switch 2; irregular */
-        case 0:                                     /* switch 2 */
+        switch (temp_r0) {
+        case 0:
             if (temp_r4 & 0x2000) {
                 return 1U;
             }
             return 0U;
-        case 2:                                     /* switch 2 */
+        case 2:
             if (temp_r4 & 0x4000) {
                 return 1U;
             }
             if (!(temp_r4 & 0x0380E000)) {
                 return 1U;
             }
-            /* Duplicate return node #39. Try simplifying control flow for better match */
             return 0U;
-        case 4:                                     /* switch 2 */
+        case 4:
             if (temp_r4 & 0x8000) {
                 return 1U;
             }
-            /* Duplicate return node #39. Try simplifying control flow for better match */
             return 0U;
-        case 1:                                     /* switch 2 */
+        case 1:
             if (temp_r4 & 0x800000) {
                 return 1U;
             }
-            /* Duplicate return node #39. Try simplifying control flow for better match */
             return 0U;
-        case 3:                                     /* switch 2 */
+        case 3:
             if (temp_r4 & 0x01000000) {
                 return 1U;
             }
-            /* Duplicate return node #39. Try simplifying control flow for better match */
             return 0U;
-        case 5:                                     /* switch 2 */
+        case 5:
             if (temp_r4 & 0x02000000) {
                 return 1U;
             }
-            /* Duplicate return node #39. Try simplifying control flow for better match */
             return 0U;
-        default:                                    /* switch 2 */
+        default:
             return 0U;
         }
         break;
-    case 1:                                         /* switch 1 */
+    case 1:
         if (!(temp_r4 & 0x1000)) {
             return 0U;
         }
         goto block_15;
-    case 3:    default:                                        /* switch 1 */
+    case 3:    default:
         return 0U;
     }
 }
@@ -615,8 +597,6 @@ void peEmitterNode::Render(_peEmitter* p0) {
 extern "C++" {
 #pragma push
 #pragma dont_inline on
-// container fields: 0x0 emitter, 0x10 node list, 0x14 node count, 0x19 active, 0x20 emitter data;
-// emitter nodes: 0x28 next, 0x2C previous, 0xF8 depth, 0x100 child container list (linked at +0x4, vtable at +0x1C)
 void peEmitterContainer::Update(float dt) {
     u8* child;
     peNode* node;
@@ -680,9 +660,9 @@ u16 peEmitterContainer::Emit(unsigned short count) {
 #pragma pop
 }
 u8 peEmitterNode::Update(peEmitterNode* p0, _peEmitter* p1, float p2) {
-    s32 sp10;
+    volatile s32 sp10;
     s32 sp14;
-    s32 sp1D;
+    volatile s32 sp1D;
     s32 sp1E;
     s32 unksp20;
     s32 sp48;
@@ -692,7 +672,7 @@ u8 peEmitterNode::Update(peEmitterNode* p0, _peEmitter* p1, float p2) {
     volatile f32 sp38;
     f32 sp34;
     f32 sp30;
-    u8 sp1C;
+    volatile u8 sp1C;
     f32 sp18;
     u16 spC;
     u8 spA;
@@ -757,7 +737,7 @@ u8 peEmitterNode::Update(peEmitterNode* p0, _peEmitter* p1, float p2) {
     peSpline *temp_r3_7;
     peSpline *temp_r3_8;
     peSpline *temp_r3_9;
-    s32 temp_r29;
+    volatile s32 temp_r29;
     s32 temp_r3_2;
     s32 temp_r3_3;
     s32 var_r0;
@@ -792,11 +772,11 @@ block_8:
     }
     peColorSplineGetValue((u8*)(&sp1C), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 0x130)), var_f31);
     spA = sp1C;
-    M2C_FIELD(this, f32 *, 0x38) = (f32) (0.00390625f * (2.0f * M2C_ERROR(/* psq_l unimplemented */)));
-    sp9 = sp1D;
-    M2C_FIELD(this, f32 *, 0x3C) = (f32) (0.00390625f * (2.0f * M2C_ERROR(/* psq_l unimplemented */)));
+    M2C_FIELD(this, f32 *, 0x38) = (f32) (0.00390625f * (2.0f * M2C_ERROR( )));
+    if (sp9 < sp1D) sp9 = sp1D;
+    M2C_FIELD(this, f32 *, 0x3C) = (f32) (0.00390625f * (2.0f * M2C_ERROR( )));
     sp8 = sp1E;
-    M2C_FIELD(this, f32 *, 0x40) = (f32) (0.00390625f * (2.0f * M2C_ERROR(/* psq_l unimplemented */)));
+    M2C_FIELD(this, f32 *, 0x40) = (f32) (0.00390625f * (2.0f * M2C_ERROR( )));
     temp_r3 = M2C_FIELD(p1, peSpline **, 0x134);
     if ((temp_r3 == NULL) || !(M2C_FIELD(temp_r3, u8 *, 0) & 3)) {
         var_f1 = 1.0f;
@@ -1082,7 +1062,7 @@ block_8:
         var_r3 = 0;
     } else {
         M2C_FIELD(this, u16 *, 0x48) = (u16) (M2C_FIELD(this, u16 *, 0x48) | 8);
-        if ((M2C_FIELD(this, u16 *, 0x48) & 0x10) && (temp_r3_21 = M2C_FIELD(this, u8 **, 0xFC), ((M2C_FIELD(this, f32 *, 0x30) > (M2C_FIELD(temp_r3_21, f32 *, 0x18) + M2C_FIELD(temp_r3_21, f32 *, 0x1C))) != 0))) {
+        if ((M2C_FIELD((s32)this, u16 *, 0x48) & 0x10) && (temp_r3_21 = M2C_FIELD(this, u8 **, 0xFC), ((M2C_FIELD(this, f32 *, 0x30) > (M2C_FIELD(temp_r3_21, f32 *, 0x18) + M2C_FIELD(temp_r3_21, f32 *, 0x1C))) != 0))) {
             var_r3 = 0;
         } else {
             temp_r4 = M2C_FIELD(this, u8 **, 0xFC);
@@ -1107,7 +1087,7 @@ block_8:
             } else {
                 var_r3 = sp10;
                 spC = var_r3;
-                M2C_FIELD(this, f32 *, 0x34) = (f32) (((temp_f29 * var_f1_33 * p2) + M2C_FIELD(this, f32 *, 0x34)) - M2C_ERROR(/* psq_l unimplemented */));
+                M2C_FIELD(this, f32 *, 0x34) = (f32) (((temp_f29 * var_f1_33 * p2) + M2C_FIELD(this, f32 *, 0x34)) - M2C_ERROR( ));
                 if ((var_r3 == 0) && ((u16) M2C_FIELD(this, u16 *, 0x4A) == 0)) {
                     var_r3 = 1;
                     M2C_FIELD(this, f32 *, 0x34) = 0.0f;
@@ -1344,19 +1324,19 @@ void peEmitterNode::CreateParameters(unsigned short p0, float p1) {
     spA = M2C_FIELD(this, u16 *, 0x4A) + var_r27;
     temp_r29 = ((u32) M2C_FIELD(temp_r31, u32 *, 0) >> 6U) & 1;
     sp8 = var_r27;
-    var_f30 = temp_f31 * M2C_ERROR(/* psq_l unimplemented */);
+    var_f30 = temp_f31 * M2C_ERROR( );
     var_f27 = 0.0f;
-    temp_f29 = 1.0f / M2C_ERROR(/* psq_l unimplemented */);
+    temp_f29 = 1.0f / M2C_ERROR( );
     var_r30 = g_emitParams;
     var_f28 = 1.0f;
 loop_36:
     temp_cr0_eq = var_r27 == 0;
     var_r27 -= 1;
     if (temp_cr0_eq == 0) {
-        peEmitterNode::GetPositionParameter((GSvec *)((GSvec*)(((u8*)(var_r30) + 8))), (GSvec *)((GSvec*)(&unksp100)), (_pePositionFunction *)((_pePositionFunction*)(temp_r31 + 0x34)), (float)(M2C_ERROR(/* Read from unset register $r6 */)));
+        peEmitterNode::GetPositionParameter((GSvec *)((GSvec*)(((u8*)(var_r30) + 8))), (GSvec *)((GSvec*)(&unksp100)), (_pePositionFunction *)((_pePositionFunction*)(temp_r31 + 0x34)), (float)(M2C_ERROR( )));
         temp_r3 = M2C_FIELD(temp_r31, u16 *, 0x74);
         temp_r0 = temp_r3 & 2;
-        switch (temp_r0) {                          /* irregular */
+        switch (temp_r0) {
         case 0:
             C_QUATRotAxisRad((Quaternion*)(&unkspF0), (const Vec*)(temp_r31 + 0x84), (M2C_FIELD(temp_r31, f32 *, 0x9C) * HSD_Randf()) + M2C_FIELD(temp_r31, f32 *, 0x98));
             PSMTXQuat((Mtx)((s32) &sp10C), (const Quaternion *)((const register Quaternion*)(&unkspF0)));
@@ -1415,7 +1395,7 @@ loop_36:
             M2C_FIELD(var_r30, f32 *, 0x24) = sp9C;
             M2C_FIELD(var_r30, f32 *, 0x28) = spA0;
             C_QUATLerp((const Quaternion*)(this + 0xDC), (const Quaternion*)(this + 0xB4), (Quaternion*)(&unksp88), var_f28);
-            M2C_FIELD(var_r30, f32 *, 0x2C) = unksp88;
+            M2C_FIELD((s32)var_r30, f32 *, 0x2C) = unksp88;
             M2C_FIELD(var_r30, f32 *, 0x30) = sp8C;
             M2C_FIELD(var_r30, f32 *, 0x34) = sp90;
             M2C_FIELD(var_r30, f32 *, 0x38) = sp94;
@@ -1430,7 +1410,7 @@ loop_36:
             M2C_FIELD(var_r30, f32 *, 0x44) = sp84;
             if (M2C_FIELD(temp_r31, u16 *, 0x34) & 0x100) {
                 temp_r3_6 = (Vec *)(((u8*)(var_r30) + 8));
-                PSVECSubtract((const register Vec*)(temp_r3_6), (const register Vec*)(((u8*)(var_r30) + 0x20)), (register Vec*)(temp_r3_6));
+                PSVECSubtract((const register Vec*)(temp_r3_6), (const register Vec*)(((u8*)((u16)var_r30) + 0x20)), (register Vec*)(temp_r3_6));
                 PSQUATInverse((const register Quaternion*)(((u8*)(var_r30) + 0x2C)), (register Quaternion*)(&unksp54));
                 spE0 = unksp54;
                 spE4 = sp58;
@@ -1525,19 +1505,19 @@ void peEmitterNode::SetLastLoop() {
 
 extern "C++" {
 void peEmitterNode::CreateWorldParams() {
-    s32 sp10;
+    volatile s32 sp10;
     s32 sp14;
     s32 sp1C;
     s32 sp20;
     s32 sp28;
     s32 sp2C;
     s32 spC;
-    u32 unksp18;
+    volatile f32 sp60;
     u32 unksp24;
-    s32 unksp8;
-    f32 sp60;
-    f32 sp5C;
-    f32 sp58;
+    f32 sp30;
+    u32 unksp18;
+    volatile f32 sp5C;
+    volatile f32 sp58;
     f32 sp54;
     f32 sp50;
     f32 sp4C;
@@ -1547,7 +1527,7 @@ void peEmitterNode::CreateWorldParams() {
     f32 sp3C;
     f32 sp38;
     f32 sp34;
-    f32 sp30;
+    s32 unksp8;
     u32 temp_r31;
 
     temp_r31 = *M2C_FIELD(this, u32 **, 0xFC);
@@ -1581,13 +1561,13 @@ void peEmitterNode::CreateWorldParams() {
     sp40 = sp1C;
     sp44 = sp20;
     PSQUATMultiply((const register Quaternion*)(this + 0x80), (const register Quaternion*)(this + 0xB4), (register Quaternion*)(&unksp8));
-    M2C_FIELD(this, f32 *, 0xC0) = (f32) M2C_FIELD(this, f32 *, 0x70);
     sp48 = unksp8;
     sp4C = spC;
     sp50 = sp10;
     sp54 = sp14;
-    sp58 = M2C_FIELD(this, f32 *, 0x58);
     sp5C = M2C_FIELD(this, f32 *, 0x5C);
+    M2C_FIELD(this, f32 *, 0xC0) = (f32) M2C_FIELD(this, f32 *, 0x70);
+    sp58 = M2C_FIELD(this, f32 *, 0x58);
     sp60 = M2C_FIELD(this, f32 *, 0x60);
     peNodeTransformsConcat((peXform*)(this + 0xA8), (peXform*)(M2C_FIELD(this, peXform **, 0x20)), (peXform*)((peXform *) &sp3C), (temp_r31 >> 1U) & 1);
     PSVECSubtract((const register Vec*)(this + 0xA8), (const register Vec*)(&g_CameraPosition), (register Vec*)(&unksp24));
@@ -1616,34 +1596,36 @@ extern "C++" {
 }
 
 extern "C++" {
+#pragma push
+#pragma optimize_for_size on
 void peEmitterNode::GetPositionParameter(GSvec* p0, GSvec* p1, _pePositionFunction* p2, float p3) {
     f32 sp10;
     f32 sp18;
     f32 sp1C;
-    volatile f32 sp24;
+    u32 unksp44;
     f32 sp28;
-    volatile f32 sp30;
+    u32 v38[3];
     f32 sp34;
     s32 sp48;
     s32 sp4C;
-    f32 sp54;
+    volatile f32 sp54;
     f32 sp58;
-    f32 spC;
-    f32 unksp14;
-    f32 unksp20;
-    f32 unksp2C;
-    u32 v38[3];
-    u32 unksp44;
-    f32 unksp50;
-    s32 unksp5C;
-    f32 unksp8;
-    s32 sp108;
+    f32 sp6C;
     s32 spD8;
-    s32 spA8;
+    f32 unksp50;
+    f32 unksp2C;
+    volatile f32 sp30;
+    volatile f32 sp24;
+    f32 unksp20;
+    s32 unksp5C;
     s32 sp78;
+    s32 sp108;
+    f32 unksp14;
+    s32 spA8;
+    f32 unksp8;
     f32 sp74;
     f32 sp70;
-    f32 sp6C;
+    volatile f32 spC;
     f32 var_f1;
     f32 var_f1_2;
     f32 var_f1_3;
@@ -1658,7 +1640,7 @@ void peEmitterNode::GetPositionParameter(GSvec* p0, GSvec* p1, _pePositionFuncti
 
     temp_r5 = M2C_FIELD(p1, u16 *, 0);
     temp_r0 = temp_r5 & 3;
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 0:
         M2C_FIELD(p0, f32 *, 0) = (f32) M2C_FIELD(p1, f32 *, 0x1C);
         M2C_FIELD(p0, f32 *, 4) = (f32) M2C_FIELD(p1, f32 *, 0x20);
@@ -1742,7 +1724,8 @@ block_21:
         if (M2C_FIELD(p1, u16 *, 0) & 0x80) {
             var_f1_6 = 3.1415927f * (2.0f * (M2C_FIELD(p1, f32 *, 0x30) * p3));
         } else {
-            var_f1_6 = 3.1415927f * (2.0f * HSD_Randf());
+            var_f1_6 = (2.0f * HSD_Randf());
+            var_f1_6 *= 3.1415927f;
         }
         C_QUATRotAxisRad((Quaternion*)(&unksp5C), (const Vec*)(((u8*)(p1) + 4)), var_f1_6);
         PSMTXQuat((Mtx)((s32) &sp108), (const Quaternion *)((const register Quaternion*)(&unksp5C)));
@@ -1764,7 +1747,8 @@ block_21:
         if (M2C_FIELD(p1, u16 *, 0) & 0x80) {
             var_f1_8 = 3.1415927f * (2.0f * (M2C_FIELD(p1, f32 *, 0x30) * p3));
         } else {
-            var_f1_8 = 3.1415927f * (2.0f * HSD_Randf());
+            var_f1_8 = (2.0f * HSD_Randf());
+            var_f1_8 *= 3.1415927f;
         }
         C_QUATRotAxisRad((Quaternion*)(&unksp5C), (const Vec*)((Vec *) p0), var_f1_8);
         PSMTXQuat((Mtx)((s32) &sp78), (const Quaternion *)((const register Quaternion*)(&unksp5C)));
@@ -1791,6 +1775,7 @@ block_21:
         return;
     }
 }
+#pragma pop
 }
 }
 }

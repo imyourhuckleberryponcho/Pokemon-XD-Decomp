@@ -1,7 +1,4 @@
-// Named accessors for the battle floor (FIGHT_FLOOR) and the fight floor data table.
-// Every fightFloor_* function falls back to the current floor when passed NULL.
 #include <dolphin/types.h>
-
 
 struct FightOutPokemon;
 struct FightJoutai {
@@ -39,44 +36,44 @@ public:
         return turnCount;
     }
 
-    FightJoutai joutai[1];                 // 0x0000
-    u16 turnCount;                         // 0x0010
-    u16 encountDataId;                     // 0x0012
-    FIGHT_SIDE sides[2];                   // 0x0014
-    FightOutPokemon* attackPokemon;        // 0xDDF4
-    FightOutPokemon* defensePokemon;       // 0xDDF8
-    FightOutPokemon* escapePokemon;        // 0xDDFC
-    FightOutPokemon* irekaePokemon;        // 0xDE00
-    FightOutPokemon* kizetuPokemon;        // 0xDE04
-    FightOutPokemon* tuikakoukaPokemon;    // 0xDE08
-    FightOutPokemon* tokuseiPokemon;       // 0xDE0C
-    FightOutPokemon* itemPokemon;          // 0xDE10
-    FightOutPokemon* appointPokemon;       // 0xDE14
-    void* appointTrainer;                  // 0xDE18
-    void* appointWaza;                     // 0xDE1C
-    void* appointSide;                     // 0xDE20
-    void* appointItem;                     // 0xDE24
-    u32 wazakoukaMsgId;                    // 0xDE28
-    u32 criticalMsgId;                     // 0xDE2C
-    u32 attackMsgId;                       // 0xDE30
-    u32 appointMsgId;                      // 0xDE34
-    u16 appointDataIds[4];                 // 0xDE38
-    s16 fightPokemonEntryCnt;              // 0xDE40
-    FightOutPokemon* fightOutPokemon[8];   // 0xDE44
-    u16 firstAttackRnd;                    // 0xDE64
-    u8 stockPokemonNum;                    // 0xDE66
+    FightJoutai joutai[1];
+    u16 turnCount;
+    u16 encountDataId;
+    FIGHT_SIDE sides[2];
+    FightOutPokemon* attackPokemon;
+    FightOutPokemon* defensePokemon;
+    FightOutPokemon* escapePokemon;
+    FightOutPokemon* irekaePokemon;
+    FightOutPokemon* kizetuPokemon;
+    FightOutPokemon* tuikakoukaPokemon;
+    FightOutPokemon* tokuseiPokemon;
+    FightOutPokemon* itemPokemon;
+    FightOutPokemon* appointPokemon;
+    void* appointTrainer;
+    void* appointWaza;
+    void* appointSide;
+    void* appointItem;
+    u32 wazakoukaMsgId;
+    u32 criticalMsgId;
+    u32 attackMsgId;
+    u32 appointMsgId;
+    u16 appointDataIds[4];
+    s16 fightPokemonEntryCnt;
+    FightOutPokemon* fightOutPokemon[8];
+    u16 firstAttackRnd;
+    u8 stockPokemonNum;
     u8 padDE67;
-    FightFloorStock stock[6];              // 0xDE68
+    FightFloorStock stock[6];
 };
 
 struct FightFloorData {
-    u8 tikeiDataId;            // 0x00
-    u16 floorDataId;           // 0x02
+    u8 tikeiDataId;
+    u16 floorDataId;
     u8 unk4[4];
-    u32 syoukaiWzxDataId;      // 0x08
-    u32 bgmSndId;              // 0x0C
-    u32 envSndId;              // 0x10
-    u16 fightSideDataId[2];    // 0x14
+    u32 syoukaiWzxDataId;
+    u32 bgmSndId;
+    u32 envSndId;
+    u16 fightSideDataId[2];
 };
 
 extern "C" {

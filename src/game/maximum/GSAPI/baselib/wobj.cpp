@@ -1,5 +1,5 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Based on the Melee decomp's wobj.c; XD's WObj class also has an update callback.
+
+
 #include <game/maximum/GSAPI/baselib/class.h>
 
 #pragma pool_strings off
@@ -101,7 +101,7 @@ void HSD_JObjSetupMatrixSub(HSD_JObj* jobj);
 void splArcLengthPoint(Vec3* p, HSD_Spline* spline, f32 t);
 void PSMTXMultVec(const MtxPtr m, const Vec3* src, Vec3* dst);
 
-// From jobj.h.
+
 static inline s32 HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
     s32 result;
     if (jobj == NULL) {

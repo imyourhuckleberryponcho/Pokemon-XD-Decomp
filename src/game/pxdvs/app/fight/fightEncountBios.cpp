@@ -1,7 +1,5 @@
 #include <dolphin/types.h>
 
-// Built with -O4,s (see configure.py).
-
 struct FightEncountWipeData {
     u8 snapshotUse;
     u8 unk1;
@@ -11,7 +9,7 @@ struct FightEncountWipeData {
 };
 
 struct FightTrainerInfo {
-    u32 ids; // deckGrpId << 16 | fightTrainerDataId
+    u32 ids;
     u32 gsInputDevice;
 };
 

@@ -405,7 +405,7 @@ config.libs = [
             Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSFatal.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSFont.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSInterrupt.c"),
-            Object(Equivalent, "dolphin/os/OSLink.c"),
+            Object(MatchingFor("GXXE01"), "dolphin/os/OSLink.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSMemory.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSMutex.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "dolphin/os/OSReboot.c"),
@@ -710,7 +710,7 @@ config.libs = [
             Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/snd_synthapi.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/synth_ac.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/synth_dbtab.c"),
-            Object(NonMatching, "musyx/runtime/synth_vsamples.c"),
+            Object(MatchingFor("GXXE01"), "musyx/runtime/synth_vsamples.c"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/hw_dspctrl.c"),
             Object(MatchingFor("GXXE01"), "musyx/runtime/hw_volconv.c", src_dir="src"),
             Object(MatchingFor("GXXE01", "NXXJ01"), "musyx/runtime/snd3d.c"),
@@ -847,7 +847,7 @@ config.libs = [
             Object(MatchingFor("GXXE01"), "game/menuDataBios.cpp"),
             Object(NonMatching, "game/menuPanel.cpp", extra_cflags=["-inline noauto"]),
             Object(NonMatching, "game/menuCB_Sub1.cpp", extra_cflags=["-inline noauto"]),
-            Object(NonMatching, "game/menuLogoDemo.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/menuLogoDemo.cpp", extra_cflags=["-inline noauto,deferred"]),
             Object(NonMatching, "game/menuHologram.cpp", extra_cflags=["-inline noauto,deferred"]),
             Object(NonMatching, "game/menuBingo.cpp"),
             Object(MatchingFor("GXXE01"), "game/menuItemBT.c"),
@@ -915,7 +915,7 @@ config.libs = [
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSbezier.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSlerp.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSutil.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSmath/GSvec.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSmath/GSvec.cpp"),
 
             # GSmodel
             Object(NonMatching, "game/pxdvs/GSAPI/GSmodel/effects.cpp", extra_cflags=["-O4,s", "-inline noauto"]),
@@ -1022,7 +1022,7 @@ config.libs = [
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSlogM/GSlog.cpp", extra_cflags=["-inline noauto,deferred"]),
 
             # GSgfxM
-            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/backfb.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/backfb.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/GSgfx.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/layer.cpp"),
             Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/render.cpp"),
@@ -1045,7 +1045,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/gamecube.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/screenshot.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/capture.cpp"),
-            Object(NonMatching, "game/pxdvs/GSAPI/GSgfxM/reset.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/GSAPI/GSgfxM/reset.cpp"),
         ]
     },
     {
@@ -1223,7 +1223,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/sodateya/sodateya.cpp", extra_cflags=["-O4,s"]),
 
             # fight
-            Object(NonMatching, "game/pxdvs/app/fight/fightMain.cpp", extra_cflags=["-O4,s", "-inline noauto"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightMain.cpp", extra_cflags=["-O4,s", "-inline noauto"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightKind.cpp", extra_cflags=["-O4,s"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightTarget.cpp", extra_cflags=["-O4,s"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/fight/fightType.cpp"),

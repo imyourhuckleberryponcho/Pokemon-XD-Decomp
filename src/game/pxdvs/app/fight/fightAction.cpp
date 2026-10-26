@@ -1,4 +1,3 @@
-// 15/16 exact; fightActionFifoIn is the last one (see the note above it).
 #include <dolphin/types.h>
 
 struct FIGHT_ACTION_DATA_dd_ {
@@ -156,8 +155,6 @@ u8 fightActionFifoOut(FIGHT_ACTION* out) {
     return 1;
 }
 
-// 98%: the target stores the tail twice (tail+1, then masked). The permuter matched it 100% only with an
-// unnatural `fightActionBiosSetFifoBanme(in, (0, tail))` comma expression; a natural form is still unknown.
 FIGHT_ACTION* fightActionFifoIn(FIGHT_ACTION* in) {
     unsigned int tail = _fight_action_fifo_tail;
     FIGHT_ACTION* slot;

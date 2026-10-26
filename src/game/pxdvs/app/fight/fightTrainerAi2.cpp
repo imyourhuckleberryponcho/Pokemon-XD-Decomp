@@ -1,8 +1,5 @@
 #include <dolphin/types.h>
 
-// Built with -O4,s. CheckAbiCnt's target selection is a switch (default/case 0), as in the Colosseum decomp.
-// Verification: build/scratch/ai-finish-verification.txt.
-
 struct FIGHT_TRAINER;
 struct FightOutPokemon;
 

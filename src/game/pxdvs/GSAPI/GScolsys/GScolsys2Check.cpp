@@ -1,8 +1,3 @@
-// STATUS: default flags. GScolsys2CheckGetEventID exact (136 B). getMdlEventList 98.15%,
-// getEventList 90.8% (compiler strength-reduces out[count] into a running offset register; target
-// recomputes count*0x34). NOTE: the target names the anonymous event struct "@class$515GScolsys2Check_c"
-// (unit was a .c file, 512 earlier anonymous classes); from GScolsys2Check.cpp the compiler emits
-// "@class$3GScolsys2Check_cpp", so the two static functions need a symbols.txt rename to be paired.
 #include <dolphin/types.h>
 
 struct Vec3 {
@@ -150,7 +145,8 @@ static int getEventList(GSvec* start, GSvec* end, EventTri* out) {
         for (k = 0; k < n && count < 4; src++, k++) {
             int j;
             for (j = 0; j < count; j++) {
-                if (out[j].id == src->id) {
+                u32 rf_t = out[j].id;
+                if (rf_t == src->id) {
                     break;
                 }
             }

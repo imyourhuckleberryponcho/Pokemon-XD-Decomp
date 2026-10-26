@@ -1,7 +1,5 @@
-// Draft: debug menu for editing fight trainer AI data.
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 struct AddsubEntry {

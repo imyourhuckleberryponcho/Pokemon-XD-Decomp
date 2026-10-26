@@ -5,7 +5,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
 #define DEFINE__PRINT(unit)               \
 	inline static void _Print(char*, ...) \
@@ -15,6 +15,6 @@ extern "C" {
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

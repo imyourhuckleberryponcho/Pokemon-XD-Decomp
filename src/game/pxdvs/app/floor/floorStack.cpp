@@ -10,7 +10,6 @@ enum FloorState {
     FLOOR_STATE_0
 };
 
-// A loaded resource (group + id).
 class GSresID {
 public:
     void set(unsigned long group, unsigned long id);
@@ -20,7 +19,6 @@ public:
     u32 m_id;
 };
 
-// State of one floor (map) on the floor stack.
 class FloorStack {
 public:
     FloorStack();
@@ -177,7 +175,6 @@ void FloorStack::addResource(unsigned long group, unsigned long id) {
     GSresID* res;
     for (res = m_resources; res != &m_resources[64]; res++) {
         if (res->m_group == group && res->m_id == id) {
- // Already held: drop the extra reference.
             GSresFreeResource(res->m_group, res->m_id);
             return;
         }
@@ -303,7 +300,6 @@ FloorStack::FloorStack() {
 }
 #pragma dont_inline reset
 
-// Defined after their callers, so these were emitted as weak functions instead of inlined.
 inline void GSresID::set(unsigned long group, unsigned long id) {
     m_group = group;
     m_id = id;

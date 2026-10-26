@@ -38,14 +38,14 @@ enum argument_options {
 };
 
 typedef struct {
-	u8 justification_options; // _0
-	u8 sign_options;          // _1
-	u8 precision_specified;   // _2
-	u8 alternate_form;        // _3
-	u8 argument_options;      // _4
-	u8 conversion_char;       // _5
-	int field_width;          // _8
-	int precision;            // _C
+	u8 justification_options;
+	u8 sign_options;
+	u8 precision_specified;
+	u8 alternate_form;
+	u8 argument_options;
+	u8 conversion_char;
+	int field_width;
+	int precision;
 } print_format;
 
 inline int vsnprintf(char* s, size_t n, const char* format, va_list arg);

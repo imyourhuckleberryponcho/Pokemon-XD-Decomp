@@ -24,7 +24,7 @@ typedef void (*terminate_handler)();
 terminate_handler set_terminate(terminate_handler handler);
 void terminate();
 
-} // namespace std
+}
 
 using std::bad_exception;
 using std::exception;

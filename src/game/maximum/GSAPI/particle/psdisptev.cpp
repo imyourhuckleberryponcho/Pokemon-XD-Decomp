@@ -1,6 +1,3 @@
-// The volatile kind field preserves the retail reloads in the fall-through cases.
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Particle TEV (texture combiner) setup, same as the Melee decomp's psdisptev.c.
 #include <dolphin/types.h>
 #include <dolphin/gx.h>
 

@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Cry waveform display data for each species (index = species ID).
 typedef struct WaveDispData WaveDispData;
 
 extern WaveDispData wavedispdata_001_fushigidane;

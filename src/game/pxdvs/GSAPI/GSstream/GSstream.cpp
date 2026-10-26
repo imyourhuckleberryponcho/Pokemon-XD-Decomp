@@ -11,7 +11,6 @@ void* GSdvdCreate(const char* path);
 void GSdvdClose(void* file);
 }
 
-// Writes a file on the development host (through the DVD emulator).
 class GSstreamFileOutput {
 public:
     GSstreamFileOutput();

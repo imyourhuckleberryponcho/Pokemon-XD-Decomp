@@ -1,5 +1,5 @@
-// STATUS: 41/41 exact, LAYOUT OK, CONST OK (needs -inline deferred; source in reverse asm order). Ready to link. _cameraLoadClipping needs dont_inline; _cameraRemovedHalf is a placeholder for a linker-stripped 0.5f user.
-// Written in REVERSE asm order (like GSlight.cpp): needs "-inline deferred".
+
+
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
 
@@ -23,20 +23,20 @@ struct HSD_ObjHeader {
 };
 
 struct HSD_CObj {
-    void** class_info; // 0x0
-    u16 ref_count; // 0x4
+    void** class_info;
+    u16 ref_count;
     u16 pad6;
-    u32 flags; // 0x8
-    f32 viewport_left; // 0xC
-    f32 viewport_right; // 0x10
-    f32 viewport_top; // 0x14
-    f32 viewport_bottom; // 0x18
-    u16 scissor_left; // 0x1C
-    u16 scissor_right; // 0x1E
-    u16 scissor_top; // 0x20
-    u16 scissor_bottom; // 0x22
+    u32 flags;
+    f32 viewport_left;
+    f32 viewport_right;
+    f32 viewport_top;
+    f32 viewport_bottom;
+    u16 scissor_left;
+    u16 scissor_right;
+    u16 scissor_top;
+    u16 scissor_bottom;
     u8 pad24[0x50 - 0x24];
-    u8 projection_type; // 0x50
+    u8 projection_type;
 };
 
 struct GSgfxRenderModule {
@@ -57,25 +57,25 @@ struct GScameraWObjDesc {
 };
 
 struct GScameraCObjDesc {
-    char* class_name; // 0x34
-    u16 flags; // 0x38
-    u16 projection_type; // 0x3A
-    s16 viewport_left; // 0x3C
-    s16 viewport_right; // 0x3E
-    s16 viewport_top; // 0x40
-    s16 viewport_bottom; // 0x42
-    u16 scissor_left; // 0x44
-    u16 scissor_right; // 0x46
-    u16 scissor_top; // 0x48
-    u16 scissor_bottom; // 0x4A
-    GScameraWObjDesc* position; // 0x4C
-    GScameraWObjDesc* interest; // 0x50
-    f32 roll; // 0x54
-    void* targetDesc; // 0x58
-    f32 near; // 0x5C
-    f32 far; // 0x60
-    f32 fov; // 0x64
-    f32 aspect; // 0x68
+    char* class_name;
+    u16 flags;
+    u16 projection_type;
+    s16 viewport_left;
+    s16 viewport_right;
+    s16 viewport_top;
+    s16 viewport_bottom;
+    u16 scissor_left;
+    u16 scissor_right;
+    u16 scissor_top;
+    u16 scissor_bottom;
+    GScameraWObjDesc* position;
+    GScameraWObjDesc* interest;
+    f32 roll;
+    void* targetDesc;
+    f32 near;
+    f32 far;
+    f32 fov;
+    f32 aspect;
 };
 
 struct GScameraDesc {
@@ -84,49 +84,49 @@ struct GScameraDesc {
 };
 
 struct _GScamera {
-    u8 used; // 0x0
-    u8 lookAt; // 0x1
-    u8 dirty; // 0x2
-    u8 canAnimate; // 0x3
-    GScameraDesc* desc; // 0x4
-    HSD_CObj* cobj; // 0x8
-    GScameraWObjDesc positionDesc; // 0xC
-    GScameraWObjDesc interestDesc; // 0x20
-    GScameraCObjDesc cobjDesc; // 0x34
-    Vec eye; // 0x6C
-    Vec prevEye; // 0x78
-    Vec rot; // 0x84
-    Mtx viewMtx; // 0x90
-    Mtx invMtx; // 0xC0
-    Vec up; // 0xF0
-    Vec interest; // 0xFC
-    s32 animType; // 0x108
-    u32 animCount; // 0x10C
-    u32 animIndex; // 0x110
-    f32 rate; // 0x114
-    f32 frame; // 0x118
-    f32 frameCount; // 0x11C
-    u8 ended; // 0x120
-    s8 direction; // 0x121
-    u8 animating; // 0x122
-    u8 flags; // 0x123
+    u8 used;
+    u8 lookAt;
+    u8 dirty;
+    u8 canAnimate;
+    GScameraDesc* desc;
+    HSD_CObj* cobj;
+    GScameraWObjDesc positionDesc;
+    GScameraWObjDesc interestDesc;
+    GScameraCObjDesc cobjDesc;
+    Vec eye;
+    Vec prevEye;
+    Vec rot;
+    Mtx viewMtx;
+    Mtx invMtx;
+    Vec up;
+    Vec interest;
+    s32 animType;
+    u32 animCount;
+    u32 animIndex;
+    f32 rate;
+    f32 frame;
+    f32 frameCount;
+    u8 ended;
+    s8 direction;
+    u8 animating;
+    u8 flags;
 };
 
 struct GScameraState {
-    u8 animating; // 0x0
-    u8 ended; // 0x1
+    u8 animating;
+    u8 ended;
     u8 pad2[2];
-    Vec eye; // 0x4
-    Vec prevEye; // 0x10
-    Vec rot; // 0x1C
-    Mtx viewMtx; // 0x28
-    Mtx invMtx; // 0x58
-    Vec up; // 0x88
-    Vec interest; // 0x94
-    s32 animType; // 0xA0
-    u32 animIndex; // 0xA4
-    f32 rate; // 0xA8
-    f32 frame; // 0xAC
+    Vec eye;
+    Vec prevEye;
+    Vec rot;
+    Mtx viewMtx;
+    Mtx invMtx;
+    Vec up;
+    Vec interest;
+    s32 animType;
+    u32 animIndex;
+    f32 rate;
+    f32 frame;
 };
 
 struct GSlayerMtx {
@@ -141,21 +141,21 @@ struct GSlayerCam {
 
 struct GSgfxLayer {
     u8 pad0[0x28];
-    s32 id; // 0x28
+    s32 id;
     u8 pad2c[0xd54 - 0x2c];
-    s32 projType; // 0xD54
-    f32 proj[6]; // 0xD58
-    s16 scissorX; // 0xD70
-    s16 scissorY; // 0xD72
-    s16 scissorW; // 0xD74
-    s16 scissorH; // 0xD76
-    f32 viewX; // 0xD78
-    f32 viewY; // 0xD7C
-    f32 viewW; // 0xD80
-    f32 viewH; // 0xD84
+    s32 projType;
+    f32 proj[6];
+    s16 scissorX;
+    s16 scissorY;
+    s16 scissorW;
+    s16 scissorH;
+    f32 viewX;
+    f32 viewY;
+    f32 viewW;
+    f32 viewH;
     u8 pad_d88[0x1684 - 0xd88];
-    f32 nearZ; // 0x1684
-    f32 farZ; // 0x1688
+    f32 nearZ;
+    f32 farZ;
     u8 pad_168c[0x16a6 - 0x168c];
     u8 f16a6;
     u8 f16a7;
@@ -173,7 +173,7 @@ struct GSgfxLayer {
     u8 pad_1774[0x17c4 - 0x1774];
     u32 dirty17c4;
     u8 pad_17c8[0x19a0 - 0x17c8];
-    GSlayerCam* cam; // 0x19A0
+    GSlayerCam* cam;
 };
 
 extern "C" {
@@ -693,7 +693,7 @@ static void _cameraLoadCameraMatrix(GScamera* camera, GSgfxLayerID id)
 {
     GSgfxLayer* layer;
     Mtx44 projB, projA, projO;
-    f32 p0, p1, p2, p3; // fov/aspect/near/far, or top/left/bottom/right
+    f32 p0, p1, p2, p3;
 
     if (id == GS_GFX_LAYER_NONE) {
         layer = 0;
@@ -874,8 +874,8 @@ void GScameraGetRotation(GScamera* camera, f32* rotation)
     }
 }
 
-// Placeholder for a function the linker removed from the original: it was the first user of the
-// 0.5f literal (so the literal sits before the 2.0f of GScameraSetViewport in .sdata2).
+
+
 static f32 _cameraRemovedHalf(f32 v)
 {
     return 0.5f * v;

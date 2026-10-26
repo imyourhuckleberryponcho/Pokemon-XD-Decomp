@@ -1,4 +1,3 @@
-// STATUS: 5/5 exact, LAYOUT OK, CONST OK; needs extra_cflags -inline deferred (source is bottom-to-top)
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/string.h>
@@ -93,7 +92,6 @@ struct GSlayerCam {
     u32 pad;
     u32* data;
 };
-
 
 struct GSfilterEntry {
     u8 index;

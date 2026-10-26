@@ -17,7 +17,6 @@ typedef int (*_compare_function)(const void*, const void*);
 		}                                              \
 	} while (0)
 
-// MSL's qsort is actually a heapsort.
 void qsort(void* table_base, size_t num_members, size_t member_size, _compare_function compare_members)
 {
 	size_t l, r, j;

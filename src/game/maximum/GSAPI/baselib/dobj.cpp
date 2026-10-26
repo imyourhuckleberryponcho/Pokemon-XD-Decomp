@@ -1,6 +1,6 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. Based on the Melee decomp's dobj.c; XD's version also runs the DObj's own
-// animation in HSD_DObjAnim and has HSD_DObjCountVertices.
+
+
+
 #include <game/maximum/GSAPI/baselib/class.h>
 
 #pragma pool_strings off

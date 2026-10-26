@@ -141,7 +141,6 @@ DSError TRKRequestSend(MessageBuffer* msgBuf, int* bufferId, u32 p1, u32 p2, int
 
 			if (*bufferId != -1) {
 				if (buffer->length < 0x40) {
-					// OSReport("MetroTRK - bad reply size %ld\n", buffer->length);
 					badReply = TRUE;
 				}
 				if (error == DS_NoError && !badReply) {

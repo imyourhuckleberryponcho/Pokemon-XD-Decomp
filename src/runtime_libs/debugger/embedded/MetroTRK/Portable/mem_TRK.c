@@ -7,10 +7,6 @@
 DECL_SECT(".init") void* TRK_memcpy(void* dst, const void* src, size_t n);
 DECL_SECT(".init") void* TRK_memset(void* dst, int val, size_t n);
 
-/**
- * @note Address: 0x800BDDF0
- * @note Size: 0xB8
- */
 #pragma dont_inline on
 static void TRK_fill_mem(void* dst, int val, size_t n)
 {

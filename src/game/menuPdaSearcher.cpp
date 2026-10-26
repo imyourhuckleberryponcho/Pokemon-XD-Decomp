@@ -1,4 +1,3 @@
-// WIP (smallmenu, 2026-10-15): 12/13 exact (_animCursor 95%: float/int reg allocation + hoisting of tc/cx/cy). Needs -inline noauto,deferred (source bottom-to-top); LAYOUT/CONST/CALLS/DATA OK.
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
@@ -275,10 +274,11 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
     menuItemBiosGetPtr(w->menuID, sp->id);
     f32 tc[4][3];
     f32 u0 = (f32)val->x / (f32)xs;
-    f32 v0 = (f32)val->y / (f32)ys;
+    s8 rf_t = val->y;
+    f32 v0 = (f32)rf_t / (f32)ys;
     f32 v1 = (f32)(val->y + val->h) / (f32)ys;
     f32 u1 = (f32)(val->w + val->x) / (f32)xs;
-    tc[2][1] = tc[3][1] = v1;
+    tc[3][1] = tc[2][1] = v1;
     tc[0][0] = tc[3][0] = u0;
     tc[1][0] = tc[2][0] = u1;
     tc[0][1] = tc[1][1] = v0;

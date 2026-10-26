@@ -1,4 +1,3 @@
-// STATUS: 12/16 exact. Left: battleGridReplacePokemon (1 branch form), RestoreModelVisibilityFlags (reg alloc), HideModelsExcept, Update.
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -217,10 +216,10 @@ void battleGridStoreModelVisibilityFlags(void) {
 void battleGridHideModelsExcept(NullSequence* seq) {
     BattleGridEntry* g = gBattleGrid.entries;
     u16 idx = 0;
-    ModelSequence* except = ToModel(seq);
     u16 i;
     u16 j;
     g = gBattleGrid.entries;
+    ModelSequence* except = ToModel(seq);
     battleGridResetModelVisibilityFlags();
     memset(gSavedVisibilityCodes, 0, 12);
     for (i = 0; i < 4; i++, g++) {
@@ -300,9 +299,9 @@ void battleGridUpdate(void) {
         GSvec rot;
         GSvec slotPos;
         GSvec pairPos;
-        bool found;
+        s16 b;
         BattleGridEntry* e;
-        u16 b;
+        bool found;
         u16 a;
 
         found = false;

@@ -5,7 +5,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
 enum critical_regions {
 	atexit_funcs_access,
@@ -27,6 +27,6 @@ void __end_critical_region(int region);
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

@@ -1,7 +1,6 @@
 #include <dolphin/types.h>
 #include <dolphin/gx/GXStruct.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 struct WindowKeyInfo {
@@ -32,7 +31,6 @@ void menuOpenCustom(s32 menuID, ...);
 static s32 _viewStartLine;
 static u8 _calcStartLine;
 
-// Nothing references these, but the original link kept them.
 #pragma force_active on
 
 s32 dbgMenuLogDraw(Window* window) {

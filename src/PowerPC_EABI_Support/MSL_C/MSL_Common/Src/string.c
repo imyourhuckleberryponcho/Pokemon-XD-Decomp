@@ -42,7 +42,6 @@ int strncmp(const char* str1, const char* str2, size_t n)
 
 int strcmp(const char* str1, const char* str2)
 {
-	// bless metrowerks for this implementation
 
 	register u8* left  = (u8*)str1;
 	register u8* right = (u8*)str2;

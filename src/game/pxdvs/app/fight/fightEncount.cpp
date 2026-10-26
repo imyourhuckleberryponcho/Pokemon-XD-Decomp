@@ -1,4 +1,3 @@
-// Draft (first pass), not yet matching.
 #include <dolphin/types.h>
 
 #pragma dont_inline on
@@ -45,18 +44,18 @@ public:
     u16 getField() const;
     void clear();
 
-    u16 field;      // 0x0
-    u16 msg[4];     // 0x2
-    u8 addMode;     // 0xA
-    u8 addPlace;    // 0xB
-    u8 addID;       // 0xC
-    u8 swapMode;    // 0xD
-    u16 swapDeckNO; // 0xE
-    u8 fightMode;   // 0x10
-    u8 trainerKind; // 0x11
-    u8 destroyFlag; // 0x12
-    u32 roundNo;    // 0x14
-    u8 dirtyFlag;   // 0x18
+    u16 field;
+    u16 msg[4];
+    u8 addMode;
+    u8 addPlace;
+    u8 addID;
+    u8 swapMode;
+    u16 swapDeckNO;
+    u8 fightMode;
+    u8 trainerKind;
+    u8 destroyFlag;
+    u32 roundNo;
+    u8 dirtyFlag;
 };
 
 extern s8 underTakerDeckRand;

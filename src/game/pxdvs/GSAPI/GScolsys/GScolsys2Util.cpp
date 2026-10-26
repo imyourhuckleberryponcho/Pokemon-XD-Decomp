@@ -66,8 +66,6 @@ void GScolsy2UtilGetPointExtentionLine(GSvec* out, GSvec* start, GSvec* end, f32
 
 #define COL_ABS(x) ((x) > 0.0f ? (x) : -(x))
 
-// Edge test (same as getCpPolyVec in GScolsys2Walk): the edge deltas are written in place so they
-// become the inline's own temporaries, which gives retail's float-register order.
 static inline f32 colEdgeSide(f32 ez, f32 ex, f32 z, f32 x, f32 pz, f32 px)
 {
     ez -= z;

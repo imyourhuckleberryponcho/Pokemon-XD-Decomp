@@ -1,6 +1,6 @@
-// Compiled as C with deferred inlining (see configure.py). Particle system front end: generator
-// flag setters, family kill/visibility helpers, point JObj table and the particle bank setup.
-// the struct layouts are XD's own.
+
+
+
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -9,99 +9,99 @@ typedef struct PSGenerator PSGenerator;
 typedef struct PSParticle PSParticle;
 
 struct PSGenerator {
-    /* 0x00 */ PSGenerator* next;
-    /* 0x04 */ u32 flags;
-    /* 0x08 */ u8 pad08[0x08];
-    /* 0x10 */ u16 maxLife;
-    /* 0x12 */ u16 angleFlags;
-    /* 0x14 */ u8 bank;
-    /* 0x15 */ u8 linkNo;
-    /* 0x16 */ u8 pad16[2];
-    /* 0x18 */ u16 familyId;
-    /* 0x1A */ u8 pad1A[0x1E];
-    /* 0x38 */ f32 gravity;
-    /* 0x3C */ f32 friction;
-    /* 0x40 */ u8 pad40[4];
-    /* 0x44 */ f32 radius;
-    /* 0x48 */ u8 pad48[4];
-    /* 0x4C */ u32 childCount;
-    /* 0x50 */ void* appSRT;
-    /* 0x54 */ f32 shape[12];
-    /* 0x84 */ u8 pad84[8];
-    /* 0x8C */ u16 generatorFlags;
-    /* 0x8E */ u16 index;
-    /* 0x90 */ u8 pad90[0x18];
-    /* 0xA8 */ void* linkedJObj;
-    /* 0xAC */ f32 angleRadiusScale[3];
+ PSGenerator* next;
+ u32 flags;
+ u8 pad08[0x08];
+ u16 maxLife;
+ u16 angleFlags;
+ u8 bank;
+ u8 linkNo;
+ u8 pad16[2];
+ u16 familyId;
+ u8 pad1A[0x1E];
+ f32 gravity;
+ f32 friction;
+ u8 pad40[4];
+ f32 radius;
+ u8 pad48[4];
+ u32 childCount;
+ void* appSRT;
+ f32 shape[12];
+ u8 pad84[8];
+ u16 generatorFlags;
+ u16 index;
+ u8 pad90[0x18];
+ void* linkedJObj;
+ f32 angleRadiusScale[3];
 };
 
 struct PSParticle {
-    /* 0x00 */ PSParticle* next;
-    /* 0x04 */ u32 kind; /* also used as flags */
-    /* 0x08 */ u8 bank;
-    /* 0x09 */ u8 texGroup;
-    /* 0x0A */ u8 poseNum;
-    /* 0x0B */ u8 palNum;
-    /* 0x0C */ u16 sizeCount;
-    /* 0x0E */ u16 primColCount;
-    /* 0x10 */ u16 envColCount;
-    /* 0x12 */ u8 primCol[4];
-    /* 0x16 */ u8 envCol[4];
-    /* 0x1A */ u16 cmdWait;
-    /* 0x1C */ u8 loopCount;
-    /* 0x1D */ u8 linkNo;
-    /* 0x1E */ u16 familyId;
-    /* 0x20 */ u8* cmdList;
-    /* 0x24 */ u16 cmdPtr;
-    /* 0x26 */ u16 cmdMarkPtr;
-    /* 0x28 */ u16 cmdLoopPtr;
-    /* 0x2A */ u16 life;
-    /* 0x2C */ f32 vel[3];
-    /* 0x38 */ f32 grav;
-    /* 0x3C */ f32 fric;
-    /* 0x40 */ f32 pos[3];
-    /* 0x4C */ f32 size;
-    /* 0x50 */ f32 rotate;
-    /* 0x54 */ u16 aCmpCount;
-    /* 0x56 */ u8 aCmpMode;
-    /* 0x57 */ u8 aCmpParam1;
-    /* 0x58 */ u8 aCmpParam2;
-    /* 0x59 */ u8 pJObjOfs;
-    /* 0x5A */ u16 matColCount;
-    /* 0x5C */ u16 ambColCount;
-    /* 0x5E */ u16 rotateCount;
-    /* 0x60 */ u8 pad60[4];
-    /* 0x64 */ f32 sizeTarget;
-    /* 0x68 */ f32 rotateTarget;
-    /* 0x6C */ u16 primColRemain;
-    /* 0x6E */ u16 envColRemain;
-    /* 0x70 */ u8 pad70[8];
-    /* 0x78 */ u16 matColRemain;
-    /* 0x7A */ u16 ambColRemain;
-    /* 0x7C */ u16 aCmpRemain;
-    /* 0x7E */ u8 pad7E[2];
-    /* 0x80 */ u8 matRGB;
-    /* 0x81 */ u8 matA;
-    /* 0x82 */ u8 ambRGB;
-    /* 0x83 */ u8 ambA;
-    /* 0x84 */ u8 pad84[4];
-    /* 0x88 */ f32 trail;
-    /* 0x8C */ PSGenerator* owner;
-    /* 0x90 */ void* appSRT;
+ PSParticle* next;
+ u32 kind;
+ u8 bank;
+ u8 texGroup;
+ u8 poseNum;
+ u8 palNum;
+ u16 sizeCount;
+ u16 primColCount;
+ u16 envColCount;
+ u8 primCol[4];
+ u8 envCol[4];
+ u16 cmdWait;
+ u8 loopCount;
+ u8 linkNo;
+ u16 familyId;
+ u8* cmdList;
+ u16 cmdPtr;
+ u16 cmdMarkPtr;
+ u16 cmdLoopPtr;
+ u16 life;
+ f32 vel[3];
+ f32 grav;
+ f32 fric;
+ f32 pos[3];
+ f32 size;
+ f32 rotate;
+ u16 aCmpCount;
+ u8 aCmpMode;
+ u8 aCmpParam1;
+ u8 aCmpParam2;
+ u8 pJObjOfs;
+ u16 matColCount;
+ u16 ambColCount;
+ u16 rotateCount;
+ u8 pad60[4];
+ f32 sizeTarget;
+ f32 rotateTarget;
+ u16 primColRemain;
+ u16 envColRemain;
+ u8 pad70[8];
+ u16 matColRemain;
+ u16 ambColRemain;
+ u16 aCmpRemain;
+ u8 pad7E[2];
+ u8 matRGB;
+ u8 matA;
+ u8 ambRGB;
+ u8 ambA;
+ u8 pad84[4];
+ f32 trail;
+ PSGenerator* owner;
+ void* appSRT;
 };
 
 #define PS_FLAG_HIDDEN 0x20000000
 #define PS_FLAG_POINT_JOBJ 0x8000
 
 typedef struct PSTexGroup {
-    u32 num;     /* 0x00 */
-    u32 fmt;     /* 0x04 */
-    u32 tlutfmt; /* 0x08 */
-    u32 width;   /* 0x0C */
-    u32 height;  /* 0x10 */
-    u16 palnum;  /* 0x14 */
-    u16 palflag; /* 0x16 */
-    u8* texTable[1]; /* 0x18 */
+    u32 num;
+    u32 fmt;
+    u32 tlutfmt;
+    u32 width;
+    u32 height;
+    u16 palnum;
+    u16 palflag;
+    u8* texTable[1];
 } PSTexGroup;
 
 typedef struct PSFormGroup {
@@ -110,27 +110,27 @@ typedef struct PSFormGroup {
 } PSFormGroup;
 
 typedef struct PSCmdList {
-    u16 type;     /* 0x00 */
-    u16 texGroup; /* 0x02 */
-    u16 genLife;  /* 0x04 */
-    u16 life;     /* 0x06 */
-    u32 kind;     /* 0x08 */
-    f32 grav;     /* 0x0C */
-    f32 fric;     /* 0x10 */
-    f32 vx;       /* 0x14 */
-    f32 vy;       /* 0x18 */
-    f32 vz;       /* 0x1C */
-    f32 radius;   /* 0x20 */
-    f32 angle;    /* 0x24 */
-    f32 random;   /* 0x28 */
-    f32 size;     /* 0x2C */
-    f32 param1;   /* 0x30 */
-    f32 param2;   /* 0x34 */
-    f32 param3;   /* 0x38 */
-    u8 cmdList[1]; /* 0x3C */
+    u16 type;
+    u16 texGroup;
+    u16 genLife;
+    u16 life;
+    u32 kind;
+    f32 grav;
+    f32 fric;
+    f32 vx;
+    f32 vy;
+    f32 vz;
+    f32 radius;
+    f32 angle;
+    f32 random;
+    f32 size;
+    f32 param1;
+    f32 param2;
+    f32 param3;
+    u8 cmdList[1];
 } PSCmdList;
 
-/* Source order is the reverse of the link order (-inline deferred). */
+
 void* psPointJObj[8];
 s32 psNumCmdList[64];
 s32 psNumTexGroup[64];
@@ -140,7 +140,7 @@ PSFormGroup** psFormGroupArray[64];
 u32* ptclref[64];
 
 extern PSGenerator* activeGenerator;
-/* Source order is the reverse of the link order (-inline deferred). */
+
 u16 numActiveParticles;
 u16 numActiveGenerators;
 u16 numActivePSAppSRT;
@@ -170,8 +170,8 @@ PSParticle* psGenerateParticle0(PSParticle** head, s32 linkNo, s32 bank, void* u
                                 PSGenerator* gp, s32 flgInterpret);
 void psInitDataBankLocate(int* cmdBank, int* texBank, int* formBank);
 
-/* Returns the successor (read first): as psKillParticle's own local it is coloured like retail
- * in the inlined callers. */
+
+
 static inline PSParticle* psKillParticle(PSParticle* pp)
 {
     PSParticle* next;

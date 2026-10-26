@@ -8,7 +8,6 @@ struct tagWINDOW_WORK {
     s16 cursor;
 };
 
-// One entry of the debug menu table.
 struct DbgMenuData {
     u8 end : 1;
     u8 flags : 7;
@@ -126,9 +125,9 @@ void dbgMenuCursor(tagWINDOW_WORK* window) {
     enum TsE { TsE0 };
     u16 repeat = windowGetKeyInfo()->repeat;
     enum TsE count = (enum TsE)(_dbgMenuGetMenuNum(window, 0));
-    s8 visible = menuDataBiosGetDispMax(window->menuID);
-    s16 top;
     s16 cursor;
+    s16 top;
+    s8 visible = menuDataBiosGetDispMax(window->menuID);
 
     if (count < visible) {
         visible = count;

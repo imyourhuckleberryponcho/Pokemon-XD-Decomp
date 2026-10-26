@@ -6,7 +6,6 @@
 enum GSgfxLayerPass {};
 enum GSgfxLayerOffset {};
 
-// One render layer: id, name, buffer setup.
 struct _GSgfxLayerData {
     s32 id;
     const char* name;
@@ -136,7 +135,6 @@ GSgfxLayer* floorGetMenuLayerID(void) {
     return _menu_extra_layer_id;
 }
 
-// Sets up the render layers for a floor: special floors have their own table, otherwise by kind.
 void floorLayerConfig(u32 floorID, u8 kind) {
     u32 i;
     for (i = 0; i < g_floor_layer_config_count; i++) {

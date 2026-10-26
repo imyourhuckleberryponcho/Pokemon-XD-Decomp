@@ -1,4 +1,3 @@
-// Partial byte-exact XD move-hit AI port.
 #include <dolphin/types.h>
 #pragma dont_inline on
 typedef struct FightOutPokemon FightOutPokemon;
@@ -17,7 +16,6 @@ s32 fightTrainerAiWazaHit039(void*,u32,u32,u32);
 u32 fightTrainerAiWazaHit111(void*,u32,u32,u32);
 s32 fightTrainerAiWazaHit121(void*,u32,u32,u32);
 s32 fightTrainerAiWazaHit146(void*,u32,u32,u32);
-
 
 s32 fightTrainerAiWazaHit217(void* ctx,u32 param1,u32 param2,u32 param3) {
     return fightTrainerAiWazaHit000(ctx,param1,param2,param3);

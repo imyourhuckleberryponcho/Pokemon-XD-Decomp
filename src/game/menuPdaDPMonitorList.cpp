@@ -20,7 +20,6 @@ public:
 };
 extern "C" DarkPokemon* darkPokemonGetDarkPokemon(u32 index);
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct CURSOR {
@@ -589,16 +588,19 @@ void menuPdaDPMList::SetItemColor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
 }
 
 s32 menuPdaDPMList::SortPlace() {
-    darkPokemonWhere place;
+    DarkPokemon* dark;
+    int i;
+    s32 n;
+    u16 did;
     u8 floor;
     s32 total;
-    s32 n;
+    darkPokemonWhere place;
     total = Sort(DPM_SORT_POKEMON);
     tempCount = 0;
     n = 0;
-    for (int i = 0; i < total; i++) {
-        u16 did = GetDarkPokemonID(i);
-        DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
+    for (i = 0; i < total; i++) {
+        did = GetDarkPokemonID(i);
+        dark = darkPokemonGetDarkPokemon((u16)did);
         dark->getPlace(place, floor);
         if (dark->isSnach() && place == 1) {
             u16 pid = dark->getPokemonID();
@@ -614,8 +616,8 @@ s32 menuPdaDPMList::SortPlace() {
         SortSetTemp(temp2, temp, n);
     }
     for (int fl = 0; fl < 9; fl++) {
-        s32 n = 0;
-        for (int i = 0; i < total; i++) {
+        s32 n;
+        for (i = 0, n = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
             dark->getPlace(place, floor);
@@ -768,7 +770,7 @@ s32 menuPdaDPMList::SortDP() {
     n = 0;
     for (i = 0; i < total; i++) {
         u16 did = GetDarkPokemonID(i);
-        DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
+        dark = darkPokemonGetDarkPokemon(did);
         if (!dark->isSnach()) {
             u16 pid = dark->getPokemonID();
             temp[n].key = dark->getSnatchIndex();
@@ -880,8 +882,9 @@ void menuPdaDPMList::Cursor(tagWINDOW_WORK* window) {
                 c.pos = 0;
             }
         } else if (p >= visible) {
-            s8 last = visible - 1;
+            s8 last;
             s16 t2 = c.top + (p - (visible - 1));
+            last = visible - 1;
             c.pos = last;
             c.top = t2;
             if (t2 + last >= n) {

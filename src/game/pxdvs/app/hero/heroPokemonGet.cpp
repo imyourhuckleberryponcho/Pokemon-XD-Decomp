@@ -123,9 +123,3 @@ void heroPokemonGetBlacky(Hero* hero)
 }
 }
 
-
-
-
-
-
-

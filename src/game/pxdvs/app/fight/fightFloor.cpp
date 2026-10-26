@@ -1,8 +1,3 @@
-// XD's fightFloor goes through named accessors (fightFloor_GetXxx) instead of Colosseum's
-// generic fightFloorGetStatus dispatch, so this file is written from the XD asm.
-// Needs extra_cflags=["-O4,s", "-inline deferred"] in configure.py. all 87 functions exact.
-// Source order is reversed
-// (deferred codegen); this also gives the retail .rodata order (table before "fightInput").
 #include <dolphin/types.h>
 
 #pragma dont_inline on
@@ -547,9 +542,6 @@ u32 fightFloorSetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg, u32
 u32 fightFloorGetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg);
 FIGHT_FLOOR* fightFloorGetNowPtr(void);
 }
-
-// Functions are written in reverse order: this unit is built with -inline deferred,
-// which emits them in reverse source order.
 
 static void _fightFloorInitFightOutPokemonPtrAry(FightOutPokemon** ary) {
     u16 i;

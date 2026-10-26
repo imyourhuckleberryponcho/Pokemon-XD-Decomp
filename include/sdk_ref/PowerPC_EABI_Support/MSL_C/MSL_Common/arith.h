@@ -5,11 +5,11 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
 typedef struct {
-	int quot; /* quotient */
-	int rem;  /* remainder */
+	int quot;
+	int rem;
 } div_t;
 
 int abs(int __x);
@@ -23,6 +23,6 @@ inline int _abs(int __x)
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

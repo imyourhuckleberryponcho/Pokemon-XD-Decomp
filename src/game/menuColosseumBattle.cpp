@@ -1,9 +1,4 @@
-// STATUS (rough draft, rd_colb): 26/26 functions, 8 exact, byte-weighted ~88.6% with extra_cflags ["-inline noauto"]
-// (+ peephole off, pool_strings off in-file). _CB fields are accessed by offset (CB macro): define a real _MENUCBWORK
-// struct next. Open: .data jump tables @2836/@2894 (target uses dense switches in menuColosseumBattleMain/_duel; ours not),
-// menuColosseumBattle 41% (the 3 init loops are unrolled differently), _duel 82%, teamselect 81%, SubWinDisp 81%.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -24,8 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-
-// Menu callbacks were built without the peephole optimizer.
 #pragma peephole off
 #pragma pool_strings off
 
@@ -36,16 +29,16 @@ struct _MENUCBTRAINER {
 
 struct _MENUCBWORK {
     u8 pad0[0x18];
-    _MENUCBTRAINER trainer[4];    // 0x18
-    _MENUCBTRAINER trainerOrg[4]; // 0x4C98
+    _MENUCBTRAINER trainer[4];
+    _MENUCBTRAINER trainerOrg[4];
     u8 rest[0xB5F4 - 0x9918];
 };
 
 struct TunaideSelect {
-    s32 mode;     // 0x00
+    s32 mode;
     s32 unk4;
-    s32 homePlace; // 0x08
-    u8 ctl[4];    // 0x0C
+    s32 homePlace;
+    u8 ctl[4];
 };
 
 extern "C" {
@@ -225,10 +218,6 @@ extern "C" void fn_80044314(void) {
         }
     }
 }
-
-// ---- draft declarations ----
-
-
 
 static void _menuCB_RuleData_CBtoSAVEDATA() {
     memcpy(savedataGetStatus(0, 0xE), &CB(u8, 0x9918), 0x360);
@@ -455,8 +444,9 @@ static void menuCB_SAVEDATA_recover() {
 }
 
 static void menuCB_GCEntry_Job() {
+    void* hero;
     void* save = savedataGetStatus(0, 2);
-    void* hero = &CB(u8, 0xA65C);
+    hero = &CB(u8, 0xA65C);
     heroBiosCopy(hero, save);
     for (u32 i = 0; i < 6; i++) {
         pokemonInit(heroBiosGetPokemonPtr(hero, i));
@@ -1057,26 +1047,26 @@ void menuColosseumBattle(s32 p0) {
     }
     if (0 < 0x30) {
         temp_r4_2 = (unsigned char *)(&_CB + 0x20);
+        M2C_FIELD(&_CB, s32 *, 0xB0EC) = 0;
         M2C_FIELD(&_CB, s32 *, 0xB0D4) = 0;
         M2C_FIELD(&_CB, s32 *, 0xB0D8) = 0;
         M2C_FIELD(&_CB, s32 *, 0xB0DC) = 0;
         M2C_FIELD(&_CB, s32 *, 0xB0E0) = 0;
         M2C_FIELD(&_CB, s32 *, 0xB0E4) = 0;
         M2C_FIELD(&_CB, s32 *, 0xB0E8) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0EC) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0F0) = 0;
         temp_r4_3 = temp_r4_2;
         temp_r4_3 += 0x20;
+        M2C_FIELD(temp_r4_2, s32 *, 0xB0EC) = 0;
+        M2C_FIELD(&_CB, s32 *, 0xB0F0) = 0;
         M2C_FIELD(temp_r4_2, s32 *, 0xB0D4) = 0;
         M2C_FIELD(temp_r4_2, s32 *, 0xB0D8) = 0;
         M2C_FIELD(temp_r4_2, s32 *, 0xB0DC) = 0;
         M2C_FIELD(temp_r4_2, s32 *, 0xB0E0) = 0;
         M2C_FIELD(temp_r4_2, s32 *, 0xB0E4) = 0;
         M2C_FIELD(temp_r4_2, s32 *, 0xB0E8) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0EC) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0F0) = 0;
         temp_r4_4 = temp_r4_3 + 0x20;
         M2C_FIELD(temp_r4_3, s32 *, 0xB0D4) = 0;
+        M2C_FIELD(temp_r4_2, s32 *, 0xB0F0) = 0;
         M2C_FIELD(temp_r4_3, s32 *, 0xB0D8) = 0;
         M2C_FIELD(temp_r4_3, s32 *, 0xB0DC) = 0;
         M2C_FIELD(temp_r4_3, s32 *, 0xB0E0) = 0;
@@ -1137,6 +1127,5 @@ void menuColosseumBattle(s32 p0) {
     floorWaitForChange();
 }
 }
-
 
 extern "C" void menuColosseumBattle(s32 mode);

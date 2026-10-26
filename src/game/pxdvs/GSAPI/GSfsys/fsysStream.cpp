@@ -91,7 +91,6 @@ BOOL _fsysStreamGetData(Fsys* fsys, u32 id, void* dst, u32 size, u32 offset, u32
 
 static void _fsysStreamGetDataCallback(void* arq) {
     FsysArqTrans* trans = _fsysArq2ArqTrans(arq);
- // The doubled check reproduces the original branch layout (likely a stripped debug check).
     if (trans == NULL) {
         if (trans == NULL) {
             return;

@@ -1,9 +1,7 @@
 #include <dolphin/types.h>
 
-// Several tables are unreferenced in the final game; keep them so the linker does not strip them.
 #pragma force_active on
 
-// .rodata objects
 const u32 NoHitMsgTbl[] = {
     0x00004E2F,
     0x00004E30,
@@ -212,8 +210,6 @@ const u32 IrekaeMsgTbl[] = {
     0x00004FE7,
     0x00004F64,
 };
-
-// .sdata2 objects
 
 const u32 NemuruMsgTbl[] = {
     0x00004E6A,

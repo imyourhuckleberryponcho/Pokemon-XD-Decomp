@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Debug menu units were built without the peephole optimizer.
 #pragma peephole off
 
 extern "C" {
@@ -17,7 +16,6 @@ static s32 gSelected_column;
 static s32 gSelectedMenu_column;
 static u8 gSaveResult;
 
-// Nothing references this, but the original link kept it.
 #pragma force_active on
 s32 dbgMenuFieldCameraChangeDisp(void) {
     if (!menuIsCheck(0x23)) {

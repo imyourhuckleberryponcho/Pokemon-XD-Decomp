@@ -1,8 +1,3 @@
-// GSmsg: GSAPI message / text rendering system.
-// STATUS: 16/41 exact with extra_cflags=["-inline deferred"] + "#pragma peephole off" (file is written
-// bottom-to-top). Still stubs: _msgMainSub, _msgMakeTexture. Near misses: GetGSchar (instr order),
-// GetLength, Exec, PrintRect, GSprint, GetRect, InitRuby, MakeGScharStr, GBA converters (regs).
-// TODO: GScharMakeFromGBA jump table (.data jumptable) not produced; Open has an extra trailing blr.
 #include <dolphin/types.h>
 #include <libc/stdarg.h>
 #include <dolphin/gx/GXVert.h>
@@ -18,7 +13,6 @@ struct MsgEntry {
     u32 offset;
 };
 
-// message bank (loaded text file); also linked list node
 struct MsgBank {
     u16 id;
     u8 pad2;
@@ -107,7 +101,7 @@ struct MSG_TASK_WORK {
     s8 lineSpace;
     s8 yAdjust;
     u8 layer;
-    s8 f45;
+    bool f45;
     u8 csrA;
     u8 csrB;
     u8 talking;
@@ -133,9 +127,9 @@ struct MsgSys {
     MsgBank* banks;
     GStexture* tex[2];
     void* image;
-    s16 count14; // atlas cursor x
-    s16 count16; // atlas cursor y
-    u8 pad18;    // current atlas row height
+    s16 count14;
+    s16 count16;
+    u8 pad18;
     s8 cur;
     u8 pad1a[2];
     MSG_TASK_WORK* tasks;
@@ -152,7 +146,6 @@ struct MsgSE {
     u16 a;
     u16 b;
 };
-
 
 struct GXRGBA {
     struct {
@@ -1704,8 +1697,6 @@ const u16 lbl_802F2B88[256] = {
     0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-
-
 static u32 _msgGetLength(const u16* s);
 static u32 _msgGetSize(const u16* s);
 static FontEntry* _msgGetCodeInfo(MSG_TASK_WORK* t, u16 code, tagFONT_INFO** out);
@@ -1829,7 +1820,6 @@ static inline u8* msgFindB(u32 key)
     return 0;
 }
 
-/* Message reader and control dispatch, written with early returns. */
 static inline u16 msgReadCode(MSG_TASK_WORK* t)
 {
     u16* cursor;
@@ -2261,7 +2251,8 @@ static void _msgSetChar(MSG_TASK_WORK* t, u16 code)
         t->charW = (f32)t->fontW * t->scaleX + 2.0f;
     } else {
         u8 w = e->width;
-        _msgMakeTexture(t, (u8*)info + (info->dataOff + (e->bits & 0xFFFFFF)), (u8)w, e->height, (e->bits >> 24));
+        s8 rf_t = info->dataOff;
+        _msgMakeTexture(t, (u8*)info + (rf_t + (e->bits & 0xFFFFFF)), (u8)w, e->height, (e->bits >> 24));
         t->charW = (f32)(s16)w * t->scaleX;
     }
 }
@@ -3000,10 +2991,10 @@ void GSmsgInitRuby(MSG_TASK_WORK* t)
     u8 pass;
     s16 width0;
     s16 width1;
-    u8* savedIp;
+    s8 savedMode;
     u8 savedFlag;
-    u8 savedDepth;
-    s32 savedMode;
+    u8* savedIp;
+    s8 savedDepth;
     u8* resume[3];
     f32 rubyHeight;
     u16 code;
@@ -3396,7 +3387,7 @@ static inline s32 gbaLoadQuote(u16* dst, const u8* src, s32 len, u16 q1, u16 q2)
     }
     while (len != 0 && *src != 0xff) {
         if (dst != 0) {
-            u8 c = *src;
+            int c = *src;
             switch (c) {
             case 0xb1:
                 *dst++ = q1;
@@ -3445,11 +3436,7 @@ s32 GScharMakeFromGBA(u16* dst, u8* src, s32 len, s32 lang)
         case 4:
             return gbaLoadQuote(dst, src, len, 0xab, 0xbb);
         case 0:
-        case 2:
-        case 5:
-        case 6:
-        case 7:
-        case 9:
+        case 8:
         default:
             return gbaLoad(dst, src, len, lbl_802F2B88);
         }
@@ -3459,14 +3446,14 @@ s32 GScharMakeFromGBA(u16* dst, u8* src, s32 len, s32 lang)
 
 static inline s32 gbaStore(u8* dst, const u16* src, const u16* tbl)
 {
-    s32 n = 0; //D1
-    u32 c; //D1
+    s32 n = 0;
+    u32 c;
     if (src == 0) {
         return 0;
     }
     while ((c = *src) != 0) {
-        const u16* p = tbl; //D2
-        s32 i = 0; //D2
+        const u16* p = tbl;
+        s32 i = 0;
         while (c != *p) {
             i++;
             p++;
@@ -3492,7 +3479,7 @@ static inline s32 gbaStoreQuote(u8* dst, const u16* src, s32 lang)
         return 0;
     }
     while ((c = *src) != 0) {
-        u8 idx;
+        int idx;
         switch (c) {
         case 0xab:
         case 0x201e:

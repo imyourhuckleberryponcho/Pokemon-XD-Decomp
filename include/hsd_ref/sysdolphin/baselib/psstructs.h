@@ -106,11 +106,10 @@ struct HSD_psAppSRT {
     float ssx; /* 0x64 */
     float ssy; /* 0x68 */
 
-    /* XD: Melee's x6C..x98 are absent, so everything below is 0x30 lower */
     void (*freefunc)(struct HSD_psAppSRT* appSrt); /* 0x6C */
 
     u16 idnum; /* 0x70 */
-    u8 xA2;    /* 0x72 */
+    u8 xA2;
 };
 
 /* size: 0x98 */
@@ -149,7 +148,7 @@ struct HSD_Particle {
     u16 matColCount;                     // 0x5A
     u16 ambColCount;                     // 0x5C
     u16 rotateCount;                     // 0x5E
-    u32 xd_unk60;                        // XD only
+    u32 xd_unk60;
     float sizeTarget;                    // 0x60
     float rotateTarget;                  // 0x64
     u16 primColRemain;                   // 0x68
@@ -237,9 +236,9 @@ struct HSD_Generator {
     u16 genLife;                          // 0x10
     u16 type;                             // 0x12
     u8 bank;                              // 0x14
-    u8 linkNo;                            // 0x15
+    u8 linkNo;
     u8 texGroup;                          // 0x16
-    u8 dummy;                             // 0x17
+    u8 dummy;
     u16 idnum;                            // 0x18
     u16 life;                             // 0x1A
     u8* cmdList;                          // 0x1C
@@ -260,13 +259,13 @@ struct HSD_Generator {
         auxCone cone;
         auxSphere sphere;
     } aux; // 0x54
-    void* camera;  // 0x88 (XD only: camera this generator is drawn with)
-    u16 flags;     // 0x8C (XD only; 0x20 = apply scale below)
-    u16 index;     // 0x8E
-    Vec3 rot;      // 0x90 (XD only: Euler angles applied to the emitter)
-    Vec3 scale;    // 0x9C (XD only)
-    HSD_JObj* jobj;                       // 0xA8
-    Vec3 scale2;                          // 0xAC (XD only)
+    void* camera;
+    u16 flags;
+    u16 index;
+    Vec3 rot;
+    Vec3 scale;
+    HSD_JObj* jobj;
+    Vec3 scale2;
 };
 
 #define PS_TEXDIRECTION

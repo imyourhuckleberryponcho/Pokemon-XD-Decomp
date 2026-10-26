@@ -3,7 +3,7 @@ class Hero {
 public:
     static Hero* getHeroPtr();
     u8 getFollowerID();
-    u8 getFollowerModelLevel();
+    s32 getFollowerModelLevel();
     void addFootStep(unsigned long);
 };
 #pragma pool_strings off
@@ -78,25 +78,25 @@ struct FOOTSTEP {
 };
 
 struct PeopleWork {
-    u8 active;           // 0x00
+    u8 active;
     u8 pad1[0xc];
-    u8 unkD;             // 0x0d
+    u8 unkD;
     u8 pad0E[6];
-    u32 group;           // 0x14
-    u32 id;              // 0x18
-    u32 objID;           // 0x1c
-    f32 walkSpeed;       // 0x20
-    f32 runSpeed;        // 0x24
-    f32 animRate;        // 0x28
-    f32 unk2C;           // 0x2c
+    u32 group;
+    u32 id;
+    u32 objID;
+    f32 walkSpeed;
+    f32 runSpeed;
+    f32 animRate;
+    f32 unk2C;
     u8 pad30[0x20];
-    s32 unk50;           // 0x50
+    s32 unk50;
     u8 pad54[0x14];
-    GSvec target;        // 0x68
+    GSvec target;
     u8 pad74[0xb0];
-    s32 unk124;          // 0x124
+    s32 unk124;
     u8 pad128[0x18];
-    s32 unk140;          // 0x140
+    s32 unk140;
 };
 
 struct EventTri;
@@ -104,17 +104,17 @@ struct EventTri;
 struct HeroMoveEvent {
     GSvec pos[3];
     u32 unk24[3];
-    u16 eventID;           // 0x30
+    u16 eventID;
     u16 pad32;
 };
 
 struct HeroMoveMember {
-    s32 leader;            // 0x00 (used in member 0 only)
-    u16 flags;             // 0x04
+    s32 leader;
+    u16 flags;
     u16 pad6;
-    f32 formation;         // 0x08
-    s32 neckMode;          // 0x0c
-    s32 unk10;             // 0x10
+    f32 formation;
+    s32 neckMode;
+    s32 unk10;
     u8 pad14[0xc];
 };
 
@@ -124,31 +124,31 @@ struct StepCallback {
 };
 
 struct HeroMoveWork {
-    HeroMoveMember members[4]; // 0x00
+    HeroMoveMember members[4];
     u8 pad80[4];
-    s32 logHead;           // 0x84
-    s32 logCount;          // 0x88
-    GSvec leaderLog[60];   // 0x8c
-    f32 stepAccum;         // 0x35c
-    StepCallback callbacks[8]; // 0x360
-    s32 poisonCounter;     // 0x3a0
-    s32 friendCounter;     // 0x3a4
-    s32 lockFrame;         // 0x3a8
-    u8 smoothFloorLink;    // 0x3ac
-    u8 started;            // 0x3ad
-    u8 stickOverride;      // 0x3ae
-    s8 stickData[4];       // 0x3af
+    s32 logHead;
+    s32 logCount;
+    GSvec leaderLog[60];
+    f32 stepAccum;
+    StepCallback callbacks[8];
+    s32 poisonCounter;
+    s32 friendCounter;
+    s32 lockFrame;
+    u8 smoothFloorLink;
+    u8 started;
+    u8 stickOverride;
+    s8 stickData[4];
     u8 pad3b3;
-    u32 autoEvent[5];      // 0x3b4 (script id, then 4 args)
-    HeroMoveEvent events3[4]; // 0x3c8
-    HeroMoveEvent events1[4]; // 0x498
-    HeroMoveEvent events2[4]; // 0x568
-    s32 eventCount3;       // 0x638
-    s32 eventCount1;       // 0x63c
-    s32 eventCount2;       // 0x640
-    s32 stepPool[4];       // 0x644
-    AnalogStickEmu analog; // 0x654
-    s32 frameCounter;      // 0x65c
+    u32 autoEvent[5];
+    HeroMoveEvent events3[4];
+    HeroMoveEvent events1[4];
+    HeroMoveEvent events2[4];
+    s32 eventCount3;
+    s32 eventCount1;
+    s32 eventCount2;
+    s32 stepPool[4];
+    AnalogStickEmu analog;
+    s32 frameCounter;
 };
 
 extern "C" {
@@ -250,7 +250,6 @@ extern "C" void heroSetFollowerWithID(u8, s32);
 
 static s32 getObjID(HEROMOVE_MEMBER);
 extern "C" u32 heroGetObjID(Hero*);
-
 
 extern "C" void peopleSetDisp(u32, u32, bool);
 extern "C" void* GSmodelGetPart(_GSmodel*, s32);
@@ -402,7 +401,6 @@ static void _closeHeroThread();
 static HeroMoveWork HeroMove;
 static FloorModuleInterface _floorModuleHero;
 
-
 static inline f32 _sqrtf(f32 x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
@@ -546,8 +544,9 @@ s32 heroMoveInit(GSvec* pos, GSvec* rot) {
         peopleOpen(0, 0x68, 0x195B0400);
         peopleOpen(0, 0x69, 0x19540400);
     }
+    int i;
     _GSmodel* models[4];
-    for (int i = 0; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         models[i] = getModel((HEROMOVE_MEMBER)i);
         if (models[i] != 0) {
             GSmodelEnableAnimBlend(models[i]);
@@ -570,7 +569,7 @@ s32 heroMoveInit(GSvec* pos, GSvec* rot) {
         peopleSetPos(0, 0x64, pos);
         peopleSetRot(0, 0x64, rot);
     }
-    for (int i = 0; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         updateAnimation(0.0f, (HEROMOVE_MEMBER)i);
     }
     initFloor();
@@ -582,7 +581,7 @@ s32 heroMoveInit(GSvec* pos, GSvec* rot) {
     HeroMove.analog.init();
     Hero* hero = Hero::getHeroPtr();
     u8 followerID = hero->getFollowerID();
-    u8 level = hero->getFollowerModelLevel();
+    s32 level = hero->getFollowerModelLevel();
     if (followerID != 0) {
         heroMoveJoinMember(followerID);
         heroSetFollowerWithID(followerID, level);
@@ -871,7 +870,7 @@ bool heroMoveIsMember(HEROMOVE_MEMBER member) {
 
 extern "C" {
 u8 heroMoveSetNeckMode(s32 member, s32 mode) {
-    if (mode < 0 || mode >= 2) {
+    if ((mode < 0) || (mode >= 2)) {
         return 0;
     }
     if (!heroMoveIsMember((HEROMOVE_MEMBER)member)) {
@@ -880,8 +879,8 @@ u8 heroMoveSetNeckMode(s32 member, s32 mode) {
     u32 group;
     u32 id;
     getResID(&group, &id, (HEROMOVE_MEMBER)member);
-    HeroMoveMember* m = &HeroMove.members[member];
-    switch (m->neckMode) {
+    HeroMoveMember * m;
+    switch ((&HeroMove.members[member])->neckMode) {
     case 1:
         peopleRemoveNeckTarget(group, id, 1.0f);
         break;
@@ -891,7 +890,7 @@ u8 heroMoveSetNeckMode(s32 member, s32 mode) {
         peopleSetNeckTargetHero(group, id);
         break;
     }
-    m->neckMode = mode;
+    (&HeroMove.members[member])->neckMode = mode;
     return 1;
 }
 }

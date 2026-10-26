@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Menu files were built without the peephole optimizer.
 #pragma peephole off
 
 struct MenuWindow {
@@ -116,7 +115,6 @@ void menuIntUnderTakerHook(MenuWindow* window, MenuItem* item) {
 
 }
 
-// Pulsing icon alpha between 50 and 255.
 static u8 _menuIntGetAlpha2() {
     f32 c = cos(6.2831855f * _menuIntFrameCount2 / 1.5f);
     u16 alpha = _menuIntWave(c, 0.5f);
@@ -253,7 +251,6 @@ s32 menuIntMainCtrl(MenuWindow* window) {
 
 }
 
-// Rumble, unless switched off in the options.
 static void _menuIntVibSet() {
     if (gamedatasaveGetStatus(0, 9) == 0) {
         GSinputMotorStart(1, 0, 0xFF, 30, 0);

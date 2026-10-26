@@ -92,6 +92,6 @@ inline T* copy_backward(T* first, T* last, T* d_last)
 	return __copy_backward<T, 1>::copy_backward(first, last, d_last);
 }
 
-} // namespace std
+}
 
 #endif

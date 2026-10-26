@@ -1,7 +1,5 @@
 #include <dolphin/types.h>
 
-// Built with -O4,s (see configure.py).
-
 struct FightJoutai {
     u8 unk0[0x10];
 };

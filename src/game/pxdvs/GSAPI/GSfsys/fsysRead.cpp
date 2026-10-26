@@ -1,6 +1,4 @@
-// Not yet decompiled.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -25,7 +23,6 @@ struct FsysWork;
 struct GSdvdFile;
 
 extern "C" {
-// ---- draft declarations ----
 struct Fsys {
     u8 _draft[1];
 };
@@ -40,9 +37,9 @@ struct FsysBlock {
 };
 struct FsysHeader {
     u8 unk0[0xC];
-    u32 count;          // 0x0C number of resources
+    u32 count;
     u8 unk10[0x30];
-    u32 offsetTable;    // 0x40 offset (from the header) of the u32 resource offset table
+    u32 offsetTable;
 };
 struct FsysResHeader {
     u8 _draft[1];
@@ -160,7 +157,7 @@ loop_4:
         }
         OSRestoreInterrupts(temp_r29);
         sp8 = (void (*)())_fsysReadHeaderCacheCallback;
-        _fsysReadData((void *)(p0), (void *)(NULL), (unsigned char)(var_r28), (long)(0xFFFF), (void *)(M2C_FIELD(p0, u8 **, 0x20)), (void *)(M2C_FIELD(M2C_FIELD(p0, u8 **, 0x1C), u8 **, 8)), (void *)(NULL), (void *)((u16)_fsysReadHeaderDvdCallback), (long)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)), (long)(0));
+        _fsysReadData((void *)(p0), (void *)(NULL), (unsigned char)(var_r28), (long)(0xFFFF), (void *)(M2C_FIELD(p0, u8 **, 0x20)), (void *)(M2C_FIELD(M2C_FIELD(p0, u8 **, 0x1C), u8 **, 8)), (void *)(NULL), (void *)((u16)_fsysReadHeaderDvdCallback), (long)(M2C_ERROR( )), (long)(0));
     }
 }
 }
@@ -245,7 +242,7 @@ static void _fsysReadHeaderCallbackSub(void *p0) {
     temp_r31 = OSDisableInterrupts();
     M2C_FIELD(p0, s8 *, 0x2E) = 1;
     temp_r0 = M2C_FIELD(p0, s32 *, 0x10);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 3:
         break;
     case 4:
@@ -334,7 +331,6 @@ static void* _fsysReadFile(void *p0) {
             return NULL;
         }
         var_r3 = (FsysResHeader *)(_fsysReadDataExec(p0, var_r3));
-        /* Duplicate return node #19. Try simplifying control flow for better match */
         return var_r3;
     }
     return var_r3;
@@ -395,7 +391,7 @@ block_14:
     temp_r27_2 = ((u32) M2C_FIELD(p1, u32 *, 0xC) >> 0x11U) & 1;
     temp_r8 = _fsysGetTransLength(M2C_FIELD(p1, s32 *, 0x14), (u16)temp_r28);
     sp8 = (void (*)())_fsysReadBlockCacheCallback;
-    temp_r27 = (unsigned char *)(_fsysReadData((void *)((u16)p0), (void *)(p1), (unsigned char)(temp_r27_2), (long)(M2C_FIELD(p0, s32 *, 0x24)), (void *)(M2C_FIELD(M2C_FIELD((u16)p1, s8 **, 0x30), u8 **, 8)), (void *)((u8 *) temp_r8), (void *)((u8 *) temp_r28), (void *)(_fsysReadBlockDvdCallback), (long)(M2C_ERROR(/* Unable to find stack arg 0x0 in block */)), (long)(0)));
+    temp_r27 = (unsigned char *)(_fsysReadData((void *)((u16)p0), (void *)(p1), (unsigned char)(temp_r27_2), (long)(M2C_FIELD(p0, s32 *, 0x24)), (void *)(M2C_FIELD(M2C_FIELD((u16)p1, s8 **, 0x30), u8 **, 8)), (void *)((u8 *) temp_r8), (void *)((u8 *) temp_r28), (void *)(_fsysReadBlockDvdCallback), (long)(M2C_ERROR( )), (long)(0)));
     OSRestoreInterrupts(temp_r31);
     return temp_r27;
 }

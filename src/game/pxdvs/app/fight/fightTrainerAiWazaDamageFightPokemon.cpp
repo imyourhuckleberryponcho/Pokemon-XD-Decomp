@@ -1,6 +1,3 @@
-// WIP: mechanical copy of fightTrainerAiWazaDamage.cpp (its matched twin, found with
-// similar.py). 178/217 exact as-is. Remaining: the defender is a FightPokemon* and uses the
-// fightTrainerAiGetFightPokemon* accessors; static SubPre helpers come before their callers (LAYOUT).
 #include <dolphin/types.h>
 
 struct FIGHT_TRAINER;

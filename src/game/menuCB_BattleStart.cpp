@@ -1,7 +1,4 @@
-// Matching. Built with -inline noauto + -inline deferred: functions are written in REVERSE asm order (data
-// order follows parse order). The empty __sinit needs an explicit .ctors entry or the linker strips it.
 #include <dolphin/types.h>
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -22,7 +19,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -44,7 +40,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #endif
 
 #pragma peephole off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -65,7 +60,7 @@ struct char16;
 
 struct MenuCBBattleStartWork {
     u32 unk0;
-    s32 status; // 0x04
+    s32 status;
     u8 unk8[0x140];
 };
 
@@ -73,9 +68,7 @@ extern "C" {
 
 extern MenuCBBattleStartWork _menuCBBattleStartWork;
 
-
 extern "C++" {
-// ---- draft declarations ----
 struct FightTrainerKindData {
     u8 _draft[1];
 };
@@ -145,8 +138,6 @@ extern "C++" {
 extern "C++" {
 
 extern "C++" {
-// ---- draft declarations ----
-
 
 extern "C" {
 void menuCBBattleStartDispTrainerInit();
@@ -157,17 +148,10 @@ extern s32 jtbl_2145;
 extern s32 jtbl_2136;
 }
 
-// ---- draft declarations ----
-
-
-
 }
-
-
 
 extern "C" {
 
-
 }
 
 }
@@ -176,12 +160,9 @@ extern "C" {
 }
 }
 }
-
 
 extern "C++" {
 extern "C++" {
-
-
 
 }
 
@@ -334,29 +315,29 @@ void menuCBBattleStartInit(s32 p0, s32 p1) {
     M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0) = p0;
     M2C_FIELD(&_menuCBBattleStartWork, s32 *, 4) = p1;
     _menuCBBattleStartSetIndex();
-    switch (p1) {                                   /* switch 1; irregular */
-    case 0:                                         /* switch 1 */
+    switch (p1) {
+    case 0:
         menuCBPokemonEntryTexWorkInit();
         menuCBPokemonEntryLoadTex();
         temp_r0 = (u16)HSD_Rand() % 3;
-        switch (temp_r0) {                          /* switch 2; irregular */
-        case 0:                                     /* switch 2 */
+        switch (temp_r0) {
+        case 0:
             M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x124) = 0x3D2;
             break;
-        case 1:                                     /* switch 2 */
+        case 1:
             M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x124) = 0x3F5;
             break;
-        case 2:                                     /* switch 2 */
+        case 2:
             M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x124) = 0x3F6;
             break;
         case 3:
-        default:                                    /* switch 2 */
+        default:
             M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x124) = 0x3F7;
             break;
         }
         soundOpenPlay(M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x124), 0, 0xFF);
         return;
-    case 1:                                         /* switch 1 */
+    case 1:
         menuCBPokemonEntryTexWorkInit();
         menuCBPokemonEntryLoadTex();
         M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x124) = 0x5DB;
@@ -503,6 +484,5 @@ static void _menuCBBattleStartSetIndex() {
 }
 }
 }
-
 
 }

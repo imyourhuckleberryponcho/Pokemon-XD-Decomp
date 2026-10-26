@@ -1,7 +1,5 @@
 #include <dolphin/types.h>
 
-// Built with -O4,s (see configure.py).
-
 struct FightKindData {
     u8 backSaveDataFlag;
     u8 doBadgeCheckFlag;

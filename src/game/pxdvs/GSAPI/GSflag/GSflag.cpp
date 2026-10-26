@@ -1,9 +1,7 @@
-// GSflag: all functions match (linked).
 #include <dolphin/types.h>
 
 #pragma pool_strings off
 
-// One flag: which bit array (level) it lives in, its width in bits and its bit position.
 struct FlagData {
     u8 level : 2;
     u8 length : 6;
@@ -154,7 +152,6 @@ void GSflagInit(u32* bits1, u32 num1, u32* bits2, u32 num2, u32* bits3, u32 num3
 }
 #pragma dont_inline reset
 
-// Assigns every flag a bit position within its level and checks the levels' sizes.
 void GSflagInitBitPos(FlagData* flags, u32 count, u32 limit1, u32 limit2, u32 limit3) {
     FlagData* data = flags;
     u16 pos1 = 0;

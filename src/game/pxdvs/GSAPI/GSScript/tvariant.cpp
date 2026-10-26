@@ -1,9 +1,5 @@
-// STATUS: 31/32 exact, LAYOUT OK. Left: restoreStateData (type 0x23 people
-// search loop: offset/pointer registers r9/r10 swapped vs retail).
 #include <dolphin/types.h>
 
-// Script variant values: conversions, arithmetic, comparisons and save/load.
-// Built with -inline deferred: functions are written in reverse object order.
 #pragma pool_strings off
 
 struct GSvec {
@@ -128,8 +124,6 @@ struct tigaVariant {
         value.pointer = v;
         dupIfNeeded();
     }
- // Result type of a binary operation; hi/lo receive the operands with the
- // higher and lower type.
     inline int getOpType(tigaVariant* b, tigaVariant*& hi, tigaVariant*& lo) {
         if (type == b->type) {
             hi = this;
@@ -223,7 +217,6 @@ inline void tigaVariant::dupIfNeeded()
         Tiga::m_cpCurrentObject->cellMemory->dupVariant(this);
     }
 }
-
 
 static inline bool isZeroVector(GSvec* v)
 {
@@ -369,8 +362,6 @@ void tigaArrayFixed::resize(int) {}
 
 void tigaArrayFixed::push_back(tigaVariant*) {}
 
-// Debug range checks; unused in retail, so the linker drops them (only their
-// strings remain in .rodata).
 void tigaArrayFixed::checkForeach()
 {
     if (iter >= size) {

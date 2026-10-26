@@ -1,14 +1,7 @@
-// STATUS (cleanup pass): 36/41 exact. Needs extra_cflags ["-inline noauto,deferred"]; the file is written bottom-to-top
-// (-inline deferred) and uses #pragma peephole off. Not exact: _menuModelAdjustCamera (98.8%) / _menuModelAdjustCamera2
-// (97.6%) float scheduling only, menuModelRender / _menuModelRenderOff (lwz r3 vs r0 for wazaSeq), and
-// _menuModelMakeLoadInfo (code identical, but the target symbol is mangled ...PokemonUs (3 params) while it takes 4:
-// rename it in symbols.txt to ...PokemonUsb to pair it).
 #include <dolphin/types.h>
 #pragma pool_strings off
 #pragma peephole off
 
-// pokemon.hpp declares pokemonGetStatus as returning u16; the callers here need the real u32 return
-// (see docs/signatures.txt). Rename the header's declaration away and declare the correct one.
 #define pokemonGetStatus pokemonGetStatus_hdr
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #undef pokemonGetStatus
@@ -42,56 +35,55 @@ struct Col {
 
 static inline Vec3 vecAdd(Vec3* a, Vec3* b);
 
-// one queued load request (kind 1 = Pokemon sequence, 0 = floor object)
 struct MENU_MODEL_LOAD {
-    u8 kind;     // 0x00
+    u8 kind;
     union {
         u32 id;
         struct {
             u16 form;
             u16 waza;
         } pk;
-    };           // 0x04 (objects: u32 id)
-    s32 rnd;     // 0x08
-    u16 c;       // 0x0C
-    u8 shadow;   // 0x0E
-    u8 anim;     // 0x0F
+    };
+    s32 rnd;
+    u16 c;
+    u8 shadow;
+    u8 anim;
 };
 
 struct MENU_MODEL {
-    u8 state;       // 0x00
-    u8 loading;     // 0x01
-    u8 inited;      // 0x02
-    u8 visible;     // 0x03
-    u8 clip;        // 0x04
+    u8 state;
+    u8 loading;
+    u8 inited;
+    u8 visible;
+    u8 clip;
     u8 pad5[7];
-    f32 progress;   // 0x0C
-    MENU_MODEL_LOAD pending; // 0x10
-    MENU_MODEL_LOAD cur;     // 0x20
-    u32 model;      // 0x30
-    u32 wazaSeq;    // 0x34
-    u32 nextModel;  // 0x38
-    u32 nextWaza;   // 0x3C
-    f32 angle[3];   // 0x40
-    f32 offset[3];  // 0x4C
-    void* thread;     // 0x58
-    s32 x;          // 0x5C
-    s32 y;          // 0x60
-    s32 w;          // 0x64
-    s32 h;          // 0x68
-    u32 camera;     // 0x6C
-    GSlight* light[3];   // 0x70
-    f32 zoom;       // 0x7C
-    s32 waitCount;  // 0x80
-    u8 f84;         // 0x84
+    f32 progress;
+    MENU_MODEL_LOAD pending;
+    MENU_MODEL_LOAD cur;
+    u32 model;
+    u32 wazaSeq;
+    u32 nextModel;
+    u32 nextWaza;
+    f32 angle[3];
+    f32 offset[3];
+    void* thread;
+    s32 x;
+    s32 y;
+    s32 w;
+    s32 h;
+    u32 camera;
+    GSlight* light[3];
+    f32 zoom;
+    s32 waitCount;
+    u8 f84;
     u8 pad85[3];
-    f32 camRot[3];  // 0x88
-    u8 mtx[0x30];   // 0x94
-    u8 sizeValid;   // 0xC4
+    f32 camRot[3];
+    u8 mtx[0x30];
+    u8 sizeValid;
     u8 pad[3];
-    f32 size[3];    // 0xC8
-    f32 min[3];     // 0xD4
-    f32 max[3];     // 0xE0
+    f32 size[3];
+    f32 min[3];
+    f32 max[3];
 };
 
 struct PokemonMenuAnim {
@@ -1113,6 +1105,5 @@ void menuModelGetPkxRndFromPokemonForSeqenceLoad(u32& rnd, u16& species, Pokemon
         return;
     }
 }
-
 
 u8 _modeloff;

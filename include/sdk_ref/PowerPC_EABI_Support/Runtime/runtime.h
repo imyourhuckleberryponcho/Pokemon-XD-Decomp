@@ -5,15 +5,14 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // ifdef __cplusplus
+#endif
 
 u32 __cvt_fp2unsigned(f64);
-// TODO: The rest
 
 void* __copy(char*, char*, size_t);
 
 #ifdef __cplusplus
 };
-#endif // ifdef __cplusplus
+#endif
 
 #endif

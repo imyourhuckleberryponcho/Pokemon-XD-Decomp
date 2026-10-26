@@ -1,4 +1,3 @@
-// Draft (dr4). Camera director for battle grid scenes (random camera + waza cameras).
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -178,7 +177,6 @@ void _wazaSequenceCameraDoPosition(ModelSequence* modelSequence, wazaSequenceCam
 void _wazaSequenceCameraDoFOV(ModelSequence* modelSequence, wazaSequenceCameraParams* params, int flags, f32 scale);
 void _wazaSequenceCameraGetFOVRange(wazaSequenceCameraParams* params, f32* lowFov, f32* highFov, f32 radius);
 
-// From the Dolphin SDK's OSFastCast.h (GQR3 is set up for u16 conversion).
 static inline u16 __OSf32tou16(register f32 inF) {
     u16 tmp;
     register u16* tmpPtr = &tmp;
@@ -402,7 +400,7 @@ void battleCameraStartRandom(u8 simple) {
     }
 }
 
-}  // extern "C"
+}
 
 static inline void DoPreset(GSvec* t, GSvec* a, GSvec* b, f32 time, f32 fov) {
     f32 s = battleGridGetUnscaledDistance(true);
@@ -451,9 +449,9 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     f32 d1;
     f32 d0;
     f32 dur;
+    f32 rot1;
     f32 rot2;
     f32 fov2;
-    f32 rot1;
     f32 dist2;
     f32 fov1;
     f32 height;
@@ -621,11 +619,12 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
             dist1 = tmp;
         }
         height = Lerp(params.heightMin, params.heightMax, HSD_Randf());
-        if (seq->isEnemy != 0) {
+        if (!(seq->isEnemy != 0)) {
+            rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf();
+            rot1 += (params.rotationMin + params.rotationBase);
+        } else {
             rot1 = HSD_Randf();
             rot1 *= params.rotationBase - (params.rotationMax - params.rotationMin);
-        } else {
-            rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
         }
         rot2 = rot1;
         break;
@@ -639,7 +638,8 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
             rot2 = HSD_Randf();
             rot2 *= params.rotationBase - (params.rotationMax - params.rotationMin);
         } else {
-            rot2 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
+            rot2 = (params.rotationMax - params.rotationMin) * HSD_Randf();
+            rot2 += (params.rotationBase + params.rotationMin);
             rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
         }
         break;
@@ -647,11 +647,12 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         dist1 = Lerp(params.distanceMin, params.distanceMax, HSD_Randf());
         dist2 = dist1;
         height = Lerp(params.heightMin, params.heightMax, HSD_Randf());
-        if (seq->isEnemy != 0) {
+        if (!(seq->isEnemy != 0)) {
+            rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf();
+            rot1 += (params.rotationMin + params.rotationBase);
+        } else {
             rot1 = HSD_Randf();
             rot1 *= params.rotationBase - (params.rotationMax - params.rotationMin);
-        } else {
-            rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
         }
         rot2 = rot1;
         break;
@@ -688,7 +689,7 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         break;
     }
     dur = HSD_Randf();
-    dur += 3.0f;
+    dur = dur + 3.0f;
     cameraMoveStop();
     cameraSetType(7);
     fn_80196A14(1);
@@ -902,7 +903,7 @@ void battleCameraStartWaza(WazaSequence* waza) {
     }
 }
 
-}  // extern "C"
+}
 
 static void _battleCameraUpdateWaza(void) {
     ModelSequence* ms;

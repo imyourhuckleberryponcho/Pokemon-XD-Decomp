@@ -3,9 +3,7 @@
 void PPCHalt(void);
 #include "Dolphin/os.h"
 
-BOOL _MetroTRK_Has_Framing; // UNUSED
-// GPVE01 _MetroTRK_Has_Framing = .bss:0x804F4814; // type:object size:0x4 scope:global align:4
-// GPVE01_D17 _MetroTRK_Has_Framing = .bss:0x804F4754; // type:object size:0x4 scope:global align:4
+BOOL _MetroTRK_Has_Framing;
 u8 TRK_Use_BBA;
 
 DBCommTable gDBCommTable = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
@@ -36,9 +34,8 @@ int InitMetroTRKCommTable(int hwId)
 	OSReport("Devkit set to : %ld\n", hwId);
 	TRK_Use_BBA = 0;
 
-	if (hwId == HARDWARE_BBA) { // BBA hardware
+	if (hwId == HARDWARE_BBA) {
 		OSReport("MetroTRK : Set to BBA\n");
-		// Initialize gDBCommTable
 		TRK_Use_BBA                       = 1;
 		gDBCommTable.initialize_func      = udp_cc_initialize;
 		gDBCommTable.open_func            = udp_cc_open;
@@ -53,9 +50,8 @@ int InitMetroTRKCommTable(int hwId)
 		return 0;
 	}
 
-	if (hwId == HARDWARE_GDEV) { // NDEV hardware
+	if (hwId == HARDWARE_GDEV) {
 		OSReport("MetroTRK : Set to GDEV hardware\n");
-		// Initialize gDBCommTable
 		result                            = Hu_IsStub();
 		gDBCommTable.initialize_func      = gdev_cc_initialize;
 		gDBCommTable.open_func            = gdev_cc_open;
@@ -71,7 +67,6 @@ int InitMetroTRKCommTable(int hwId)
 	} else if (hwId == HARDWARE_AMC_DDH) {
 		OSReport("MetroTRK : Set to AMC DDH hardware\n");
 		result = AMC_IsStub();
-		// Initialize gDBCommTable
 		gDBCommTable.initialize_func      = ddh_cc_initialize;
 		gDBCommTable.open_func            = ddh_cc_open;
 		gDBCommTable.close_func           = ddh_cc_close;
@@ -83,7 +78,7 @@ int InitMetroTRKCommTable(int hwId)
 		gDBCommTable.post_stop_func       = ddh_cc_post_stop;
 		gDBCommTable.init_interrupts_func = ddh_cc_initinterrupts;
 
-	} else { // unknown hardware
+	} else {
 		OSReport("MetroTRK : Set to UNKNOWN hardware. (%ld)\n", hwId);
 		OSReport("MetroTRK : Invalid hardware ID passed from OS\n");
 		OSReport("MetroTRK : Defaulting to GDEV Hardware\n");

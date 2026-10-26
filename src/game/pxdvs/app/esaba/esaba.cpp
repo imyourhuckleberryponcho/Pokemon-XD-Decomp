@@ -1,4 +1,3 @@
-// Draft: esaba (feeding spots on the field).
 #include <dolphin/types.h>
 
 enum FootStepCounter { FOOT_STEP_COUNTER_0 };
@@ -186,7 +185,7 @@ extern "C" {
 
 void esabaSetPokemon(u16 place, u16 id) {
     Pokemon pokemon;
-    u32 hero;
+    s16 hero;
     u32 rnd;
 
     if (id == 0) {
@@ -225,6 +224,8 @@ u32 esabaGetEsaItemNum(void) {
     return itemQuantity__4HeroFUs(getHeroPtr__4HeroFv(), 0x1FF);
 }
 
+#pragma push
+#pragma peephole off
 s32 esabaGet(s32 place) {
     s32 left;
     s32 num = GSflagGet(esabadata[place].flagNum);
@@ -241,6 +242,7 @@ s32 esabaGet(s32 place) {
     }
     return 0;
 }
+#pragma pop
 
 s32 esabaPut(s32 place) {
     s32 total;
@@ -344,8 +346,8 @@ s32 esabaSet(s32 place) {
                 }
                 s32 t = orig - fromBag - fromBox;
                 if (t != 0) {
-                    s32 m = (s16)t;
                     diff = -(orig - t);
+                    s32 m = (s16)t;
                     GSflagSet(esabadata[place].flagNum, m);
                     if (m == 0) {
                         GSflagSet(esabadata[place].flag4, 0);
@@ -491,6 +493,7 @@ static void _esabaAppearPokemon(u16 place) {
 static void _esabaAppearPokemonSub2(u16 place) {
     u16 count = getMax(place);
     u16 i;
+    s32 rf_t;
     u8 found = 0;
     u16 roll;
     u16 total;
@@ -507,7 +510,8 @@ static void _esabaAppearPokemonSub2(u16 place) {
     if (!found) {
         roll = (u16)HSD_Rand() % 100;
         if (roll < (u16)esabapokemondata_EX[1].prob) {
-            setPokemon(place, esabapokemondata_EX[1].id);
+            rf_t = esabapokemondata_EX[1].id;
+            setPokemon(place, rf_t);
             return;
         }
     } else {
@@ -560,13 +564,13 @@ static void _esabaAppearPokemonSub(u16 place) {
         probB = 0;
     }
     roll = (u16)HSD_Rand() % 100;
-    if (roll < probA) {
+    if ((u32)roll < probA) {
         setPokemon((u16)place, esabapokemondata_EX[0].id);
     } else if (roll < (u16)(probA ? probA + probB : probB)) {
         setPokemon((u16)place, esabapokemondata_EX[1].id);
     } else {
-        roll = (u16)HSD_Rand() % 100;
         total = 0;
+        roll = (u16)HSD_Rand() % 100;
         for (k = 0; k < count; k++) {
             EsaTable* t = getTable(place);
             total += t ? t->entries[k].prob : 0;

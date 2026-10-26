@@ -1,5 +1,3 @@
-// WIP (smallmenu, 2026-10-15): 10/16 exact. Needs -inline noauto,deferred (source bottom-to-top); LAYOUT/CONST/CALLS/DATA OK. Non-exact: mainFlow 94% (GPR order), open_menu/waitAction/checkDisconnect/SetRomVer (reg or branch shape), check_langarea (jumptable symbol name only).
-// (-inline noauto,deferred).
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
@@ -17,17 +15,17 @@ struct Quad {
 };
 
 struct _GBA_Connect_WORK {
-    Quad phase;     // 0x00
-    Quad saved;     // 0x10
-    u8 pad20;       // 0x20
-    s8 channel;     // 0x21
-    u8 pad22[2];    // 0x22
-    u32 flags;      // 0x24
-    u32 state;      // 0x28
-    s32 type;       // 0x2c
-    u8 timeout[4];  // 0x30
-    u8 pad34[0x14]; // 0x34
-    u8 f48[4];      // 0x48
+    Quad phase;
+    Quad saved;
+    u8 pad20;
+    s8 channel;
+    u8 pad22[2];
+    u32 flags;
+    u32 state;
+    s32 type;
+    u8 timeout[4];
+    u8 pad34[0x14];
+    u8 f48[4];
 };
 
 struct GBAInfo {
@@ -416,11 +414,12 @@ static _GBA_Connect_WORK* _open_menu(_MENU_GBAC_TYPE type, u32 flags, long ch)
         break;
     }
     s32 i;
-    const s32* init = _initial_phase[type];
+
     for (i = 0; i < 4; i++) {
+        const s32 * init = _initial_phase[type];
         s8 c = chans[i];
         w->phase.v[c] = init[c];
-        if (i < ch && w->phase.v[c] == 1) {
+        if ((i < ch) && (w->phase.v[c] == 1)) {
             w->phase.v[c] = 5;
         }
         w->f48[i] = 1;

@@ -1,4 +1,3 @@
-// STATUS: 4/5 exact (checkHitCollision 98.4%: tmpPtr/head register order); default flags, LAYOUT/CONST/CALLS/DATA OK.
 #include <dolphin/types.h>
 
 struct GSvec {
@@ -10,9 +9,9 @@ struct GSmtx {
 };
 
 struct CCD_TRI {
-    GSvec verts[3];  // 0x00
-    GSvec normal;    // 0x24
-    u16 flags;       // 0x30
+    GSvec verts[3];
+    GSvec normal;
+    u16 flags;
     u8 pad32[2];
 };
 
@@ -22,25 +21,25 @@ struct CCD_GRID_CELL {
 };
 
 struct CCD_HITMDL_HEAD {
-    CCD_TRI* tris;         // 0x00
-    u32 numTris;           // 0x04
-    CCD_GRID_CELL* cells;  // 0x08
-    u32* indices;          // 0x0C
-    u16 cellsX;            // 0x10
-    u16 cellsZ;            // 0x12
-    f32 cellWidth;         // 0x14
-    f32 cellDepth;         // 0x18
-    f32 minX;              // 0x1C
-    f32 minZ;              // 0x20
+    CCD_TRI* tris;
+    u32 numTris;
+    CCD_GRID_CELL* cells;
+    u32* indices;
+    u16 cellsX;
+    u16 cellsZ;
+    f32 cellWidth;
+    f32 cellDepth;
+    f32 minX;
+    f32 minZ;
 };
 
 struct CCD_OBJ {
     u8 unk0[0x28];
-    CCD_HITMDL_HEAD* hit;     // 0x28
+    CCD_HITMDL_HEAD* hit;
     u8 unk2C[8];
-    CCD_HITMDL_HEAD* hitAlt;  // 0x34
+    CCD_HITMDL_HEAD* hitAlt;
     u8 unk38[4];
-    u16 flags;  // 0x3C
+    u16 flags;
     u8 pad3E[2];
 };
 
@@ -136,8 +135,6 @@ static inline bool chkVerts(GSvec* verts, GSvec* normal, GSvec* pos, f32 radiusS
     return false;
 }
 
-/* Placeholder for a function the linker stripped from the original object: its float literals
- * (0.0f, 1.0f) sit in .sdata2 ahead of the 0.0001f used by the hit tests below. */
 static f32 unusedClampT(f32 t) {
     if (t < 0.0f) {
         return 0.0f;

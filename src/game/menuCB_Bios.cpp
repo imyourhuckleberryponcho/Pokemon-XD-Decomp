@@ -1,17 +1,11 @@
-// STATUS (cleanup pass): 41/41 functions, 38 exact with extra_cflags -inline noauto (+ peephole off via pragma);
-// LAYOUT/CONST/CALLS/DATA all OK. Not exact: InitVersusTrainer 99.1% (callee arg clrlwi on the heroId passed as Hero*),
-// InitContextAtFirst 97.9% (li r3 scheduling after rule copies), menuCB_RULE_INIT 97.8% (ruleNameFill address folding).
-// CBRule is a pack(1) struct (misaligned s32 members): struct assignment gives the member-wise copies of the target.
 #include <dolphin/types.h>
 
-// Menu callbacks were built without the peephole optimizer.
 #pragma peephole off
 
 struct Hero;
 struct Pokemon;
 
 #pragma pack(push, 1)
-// one tool-battle rule (0x90 bytes, misaligned s32 members)
 struct CBRule {
     s16 a0, a2, a4, a6;
     s32 a8;
@@ -28,37 +22,36 @@ struct CBRule {
 };
 #pragma pack(pop)
 
-// tool battle save data: 6 rules, then a flag byte
 struct _TOOL_SAVEDATA {
     CBRule rule[6];
-    s8 working; // 0x360 (padded)
+    s8 working;
     u8 pad361[3];
 };
 
 struct CBTrainer {
-    u16 dataId;       // 0x00
-    u16 playerId;     // 0x02
-    s32 homePlace;    // 0x04
+    u16 dataId;
+    u16 playerId;
+    s32 homePlace;
     u8 pad8[0x1C];
-    s32 controllerId; // 0x24
-    s32 versusId;     // 0x28
-    u8 hero[0x978];   // 0x2C
-    u8 heroOrg[0x978]; // 0x9A4
+    s32 controllerId;
+    s32 versusId;
+    u8 hero[0x978];
+    u8 heroOrg[0x978];
     u8 padLast[4];
 };
 
 struct _MENUCBWORK {
     u8 pad0[4];
-    s32 mode;        // 0x04
-    s32 state;       // 0x08
-    s32 ruleType;    // 0x0C
+    s32 mode;
+    s32 state;
+    s32 ruleType;
     u8 pad10[4];
-    s32 f14;         // 0x14
-    CBTrainer trainer[4];    // 0x18
-    CBTrainer trainerOrg[4]; // 0x4C98
-    CBRule rule[6];  // 0x9918
+    s32 f14;
+    CBTrainer trainer[4];
+    CBTrainer trainerOrg[4];
+    CBRule rule[6];
     u8 pad9C78[0xB0E0 - 0x9C78];
-    s32 controller2P; // 0xB0E0
+    s32 controller2P;
     u8 padB0E4[0xB5F4 - 0xB0E4];
 };
 
@@ -418,7 +411,6 @@ void menuCBBios_InitContext(_MENUCBWORK* cb) {
     menuCBBios_UnlockContext();
 }
 
-// fill one rule-name block (7 entries of 3 u16 each) from a message
 static inline void ruleNameFill(u16* src, void* base, int off) {
     for (int k = 0; k < 7; k++) {
         u16* dst = (u16*)((u8*)base + off + k * 6);

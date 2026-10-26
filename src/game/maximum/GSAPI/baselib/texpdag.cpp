@@ -1,6 +1,6 @@
-// Compiled as C with deferred inlining (see configure.py): functions come out in reverse
-// source order. From the Melee decomp's texpdag.c (headers in include/hsd_ref); the TExp
-// simplification functions that follow there are not part of XD's object.
+
+
+
 #define HSD_FILE_NAME "texpdag.c"
 #include <sysdolphin/baselib/texpdag.h>
 

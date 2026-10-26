@@ -558,7 +558,7 @@ static void setInterruptRegs(VITiming* tm) {
     regs[24] = vct | 0x1000;
     MARK_CHANGED(24);
 
-    vct;  // fixes regalloc
+    vct;
 }
 
 static void setPicConfig(u16 fbSizeX, VIXFBMode xfbMode, u16 panPosX, u16 panSizeX, u8* wordPerLine, u8* std, u8* wpl, u8* xof) {
@@ -1139,7 +1139,7 @@ void __VIGetAdjustingValues(s16* x, s16* y) {
     OSRestoreInterrupts(enabled);
 }
 
-// DEBUG NONMATCHING - wrong reg use, equivalent
+
 void __VIEnableRawPositionInterrupt(s16 x, s16 y, void (*callback)(s16, s16)) {
     BOOL enabled;
     u32 halfLine;

@@ -1,6 +1,5 @@
 #include <dolphin/types.h>
 
-// Species-specific move animations: variation, model, move and resource IDs.
 typedef struct PokemonWazaWzxEntry {
     u8 variation;
     u8 pad1;

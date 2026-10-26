@@ -1,6 +1,3 @@
-// STATUS: all 6 functions written, sizes match. Exact: getEventList (584). Others 95.7-99.4% (register
-// allocation only). Static fn names differ from the target (@class$3GScolsys2Thru_cpp vs @class$515GScolsys2Thru_c),
-// so objdiff/report cannot pair them until the target symbols are renamed (or the names are matched).
 #include <dolphin/types.h>
 
 struct Vec3 {
@@ -23,10 +20,10 @@ extern struct {
 #define EventTri __typeof__(eventTriDummy)
 
 struct ThruTri {
-    Vec3 v[3];     // 0x00
-    Vec3 normal;   // 0x24
-    u16 flags;     // 0x30
-    u16 id;        // 0x32
+    Vec3 v[3];
+    Vec3 normal;
+    u16 flags;
+    u16 id;
 };
 
 struct GridCell {
@@ -35,23 +32,23 @@ struct GridCell {
 };
 
 struct CCD_THRUMDL_HEAD {
-    ThruTri* tris;    // 0x00
-    u32 numTris;      // 0x04
-    GridCell* cells;  // 0x08
-    u32* indices;     // 0x0C
-    u16 cellsX;       // 0x10
-    u16 cellsZ;       // 0x12
-    f32 cellWidth;    // 0x14
-    f32 cellDepth;    // 0x18
-    f32 minX;         // 0x1C
-    f32 minZ;         // 0x20
+    ThruTri* tris;
+    u32 numTris;
+    GridCell* cells;
+    u32* indices;
+    u16 cellsX;
+    u16 cellsZ;
+    f32 cellWidth;
+    f32 cellDepth;
+    f32 minX;
+    f32 minZ;
 };
 
 struct ThruObj {
     u8 unk0[0x2C];
-    CCD_THRUMDL_HEAD* thru;  // 0x2C
+    CCD_THRUMDL_HEAD* thru;
     u8 unk30[0xC];
-    u16 flags;  // 0x3C
+    u16 flags;
     u8 pad3E[2];
 };
 
@@ -210,14 +207,13 @@ static int getMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL_HEAD* head,
 }
 
 static inline int getFixedMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL_HEAD* mdl, EventTri* temp) {
-    EventTri* cur = temp;
-    ThruTri* tri;
     u32 m;
     Vec3 cp;
     f32 t;
     Vec3 dir;
     int j;
     int n;
+    ThruTri* tri;
     Vec3* normal;
 
     PSVECSubtract(end, start, &dir);
@@ -250,12 +246,12 @@ static inline int getFixedMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL
         if (hit) {
             u16 id = tri->id;
             n++;
-            cur->v[0].x = tri->v[0].x; cur->v[0].y = tri->v[0].y; cur->v[0].z = tri->v[0].z;
-            cur->v[1].x = tri->v[1].x; cur->v[1].y = tri->v[1].y; cur->v[1].z = tri->v[1].z;
-            cur->v[2].x = tri->v[2].x; cur->v[2].y = tri->v[2].y; cur->v[2].z = tri->v[2].z;
-            cur->normal = tri->normal;
-            cur->id = id;
-            cur++;
+            (temp)->v[0].x = tri->v[0].x; (temp)->v[0].y = tri->v[0].y; (temp)->v[0].z = tri->v[0].z;
+            (temp)->v[1].x = tri->v[1].x; (temp)->v[1].y = tri->v[1].y; (temp)->v[1].z = tri->v[1].z;
+            (temp)->v[2].x = tri->v[2].x; (temp)->v[2].y = tri->v[2].y; (temp)->v[2].z = tri->v[2].z;
+            (temp)->normal = tri->normal;
+            (temp)->id = id;
+            (temp)++;
         }
     }
     return n;
@@ -303,7 +299,8 @@ int GScolsys2ThruPassEventID(GSvec* start, GSvec* end, EventTri* out) {
         for (k = 0; k < n && count < 4; src++, k++) {
             int j;
             for (j = 0; j < count; j++) {
-                if (out[j].id == src->id) {
+                u32 rf_t = out[j].id;
+                if (rf_t == src->id) {
                     break;
                 }
             }

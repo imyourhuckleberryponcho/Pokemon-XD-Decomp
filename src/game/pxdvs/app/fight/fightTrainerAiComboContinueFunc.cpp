@@ -1,6 +1,3 @@
-// STATUS: 1/6 exact (8 bytes); LAYOUT OK; needs extra_cflags=["-O4,s"]
-// Scores with -O4,s: null_Continue 100%, Sukirusuwappu 93.75%, Amaikaori 90.75%, Nekodamasi 89.11%, Zikoanzi 88.21%, helper 85.56%
-// All 5 non-exact functions are 85%+; remaining differences are register allocation/instruction ordering for -O4,s optimizations
 #include <dolphin/types.h>
 
 struct FIGHT_TRAINER;
@@ -141,7 +138,8 @@ s32 fightAiCombo_Batontatti_Nekodamasi_Continue(FIGHT_TRAINER *arg0, FightOutPok
 
     var_r27 = 0;
     while ((s32) var_r27 < (s32) temp_r26) {
-        temp_r22 = var_r27 * 2;
+        temp_r22 = var_r27;
+        temp_r22 *= 2;
         sp8[spC[temp_r22 / 2]] = 0x32;
         if (fightAi_CanMoveAppointWaza(arg0, arg1, sp14[temp_r22 / 2]) == 0) {
             sp8[spC[temp_r22 / 2]] = 0;

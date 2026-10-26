@@ -9,8 +9,6 @@ struct CursorPos {
 
 static CursorPos _cursor[16];
 
-// The original's two {-1, -1} initializer constants are laid out with SetPos's first,
-// even though GetPos comes first in .text. Explicit constants reproduce that order.
 static const CursorPos sSetPosInvalid = { -1, -1 };
 static const CursorPos sGetPosInvalid = { -1, -1 };
 

@@ -1,7 +1,6 @@
 #ifndef _MSL_TYPES_H
 #define _MSL_TYPES_H
 
-// Basic types for the MetroWerks runtime/MSL sources (ported from the Pikmin 2 decomp).
 typedef int BOOL;
 typedef signed char s8;
 typedef signed short s16;

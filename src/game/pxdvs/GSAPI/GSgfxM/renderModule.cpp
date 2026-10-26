@@ -6,7 +6,6 @@ enum GSgfxLayerPass {
     GS_GFX_LAYER_PASS_0
 };
 
-// Callbacks a render module provides; any of them may be NULL.
 struct GSgfxRenderModule {
     void (*init)(void* user);
     void (*preUpdate)(f32 dt);

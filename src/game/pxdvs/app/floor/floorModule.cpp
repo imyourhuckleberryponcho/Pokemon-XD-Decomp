@@ -1,7 +1,5 @@
-// Partial: only the small FloorModuleEntry / ScriptTpcNode accessors are written so far.
 #include <dolphin/types.h>
 #pragma peephole off
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -22,7 +20,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -43,7 +40,6 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 
-// ---- draft prelude (m2c helper macros; remove when cleaning up) ----
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -96,8 +92,8 @@ class ScriptTpcNode {
 public:
     void setID(u32 id);
 
-    u32 id;      // 0x00 script function id (0x0596xxxx = common script)
-    u32 script;  // 0x04 running thread id
+    u32 id;
+    u32 script;
 public:
     void block();
     void exec(unsigned char, unsigned long, FloorEnterMode);
@@ -121,18 +117,18 @@ public:
     u8 getPriority() const;
     bool isEmpty() const;
 
-    FloorModuleEntry* prev;  // 0x00
-    FloorModuleEntry* next;  // 0x04
-    u32 handle;              // 0x08
+    FloorModuleEntry* prev;
+    FloorModuleEntry* next;
+    u32 handle;
     u32 unkC;
-    u32 type;                // 0x10
-    u32 groupID;             // 0x14
-    u8 priority;             // 0x18
-    bool blocked;            // 0x19
-    u8 started;              // 0x1A interface module: init call done
+    u32 type;
+    u32 groupID;
+    u8 priority;
+    bool blocked;
+    u8 started;
     u8 unk1B;
-    u8 module[0x2C];         // 0x1C FloorScriptModule / ScriptTpcNode / FloorModuleInterface
-public: // draft
+    u8 module[0x2C];
+public:
     FloorModuleEntry();
     void init();
     u8 isScriptRunning(FloorState);
@@ -152,22 +148,20 @@ class tigaVariant {
 public:
     void setInteger(long value);
 
-    u16 type;   // 0x00
-    s32 value;  // 0x04
+    u16 type;
+    s32 value;
 };
 }
 
-
 extern "C++" {
-// ---- draft declarations ----
 struct FloorData {
     u8 _draft[1];
 };
 struct FloorModuleList {
-    FloorModuleEntry* entries;  // 0x00 array of count entries
-    u32 count;                  // 0x04
-    u32 nextHandle;             // 0x08
-    FloorModuleEntry* head;     // 0x0C active list
+    FloorModuleEntry* entries;
+    u32 count;
+    u32 nextHandle;
+    FloorModuleEntry* head;
     u32 unk10;
     void restorePopState(void*, FloorStateMode, bool);
     void removeFuncFromList(FloorModuleEntry*);
@@ -195,9 +189,9 @@ struct FloorModuleList {
     void dumpModule();
 };
 struct FloorScriptModule {
-    ScriptTpcNode init;   // 0x00 FloorState 2
-    ScriptTpcNode enter;  // 0x08 FloorState 4
-    ScriptTpcNode exit;   // 0x10 FloorState 6
+    ScriptTpcNode init;
+    ScriptTpcNode enter;
+    ScriptTpcNode exit;
     void setIDs(unsigned long, unsigned long, unsigned long);
     void exec(FloorState, unsigned char, unsigned long, FloorEnterMode);
     ScriptTpcNode* stateToNode(FloorState);
@@ -229,14 +223,9 @@ extern "C++" {
 static void _dispModuleName(FloorModuleInterface* p0, const char* p1);
 static void* _floorStateToStr(FloorState p0);
 }
-// ---- draft declarations ----
-
 
 extern "C" {
 }
-
-// ---- draft declarations ----
-
 
 extern "C" {
 u8 FloorModuleInterface_exec(s32 *p0, s32 p1, s32 p2, s32 p3, bool p4);
@@ -1339,13 +1328,12 @@ void FloorModuleEntry::terminate() {
     s32 temp_r0;
 
     temp_r0 = M2C_FIELD(this, s32 *, 0x10);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 2:
         ((FloorScriptModule*)((u8*)this + 0x1C))->terminate();
         return;
     case 4:
         ((ScriptTpcNode*)((u8*)this + 0x1C))->terminate();
-        /* fallthrough */
     case 3:
         return;
     }
@@ -1366,13 +1354,12 @@ void FloorModuleEntry::unblock() {
 
     M2C_FIELD(this, s8 *, 0x19) = 0;
     temp_r0 = M2C_FIELD(this, s32 *, 0x10);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 2:
         ((FloorScriptModule*)((u8*)this + 0x1C))->unblock();
         return;
     case 4:
         ((ScriptTpcNode*)((u8*)this + 0x1C))->unblock();
-        /* fallthrough */
     case 3:
         return;
     }
@@ -1385,13 +1372,12 @@ void FloorModuleEntry::block() {
 
     M2C_FIELD(this, s8 *, 0x19) = 1;
     temp_r0 = M2C_FIELD(this, s32 *, 0x10);
-    switch (temp_r0) {                              /* irregular */
+    switch (temp_r0) {
     case 2:
         ((FloorScriptModule*)((u8*)this + 0x1C))->block();
         return;
     case 4:
         ((ScriptTpcNode*)((u8*)this + 0x1C))->block();
-        /* fallthrough */
     case 3:
         return;
     }
@@ -1405,7 +1391,6 @@ void FloorModuleEntry::setScriptModule(unsigned char p0, unsigned long p1, unsig
     ((FloorScriptModule*)((u8*)this + 0x1C))->setIDs(p2, p3, p4);
 }
 }
-
 
 }
 
@@ -1449,7 +1434,7 @@ u8 FloorModuleInterface_exec(s32 *p0, s32 p1, s32 p2, s32 p3, bool p4) {
     GSthread *temp_r31;
     s32 (*temp_r12)(s32, s32);
 
-        switch (p1) { case 1: goto sw0_c1; case 2: goto sw0_c2; case 4: goto sw0_c4; case 6: goto sw0_c6; case 8: goto sw0_c8; case 0: goto sw0_c0; case 3: goto sw0_c3; case 5: goto sw0_c5; case 7: goto sw0_c7; default: goto block_16; }                                    /* jump table: jtbl_2946 */
+        switch (p1) { case 1: goto sw0_c1; case 2: goto sw0_c2; case 4: goto sw0_c4; case 6: goto sw0_c6; case 8: goto sw0_c8; case 0: goto sw0_c0; case 3: goto sw0_c3; case 5: goto sw0_c5; case 7: goto sw0_c7; default: goto block_16; }
 sw0_c1:;
     if ((u32) M2C_FIELD(p0, s32 *, 0) == 0U) {
         goto block_16;
@@ -1703,7 +1688,6 @@ static void* _floorStateToStr(FloorState p0) {
 }
 }
 
-
 FloorModuleEntry* FloorModuleEntry::getNext() const {
     return next;
 }
@@ -1732,7 +1716,6 @@ void* FloorModuleEntry::getModuleInterface() {
 }
 }
 
-
 u32 FloorModuleEntry::getHandle() const {
     return handle;
 }
@@ -1752,7 +1735,6 @@ u32 FloorModuleList::getNewHandle() {
     return M2C_FIELD(this, u32 *, 8);
 }
 }
-
 
 void FloorModuleEntry::setPrev(FloorModuleEntry* entry) {
     prev = entry;
@@ -1774,8 +1756,6 @@ bool FloorModuleEntry::isTpcScript() const {
     return type == 2;
 }
 }
-
-
 
 void GSscript::tigaVariant::setInteger(long value) {
     type = 1;

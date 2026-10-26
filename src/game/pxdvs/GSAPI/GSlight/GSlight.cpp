@@ -1,5 +1,5 @@
-// GSlight.cpp was built with "-inline deferred" (extra_cflags in configure.py): MWCC emits the
-// functions in REVERSE source order, so the definitions below are written last-to-first.
+
+
 #include <dolphin/types.h>
 #include <dolphin/gx/GXStruct.h>
 
@@ -52,38 +52,38 @@ struct GSlightDesc {
 };
 
 struct GSlight {
-    u8 used; // 0x0
-    u8 active; // 0x1
-    u8 canAnimate; // 0x2
-    u8 animating; // 0x3
-    s32 type; // 0x4
-    GSlightDesc* desc; // 0x8
-    HSD_LObj* lobj; // 0xc
-    GSlightWObjDesc positionDesc; // 0x10
-    GSlightWObjDesc interestDesc; // 0x24
-    GSlightLightDesc lightDesc; // 0x38
-    f32 cutoff; // 0x54
-    u32 animCount; // 0x58
-    s32 animType; // 0x5c
-    u32 animIndex; // 0x60
-    f32 rate; // 0x64
-    f32 frame; // 0x68
-    f32 frameCount; // 0x6c
-    u8 ended; // 0x70
-    s8 direction; // 0x71
+    u8 used;
+    u8 active;
+    u8 canAnimate;
+    u8 animating;
+    s32 type;
+    GSlightDesc* desc;
+    HSD_LObj* lobj;
+    GSlightWObjDesc positionDesc;
+    GSlightWObjDesc interestDesc;
+    GSlightLightDesc lightDesc;
+    f32 cutoff;
+    u32 animCount;
+    s32 animType;
+    u32 animIndex;
+    f32 rate;
+    f32 frame;
+    f32 frameCount;
+    u8 ended;
+    s8 direction;
 };
 
 struct GSlightState {
-    u8 active; // 0x0
-    u8 animating; // 0x1
-    u8 ended; // 0x2
-    s8 direction; // 0x3
-    f32 position[3]; // 0x4
-    f32 interest[3]; // 0x10
-    u32 animIndex; // 0x1c
-    f32 frame; // 0x20
-    f32 rate; // 0x24
-    s32 animType; // 0x28
+    u8 active;
+    u8 animating;
+    u8 ended;
+    s8 direction;
+    f32 position[3];
+    f32 interest[3];
+    u32 animIndex;
+    f32 frame;
+    f32 rate;
+    s32 animType;
 };
 
 struct HSD_ObjHeader {

@@ -323,8 +323,10 @@ void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
         return 0;
     }
     GSresUnlockResource(group, id);
-    void* res = GSresGetResource(group, floorReadMakeObjResID(id));
-    void* p = GSparticleLoad(res);
+    void* p;
+    void* res;
+    res = GSresGetResource(group, floorReadMakeObjResID(id));
+    p = GSparticleLoad(res);
     if (p != 0) {
         GSresRegisterResource(p, group, id, _unloadParticles);
         fd = (FloorData*)dc_ataBiosGetCurrentPtr;
@@ -439,14 +441,16 @@ void* floorReadCameraPreFunc(u32 group, u32 id, u32 size) {
 }
 
 _HSD_SceneDesc* floorReadObjPostFunc(u32 group, u32 id, u32 size) {
+    s32 off;
+    _HSD_SceneDesc* desc;
     s32 i = 0;
-    _HSD_SceneDesc* desc = _makeArchiveHeader(group, id, size);
+    desc = _makeArchiveHeader(group, id, size);
     if (desc == 0) {
         return 0;
     }
     u32 base = floorReadMakeModelResID(id);
     if (desc->models != 0) {
-        s32 off = 0;
+        off = 0;
         while (*(void**)((u8*)desc->models + off) != 0) {
             GSresRegisterResource(*(void**)((u8*)desc->models + off), group, base | i, 0);
             off += 4;

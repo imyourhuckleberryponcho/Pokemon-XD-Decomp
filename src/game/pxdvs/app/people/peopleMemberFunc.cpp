@@ -170,7 +170,6 @@ bool tagPeopleWork::isWalkStartMotion() const {
     return false;
 }
 
-// Characters whose animations are always blended.
 bool tagPeopleWork::isAlwayBlendChara() const {
     u32 id = infoID;
     if (id == 0x16C90400 || id == 0x169E0400 || id == 0x169F0400 || id == 0x16A00400 || id == 0x20250400 ||

@@ -1,4 +1,3 @@
-// STATUS: 13/18 exact. Left: GStextureCreate 95%, CreateFromMemory 95%, Load 99.2% (all param/local reg order), ConvertToHW/FromHW (reg alloc).
 #include <dolphin/types.h>
 #include <dolphin/gx.h>
 #include <dolphin/os/OSCache.h>
@@ -6,27 +5,27 @@
 #pragma pool_strings off
 
 struct GStexture {
-    u16 width; // 0x0
-    u16 height; // 0x2
-    u8 bitsPerPixel; // 0x4
-    u8 mipLevels; // 0x5
-    u8 inUse; // 0x6
-    u8 dirty; // 0x7
-    s32 format; // 0x8
-    u32 tlutFormat; // 0xC
-    u32 wrapS; // 0x10
-    u32 wrapT; // 0x14
-    s32 minFilter; // 0x18
-    s32 magFilter; // 0x1C
-    u32 mipFilter; // 0x20
-    void* memHandle; // 0x24
-    void* mipData[8]; // 0x28
-    void* tlutData; // 0x48
-    u32 totalSize; // 0x4C
-    u16 refCount; // 0x50
+    u16 width;
+    u16 height;
+    u8 bitsPerPixel;
+    u8 mipLevels;
+    u8 inUse;
+    u8 dirty;
+    s32 format;
+    u32 tlutFormat;
+    u32 wrapS;
+    u32 wrapT;
+    s32 minFilter;
+    s32 magFilter;
+    u32 mipFilter;
+    void* memHandle;
+    void* mipData[8];
+    void* tlutData;
+    u32 totalSize;
+    u16 refCount;
     u16 pad52;
-    GXTexObj texObj; // 0x54
-    GXTlutObj tlutObj; // 0x74
+    GXTexObj texObj;
+    GXTlutObj tlutObj;
 };
 
 extern "C" {
@@ -367,7 +366,6 @@ static inline s32 _textureGetGXFormat(GStexture* tex)
     }
 }
 
-// Sets up the GX texture object (and TLUT object for paletted textures).
 static inline void _textureInitObjs(GStexture* tex)
 {
     GXTlutFmt tlutFmt;
@@ -421,7 +419,6 @@ static inline void _textureInitObjs(GStexture* tex)
     }
 }
 
-// Total byte size of all mip levels (each level is rounded up to 32 bytes).
 static inline void _textureCalcSize(GStexture* tex, s32 levels, u32 baseSize)
 {
     u32 size = baseSize;
@@ -487,11 +484,11 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void
     tex->wrapT = 0;
     tex->minFilter = 2;
     tex->magFilter = 2;
-    tex->memHandle = 0;
     tex->mipData[1] = 0;
+    tex->memHandle = 0;
     tex->mipData[0] = data;
-    tex->tlutData = 0;
     tex->totalSize = 0;
+    tex->tlutData = 0;
     size = (tex->bitsPerPixel * (width * height)) >> 3;
     _textureCalcSize(tex, levels, size);
     if (tlutEntries != 0) {

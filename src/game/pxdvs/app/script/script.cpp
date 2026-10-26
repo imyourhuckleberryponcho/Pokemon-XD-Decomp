@@ -1,6 +1,3 @@
-// Script helper functions called from the script command handlers.
-// Built with -inline deferred: functions are written in reverse object order.
-// WIP: being written from the bottom of the object upwards.
 #include <dolphin/types.h>
 
 #pragma peephole off
@@ -1483,7 +1480,6 @@ s32 scriptHizukiAway(s32 group, s32 id)
     }
     return 0;
 }
-
 
 s32 scriptSetEndedMotion(s32 group, s32 id, s32 anim, u8 loop)
 {

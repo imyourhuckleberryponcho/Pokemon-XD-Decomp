@@ -32,7 +32,6 @@ public:
     virtual ~GSeffect();
 };
 
-// Applies an environment map to a model while active.
 class envMapEffect : public GSeffect {
 public:
     virtual ~envMapEffect();
