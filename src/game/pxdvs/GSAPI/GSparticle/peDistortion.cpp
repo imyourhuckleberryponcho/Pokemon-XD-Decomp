@@ -39,7 +39,7 @@ struct GSgfxLayer;
 enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
 enum GSgfxPrimType { GSgfxPrimType_draft_dummy };
 struct GSgfxVF;
-enum Mtx { Mtx_draft_dummy };
+typedef f32 Mtx[3][4];
 struct Quaternion;
 struct Vec;
 struct _EmitParams;
@@ -67,7 +67,7 @@ struct GSgfxVF {
     u8 data[0x440];
 };
 struct Quaternion {
-    u8 _draft[1];
+    f32 x, y, z, w;
 };
 struct Vec {
     f32 x, y, z;
@@ -125,6 +125,8 @@ public:
 };
 class peDistortionContainer : public peRenderContainer {
 public:
+    void hideNode(struct peNodeView* n);
+    bool updateNode(struct peNodeView* n, f32 dt);
     _peDistortion* data;
     f32 uv[8];
 
@@ -169,7 +171,7 @@ void PSVECNormalize(const register Vec* src, register Vec* unit);
 void PSVECScale(const register Vec* src, register Vec* dst, register f32 scale);
 asm void PSVECSubtract(const register Vec* a, const register Vec* b, register Vec* a_b);
 double atan2(double y, double x);
-s32 particleEngineSetupBlendMode(s32, void*, s32, s32, void*);
+s32 particleEngineSetupBlendMode(s32);
 s32 particleEngineSetupTevStages(s32, s32, s32);
 s32 particleEngineSetupTexture(s32, s32, s32, s32, s32, s32);
 f32 peSplineGetValue(peSpline* s, f32 t);
@@ -208,7 +210,7 @@ inline float sqrtf(float x) {
     return x;
 }
 extern Vec g_CameraPosition;
-extern s32 g_CameraSideDir;
+extern Vec g_CameraSideDir;
 extern Vec g_CameraUpDir;
 extern GSbound* g_currentBound;
 extern GSgfxLayer* g_current_layer;
@@ -228,56 +230,205 @@ extern ParticleDebugStats g_particle_debug_stats;
 extern s32 g_render_pass;
 extern GSgfxVF g_vertex_format;
 struct XdBlobC { u8 data[0xC]; };
-extern XdBlobC xAxisVector;
-extern s32 yAxisVector;
+extern Vec xAxisVector;
+extern Vec yAxisVector;
 extern s32 this_;
 }
 
-void peDistortionContainer::Stop() {
-    u8 *var_r6;
-    s32 temp_r29;
-    s32 var_r4;
-    u8 *temp_r7;
-    u8 *var_r31;
-    s32 temp_cr0_eq;
+struct peXformP {
+    Vec pos;
+    Quaternion rot;
+    Vec scale;
+};
+struct peSplineHdr {
+    u8 flags;
+    f32 value;
+    f32 time;
+};
+struct GSColor {
+    u8 r, g, b, a;
+};
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
-        ((peContainer*)this)->PreUpdate();
-        M2C_FIELD(this, u8 *, 0x19) = 0U;
-        var_r31 = M2C_FIELD(this, u8 **, 0x10);
-        temp_r29 = *M2C_FIELD(M2C_FIELD(this, u8 **, 0), s32 **, 0xFC);
-        if (temp_r29 & 0x800000) {
+struct peDistortionDef {
+    u32 flags;
+    u8 pad4[0x10];
+    peSpline* scaleX;
+    peSpline* scaleY;
+    f32 offsetX;
+    f32 offsetY;
+    f32 spinScale;
+    u8 pad28[8];
+    peSpline* spin;
+    peSpline* alpha;
+};
+
+struct peDistortionNodeData {
+    f32 life0;
+    f32 life;
+    Vec pos;
+    Vec vel;
+    peXformP* xform;
+    u8 pad24[0xc];
+    u16 index;
+    u16 spin;
+    f32 sizeX;
+    f32 sizeY;
+    f32 rot;
+    f32 rotOffset;
+    f32 rotSpeed;
+};
+
+struct peEmitterNodeData {
+    u8 pad0[0x38];
+    f32 color[4];
+    u8 pad48[0xb4];
+    u32* params;
+};
+
+static inline f32 evalSpline(peSpline* sp, f32 t) {
+    peSplineHdr* s = (peSplineHdr*)sp;
+    if (s == 0 || (s->flags & 3) == 0) {
+        return 1.0f;
+    }
+    f32 d = s->time - t;
+    if (d < 0.0f) {
+        d = -d;
+    }
+    if (d <= 0.00001f) {
+        return s->value;
+    }
+    return peSplineGetValue(sp, t);
+}
+
+static inline void rotateBy(Vec* v, Quaternion* q) {
+    Mtx m;
+    PSMTXQuat(m, q);
+    PSMTXMultVecSR(m, v, v);
+}
+
+static inline void quatToMtx(Mtx m, Quaternion q) {
+    PSMTXQuat(m, &q);
+}
+
+static inline void vecCross(Vec* dst, Vec* a, Vec* b) {
+    Vec t;
+    PSVECCrossProduct(a, b, &t);
+    *dst = t;
+}
+
+static inline void vecSub(Vec* dst, Vec* a, Vec* b) {
+    Vec t;
+    PSVECSubtract(a, b, &t);
+    *dst = t;
+}
+
+static inline void vecAdd(Vec* dst, Vec* a, Vec* b) {
+    Vec t;
+    PSVECAdd(a, b, &t);
+    *dst = t;
+}
+
+static inline void vecScale(Vec* dst, Vec* a, f32 k) {
+    Vec t;
+    PSVECScale(a, &t, k);
+    *dst = t;
+}
+
+static inline void projectToNode(Vec* v, Vec* p, peXformP* xf) {
+    Quaternion qi;
+    Mtx m;
+    Vec t;
+    PSQUATInverse(&xf->rot, &qi);
+    quatToMtx(m, qi);
+    PSMTXMultVecSR(m, v, &t);
+    *p = t;
+    p->x *= xf->scale.x;
+    p->y *= xf->scale.y;
+    p->z *= xf->scale.z;
+    rotateBy(p, &xf->rot);
+    PSVECScale(v, v, PSVECDotProduct(v, p));
+}
+
+static inline void spinAround(Vec* up, Vec* right, Vec* axis, f32 angle) {
+    Quaternion q;
+    C_QUATRotAxisRad(&q, axis, angle);
+    rotateBy(up, &q);
+    rotateBy(right, &q);
+}
+
+static inline void emitCorner(char* out, Vec* v, Vec* off, bool hasOff, Vec* pos) {
+    if (hasOff) {
+        PSVECAdd(v, off, v);
+    }
+    PSVECAdd(v, pos, v);
+    ((Vec*)out)->x = v->x;
+    ((Vec*)out)->y = v->y;
+    ((Vec*)out)->z = v->z;
+    if (g_currentBound != NULL) {
+        GSboundAddPoint(g_currentBound, v->x, v->y, v->z);
+    }
+}
+
+static inline u8 OSf32tou8(register f32 inF) {
+    u8 out;
+    u8* outP = &out;
+    register u8* ptr = outP;
+    asm { psq_st inF, 0(ptr), 1, 2 }
+    return *ptr;
+}
+
+struct peDLView {
+    u16 flags;
+    u16 stride;
+    u8* buf;
+    u8 pad8[8];
+};
+
+struct peNodeView {
+    u8 pad0[0x28];
+    peNodeView* next;
+    u8 pad2c[4];
+    u16 vtx;
+};
+
+inline void peDistortionContainer::hideNode(peNodeView* n) {
+    peDLView* d = (peDLView*)dl[cur];
+    u16* idx;
+    u16 off = n->vtx * 4;
+    if (d->flags & 1) {
+        idx = (u16*)(d->buf + off * d->stride + 3);
+    } else {
+        idx = NULL;
+    }
+    for (u16 i = 4; i-- != 0;) {
+        idx[0] = 0xffff;
+        idx[1] = 0xffff;
+        idx[2] = 0xffff;
+        idx += 3;
+    }
+    d->flags |= 2;
+}
+
+void peDistortionContainer::Stop() {
+    if (started) {
+        PreUpdate();
+        started = 0;
+        peNodeView* n = (peNodeView*)activeList;
+        u32 flags = **(u32**)((u8*)emitter + 0xfc);
+        if (flags & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
-        if (temp_r29 & 0x01000000) {
+        if (flags & 0x1000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)3, false);
         }
-        if (temp_r29 & 0x02000000) {
+        if (flags & 0x2000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)5, false);
         }
-        while (var_r31 != NULL) {
-            temp_r7 = (unsigned char *)(this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
-            if (M2C_FIELD((u16)temp_r7, u16 *, 0) & 1) {
-                var_r6 = (unsigned char *)(M2C_FIELD(temp_r7, s32 *, 4) + ((((M2C_FIELD(var_r31, u16 *, 0x30) * 4) & 0xFFFC) * M2C_FIELD(temp_r7, u16 *, 2)) + 3));
-            } else {
-                var_r6 = NULL;
-            }
-            var_r4 = 4;
-loop_13:
-            temp_cr0_eq = var_r4 == 0;
-            var_r4 -= 1;
-            if (temp_cr0_eq == 0) {
-                M2C_FIELD(var_r6, u16 *, 0) = 0xFFFF;
-                M2C_FIELD(var_r6, u16 *, 2) = 0xFFFF;
-                M2C_FIELD(var_r6, u16 *, 4) = 0xFFFF;
-                var_r6 += 6;
-                goto loop_13;
-            }
-            M2C_FIELD((u16)temp_r7, u16 *, 0) = (u16) (M2C_FIELD(temp_r7, u16 *, 0) | 2);
-            var_r31 = M2C_FIELD(var_r31, u8 **, 0x28);
+        for (; n != NULL; n = n->next) {
+            hideNode(n);
         }
-        ((peContainer*)((peContainer *) this))->RemoveAll();
-        ((peRenderContainer*)((peRenderContainer *) this))->ResetSwap();
+        RemoveAll();
+        ResetSwap();
     }
 }
 }
@@ -377,7 +528,7 @@ void peDistortionContainer::Render() {
                 LAYER_FIELD(l, s8, 0x1672) = 1;
                 layerMark(l, 0x40, 0x170C, 0x10);
             }
-            particleEngineSetupBlendMode(0, g_current_layer, 1, 0, g_current_layer);
+            particleEngineSetupBlendMode(0);
             particleEngineSetupTevStages(0, 0, 0);
             var_r8 = 0;
             if (temp_r31 & 0x40) {
@@ -410,157 +561,123 @@ extern "C++" {
 extern "C++" {
 
 extern "C++" {
-void peDistortionContainer::Update(float p0) {
-    peNode *var_r31;
-    f32 temp_f31;
-    f32 var_f1;
-    f32 var_f1_2;
-    peEmitterNode *temp_r28;
-    peNode *temp_r30;
-    _peDistortion *temp_r27;
-    peSpline *temp_r3;
-    s32 temp_cr0_eq;
-    s8 *temp_r26;
-    u32 var_r4;
-    u8 *var_r5;
-    u8 var_r0;
-    u8 *temp_r6;
-    u8 temp_r0;
+inline bool peDistortionContainer::updateNode(peNodeView* node, f32 dt) {
+    peDistortionNodeData* n = (peDistortionNodeData*)node;
+    peDistortionDef* p = (peDistortionDef*)data;
+    peEmitterNode* e = emitter;
+    char* buf = (char*)(&bufA)[cur];
+    if (buf == NULL) {
+        return false;
+    }
+    if ((((peDLView*)dl[cur])->flags & 1) != 1) {
+        return false;
+    }
+    if (!((peNode*)n)->Update(e, dt)) {
+        return false;
+    }
+    f32 t = 1.0f - n->life / n->life0;
+    if (p->flags & 0x200) {
+        n->rotOffset = p->spinScale * evalSpline(p->spin, t);
+    }
+    n->rotOffset = n->rotSpeed * dt + n->rotOffset;
+    ((peDistortionNode*)n)->UpdateRenderData(e, (_peDistortion*)p, buf, t);
+    return true;
+}
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
-        var_r31 = M2C_FIELD(this, peNode **, 0x10);
-        while (var_r31 != NULL) {
-            temp_r0 = M2C_FIELD(this, u8 *, 0x21);
-            temp_r30 = M2C_FIELD(var_r31, peNode **, 0x28);
-            temp_r27 = M2C_FIELD(this, _peDistortion **, 0x54);
-            temp_r26 = (signed char *)&(*((u8*)this + ((temp_r0 * 4) + 0x48)));
-            temp_r28 = M2C_FIELD(this, peEmitterNode **, 0);
-            if (temp_r26 == NULL) {
-                var_r0 = 0;
-            } else if ((s32) (*((u8 *)this + ((temp_r0 * 0x10) + 0x28)) & 1) != 1) {
-                var_r0 = 0;
-            } else if (((peNode*)(var_r31))->Update((peEmitterNode*)(temp_r28), p0) == 0) {
-                var_r0 = 0;
-            } else {
-                temp_f31 = 1.0f - (M2C_FIELD(var_r31, f32 *, 4) / M2C_FIELD(var_r31, f32 *, 0));
-                if (M2C_FIELD(temp_r27, s32 *, 0) & 0x200) {
-                    temp_r3 = M2C_FIELD(temp_r27, peSpline **, 0x30);
-                    if ((temp_r3 == NULL) || !(M2C_FIELD(temp_r3, u8 *, 0) & 3)) {
-                        var_f1 = 1.0f;
-                    } else {
-                        var_f1_2 = M2C_FIELD(temp_r3, f32 *, 8) - temp_f31;
-                        if (var_f1_2 < 0.0f) {
-                            var_f1_2 = -var_f1_2;
-                        }
-                        if (var_f1_2 <= 0.00001f) {
-                            var_f1 = M2C_FIELD(temp_r3, f32 *, 4);
-                        } else {
-                            var_f1 = peSplineGetValue((peSpline*)(temp_r3), temp_f31);
-                        }
-                    }
-                    M2C_FIELD(var_r31, f32 *, 0x40) = (f32) (M2C_FIELD(temp_r27, f32 *, 0x24) * var_f1);
-                }
-                M2C_FIELD(var_r31, f32 *, 0x40) = (f32) ((M2C_FIELD(var_r31, f32 *, 0x44) * p0) + M2C_FIELD(var_r31, f32 *, 0x40));
-                ((peDistortionNode*)((peDistortionNode *) var_r31))->UpdateRenderData((peEmitterNode*)(temp_r28), (_peDistortion*)(temp_r27), (char*)(temp_r26), temp_f31);
-                var_r0 = 1;
+void peDistortionContainer::Update(float dt) {
+    if (started) {
+        peNodeView* n = (peNodeView*)activeList;
+        while (n != NULL) {
+            peNodeView* next = n->next;
+            if (!updateNode(n, dt)) {
+                hideNode(n);
+                RemoveNode((peNode*)n);
             }
-            if (var_r0 == 0) {
-                temp_r6 = (unsigned char *)((u8*)this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
-                if (M2C_FIELD(temp_r6, u16 *, 0) & 1) {
-                    var_r5 = (unsigned char *)(M2C_FIELD(temp_r6, s32 *, 4) + ((((M2C_FIELD(var_r31, u16 *, 0x30) * 4) & 0xFFFC) * M2C_FIELD(temp_r6, u16 *, 2)) + 3));
-                } else {
-                    var_r5 = NULL;
-                }
-                var_r4 = 4;
-loop_25:
-                temp_cr0_eq = var_r4 == 0;
-                var_r4 -= 1;
-                if (temp_cr0_eq == 0) {
-                    M2C_FIELD(var_r5, u16 *, 0) = 0xFFFF;
-                    M2C_FIELD(var_r5, u16 *, 2) = 0xFFFF;
-                    M2C_FIELD(var_r5, u16 *, 4) = 0xFFFF;
-                    var_r5 += 6;
-                    goto loop_25;
-                }
-                M2C_FIELD(temp_r6, u16 *, 0) = (u16) (M2C_FIELD(temp_r6, u16 *, 0) | 2);
-                ((peContainer*)((peContainer *) this))->RemoveNode((peNode*)(var_r31));
-            }
-            var_r31 = temp_r30;
+            n = next;
         }
     }
 }
 }
 
 extern "C++" {
-u16 peDistortionContainer::Emit(unsigned short p0) {
-    u8 *temp_r31;
-    f32 temp_f1;
-    u16 var_r30;
-    s32 temp_r24;
-    _EmitParams *var_r29;
-    u16 temp_r4;
-    u16 temp_r8;
-    s32 *temp_r23;
-    u8 *var_r9;
-    peNode *var_r28;
-    peNode *temp_r27;
-    u16 temp_r26;
+struct peDistortionDefE {
+    u32 flags;
+    f32 sizeXBase;
+    f32 sizeYBase;
+    f32 sizeXRange;
+    f32 sizeYRange;
+    u8 pad14[0x10];
+    f32 rotBase;
+    f32 spinBase;
+    f32 spinRange;
+};
 
-    if ((u8) M2C_FIELD(((s32)this), u8 *, 0x19) == 0) {
-        return 0U;
+struct _EmitParamsD {
+    u8 data[0x48];
+};
+
+u16 peDistortionContainer::Emit(unsigned short count) {
+    if (!started) {
+        return 0;
     }
-    var_r30 = ((peContainer*)((peContainer *) ((s32)this)))->CreateNodes(p0);
-    var_r29 = g_emitParams;
-    var_r28 = M2C_FIELD(((s32)this), peNode **, 0x10);
-    temp_r26 = var_r30;
-    while (var_r30 != 0) {
-        temp_r23 = M2C_FIELD(((s32)this), s32 **, 0x54);
-        temp_r27 = M2C_FIELD((u16)var_r28, peNode **, 0x28);
-        temp_r31 = (unsigned char *)(((s32)this) + ((M2C_FIELD(((s32)this), u8 *, 0x21) * 0x10) + 0x28));
-        temp_r24 = M2C_FIELD(temp_r23, s32 *, 0);
-        if ((s32) (M2C_FIELD(temp_r31, u16 *, 0) & 1) == 1) {
-            ((peNode*)((u16)var_r28))->Start((peEmitterNode*)(M2C_FIELD(((s32)this), peEmitterNode **, 0)), (_EmitParams*)(var_r29));
-            temp_f1 = HSD_Randf();
-            M2C_FIELD(var_r28, f32 *, 0x34) = (f32) (M2C_FIELD(temp_r23, f32 *, 0xC) * temp_f1);
-            M2C_FIELD(var_r28, f32 *, 0x38) = (f32) (M2C_FIELD(temp_r23, f32 *, 0x10) * temp_f1);
-            M2C_FIELD(var_r28, f32 *, 0x34) = (f32) (M2C_FIELD(var_r28, f32 *, 0x34) + M2C_FIELD(temp_r23, f32 *, 4));
-            M2C_FIELD(var_r28, f32 *, 0x38) = (f32) (M2C_FIELD(var_r28, f32 *, 0x38) + M2C_FIELD(temp_r23, f32 *, 8));
-            if (temp_r24 & 0x80) {
-                M2C_FIELD(var_r28, f32 *, 0x3C) = (f32) (6.2831855f * HSD_Randf());
+    peDLView* d;
+    u16 left = CreateNodes(count);
+    _EmitParamsD* params = (_EmitParamsD*)g_emitParams;
+    peNodeView* node = (peNodeView*)activeList;
+    u32 flags;
+    u16 created = left;
+    while (left != 0) {
+        peDistortionDefE* p = (peDistortionDefE*)data;
+        peNodeView* next = node->next;
+        d = (peDLView*)dl[cur];
+        flags = p->flags;
+        if ((d->flags & 1) == 1) {
+            peDistortionNodeData* n = (peDistortionNodeData*)node;
+            ((peNode*)n)->Start(emitter, (_EmitParams*)params);
+            f32 r = HSD_Randf();
+            n->sizeX = p->sizeXRange * r;
+            n->sizeY = p->sizeYRange * r;
+            n->sizeX += p->sizeXBase;
+            n->sizeY += p->sizeYBase;
+            if (flags & 0x80) {
+                n->rot = 6.2831855f * HSD_Randf();
             } else {
-                M2C_FIELD(var_r28, f32 *, 0x3C) = 0.0f;
+                n->rot = 0.0f;
             }
-            if ((temp_r24 & 0x1000) && (HSD_Randf() < 0.5f)) {
-                M2C_FIELD(var_r28, u16 *, 0x32) = (u16) (M2C_FIELD(var_r28, u16 *, 0x32) | 1);
+            if ((flags & 0x1000) && HSD_Randf() < 0.5f) {
+                n->spin |= 1;
             }
-            M2C_FIELD(var_r28, f32 *, 0x40) = (f32) M2C_FIELD(temp_r23, f32 *, 0x24);
-            M2C_FIELD(var_r28, f32 *, 0x44) = (f32) ((M2C_FIELD(temp_r23, f32 *, 0x2C) * HSD_Randf()) + M2C_FIELD(temp_r23, f32 *, 0x28));
-            temp_r4 = M2C_FIELD(var_r28, u16 *, 0x30);
-            temp_r8 = temp_r4 * 0xD;
-            if (M2C_FIELD(temp_r31, u16 *, 0) & 1) {
-                var_r9 = (unsigned char *)(M2C_FIELD(temp_r31, s32 *, 4) + ((((temp_r4 * 4) & 0xFFFC) * M2C_FIELD(temp_r31, u16 *, 2)) + 3));
-            } else {
-                var_r9 = NULL;
+            n->rotOffset = p->rotBase;
+            n->rotSpeed = HSD_Randf() * p->spinRange + p->spinBase;
+            {
+                u16 base = n->index * 13;
+                u16 off = n->index * 4;
+                u16* idx;
+                if (d->flags & 1) {
+                    idx = (u16*)(d->buf + off * d->stride + 3);
+                } else {
+                    idx = NULL;
+                }
+                idx[0] = base;
+                idx[1] = base;
+                idx[2] = 0;
+                idx[3] = base + 3;
+                idx[4] = base;
+                idx[5] = 2;
+                idx[6] = base + 6;
+                idx[7] = base;
+                idx[8] = 4;
+                idx[9] = base + 9;
+                idx[10] = base;
+                idx[11] = 6;
             }
-            M2C_FIELD(var_r9, u16 *, 0) = temp_r8;
-            M2C_FIELD(var_r9, u16 *, 2) = temp_r8;
-            M2C_FIELD(var_r9, s16 *, 4) = 0;
-            M2C_FIELD(var_r9, s16 *, 6) = (s16) (temp_r8 + 3);
-            M2C_FIELD(var_r9, u16 *, 8) = temp_r8;
-            M2C_FIELD(var_r9, s16 *, 0xA) = 2;
-            M2C_FIELD(var_r9, s16 *, 0xC) = (s16) (temp_r8 + 6);
-            M2C_FIELD(var_r9, u16 *, 0xE) = temp_r8;
-            M2C_FIELD(var_r9, s16 *, 0x10) = 4;
-            M2C_FIELD(var_r9, s16 *, 0x12) = (s16) (temp_r8 + 9);
-            M2C_FIELD(var_r9, u16 *, 0x14) = temp_r8;
-            M2C_FIELD(var_r9, s16 *, 0x16) = 6;
-            M2C_FIELD(temp_r31, u16 *, 0) = (u16) (M2C_FIELD(temp_r31, u16 *, 0) | 2);
+            d->flags |= 2;
         }
-        var_r28 = temp_r27;
-        var_r30 -= 1;
-        var_r29 += 0x48;
+        node = next;
+        left--;
+        params++;
     }
-    return temp_r26;
+    return created;
 }
 }
 
@@ -622,368 +739,110 @@ peDistortionContainer::peDistortionContainer(peEmitterNode* p0, _peDistortion* p
 }
 #pragma pop
 }
-void peDistortionNode::UpdateRenderData(peEmitterNode* p0, _peDistortion* p1, char* p2, float p3) {
-    u32 temp_r31;
-    s32 sp1C;
-    s32 sp20;
-    s32 sp28;
-    s32 sp2C;
-    s32 sp30;
-    s32 sp38;
-    s32 sp3C;
-    s32 sp44;
-    s32 sp48;
-    s32 sp50;
-    s32 sp54;
-    s32 sp5C;
-    s32 sp60;
-    s32 sp68;
-    s32 sp6C;
-    f32 sp74;
-    f32 sp78;
-    s32 sp8;
-    f32 sp80;
-    f32 sp84;
-    s32 sp8C;
-    s32 sp90;
-    volatile s32 spA4;
-    s32 spA8;
-    s32 unksp104;
-    s32 unksp14;
-    s32 unksp24;
-    s32 unksp34;
-    s32 unksp40;
-    s32 unksp4C;
-    f32 unksp58;
-    f32 unksp64;
-    f32 unksp70;
-    f32 unksp7C;
-    s32 unksp88;
-    s32 v94[3];
-    s32 unkspA0;
-    s32 unkspAC;
-    s32 unkspD8;
-    s32 unkspE8;
-    s32 sp39C;
-    s32 sp36C;
-    s32 sp33C;
-    s32 sp30C;
-    s32 sp2DC;
-    s32 sp2AC;
-    s32 sp27C;
-    s32 sp24C;
-    s32 sp21C;
-    s32 sp1EC;
-    s32 sp1BC;
-    s32 sp18C;
-    s32 sp15C;
-    f32 sp158;
-    f32 sp154;
-    f32 sp150;
-    f32 sp14C;
-    f32 sp148;
-    f32 sp144;
-    f32 sp140;
-    f32 sp13C;
-    f32 sp138;
-    f32 sp134;
-    f32 sp130;
-    f32 sp12C;
-    f32 sp128;
-    f32 sp124;
-    f32 sp120;
-    f32 sp11C;
-    f32 sp118;
-    f32 sp114;
-    volatile f32 sp100;
-    f32 spFC;
-    f32 spF8;
-    f32 spD4;
-    f32 spD0;
-    f32 spCC;
-    f32 spC8;
-    f32 spC4;
-    f32 spC0;
-    f32 spBC;
-    f32 spB8;
-    u8 sp13;
-    volatile s8 sp12;
-    s8 sp11;
-    s8 sp10;
-    f32 spC;
-    Vec *temp_r5;
-    Vec *temp_r5_2;
-    Vec *temp_r5_3;
-    f32 temp_f1_4;
-    f32 temp_f29;
-    f32 temp_f30;
-    f32 var_f1;
-    f32 var_f1_2;
-    f32 var_f1_3;
-    f32 var_f1_4;
-    f32 var_f1_5;
-    f32 var_f1_6;
-    f32 var_f1_7;
-    f32 var_f29;
-    f32 var_f2;
-    f64 temp_f1;
-    f64 temp_f1_2;
-    f64 temp_f1_3;
-    peSpline *temp_r3_2;
-    peSpline *temp_r3_3;
-    peSpline *temp_r3_4;
-    s32 temp_r3;
-    s32 var_r0;
-    u32 temp_r26;
-    u32 temp_r26_2;
-    s32 sp18;
-    u8 *temp_r27;
+void peDistortionNode::UpdateRenderData(peEmitterNode* emitter, _peDistortion* dist, char* out, float t) {
+    peDistortionNodeData* n = (peDistortionNodeData*)this;
+    peEmitterNodeData* e = (peEmitterNodeData*)emitter;
+    peDistortionDef* p = (peDistortionDef*)dist;
+    u32 flags = p->flags;
+    Vec right;
+    Vec up;
+    Vec v;
+    Vec off;
+    Vec fwd;
+    f32 angle;
+    Quaternion pos;
 
-    temp_r5 = M2C_FIELD(this, Vec **, 0x20);
-    temp_r31 = M2C_FIELD(p1, u32 *, 0);
-    sp118 = M2C_FIELD(this, f32 *, 0xC) * M2C_FIELD(temp_r5, f32 *, 0x20);
-    sp114 = M2C_FIELD(this, f32 *, 8) * M2C_FIELD(temp_r5, f32 *, 0x1C);
-    sp11C = M2C_FIELD(this, f32 *, 0x10) * M2C_FIELD(temp_r5, f32 *, 0x24);
-    PSMTXQuat((Mtx)((s32) &sp39C), (const Quaternion *)((const register Quaternion*)(((u8*)(temp_r5) + 0xC))));
-    PSMTXMultVecSR((const Mtx)((s32) &sp39C), (const Vec *)((const register Vec*)((Vec *) &sp114)), (Vec *)((register Vec*)((Vec *) &sp114)));
-    PSVECAdd((const register Vec*)((Vec *) &sp114), (const register Vec*)(M2C_FIELD(this, Vec **, 0x20)), (register Vec*)((Vec *) &sp114));
-    if (temp_r31 & 0x100) {
-        if (temp_r31 & 0x400) {
-            PSVECSubtract((const register Vec*)(&g_CameraPosition), (const register Vec*)((Vec *) &sp114), (register Vec*)(&unkspA0));
-            sp120 = unkspA0;
-            sp124 = spA4;
-            sp128 = spA8;
-            PSVECNormalize((const register Vec*)((Vec *) &sp120), (register Vec*)((Vec *) &sp120));
-            PSVECCrossProduct((const register Vec*)((Vec *) &sp120), (const register Vec*)(&g_CameraUpDir), (register Vec*)(v94));
-            sp150 = v94[0];
-            sp154 = v94[1];
-            sp158 = v94[2];
-            PSVECNormalize((const register Vec*)((Vec *) &sp150), (register Vec*)((Vec *) &sp150));
-            PSVECCrossProduct((const register Vec*)((Vec *) &sp120), (const register Vec*)((Vec *) &sp150), (register Vec*)(&unkspAC));
-        } else {
-            sp158 = M2C_FIELD(&g_CameraSideDir, f32 *, 8);
-            sp144 = M2C_FIELD(&g_CameraUpDir, f32 *, 0);
-            sp148 = M2C_FIELD(&g_CameraUpDir, f32 *, 4);
-            sp14C = M2C_FIELD(&g_CameraUpDir, f32 *, 8);
-            sp150 = M2C_FIELD(&g_CameraSideDir, f32 *, 0);
-            sp154 = M2C_FIELD(&g_CameraSideDir, f32 *, 4);
-        }
-    } else {
-        sp150 = M2C_FIELD(&xAxisVector, f32 *, 0);
-        sp154 = M2C_FIELD(&xAxisVector, f32 *, 4);
-        sp158 = M2C_FIELD(&xAxisVector, f32 *, 8);
-        sp144 = M2C_FIELD(&yAxisVector, f32 *, 0);
-        sp148 = M2C_FIELD(&yAxisVector, f32 *, 4);
-        sp14C = M2C_FIELD(&yAxisVector, f32 *, 8);
-        if (*M2C_FIELD(p0, s32 **, 0xFC) & 0x400) {
-            temp_f29 = M2C_FIELD(this, f32 *, 0x1C);
-            temp_f30 = M2C_FIELD(this, f32 *, 0x14);
-            var_f2 = (temp_f30 * temp_f30) + (temp_f29 * temp_f29);
-            var_f2 = sqrtf(var_f2);
-            temp_f1_4 = (f32) atan2((f64) temp_f30, (f64) temp_f29);
-            spF8 = (f32) atan2(-M2C_FIELD(this, f32 *, 0x18), (f64) var_f2);
-            sp100 = 0.0f;
-            spFC = temp_f1_4;
-            EulerToQuat((Vec*)((Vec *) &spF8), (Quaternion*)(&unksp104));
-            PSMTXQuat((Mtx)((s32) &sp36C), (const Quaternion *)((const register Quaternion*)(&unksp104)));
-            PSMTXMultVecSR((const Mtx)((s32) &sp36C), (const Vec *)((const register Vec*)((Vec *) &sp150)), (Vec *)((register Vec*)((Vec *) &sp150)));
-            PSMTXQuat((Mtx)((s32) &sp33C), (const Quaternion *)((const register Quaternion*)(&unksp104)));
-            PSMTXMultVecSR((const Mtx)((s32) &sp33C), (const Vec *)((const register Vec*)((Vec *) &sp144)), (Vec *)((register Vec*)((Vec *) &sp144)));
-        }
-        PSMTXQuat((Mtx)((s32) &sp30C), (const Quaternion *)((const register Quaternion*)(M2C_FIELD(this, Vec **, 0x20) + 0xC)));
-        PSMTXMultVecSR((const Mtx)((s32) &sp30C), (const Vec *)((const register Vec*)((Vec *) &sp150)), (Vec *)((register Vec*)((Vec *) &sp150)));
-        PSMTXQuat((Mtx)((s32) &sp2DC), (const Quaternion *)((const register Quaternion*)(M2C_FIELD(this, Vec **, 0x20) + 0xC)));
-        PSMTXMultVecSR((const Mtx)((s32) &sp2DC), (const Vec *)((const register Vec*)((Vec *) &sp144)), (Vec *)((register Vec*)((Vec *) &sp144)));
+    {
+        f32 py = n->pos.y * n->xform->scale.y;
+        f32 px = n->pos.x * n->xform->scale.x;
+        f32 pz = n->pos.z * n->xform->scale.z;
+        pos.x = px;
+        pos.y = py;
+        pos.z = pz;
     }
-    PSVECCrossProduct((const register Vec*)((Vec *) &sp144), (const register Vec*)((Vec *) &sp150), (register Vec*)(&unksp88));
-    sp120 = unksp88;
-    sp124 = sp8C;
-    sp128 = sp90;
-    if (M2C_FIELD(this, s16 *, 0x32) & 1) {
-        var_f29 = 0.0f - (M2C_FIELD(this, f32 *, 0x3C) + M2C_FIELD(this, f32 *, 0x40));
-    } else {
-        var_f29 = 0.0f + (M2C_FIELD(this, f32 *, 0x3C) + M2C_FIELD(this, f32 *, 0x40));
-    }
-    temp_r26 = temp_r31 & 0x8000;
-    if (temp_r26 != 0) {
-        if (var_f29 < 0.0f) {
-            var_f1 = -var_f29;
-        } else {
-            var_f1 = var_f29;
-        }
-        if (var_f1 > 0.00001f) {
-            C_QUATRotAxisRad((Quaternion*)(&unkspE8), (const Vec*)((Vec *) &sp120), var_f29);
-            PSMTXQuat((Mtx)((s32) &sp2AC), (const Quaternion *)((const register Quaternion*)(&unkspE8)));
-            PSMTXMultVecSR((const Mtx)((s32) &sp2AC), (const Vec *)((const register Vec*)((Vec *) &sp144)), (Vec *)((register Vec*)((Vec *) &sp144)));
-            PSMTXQuat((Mtx)((s32) &sp27C), (const Quaternion *)((const register Quaternion*)(&unkspE8)));
-            PSMTXMultVecSR((const Mtx)((s32) &sp27C), (const Vec *)((const register Vec*)((Vec *) &sp150)), (Vec *)((register Vec*)((Vec *) &sp150)));
-        }
-    }
-    PSQUATInverse((const register Quaternion*)(M2C_FIELD(this, Vec **, 0x20) + 0xC), (register Quaternion*)(&unksp24));
-    spC8 = unksp24;
-    spCC = sp28;
-    spD0 = sp2C;
-    spD4 = sp30;
-    PSMTXQuat((Mtx)((s32) &sp18C), (const Quaternion *)((const register Quaternion*)((Quaternion *) &spC8)));
-    PSMTXMultVecSR((const Mtx)((s32) &sp18C), (const Vec *)((const register Vec*)((Vec *) &sp150)), (Vec *)((register Vec*)(&unksp7C)));
-    sp138 = unksp7C;
-    sp13C = sp80;
-    sp140 = sp84;
-    temp_r5_2 = M2C_FIELD(this, Vec **, 0x20);
-    sp138 = unksp7C * M2C_FIELD(temp_r5_2, f32 *, 0x1C);
-    sp13C = sp80 * M2C_FIELD(temp_r5_2, f32 *, 0x20);
-    sp140 = sp84 * M2C_FIELD(temp_r5_2, f32 *, 0x24);
-    PSMTXQuat((Mtx)((s32) &sp24C), (const Quaternion *)((const register Quaternion*)(((u8*)(temp_r5_2) + 0xC))));
-    PSMTXMultVecSR((const Mtx)((s32) &sp24C), (const Vec *)((const register Vec*)((Vec *) &sp138)), (Vec *)((register Vec*)((Vec *) &sp138)));
-    PSVECScale((const register Vec*)((Vec *) &sp150), (register Vec*)((Vec *) &sp150), PSVECDotProduct((const register Vec*)((Vec *) &sp150), (const register Vec*)((Vec *) &sp138)));
-    PSQUATInverse((const register Quaternion*)(M2C_FIELD(this, Vec **, 0x20) + 0xC), (register Quaternion*)(&unksp14));
-    spB8 = unksp14;
-    spBC = sp18;
-    spC0 = sp1C;
-    spC4 = sp20;
-    PSMTXQuat((Mtx)((s32) &sp15C), (const Quaternion *)((const register Quaternion*)((Quaternion *) &spB8)));
-    PSMTXMultVecSR((const Mtx)((s32) &sp15C), (const Vec *)((const register Vec*)((Vec *) &sp144)), (Vec *)((register Vec*)(&unksp70)));
-    sp138 = unksp70;
-    sp13C = sp74;
-    sp140 = sp78;
-    temp_r5_3 = M2C_FIELD(this, Vec **, 0x20);
-    sp138 = unksp70 * M2C_FIELD(temp_r5_3, f32 *, 0x1C);
-    sp13C = sp74 * M2C_FIELD(temp_r5_3, f32 *, 0x20);
-    sp140 = sp78 * M2C_FIELD(temp_r5_3, f32 *, 0x24);
-    PSMTXQuat((Mtx)((s32) &sp21C), (const Quaternion *)((const register Quaternion*)(((u8*)(temp_r5_3) + 0xC))));
-    PSMTXMultVecSR((const Mtx)((s32) &sp21C), (const Vec *)((const register Vec*)((Vec *) &sp138)), (Vec *)((register Vec*)((Vec *) &sp138)));
-    PSVECScale((const register Vec*)((Vec *) &sp144), (register Vec*)((Vec *) &sp144), PSVECDotProduct((const register Vec*)((Vec *) &sp144), (const register Vec*)((Vec *) &sp138)));
-    temp_r3_2 = M2C_FIELD(p1, peSpline **, 0x14);
-    if ((temp_r3_2 == NULL) || !(M2C_FIELD(temp_r3_2, u8 *, 0) & 3)) {
-        var_f1_2 = 1.0f;
-    } else {
-        var_f1_3 = M2C_FIELD(temp_r3_2, f32 *, 8) - p3;
-        if (var_f1_3 < 0.0f) {
-            var_f1_3 = -var_f1_3;
-        }
-        if (var_f1_3 <= 0.00001f) {
-            var_f1_2 = M2C_FIELD(temp_r3_2, f32 *, 4);
-        } else {
-            var_f1_2 = peSplineGetValue((peSpline*)(temp_r3_2), p3);
-        }
-    }
-    PSVECScale((const register Vec*)((Vec *) &sp150), (register Vec*)((Vec *) &sp150), M2C_FIELD(this, f32 *, 0x34) * var_f1_2);
-    temp_r3_3 = M2C_FIELD(p1, peSpline **, 0x18);
-    if ((temp_r3_3 == NULL) || !(M2C_FIELD(temp_r3_3, u8 *, 0) & 3)) {
-        var_f1_4 = 1.0f;
-    } else {
-        var_f1_5 = M2C_FIELD(temp_r3_3, f32 *, 8) - p3;
-        if (var_f1_5 < 0.0f) {
-            var_f1_5 = -var_f1_5;
-        }
-        if (var_f1_5 <= 0.00001f) {
-            var_f1_4 = M2C_FIELD(temp_r3_3, f32 *, 4);
-        } else {
-            var_f1_4 = peSplineGetValue((peSpline*)(temp_r3_3), p3);
-        }
-    }
-    PSVECScale((const register Vec*)((Vec *) &sp144), (register Vec*)((Vec *) &sp144), M2C_FIELD(this, f32 *, 0x38) * var_f1_4);
-    if (temp_r26 == 0) {
-        if (var_f29 < 0.0f) {
-            var_f1_6 = -var_f29;
-        } else {
-            var_f1_6 = var_f29;
-        }
-        if (var_f1_6 > 0.00001f) {
-            C_QUATRotAxisRad((Quaternion*)(&unkspD8), (const Vec*)((Vec *) &sp120), var_f29);
-            PSMTXQuat((Mtx)((s32) &sp1EC), (const Quaternion *)((const register Quaternion*)(&unkspD8)));
-            PSMTXMultVecSR((const Mtx)((s32) &sp1EC), (const Vec *)((const register Vec*)((Vec *) &sp144)), (Vec *)((register Vec*)((Vec *) &sp144)));
-            PSMTXQuat((Mtx)((s32) &sp1BC), (const Quaternion *)((const register Quaternion*)(&unkspD8)));
-            PSMTXMultVecSR((const Mtx)((s32) &sp1BC), (const Vec *)((const register Vec*)((Vec *) &sp150)), (Vec *)((register Vec*)((Vec *) &sp150)));
-        }
-    }
-    temp_r26_2 = (temp_r31 >> 0xBU) & 1;
-    if (temp_r26_2 != 0) {
-        PSVECScale((const register Vec*)((Vec *) &sp150), (register Vec*)(&unksp64), M2C_FIELD(p1, f32 *, 0x1C));
-        sp12C = unksp64;
-        sp130 = sp68;
-        sp134 = sp6C;
-        PSVECScale((const register Vec*)((Vec *) &sp144), (register Vec*)(&unksp58), M2C_FIELD(p1, f32 *, 0x20));
-        sp12C *= unksp58;
-        sp130 *= sp5C;
-        sp134 *= sp60;
-    }
-    sp138 = -sp150;
-    sp13C = -sp154;
-    temp_r27 = (unsigned char *)(p2 + (M2C_FIELD(this, s16 *, 0x30) * 0x34));
-    sp140 = -sp158;
-    PSVECSubtract((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp144), (register Vec*)((Vec *) &sp138));
-    if (temp_r26_2 != 0) {
-        PSVECAdd((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp12C), (register Vec*)((Vec *) &sp138));
-    }
-    PSVECAdd((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp114), (register Vec*)((Vec *) &sp138));
-    M2C_FIELD(temp_r27, f32 *, 0) = sp138;
-    M2C_FIELD(temp_r27, f32 *, 4) = sp13C;
-    M2C_FIELD(temp_r27, f32 *, 8) = sp140;
-    if ((GSbound *) g_currentBound != NULL) {
-        GSboundAddPoint((GSbound*)(g_currentBound), sp138, sp13C, sp140);
-    }
-    PSVECSubtract((const register Vec*)((Vec *) &sp150), (const register Vec*)((Vec *) &sp144), (register Vec*)(&unksp4C));
-    sp138 = unksp4C;
-    sp13C = sp50;
-    sp140 = sp54;
-    if (temp_r26_2 != 0) {
-        PSVECAdd((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp12C), (register Vec*)((Vec *) &sp138));
-    }
-    PSVECAdd((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp114), (register Vec*)((Vec *) &sp138));
-    M2C_FIELD(temp_r27, f32 *, 0xC) = sp138;
-    M2C_FIELD(temp_r27, f32 *, 0x10) = sp13C;
-    M2C_FIELD(temp_r27, f32 *, 0x14) = sp140;
-    if ((GSbound *) g_currentBound != NULL) {
-        GSboundAddPoint((GSbound*)(g_currentBound), sp138, sp13C, sp140);
-    }
-    PSVECAdd((const register Vec*)((Vec *) &sp150), (const register Vec*)((Vec *) &sp144), (register Vec*)(&unksp40));
-    sp138 = unksp40;
-    sp13C = sp44;
-    sp140 = sp48;
-    if (temp_r26_2 != 0) {
-        PSVECAdd((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp12C), (register Vec*)((Vec *) &sp138));
-    }
-    PSVECAdd((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp114), (register Vec*)((Vec *) &sp138));
-    M2C_FIELD(temp_r27, f32 *, 0x18) = sp138;
-    M2C_FIELD(temp_r27, f32 *, 0x1C) = sp13C;
-    M2C_FIELD(temp_r27, f32 *, 0x20) = sp140;
-    if ((GSbound *) g_currentBound != NULL) {
-        GSboundAddPoint((GSbound*)(g_currentBound), sp138, sp13C, sp140);
-    }
-    PSVECSubtract((const register Vec*)((Vec *) &sp144), (const register Vec*)((Vec *) &sp150), (register Vec*)(&unksp34));
-    sp138 = unksp34;
-    sp13C = sp38;
-    sp140 = sp3C;
-    if (temp_r26_2 != 0) {
-        PSVECAdd((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp12C), (register Vec*)((Vec *) &sp138));
-    }
-    PSVECAdd((const register Vec*)((Vec *) &sp138), (const register Vec*)((Vec *) &sp114), (register Vec*)((Vec *) &sp138));
-    M2C_FIELD(temp_r27, f32 *, 0x24) = sp138;
-    M2C_FIELD(temp_r27, f32 *, 0x28) = sp13C;
-    M2C_FIELD(temp_r27, f32 *, 0x2C) = sp140;
-    if ((GSbound *) g_currentBound != NULL) {
-        GSboundAddPoint((GSbound*)(g_currentBound), sp138, sp13C, sp140);
-    }
-    temp_r3_4 = M2C_FIELD(p1, peSpline **, 0x34);
-    sp12 = 0xFF;
-    sp11 = 0xFF;
-    sp10 = 0xFF;
-    if ((temp_r3_4 == NULL) || !(M2C_FIELD(temp_r3_4, u8 *, 0) & 3)) {
+    rotateBy((Vec*)&pos, &n->xform->rot);
+    PSVECAdd((Vec*)&pos, &n->xform->pos, (Vec*)&pos);
 
-    } else {
-        var_f1_7 = M2C_FIELD(temp_r3_4, f32 *, 8) - p3;
-        if (var_f1_7 < 0.0f) {
-            var_f1_7 = -var_f1_7;
-        }
-        if (var_f1_7 <= 0.00001f) {
-
+    if (flags & 0x100) {
+        if (flags & 0x400) {
+            Vec unused;
+            vecSub(&fwd, &g_CameraPosition, (Vec*)&pos);
+            PSVECNormalize(&fwd, &fwd);
+            vecCross(&right, &fwd, &g_CameraUpDir);
+            PSVECNormalize(&right, &right);
+            PSVECCrossProduct(&fwd, &right, &unused);
         } else {
-            peSplineGetValue((peSpline*)(temp_r3_4), p3);
+            up = g_CameraUpDir;
+            right = g_CameraSideDir;
         }
+    } else {
+        right = xAxisVector;
+        up = yAxisVector;
+        if (*e->params & 0x400) {
+            Vec euler;
+            Quaternion q;
+            f32 vx;
+            f32 vz;
+            vz = n->vel.z;
+            vx = n->vel.x;
+            f32 h = sqrtf(vx * vx + vz * vz);
+            euler.x = atan2(-n->vel.y, h);
+            euler.y = atan2(vx, vz);
+            euler.z = 0.0f;
+            EulerToQuat(&euler, &q);
+            rotateBy(&right, &q);
+            rotateBy(&up, &q);
+        }
+        rotateBy(&right, &n->xform->rot);
+        rotateBy(&up, &n->xform->rot);
     }
-    sp13 = sp8;
-    M2C_FIELD(temp_r27, s32 *, 0x30) = (s32) sp10;
+    vecCross(&fwd, &up, &right);
+    angle = 0.0f;
+    if (n->spin & 1) {
+        angle -= n->rot + n->rotOffset;
+    } else {
+        angle += n->rot + n->rotOffset;
+    }
+    u32 spinFirst = flags & 0x8000;
+    if (spinFirst && (angle < 0.0f ? -angle : angle) > 0.00001f) {
+        spinAround(&up, &right, &fwd, angle);
+    }
+    projectToNode(&right, &v, n->xform);
+    projectToNode(&up, &v, n->xform);
+    PSVECScale(&right, &right, n->sizeX * evalSpline(p->scaleX, t));
+    PSVECScale(&up, &up, n->sizeY * evalSpline(p->scaleY, t));
+    if (!spinFirst && (angle < 0.0f ? -angle : angle) > 0.00001f) {
+        spinAround(&up, &right, &fwd, angle);
+    }
+    bool hasOff = (flags >> 11) & 1;
+    if (hasOff) {
+        Vec offY;
+        vecScale(&off, &right, p->offsetX);
+        PSVECScale(&up, &offY, p->offsetY);
+        off.x *= offY.x;
+        off.y *= offY.y;
+        off.z *= offY.z;
+    }
+    out += n->index * 0x34;
+    v.z = -right.z;
+    v.x = -right.x;
+    v.y = -right.y;
+    PSVECSubtract(&v, &up, &v);
+    emitCorner(out, &v, &off, hasOff, (Vec*)&pos);
+    vecSub(&v, &right, &up);
+    emitCorner(out + 0xc, &v, &off, hasOff, (Vec*)&pos);
+    vecAdd(&v, &right, &up);
+    emitCorner(out + 0x18, &v, &off, hasOff, (Vec*)&pos);
+    vecSub(&v, &up, &right);
+    emitCorner(out + 0x24, &v, &off, hasOff, (Vec*)&pos);
+    {
+        GSColor c;
+        c.b = 0xff;
+        c.g = 0xff;
+        c.r = 0xff;
+        c.a = OSf32tou8(255.0f * e->color[3] * evalSpline(p->alpha, t));
+        *(GSColor*)(out + 0x30) = c;
+    }
 }
 }
 }

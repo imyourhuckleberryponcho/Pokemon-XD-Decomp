@@ -375,7 +375,8 @@ tagGScol4ub GsKeyObject::GetTextureColorLow(const tagGsFilePrimKeyFrame* a, cons
                                             f32 t, u32 idx) const {
     tagGScol4ub col;
     f32 v[4];
-    if (header->texFlag[idx] == 0) {
+    s32 rf_t = header->texFlag[idx];
+    if (rf_t == 0) {
         const u8* src = frames[0]->texColorLow[idx];
         col.r = src[0];
         col.g = src[1];
@@ -409,7 +410,8 @@ tagGScol4ub GsKeyObject::GetTextureColor(const tagGsFilePrimKeyFrame* a, const t
                                          u32 idx) const {
     tagGScol4ub col;
     f32 v[4];
-    if (header->texFlag[idx] == 0) {
+    s32 rf_t = header->texFlag[idx];
+    if (rf_t == 0) {
         const u8* src = frames[0]->texColor[idx];
         col.r = src[0];
         col.g = src[1];

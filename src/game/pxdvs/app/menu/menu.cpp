@@ -700,22 +700,26 @@ void menuButtonNormal(MenuWindow* node) {
     }
 }
 
+static inline MenuItem* menuItemNext(MenuWindow* window, MenuItem* item) {
+    return menuItemBiosGetPtr(window->id, item->next);
+}
+
 void menuCursorNormal(MenuWindow* window, u8 useSub) {
-    MenuItem* current;
-    int left;
-    int down;
-    int right;
     s8 index;
-    int up;
-    int xRange;
-    int yRange;
-    MenuData* data;
-    u16 wrap;
-    u16 keys;
-    int best;
     int cross;
+    int best;
+    int up;
+    int down;
+    u16 wrap;
+    MenuData* data;
+    int left;
+    u16 keys;
+    int xRange;
+    MenuItem* current;
     MenuItem* item;
+    int yRange;
     int delta;
+    int right;
 
     wrap = 0;
     if (window == NULL) {
@@ -775,7 +779,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
                 if (item->last) {
                     break;
                 }
-                item = menuItemBiosGetPtr(window->id, item->next);
+                item = menuItemNext(window, item);
             }
         } else if (down) {
             best = 480;
@@ -797,7 +801,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
                 if (item->last) {
                     break;
                 }
-                item = menuItemBiosGetPtr(window->id, item->next);
+                item = menuItemNext(window, item);
             }
         } else if (left) {
             best = 640;
@@ -819,7 +823,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
                 if (item->last) {
                     break;
                 }
-                item = menuItemBiosGetPtr(window->id, item->next);
+                item = menuItemNext(window, item);
             }
         } else if (right) {
             best = 640;
@@ -841,7 +845,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
                 if (item->last) {
                     break;
                 }
-                item = menuItemBiosGetPtr(window->id, item->next);
+                item = menuItemNext(window, item);
             }
         }
 
@@ -893,7 +897,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
                 if (item->last) {
                     break;
                 }
-                item = menuItemBiosGetPtr(window->id, item->next);
+                item = menuItemNext(window, item);
             }
         } else if (down) {
             best = 0;
@@ -915,7 +919,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
                 if (item->last) {
                     break;
                 }
-                item = menuItemBiosGetPtr(window->id, item->next);
+                item = menuItemNext(window, item);
             }
         } else if (left) {
             best = 0;
@@ -937,7 +941,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
                 if (item->last) {
                     break;
                 }
-                item = menuItemBiosGetPtr(window->id, item->next);
+                item = menuItemNext(window, item);
             }
         } else if (right) {
             best = 0;
@@ -959,7 +963,7 @@ void menuCursorNormal(MenuWindow* window, u8 useSub) {
                 if (item->last) {
                     break;
                 }
-                item = menuItemBiosGetPtr(window->id, item->next);
+                item = menuItemNext(window, item);
             }
         }
 

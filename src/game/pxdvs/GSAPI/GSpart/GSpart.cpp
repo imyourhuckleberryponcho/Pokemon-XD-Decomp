@@ -390,7 +390,7 @@ static inline HSD_MObj* partFindMaterial(HSD_DObj* dobj, u32 index, u32* count) 
 }
 
 static inline GSmaterial* partFindModelMaterial(_GSmodel* model, HSD_MObj* mobj) {
-    GSmaterial* mat = model ? model->materials : 0;
+    GSmaterial* mat = (GSmaterial*)(model ? (void*)model->materials : 0);
     u32 count = model ? model->materialCount : 0;
     u32 i;
 
@@ -811,6 +811,7 @@ s32 GSpartSetTexAnimIndex(GSpart* part, int anim, int index, s32 type, f32 frame
     HSD_TObj* tobj;
     GSmaterial* mat;
     int n;
+    HSD_AObj* aobj;
 
     if (anim < 0 || index < 0) {
         return -1;
@@ -853,19 +854,20 @@ s32 GSpartSetTexAnimIndex(GSpart* part, int anim, int index, s32 type, f32 frame
     HSD_TObjRemoveAnim(tobj);
     HSD_TObjAddAnim(tobj, matAnim->texanim);
     HSD_TObjReqAnim(tobj, frame);
-    slot->aobj = tobj->aobj;
+    aobj = tobj->aobj;
+    slot->aobj = aobj;
     slot->type = type;
     slot->index = index;
     slot->rate = model->texAnimRate;
     slot->frame = frame;
     slot->reqFrame = slot->frame;
-    slot->endFrame = slot->aobj->end_frame;
+    slot->endFrame = aobj->end_frame;
     switch (slot->type) {
     case 0:
-        HSD_AObjClearFlags(slot->aobj, 0x20000000);
+        HSD_AObjClearFlags(aobj, 0x20000000);
         break;
     case 1:
-        HSD_AObjSetFlags(slot->aobj, 0x20000000);
+        HSD_AObjSetFlags(aobj, 0x20000000);
         break;
     }
     model->texAnimDirty = 1;

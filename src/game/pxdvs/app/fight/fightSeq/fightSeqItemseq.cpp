@@ -37,7 +37,7 @@ void fightSeq_JumpWazaSeq(void* target);
 FightOutPokemon* fightTargetGetPtrAsNowFightType(u16 slotType, void* ptr);
 s32 fightFloor_GetFightType(void* floor);
 u8 fightFloor_GetFightKind(void* floor);
-u32 fightFloor_GetEncountFloorId(void* floor);
+u32 fightFloor_GetEncountFloorId(void);
 u16 fightFloor_GetEncountDataId(void* floor);
 u8 fightFloor_GetTikeiDataId(void* floor);
 u8 fightFloor_GetFightTypeEntryPokemonNum(void* floor);
@@ -219,11 +219,16 @@ u8 fightSeqItemSeq_AddPoke(Pokemon* pokemon, u8 ball, FIGHT_TRAINER* trainer, He
     Pokemon* caught;
     FightPokemon* fp;
     u8 level;
-    u8 full = 0;
-    u32 floorId = fightFloor_GetEncountFloorId(0);
-    DeckDarkPokemon* deck = DeckDarkPokemon::getDeckDarkPokemonObj(pokemon_GetDarkpokemonDataId(pokemon));
-    DarkPokemon* dark = darkPokemonGetDarkPokemon(pokemon_GetDarkpokemonDataId(pokemon));
-    u32 entryNum = fightFloor_GetFightTypeEntryPokemonNum(0);
+    u8 full;
+    u32 floorId;
+    u32 entryNum;
+    DarkPokemon* dark;
+    DeckDarkPokemon* deck;
+    full = 0;
+    floorId = fightFloor_GetEncountFloorId();
+    deck = DeckDarkPokemon::getDeckDarkPokemonObj(pokemon_GetDarkpokemonDataId(pokemon));
+    dark = darkPokemonGetDarkPokemon(pokemon_GetDarkpokemonDataId(pokemon));
+    entryNum = fightFloor_GetFightTypeEntryPokemonNum(0);
 
     if (fightFloor_GetFightKind(0) == 0xC) {
         WildPokemonCatchFlag = 1;
@@ -247,7 +252,8 @@ u8 fightSeqItemSeq_AddPoke(Pokemon* pokemon, u8 ball, FIGHT_TRAINER* trainer, He
         }
         pokemon_SetHp(pokemon, newHp);
     }
-    dark->setReversPattern(deck->getRevers());
+    u8 rev = deck->getRevers();
+    dark->setReversPattern(rev);
     pokemon_SetFightTrainerPokemonDataId(pokemon, 0);
     s16 slot = heroCatchPokemon(hero, pokemon, floorId, (u8)ball, 1);
     if (slot == -1) {

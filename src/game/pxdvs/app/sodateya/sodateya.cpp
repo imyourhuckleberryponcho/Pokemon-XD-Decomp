@@ -102,7 +102,7 @@ s32 sodateyaCalcPrice(s32 count) {
     } else {
         price = 0;
     }
-    return count * 100 + price + 100;
+    return count * 100 + 100 + price;
 }
 
 void sodateyaReclaim(s32 slot) {
@@ -275,18 +275,20 @@ static inline void reliveEvent(Pokemon* p) {
 }
 
 static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
-    u16 i;
     void* hero = savedataGetStatus(0, 2);
     u16 progress;
+    Pokemon* p;
+    u16 i;
+    u16 dark;
     if (hero != 0) {
         for (i = 0; i < 6; i++) {
-            Pokemon* p = heroBiosGetPokemonPtr(hero, i);
+            p = heroBiosGetPokemonPtr(hero, i);
             if (pokemonCheckValid(p) && p != 0) {
-                u16 dark = getDarkId(p, mode);
+                dark = getDarkId(p, mode);
                 if (dark != 0) {
                     u32 cmpv = pokemonBiosGetDp(p);
                     if (cmpv != 0) {
-                        u16 sum = steps + darkPokemonBiosGetSteps(dark);
+                        u16 sum = darkPokemonBiosGetSteps(dark) + steps;
                         if (sum >= 0x100) {
                             pokemonAddDpFormPokemonDpFilterId(p, 0, 1);
                             if (pokemonGetDp(p) == 0.0f) {
@@ -315,10 +317,7 @@ static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
         progress = GSflagGet(5);
         if (progress < 10000) {
             s32 t = progress + steps;
-            if (t >= 0xFFFF) {
-                t = 0xFFFF;
-            }
-            progress = t;
+            progress = t < 0xFFFF ? t : 0xFFFF;
         }
         GSflagSet(5, progress);
     }

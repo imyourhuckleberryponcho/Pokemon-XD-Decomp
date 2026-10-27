@@ -150,13 +150,13 @@ int GSgfxLayerFindByID(int id);
 int GSgfxLayerGetActive();
 void GSprimDraw2DLineListC(void* verts, u32 count, void* colors);
 void GSprimDraw2DTexQuad4V(GSvec2* pos, GSvec2* uv, GStexture* tex, void* col);
-void GSprimDraw2DTexQuad4VCA(GSvec2* pos, GSvec2* uv, GStexture* tex, void* col, void* add, s32 addA);
+void GSprimDraw2DTexQuad4VCA(GSvec2* pos, GSvec2* uv, GStexture* tex, void* col, void* add);
 void GSprimSetLineWidth(f32 w);
 void GSprimSetQuadVertexOrder(s32 order);
 void flcalcBezier3(GSvec2* out, GSvec2* pts, f32 t);
 void flcalcMatrix(GSvec2* out, FLASHMATRIXF* m, GSvec2* in);
 void flcalcMulMatrixf(FLASHMATRIXF* out, FLASHMATRIXF* a, FLASHMATRIXF* b);
-s32 flcalcMultiTransformColor(s32 cx, s32 color, u8 a, u8 b);
+s32 flcalcMultiTransformColor(s32 cx, s32 color);
 GStexture* FlashSystemGetGStexture(u16 id);
 }
 void GSprimSetup2DRender(GSgfxLayer* layer);
@@ -307,7 +307,7 @@ static inline void buildGradient(VEC_GRAPH_DATA* d) {
                 u8 g = (u8)(s32)(((((f32)b[2]) - (f32)a[2]) / (f32)span) * (f32)j + (f32)a[2]);
                 u8 bl = (u8)(s32)(((((f32)b[3]) - (f32)a[3]) / (f32)span) * (f32)j + (f32)a[3]);
                 u8 al = (u8)(s32)(((((f32)b[0]) - (f32)a[0]) / (f32)span) * (f32)j + (f32)a[0]);
-                d->palette[j + n] = flcalcMultiTransformColor(d->cxform, r | (g << 8) | (al << 24) | (bl << 16), a[2], a[3]);
+                d->palette[j + n] = flcalcMultiTransformColor(d->cxform, r | (g << 8) | (al << 24) | (bl << 16));
             }
         }
         memcpy(&prev, d->grad + off + 8, 4);
@@ -530,7 +530,7 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long idx) {
             u8* st = styles + (idx << 7);
             switch (st[0]) {
             case 0:
-                d->color = flcalcMultiTransformColor(d->cxform, AT(s32, st, 4), 0, 0);
+                d->color = flcalcMultiTransformColor(d->cxform, AT(s32, st, 4));
                 d->grad = 0;
                 return;
             case 16:
@@ -561,7 +561,7 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long idx) {
             u8* st2 = d->styles + (idx << 7);
             switch (st2[0]) {
             case 0:
-                d->color = flcalcMultiTransformColor(d->cxform, AT(s32, st2, 4), 0, 0);
+                d->color = flcalcMultiTransformColor(d->cxform, AT(s32, st2, 4));
                 d->grad = 0;
                 break;
             case 16:
@@ -653,7 +653,7 @@ static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2*
             return;
         }
         s32 c = *(s32*)col;
-        GSprimDraw2DTexQuad4VCA(pos, uv, tex, &c, add, a4);
+        GSprimDraw2DTexQuad4VCA(pos, uv, tex, &c, add);
     }
 }
 
@@ -802,9 +802,9 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
         }
     }
     memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp30), 4U);
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
     var_r20 = 0;
     M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
+    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
     *lList += 1;
 loop_40:
     if (var_r20 < var_r31) {
@@ -1191,75 +1191,56 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
     } while (loop != 0);
     if (inLine == 0) SBscan();
 }
+static inline void vecLayerSetBlend(u8* l, s32 type, s32 src, s32 dst) {
+    if (type == 0) {
+        if (AT(s32, l, 0x1994) != 0) {
+            AT(s32, l, 0x1994) = 0;
+            AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
+        }
+        AT(s32, l, 0x1644) = 0;
+        AT(s32, l, 0x1648) = 1;
+        AT(s32, l, 0x164C) = 1;
+        AT(s32, l, 0x1650) = 5;
+    } else {
+        if (AT(s32, l, 0x1994) != 1) {
+            AT(s32, l, 0x1994) = 1;
+            AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
+        }
+        AT(s32, l, 0x1644) = type;
+        AT(s32, l, 0x1648) = src;
+        AT(s32, l, 0x164C) = dst;
+        AT(s32, l, 0x1650) = 5;
+    }
+    AT(s32, l, 0x170C) |= 1;
+    AT(s32, l, 0x16A8) |= 0x40;
+    AT(s32, l, 0x17C4) |= 1;
+    AT(s32, l, 0x1760) |= 0x40;
+}
+
 extern "C" void vectorGraph(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHAPERECORD* rec, FLASHMATRIXF* parent, FLASHMATRIXF* mat, FLASHCXFORM* cx, u8 flags) {
     if (debugstep != 0x18) {
         GSprimSetup2DRender(0);
-        GSgfxLayerGetActive();
-        u8* l = (u8*)GSgfxLayerFindByID(0);
-        AT(s32, l, 0x1674) = 1;
-        AT(s32, (u16)l, 0x170C) |= 0x20;
+        u8* l = (u8*)GSgfxLayerFindByID(GSgfxLayerGetActive());
+        AT(u8, l, 0x1674) = 1;
+        AT(s32, l, 0x170C) |= 0x20;
         AT(s32, l, 0x16A8) |= 0x40;
         AT(s32, l, 0x17C4) |= 0x20;
         AT(s32, l, 0x1760) |= 0x40;
         if ((flags & 0x40) != 0) {
-            if (_typemask == 0) {
-                if (AT(s32, l, 0x1994) != 0) {
-                    AT(s32, l, 0x1994) = 0;
-                    AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
-                }
-                AT(s32, l, 0x1644) = 0;
-                AT(s32, l, 0x1648) = 1;
-                AT(s32, l, 0x164C) = 1;
-                AT(s32, l, 0x1650) = 5;
-            } else {
-                if (AT(s32, l, 0x1994) != 1) {
-                    AT(s32, l, 0x1994) = 1;
-                    AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
-                }
-                AT(s32, l, 0x1644) = _typemask;
-                AT(s32, (u16)l, 0x1648) = _srcmask;
-                AT(s32, l, 0x164C) = _dstmask;
-                AT(s32, l, 0x1650) = 5;
-            }
-            AT(s32, l, 0x170C) |= 1;
-            AT(s32, l, 0x16A8) |= 0x40;
-            AT(s32, l, 0x17C4) |= 1;
-            AT(s32, l, 0x1760) |= 0x40;
+            vecLayerSetBlend(l, _typemask, _srcmask, _dstmask);
         } else {
-            if (_type == 0) {
-                if (AT(s32, l, 0x1994) != 0) {
-                    AT(s32, l, 0x1994) = 0;
-                    AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
-                }
-                AT(s32, l, 0x1644) = 0;
-                AT(s32, l, 0x1648) = 1;
-                AT(s32, l, 0x164C) = 1;
-                AT(s32, l, 0x1650) = 5;
-            } else {
-                if (AT(s32, l, 0x1994) != 1) {
-                    AT(s32, l, 0x1994) = 1;
-                    AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
-                }
-                AT(s32, l, 0x1648) = _src;
-                AT(s32, l, 0x1644) = _type;
-                AT(s32, l, 0x164C) = _dst;
-                AT(s32, l, 0x1650) = 5;
-            }
-            AT(s32, l, 0x170C) |= 1;
-            AT(s32, l, 0x16A8) |= 0x40;
-            AT(s32, l, 0x17C4) |= 1;
-            AT(s32, l, 0x1760) |= 0x40;
+            vecLayerSetBlend(l, _type, _src, _dst);
         }
         GSprimSetQuadVertexOrder(1);
         gVecDat.on[0] = 0;
-        gVecDat.on[1] = 0;
-        gVecDat.width[0] = -1;
         gVecDat.idx[0] = -1;
+        gVecDat.width[0] = -1;
+        gVecDat.on[1] = 0;
         gVecDat.idx[1] = -1;
         gVecDat.width[1] = -1;
         gVecDat.numStyles = fills->count;
         gVecDat.cxform = (s32)cx;
-        gVecDat.color2 = flcalcMultiTransformColor((s32)cx, -1, (u8)(u32)&gVecDat, 0);
+        gVecDat.color2 = flcalcMultiTransformColor((s32)cx, -1);
         gVecDat.styles = fills->list;
         gVecDat.f3C = ((s32*)lines)[1];
         gVecDat.minY = 0x7FFF;
@@ -1267,7 +1248,7 @@ extern "C" void vectorGraph(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lin
         gVecDat.maxY = -0x8000;
         gVecDat.maxX = -0x8000;
         memset(scanline_buffer, 0, 0x25800);
-        vecExec((u16)a0, fills, lines, rec, parent, mat, cx);
+        vecExec(a0, fills, lines, rec, parent, mat, cx);
     }
 }
 

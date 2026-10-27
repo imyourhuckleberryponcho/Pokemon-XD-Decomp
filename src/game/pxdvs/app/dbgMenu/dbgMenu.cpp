@@ -62,6 +62,16 @@ inline DbgMenuData* dbgMenuGetPtr(s32 index) {
     return debugMenuDataGetPtr(index);
 }
 
+typedef s32 (*DbgMenuFunc)(s32, s32);
+
+inline DbgMenuFunc dbgMenuGetFunc(s32 index) {
+    DbgMenuData* data = dbgMenuGetPtr(index);
+    if (data == 0) {
+        return 0;
+    }
+    return data->func;
+}
+
 inline s16 dbgMenuGetLink(s32 index) {
     DbgMenuData* data = dbgMenuGetPtr(index);
     if (data == 0) {
@@ -122,9 +132,9 @@ void dbgMenuSetLayerID(s32 id) {
 }
 
 void dbgMenuCursor(tagWINDOW_WORK* window) {
-    enum TsE { TsE0 };
-    u16 repeat = windowGetKeyInfo()->repeat;
-    enum TsE count = (enum TsE)(_dbgMenuGetMenuNum(window, 0));
+    s32 count;
+    s32 repeat = windowGetKeyInfo()->repeat;
+    count = (s8)_dbgMenuGetMenuNum(window, 0);
     s16 cursor;
     s16 top;
     s8 visible = menuDataBiosGetDispMax(window->menuID);
@@ -150,8 +160,7 @@ void dbgMenuCursor(tagWINDOW_WORK* window) {
         top = top + (cursor - (visible - 1));
         cursor = (s8)(visible - 1);
         if (top + cursor >= count) {
-            top = 0;
-            cursor = 0;
+            cursor = top = 0;
         }
     }
     window->top = top;
@@ -208,10 +217,10 @@ static s32 _dbgMenuSub(s32 depth) {
     tagWINDOW_WORK* window;
     s32 item;
     s16 link;
-    DbgMenuData* data;
+    DbgMenuFunc func;
 
     result = 0;
-    menuID = _menu_data_number + depth + 1;
+    menuID = _menu_data_number + 1 + depth;
     for (;;) {
         layer = depth < 0 ? 0 : _menu_data_number + depth;
         cursor = &_pCursor[_dbgMenuGetMenuNo(layer)];
@@ -226,15 +235,14 @@ static s32 _dbgMenuSub(s32 depth) {
             if (depth == 0) {
                 result = -1;
             }
-            menuClose(menuID);
-            return result;
+            break;
         }
         item = _dbgMenuGetItemNo(window, window->top + window->cursor);
         link = _dbgMenuGetLink(item);
         if (link != 0) {
-            data = dbgMenuGetPtr(item);
-            if (data != 0 && data->func != 0) {
-                selected = data->func(item, window->top + window->cursor);
+            func = dbgMenuGetFunc(item);
+            if (func != 0) {
+                selected = func(item, window->top + window->cursor);
             } else {
                 selected = 1;
             }
@@ -248,12 +256,14 @@ static s32 _dbgMenuSub(s32 depth) {
             continue;
         }
         menuClose(_menu_data_number + 1);
-        data = dbgMenuGetPtr(item);
-        if (data != 0 && data->func != 0) {
-            data->func(item, window->top + window->cursor);
+        func = dbgMenuGetFunc(item);
+        if (func != 0) {
+            func(item, window->top + window->cursor);
         }
         return 1;
     }
+    menuClose(menuID);
+    return result;
 }
 
 static s32 _dbgMenuGetMenuNum(tagWINDOW_WORK* window, s32* width) {

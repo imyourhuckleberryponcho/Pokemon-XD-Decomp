@@ -1,3 +1,4 @@
+#pragma optimization_level 3
 #include <dolphin/types.h>
 class Hero {
 public:
@@ -1522,7 +1523,7 @@ void heroMoveTermEvent() {
             u32 group;
             u32 id;
             getResID(&group, &id, (HEROMOVE_MEMBER)i);
-            peopleSetCollision((u16)group, id, 1);
+            peopleSetCollision(group, id, 1);
             peopleSetFlagOn(group, id, 0x700);
             peopleSetFlagOff(group, id, 0x80000008);
         }

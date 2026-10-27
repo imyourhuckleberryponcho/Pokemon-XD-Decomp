@@ -57,7 +57,7 @@ void* GSmemAllocAlign(u32 size, u32 align);
 void GSmemFree(void* p);
 void GSresFreeGroup(u32 g);
 void GSthreadSwitch();
-s32 HSD_Rand(void);
+u16 HSD_Rand(void);
 void cursorBiosInit();
 void fadeCheck(s32 n);
 void fadeSet(s32 id, f32 t);
@@ -246,11 +246,11 @@ static void _menuCB_RuleEdit_Cursol_Init(long v) {
     CB(s32, 0xB014) = v;
 }
 
-void menuCB_RuleCustomJobDisp(long mode) {
+static void menuCB_RuleCustomJobDisp(long mode) {
     s32 cursor;
     if (mode == 0) cursor = 0;
     if (mode == 1) cursor = -1;
-    CB(void*, 0x9C78) = &CB(u8, 0x9918) + CB(s32, 0xB004) * 0x90;
+    CB(void*, 0x9C78) = (u8*)&_CB + CB(s32, 0xB004) * 0x90 + 0x9918;
     menuCBRule_Copy(_menuCB_Temp + 0x3990, menuCBRule_ConstantRule2(CB(s32, 0xB004)));
     menuCBRule_Copy(_menuCB_Temp + 0x3A20, CB(void*, 0x9C78));
     _menuCB_RuleEdit_Cursol_Init(cursor);
@@ -388,54 +388,56 @@ extern "C" void menuCB_FlashStart(u8 v) {
 
 static u8 menuCB_SubWinDisp_GCENTRY() {
     if (CB(s32, 0xB0F4) == 1) {
-        if (CB(s32, 0xB070) == 1) return 0;
+        if (CB(s32, 0xB070) == 1) {
+            return 0;
+        }
         if (CB(s32, 0xAFF0) == 1) {
-            s32 r = menuCB_GCEntry_SubWindow_Disp();
-            switch (r) {
+            switch (menuCB_GCEntry_SubWindow_Disp()) {
+            case 0:
+                return 0;
             case 1:
                 CB(s32, 0xB0F4) = 0;
                 CB(s32, 0xAFF0) = 0;
                 return 1;
-            case 0:
-                return 0;
             }
-        } else {
-            return 0;
         }
-    } else {
-        s32 r = menuCB_GCEntry_SubWindow_Disp();
-        GSthreadSwitch();
-        if (r != 4) {
-            if (r < 4) {
-                if (r != 2) {
-                    if (r < 2) {
-                        menuCBGCEntryPokemon();
-                        if (r < 0) goto done;
-                        if (CB(s32, 0xB0FC) >= 2) return 1;
-                        CB(s32, 0xB0FC) = 0;
-                        s32 country = pokecoloGetCountryCode();
-                        if (country != 0) {
-                            if (country >= 0) {
-                            }
-                        } else if (CB(s32, 0xB0F0) == 2) {
-                            menuCBReliveHallCursolInit();
-                        }
-                        return 1;
-                    }
-                    goto done;
-                }
-                menuCB_GCEntry_PokemonStatusDisp();
-                goto done;
-            }
-            if (r != 6 && r < 6) menuCB_GCEntry_ItemKeepJob();
-            goto done;
-        }
-        menuCB_GCEntry_ItemGiveJob();
-    done:
-        CB(s32, 0xB0FC) = 0;
-        return 1;
+        return 0;
     }
-    return 0;
+    s32 r = menuCB_GCEntry_SubWindow_Disp();
+    GSthreadSwitch();
+    switch (r) {
+    case 0:
+    case 1:
+        menuCBGCEntryPokemon();
+        if (CB(s32, 0xB0FC) >= 2) {
+            return 1;
+        }
+        CB(s32, 0xB0FC) = 0;
+        switch (pokecoloGetCountryCode()) {
+        case 0:
+            if (CB(s32, 0xB0F0) == 2) {
+                menuCBReliveHallCursolInit();
+            }
+            break;
+        case 1:
+        case 2:
+            break;
+        }
+        return 1;
+    case 2:
+        menuCB_GCEntry_PokemonStatusDisp();
+        break;
+    case 4:
+        menuCB_GCEntry_ItemGiveJob();
+        break;
+    case 5:
+        menuCB_GCEntry_ItemKeepJob();
+        break;
+    case 6:
+        break;
+    }
+    CB(s32, 0xB0FC) = 0;
+    return 1;
 }
 
 static void menuCB_SAVEDATA_recover() {
@@ -499,23 +501,23 @@ static void menuCB_GCEntry_Job() {
 static void _imasuguBattleMenuMain() {
     menuCB_SE_Play(0x14);
     while (1) {
-        if (CB(s32, 0xB17C) != 0) {
-            menuOpen(0xA4, 0);
-        } else {
-            if (CB(s32, 0xB054) != 1) goto open;
-            menuCB_SE_Play(0x15);
-            menuCloseCustom(0xA4, 0, 0);
-            menuCBBios_UnlockContext();
-            fn_80151F6C();
-            menuCloseCustom(0xA4, 0, 1);
-            _flashBackFlag = 0;
-            GSfloorPop();
-            menuTopSetBattleSelectMode(0);
-            floorSetFadeScript(0, 0);
+        if (CB(s32, 0xB17C) == 0) {
             menuOpen(0xA4, 1);
-            return;
+            if (CB(s32, 0xB054) == 1) {
+                menuCB_SE_Play(0x15);
+                menuCloseCustom(0xA4, 0, 0);
+                menuCBBios_UnlockContext();
+                fn_80151F6C();
+                menuCloseCustom(0xA4, 0, 1);
+                _flashBackFlag = 0;
+                GSfloorPop();
+                menuTopSetBattleSelectMode(0);
+                floorSetFadeScript(0, 0);
+                return;
+            }
+        } else {
+            menuOpen(0xA4, 0);
         }
-    open:
         CB(s8, 0xB4A1) = -1;
         menuOpenCustom(0x106, windowGetActiveID(), &CB(u8, 0xAFD8), 0, 1, 0);
         if (CB(s32, 0xAFD8) == 4 || CB(s32, 0xB058) == 1) {
@@ -579,12 +581,14 @@ static void _imasuguBattleMenuMain() {
 }
 
 static s32 _YesNo(long a) {
-    s32 c = pokecoloGetCountryCode();
-    if (c != 0) {
-        if (c >= 0 && c < 3) return menuSubOpenYesNo(0, 0x3C, 0xC8, a);
-        return 0;
+    switch (pokecoloGetCountryCode()) {
+    case 0:
+        return menuSubOpenYesNo(0, 0x3C, 0xD2, a);
+    case 1:
+    case 2:
+        return menuSubOpenYesNo(0, 0x3C, 0xC8, a);
     }
-    return menuSubOpenYesNo(0, 0x3C, 0xD2, a);
+    return 0;
 }
 
 static void _tempHeroInitAll() {
@@ -666,8 +670,9 @@ static s32 _gbac_connect_job(long) {
     menuCBTrainerBios_SetControlerID(&CB(u8, 0x1338), 2);
     menuCBTrainerBios_SetControlerID(&CB(u8, 0x2658), 3);
     menuCBTrainerBios_SetControlerID(&CB(u8, 0x3978), 4);
-    if (CB(s32, 8) != 2 && CB(s32, 8) < 2) {
-        if (CB(s32, 8) < 0) goto four;
+    switch (CB(s32, 8)) {
+    case 0:
+    case 1:
         if (CB(s32, 0x4C9C) == 0) {
             list[0] = (s32)(_menuCB_Temp + 0x1320);
             list[1] = (s32)(_menuCB_Temp + 0x1C98);
@@ -681,14 +686,16 @@ static s32 _gbac_connect_job(long) {
             list[2] = (s32)(_menuCB_Temp + 0x1C98);
             list[3] = 0;
         }
-    } else {
-    four:
+        break;
+    case 2:
+    default:
         if (CB(s32, 0x4C9C) == 0) type = 2;
         else type = 3;
         list[0] = (s32)(_menuCB_Temp + 0x1320);
         list[1] = (s32)(_menuCB_Temp + 0x1C98);
         list[2] = (s32)(_menuCB_Temp + 0x2610);
         list[3] = (s32)(_menuCB_Temp + 0x2F88);
+        break;
     }
     if (CB(s32, 0x4C9C) == 0) {
         menuCB_SAVEDATA_recover();
@@ -702,8 +709,9 @@ static s32 _gbac_connect_job(long) {
     }
     if (openMenuGBA(type, 0x1A, list) < 0) return menuCB_MenuRollback(0xA9);
     if (CB(s32, 0x4C9C) == 0) heroBiosSetHomePlace(_menuCB_Temp + 0x1320, 0);
-    if (CB(s32, 8) != 2 && CB(s32, 8) < 2) {
-        if (CB(s32, 8) < 0) goto four2;
+    switch (CB(s32, 8)) {
+    case 0:
+    case 1: {
         void* t0 = &CB(u8, 0x4C98);
         menuCBBios_InitVersusTrainer(t0, _menuCB_Temp + 0x1320);
         void* t1 = &CB(u8, 0x5FB8);
@@ -717,8 +725,10 @@ static s32 _gbac_connect_job(long) {
         }
         menuCBTrainerBios_SetControlerID(&CB(u8, 0x72D8), 0);
         menuCBTrainerBios_SetControlerID(&CB(u8, 0x85F8), 0);
-    } else {
-    four2:
+        break;
+    }
+    case 2:
+    default: {
         void* t0 = &CB(u8, 0x4C98);
         menuCBBios_InitVersusTrainer(t0, _menuCB_Temp + 0x1320);
         void* t1 = &CB(u8, 0x5FB8);
@@ -731,6 +741,8 @@ static s32 _gbac_connect_job(long) {
         menuCBTrainerBios_SetControlerID(t1, 2);
         menuCBTrainerBios_SetControlerID(t2, 3);
         menuCBTrainerBios_SetControlerID(t3, 4);
+        break;
+    }
     }
     return 0xAB;
 }

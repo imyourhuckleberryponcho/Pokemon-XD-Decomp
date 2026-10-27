@@ -1027,10 +1027,10 @@ void WorldMap::CalcModel2D(f32 fov, bool init) {
         GSvec v;
         PSMTXMultVec(view, &ic->pos, &v);
         i++;
-        f32 sx = 320.0f + (k * v.x) / v.z;
-        f32 sy = 240.0f + (nk * v.y) / v.z;
-        ic->sx = sx;
-        ic->sy = sy;
+        f32 dx = (k * v.x) / v.z;
+        f32 dy = (nk * v.y) / v.z;
+        ic->sx = 320.0f + dx;
+        ic->sy = 240.0f + dy;
         ic->sz = 0.0f;
     }
     a = 0;

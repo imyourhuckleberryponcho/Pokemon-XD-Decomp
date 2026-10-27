@@ -923,9 +923,10 @@ void CMenuPokemonChange::setMenuByTbl(s32* tbl)
     u32 common = i;
     for (i = common; (id = m_menuTbl[i]) != 0 && i < 8; i++) {
         s32* p;
+        s32 v;
         u8 found;
-        for (p = tbl, found = 0; *p != 0; p++) {
-            if (id == *p) {
+        for (p = tbl, found = 0; (v = *p) != 0; p++) {
+            if (id == v) {
                 found = 1;
                 break;
             }
@@ -941,8 +942,10 @@ void CMenuPokemonChange::setMenuByTbl(s32* tbl)
     }
     if (!loaded) {
         s32 last = tbl[count - 1];
-        if (last == 0xD6) {
-            oneMenuLoad((u16)last);
+        switch (last) {
+        case 0xD6:
+            oneMenuLoad(last);
+            break;
         }
     }
     memset(m_menuTbl, 0, 0x20);
@@ -2182,7 +2185,7 @@ namespace {
 u8 CMenuPokemonChange::pokmonSelectCheck(enumPlayerIndex player)
 {
     Pokemon* pokemon = getSelPokemon(player);
-    if (isPokemonLookAbleStatus(m_sel[player])) {
+    if (isPokemonLookAbleStatus(m_sel[(s32)player])) {
         return 1;
     }
     switch (_getPokemonState(pokemon, player)) {

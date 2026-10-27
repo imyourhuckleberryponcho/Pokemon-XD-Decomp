@@ -740,9 +740,8 @@ static void _menuCB_PokemonStatusDispBeforeJob(u32 first) {
 
 static void _menuCBGCDelPokemon() {
     u32 i;
-    Pokemon* cur;
     u32 index;
-    Pokemon* src;
+    Pokemon* cur;
     u32 type;
     Pokemon* dst;
     switch (_CB.unkB0F8) {
@@ -792,9 +791,9 @@ static void _menuCBGCDelPokemon() {
         backup_index[i] = backup_index[i + 1];
         backup_type[i + 1] = 0;
         backup_index[i + 1] = 0;
-        src = menuCBPokemonPtrGet(7, i + 1);
-        memcpy(dst, src, 0xC4);
-        pokemonInit(src);
+        cur = menuCBPokemonPtrGet(7, i + 1);
+        memcpy(dst, cur, 0xC4);
+        pokemonInit(cur);
     }
     _CB.unkB100--;
 }
@@ -3095,6 +3094,8 @@ void toobattle_drawHeroName(CBWin* win, s32 player) {
     _drawStrings(win, heroBiosGetNamePtr((u8*)&_CB + player * 0x1320 + 0x563C), 0, 0, fn_8007E634(0x4276));
 }
 
+#pragma push
+#pragma optimization_level 2
 void toolbattle_drawHeroID(CBWin* win, s32 player) {
     u16 wide[129];
     char str[128];
@@ -3108,6 +3109,7 @@ void toolbattle_drawHeroID(CBWin* win, s32 player) {
     GScharMakeFromSJIS(wide, str);
     _drawStrings(win, wide, 0, 0, 0x43C4);
 }
+#pragma pop
 
 s32 toolbattle_trainerFace(void) {
     void* org = menuCBBios_GetTrainerOrgImmediately();

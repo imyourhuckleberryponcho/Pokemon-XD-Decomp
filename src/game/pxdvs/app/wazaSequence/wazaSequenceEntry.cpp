@@ -1661,69 +1661,60 @@ bool ModelEntry::Update(float p0) {
 }
 
 extern "C++" {
+static inline ModelSequence* _asModelSequence(ModelSequence* seq) {
+    if (M2C_FIELD(seq, s32 *, 8) == 1) {
+        return seq;
+    }
+    return NULL;
+}
+
 void ModelEntry::Stop(bool p0) {
-    s32 unksp14;
-    s32 unksp20;
-    s32 unksp8;
-    ModelSequence *var_r30;
-    _GSmodel *temp_r3;
-    _GSmodel *var_r29;
-    s32 temp_r0;
+    GSvec pos;
+    GSvec rot;
+    GSvec partPos;
+    ModelSequence* seq;
+    _GSmodel* part = NULL;
 
-    var_r29 = NULL;
-    temp_r0 = M2C_FIELD(this, s32 *, 0x18);
-    if (temp_r0 != 1) {
-        if (temp_r0 != 2) {
-            if (p0) {
-                return;
-            }
-            goto block_4;
+    if (!(M2C_FIELD(this, s32 *, 0x18) == 1 || (M2C_FIELD(this, s32 *, 0x18) != 2 && p0))) {
+        return;
+    }
+    M2C_FIELD(this, s32 *, 0x18) = 2;
+    if (M2C_FIELD(this, _GSmodel **, 0x4C) == NULL) {
+        return;
+    }
+    seq = _asModelSequence(M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), ModelSequence **, 0x24));
+    if (seq != NULL) {
+        part = M2C_FIELD(seq, _GSmodel **, 0x94);
+    }
+    GSmodelStopAnimation(M2C_FIELD(this, _GSmodel **, 0x4C));
+    GSmodelStopTexAnimation(M2C_FIELD(this, _GSmodel **, 0x4C));
+    GSmodelSetVisibility(M2C_FIELD(this, _GSmodel **, 0x4C), 0);
+    if (part != NULL && M2C_FIELD(this, u8 *, 0x4A) != 0) {
+        GSmodelGetPosition(M2C_FIELD(this, _GSmodel **, 0x4C), &pos);
+        GSmodelGetRotation(M2C_FIELD(this, _GSmodel **, 0x4C), &rot);
+        GSmodelGetPosition(part, &partPos);
+        PSVECSubtract((Vec*)&partPos, (Vec*)&pos, (Vec*)&partPos);
+        M2C_FIELD(seq, u8 *, 0x58) = 0;
+        if (M2C_FIELD(this, u8 *, 0x4B) != 0) {
+            M2C_FIELD(this, u8 *, 0x4B) = 0;
+            GSmodelDetachFromGSpart(part, 0);
         }
-    } else {
-block_4:
-        M2C_FIELD((u16)this, s32 *, 0x18) = 2;
-        temp_r3 = M2C_FIELD(this, _GSmodel **, 0x4C);
-        if (temp_r3 != NULL) {
-            var_r30 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), ModelSequence **, 0x24);
-            if ((s32) M2C_FIELD(var_r30, s32 *, 8) == 1) {
-
-            } else {
-                var_r30 = NULL;
-            }
-            if (var_r30 != NULL) {
-                var_r29 = M2C_FIELD(var_r30, _GSmodel **, 0x94);
-            }
-            GSmodelStopAnimation((_GSmodel*)(temp_r3));
-            GSmodelStopTexAnimation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)));
-            GSmodelSetVisibility((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), 0U);
-            if ((var_r29 != NULL) && ((u8) M2C_FIELD(this, u8 *, 0x4A) != 0)) {
-                GSmodelGetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp20));
-                GSmodelGetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp14));
-                GSmodelGetPosition((_GSmodel*)(var_r29), (GSvec*)(&unksp8));
-                PSVECSubtract((const register Vec*)(&unksp8), (const register Vec*)(&unksp20), (register Vec*)(&unksp8));
-                M2C_FIELD(var_r30, u8 *, 0x58) = 0;
-                if ((u8) M2C_FIELD(this, u8 *, 0x4B) != 0) {
-                    M2C_FIELD(this, u8 *, 0x4B) = 0U;
-                    GSmodelDetachFromGSpart((_GSmodel*)(var_r29), 0U);
-                }
-                ((ModelSequence*)(var_r30))->ResetPosition();
-                ((ModelSequence*)(var_r30))->ResetRotation();
-                ((ModelSequence*)(var_r30))->ResetScale();
-                if (M2C_FIELD(this, u16 *, 0x48) & 0x10) {
-                    GSmodelRemoveNull((_GSmodel*)(var_r29));
-                }
-                if (M2C_FIELD(this, u16 *, 0x48) & 8) {
-                    GSmodelAddNull((_GSmodel*)(var_r29), (Vec*)(&unksp8), (Vec*)(NULL), (Vec*)(NULL));
-                }
-            }
-            if ((u8) M2C_FIELD(this, u8 *, 0x4B) != 0) {
-                GSmodelDetachFromGSpart((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), 0U);
-            }
-            GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &zeroVector));
-            GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &zeroVector));
-            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unitScaleVector));
+        seq->ResetPosition();
+        seq->ResetRotation();
+        seq->ResetScale();
+        if (M2C_FIELD(this, u16 *, 0x48) & 0x10) {
+            GSmodelRemoveNull(part);
+        }
+        if (M2C_FIELD(this, u16 *, 0x48) & 8) {
+            GSmodelAddNull(part, (Vec*)&partPos, NULL, NULL);
         }
     }
+    if (M2C_FIELD(this, u8 *, 0x4B) != 0) {
+        GSmodelDetachFromGSpart(M2C_FIELD(this, _GSmodel **, 0x4C), 0);
+    }
+    GSmodelSetPosition(M2C_FIELD(this, _GSmodel **, 0x4C), (GSvec*)&zeroVector);
+    GSmodelSetRotation(M2C_FIELD(this, _GSmodel **, 0x4C), (GSvec*)&zeroVector);
+    GSmodelSetScale(M2C_FIELD(this, _GSmodel **, 0x4C), (GSvec*)&unitScaleVector);
 }
 }
 
@@ -2314,10 +2305,10 @@ bool EffectEntry::Update(f32 dt) {
     }
     switch (m_type) {
     case 0: {
+        bool useAlpha;
         EffectKey* key = &m_keys[m_curKey];
         u8* fx = (u8*)m_effect;
         f32 a = t;
-        bool useAlpha;
         u8 r, g, b, alpha;
 
         if (t < 0.0f) {

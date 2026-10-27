@@ -1195,6 +1195,9 @@ void fightSeqItemExec(void* floor, u16 itemId) {
                     fightMsgctrlSetValue(0x41, GSmsgGetGSchar(0x4F10));
                 }
                 break;
+            case 0:
+            case 1:
+            case 2:
             case 6:
                 break;
             }

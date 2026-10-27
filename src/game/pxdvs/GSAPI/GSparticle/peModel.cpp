@@ -422,7 +422,7 @@ void peModelContainer::Render() {
                             f32 f = (f32)fmod(t, m->loopTime);
                             HSD_JObjReqAnimAll(jobj, f);
                             HSD_JObjAnimAll(jobj);
-                            HSD_JObjDispAll(jobj, 0, 0, mode);
+                            HSD_JObjDispAll(jobj, 0, mode, 0);
                         }
                     }
                 }

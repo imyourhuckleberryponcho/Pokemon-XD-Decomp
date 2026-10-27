@@ -19,8 +19,7 @@ struct MenuPokemonStatusWork {
 };
 
 struct MenuBallStatusArg {
-    u32 balls;
-    u16 flags;
+    u8 balls[6];
 };
 
 struct MenuTargetEntry {
@@ -42,8 +41,8 @@ struct MenuWazaStatus {
 };
 
 extern "C" {
-s8 fightFloor_GetStatusMenuCnt(u8);
-void fightFloor_SetStatusMenuCnt(u8, s8);
+s8 fightFloor_GetStatusMenuCnt(s32 status);
+void fightFloor_SetStatusMenuCnt(s32 status, s8 cnt);
 u8 fightFloorIsUseFightTimerCommand(s32);
 u8 fightFloorIsUseFightTimerAll(s32);
 u8 fightFloorLoopValidFightTrainer(s32, FightLoopFunc, void*, s32);
@@ -65,8 +64,8 @@ void menuFightOpenCountDown(void);
 void menuFightOpenTotalTimer(void);
 void GSthreadSwitch(void);
 u8 menuIsCheck(u32);
-void menuCloseCustom(u8, s32, s32);
-void menuOpenCustom(u8, s32, s32, s32, s32, s32, ...);
+void menuCloseCustom(s32, s32, s32);
+void menuOpenCustom(s32, s32, s32, s32, s32, s32, ...);
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
 void winMsgOpenLevelUpStatus(u8*, s32);
 void winMsgCloseLevelUpStatus(s32);
@@ -140,10 +139,10 @@ s32 menuFightOpenWaza(FIGHT_TRAINER*, MenuWazaStatus*, u16, s32);
 void menuFightCloseWaza(s32);
 s32 menuFightOpenTarget(MenuTargetArg*, s32, s32);
 void menuFightCloseTarget(s32);
-u8 menuFightGetKeyWaitMenuId(void);
+u32 menuFightGetKeyWaitMenuId(void);
 void menuFightStatusStartAnimHP(void*, void*);
 void menuFightStatusSetActive(u32, s32);
-s32 menuFightChkOpenBall(u8);
+s32 menuFightChkOpenBall(s32 id);
 void* fightTargetGetPtr(s32, void*, u16);
 u32 fightSideGetStatus(void*, s32, s32, u16);
 void* fightTargetDataBiosGetPtr(u16);
@@ -192,7 +191,7 @@ void fightMenuAllFightOutPokemonCloseStatusMenu(u8 wait);
 void fightMenuAllFightOutPokemonOpenStatusMenu(u8 flag);
 u32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* p, u16 id, bool flag);
 u32 fightMenuGetFightTrainerPtrToStatusMenuId(FIGHT_TRAINER* p, u16 id);
-u8 fightMenuGetFightTrainerPtrToKeyWaitMenuId(FIGHT_TRAINER* p, u16 id);
+u32 fightMenuGetFightTrainerPtrToKeyWaitMenuId(FIGHT_TRAINER* p, u16 id);
 void fightMenuFightTrainerCloseStatusMenu(FIGHT_TRAINER* p, u16 id, s32 wait);
 void fightMenuFightTrainerOpenStatusMenu(FIGHT_TRAINER* p, u16 id);
 void fightMenuFightOutPokemonOpenStatusMenu(FightOutPokemon* p, u16 id, bool flag);
@@ -204,14 +203,14 @@ void fightMenuCloseInfoMenu(u8 wait);
 void fightMenuOpenInfoMenu(s8 flag);
 s16 fightMenuFightTrainerGcHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id, u8 cancel, u8 nested);
 
-static inline void fightMenuCloseCustomBody(u8 menuId)
+static inline void fightMenuCloseCustomBody(u32 menuId)
 {
     if (fightFloor_GetStatusMenuCnt(menuId) == -1) {
         fightFloor_SetStatusMenuCnt(menuId, 15);
     }
 }
 
-u32 fightMenuCloseCustom(u8 menuId)
+u32 fightMenuCloseCustom(u32 menuId)
 {
     fightMenuCloseCustomBody(menuId);
     return 0;
@@ -666,23 +665,23 @@ static FightOutPokemon* _fightMenuFightTrainerAgbHeroSelectDefensePokemon(FightO
 extern "C" {
 s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id, u32 target)
 {
+    s16 result;
     u32 gbaWork;
     u32 num;
     u16 i;
     s32 gba;
     s32 action;
-    s16 result;
 
     gbaWork = fightTrainerGetStatus(trainer, 0, 0x4B, 0);
     fightTypeDataBiosGetPtr(id);
     num = fightTypeDataBiosGetFightoutPokemonNum();
-    for (i = 0; i < num; i++) {
+    for (u16 i = 0; i < num; i++) {
         s32 cmpv = fightTrainerGetStatus(trainer, 0, 0x46, i);
         if (cmpv == target) {
             break;
         }
     }
-    if ((u32)i < num) {
+    if (i >= num) {
         return fightTrainerAiSelectIrekaeDasuFightPokemon(trainer, p, id, target);
     }
     if (fightGetFightResultId() == 1) {
@@ -1292,7 +1291,7 @@ void fightMenuFightOutPokemonCloseStatusMenu(FightOutPokemon* p, u16 id, bool fl
 
 static void _fightMenuFightOutPokemonCloseStatusMenuSub(FightOutPokemon* p, u16 id, bool flag, bool wait)
 {
-    u8 menuId = fightMenuGetFightOutPokemonPtrToStatusMenuId(p, id, wait);
+    u32 menuId = fightMenuGetFightOutPokemonPtrToStatusMenuId(p, id, wait);
     if (menuIsCheck(menuId)) {
         fightMenuCloseCustomBody(menuId);
     }
@@ -1301,7 +1300,6 @@ static void _fightMenuFightOutPokemonCloseStatusMenuSub(FightOutPokemon* p, u16 
 extern "C" {
 void fightMenuFightOutPokemonRenewStatusMenu(FightOutPokemon* p, u16 id, bool flag)
 {
-    extern void fightFloor_SetStatusMenuCnt(u32, s8);
     u32 menuId = fightMenuGetFightOutPokemonPtrToStatusMenuId(p, id, true);
     if (menuIsCheck(menuId)) {
         fightMenuFightOutPokemonOpenStatusMenu(p, id, flag);
@@ -1330,7 +1328,7 @@ void fightMenuFightOutPokemonOpenStatusMenu(FightOutPokemon* p, u16 id, bool fla
 static void _fightMenuFightOutPokemonOpenStatusMenuSub(FightOutPokemon* p, u16 id, bool flag, bool open, bool start)
 {
     MenuPokemonStatusArg status;
-    u8 menuId = fightMenuGetFightOutPokemonPtrToStatusMenuId(p, id, open);
+    u32 menuId = fightMenuGetFightOutPokemonPtrToStatusMenuId(p, id, open);
 
     fightOutPokemonToMenuPokemonStatus(p, &status);
     if (!flag) {
@@ -1396,7 +1394,7 @@ void fightMenuFightTrainerRenewStatusMenu(FIGHT_TRAINER* p, u16 id)
 
 void fightMenuFightTrainerOpenStatusMenu(FIGHT_TRAINER* p, u16 id)
 {    MenuBallStatusArg status;
-    u8 menuId = fightMenuGetFightTrainerPtrToStatusMenuId(p, id);
+    u32 menuId = fightMenuGetFightTrainerPtrToStatusMenuId(p, id);
 
     fightTrainerToMenuBallStatus(p, &status);
     if (dbgMenuFightGetFightPokeStMenuOpenFlag() == 1 && menuFightChkOpenBall(menuId)) {
@@ -1427,7 +1425,7 @@ u32 fightMenuGetFightTrainerPtrToStatusMenuId(FIGHT_TRAINER* p, u16 id)
     return fightSideGetStatus(0, sideId, 2, buff);
 }
 
-u8 fightMenuGetFightTrainerPtrToKeyWaitMenuId(FIGHT_TRAINER* p, u16 id)
+u32 fightMenuGetFightTrainerPtrToKeyWaitMenuId(FIGHT_TRAINER* p, u16 id)
 {
     return menuFightGetKeyWaitMenuId();
 }

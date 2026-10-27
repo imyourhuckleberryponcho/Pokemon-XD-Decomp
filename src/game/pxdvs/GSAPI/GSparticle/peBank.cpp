@@ -593,16 +593,10 @@ static void _peFreeInternalBankData(_particleData* data) {
         break;
     case 2: {
         _peModelData* m = (_peModelData*)p;
-        if (m == 0) {
-            break;
-        }
-        if (m->flags & 0x40) {
-            break;
-        }
-        if (!m->jobj) {
-            HSD_JObjUnref(m->jobj);
+        if (m == 0 || (m->flags & 0x40) || m->jobj == 0) {
             return;
         }
+        HSD_JObjUnref(m->jobj);
         return;
     }
     case 4: {

@@ -809,7 +809,7 @@ config.libs = [
             Object(NonMatching, "game/menuPokemonStatus.cpp", extra_cflags=["-inline noauto,deferred"]),
             Object(MatchingFor("GXXE01"), "game/menuItemTool.cpp"),
             Object(MatchingFor("GXXE01"), "game/menuSaveLoad.cpp"),
-            Object(NonMatching, "game/menuPda.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/menuPda.cpp", extra_cflags=["-inline noauto,deferred"]),
             Object(NonMatching, "game/menuReliveHall.cpp", extra_cflags=["-inline noauto"]),
             Object(NonMatching, "game/menuPdaSearcher.cpp", extra_cflags=["-inline noauto,deferred"]),
             Object(MatchingFor("GXXE01"), "game/menuPdaMailXD.cpp"),
@@ -1071,7 +1071,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/menu/winMsg.cpp"),
 
             # zokusei
-            Object(NonMatching, "game/pxdvs/app/zokusei/zokusei.cpp", extra_cflags=["-opt level=0"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/zokusei/zokusei.cpp", extra_cflags=["-opt level=0"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/zokusei/zokuseiBios.cpp", extra_cflags=["-opt level=0"]),
 
             # floor
@@ -1082,7 +1082,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/floor/floorFieldCamera.cpp", extra_cflags=["-inline noauto"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorFieldCameraEditor.cpp", extra_cflags=["-inline off"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/floor/floorOffscreen.cpp"),
-            Object(NonMatching, "game/pxdvs/app/floor/floorManager.cpp", extra_cflags=["-inline off"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/floor/floorManager.cpp", extra_cflags=["-inline off"]),
             Object(NonMatching, "game/pxdvs/app/floor/floorModule.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/floor/floorStack.cpp"),
             Object(NonMatching, "game/pxdvs/app/floor/floorLoad.cpp"),

@@ -57,6 +57,10 @@ extern "C" {
 s32 zokuseiGetWazaJoutaiAsDefenseZokuseiAry(u16 type, u16* arr, u16 count);
 }
 
+static inline u16 _getWazaJoutai(u16 id, u16 target) {
+    return zokuseiBiosGetWazaJoutai(id, target);
+}
+
 u16 zokuseiGetPokemonSpriteID(PokemonData* pdata, u16 index) {
     if (index >= 2) {
         return 0;
@@ -119,7 +123,6 @@ s32 zokuseiGetWazaJoutaiAsDefenseZokuseiAry(u16 type, u16* arr, u16 count) {
     u16 countA = 0;
     u16 countB = 0;
     u16 e;
-    u16 code;
     u16 result;
 
     for (i = 0; i < count; i++) {
@@ -127,8 +130,7 @@ s32 zokuseiGetWazaJoutaiAsDefenseZokuseiAry(u16 type, u16* arr, u16 count) {
             continue;
         }
         e = arr[i];
-        code = zokuseiBiosGetWazaJoutai((u32)type, (u32)e);
-        result = code;
+        result = _getWazaJoutai(type, e);
         if (result == 0x43) {
             return 0x43;
         }

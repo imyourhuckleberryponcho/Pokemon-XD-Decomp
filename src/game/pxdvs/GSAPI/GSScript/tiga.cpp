@@ -443,12 +443,15 @@ struct ChankRec {
     u8 data[1];
 };
 
+#pragma push
+#pragma optimization_level 1
 void tigaErrMessage(const char* msg)
 {
     if (Tiga::m_cpCurrentObject != 0) {
         const char* m = msg;
     }
 }
+#pragma pop
 
 static void _executeScriptThread(Tiga* t, long id)
 {

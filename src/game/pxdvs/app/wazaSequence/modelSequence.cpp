@@ -136,7 +136,7 @@ f32 GSmodelGetAnimFrame(_GSmodel* model);
 void GSmodelRemoveNull(_GSmodel* model);
 u16 GSmodelCenterNull(_GSmodel* model);
 GSpart* GSmodelGetPart(_GSmodel* model, s32 joint);
-f32 menuModelGetScale(u8 a, u16 b);
+f32 menuModelGetScale(u8 a);
 u8 GSgfxVideoGetVsyncRate(void);
 void GSmodelSetDontResetPartAnimFlag(_GSmodel* model, s32 flag);
 void GSparticleDestroyGenerator(GSparticleGen* gen, s32 children);
@@ -214,7 +214,7 @@ u32 wazaSequenceSysGetModelShadowCount(void);
 s32 wazaSequenceSysGetModelShadowList(void);
 class ModelSequence;
 void wazaSequenceSysFreeSequenceResource(ModelSequence* seq);
-f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec* out);
+static f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec* out);
 extern PkxEntry pokemon_pkx_data[];
 extern PkxEntry unknown_pokemon_pkx_data[];
 extern PkxEntry deoxys_pokemon_pkx_data[];
@@ -1274,7 +1274,7 @@ void ModelSequence::SetFlags(u8 flags) {
     m_flags = flags;
 }
 
-f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec* out) {
+static f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec* out) {
     ModelSequence* seq = (ModelSequence*)user;
     out->x = seq->m_look.x;
     out->y = seq->m_look.y;
@@ -1735,5 +1735,5 @@ f32 ModelSequence::GetModelScale(bool raw) const {
     if (raw) {
         return scale;
     }
-    return menuModelGetScale(m_hasParent, m_unk4);
+    return menuModelGetScale(m_hasParent);
 }

@@ -355,7 +355,7 @@ static u8 _expRecover(Pokemon* pokemon, unsigned long gainExp) {
             item = pokemonGetSoubiItemSoubiDataId(pokemon);
             pokemonGetFriendFormPokemonFriendFilterId(pokemon, item, 0);
             newLevel = pokemonBiosGetLevel(pokemon);
-            soundOpenPlayME(0x4CA, 0, 0xFF);
+            soundOpenPlayME(0x3C7, 0, 0xFF);
             msgctrlSetValue(0x2F, (u8)newLevel);
             winMsgOpenField((void*)0x44CE, 1, 0);
             status.hp = (s16)pokemonGetStatus(pokemon, 0, 0x87, 0);

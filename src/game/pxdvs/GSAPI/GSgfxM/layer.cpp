@@ -311,12 +311,12 @@ static inline void layerFlushFifo(GSgfxLayer::PassFifo* f) {
     union {
         volatile u32 v;
     } r;
+    GSgfx_GCFifoObj* obj = FIFO_OBJ(f);
     u32 bit;
     u32 used;
     u32 rd;
     u32 wr;
     GSgfxRenderWaitData w;
-    GSgfx_GCFifoObj* obj = FIFO_OBJ(f);
 
     GXSaveCPUFifo(obj);
     r.v = *(volatile u32*)0xCC003014;
@@ -420,7 +420,7 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     s8 sp88;
     s8 sp87;
     volatile s8 sp86;
-    s8 sp85;
+    volatile s8 sp85;
     s8 sp84;
     u8 var_r6;
     u32 sp7C;
@@ -723,7 +723,7 @@ loop_138:
             } else {
                 sp87 = 0x58;
             }
-            if ((temp_r24 != NULL) && ((u32) (M2C_FIELD((u16)temp_r24, s32 *, 4) & 1) == 1)) {
+            if ((temp_r24 != NULL) && ((u32) (M2C_FIELD(temp_r24, s32 *, 4) & 1) == 1)) {
                 temp_r0 = M2C_FIELD(temp_r24, s32 *, 0x2C);
                 switch (temp_r0) {
                 case 1:
@@ -913,9 +913,7 @@ loop_138:
                     var_r6_2 = (long *)("opaque");
                 }
                 var_r4_3 = (long *)("after");
-                if ((s32) M2C_FIELD(var_r17, s32 *, 0xC) == 1) {
-                    var_r4_3 = (long *)("before");
-                }
+                var_r4_3 = !((s32) M2C_FIELD(var_r17, s32 *, 0xC) == 1) ? var_r4_3 : (long *)("before");
                 GSprimWriteStr(60.0f, var_f26_2, "redirected %s: %s %s pass", var_r4_3, &sp8C, var_r6_2);
                 var_f26_2 += 12.0f;
                 var_r17 += 0x10;
@@ -1362,8 +1360,8 @@ void GSgfxLayer::Prerender() {
 
 extern "C++" {
 void GSgfxLayer::PrerenderPass(GSgfxLayerPass pass) {
-    PassFifo* f;
     PassFifo* active;
+    PassFifo* f;
     u32 mask;
 
     if (passes[pass].data != NULL) {

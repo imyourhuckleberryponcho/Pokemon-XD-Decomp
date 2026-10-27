@@ -616,16 +616,18 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
 {
     CursorPos c3;
     CursorPos pos;
-    CursorPos prev;
     u16 rep = windowGetKeyRepeat();
     u16 trg = windowGetKeyTrg();
-    u8 moved = 0;
-    u32 se = 0;
+    u32 se;
+    u8 moved;
+    moved = 0;
+    se = 0;
     int msgs[7] = { 0x3AA1, 0x3AA2, 0x3AA7, 0x3AA8, 0x3AB7, 0x3AA7, 0x3AA2 };
     if (Data.tabScroll != 0.0f || Data.listScroll != 0.0f || winSeqCheckMove(w->menuID)) {
         return 0;
     }
-    CursorPos c = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
+    CursorPos c;
+    c = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
     pos.x = c.x;
     pos.y = c.y;
     _getNbItemSlot(w->cursor);
@@ -643,10 +645,11 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
         se = 0x12;
         Data.exchangeFrom = -1;
     }
-    CursorPos c2 = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
+    CursorPos c2;
+    c2 = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
     pos.x = c2.x;
-    prev = pos;
     pos.y = c2.y;
+    CursorPos prev = pos;
     int total = _getNbItemSlot(w->cursor) + 1;
     if (rep & 2) {
         pos.y += 1;
@@ -684,8 +687,7 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
     }
     CursorPos set = pos;
     cursorBiosSetPos(TabTbl[w->cursor].cursorIdx, set);
-    u16 rf_t = prev.y;
-    if (pos.y != rf_t || pos.x != prev.x) {
+    if (prev.y != pos.y || prev.x != pos.x) {
         menuSubCursorAnimeStart();
     }
     if (Data.exchangeFrom < 0 && !moved) {
@@ -724,7 +726,8 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
         c3 = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
         pos.x = c3.x;
         pos.y = c3.y;
-        u16 id = _getItemIDFromMenuPos(w->cursor, c3.x + c3.y);
+        u16 rf_t = w->cursor;
+        u16 id = _getItemIDFromMenuPos(rf_t, c3.x + c3.y);
         if (id != 0) {
             msg = _getItemInstMsg(id);
         } else {
@@ -809,7 +812,8 @@ int menuPocket2DrawExchangeCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
         y += (s16)Data.listScroll;
     }
     if (Data.exchangeFrom >= 0) {
-        sp->y = menuItemBiosGetPtr(w->menuID, sp->id)->y + y;
+        MenuItem* item = menuItemBiosGetPtr(w->menuID, sp->id);
+        sp->y = item->y + y;
         winSpriteSetDisp(sp, 1);
         static f32 duration = 0.5f;
         Data.blink += timeGetLastFrameSec();
@@ -820,10 +824,8 @@ int menuPocket2DrawExchangeCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
         if (t > 0.5f) {
             t = 1.0f - t;
         }
-        f32 kc552 = 2.0f;
-        f32 k = t * kc552;
-        f32 kc578 = 155.0f;
-        sp->alpha = k * kc578 + 100.0f;
+        t *= 2.0f;
+        sp->alpha = 155.0f * t + 100.0f;
     } else {
         winSpriteSetDisp(sp, 0);
     }
@@ -1016,12 +1018,10 @@ int menuPocket2DrawActionMenu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             }
         }
         if (i < 7) {
-            ResizeEntry* e;
             int off = _actionMenuLineHeight(w) * (4 - param->n);
-            e = &ActMenuResizeWork[i];
-            sp->y = off + e->y;
-            if (e->resize != 0) {
-                sp->h = e->h - off;
+            sp->y = off + ActMenuResizeWork[i].y;
+            if (ActMenuResizeWork[i].resize != 0) {
+                sp->h = ActMenuResizeWork[i].h - off;
             }
         }
     }
@@ -1263,11 +1263,11 @@ int menuPocket2DrawNumMenuCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     if (i >= 4) {
         return 0;
     }
-    int idx = w->cursor;
-    if (idx < 0 || idx >= MenuPocket2Num[i].count) {
+    if (w->cursor < 0 || w->cursor >= MenuPocket2Num[i].count) {
         return 0;
     }
-    const NumRow* row = &MenuPocket2Num[i].tbl[idx];
+    const NumRow* row = MenuPocket2Num[i].tbl;
+    row += w->cursor;
     if (row->b == sp->id || row->c == sp->id) {
         sp->alpha = 0xFF;
     } else {
@@ -1376,11 +1376,9 @@ u16 _menuPocketLoop(void)
     CursorPos cp;
     long param;
     long* pp;
-    int pos;
     u16 out;
     u16 item;
     int i;
-    const TabEntry* t;
     memset(&cp, 0, 4);
     if (Data.mode == 6) {
         cp.y = 1;
@@ -1389,20 +1387,19 @@ u16 _menuPocketLoop(void)
         cp.x = c.x;
         cp.y = c.y;
     }
-    t = TabTbl;
     pp = &param;
     param = cp.y;
-    for (i = 0; i < 5; t++, i++) {
-        CursorPos c = cursorBiosGetPos(t->cursorIdx);
+    for (i = 0; i < 5; i++) {
+        CursorPos c = cursorBiosGetPos(TabTbl[i].cursorIdx);
         if (c.x + c.y >= _getNbItemSlot(i) + 1) {
             CursorPos z = czero;
-            cursorBiosSetPos(t->cursorIdx, z);
+            cursorBiosSetPos(TabTbl[i].cursorIdx, z);
         }
     }
     if (!Data.resizeInit) {
         _setActMenuResizeWork();
     }
-    pos = 0;
+    int pos = 0;
     for (;;) {
         Data.inList = 1;
         item = _selectItem(pos, pp);
@@ -1411,13 +1408,19 @@ u16 _menuPocketLoop(void)
         if (item == 0) {
             break;
         }
-        int r = _afterDecideItem(Data.mode, Data.tab, (u8)item, pos, &out);
+        int r = _afterDecideItem(Data.mode, Data.tab, item, pos, &out);
         if (out != 0) {
             item = out;
         }
-        if (r == 1) {
+        switch (r) {
+        case 0:
+            continue;
+        case 1:
             break;
+        default:
+            continue;
         }
+        break;
     }
     menuCloseCustom(0x2C, 0, 1);
     if (Data.mode == 4) {
@@ -1627,9 +1630,9 @@ void _printItemDouguBall(GSgfxLayerID layer, int x, int y, int tab, int pos)
 namespace {
 s32 _actTukauNormal(int tab, int pos, int* out)
 {
-    s32 ret;
     u16 raw = _getItemIDFromMenuPos(tab, pos);
     u32 id = raw;
+    s32 ret;
     UseFunc f = _getUseFunc(id);
     if (f == 0) {
         _infoBeep(0xC374);
@@ -1644,7 +1647,7 @@ s32 _actTukauNormal(int tab, int pos, int* out)
         ret = 1;
         break;
     case 2:
-        if (tab == 4 && id != 0x1F6) {
+        if (tab == 4 && raw != 0x1F6) {
             ret = 0;
         } else {
             ret = 2;
@@ -1897,23 +1900,20 @@ struct ItemSlot {
 void _swapItemSlot(int kind, int from, int to)
 {
     u16 count;
-    u32 saved;
     if (from == to || from == to - 1) {
         return;
     }
     ItemSlot* items = (ItemSlot*)heroItemGetItemKindToItemAryPtr(Data.hero, kind, &count, 0, 0, 0);
-    ItemSlot* p = items + from;
-    saved = *(u32*)p;
+    ItemSlot saved = items[from];
     if (from != count - 1) {
-        memmove(p, p + 1, (count - from - 1) * 4);
+        memmove(items + from, items + from + 1, (count - from - 1) * 4);
     }
     if (from < to) {
         to--;
     }
-    ItemSlot* q = items + to;
-    memmove(q + 1, q, (count - to - 1) * 4);
-    q->id = ((ItemSlot*)&saved)->id;
-    q->n = ((ItemSlot*)&saved)->n;
+    memmove(items + to + 1, items + to, (count - to - 1) * 4);
+    items[to].id = saved.id;
+    items[to].n = saved.n;
 }
 }
 

@@ -282,10 +282,10 @@ static inline void setVtxDesc(s32 fmt)
 
 inline static void calcTornadoLastPos(HSD_Particle* pp, f32* x, f32* y, f32* z)
 {
+    f32 radius;
     f32 px, py, pz;
     f32 sina, sinb, cosa, cosb;
     HSD_Generator* gp;
-    f32 radius;
     f32 vx0;
     f32 vz0;
 
@@ -1390,6 +1390,10 @@ inline void psDispSub(HSD_Particle* pp, u8* texform)
 
 #define PS_FLAG_HIDDEN 0x20000000
 
+
+
+#pragma push
+#pragma optimization_level 3
 static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void* camera)
 {
     s32 linkNo;
@@ -1696,11 +1700,12 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                                 HSD_ASSERT(0x7AD, 0);
                                 break;
                             }
+                            prev_tex_interp_near = pp->kind & TexInterpNear;
                             GXInitTexObjLOD(
                                 &texObj,
-                                ((prev_tex_interp_near = pp->kind & TexInterpNear) != 0) ? GX_NEAR
+                                (prev_tex_interp_near != 0) ? GX_NEAR
                                                             : GX_LINEAR,
-                                (GXTexFilter)(((pp->kind >> 9) & 1) ^ 1),
+                                ((pp->kind >> 9) & 1) ? GX_NEAR : GX_LINEAR,
                                 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE,
                                 GX_ANISO_1);
                             GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -1764,6 +1769,7 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
         HSD_StateInvalidate(-1);
     }
 }
+#pragma pop
 
 void psDispSetProjection(void* proj)
 {

@@ -367,13 +367,18 @@ s32 menuPcBoxDouguHikidashiCursor(tagWINDOW_WORK* w) {
     if (ofs != CursorOfs || cur != CursorPos) {
         menuSubCursorAnimeStart();
     }
+    u32 msg;
     if (IrekaeSlotID >= 0) {
-        setExplanationMsgID(0x3BBC);
-    } else if (getItemIDFromMenuPos(CursorOfs + CursorPos) != 0) {
-        setExplanationMsgID(getItemInstMsg(getItemIDFromMenuPos(CursorOfs + CursorPos)));
+        msg = 0x3BBC;
     } else {
-        setExplanationMsgID(0x3BBB);
+        u16 id = getItemIDFromMenuPos(CursorOfs + CursorPos);
+        if (id != 0) {
+            msg = getItemInstMsg(id);
+        } else {
+            msg = 0x3BBB;
+        }
     }
+    setExplanationMsgID(msg);
     return 0;
 }
 }

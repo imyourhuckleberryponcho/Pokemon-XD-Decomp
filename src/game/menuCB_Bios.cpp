@@ -464,7 +464,9 @@ void menuCB_RULE_INIT(_TOOL_SAVEDATA* save) {
 }
 
 static void menuCBBios_InitContextAtFirst(_MENUCBWORK* cb, _TOOL_SAVEDATA* save) {
+    _MENUCBWORK * *new_var;
     menuCBBios_UnlockContext();
+    new_var = &cb;
     memset(cb, 0, 0xB5F4);
     cb->rule[0] = *menuCBRule_ConstantRule(0);
     cb->rule[1] = *menuCBRule_ConstantRule(1);

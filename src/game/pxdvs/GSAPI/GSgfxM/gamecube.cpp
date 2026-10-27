@@ -59,7 +59,12 @@ struct RegZMode {
 };
 struct RegCMode0 {
     u32 id : 8;
-    u32 pad : 19;
+    u32 pad : 8;
+    u32 pad2 : 3;
+    u32 lop : 1;
+    u32 sub : 1;
+    u32 src : 3;
+    u32 dst : 3;
     u32 alphaUpd : 1;
     u32 colorUpd : 1;
     u32 dither : 1;
@@ -177,25 +182,36 @@ struct TexGenCache { s32 func; s32 src; u32 mtx; u8 norm; s32 post; };
 struct RegId24 { u32 id : 8; u32 v : 24; };
 struct RegTexImg { u32 id : 8; u32 pad : 2; u32 b21 : 1; u32 ch : 3; u32 cw : 3; u32 addr : 15; };
 union RegTlutW { RegId24 a; struct { u32 id : 8; u32 pad : 14; u32 tmem : 10; } b; };
-struct TlutCache { u32 a; s16 b; s16 c; };
+struct TlutCache { u32 a; u16 b; u16 c; };
 struct TexObj { u32 w0, w1, w2, w3; };
 struct TlutObj { u32 w0, w1; u16 h8; };
 struct RegIref { u32 id : 8; u32 c3 : 3; u32 m3 : 3; u32 c2 : 3; u32 m2 : 3; u32 c1 : 3; u32 m1 : 3; u32 c0 : 3; u32 m0 : 3; };
 struct RegTref { u32 id : 8; u32 pad2 : 2; u32 col1 : 3; u32 en1 : 1; u32 c1 : 3; u32 m1 : 3; u32 pad1 : 2; u32 col0 : 3; u32 en0 : 1; u32 c0 : 3; u32 m0 : 3; };
 struct RegGenMode { u32 id : 8; u32 pad23 : 4; u32 b19 : 1; u32 nInd : 3; u32 cull : 2; u32 nTev : 4; u32 pad6 : 4; u32 nChan : 2; u32 nTex : 4; };
-union RegTexImg0 { RegId24 a; struct { u32 id : 8; u32 fmt : 4; u32 rest : 20; } b; };
+union RegTexImg0 { RegId24 a; struct { u32 id : 8; u32 fmt : 4; u32 rest : 20; } b; struct { u32 id : 8; u32 fmt : 4; u32 h : 10; u32 w : 10; } c; };
 struct GSState;
 extern GSState* gsgfxState;
 
 struct RegX22 { u32 id : 8; u32 pad23 : 1; u32 b22 : 1; u32 f19 : 3; u32 f16 : 3; u32 pw : 8; u32 lw : 8; };
 struct RegX68 { u32 id : 8; u32 pad : 23; u32 b0 : 1; };
-struct RegCMode1 { u32 id : 8; u32 pad : 13; u32 f9 : 2; u32 pad2 : 9; };
+struct RegCMode1 { u32 id : 8; u32 pad : 13; u32 f9 : 2; u32 en : 1; u32 alpha : 8; };
 struct Reg { u32 id : 8; u32 v : 24; };
-struct RegKcol { u32 id : 8; u32 f : 1; u32 rest : 23; };
-struct RegKsel { u32 id : 8; u32 pad : 20; u32 hi : 2; u32 lo : 2; };
+struct RegKcol { u32 id : 8; u32 f : 1; u32 hi : 11; u32 pad2 : 1; u32 lo : 11; };
+struct RegKsel { u32 id : 8; u32 kasel1 : 5; u32 kcsel1 : 5; u32 kasel0 : 5; u32 kcsel0 : 5; u32 hi : 2; u32 lo : 2; };
+struct RegTevC { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 4; u32 b : 4; u32 c : 4; u32 d : 4; };
+struct RegTevA { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 3; u32 b : 3; u32 c : 3; u32 d : 3; u32 tswap : 2; u32 rswap : 2; };
+struct RegSS { u32 id : 8; u32 pad : 8; u32 t1 : 4; u32 s1 : 4; u32 t0 : 4; u32 s0 : 4; };
+struct RegAlphaCmp { u32 id : 8; u32 op : 2; u32 comp1 : 3; u32 comp0 : 3; u32 ref1 : 8; u32 ref0 : 8; };
+struct RegZTex { u32 id : 8; u32 pad : 20; u32 op : 2; u32 fmt : 2; };
+struct RegFogCol { u32 id : 8; u32 r : 8; u32 g : 8; u32 b : 8; };
+struct RegFogRange { u32 id : 8; u32 pad : 13; u32 en : 1; u32 center : 10; };
 struct RegTlutLoad0 { u32 id : 8; u32 pad : 3; u32 a : 21; };
 struct RegTlutLoad1 { u32 id : 8; u32 pad : 3; u32 b : 11; u32 c : 10; };
-struct RegSu { u32 id : 8; u32 pad : 8; u32 half : 16; };
+struct RegSu { u32 id : 8; u32 pad : 4; u32 pf : 1; u32 lf : 1; u32 pad2 : 2; u32 half : 16; };
+struct RegScis { u32 id : 8; u32 x : 12; u32 y : 12; };
+struct GSColor { u8 r, g, b, a; };
+struct ColCache { u8 flag; GSColor c; };
+struct IndOrderCache { s32 coord; s32 map; };
 struct RegSuBits { u32 id : 8; u32 pad : 8; u32 hi : 4; u32 f11 : 1; u32 f10 : 1; u32 sz : 10; };
 struct ChanCache { u8 a; s32 w[5]; };
 struct TevOrderCache { s32 a, b, c; };
@@ -221,13 +237,12 @@ struct GSState {
     RegPeCtrl peCtrl;
     Reg r44;
     Reg r48;
-    Reg scis0;
-    Reg scis1;
+    RegScis scis0;
+    RegScis scis1;
     u32 xf1005;
     RegTref tref[8];
     RegIref iref;
-    Reg ras1ss0;
-    Reg ras1ss1;
+    RegSS ras1ss[2];
     RegId24 texMode0[8];
     RegId24 texMode1[8];
     RegTexImg0 texImg0[8];
@@ -243,12 +258,21 @@ struct GSState {
     RegX22 r1ec;
     RegMatIdxA matIdxA;
     RegMatIdxB matIdxB;
-    Reg r1f8;
+    RegAlphaCmp r1f8;
     Reg r1fc;
-    Reg r200;
-    RegKsel ksel[8];
-    Reg tevc[16];
-    Reg teva[16];
+    RegZTex r200;
+    union {
+        RegKsel ksel[8];
+        u32 kselRaw[8];
+    };
+    union {
+        RegTevC tevc[16];
+        u32 tevcRaw[16];
+    };
+    union {
+        RegTevA teva[16];
+        u32 tevaRaw[16];
+    };
     RegKcol kcolA0[4];
     RegKcol kcolA1[4];
     RegKcol kcolB0[4];
@@ -257,10 +281,13 @@ struct GSState {
     RegFog1 fog1;
     RegFog2 fog2;
     RegFog3 fog3;
-    Reg r2f4;
-    Reg r2f8;
+    RegFogCol r2f4;
+    RegFogRange r2f8;
     Reg rangeAdj[5];
-    RegIndCmd indCmd[16];
+    union {
+        RegIndCmd indCmd[16];
+        u32 indCmdRaw[16];
+    };
     Reg r350;
     RegX68 r354;
     TexGenCache texGen[8];
@@ -284,7 +311,8 @@ struct GSState {
     u8 c454;
     u8 pad455[3];
     ChanCache chan[4];
-    u8 ambMat[4][5];
+    ColCache amb[2];
+    ColCache mat[2];
     TevOrderCache tevOrder[16];
     u8 c58c[2];
     u8 pad58e[2];
@@ -292,10 +320,28 @@ struct GSState {
     TevInCache alphaIn[16];
     TevOpCache colorOp[16];
     TevOpCache alphaOp[16];
-    u8 kcolFlag[4][5];
-    s32 cA24[80];
+    union {
+        u8 kcolFlag[4][5];
+        ColCache kcol[4];
+    };
+    union {
+        s32 cA24[80];
+        struct {
+            s32 kcsel[16];
+            s32 kasel[16];
+            s32 swapSel[16][2];
+            s32 swapTab[4][4];
+        } tv;
+    };
     u8 indStatus[16];
-    s32 cB74[20];
+    union {
+        s32 cB74[20];
+        struct {
+            IndOrderCache indOrder[4];
+            s32 indScale[4][2];
+            s32 blendCache[4];
+        } ind;
+    };
     u8 cBC4[2];
     u8 padbc6[2];
     s32 cBC8[3];
@@ -314,8 +360,7 @@ struct GSState {
     f32 c_fogEnd;
     f32 c_fogNear;
     f32 c_fogFar;
-    u8 cC08;
-    u8 padc09[4];
+    ColCache fogCol;
     u8 cC0D;
     u16 cC0E;
     u8 padc10[0xc24 - 0xc10];
@@ -351,8 +396,6 @@ void GSgfx_GCWriteFog(u32 type, f32 startz, f32 endz, f32 nearz, f32 farz);
 void GSgfx_GCWriteTexCoordGen(u32 coord, s32 func, s32 src, u32 mtxIdx, u8 normalize, u32 postMtx);
 extern s32 jtbl_1414;
 extern s32 jtbl_1415;
-extern s32 cm2hw_localstatic3_GSgfx_GCWriteCullMode;
-extern s32 c2r_localstatic3_GSgfx_GCWriteTevOrder;
 }
 
 static inline void WrBP(u8*& p, u32 v) {
@@ -425,9 +468,27 @@ u8* GSgfx_GCWriteCopyDispDirect(u8* p, CopyReq* req, u32 dest, u8 colorUpd, u8 a
     return p;
 }
 
-#define FIFO8 (*(volatile u8*)0xCC008000)
-#define FIFO16 (*(volatile u16*)0xCC008000)
-#define FIFO32 (*(volatile u32*)0xCC008000)
+union GSWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    f32 f32;
+};
+volatile GSWGPipe GSWGFifo : 0xCC008000;
+#define FIFO8 GSWGFifo.u8
+#define FIFO16 GSWGFifo.u16
+#define FIFO32 GSWGFifo.u32
+static inline void WrCP(u8 reg, u32 v) {
+    FIFO8 = 8;
+    FIFO8 = reg;
+    FIFO32 = v;
+}
+static inline void WrXF(u16 reg, u32 v) {
+    FIFO8 = 0x10;
+    FIFO16 = 0;
+    FIFO16 = reg;
+    FIFO32 = v;
+}
 static inline void WrFifo(u32 v) {
     FIFO8 = 0x61;
     FIFO32 = v;
@@ -463,22 +524,22 @@ u8* GSgfx_GCWriteCopyFilterDirect(u8* p, u8 aa, u8* pat, u8 vf, u8* vfilt) {
     WrBP(p, RAW(co));
     return p;
 }
-void GSgfx_GCWriteCopyDisp(CopyReq* req, u32 dest, u8 colorUpd, u8 alphaUpd, u8 clear) {
+void GSgfx_GCWriteCopyDisp(CopyReq* req, u32 dest, int colorUpd, int alphaUpd, u8 clear) {
     RegClearAR car; RegClearZ cz; RegCMode0 cm; RegZMode zm; RegPeCtrl pe;
     RegYScale ys; RegSrc src; RegSrc size; RegStride st; RegDest dst; RegCopyCmd cmd;
     if (req->clear == 1) {
-        RAW(pe) = 0;
-        RAW(zm) = 0;
         RAW(cm) = 0;
+        cm.id = 0x41;
+        RAW(pe) = 0;
         cm.blend = 0;
         pe.pixfmt = _gcGlobalRegState.b2;
+        RAW(zm) = 0;
         pe.zfmt = _gcGlobalRegState.b3;
-        cm.colorUpd = colorUpd;
-        pe.zcomploc = 0;
-        cm.alphaUpd = alphaUpd;
-        cm.id = 0x41;
         zm.id = 0x40;
         pe.id = 0x43;
+        pe.zcomploc = 0;
+        cm.colorUpd = colorUpd;
+        cm.alphaUpd = alphaUpd;
         if (clear == 1) {
             zm.enable = 1;
             zm.func = 7;
@@ -507,22 +568,21 @@ void GSgfx_GCWriteCopyDisp(CopyReq* req, u32 dest, u8 colorUpd, u8 alphaUpd, u8 
     ys.id = 0x4e; src.id = 0x49; size.id = 0x4a; st.id = 0x4d; dst.id = 0x4b; cmd.id = 0x52;
     ys.scale = (u32)(256.0f / req->gamma);
     size.x = req->width - 1;
+    cmd.clamp = req->clamp;
     src.x = req->left;
     size.y = req->height - 1;
-    st.stride = req->dstWidth >> 4;
-    dst.addr = dest >> 5;
+    cmd.f14 = 1;
     src.y = req->top;
-    cmd.f12_13 = req->f10;
+    dst.addr = dest >> 5;
+    st.stride = req->dstWidth >> 4;
+    cmd.f7_8 = req->f14;
     WrFifo(RAW(ys));
     WrFifo(RAW(src));
-    cmd.clamp = req->clamp;
     WrFifo(RAW(size));
     WrFifo(RAW(st));
     WrFifo(RAW(dst));
-    cmd.f14 = 1;
-    cmd.f7_8 = req->f14;
+    cmd.f12_13 = req->f10;
     cmd.f11 = req->clear;
-    if (ys.scale == 0x100) cmd.f10 = 0; else cmd.f10 = 1;
     WrFifo(RAW(cmd));
 }
 
@@ -745,34 +805,20 @@ void GSgfx_GCWriteTevIndBumpST(unsigned int stage, bool indId, s32 mtx) {
 
 #define SETF(reg, size, shift, val)     ((reg) = (u32)__rlwimi((u32)(reg), (val), (shift), 32 - (shift) - (size), 31 - (shift)))
 
-static inline void WrIndTexMtx(u32 id, f32* m, s8 scale) {
+static inline void WrIndTexMtx(u32 id, f32* m, s32 scaleExp) {
     s32 mtx[6];
     u32 reg;
-    mtx[0] = (int)(1024.0f * m[0]) & 0x7FF;
-    mtx[1] = (int)(1024.0f * m[3]) & 0x7FF;
-    mtx[2] = (int)(1024.0f * m[1]) & 0x7FF;
-    mtx[3] = (int)(1024.0f * m[4]) & 0x7FF;
-    mtx[4] = (int)(1024.0f * m[2]) & 0x7FF;
+    s8 scale;
     mtx[5] = (int)(1024.0f * m[5]) & 0x7FF;
-    scale = scale + 17;
-    reg = 0;
-    SETF(reg, 11, 0, mtx[0]);
-    SETF(reg, 11, 11, mtx[1]);
-    SETF(reg, 2, 22, scale & 3);
-    SETF(reg, 8, 24, id + 6);
-    WrFifo(reg);
-    reg = 0;
-    SETF(reg, 11, 0, mtx[2]);
-    SETF(reg, 11, 11, mtx[3]);
-    SETF(reg, 2, 22, (scale >> 2) & 3);
-    SETF(reg, 8, 24, id + 7);
-    WrFifo(reg);
-    reg = 0;
-    SETF(reg, 11, 0, mtx[4]);
-    SETF(reg, 11, 11, mtx[5]);
-    SETF(reg, 2, 22, (scale >> 4) & 3);
-    SETF(reg, 8, 24, id + 8);
-    WrFifo(reg);
+    mtx[4] = (int)(1024.0f * m[2]) & 0x7FF;
+    mtx[3] = (int)(1024.0f * m[4]) & 0x7FF;
+    mtx[2] = (int)(1024.0f * m[1]) & 0x7FF;
+    mtx[1] = (int)(1024.0f * m[3]) & 0x7FF;
+    mtx[0] = (int)(1024.0f * m[0]) & 0x7FF;
+    scale = scaleExp + 17;
+    WrFifo(mtx[0] | (mtx[1] << 11) | ((scale & 3) << 22) | ((id + 6) << 24));
+    WrFifo(mtx[2] | (mtx[3] << 11) | (((scale >> 2) & 3) << 22) | ((id + 7) << 24));
+    WrFifo(mtx[4] | (mtx[5] << 11) | (((scale >> 4) & 3) << 22) | ((id + 8) << 24));
 }
 
 void GSgfx_GCWriteTevIndTile(u32 stage, u8 indId, u16 sizeS, u16 sizeT, u16 spaceS, u16 spaceT, u32 fmt, s32 mtx,
@@ -795,9 +841,8 @@ void GSgfx_GCWriteTevIndTile(u32 stage, u8 indId, u16 sizeS, u16 sizeT, u16 spac
     case 0x10: wt = 5; break;
     default: return;
     }
-    m[0] = spaceS * (1.0f / 1024.0f);
-    f32 kc471 = 1.0f;
-    m[4] = spaceT * (kc471 / 1024.0f);
+    m[0] = spaceS / 1024.0f;
+    m[4] = spaceT / 1024.0f;
     m[1] = 0.0f;
     m[2] = 0.0f;
     m[3] = 0.0f;
@@ -817,7 +862,7 @@ void GSgfx_GCWriteIndTexMtx(u32 mtx, f32* m, s32 scale) {
     case 2: mtx = 3; break;
     case 3: mtx = 6; break;
     }
-    WrIndTexMtx((u16)mtx, m, scale);
+    WrIndTexMtx(mtx, m, scale);
 }
 
 void GSgfx_GCWriteTexCoordGen(u32 coord, s32 func, s32 src, u32 mtxIdx, u8 normalize, u32 postMtx) {
@@ -1128,22 +1173,23 @@ void GSgfx_GCWriteVtxDesc(VtxDescEntry* list) {
 #define STF(o) (*(f32*)((u8*)gsgfxState + (o)))
 
 static inline void UpdateCoordSize(u32 coord, u32 map) {
-    gsgfxState->suS[coord].half = *(u16*)((u8*)&gsgfxState->texImg0[map & 7] + 2) & 0x3ff;
-    gsgfxState->suT[coord].half = (*(u32*)&gsgfxState->texImg0[map & 7] >> 10) & 0x3ff;
+    gsgfxState->suS[coord].half = gsgfxState->texImg0[map & 7].c.w;
+    gsgfxState->suT[coord].half = gsgfxState->texImg0[map & 7].c.h;
 }
 
 void GSgfx_GCFlushState(void) {
-    int i, j;
+    volatile GSState* st;
+    int i;
     gsgfxState->r1ec.b22 = _gcGlobalRegState.b0;
     gsgfxState->r354.b0 = _gcGlobalRegState.b1;
     gsgfxState->peCtrl.pixfmt = _gcGlobalRegState.b2;
     gsgfxState->peCtrl.zfmt = _gcGlobalRegState.b3;
     gsgfxState->cmode1.f9 = _gcGlobalRegState.b4;
     {
-        volatile GSState* st = gsgfxState;
+        st = gsgfxState;
         if (st->dirty & 0x1000) WrFifo(RAW(st->r354));
         if (st->d10 != 0) {
-            for (s32 i = 0; i < 8; i++) {
+            for (i = 0; i < 8; i++) {
                 if (st->d10 & (1 << i)) {
                     s32 fmt = st->texImg0[i].b.fmt;
                     switch (fmt) {
@@ -1163,30 +1209,26 @@ void GSgfx_GCFlushState(void) {
             st->d10 = 0;
         }
     }
-    {
-        GSState* st = gsgfxState;
-        if (st->d0c != 0) {
-            for (i = 0, j = 0; i < st->genMode.nInd; i++, j += 8) {
-                s16 rf_t = st->d0c;
-                if (rf_t & (1 << *(s32*)((u8*)gsgfxState + 0xb74 + j))) {
-                    s32 coord = *(s32*)((u8*)gsgfxState + 0xb74 + j);
-                    UpdateCoordSize(coord, *(u32*)((u8*)gsgfxState + 0xb78 + j));
-                }
+    if (gsgfxState->d0c != 0) {
+        for (i = 0; i < gsgfxState->genMode.nInd; i++) {
+            s32 coord = gsgfxState->ind.indOrder[i].coord;
+            if (gsgfxState->d0c & (1 << coord)) {
+                UpdateCoordSize(coord, gsgfxState->ind.indOrder[i].map);
             }
-            for (i = 0, j = 0; i < st->genMode.nTev + 1; i++, j += 12) {
-                s32 coord = *(s32*)((u8*)gsgfxState + 0x4cc + j);
-                if (coord != 0xff && (st->d0c & (1 << coord))) {
-                    UpdateCoordSize(coord, *(u32*)((u8*)gsgfxState + 0x4d0 + j));
-                }
-            }
-            for (i = 0; i < 8; i++) {
-                if (st->d0c & (1 << i)) {
-                    WrFifo(RAW(st->suS[i]));
-                    WrFifo(RAW(st->suT[i]));
-                }
-            }
-            st->d0c = 0;
         }
+        for (i = 0; i < gsgfxState->genMode.nTev + 1; i++) {
+            s32 coord = gsgfxState->tevOrder[i].a;
+            if (coord != 0xff && (gsgfxState->d0c & (1 << coord))) {
+                UpdateCoordSize(coord, gsgfxState->tevOrder[i].b);
+            }
+        }
+        for (i = 0; i < 8; i++) {
+            if (gsgfxState->d0c & (1 << i)) {
+                WrFifo(RAW(gsgfxState->suS[i]));
+                WrFifo(RAW(gsgfxState->suT[i]));
+            }
+        }
+        gsgfxState->d0c = 0;
     }
     if (gsgfxState->d14 != 0) {
         WrFifo(RAW(gsgfxState->r350));
@@ -1231,8 +1273,9 @@ void GSgfx_GCFlushState(void) {
         GSState* st = gsgfxState;
         if (st->dirty & 0x2000) WrFifo(RAW(st->iref));
         if (st->dIref != 0) {
-            if (st->dIref & (1 << 0)) WrFifo(RAW(st->ras1ss0));
-            if (st->dIref & (1 << 1)) WrFifo(RAW(st->ras1ss1));
+            for (i = 0; i < 2; i++) {
+                if (st->dIref & (1 << i)) WrFifo(RAW(st->ras1ss[i]));
+            }
             st->dIref = 0;
         }
     }
@@ -1257,7 +1300,7 @@ void GSgfx_GCFlushState(void) {
     {
         GSState* st = gsgfxState;
         if (st->dKcolA != 0) {
-            for (i = 0; i < 8; i++) {
+            for (i = 0; i < 4; i++) {
                 if (st->dKcolA & (1 << i)) {
                     WrFifo(RAW(st->kcolA0[i]));
                     WrFifo(RAW(st->kcolA1[i]));
@@ -1317,50 +1360,31 @@ void GSgfx_GCFlushState(void) {
         }
         if (st->dirty & 0x800) WrFifo(RAW(st->r350));
         if (st->dirty & 0x1000000) {
-            FIFO8 = 0x10;
-            FIFO16 = 0x1009;
-            FIFO16 = 0;
-            FIFO32 = st->genMode.nChan;
+            WrXF(0x1009, st->genMode.nChan);
         }
         if (st->dirty & 0x2000000) {
-            FIFO8 = 0x10;
-            FIFO16 = 0x103f;
-            FIFO16 = 0;
-            FIFO32 = st->genMode.nTex;
+            WrXF(0x103f, st->genMode.nTex);
         }
         if (st->dirty & 0x4000000) {
-            FIFO16 = 0;
-            FIFO8 = 0x10;
-            FIFO16 = 0x1005;
-            FIFO32 = st->xf1005;
+            WrXF(0x1005, st->xf1005);
         }
         if (st->dirty & 0xc0) {
             if (st->dirty & 0x40) {
-                FIFO8 = 8;
-                FIFO8 = 0x30;
-                FIFO32 = RAW(st->matIdxA);
+                WrCP(0x30, RAW(st->matIdxA));
             }
             if (st->dirty & 0x80) {
-                FIFO8 = 8;
-                FIFO8 = 0x40;
-                FIFO32 = RAW(st->matIdxB);
+                WrCP(0x40, RAW(st->matIdxB));
             }
             if ((st->dirty & 0xc0) == 0xc0) {
-                FIFO16 = 1;
                 FIFO8 = 0x10;
+                FIFO16 = 1;
                 FIFO16 = 0x1018;
                 FIFO32 = RAW(st->matIdxA);
                 FIFO32 = RAW(st->matIdxB);
             } else if (st->dirty & 0x40) {
-                FIFO8 = 0x10;
-                FIFO16 = 0;
-                FIFO16 = 0x1018;
-                FIFO32 = RAW(st->matIdxA);
+                WrXF(0x1018, RAW(st->matIdxA));
             } else {
-                FIFO8 = 0x10;
-                FIFO16 = 0x1019;
-                FIFO16 = 0;
-                FIFO32 = RAW(st->matIdxB);
+                WrXF(0x1019, RAW(st->matIdxB));
             }
         }
     }
@@ -1378,10 +1402,10 @@ void GSgfx_GCInvalidateState(void) {
     }
     gsgfxState->c3f8 = 0xFE;
     gsgfxState->sizeW0 = 0;
+    for (i = 0; i < 16; i++) gsgfxState->coordScale[i] = 0xFE;
     gsgfxState->sizeOff0 = 0xFEFEFEFE;
     gsgfxState->sizeW1 = 0;
     gsgfxState->sizeOff1 = 0xFEFEFEFE;
-    for (i = 0; i < 16; i++) gsgfxState->coordScale[i] = 0xFE;
     gsgfxState->c41c = 0xFEFEFEFE;
     gsgfxState->c438 = 0xFE;
     gsgfxState->c43c = 0xFEFEFEFE;
@@ -1408,7 +1432,10 @@ void GSgfx_GCInvalidateState(void) {
         gsgfxState->chan[i].w[3] = 0xFEFEFEFE;
         gsgfxState->chan[i].w[4] = 0xFEFEFEFE;
     }
-    for (i = 0; i < 4; i++) gsgfxState->ambMat[i][0] = 1;
+    for (i = 0; i < 2; i++) {
+        gsgfxState->amb[i].flag = 1;
+        gsgfxState->mat[i].flag = 1;
+    }
     for (i = 0; i < 16; i++) {
         gsgfxState->tevOrder[i].a = 0xFEFEFEFE;
         gsgfxState->tevOrder[i].b = 0xFEFEFEFE;
@@ -1442,10 +1469,29 @@ void GSgfx_GCInvalidateState(void) {
         gsgfxState->alphaOp[i].clamp = 0xFE;
         gsgfxState->alphaOp[i].reg = 0xFEFEFEFE;
     }
-    for (i = 0; i < 4; i++) gsgfxState->kcolFlag[i][0] = 1;
+    for (i = 0; i < 4; i++) gsgfxState->kcol[i].flag = 1;
+    for (i = 0; i < 16; i++) gsgfxState->tv.kcsel[i] = 0xFEFEFEFE;
+    for (i = 0; i < 16; i++) gsgfxState->tv.kasel[i] = 0xFEFEFEFE;
+    for (i = 0; i < 16; i++) {
+        gsgfxState->tv.swapSel[i][0] = 0xFEFEFEFE;
+        gsgfxState->tv.swapSel[i][1] = 0xFEFEFEFE;
+    }
+    for (i = 0; i < 4; i++) {
+        gsgfxState->tv.swapTab[i][0] = 0xFEFEFEFE;
+        gsgfxState->tv.swapTab[i][1] = 0xFEFEFEFE;
+        gsgfxState->tv.swapTab[i][2] = 0xFEFEFEFE;
+        gsgfxState->tv.swapTab[i][3] = 0xFEFEFEFE;
+    }
     for (i = 0; i < 16; i++) gsgfxState->indStatus[i] = 0xFE;
-    for (i = 0; i < 80; i++) gsgfxState->cA24[i] = 0xFEFEFEFE;
-    for (i = 0; i < 20; i++) gsgfxState->cB74[i] = 0xFEFEFEFE;
+    for (i = 0; i < 4; i++) {
+        gsgfxState->ind.indOrder[i].coord = 0xFEFEFEFE;
+        gsgfxState->ind.indOrder[i].map = 0xFEFEFEFE;
+    }
+    for (i = 0; i < 4; i++) {
+        gsgfxState->ind.indScale[i][0] = 0xFEFEFEFE;
+        gsgfxState->ind.indScale[i][1] = 0xFEFEFEFE;
+    }
+    for (i = 0; i < 4; i++) gsgfxState->ind.blendCache[i] = 0xFEFEFEFE;
     gsgfxState->cBC4[0] = 0xFE;
     gsgfxState->cBC4[1] = 0xFE;
     for (i = 0; i < 3; i++) gsgfxState->cBC8[i] = 0xFEFEFEFE;
@@ -1464,12 +1510,12 @@ void GSgfx_GCInvalidateState(void) {
     gsgfxState->c_fogEnd = (f32)0xFEFEFEFEu;
     gsgfxState->c_fogNear = (f32)0xFEFEFEFEu;
     gsgfxState->c_fogFar = (f32)0xFEFEFEFEu;
-    gsgfxState->cC08 = 1;
+    gsgfxState->fogCol.flag = 1;
     gsgfxState->cC0E = 0xFEFE;
     gsgfxState->cC0D = 0xFE;
 }
 
-static inline void GSgfx_GCWriteCullMode(s32 mode) {
+inline void GSgfx_GCWriteCullMode(s32 mode) {
     static const u8 cm2hw[4] = {0, 2, 1, 3};
     gsgfxState->c43c = mode;
     gsgfxState->genMode.cull = cm2hw[mode];
@@ -1477,871 +1523,637 @@ static inline void GSgfx_GCWriteCullMode(s32 mode) {
     gsgfxState->c43c = mode;
 }
 
-void GSgfx_GCReset() {
-    s32 unksp11;
-    s32 unksp12;
-    s32 unksp13;
-    s32 unksp15;
-    s32 unksp16;
-    s32 unksp17;
-    s32 unksp19;
-    s32 unksp1A;
-    s32 unksp1B;
-    s32 unkspD;
-    s32 unkspE;
-    s32 sp20;
-    s32 sp1C;
-    s32 sp18;
-    s32 sp14;
-    s32 sp10;
-    s32 spC;
-    u16 spA;
-    u16 sp8;
-    f32 temp_f10;
-    f32 temp_f11;
-    f32 temp_f12;
-    f32 temp_f1;
-    f32 temp_f5;
-    f32 temp_f6;
-    f32 temp_f7;
-    f32 temp_f9;
-    f32 var_f8;
-    s16 temp_r17;
-    s32 temp_r0;
-    s32 temp_r0_2;
-    s32 temp_r0_3;
-    s32 temp_r0_4;
-    s32 temp_r0_5;
-    s32 temp_r0_6;
-    s32 temp_r0_7;
-    s32 temp_r0_8;
-    s32 temp_r10;
-    s32 temp_r10_2;
-    s32 temp_r10_3;
-    s32 temp_r10_4;
-    s32 temp_r10_5;
-    s32 temp_r10_6;
-    s32 temp_r10_7;
-    s32 temp_r10_8;
-    s32 temp_r10_9;
-    s32 temp_r11;
-    s32 temp_r11_10;
-    s32 temp_r11_2;
-    s32 temp_r11_3;
-    s32 temp_r11_4;
-    s32 temp_r11_5;
-    s32 temp_r11_6;
-    s32 temp_r11_7;
-    u16 temp_r11_8;
-    s32 temp_r11_9;
-    s32 temp_r12;
-    s32 temp_r12_2;
-    s32 temp_r12_3;
-    s32 temp_r12_4;
-    s32 temp_r12_5;
-    s32 temp_r12_6;
-    s32 temp_r12_7;
-    s32 temp_r12_8;
-    s32 temp_r12_9;
-    s32 temp_r16;
-    s32 temp_r16_2;
-    s32 temp_r17_2;
-    s32 temp_r17_3;
-    s32 temp_r17_4;
-    s32 temp_r18;
-    s32 temp_r18_2;
-    s32 temp_r19;
-    s32 temp_r19_2;
-    s32 temp_r19_3;
-    s32 temp_r19_4;
-    s32 temp_r20;
-    s32 temp_r20_2;
-    s32 temp_r20_3;
-    s32 temp_r21;
-    s32 temp_r22;
-    s32 temp_r22_2;
-    s32 temp_r22_3;
-    s32 temp_r23;
-    s32 temp_r23_2;
-    s32 temp_r24;
-    s32 temp_r30;
-    s32 temp_r31;
-    s32 temp_r4;
-    s32 temp_r4_2;
-    s32 temp_r5;
-    s32 temp_r5_2;
-    s32 temp_r5_3;
-    s32 temp_r5_4;
-    s32 temp_r7;
-    s32 temp_r7_2;
-    s32 temp_r7_3;
-    s32 temp_r7_4;
-    s32 temp_r7_5;
-    s32 temp_r7_6;
-    s32 temp_r7_7;
-    s32 temp_r8_10;
-    s32 temp_r8_11;
-    s32 temp_r8_12;
-    s32 temp_r8_13;
-    s32 temp_r8_14;
-    s32 temp_r8_3;
-    s32 temp_r8_4;
-    s32 temp_r8_5;
-    s32 temp_r8_6;
-    s32 temp_r8_7;
-    s32 temp_r8_8;
-    s32 temp_r8_9;
-    s32 temp_r9_2;
-    s32 temp_r9_3;
-    s32 temp_r9_4;
-    s32 temp_r9_5;
-    s32 temp_r9_6;
-    s32 temp_r9_7;
-    s32 var_ctr;
-    s32 var_ctr_10;
-    s32 var_ctr_2;
-    s32 var_ctr_3;
-    s32 var_ctr_4;
-    s32 var_ctr_5;
-    s32 var_ctr_6;
-    s32 var_ctr_7;
-    s32 var_ctr_8;
-    s32 var_ctr_9;
-    s32 var_r10;
-    s32 var_r10_2;
-    s32 var_r17;
-    s32 var_r18;
-    s32 var_r3;
-    s32 var_r3_2;
-    s32 var_r3_3;
-    s32 var_r3_4;
-    s32 var_r4;
-    s32 var_r4_2;
-    s32 var_r4_3;
-    s32 var_r4_4;
-    s32 var_r4_5;
-    s32 var_r4_6;
-    s32 var_r5;
-    s32 var_r5_2;
-    s32 var_r5_3;
-    s32 var_r5_4;
-    volatile s32 var_r5_5;
-    s32 var_r6;
-    s32 var_r6_2;
-    s32 var_r6_3;
-    s32 var_r6_4;
-    s32 var_r6_5;
-    s32 var_r6_6;
-    s32 var_r7;
-    s32 var_r7_2;
-    s32 var_r7_3;
-    s32 var_r7_4;
-    s32 var_r8_2;
-    s32 var_r8_3;
-    s32 var_r8_4;
-    s32 var_r9;
-    s32 var_r9_2;
-    s32 var_r9_3;
-    s8 temp_r9_8;
-    u16 temp_r8;
-    u16 temp_r9;
-    u32 temp_r8_2;
-    u8 var_r8;
+static inline void GSgfx_GCWriteNumTexGens(u8 n) {
+    gsgfxState->genMode.nTex = n;
+    gsgfxState->dirty |= 0x2000001;
+    gsgfxState->c3f8 = n;
+}
 
-    var_r18 = 0;
-    var_r17 = 0;
-    sp20 = jtbl_1414;
-    sp1C = jtbl_1415;
-    do {
-        temp_r5 = var_r18 + 4;
-        *(s32*)((u8*)gsgfxState + var_r17 + 0x358) = 1;
-        *(s32*)((u8*)gsgfxState + var_r17 + 0x35C) = temp_r5;
-        *(s32*)((u8*)gsgfxState + var_r17 + 0x360) = 0x3C;
-        *((u8*)(gsgfxState) + (var_r17 + 0x364)) = 0;
-        *(s32*)((u8*)gsgfxState + var_r17 + 0x368) = 0x7D;
-        GSgfx_GCWriteTexCoordGen((unsigned long)(var_r18), (long)(1), (long)(temp_r5), (unsigned long)(0x3C), (unsigned char)(0), (unsigned long)(0x7D));
-        var_r18 += 1;
-        var_r17 += 0x14;
-    } while (var_r18 < 8);
-    M2C_FIELD(gsgfxState, s8 *, 0x3F8) = 1;
-    M2C_FIELD(gsgfxState, u8 *, 0x33) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x33) & ~0xF) | 1);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x02000000 | 1);
-    M2C_FIELD(gsgfxState, s8 *, 0x3F8) = 1;
-    M2C_FIELD(gsgfxState, s8 *, 0x3FC) = 6;
-    M2C_FIELD(gsgfxState, s32 *, 0x400) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x1EF) = 6;
-    M2C_FIELD(gsgfxState, u8 *, 0x1ED) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1ED) & ~7);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x400);
-    M2C_FIELD(gsgfxState, s8 *, 0x3FC) = 6;
-    M2C_FIELD(gsgfxState, s32 *, 0x400) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x404) = 6;
-    M2C_FIELD(gsgfxState, s32 *, 0x408) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x1EE) = 6;
-    M2C_FIELD(gsgfxState, u8 *, 0x1ED) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1ED) & ~0x38);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x400);
-    M2C_FIELD(gsgfxState, s8 *, 0x404) = 6;
-    M2C_FIELD(gsgfxState, s32 *, 0x408) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x40C) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x40D) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1AD) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1AD) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x1AD) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1AD) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | 1);
-    M2C_FIELD(gsgfxState, s8 *, 0x40C) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x40D) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x40E) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x40F) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1B1) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1B1) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x1B1) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1B1) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | 2);
-    M2C_FIELD(gsgfxState, s8 *, 0x40E) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x40F) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x410) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x411) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1B5) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1B5) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x1B5) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1B5) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | 4);
-    M2C_FIELD(gsgfxState, s8 *, 0x410) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x411) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x412) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x413) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1B9) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1B9) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x1B9) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1B9) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | 8);
-    M2C_FIELD(gsgfxState, s8 *, 0x412) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x413) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x414) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x415) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1BD) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1BD) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x1BD) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1BD) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | 0x10);
-    M2C_FIELD(gsgfxState, s8 *, 0x414) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x415) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x416) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x417) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1C1) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1C1) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x1C1) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1C1) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | 0x20);
-    M2C_FIELD(gsgfxState, s8 *, 0x416) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x417) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x418) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x419) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1C5) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1C5) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x1C5) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1C5) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | 0x40);
-    M2C_FIELD(gsgfxState, s8 *, 0x418) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x419) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x41A) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x41B) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1C9) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1C9) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x1C9) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1C9) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | 0x80);
-    M2C_FIELD(gsgfxState, s8 *, 0x41A) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x41B) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x438) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x31) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x31) & ~8);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 1);
-    M2C_FIELD(gsgfxState, s8 *, 0x438) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0x43C) = 2;
-    M2C_FIELD(gsgfxState, u8 *, 0x32) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x32) & ~0xC0) | ((M2C_FIELD(&cm2hw_localstatic3_GSgfx_GCWriteCullMode, u8 *, 2) << 6) & 0xC0));
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 1);
-    M2C_FIELD(gsgfxState, s32 *, 0x43C) = 2;
-    M2C_FIELD(gsgfxState, s32 *, 0x440) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0x54) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x04000000);
-    M2C_FIELD(gsgfxState, s32 *, 0x440) = 0;
-    M2C_FIELD(gsgfxState, s16 *, 0x444) = 0;
-    M2C_FIELD(gsgfxState, s16 *, 0x446) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0x44C) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0x450) = 0;
-    GSgfxVideoGetEFBSize((u16*)(((u8*)(gsgfxState) + 0x448)), (u16*)(((u8*)(gsgfxState) + 0x44A)));
-    temp_r9 = M2C_FIELD(gsgfxState, u16 *, 0x44A);
-    temp_r8 = M2C_FIELD(gsgfxState, u16 *, 0x448);
-    M2C_FIELD(gsgfxState, u32 *, 0x4C) = (u32) ((M2C_FIELD(gsgfxState, u32 *, 0x4C) & ~0xFFF000) | 0x156000);
-    M2C_FIELD(gsgfxState, u16 *, 0x4E) = (u16) ((M2C_FIELD(gsgfxState, u16 *, 0x4E) & ~0xFFF) | 0x156);
-    M2C_FIELD(gsgfxState, s32 *, 0x50) = (s32) ((M2C_FIELD(gsgfxState, s32 *, 0x50) & ~0xFFF000) | ((((((u32) M2C_FIELD(gsgfxState, u32 *, 0x4C) >> 0xCU) & 0xFFF) + (temp_r8 - 1)) << 0xC) & 0xFFF000));
-    M2C_FIELD(gsgfxState, u16 *, 0x52) = (u16) ((M2C_FIELD(gsgfxState, u16 *, 0x52) & ~0xFFF) | (((M2C_FIELD(gsgfxState, u16 *, 0x4E) & 0xFFF) + (temp_r9 - 1)) & 0xFFF));
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x4000);
-    M2C_FIELD(gsgfxState, s16 *, 0x444) = 0;
-    M2C_FIELD(gsgfxState, s16 *, 0x446) = 0;
-    M2C_FIELD(gsgfxState, u16 *, 0x448) = temp_r8;
-    M2C_FIELD(gsgfxState, u16 *, 0x44A) = temp_r9;
-    M2C_FIELD(gsgfxState, s32 *, 0x44C) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0x450) = 0;
-    M2C_FIELD(gsgfxState, f32 *, 0xC24) = 0.0f;
-    M2C_FIELD(gsgfxState, f32 *, 0xC28) = 0.0f;
-    spA = M2C_FIELD(gsgfxState, u16 *, 0x448);
-    M2C_FIELD(gsgfxState, f32 *, 0xC2C) = (f32) M2C_ERROR( );
-    sp8 = M2C_FIELD(gsgfxState, u16 *, 0x44A);
-    M2C_FIELD(gsgfxState, f32 *, 0xC30) = (f32) M2C_ERROR( );
-    M2C_FIELD(gsgfxState, f32 *, 0xC34) = 0.0f;
-    M2C_FIELD(gsgfxState, f32 *, 0xC38) = 1.0f;
-    M2C_FIELD(gsgfxState, u32 *, 0xC3C) = 1U;
-    temp_r8_2 = M2C_FIELD(gsgfxState, u32 *, 0xC3C);
-    temp_f12 = M2C_FIELD(gsgfxState, f32 *, 0xC38);
-    temp_f11 = M2C_FIELD(gsgfxState, f32 *, 0xC34);
-    temp_f10 = M2C_FIELD(gsgfxState, f32 *, 0xC30);
-    temp_f9 = M2C_FIELD(gsgfxState, f32 *, 0xC2C);
-    var_f8 = M2C_FIELD(gsgfxState, f32 *, 0xC28);
-    temp_f7 = M2C_FIELD(gsgfxState, f32 *, 0xC24);
-    if (temp_r8_2 == 0U) {
-        var_f8 -= 0.5f;
+static inline void GSgfx_GCWriteLineWidth(u8 width, s32 offset) {
+    gsgfxState->r1ec.lw = width;
+    gsgfxState->r1ec.f16 = offset;
+    gsgfxState->dirty |= 0x400;
+    gsgfxState->sizeW0 = width;
+    gsgfxState->sizeOff0 = offset;
+}
+
+static inline void GSgfx_GCWritePointSize(u8 size, s32 offset) {
+    gsgfxState->r1ec.pw = size;
+    gsgfxState->r1ec.f19 = offset;
+    gsgfxState->dirty |= 0x400;
+    gsgfxState->sizeW1 = size;
+    gsgfxState->sizeOff1 = offset;
+}
+
+static inline void GSgfx_GCWriteTexOffsets(s32 coord, u8 line, u8 point) {
+    gsgfxState->suS[coord].lf = line;
+    gsgfxState->suS[coord].pf = point;
+    gsgfxState->d0c |= 1 << coord;
+    gsgfxState->coordScale[coord * 2] = line;
+    gsgfxState->coordScale[coord * 2 + 1] = point;
+}
+
+static inline void GSgfx_GCWriteCoPlanar(u8 enable) {
+    gsgfxState->genMode.b19 = enable;
+    gsgfxState->dirty |= 1;
+    gsgfxState->c438 = enable;
+}
+
+static inline void GSgfx_GCWriteClipMode(s32 mode) {
+    gsgfxState->xf1005 = mode;
+    gsgfxState->dirty |= 0x4000000;
+    gsgfxState->c440 = mode;
+}
+
+static inline void GSgfx_GCWriteScissor(u16 x, u16 y, u16 w, u16 h, s32 xo, s32 yo) {
+    gsgfxState->scis0.x = x + (xo + 0x156);
+    gsgfxState->scis0.y = y + (yo + 0x156);
+    gsgfxState->scis1.x = gsgfxState->scis0.x + (w - 1);
+    gsgfxState->scis1.y = gsgfxState->scis0.y + (h - 1);
+    gsgfxState->dirty |= 0x4000;
+    gsgfxState->scis[0] = x;
+    gsgfxState->scis[1] = y;
+    gsgfxState->scis[2] = w;
+    gsgfxState->scis[3] = h;
+    gsgfxState->scisOff[0] = xo;
+    gsgfxState->scisOff[1] = yo;
+}
+
+#define FIFOF GSWGFifo.f32
+
+static inline f32 __OSu16tof32(register const u16* arg) {
+    register f32 ret;
+    asm { psq_l ret, 0(arg), 1, 3 }
+    return ret;
+}
+
+static inline f32 GSu16tof32(u16 v) {
+    return __OSu16tof32(&v);
+}
+
+static inline void GSgfx_GCWriteViewport(f32 x, f32 y, f32 w, f32 h, f32 n, f32 f, u32 jitter) {
+    f32 sx, sy, zmax;
+    f32 zScale = 16777216.0f;
+    f32 zOffset = 0.0f;
+    if (jitter == 0) {
+        y -= 0.5f;
     }
-    var_r6 = 0;
-    *(s8 *)0xCC008000 = 0x10;
-    temp_f1 = temp_f10 / 2.0f;
-    temp_f6 = temp_f9 * 0.5f;
-    *(s8 *)0xCC008000 = 5;
-    temp_f5 = temp_f12 * 1.6777216e7f;
-    *(s8 *)0xCC008000 = 0x101A;
-    *(s8 *)0xCC008000 = temp_f6;
-    *(s8 *)0xCC008000 = (f32) -temp_f1;
-    var_r7 = 0;
-    *(s8 *)0xCC008000 = (f32) -((temp_f11 * 1.6777216e7f) - temp_f5);
-    var_r4 = 0;
-    *(s8 *)0xCC008000 = (f32) (342.0f + (temp_f7 + temp_f6));
-    *(s8 *)0xCC008000 = (f32) (342.0f + (var_f8 + temp_f1));
-    *(s8 *)0xCC008000 = (f32) (temp_f5 + 0.0f);
-    M2C_FIELD(gsgfxState, f32 *, 0xC24) = temp_f7;
-    M2C_FIELD(gsgfxState, f32 *, 0xC28) = var_f8;
-    M2C_FIELD(gsgfxState, f32 *, 0xC2C) = temp_f9;
-    M2C_FIELD(gsgfxState, f32 *, 0xC30) = temp_f10;
-    M2C_FIELD(gsgfxState, f32 *, 0xC34) = temp_f11;
-    M2C_FIELD(gsgfxState, f32 *, 0xC38) = temp_f12;
-    M2C_FIELD(gsgfxState, u32 *, 0xC3C) = temp_r8_2;
-    M2C_FIELD(gsgfxState, s8 *, 0x454) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x33) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x33) & ~0x30);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x01000000 | 1);
-    M2C_FIELD(gsgfxState, s8 *, 0x454) = 0;
-    var_ctr = 4;
-    do {
-        var_r5 = 0;
-        *((u8*)(gsgfxState) + (var_r4 + 0x458)) = 0;
-        temp_r17 = (var_r6 & 3) + 0x100E;
-        temp_r22 = var_r4 + 0x464;
-        temp_r20 = var_r4 + 0x468;
-        *((u8*)(gsgfxState) + (var_r4 + 0x45C)) = 0;
-        temp_r19 = var_r4 + 0x46C;
-        temp_r12 = var_r7 + 0x458;
-        temp_r11 = var_r7 + 0x45C;
-        *((u8*)(gsgfxState) + (var_r4 + 0x460)) = 1;
-        temp_r10 = var_r7 + 0x460;
-        temp_r9_2 = var_r7 + 0x464;
-        temp_r8_3 = var_r7 + 0x468;
-        temp_r0 = var_r7 + 0x46C;
-        var_r4 += 0x18;
-        var_r6 += 1;
-        *((u8 *)gsgfxState + temp_r22) = 0;
-        var_r7 += 0x18;
-        *((u8 *)gsgfxState + temp_r20) = 0;
-        *((u8 *)gsgfxState + temp_r19) = 2;
-        *(s8 *)0xCC008000 = 0x10;
-        *(s8 *)0xCC008000 = 0;
-        *(s8 *)0xCC008000 = temp_r17;
-        *(s8 *)0xCC008000 = 0x401;
-        *((u8 *)gsgfxState + temp_r12) = 0;
-        *((u8 *)gsgfxState + temp_r11) = 0;
-        *((u8 *)gsgfxState + temp_r10) = 1;
-        *((u8 *)gsgfxState + temp_r9_2) = 0;
-        *((u8 *)gsgfxState + temp_r8_3) = 0;
-        *((u8 *)gsgfxState + temp_r0) = 2;
-        var_ctr -= 1;
-    } while (var_ctr != 0);
-    var_r10 = 0;
-    var_ctr_2 = 4;
-    do {
-        temp_r4 = var_r5 + 4;
-        sp18 = sp20;
-        *((u8*)((u16)gsgfxState) + (var_r10 + 0x4B9)) = sp20;
-        temp_r11_2 = (temp_r4 - 4) * 5;
-        *(u8 *)0xCC008000 = 0x10;
-        var_r3 = 0;
-        *(u8 *)0xCC008000 = 0;
-        *(u8 *)0xCC008000 = (s16) ((temp_r4 & 1) + 0x100A);
-        *(u8 *)0xCC008000 = (s32) (unksp1B | (((((unksp19 << 0x10) & ~0xFF000000) | ((u8) sp18 << 0x18)) & ~0xFF00) | ((unksp1A << 8) & 0xFF00)));
-        var_r10 += 5;
-        var_r5 += 1;
-        *((u8*)(gsgfxState) + (temp_r11_2 + 0x4B9)) = sp20;
-        *((u8*)(gsgfxState) + (temp_r11_2 + 0x4B8)) = 0;
-        var_ctr_2 -= 1;
-    } while (var_ctr_2 != 0);
-    var_r10_2 = 0;
-    var_ctr_3 = 4;
-    do {
-        temp_r5_2 = var_r3 + 4;
-        sp14 = sp1C;
-        *((u8*)(gsgfxState) + (var_r10_2 + 0x4C3)) = sp1C;
-        temp_r11_3 = (temp_r5_2 - 4) * 5;
-        *(u8 *)0xCC008000 = 0x10;
-        var_r5_2 = 0;
-        *(u8 *)0xCC008000 = 0;
-        *(u8 *)0xCC008000 = (s16) ((temp_r5_2 & 1) + 0x100C);
-        *(u8 *)0xCC008000 = (s32) (unksp17 | (((((unksp15 << 0x10) & ~0xFF000000) | ((u8) sp14 << 0x18)) & ~0xFF00) | ((unksp16 << 8) & 0xFF00)));
-        var_r10_2 += 5;
-        var_r3 += 1;
-        *((u8*)(gsgfxState) + (temp_r11_3 + 0x4C3)) = sp1C;
-        *((u8*)(gsgfxState) + (temp_r11_3 + 0x4C2)) = 0;
-        var_ctr_3 -= 1;
-    } while (var_ctr_3 != 0);
-    var_r4_2 = 0;
-    var_r6_2 = 0;
-    var_ctr_4 = 0x10;
-    do {
-        if (var_r5_2 < 8) {
-            *((u8*)(gsgfxState) + (var_r4_2 + 0x4CC)) = var_r5_2;
-            temp_r0_2 = var_r5_2 >> 1;
-            *((u8*)(gsgfxState) + (var_r4_2 + 0x4D0)) = var_r5_2;
-            *((u8*)(gsgfxState) + (var_r4_2 + 0x4D4)) = 4;
-            if (var_r5_2 & 1) {
-                temp_r12_2 = temp_r0_2 * 4;
-                temp_r9_3 = temp_r12_2 + 0x5A;
-                temp_r8_4 = temp_r12_2 + 0x58;
-                *((u8 *)gsgfxState + temp_r9_3) = (*((u8 *)gsgfxState + temp_r9_3) & ~0x70) | ((var_r5_2 << 4) & 0x70);
-                var_r9 = 0;
-                *((u8 *)gsgfxState + temp_r8_4) = (*((u8 *)gsgfxState + temp_r8_4) & ~0x38000) | ((var_r5_2 << 0xF) & 0x38000);
-                if ((var_r5_2 != 0xFF) && !(var_r5_2 & 0x100)) {
-                    var_r9 = 1;
-                }
-                temp_r10_2 = temp_r12_2 + 0x59;
-                *((u8 *)gsgfxState + temp_r10_2) = (*((u8 *)gsgfxState + temp_r10_2) & ~4) | ((var_r9 << 2) & 4);
-                *((u8 *)gsgfxState + temp_r10_2) = (*((u8 *)gsgfxState + temp_r10_2) & ~0x38) | ((M2C_FIELD(&c2r_localstatic3_GSgfx_GCWriteTevOrder, u8 *, 4) << 3) & 0x38);
-            } else {
-                temp_r12_3 = temp_r0_2 * 4;
-                temp_r10_3 = temp_r12_3 + 0x5B;
-                var_r8 = 0;
-                *((u8 *)gsgfxState + temp_r10_3) = (*((u8 *)gsgfxState + temp_r10_3) & ~7) | (var_r5_2 & 7);
-                *((u8 *)gsgfxState + temp_r10_3) = (*((u8 *)gsgfxState + temp_r10_3) & ~0x38) | ((var_r5_2 << 3) & 0x38);
-                if ((var_r5_2 != 0xFF) && !(var_r5_2 & 0x100)) {
-                    var_r8 = 1;
-                }
-                temp_r9_4 = temp_r12_3 + 0x5B;
-                temp_r8_5 = temp_r12_3 + 0x5A;
-                *((u8 *)gsgfxState + temp_r9_4) = (*((u8 *)gsgfxState + temp_r9_4) & ~0x40) | ((var_r8 << 6) & 0x40);
-                *((u8 *)gsgfxState + temp_r8_5) = (*((u8 *)gsgfxState + temp_r8_5) & ~0x380) | ((M2C_FIELD(&c2r_localstatic3_GSgfx_GCWriteTevOrder, u8 *, 4) << 7) & 0x380);
-            }
-            M2C_FIELD(gsgfxState, s32 *, 4) = (s32) (M2C_FIELD(gsgfxState, s32 *, 4) | (1 << temp_r0_2));
-            if (var_r5_2 != 0xFF) {
-                M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | (1 << var_r5_2));
-            }
-            *((u8*)(gsgfxState) + (var_r6_2 + 0x4CC)) = var_r5_2;
-            *((u8*)(gsgfxState) + (var_r6_2 + 0x4D0)) = var_r5_2;
-            *((u8*)(gsgfxState) + (var_r6_2 + 0x4D4)) = 4;
-        } else {
-            *((u8*)(gsgfxState) + (var_r4_2 + 0x4CC)) = 0xFF;
-            temp_r0_3 = var_r5_2 >> 1;
-            *((u8*)(gsgfxState) + (var_r4_2 + 0x4D0)) = 0xFF;
-            *((u8*)(gsgfxState) + (var_r4_2 + 0x4D4)) = 0xFF;
-            if (var_r5_2 & 1) {
-                temp_r10_4 = temp_r0_3 * 4;
-                temp_r9_5 = temp_r10_4 + 0x5A;
-                temp_r8_6 = temp_r10_4 + 0x58;
-                temp_r10_5 = temp_r10_4 + 0x59;
-                *((u8 *)gsgfxState + temp_r9_5) = *((u8 *)gsgfxState + temp_r9_5) | 0x70;
-                *((u8 *)gsgfxState + temp_r8_6) = *((u8 *)gsgfxState + temp_r8_6) | 0x38000;
-                *((u8 *)gsgfxState + temp_r10_5) = *((u8 *)gsgfxState + temp_r10_5) & ~4;
-                *((u8 *)gsgfxState + temp_r10_5) = (*((u8 *)gsgfxState + temp_r10_5) & ~0x38) | ((M2C_FIELD(&c2r_localstatic3_GSgfx_GCWriteTevOrder, u8 *, 0xF) << 3) & 0x38);
-            } else {
-                temp_r8_7 = temp_r0_3 * 4;
-                temp_r11_4 = temp_r8_7 + 0x5B;
-                temp_r8_8 = temp_r8_7 + 0x5A;
-                *((u8 *)gsgfxState + temp_r11_4) = *((u8 *)gsgfxState + temp_r11_4) | 7;
-                *((u8 *)gsgfxState + temp_r11_4) = *((u8 *)gsgfxState + temp_r11_4) | 0x38;
-                *((u8 *)gsgfxState + temp_r11_4) = *((u8 *)gsgfxState + temp_r11_4) & ~0x40;
-                *((u8 *)gsgfxState + temp_r8_8) = (*((u8 *)gsgfxState + temp_r8_8) & ~0x380) | ((M2C_FIELD(&c2r_localstatic3_GSgfx_GCWriteTevOrder, u8 *, 0xF) << 7) & 0x380);
-            }
-            M2C_FIELD(gsgfxState, s32 *, 4) = (s32) (M2C_FIELD(gsgfxState, s32 *, 4) | (1 << temp_r0_3));
-            *((u8*)(gsgfxState) + (var_r6_2 + 0x4CC)) = 0xFF;
-            *((u8*)(gsgfxState) + (var_r6_2 + 0x4D0)) = 0xFF;
-            *((u8*)(gsgfxState) + (var_r6_2 + 0x4D4)) = 0xFF;
-        }
-        var_r4_2 += 0xC;
-        var_r5_2 += 1;
-        var_r6_2 += 0xC;
-        var_ctr_4 -= 1;
-    } while (var_ctr_4 != 0);
-    var_r6_3 = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x58C) = 1;
-    var_r3_2 = 0;
-    var_r4_3 = 0;
-    var_r7_2 = 0;
-    var_r8_2 = 0;
-    var_r9_2 = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x32) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x32) & ~0x3C);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 1);
-    M2C_FIELD(gsgfxState, s8 *, 0x58C) = 1;
-    var_ctr_5 = 0x10;
-    do {
-        *((u8*)(gsgfxState) + (var_r3_2 + 0x590)) = 0xF;
-        temp_r31 = var_r9_2 + 0x226;
-        *((u8*)(gsgfxState) + (var_r3_2 + 0x594)) = 0xA;
-        temp_r30 = var_r9_2 + 0x227;
-        temp_r18 = 1 << var_r6_3;
-        *((u8*)(gsgfxState) + (var_r3_2 + 0x598)) = 8;
-        *((u8*)(gsgfxState) + (var_r3_2 + 0x59C)) = 0xF;
-        temp_r11_5 = var_r9_2 + 0x266;
-        *((u8 *)gsgfxState + temp_r31) = *((u8 *)gsgfxState + temp_r31) | 0xF0;
-        *((u8 *)gsgfxState + temp_r31) = (*((u8 *)gsgfxState + temp_r31) & ~0xF) | 0xA;
-        *((u8 *)gsgfxState + temp_r30) = (*((u8 *)gsgfxState + temp_r30) & ~0xF0) | 0x80;
-        *((u8 *)gsgfxState + temp_r30) = *((u8 *)gsgfxState + temp_r30) | 0xF;
-        M2C_FIELD(gsgfxState, s32 *, 0x1C) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x1C) | temp_r18);
-        *((u8*)(gsgfxState) + (var_r8_2 + 0x590)) = 0xF;
-        *((u8*)(gsgfxState) + (var_r8_2 + 0x594)) = 0xA;
-        *((u8*)(gsgfxState) + (var_r8_2 + 0x598)) = 8;
-        *((u8*)(gsgfxState) + (var_r8_2 + 0x59C)) = 0xF;
-        *((u8*)(gsgfxState) + (var_r3_2 + 0x690)) = 7;
-        *((u8*)(gsgfxState) + (var_r3_2 + 0x694)) = 5;
-        *((u8*)(gsgfxState) + (var_r3_2 + 0x698)) = 4;
-        *((u8*)(gsgfxState) + (var_r3_2 + 0x69C)) = 7;
-        *((u8 *)gsgfxState + temp_r11_5) = *((u8 *)gsgfxState + temp_r11_5) | 0xE0;
-        *((u8 *)gsgfxState + temp_r11_5) = (*((u8 *)gsgfxState + temp_r11_5) & ~0x1C) | 0x14;
-        *((u8 *)gsgfxState + temp_r11_5) = (*((u8 *)gsgfxState + temp_r11_5) & ~0x380) | 0x200;
-        temp_r5_3 = var_r9_2 + 0x267;
-        *((u8 *)gsgfxState + temp_r5_3) = *((u8 *)gsgfxState + temp_r5_3) | 0x70;
-        var_r5_3 = 0;
-        temp_r12_4 = var_r9_2 + 0x225;
-        M2C_FIELD(gsgfxState, s32 *, 0x20) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x20) | temp_r18);
-        *((u8*)(gsgfxState) + (var_r8_2 + 0x690)) = 7;
-        *((u8*)(gsgfxState) + (var_r8_2 + 0x694)) = 5;
-        *((u8*)(gsgfxState) + (var_r8_2 + 0x698)) = 4;
-        *((u8*)(gsgfxState) + (var_r8_2 + 0x69C)) = 7;
-        *((u8*)(gsgfxState) + (var_r4_3 + 0x790)) = 0;
-        *((u8*)(gsgfxState) + (var_r4_3 + 0x794)) = 0;
-        *((u8*)(gsgfxState) + (var_r4_3 + 0x798)) = 0;
-        *((u8*)(gsgfxState) + (var_r4_3 + 0x79C)) = 1;
-        *((u8*)(gsgfxState) + (var_r4_3 + 0x7A0)) = 0;
-        *((u8 *)gsgfxState + temp_r12_4) = *((u8 *)gsgfxState + temp_r12_4) & ~3;
-        *((u8 *)gsgfxState + temp_r12_4) = *((u8 *)gsgfxState + temp_r12_4) & ~4;
-        *((u8 *)gsgfxState + temp_r12_4) = *((u8 *)gsgfxState + temp_r12_4) | 8;
-        *((u8 *)gsgfxState + temp_r12_4) = *((u8 *)gsgfxState + temp_r12_4) & ~0x30;
-        *((u8 *)gsgfxState + temp_r12_4) = *((u8 *)gsgfxState + temp_r12_4) & ~0xC0;
-        M2C_FIELD(gsgfxState, s32 *, 0x1C) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x1C) | temp_r18);
-        *((u8*)(gsgfxState) + (var_r7_2 + 0x790)) = 0;
-        *((u8*)(gsgfxState) + (var_r7_2 + 0x794)) = 0;
-        *((u8*)(gsgfxState) + (var_r7_2 + 0x798)) = 0;
-        *((u8*)(gsgfxState) + (var_r7_2 + 0x79C)) = 1;
-        temp_r22_2 = var_r9_2 + 0x265;
-        *((u8*)(gsgfxState) + (var_r7_2 + 0x7A0)) = 0;
-        temp_r24 = var_r4_3 + 0x8D4;
-        temp_r23 = var_r4_3 + 0x8D8;
-        temp_r21 = var_r4_3 + 0x8DC;
-        temp_r20_2 = var_r4_3 + 0x8E0;
-        temp_r19_2 = var_r7_2 + 0x8D0;
-        temp_r12_5 = var_r7_2 + 0x8D4;
-        *((u8*)(gsgfxState) + (var_r4_3 + 0x8D0)) = 0;
-        temp_r11_6 = var_r7_2 + 0x8D8;
-        temp_r10_6 = var_r7_2 + 0x8DC;
-        temp_r0_4 = var_r7_2 + 0x8E0;
-        var_r3_2 += 0x10;
-        var_r4_3 += 0x14;
-        var_r6_3 += 1;
-        *((u8 *)gsgfxState + temp_r24) = 0;
-        var_r7_2 += 0x14;
-        var_r8_2 += 0x10;
-        var_r9_2 += 4;
-        *((u8 *)gsgfxState + temp_r23) = 0;
-        *((u8 *)gsgfxState + temp_r21) = 1;
-        *((u8 *)gsgfxState + temp_r20_2) = 0;
-        *((u8 *)gsgfxState + temp_r22_2) = *((u8 *)gsgfxState + temp_r22_2) & ~3;
-        *((u8 *)gsgfxState + temp_r22_2) = *((u8 *)gsgfxState + temp_r22_2) & ~4;
-        *((u8 *)gsgfxState + temp_r22_2) = *((u8 *)gsgfxState + temp_r22_2) | 8;
-        *((u8 *)gsgfxState + temp_r22_2) = *((u8 *)gsgfxState + temp_r22_2) & ~0x30;
-        *((u8 *)gsgfxState + temp_r22_2) = *((u8 *)gsgfxState + temp_r22_2) & ~0xC0;
-        M2C_FIELD(gsgfxState, s32 *, 0x20) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x20) | temp_r18);
-        *((u8 *)gsgfxState + temp_r19_2) = 0;
-        *((u8 *)gsgfxState + temp_r12_5) = 0;
-        *((u8 *)gsgfxState + temp_r11_6) = 0;
-        *((u8 *)gsgfxState + temp_r10_6) = 1;
-        *((u8 *)gsgfxState + temp_r0_4) = 0;
-        var_ctr_5 -= 1;
-    } while (var_ctr_5 != 0);
-    var_r3_3 = 0;
-    var_r7_3 = 0;
-    var_r8_3 = 0;
-    var_ctr_6 = 4;
-    do {
-        sp10 = sp20;
-        temp_r10_7 = 1 << var_r5_3;
-        temp_r11_7 = var_r8_3 + 0x2C6;
-        *((u8*)(gsgfxState) + (var_r3_3 + 0xA11)) = sp20;
-        temp_r19_3 = var_r8_3 + 0x2C4;
-        temp_r17_2 = var_r8_3 + 0x2D6;
-        temp_r12_6 = var_r8_3 + 0x2D4;
-        temp_r9_6 = var_r7_3 + 0xA11;
-        temp_r4_2 = var_r7_3 + 0xA10;
+    sx = w / 2;
+    sy = h / 2;
+    zmax = f * zScale;
+    FIFO8 = 0x10;
+    FIFO16 = 5;
+    FIFO16 = 0x101a;
+    FIFOF = sx;
+    FIFOF = -sy;
+    FIFOF = zmax - n * zScale;
+    FIFOF = 342.0f + (x + sx);
+    FIFOF = 342.0f + (y + sy);
+    FIFOF = zmax + zOffset;
+    gsgfxState->vp[0] = x;
+    gsgfxState->vp[1] = y;
+    gsgfxState->vp[2] = w;
+    gsgfxState->vp[3] = h;
+    gsgfxState->vp[4] = n;
+    gsgfxState->vp[5] = f;
+    gsgfxState->cC3C = jitter;
+}
 
-        var_r6_4 = 0;
-        var_r3_3 += 5;
-        var_r5_3 += 1;
-        var_r7_3 += 5;
-        var_r8_3 += 4;
-        *((u8 *)gsgfxState + temp_r19_3) = (*((u8 *)gsgfxState + temp_r19_3) & ~0x7FF000) | ((unksp13 << 0xC) & 0x7FF000);
+static inline void GSgfx_GCWriteNumChans(u8 n) {
+    gsgfxState->genMode.nChan = n;
+    gsgfxState->dirty |= 0x1000001;
+    gsgfxState->c454 = n;
+}
 
-        *((u8 *)gsgfxState + temp_r12_6) = (*((u8 *)gsgfxState + temp_r12_6) & ~0x7FF000) | ((unksp11 << 0xC) & 0x7FF000);
-        M2C_FIELD(gsgfxState, s32 *, 0x28) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x28) | temp_r10_7);
-        *((u8 *)gsgfxState + temp_r9_6) = sp20;
-        *((u8 *)gsgfxState + temp_r4_2) = 0;
-        var_ctr_6 -= 1;
-    } while (var_ctr_6 != 0);
-    var_r3_4 = 0;
-    var_r4_4 = 0;
-    var_ctr_7 = 0x10;
-    do {
-        temp_r12_7 = var_r6_4 & 1;
-        *((u8*)(gsgfxState) + (var_r3_4 + 0xA24)) = 0xC;
-        temp_r0_5 = var_r6_4 >> 1;
-        if (temp_r12_7 != 0) {
-            temp_r7 = (temp_r0_5 * 4) + 0x204;
-            *((u8 *)gsgfxState + temp_r7) = (*((u8 *)gsgfxState + temp_r7) & ~0x7C000) | 0x30000;
+static inline void GSgfx_GCWriteChanCtrl(u32 chan, u8 enable, s32 amb, s32 mat, s32 lights, s32 diff, s32 attn) {
+    u32 reg = mat | (enable << 1) | ((lights & 0xf) << 2) | (amb << 6) | ((attn == 0 ? 0 : diff) << 7) |
+              ((attn != 2) << 9) | ((attn != 0) << 10) | ((lights >> 4) << 11);
+    FIFO8 = 0x10;
+    FIFO16 = 0;
+    FIFO16 = 0x100e + (chan & 3);
+    FIFO32 = reg;
+    gsgfxState->chan[chan].a = enable;
+    gsgfxState->chan[chan].w[0] = amb;
+    gsgfxState->chan[chan].w[1] = mat;
+    gsgfxState->chan[chan].w[2] = lights;
+    gsgfxState->chan[chan].w[3] = diff;
+    gsgfxState->chan[chan].w[4] = attn;
+}
+
+static inline void GSgfx_GCWriteAmbColor(s32 chan, GSColor c) {
+    int idx = (chan - 4) * 5;
+    FIFO8 = 0x10;
+    FIFO16 = 0;
+    FIFO16 = 0x100a + (chan & 1);
+    FIFO32 = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+    *(u32*)((u8*)gsgfxState + idx + 0x4b9) = *(u32*)&c;
+    *((u8*)gsgfxState + idx + 0x4b8) = 0;
+}
+
+static inline void GSgfx_GCWriteMatColor(s32 chan, GSColor c) {
+    int idx = (chan - 4) * 5;
+    FIFO8 = 0x10;
+    FIFO16 = 0;
+    FIFO16 = 0x100c + (chan & 1);
+    FIFO32 = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+    *(u32*)((u8*)gsgfxState + idx + 0x4c3) = *(u32*)&c;
+    *((u8*)gsgfxState + idx + 0x4c2) = 0;
+}
+
+inline void GSgfx_GCWriteTevOrder(s32 stage, s32 coord, s32 map, s32 color) {
+    static u8 c2r[16] = {0, 1, 0, 1, 0, 1, 7, 5, 6, 0, 0, 0, 0, 0, 0, 7};
+    int pair = stage >> 1;
+    if (stage & 1) {
+        gsgfxState->tref[pair].m1 = map;
+        gsgfxState->tref[pair].c1 = coord;
+        gsgfxState->tref[pair].en1 = (map != 0xff) && !(map & 0x100);
+        gsgfxState->tref[pair].col1 = c2r[color & 0xf];
+    } else {
+        gsgfxState->tref[pair].m0 = map;
+        gsgfxState->tref[pair].c0 = coord;
+        gsgfxState->tref[pair].en0 = (map != 0xff) && !(map & 0x100);
+        gsgfxState->tref[pair].col0 = c2r[color & 0xf];
+    }
+    gsgfxState->dTref |= 1 << pair;
+    if (coord != 0xff) {
+        gsgfxState->d0c |= 1 << coord;
+    }
+    gsgfxState->tevOrder[stage].a = coord;
+    gsgfxState->tevOrder[stage].b = map;
+    gsgfxState->tevOrder[stage].c = color;
+}
+
+static inline void GSgfx_GCWriteNumTevStages(u8 n) {
+    gsgfxState->genMode.nTev = n - 1;
+    gsgfxState->dirty |= 1;
+    gsgfxState->c58c[0] = n;
+}
+
+static inline void GSgfx_GCWriteTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
+    gsgfxState->tevc[stage].a = a;
+    gsgfxState->tevc[stage].b = b;
+    gsgfxState->tevc[stage].c = c;
+    gsgfxState->tevc[stage].d = d;
+    gsgfxState->dTevc |= 1 << stage;
+    gsgfxState->colorIn[stage].a = a;
+    gsgfxState->colorIn[stage].b = b;
+    gsgfxState->colorIn[stage].c = c;
+    gsgfxState->colorIn[stage].d = d;
+}
+
+static inline void GSgfx_GCWriteTevAlphaIn(s32 stage, s32 a, s32 b, s32 c, s32 d) {
+    gsgfxState->teva[stage].a = a;
+    gsgfxState->teva[stage].b = b;
+    gsgfxState->teva[stage].c = c;
+    gsgfxState->teva[stage].d = d;
+    gsgfxState->dTeva |= 1 << stage;
+    gsgfxState->alphaIn[stage].a = a;
+    gsgfxState->alphaIn[stage].b = b;
+    gsgfxState->alphaIn[stage].c = c;
+    gsgfxState->alphaIn[stage].d = d;
+}
+
+static inline void GSgfx_GCWriteTevColorOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 reg) {
+    if (op <= 1) {
+        gsgfxState->tevc[stage].bias = bias;
+        gsgfxState->tevc[stage].op = op;
+        gsgfxState->tevc[stage].clamp = clamp;
+        gsgfxState->tevc[stage].scale = scale;
+        gsgfxState->tevc[stage].reg = reg;
+    } else {
+        gsgfxState->tevc[stage].bias = 3;
+        gsgfxState->tevc[stage].op = op;
+        gsgfxState->tevc[stage].clamp = clamp;
+        gsgfxState->tevc[stage].scale = (u32)op >> 1;
+        gsgfxState->tevc[stage].reg = reg;
+    }
+    gsgfxState->dTevc |= 1 << stage;
+    gsgfxState->colorOp[stage].op = op;
+    gsgfxState->colorOp[stage].bias = bias;
+    gsgfxState->colorOp[stage].scale = scale;
+    gsgfxState->colorOp[stage].clamp = clamp;
+    gsgfxState->colorOp[stage].reg = reg;
+}
+
+static inline void GSgfx_GCWriteTevAlphaOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 reg) {
+    if (op <= 1) {
+        gsgfxState->teva[stage].bias = bias;
+        gsgfxState->teva[stage].op = op;
+        gsgfxState->teva[stage].clamp = clamp;
+        gsgfxState->teva[stage].scale = scale;
+        gsgfxState->teva[stage].reg = reg;
+    } else {
+        gsgfxState->teva[stage].bias = 3;
+        gsgfxState->teva[stage].op = op;
+        gsgfxState->teva[stage].clamp = clamp;
+        gsgfxState->teva[stage].scale = (u32)op >> 1;
+        gsgfxState->teva[stage].reg = reg;
+    }
+    gsgfxState->dTeva |= 1 << stage;
+    gsgfxState->alphaOp[stage].op = op;
+    gsgfxState->alphaOp[stage].bias = bias;
+    gsgfxState->alphaOp[stage].scale = scale;
+    gsgfxState->alphaOp[stage].clamp = clamp;
+    gsgfxState->alphaOp[stage].reg = reg;
+}
+
+static inline void GSgfx_GCWriteTevKColor(s32 id, GSColor c) {
+    gsgfxState->kcolB0[id].lo = c.r;
+    gsgfxState->kcolB0[id].hi = c.a;
+    gsgfxState->kcolB1[id].lo = c.b;
+    gsgfxState->kcolB1[id].hi = c.g;
+    gsgfxState->dKcolB |= 1 << id;
+    *(u32*)&gsgfxState->kcol[id].c = *(u32*)&c;
+    gsgfxState->kcol[id].flag = 0;
+}
+
+static inline void GSgfx_GCWriteTevKColorSel(s32 stage, s32 sel) {
+    int pair = stage >> 1;
+    if (stage & 1) {
+        gsgfxState->ksel[pair].kcsel1 = sel;
+    } else {
+        gsgfxState->ksel[pair].kcsel0 = sel;
+    }
+    gsgfxState->dKsel |= 1 << pair;
+    gsgfxState->tv.kcsel[stage] = sel;
+}
+
+static inline void GSgfx_GCWriteTevKAlphaSel(s32 stage, s32 sel) {
+    int pair = stage >> 1;
+    if (stage & 1) {
+        gsgfxState->ksel[pair].kasel1 = sel;
+    } else {
+        gsgfxState->ksel[pair].kasel0 = sel;
+    }
+    gsgfxState->dKsel |= 1 << pair;
+    gsgfxState->tv.kasel[stage] = sel;
+}
+
+static inline void GSgfx_GCWriteTevSwapMode(s32 stage, s32 ras, s32 tex) {
+    gsgfxState->teva[stage].rswap = ras;
+    gsgfxState->teva[stage].tswap = tex;
+    gsgfxState->dTeva |= 1 << stage;
+    gsgfxState->tv.swapSel[stage][0] = ras;
+    gsgfxState->tv.swapSel[stage][1] = tex;
+}
+
+static inline void GSgfx_GCWriteTevSwapModeTable(s32 t, s32 r, s32 g, s32 b, s32 a) {
+    int i1;
+    int i0 = t * 2;
+    i1 = i0 + 1;
+    gsgfxState->ksel[i0].lo = r;
+    gsgfxState->ksel[i0].hi = g;
+    gsgfxState->ksel[i1].lo = b;
+    gsgfxState->ksel[i1].hi = a;
+    gsgfxState->dKsel |= 1 << i0;
+    gsgfxState->dKsel |= 1 << i1;
+    gsgfxState->tv.swapTab[t][0] = r;
+    gsgfxState->tv.swapTab[t][1] = g;
+    gsgfxState->tv.swapTab[t][2] = b;
+    gsgfxState->tv.swapTab[t][3] = a;
+}
+
+static inline void GSgfx_GCWriteNumIndStages(u8 n) {
+    gsgfxState->genMode.nInd = n;
+    gsgfxState->dirty |= 1;
+    gsgfxState->c58c[1] = n;
+}
+
+static inline void GSgfx_GCWriteIndTexOrder(s32 stage, s32 coord, s32 map) {
+    switch (stage) {
+    case 0:
+        gsgfxState->iref.m0 = map;
+        gsgfxState->iref.c0 = coord;
+        break;
+    case 1:
+        gsgfxState->iref.m1 = map;
+        gsgfxState->iref.c1 = coord;
+        break;
+    case 2:
+        gsgfxState->iref.m2 = map;
+        gsgfxState->iref.c2 = coord;
+        break;
+    case 3:
+        gsgfxState->iref.m3 = map;
+        gsgfxState->iref.c3 = coord;
+        break;
+    }
+    gsgfxState->dirty |= 0x2000;
+    gsgfxState->d0c |= 1 << coord;
+    gsgfxState->ind.indOrder[stage].coord = coord;
+    gsgfxState->ind.indOrder[stage].map = map;
+}
+
+static inline void GSgfx_GCWriteIndTexCoordScale(s32 stage, s32 s, s32 t) {
+    int pair = stage >> 1;
+    if (stage & 1) {
+        gsgfxState->ras1ss[pair].s1 = s;
+        gsgfxState->ras1ss[pair].t1 = t;
+    } else {
+        gsgfxState->ras1ss[pair].s0 = s;
+        gsgfxState->ras1ss[pair].t1 = t;
+    }
+    gsgfxState->dIref |= 1 << pair;
+    gsgfxState->ind.indScale[stage][0] = s;
+    gsgfxState->ind.indScale[stage][1] = t;
+}
+
+static inline void GSgfx_GCWriteBlendMode(s32 type, s32 src, s32 dst, s32 lop) {
+    int blend = 0;
+    if (type == 1 || type == 3) {
+        blend = 1;
+    }
+    gsgfxState->cmode0.blend = blend;
+    gsgfxState->cmode0.logic = (type == 2);
+    gsgfxState->cmode0.src = src;
+    gsgfxState->cmode0.dst = dst;
+    gsgfxState->cmode0.sub = (type == 3);
+    gsgfxState->cmode0.lop = lop;
+    gsgfxState->dirty |= 4;
+    gsgfxState->ind.blendCache[0] = type;
+    gsgfxState->ind.blendCache[1] = src;
+    gsgfxState->ind.blendCache[2] = dst;
+    gsgfxState->ind.blendCache[3] = lop;
+}
+
+static inline void GSgfx_GCWriteColorUpdate(u8 enable) {
+    gsgfxState->cmode0.colorUpd = enable;
+    gsgfxState->dirty |= 4;
+    gsgfxState->cBC4[0] = enable;
+}
+
+static inline void GSgfx_GCWriteAlphaUpdate(u8 enable) {
+    gsgfxState->cmode0.alphaUpd = enable;
+    gsgfxState->dirty |= 4;
+    gsgfxState->cBC4[1] = enable;
+}
+
+static inline void GSgfx_GCWriteZMode(u8 enable, s32 func, u8 update) {
+    gsgfxState->zmode.enable = enable;
+    gsgfxState->zmode.func = func;
+    gsgfxState->zmode.update = update;
+    gsgfxState->dirty |= 2;
+    gsgfxState->cBE4 = enable;
+    gsgfxState->cBE8 = func;
+    gsgfxState->cBEC = update;
+}
+
+static inline void GSgfx_GCWriteZCompLoc(u8 beforeTex) {
+    gsgfxState->peCtrl.zcomploc = beforeTex;
+    gsgfxState->dirty |= 0x10;
+    gsgfxState->c_bf0 = beforeTex;
+}
+
+static inline void GSgfx_GCWriteDither(u8 dither) {
+    gsgfxState->cmode0.dither = dither;
+    gsgfxState->dirty |= 4;
+    gsgfxState->cBF1[0] = dither;
+}
+
+static inline void GSgfx_GCWriteDstAlpha(u8 enable, u8 alpha) {
+    gsgfxState->cmode1.en = enable;
+    gsgfxState->cmode1.alpha = alpha;
+    gsgfxState->dirty |= 8;
+    gsgfxState->cBF1[1] = enable;
+    gsgfxState->cBF1[2] = alpha;
+}
+
+static inline void GSgfx_GCWriteAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1) {
+    gsgfxState->r1f8.ref0 = ref0;
+    gsgfxState->r1f8.ref1 = ref1;
+    gsgfxState->r1f8.comp0 = comp0;
+    gsgfxState->r1f8.comp1 = comp1;
+    gsgfxState->r1f8.op = op;
+    gsgfxState->dirty |= 0x100;
+    gsgfxState->cBC8[0] = comp0;
+    gsgfxState->cBD4[0] = ref0;
+    gsgfxState->cBC8[1] = op;
+    gsgfxState->cBC8[2] = comp1;
+    gsgfxState->cBD4[1] = ref1;
+}
+
+static inline void GSgfx_GCWriteZTexture(s32 op, s32 fmt, u32 bias) {
+    u32 zfmt;
+    switch (fmt) {
+    case 0x11:
+        zfmt = 0;
+        break;
+    case 0x13:
+        zfmt = 1;
+        break;
+    case 0x16:
+        zfmt = 2;
+        break;
+    default:
+        zfmt = 2;
+        break;
+    }
+    gsgfxState->r1fc.v = bias;
+    gsgfxState->r200.fmt = zfmt;
+    gsgfxState->r200.op = op;
+    gsgfxState->dirty |= 0x200;
+    gsgfxState->cBD8[0] = op;
+    gsgfxState->cBD8[1] = fmt;
+    gsgfxState->cBD8[2] = bias;
+}
+
+static inline void GSgfx_GCWriteFogColor(GSColor c) {
+    gsgfxState->r2f4.r = c.r;
+    gsgfxState->r2f4.g = c.g;
+    gsgfxState->r2f4.b = c.b;
+    gsgfxState->dirty |= 0x20000;
+    *(u32*)&gsgfxState->fogCol.c = *(u32*)&c;
+    gsgfxState->fogCol.flag = 0;
+}
+
+static inline void GSgfx_GCWriteFogRangeAdj(u8 en, u16 center) {
+    gsgfxState->r2f8.en = en;
+    gsgfxState->r2f8.center = center + 0x156;
+    gsgfxState->dirty |= 0x40000;
+    gsgfxState->cC0D = en;
+    gsgfxState->cC0E = center;
+}
+
+void GSgfx_GCReset() {
+    GSColor black = {0, 0, 0, 0};
+    GSColor white = {0xff, 0xff, 0xff, 0xff};
+    int i;
+    for (i = 0; i < 8; i++) {
+        gsgfxState->texGen[i].func = 1;
+        gsgfxState->texGen[i].src = i + 4;
+        gsgfxState->texGen[i].mtx = 0x3c;
+        gsgfxState->texGen[i].norm = 0;
+        gsgfxState->texGen[i].post = 0x7d;
+        GSgfx_GCWriteTexCoordGen(i, 1, i + 4, 0x3c, 0, 0x7d);
+    }
+    gsgfxState->c3f8 = 1;
+    GSgfx_GCWriteNumTexGens(1);
+    gsgfxState->sizeW0 = 6;
+    gsgfxState->sizeOff0 = 0;
+    GSgfx_GCWriteLineWidth(6, 0);
+    gsgfxState->sizeW1 = 6;
+    gsgfxState->sizeOff1 = 0;
+    GSgfx_GCWritePointSize(6, 0);
+    for (i = 0; i < 8; i++) {
+        gsgfxState->coordScale[i * 2] = 0;
+        gsgfxState->coordScale[i * 2 + 1] = 0;
+        GSgfx_GCWriteTexOffsets(i, 0, 0);
+    }
+    gsgfxState->c438 = 0;
+    GSgfx_GCWriteCoPlanar(0);
+    GSgfx_GCWriteCullMode(2);
+    gsgfxState->c440 = 0;
+    GSgfx_GCWriteClipMode(0);
+    gsgfxState->scis[0] = 0;
+    gsgfxState->scis[1] = 0;
+    gsgfxState->scisOff[0] = 0;
+    gsgfxState->scisOff[1] = 0;
+    GSgfxVideoGetEFBSize(&gsgfxState->scis[2], &gsgfxState->scis[3]);
+    u8 rf_t = gsgfxState->scis[2];
+    GSgfx_GCWriteScissor(0, 0, rf_t, gsgfxState->scis[3], 0, 0);
+    gsgfxState->vp[0] = 0.0f;
+    gsgfxState->vp[1] = 0.0f;
+    gsgfxState->vp[2] = GSu16tof32(gsgfxState->scis[2]);
+    gsgfxState->vp[3] = GSu16tof32(gsgfxState->scis[3]);
+    gsgfxState->vp[4] = 0.0f;
+    gsgfxState->vp[5] = 1.0f;
+    gsgfxState->cC3C = 1;
+    GSgfx_GCWriteViewport(gsgfxState->vp[0], gsgfxState->vp[1], gsgfxState->vp[2], gsgfxState->vp[3],
+                          gsgfxState->vp[4], gsgfxState->vp[5], gsgfxState->cC3C);
+    gsgfxState->c454 = 0;
+    GSgfx_GCWriteNumChans(0);
+    for (i = 0; i < 4; i++) {
+        gsgfxState->chan[i].w[0] = 0;
+        gsgfxState->chan[i].a = 0;
+        gsgfxState->chan[i].w[1] = 1;
+        gsgfxState->chan[i].w[2] = 0;
+        gsgfxState->chan[i].w[3] = 0;
+        gsgfxState->chan[i].w[4] = 2;
+        GSgfx_GCWriteChanCtrl(i, 0, 0, 1, 0, 0, 2);
+    }
+    for (i = 0; i < 4; i++) {
+        *(u32*)&gsgfxState->amb[i].c = *(u32*)&black;
+        GSgfx_GCWriteAmbColor(i + 4, black);
+    }
+    for (i = 0; i < 4; i++) {
+        *(u32*)&gsgfxState->mat[i].c = *(u32*)&white;
+        GSgfx_GCWriteMatColor(i + 4, white);
+    }
+    for (int i = 0; i < 16; i++) {
+        if (i < 8) {
+            gsgfxState->tevOrder[i].a = i;
+            gsgfxState->tevOrder[i].b = i;
+            gsgfxState->tevOrder[i].c = 4;
+            GSgfx_GCWriteTevOrder(i, i, i, 4);
         } else {
-            temp_r7_2 = (temp_r0_5 * 4) + 0x206;
-            *((u8 *)gsgfxState + temp_r7_2) = (*((u8 *)gsgfxState + temp_r7_2) & ~0x1F0) | 0xC0;
+            gsgfxState->tevOrder[i].a = 0xff;
+            gsgfxState->tevOrder[i].b = 0xff;
+            gsgfxState->tevOrder[i].c = 0xff;
+            GSgfx_GCWriteTevOrder(i, 0xff, 0xff, 0xff);
         }
-        temp_r5_4 = var_r6_4 * 4;
-        M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | (1 << temp_r0_5));
-        *((u8*)(gsgfxState) + (temp_r5_4 + 0xA24)) = 0xC;
-        *((u8*)((u16)gsgfxState) + (var_r3_4 + 0xA64)) = 0x1C;
-        if (temp_r12_7 != 0) {
-            temp_r8_9 = (temp_r0_5 * 4) + 0x205;
-            *((u8 *)gsgfxState + temp_r8_9) = (*((u8 *)gsgfxState + temp_r8_9) & ~0xF8) | 0xE0;
-        } else {
-            temp_r8_10 = (temp_r0_5 * 4) + 0x206;
-            *((u8 *)gsgfxState + temp_r8_10) = (*((u8 *)gsgfxState + temp_r8_10) & ~0x3E) | 0x38;
-        }
-        var_r5_4 = 0;
-        temp_r9_7 = var_r4_4 + 0xAA8;
-        M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | (1 << temp_r0_5));
-        temp_r10_8 = var_r4_4 + 0xAA4;
-        temp_r16 = var_r6_4 * 8;
-        temp_r8_11 = 1 << var_r6_4;
-        temp_r11_8 = (var_r6_4 * 4) + 0x267;
-        temp_r7_3 = temp_r16 + 0xAA4;
-        temp_r0_6 = temp_r16 + 0xAA8;
-        *((u8*)(gsgfxState) + (temp_r5_4 + 0xA64)) = 0x1C;
-        var_r3_4 += 4;
-        var_r4_4 += 8;
-        var_r6_4 += 1;
-        *((u8 *)gsgfxState + temp_r10_8) = 0;
-        *((u8 *)gsgfxState + temp_r9_7) = 0;
-        *((u8 *)gsgfxState + temp_r11_8) = *((u8 *)gsgfxState + temp_r11_8) & ~3;
-        *((u8 *)gsgfxState + temp_r11_8) = *((u8 *)gsgfxState + temp_r11_8) & ~0xC;
-        M2C_FIELD(gsgfxState, s32 *, 0x20) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x20) | temp_r8_11);
-        *((u8 *)gsgfxState + temp_r7_3) = 0;
-        *((u8 *)gsgfxState + temp_r0_6) = 0;
-        var_ctr_7 -= 1;
-    } while (var_ctr_7 != 0);
-    var_r7_4 = 0;
-    var_r8_4 = 0;
-    var_r9_3 = 0;
-    var_ctr_8 = 4;
-    do {
-        var_r6_5 = 0;
-        *((u8*)(gsgfxState) + (var_r5_4 + 0xB24)) = 0;
-        temp_r16_2 = var_r8_4 + 1;
-        temp_r23_2 = var_r9_3 + 0x207;
-        temp_r19_4 = 1 << var_r8_4;
-        *((u8*)(gsgfxState) + (var_r5_4 + 0xB28)) = 1;
-        temp_r20_3 = var_r5_4 + 0xB30;
-        temp_r22_3 = (temp_r16_2 * 4) + 0x207;
-        temp_r18_2 = 1 << temp_r16_2;
-        temp_r17_3 = var_r7_4 + 0xB24;
-        *((u8*)(gsgfxState) + (var_r5_4 + 0xB2C)) = 2;
-        temp_r12_8 = var_r7_4 + 0xB28;
-        temp_r11_9 = var_r7_4 + 0xB2C;
-        temp_r10_9 = var_r7_4 + 0xB30;
-        var_r5_4 += 0x10;
-        var_r7_4 += 0x10;
-        var_r8_4 += 2;
-        *((u8 *)gsgfxState + temp_r20_3) = 3;
-        var_r9_3 += 8;
-        *((u8 *)gsgfxState + temp_r23_2) = *((u8 *)gsgfxState + temp_r23_2) & ~3;
-        *((u8 *)gsgfxState + temp_r23_2) = (*((u8 *)gsgfxState + temp_r23_2) & ~0xC) | 4;
-        *((u8 *)gsgfxState + temp_r22_3) = (*((u8 *)gsgfxState + temp_r22_3) & ~3) | 2;
-        *((u8 *)gsgfxState + temp_r22_3) = *((u8 *)gsgfxState + temp_r22_3) | 0xC;
-        M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | temp_r19_4);
-        M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | temp_r18_2);
-        *((u8 *)gsgfxState + temp_r17_3) = 0;
-        *((u8 *)gsgfxState + temp_r12_8) = 1;
-        *((u8 *)gsgfxState + temp_r11_9) = 2;
-        *((u8 *)gsgfxState + temp_r10_9) = 3;
-        var_ctr_8 -= 1;
-    } while (var_ctr_8 != 0);
-    var_r4_5 = 0;
-    var_ctr_9 = 0x10;
-    do {
-        temp_r0_7 = var_r6_5 + 0xB64;
-        temp_r17_4 = var_r4_5 + 0x313;
-        *((u8 *)gsgfxState + temp_r0_7) = 1;
-        temp_r7_4 = 1 << var_r6_5;
-        var_r5_5 = 0;
-        temp_r12_9 = var_r4_5 + 0x312;
-        temp_r11_10 = var_r4_5 + 0x311;
-        var_r6_5 += 1;
-        temp_r9_8 = *((u8 *)gsgfxState + temp_r17_4) & ~3;
-        var_r4_5 += 4;
-        *((u8 *)gsgfxState + temp_r17_4) = temp_r9_8;
-        *((u8 *)gsgfxState + temp_r17_4) = *((u8 *)gsgfxState + temp_r17_4) & ~0xC;
-        *((u8 *)gsgfxState + temp_r17_4) = *((u8 *)gsgfxState + temp_r17_4) & ~0x70;
-        *((u8 *)gsgfxState + temp_r12_9) = *((u8 *)gsgfxState + temp_r12_9) & ~0x180;
-        *((u8 *)gsgfxState + temp_r12_9) = *((u8 *)gsgfxState + temp_r12_9) & ~0x1E;
-        *((u8 *)gsgfxState + temp_r12_9) = *((u8 *)gsgfxState + temp_r12_9) & ~0xE0;
-        *((u8 *)gsgfxState + temp_r11_10) = *((u8 *)gsgfxState + temp_r11_10) & ~7;
-        *((u8 *)gsgfxState + temp_r11_10) = *((u8 *)gsgfxState + temp_r11_10) & ~8;
-        *((u8 *)gsgfxState + temp_r11_10) = *((u8 *)gsgfxState + temp_r11_10) & ~0x10;
-        M2C_FIELD(gsgfxState, s32 *, 0x2C) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x2C) | temp_r7_4);
-        *((u8 *)gsgfxState + temp_r0_7) = 2;
-        *((u8 *)gsgfxState + temp_r0_7) = 1;
-        var_ctr_9 -= 1;
-    } while (var_ctr_9 != 0);
-    var_r4_6 = 0;
-    var_r6_6 = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x58D) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x31) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x31) & ~7);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 1);
-    M2C_FIELD(gsgfxState, s8 *, 0x58D) = 0;
-    var_ctr_10 = 4;
-    do {
-        *((u8*)(gsgfxState) + (var_r4_6 + 0xB74)) = var_r5_5;
-        *((u8*)(gsgfxState) + (var_r4_6 + 0xB78)) = var_r5_5;
-        switch (var_r5_5) {
-        case 0:
-            M2C_FIELD(gsgfxState, u8 *, 0x7B) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x7B) & ~7) | (var_r5_5 & 7));
-            M2C_FIELD(gsgfxState, u8 *, 0x7B) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x7B) & ~0x38) | ((var_r5_5 << 3) & 0x38));
-            break;
-        case 1:
-            M2C_FIELD(gsgfxState, u16 *, 0x7A) = (u16) ((M2C_FIELD(gsgfxState, u16 *, 0x7A) & ~0x1C0) | ((var_r5_5 << 6) & 0x1C0));
-            M2C_FIELD(gsgfxState, u16 *, 0x7A) = (s8) (((u8) M2C_FIELD(gsgfxState, u16 *, 0x7A) & ~0xE) | ((var_r5_5 << 1) & 0xE));
-            break;
-        case 2:
-            M2C_FIELD(gsgfxState, u16 *, 0x7A) = (s8) (((u8) M2C_FIELD(gsgfxState, u16 *, 0x7A) & ~0x70) | ((var_r5_5 << 4) & 0x70));
-            M2C_FIELD(gsgfxState, s32 *, 0x78) = (s32) ((M2C_FIELD(gsgfxState, s32 *, 0x78) & ~0x38000) | ((var_r5_5 << 0xF) & 0x38000));
-            break;
-        case 3:
-            M2C_FIELD(gsgfxState, u8 *, 0x79) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x79) & ~0x1C) | ((var_r5_5 << 2) & 0x1C));
-            M2C_FIELD(gsgfxState, u8 *, 0x79) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x79) & ~0xE0) | ((var_r5_5 << 5) & 0xE0));
-            break;
-        }
-        M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x2000);
-        temp_r0_8 = var_r5_5 >> 1;
-        M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | (1 << var_r5_5));
-        *((u8*)(gsgfxState) + (var_r6_6 + 0xB74)) = var_r5_5;
-        *((u8*)(gsgfxState) + (var_r6_6 + 0xB78)) = var_r5_5;
-        *((u8*)(gsgfxState) + (var_r4_6 + 0xB94)) = 0;
-        *((u8*)(gsgfxState) + (var_r4_6 + 0xB98)) = 0;
-        if (var_r5_5 & 1) {
-            temp_r8_12 = (temp_r0_8 * 4) + 0x7E;
-            *((u8 *)gsgfxState + temp_r8_12) = *((u8 *)gsgfxState + temp_r8_12) & ~0xF;
-            *((u8 *)gsgfxState + temp_r8_12) = *((u8 *)gsgfxState + temp_r8_12) & ~0xF0;
-        } else {
-            temp_r7_5 = temp_r0_8 * 4;
-            temp_r8_13 = temp_r7_5 + 0x7F;
-            temp_r7_6 = temp_r7_5 + 0x7E;
-            *((u8 *)gsgfxState + temp_r8_13) = *((u8 *)gsgfxState + temp_r8_13) & ~0xF;
-            *((u8 *)gsgfxState + temp_r7_6) = *((u8 *)gsgfxState + temp_r7_6) & ~0xF0;
-        }
-        temp_r8_14 = var_r6_6 + 0xB94;
-        temp_r7_7 = var_r6_6 + 0xB98;
-        var_r4_6 += 8;
-        var_r5_5 += 1;
-        M2C_FIELD(gsgfxState, s32 *, 8) = (s32) (M2C_FIELD(gsgfxState, s32 *, 8) | (1 << temp_r0_8));
-        var_r6_6 += 8;
-        *((u8 *)gsgfxState + temp_r8_14) = 0;
-        *((u8 *)gsgfxState + temp_r7_7) = 0;
-        var_ctr_10 -= 1;
-    } while (var_ctr_10 != 0);
-    M2C_FIELD(gsgfxState, s32 *, 0xBB4) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBB8) = 4;
-    M2C_FIELD(gsgfxState, s32 *, 0xBBC) = 5;
-    M2C_FIELD(gsgfxState, s32 *, 0xBC0) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x3B) & ~1);
-    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x3B) & ~2);
-    M2C_FIELD(gsgfxState, u8 *, 0x3A) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x3A) & ~7) | 4);
-    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x3B) & ~0xE0) | 0xA0);
-    M2C_FIELD(gsgfxState, u8 *, 0x3A) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x3A) & ~8);
-    M2C_FIELD(gsgfxState, u8 *, 0x3A) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x3A) & ~0x10);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 4);
-    M2C_FIELD(gsgfxState, s32 *, 0xBB4) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBB8) = 4;
-    M2C_FIELD(gsgfxState, s32 *, 0xBBC) = 5;
-    M2C_FIELD(gsgfxState, s32 *, 0xBC0) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0xBC4) = 1;
-    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x3B) | 8);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 4);
-    M2C_FIELD(gsgfxState, s8 *, 0xBC4) = 1;
-    M2C_FIELD(gsgfxState, s8 *, 0xBC5) = 1;
-    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x3B) | 0x10);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 4);
-    M2C_FIELD(gsgfxState, s8 *, 0xBC5) = 1;
-    M2C_FIELD(gsgfxState, s8 *, 0xBE4) = 1;
-    M2C_FIELD(gsgfxState, s32 *, 0xBE8) = 3;
-    M2C_FIELD(gsgfxState, s8 *, 0xBEC) = 1;
-    M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x37) | 1);
-    M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x37) & ~0xE) | 6);
-    M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x37) | 0x10);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 2);
-    M2C_FIELD(gsgfxState, s8 *, 0xBE4) = 1;
-    M2C_FIELD(gsgfxState, s32 *, 0xBE8) = 3;
-    M2C_FIELD(gsgfxState, s8 *, 0xBEC) = 1;
-    M2C_FIELD(gsgfxState, s8 *, 0xBF0) = 1;
-    M2C_FIELD(gsgfxState, u8 *, 0x43) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x43) | 0x40);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x10);
-    M2C_FIELD(gsgfxState, s8 *, 0xBF0) = 1;
-    M2C_FIELD(gsgfxState, s8 *, 0xBF1) = 1;
-    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x3B) | 4);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 4);
-    M2C_FIELD(gsgfxState, s8 *, 0xBF1) = 1;
-    M2C_FIELD(gsgfxState, s8 *, 0xBF2) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0xBF3) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x3E) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x3E) & ~1);
-    M2C_FIELD(gsgfxState, s8 *, 0x3F) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 8);
-    M2C_FIELD(gsgfxState, s8 *, 0xBF2) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0xBF3) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBC8) = 7;
-    M2C_FIELD(gsgfxState, s8 *, 0xBD4) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBCC) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBD0) = 7;
-    M2C_FIELD(gsgfxState, s8 *, 0xBD5) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x1FB) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0x1FA) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x1F9) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1F9) | 7);
-    M2C_FIELD(gsgfxState, u8 *, 0x1F9) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1F9) | 0x38);
-    M2C_FIELD(gsgfxState, u8 *, 0x1F9) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x1F9) & ~0xC0);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x100);
-    M2C_FIELD(gsgfxState, s32 *, 0xBC8) = 7;
-    M2C_FIELD(gsgfxState, s8 *, 0xBD4) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBCC) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBD0) = 7;
-    M2C_FIELD(gsgfxState, s8 *, 0xBD5) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBD8) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBDC) = 0x11;
-    M2C_FIELD(gsgfxState, s32 *, 0xBE0) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0x1FC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x1FC) & ~0xFFFFFF);
-    M2C_FIELD(gsgfxState, u8 *, 0x203) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x203) & ~3);
-    M2C_FIELD(gsgfxState, u8 *, 0x203) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x203) & ~0xC);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x200);
-    M2C_FIELD(gsgfxState, s32 *, 0xBD8) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBDC) = 0x11;
-    M2C_FIELD(gsgfxState, s32 *, 0xBE0) = 0;
-    M2C_FIELD(gsgfxState, s32 *, 0xBF4) = 0;
-    M2C_FIELD(gsgfxState, f32 *, 0xBF8) = 0.0f;
-    M2C_FIELD(gsgfxState, f32 *, 0xBFC) = 1000.0f;
-    M2C_FIELD(gsgfxState, f32 *, 0xC00) = 0.0f;
-    M2C_FIELD(gsgfxState, f32 *, 0xC04) = 1000.0f;
-    M2C_FIELD(gsgfxState, s32 *, 0xC09) = sp20;
+    }
+    gsgfxState->c58c[0] = 1;
+    GSgfx_GCWriteNumTevStages(1);
+    for (i = 0; i < 16; i++) {
+        gsgfxState->colorIn[i].a = 0xf;
+        gsgfxState->colorIn[i].b = 0xa;
+        gsgfxState->colorIn[i].c = 8;
+        gsgfxState->colorIn[i].d = 0xf;
+        GSgfx_GCWriteTevColorIn(i, 0xf, 0xa, 8, 0xf);
+        gsgfxState->alphaIn[i].a = 7;
+        gsgfxState->alphaIn[i].b = 5;
+        gsgfxState->alphaIn[i].c = 4;
+        gsgfxState->alphaIn[i].d = 7;
+        GSgfx_GCWriteTevAlphaIn(i, 7, 5, 4, 7);
+        gsgfxState->colorOp[i].bias = 0;
+        gsgfxState->colorOp[i].scale = 0;
+        gsgfxState->colorOp[i].op = 0;
+        gsgfxState->colorOp[i].reg = 0;
+        gsgfxState->alphaOp[i].op = 0;
+        gsgfxState->alphaOp[i].bias = 0;
+        gsgfxState->alphaOp[i].scale = 0;
+        GSgfx_GCWriteTevColorOp(i, 0, 0, 0, 1, 0);
+        gsgfxState->colorOp[i].clamp = 1;
+        gsgfxState->alphaOp[i].clamp = 1;
+        gsgfxState->alphaOp[i].reg = 0;
+        GSgfx_GCWriteTevAlphaOp(i, 0, 0, 0, 1, 0);
+    }
+    for (i = 0; i < 4; i++) {
+        *(u32*)&gsgfxState->kcol[i].c = *(u32*)&black;
+        GSgfx_GCWriteTevKColor(i, black);
+    }
+    for (i = 0; i < 16; i++) {
+        gsgfxState->tv.kcsel[i] = 0xc;
+        GSgfx_GCWriteTevKColorSel(i, 0xc);
+        gsgfxState->tv.kasel[i] = 0x1c;
+        GSgfx_GCWriteTevKAlphaSel(i, 0x1c);
+        gsgfxState->tv.swapSel[i][1] = 0;
+        gsgfxState->tv.swapSel[i][0] = 0;
+        GSgfx_GCWriteTevSwapMode(i, 0, 0);
+    }
+    for (i = 0; i < 4; i++) {
+        gsgfxState->tv.swapTab[i][0] = 0;
+        gsgfxState->tv.swapTab[i][1] = 1;
+        gsgfxState->tv.swapTab[i][2] = 2;
+        gsgfxState->tv.swapTab[i][3] = 3;
+        GSgfx_GCWriteTevSwapModeTable(i, 0, 1, 2, 3);
+    }
+    for (i = 0; i < 16; i++) {
+        gsgfxState->indStatus[i] = 1;
+        SetTevIndirect(i, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        gsgfxState->indStatus[i] = 1;
+    }
+    gsgfxState->c58c[1] = 0;
+    GSgfx_GCWriteNumIndStages(0);
+    for (i = 0; i < 4; i++) {
+        gsgfxState->ind.indOrder[i].coord = i;
+        gsgfxState->ind.indOrder[i].map = i;
+        GSgfx_GCWriteIndTexOrder(i, i, i);
+        gsgfxState->ind.indScale[i][0] = 0;
+        gsgfxState->ind.indScale[i][1] = 0;
+        GSgfx_GCWriteIndTexCoordScale(i, 0, 0);
+    }
+    gsgfxState->ind.blendCache[0] = 0;
+    gsgfxState->ind.blendCache[1] = 4;
+    gsgfxState->ind.blendCache[2] = 5;
+    gsgfxState->ind.blendCache[3] = 0;
+    GSgfx_GCWriteBlendMode(0, 4, 5, 0);
+    gsgfxState->cBC4[0] = 1;
+    GSgfx_GCWriteColorUpdate(1);
+    gsgfxState->cBC4[1] = 1;
+    GSgfx_GCWriteAlphaUpdate(1);
+    gsgfxState->cBE4 = 1;
+    gsgfxState->cBE8 = 3;
+    gsgfxState->cBEC = 1;
+    GSgfx_GCWriteZMode(1, 3, 1);
+    gsgfxState->c_bf0 = 1;
+    GSgfx_GCWriteZCompLoc(1);
+    gsgfxState->cBF1[0] = 1;
+    GSgfx_GCWriteDither(1);
+    gsgfxState->cBF1[1] = 0;
+    gsgfxState->cBF1[2] = 0;
+    GSgfx_GCWriteDstAlpha(0, 0);
+    gsgfxState->cBC8[0] = 7;
+    gsgfxState->cBD4[0] = 0;
+    gsgfxState->cBC8[1] = 0;
+    gsgfxState->cBC8[2] = 7;
+    gsgfxState->cBD4[1] = 0;
+    GSgfx_GCWriteAlphaCompare(7, 0, 0, 7, 0);
+    gsgfxState->cBD8[0] = 0;
+    gsgfxState->cBD8[1] = 0x11;
+    gsgfxState->cBD8[2] = 0;
+    GSgfx_GCWriteZTexture(0, 0x11, 0);
+    gsgfxState->c_fogType = 0;
+    gsgfxState->c_fogStart = 0.0f;
+    gsgfxState->c_fogEnd = 1000.0f;
+    gsgfxState->c_fogNear = 0.0f;
+    gsgfxState->c_fogFar = 1000.0f;
+    *(u32*)&gsgfxState->fogCol.c = *(u32*)&black;
     GSgfx_GCWriteFog(0, 0.0f, 1000.0f, 0.0f, 1000.0f);
-    spC = sp20;
-    M2C_FIELD(gsgfxState, u8 *, 0x2F5) = (u8) spC;
-    M2C_FIELD(gsgfxState, u8 *, 0x2F6) = unkspD;
-    M2C_FIELD(gsgfxState, u8 *, 0x2F7) = unkspE;
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x20000);
-    M2C_FIELD(gsgfxState, s32 *, 0xC09) = sp20;
-    M2C_FIELD(gsgfxState, s8 *, 0xC08) = 0;
-    M2C_FIELD(gsgfxState, s16 *, 0xC0E) = 0;
-    M2C_FIELD(gsgfxState, s8 *, 0xC0D) = 0;
-    M2C_FIELD(gsgfxState, u8 *, 0x2FA) = (u8) (M2C_FIELD(gsgfxState, u8 *, 0x2FA) & ~4);
-    M2C_FIELD(gsgfxState, u8 *, 0x2FA) = (s16) (((u16) M2C_FIELD(gsgfxState, u8 *, 0x2FA) & ~0x3FF) | 0x156);
-    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x40000);
-    M2C_FIELD(gsgfxState, s8 *, 0xC0D) = 0;
-    M2C_FIELD(gsgfxState, s16 *, 0xC0E) = 0;
+    GSgfx_GCWriteFogColor(black);
+    gsgfxState->cC0E = 0;
+    gsgfxState->cC0D = 0;
+    GSgfx_GCWriteFogRangeAdj(0, 0);
     GSgfx_GCFlushState();
 }
 
@@ -2379,11 +2191,11 @@ void GSgfx_GCInitState(void) {
     gsgfxState->tref[7].id = 0x2f;
     RAW(gsgfxState->iref) = 0;
     gsgfxState->iref.id = 0x27;
-    RAW(gsgfxState->ras1ss0) = 0;
-    gsgfxState->ras1ss0.id = 0x25;
-    RAW(gsgfxState->ras1ss1) = 0;
-    gsgfxState->ras1ss1.id = 0x26;
-    for (s32 i = 0; i < 8; i++) {
+    RAW(gsgfxState->ras1ss[0]) = 0;
+    gsgfxState->ras1ss[0].id = 0x25;
+    RAW(gsgfxState->ras1ss[1]) = 0;
+    gsgfxState->ras1ss[1].id = 0x26;
+    for (i = 0; i < 8; i++) {
         RAW(gsgfxState->texMode0[i]) = 0;
         RAW(gsgfxState->texMode1[i]) = 0;
         RAW(gsgfxState->texImg0[i]) = 0;
@@ -2434,8 +2246,8 @@ void GSgfx_GCInitState(void) {
     RAW(gsgfxState->suS[7]) = 0;
     RAW(gsgfxState->suT[7]) = 0;
     gsgfxState->suS[7].id = 0x3e;
-    RAW(gsgfxState->r1ec) = 0;
     gsgfxState->suT[7].id = 0x3f;
+    RAW(gsgfxState->r1ec) = 0;
     gsgfxState->r1ec.id = 0x22;
     RAW(gsgfxState->matIdxA) = 0;
     RAW(gsgfxState->matIdxB) = 0;
@@ -2485,8 +2297,8 @@ void GSgfx_GCInitState(void) {
     gsgfxState->kcolB1[2].f = 1;
     RAW(gsgfxState->kcolB0[3]) = 0;
     RAW(gsgfxState->kcolB1[3]) = 0;
-    gsgfxState->kcolB1[3].id = 0xe7;
     gsgfxState->kcolB0[3].id = 0xe6;
+    gsgfxState->kcolB1[3].id = 0xe7;
     gsgfxState->kcolB0[3].f = 1;
     gsgfxState->kcolB1[3].f = 1;
     RAW(gsgfxState->r1fc) = 0;
@@ -2494,23 +2306,23 @@ void GSgfx_GCInitState(void) {
     RAW(gsgfxState->r200) = 0;
     gsgfxState->r200.id = 0xf5;
     for (i = 0; i < 8; i++) {
-        RAW(gsgfxState->ksel[i]) = 0;
+        gsgfxState->kselRaw[i] = 0;
         gsgfxState->ksel[i].id = 0xf6 + i;
     }
-    for (i = 0; i < 4; i++) {
-        gsgfxState->ksel[i * 2].lo = 0;
-        gsgfxState->ksel[i * 2].hi = 1;
-        gsgfxState->ksel[i * 2 + 1].lo = 2;
-        gsgfxState->ksel[i * 2 + 1].hi = 3;
+    for (i = 0; i < 8; i += 2) {
+        gsgfxState->ksel[i].lo = 0;
+        gsgfxState->ksel[i].hi = 1;
+        gsgfxState->ksel[i + 1].lo = 2;
+        gsgfxState->ksel[i + 1].hi = 3;
     }
     for (i = 0; i < 16; i++) {
-        RAW(gsgfxState->tevc[i]) = 0;
-        RAW(gsgfxState->teva[i]) = 0;
-        gsgfxState->teva[i].id = 0xc1 + i * 2;
+        gsgfxState->tevcRaw[i] = 0;
+        gsgfxState->tevaRaw[i] = 0;
         gsgfxState->tevc[i].id = 0xc0 + i * 2;
+        gsgfxState->teva[i].id = 0xc1 + i * 2;
     }
     for (i = 0; i < 16; i++) {
-        RAW(gsgfxState->indCmd[i]) = 0;
+        gsgfxState->indCmdRaw[i] = 0;
         gsgfxState->indCmd[i].id = 0x10 + i;
     }
     RAW(gsgfxState->r350) = 0;

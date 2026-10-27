@@ -180,37 +180,80 @@ void menuPdaMemoBackHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     menuPdaGetRes();
     menuPdaGetSubres();
     switch (sprite->id) {
-    case 0xC4:
-        if ((u16)menuPdaMemoXDGetItem() == 0) {
-            msgctrlSetValue(0x34, memoDataGetCount(0));
+    case 0xB5:
+    case 0xB6:
+    case 0xB7:
+    case 0xB8:
+        if (menuPdaMemoXDGetItem() == 3) {
             winSpriteSetDisp(sprite, 1);
         } else {
             winSpriteSetDisp(sprite, 0);
         }
         break;
-    case 0xB9:
-        if ((u16)menuPdaMemoXDGetItem() == 3) {
-            menuPdaMemoListDispPokemonModel(window, sprite, 0);
+    case 0xB1:
+    case 0xB2:
+    case 0xB3:
+    case 0xB4:
+        if (menuPdaMemoXDGetItem() == 0) {
+            winSpriteSetDisp(sprite, 1);
+        } else {
+            winSpriteSetDisp(sprite, 0);
         }
         break;
-    case 0xBB:
-        if ((u16)menuPdaMemoXDGetItem() == 0) {
-            menuPdaMemoListDispPokemonModel(window, sprite, 1);
+    case 0xAD:
+    case 0xAE:
+    case 0xAF:
+    case 0xB0:
+        if (menuPdaMemoXDGetItem() == 1 || menuPdaMemoXDGetItem() == 2) {
+            winSpriteSetDisp(sprite, 1);
+        } else {
+            winSpriteSetDisp(sprite, 0);
+        }
+        break;
+    case 0xBC:
+    case 0xBD:
+    case 0xBE:
+    case 0xBF:
+    case 0xC0:
+    case 0xC1:
+    case 0xC2:
+    case 0xC3:
+        if (menuPdaMemoXDGetItem() == 1) {
+            winSpriteSetDisp(sprite, 1);
+        } else {
+            winSpriteSetDisp(sprite, 0);
+        }
+        break;
+    case 0xC4:
+        if (menuPdaMemoXDGetItem() == 0) {
+            winSpriteSetDisp(sprite, 1);
+            msgctrlSetValue(0x34, memoDataGetCount(0));
+        } else {
+            winSpriteSetDisp(sprite, 0);
         }
         break;
     case 0xBA:
-        u8 cmpv = (u16)menuPdaMemoXDGetItem();
-        if (cmpv == 1) {
+        if (menuPdaMemoXDGetItem() == 1) {
             menuPdaMemoListDispPokemonModel(window, sprite, 2);
         }
         break;
     case 0x1C7:
-        if ((u16)menuPdaMemoXDGetItem() == 2) {
+        if (menuPdaMemoXDGetItem() == 2) {
             menuPdaMemoListDispPokemonModel(window, sprite, 3);
         }
         break;
+    case 0xB9:
+        if (menuPdaMemoXDGetItem() == 3) {
+            menuPdaMemoListDispPokemonModel(window, sprite, 0);
+        }
+        break;
+    case 0xBB:
+        if (menuPdaMemoXDGetItem() == 0) {
+            menuPdaMemoListDispPokemonModel(window, sprite, 1);
+        }
+        break;
     case 0x16A:
-        if ((u16)menuPdaMemoXDGetItem() == 2) {
+        if (menuPdaMemoXDGetItem() == 2) {
             winSpriteSetDisp(sprite, 1);
             menuPdaMemoXDWeight(window, sprite);
         } else {
@@ -218,39 +261,11 @@ void menuPdaMemoBackHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         }
         break;
     case 0x16B:
-        if ((u16)menuPdaMemoXDGetItem() == 2) {
+        if (menuPdaMemoXDGetItem() == 2) {
             winSpriteSetDisp(sprite, 1);
             menuPdaMemoXDHeight(window, sprite);
         } else {
             winSpriteSetDisp(sprite, 0);
-        }
-        break;
-    default:
-        if (sprite->id >= 0xBB) {
-            if (menuPdaMemoXDGetItem() == 1) {
-                winSpriteSetDisp(sprite, 1);
-            } else {
-                winSpriteSetDisp(sprite, 0);
-            }
-        } else if (sprite->id >= 0xB5) {
-            if ((u16)menuPdaMemoXDGetItem() == 3) {
-                winSpriteSetDisp(sprite, 1);
-            } else {
-                winSpriteSetDisp(sprite, 0);
-            }
-        } else if (sprite->id >= 0xB1) {
-            s32 cmpv = menuPdaMemoXDGetItem();
-            if (cmpv == 0) {
-                winSpriteSetDisp(sprite, 1);
-            } else {
-                winSpriteSetDisp(sprite, 0);
-            }
-        } else if (sprite->id >= 0xAD) {
-            if ((u16)menuPdaMemoXDGetItem() == 1 || (u16)menuPdaMemoXDGetItem() == 2) {
-                winSpriteSetDisp(sprite, 1);
-            } else {
-                winSpriteSetDisp(sprite, 0);
-            }
         }
         break;
     }
@@ -282,41 +297,41 @@ s32 menuPdaMemoXDGetItem(void) {
 }
 
 s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
-    enum TsE { TsE0 };
-    if (pMemo == 0) {
+    menuPdaMemoXD* memo = pMemo;
+    if (memo == 0) {
         return 0;
     }
-    switch ((s8)sprite->id) {
+    MEMO_CONTENTS* contents = window->contents;
+    switch (sprite->id) {
     case 0xFD:
-        pMemo->PokemonType(window, sprite, (MEMO_CONTENTS*)pMemo, 0);
-        CURSOR* cursor = window->contents->cursor;
+        memo->PokemonType(window, sprite, contents, 0);
         break;
     case 0xFE:
-        pMemo->PokemonType(window, sprite, (MEMO_CONTENTS*)pMemo, 1);
+        memo->PokemonType(window, sprite, contents, 1);
         break;
     case 0x103:
-        pMemo->PokemonTokusei(window, sprite, (MEMO_CONTENTS*)pMemo, 0);
+        memo->PokemonTokusei(window, sprite, contents, 0);
         break;
     case 0x102:
-        pMemo->PokemonTokusei(window, sprite, (MEMO_CONTENTS*)pMemo, 1);
+        memo->PokemonTokusei(window, sprite, contents, 1);
         break;
     case 0x105:
-        pMemo->PokemonSyuzoku(window, sprite, (MEMO_CONTENTS*)pMemo);
+        memo->PokemonSyuzoku(window, sprite, contents);
         break;
     case 0x106:
-        pMemo->PokemonName(window, sprite, (MEMO_CONTENTS*)pMemo);
+        memo->PokemonName(window, sprite, contents);
         break;
     case 0x100:
         sprite->colorR = 0xD5;
         sprite->colorG = 0xAA;
         sprite->colorB = 0x33;
-        pMemo->PokemonWeight(window, sprite, (MEMO_CONTENTS*)pMemo);
+        memo->PokemonWeight(window, sprite, contents);
         break;
     case 0x101:
         sprite->colorR = 0xD5;
         sprite->colorG = 0xAA;
         sprite->colorB = 0x33;
-        pMemo->PokemonHeight(window, sprite, (MEMO_CONTENTS*)pMemo);
+        memo->PokemonHeight(window, sprite, contents);
         break;
     case 0x104:
         sprite->colorR = 0xD5;
@@ -326,50 +341,68 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     case 0x10B:
         menuPdaMemoWaveHook();
         break;
-    default:
-        pMemo->PokemonAisyou(window, sprite, (MEMO_CONTENTS*)pMemo);
+    case 0x144:
+    case 0x145:
+    case 0x146:
+    case 0x147:
+    case 0x148:
+    case 0x149:
+    case 0x14A:
+    case 0x14B:
+    case 0x14C:
+    case 0x14D:
+    case 0x14E:
+    case 0x14F:
+    case 0x150:
+    case 0x151:
+    case 0x152:
+    case 0x153:
+    case 0x154:
+        memo->PokemonAisyou(window, sprite, contents);
         break;
     case 0x15A:
-        pMemo->PokemonTokuseiSetumei(window, sprite, (MEMO_CONTENTS*)pMemo, 0);
+        memo->PokemonTokuseiSetumei(window, sprite, contents, 0);
         break;
     case 0x15B:
-        pMemo->PokemonTokusei(window, sprite, (MEMO_CONTENTS*)pMemo, 0);
+        memo->PokemonTokusei(window, sprite, contents, 0);
         break;
     case 0x157:
-        pMemo->PokemonTokuseiSetumei(window, sprite, (MEMO_CONTENTS*)pMemo, 1);
+        memo->PokemonTokuseiSetumei(window, sprite, contents, 1);
         break;
     case 0x158:
-        pMemo->PokemonTokusei(window, sprite, (MEMO_CONTENTS*)pMemo, 1);
+        memo->PokemonTokusei(window, sprite, contents, 1);
         break;
     case 0x15D:
-        pMemo->PokemonSyuzoku(window, sprite, (MEMO_CONTENTS*)pMemo);
+        memo->PokemonSyuzoku(window, sprite, contents);
         break;
     case 0x15E:
-        pMemo->PokemonName(window, sprite, (MEMO_CONTENTS*)pMemo);
+        memo->PokemonName(window, sprite, contents);
         break;
     case 0x155:
-        pMemo->PokemonType(window, sprite, (MEMO_CONTENTS*)pMemo, 0);
+        memo->PokemonType(window, sprite, contents, 0);
         break;
     case 0x156:
-        pMemo->PokemonType(window, sprite, (MEMO_CONTENTS*)pMemo, 1);
+        memo->PokemonType(window, sprite, contents, 1);
         break;
     case 0x15C:
-        s32 tmp1 = (u32)GSmsgGetGSchar(0x3B68);
-        msgctrlSetValue(0x4D, tmp1);
-        msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(0x3B69));
+        s32 name = (u32)GSmsgGetGSchar(0x3B68);
+        msgctrlSetValue(0x4D, name);
+        s32 text = (u32)GSmsgGetGSchar(0x3B69);
+        msgctrlSetValue(0x37, text);
         GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
         break;
     case 0x159: {
-        enum TsE mon = (enum TsE)((u16)(u32)pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(cursor->pos + cursor->top)));
-        u32 first = pokemonDataBiosGetTokuseiDataId(0, 0);
-        u32 second = pokemonDataBiosGetTokuseiDataId((void*)mon, 1);
+        void* mon = pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(contents->cursor->pos + contents->cursor->top));
+        u32 first = pokemonDataBiosGetTokuseiDataId(mon, 0);
+        u32 second = pokemonDataBiosGetTokuseiDataId(mon, 1);
         if (second == first) {
             second = 0;
         }
         if ((u16)second != 0) {
-            s32 tmp1 = (u32)GSmsgGetGSchar(0x3B68);
-            msgctrlSetValue(0x4D, tmp1);
-            msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(0x3B6A));
+            s32 name = (u32)GSmsgGetGSchar(0x3B68);
+            msgctrlSetValue(0x4D, name);
+            s32 text = (u32)GSmsgGetGSchar(0x3B6A);
+            msgctrlSetValue(0x37, text);
             GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
         }
         break;
@@ -531,11 +564,11 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
     int n2;
     int n1;
     CURSOR* c = contents->cursor;
-    u16 mon = (u16)(u32)pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
-    MenuItem* item = menuItemBiosGetPtr(0x7E, sprite->id);
+    void* mon = pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
+    volatile MenuItem* item = menuItemBiosGetPtr(0x7E, sprite->id);
     GSmsgGetGSchar(0x3BBC);
-    volatile u8 first = pokemonDataBiosGetTokuseiDataId((void*)mon, 0);
-    u16 tid = pokemonDataBiosGetTokuseiDataId((void*)mon, slot);
+    u32 first = pokemonDataBiosGetTokuseiDataId(mon, 0);
+    u16 tid = pokemonDataBiosGetTokuseiDataId(mon, slot);
     if (slot != 0 && tid == first) {
         tid = 0;
     }
@@ -546,9 +579,10 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
         u16* buf1 = new u16[len + 2];
         u16* buf2 = new u16[len + 2];
         u16* name = buf1;
-        int n = 0;
+        int n;
         int best = 0;
         u8 wrap = 0;
+        n = 0;
         do {
             int spaces = 0;
             int prev = n;
@@ -580,7 +614,8 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
             if (width <= item->width) {
                 best = n;
             }
-            if (!(item->width >= width)) {
+            u16 rf_t = item->width;
+            if (!(rf_t >= width)) {
                 wrap = 1;
             }
         } while (k < len);
@@ -636,9 +671,9 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
 void menuPdaMemoXD::PokemonTokusei(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, MEMO_CONTENTS* contents,
                                    unsigned short slot) {
     CURSOR* c = contents->cursor;
-    u32 mon = (u16)(u32)pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
-    u32 first = pokemonDataBiosGetTokuseiDataId(0, 0);
-    u32 tokusei = pokemonDataBiosGetTokuseiDataId((void*)mon, slot);
+    void* mon = pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
+    u32 first = pokemonDataBiosGetTokuseiDataId(mon, 0);
+    u32 tokusei = pokemonDataBiosGetTokuseiDataId(mon, slot);
     if (slot == 0) {
         if (tokusei != 0) {
             void* data = pokemonTokuseiDataBiosGetPtr(tokusei);

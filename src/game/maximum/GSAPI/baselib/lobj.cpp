@@ -729,12 +729,9 @@ inline static void LObjSetupSpec(HSD_LObj* lobj, MtxPtr vmtx, GXLightID spec_id)
 {
     lobj->spec_id = spec_id;
     if (spec_id != 0) {
-        f32 k0;
-
         GXInitLightColor(&lobj->spec_lightobj, lobj->color);
         lobj->shininess = 50.0F;
-        k0 = lobj->shininess * 0.5F;
-        GXInitLightAttn(&lobj->spec_lightobj, 0.0F, 0.0F, 1.0F, k0, 0.0F, 1.0F - k0);
+        GXInitLightAttn(&lobj->spec_lightobj, 0.0F, 0.0F, 1.0F, lobj->shininess / 2.0F, 0.0F, 1.0F - lobj->shininess / 2.0F);
 
         switch (HSD_LObjGetType(lobj)) {
         case LOBJ_POINT:
@@ -755,10 +752,113 @@ inline static void LObjSetupSpec(HSD_LObj* lobj, MtxPtr vmtx, GXLightID spec_id)
     }
 }
 
+static inline void LObjSetupInfinite(HSD_LObj* lobj, MtxPtr vmtx)
+{
+    Vec3 pos;
+    LObjGetPos(lobj, &pos);
+    pos.x *= 1048576.0F;
+    pos.y *= 1048576.0F;
+    pos.z *= 1048576.0F;
+    PSMTXMultVec(vmtx, &pos, &pos);
+    if (lobj->flags & LOBJ_DIFFUSE) {
+        GXInitLightPos(&lobj->lightobj, pos.x, pos.y, pos.z);
+        GXInitLightAttn(&lobj->lightobj, 1.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F);
+    }
+    if (lobj->flags & LOBJ_SPECULAR) {
+        GXInitLightPos(&lobj->spec_lightobj, pos.x, pos.y, pos.z);
+    }
+}
+
+static inline void LObjSetupPoint(HSD_LObj* lobj, MtxPtr vmtx)
+{
+    Vec3 pos;
+    GXInitLightColor(&lobj->lightobj, lobj->color);
+    lobj->hw_color = lobj->color;
+    LObjGetPos(lobj, &pos);
+    PSMTXMultVec(vmtx, &pos, &pos);
+    GXInitLightPos(&lobj->lightobj, pos.x, pos.y, pos.z);
+    GXInitLightPos(&lobj->spec_lightobj, pos.x, pos.y, pos.z);
+    if (lobj->flags & LOBJ_RAW_PARAM) {
+        GXInitLightAttn(&lobj->lightobj, 1.0F, 0.0F, 0.0F, lobj->u.attn.k0,
+                        lobj->u.attn.k1, lobj->u.attn.k2);
+    } else {
+        f32 ref_br = lobj->u.point.ref_br;
+        f32 ref_dist = lobj->u.point.ref_dist;
+        u32 dist_func = lobj->u.point.dist_func;
+        if (ref_dist < __float_epsilon[0]) {
+            ref_dist = __float_epsilon[0];
+        }
+        if (ref_br < __float_epsilon[0]) {
+            ref_br = __float_epsilon[0];
+        }
+        GXInitLightDistAttn(&lobj->lightobj, ref_dist, ref_br, dist_func);
+        GXInitLightSpot(&lobj->lightobj, 0.0F, GX_SP_OFF);
+        GXInitLightDistAttn(&lobj->spec_lightobj, ref_dist, ref_br, dist_func);
+    }
+}
+
+static inline void LObjSetupSpot(HSD_LObj* lobj, MtxPtr vmtx)
+{
+    Vec3 pos;
+    Vec3 dir;
+    LObjGetPos(lobj, &pos);
+    PSMTXMultVec(vmtx, &pos, &pos);
+    HSD_LObjGetLightVector(lobj, &dir);
+    PSMTXMultVecSR(vmtx, &dir, &dir);
+    PSVECNormalize(&dir, &dir);
+    GXInitLightPos(&lobj->lightobj, pos.x, pos.y, pos.z);
+    GXInitLightPos(&lobj->spec_lightobj, pos.x, pos.y, pos.z);
+    GXInitLightDir(&lobj->lightobj, dir.x, dir.y, dir.z);
+    if (lobj->flags & LOBJ_RAW_PARAM) {
+        GXInitLightAttn(&lobj->lightobj, lobj->u.attn.a0, lobj->u.attn.a1,
+                        lobj->u.attn.a2, lobj->u.attn.k0, lobj->u.attn.k1,
+                        lobj->u.attn.k2);
+    } else {
+        f32 ref_br = lobj->u.spot.ref_br;
+        f32 ref_dist = lobj->u.spot.ref_dist;
+        f32 cutoff = lobj->u.spot.cutoff;
+        u32 spot_func = lobj->u.spot.spot_func;
+        u32 dist_func = lobj->u.spot.dist_func;
+        if (ref_dist < __float_epsilon[0]) {
+            ref_dist = __float_epsilon[0];
+        }
+        if (ref_br < __float_epsilon[0]) {
+            ref_br = __float_epsilon[0];
+        }
+        GXInitLightDistAttn(&lobj->lightobj, ref_dist, ref_br, dist_func);
+        GXInitLightDistAttn(&lobj->spec_lightobj, ref_dist, ref_br, dist_func);
+        GXInitLightSpot(&lobj->lightobj, cutoff, spot_func);
+    }
+}
+
+static inline void LObjSetupDiffuse(HSD_LObj* lobj)
+{
+    GXInitLightColor(&lobj->lightobj, lobj->color);
+    lobj->hw_color = lobj->color;
+    lobj->flags |= LOBJ_DIFF_DIRTY;
+    switch (HSD_LObjGetType(lobj)) {
+    case LOBJ_INFINITE:
+        break;
+    case LOBJ_POINT:
+    case LOBJ_SPOT:
+        lightmask_attnfunc |= lobj->id;
+        break;
+    default:
+        HSD_ASSERT(664, 0);
+    }
+    if (lobj->flags & LOBJ_DIFFUSE) {
+        lightmask_diffuse |= lobj->id;
+    }
+    if (lobj->flags & LOBJ_ALPHA) {
+        lightmask_alpha |= lobj->id;
+    }
+}
+
 void HSD_LObjSetupInit(HSD_CObj* cobj)
 {
     MtxPtr vmtx;
-    int i, num, idx;
+    int i, idx;
+    s32 num;
     HSD_SList* list;
 
     lightmask_diffuse = GX_LIGHT_NULL;
@@ -799,111 +899,25 @@ void HSD_LObjSetupInit(HSD_CObj* cobj)
         switch (type) {
         case LOBJ_AMBIENT:
             continue;
-        case LOBJ_INFINITE: {
-            Vec3 pos;
-            LObjGetPos(lobj, &pos);
-            pos.x *= 1048576.0F;
-            pos.y *= 1048576.0F;
-            pos.z *= 1048576.0F;
-            PSMTXMultVec(vmtx, &pos, &pos);
-            if (lobj->flags & LOBJ_DIFFUSE) {
-                GXInitLightPos(&lobj->lightobj, pos.x, pos.y, pos.z);
-                GXInitLightAttn(&lobj->lightobj, 1.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F);
-            }
-            if (lobj->flags & LOBJ_SPECULAR) {
-                GXInitLightPos(&lobj->spec_lightobj, pos.x, pos.y, pos.z);
-            }
+        case LOBJ_INFINITE:
+            LObjSetupInfinite(lobj, vmtx);
             break;
-        }
-        case LOBJ_POINT: {
-            Vec3 pos;
-            GXInitLightColor(&lobj->lightobj, lobj->color);
-            lobj->hw_color = lobj->color;
-            LObjGetPos(lobj, &pos);
-            PSMTXMultVec(vmtx, &pos, &pos);
-            GXInitLightPos(&lobj->lightobj, pos.x, pos.y, pos.z);
-            GXInitLightPos(&lobj->spec_lightobj, pos.x, pos.y, pos.z);
-            if (lobj->flags & LOBJ_RAW_PARAM) {
-                GXInitLightAttn(&lobj->lightobj, 1.0F, 0.0F, 0.0F, lobj->u.attn.k0,
-                                lobj->u.attn.k1, lobj->u.attn.k2);
-            } else {
-                f32 ref_dist = lobj->u.point.ref_dist;
-                f32 ref_br = lobj->u.point.ref_br;
-                u32 dist_func = lobj->u.point.dist_func;
-                if (ref_dist < __float_epsilon[0]) {
-                    ref_dist = __float_epsilon[0];
-                }
-                if (ref_br < __float_epsilon[0]) {
-                    ref_br = __float_epsilon[0];
-                }
-                GXInitLightDistAttn(&lobj->lightobj, ref_dist, ref_br, dist_func);
-                GXInitLightSpot(&lobj->lightobj, 0.0F, GX_SP_OFF);
-                GXInitLightDistAttn(&lobj->spec_lightobj, ref_dist, ref_br, dist_func);
-            }
+        case LOBJ_POINT:
+            LObjSetupPoint(lobj, vmtx);
             break;
-        }
-        case LOBJ_SPOT: {
-            Vec3 dir;
-            Vec3 pos;
-            LObjGetPos(lobj, &pos);
-            PSMTXMultVec(vmtx, &pos, &pos);
-            HSD_LObjGetLightVector(lobj, &dir);
-            PSMTXMultVecSR(vmtx, &dir, &dir);
-            PSVECNormalize(&dir, &dir);
-            GXInitLightPos(&lobj->lightobj, pos.x, pos.y, pos.z);
-            GXInitLightPos(&lobj->spec_lightobj, pos.x, pos.y, pos.z);
-            GXInitLightDir(&lobj->lightobj, dir.x, dir.y, dir.z);
-            if (lobj->flags & LOBJ_RAW_PARAM) {
-                GXInitLightAttn(&lobj->lightobj, lobj->u.attn.a0, lobj->u.attn.a1,
-                                lobj->u.attn.a2, lobj->u.attn.k0, lobj->u.attn.k1,
-                                lobj->u.attn.k2);
-            } else {
-                f32 cutoff = lobj->u.spot.cutoff;
-                f32 ref_dist = lobj->u.spot.ref_dist;
-                f32 ref_br = lobj->u.spot.ref_br;
-                u32 dist_func;
-                u32 spot_func = lobj->u.spot.spot_func;
-                dist_func = lobj->u.spot.dist_func;
-                if (ref_dist < __float_epsilon[0]) {
-                    ref_dist = __float_epsilon[0];
-                }
-                if (ref_br < __float_epsilon[0]) {
-                    ref_br = __float_epsilon[0];
-                }
-                GXInitLightDistAttn(&lobj->lightobj, ref_dist, ref_br, dist_func);
-                GXInitLightDistAttn(&lobj->spec_lightobj, ref_dist, ref_br, dist_func);
-                GXInitLightSpot(&lobj->lightobj, cutoff, spot_func);
-            }
+        case LOBJ_SPOT:
+            LObjSetupSpot(lobj, vmtx);
             break;
-        }
         }
 
         if (ref_type & (LOBJ_DIFFUSE | LOBJ_ALPHA)) {
-            GXInitLightColor(&lobj->lightobj, lobj->color);
-            lobj->hw_color = lobj->color;
-            lobj->flags |= LOBJ_DIFF_DIRTY;
-            switch (HSD_LObjGetType(lobj)) {
-            case LOBJ_INFINITE:
-                break;
-            case LOBJ_POINT:
-            case LOBJ_SPOT:
-                lightmask_attnfunc |= lobj->id;
-                break;
-            default:
-                HSD_ASSERT(664, 0);
-            }
-            if (lobj->flags & LOBJ_DIFFUSE) {
-                lightmask_diffuse |= lobj->id;
-            }
-            if (lobj->flags & LOBJ_ALPHA) {
-                lightmask_alpha |= lobj->id;
-            }
+            LObjSetupDiffuse(lobj);
         } else if (ref_type & LOBJ_SPECULAR) {
             LObjSetupSpec(lobj, vmtx, lobj->id);
         }
     }
 
-    if (active_lights[MAX_GXLIGHT - 1] == NULL) {
+    if (active_lights[HSD_LightID2Index(GX_MAX_LIGHT)] == NULL) {
         for (; list; list = list->next) {
             HSD_LObj* lobj = list->data;
             if (lobj == NULL) {
@@ -938,7 +952,6 @@ void HSD_LObjSetupInit(HSD_CObj* cobj)
         LObjSetupSpec(lobj, vmtx, HSD_Index2LightID(idx++));
     }
 
-    num = HSD_LObjGetNbActive();
     for (i = 0; i < num; i++) {
         HSD_LObj* lobj = HSD_LObjGetActiveByIndex(i);
         if (lobj != NULL) {

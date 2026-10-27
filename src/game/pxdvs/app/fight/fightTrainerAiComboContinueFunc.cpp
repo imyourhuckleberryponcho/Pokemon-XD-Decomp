@@ -5,7 +5,7 @@ struct FightOutPokemon;
 struct FightPokemon;
 
 extern "C" {
-s32 HSD_Rand();
+u16 HSD_Rand(void);
 u8 fightAi_CanMoveAppointWaza(FIGHT_TRAINER*, FightOutPokemon*, u16);
 u8 fightAi_CreateFightActionAttckIrekae(FightOutPokemon*, s16);
 u8 fightAi_CreateFightActionAttckWaza(FightOutPokemon*, FightOutPokemon*, u16, s16);

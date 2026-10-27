@@ -603,6 +603,8 @@ static void _inputDoSmoothing(InputDevice* d, s8 tx, s8 ty, u8* px, u8* py, f32*
     }
 }
 
+#pragma push
+#pragma optimization_level 1
 static void _inputDoClamping(InputDevice* d)
 {
     switch (d->clamping) {
@@ -630,6 +632,7 @@ static void _inputDoClamping(InputDevice* d)
     }
     }
 }
+#pragma pop
 
 static InputDevice* _inputFindDevice(s32 id)
 {

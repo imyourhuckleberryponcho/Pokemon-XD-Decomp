@@ -404,11 +404,12 @@ s32 menuPdaMemoListCtrl(tagWINDOW_WORK* window) {
 
 void pdaMemoList::Sort(menuPdaMemoSort sort) {
     switch (sort) {
+    case MEMO_SORT_GOJYUON:
+    default:
+        SortGojyuon();
+        break;
     case MEMO_SORT_POKEMON_ID:
         SortPokemonID();
-        break;
-    case MEMO_SORT_GOJYUON:
-        SortGojyuon();
         break;
     }
 }
@@ -527,7 +528,6 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     MenuItem* base = menuItemBiosGetPtr(0x78, 0xF1);
     MenuItem* area = menuItemBiosGetPtr(0x78, 0xEE);
     MenuItem* self = menuItemBiosGetPtr(0x78, sprite->id);
-    int textLayer = layer;
     spriteSetScissor(layer, area->x - self->x, area->y - self->y, area->width, area->height);
     f32 y = unk248;
     f32 offset;
@@ -541,7 +541,7 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             s32 name = GetPokemonName(i);
             void* mon = GetPokemonPointer(i);
             msgctrlSetValue(0x37, name);
-            GSmsgPrint2(textLayer, 0, (s32)(y + offset), window->alpha | ~0xFF, 0x4277);
+            GSmsgPrint2(layer, 0, (s32)(y + offset), window->alpha | ~0xFF, 0x4277);
             u16 type = pokemonGetStatus(0, pokemonGetStatus(mon, 0, 0x6E, 0), 0x16, 0);
             u16 sprID = zokuseiBiosGetSmallSpriteID(type);
             windowDrawSprite2(type1->x - base->x, (s32)y, type1->width, type1->height, window->alpha | ~0xFF, window,
@@ -555,7 +555,7 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         }
         y += 27.0f;
     }
-    spriteClearScissor(textLayer);
+    spriteClearScissor(layer);
 }
 
 void pdaMemoList::DispPokemonModel(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, unsigned long itemID) {
@@ -722,6 +722,12 @@ void pdaMemoList::Release() {
     }
 }
 
+static inline void fillSortList(pdaMemoList* self) {
+    for (s32 i = 0; i < memoDataGetCount(0); i++) {
+        self->sortList[i] = memoDataGetPokemonID(0, (u16)i) & 0x3FFF;
+    }
+}
+
 void pdaMemoList::InitWork() {
     int count = memoDataGetCount(0);
     listPos = 0;
@@ -746,14 +752,7 @@ void pdaMemoList::InitWork() {
     menuModelInit(&model, item->width, item->height);
     menuModelInit(&heroModel, 0x280, 0x1E0);
     menuModelTerm(&heroModel);
-    s32 i = 0;
-    s32 off = 0;
-    while (i < memoDataGetCount(0)) {
-        u16 id = memoDataGetPokemonID(0, (u16)i) & 0x3FFF;
-        i++;
-        *(u16*)((u8*)sortList + off) = id;
-        off += 2;
-    }
+    fillSortList(this);
     Sort(MEMO_SORT_GOJYUON);
     menuPdaSubInitAlpha(alpha, 8, 0);
     LoadPokemon(0);
@@ -851,10 +850,11 @@ void pdaMemoList::Cursor(tagWINDOW_WORK* window) {
         }
     }
     _setCursor(c);
-    window->top = c.top;
+    s8 rf_t = c.top;
+    window->top = rf_t;
     window->pos = c.pos;
     if (prev != c.pos + c.top) {
-        LoadPokemon(0);
+        LoadPokemon(c.pos + c.top);
     }
 }
 

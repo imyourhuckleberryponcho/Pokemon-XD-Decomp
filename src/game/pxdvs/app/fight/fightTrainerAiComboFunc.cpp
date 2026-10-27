@@ -1538,25 +1538,25 @@ s32 fightAiCombo_Dokudoku_Karagenki_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u
 }
 
 s32 fightAiCombo_Horobinouta_Irekae_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16 cnt, FightOutPokemon** oppAry, u16 oppCnt, AllWazaValid* out, u8 bonus) {
-    s16 best;
+    u8 k;
     u8 j;
     u8 buf[0x40];
     s16 id;
-    u8 flagA;
-    u8 k;
+    s16 best;
     u8 i;
     s8 another;
+    u8 flagA;
     u8 num;
     AllWazaValid tbl[0x40];
-    u8 n;
     s32 val;
     s16 cur;
     u16 irekaeNum;
     FightPokemon* irekae[6];
-    u16 rnd;
+    s32 rnd;
     u8 flagB;
     u8 pct;
     u8 found;
+    u8 n;
 
     found = 0;
     num = 0;

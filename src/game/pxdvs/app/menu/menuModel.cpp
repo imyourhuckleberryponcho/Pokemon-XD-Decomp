@@ -526,12 +526,8 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
         GSboundGetMinMax(bound, b->min, b->max, 0, 0, 0, 0);
         b->sizeValid = 1;
     }
-    depth = a->size[1];
     width = a->size[0] + b->size[0];
-    if (depth >= b->size[1]) {
-    } else {
-        depth = b->size[1];
-    }
+    depth = (a->size[1] >= b->size[1]) ? a->size[1] : b->size[1];
     f32 negB = -b->size[0];
     f32 kc1917 = 0.5f;
     mid = (width * kc1917) + negB;

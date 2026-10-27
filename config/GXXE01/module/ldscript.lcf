@@ -29,4 +29,6 @@ FORCEACTIVE
     menuMoveDemoExit
     menuMoveDemoMain
     menuMoveDemoInit
+    menuPdaMain
+    menuPdaInit
 }

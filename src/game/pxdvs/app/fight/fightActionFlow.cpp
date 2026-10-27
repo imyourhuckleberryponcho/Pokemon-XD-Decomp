@@ -256,7 +256,7 @@ u16* GSmsgGetGSchar(u32);
 u32 floorGetCurrentGroupID(void);
 u8 menuCBBios_CurrentlyWorkingToolBattle(void);
 u32 fightFloor_GetEncountDataId(FIGHT_FLOOR*);
-u32 fightFloor_GetEncountFloorId(FIGHT_FLOOR*);
+u32 fightFloor_GetEncountFloorId();
 u8 fightFloor_GetTrainer(FIGHT_FLOOR*);
 u16 fightFloor_GetTurnCount(FIGHT_FLOOR*);
 u8 fightFloor_GetStockPokemonNum(FIGHT_FLOOR*);
@@ -788,7 +788,7 @@ u32 fightActionFlowSyuuryou(FightAction* action) {
             dark->setCatchBallID(ball);
             u16 catchFloor = dark->getCatchFloorId();
             if (catchFloor == 0xb5 || catchFloor == 0) {
-                dark->setCatchFloorId(fightFloor_GetEncountFloorId(0));
+                dark->setCatchFloorId(fightFloor_GetEncountFloorId());
             }
             u32 msg = 0x5002;
             msg = fightSeqItemSeq_AddPoke(pokemon, ball, trainer, fightTrainer_GetHeroPtr(trainer)) != 1 ? msg : 0x4f86;

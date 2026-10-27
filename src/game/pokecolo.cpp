@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #pragma pool_strings off
+#pragma peephole off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -333,7 +334,6 @@ f64 pokecoloGetPlayTime() {
 }
 
 extern "C++" {
-#pragma peephole off
 static void _countPlayTime() {
     f64 temp_f31;
     f64 var_f1;
@@ -349,13 +349,16 @@ static void _countPlayTime() {
         gamedatasaveBiosSetPlaytime((GamedataSave*)(temp_r3), var_f1);
     }
 }
-#pragma peephole reset
 }
 
 extern "C++" {
 static u32 _getSaveSystemDataPtr() {
-    if ((savedataBiosGetNowSavedataPtr() != 0U) && (savedataBiosGetGamedataPtr((Savedata *)(0)) != 0U)) {
-        return (unsigned long)(gamedatasaveBiosGetPtr((Gamedata *)(0)));
+    Savedata* save = (Savedata*)savedataBiosGetNowSavedataPtr();
+    if (save != 0) {
+        Gamedata* game = (Gamedata*)savedataBiosGetGamedataPtr(save);
+        if (game != 0) {
+            return (u32)gamedatasaveBiosGetPtr(game);
+        }
     }
     return 0;
 }
@@ -365,9 +368,12 @@ s32 pokecoloGetCountryCode(void) {
     return 0x1;
 }
 extern "C++" {
+#pragma push
+#pragma peephole on
 s32 _pokecoloCheckExDisc() {
     return pokecoloGetRomVersion() == 4 ? 1 : 0;
 }
+#pragma pop
 }
 
 void pokecoloInitRomVersion(void) {
@@ -384,34 +390,32 @@ f32 pokecoloGetFrameTime() {
 }
 
 extern "C" {
+#pragma push
 void pokecoloCheckDiskTray() {
-    s32 temp_r3;
-
     if (menuIsCheck(0x2A) != 0) {
         if (pauseIsPause() == 0) {
             pauseOn();
         }
-    } else {
-        temp_r3 = GSfsysGetDriveStatus();
-        if (temp_r3 != 0xB) {
-            if ((temp_r3 < 0xB) && (temp_r3 < 7)) {
-                if (temp_r3 < 3) {
-                    goto block_10;
-                }
-                goto block_8;
-            }
-block_10:
-            if (pauseIsPause() != 0) {
-                pauseOff();
-            }
-        } else {
-block_8:
-            if (pauseIsPause() == 0) {
-                pauseOn();
-            }
+        return;
+    }
+    switch (GSfsysGetDriveStatus()) {
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 11:
+        if (pauseIsPause() == 0) {
+            pauseOn();
         }
+        break;
+    default:
+        if (pauseIsPause() != 0) {
+            pauseOff();
+        }
+        break;
     }
 }
+#pragma pop
 extern "C" {
 #pragma push
 #pragma optimize_for_size on
@@ -500,19 +504,19 @@ void pokecoloMain(int p0, char** p1) {
     GSgfxVideoSetLockFrameRate(0);
     GSgfxVideoSetLockFrameActive(1);
     pokecoloGappRenderHandle = GSgappCreate(1, 0xFF, 0, (GSgappFunc)(_mainRender));
-    GSgappSetName((int)("Render"), (const char *)(0));
+    GSgappSetName(pokecoloGappRenderHandle, "Render");
     pokecoloGappPadReadHandle = GSgappCreate(1, 0, 0, (GSgappFunc)(_mainPadRead));
-    GSgappSetName((int)("PADRead"), (const char *)(0));
+    GSgappSetName(pokecoloGappPadReadHandle, "PADRead");
     pokecoloGappGBAReadHandle = GSgappCreate(1, 1, 0, (GSgappFunc)(_mainGBARead));
-    GSgappSetName((int)("GBARead"), (const char *)(0));
+    GSgappSetName(pokecoloGappGBAReadHandle, "GBARead");
     pokecoloGappThreadHandle = GSgappCreate(1, 0xA, 0, (GSgappFunc)(_mainThreadExec));
-    GSgappSetName((int)(&_clearAddress + 0x80), (const char *)(0));
+    GSgappSetName(pokecoloGappThreadHandle, (const char*)(&_clearAddress + 0x80));
     GSgappSetPauseLevel(pokecoloGappThreadHandle, 1);
     GSvtrRegisterGSgapp(pokecoloGappThreadHandle);
     pokecoloGappAntiActionReplayHandle = GSgappCreate(1, 0xFD, 0, (GSgappFunc)(mainAntiActionReplay));
-    GSgappSetName((int)(&_clearAddress + 0x8C), (const char *)(0));
+    GSgappSetName(pokecoloGappAntiActionReplayHandle, (const char*)(&_clearAddress + 0x8C));
     pokecoloGappMainDeamonHandle = GSgappCreate(1, 0xFE, 0, (GSgappFunc)(_mainDaemon));
-    GSgappSetName((int)(&_clearAddress + 0xA0), (const char *)(0));
+    GSgappSetName(pokecoloGappMainDeamonHandle, (const char*)(&_clearAddress + 0xA0));
     GSgfxResetEnable();
     GSgfxResetSetShutdownCallback(_pokecoloShutdown);
     fadeInit();
@@ -524,12 +528,12 @@ void pokecoloMain(int p0, char** p1) {
     var_r28_3 = (u32) temp_ret;
     var_r29 = temp_ret;
 loop_23:
+    var_r28_3 = (u32) temp_ret_4;
     GSgappUpdate();
     pokecoloCheckDiskTray();
-    temp_ret_2 = OSGetTime();
     var_r29 = temp_ret_4;
     temp_r6 = (u32) temp_ret_2 - var_r28_3;
-    var_r28_3 = (u32) temp_ret_4;
+    temp_ret_2 = OSGetTime();
     temp_ret_3 = __div2u(((((temp_ret_2 - var_r29) - !M2C_CARRY) * 8) & ~7) | (temp_r6 >> 0x1DU), temp_r6 * 8, 0, *(u32 *)0x800000F8 / 500000);
     M2C_FIELD(&_frameTime, s32 *, 0) = temp_ret_3;
     M2C_FIELD(&_frameTime, u32 *, 4) = (u32) temp_ret_3;
@@ -551,13 +555,7 @@ static void _pokecoloShutdown() {
 
 extern "C++" {
 #pragma push
-#pragma peephole off
 static void _pokecoloInit() {
-    void* flags1;
-    void* num3;
-    void* flags2;
-    void* num2;
-    void* flags3;
     u8* res;
 
     floorLayerConfig(0, 5);
@@ -577,17 +575,11 @@ static void _pokecoloInit() {
     savedataBiosSetNowSavedataPtr((Savedata*)(savedataBiosGetSavedataBufferPtr() + ((u32) OSGetTime() & 0x7E0)));
     savedataCreate(0, 0);
     fightInit();
-    flags3 = savedataGetStatus(0, 9);
-    num2 = savedataGetStatus(0, 6);
-    flags2 = savedataGetStatus(0, 8);
-    num3 = savedataGetStatus(0, 5);
-    flags1 = savedataGetStatus(0, 7);
-    savedataGetStatus(0, 4);
-    GSflagInit((u32*)flags1, (u32)num3, (u32*)flags2, (u32)num2, (u32*)flags3, 0);
+    GSflagInit((u32*)savedataGetStatus(0, 4), (u32)savedataGetStatus(0, 7), (u32*)savedataGetStatus(0, 5),
+               (u32)savedataGetStatus(0, 8), (u32*)savedataGetStatus(0, 6), (u32)savedataGetStatus(0, 9));
     GSvtrLoadTexture();
     menuFaceAllocMemory();
-    GSresGetResourceAllGroup(0x1F3A1200);
-    GSmodelSetMarukageTexture((GStexture *)(0));
+    GSmodelSetMarukageTexture((GStexture*)GSresGetResourceAllGroup(0x1F3A1200));
     characterInit();
     cameraInit();
     lightInit();
@@ -649,7 +641,6 @@ void mainAntiActionReplay() {
 }
 
 extern "C++" {
-#pragma peephole off
 static void _mainRender(unsigned long p0, unsigned long p1) {
     static s32 frame = 0;
     GSgfxRender();
@@ -681,7 +672,6 @@ static void _mainDaemon(unsigned long p0, unsigned long p1) {
 }
 }
 
-#pragma peephole reset
 }
 
 }
@@ -721,7 +711,6 @@ static void _mainThreadExec(unsigned long p0, unsigned long p1) {
 }
 
 extern "C++" {
-#pragma peephole off
 static void _mainGBARead(unsigned long p0, unsigned long p1) {
     s32 i;
 
@@ -745,7 +734,6 @@ static void _mainPadRead(unsigned long p0, unsigned long p1) {
     }
     GSinputReadEnd();
 }
-#pragma peephole reset
 }
 }
 }

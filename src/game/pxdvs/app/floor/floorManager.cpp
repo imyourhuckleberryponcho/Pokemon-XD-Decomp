@@ -685,6 +685,472 @@ u8 FloorManager::makeSaveData(u8** data, u32* size) {
     return 1;
 }
 
+extern "C" void* GSmemAlloc(u32 size);
+#pragma defer_codegen on
+
+u32 FloorModuleList::getPushStateSize() const {
+    return m_pushStateSize;
+}
+
+GSBinWriteStream::GSBinWriteStream(unsigned long size) {
+    u8* p = (u8*)GSmemAlloc(size);
+    m_buffer = p;
+    m_cursor = p;
+    m_top = p;
+    m_size = size;
+    m_owned = 1;
+}
+
+u8* GSBinWriteStream::getTop() const {
+    return m_top;
+}
+
+bool GSscript::Tiga::isMapping() {
+    return m_mapped != 0;
+}
+
+bool FloorStackList::isPushReady() const {
+    return m_num - 1 > m_depth;
+}
+
+bool FloorStackList::isPopReady() const {
+    return m_depth > 0;
+}
+
+u32 FloorStackList::getFloorID() {
+    return getCurrentStack()->getFloorID();
+}
+
+u8 FloorStackList::isPushFlag() {
+    return getCurrentStack()->isPushFlag();
+}
+
+u8 FloorStackList::isPopFlag() {
+    return getCurrentStack()->isPopFlag();
+}
+
+bool FloorStackList::isFloorPushd() const {
+    return m_depth != 0;
+}
+
+AppScript* FloorStackList::getScriptModule() {
+    return getCurrentStack()->getScriptModule();
+}
+
+void FloorStack::setType(FloorModuleType type) {
+    m_type = type;
+}
+
+u8 FloorStack::isPushFlag() {
+    return m_pushFlag;
+}
+
+FloorModuleType FloorStack::getType() {
+    return m_type;
+}
+
+void FloorStackList::freeAllResource() {
+    getCurrentStack()->freeAllResource();
+}
+
+void FloorStack::setUpdateState(FloorState state) {
+    m_updateState = state;
+}
+
+u8 FloorStack::isPopFlag() {
+    return m_popFlag;
+}
+
+u32 FloorStack::getFloorID() const {
+    return m_floorID;
+}
+
+u32 FloorStack::getGroupID() const {
+    return m_groupID;
+}
+
+u32 FloorStackList::getGroupID() {
+    return getCurrentStack()->getGroupID();
+}
+
+void FloorStackList::clearFlag() {
+    getCurrentStack()->clearFlag();
+}
+
+void FloorStackList::setFloorID(unsigned long id) {
+    getCurrentStack()->setFloorID(id);
+}
+
+void FloorStackList::setPushFlag() {
+    getCurrentStack()->setPushFlag();
+}
+
+void FloorStackList::reallocPushData() {
+    getCurrentStack()->reallocPushData();
+}
+
+void* FloorStackList::getPushState() {
+    return getCurrentStack()->getPushState();
+}
+
+void FloorStackList::clearState() {
+    getCurrentStack()->setPushState(0, 0);
+}
+
+void* FloorStack::getPushState() {
+    return m_pushData;
+}
+
+void FloorStackList::freeState() {
+    GSmemFree(getCurrentStack()->getPushState());
+    clearState();
+}
+
+FloorStack* FloorStackList::getBottomOfStack() {
+    return m_stacks;
+}
+
+FloorState FloorStack::getUpdateState() {
+    return m_updateState;
+}
+
+void FloorStackList::addResource(unsigned long group, unsigned long id) {
+    getCurrentStack()->addResource(group, id);
+}
+
+FloorStack* FloorStackList::getTopOfStack() {
+    return m_stacks + m_depth;
+}
+
+FloorStack* FloorStackList::getCurrentStack() {
+    return getTopOfStack();
+}
+
+void FloorStackList::freeResource(unsigned long group, unsigned long id) {
+    getCurrentStack()->freeResource(group, id);
+}
+
+FloorManager::FloorManager() {
+    m_changing = 0;
+    m_modules = 0;
+    m_stacks = 0;
+    m_maxSize = 0;
+    m_maxID = 0;
+}
+
+FloorManager::~FloorManager() {
+    if (m_modules != 0) {
+        delete m_modules;
+        m_modules = 0;
+    }
+    if (m_stacks != 0) {
+        delete m_stacks;
+        m_stacks = 0;
+    }
+}
+
+void FloorManager::init(unsigned long numStacks, unsigned long numModules) {
+    if (m_modules != 0) {
+        delete m_modules;
+        m_modules = 0;
+    }
+    if (m_stacks != 0) {
+        delete m_stacks;
+        m_stacks = 0;
+    }
+    m_modules = new FloorModuleList(numModules);
+    m_stacks = new FloorStackList(numStacks);
+    changeTaskMode(FLOOR_TASK_0);
+    GSthreadSetName(GSthreadCreate(0, 0x7d0, 0x4000, 1, 1, (void*)_floorMainThread), "floorMainThread");
+    GSthreadSetName(GSthreadCreate(1, 0x7d0, 0x1000, 1, 1, (void*)_floorScriptThread), "scriptUpdate");
+}
+
+u8 FloorManager::open(unsigned int floorID) {
+    if (getTaskMode() != FLOOR_TASK_0) {
+        return 0;
+    }
+    if (floorDataBiosGetPtr(floorID) == 0) {
+        return 0;
+    }
+    m_stacks->setFloorID(floorID);
+    m_stacks->setGroupID(makeFloorGroupID(floorID));
+    m_stacks->setUpdateState(FLOOR_STATE_2);
+    changeTaskMode(FLOOR_TASK_1);
+    return 1;
+}
+
+u8 FloorManager::close() {
+    if (getTaskMode() != FLOOR_TASK_2) {
+        return 0;
+    }
+    m_modules->killModuleGroup(m_stacks->getGroupID());
+    m_stacks->setUpdateState(FLOOR_STATE_6);
+    m_nextFloor = -1;
+    return 1;
+}
+
+u8 FloorManager::push(unsigned int floorID) {
+    floorSetFadeScript(0x5960009, 0x5960008);
+    if (!m_stacks->isPushReady()) {
+        return 0;
+    }
+    changeTaskMode(FLOOR_TASK_4);
+    m_nextFloor = floorID;
+    m_changing = 1;
+    return 1;
+}
+
+u8 FloorManager::pop() {
+    if (getTaskMode() != FLOOR_TASK_2) {
+        return 0;
+    }
+    floorSetFadeScript(0x5960009, 0x5960008);
+    if (!m_stacks->isPopReady()) {
+        return 0;
+    }
+    close();
+    setNextTaskMode(FLOOR_TASK_5);
+    m_changing = 1;
+    return 1;
+}
+
+u8 FloorManager::change(unsigned int floorID) {
+    if (getTaskMode() != FLOOR_TASK_2) {
+        return 0;
+    }
+    if (floorDataBiosGetPtr(floorID) == 0) {
+        return 0;
+    }
+    floorSetFadeScript(0x5960009, 0x5960008);
+    close();
+    setNextTaskMode(FLOOR_TASK_3);
+    m_nextFloor = floorID;
+    m_changing = 1;
+    return 1;
+}
+
+u8 FloorManager::popAndChange(unsigned int floorID) {
+    if (getTaskMode() != FLOOR_TASK_2) {
+        return 0;
+    }
+    floorSetFadeScript(0x5960009, 0x5960008);
+    if (!m_stacks->isPopReady()) {
+        return 0;
+    }
+    close();
+    setNextTaskMode(FLOOR_TASK_6);
+    m_nextFloor = floorID;
+    m_changing = 1;
+    return 1;
+}
+
+u32 FloorManager::getCurrentFloorID() {
+    return m_stacks->getFloorID();
+}
+
+u32 FloorManager::getNextFloorID() {
+    return m_nextFloor;
+}
+
+u32 FloorManager::getCurrentFloorGroupID() {
+    return m_stacks->getGroupID();
+}
+
+u8 FloorManager::isPush() {
+    return m_stacks->isPushFlag();
+}
+
+u8 FloorManager::isPop() {
+    return m_stacks->isPopFlag();
+}
+
+bool FloorManager::isFloorPushed() {
+    return m_stacks->isFloorPushd();
+}
+
+AppScript* FloorManager::getCurrentScript() {
+    return m_stacks->getScriptModule();
+}
+
+void FloorManager::mappingScript(char* name) {
+    FloorStack* stack = m_stacks->getCurrentStack();
+    if (stack != 0 && name != 0) {
+        if (memcmp(name, "TCOD", 4) == 0) {
+            stack->setType(FLOOR_MODULE_TYPE_2);
+            if (stack->getScriptModule() != 0) {
+                stack->getScriptModule()->mappingScript(name);
+            }
+        } else {
+            stack->setType(FLOOR_MODULE_TYPE_1);
+        }
+    } else {
+        stack->setType(FLOOR_MODULE_TYPE_1);
+    }
+}
+
+void FloorManager::unmappingScript(char* name) {
+    FloorStack* stack = m_stacks->getCurrentStack();
+    if (stack != 0) {
+        if (stack->getScriptModule() != 0) {
+            stack->getScriptModule()->unmappingScript();
+        }
+        stack->setType(FLOOR_MODULE_TYPE_1);
+    }
+}
+
+void FloorManager::mappingCommonScript(char* name) {
+    if (name != 0) {
+        if (memcmp(name, "TCOD", 4) == 0) {
+            setCommonScriptType(FLOOR_MODULE_TYPE_2);
+            m_common.mappingScript(name);
+        } else {
+            setCommonScriptType(FLOOR_MODULE_TYPE_1);
+        }
+    } else {
+        setCommonScriptType(FLOOR_MODULE_TYPE_1);
+    }
+}
+
+int FloorManager::getCurrentEnterMode() {
+    FloorStack* stack = m_stacks->getCurrentStack();
+    if (floorIsContinueMode()) {
+        return 3;
+    }
+    if (stack->isPopFlag()) {
+        return 2;
+    }
+    return stack->isPushFlag() != 0;
+}
+
+bool FloorManager::getCurrentScriptMode() {
+    return m_stacks->getCurrentStack()->getType() == FLOOR_MODULE_TYPE_2;
+}
+
+void FloorManager::waitForChange() {
+    while (m_changing) {
+        GSthreadSwitch();
+    }
+}
+
+void FloorManager::scriptUpdate() {
+    FloorStack* stack = m_stacks->getCurrentStack();
+    if (stack != 0) {
+        GSscript::Tiga* script = stack->getScriptModule();
+        if (script != 0) {
+            script->executeThread(timeGetLastFrameSec());
+        }
+    }
+}
+
+void FloorManager::load(GSfloor_dd_* floor, FloorEnterMode mode) {
+    u32 fsys = floorDataBiosGetFileGroupID(floor);
+    fn_8005C068(gamedatasaveGetStatus(0, 0xb));
+    m_modules->executeAll(floorDataBiosGetFloorID(floor), FLOOR_STATE_1, FLOOR_MODULE_TYPE_0, mode, -1);
+    floorLayerConfig(floorDataBiosGetFloorID(floor), floorDataBiosGetFloorKind(floor));
+    GSlogWrite("\n------------------>>> Floor %d loading... fsysid=[%d]\n\n", floorDataBiosGetFloorID(floor), fsys);
+    GSfsysReadWait(fsys);
+    floorInitWazaSequence(floorDataBiosGetFloorID(floor));
+    GSthreadSwitch();
+    GSthreadSwitch();
+}
+
+void FloorManager::unload(GSfloor_dd_* floor, bool full, FloorEnterMode mode) {
+    if (!floorCheckFightKind(m_nextFloor)) {
+        floorCheckFade();
+    }
+    u32 id = floorDataBiosGetFloorID(floor);
+    m_modules->executeAll(id, FLOOR_STATE_8, FLOOR_MODULE_TYPE_0, mode, -1);
+    if (full) {
+        GSthreadTerminateGroup(GSfloorGetCurrentFloorGroupID());
+    }
+    GSfsysFree(floorDataBiosGetFileGroupID(floor));
+    GSresFreeGroup(floorDataBiosGetGroupID(floor));
+    m_stacks->freeAllResource();
+    psRemoveParticle();
+    psRemoveGenerator();
+    psRemoveAppSRT();
+    GSlightDeleteCurrentAll();
+    GSmodelFreeAllShadowTextures();
+    m_changing = 0;
+}
+
+u8 FloorManager::update(FloorStack* stack) {
+    switch (stack->getUpdateState()) {
+    case FLOOR_STATE_2:
+        execPreFunction(stack, (FloorEnterMode)getCurrentEnterMode());
+        stack->clearFlag();
+        break;
+    case FLOOR_STATE_4: {
+        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_4, FLOOR_MODULE_TYPE_ALL, (FloorEnterMode)getCurrentEnterMode(), -1);
+        if (stack->getUpdateState() == FLOOR_STATE_4) {
+            stack->setUpdateState(FLOOR_STATE_5);
+        }
+        break;
+    }
+    case FLOOR_STATE_5:
+        floorSetContinueMode(0);
+        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_4, FLOOR_MODULE_TYPE_0, FLOOR_ENTER_MODE_0, -1);
+        break;
+    case FLOOR_STATE_6:
+        execPostFunction(stack, FLOOR_ENTER_MODE_0);
+        return 0;
+    }
+    return 1;
+}
+
+void FloorManager::execPreFunction(FloorStack* stack, FloorEnterMode mode) {
+    u8 restored = 0;
+    StateDataPtr state;
+    flooSetFrameRate();
+    if (mode == FLOOR_ENTER_MODE_3 && getStateData(&state) == 0) {
+        mode = FLOOR_ENTER_MODE_0;
+    }
+    if (mode == FLOOR_ENTER_MODE_2 || mode == FLOOR_ENTER_MODE_3) {
+        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_2, FLOOR_MODULE_TYPE_0, mode, stack->getGroupID());
+    } else {
+        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_2, FLOOR_MODULE_TYPE_ALL, mode, -1);
+    }
+    GSthreadSwitch();
+    m_modules->waitFloorScript(FLOOR_STATE_2);
+    if (mode == FLOOR_ENTER_MODE_3) {
+        m_modules->restorePopState(state.m_end, FLOOR_STATE_MODE_3, false);
+        GSscript::Tiga* script = stack->getScriptModule();
+        if (script != 0) {
+            restored = script->restoreStateData(state.m_data, state.m_header->m_size);
+        }
+        if (restored == 0) {
+            m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_2, FLOOR_MODULE_TYPE_2, mode, stack->getGroupID());
+            GSthreadSwitch();
+            m_modules->waitFloorScript(FLOOR_STATE_2);
+            stack->setUpdateState(FLOOR_STATE_4);
+        } else {
+            floorExecScriptIntegerByName("anywaysave_restart", GSfloorGetCurrentFloorGroupID(), 0, 0, 0);
+            underTakerMenuResore();
+            floorSetFadeScript(0x5960009, 0x5960019);
+            stack->setUpdateState(FLOOR_STATE_5);
+        }
+    } else if (stack->isPopFlag()) {
+        m_modules->unblockModuleGroup(stack->getGroupID());
+        m_stacks->unblock();
+        stack->setUpdateState(FLOOR_STATE_5);
+    } else {
+        stack->setUpdateState(FLOOR_STATE_4);
+    }
+    floorExecFadeIn();
+}
+
+void FloorManager::execPostFunction(FloorStack* stack, FloorEnterMode mode) {
+    floorExecFadeOut();
+    if (mode == FLOOR_ENTER_MODE_1) {
+        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_6, FLOOR_MODULE_TYPE_0, mode, -1);
+    } else {
+        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_6, FLOOR_MODULE_TYPE_ALL, mode, -1);
+    }
+    GSthreadSwitch();
+    if (mode != FLOOR_ENTER_MODE_1) {
+        m_modules->waitFloorScript(FLOOR_STATE_6);
+    }
+}
 void FloorManager::mainThread() {
     while (true) {
         switch (getTaskMode()) {
@@ -761,470 +1227,4 @@ void FloorManager::mainThread() {
         }
         }
     }
-}
-
-void FloorManager::execPostFunction(FloorStack* stack, FloorEnterMode mode) {
-    floorExecFadeOut();
-    if (mode == FLOOR_ENTER_MODE_1) {
-        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_6, FLOOR_MODULE_TYPE_0, mode, -1);
-    } else {
-        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_6, FLOOR_MODULE_TYPE_ALL, mode, -1);
-    }
-    GSthreadSwitch();
-    if (mode != FLOOR_ENTER_MODE_1) {
-        m_modules->waitFloorScript(FLOOR_STATE_6);
-    }
-}
-
-void FloorManager::execPreFunction(FloorStack* stack, FloorEnterMode mode) {
-    u8 restored = 0;
-    StateDataPtr state;
-    flooSetFrameRate();
-    if (mode == FLOOR_ENTER_MODE_3 && getStateData(&state) == 0) {
-        mode = FLOOR_ENTER_MODE_0;
-    }
-    if (mode == FLOOR_ENTER_MODE_2 || mode == FLOOR_ENTER_MODE_3) {
-        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_2, FLOOR_MODULE_TYPE_0, mode, stack->getGroupID());
-    } else {
-        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_2, FLOOR_MODULE_TYPE_ALL, mode, -1);
-    }
-    GSthreadSwitch();
-    m_modules->waitFloorScript(FLOOR_STATE_2);
-    if (mode == FLOOR_ENTER_MODE_3) {
-        m_modules->restorePopState(state.m_end, FLOOR_STATE_MODE_3, false);
-        GSscript::Tiga* script = stack->getScriptModule();
-        if (script != 0) {
-            restored = script->restoreStateData(state.m_data, state.m_header->m_size);
-        }
-        if (restored == 0) {
-            m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_2, FLOOR_MODULE_TYPE_2, mode, stack->getGroupID());
-            GSthreadSwitch();
-            m_modules->waitFloorScript(FLOOR_STATE_2);
-            stack->setUpdateState(FLOOR_STATE_4);
-        } else {
-            floorExecScriptIntegerByName("anywaysave_restart", GSfloorGetCurrentFloorGroupID(), 0, 0, 0);
-            underTakerMenuResore();
-            floorSetFadeScript(0x5960009, 0x5960019);
-            stack->setUpdateState(FLOOR_STATE_5);
-        }
-    } else if (stack->isPopFlag()) {
-        m_modules->unblockModuleGroup(stack->getGroupID());
-        m_stacks->unblock();
-        stack->setUpdateState(FLOOR_STATE_5);
-    } else {
-        stack->setUpdateState(FLOOR_STATE_4);
-    }
-    floorExecFadeIn();
-}
-
-u8 FloorManager::update(FloorStack* stack) {
-    switch (stack->getUpdateState()) {
-    case FLOOR_STATE_2:
-        execPreFunction(stack, (FloorEnterMode)getCurrentEnterMode());
-        stack->clearFlag();
-        break;
-    case FLOOR_STATE_4: {
-        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_4, FLOOR_MODULE_TYPE_ALL, (FloorEnterMode)getCurrentEnterMode(), -1);
-        if (stack->getUpdateState() == FLOOR_STATE_4) {
-            stack->setUpdateState(FLOOR_STATE_5);
-        }
-        break;
-    }
-    case FLOOR_STATE_5:
-        floorSetContinueMode(0);
-        m_modules->executeAll(stack->getFloorID(), FLOOR_STATE_4, FLOOR_MODULE_TYPE_0, FLOOR_ENTER_MODE_0, -1);
-        break;
-    case FLOOR_STATE_6:
-        execPostFunction(stack, FLOOR_ENTER_MODE_0);
-        return 0;
-    }
-    return 1;
-}
-
-void FloorManager::unload(GSfloor_dd_* floor, bool full, FloorEnterMode mode) {
-    if (!floorCheckFightKind(m_nextFloor)) {
-        floorCheckFade();
-    }
-    u32 id = floorDataBiosGetFloorID(floor);
-    m_modules->executeAll(id, FLOOR_STATE_8, FLOOR_MODULE_TYPE_0, mode, -1);
-    if (full) {
-        GSthreadTerminateGroup(GSfloorGetCurrentFloorGroupID());
-    }
-    GSfsysFree(floorDataBiosGetFileGroupID(floor));
-    GSresFreeGroup(floorDataBiosGetGroupID(floor));
-    m_stacks->freeAllResource();
-    psRemoveParticle();
-    psRemoveGenerator();
-    psRemoveAppSRT();
-    GSlightDeleteCurrentAll();
-    GSmodelFreeAllShadowTextures();
-    m_changing = 0;
-}
-
-void FloorManager::load(GSfloor_dd_* floor, FloorEnterMode mode) {
-    u32 fsys = floorDataBiosGetFileGroupID(floor);
-    fn_8005C068(gamedatasaveGetStatus(0, 0xb));
-    m_modules->executeAll(floorDataBiosGetFloorID(floor), FLOOR_STATE_1, FLOOR_MODULE_TYPE_0, mode, -1);
-    floorLayerConfig(floorDataBiosGetFloorID(floor), floorDataBiosGetFloorKind(floor));
-    GSlogWrite("\n------------------>>> Floor %d loading... fsysid=[%d]\n\n", floorDataBiosGetFloorID(floor), fsys);
-    GSfsysReadWait(fsys);
-    floorInitWazaSequence(floorDataBiosGetFloorID(floor));
-    GSthreadSwitch();
-    GSthreadSwitch();
-}
-
-void FloorManager::scriptUpdate() {
-    FloorStack* stack = m_stacks->getCurrentStack();
-    if (stack != 0) {
-        GSscript::Tiga* script = stack->getScriptModule();
-        if (script != 0) {
-            script->executeThread(timeGetLastFrameSec());
-        }
-    }
-}
-
-void FloorManager::waitForChange() {
-    while (m_changing) {
-        GSthreadSwitch();
-    }
-}
-
-bool FloorManager::getCurrentScriptMode() {
-    return m_stacks->getCurrentStack()->getType() == FLOOR_MODULE_TYPE_2;
-}
-
-int FloorManager::getCurrentEnterMode() {
-    FloorStack* stack = m_stacks->getCurrentStack();
-    if (floorIsContinueMode()) {
-        return 3;
-    }
-    if (stack->isPopFlag()) {
-        return 2;
-    }
-    return stack->isPushFlag() != 0;
-}
-
-void FloorManager::mappingCommonScript(char* name) {
-    if (name != 0) {
-        if (memcmp(name, "TCOD", 4) == 0) {
-            setCommonScriptType(FLOOR_MODULE_TYPE_2);
-            m_common.mappingScript(name);
-        } else {
-            setCommonScriptType(FLOOR_MODULE_TYPE_1);
-        }
-    } else {
-        setCommonScriptType(FLOOR_MODULE_TYPE_1);
-    }
-}
-
-void FloorManager::unmappingScript(char* name) {
-    FloorStack* stack = m_stacks->getCurrentStack();
-    if (stack != 0) {
-        if (stack->getScriptModule() != 0) {
-            stack->getScriptModule()->unmappingScript();
-        }
-        stack->setType(FLOOR_MODULE_TYPE_1);
-    }
-}
-
-void FloorManager::mappingScript(char* name) {
-    FloorStack* stack = m_stacks->getCurrentStack();
-    if (stack != 0 && name != 0) {
-        if (memcmp(name, "TCOD", 4) == 0) {
-            stack->setType(FLOOR_MODULE_TYPE_2);
-            if (stack->getScriptModule() != 0) {
-                stack->getScriptModule()->mappingScript(name);
-            }
-        } else {
-            stack->setType(FLOOR_MODULE_TYPE_1);
-        }
-    } else {
-        stack->setType(FLOOR_MODULE_TYPE_1);
-    }
-}
-
-AppScript* FloorManager::getCurrentScript() {
-    return m_stacks->getScriptModule();
-}
-
-bool FloorManager::isFloorPushed() {
-    return m_stacks->isFloorPushd();
-}
-
-u8 FloorManager::isPop() {
-    return m_stacks->isPopFlag();
-}
-
-u8 FloorManager::isPush() {
-    return m_stacks->isPushFlag();
-}
-
-u32 FloorManager::getCurrentFloorGroupID() {
-    return m_stacks->getGroupID();
-}
-
-u32 FloorManager::getNextFloorID() {
-    return m_nextFloor;
-}
-
-u32 FloorManager::getCurrentFloorID() {
-    return m_stacks->getFloorID();
-}
-
-u8 FloorManager::popAndChange(unsigned int floorID) {
-    if (getTaskMode() != FLOOR_TASK_2) {
-        return 0;
-    }
-    floorSetFadeScript(0x5960009, 0x5960008);
-    if (!m_stacks->isPopReady()) {
-        return 0;
-    }
-    close();
-    setNextTaskMode(FLOOR_TASK_6);
-    m_nextFloor = floorID;
-    m_changing = 1;
-    return 1;
-}
-
-u8 FloorManager::change(unsigned int floorID) {
-    if (getTaskMode() != FLOOR_TASK_2) {
-        return 0;
-    }
-    if (floorDataBiosGetPtr(floorID) == 0) {
-        return 0;
-    }
-    floorSetFadeScript(0x5960009, 0x5960008);
-    close();
-    setNextTaskMode(FLOOR_TASK_3);
-    m_nextFloor = floorID;
-    m_changing = 1;
-    return 1;
-}
-
-u8 FloorManager::pop() {
-    if (getTaskMode() != FLOOR_TASK_2) {
-        return 0;
-    }
-    floorSetFadeScript(0x5960009, 0x5960008);
-    if (!m_stacks->isPopReady()) {
-        return 0;
-    }
-    close();
-    setNextTaskMode(FLOOR_TASK_5);
-    m_changing = 1;
-    return 1;
-}
-
-u8 FloorManager::push(unsigned int floorID) {
-    floorSetFadeScript(0x5960009, 0x5960008);
-    if (!m_stacks->isPushReady()) {
-        return 0;
-    }
-    changeTaskMode(FLOOR_TASK_4);
-    m_nextFloor = floorID;
-    m_changing = 1;
-    return 1;
-}
-
-u8 FloorManager::close() {
-    if (getTaskMode() != FLOOR_TASK_2) {
-        return 0;
-    }
-    m_modules->killModuleGroup(m_stacks->getGroupID());
-    m_stacks->setUpdateState(FLOOR_STATE_6);
-    m_nextFloor = -1;
-    return 1;
-}
-
-u8 FloorManager::open(unsigned int floorID) {
-    if (getTaskMode() != FLOOR_TASK_0) {
-        return 0;
-    }
-    if (floorDataBiosGetPtr(floorID) == 0) {
-        return 0;
-    }
-    m_stacks->setFloorID(floorID);
-    m_stacks->setGroupID(makeFloorGroupID(floorID));
-    m_stacks->setUpdateState(FLOOR_STATE_2);
-    changeTaskMode(FLOOR_TASK_1);
-    return 1;
-}
-
-void FloorManager::init(unsigned long numStacks, unsigned long numModules) {
-    if (m_modules != 0) {
-        delete m_modules;
-        m_modules = 0;
-    }
-    if (m_stacks != 0) {
-        delete m_stacks;
-        m_stacks = 0;
-    }
-    m_modules = new FloorModuleList(numModules);
-    m_stacks = new FloorStackList(numStacks);
-    changeTaskMode(FLOOR_TASK_0);
-    GSthreadSetName(GSthreadCreate(0, 0x7d0, 0x4000, 1, 1, (void*)_floorMainThread), "floorMainThread");
-    GSthreadSetName(GSthreadCreate(1, 0x7d0, 0x1000, 1, 1, (void*)_floorScriptThread), "scriptUpdate");
-}
-
-FloorManager::~FloorManager() {
-    if (m_modules != 0) {
-        delete m_modules;
-        m_modules = 0;
-    }
-    if (m_stacks != 0) {
-        delete m_stacks;
-        m_stacks = 0;
-    }
-}
-
-FloorManager::FloorManager() {
-    m_changing = 0;
-    m_modules = 0;
-    m_stacks = 0;
-    m_maxSize = 0;
-    m_maxID = 0;
-}
-
-extern "C" void* GSmemAlloc(u32 size);
-
-inline void FloorStackList::freeResource(unsigned long group, unsigned long id) {
-    getCurrentStack()->freeResource(group, id);
-}
-
-inline FloorStack* FloorStackList::getCurrentStack() {
-    return getTopOfStack();
-}
-
-inline FloorStack* FloorStackList::getTopOfStack() {
-    return m_stacks + m_depth;
-}
-
-inline void FloorStackList::addResource(unsigned long group, unsigned long id) {
-    getCurrentStack()->addResource(group, id);
-}
-
-inline FloorState FloorStack::getUpdateState() {
-    return m_updateState;
-}
-
-inline FloorStack* FloorStackList::getBottomOfStack() {
-    return m_stacks;
-}
-
-inline void FloorStackList::freeState() {
-    GSmemFree(getCurrentStack()->getPushState());
-    clearState();
-}
-
-inline void* FloorStack::getPushState() {
-    return m_pushData;
-}
-
-inline void FloorStackList::clearState() {
-    getCurrentStack()->setPushState(0, 0);
-}
-
-inline void* FloorStackList::getPushState() {
-    return getCurrentStack()->getPushState();
-}
-
-inline void FloorStackList::reallocPushData() {
-    getCurrentStack()->reallocPushData();
-}
-
-inline void FloorStackList::setPushFlag() {
-    getCurrentStack()->setPushFlag();
-}
-
-inline void FloorStackList::setFloorID(unsigned long id) {
-    getCurrentStack()->setFloorID(id);
-}
-
-inline void FloorStackList::clearFlag() {
-    getCurrentStack()->clearFlag();
-}
-
-inline u32 FloorStackList::getGroupID() {
-    return getCurrentStack()->getGroupID();
-}
-
-inline u32 FloorStack::getGroupID() const {
-    return m_groupID;
-}
-
-inline u32 FloorStack::getFloorID() const {
-    return m_floorID;
-}
-
-inline u8 FloorStack::isPopFlag() {
-    return m_popFlag;
-}
-
-inline void FloorStack::setUpdateState(FloorState state) {
-    m_updateState = state;
-}
-
-inline void FloorStackList::freeAllResource() {
-    getCurrentStack()->freeAllResource();
-}
-
-inline FloorModuleType FloorStack::getType() {
-    return m_type;
-}
-
-inline u8 FloorStack::isPushFlag() {
-    return m_pushFlag;
-}
-
-inline void FloorStack::setType(FloorModuleType type) {
-    m_type = type;
-}
-
-inline AppScript* FloorStackList::getScriptModule() {
-    return getCurrentStack()->getScriptModule();
-}
-
-inline bool FloorStackList::isFloorPushd() const {
-    return m_depth != 0;
-}
-
-inline u8 FloorStackList::isPopFlag() {
-    return getCurrentStack()->isPopFlag();
-}
-
-inline u8 FloorStackList::isPushFlag() {
-    return getCurrentStack()->isPushFlag();
-}
-
-inline u32 FloorStackList::getFloorID() {
-    return getCurrentStack()->getFloorID();
-}
-
-inline bool FloorStackList::isPopReady() const {
-    return m_depth > 0;
-}
-
-inline bool FloorStackList::isPushReady() const {
-    return m_num - 1 > m_depth;
-}
-
-inline bool GSscript::Tiga::isMapping() {
-    return m_mapped != 0;
-}
-
-inline u8* GSBinWriteStream::getTop() const {
-    return m_top;
-}
-
-inline GSBinWriteStream::GSBinWriteStream(unsigned long size) {
-    u8* p = (u8*)GSmemAlloc(size);
-    m_buffer = p;
-    m_cursor = p;
-    m_top = p;
-    m_size = size;
-    m_owned = 1;
-}
-
-inline u32 FloorModuleList::getPushStateSize() const {
-    return m_pushStateSize;
 }

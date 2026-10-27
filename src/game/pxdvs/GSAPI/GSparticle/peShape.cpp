@@ -1483,18 +1483,18 @@ extern "C++" {
 u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
     f32 temp_f31;
     s32 sp14;
-    s32 sp18;
+    volatile s32 sp18;
     s32 sp24;
     s32 sp28;
     s32 sp2C;
-    s32 sp34;
+    u32 sp34;
     s32 sp38;
     s32 sp40;
     s32 sp44;
     s32 spC;
     s32 unksp20;
     s32 unksp30;
-    s32 unksp3C;
+    u32 unksp3C;
     s32 unksp54;
     f32 spE0;
     f32 spDC;
@@ -1511,7 +1511,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
     volatile f32 sp84;
     f32 sp80;
     f32 sp7C;
-    f32 sp78;
+    volatile f32 sp78;
     volatile f32 sp74;
     f32 sp70;
     f32 sp6C;
@@ -1571,7 +1571,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
         }
         var_f2 = (sp6C * sp6C);
         var_f2 += (sp64 * sp64);
-        if (var_f2 > 0.0f) {
+        if (var_f2 > 1.0f) {
             temp_f1 = __frsqrte(var_f2);
             temp_f1_2 = 0.5 * temp_f1 * -(((f64) var_f2 * (temp_f1 * temp_f1)) - 3.0);
             temp_f1_3 = 0.5 * temp_f1_2 * -(((f64) var_f2 * (temp_f1_2 * temp_f1_2)) - 3.0);
@@ -1711,15 +1711,16 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
             var_f2_2 = peSplineGetValue((peSpline*)(temp_r3_9), temp_f31);
         }
     }
-    sp88 = M2C_FIELD(this, f32 *, 0x80) * var_f2_2;
-    peColorSplineGetValue((u8*)((u8*)this + 0x98), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 0x4C)), temp_f31);
+    sp88 = M2C_FIELD(this, f32 *, 0x80);
+    sp88 *= var_f2_2;
     spA = M2C_FIELD(this, u8 *, 0x98);
     M2C_FIELD(this, u8 *, 0x98) = sp14;
+    peColorSplineGetValue((u8*)((u8*)this + 0x98), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 0x4C)), temp_f31);
     sp9 = M2C_FIELD(this, u8 *, 0x99);
     M2C_FIELD(this, u8 *, 0x99) = sp10;
     sp8 = M2C_FIELD(this, u8 *, 0x9A);
     M2C_FIELD(this, u8 *, 0x9A) = spC;
-    temp_r3_10 = M2C_FIELD(p1, peSpline **, 0x50);
+    temp_r3_10 = M2C_FIELD((u16)p1, peSpline **, 0x50);
     if ((temp_r3_10 == NULL) || !(M2C_FIELD(temp_r3_10, u8 *, 0) & 3)) {
 
     } else {
@@ -1740,7 +1741,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
         var_f0 = M2C_FIELD(this, f32 *, 0x68);
     }
     sp70 = var_f0;
-    if (M2C_FIELD(this, s32 *, 0x88) & 2) {
+    if (M2C_FIELD((s32)this, s32 *, 0x88) & 2) {
         sp74 = -M2C_FIELD(this, f32 *, 0x6C);
     } else {
         sp74 = M2C_FIELD(this, f32 *, 0x6C);
@@ -1751,7 +1752,7 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
         sp78 = M2C_FIELD(this, f32 *, 0x70);
     }
     sp7C = M2C_FIELD(this, f32 *, 0x74);
-    spBC = M2C_FIELD(this, f32 *, 8);
+    spBC = M2C_FIELD((u16)this, f32 *, 8);
     spC0 = M2C_FIELD(this, f32 *, 0xC);
     spC4 = M2C_FIELD(this, f32 *, 0x10);
     PSQUATMultiply((const register Quaternion*)(this + 0x58), (const register Quaternion*)((Quaternion *) &sp70), (register Quaternion*)(&unksp20));
@@ -1760,11 +1761,11 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
     spD0 = sp28;
     spD4 = sp2C;
     spD8 = sp80;
-    spDC = sp84;
     spE0 = sp88;
     peNodeTransformsConcat((peXform*)(this + 0x30), (peXform*)(M2C_FIELD(this, peXform **, 0x20)), (peXform*)((peXform *) &spBC), 0U);
-    PSVECSubtract((const register Vec*)(this + 0x30), (const register Vec*)(&g_CameraPosition), (register Vec*)(&unksp3C));
     sp48 = unksp3C;
+    if (spDC < sp84) spDC = sp84;
+    PSVECSubtract((const register Vec*)(this + 0x30), (const register Vec*)(&g_CameraPosition), (register Vec*)(&unksp3C));
     sp4C = sp40;
     sp50 = sp44;
     M2C_FIELD(this, f32 *, 0x84) = PSVECDotProduct((const register Vec*)(&g_CameraLookDir), (const register Vec*)((Vec *) &sp48));

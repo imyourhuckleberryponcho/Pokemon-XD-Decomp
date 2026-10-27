@@ -196,9 +196,9 @@ struct OrreHero {
 };
 static OrreHero _orreHero;
 
-void* _loadPokemonCallBack(void* idx);
-void* _GetTemochiPokemonPtr(u16 idx);
-Pokemon* _PokemonStatusDisp_CallBack(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, long idx);
+static void* _loadPokemonCallBack(void* idx);
+static void* _GetTemochiPokemonPtr(u16 idx);
+static Pokemon* _PokemonStatusDisp_CallBack(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, long idx);
 
 static inline void setNowFrameEnd(u32 id, int n) {
     const char* endLabel[5] = {"1_start", "1_end", "2_end", "3_end", "4_end"};
@@ -211,7 +211,7 @@ static inline void playLabel(u32 id, int n) {
     FlashSystemSetPlayFrameLabel(id, anim[n][0], anim[n][1]);
 }
 
-void* _loadPokemonCallBack(void* param) {
+static void* _loadPokemonCallBack(void* param) {
     u16* idx = (u16*)param;
     void* result = 0;
     if (pOrre != 0) {
@@ -586,14 +586,14 @@ s32 menuOrre::Hook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     return 0;
 }
 
-void* _GetTemochiPokemonPtr(u16 idx) {
+static void* _GetTemochiPokemonPtr(u16 idx) {
     if (pOrre != 0) {
         return pOrre->GetTemochiPokemonPtr(idx);
     }
     return 0;
 }
 
-Pokemon* _PokemonStatusDisp_CallBack(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, long param) {
+static Pokemon* _PokemonStatusDisp_CallBack(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, long param) {
     u16* idx = (u16*)param;
     Pokemon* result = 0;
     switch (type) {
@@ -637,7 +637,6 @@ void menuOrre::Main() {
     u8 ok = 1;
     u16 k;
     u16 i;
-    void* src;
     void* hero;
     _loadFaceCount = 0;
     menuFaceLoad(0, _loadPokemonCallBack, &_loadFaceCount);
@@ -760,8 +759,7 @@ void menuOrre::Main() {
             pokemonInit(heroBiosGetPokemonPtr(hero, i));
         }
         for (k = 0; k < 4; k++) {
-            src = GetTemochiPokemonPtr(m_sel[k]);
-            pokemonBiosCopy(heroBiosGetPokemonPtr(hero, (u8)k), src);
+            pokemonBiosCopy(heroBiosGetPokemonPtr(hero, k), GetTemochiPokemonPtr(m_sel[k]));
         }
         fightSetMenuCtrlHero(fightGetMenuCtrlHero());
         _fightresult = fightEncount(m_deck);

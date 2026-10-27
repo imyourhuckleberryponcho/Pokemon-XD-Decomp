@@ -401,6 +401,7 @@ extern "C" {
 extern "C" {
 void GSgfxVFSetElement(GSgfxVF* p0, s32 p1, s32 p2, s32 p3, s32 p4) {
     goto loop_4;
+    goto loop_64;
     goto loop_68;
     s32 *var_r3;
     s32 *var_r3_2;
@@ -420,7 +421,6 @@ void GSgfxVFSetElement(GSgfxVF* p0, s32 p1, s32 p2, s32 p3, s32 p4) {
     s32 temp_r0_5;
     s32 temp_r0_7;
     volatile s32 temp_r3;
-    s32 temp_r3_2;
     s32 temp_r6;
     s32 temp_r7;
     u32 temp_r0_3;
@@ -634,11 +634,10 @@ loop_64:
 
         } else {
             var_r5_5 += 0x10;
-            goto loop_64;
         }
         if (var_r5_5 != NULL) {
             var_r4_6 += 1;
-            M2C_FIELD(p0, u8 *, 2) = (u8) (M2C_FIELD(p0, u8 *, 2) + 1);
+            M2C_FIELD((u8)p0, u8 *, 2) = (u8) (M2C_FIELD(p0, u8 *, 2) + 1);
         }
     }
     var_r5_6 = 0;
@@ -646,10 +645,9 @@ loop_78:
     if (var_r5_6 < 8U) {
         var_r4_7 = (long *)(((u8*)((u8)p0) + 8));
 loop_74:
-        temp_r3_2 = *var_r4_7;
-        if (temp_r3_2 == 0xFF) {
+        if ((*var_r4_7) == 0xFF) {
             var_r4_7 = NULL;
-        } else if (temp_r3_2 == (s32) (var_r5_6 + 0xD)) {
+        } else if ((*var_r4_7) == (s32) (var_r5_6 + 0xD)) {
 
         } else {
             var_r4_7 += 0x10;

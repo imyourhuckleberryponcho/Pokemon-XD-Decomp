@@ -1078,7 +1078,7 @@ static void TExp2TevDesc(HSD_TExp* texp, HSD_TExpTevDesc* desc,
         tevdesc->u.tevconf.alpha_clamp =
             tev->a_clamp != 0 ? GX_TRUE : GX_FALSE;
 
-        HSD_ASSERT(1397, tev->a_dst != HSD_TE_UNDEF);
+        HSD_ASSERT(1429, tev->a_dst != HSD_TE_UNDEF);
         tevdesc->u.tevconf.alpha_out_reg = dst[tev->a_dst];
         if (tevdesc->u.tevconf.alpha_out_reg == 0) {
             *init_aprev = 0;

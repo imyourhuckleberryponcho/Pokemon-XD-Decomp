@@ -174,7 +174,7 @@ void* memset(void*, int, u32);
 void* memcpy(void*, const void*, u32);
 }
 
-struct RegBlend { u32 id : 8; u32 pad : 8; u32 pad2 : 3; u32 lop : 1; u32 sub : 1; u32 src : 3; u32 dst : 3; u32 pad3 : 3; u32 logic : 1; u32 blend : 1; };
+struct RegBlend { u32 id : 8; u32 pad : 8; u32 pad2 : 3; u32 lop : 1; u32 sub : 1; u32 src : 3; u32 dst : 3; u32 alphaUpd : 1; u32 colorUpd : 1; u32 dither : 1; u32 logic : 1; u32 blend : 1; };
 struct RegSS { u32 id : 8; u32 pad : 8; u32 t1 : 4; u32 s1 : 4; u32 t0 : 4; u32 s0 : 4; };
 struct RegAlphaCmp { u32 id : 8; u32 op : 2; u32 comp1 : 3; u32 comp0 : 3; u32 ref1 : 8; u32 ref0 : 8; };
 struct AlphaCache { s32 comp0, op, comp1; u8 ref0, ref1; };
@@ -183,7 +183,7 @@ struct RegScis { u32 id : 8; u32 x : 12; u32 y : 12; };
 struct RegFogRange { u32 id : 8; u32 pad : 13; u32 en : 1; u32 center : 10; };
 struct RegRangeAdj { u32 id : 8; u32 k : 12; u32 r : 12; };
 struct RegTevC { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 4; u32 b : 4; u32 c : 4; u32 d : 4; };
-struct RegTevA { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 3; u32 b : 3; u32 c : 3; u32 d : 3; u32 pad : 4; };
+struct RegTevA { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 3; u32 b : 3; u32 c : 3; u32 d : 3; u32 tswap : 2; u32 rswap : 2; };
 struct RegPeCtrl {
     u32 id : 8;
     u32 pad : 17;
@@ -330,13 +330,14 @@ struct GSState;
 
 struct RegX22 { u32 id : 8; u32 pad23 : 1; u32 b22 : 1; u32 f19 : 3; u32 f16 : 3; u32 pw : 8; u32 lw : 8; };
 struct RegX68 { u32 id : 8; u32 pad : 23; u32 b0 : 1; };
-struct RegCMode1 { u32 id : 8; u32 pad : 13; u32 f9 : 2; u32 pad2 : 9; };
+struct RegCMode1 { u32 id : 8; u32 pad : 13; u32 f9 : 2; u32 en : 1; u32 alpha : 8; };
 struct Reg { u32 id : 8; u32 v : 24; };
 struct RegKcol { u32 id : 8; u32 pad : 1; u32 hi : 11; u32 pad2 : 1; u32 lo : 11; };
-struct RegKsel { u32 id : 8; u32 pad : 20; u32 hi : 2; u32 lo : 2; };
+struct RegKsel { u32 id : 8; u32 kasel1 : 5; u32 kcsel1 : 5; u32 kasel0 : 5; u32 kcsel0 : 5; u32 hi : 2; u32 lo : 2; };
 struct RegTlutLoad0 { u32 id : 8; u32 pad : 3; u32 a : 21; };
 struct RegTlutLoad1 { u32 id : 8; u32 pad : 3; u32 b : 11; u32 c : 10; };
-struct RegSu { u32 id : 8; u32 pad : 8; u32 half : 16; };
+struct RegSu { u32 id : 8; u32 pad : 4; u32 pf : 1; u32 lf : 1; u32 pad2 : 2; u32 half : 16; };
+struct RegFogCol { u32 id : 8; u32 r : 8; u32 g : 8; u32 b : 8; };
 struct RegSuBits { u32 id : 8; u32 pad : 8; u32 hi : 4; u32 f11 : 1; u32 f10 : 1; u32 sz : 10; };
 struct ChanCache { u8 a; s32 w[5]; };
 struct TevOrderCache { s32 a, b, c; };
@@ -397,7 +398,7 @@ struct GSState {
     RegFog1 fog1;
     RegFog2 fog2;
     RegFog3 fog3;
-    Reg r2f4;
+    RegFogCol r2f4;
     RegFogRange fogRange;
     RegRangeAdj rangeAdj[5];
     RegIndCmd indCmd[16];
@@ -451,7 +452,7 @@ struct GSState {
     u8 padbed[3];
     u8 c_bf0;
     u8 cBF1[3];
-    u32 c_fogType;
+    s32 c_fogType;
     f32 c_fogStart;
     f32 c_fogEnd;
     f32 c_fogNear;
@@ -468,7 +469,14 @@ struct GSState {
 #define RAW(r) (*(u32*)&(r))
 extern "C" GSState* gsgfxState;
 u8* _layerStateLastHWState;
-#define GX_WGPIPE (*(volatile union { u8 u8; u16 u16; u32 u32; f32 f32; }*)0xCC008000)
+union GSWGPipe {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    f32 f32;
+};
+volatile GSWGPipe GSWGFifo : 0xCC008000;
+#define GX_WGPIPE GSWGFifo
 
 extern "C" {
 struct GXFogAdjTable {
@@ -476,7 +484,7 @@ struct GXFogAdjTable {
 };
 
 extern "C" {
-void* GSgfxVideoGetViewport(f32, s32, s32, f32, f32, s32, s32, f32);
+f32* GSgfxVideoGetViewport(void);
 inline void GSgfx_GCSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1);
 struct GSColor { u8 r; u8 g; u8 b; u8 a; };
 inline void GSgfx_GCSetAmbColor(s32 ch, GSColor c);
@@ -493,17 +501,17 @@ inline void GSgfx_GCSetTevAlphaOp(s32 stage, s32 op, s32 bias, s32 scale, u8 cla
 inline void GSgfx_GCSetTevColorIn(s32 stage, s32 a, s32 b, s32 c, s32 d);
 inline void GSgfx_GCSetTevColorOp(s32 stage, s32 op, s32 bias, s32 scale, u8 clamp, s32 reg);
 inline void GSgfx_GCSetTevDirect(s32 stage);
-inline void GSgfx_GCSetTevIndBumpXYZ(s32 stage, u8 indId, u8 mtx);
+inline void GSgfx_GCSetTevIndBumpXYZ(s32 stage, u8 indId, s32 mtx);
 inline void GSgfx_GCSetTevIndRepeat(s32 stage);
-inline void GSgfx_GCSetTevIndWarp(s32 stage, u8 indId, u8 signMod, u8 wrap, u8 mtx);
-inline void GSgfx_GCSetTevIndirect(s32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, u8 ws, u8 wt, s32 addPrev, u8 utc, s32 alpha);
-inline void GSgfx_GCSetTevKColor(u32 i, u32* c);
+inline void GSgfx_GCSetTevIndWarp(s32 stage, u8 indId, u8 signMod, u8 wrap, s32 mtx);
+inline void GSgfx_GCSetTevIndirect(s32 stage, u8 indId, s32 fmt, s32 bias, s32 mtx, s32 ws, s32 wt, u8 addPrev, u8 utc, s32 alpha);
+inline void GSgfx_GCSetTevKColor(u32 i, GSColor c);
 inline void GSgfx_GCSetTevOrder(s32 stage, s32 coord, s32 map, s32 color);
 inline void GSgfx_GCSetTevSwapModeTable(s32 t, s32 r, s32 g, s32 b, s32 a);
-s32 GSgfx_GCWriteFog(s32);
-s32 GSgfx_GCWriteTevIndBumpST(s32, u8, s32);
-s32 GSgfx_GCWriteTevIndTile(s32, u8, u16, u16, u16, u16, s32, s32);
-s32 GSgfx_GCWriteTexCoordGen(s32);
+void GSgfx_GCWriteFog(u32 type, f32 startz, f32 endz, f32 nearz, f32 farz);
+void GSgfx_GCWriteTevIndBumpST(unsigned int stage, u8 indId, s32 mtx);
+void GSgfx_GCWriteTevIndTile(u32 stage, u8 indId, u16 sizeS, u16 sizeT, u16 spaceS, u16 spaceT, u32 fmt, s32 mtx, u32 bias, u32 alpha);
+void GSgfx_GCWriteTexCoordGen(u32 coord, s32 func, s32 src, u32 mtxIdx, u8 normalize, u32 postMtx);
 void GXInitFogAdjTable(GXFogAdjTable *table, u16 width, const f32 projmtx[4][4]);
 extern s32 cm2hw_localstatic3_GSgfx_GCWriteCullMode;
 extern s32 jtbl_1693;
@@ -642,785 +650,741 @@ void GSgfxLayer::ResetVertexFormat(GSgfxVF* vf) {
 extern "C" {
 
 extern "C++" {
+struct GSgfxLayerTexGen {
+    s32 func;
+    s32 src;
+    u32 mtx;
+    u8 norm;
+    u32 post;
+    u8* tex;
+};
+struct GSgfxLayerChan {
+    u8 enable;
+    s32 amb;
+    s32 mat;
+    u32 lightMask;
+    s32 diff;
+    s32 attn;
+    u8* lights[8];
+};
+struct GSgfxLayerTevColor {
+    u32 type;
+    union {
+        GSColor c;
+        s16 s10[4];
+    };
+};
+struct GSgfxLayerInd {
+    u32 type;
+    union {
+        struct {
+            u8 indId;
+            u8 pad[3];
+            s32 fmt, bias, mtx, ws, wt, alpha;
+            u8 addPrev, utc;
+        } ind;
+        struct {
+            u8 indId, signMod, wrap;
+            u8 pad;
+            s32 mtx;
+        } warp;
+        struct {
+            u8 indId;
+            u8 pad;
+            u16 sizeS, sizeT, spaceS, spaceT;
+            u16 pad2;
+            s32 fmt, mtx, bias, alpha;
+        } tile;
+        struct {
+            u8 indId;
+            u8 pad[3];
+            s32 mtx;
+        } bump;
+    };
+};
+struct GSgfxLayerHW {
+    u8 nTexGens;
+    GSgfxLayerTexGen texGen[8];
+    u8 lineWidth;
+    s32 lineOffset;
+    u8 pointSize;
+    s32 pointOffset;
+    u8 texOffsets[8][2];
+    s32 projType;
+    f32 proj[6];
+    u16 scissor[4];
+    f32 viewport[4];
+    u8 coPlanar;
+    s32 cullMode;
+    s32 clipMode;
+    u8 lightCount;
+    u8* lights[8];
+    u8 nChans;
+    GSgfxLayerChan chan[4];
+    GSColor amb[2];
+    GSColor mat[2];
+    u8 nTevStages;
+    s32 tevOrder[16][3];
+    s32 colorIn[16][4];
+    s32 alphaIn[16][4];
+    TevOpCache colorOp[16];
+    TevOpCache alphaOp[16];
+    GSgfxLayerTevColor tevColor[4];
+    GSgfxLayerInd ind[4];
+    u8 nIndStages;
+    s32 indOrder[4][2];
+    s32 indScale[4][2];
+    GSColor kcolor[4];
+    s32 kcsel[16];
+    s32 kasel[16];
+    s32 swapSel[16][2];
+    s32 swapTab[4][4];
+    s32 blend[4];
+    u8 dstAlphaEnable;
+    u8 dstAlpha;
+    u8 colorUpdate;
+    u8 alphaUpdate;
+    u8 zUpdate;
+    u8 pad9e9[3];
+    u8 zEnable;
+    s32 zFunc;
+    s32 alphaComp0;
+    s32 alphaCmpOp;
+    s32 alphaComp1;
+    u8 alphaRef0;
+    u8 alphaRef1;
+    u8 zCompLoc;
+    u8 pada03;
+    u8 dither;
+    s32 fogType;
+    f32 fogStart;
+    f32 fogEnd;
+    f32 fogNear;
+    f32 fogFar;
+    GSColor fogColor;
+    u16 fogTable[10];
+    u16 fogCenter;
+    u8 fogRangeEnable;
+    u8 fogEnable;
+};
+struct GSgfxLayerDirty {
+    u32 groups;
+    u32 geom;
+    u32 texGen;
+    u32 texOffsets;
+    u32 raster;
+    u32 light;
+    u32 chanCtrl;
+    u32 amb;
+    u32 mat;
+    u32 tev;
+    u32 tevOrder;
+    u32 colorIn;
+    u32 alphaIn;
+    u32 colorOp;
+    u32 alphaOp;
+    u32 tevColor;
+    u32 ind;
+    u32 indStage;
+    u32 indOrder;
+    u32 indScale;
+    u32 kcolor;
+    u32 kcsel;
+    u32 kasel;
+    u32 swapSel;
+    u32 swapTab;
+    u32 pe;
+};
+
+extern "C" {
+
+inline void GSgfx_GCSetNumTexGens(u8 n) {
+    if (gsgfxState->c3f8 != n) {
+        gsgfxState->genMode.nTex = n;
+        gsgfxState->dirty |= 0x2000001;
+        gsgfxState->c3f8 = n;
+    }
+}
+
+inline void GSgfx_GCSetLineWidth(u8 width, s32 offset) {
+    if (gsgfxState->sizeW0 != width || gsgfxState->sizeOff0 != offset) {
+        gsgfxState->r1ec.lw = width;
+        gsgfxState->r1ec.f16 = offset;
+        gsgfxState->dirty |= 0x400;
+        gsgfxState->sizeW0 = width;
+        gsgfxState->sizeOff0 = offset;
+    }
+}
+
+inline void GSgfx_GCSetPointSize(u8 size, s32 offset) {
+    if (gsgfxState->sizeW1 != size || gsgfxState->sizeOff1 != offset) {
+        gsgfxState->r1ec.pw = size;
+        gsgfxState->r1ec.f19 = offset;
+        gsgfxState->dirty |= 0x400;
+        gsgfxState->sizeW1 = size;
+        gsgfxState->sizeOff1 = offset;
+    }
+}
+
+inline void GSgfx_GCSetTexOffsets(s32 coord, u8 line, u8 point) {
+    if (gsgfxState->coordScale[coord * 2] != line || gsgfxState->coordScale[coord * 2 + 1] != point) {
+        gsgfxState->suS[coord].lf = line;
+        gsgfxState->suS[coord].pf = point;
+        gsgfxState->d0c |= 1 << coord;
+        gsgfxState->coordScale[coord * 2] = line;
+        gsgfxState->coordScale[coord * 2 + 1] = point;
+    }
+}
+
+inline void GSgfx_GCSetCoPlanar(u8 enable) {
+    if (gsgfxState->c438 != enable) {
+        gsgfxState->genMode.b19 = enable;
+        gsgfxState->dirty |= 1;
+        gsgfxState->c438 = enable;
+    }
+}
+
+inline void GSgfx_GCWriteCullMode(s32 mode) {
+    static const u8 cm2hw[4] = {0, 2, 1, 3};
+    gsgfxState->genMode.cull = cm2hw[mode];
+    gsgfxState->dirty |= 1;
+    gsgfxState->c43c = mode;
+}
+
+inline void GSgfx_GCSetCullMode(s32 mode) {
+    if (gsgfxState->c43c != mode) {
+        GSgfx_GCWriteCullMode(mode);
+    }
+}
+
+inline void GSgfx_GCSetTexCoordGen(u32 coord, s32 func, s32 src, u32 mtx, u8 norm, u32 post) {
+    if (gsgfxState->texGen[coord].func != func || gsgfxState->texGen[coord].src != src ||
+        gsgfxState->texGen[coord].mtx != mtx || gsgfxState->texGen[coord].norm != norm ||
+        gsgfxState->texGen[coord].post != post) {
+        GSgfx_GCWriteTexCoordGen(coord, func, src, mtx, norm, post);
+    }
+}
+
+inline void GSgfx_GCSetClipMode(s32 mode) {
+    if (gsgfxState->c440 != mode) {
+        gsgfxState->xf1005 = mode;
+        gsgfxState->dirty |= 0x4000000;
+        gsgfxState->c440 = mode;
+    }
+}
+
+inline void GSgfx_GCSetNumChans(u8 n) {
+    if (gsgfxState->c454 != n) {
+        gsgfxState->genMode.nChan = n;
+        gsgfxState->dirty |= 0x1000001;
+        gsgfxState->c454 = n;
+    }
+}
+
+inline void GSgfx_GCSetNumTevStages(u8 n) {
+    if (gsgfxState->c58c[0] != n) {
+        gsgfxState->genMode.nTev = n - 1;
+        gsgfxState->dirty |= 1;
+        gsgfxState->c58c[0] = n;
+    }
+}
+
+inline void GSgfx_GCSetNumIndStages(u8 n) {
+    if (gsgfxState->c58c[1] != n) {
+        gsgfxState->genMode.nInd = n;
+        gsgfxState->dirty |= 1;
+        gsgfxState->c58c[1] = n;
+    }
+}
+
+inline void GSgfx_GCSetTevColor(s32 id, GSColor c) {
+    gsgfxState->kcolA0[id].lo = c.r;
+    gsgfxState->kcolA0[id].hi = c.a;
+    gsgfxState->kcolA1[id].lo = c.b;
+    gsgfxState->kcolA1[id].hi = c.g;
+    gsgfxState->dKcolA |= 1 << id;
+}
+
+}
+
+struct GSColorS10 { s16 r, g, b, a; };
+inline void GSgfx_GCSetTevColorS10(s32 id, GSColorS10 c) {
+    gsgfxState->kcolA0[id].lo = c.r & 0x7ff;
+    gsgfxState->kcolA0[id].hi = c.a & 0x7ff;
+    gsgfxState->kcolA1[id].lo = c.b & 0x7ff;
+    gsgfxState->kcolA1[id].hi = c.g & 0x7ff;
+    gsgfxState->dKcolA |= 1 << id;
+}
+
+inline void GSgfx_GCSetTevKColorSel(s32 stage, s32 sel) {
+    if (gsgfxState->cA24[stage] != sel) {
+        int pair = stage >> 1;
+        if (stage & 1) {
+            gsgfxState->ksel[pair].kcsel1 = sel;
+        } else {
+            gsgfxState->ksel[pair].kcsel0 = sel;
+        }
+        gsgfxState->dKsel |= 1 << pair;
+        gsgfxState->cA24[stage] = sel;
+    }
+}
+
+inline void GSgfx_GCSetTevKAlphaSel(s32 stage, s32 sel) {
+    if (gsgfxState->cA24[stage + 16] != sel) {
+        int pair = stage >> 1;
+        if (stage & 1) {
+            gsgfxState->ksel[pair].kasel1 = sel;
+        } else {
+            gsgfxState->ksel[pair].kasel0 = sel;
+        }
+        gsgfxState->dKsel |= 1 << pair;
+        gsgfxState->cA24[stage + 16] = sel;
+    }
+}
+
+inline void GSgfx_GCSetTevSwapMode(s32 stage, s32 ras, s32 tex) {
+    if (gsgfxState->cA24[32 + stage * 2] != ras || gsgfxState->cA24[33 + stage * 2] != tex) {
+        gsgfxState->teva[stage].rswap = ras;
+        gsgfxState->teva[stage].tswap = tex;
+        gsgfxState->dTeva |= 1 << stage;
+        gsgfxState->cA24[32 + stage * 2] = ras;
+        gsgfxState->cA24[33 + stage * 2] = tex;
+    }
+}
+
+inline void GSgfx_GCSetDstAlpha(u8 enable, u8 alpha) {
+    if (gsgfxState->cBF1[1] != enable || gsgfxState->cBF1[2] != alpha) {
+        gsgfxState->cmode1.en = enable;
+        gsgfxState->cmode1.alpha = alpha;
+        gsgfxState->dirty |= 8;
+        gsgfxState->cBF1[1] = enable;
+        gsgfxState->cBF1[2] = alpha;
+    }
+}
+
+inline void GSgfx_GCSetColorUpdate(u8 enable) {
+    if (gsgfxState->cBC4[0] != enable) {
+        gsgfxState->cmode0.colorUpd = enable;
+        gsgfxState->dirty |= 4;
+        gsgfxState->cBC4[0] = enable;
+    }
+}
+
+inline void GSgfx_GCSetAlphaUpdate(u8 enable) {
+    if (gsgfxState->cBC4[1] != enable) {
+        gsgfxState->cmode0.alphaUpd = enable;
+        gsgfxState->dirty |= 4;
+        gsgfxState->cBC4[1] = enable;
+    }
+}
+
+inline void GSgfx_GCSetZMode(u8 enable, s32 func, u8 update) {
+    if (gsgfxState->cBE4 != enable || gsgfxState->cBE8 != func || gsgfxState->cBEC != update) {
+        gsgfxState->zmode.enable = enable;
+        gsgfxState->zmode.func = func;
+        gsgfxState->zmode.update = update;
+        gsgfxState->dirty |= 2;
+        gsgfxState->cBE4 = enable;
+        gsgfxState->cBE8 = func;
+        gsgfxState->cBEC = update;
+    }
+}
+
+inline void GSgfx_GCSetZCompLoc(u8 beforeTex) {
+    if (gsgfxState->c_bf0 != beforeTex) {
+        gsgfxState->peCtrl.zcomploc = beforeTex;
+        gsgfxState->dirty |= 0x10;
+        gsgfxState->c_bf0 = beforeTex;
+    }
+}
+
+inline void GSgfx_GCSetDither(u8 dither) {
+    if (gsgfxState->cBF1[0] != dither) {
+        gsgfxState->cmode0.dither = dither;
+        gsgfxState->dirty |= 4;
+        gsgfxState->cBF1[0] = dither;
+    }
+}
+
+inline void GSgfx_GCSetFogColor(GSColor c) {
+    if (*(u32*)gsgfxState->padc09 != *(u32*)&c || gsgfxState->cC08 == 1) {
+        gsgfxState->r2f4.r = c.r;
+        gsgfxState->r2f4.g = c.g;
+        gsgfxState->r2f4.b = c.b;
+        gsgfxState->dirty |= 0x20000;
+        *(u32*)gsgfxState->padc09 = *(u32*)&c;
+        gsgfxState->cC08 = 0;
+    }
+}
+
+extern "C" inline void GSgfx_GCSetFog(s32 type, f32 start, f32 end, f32 nearz, f32 farz) {
+    if (gsgfxState->c_fogType != type || gsgfxState->c_fogStart != start || gsgfxState->c_fogEnd != end ||
+        gsgfxState->c_fogNear != nearz || gsgfxState->c_fogFar != farz) {
+        GSgfx_GCWriteFog(type, start, end, nearz, farz);
+    }
+}
+
+static inline u16 __OSf32tou16(register f32 inF) {
+    u16 out;
+    u16* outP = &out;
+    register u16* ptr = outP;
+    asm { psq_st inF, 0(ptr), 1, 3 }
+    return *ptr;
+}
+
 void GSgfxLayer::SetupGPUState() {
-    f32 sp10;
-    s32 unksp15;
-    s32 unksp16;
-    s32 unksp19;
-    s32 unksp1A;
-    s32 unksp1D;
-    s32 unksp1E;
-    s32 unksp1F;
-    s32 unksp36;
-    s32 unksp3A;
-    f32 sp78;
-    s32 sp74;
-    s32 sp70;
-    s32 sp6C;
-    s32 sp68;
-    u8 *var_r29;
-    u8 temp_r5;
-    u8 *var_r3_3;
-    u8 *var_r25_2;
-    volatile f32 sp54;
-    f32 sp50;
-    s32 sp4C;
-    f32 sp48;
-    volatile f32 sp44;
-    s32 sp40;
-    volatile f32 sp3C;
-    s32 sp38;
-    s32 sp34;
-    s32 sp30;
-    s32 sp2C;
-    s32 sp28;
-    u32 sp24;
-    u32 sp20;
-    s32 sp1C;
-    u32 sp18;
-    u32 sp14;
-    s32 spC;
-    s32 sp8;
-    s32 temp_r0_2;
-    s32 temp_r0_3;
-    s32 temp_r10;
-    s32 temp_r10_2;
-    s32 temp_r10_3;
-    s32 temp_r10_4;
-    s32 temp_r11;
-    s32 temp_r12_2;
-    s32 temp_r12_3;
-    u8 *var_r3_4;
-    s32 temp_r25;
-    s32 temp_r3_3;
-    s32 temp_r4_3;
-    s32 temp_r4_4;
-    s32 temp_r6;
-    s32 temp_r6_2;
-    s32 temp_r6_3;
-    s32 temp_r6_4;
-    s32 temp_r6_5;
-    s32 temp_r6_6;
-    s32 temp_r7_2;
-    s32 temp_r7_3;
-    s32 temp_r8;
-    s32 temp_r8_2;
-    s32 temp_r8_3;
-    s32 temp_r9;
-    s32 temp_r9_2;
-    s32 temp_r9_3;
-    s32 var_ctr;
-    s32 var_r24_2;
-    s32 var_r25;
-    s32 var_r26;
-    s32 var_r26_10;
-    s32 var_r26_11;
-    s32 var_r26_2;
-    s32 var_r26_3;
-    s32 var_r26_4;
-    s32 var_r26_5;
-    s32 var_r26_6;
-    s32 var_r26_7;
-    s32 var_r26_8;
-    s32 var_r26_9;
-    s32 var_r27;
-    s32 var_r28;
-    s32 var_r28_2;
-    s32 var_r29_3;
-    s32 var_r4;
-    s32 var_r4_2;
-    s32 var_r4_3;
-    s32 var_r4_4;
-    s32 var_r4_5;
-    s32 var_r5;
-    s32 var_r5_3;
-    s32 var_r5_4;
-    s32 var_r5_5;
-    s32 var_r5_6;
-    s32 var_r6;
-    s32 var_r6_3;
-    s32 var_r7;
-    u32 temp_r0;
-    u32 temp_r0_4;
-    u32 temp_r3_4;
-    u32 temp_r3_5;
-    u8 temp_r0_5;
-    u8 temp_r12;
-    u8 temp_r24;
-    u8 temp_r4;
-    u8 temp_r4_10;
-    u8 temp_r4_11;
-    u8 temp_r4_12;
-    u8 temp_r4_13;
-    u8 temp_r4_2;
-    u8 temp_r4_5;
-    u8 temp_r4_7;
-    u8 temp_r4_8;
-    u8 temp_r4_9;
-    s32 sp60;
-    u8 temp_r5_2;
-    u8 temp_r5_3;
-    u8 temp_r5_4;
-    u8 temp_r5_5;
-    u8 var_r28_3;
-    u8 var_r5_2;
-    u8 **var_r6_2;
-    u8 *temp_r30;
-    u8 *temp_r31;
-    u8 *temp_r3;
-    u8 *temp_r3_2;
-    u8 *temp_r3_6;
-    u8 *temp_r4_6;
-    GSState * temp_r7;
-    GSState * temp_r7_4;
-    u8 *var_r24;
-    u8 *var_r25_10;
-    u8 *var_r25_11;
-    u8 *var_r25_12;
-    f32 sp58;
-    u8 *var_r25_3;
-    u8 *var_r25_4;
-    u8 *var_r25_5;
-    u8 *var_r25_6;
-    u8 *var_r25_7;
-    u8 *var_r25_8;
-    u8 *var_r25_9;
-    f32 sp64;
-    u8 *var_r29_2;
-    u8 *var_r3;
-    u8 *var_r3_2;
-    s32 sp5C;
-    s32 temp_r24_2;
-    u8 *var_r3_5;
-
-    temp_r30 = ((u8*)this + ((M2C_FIELD(this, s32 *, 0x1994) * 0xB8) + 0x16A8));
-    temp_r0 = M2C_FIELD(temp_r30, u32 *, 0);
-    if (temp_r0 != 0) {
-        temp_r31 = (unsigned char *)(this + 0xC70);
-        if (temp_r0 & 1) {
-            if (M2C_FIELD(temp_r30, s32 *, 4) & 1) {
-                temp_r4 = M2C_FIELD(this, u8 *, 0xC70);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0x3F8) != temp_r4) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x33) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x33) & ~0xF) | (temp_r4 & 0xF));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x02000000 | 1);
-                    M2C_FIELD(gsgfxState, u8 *, 0x3F8) = temp_r4;
-                }
+    GSgfxLayerHW* hw;
+    GSgfxLayerDirty* d = (GSgfxLayerDirty*)((u8*)this + 0x16a8 + *(u32*)((u8*)this + 0x1994) * 0xb8);
+    if (d->groups != 0) {
+        hw = (GSgfxLayerHW*)&rs;
+        if (d->groups & 1) {
+            if (d->geom & 1) {
+                GSgfx_GCSetNumTexGens(hw->nTexGens);
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 8) != 0) {
-                var_r29 = temp_r31;
-                var_r28 = 0;
-                var_r27 = 0;
-                while (var_r28 < (s32) M2C_FIELD(this, u8 *, 0xC70)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 8) & (1 << var_r28)) {
-                        temp_r3 = M2C_FIELD(var_r29, u8 **, 0x18);
-                        if (temp_r3 != NULL) {
-                            M2C_FIELD(var_r29, s32 *, 4) = (s32) (M2C_FIELD(temp_r3, u8 *, 0x7C) + 2);
+            if (d->texGen != 0) {
+                for (int i = 0; i < hw->nTexGens; i++) {
+                    if (d->texGen & (1 << i)) {
+                        GSgfxLayerTexGen* tg = &hw->texGen[i];
+                        if (tg->tex != NULL) {
+                            s16 rf_t = tg->tex[0x7c];
+                            tg->func = rf_t + 2;
                         }
-                        if (((s32) M2C_FIELD((temp_r3_2 = (unsigned char *)(gsgfxState + var_r27)), s32 *, 0x358) != (s32) M2C_FIELD(var_r29, s32 *, 4)) || ((s32) M2C_FIELD(temp_r3_2, s32 *, 0x35C) != (s32) M2C_FIELD(var_r29, s32 *, 8)) || ((u32) M2C_FIELD(temp_r3_2, u32 *, 0x360) != (u32) M2C_FIELD(var_r29, u32 *, 0xC)) || ((u8) M2C_FIELD(temp_r3_2, u8 *, 0x364) != (u8) M2C_FIELD(var_r29, u8 *, 0x10)) || ((u32) M2C_FIELD(temp_r3_2, u32 *, 0x368) != (u32) M2C_FIELD(var_r29, u32 *, 0x14))) {
-                            GSgfx_GCWriteTexCoordGen(var_r28);
-                        }
+                        GSgfx_GCSetTexCoordGen(i, tg->func, tg->src, tg->mtx, tg->norm, tg->post);
                     }
-                    var_r29 += 0x18;
-                    var_r28 += 1;
-                    var_r27 += 0x14;
                 }
-                M2C_FIELD(temp_r30, u32 *, 8) = 0U;
+                d->texGen = 0;
             }
-            if ((M2C_FIELD(temp_r30, s32 *, 4) & 4) && ((temp_r5 = M2C_FIELD(temp_r31, u8 *, 0xC4), temp_r6 = M2C_FIELD(temp_r31, s32 *, 0xC8), (((u8) M2C_FIELD(gsgfxState, u8 *, 0x3FC) == temp_r5) == 0)) || ((s32) M2C_FIELD(gsgfxState, s32 *, 0x400) != temp_r6))) {
-                M2C_FIELD(gsgfxState, u8 *, 0x1EF) = temp_r5;
-                M2C_FIELD(gsgfxState, u8 *, 0x1ED) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x1ED) & ~7) | (temp_r6 & 7));
-                M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x400);
-                M2C_FIELD(gsgfxState, u8 *, 0x3FC) = temp_r5;
-                M2C_FIELD(gsgfxState, s32 *, 0x400) = temp_r6;
+            if (d->geom & 4) {
+                GSgfx_GCSetLineWidth(hw->lineWidth, hw->lineOffset);
             }
-            if ((M2C_FIELD(temp_r30, s32 *, 4) & 8) && ((temp_r5_2 = M2C_FIELD(temp_r31, u8 *, 0xCC), temp_r6_2 = M2C_FIELD(temp_r31, s32 *, 0xD0), (((u8) M2C_FIELD(gsgfxState, u8 *, 0x404) == temp_r5_2) == 0)) || ((s32) M2C_FIELD(gsgfxState, s32 *, 0x408) != temp_r6_2))) {
-                M2C_FIELD(gsgfxState, u8 *, 0x1EE) = temp_r5_2;
-                M2C_FIELD(gsgfxState, u8 *, 0x1ED) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x1ED) & ~0x38) | ((temp_r6_2 << 3) & 0x38));
-                M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x400);
-                M2C_FIELD(gsgfxState, u8 *, 0x404) = temp_r5_2;
-                M2C_FIELD(gsgfxState, s32 *, 0x408) = temp_r6_2;
+            if (d->geom & 8) {
+                GSgfx_GCSetPointSize(hw->pointSize, hw->pointOffset);
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0xC) != 0) {
-                var_r3 = temp_r31;
-                var_r4 = 0;
-                var_r5 = 0;
-                var_r6 = 0;
-                while (var_r4 < (s32) M2C_FIELD(this, u8 *, 0xC70)) {
-                    if ((M2C_FIELD(temp_r30, u32 *, 0xC) & (1 << var_r4)) && ((temp_r12 = M2C_FIELD(var_r3, u8 *, 0xD4), temp_r7 = gsgfxState + var_r6, temp_r24 = M2C_FIELD(var_r3, u8 *, 0xD5), (((u8) M2C_FIELD(temp_r7, u8 *, 0x40C) == temp_r12) == 0)) || ((u8) M2C_FIELD(temp_r7, u8 *, 0x40D) != temp_r24))) {
-                        *((u8 *)gsgfxState + temp_r11) = (*((u8 *)gsgfxState + temp_r11) & ~4) | ((temp_r12 << 2) & 4);
-                        temp_r11 = var_r5;
-                        temp_r11 += 0x1AD;
-                        *((u8 *)gsgfxState + temp_r11) = (*((u8 *)gsgfxState + temp_r11) & ~8) | ((temp_r24 << 3) & 8);
-                        M2C_FIELD(gsgfxState, s32 *, 0xC) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0xC) | (1 << var_r4));
-                        *((u8*)(gsgfxState) + (var_r6 + 0x40C)) = temp_r12;
-                        *((u8*)(gsgfxState) + (var_r6 + 0x40D)) = temp_r24;
+            if (d->texOffsets != 0) {
+                for (int i = 0; i < hw->nTexGens; i++) {
+                    if (d->texOffsets & (1 << i)) {
+                        GSgfx_GCSetTexOffsets(i, hw->texOffsets[i][0], hw->texOffsets[i][1]);
                     }
-                    var_r3 += 2;
-                    var_r4 += 1;
-                    var_r5 += 4;
-                    var_r6 += 2;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0xC) = 0U;
+                d->texOffsets = 0;
             }
-            if (M2C_FIELD(temp_r30, s32 *, 4) & 0x20) {
-                GSgfx_GCSetProjection((long)(M2C_FIELD(temp_r31, s32 *, 0xE4)), (unsigned long *)(temp_r31 + 0xE8));
+            if (d->geom & 0x20) {
+                GSgfx_GCSetProjection(hw->projType, (u32*)hw->proj);
             }
-            M2C_FIELD(temp_r30, s32 *, 4) = 0;
+            d->geom = 0;
         }
-        if (M2C_FIELD(temp_r30, u32 *, 0) & 2) {
-            if (M2C_FIELD(temp_r30, s32 *, 0x10) & 8) {
-                temp_r4_2 = M2C_FIELD(temp_r31, u8 *, 0x118);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0x438) != temp_r4_2) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x31) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x31) & ~8) | ((temp_r4_2 << 3) & 8));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 1);
-                    M2C_FIELD(gsgfxState, u8 *, 0x438) = temp_r4_2;
-                }
+        if (d->groups & 2) {
+            if (d->raster & 8) {
+                GSgfx_GCSetCoPlanar(hw->coPlanar);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x10) & 2) {
-                temp_r4_3 = M2C_FIELD(temp_r31, s32 *, 0x11C);
-                if ((s32) M2C_FIELD(gsgfxState, s32 *, 0x43C) != temp_r4_3) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x32) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x32) & ~0xC0) | ((*(&cm2hw_localstatic3_GSgfx_GCWriteCullMode + temp_r4_3) << 6) & 0xC0));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 1);
-                    M2C_FIELD(gsgfxState, s32 *, 0x43C) = temp_r4_3;
-                }
+            if (d->raster & 2) {
+                GSgfx_GCSetCullMode(hw->cullMode);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x10) & 4) {
-                temp_r4_4 = M2C_FIELD(temp_r31, s32 *, 0x120);
-                if ((s32) M2C_FIELD(gsgfxState, s32 *, 0x440) != temp_r4_4) {
-                    M2C_FIELD(gsgfxState, s32 *, 0x54) = temp_r4_4;
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x04000000);
-                    M2C_FIELD(gsgfxState, s32 *, 0x440) = temp_r4_4;
-                }
+            if (d->raster & 4) {
+                GSgfx_GCSetClipMode(hw->clipMode);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x10) & 1) {
-                GSgfx_GCSetScissor(M2C_FIELD(temp_r31, u16 *, 0x100), M2C_FIELD(temp_r31, u16 *, 0x102), M2C_FIELD(temp_r31, u16 *, 0x104), M2C_FIELD(temp_r31, u16 *, 0x106), 0, 0);
+            if (d->raster & 1) {
+                GSgfx_GCSetScissor(hw->scissor[0], hw->scissor[1], hw->scissor[2], hw->scissor[3], 0, 0);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x10) & 0x10) {
-                GSgfxVideoSetViewport(M2C_FIELD(temp_r31, f32 *, 0x108), M2C_FIELD(temp_r31, f32 *, 0x10C), M2C_FIELD(temp_r31, f32 *, 0x110), M2C_FIELD(temp_r31, f32 *, 0x114), 0U);
+            if (d->raster & 0x10) {
+                GSgfxVideoSetViewport(hw->viewport[0], hw->viewport[1], hw->viewport[2], hw->viewport[3], false);
             }
-            M2C_FIELD(temp_r30, s32 *, 0x10) = 0;
+            d->raster = 0;
         }
-        if (M2C_FIELD(temp_r30, u32 *, 0) & 4) {
-            if (M2C_FIELD(temp_r30, s32 *, 0x14) & 1) {
-                temp_r4_5 = M2C_FIELD(temp_r31, u8 *, 0x148);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0x454) != temp_r4_5) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x33) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x33) & ~0x30) | ((temp_r4_5 << 4) & 0x30));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x01000000 | 1);
-                    M2C_FIELD(gsgfxState, u8 *, 0x454) = temp_r4_5;
-                }
+        if (d->groups & 4) {
+            if (d->light & 1) {
+                GSgfx_GCSetNumChans(hw->nChans);
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x18) != 0) {
-                var_r25 = 0;
-                var_r24 = temp_r31;
-                do {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x18) & (1 << var_r25)) {
-                        if ((u8) M2C_FIELD(var_r24, u8 *, 0x14C) != 0) {
-                            temp_r8 = M2C_FIELD(var_r24, s32 *, 0x160);
-                            var_r6_2 = (unsigned char **)(var_r24 + 0x164);
-                            var_r7 = 0;
-loop_71:
-                            temp_r4_6 = *var_r6_2;
-                            if (temp_r4_6 != NULL) {
-                                var_r5_2 = 0;
-                                while (var_r5_2 < 8U) {
-                                    temp_r0_2 = M2C_FIELD(temp_r4_6, s32 *, 4);
-                                    if ((temp_r8 == temp_r0_2) || ((temp_r8 == 2) && (temp_r0_2 == 1))) {
-                                        var_r7 |= 1 << M2C_FIELD(temp_r4_6, u8 *, 0x7C);
+            if (d->chanCtrl != 0) {
+                for (int i = 0; i < 4; i++) {
+                    if (d->chanCtrl & (1 << i)) {
+                        GSgfxLayerChan* ch = &hw->chan[i];
+                        if (ch->enable != 0) {
+                            s32 attn = ch->attn;
+                            u8** lp;
+                            u32 mask;
+                            for (lp = ch->lights, mask = 0; *lp != NULL; lp++) {
+                                u8* light = *lp;
+                                for (u8 j = 0; j < 8; j++) {
+                                    s32 type = *(s32*)(light + 4);
+                                    if (attn == type || (attn == 2 && type == 1)) {
+                                        mask |= 1 << light[0x7c];
                                     }
-                                    var_r5_2 += 1;
                                 }
-                                var_r6_2 += 4;
-                                goto loop_71;
                             }
-                            M2C_FIELD(var_r24, s32 *, 0x158) = var_r7;
+                            ch->lightMask = mask;
                         } else {
-                            M2C_FIELD(var_r24, s32 *, 0x158) = 0;
+                            ch->lightMask = 0;
                         }
-                        GSgfx_GCSetChanCtrl(var_r25, M2C_FIELD(var_r24, u8 *, 0x14C), M2C_FIELD(var_r24, s32 *, 0x150), M2C_FIELD(var_r24, s32 *, 0x154), M2C_FIELD(var_r24, s32 *, 0x158), M2C_FIELD(var_r24, s32 *, 0x15C), M2C_FIELD(var_r24, s32 *, 0x160));
+                        GSgfx_GCSetChanCtrl(i, ch->enable, ch->amb, ch->mat, ch->lightMask, ch->diff, ch->attn);
                     }
-                    var_r25 += 1;
-                    var_r24 += 0x38;
-                } while (var_r25 < 4);
-                M2C_FIELD(temp_r30, u32 *, 0x18) = 0U;
-            }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x1C) != 0) {
-                var_r25_2 = temp_r31;
-                var_r26 = 0;
-                while (var_r26 < (s32) M2C_FIELD(temp_r31, u8 *, 0x148)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x1C) & (1 << var_r26)) {
-                        sp30 = M2C_FIELD(var_r25_2, s32 *, 0x22C);
-                        GSgfx_GCSetAmbColor((long)(var_r26 + 4), *(GSColor*)&sp30);
-                    }
-                    var_r25_2 += 4;
-                    var_r26 += 1;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x1C) = 0U;
+                d->chanCtrl = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x20) != 0) {
-                var_r25_3 = temp_r31;
-                var_r26_2 = 0;
-                while (var_r26_2 < (s32) M2C_FIELD(temp_r31, u8 *, 0x148)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x20) & (1 << var_r26_2)) {
-                        sp2C = M2C_FIELD(var_r25_3, s32 *, 0x234);
-                        GSgfx_GCSetMatColor((long)(var_r26_2 + 4), *(GSColor*)&sp2C);
+            if (d->amb != 0) {
+                for (int i = 0; i < hw->nChans; i++) {
+                    if (d->amb & (1 << i)) {
+                        GSgfx_GCSetAmbColor(i + 4, hw->amb[i]);
                     }
-                    var_r25_3 += 4;
-                    var_r26_2 += 1;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x20) = 0U;
+                d->amb = 0;
             }
-            M2C_FIELD(temp_r30, s32 *, 0x14) = 0;
+            if (d->mat != 0) {
+                for (int i = 0; i < hw->nChans; i++) {
+                    if (d->mat & (1 << i)) {
+                        GSgfx_GCSetMatColor(i + 4, hw->mat[i]);
+                    }
+                }
+                d->mat = 0;
+            }
+            d->light = 0;
         }
-        if (M2C_FIELD(temp_r30, u32 *, 0) & 8) {
-            if (M2C_FIELD(temp_r30, s32 *, 0x24) & 1) {
-                temp_r4_7 = M2C_FIELD(temp_r31, u8 *, 0x23C);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0x58C) != temp_r4_7) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x32) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x32) & ~0x3C) | (((temp_r4_7 - 1) << 2) & 0x3C));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 1);
-                    M2C_FIELD(gsgfxState, u8 *, 0x58C) = temp_r4_7;
-                }
+        if (d->groups & 8) {
+            if (d->tev & 1) {
+                GSgfx_GCSetNumTevStages(hw->nTevStages);
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x28) != 0) {
-                var_r25_4 = temp_r31;
-                var_r26_3 = 0;
-                while (var_r26_3 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x28) & (1 << var_r26_3)) {
-                        GSgfx_GCSetTevOrder(var_r26_3, M2C_FIELD(var_r25_4, s32 *, 0x240), M2C_FIELD(var_r25_4, s32 *, 0x244), M2C_FIELD(var_r25_4, s32 *, 0x248));
+            if (d->tevOrder != 0) {
+                for (int i = 0; i < hw->nTevStages; i++) {
+                    if (d->tevOrder & (1 << i)) {
+                        GSgfx_GCSetTevOrder(i, hw->tevOrder[i][0], hw->tevOrder[i][1], hw->tevOrder[i][2]);
                     }
-                    var_r25_4 += 0xC;
-                    var_r26_3 += 1;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x28) = 0U;
+                d->tevOrder = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x2C) != 0) {
-                var_r25_5 = temp_r31;
-                var_r26_4 = 0;
-                while (var_r26_4 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x2C) & (1 << var_r26_4)) {
-                        GSgfx_GCSetTevColorIn(var_r26_4, M2C_FIELD(var_r25_5, s32 *, 0x300), M2C_FIELD(var_r25_5, s32 *, 0x304), M2C_FIELD(var_r25_5, s32 *, 0x308), M2C_FIELD(var_r25_5, s32 *, 0x30C));
+            if (d->colorIn != 0) {
+                for (int i = 0; i < hw->nTevStages; i++) {
+                    if (d->colorIn & (1 << i)) {
+                        GSgfx_GCSetTevColorIn(i, hw->colorIn[i][0], hw->colorIn[i][1], hw->colorIn[i][2],
+                                              hw->colorIn[i][3]);
                     }
-                    var_r25_5 += 0x10;
-                    var_r26_4 += 1;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x2C) = 0U;
+                d->colorIn = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x30) != 0) {
-                var_r25_6 = temp_r31;
-                var_r26_5 = 0;
-                while (var_r26_5 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x30) & (1 << var_r26_5)) {
-                        GSgfx_GCSetTevAlphaIn(var_r26_5, M2C_FIELD(var_r25_6, s32 *, 0x400), M2C_FIELD(var_r25_6, s32 *, 0x404), M2C_FIELD(var_r25_6, s32 *, 0x408), M2C_FIELD(var_r25_6, s32 *, 0x40C));
+            if (d->alphaIn != 0) {
+                for (int i = 0; i < hw->nTevStages; i++) {
+                    if (d->alphaIn & (1 << i)) {
+                        GSgfx_GCSetTevAlphaIn(i, hw->alphaIn[i][0], hw->alphaIn[i][1], hw->alphaIn[i][2],
+                                              hw->alphaIn[i][3]);
                     }
-                    var_r25_6 += 0x10;
-                    var_r26_5 += 1;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x30) = 0U;
+                d->alphaIn = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x34) != 0) {
-                var_r25_7 = temp_r31;
-                var_r26_6 = 0;
-                while (var_r26_6 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x34) & (1 << var_r26_6)) {
-                        GSgfx_GCSetTevColorOp(var_r26_6, M2C_FIELD(var_r25_7, s32 *, 0x500), M2C_FIELD(var_r25_7, s32 *, 0x504), M2C_FIELD(var_r25_7, s32 *, 0x508), M2C_FIELD(var_r25_7, u8 *, 0x50C), M2C_FIELD(var_r25_7, s32 *, 0x510));
+            if (d->colorOp != 0) {
+                for (int i = 0; i < hw->nTevStages; i++) {
+                    if (d->colorOp & (1 << i)) {
+                        GSgfx_GCSetTevColorOp(i, hw->colorOp[i].op, hw->colorOp[i].bias, hw->colorOp[i].scale,
+                                              hw->colorOp[i].clamp, hw->colorOp[i].reg);
                     }
-                    var_r25_7 += 0x14;
-                    var_r26_6 += 1;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x34) = 0U;
+                d->colorOp = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x38) != 0) {
-                var_r25_8 = temp_r31;
-                var_r26_7 = 0;
-                while (var_r26_7 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x38) & (1 << var_r26_7)) {
-                        GSgfx_GCSetTevAlphaOp(var_r26_7, M2C_FIELD(var_r25_8, s32 *, 0x640), M2C_FIELD(var_r25_8, s32 *, 0x644), M2C_FIELD(var_r25_8, s32 *, 0x648), M2C_FIELD(var_r25_8, u8 *, 0x64C), M2C_FIELD(var_r25_8, s32 *, 0x650));
+            if (d->alphaOp != 0) {
+                for (int i = 0; i < hw->nTevStages; i++) {
+                    if (d->alphaOp & (1 << i)) {
+                        GSgfx_GCSetTevAlphaOp(i, hw->alphaOp[i].op, hw->alphaOp[i].bias, hw->alphaOp[i].scale,
+                                              hw->alphaOp[i].clamp, hw->alphaOp[i].reg);
                     }
-                    var_r25_8 += 0x14;
-                    var_r26_7 += 1;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x38) = 0U;
+                d->alphaOp = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x3C) != 0) {
-                var_r3_2 = temp_r31;
-                var_r4_2 = 0;
-                var_r5_3 = 0;
-                var_ctr = 4;
-                do {
-                    temp_r0_3 = 1 << var_r4_2;
-                    if (M2C_FIELD(temp_r30, u32 *, 0x3C) & temp_r0_3) {
-                        if ((u32) M2C_FIELD(var_r3_2, u32 *, 0x780) == 0U) {
-                            temp_r9 = 0x2A6;
-                            temp_r9 += var_r5_3;
-                            temp_r10 = 0x2A4;
-                            temp_r10 += var_r5_3;
-                            sp1C = M2C_FIELD(var_r3_2, s32 *, 0x784);
-                            temp_r8_2 = 0x2B6;
-                            temp_r8_2 += var_r5_3;
-                            temp_r7_2 = 0x2B4;
-                            temp_r7_2 += var_r5_3;
-                            *((u8 *)gsgfxState + temp_r9) = (*((u8 *)gsgfxState + temp_r9) & ~0x7FF) | ((u8) sp1C & 0x7FF);
-                            *((u8 *)gsgfxState + temp_r10) = (*((u8 *)gsgfxState + temp_r10) & ~0x7FF000) | ((unksp1F << 0xC) & 0x7FF000);
-
-                            *((u8 *)gsgfxState + temp_r7_2) = (*((u8 *)gsgfxState + temp_r7_2) & ~0x7FF000) | ((unksp1D << 0xC) & 0x7FF000);
-                            M2C_FIELD(gsgfxState, s32 *, 0x24) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x24) | temp_r0_3);
+            if (d->tevColor != 0) {
+                for (int i = 0; i < 4; i++) {
+                    if (d->tevColor & (1 << i)) {
+                        if (hw->tevColor[i].type == 0) {
+                            GSgfx_GCSetTevColor(i, hw->tevColor[i].c);
                         } else {
-                            temp_r10_2 = 0x2A6;
-                            temp_r10_2 += var_r5_3;
-                            temp_r12_2 = 0x2A4;
-                            temp_r12_2 += var_r5_3;
-                            sp34 = M2C_FIELD(var_r3_2, s32 *, 0x784);
-                            temp_r8_3 = 0x2B6;
-                            temp_r8_3 += var_r5_3;
-                            temp_r7_3 = 0x2B4;
-                            temp_r7_3 += var_r5_3;
-                            sp38 = M2C_FIELD(var_r3_2, s32 *, 0x788);
-                            *((u8 *)gsgfxState + temp_r10_2) = (*((u8 *)gsgfxState + temp_r10_2) & ~0x7FF) | ((s16) sp34 & 0x7FF);
-                            *((u8 *)gsgfxState + temp_r12_2) = (*((u8 *)gsgfxState + temp_r12_2) & ~0x7FF000) | (((unksp3A & 0x7FF) << 0xC) & 0x7FF000);
-                            *((u8 *)gsgfxState + temp_r8_3) = (*((u8 *)gsgfxState + temp_r8_3) & ~0x7FF) | ((s16) sp38 & 0x7FF & 0x7FF);
-                            *((u8 *)gsgfxState + temp_r7_3) = (*((u8 *)gsgfxState + temp_r7_3) & ~0x7FF000) | (((unksp36 & 0x7FF) << 0xC) & 0x7FF000);
-                            M2C_FIELD(gsgfxState, s32 *, 0x24) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x24) | temp_r0_3);
+                            GSgfx_GCSetTevColorS10(i, *(GSColorS10*)hw->tevColor[i].s10);
                         }
                     }
-                    var_r3_2 += 0xC;
-                    var_r4_2 += 1;
-                    var_r5_3 += 4;
-                    var_ctr -= 1;
-                } while (var_ctr != 0);
-                M2C_FIELD(temp_r30, u32 *, 0x3C) = 0U;
+                }
+                d->tevColor = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x40) != 0) {
-                var_r28_2 = 0;
-                var_r29_2 = temp_r31;
-                do {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x40) & (1 << var_r28_2)) {
-                        temp_r0_4 = M2C_FIELD(var_r29_2, u32 *, 0x7B0);
-                        switch (temp_r0_4) {
+            if (d->ind != 0) {
+                for (int i = 0; i < 4; i++) {
+                    if (d->ind & (1 << i)) {
+                        GSgfxLayerInd* ind = &hw->ind[i];
+                        switch (ind->type) {
                         case 0:
-                            GSgfx_GCSetTevDirect(var_r28_2);
+                            GSgfx_GCSetTevDirect(i);
                             break;
                         case 1:
-                            sp8 = (s32) M2C_FIELD(var_r29_2, u8 *, 0x7D1);
-                            spC = M2C_FIELD(var_r29_2, s32 *, 0x7CC);
-                            GSgfx_GCSetTevIndirect((long)(var_r28_2), (unsigned char)(M2C_FIELD(var_r29_2, u8 *, 0x7B4)), (unsigned char)(M2C_FIELD(var_r29_2, s32 *, 0x7B8)), (unsigned char)(M2C_FIELD(var_r29_2, s32 *, 0x7BC)), (unsigned char)(M2C_FIELD(var_r29_2, s32 *, 0x7C0)), (unsigned char)(M2C_FIELD(var_r29_2, s32 *, 0x7C4)), (unsigned char)(M2C_FIELD(var_r29_2, s32 *, 0x7C8)), (long)(M2C_FIELD(var_r29_2, u8 *, 0x7D0)), (unsigned char)(0), (long)(0));
+                            GSgfx_GCSetTevIndirect(i, ind->ind.indId, ind->ind.fmt, ind->ind.bias, ind->ind.mtx,
+                                                   ind->ind.ws, ind->ind.wt, ind->ind.addPrev, ind->ind.utc,
+                                                   ind->ind.alpha);
                             break;
                         case 2:
-                            GSgfx_GCSetTevIndWarp(var_r28_2, M2C_FIELD(var_r29_2, u8 *, 0x7B4), M2C_FIELD(var_r29_2, u8 *, 0x7B5), M2C_FIELD(var_r29_2, u8 *, 0x7B6), M2C_FIELD(var_r29_2, s32 *, 0x7B8));
+                            s32 rf_t = ind->warp.signMod;
+                            GSgfx_GCSetTevIndWarp(i, ind->warp.indId, rf_t, ind->warp.wrap,
+                                                  ind->warp.mtx);
                             break;
                         case 3:
-                            sp8 = M2C_FIELD(var_r29_2, s32 *, 0x7C8);
-                            spC = M2C_FIELD(var_r29_2, s32 *, 0x7CC);
-                            GSgfx_GCWriteTevIndTile(var_r28_2, M2C_FIELD(var_r29_2, u8 *, 0x7B4), (u16) M2C_FIELD(var_r29_2, u8 *, 0x7B6), (u16) M2C_FIELD(var_r29_2, s32 *, 0x7B8), M2C_FIELD(var_r29_2, u16 *, 0x7BA), (u16) M2C_FIELD(var_r29_2, s32 *, 0x7BC), M2C_FIELD(var_r29_2, s32 *, 0x7C0), M2C_FIELD(var_r29_2, s32 *, 0x7C4));
+                            GSgfx_GCWriteTevIndTile(i, ind->tile.indId, ind->tile.sizeS, ind->tile.sizeT,
+                                                    ind->tile.spaceS, ind->tile.spaceT, ind->tile.fmt, ind->tile.mtx,
+                                                    ind->tile.bias, ind->tile.alpha);
                             break;
                         case 4:
-                            GSgfx_GCWriteTevIndBumpST(var_r28_2, M2C_FIELD(var_r29_2, u8 *, 0x7B4), M2C_FIELD(var_r29_2, s32 *, 0x7B8));
+                            GSgfx_GCWriteTevIndBumpST(i, ind->bump.indId, ind->bump.mtx);
                             break;
                         case 5:
-                            GSgfx_GCSetTevIndBumpXYZ(var_r28_2, M2C_FIELD(var_r29_2, u8 *, 0x7B4), M2C_FIELD(var_r29_2, s32 *, 0x7B8));
+                            GSgfx_GCSetTevIndBumpXYZ(i, ind->bump.indId, ind->bump.mtx);
                             break;
                         case 6:
-                            GSgfx_GCSetTevIndRepeat(var_r28_2);
+                            GSgfx_GCSetTevIndRepeat(i);
                             break;
                         }
                     }
-                    var_r28_2 += 1;
-                    var_r29_2 += 0x24;
-                } while (var_r28_2 < 4);
-                M2C_FIELD(temp_r30, u32 *, 0x40) = 0U;
+                }
+                d->ind = 0;
             }
-            M2C_FIELD(temp_r30, s32 *, 0x24) = 0;
+            d->tev = 0;
         }
-        if (M2C_FIELD(temp_r30, u32 *, 0) & 0x80) {
-            if (M2C_FIELD(temp_r30, s32 *, 0x44) & 1) {
-                temp_r4_8 = M2C_FIELD(temp_r31, u8 *, 0x840);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0x58D) != temp_r4_8) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x31) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x31) & ~7) | (temp_r4_8 & 7));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 1);
-                    M2C_FIELD(gsgfxState, u8 *, 0x58D) = temp_r4_8;
+        if (d->groups & 0x80) {
+            if (d->indStage & 1) {
+                GSgfx_GCSetNumIndStages(hw->nIndStages);
+            }
+            if (d->indOrder != 0) {
+                for (int i = 0; i < 4; i++) {
+                    if (d->indOrder & (1 << i)) {
+                        GSgfx_GCSetIndTexOrder(i, hw->indOrder[i][0], hw->indOrder[i][1]);
+                    }
                 }
+                d->indOrder = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x48) != 0) {
-                var_r25_9 = temp_r31;
-                var_r26_8 = 0;
-                do {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x48) & (1 << var_r26_8)) {
-                        GSgfx_GCSetIndTexOrder(var_r26_8, M2C_FIELD(var_r25_9, s32 *, 0x844), M2C_FIELD(var_r25_9, s32 *, 0x848));
+            if (d->indScale != 0) {
+                for (int i = 0; i < 4; i++) {
+                    if (d->indScale & (1 << i)) {
+                        GSgfx_GCSetIndTexCoordScale(i, hw->indScale[i][0], hw->indScale[i][1]);
                     }
-                    var_r26_8 += 1;
-                    var_r25_9 += 8;
-                } while (var_r26_8 < 4);
-                M2C_FIELD(temp_r30, u32 *, 0x48) = 0U;
+                }
+                d->indScale = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x4C) != 0) {
-                var_r25_10 = temp_r31;
-                var_r26_9 = 0;
-                do {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x4C) & (1 << var_r26_9)) {
-                        GSgfx_GCSetIndTexCoordScale(var_r26_9, M2C_FIELD(var_r25_10, s32 *, 0x864), M2C_FIELD(var_r25_10, s32 *, 0x868));
-                    }
-                    var_r26_9 += 1;
-                    var_r25_10 += 8;
-                } while (var_r26_9 < 4);
-                M2C_FIELD(temp_r30, u32 *, 0x4C) = 0U;
-            }
-            M2C_FIELD(temp_r30, s32 *, 0x44) = 0;
+            d->indStage = 0;
         }
-        if (M2C_FIELD(temp_r30, u32 *, 0) & 0x10) {
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x50) != 0) {
-                var_r25_11 = temp_r31;
-                var_r26_10 = 0;
-                do {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x50) & (1 << var_r26_10)) {
-                        sp28 = M2C_FIELD(var_r25_11, s32 *, 0x884);
-                        GSgfx_GCSetTevKColor((unsigned long)(var_r26_10), (unsigned long *)(&sp28));
+        if (d->groups & 0x10) {
+            if (d->kcolor != 0) {
+                for (int i = 0; i < 4; i++) {
+                    if (d->kcolor & (1 << i)) {
+                        GSgfx_GCSetTevKColor(i, hw->kcolor[i]);
                     }
-                    var_r26_10 += 1;
-                    var_r25_11 += 4;
-                } while (var_r26_10 < 4);
-                M2C_FIELD(temp_r30, u32 *, 0x50) = 0U;
-            }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x54) != 0) {
-                var_r3_3 = temp_r31;
-                var_r4_3 = 0;
-                var_r5_4 = 0;
-                while (var_r4_3 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x54) & (1 << var_r4_3)) {
-                        temp_r9_2 = M2C_FIELD(var_r3_3, s32 *, 0x894);
-                        if ((s32) *((u8*)(gsgfxState) + (var_r5_4 + 0xA24)) != temp_r9_2) {
-                            temp_r10_3 = var_r4_3 >> 1;
-                            if (var_r4_3 & 1) {
-                                temp_r6_3 = 0x204;
-                                temp_r6_3 += (temp_r10_3 * 4);
-                                *((u8 *)gsgfxState + temp_r6_3) = (*((u8 *)gsgfxState + temp_r6_3) & ~0x7C000) | ((temp_r9_2 << 0xE) & 0x7C000);
-                            } else {
-                                temp_r6_4 = 0x206;
-                                temp_r6_4 += (temp_r10_3 * 4);
-                                *((u8 *)gsgfxState + temp_r6_4) = (*((u8 *)gsgfxState + temp_r6_4) & ~0x1F0) | ((temp_r9_2 << 4) & 0x1F0);
-                            }
-                            M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | (1 << temp_r10_3));
-                            *((u8*)(gsgfxState) + (var_r5_4 + 0xA24)) = temp_r9_2;
-                        }
-                    }
-                    var_r3_3 += 4;
-                    var_r4_3 += 1;
-                    var_r5_4 += 4;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x54) = 0U;
+                d->kcolor = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x58) != 0) {
-                var_r3_4 = temp_r31;
-                var_r4_4 = 0;
-                var_r5_5 = 0;
-                while (var_r4_4 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x58) & (1 << var_r4_4)) {
-                        temp_r9_3 = M2C_FIELD(var_r3_4, s32 *, 0x8D4);
-                        if ((s32) *((u8*)(gsgfxState) + (var_r5_5 + 0xA64)) != temp_r9_3) {
-                            temp_r10_4 = var_r4_4 >> 1;
-                            if (var_r4_4 & 1) {
-                                temp_r6_5 = 0x205;
-                                temp_r6_5 += (temp_r10_4 * 4);
-                                *((u8 *)gsgfxState + temp_r6_5) = (*((u8 *)gsgfxState + temp_r6_5) & ~0xF8) | ((temp_r9_3 << 3) & 0xF8);
-                            } else {
-                                temp_r6_6 = 0x206;
-                                temp_r6_6 += (temp_r10_4 * 4);
-                                *((u8 *)gsgfxState + temp_r6_6) = (*((u8 *)gsgfxState + temp_r6_6) & ~0x3E) | ((temp_r9_3 << 1) & 0x3E);
-                            }
-                            M2C_FIELD(gsgfxState, s32 *, 0x18) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x18) | (1 << temp_r10_4));
-                            *((u8*)(gsgfxState) + (var_r5_5 + 0xA64)) = temp_r9_3;
-                        }
+            if (d->kcsel != 0) {
+                for (int i = 0; i < hw->nTevStages; i++) {
+                    if (d->kcsel & (1 << i)) {
+                        GSgfx_GCSetTevKColorSel(i, hw->kcsel[i]);
                     }
-                    var_r3_4 += 4;
-                    var_r4_4 += 1;
-                    var_r5_5 += 4;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x58) = 0U;
+                d->kcsel = 0;
+            }
+            if (d->kasel != 0) {
+                for (int i = 0; i < hw->nTevStages; i++) {
+                    if (d->kasel & (1 << i)) {
+                        s16 rf_t = hw->kasel[i];
+                        GSgfx_GCSetTevKAlphaSel(i, rf_t);
+                    }
+                }
+                d->kasel = 0;
             }
         }
-        if (M2C_FIELD(temp_r30, u32 *, 0) & 0x20) {
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x5C) != 0) {
-                var_r3_5 = temp_r31;
-                var_r4_5 = 0;
-                var_r5_6 = 0;
-                var_r6_3 = 0;
-                while (var_r4_5 < (s32) M2C_FIELD(temp_r31, u8 *, 0x23C)) {
-                    if ((M2C_FIELD(temp_r30, u32 *, 0x5C) & (1 << var_r4_5)) && ((temp_r24_2 = M2C_FIELD(var_r3_5, s32 *, 0x914), temp_r7_4 = gsgfxState + var_r6_3, temp_r25 = M2C_FIELD(var_r3_5, s32 *, 0x918), (((s32) M2C_FIELD(temp_r7_4, s32 *, 0xAA4) == temp_r24_2) == 0)) || ((s32) M2C_FIELD(temp_r7_4, s32 *, 0xAA8) != temp_r25))) {
-                        temp_r12_3 = 0x267;
-                        temp_r12_3 += var_r5_6;
-                        *((u8 *)gsgfxState + temp_r12_3) = (*((u8 *)gsgfxState + temp_r12_3) & ~3) | (temp_r24_2 & 3);
-                        *((u8 *)gsgfxState + temp_r12_3) = (*((u8 *)gsgfxState + temp_r12_3) & ~0xC) | ((temp_r25 << 2) & 0xC);
-                        M2C_FIELD(gsgfxState, s32 *, 0x20) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0x20) | (1 << var_r4_5));
-                        *((u8*)(gsgfxState) + (var_r6_3 + 0xAA4)) = temp_r24_2;
-                        *((u8*)(gsgfxState) + (var_r6_3 + 0xAA8)) = temp_r25;
+        if (d->groups & 0x20) {
+            if (d->swapSel != 0) {
+                for (int i = 0; i < hw->nTevStages; i++) {
+                    if (d->swapSel & (1 << i)) {
+                        GSgfx_GCSetTevSwapMode(i, hw->swapSel[i][0], hw->swapSel[i][1]);
                     }
-                    var_r3_5 += 8;
-                    var_r4_5 += 1;
-                    var_r5_6 += 4;
-                    var_r6_3 += 8;
                 }
-                M2C_FIELD(temp_r30, u32 *, 0x5C) = 0U;
+                d->swapSel = 0;
             }
-            if ((u32) M2C_FIELD(temp_r30, u32 *, 0x60) != 0) {
-                var_r25_12 = temp_r31;
-                var_r26_11 = 0;
-                do {
-                    if (M2C_FIELD(temp_r30, u32 *, 0x60) & (1 << var_r26_11)) {
-                        GSgfx_GCSetTevSwapModeTable(var_r26_11, M2C_FIELD(var_r25_12, s32 *, 0x994), M2C_FIELD(var_r25_12, s32 *, 0x998), M2C_FIELD(var_r25_12, s32 *, 0x99C), M2C_FIELD(var_r25_12, s32 *, 0x9A0));
+            if (d->swapTab != 0) {
+                for (int i = 0; i < 4; i++) {
+                    if (d->swapTab & (1 << i)) {
+                        GSgfx_GCSetTevSwapModeTable(i, hw->swapTab[i][0], hw->swapTab[i][1], hw->swapTab[i][2],
+                                                    hw->swapTab[i][3]);
                     }
-                    var_r26_11 += 1;
-                    var_r25_12 += 0x10;
-                } while (var_r26_11 < 4);
-                M2C_FIELD(temp_r30, u32 *, 0x60) = 0U;
+                }
+                d->swapTab = 0;
             }
         }
-        if (M2C_FIELD(temp_r30, u32 *, 0) & 0x40) {
-            var_r29_3 = M2C_FIELD(temp_r31, s32 *, 0x9F0);
-            temp_r0_5 = M2C_FIELD(temp_r31, u8 *, 0x9EC) != 0;
-            var_r28_3 = temp_r0_5;
-            if (((u8) M2C_FIELD(temp_r31, u8 *, 0x9E8) == 1) && (temp_r0_5 == 0)) {
-                var_r28_3 = 1;
-                var_r29_3 = 7;
+        if (d->groups & 0x40) {
+            int zEnable = hw->zEnable != 0;
+            s32 zFunc = hw->zFunc;
+            if (hw->zUpdate == 1 && zEnable == 0) {
+                zEnable = 1;
+                zFunc = 7;
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x64) & 1) {
-                GSgfx_GCSetBlendMode(M2C_FIELD(temp_r31, s32 *, 0x9D4), M2C_FIELD(temp_r31, s32 *, 0x9D8), M2C_FIELD(temp_r31, s32 *, 0x9DC), M2C_FIELD(temp_r31, s32 *, 0x9E0));
+            if (d->pe & 1) {
+                GSgfx_GCSetBlendMode(hw->blend[0], hw->blend[1], hw->blend[2], hw->blend[3]);
             }
-            if ((M2C_FIELD(temp_r30, s32 *, 0x64) & 2) && ((temp_r4_9 = M2C_FIELD(temp_r31, u8 *, 0x9E4), temp_r5_3 = M2C_FIELD(temp_r31, u8 *, 0x9E5), (((u8) M2C_FIELD(gsgfxState, u8 *, 0xBF2) == temp_r4_9) == 0)) || ((u8) M2C_FIELD(gsgfxState, u8 *, 0xBF3) != temp_r5_3))) {
-                M2C_FIELD(gsgfxState, u8 *, 0x3E) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x3E) & ~1) | (temp_r4_9 & 1));
-                M2C_FIELD(gsgfxState, u8 *, 0x3F) = temp_r5_3;
-                M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 8);
-                M2C_FIELD(gsgfxState, u8 *, 0xBF2) = temp_r4_9;
-                M2C_FIELD(gsgfxState, u8 *, 0xBF3) = temp_r5_3;
+            if (d->pe & 2) {
+                GSgfx_GCSetDstAlpha(hw->dstAlphaEnable, hw->dstAlpha);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x64) & 4) {
-                temp_r4_10 = M2C_FIELD(temp_r31, u8 *, 0x9E6);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0xBC4) != temp_r4_10) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x3B) & ~8) | ((temp_r4_10 << 3) & 8));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 4);
-                    M2C_FIELD(gsgfxState, u8 *, 0xBC4) = temp_r4_10;
-                }
-                temp_r4_11 = M2C_FIELD(temp_r31, u8 *, 0x9E7);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0xBC5) != temp_r4_11) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x3B) & ~0x10) | ((temp_r4_11 << 4) & 0x10));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 4);
-                    M2C_FIELD(gsgfxState, u8 *, 0xBC5) = temp_r4_11;
-                }
-                temp_r5_4 = M2C_FIELD(temp_r31, u8 *, 0x9E8);
-                if (((u8) M2C_FIELD(gsgfxState, u8 *, 0xBE4) != var_r28_3) || ((s32) M2C_FIELD(gsgfxState, s32 *, 0xBE8) != var_r29_3) || ((u8) M2C_FIELD(gsgfxState, u8 *, 0xBEC) != temp_r5_4)) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x37) & ~1) | (var_r28_3 & 1));
-                    M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x37) & ~0xE) | ((var_r29_3 << 1) & 0xE));
-                    M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x37) & ~0x10) | ((temp_r5_4 << 4) & 0x10));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 2);
-                    M2C_FIELD(gsgfxState, u8 *, 0xBE4) = var_r28_3;
-                    M2C_FIELD(gsgfxState, s32 *, 0xBE8) = var_r29_3;
-                    M2C_FIELD(gsgfxState, u8 *, 0xBEC) = temp_r5_4;
-                }
+            if (d->pe & 4) {
+                GSgfx_GCSetColorUpdate(hw->colorUpdate);
+                GSgfx_GCSetAlphaUpdate(hw->alphaUpdate);
+                GSgfx_GCSetZMode(zEnable, zFunc, hw->zUpdate);
             }
-            if ((M2C_FIELD(temp_r30, s32 *, 0x64) & 8) && ((temp_r5_5 = M2C_FIELD(temp_r31, u8 *, 0x9E8), (((u8) M2C_FIELD(gsgfxState, u8 *, 0xBE4) == var_r28_3) == 0)) || ((s32) M2C_FIELD(gsgfxState, s32 *, 0xBE8) != var_r29_3) || ((u8) M2C_FIELD(gsgfxState, u8 *, 0xBEC) != temp_r5_5))) {
-                M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x37) & ~1) | (var_r28_3 & 1));
-                M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x37) & ~0xE) | ((var_r29_3 << 1) & 0xE));
-                M2C_FIELD(gsgfxState, u8 *, 0x37) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x37) & ~0x10) | ((temp_r5_5 << 4) & 0x10));
-                M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 2);
-                M2C_FIELD(gsgfxState, u8 *, 0xBE4) = var_r28_3;
-                M2C_FIELD(gsgfxState, s32 *, 0xBE8) = var_r29_3;
-                M2C_FIELD(gsgfxState, u8 *, 0xBEC) = temp_r5_5;
+            if (d->pe & 8) {
+                GSgfx_GCSetZMode(zEnable, zFunc, hw->zUpdate);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x64) & 0x10) {
-                GSgfx_GCSetAlphaCompare(M2C_FIELD(temp_r31, s32 *, 0x9F4), M2C_FIELD(temp_r31, u8 *, 0xA00), M2C_FIELD(temp_r31, s32 *, 0x9F8), M2C_FIELD(temp_r31, s32 *, 0x9FC), M2C_FIELD(temp_r31, u8 *, 0xA01));
-                temp_r4_12 = M2C_FIELD(temp_r31, u8 *, 0xA02);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0xBF0) != temp_r4_12) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x43) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x43) & ~0x40) | ((temp_r4_12 << 6) & 0x40));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x10);
-                    M2C_FIELD(gsgfxState, u8 *, 0xBF0) = temp_r4_12;
-                }
+            if (d->pe & 0x10) {
+                GSgfx_GCSetAlphaCompare(hw->alphaComp0, hw->alphaRef0, hw->alphaCmpOp, hw->alphaComp1, hw->alphaRef1);
+                GSgfx_GCSetZCompLoc(hw->zCompLoc);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x64) & 0x20) {
-                temp_r4_13 = M2C_FIELD(temp_r31, u8 *, 0xA04);
-                if ((u8) M2C_FIELD(gsgfxState, u8 *, 0xBF1) != temp_r4_13) {
-                    M2C_FIELD(gsgfxState, u8 *, 0x3B) = (u8) ((M2C_FIELD(gsgfxState, u8 *, 0x3B) & ~4) | ((temp_r4_13 << 2) & 4));
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 4);
-                    M2C_FIELD(gsgfxState, u8 *, 0xBF1) = temp_r4_13;
-                }
+            if (d->pe & 0x20) {
+                GSgfx_GCSetDither(hw->dither);
             }
-            temp_r3_3 = M2C_FIELD(temp_r30, s32 *, 0x64);
-            if (temp_r3_3 & 0x40) {
-                if ((u8) M2C_FIELD(temp_r31, u8 *, 0xA37) == 1) {
-                    var_r24_2 = M2C_FIELD(temp_r31, s32 *, 0xA08);
-                    switch (var_r24_2) {
-                    case 0:
-                            M2C_FIELD(temp_r31, u8 *, 0xA37) = 0U;
-                        break;
+            if (d->pe & 0x40) {
+                s32 fogType;
+                if (hw->fogEnable == 1) {
+                    fogType = hw->fogType;
+                    if (fogType == 0) {
+                        hw->fogEnable = 0;
                     }
                 } else {
-                    var_r24_2 = 0;
+                    fogType = 0;
                 }
-                if (((s32) M2C_FIELD(gsgfxState, s32 *, 0xBF4) != var_r24_2) || (M2C_FIELD(gsgfxState, f32 *, 0xBF8) != M2C_FIELD(temp_r31, f32 *, 0xA0C)) || (M2C_FIELD(gsgfxState, f32 *, 0xBFC) != M2C_FIELD(temp_r31, f32 *, 0xA10)) || (M2C_FIELD(gsgfxState, f32 *, 0xC00) != M2C_FIELD(temp_r31, f32 *, 0xA14)) || (M2C_FIELD(gsgfxState, f32 *, 0xC04) != M2C_FIELD(temp_r31, f32 *, 0xA18))) {
-                    GSgfx_GCWriteFog(var_r24_2);
+                GSgfx_GCSetFog(fogType, hw->fogStart, hw->fogEnd, hw->fogNear, hw->fogFar);
+                if (fogType != 0) {
+                    GSgfx_GCSetFogColor(hw->fogColor);
                 }
-                if ((var_r24_2 != 0) && ((temp_r3_4 = M2C_FIELD(temp_r31, u32 *, 0xA1C), sp24 = temp_r3_4, (((u32) M2C_FIELD(gsgfxState, u32 *, 0xC09) == temp_r3_4) == 0)) || ((u8) M2C_FIELD(gsgfxState, u8 *, 0xC08) == 1))) {
-                    sp18 = sp24;
-                    M2C_FIELD(gsgfxState, u8 *, 0x2F5) = (u8) sp18;
-                    M2C_FIELD(gsgfxState, u8 *, 0x2F6) = unksp19;
-                    M2C_FIELD(gsgfxState, u8 *, 0x2F7) = unksp1A;
-                    M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x20000);
-                    M2C_FIELD(gsgfxState, u32 *, 0xC09) = sp24;
-                    M2C_FIELD(gsgfxState, u8 *, 0xC08) = 0U;
-                }
-            } else if ((temp_r3_3 & 0x80) && ((temp_r3_5 = M2C_FIELD(temp_r31, u32 *, 0xA1C), sp20 = temp_r3_5, (((u32) M2C_FIELD(gsgfxState, u32 *, 0xC09) == temp_r3_5) == 0)) || ((u8) M2C_FIELD(gsgfxState, u8 *, 0xC08) == 1))) {
-                sp14 = sp20;
-                M2C_FIELD(gsgfxState, u8 *, 0x2F5) = (u8) sp14;
-                M2C_FIELD(gsgfxState, u8 *, 0x2F6) = unksp15;
-                M2C_FIELD(gsgfxState, u8 *, 0x2F7) = unksp16;
-                M2C_FIELD(gsgfxState, s32 *, 0) = (s32) (M2C_FIELD(gsgfxState, s32 *, 0) | 0x20000);
-                M2C_FIELD(gsgfxState, u32 *, 0xC09) = sp20;
-                M2C_FIELD(gsgfxState, u8 *, 0xC08) = 0U;
+            } else if (d->pe & 0x80) {
+                GSgfx_GCSetFogColor(hw->fogColor);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x64) & 0x100) {
-                sp3C = M2C_FIELD(&jtbl_1693, f32 *, 0);
-                sp40 = M2C_FIELD(&jtbl_1693, s32 *, 4);
-                sp44 = M2C_FIELD(&jtbl_1693, f32 *, 8);
-                sp48 = M2C_FIELD(&jtbl_1693, f32 *, 0xC);
-                sp4C = M2C_FIELD(&jtbl_1693, s32 *, 0x10);
-                sp50 = M2C_FIELD(&jtbl_1693, f32 *, 0x14);
-                sp54 = M2C_FIELD(&jtbl_1693, f32 *, 0x18);
-                sp58 = M2C_FIELD(&jtbl_1693, f32 *, 0x1C);
-                sp5C = M2C_FIELD(&jtbl_1693, s32 *, 0x20);
-                sp60 = M2C_FIELD(&jtbl_1693, s32 *, 0x24);
-                sp64 = M2C_FIELD(&jtbl_1693, f32 *, 0x28);
-                sp68 = M2C_FIELD(&jtbl_1693, s32 *, 0x2C);
-                sp6C = M2C_FIELD(&jtbl_1693, s32 *, 0x30);
-                sp70 = M2C_FIELD(&jtbl_1693, s32 *, 0x34);
-                sp74 = M2C_FIELD(&jtbl_1693, s32 *, 0x38);
-                sp78 = M2C_FIELD(&jtbl_1693, f32 *, 0x3C);
-                temp_r3_6 = (unsigned char *)(GSgfxVideoGetViewport(M2C_ERROR( ), M2C_FIELD(&jtbl_1693, s32 *, 0x38), M2C_FIELD(&jtbl_1693, s32 *, 0x34), M2C_ERROR( ), M2C_ERROR( ), M2C_FIELD(&jtbl_1693, s32 *, 0x30), M2C_FIELD(&jtbl_1693, s32 *, 0x2C), M2C_ERROR( )));
-                if ((s32) M2C_FIELD(temp_r31, s32 *, 0xE4) == 0) {
-                    sp3C = M2C_FIELD(temp_r31, f32 *, 0xE8);
-                    sp44 = M2C_FIELD(temp_r31, f32 *, 0xEC);
-                    sp48 = 0.0f;
-                    sp50 = M2C_FIELD(temp_r31, f32 *, 0xF0);
-                    sp54 = M2C_FIELD(temp_r31, f32 *, 0xF4);
-                    sp58 = 0.0f;
-                    sp64 = M2C_FIELD(temp_r31, f32 *, 0xF8);
-                    sp68 = M2C_FIELD(temp_r31, f32 *, 0xFC);
-                    sp74 = -1.0f;
-                    sp78 = 0.0f;
+            if (d->pe & 0x100) {
+                f32 m[4][4] = {0};
+                f32* vp = GSgfxVideoGetViewport();
+                if (hw->projType == 0) {
+                    m[0][0] = hw->proj[0];
+                    m[0][2] = hw->proj[1];
+                    m[0][3] = 0.0f;
+                    m[1][1] = hw->proj[2];
+                    m[1][2] = hw->proj[3];
+                    m[1][3] = 0.0f;
+                    m[2][2] = hw->proj[4];
+                    m[2][3] = hw->proj[5];
+                    m[3][2] = -1.0f;
+                    m[3][3] = 0.0f;
                 } else {
-                    sp3C = M2C_FIELD(temp_r31, f32 *, 0xE8);
-                    sp44 = 0.0f;
-                    sp48 = M2C_FIELD(temp_r31, f32 *, 0xEC);
-                    sp50 = M2C_FIELD(temp_r31, f32 *, 0xF0);
-                    sp54 = 0.0f;
-                    sp58 = M2C_FIELD(temp_r31, f32 *, 0xF4);
-                    sp64 = M2C_FIELD(temp_r31, f32 *, 0xF8);
-                    sp68 = M2C_FIELD(temp_r31, f32 *, 0xFC);
-                    sp74 = -1.0f;
-                    sp78 = 0.0f;
+                    m[0][0] = hw->proj[0];
+                    m[0][2] = 0.0f;
+                    m[0][3] = hw->proj[1];
+                    m[1][1] = hw->proj[2];
+                    m[1][2] = 0.0f;
+                    m[1][3] = hw->proj[3];
+                    m[2][2] = hw->proj[4];
+                    m[2][3] = hw->proj[5];
+                    m[3][2] = -1.0f;
+                    m[3][3] = 0.0f;
                 }
-                GXInitFogAdjTable((GXFogAdjTable *)(temp_r31 + 0xA20), (unsigned short)(sp10), (const float (*)[4])&(M2C_FIELD(temp_r31, f32 *, 0xFC)));
+                GXInitFogAdjTable((GXFogAdjTable*)hw->fogTable, __OSf32tou16(vp[2]), m);
             }
-            if (M2C_FIELD(temp_r30, s32 *, 0x64) & 0x200) {
-                GSgfx_GCSetFogRangeAdj((unsigned char)(M2C_FIELD(temp_r31, u8 *, 0xA36)), (unsigned short)(M2C_FIELD(temp_r31, u16 *, 0xA34)), (unsigned long *)(temp_r31 + 0xA20));
+            if (d->pe & 0x200) {
+                GSgfx_GCSetFogRangeAdj(hw->fogRangeEnable, hw->fogCenter, (u32*)hw->fogTable);
             }
-            M2C_FIELD(temp_r30, s32 *, 0x64) = 0;
+            d->pe = 0;
         }
-        M2C_FIELD(temp_r30, u32 *, 0) = 0U;
+        d->groups = 0;
     }
 }
 }
@@ -1529,9 +1493,9 @@ inline void GSgfx_GCSetTevSwapModeTable(s32 t, s32 r, s32 g, s32 b, s32 a) {
     }
 }
 
-inline void GSgfx_GCSetTevKColor(u32 i, u32* c) {
-    if (*(u32*)&gsgfxState->kcolFlag[i][1] != *c || gsgfxState->kcolFlag[i][0] == 1) {
-        u32 v = *c;
+inline void GSgfx_GCSetTevKColor(u32 i, GSColor c) {
+    if (*(u32*)&gsgfxState->kcolFlag[i][1] != *(u32*)&c || gsgfxState->kcolFlag[i][0] == 1) {
+        u32 v = *(u32*)&c;
         u8* b = (u8*)&v;
         gsgfxState->kcolB0[i].lo = b[0];
         gsgfxState->kcolB0[i].hi = b[3];
@@ -1593,21 +1557,24 @@ inline void GSgfx_GCSetTevIndRepeat(s32 stage) {
     GSIndSet(stage, 0, 0, 0, 0, 6, 6, 1, 0, 0);
 }
 
-inline void GSgfx_GCSetTevIndBumpXYZ(s32 stage, u8 indId, u8 mtx) {
+inline void GSgfx_GCSetTevIndBumpXYZ(s32 stage, u8 indId, s32 mtx) {
     GSIndSet(stage, (u16)indId, 0, 7, (u16)mtx, 0, 0, 0, 0, 0);
 }
 
-inline void GSgfx_GCSetTevIndWarp(s32 stage, u8 indId, u8 signMod, u8 wrap, u8 mtx) {
+#pragma push
+#pragma optimize_for_size on
+inline void GSgfx_GCSetTevIndWarp(s32 stage, u8 indId, u8 signMod, u8 wrap, s32 mtx) {
     int w = 0;
     if (wrap) {
         w = 6;
     }
     int bias = 0;
     bias = !(signMod) ? bias : 7;
-    GSIndSet(stage, (u16)indId, 0, bias, mtx, w, w, 0, 0, 0);
+    GSIndSet(stage, indId, 0, (u16)bias, mtx, w, w, 0, 0, 0);
 }
+#pragma pop
 
-inline void GSgfx_GCSetTevIndirect(s32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, u8 ws, u8 wt, s32 addPrev, u8 utc, s32 alpha) {
+inline void GSgfx_GCSetTevIndirect(s32 stage, u8 indId, s32 fmt, s32 bias, s32 mtx, s32 ws, s32 wt, u8 addPrev, u8 utc, s32 alpha) {
     GSIndSet(stage, indId, fmt, bias, mtx, ws, wt, addPrev, utc, alpha);
 }
 

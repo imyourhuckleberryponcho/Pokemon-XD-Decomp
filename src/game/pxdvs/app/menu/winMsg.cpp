@@ -100,7 +100,7 @@ s32 winMsgDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
         mw = sp->w;
         mh = sp->h;
     }
-    spriteSetOffset(layer, w->offX + sp->x, (sp->y + (s16)(sp->h - 4 - mh)) + w->offY);
+    spriteSetOffset(layer, w->offX + sp->x, sp->y + ((s16)(sp->h - 4 - mh) + w->offY));
     spriteSetEnv(layer);
     switch (w->menuID) {
     case 0x14:
@@ -115,14 +115,16 @@ s32 winMsgDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     }
     switch ((s8)w->state) {
     case 0:
-    case 3:
-    case 5:
+    case 1:
         break;
     case 2:
         if (w->menuID != 0x14) {
             GSmsgMain(layer, fw->msg, fw->key, ((s8)w->used & 4) == 0);
             fw->key = 0;
         }
+        break;
+    case 3:
+    case 5:
         break;
     }
     return 0;

@@ -1210,39 +1210,32 @@ u32 FloorModuleList::registerModule(unsigned char p0, unsigned long p1, FloorMod
 
 extern "C++" {
 extern "C++" {
-void FloorModuleList::insertFuncIntoList(FloorModuleEntry* p0) {
-    FloorModuleEntry *temp_r0;
-    FloorModuleEntry *var_r30;
-
-    temp_r0 = M2C_FIELD(this, FloorModuleEntry **, 0xC);
-    if (temp_r0 == NULL) {
-        M2C_FIELD(this, FloorModuleEntry **, 0xC) = p0;
+void FloorModuleList::insertFuncIntoList(FloorModuleEntry* entry) {
+    if (M2C_FIELD(this, FloorModuleEntry **, 0xC) == NULL) {
+        M2C_FIELD(this, FloorModuleEntry **, 0xC) = entry;
         return;
     }
-    var_r30 = temp_r0;
-loop_5:
-    if (((FloorModuleEntry*)(var_r30))->getNext() != NULL) {
-        if (((FloorModuleEntry*)(var_r30))->getPriority() < (((FloorModuleEntry*)(p0))->getPriority())) {
-            var_r30 = ((FloorModuleEntry*)(var_r30))->getNext();
-            goto loop_5;
+    FloorModuleEntry* cur = M2C_FIELD(this, FloorModuleEntry **, 0xC);
+    while (cur->getNext() != NULL) {
+        if (!(cur->getPriority() < entry->getPriority())) {
+            break;
         }
+        cur = cur->getNext();
     }
-    if (((FloorModuleEntry*)(var_r30))->getNext() == NULL) {
-        if (((FloorModuleEntry*)(var_r30))->getPriority() < (((FloorModuleEntry*)(p0))->getPriority())) {
-            ((FloorModuleEntry*)(p0))->setPrev((FloorModuleEntry*)(var_r30));
-            ((FloorModuleEntry*)(p0))->setNext((FloorModuleEntry*)(NULL));
-            ((FloorModuleEntry*)(var_r30))->setNext((FloorModuleEntry*)(p0));
-            return;
-        }
+    if (cur->getNext() == NULL && cur->getPriority() < entry->getPriority()) {
+        entry->setPrev(cur);
+        entry->setNext(NULL);
+        cur->setNext(entry);
+        return;
     }
-    if (((FloorModuleEntry*)(var_r30))->getPrev() != NULL) {
-        ((FloorModuleEntry*)(((FloorModuleEntry*)(var_r30))->getPrev()))->setNext((FloorModuleEntry*)(p0));
+    if (cur->getPrev() != NULL) {
+        cur->getPrev()->setNext(entry);
     }
-    ((FloorModuleEntry*)(p0))->setPrev((FloorModuleEntry*)(((FloorModuleEntry*)(var_r30))->getPrev()));
-    ((FloorModuleEntry*)(p0))->setNext((FloorModuleEntry*)(var_r30));
-    ((FloorModuleEntry*)(var_r30))->setPrev((FloorModuleEntry*)(p0));
-    if ((FloorModuleEntry *) M2C_FIELD(this, FloorModuleEntry **, 0xC) == var_r30) {
-        M2C_FIELD(this, FloorModuleEntry **, 0xC) = p0;
+    entry->setPrev(cur->getPrev());
+    entry->setNext(cur);
+    cur->setPrev(entry);
+    if (M2C_FIELD(this, FloorModuleEntry **, 0xC) == cur) {
+        M2C_FIELD(this, FloorModuleEntry **, 0xC) = entry;
     }
 }
 }

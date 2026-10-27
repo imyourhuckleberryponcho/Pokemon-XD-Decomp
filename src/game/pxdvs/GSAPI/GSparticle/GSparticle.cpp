@@ -289,10 +289,9 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
     temp_r3 = GScameraGetActiveCamera();
     var_r29 = 1;
     temp_r31 = M2C_FIELD(p0, u8 *, 0x16A7) != 0;
-    if (temp_r3 != NULL) {
-        if (GScameraIsValid((GScamera*)(temp_r3)) == 0) {
-            return;
-        }
+    if (temp_r3 == NULL || GScameraIsValid((GScamera*)(temp_r3)) == 0) {
+        return;
+    } else {
         temp_r28 = GSgfxPerfbarCPUEntry(0xFF00FF);
         if ((u8) _invalidateVtx != 0) {
             M2C_FIELD(p0, s32 *, 4) = (s32) (M2C_FIELD(p0, s32 *, 4) | 0x08000000);
@@ -342,7 +341,7 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
                         psDispParticles(var_r29, 2U, (void*)(temp_r25));
                         ((GSgfxLayer*)(p0))->InvalidateState();
                     }
-                    var_r30 += 4;
+                    var_r30++;
                     var_r24 += 1;
                 }
                 M2C_FIELD(p0, s8 *, 0xD44) = 0;
@@ -355,7 +354,8 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
                     GScameraLoadActiveCameraMatrix((GSgfxLayerID)(M2C_FIELD(p0, s32 *, 0x28)));
                 }
             }
-        case 0:        default:
+        case 0:
+        case 1:
         case 3:
         case 5:
             particleEngineRender(p0);
@@ -629,12 +629,9 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
     f32 sp2C;
     f32 sp30;
     f32 sp34;
-    f32 sp3C;
-    f32 sp40;
-    f32 sp44;
     f32 unksp18;
     f32 unksp28;
-    f32 unksp38;
+    f32 v38[4];
     f32 v48[4];
     s32 unksp58;
     s32 unksp64;
@@ -710,9 +707,9 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
         GSpartGetTransform((GSpart*)(temp_r3), (GSvec*)(v8C), (GSvec*)(v80), (GSvec*)(&unksp74));
         GSpartFree((GSpart*)(temp_r3));
         EulerToQuat((Vec*)(v80), (Quaternion*)(&unksp64));
-        GSvecTransformQuat((GSvec*)(&unksp58), (const GSquat*)(&unksp64), (const GSvec*)(((u8*)(p0) + 0x10)));
+        GSvecTransformQuat((GSvec*)(&unksp58), (const GSquat*)(&unksp64), (const GSvec*)(((u8*)((s32)p0) + 0x10)));
         PSVECAdd((const register Vec*)(v8C), (const register Vec*)(&unksp58), (register Vec*)(v8C));
-        PSVECAdd((const register Vec*)(v80), (const register Vec*)(((u8*)(p0) + 0x1C)), (register Vec*)(v80));
+        PSVECAdd((const register Vec*)(v80), (const register Vec*)(((u8*)((s32)p0) + 0x1C)), (register Vec*)(v80));
         sp78 *= M2C_FIELD(p0, f32 *, 0x2C);
         sp7C *= M2C_FIELD(p0, f32 *, 0x30);
         unksp74 *= M2C_FIELD(p0, f32 *, 0x28);
@@ -827,13 +824,13 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
                 break;
             case 2:
                 if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                    EulerToQuat((Vec*)(v80), (Quaternion*)(&unksp38));
+                    EulerToQuat((Vec*)(v80), (Quaternion*)(v38));
                     temp_r3_6 = M2C_FIELD(p0, u8 **, 0x38);
                     if (temp_r3_6 != NULL) {
-                        M2C_FIELD(temp_r3_6, f32 *, 0x118) = unksp38;
-                        M2C_FIELD(temp_r3_6, f32 *, 0x11C) = sp3C;
-                        M2C_FIELD(temp_r3_6, f32 *, 0x120) = sp40;
-                        M2C_FIELD(temp_r3_6, f32 *, 0x124) = sp44;
+                        M2C_FIELD(temp_r3_6, f32 *, 0x118) = v38[0];
+                        M2C_FIELD(temp_r3_6, f32 *, 0x11C) = v38[1];
+                        M2C_FIELD(temp_r3_6, f32 *, 0x120) = v38[2];
+                        M2C_FIELD(temp_r3_6, f32 *, 0x124) = v38[3];
                     }
                 } else {
                     temp_r4_5 = M2C_FIELD(p0, u8 **, 0x38);
@@ -890,11 +887,11 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
                     }
                 } else {
                     temp_r4_6 = M2C_FIELD(p0, u8 **, 0x38);
-                    M2C_FIELD(temp_r4_6, f32 *, 0x24) = unksp74;
                     M2C_FIELD(temp_r4_6, f32 *, 0x28) = sp78;
+                    M2C_FIELD(temp_r4_6, f32 *, 0x24) = unksp74;
+                    M2C_FIELD(M2C_FIELD(temp_r4_6, u8 **, 8), f32 *, 0xA0) = sp78;
                     M2C_FIELD(temp_r4_6, f32 *, 0x2C) = sp7C;
                     M2C_FIELD(M2C_FIELD(temp_r4_6, u8 **, 8), f32 *, 0x9C) = unksp74;
-                    M2C_FIELD(M2C_FIELD(temp_r4_6, u8 **, 8), f32 *, 0xA0) = sp78;
                     M2C_FIELD(M2C_FIELD(temp_r4_6, u8 **, 8), f32 *, 0xA4) = sp7C;
                 }
                 break;
@@ -996,8 +993,8 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
                     }
                 } else {
                     temp_r4_10 = M2C_FIELD(p0, u8 **, 0x38);
-                    M2C_FIELD(temp_r4_10, f32 *, 0x24) = unksp74;
                     M2C_FIELD(temp_r4_10, f32 *, 0x28) = sp78;
+                    M2C_FIELD(temp_r4_10, f32 *, 0x24) = unksp74;
                     M2C_FIELD(temp_r4_10, f32 *, 0x2C) = sp7C;
                     M2C_FIELD(M2C_FIELD(temp_r4_10, u8 **, 8), f32 *, 0x9C) = unksp74;
                     M2C_FIELD(M2C_FIELD(temp_r4_10, u8 **, 8), f32 *, 0xA0) = sp78;
@@ -1066,8 +1063,8 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
                     }
                 } else {
                     temp_r4_12 = M2C_FIELD(p0, u8 **, 0x38);
-                    M2C_FIELD(temp_r4_12, f32 *, 0x24) = unksp74;
                     M2C_FIELD(temp_r4_12, f32 *, 0x28) = sp78;
+                    M2C_FIELD(temp_r4_12, f32 *, 0x24) = unksp74;
                     M2C_FIELD(temp_r4_12, f32 *, 0x2C) = sp7C;
                     M2C_FIELD(M2C_FIELD(temp_r4_12, u8 **, 8), f32 *, 0x9C) = unksp74;
                     M2C_FIELD(M2C_FIELD(temp_r4_12, u8 **, 8), f32 *, 0xA0) = sp78;
@@ -1154,8 +1151,8 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
                     }
                 } else {
                     temp_r4_15 = M2C_FIELD(p0, u8 **, 0x38);
-                    M2C_FIELD(temp_r4_15, f32 *, 0x24) = unksp74;
                     M2C_FIELD(temp_r4_15, f32 *, 0x28) = sp78;
+                    M2C_FIELD(temp_r4_15, f32 *, 0x24) = unksp74;
                     M2C_FIELD(temp_r4_15, f32 *, 0x2C) = sp7C;
                     M2C_FIELD(M2C_FIELD(temp_r4_15, u8 **, 8), f32 *, 0x9C) = unksp74;
                     M2C_FIELD(M2C_FIELD(temp_r4_15, u8 **, 8), f32 *, 0xA0) = sp78;

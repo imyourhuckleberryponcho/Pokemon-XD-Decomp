@@ -117,7 +117,7 @@ f32 menuGetPokemonScale(u32 id, int index)
 }
 
 void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id);
-u16 pokemonindex(int);
+static u16 pokemonindex(int);
 
 void menuPocketDebugMakeDarkPokemonByID(Pokemon& p, u16 id, f32 mult)
 {
@@ -163,7 +163,7 @@ void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id)
     dark->setSnatchIndex((u8)id);
 }
 
-u16 pokemonindex(int n)
+static u16 pokemonindex(int n)
 {
     int v = n + 1;
     if (v > 0xFB) v += 0x19;

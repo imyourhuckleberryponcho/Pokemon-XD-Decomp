@@ -258,7 +258,7 @@ extern "C" u32 pokemonCheckRare(Pokemon*);
 extern "C" void pokemonGrowBasisStatus(Pokemon*,u32);
 extern "C" void pokemonResetBasisStatus(Pokemon*);
 extern "C" void pokemonSetStatus(Pokemon*, u32, u16, u32, u32);
-extern "C" u16 pokemonGetStatus(Pokemon*, u32, u16, u32);
+extern "C" u32 pokemonGetStatus(Pokemon*, u32, u16, u32);
 extern "C" u32 pokemonAdjustValueBySeikaku(u32, u16, u32);
 static u8 _pokemonGetSeikaku(Pokemon*);
 extern "C" u8 pokemonGetSeikakuAsRnd(u32);

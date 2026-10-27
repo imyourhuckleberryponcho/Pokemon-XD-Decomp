@@ -6753,14 +6753,13 @@ void menuTool_Rule00_Ctrl(void * p0) {
                 M2C_FIELD(&_CB, s32 *, 0xB128) = 0xF;
                 M2C_FIELD(&_CB, s32 *, 0xB124) = -1;
             }
-        } else if ((s32) M2C_FIELD(&_CB, s32 *, 0xB010) < 1) {
-            if ((s32) M2C_FIELD(&_CB, s32 *, 0xB090) >= 1) {
+        } else {
+            if ((s32) M2C_FIELD(&_CB, s32 *, 0xB010) >= 1 || (s32) M2C_FIELD(&_CB, s32 *, 0xB090) >= 1) {
                 return;
             }
-            if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0B0) != 0) {
-                if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0B4) == 0) {
-                    return;
-                }
+            if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0B0) == 0 || (s32) M2C_FIELD(&_CB, s32 *, 0xB0B4) == 0) {
+                return;
+            }
                 if ((s32) M2C_FIELD(&_CB, s32 *, 0xB118) == 5) {
                     if ((s32) _ruleCursol2 != -1) {
                         if ((s32) _ruleCursol2 != (s32) M2C_FIELD(&_CB, s32 *, 0xB028)) {
@@ -6797,8 +6796,8 @@ block_17:
                             return;
                         }
                         menuCB_SE_Play(0x11);
-                        temp_r3 = (long)((M2C_FIELD(&_CB, s32 *, 0xB02C) + (s32)M2C_FIELD(&_CB, u8 **, 0x9C78)) + 0x52);
-                        *(M2C_FIELD(&_CB, s32 *, 0xB028) + (u8*)temp_r3) ^= 1;
+                        var_r7 = (u8*)(M2C_FIELD(&_CB, s32 *, 0xB02C) + (s32)M2C_FIELD(&_CB, u8 **, 0x9C78)) + 0x52;
+                        var_r7[M2C_FIELD(&_CB, s32 *, 0xB028)] ^= 1;
                         goto block_27;
                     }
 block_27:
@@ -6841,8 +6840,10 @@ block_27:
                         }
                         if ((s32) _ruleCursol2 != currentCursor) {
                             menuCB_SE_Play(0x10);
+                            return;
                         }
                     }
+                    return;
                 } else {
                     if (M2C_FIELD(&_CB, s32 *, 0xB11C) != 0) {
 switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C)) {
@@ -7437,10 +7438,10 @@ switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C)) {
                         if ((s32) ((M2C_FIELD(windowGetKeyInfo(), u16 *, 4) | (u16)(M2C_FIELD(windowGetKeyInfo2(), u16 *, 4))) & 3) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB034) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB034) ^ 1);
                             menuCB_SE_Play(0x10);
-                            return;
                         }
                         break;
                     }
+                    return;
                     } else {
                         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x820) != 0) {
                             M2C_FIELD(&_CB, s32 *, 0xB010) = 1;
@@ -7470,6 +7471,7 @@ switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C)) {
                                     return;
                                 }
                             }
+                            return;
                         } else {
                             if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x10) != 0) {
                                 menuCBRule_Copy(_ruleTempBuff_DB, M2C_FIELD(&_CB, u8 **, 0x9C78));
@@ -7478,7 +7480,8 @@ switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C)) {
                                 case 0:
                                     M2C_FIELD(&_CB, s32 *, 0xB11C) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB11C) + M2C_FIELD(&_CB, s32 *, 0xB014));
                                     switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB014)) {
-                                    case 1:                                    default:
+                                    case 0:
+                                    case 1:
                                         M2C_FIELD(&_ruleCursol, s32 *, 0) = 0;
                                         M2C_FIELD(&_ruleCursol, s32 *, 4) = 0;
                                         break;
@@ -7638,7 +7641,6 @@ switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C)) {
                         
                     }
                 }
-            }
         }
     }
 }

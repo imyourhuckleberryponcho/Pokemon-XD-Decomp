@@ -644,12 +644,15 @@ static bool _SelectCursorPositionCheck(void) {
 }
 
 static void _SelectCursorCalcAngle(s8 idx) {
+    float new_var;
     MenuItem* item = menuItemBiosGetPtr(0x6B, _SelectLabel[idx]);
-    _menuPdaStatus.target = (f32)(s16)(item->y - 5);
+    new_var = 30.0f;
+    _menuPdaStatus.target = (s16)(item->y - 5);
     _menuPdaStatus.ang0 = acos((_menuPdaStatus.pos - _center1[1]) / _r1);
-    _menuPdaStatus.ang1 = acos((30.0f + _menuPdaStatus.pos - _center1[1]) / _r1);
+    _menuPdaStatus.ang1 = acos(((_menuPdaStatus.pos + new_var) - _center1[1]) / _r1);
     _menuPdaStatus.ang2 = acos((_menuPdaStatus.pos - _center2[1]) / _r2);
-    _menuPdaStatus.ang3 = acos((30.0f + _menuPdaStatus.pos - _center2[1]) / _r2);
+    new_var = 30.0f;
+    _menuPdaStatus.ang3 = acos(((_menuPdaStatus.pos + new_var) - _center2[1]) / _r2);
     _menuPdaStatus.angD0 = _menuPdaStatus.ang1 - _menuPdaStatus.ang0;
     _menuPdaStatus.angD1 = _menuPdaStatus.ang3 - _menuPdaStatus.ang2;
 }
@@ -718,7 +721,7 @@ static void _SelectCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s8 idx
     f32 d;
     GSgfxVF* vf;
     _checkAddFunc(window);
-    half = 0.5f * _next_height;
+    half = _next_height / 2.0f;
     if (menuItemBiosGetSelectFlag(0x6B, sprite->id)) {
         winSpriteSetDisp(sprite, 1);
     } else {
@@ -777,7 +780,7 @@ static void _SelectCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s8 idx
     }
 }
 
-static f32 _menuPdaUnusedOne(f32 v) {
+f32 _menuPdaUnusedOne(f32 v) {
     return v + 1.0f;
 }
 
@@ -811,7 +814,7 @@ s32 menuPdaBackDrawTitleText(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             digit = value % 10;
             value /= 10;
             msgctrlSetValue(0x34, digit);
-            GSmsgPrint2(window->layer, (u16)x, 0, window->alpha | 0xFFFFFF00, 0x426F);
+            GSmsgPrint2(window->layer, x, 0, (u8)window->alpha | 0xFFFFFF00, 0x426F);
             x -= GSmsgGetRect(0x426F) >> 16;
         }
         break;

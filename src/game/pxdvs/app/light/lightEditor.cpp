@@ -181,7 +181,7 @@ static struct _struct_widthArray_S2051_0x8 widthArray_S2051[4] = { { -1.0f, -1.0
 void LightEditor::editDirection(GSlight* p0) {
     s32 var_r29;
     s32 var_r30;
-    volatile s32 sp3C;
+    volatile s32 sp64;
     volatile s32 sp40;
     s32 sp44;
     s32 sp48;
@@ -191,12 +191,12 @@ void LightEditor::editDirection(GSlight* p0) {
     s32 sp58;
     s32 sp5C;
     s32 sp60;
-    volatile s32 sp64;
-    s32 unksp14;
+    s32 sp38;
+    volatile s32 sp3C;
     volatile s32 spC8;
     volatile s32 spC4;
     f32 sp2C;
-    s32 spBC;
+    volatile f32 sp24;
     s32 spB8;
     s32 spB4;
     s32 spB0;
@@ -204,15 +204,15 @@ void LightEditor::editDirection(GSlight* p0) {
     s32 spA8;
     s32 spA4;
     volatile s32 spA0;
-    volatile s32 sp9C;
+    f32 sp20;
     s32 sp98;
     s32 sp68;
-    s32 sp38;
+    s32 unksp14;
     s32 spC0;
     f32 sp28;
-    volatile f32 sp24;
-    f32 sp20;
+    s32 spBC;
     volatile f32 sp10;
+    volatile s32 sp9C;
     f32 spC;
     volatile f32 sp8;
     u32 sp30;

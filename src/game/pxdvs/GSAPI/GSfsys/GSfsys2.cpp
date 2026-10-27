@@ -177,7 +177,7 @@ static u8 _fsysAddQueManage(FsysQue* que, s32 prio);
 static FsysQue* _fsysGetQueManage(u32 id, u32 idx);
 static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, s32 a, s32 b, s32 c);
 static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, s32 a, s32 b, s32 c);
-static FsysWork* _fsysGetNewWork(void);
+FsysWork* _fsysGetNewWork(void);
 static FsysGroup* _fsysGetGROUP(u32 id);
 static s32 _fsysOpenFile(FsysWork* work);
 static void _fsysOffTOCFlag(u32 id, u32 flag);
@@ -225,7 +225,7 @@ u8 _fsysInitCache(s32, s32);
 void* GSgappCreate(u32, u32, u32, void (*)(void));
 void GSgappSetName(void*, const char*);
 static u8 _fsysInitTOC(void);
-static void* _fsysDoMalloc(u32);
+void* _fsysDoMalloc(u32);
 FsysDataType* _fsysGetDataType(u32);
 void* _fsysGetResource(u32, u32, u32, FsysResHeader*);
 static void GSfsysDaemonForeground(void);
@@ -1332,22 +1332,6 @@ static void _fsysForegroundTask(FsysWork* work) {
     }
     OSRestoreInterrupts(intr);
     switch (work->status) {
-    case -999:
-        break;
-    default:
-        OSReport("_fsysForegroundTask:ERROR...:%d\n", work->id);
-        if (_fsysCloseFile(work, 1) == 0) {
-            _fsysWorkSetTaskStatus(work, -997);
-            break;
-        }
-    case -998:
-        OSReport("_fsysForegroundTask:ERROR_FILEOPEN:%d\n", work->id);
-        _fsysOpenFile(work);
-        break;
-    case -997:
-        OSReport("_fsysForegroundTask:ERROR_FILECLOSE:%d\n", work->id);
-        _fsysWorkSetTaskStatus(work, -999);
-        break;
     case 3:
         if (_headerTop == 0) {
             _headerTop = headerTop;
@@ -1381,25 +1365,42 @@ static void _fsysForegroundTask(FsysWork* work) {
             break;
         }
         break;
-    case 6:
-    case 7:
     case 9:
         _fsysCheckExpandCompleteAll(work);
         break;
+    case 6:
+    case 7:
     case 10:
         switch (work->mode) {
         case 1:
             if (_fsysCheckExpandCompleteAll(work) == 0) {
                 break;
             }
+        case 2:
         case 4:
             _fsysWorkSetTaskStatus(work, 11);
             break;
         default:
-        case 3:
             _fsysWorkSetTaskStatus(work, -1000);
             break;
         }
+        break;
+    case -1000:
+    case -996:
+    case -995:
+    case -994:
+        OSReport("_fsysForegroundTask:ERROR...:%d\n", work->id);
+        if (_fsysCloseFile(work, 1) == 0) {
+            _fsysWorkSetTaskStatus(work, -997);
+            break;
+        }
+    case -998:
+        OSReport("_fsysForegroundTask:ERROR_FILEOPEN:%d\n", work->id);
+        _fsysOpenFile(work);
+        break;
+    case -997:
+        OSReport("_fsysForegroundTask:ERROR_FILECLOSE:%d\n", work->id);
+        _fsysWorkSetTaskStatus(work, -999);
         break;
     case 11:
         if (_fsysCloseFile(work, 0) == 0) {
@@ -1410,6 +1411,11 @@ static void _fsysForegroundTask(FsysWork* work) {
             }
             _fsysWorkSetTaskStatus(work, 12);
         }
+        break;
+    case -999:
+    case 0:
+    case 1:
+    case 2:
         break;
     }
     intr = OSDisableInterrupts();
@@ -1665,11 +1671,11 @@ void _fsysAddBGWork(FsysBG* bg) {
 }
 
 FsysBG* _fsysGetNewBGWork(void) {
-    u32 i;
     FsysBG* bg;
+    u32 i;
     FsysBG* ret = 0;
+    BOOL intr = OSDisableInterrupts();
 
-    OSDisableInterrupts();
     i = _fsysBGWorkIndex;
     while (ret == 0) {
         bg = &_fsysBGWork[i];
@@ -1708,7 +1714,7 @@ FsysBG* _fsysGetNewBGWork(void) {
         }
     }
     _fsysBGWorkIndex = i;
-    OSRestoreInterrupts(0);
+    OSRestoreInterrupts(intr);
     return ret;
 }
 
@@ -1745,7 +1751,7 @@ void _fsysAddTAG(FsysTag* tag, FsysTag** root) {
     OSRestoreInterrupts(intr);
 }
 
-static FsysWork* _fsysGetNewWork(void) {
+FsysWork* _fsysGetNewWork(void) {
     FsysWork* w;
 
     w = _fsysGetNewWork_Sub(1);
@@ -1876,7 +1882,7 @@ static u8 _fsysInitTOC(void) {
     return 1;
 }
 
-static void* _fsysDoMalloc(u32 size) {
+void* _fsysDoMalloc(u32 size) {
     return GSmemAllocAlign(size, 0x20);
 }
 

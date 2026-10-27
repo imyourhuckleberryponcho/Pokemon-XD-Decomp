@@ -107,7 +107,7 @@ void evolution();
 void evolutionMain();
 s32 evolutionOpen(void*, void*, s32, u16*, s32, u8*);
 s32 evolutionStart(s32 *p0, s32 *p1, s32 p2, u16 *p3, s32 p4, u8 *p5);
-s32 evolutionWazaLearn(s32 *p0, u16 p1, s8 *p2, s32 p3, void *p4, u32 *p5);
+s32 evolutionWazaLearn(Pokemon* p0, u32 p1, s8 *p2, EVOLUTION_WINDOW_TYPE p3, void *p4, u32 *p5);
 static s32 evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc(u32 *p0, s32 p1, s32 *p2, s32 *p3, u16 *p4, s32 p5, u8 *p6);
 s8 fadeCheck(bool);
 void fadeSet(s32 type, f32 time);
@@ -120,7 +120,7 @@ void msgctrlSetValue(s32 id, u32 value);
 void pokemonBiosCopy(Pokemon* pokeDst, const Pokemon* pokeSrc);
 char* pokemonBiosGetNicknamePtr(Pokemon* poke);
 u16 pokemonBiosGetPokemonDataId(Pokemon* poke);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u32 wazaNum);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u16 wazaNum);
 u32 pokemonBiosGetRnd(Pokemon* poke);
 bool pokemonCheckValid(Pokemon* pokemon);
 PokemonData* pokemonDataBiosGetPtr(u16 pokeNum);
@@ -474,54 +474,47 @@ static s32 loadAll(WORK* p0, Pokemon* p1, Pokemon* p2) {
 }
 
 extern "C" {
-s32 evolutionWazaLearn(s32 *p0, u16 p1, s8 *p2, s32 p3, void *p4, u32 *p5) {
-    enum TsE { TsE0 };
-    s32 var_r26;
-    enum TsE temp_r3;
+s32 evolutionWazaLearn(Pokemon* p0, u32 p1, s8 *p2, EVOLUTION_WINDOW_TYPE p3, void *p4, u32 *p5) {
+    s32 slot;
 
-    var_r26 = 0;
-loop_1:
-    if (pokemonBiosGetPokemonWazaDataId((Pokemon*)((Pokemon *) p0), (u32) var_r26) != 0) {
-        var_r26 += 1;
-        if ((s32) var_r26 < 4) {
-            goto loop_1;
+    for (slot = 0; slot < 4; slot++) {
+        if (pokemonBiosGetPokemonWazaDataId(p0, slot) == 0) {
+            break;
         }
     }
-    if ((s32) var_r26 >= 4) {
-        temp_r3 = (enum TsE)((unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)((Pokemon *) p0))));
-        msgctrlSetValue(0x32, temp_r3);
-        msgctrlSetValue(0x39, (u32) p1);
-loop_5:
-        if (dispMsgYesNo(0xC36AU, (EVOLUTION_WINDOW_TYPE)(p3)) == 0) {
-            if (p4 != NULL) {
-                var_r26 = ((s8 (*)(s32 *, u16, u32 *)) p4)(p0, p1, p5);
-            } else {
-                var_r26 = 0;
+    if (slot >= 4) {
+        char* name = pokemonBiosGetNicknamePtr(p0);
+        msgctrlSetValue(0x32, (u32)name);
+        u16 waza = p1;
+        msgctrlSetValue(0x39, waza);
+        while (true) {
+            if (dispMsgYesNo(0xC36A, p3) == 0) {
+                if (p4 != NULL) {
+                    slot = ((s8 (*)(Pokemon*, u32, u32*))p4)(p0, p1, p5);
+                } else {
+                    slot = 0;
+                }
+                if (slot >= 0) {
+                    break;
+                }
             }
-            if ((s32) var_r26 < 0) {
-                goto block_10;
+            msgctrlSetValue(0x32, (u32)name);
+            msgctrlSetValue(0x39, waza);
+            if (dispMsgYesNo(0xC36B, p3) == 0) {
+                dispMsg(0xC36C, p3);
+                return 0;
             }
-            msgctrlSetValue((long)(0x32), (unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)((Pokemon *) p0))));
-            msgctrlSetValue(0x39, (u32) pokemonBiosGetPokemonWazaDataId((Pokemon*)((Pokemon *) p0), (u32) var_r26));
-            openMsgWin(0xC36DU, (EVOLUTION_WINDOW_TYPE)((u16)p3));
-            msgctrlSetValue(0x5D, 0x21U);
-            goto block_13;
         }
-block_10:
-        msgctrlSetValue(0x32, temp_r3);
-        msgctrlSetValue(0x39, (u32) p1);
-        if (dispMsgYesNo(0xC36BU, (EVOLUTION_WINDOW_TYPE)(p3)) == 0) {
-            dispMsg(0xC36CU, (EVOLUTION_WINDOW_TYPE)((u16)p3));
-            return 0;
-        }
-        goto loop_5;
+        msgctrlSetValue(0x32, (u32)pokemonBiosGetNicknamePtr(p0));
+        msgctrlSetValue(0x5D, 0x21);
+        msgctrlSetValue(0x39, pokemonBiosGetPokemonWazaDataId(p0, slot));
+        openMsgWin(0xC36D, p3);
     }
-block_13:
-    soundOpenPlayME(0x3C7U, 0U, 0xFFU);
-    msgctrlSetValue((long)(0x32), (unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)((Pokemon *) p0))));
-    msgctrlSetValue(0x39, (u32) p1);
-    dispMsg(0xC36EU, (EVOLUTION_WINDOW_TYPE)(p3));
-    *p2 = (s8) var_r26;
+    soundOpenPlayME(0x3C7, 0, 0xFF);
+    msgctrlSetValue(0x32, (u32)pokemonBiosGetNicknamePtr(p0));
+    msgctrlSetValue(0x39, (u16)p1);
+    dispMsg(0xC36E, p3);
+    *p2 = slot;
     return 1;
 }
 }
@@ -774,7 +767,7 @@ static s32 evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc(u32 *p0, s32 p1, s
     var_r28 = 0;
     while (var_r28 < p5) {
         temp_r27 = *var_r24;
-        if (evolutionWazaLearn(&unkspC, temp_r27, &sp8, 0, cbWazaForget, p0) != 0) {
+        if (evolutionWazaLearn((Pokemon*)&unkspC, temp_r27, &sp8, (EVOLUTION_WINDOW_TYPE)0, cbWazaForget, p0) != 0) {
             pokemonWazaCreate((Pokemon*)(&unkspC), (u16) sp8, temp_r27);
         } else {
             sp8 = -1;

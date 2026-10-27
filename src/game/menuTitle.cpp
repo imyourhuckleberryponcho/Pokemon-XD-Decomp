@@ -278,7 +278,7 @@ void menuTitleCursorAnime(void *p0, void *p1) {
         temp_r0 = _titleCursorTimer % 60;
         M2C_FIELD(p1, s32 *, 0x64) = -1;
         if (temp_r0 < 0x1E) {
-            M2C_FIELD(p1, u8 *, 0x67) = (u8) (M2C_FIELD(p1, u8 *, 0x67) - (s32) (128.0f * (f32) sin((f64) (3.14f * ((f32) temp_r0 / 30.0f)))));
+            M2C_FIELD(p1, u8 *, 0x67) -= (u8) (128.0f * (f32) sin((f64) (3.14f * ((f32) temp_r0 / 30.0f))));
         }
     } else {
         M2C_FIELD(p1, u8 *, 0x67) = 0xFFU;

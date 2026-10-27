@@ -243,7 +243,6 @@ void gbaPokemonFromGC(void *p0, void *p1) {
     volatile u8 sp9;
     u8 sp8;
     GamedataAttest *temp_r3;
-    s32 temp_r31_2;
     s32 temp_r3_4;
     s32 temp_r3_5;
     s32 var_ctr;
@@ -255,8 +254,8 @@ void gbaPokemonFromGC(void *p0, void *p1) {
     u8 temp_r0;
     bool temp_r0_10;
     u8 temp_r0_11;
-    u8 temp_r0_12;
-    u8 temp_r0_13;
+    s32 temp_r0_12;
+    s32 temp_r0_13;
     u8 temp_r0_14;
     s32 temp_r0_15;
     s32 temp_r0_16;
@@ -344,7 +343,7 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         temp_r3_5 = GBAMakeFromGSchar((u8*)(((u8*)(p1) + 0x14)), (const u16*)(pokemonBiosGetCatchTrainerNamePtr((Pokemon*)((Pokemon *) p0))), (void*)((u8 *) (u8)(gamedataAttestBiosGetLangareaId((GamedataAttest*)(temp_r3)))));
         if (temp_r3_5 < 7) {
             M2C_FIELD(((u8 *)p1 + temp_r3_5), s8 *, 0x14) = 0xFF;
-            memset((void*)((u8*)(p1) + (temp_r3_5 + 0x15)), 0, 6 - temp_r3_5);
+            memset((void*)((u8*)((u8)p1) + (temp_r3_5 + 0x15)), 0, 6 - temp_r3_5);
         }
         M2C_FIELD(p1, u8 *, 0x1B) = pokemonBiosGetPcboxMark((Pokemon*)((Pokemon *) p0));
         M2C_FIELD(p1, u16 *, 0x1E) = _swap16(pokemonBiosGetAmari((Pokemon*)((Pokemon *) p0)));
@@ -397,8 +396,8 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         spB = temp_r0_4;
         spB = (temp_r0_4 & ~0x38) | ((pokemonBiosGetBeautifulMedal((Pokemon*)((Pokemon *) p0)) << 3) & 0x38);
         spA = (spA & ~0x1C0) | ((pokemonBiosGetCuteMedal((Pokemon*)((Pokemon *) p0)) << 6) & 0x1C0);
-        temp_r0_5 = ((u8) spA & ~0xE) | ((pokemonBiosGetCleverMedal((Pokemon*)((Pokemon *) p0)) << 1) & 0xE);
         sp9 = temp_r0_7;
+        temp_r0_5 = ((u8) spA & ~0xE) | ((pokemonBiosGetCleverMedal((Pokemon*)((Pokemon *) p0)) << 1) & 0xE);
         spA = temp_r0_5;
         temp_r0_6 = (temp_r0_5 & ~0x70) | ((pokemonBiosGetStrongMedal((Pokemon*)((Pokemon *) p0)) << 4) & 0x70);
         sp9 = temp_r0_9;
@@ -426,14 +425,13 @@ void gbaPokemonFromGC(void *p0, void *p1) {
         temp_r0_17 = (temp_r0_16 & ~0x78) | ((pokemonBiosGetAmariRibbon((Pokemon*)((Pokemon *) p0)) << 3) & 0x78);
         sp8 = temp_r0_17;
         sp8 = (temp_r0_17 & ~0x80) | ((pokemonBiosGetEventGetFlag((Pokemon*)((Pokemon *) p0)) << 7) & 0x80);
-        temp_r31_2 = pokemonBiosGetConditionAmari((Pokemon*)((Pokemon *) p0)) & 0xFFFFF000;
-        M2C_FIELD(p1, s32 *, 0x50) = (s32) (_swap32((u32) gbaPokemonConditonFromGC(p0)) | temp_r31_2);
+        M2C_FIELD(p1, s32 *, 0x50) = (s32) (_swap32((u32) gbaPokemonConditonFromGC(p0)) | (pokemonBiosGetConditionAmari((Pokemon*)((Pokemon *) p0)) & 0xFFFFF000));
         M2C_FIELD(p1, u8 *, 0x54) = pokemonBiosGetLevel((Pokemon*)((Pokemon *) p0));
         M2C_FIELD(p1, u8 *, 0x55) = pokemonBiosGetMailId((Pokemon*)((Pokemon *) p0));
         M2C_FIELD(p1, u16 *, 0x58) = _swap16(pokemonBiosGetMaxHp((Pokemon*)((Pokemon *) p0)));
         M2C_FIELD(p1, u16 *, 0x56) = _swap16(pokemonBiosGetHp((Pokemon*)((Pokemon *) p0)));
         M2C_FIELD(p1, u16 *, 0x5A) = _swap16(pokemonBiosGetPhyAtk((Pokemon*)((Pokemon *) p0)));
-        var_r31_2 = (unsigned short *)(((u8*)(p1) + 0x20));
+        var_r31_2 = (unsigned short *)(((u8*)((s32)p1) + 0x20));
         M2C_FIELD(p1, u16 *, 0x5C) = _swap16(pokemonBiosGetPhyDef((Pokemon*)((Pokemon *) p0)));
         M2C_FIELD(p1, u16 *, 0x5E) = _swap16(pokemonBiosGetNimbleness((Pokemon*)((Pokemon *) p0)));
         M2C_FIELD(p1, u16 *, 0x60) = _swap16(pokemonBiosGetSpeAtk((Pokemon*)((Pokemon *) p0)));
@@ -614,8 +612,8 @@ void gbaPokemonToGC(Pokemon* p0, GBAPokemon* p1) {
         pokemonBiosSetCute((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x40));
         pokemonBiosSetClever((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x41));
         pokemonBiosSetStrong((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x42));
-        pokemonBiosSetFur((Pokemon*)(p0), M2C_FIELD(p1, u8 *, 0x43));
-        pokemonBiosSetMaxHpEffort((Pokemon*)(p0), (u16) M2C_FIELD((u16)p1, u8 *, 0x38));
+        pokemonBiosSetMaxHpEffort((Pokemon*)(p0), (u16) M2C_FIELD(p1, u8 *, 0x38));
+        pokemonBiosSetFur((Pokemon*)(p0), M2C_FIELD((u16)p1, u8 *, 0x43));
         pokemonBiosSetPokerus((Pokemon*)(p0), unksp13);
         pokemonBiosSetCatchFloorId((Pokemon*)(p0), (u16) unksp12);
         pokemonBiosSetCatchLevel((Pokemon*)(p0), unksp11 & 0x7F);

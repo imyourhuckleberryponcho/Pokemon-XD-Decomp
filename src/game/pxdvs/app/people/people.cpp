@@ -109,8 +109,8 @@ struct tagPeopleWork {
     f32 timer;
     f32 timeBase;
     f32 timeRange;
-    u8 motionType;
-    u8 pad9D[0xB];
+    u32 motionType;
+    u8 padA0[8];
     GSvec savedPos;
     GSvec lastPos;
     u8 neckReg;
@@ -255,7 +255,7 @@ f32 peopleInfoBiosGetTalkDistance(PeopleInfo* info);
 f32 peopleInfoBiosGetColBallSize(PeopleInfo* info);
 u8 peopleInfoBiosGetColType(PeopleInfo* info);
 bool peopleInfoBiosGetBoundCheck(PeopleInfo* info);
-void peopleInfoBiosGetMotion(PeopleInfo* info, u8 kind, s32* motion, u8* loop);
+void peopleInfoBiosGetMotion(PeopleInfo* info, u8 kind, s32* motion, bool* loop);
 
 void peoplePartAnimationSpeakStop(tagPeopleWork* work);
 void peoplePartAnimationSpeakStart(tagPeopleWork* work);
@@ -319,7 +319,7 @@ bool GSmodelIsAnimating(_GSmodel* model);
 bool GSmodelIsNullAnimation(_GSmodel* model, s32 index);
 void GSmodelLinkTexAnimToAnim(_GSmodel* model, u8 link);
 void GSmodelRecalculateBound(_GSmodel* model);
-void GSmodelSetAnimEndedCallback(_GSmodel* model, void (*cb)(_GSmodel*, _GSmodelAnimCBData*), void* user, void* user2);
+void GSmodelSetAnimEndedCallback(_GSmodel* model, void (*cb)(_GSmodel*, _GSmodelAnimCBData*), void* user);
 void GSmodelSetAnimRate(_GSmodel* model, f32 rate);
 void GSmodelSetBlendAnimFrameForce(_GSmodel* model, f32 frame, f32 blendFrame);
 void GSmodelSetBlendFactor(_GSmodel* model, f32 factor);
@@ -349,7 +349,7 @@ u8 GSsndPlayNow(u32 id);
 u32 GSthreadGetCurrentThread();
 void GSthreadSwitch();
 void GSvecTransformQuat(GSvec* out, const GSquat* q, const GSvec* v);
-u32 HSD_Rand();
+u16 HSD_Rand(void);
 f32 HSD_Randf();
 void PSVECAdd(const GSvec* a, const GSvec* b, GSvec* ab);
 f32 PSVECDistance(const GSvec* a, const GSvec* b);
@@ -364,7 +364,7 @@ double sin(double x);
 double cos(double x);
 double fmod(double x, double y);
 void* memset(void* dst, int val, u32 n);
-s32 dbgMenuIsOpen();
+u8 dbgMenuIsOpen();
 void floorBlockScriptThread(long handle);
 void floorUnblockScriptThread(long handle);
 void* floorCreateThread(s32 a, u32 stackSize, s32 c, void (*func)());
@@ -887,12 +887,9 @@ void peopleUpdateShadow() {
 }
 
 void peopleDaemon() {
-    enum TsE { TsE0 };
     s32 prevIndex, prevBlend, curIndex, curBlend;
-    enum TsE vsync = (enum TsE)(GSgfxVideoGetVsyncRate());
-    volatile f32 frameTime = (f32)timeGetLastFrameTime();
-    f32 kc162 = 30.0f;
-    f32 scale = (frameTime * kc162) / (f32)vsync;
+    f32 rate = GSgfxVideoGetVsyncRate();
+    f32 scale = (30.0f * timeGetLastFrameTime()) / rate;
     if (!dbgMenuIsOpen() && _getLastFrameTime()) {
         if (_getLastFrameSec() == 0.0f) {
             return;
@@ -938,11 +935,11 @@ void peopleDaemon() {
                             }
                         }
                         if (scale == 0.0f ||
-                            (_distanceXZ(peopleBiosGetPrevPosPtr(work), peopleBiosGetPosPtr(work)) < 0.00001f &&
-                             _distanceXZ(peopleBiosGetPrevPosPtr(work), peopleBiosGetPosPtr(work)) > -0.00001f)) {
+                            (_distanceXZ(peopleBiosGetPosPtr(work), peopleBiosGetPrevPosPtr(work)) < 0.00001f &&
+                             _distanceXZ(peopleBiosGetPosPtr(work), peopleBiosGetPrevPosPtr(work)) > -0.00001f)) {
                             work->curRate = 0.0f;
                         } else {
-                            work->curRate = PSVECDistance(peopleBiosGetPrevPosPtr(work), peopleBiosGetPosPtr(work)) / scale;
+                            work->curRate = PSVECDistance(peopleBiosGetPosPtr(work), peopleBiosGetPrevPosPtr(work)) / scale;
                         }
                         peopleViewerDisplayDaemonInfo(work);
                         _peopleMoveRotate(work);
@@ -1014,7 +1011,7 @@ void peopleDispMark(u32 groupID, u32 peopleID) {
     }
     markRes.groupID = floorGroup;
     markRes.peopleID = markID;
-    GSmodelSetAnimEndedCallback(model, _peopleMarkAnimEndCallback, &markRes, &markRes);
+    GSmodelSetAnimEndedCallback(model, _peopleMarkAnimEndCallback, &markRes);
     scriptModelSetMotion(markID, 0, 0, 0);
     GSsndPlayNow(0x16);
 }
@@ -1030,17 +1027,16 @@ void peopleFallAppear(u32 groupID, u32 peopleID, f32 height) {
         soundOpenPlay(0x5A2, 0, 0x7F);
         peopleSetMotionType(work, 7);
         do {
-            s32 prev = t;
             t++;
-            pos.y = pos.y - (((f32)t * (0.4f * (f32)t)) / 2.0f - ((f32)prev * (0.4f * (f32)prev)) / 2.0f);
+            pos.y = pos.y - (((f32)t * (0.4f * (f32)t)) / 2.0f - ((f32)(t - 1) * (0.4f * (f32)(t - 1))) / 2.0f);
             peopleSetPos(groupID, peopleID, &pos);
             if (pos.y <= 0.0f) {
+                pos.y = 0.0f;
+                peopleSetPos(groupID, peopleID, &pos);
                 break;
             }
             GSthreadSwitch();
         } while (true);
-        pos.y = 0.0f;
-        peopleSetPos(groupID, peopleID, &pos);
         soundOpenPlay(0x5A3, 0, 0x7F);
         peopleSetMotionType(work, 8);
         peopleWaitSyncMotion(groupID, peopleID, 1);
@@ -1473,6 +1469,7 @@ static void _peopleMoveTypeList(tagPeopleWork* work, bool loop) {
     }
     switch (work->mode) {
     case 0:
+    case 1:
         if (work->points) {
             first = true;
             GSvec* p = &work->points[work->pointIndex];
@@ -1487,15 +1484,14 @@ static void _peopleMoveTypeList(tagPeopleWork* work, bool loop) {
     move:
         arrived = false;
         if ((work->pointIndex >= work->pointCount - 1 && work->moveType == 2) || work->f7C) {
-            peopleBiosGetPosPtr(work);
-            dist = PSVECDistance(&work->destPos, peopleBiosGetPosPtr(work));
-            volatile u8 vsync = GSgfxVideoGetVsyncRate();
-            f32 time = (f32)timeGetLastFrameTime();
-            if (dist < peopleViewerGetPlaySpeedRate(work) * (speed * ((30.0f * time) / (f32)vsync))) {
+            dist = PSVECDistance(peopleBiosGetPosPtr(work), &work->destPos);
+            f32 vsync = (u8)GSgfxVideoGetVsyncRate();
+            f32 time = timeGetLastFrameTime();
+            if (dist < peopleViewerGetPlaySpeedRate(work) * (speed * ((30.0f * time) / vsync))) {
                 arrived = true;
             }
         } else {
-            if (PSVECDistance(&work->destPos, peopleBiosGetPosPtr(work)) < 5.0f) {
+            if (PSVECDistance(peopleBiosGetPosPtr(work), &work->destPos) < 5.0f) {
                 arrived = true;
             }
         }
@@ -1584,6 +1580,8 @@ static s32 _peopleMoveSub(tagPeopleWork* work) {
         work->angle = atan2(delta.x, delta.z);
     }
     switch (work->followState) {
+    case 1:
+    case 2:
     case 4:
         speed = 0.53333336f;
         break;
@@ -1892,7 +1890,7 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
                     work->setAnimRate(0.5f, true);
                     work->followState = 5;
                     return;
-                case 0:                default:
+                default:
                     work->f17F = 1;
                     return;
                 }
@@ -3674,14 +3672,16 @@ struct WalkHit {
     f32 height, a, b;
 };
 
+struct ThruEvent {
+    GSvec tri[3];
+    u8 pad24[0x10];
+};
+
 static bool _peopleAdjustPositionSub(tagPeopleWork* work, GSvec* pos, GSvec* saved) {
     GSvec hit, hiNew, hiOld, newPos, oldPos;
     f32 h;
     WalkHit hits[8];
-    GSvec events[10];
-    GSvec events2[10];
-    GSvec events3[10];
-    GSvec events4[10];
+    ThruEvent events[4];
     volatile f32 radius;
     if (peopleBiosCheckFlag(work, 0x700)) {
         newPos.x = pos->x;
@@ -3961,13 +3961,13 @@ static bool _peopleIsMoving(tagPeopleWork* work) {
 extern "C" {
 void peopleSetMotionType(tagPeopleWork* work, u32 type) {
     s32 motion;
-    u8 loop;
+    bool loop;
     work->motionType = type;
     PeopleInfo* dc_peopleInfoBiosGetPtr = peopleInfoBiosGetPtr(work->objectID);
     if (dc_peopleInfoBiosGetPtr) {
         peopleInfoBiosGetMotion(dc_peopleInfoBiosGetPtr, work->motionType, &motion, &loop);
         if (motion != -1) {
-            peopleSetMotion(work->groupID, work->peopleID, 0, loop, 0);
+            peopleSetMotion(work->groupID, work->peopleID, motion, 0, loop);
         }
     }
 }

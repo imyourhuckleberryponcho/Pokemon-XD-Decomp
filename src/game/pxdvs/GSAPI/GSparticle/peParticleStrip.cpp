@@ -39,7 +39,7 @@ struct GSgfxLayer;
 enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
 enum GSgfxPrimType { GSgfxPrimType_draft_dummy };
 struct GSgfxVF;
-enum Mtx { Mtx_draft_dummy };
+typedef f32 Mtx[3][4];
 struct Quaternion;
 struct Vec;
 struct _EmitParams;
@@ -68,10 +68,10 @@ struct GSgfxVF {
     u8 data[0x440];
 };
 struct Quaternion {
-    u8 _draft[1];
+    f32 x, y, z, w;
 };
 struct Vec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 struct _EmitParams {
     u8 _draft[1];
@@ -129,6 +129,8 @@ public:
 };
 class peParticleStripContainer : public peRenderContainer {
 public:
+    void hideNode(struct peNodeView* n);
+    bool updateNode(struct peNodeView* n, f32 dt);
     _peParticleStrip* data;
     u32 unk58;
     u8 unk5C;
@@ -168,7 +170,7 @@ asm void PSVECAdd(const register Vec* a, const register Vec* b, register Vec* ab
 void PSVECScale(const register Vec* src, register Vec* dst, register f32 scale);
 asm void PSVECSubtract(const register Vec* a, const register Vec* b, register Vec* a_b);
 double fmod(double x, double y);
-s32 particleEngineSetupBlendMode(s32, void*);
+s32 particleEngineSetupBlendMode(s32);
 s32 particleEngineSetupTevStages(s32, u32, u32);
 s32 particleEngineSetupTexture(s32, s32*, s32, s32, s32, s32);
 void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t);
@@ -313,57 +315,155 @@ void peParticleStripContainer::RearrangeIndices() {
 }
 
 extern "C++" {
-void peParticleStripContainer::Stop() {
-    s32 var_r4;
-    s32 temp_cr0_eq;
-    s32 var_r6;
-    s16 *var_r6_2;
-    u32 temp_r30;
-    u8 *temp_r7;
-    u8 *var_r8;
+struct peXformP {
+    Vec pos;
+    Quaternion rot;
+    Vec scale;
+};
+struct peSplineHdr {
+    u8 flags;
+    f32 value;
+    f32 time;
+};
+struct GSColor {
+    u8 r, g, b, a;
+};
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
-        ((peContainer*)this)->PreUpdate();
-        M2C_FIELD(this, u8 *, 0x19) = 0U;
-        temp_r30 = *M2C_FIELD(this, u32 **, 0x54);
-        if (temp_r30 & 0x400000) {
+struct peStripDef {
+    u32 flags;
+    u8 pad4[4];
+    peColorSpline* color;
+    peColorSpline* color2;
+    peSpline* alpha;
+};
+
+struct peStripNodeData {
+    f32 life0;
+    f32 life;
+    Vec pos;
+    Vec vel;
+    peXformP* xform;
+    u8 pad24[0xc];
+    u16 index;
+    u8 pad32[2];
+    Vec extent;
+};
+
+struct peEmitterNodeData {
+    u8 pad0[0x38];
+    f32 color[4];
+};
+
+static inline f32 evalSpline(peSpline* sp, f32 t) {
+    peSplineHdr* s = (peSplineHdr*)sp;
+    if (s == 0 || (s->flags & 3) == 0) {
+        return 1.0f;
+    }
+    f32 d = s->time - t;
+    if (d < 0.0f) {
+        d = -d;
+    }
+    if (d <= 0.00001f) {
+        return s->value;
+    }
+    return peSplineGetValue(sp, t);
+}
+
+static inline void rotateBy(Vec* v, Quaternion* q) {
+    Mtx m;
+    PSMTXQuat(m, q);
+    PSMTXMultVecSR(m, v, v);
+}
+
+static inline void vecScale(Vec* dst, Vec* a, f32 k) {
+    Vec t;
+    PSVECScale(a, &t, k);
+    *dst = t;
+}
+
+static inline void emitPoint(char* out, Vec* v) {
+    ((Vec*)out)->x = v->x;
+    ((Vec*)out)->y = v->y;
+    ((Vec*)out)->z = v->z;
+    if (g_currentBound != NULL) {
+        GSboundAddPoint(g_currentBound, v->x, v->y, v->z);
+    }
+}
+
+static inline f32 __OSu8tof32(register const u8* arg) {
+    register f32 ret;
+    asm { psq_l ret, 0(arg), 1, 2 }
+    return ret;
+}
+
+static inline f32 OSu8tof32(u8 in) {
+    return __OSu8tof32(&in);
+}
+
+static inline u8 OSf32tou8(register f32 inF) {
+    u8 out;
+    u8* outP = &out;
+    register u8* ptr = outP;
+    asm { psq_st inF, 0(ptr), 1, 2 }
+    return *ptr;
+}
+
+struct peDLView {
+    u16 flags;
+    u16 stride;
+    u8* buf;
+    u8 pad8[8];
+};
+
+struct peNodeView {
+    u8 pad0[0x28];
+    peNodeView* next;
+    u8 pad2c[6];
+    u16 vtx;
+};
+
+inline void peParticleStripContainer::hideNode(peNodeView* n) {
+    peDLView* d = (peDLView*)dl[cur];
+    u16* idx;
+    u32 hasColor2 = (*(u32*)data >> 18) & 1;
+    if (d->flags & 1) {
+        idx = (u16*)(d->buf + 3);
+    } else {
+        idx = NULL;
+    }
+    idx += n->vtx;
+    for (u16 i = 2; i-- != 0;) {
+        idx[0] = 0xffff;
+        idx[1] = 0xffff;
+        idx[2] = 0xffff;
+        idx += 3;
+        if (hasColor2) {
+            *idx = 0xffff;
+            idx += 1;
+        }
+    }
+    d->flags |= 2;
+}
+
+void peParticleStripContainer::Stop() {
+    if (started) {
+        PreUpdate();
+        started = 0;
+        u32 flags = *(u32*)data;
+        if (flags & 0x400000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
-        if (temp_r30 & 0x800000) {
+        if (flags & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)3, false);
         }
-        if (temp_r30 & 0x01000000) {
+        if (flags & 0x1000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)5, false);
         }
-        var_r8 = M2C_FIELD(this, u8 **, 0x10);
-        while (var_r8 != NULL) {
-            temp_r7 = (unsigned char *)(this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
-            if (M2C_FIELD(temp_r7, u16 *, 0) & 1) {
-                var_r6 = M2C_FIELD(temp_r7, s32 *, 4) + 3;
-            } else {
-                var_r6 = 0;
-            }
-            var_r4 = 2;
-            var_r6_2 = (short *)(var_r6 + (M2C_FIELD(var_r8, u16 *, 0x32) * 2));
-loop_14:
-            temp_cr0_eq = var_r4 == 0;
-            var_r4 -= 1;
-            if (temp_cr0_eq == 0) {
-                M2C_FIELD(var_r6_2, u16 *, 0) = 0xFFFF;
-                M2C_FIELD((u16)var_r6_2, u16 *, 2) = 0xFFFF;
-                M2C_FIELD(var_r6_2, u16 *, 4) = 0xFFFF;
-                var_r6_2 += 6;
-                if ((u32) (((u32) *M2C_FIELD(this, u32 **, 0x54) >> 0x12U) & 1) != 0) {
-                    *var_r6_2 = 0xFFFF;
-                    var_r6_2 += 2;
-                }
-                goto loop_14;
-            }
-            M2C_FIELD(temp_r7, u16 *, 0) = (u16) (M2C_FIELD(temp_r7, u16 *, 0) | 2);
-            var_r8 = M2C_FIELD(var_r8, u8 **, 0x28);
+        for (peNodeView* n = (peNodeView*)activeList; n != NULL; n = n->next) {
+            hideNode(n);
         }
-        ((peContainer*)((peContainer *) this))->RemoveAll();
-        ((peRenderContainer*)((peRenderContainer *) this))->ResetSwap();
+        RemoveAll();
+        ResetSwap();
     }
 }
 }
@@ -472,7 +572,7 @@ void peParticleStripContainer::Render() {
                 GSgfxLayer* l = g_current_layer;
                 layerMark(l, 2, 0x16B8, 2);
             }
-            particleEngineSetupBlendMode(temp_r31 & 7, g_current_layer);
+            particleEngineSetupBlendMode(temp_r31 & 7);
             temp_r29 = M2C_FIELD(((u8*)this + (temp_r0_2 * 4)), u8 **, 0x48);
             temp_r0_2 = M2C_FIELD(this, u8 *, 0x21);
             temp_r4_2 = (unsigned char *)((u8*)this + ((temp_r0_2 * 0x10) + 0x28));
@@ -560,128 +660,95 @@ void peParticleStripContainer::Render() {
 }
 
 extern "C++" {
-void peParticleStripContainer::Update(float p0) {
-    peEmitterNode *temp_r28;
-    _peParticleStrip *temp_r27;
-    s32 var_r5;
-    peNode *var_r31;
-    s16 *var_r6_2;
-    s32 temp_cr0_eq;
-    s32 var_r6;
-    s8 *temp_r26;
-    peNode *temp_r30;
-    u8 temp_r0;
-    u8 var_r0;
-    u8 *temp_r7;
+inline bool peParticleStripContainer::updateNode(peNodeView* node, f32 dt) {
+    peStripNodeData* n = (peStripNodeData*)node;
+    _peParticleStrip* p = data;
+    peEmitterNode* e = emitter;
+    char* buf = (char*)(&bufA)[cur];
+    if (buf == NULL) {
+        return false;
+    }
+    if ((((peDLView*)dl[cur])->flags & 1) != 1) {
+        return false;
+    }
+    if (!((peNode*)n)->Update(e, dt)) {
+        return false;
+    }
+    ((peParticleStripNode*)n)->UpdateRenderData(e, p, buf, 1.0f - n->life / n->life0);
+    return true;
+}
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
-        var_r31 = M2C_FIELD(this, peNode **, 0x10);
-        while (var_r31 != NULL) {
-            temp_r0 = M2C_FIELD(this, u8 *, 0x21);
-            temp_r30 = M2C_FIELD(var_r31, peNode **, 0x28);
-            temp_r27 = M2C_FIELD(this, _peParticleStrip **, 0x54);
-            temp_r26 = (signed char *)&(*(this + ((temp_r0 * 4) + 0x48)));
-            temp_r28 = M2C_FIELD(this, peEmitterNode **, 0);
-            if (temp_r26 == NULL) {
-                var_r0 = 0;
-            } else if ((s32) (*((u8 *)this + ((temp_r0 * 0x10) + 0x28)) & 1) != 1) {
-                var_r0 = 0;
-            } else if (((peNode*)(var_r31))->Update((peEmitterNode*)(temp_r28), p0) == 0) {
-                var_r0 = 0;
-            } else {
-                ((peParticleStripNode*)((peParticleStripNode *) var_r31))->UpdateRenderData((peEmitterNode*)(temp_r28), (_peParticleStrip*)(temp_r27), (char*)(temp_r26), 1.0f - (M2C_FIELD(var_r31, f32 *, 4) / M2C_FIELD(var_r31, f32 *, 0)));
-                var_r0 = 1;
+void peParticleStripContainer::Update(float dt) {
+    if (started) {
+        peNodeView* n = (peNodeView*)activeList;
+        while (n != NULL) {
+            peNodeView* next = n->next;
+            if (!updateNode(n, dt)) {
+                hideNode(n);
+                RemoveNode((peNode*)n);
             }
-            if (var_r0 == 0) {
-                temp_r7 = (unsigned char *)(this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
-                if (M2C_FIELD(temp_r7, u16 *, 0) & 1) {
-                    var_r6 = M2C_FIELD(temp_r7, s32 *, 4) + 3;
-                } else {
-                    var_r6 = 0;
-                }
-                var_r5 = 2;
-                var_r6_2 = (short *)(var_r6 + (M2C_FIELD(var_r31, u16 *, 0x32) * 2));
-loop_16:
-                temp_cr0_eq = var_r5 == 0;
-                var_r5 -= 1;
-                if (temp_cr0_eq == 0) {
-                    M2C_FIELD(var_r6_2, u16 *, 0) = 0xFFFF;
-                    M2C_FIELD((u16)var_r6_2, u16 *, 2) = 0xFFFF;
-                    M2C_FIELD(var_r6_2, u16 *, 4) = 0xFFFF;
-                    var_r6_2 += 6;
-                    if ((u32) ((*(u32 *)M2C_FIELD(this, _peParticleStrip **, 0x54) >> 0x12U) & 1) != 0) {
-                        *var_r6_2 = 0xFFFF;
-                        var_r6_2 += 2;
-                    }
-                    goto loop_16;
-                }
-                M2C_FIELD(temp_r7, u16 *, 0) = (u16) (M2C_FIELD(temp_r7, u16 *, 0) | 2);
-                ((peContainer*)((peContainer *) this))->RemoveNode((peNode*)(var_r31));
-            }
-            var_r31 = temp_r30;
+            n = next;
         }
-        M2C_FIELD(this, f32 *, 0x58) = (f32) (M2C_FIELD(this, f32 *, 0x58) - p0);
-        ((peParticleStripContainer*)(this))->RearrangeIndices();
+        *(f32*)&unk58 -= dt;
+        RearrangeIndices();
     }
 }
 }
 
 extern "C++" {
-u16 peParticleStripContainer::Emit(unsigned short count) {
-    f32 unkspC;
-    f32 sp14;
-    f32 unksp18;
-    f32 sp20;
-    volatile f32 sp10;
-    volatile f32 sp1C;
-    s16 sp8;
-    _EmitParams *var_r29;
-    f32 temp_f31;
-    peEmitterNode *temp_r4;
-    peNode *var_r28;
-    peNode *temp_r27;
-    u16 temp_r26;
-    u16 temp_r3;
-    u16 var_r30;
-    u8 *temp_r24;
-    s32 temp_r23;
+struct peStripDefE {
+    u32 flags;
+    u8 pad4[0x1c];
+    Vec dir;
+    f32 lenBase;
+    f32 lenRange;
+};
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
-        return 0U;
+struct _EmitParamsS {
+    u8 data[0x48];
+};
+
+static inline f32 __OSu16tof32S(register const u16* arg) {
+    register f32 ret;
+    asm { psq_l ret, 0(arg), 1, 3 }
+    return ret;
+}
+
+static inline f32 u16tof32S(u16 v) {
+    return __OSu16tof32S(&v);
+}
+
+u16 peParticleStripContainer::Emit(unsigned short count) {
+    if (!started) {
+        return 0;
     }
-    temp_r3 = ((peContainer*)this)->CreateNodes(count);
-    var_r30 = temp_r3;
-    var_r29 = g_emitParams;
-    var_r28 = M2C_FIELD(this, peNode **, 0x10);
-    temp_r26 = var_r30;
-    while (var_r30 != 0) {
-        temp_r27 = M2C_FIELD(var_r28, peNode **, 0x28);
-        sp8 = (M2C_FIELD(temp_r4, u16 *, 0x4A) + temp_r3) - var_r30;
-        temp_r24 = M2C_FIELD(this, u8 **, 0x54);
-        temp_r4 = M2C_FIELD(this, peEmitterNode **, 0);
-        temp_r23 = 0x28;
-        temp_r23 += (M2C_FIELD(this, u8 *, 0x21) * 0x10);
-        temp_f31 = M2C_FIELD(M2C_FIELD(temp_r4, u8 **, 0xFC), f32 *, 8) * M2C_ERROR( );
-        if ((s32) (*((u8 *)count + temp_r23) & 1) == 1) {
-            ((peNode*)(var_r28))->Start((peEmitterNode*)(temp_r4), (_EmitParams*)(var_r29));
-            if (M2C_FIELD(temp_r24, s32 *, 0) & 0x02000000) {
-                PSVECScale((const register Vec*)(temp_r24 + 0x20), (register Vec*)(&unksp18), 10.0f * ((M2C_FIELD(temp_r24, f32 *, 0x30) * temp_f31) + M2C_FIELD(temp_r24, f32 *, 0x2C)));
-                M2C_FIELD(var_r28, f32 *, 0x34) = unksp18;
-                M2C_FIELD(var_r28, f32 *, 0x38) = sp1C;
-                M2C_FIELD(var_r28, f32 *, 0x3C) = sp20;
+    u16 left = CreateNodes(count);
+    _EmitParamsS* params = (_EmitParamsS*)g_emitParams;
+    peNodeView* node = (peNodeView*)activeList;
+    peNodeView* next;
+    u16 created = left;
+    u16 total = left;
+    while (left != 0) {
+        u8* e = (u8*)emitter;
+        next = node->next;
+        f32 phase = (*(f32**)(e + 0xfc))[2] * u16tof32S(*(u16*)(e + 0x4a) + total - left);
+        peStripDefE* p = (peStripDefE*)data;
+        peDLView* d = (peDLView*)dl[cur];
+        if ((d->flags & 1) == 1) {
+            peStripNodeData* n = (peStripNodeData*)node;
+            ((peNode*)n)->Start(emitter, (_EmitParams*)params);
+            if (p->flags & 0x2000000) {
+                vecScale(&n->extent, &p->dir, 10.0f * (phase * p->lenRange + p->lenBase));
             } else {
-                PSVECScale((const register Vec*)(temp_r24 + 0x20), (register Vec*)(&unkspC), 10.0f * ((M2C_FIELD(temp_r24, f32 *, 0x30) * HSD_Randf()) + M2C_FIELD(temp_r24, f32 *, 0x2C)));
-                M2C_FIELD(var_r28, f32 *, 0x34) = unkspC;
-                M2C_FIELD(var_r28, f32 *, 0x38) = sp10;
-                M2C_FIELD(var_r28, f32 *, 0x3C) = sp14;
+                vecScale(&n->extent, &p->dir, 10.0f * (HSD_Randf() * p->lenRange + p->lenBase));
             }
-            *((u8 *)count + temp_r23) = *((u8 *)count + temp_r23) | 2;
+            d->flags |= 2;
         }
-        var_r28 = temp_r27;
-        var_r30 -= 1;
-        var_r29 += 0x48;
+        node = next;
+        left--;
+        params++;
     }
-    return temp_r26;
+    return created;
 }
 }
 
@@ -749,112 +816,59 @@ peParticleStripContainer::peParticleStripContainer(peEmitterNode* p0, _peParticl
 }
 
 extern "C++" {
-void peParticleStripNode::UpdateRenderData(peEmitterNode* p0, _peParticleStrip* p1, char* p2, float p3) {
-    s32 sp80;
-    s32 sp14;
-    volatile s32 sp18;
-    s32 sp24;
-    s32 sp28;
-    s32 spC;
-    f32 unksp20;
-    s32 sp10;
-    s32 sp50;
-    f32 sp4C;
-    f32 sp48;
-    f32 sp44;
-    f32 sp40;
-    volatile f32 sp3C;
-    f32 sp38;
-    f32 sp34;
-    f32 sp30;
-    f32 sp2C;
-    volatile u8 sp1F;
-    volatile u8 sp1E;
-    volatile u8 sp1D;
-    u8 sp1C;
-    u8 spA;
-    bool sp9;
-    u8 sp8;
-    Vec *temp_r5;
-    Vec *temp_r5_2;
-    f32 var_f1;
-    peSpline *temp_r3;
-    u32 temp_r27;
-    u8 *var_r31;
-    u32 temp_r30;
+void peParticleStripNode::UpdateRenderData(peEmitterNode* emitter, _peParticleStrip* strip, char* out, float t) {
+    Vec ext;
+    Vec half;
+    peEmitterNodeData* e = (peEmitterNodeData*)emitter;
+    peStripDef* p = (peStripDef*)strip;
+    u32 flags = p->flags;
+    u32 hasColor2 = (flags >> 18) & 1;
+    Vec pos;
+    peStripNodeData* n = (peStripNodeData*)this;
 
-    temp_r5 = M2C_FIELD(this, Vec **, 0x20);
-    temp_r27 = M2C_FIELD(p1, u32 *, 0);
-    temp_r30 = (temp_r27 >> 0x12U) & 1;
-    sp48 = M2C_FIELD(temp_r5, f32 *, 0x20);
-    sp48 *= M2C_FIELD(this, f32 *, 0xC);
-    sp4C = M2C_FIELD(temp_r5, f32 *, 0x24);
-    sp4C *= M2C_FIELD(this, f32 *, 0x10);
-    sp44 = M2C_FIELD(temp_r5, f32 *, 0x1C);
-    sp44 *= M2C_FIELD(this, f32 *, 8);
-    PSMTXQuat((Mtx)((s32) &sp80), (const Quaternion *)((const register Quaternion*)(((u8*)(temp_r5) + 0xC))));
-    PSMTXMultVecSR((const Mtx)((s32) &sp80), (const Vec *)((const register Vec*)((Vec *) &sp44)), (Vec *)((register Vec*)((Vec *) &sp44)));
-    PSVECAdd((const register Vec*)((Vec *) &sp44), (const register Vec*)(M2C_FIELD(this, Vec **, 0x20)), (register Vec*)((Vec *) &sp44));
-    if (temp_r30 != 0) {
-        var_r31 = (unsigned char *)(p2 + (M2C_FIELD(this, u16 *, 0x30) * 0x30));
+    {
+        f32 py = n->pos.y * n->xform->scale.y;
+        f32 pz = n->pos.z * n->xform->scale.z;
+        f32 px = n->pos.x * n->xform->scale.x;
+        pos.x = px;
+        pos.y = py;
+        pos.z = pz;
+    }
+    rotateBy(&pos, &n->xform->rot);
+    PSVECAdd(&pos, &n->xform->pos, &pos);
+    if (hasColor2) {
+        out += n->index * 0x30;
     } else {
-        var_r31 = (unsigned char *)(p2 + (M2C_FIELD(this, u16 *, 0x30) * 0x2C));
+        out += n->index * 0x2c;
     }
-    temp_r5_2 = M2C_FIELD(this, Vec **, 0x20);
-    sp3C = M2C_FIELD(temp_r5_2, f32 *, 0x20);
-    sp3C *= M2C_FIELD(this, f32 *, 0x38);
-    sp40 = M2C_FIELD(temp_r5_2, f32 *, 0x24);
-    sp40 *= M2C_FIELD(this, f32 *, 0x3C);
-    sp38 = M2C_FIELD(temp_r5_2, f32 *, 0x1C);
-    sp38 *= M2C_FIELD(this, f32 *, 0x34);
-    PSMTXQuat((Mtx)((s32) &sp50), (const Quaternion *)((const register Quaternion*)(((u8*)(temp_r5_2) + 0xC))));
-    PSMTXMultVecSR((const Mtx)((s32) &sp50), (const Vec *)((const register Vec*)((Vec *) &sp38)), (Vec *)((register Vec*)((Vec *) &sp38)));
-    if (temp_r27 & 0x4000) {
-        PSVECScale((const register Vec*)((Vec *) &sp38), (register Vec*)(&unksp20), 0.5f);
-        sp2C = unksp20;
-        sp30 = sp24;
-        sp34 = sp28;
-        PSVECSubtract((const register Vec*)((Vec *) &sp44), (const register Vec*)((Vec *) &sp2C), (register Vec*)((Vec *) &sp44));
+    {
+        f32 ey = n->extent.y * n->xform->scale.y;
+        f32 ez = n->extent.z * n->xform->scale.z;
+        f32 ex = n->extent.x * n->xform->scale.x;
+        ext.x = ex;
+        ext.y = ey;
+        ext.z = ez;
     }
-    M2C_FIELD(var_r31, f32 *, 0) = sp44;
-    M2C_FIELD(var_r31, f32 *, 4) = sp48;
-    M2C_FIELD(var_r31, f32 *, 8) = sp4C;
-    if ((GSbound *) g_currentBound != NULL) {
-        GSboundAddPoint((GSbound*)(g_currentBound), sp44, sp48, sp4C);
+    rotateBy(&ext, &n->xform->rot);
+    if (flags & 0x4000) {
+        vecScale(&half, &ext, 0.5f);
+        PSVECSubtract(&pos, &half, &pos);
     }
-    PSVECAdd((const register Vec*)((Vec *) &sp44), (const register Vec*)((Vec *) &sp38), (register Vec*)((Vec *) &sp44));
-    M2C_FIELD(var_r31, f32 *, 0xC) = sp44;
-    M2C_FIELD(var_r31, f32 *, 0x10) = sp48;
-    M2C_FIELD(var_r31, f32 *, 0x14) = sp4C;
-    if ((GSbound *) g_currentBound != NULL) {
-        GSboundAddPoint((GSbound*)(g_currentBound), sp44, sp48, sp4C);
-    }
-    peColorSplineGetValue((u8*)(&sp1C), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 8)), p3);
-    spA = sp1C;
-    sp9 = sp1D;
-    if (sp1C < sp14) sp1C = sp14;
-    sp8 = sp1E;
-    sp1D = sp10;
-    sp1E = spC;
-    temp_r3 = M2C_FIELD(p1, peSpline **, 0x10);
-    if ((temp_r3 == NULL) || !(M2C_FIELD(temp_r3, u8 *, 0) & 3)) {
-
-    } else {
-        var_f1 = M2C_FIELD(temp_r3, f32 *, 8) - p3;
-        if (var_f1 < 0.0f) {
-            var_f1 = -var_f1;
+    emitPoint(out, &pos);
+    PSVECAdd(&pos, &ext, &pos);
+    emitPoint(out + 0xc, &pos);
+    {
+        GSColor c;
+        peColorSplineGetValue((u8*)&c, p->color, t);
+        c.g = OSf32tou8(e->color[1] * OSu8tof32(c.g));
+        c.r = OSf32tou8(e->color[0] * OSu8tof32(c.r));
+        c.b = OSf32tou8(e->color[2] * OSu8tof32(c.b));
+        *(GSColor*)(out + 0x18) = c;
+        c.a = OSf32tou8(255.0f * e->color[3] * evalSpline(p->alpha, t));
+        if (hasColor2) {
+            peColorSplineGetValue((u8*)&c, p->color2, t);
+            *(GSColor*)(out + 0x2c) = c;
         }
-        if (var_f1 <= 0.00001f) {
-
-        } else {
-            peSplineGetValue((peSpline*)(temp_r3), p3);
-        }
-    }
-    sp1F = sp18;
-    M2C_FIELD(var_r31, s32 *, 0x18) = (s32) sp1C;
-    if (temp_r30 != 0) {
-        peColorSplineGetValue((u8*)(&sp1C), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 0xC)), p3);
-        M2C_FIELD(var_r31, s32 *, 0x2C) = (s32) sp1C;
     }
 }
 }

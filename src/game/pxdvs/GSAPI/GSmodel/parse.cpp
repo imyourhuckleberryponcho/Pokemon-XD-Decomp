@@ -67,6 +67,7 @@ struct _HSD_JObj {
 #define JOBJ_MTX_DIRTY (1 << 6)
 #define JOBJ_INSTANCE (1 << 12)
 #define JOBJ_SPLINE (1 << 14)
+#define union_type_dobj(o) ((o)->flags & (JOBJ_PTCL | JOBJ_SPLINE) ? false : true)
 #define JOBJ_USER_DEF_MTX (1 << 23)
 
 enum HSD_TrspMask {
@@ -103,24 +104,9 @@ void PSMTXConcat(const GSmtx* a, const GSmtx* b, GSmtx* ab);
 void PSMTXCopy(const GSmtx* src, GSmtx* dst);
 
 
-static inline s32 HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
-    u8 result;
-    if (!jobj) {
-        __assert("jobj.h", 605, "jobj");
-    }
-    result = false;
-    if (!(jobj->flags & JOBJ_USER_DEF_MTX) && (jobj->flags & JOBJ_MTX_DIRTY)) {
-        result = true;
-    }
-    return result;
-}
 
-static inline void HSD_JObjSetupMatrix(HSD_JObj* jobj) {
-    if (!jobj || !HSD_JObjMtxIsDirty(jobj)) {
-        return;
-    }
-    HSD_JObjSetupMatrixSub(jobj);
-}
+static s32 HSD_JObjMtxIsDirty(HSD_JObj* jobj);
+static void HSD_JObjSetupMatrix(HSD_JObj* jobj);
 
 }
 
@@ -323,7 +309,7 @@ static void _modelParseJObjDispDObj(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask tr
 }
 
 static void _modelParseJObjDisp(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
-    if (jobj != 0 && !(jobj->flags & (JOBJ_SPLINE | JOBJ_PTCL))) {
+    if (jobj != 0 && union_type_dobj(jobj)) {
         _modelParseJObjDispDObj(jobj, vmtx, trsp_mask, rendering, func, arg);
     }
 }
@@ -338,13 +324,31 @@ static void _modelParseSetupInstanceMtx(GSmtx* vmtx, HSD_JObj* jobj, GSmtx* mtx)
     }
 }
 
-static inline void _modelParseJObjDispAll(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
+extern "C" {
+
+static void HSD_JObjSetupMatrix(HSD_JObj* jobj) {
+    if (!jobj || !HSD_JObjMtxIsDirty(jobj)) {
+        return;
+    }
+    HSD_JObjSetupMatrixSub(jobj);
+}
+
+static s32 HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
+    if (!jobj) {
+        __assert("jobj.h", 605, "jobj");
+    }
+    return !(jobj->flags & JOBJ_USER_DEF_MTX) && (jobj->flags & JOBJ_MTX_DIRTY);
+}
+
+}
+
+static void _modelParseJObjDispAll(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
+    GSmtx mtx;
+
     if (jobj == 0) {
         return;
     }
     if (jobj->flags & JOBJ_INSTANCE) {
-        GSmtx mtx;
-
         if (jobj->flags & JOBJ_HIDDEN) {
             return;
         }
@@ -355,9 +359,8 @@ static inline void _modelParseJObjDispAll(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspM
             _modelParseJObjDisp(jobj, vmtx, trsp_mask, rendering, func, arg);
         }
         if (jobj->flags & (trsp_mask << 28)) {
-            HSD_JObj* child;
-            for (child = jobj->child; child != 0; child = child->next) {
-                _modelParseJObjDispAll(child, vmtx, trsp_mask, rendering, func, arg);
+            for (jobj = jobj->child; jobj != 0; jobj = jobj->next) {
+                _modelParseJObjDispAll(jobj, vmtx, trsp_mask, rendering, func, arg);
             }
         }
     }

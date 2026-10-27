@@ -174,7 +174,7 @@ void GSgfxTexCoord2f(f32 s, f32 t);
 s32 GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32);
 void GSgfxVertex2f(f32 x, f32 y);
 char* GSmsgGetGSchar(u32 msg);
-u32 GSmsgGetRect(s32, s32);
+u32 GSmsgGetRect(s32);
 s32 GSmsgPrint2(s32 layer, s32 x, s32 y, u32 color, u32 msg);
 void GSprimSetQuadVertexOrder(s32 order);
 void* GSresGetResourceAllGroup(u32 id);
@@ -186,7 +186,7 @@ MenuSpriteVal* menuSpriteBiosGetValPtr(MenuSprite* sprite);
 s32 pokecoloGetCountryCode(void);
 const char* pokemonDataBiosGetName(PokemonData* pdata);
 extern s32 jtbl_3115;
-extern s32 lbl_804EA7F0;
+extern bool lbl_804EA7F0;
 namespace { u8 rate01ToAlphaFrom50(f32); }
 }
 namespace {
@@ -809,8 +809,7 @@ void _relivehallTempoBarSpriteSetting(tagWINDOW_WORK* w, u32 id, int tempo, u8 a
     menuPtSpriteWorkSetWidthRateColor(w, id, 0, rate, c);
 }
 void CMenuReliveHall::drawStatusPanel() {
-    u16 spA;
-    u16 sp8;
+    u16 ids[2];
     CMenuPokemonCursor *temp_r27_3;
     MenuItem *temp_r3_2;
     Pokemon *var_r3;
@@ -853,70 +852,60 @@ void CMenuReliveHall::drawStatusPanel() {
     if (temp_r3 != 0) {
         temp_r3_2 = (MenuItem *)(menuItemBiosGetPtr(M2C_FIELD(temp_r31, s32 *, 4), 0x289U));
         _menuDrawReliveMeter((Pokemon*)((Pokemon *) temp_r3), (s32) M2C_FIELD(temp_r3_2, s16 *, 6), (s32) M2C_FIELD(temp_r3_2, s16 *, 8), (s32) M2C_FIELD(temp_r3_2, s16 *, 0xA), (s32) M2C_FIELD(temp_r3_2, s16 *, 0xC), 0xFFU, (GSgfxLayerID)(M2C_FIELD(temp_r31, s32 *, 0x1C)), M2C_FIELD(this, s32 *, 0x338));
-        var_r27 = &sp8;
-        var_r28 = 0;
-        do {
-            *var_r27 = zokuseiGetPokemonSpriteID((void *)(((Pokemon*)((Pokemon *) temp_r3))->getPokemonDataPtr()), (unsigned short)(0));
-            var_r27 += 2;
-            var_r28 += 1;
-        } while ((s32) var_r28 < 2);
+        for (int i = 0; i < 2; i++) {
+            ids[i] = zokuseiGetPokemonSpriteID((void *)(((Pokemon*)((Pokemon *) temp_r3))->getPokemonDataPtr()), i);
+        }
         temp_r27 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x297U, 0));
         temp_r28 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x298U, 0));
-        if (sp8 == spA) {
-            temp_r7 = M2C_FIELD(temp_r28, s16 *, 0x50) + M2C_FIELD(temp_r27, s16 *, 0x50);
-            temp_r5 = M2C_FIELD(temp_r28, s16 *, 0x52) + M2C_FIELD(temp_r27, s16 *, 0x52);
-            menuPtSpriteDraw(sp8, (s32) ((temp_r7 >> 0x1FU) + temp_r7) >> 1, (s32) ((temp_r5 >> 0x1FU) + temp_r5) >> 1);
+        if (ids[0] == ids[1]) {
+            menuPtSpriteDraw(ids[0], (M2C_FIELD(temp_r27, s16 *, 0x50) + M2C_FIELD(temp_r28, s16 *, 0x50)) / 2,
+                             (M2C_FIELD(temp_r27, s16 *, 0x52) + M2C_FIELD(temp_r28, s16 *, 0x52)) / 2);
         } else {
-            menuPtSpriteDraw(spA, (s32) M2C_FIELD(temp_r28, s16 *, 0x50), (s32) M2C_FIELD(temp_r28, s16 *, 0x52));
-            menuPtSpriteDraw(sp8, (s32) M2C_FIELD(temp_r27, s16 *, 0x50), (s32) M2C_FIELD(temp_r27, s16 *, 0x52));
+            menuPtSpriteDraw(ids[0], M2C_FIELD(temp_r27, s16 *, 0x50), M2C_FIELD(temp_r27, s16 *, 0x52));
+            menuPtSpriteDraw(ids[1], M2C_FIELD(temp_r28, s16 *, 0x50), M2C_FIELD(temp_r28, s16 *, 0x52));
         }
     }
     if (temp_r3 != 0) {
-        temp_r3_3 = pokecoloGetCountryCode();
-        if (temp_r3_3 != 0) {
-            if ((temp_r3_3 >= 0) && (temp_r3_3 < 3)) {
-                temp_r3_4 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D3U, 0));
-                msgctrlSetValue((unsigned long)(0x37), (unsigned long)(((Pokemon*)((Pokemon *) temp_r3))->getNicknamePtr()));
-                GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r3_4, s16 *, 0x50), M2C_FIELD(temp_r3_4, s16 *, 0x52), -1, 0x4279);
-            }
-        } else {
-            msgctrlSetValue((unsigned long)(0x37), (unsigned long)(GSmsgGetGSchar((unsigned long)(pokemonDataBiosGetName((PokemonData*)(((Pokemon*)((Pokemon *) temp_r3))->getPokemonDataPtr()))))));
+        switch (pokecoloGetCountryCode()) {
+        case 0:
             temp_r28_2 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D3U, 0));
+            msgctrlSetValue((unsigned long)(0x37), (unsigned long)(GSmsgGetGSchar((unsigned long)(pokemonDataBiosGetName((PokemonData*)(((Pokemon*)((Pokemon *) temp_r3))->getPokemonDataPtr()))))));
             GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r28_2, s16 *, 0x50), M2C_FIELD(temp_r28_2, s16 *, 0x52), -1, 0x4278);
+            break;
+        case 1:
+        case 2:
+            msgctrlSetValue((unsigned long)(0x37), (unsigned long)(((Pokemon*)((Pokemon *) temp_r3))->getNicknamePtr()));
+            temp_r3_4 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D3U, 0));
+            GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r3_4, s16 *, 0x50), M2C_FIELD(temp_r3_4, s16 *, 0x52), -1, 0x4279);
+            break;
         }
         temp_r28_3 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D4U, 0));
         msgctrlSetValue(0x34, (u32) ((Pokemon*)((Pokemon *) temp_r3))->getLevel());
         GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r28_3, s16 *, 0x50), M2C_FIELD(temp_r28_3, s16 *, 0x52), -1, 0x4271);
-        temp_r3_5 = pokecoloGetCountryCode();
-        if (temp_r3_5 < 3) {
-            if (temp_r3_5 < 1) {
-
-            } else {
-                temp_r3_6 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x8EEU, 0));
-                GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r3_6, s16 *, 0x50), M2C_FIELD(temp_r3_6, s16 *, 0x52), -1, 0xD15F);
-            }
+        switch (pokecoloGetCountryCode()) {
+        case 1:
+        case 2:
+            temp_r3_6 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x8EEU, 0));
+            GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r3_6, s16 *, 0x50), M2C_FIELD(temp_r3_6, s16 *, 0x52), -1, 0xD15F);
+            break;
         }
     }
     temp_r30 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x2A5U, 0));
     msgctrlSetValue(0x2F, M2C_FIELD(this, s32 *, 0x338) + 1);
     GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30, s16 *, 0x50), M2C_FIELD(temp_r30, s16 *, 0x52), -1, 0xD157);
     temp_r30_2 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x2A6U, 0));
-    temp_r0 = GSmsgGetRect(0xD161, 0x10000) >> 0x10U;
-    temp_r3_7 = M2C_FIELD(temp_r30_2, s16 *, 0x54);
-    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30_2, s16 *, 0x50) + (s16) (((s32) (((u32) temp_r3_7 >> 0x1FU) + temp_r3_7) >> 1) - ((s32) (((u32) (s16) temp_r0 >> 0x1FU) + (s16) temp_r0) >> 1)), M2C_FIELD(temp_r30_2, s16 *, 0x52), -1, 0xD161);
+    s16 tw = GSmsgGetRect(0xD161) >> 16;
+    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30_2, s16 *, 0x50) + (s16)(M2C_FIELD(temp_r30_2, s16 *, 0x54) / 2 - tw / 2), M2C_FIELD(temp_r30_2, s16 *, 0x52), -1, 0xD161);
     temp_r30_3 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x2D2U, 0));
-    temp_r0_2 = GSmsgGetRect(0xD123, 0x10000) >> 0x10U;
-    temp_r3_8 = M2C_FIELD(temp_r30_3, s16 *, 0x54);
-    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30_3, s16 *, 0x50) + (s16) (((s32) (((u32) temp_r3_8 >> 0x1FU) + temp_r3_8) >> 1) - ((s32) (((u32) (s16) temp_r0_2 >> 0x1FU) + (s16) temp_r0_2) >> 1)), M2C_FIELD(temp_r30_3, s16 *, 0x52), -1, 0xD123);
+    tw = GSmsgGetRect(0xD123) >> 16;
+    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30_3, s16 *, 0x50) + (s16)(M2C_FIELD(temp_r30_3, s16 *, 0x54) / 2 - tw / 2), M2C_FIELD(temp_r30_3, s16 *, 0x52), -1, 0xD123);
     temp_r30_4 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D0U, 0));
     var_r27_2 = 0xD122;
-    if ((u8) (bool)lbl_804EA7F0) {
+    if (lbl_804EA7F0) {
         var_r27_2 = 0xD15A;
     }
-    temp_r0_3 = GSmsgGetRect(var_r27_2, 0x10000) >> 0x10U;
-    temp_r4 = M2C_FIELD(temp_r30_4, s16 *, 0x54);
-    temp_r8 = M2C_FIELD(temp_r30_4, s16 *, 0x50);
-    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), temp_r8 + (s16) (((s32) (((u32) temp_r4 >> 0x1FU) + temp_r4) >> 1) - ((s32) (((u32) (s16) temp_r0_3 >> 0x1FU) + (s16) temp_r0_3) >> 1)), M2C_FIELD(temp_r30_4, s16 *, 0x52), -1, var_r27_2);
+    tw = GSmsgGetRect(var_r27_2) >> 16;
+    GSmsgPrint2(M2C_FIELD(temp_r31, s32 *, 0x1C), M2C_FIELD(temp_r30_4, s16 *, 0x50) + (s16)(M2C_FIELD(temp_r30_4, s16 *, 0x54) / 2 - tw / 2), M2C_FIELD(temp_r30_4, s16 *, 0x52), -1, var_r27_2);
     if ((u8) M2C_FIELD((u16)this, u8 *, 0x81184) != 0) {
         menuPtSpriteWorkSetSw((tagWINDOW_WORK*)(temp_r31), 0x316U, 0, 0U);
         temp_r27_2 = M2C_FIELD(this, s32 *, 0x80FC0);
@@ -1637,12 +1626,15 @@ void CMenuReliveHall::drawStagePokemon()
     _antDraw(views[6], p);
 }
 
+inline f32 sinf(f32 x) { return (f32)sin(x); }
+inline f32 cosf(f32 x) { return (f32)cos(x); }
+
 void _antZokuseiDraw(SPokemonView& v)
 {
     if (!v.hidden) {
         long x2;
-        long x = (s32)(81.0f * (f32)sin(v.dir2) + (f32)v.getPosition().x);
-        long y = (s32)(81.0f * -(f32)cos(v.dir2) + (f32)v.getPosition().y);
+        long x = (s32)(81.0f * sinf(v.dir2) + (f32)v.getPosition().x);
+        long y = (s32)(81.0f * -cosf(v.dir2) + (f32)v.getPosition().y);
         u16 ids[2];
         for (int i = 0; i < 2; i++) {
             ids[i] = zokuseiGetPokemonSpriteID(v.getPokemon()->getPokemonDataPtr(), i);
@@ -1981,7 +1973,7 @@ int CMenuReliveHall::getTempoPassion(int* p0, bool p1, bool p2) {
     u8 temp_r3_5;
     u8 *temp_r3_2;
 
-    var_r3_2 = ((CReliveHall*)(((CReliveHall*)((CReliveHall *) this))->getPointer(), (M2C_FIELD(this, s32 *, 0x338))))->getStage((long)(0));
+    var_r3_2 = CReliveHall::getPointer()->getStage(M2C_FIELD(this, s32 *, 0x338));
     var_r29 = NULL;
     temp_r30 = var_r3_2;
     var_r28 = NULL;
@@ -2025,7 +2017,7 @@ int CMenuReliveHall::getTempoPassion(int* p0, bool p1, bool p2) {
         var_r3_2 = (CReliveStage *)(memcpy((void*)(((u8*)(temp_r30) + 0x310)), (const void*)(((u8*)(var_r29) + 0x310)), 0xC4U));
         M2C_FIELD(temp_r30, u8 *, 0x3D4) = (u8) M2C_FIELD(var_r29, u8 *, 0x3D4);
     }
-    temp_r3_4 = ((CReliveHall*)(((CReliveHall*)((CReliveHall *) var_r3_2))->getPointer(), (M2C_FIELD(this, s32 *, 0x338))))->getStage((long)(0));
+    temp_r3_4 = CReliveHall::getPointer()->getStage(M2C_FIELD(this, s32 *, 0x338));
     if (p2 != 0) {
         var_r3 = ((CReliveStage*)(temp_r3_4))->getTempo();
     } else {
@@ -2322,7 +2314,7 @@ void CMenuReliveHall::cursorPositionDecideAtStageChange(int p0) {
     } else {
         var_r29 = -1;
         if (p0 != -1) {
-            var_r29 = ((CReliveStage*)(((CReliveHall*)(((CReliveHall*)((CReliveHall *) var_r3))->getPointer(), p0))->getStage((long)(0))))->getDancerQuantity();
+            var_r29 = CReliveHall::getPointer()->getStage(p0)->getDancerQuantity();
         }
         temp_r3 = M2C_FIELD(M2C_FIELD((s32)temp_r31, CMenuPokemonCursor **, 0x80F64), s32 *, 0xC);
         var_r28 = temp_r3;
@@ -3028,8 +3020,9 @@ void CMenuReliveHall::actionDecide(u32 id)
 
 void CMenuReliveHall::dancerMoveAnimationOne(SPokemonView& v, f32 t)
 {
-    f32 p = t * dirSubHalf(v.dirTo, v.dirFrom);
-    v.dir = p + v.dirFrom;
+    f32 s = dirSubHalf(v.dirTo, v.dirFrom);
+    f32 p = t * s;
+    v.dir = v.dirFrom + p;
     f32 d = dirSubHalf(v.dir2From, v.dir2To);
     f32 a;
     if (d < 0.0f) a = -d;
@@ -3213,20 +3206,20 @@ void CMenuReliveHall::dancerMoveAnimationKick(f32* p0, f32* p1, bool p2, f32 p3)
 
 namespace {
 void CMenuReliveHall::resetViewAll() {
-    u8 *temp_r9_2;
+    u8 *var_r12;
     CMenuReliveHall *var_r26;
-    f32 *var_r24;
     f32 *var_r25;
+    f32 *var_r24;
     f32 *var_r7;
     f32 temp_f0_2;
     f32 temp_f0_3;
     f32 temp_f0_4;
     s32 temp_r0;
-    s32 temp_r30;
+    u8 *var_r6;
     s32 temp_r3;
     s32 temp_r3_2;
     s32 temp_r6;
-    s32 temp_r6_2;
+    u8 *temp_r9_2;
     s32 temp_r7;
     volatile s32 temp_r8;
     s32 temp_r9;
@@ -3236,16 +3229,16 @@ void CMenuReliveHall::resetViewAll() {
     u8 *temp_r26;
     u32 temp_r24;
     u32 temp_r4;
-    u32 var_ctr;
+    s32 temp_r6_2;
     u8 *temp_r10;
     u8 *temp_r24_2;
     u8 *temp_r25;
     s32 var_r5;
-    u8 *temp_r6_3;
     u8 *temp_r7_2;
     u8 *temp_r8_2;
-    u8 *var_r12;
-    u8 *var_r6;
+    u32 var_ctr;
+    s32 temp_r30;
+    u8 *temp_r6_3;
 
     memset((void*)((u8*)this + 0x340), 0, 0x2D0U);
     temp_r24 = (unsigned long)(((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getVisitorPointer());
@@ -3273,8 +3266,8 @@ void CMenuReliveHall::resetViewAll() {
         ((CAnt*)(((u8*)((s32)var_r26) + 0x350)))->initByPokemon((Pokemon*)((Pokemon *) temp_r4));
         ((CAnt*)(((u8*)(var_r26) + 0x350)))->setAnimation(1);
         var_r26 += 0x50;
-        var_r24 += 4;
         var_r25 += 4;
+        var_r24 += 4;
         var_r29 += 1;
     }
     temp_r3_2 = ((CMenuReliveHall*)(this))->getQuantityMarkerDancerEmpty();
@@ -3290,45 +3283,45 @@ void CMenuReliveHall::resetViewAll() {
                     do {
                         temp_r26 = (unsigned char *)((u8*)this + (var_r5 + 0x340));
                         M2C_FIELD(temp_r26, s8 *, 0) = 1;
-                        M2C_FIELD(temp_r26, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0);
                         temp_r8 = var_r29 + 4;
                         temp_r7 = var_r29 + 5;
                         M2C_FIELD(temp_r26, f32 *, 8) = (f32) M2C_FIELD(temp_r26, f32 *, 4);
                         temp_r6_2 = var_r29 + 6;
                         temp_r0 = var_r29 + 7;
-                        temp_r25 = (unsigned char *)((u8*)this + (((var_r29 + 1) * 0x50) + 0x340));
                         M2C_FIELD(temp_r26, f32 *, 0xC) = (f32) M2C_FIELD(temp_r26, f32 *, 4);
+                        M2C_FIELD(temp_r26, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0);
                         temp_r9 = (var_r29 + 3) * 0x50;
+                        temp_r25 = (unsigned char *)((u8*)this + (((var_r29 + 1) * 0x50) + 0x340));
+                        var_r4 += 8;
                         temp_r24_2 = (unsigned char *)((u8*)this + (((var_r29 + 2) * 0x50) + 0x340));
                         var_r29 += 8;
                         var_r5 += 0x280;
                         M2C_FIELD(temp_r25, s8 *, 0) = 1;
                         temp_r10 = (unsigned char *)((u8*)this + (temp_r9 + 0x340));
                         M2C_FIELD(temp_r25, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 4);
-                        var_r4 += 8;
                         temp_r9_2 = (unsigned char *)((u8*)this + ((temp_r8 * 0x50) + 0x340));
                         M2C_FIELD(temp_r25, f32 *, 8) = (f32) M2C_FIELD(temp_r25, f32 *, 4);
+                        M2C_FIELD(temp_r24_2, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 8);
                         temp_r8_2 = (unsigned char *)((u8*)this + ((temp_r7 * 0x50) + 0x340));
                         M2C_FIELD(temp_r25, f32 *, 0xC) = (f32) M2C_FIELD(temp_r25, f32 *, 4);
                         temp_r7_2 = (unsigned char *)((u8*)this + ((temp_r6_2 * 0x50) + 0x340));
                         M2C_FIELD(temp_r24_2, s8 *, 0) = 1;
-                        M2C_FIELD(temp_r24_2, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 8);
                         temp_r6_3 = (unsigned char *)((u8*)this + ((temp_r0 * 0x50) + 0x340));
                         M2C_FIELD(temp_r24_2, f32 *, 8) = (f32) M2C_FIELD(temp_r24_2, f32 *, 4);
                         M2C_FIELD(temp_r24_2, f32 *, 0xC) = (f32) M2C_FIELD(temp_r24_2, f32 *, 4);
                         M2C_FIELD((u16)temp_r10, s8 *, 0) = 1;
-                        M2C_FIELD(temp_r10, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0xC);
                         M2C_FIELD(temp_r10, f32 *, 8) = (f32) M2C_FIELD(temp_r10, f32 *, 4);
-                        M2C_FIELD(temp_r10, f32 *, 0xC) = (f32) M2C_FIELD(temp_r10, f32 *, 4);
                         M2C_FIELD(temp_r9_2, s8 *, 0) = 1;
+                        M2C_FIELD(temp_r10, f32 *, 0xC) = (f32) M2C_FIELD(temp_r10, f32 *, 4);
                         M2C_FIELD(temp_r9_2, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0x10);
                         M2C_FIELD(temp_r9_2, f32 *, 8) = (f32) M2C_FIELD(temp_r9_2, f32 *, 4);
+                        M2C_FIELD(temp_r7_2, s8 *, 0) = 1;
                         M2C_FIELD(temp_r9_2, f32 *, 0xC) = (f32) M2C_FIELD(temp_r9_2, f32 *, 4);
+                        M2C_FIELD(temp_r10, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0xC);
                         M2C_FIELD(temp_r8_2, s8 *, 0) = 1;
                         M2C_FIELD(temp_r8_2, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0x14);
                         M2C_FIELD(temp_r8_2, f32 *, 8) = (f32) M2C_FIELD(temp_r8_2, f32 *, 4);
                         M2C_FIELD(temp_r8_2, f32 *, 0xC) = (f32) M2C_FIELD(temp_r8_2, f32 *, 4);
-                        M2C_FIELD(temp_r7_2, s8 *, 0) = 1;
                         M2C_FIELD(temp_r7_2, f32 *, 4) = (f32) M2C_FIELD(var_r12, f32 *, 0x18);
                         M2C_FIELD(temp_r7_2, f32 *, 8) = (f32) M2C_FIELD(temp_r7_2, f32 *, 4);
                         M2C_FIELD(temp_r7_2, f32 *, 0xC) = (f32) M2C_FIELD(temp_r7_2, f32 *, 4);

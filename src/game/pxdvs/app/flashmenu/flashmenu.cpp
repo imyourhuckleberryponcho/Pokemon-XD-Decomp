@@ -342,12 +342,12 @@ void FlashMenu::Init(void* d, unsigned long arg) {
     s32 i;
     u16 nChars;
     s32 depthBytes;
-    GSgfxLayerFindByID(7);
-    GSprimSetup2DRender(0);
+    GSgfxLayer* layer = (GSgfxLayer*)GSgfxLayerFindByID(7);
+    userArg = arg;
+    GSprimSetup2DRender(layer);
     GSprimSetBlendMode(1);
     dict = (CharEntry*)GSmemAlloc(0x640);
     nChars = defaultCount(AT(u16, d, 0x18));
-    userArg = arg;
     nDepth = defaultCount(AT(u16, (u16)d, 0x1A));
     sprites = (SpriteTab*)GSmemAlloc(((nChars * 8) + 0x1F) & 0xFFFFFFE0);
     depthBytes = nChars;
@@ -546,7 +546,7 @@ void FlashMenu::DrawText(_DEFINETEXT* t, FLASHMATRIXF* parent, FLASHMATRIXF* m, 
                     advance += height;
                     u8* shape = AT(u8**, font, 0x1C)[AT(u16, glyph, 0)];
                     if (AT(u32, AT(u8*, shape, 0x18), 8) != 0) {
-                        vectorGraph((u16)userArg, shape + 4, shape + 0xC, (_SHAPERECORD*)mat2, (FLASHMATRIXF*)mat, (FLASHMATRIXF*)cxf, (FLASHCXFORM*)(u32)flags, 0);
+                        vectorGraph(userArg, shape + 4, shape + 0xC, AT(_SHAPERECORD*, shape, 0x18), (FLASHMATRIXF*)mat2, (FLASHMATRIXF*)mat, (FLASHCXFORM*)cxf, (u16)flags);
                     }
                 }
             }
@@ -601,8 +601,9 @@ void FlashMenu::DrawSprite(_DEFINESPRITE* sp, FLASHMATRIXF* parent, FLASHCXFORM*
                         }
                     }
                 }
-                BlendShapeRecord((_SHAPERECORD*)hdr, 0, 0, ratio);
-                vectorGraph(userArg, hdrBlend, hdrBlend, 0, parent, (FLASHMATRIXF*)mat, (FLASHCXFORM*)cxf, (u16)fl);
+                BlendShapeRecord(AT(_SHAPERECORD*, AT(u8*, ms, 0x30), 0x18), AT(_SHAPERECORD*, AT(u8*, ms, 0x28), 0x18),
+                                 AT(_SHAPERECORD*, AT(u8*, ms, 0x2C), 0x18), ratio);
+                vectorGraph(userArg, hdrBlend, hdrBlend + 8, AT(_SHAPERECORD*, AT(u8*, ms, 0x30), 0x18), parent, (FLASHMATRIXF*)mat, (FLASHCXFORM*)cxf, (u16)fl);
             }
             if ((ch->type & 4) != 0) {
                 u16* child = (u16*)ch->data;
@@ -682,6 +683,7 @@ void FlashMenu::DrawSub(GSgfxLayerID id, tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
     u8 cxf[0x10];
     u8* ms;
     u8* hdr = data;
+    u8* r;
     vectroGraphSetBlendMode(4, 5);
     s32 off = 0;
     for (u16 di = 0; di < AT(u16, hdr, 0x1A); off += 0x40, di++) {
@@ -704,11 +706,11 @@ void FlashMenu::DrawSub(GSgfxLayerID id, tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
                 int k;
                 s32 so;
                 for (k = 0, so = 0; k < AT(s32, ms, 8); k++, ro += 0xD4, so += 0x80) {
-                    u8* r = recs + ro;
+                    r = recs + ro;
                     if (r[0] == 0) {
                         AT(s32, AT(u8*, hdrBlend, 4), so + 4) = flcalcBlendColor(AT(s32, r, 4), AT(s32, r, 8), ratio);
                     } else if ((r[0] & 0x10) != 0) {
-                        u8* src = r + 0x3C;
+                        volatile u8* src = r + 0x3C;
                         u8* dst = AT(u8*, hdrBlend, 4) + so + 0x20;
                         for (int g = 0; g < r[0x3C]; g++, src += 0xC, dst += 8) {
                             dst[4] = flcalcBlend(src[4], src[5], ratio);
@@ -716,12 +718,13 @@ void FlashMenu::DrawSub(GSgfxLayerID id, tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
                         }
                     }
                 }
-                BlendShapeRecord((_SHAPERECORD*)hdr, 0, 0, ratio);
-                vectorGraph(userArg, hdrBlend, hdrBlend, 0, 0, (FLASHMATRIXF*)mat, (FLASHCXFORM*)e->cxform, fl);
+                BlendShapeRecord(AT(_SHAPERECORD*, AT(u8*, ms, 0x30), 0x18), AT(_SHAPERECORD*, AT(u8*, ms, 0x28), 0x18),
+                                 AT(_SHAPERECORD*, AT(u8*, ms, 0x2C), 0x18), (u16)ratio);
+                vectorGraph(userArg, hdrBlend, hdrBlend + 8, AT(_SHAPERECORD*, AT(u8*, ms, 0x30), 0x18), 0, (FLASHMATRIXF*)mat, (FLASHCXFORM*)e->cxform, fl);
             }
             if ((ch->type & 4) != 0) {
                 u16* child = (u16*)ch->data;
-                runTags((u16)curTime);
+                runTags(curTime);
                 DrawSprite((_DEFINESPRITE*)child, (FLASHMATRIXF*)mat, (FLASHCXFORM*)e->cxform, di, e->flags);
             }
             if ((ch->type & 2) != 0) {

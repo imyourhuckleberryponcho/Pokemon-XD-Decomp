@@ -71,7 +71,7 @@ struct GStexture {
 
 extern "C" {
 GSgfxVF* GSgfxVFGetPredef(s32 id);
-s32 GSgfxVideoGetClearColor(s32*, s32);
+s32 GSgfxVideoGetClearColor(s32*);
 void GSgfxVideoGetEFBSize(u16* w, u16* h);
 s32 GSgfxVideoSetClearColor(s32*);
 s32 GSgfx_GCWriteCopyFilter(u8, void*, s32, s32*);
@@ -634,7 +634,7 @@ void GSgfxLayer::PrepareDistortion() {
         M2C_FIELD(this, s32 *, 0x17C0) = (s32) (M2C_FIELD(this, s32 *, 0x17C0) | 1);
         M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x20);
         spC = M2C_FIELD(this, s32 *, 0x19B4);
-        GSgfxVideoGetClearColor(&spC, 2);
+        GSgfxVideoGetClearColor(&spC);
         sp8 = sp10;
         GSgfxVideoSetClearColor(&sp8);
         ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(fbTexPtr__10GSgfxLayer), 0U, (unsigned char*)(NULL), 1U, 1U, 0U);
