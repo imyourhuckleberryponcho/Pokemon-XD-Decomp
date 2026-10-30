@@ -1,3 +1,4 @@
+#pragma pool_strings off
 #include <dolphin/types.h>
 
 struct GStexture;

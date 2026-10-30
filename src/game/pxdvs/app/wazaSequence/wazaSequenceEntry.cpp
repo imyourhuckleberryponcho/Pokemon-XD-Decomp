@@ -371,9 +371,9 @@ void GSmodelGetFrameCount(_GSmodel* model, f32* count, f32* blendCount);
 GSpart* GSmodelGetPart(_GSmodel* model, s32 index);
 void GSmodelGetPosition(_GSmodel* model, GSvec* position);
 void GSmodelGetRotation(_GSmodel* model, GSvec* rotation);
-u32 GSmodelHasAnimationEnded(_GSmodel* model);
+u8 GSmodelHasAnimationEnded(_GSmodel* model);
 u32 GSmodelHasTexAnimationEnded(_GSmodel* model);
-u32 GSmodelIsAnimating(_GSmodel* model);
+u8 GSmodelIsAnimating(_GSmodel* model);
 void GSmodelRemoveNull(_GSmodel* model);
 void GSmodelSet60fpsAnimFlag(_GSmodel* model, u8 enable);
 void GSmodelSetAnimFrame(_GSmodel* model, f32 frame);
@@ -637,20 +637,16 @@ MainSequenceEntry::~MainSequenceEntry() {
 }
 
 extern "C++" {
-s32 CameraEntry::Load(unsigned char** p0) {
-    s32 temp_r0;
-    u8 *temp_r4;
-
-    *p0 += 0x70;
-    temp_r4 = *p0;
-    *p0 = temp_r4 + 0xC;
-    temp_r0 = M2C_FIELD(temp_r4, s32 *, 0);
-    if (temp_r0 != 3) {
-        if (temp_r0 < 3) {
-
-        }
-    } else {
-        *p0 += M2C_FIELD((u16)temp_r4, s32 *, 4) * 8;
+s32 CameraEntry::Load(unsigned char** data) {
+    *data += 0x70;
+    s32* header = (s32*)*data;
+    *data += 0xC;
+    switch (header[0]) {
+    case 2:
+        break;
+    case 3:
+        *data += header[1] * 8;
+        break;
     }
     return 1;
 }
@@ -1223,95 +1219,85 @@ void SequenceEntry::Stop(bool p0) {
 
 extern "C++" {
 s32 CameraEntry::Start() {
-    s32 temp_r0;
-
-    temp_r0 = M2C_FIELD(this, s32 *, 0x30);
-    if (temp_r0 != 1) {
-        if (temp_r0 < 1) {
-            if (temp_r0 < 0) {
-                goto block_7;
-            }
-            goto block_8;
-        }
-        if (temp_r0 < 4) {
-            goto block_8;
-        }
-block_7:
+    switch (M2C_FIELD(this, s32 *, 0x30)) {
+    case 0:
+        break;
+    case 1:
+        _wazaCameraInitShake(M2C_FIELD(this, WazaSequence **, 0x2C), M2C_FIELD(this, s32 *, 0x34));
+        break;
+    case 2:
+    case 3:
+        break;
+    default:
         return 0;
     }
-    volatile u16 tmp1 = M2C_FIELD(this, s32 *, 0x34);
-    _wazaCameraInitShake((WazaSequence*)(M2C_FIELD(this, WazaSequence **, 0x2C)), (u8)tmp1);
-block_8:
     M2C_FIELD(this, s32 *, 0x18) = 1;
-    M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
+    M2C_FIELD(this, f32 *, 0x20) = M2C_FIELD(this, f32 *, 0x1C);
     return 1;
 }
 }
 
 extern "C++" {
-bool CameraEntry::Update(float p0) {
-    s32 unksp14;
-    f32 unksp8;
-    GSpart *temp_r3;
-    s32 temp_r0;
+bool CameraEntry::Update(float dt) {
+    GSvec rot;
+    GSvec pos;
+    GSpart* part;
 
-    M2C_FIELD(this, f32 *, 0x20) = (f32) (M2C_FIELD(this, f32 *, 0x20) + p0);
-    temp_r0 = M2C_FIELD(this, s32 *, 0x30);
-    switch (temp_r0) {
+    M2C_FIELD(this, f32 *, 0x20) += dt;
+    switch (M2C_FIELD(this, s32 *, 0x30)) {
     case 0:
-        if ((M2C_FIELD(this, f32 *, 0x20) - M2C_FIELD(this, f32 *, 0x1C)) >= M2C_FIELD(this, f32 *, 0x34)) {
-            M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), s8 *, 0x15) = 1;
-            return 0;
+        if (M2C_FIELD(this, f32 *, 0x20) - M2C_FIELD(this, f32 *, 0x1C) >= M2C_FIELD(this, f32 *, 0x34)) {
+            M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), u8 *, 0x15) = 1;
+            return false;
         }
-    case 2:    default:
-        return 1;
+        break;
     case 1:
-        if ((_GSmodel *) gCameraShakeModel == NULL) {
-            return 0;
+        if (gCameraShakeModel == NULL) {
+            return false;
         }
-        if ((GSmodelIsAnimating((_GSmodel*)(gCameraShakeModel)) == 0) || (GSmodelHasAnimationEnded((_GSmodel*)(gCameraShakeModel)) != 0)) {
-            return 0;
+        if (GSmodelIsAnimating(gCameraShakeModel) == 0 || GSmodelHasAnimationEnded(gCameraShakeModel) != 0) {
+            return false;
         }
-        temp_r3 = GSmodelGetPart((_GSmodel*)(gCameraShakeModel), 1);
-        if (temp_r3 == NULL) {
-            return 0;
+        part = GSmodelGetPart(gCameraShakeModel, 1);
+        if (part == NULL) {
+            return false;
         }
-        GSpartGetTransform((GSpart*)(temp_r3), (GSvec*)(&unksp8), (GSvec*)(&unksp14), (GSvec*)(NULL));
-        PSVECScale((const register Vec*)(&unksp8), (register Vec*)(&unksp8), 2.5f);
-        cameraSetOffsetPosition((GSvec*)(&unksp8));
-        cameraSetOffsetRotation((GSvec*)(&unksp14));
-        GSpartFree((GSpart*)(temp_r3));
-        return 1;
+        GSpartGetTransform(part, &pos, &rot, NULL);
+        PSVECScale((Vec*)&pos, (Vec*)&pos, 2.5f);
+        cameraSetOffsetPosition(&pos);
+        cameraSetOffsetRotation(&rot);
+        GSpartFree(part);
+        return true;
+    case 2:
+        break;
     }
+    return true;
 }
 }
 
 extern "C++" {
-void CameraEntry::Stop(bool p0) {
-    volatile f32 sp10;
-    f32 spC;
-    volatile f32 sp8;
-    s32 temp_r0;
-    s32 temp_r5;
-
-    temp_r5 = M2C_FIELD(this, s32 *, 0x18);
-    if ((temp_r5 != 2) && ((p0 != 0) || (temp_r5 == 1))) {
+void CameraEntry::Stop(bool force) {
+    s32 state = M2C_FIELD(this, s32 *, 0x18);
+    if (state != 2 && (force || state == 1)) {
         M2C_FIELD(this, s32 *, 0x18) = 2;
-        temp_r0 = M2C_FIELD(this, s32 *, 0x30);
-        if (temp_r0 != 1) {
-            if (temp_r0 < 1) {
-
-            }
-        } else {
-            sp8 = 0.0f;
-            spC = 0.0f;
-            sp10 = 0.0f;
-            cameraSetOffsetPosition((GSvec*)((GSvec *) &sp8));
-            cameraSetOffsetRotation((GSvec*)((GSvec *) &sp8));
-            if ((_GSmodel *) gCameraShakeModel != NULL) {
-                GSmodelStopAnimation((_GSmodel*)(gCameraShakeModel));
+        switch (M2C_FIELD(this, s32 *, 0x30)) {
+        case 0:
+            break;
+        case 2:
+            break;
+        case 1: {
+            GSvec zero;
+            zero.x = 0.0f;
+            zero.y = 0.0f;
+            zero.z = 0.0f;
+            cameraSetOffsetPosition(&zero);
+            cameraSetOffsetRotation(&zero);
+            if (gCameraShakeModel != NULL) {
+                GSmodelStopAnimation(gCameraShakeModel);
                 gCameraShakeModel = NULL;
             }
+            break;
+        }
         }
     }
 }
@@ -1929,30 +1915,28 @@ block_60:
 }
 
 extern "C++" {
-bool ParticleEntry::Update(float p0) {
-    enum TsE { TsE0 };
-    s32 unksp20;
-    f32 sp14;
-    f32 sp8;
-    enum TsE temp_r30;
-    u32 temp_r31_2;
+bool ParticleEntry::Update(float dt) {
+    GSvec pos;
+    GSvec rot;
+    GSvec scale;
 
-    M2C_FIELD(this, f32 *, 0x20) = (f32) (M2C_FIELD(this, f32 *, 0x20) + p0);
+    M2C_FIELD(this, f32 *, 0x20) += dt;
     if (GSparticleIsGeneratorAlive(M2C_FIELD(this, u32 *, 0x3C)) == 0) {
-        M2C_FIELD(this, u32 *, 0x3C) = 0U;
-        return 0;
+        M2C_FIELD(this, u32 *, 0x3C) = 0;
+        return false;
     }
-    if (((s32) M2C_FIELD((M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), u8 **, 0x24)), s32 *, 8) != 1) && !(M2C_FIELD(this, u16 *, 0xA) & 4) && ((s32) (u16)M2C_FIELD(this, s32 *, 0x40) == 0)) {
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetPosition((f32*)&unksp20);
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetRotation((f32*)&sp14);
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetScale((f32*)&sp8);
-        temp_r31_2 = M2C_FIELD(this, u32 *, 0x34);
-        temp_r30 = (enum TsE)((temp_r31_2 >> 5U) & 1);
-        GSparticleSetGeneratorPosition((GSparticleGenerator*)((GSparticleGenerator *) M2C_FIELD(this, u32 *, 0x3C)), (Vec*)(&unksp20));
-        GSparticleSetGeneratorRotation(M2C_FIELD(this, u32 *, 0x3C), &sp14);
-        GSparticleSetGeneratorScale(M2C_FIELD(this, u32 *, 0x3C), &sp8, temp_r30, (temp_r31_2 >> 9U) & 1);
+    SeqCameraTarget* target = M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24);
+    if (M2C_FIELD(target, s32 *, 8) != 1 && !(M2C_FIELD(this, u16 *, 0xA) & 4) && M2C_FIELD(this, s32 *, 0x40) == 0) {
+        target->GetPosition((f32*)&pos);
+        target->GetRotation((f32*)&rot);
+        target->GetScale((f32*)&scale);
+        u32 flags = M2C_FIELD(this, u32 *, 0x34);
+        u32 local = (flags >> 5) & 1;
+        GSparticleSetGeneratorPosition((GSparticleGenerator*)M2C_FIELD(this, u32 *, 0x3C), (Vec*)&pos);
+        GSparticleSetGeneratorRotation(M2C_FIELD(this, u32 *, 0x3C), (f32*)&rot);
+        GSparticleSetGeneratorScale(M2C_FIELD(this, u32 *, 0x3C), (f32*)&scale, local, (flags >> 9) & 1);
     }
-    return 1;
+    return true;
 }
 }
 
@@ -2669,69 +2653,65 @@ void EffectEntry::Unload(unsigned char** p0) {
 }
 
 extern "C++" {
-void SequenceEntry::Link() {
-    volatile u8 sp8;
-    SequenceEntry *temp_r3_4;
-    SequenceEntry *temp_r3_5;
-    SequenceEntry *var_r31;
-    WazaSequence *temp_r3;
-    WazaSequence *temp_r3_3;
-    f32 temp_f0;
-    f32 temp_f1;
-    s32 temp_r0;
-    u8 temp_r4;
-    u8 *temp_r3_2;
-    u8 *var_r4;
+static inline f32 __OSu8tof32(register const u8* arg) {
+    register f32 ret;
+    asm { psq_l ret, 0(arg), 1, 2 }
+    return ret;
+}
 
-    temp_r4 = M2C_FIELD(this, u8 *, 5);
-    temp_r3 = M2C_FIELD(this, WazaSequence **, 0x2C);
-    var_r31 = M2C_FIELD(temp_r3, SequenceEntry **, 0x20);
-    if ((temp_r4 != 0) && (temp_r3_2 = (unsigned char *)(((WazaSequence*)(temp_r3))->GetEntryFromID(temp_r4)), ((temp_r3_2 == NULL) == 0))) {
-        M2C_FIELD(this, f32 *, 0x1C) = (f32) M2C_FIELD(temp_r3_2, f32 *, 0x1C);
-        M2C_FIELD(this, f32 *, 0x1C) = M2C_FIELD(this, f32 *, 0x1C) + M2C_FIELD(temp_r3_2, f32 **, 0x14)[M2C_FIELD(this, u8 *, 7)];
+static inline f32 OSu8tof32(u8 in) {
+    u8 tmp = in;
+    return __OSu8tof32(&tmp);
+}
+
+void SequenceEntry::Link() {
+    SequenceEntry* e = M2C_FIELD(seq, SequenceEntry **, 0x20);
+    SequenceEntry* base;
+
+    if (unk05 != 0 && (base = (SequenceEntry*)seq->GetEntryFromID(unk05)) != NULL) {
+        unk1C = base->unk1C;
+        unk1C += ((f32*)base->params)[unk07];
     } else {
-        temp_r3_3 = M2C_FIELD(this, WazaSequence **, 0x2C);
-        var_r4 = M2C_FIELD(temp_r3_3, u8 **, 0x24);
-        var_r4 = (s32) M2C_FIELD(var_r4, s32 *, 8) == 1 ? var_r4 : NULL;
-        if (var_r4 != NULL) {
-            M2C_FIELD(this, f32 *, 0x1C) = (f32) *(M2C_FIELD(var_r4, s32 **, 0x9C) + ((M2C_FIELD(temp_r3_3, u8 *, 0x13) * 0xD0) + 0xC + (M2C_FIELD(this, u8 *, 7) * 4)));
+        WazaSequence* s = seq;
+        u8* target = M2C_FIELD(s, u8 **, 0x24);
+        u8* model = M2C_FIELD(target, s32 *, 8) == 1 ? target : NULL;
+        if (model != NULL) {
+            unk1C = *(f32*)(M2C_FIELD(model, u8 **, 0x9C) + (M2C_FIELD(s, u8 *, 0x13) * 0xD0 + 0xC + unk07 * 4));
         } else {
-            sp8 = M2C_FIELD(this, u8 *, 7);
-            M2C_FIELD(this, f32 *, 0x1C) = (f32) M2C_ERROR( );
+            unk1C = OSu8tof32(unk07);
         }
     }
-    M2C_FIELD(this, f32 *, 0x1C) = (f32) (M2C_FIELD(this, f32 *, 0x1C) - *(M2C_FIELD(this, s32 **, 0x14) + (M2C_FIELD(this, u8 *, 6) * 4)));
-    M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
-    if (var_r31 != NULL) {
-        temp_f0 = M2C_FIELD(var_r31, f32 *, 0x1C);
-        temp_f1 = M2C_FIELD(this, f32 *, 0x1C);
-        if ((temp_f0 > temp_f1) || ((temp_r0 = M2C_FIELD(this, s32 *, 0xC), ((temp_r0 == 6) != 0)) && (temp_f0 == temp_f1))) {
-            M2C_FIELD(this, SequenceEntry **, 0x24) = var_r31;
-            M2C_FIELD(this, SequenceEntry **, 0x28) = NULL;
-            M2C_FIELD(var_r31, SequenceEntry **, 0x28) = this;
-            M2C_FIELD(M2C_FIELD(this, WazaSequence **, 0x2C), SequenceEntry **, 0x20) = this;
-            return;
-        }
-loop_19:
-        temp_r3_4 = M2C_FIELD(var_r31, SequenceEntry **, 0x24);
-        if (temp_r3_4 != NULL) {
-            if (!(M2C_FIELD(temp_r3_4, f32 *, 0x1C) > temp_f1) && ((temp_r0 != 6) || (M2C_FIELD(var_r31, f32 *, 0x1C) != temp_f1))) {
-                var_r31 = temp_r3_4;
-                goto loop_19;
-            }
-        }
-        M2C_FIELD(this, SequenceEntry **, 0x24) = temp_r3_4;
-        temp_r3_5 = M2C_FIELD(this, SequenceEntry **, 0x24);
-        if (temp_r3_5 != NULL) {
-            M2C_FIELD(temp_r3_5, SequenceEntry **, 0x28) = this;
-        }
-        M2C_FIELD(var_r31, SequenceEntry **, 0x24) = this;
-        M2C_FIELD(this, SequenceEntry **, 0x28) = var_r31;
+    unk1C -= ((f32*)params)[unk06];
+    unk20 = unk1C;
+    if (e == NULL) {
+        M2C_FIELD(seq, SequenceEntry **, 0x20) = this;
+        child = NULL;
+        unk28 = 0;
         return;
     }
-    M2C_FIELD(M2C_FIELD(this, WazaSequence **, 0x2C), SequenceEntry **, 0x20) = this;
-    M2C_FIELD(this, SequenceEntry **, 0x24) = NULL;
-    M2C_FIELD(this, SequenceEntry **, 0x28) = NULL;
+    if (e->unk1C > unk1C || (type == 6 && e->unk1C == unk1C)) {
+        child = e;
+        unk28 = 0;
+        e->unk28 = (s32)this;
+        M2C_FIELD(seq, SequenceEntry **, 0x20) = this;
+        return;
+    }
+    SequenceEntry* next;
+    while ((next = e->child) != NULL) {
+        if (next->unk1C > unk1C) {
+            break;
+        }
+        if (type == 6 && e->unk1C == unk1C) {
+            break;
+        }
+        e = next;
+    }
+    child = next;
+    if (child != NULL) {
+        child->unk28 = (s32)this;
+    }
+    e->child = this;
+    unk28 = (s32)e;
 }
 }
 

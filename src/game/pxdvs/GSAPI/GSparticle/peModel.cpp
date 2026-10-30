@@ -58,6 +58,11 @@ struct Quat {
     f32 x, y, z, w;
 };
 struct Vec3C : Vec3 {
+    Vec3C(const Vec3& o) {
+        x = o.x;
+        y = o.y;
+        z = o.z;
+    }
     Vec3C(f32 x_, f32 y_, f32 z_) {
         x = x_;
         y = y_;
@@ -361,15 +366,16 @@ static inline bool canRender(peModelContainer* c) {
         if (flags & 2) {
             return false;
         }
-        return true;
+        break;
     case 4:
-        if (flags & 2) {
-            return true;
+        if (!(flags & 2)) {
+            return false;
         }
-        return false;
+        break;
     default:
         return false;
     }
+    return true;
 }
 
 void peModelContainer::Render() {
@@ -387,6 +393,7 @@ void peModelContainer::Render() {
             }
             for (peNode* n = activeList; n != 0; n = n->prev) {
                 peModelNode* node = (peModelNode*)n;
+                HSD_JObj* jobj;
                 _peModel* m = model;
                 Mtx mtx;
                 Mtx rot;
@@ -401,7 +408,7 @@ void peModelContainer::Render() {
                     shapeRender(id, node->instance, g_current_layer->id);
                     g_current_layer->matrixStack->pop();
                 } else {
-                    HSD_JObj* jobj = m->jobj;
+                    jobj = m->jobj;
                     if (jobj != 0) {
                         u32 mode;
                         switch (g_render_pass) {
@@ -588,7 +595,7 @@ void peModelNode::Start(peEmitterNode* e, _peModel* m, _EmitParams* p) {
     peNode::Start(e, p);
     flip = 0;
     PSVECScale(&m->jitter, &jitter, HSD_Randf());
-    offset = Vec3C(jitter.x, jitter.y, jitter.z);
+    offset = Vec3C(jitter);
     PSVECAdd(&offset, &m->base, &offset);
     spinQuat.x = 0.0f;
     spinQuat.y = 0.0f;
@@ -605,20 +612,21 @@ void peModelNode::Start(peEmitterNode* e, _peModel* m, _EmitParams* p) {
     if (!(e->params->flags & 0x400)) {
         EulerToQuat((Vec3*)&m->rotX, &rotQuat);
         if (flags & 0xE380) {
+            Vec3* e = &euler;
             if (flags & 0x80) {
-                euler.x = 6.2831855f * HSD_Randf();
+                e->x = 6.2831855f * HSD_Randf();
             } else {
-                euler.x = 0.0f;
+                e->x = 0.0f;
             }
             if (flags & 0x100) {
-                euler.y = 6.2831855f * HSD_Randf();
+                e->y = 6.2831855f * HSD_Randf();
             } else {
-                euler.y = 0.0f;
+                e->y = 0.0f;
             }
             if (flags & 0x200) {
-                euler.z = 6.2831855f * HSD_Randf();
+                e->z = 6.2831855f * HSD_Randf();
             } else {
-                euler.z = 0.0f;
+                e->z = 0.0f;
             }
             if (flags & 0x2000) {
                 if (HSD_Randf() < 0.5f) {

@@ -83,7 +83,7 @@ struct GStexture {
     u8 _draft[1];
 };
 struct GSvec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 struct ModelBank {
     u8 _draft[1];
@@ -619,62 +619,64 @@ void GSmodelEnableDistortion(void *p0) {
 }
 
 extern "C++" {
-void modelDustUpdate(_GSmodel* p0) {
-    s32 unksp20;
-    s32 sp30;
-    s32 unksp14;
-    volatile f32 sp10;
-    s32 unksp2C;
-    u32 sp24;
-    f32 spC;
-    f32 sp8;
-    GSpart *temp_r3;
-    s32 var_r28;
-    GSparticleGenerator *temp_r3_2;
-    f32 temp_f0;
-    f32 temp_f31;
-    GSpart *temp_r3_3;
-    u8 *var_r30;
+struct ModelDust {
+    f32 lastHeight;
+    u8 emitPart;
+    u8 checkPart;
+    u8 armed;
+    u8 active;
+};
 
-    if ((GSparticleBank *) M2C_FIELD(p0, GSparticleBank **, 0x5F8) != NULL) {
-        GSmodelGetPosition((_GSmodel*)(p0), (GSvec*)(&unksp2C));
-        GSmodelGetRotation((_GSmodel*)(p0), (GSvec*)(&unksp14));
-        temp_f0 = M2C_FIELD(p0, f32 *, 0x60C);
-        var_r30 = ((u8*)(p0) + 0x5FC);
-        var_r28 = 0;
-        sp8 = temp_f0;
-        spC = temp_f0;
-        sp10 = temp_f0;
-        do {
-            if ((u8) M2C_FIELD(var_r30, u8 *, 7) != 0) {
-                temp_r3 = GSmodelGetPart((_GSmodel*)(p0), (s32) M2C_FIELD(var_r30, u8 *, 5));
-                if (temp_r3 != NULL) {
-                    GSpartGetTransform((GSpart*)(temp_r3), (GSvec*)(&unksp20), (GSvec*)(NULL), (GSvec*)(NULL));
-                    GSpartFree((GSpart*)(temp_r3));
-                    temp_f31 = sp24 - sp30;
-                    if (temp_f31 < (M2C_FIELD(var_r30, f32 *, 0) - 0.00001f)) {
-                        M2C_FIELD(var_r30, u8 *, 6) = 1U;
-                        goto block_10;
-                    }
-                    if (((u8) M2C_FIELD(var_r30, u8 *, 6) != 0) && (M2C_FIELD(var_r30, u8 *, 6) = 0U, temp_r3_2 = GSparticleCreateGenerator((GSparticleBank*)(M2C_FIELD(p0, GSparticleBank **, 0x5F8)), 0, 0), ((temp_r3_2 == NULL) == 0))) {
-                        temp_r3_3 = GSmodelGetPart((_GSmodel*)(p0), (s32) M2C_FIELD(var_r30, u8 *, 4));
-                        if (temp_r3_3 != NULL) {
-                            GSpartGetTransform((GSpart*)(temp_r3_3), (GSvec*)(&unksp20), (GSvec*)(NULL), (GSvec*)(NULL));
-                            GSpartFree((GSpart*)(temp_r3_3));
-                            GSparticleSetGeneratorPosition((GSparticleGenerator*)(temp_r3_2), (Vec*)(&unksp20));
-                            GSparticleSetGeneratorRotation((s32) temp_r3_2, &unksp14);
-                            GSparticleSetGeneratorScale((s32) temp_r3_2, &sp8, 0, 0);
-                            goto block_10;
-                        }
-                    } else {
-block_10:
-                        M2C_FIELD(var_r30, f32 *, 0) = temp_f31;
-                    }
+void modelDustUpdate(_GSmodel* model) {
+    GSpart* part;
+    GSvec pos;
+    GSvec partPos;
+    GSvec rot;
+    GSvec scale;
+    ModelDust* dust;
+    GSparticleGenerator* gen;
+    s32 i;
+    f32 height;
+
+    if (M2C_FIELD(model, GSparticleBank **, 0x5F8) == NULL) {
+        return;
+    }
+    GSmodelGetPosition(model, &pos);
+    GSmodelGetRotation(model, &rot);
+    f32 s = M2C_FIELD(model, f32 *, 0x60C);
+    scale.x = s;
+    scale.y = s;
+    scale.z = s;
+    dust = (ModelDust*)((u8*)model + 0x5FC);
+    for (i = 0; i < 2; i++, dust++) {
+        if (dust->active == 0) {
+            continue;
+        }
+        part = GSmodelGetPart(model, dust->checkPart);
+        if (part == NULL) {
+            continue;
+        }
+        GSpartGetTransform(part, &partPos, NULL, NULL);
+        GSpartFree(part);
+        height = partPos.y - pos.y;
+        if (height < dust->lastHeight - 0.00001f) {
+            dust->armed = 1;
+        } else if (dust->armed) {
+            dust->armed = 0;
+            gen = GSparticleCreateGenerator(M2C_FIELD(model, GSparticleBank **, 0x5F8), 0, 0);
+            if (gen != NULL) {
+                part = GSmodelGetPart(model, dust->emitPart);
+                if (part == NULL) {
+                    continue;
                 }
+                GSpartGetTransform(part, &partPos, NULL, NULL);
+                GSpartFree(part);
+                GSparticleSetGeneratorPosition(gen, (Vec*)&partPos);
+                GSparticleSetGeneratorRotation((s32)gen, (s32*)&rot);
+                GSparticleSetGeneratorScale((s32)gen, (f32*)&scale, 0, 0);
             }
-            var_r28 += 1;
-            var_r30 += 8;
-        } while (var_r28 < 2);
+        }
+        dust->lastHeight = height;
     }
 }
 }

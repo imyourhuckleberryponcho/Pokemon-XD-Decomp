@@ -276,8 +276,8 @@ static inline void reliveEvent(Pokemon* p) {
 
 static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
     void* hero = savedataGetStatus(0, 2);
-    u16 progress;
     Pokemon* p;
+    u16 progress;
     u16 i;
     u16 dark;
     if (hero != 0) {
@@ -328,7 +328,7 @@ static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
             u16 dark = 0;
             if (np != 0) {
                 dark = getDarkId(np, mode);
-                if (dark != 0 && darkPokemonBiosGetReliveFlag((u8)dark)) {
+                if (dark != 0 && darkPokemonBiosGetReliveFlag(dark)) {
                     dark = 0;
                 }
             }

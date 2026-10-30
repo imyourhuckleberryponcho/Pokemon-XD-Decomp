@@ -246,7 +246,7 @@ u16 pokemonGetSoubiItemSoubiDataId(Pokemon* p);
 u16 pokemonGetSoubiItemDataId(Pokemon* p);
 u8 fightOutPokemon_GetAbicntNimbleness(FightOutPokemon* fop);
 s32 heroGetStatus(void* hero, s32 id, s32 a);
-u32 fightAbicntDoKakeWaru(u8 id, u32 value);
+u32 fightAbicntDoKakeWaru(u16 id, u32 value);
 s16 fightPokemon_GetEntryId(FightPokemon* fp);
 s16 fightOutPokemon_GetIrekaeTargetEntryId(FightOutPokemon* fop);
 FightAction* fightOutPokemon_GetFightActionBuffPtr(FightOutPokemon* fop);
@@ -2008,11 +2008,11 @@ u8 fightOutPokemonCheckIrekaeReserveFightPokemon(FightOutPokemon* fop, FightPoke
 }
 
 u32 fightOutPokemonGetNowNimbleness(FightOutPokemon* fop, u8 useBadge, u8 tenki, u16 hp, void* hero) {
-    extern u32 fightAbicntDoKakeWaru(u32 id, u32 value);
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);
     if (p == 0) {
         return 0;
     }
+    u32 speed;
     u16 tokusei = fightOutPokemonGetTokuseiDataId(fop);
     u16 item = fightOutPokemonGetSoubiItemSoubiDataId(fop);
     s32 itemBuff = figthOutPokemonGetSoubiItemBuff(fop);
@@ -2029,7 +2029,7 @@ u32 fightOutPokemonGetNowNimbleness(FightOutPokemon* fop, u8 useBadge, u8 tenki,
     } else if (tokusei == 0x22 && tenki == 1) {
         nimble *= 2;
     }
-    u32 speed = fightAbicntDoKakeWaru(abicnt, nimble);
+    speed = fightAbicntDoKakeWaru(abicnt, nimble);
     if (useBadge == 1 && badge == 1) {
         speed = speed * 110 / 100;
     }

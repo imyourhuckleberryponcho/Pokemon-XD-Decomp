@@ -1517,7 +1517,8 @@ inline void GSgfx_GCSetIndTexCoordScale(s32 stage, s32 s, s32 t) {
             gsgfxState->ras1ss[pair].t1 = t;
         } else {
             gsgfxState->ras1ss[pair].s0 = s;
-            gsgfxState->ras1ss[pair].t1 = t;
+            u32 pair_c = pair;
+            gsgfxState->ras1ss[pair_c].t1 = t;
         }
         gsgfxState->dIref |= 1 << pair;
         gsgfxState->indScale[stage][0] = s;
@@ -1724,31 +1725,24 @@ inline void GSgfx_GCSetAmbColor(s32 ch, GSColor c) {
     }
 }
 
-void GSgfx_GCSetChanCtrl(s32 p0, u8 p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6) {
-    s32 temp_r11;
-    s32 temp_r12;
-    s32 temp_r12_2;
-    s32 var_r27;
-    u8 *temp_r10;
-
-    temp_r12 = p0 * 0x18;
-    temp_r11 = (long)(((u8*)(gsgfxState) + 0x458));
-    if (((u8) *((u8 *)temp_r11 + temp_r12) != p1) || (temp_r10 = (unsigned char *)gsgfxState + temp_r12, (((s32) M2C_FIELD(temp_r10, s32 *, 0x45C) == p2) == 0)) || ((s32) M2C_FIELD(temp_r10, s32 *, 0x460) != p3) || ((s32) M2C_FIELD(temp_r10, s32 *, 0x464) != p4) || ((s32) M2C_FIELD(temp_r10, s32 *, 0x468) != p5) || ((s32) M2C_FIELD(temp_r10, s32 *, 0x46C) != p6)) {
-        var_r27 = p5;
-        if (p6 == 0) {
-            var_r27 = 0;
+inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 lights, s32 diff, s32 attn) {
+    ChanCache* c = gsgfxState->chan;
+    if (c[chan].a != enable || c[chan].w[0] != amb || c[chan].w[1] != mat || c[chan].w[2] != lights ||
+        c[chan].w[3] != diff || c[chan].w[4] != attn) {
+        s32 d = diff;
+        if (attn == 0) {
+            int d = 0;
         }
-        *(s8 *)0xCC008000 = 0x10;
-        *((u8 *)temp_r11 + temp_r12_2) = p1;
-        *(s8 *)0xCC008000 = 0;
-        *(s8 *)0xCC008000 = (s16) ((p0 & 3) + 0x100E);
-        temp_r12_2 = p0 * 0x18;
-        *(s8 *)0xCC008000 = (s32) (((p4 << 7) & 0x7800) | ((((u32) (-p6 | p6) >> 0x15U) & 0x400) | ((((u32) ((2 - p6) | (p6 - 2)) >> 0x16U) & 0x200) | ((p2 << 6) | (((p4 * 4) & 0x3C) | (p3 | ((p1 * 2) & 0x1FE))) | (var_r27 << 7)))));
-        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x45C) = p2;
-        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x460) = p3;
-        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x464) = p4;
-        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x468) = p5;
-        M2C_FIELD((gsgfxState + temp_r12_2), s32 *, 0x46C) = p6;
+        GX_WGPIPE.u8 = 0x10;
+        GX_WGPIPE.u16 = 0;
+        GX_WGPIPE.u16 = 0x100E + (chan & 3);
+        GX_WGPIPE.u32 = ((lights << 7) & 0x7800) | (((attn != 0) << 10) | (((attn != 2) << 9) | ((amb << 6) | ((lights & 0xF) << 2 | (mat | (enable << 1))) | (d << 7))));
+        gsgfxState->chan[chan].a = enable;
+        gsgfxState->chan[chan].w[0] = amb;
+        gsgfxState->chan[chan].w[1] = mat;
+        gsgfxState->chan[chan].w[2] = lights;
+        gsgfxState->chan[chan].w[3] = diff;
+        gsgfxState->chan[chan].w[4] = attn;
     }
 }
 

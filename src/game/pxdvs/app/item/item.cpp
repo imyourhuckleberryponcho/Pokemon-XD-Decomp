@@ -423,7 +423,7 @@ static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
                     for (; j < (int)n; q++, j++) {
                         if (itemOk(q)) {
                             u16 a = item_GetItemDataId(p);
-                            if (item_GetItemDataId(q) < a) itemSwapI(p, q);
+                            if (a > item_GetItemDataId(q)) itemSwapI(p, q);
                         }
                     }
                 }

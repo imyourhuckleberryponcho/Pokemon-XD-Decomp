@@ -845,7 +845,7 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
             u16* src;
             u16* dst = buf1;
             src = text;
-            k = 0;
+            int k = 0;
             n++;
             for (;;) {
                 u16 ch = *src;

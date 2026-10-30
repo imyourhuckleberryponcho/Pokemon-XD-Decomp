@@ -41,10 +41,15 @@ static s32 _haltDSIHandler();
 static s32 _haltISIHandler();
 static void _haltProcessException();
 }
+
+static u8 _haltOldDSIHandler[0x74];
+static u8 _haltOldISIHandler[0x34];
+static u8 _haltOldAlignmentHandler[0x34];
+static u8 _haltOldProgramHandler[0x34];
+static u8 _haltTex[0x80];
 static s32 _haltContext[0xB2];
 static s8 _haltHandlerInstalled;
 static s32 _haltExceptionType;
-static s32 _haltOldDSIHandler;
 static s32 _haltISIHandler() {
     M2C_ERROR( );
     M2C_ERROR( );
@@ -287,25 +292,25 @@ void GSgfxHalt(s32 p0, s32 *p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, 
 
 extern "C++" {
 void GSgfxHaltInit() {
-    s32 temp_r30;
+    BOOL enabled;
 
-    memset((void*)(&_haltOldDSIHandler + 0x190), 0xFF, 0x2C8U);
-    OSSetErrorHandler((OSError)(2), (OSErrorHandler)((s32) GSgfxHalt));
-    OSSetErrorHandler((OSError)(3), (OSErrorHandler)((s32) GSgfxHalt));
-    OSSetErrorHandler((OSError)(5), (OSErrorHandler)((s32) GSgfxHalt));
-    OSSetErrorHandler((OSError)(0xF), (OSErrorHandler)((s32) GSgfxHalt));
+    memset(_haltContext, 0xFF, sizeof(_haltContext));
+    OSSetErrorHandler((OSError)2, (OSErrorHandler)GSgfxHalt);
+    OSSetErrorHandler((OSError)3, (OSErrorHandler)GSgfxHalt);
+    OSSetErrorHandler((OSError)5, (OSErrorHandler)GSgfxHalt);
+    OSSetErrorHandler((OSError)0xF, (OSErrorHandler)GSgfxHalt);
     __OSFpscrEnableBits = 0x10;
-    OSSetErrorHandler((OSError)(0x10), (OSErrorHandler)((s32) GSgfxHalt));
-    temp_r30 = OSDisableInterrupts();
-    memcpy((void*)(&_haltOldDSIHandler), (const void*)((u8 *)0x80000300), 0x74U);
-    memcpy((void*)(&_haltOldDSIHandler + 0x74), (const void*)((u8 *)0x80000400), 0x34U);
-    memcpy((void*)(&_haltOldDSIHandler + 0xA8), (const void*)((u8 *)0x80000600), 0x34U);
-    memcpy((void*)(&_haltOldDSIHandler + 0xDC), (const void*)((u8 *)0x80000700), 0x34U);
-    memcpy((void*)((u8 *)0x80000300), (const void*)(_haltDSIHandler), 0x74U);
-    memcpy((void*)((u8 *)0x80000400), (const void*)(_haltISIHandler), 0x34U);
-    memcpy((void*)((u8 *)0x80000600), (const void*)(_haltAlignmentHandler), 0x34U);
-    DCFlushRange((register void*)((u8 *)0x80000300), 0x1000U);
+    OSSetErrorHandler((OSError)0x10, (OSErrorHandler)GSgfxHalt);
+    enabled = OSDisableInterrupts();
+    memcpy(_haltOldDSIHandler, (void*)0x80000300, sizeof(_haltOldDSIHandler));
+    memcpy(_haltOldISIHandler, (void*)0x80000400, sizeof(_haltOldISIHandler));
+    memcpy(_haltOldAlignmentHandler, (void*)0x80000600, sizeof(_haltOldAlignmentHandler));
+    memcpy(_haltOldProgramHandler, (void*)0x80000700, sizeof(_haltOldProgramHandler));
+    memcpy((void*)0x80000300, (void*)_haltDSIHandler, 0x74);
+    memcpy((void*)0x80000400, (void*)_haltISIHandler, 0x34);
+    memcpy((void*)0x80000600, (void*)_haltAlignmentHandler, 0x34);
+    DCFlushRange((void*)0x80000300, 0x1000);
     _haltHandlerInstalled = 1;
-    OSRestoreInterrupts(temp_r30);
+    OSRestoreInterrupts(enabled);
 }
 }

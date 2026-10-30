@@ -13,8 +13,7 @@ struct CBRule {
     s16 a14, a16;
     u8 a18, a19;
     s16 a1A, a1C;
-    s32 e[10];
-    u16 a46;
+    u16 name[7][3];
     struct { s32 a, b; } a48;
     u16 a50;
     u8 f[0x3C];
@@ -117,7 +116,7 @@ s32 menuCB_GetBattleController2P(void) {
 }
 
 void* menuCB_RuleTitleNameGet(s32 i) {
-    return &_CB.rule[i].e[0];
+    return _CB.rule[i].name;
 }
 
 u16 menuCBTrainerBios_GetPlayerID(CBTrainer* t) {
@@ -411,16 +410,15 @@ void menuCBBios_InitContext(_MENUCBWORK* cb) {
     menuCBBios_UnlockContext();
 }
 
-static inline void ruleNameFill(u16* src, void* base, int off) {
+static inline void ruleNameFill(u16* src, _TOOL_SAVEDATA* save, int n) {
     for (int k = 0; k < 7; k++) {
-        u16* dst = (u16*)((u8*)base + off + k * 6);
         for (int j = 0; j < 3; j++) {
             if (src != 0) {
                 if (*src == 0xFFFF) src += 2;
-                dst[j] = *src;
+                save->rule[n].name[k][j] = *src;
                 if (*src != 0) src += 1;
             } else {
-                dst[j] = 0;
+                save->rule[n].name[k][j] = 0;
             }
         }
     }
@@ -454,9 +452,9 @@ void menuCB_RULE_INIT(_TOOL_SAVEDATA* save) {
             save->rule[5].f[i] = 1;
         }
     }
-    ruleNameFill(GSmsgGetGSchar(0x438A), save, 0x1CE);
-    ruleNameFill(GSmsgGetGSchar(0x438B), save, 0x25E);
-    ruleNameFill(GSmsgGetGSchar(0x438C), save, 0x2EE);
+    ruleNameFill(GSmsgGetGSchar(0x438A), save, 3);
+    ruleNameFill(GSmsgGetGSchar(0x438B), save, 4);
+    ruleNameFill(GSmsgGetGSchar(0x438C), save, 5);
     menuCBBios_InitContextAtFirst(&_CB, save);
     save->working = 0;
 }
@@ -489,9 +487,9 @@ static void menuCBBios_InitContextAtFirst(_MENUCBWORK* cb, _TOOL_SAVEDATA* save)
             cb->rule[5].f[i] = 1;
         }
     }
-    memcpy(menuCB_RuleTitleNameGet(3), (u8*)save + 0x1CE, 0x2A);
-    memcpy(menuCB_RuleTitleNameGet(4), (u8*)save + 0x25E, 0x2A);
-    memcpy(menuCB_RuleTitleNameGet(5), (u8*)save + 0x2EE, 0x2A);
+    memcpy(menuCB_RuleTitleNameGet(3), save->rule[3].name, 0x2A);
+    memcpy(menuCB_RuleTitleNameGet(4), save->rule[4].name, 0x2A);
+    memcpy(menuCB_RuleTitleNameGet(5), save->rule[5].name, 0x2A);
 }
 
 extern "C" {

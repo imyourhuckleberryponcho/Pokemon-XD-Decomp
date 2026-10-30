@@ -1,4 +1,21 @@
 #include <dolphin/types.h>
+typedef union {
+    u8 u8;
+    u16 u16;
+    u32 u32;
+    s8 s8;
+    s16 s16;
+    s32 s32;
+    f32 f32;
+} PPCWGPipe;
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
+
+static inline void _layerCallDisplayList(u8* list, u32 size)
+{
+    GXWGFifo.u8 = 0x40;
+    GXWGFifo.u32 = (u32)list;
+    GXWGFifo.u32 = size;
+}
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -91,7 +108,7 @@ struct GXVtxDescList {
 
 extern "C" {
 asm void DCStoreRange(register void* addr, register u32 nBytes);
-s32 GSgfx_GCWriteIndTexMtx(s32, s32, s32);
+s32 GSgfx_GCWriteIndTexMtx(GSgfxIndTexMtxID, f32 (*)[3], s8);
 void GXDrawCube(void);
 void GXDrawCylinder(u8 numEdges);
 void GXDrawDodeca(void);
@@ -130,26 +147,26 @@ void GSgfxLayer::tokenMark() {
 }
 
 extern "C++" {
-void GSgfxLayer::tunitIndTexMtx(GSgfxIndTexMtxID p0, float(*p1)[3], signed char p2) {
-    s32 temp_r30;
-    u8 temp_r4;
+void GSgfxLayer::tunitIndTexMtx(GSgfxIndTexMtxID id, float (*mtx)[3], signed char scale) {
+    s32 cur;
+    s32 other;
 
-    ((GSgfxLayer*)(this))->SetupFifo();
-    GSgfx_GCWriteIndTexMtx(p0, (s32) p1, (s32) p2);
-    temp_r30 = M2C_FIELD(this, s32 *, 0x1994);
-    temp_r4 = temp_r30 == 0;
-    if ((u32) M2C_FIELD((this + (temp_r4 * 0xBC)), u32 *, 0x1818) != 0U) {
-        if (temp_r30 != (s32) temp_r4) {
-            M2C_FIELD(this, s32 *, 0x1994) = (s32) temp_r4;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) ((u8*)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC);
+    SetupFifo();
+    GSgfx_GCWriteIndTexMtx(id, mtx, scale);
+    cur = M2C_FIELD(this, s32*, 0x1994);
+    other = cur == 0;
+    if (M2C_FIELD(this, u32*, 0x1818 + other * 0xBC) != 0) {
+        if (cur != other) {
+            M2C_FIELD(this, s32*, 0x1994) = other;
+            M2C_FIELD(this, u8**, 0x1990) = (u8*)this + 0x1818 + M2C_FIELD(this, s32*, 0x1994) * 0xBC;
         }
-        ((GSgfxLayer*)(this))->SetupFifo();
-        GSgfx_GCWriteIndTexMtx(p0, (s32) p1, (s32) p2);
-        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != temp_r30) {
-            M2C_FIELD(this, s32 *, 0x1994) = temp_r30;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) ((u8*)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC);
+        SetupFifo();
+        GSgfx_GCWriteIndTexMtx(id, mtx, scale);
+        if (M2C_FIELD(this, s32*, 0x1994) != cur) {
+            M2C_FIELD(this, s32*, 0x1994) = cur;
+            M2C_FIELD(this, u8**, 0x1990) = (u8*)this + 0x1818 + M2C_FIELD(this, s32*, 0x1994) * 0xBC;
         }
-        ((GSgfxLayer*)(this))->SetupFifo();
+        SetupFifo();
     }
 }
 }
@@ -811,9 +828,7 @@ void GSgfxLayer::dlDraw(GSgfxDL* p0) {
     temp_r31 = M2C_FIELD(this, s32 *, 0x199C);
     M2C_FIELD(this, s32 *, 0x199C) = (s32) M2C_FIELD(p0, s32 *, 0xC);
     ((GSgfxLayer*)(this))->FlushState();
-    *(s8 *)0xCC008000 = 0x40;
-    *(s8 *)0xCC008000 = (signed char)((u8 *) M2C_FIELD(p0, u8 **, 4));
-    *(s8 *)0xCC008000 = (u32) M2C_FIELD(p0, u32 *, 8);
+    _layerCallDisplayList(M2C_FIELD(p0, u8 **, 4), M2C_FIELD(p0, u32 *, 8));
     M2C_FIELD(this, s32 *, 0x199C) = temp_r31;
 }
 }
@@ -822,9 +837,7 @@ extern "C++" {
 void GSgfxLayer::dlDrawExt(unsigned char* p0, unsigned long p1) {
     M2C_FIELD(M2C_FIELD(this, u8 **, 0x199C), s32 *, 4) = 0;
     ((GSgfxLayer*)(this))->FlushState();
-    *(s8 *)0xCC008000 = 0x40;
-    *(s8 *)0xCC008000 = (signed char)(p0);
-    *(s8 *)0xCC008000 = p1;
+    _layerCallDisplayList(p0, p1);
 }
 }
 
@@ -835,8 +848,8 @@ void GSgfxLayer::endSurface() {
 extern "C++" {
 void GSgfxLayer::beginSurface(unsigned short p0) {
     ((GSgfxLayer*)(this))->FlushState();
-    *(s8 *)0xCC008000 = M2C_FIELD(this, s32 *, 0x1998) | M2C_FIELD(M2C_FIELD(this, u8 **, 0x199C), s32 *, 4);
+    GXWGFifo.u8 = M2C_FIELD(this, s32 *, 0x1998) | M2C_FIELD(M2C_FIELD(this, u8 **, 0x199C), s32 *, 4);
+    GXWGFifo.u16 = p0;
     gsgfx_layer_inPrimitive = 1;
-    *(s8 *)0xCC008000 = p0;
 }
 }

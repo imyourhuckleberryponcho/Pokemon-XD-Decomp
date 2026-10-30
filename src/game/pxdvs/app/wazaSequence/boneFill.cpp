@@ -99,6 +99,10 @@ void boneFillEffect::_stop() {
     }
 }
 
+static inline GSmodel* _ownerModel(BoneFillOwner* owner) {
+    return owner->model;
+}
+
 bool boneFillEffect::_update(f32 dt) {
     GSmodel* model;
     GSpart* part;
@@ -116,7 +120,7 @@ bool boneFillEffect::_update(f32 dt) {
     if (m_generator == NULL) {
         return false;
     }
-    model = m_owner->model;
+    model = _ownerModel(m_owner);
     if (model == NULL) {
         return false;
     }

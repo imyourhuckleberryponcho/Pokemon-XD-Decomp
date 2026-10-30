@@ -185,7 +185,22 @@ static inline u16 __OSf32tou16(register f32 inF) {
 }
 
 static inline f32 Lerp(f32 a, f32 b, f32 t) {
-    return a + (b - a) * t;
+    f32 d = b - a;
+    return d * t + a;
+}
+
+static inline f32 RotAdd(f32 min, f32 max, f32 base, f32 t) {
+    f32 d = max - min;
+    return d * t + (base + min);
+}
+
+static inline f32 RotSub(f32 min, f32 max, f32 base, f32 t) {
+    f32 d = max - min;
+    return (base - min) - d * t;
+}
+
+static inline f32 RandRange(f32& lo, f32& hi) {
+    return HSD_Randf() * (hi - lo) + lo;
 }
 
 static inline f32 WazaSqrtf(f32 x) {
@@ -449,14 +464,16 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     f32 d1;
     f32 d0;
     f32 dur;
-    f32 rot1;
+    f32 dist1;
     f32 rot2;
     f32 fov2;
     f32 dist2;
     f32 fov1;
     f32 height;
-    f32 dist1;
+    f32 rot1;
     f32 r;
+    f32 d;
+    f32 lo;
     f32 lowA, highA, lowB, highB;
     static u8 old_pos_pattern[2] = {12, 12};
 
@@ -558,7 +575,7 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         d0 = battleGridGetDistance(false);
         t.x = -d0 * dir; t.y = 0.0f; t.z = 0.0f;
         a.x = dir * (d1 + d0); a.y = 5.0f; a.z = 0.7f * d1;
-        b.x = a.x; b.y = 5.0f; b.z = 0.7f * -d1;
+        b.x = dir * (d1 + d0); b.y = 5.0f; b.z = 0.7f * -d1;
         DoTracked(&t, &a, &b, 30.0f);
         return;
     case 7:
@@ -607,54 +624,55 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         d0 = battleGridGetDistance(false);
         t.x = -d0 * dir; t.y = 5.0f; t.z = 0.0f;
         a.x = dir * (d1 + d0); a.y = 2.0f; a.z = 0.25f * d1;
-        b.x = a.x; b.y = 2.0f; b.z = 0.25f * -d1;
+        b.x = dir * (d1 + d0); b.y = 2.0f; b.z = 0.25f * -d1;
         DoTracked(&t, &a, &b, 15.0f);
         return;
     case 10:
-        dist1 = Lerp(params.distanceMin, params.distanceMax, HSD_Randf());
-        dist2 = Lerp(params.distanceMin, params.distanceMax, HSD_Randf());
+        r = HSD_Randf();
+        lo = params.distanceMin;
+        d = params.distanceMax - lo;
+        dist1 = d * r + lo;
+        r = HSD_Randf();
+        lo = params.distanceMin;
+        d = params.distanceMax - lo;
+        dist2 = d * r + lo;
         if (dist1 < dist2) {
             f32 tmp = dist2;
             dist2 = dist1;
             dist1 = tmp;
         }
         height = Lerp(params.heightMin, params.heightMax, HSD_Randf());
-        if (!(seq->isEnemy != 0)) {
-            rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf();
-            rot1 += (params.rotationMin + params.rotationBase);
+        if (seq->isEnemy != 0) {
+            rot2 = rot1 = RotSub(params.rotationMin, params.rotationMax, params.rotationBase, HSD_Randf());
         } else {
-            rot1 = HSD_Randf();
-            rot1 *= params.rotationBase - (params.rotationMax - params.rotationMin);
+            rot2 = rot1 = RotAdd(params.rotationMin, params.rotationMax, params.rotationBase, HSD_Randf());
         }
-        rot2 = rot1;
         break;
     case 11:
-        dist1 = Lerp(params.distanceMin, params.distanceMax, HSD_Randf());
-        dist2 = dist1;
+        dist1 = dist2 = Lerp(params.distanceMin, params.distanceMax, HSD_Randf());
         height = Lerp(params.heightMin, params.heightMax, HSD_Randf());
         if (seq->isEnemy != 0) {
-            rot1 = HSD_Randf();
-            rot1 *= params.rotationBase - (params.rotationMax - params.rotationMin);
-            rot2 = HSD_Randf();
-            rot2 *= params.rotationBase - (params.rotationMax - params.rotationMin);
+            r = HSD_Randf();
+            lo = params.rotationMin;
+            d = params.rotationMax - lo;
+            rot2 = (params.rotationBase - lo) - d * r;
+            rot1 = RotSub(params.rotationMin, params.rotationMax, params.rotationBase, HSD_Randf());
         } else {
-            rot2 = (params.rotationMax - params.rotationMin) * HSD_Randf();
-            rot2 += (params.rotationBase + params.rotationMin);
-            rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf() + (params.rotationBase + params.rotationMin);
+            r = HSD_Randf();
+            lo = params.rotationMin;
+            d = params.rotationMax - lo;
+            rot2 = d * r + (params.rotationBase + lo);
+            rot1 = RotAdd(params.rotationMin, params.rotationMax, params.rotationBase, HSD_Randf());
         }
         break;
     default:
-        dist1 = Lerp(params.distanceMin, params.distanceMax, HSD_Randf());
-        dist2 = dist1;
+        dist1 = dist2 = Lerp(params.distanceMin, params.distanceMax, HSD_Randf());
         height = Lerp(params.heightMin, params.heightMax, HSD_Randf());
-        if (!(seq->isEnemy != 0)) {
-            rot1 = (params.rotationMax - params.rotationMin) * HSD_Randf();
-            rot1 += (params.rotationMin + params.rotationBase);
+        if (seq->isEnemy != 0) {
+            rot2 = rot1 = RotSub(params.rotationMin, params.rotationMax, params.rotationBase, HSD_Randf());
         } else {
-            rot1 = HSD_Randf();
-            rot1 *= params.rotationBase - (params.rotationMax - params.rotationMin);
+            rot2 = rot1 = RotAdd(params.rotationMin, params.rotationMax, params.rotationBase, HSD_Randf());
         }
-        rot2 = rot1;
         break;
     }
 
@@ -666,8 +684,14 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     }
     switch ((u8)((u16)HSD_Rand() % 3)) {
     case 1:
-        fov2 = Lerp(lowA, highA, HSD_Randf());
-        fov1 = Lerp(lowB, highB, HSD_Randf());
+        r = HSD_Randf();
+        fov2 = lowA;
+        d = highA - fov2;
+        fov2 = d * r + fov2;
+        r = HSD_Randf();
+        fov1 = lowB;
+        d = highB - fov1;
+        fov1 = d * r + fov1;
         if (fov2 < fov1) {
             f32 tmp = fov1;
             fov1 = fov2;
@@ -675,17 +699,22 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         }
         break;
     case 2:
-        fov2 = Lerp(lowA, highA, HSD_Randf());
-        fov1 = Lerp(lowB, highB, HSD_Randf());
+        r = HSD_Randf();
+        fov2 = lowA;
+        d = highA - fov2;
+        fov2 = d * r + fov2;
+        r = HSD_Randf();
+        fov1 = lowB;
+        d = highB - fov1;
+        fov1 = d * r + fov1;
         if (fov2 > fov1) {
             f32 tmp = fov1;
             fov1 = fov2;
-            if (fov2 < tmp) fov2 = tmp;
+            fov2 = tmp;
         }
         break;
     case 0:    default:
-        fov1 = Lerp(lowA, highA, HSD_Randf());
-        fov2 = fov1;
+        fov2 = fov1 = Lerp(lowA, highA, HSD_Randf());
         break;
     }
     dur = HSD_Randf();
@@ -714,6 +743,7 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     cameraGetPosition(&cur);
     cameraGetTargetPos(&t);
     PSVECSubtract(&cur, &t, &cur);
+    cur.y = 0.0f;
     PSVECScale(&cur, &cur, dist2 / dist1);
     cur.y = height;
     PSVECAdd(&cur, &t, &cur);
@@ -912,7 +942,7 @@ static void _battleCameraUpdateWaza(void) {
     int i;
 
     if (wazaSequenceSysIsValidWaza(gActiveWazaSequenceCamera) && gActiveWazaSequenceCamera->resource == 0) {
-        ms = AsModel(gActiveWazaSequenceCamera->target);
+        ms = gActiveWazaSequenceCamera->target->m_kind == 1 ? (ModelSequence*)gActiveWazaSequenceCamera->target : 0;
         {
             f32 frames = 0.5f + GSgfxVideoGetLastRenderTime();
             u16 frameCount = __OSf32tou16(frames);

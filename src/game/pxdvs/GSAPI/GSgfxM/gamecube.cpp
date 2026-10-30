@@ -411,15 +411,15 @@ u8* GSgfx_GCWriteCopyDispDirect(u8* p, CopyReq* req, u32 dest, u8 colorUpd, u8 a
         RAW(pe) = 0;
         RAW(zm) = 0;
         RAW(cm) = 0;
-        cm.blend = 0;
+        cm.id = 0x41;
         pe.pixfmt = _gcGlobalRegState.b2;
         pe.zfmt = _gcGlobalRegState.b3;
+        cm.blend = 0;
+        pe.id = 0x43;
         cm.colorUpd = colorUpd;
         pe.zcomploc = 0;
         cm.alphaUpd = alphaUpd;
-        cm.id = 0x41;
         zm.id = 0x40;
-        pe.id = 0x43;
         if (clear == 1) {
             zm.enable = 1;
             zm.func = 7;
@@ -428,7 +428,8 @@ u8* GSgfx_GCWriteCopyDispDirect(u8* p, CopyReq* req, u32 dest, u8 colorUpd, u8 a
             zm.enable = 0;
             zm.update = 0;
         }
-        WrBP(p, RAW(cm));
+        s32 tmp1 = RAW(cm);
+        WrBP(p, tmp1);
         WrBP(p, RAW(zm));
         WrBP(p, RAW(pe));
     }
@@ -449,18 +450,19 @@ u8* GSgfx_GCWriteCopyDispDirect(u8* p, CopyReq* req, u32 dest, u8 colorUpd, u8 a
     ys.scale = (u32)(256.0f / req->gamma);
     cmd.f14 = 1;
     cmd.clamp = req->clamp;
-    cmd.f7_8 = req->f14;
     size.x = req->width - 1;
+    cmd.f7_8 = req->f14;
     src.x = req->left;
-    size.y = req->height - 1;
     cmd.f12_13 = req->f10;
+    src.y = req->top;
+    size.y = req->height - 1;
     st.stride = req->dstWidth >> 4;
     dst.addr = dest >> 5;
-    src.y = req->top;
     cmd.f11 = req->clear;
     if (ys.scale == 0x100) cmd.f10 = 0; else cmd.f10 = 1;
     WrBP(p, RAW(ys));
-    WrBP(p, RAW(src));
+    s32 tmp1 = RAW(src);
+    WrBP(p, tmp1);
     WrBP(p, RAW(size));
     WrBP(p, RAW(st));
     WrBP(p, RAW(dst));
@@ -1400,9 +1402,9 @@ void GSgfx_GCInvalidateState(void) {
         gsgfxState->texGen[i].norm = 0xFE;
         gsgfxState->texGen[i].post = 0xFEFEFEFE;
     }
-    gsgfxState->c3f8 = 0xFE;
     gsgfxState->sizeW0 = 0;
     for (i = 0; i < 16; i++) gsgfxState->coordScale[i] = 0xFE;
+    gsgfxState->c3f8 = 0xFE;
     gsgfxState->sizeOff0 = 0xFEFEFEFE;
     gsgfxState->sizeW1 = 0;
     gsgfxState->sizeOff1 = 0xFEFEFEFE;
@@ -1426,11 +1428,7 @@ void GSgfx_GCInvalidateState(void) {
     gsgfxState->c454 = 0xFE;
     for (i = 0; i < 4; i++) {
         gsgfxState->chan[i].a = 0xFE;
-        gsgfxState->chan[i].w[0] = 0xFEFEFEFE;
-        gsgfxState->chan[i].w[1] = 0xFEFEFEFE;
-        gsgfxState->chan[i].w[2] = 0xFEFEFEFE;
-        gsgfxState->chan[i].w[3] = 0xFEFEFEFE;
-        gsgfxState->chan[i].w[4] = 0xFEFEFEFE;
+        gsgfxState->chan[i].w[4] = gsgfxState->chan[i].w[3] = gsgfxState->chan[i].w[2] = gsgfxState->chan[i].w[1] = gsgfxState->chan[i].w[0] = 0xFEFEFEFE;
     }
     for (i = 0; i < 2; i++) {
         gsgfxState->amb[i].flag = 1;
@@ -1974,6 +1972,17 @@ static inline void GSgfx_GCWriteFogRangeAdj(u8 en, u16 center) {
     gsgfxState->cC0E = center;
 }
 
+static inline void tsLoopHelper4270() {
+    int i;
+    for (i = 0; i < 4; i++) {
+        gsgfxState->tv.swapTab[i][0] = 0;
+        gsgfxState->tv.swapTab[i][1] = 1;
+        gsgfxState->tv.swapTab[i][2] = 2;
+        gsgfxState->tv.swapTab[i][3] = 3;
+        GSgfx_GCWriteTevSwapModeTable(i, 0, 1, 2, 3);
+    }
+}
+
 void GSgfx_GCReset() {
     GSColor black = {0, 0, 0, 0};
     GSColor white = {0xff, 0xff, 0xff, 0xff};
@@ -2023,8 +2032,7 @@ void GSgfx_GCReset() {
     gsgfxState->c454 = 0;
     GSgfx_GCWriteNumChans(0);
     for (i = 0; i < 4; i++) {
-        gsgfxState->chan[i].w[0] = 0;
-        gsgfxState->chan[i].a = 0;
+        gsgfxState->chan[i].w[0] = gsgfxState->chan[i].a = 0;
         gsgfxState->chan[i].w[1] = 1;
         gsgfxState->chan[i].w[2] = 0;
         gsgfxState->chan[i].w[3] = 0;
@@ -2071,9 +2079,9 @@ void GSgfx_GCReset() {
         gsgfxState->colorOp[i].reg = 0;
         gsgfxState->alphaOp[i].op = 0;
         gsgfxState->alphaOp[i].bias = 0;
+        gsgfxState->colorOp[i].clamp = 1;
         gsgfxState->alphaOp[i].scale = 0;
         GSgfx_GCWriteTevColorOp(i, 0, 0, 0, 1, 0);
-        gsgfxState->colorOp[i].clamp = 1;
         gsgfxState->alphaOp[i].clamp = 1;
         gsgfxState->alphaOp[i].reg = 0;
         GSgfx_GCWriteTevAlphaOp(i, 0, 0, 0, 1, 0);
@@ -2089,15 +2097,9 @@ void GSgfx_GCReset() {
         GSgfx_GCWriteTevKAlphaSel(i, 0x1c);
         gsgfxState->tv.swapSel[i][1] = 0;
         gsgfxState->tv.swapSel[i][0] = 0;
-        GSgfx_GCWriteTevSwapMode(i, 0, 0);
+        GSgfx_GCWriteTevSwapMode((u16)i, 0, 0);
     }
-    for (i = 0; i < 4; i++) {
-        gsgfxState->tv.swapTab[i][0] = 0;
-        gsgfxState->tv.swapTab[i][1] = 1;
-        gsgfxState->tv.swapTab[i][2] = 2;
-        gsgfxState->tv.swapTab[i][3] = 3;
-        GSgfx_GCWriteTevSwapModeTable(i, 0, 1, 2, 3);
-    }
+    tsLoopHelper4270();
     for (i = 0; i < 16; i++) {
         gsgfxState->indStatus[i] = 1;
         SetTevIndirect(i, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -2106,11 +2108,12 @@ void GSgfx_GCReset() {
     gsgfxState->c58c[1] = 0;
     GSgfx_GCWriteNumIndStages(0);
     for (i = 0; i < 4; i++) {
-        gsgfxState->ind.indOrder[i].coord = i;
-        gsgfxState->ind.indOrder[i].map = i;
+        u32 i_c = i;
+        gsgfxState->ind.indOrder[i_c].coord = i;
+        gsgfxState->ind.indOrder[i_c].map = i;
         GSgfx_GCWriteIndTexOrder(i, i, i);
-        gsgfxState->ind.indScale[i][0] = 0;
-        gsgfxState->ind.indScale[i][1] = 0;
+        gsgfxState->ind.indScale[i_c][0] = 0;
+        gsgfxState->ind.indScale[i_c][1] = 0;
         GSgfx_GCWriteIndTexCoordScale(i, 0, 0);
     }
     gsgfxState->ind.blendCache[0] = 0;

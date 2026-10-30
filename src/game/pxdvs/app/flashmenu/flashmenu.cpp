@@ -314,7 +314,7 @@ void FlashMenu::Update() {
             flcalcUnitCxform(d->cxform);
             flcalcUnitMatrix2(d->matrix);
         }
-        for (i = 0, off = 0; i < hdr->numChars; off += 8, i++) {
+        for (i = off = 0; i < hdr->numChars; off += 8, i++) {
             for (int j_loop = 0; j_loop < hdr->numDepth; j_loop++) {
                 st = (SpriteTab*)((u8*)sprites + off);
                 st->depth[j_loop].charId = 0;
@@ -362,8 +362,9 @@ void FlashMenu::Init(void* d, unsigned long arg) {
     }
     depth = (DepthEntry*)GSmemAlloc(((nDepth << 6) + 0x1F) & 0xFFFFFFE0);
     for (j = 0; j < nDepth; j++) {
-        depth[j].names = 0;
-        depth[j].names = (u16*)new u8[depthBytes];
+        u32 j_c = j;
+        depth[j_c].names = 0;
+        depth[j_c].names = (u16*)new u8[depthBytes];
     }
     labels = 0;
     pos = 0x30;
@@ -386,7 +387,8 @@ void FlashMenu::Init(void* d, unsigned long arg) {
     fps = 0.0f;
     for (u32 i_loop = 0; i_loop < hdr->numDepth; i_loop++) {
         for (j = 0; j < hdr->numChars; j++) {
-            depth[i_loop].names[j] = 0;
+            u8 j_c = j;
+            depth[i_loop].names[j_c] = 0;
         }
     }
     while (1) {
@@ -1122,7 +1124,7 @@ void FlashMenu::ParsePlaceObject2Sub(_PLACEOBJECT2* p) {
     if ((fl & 4) != 0) {
         s32 dd = AT(u16, p, 8);
         if (inSprite != 0) {
-            s32 sid = spriteId;
+            sid = spriteId;
             if (spriteFrame <= AT(u16*, depth[curDepth].names, 0)[(u16)sid]) {
                 memcpy(sprites[sid].depth[dd].matrix, (u8*)p + 0xC, 0x18);
             }
@@ -1133,7 +1135,7 @@ void FlashMenu::ParsePlaceObject2Sub(_PLACEOBJECT2* p) {
     if ((fl & 8) != 0) {
         s32 dd = AT(u16, p, 8);
         if (inSprite != 0) {
-            s32 sid = spriteId;
+            sid = spriteId;
             if (spriteFrame <= AT(u16*, depth[curDepth].names, 0)[sid]) {
                 memcpy(sprites[sid].depth[dd].cxform, (u8*)p + 0x24, 0x10);
             }

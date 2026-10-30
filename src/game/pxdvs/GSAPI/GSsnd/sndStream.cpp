@@ -323,7 +323,7 @@ u32 _sndStreamCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
     if (s->mute == 1 || s->pause == 1) {
         sndStreamMixParameterVolume(s->stid, 0, 0, 0);
     } else {
-        sndStreamMixParameterVolume(s->stid, s->vol * (snd_data[s->sndId].vol * 0.0078125f), 0, 0);
+        sndStreamMixParameterVolume(s->stid, s->vol * (snd_data[s->sndId].vol / 128.0f), 0, 0);
     }
     if (s->state != 9) {
         return 0;

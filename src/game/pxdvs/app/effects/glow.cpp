@@ -400,22 +400,20 @@ void glowEffect::_renderOffset(GSgfxLayer* layer) {
         layer->dirty1760 |= 8;
         b = (u8*)layer + (u8)i * 16;
         v = 0xf;
-        if ((u8)i == 0) {
+        if ((u8)i != 0) {
             v = 0;
         }
         *(u32*)(b + 0xf70) = 8;
         *(u32*)(b + 0xf74) = 0xf;
         *(u32*)(b + 0xf78) = 0xf;
+        *(u32*)(b + 0xf7c) = v;
         *(u32*)((u8*)layer + 0x16d4) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x178c) |= bit;
         layer->dirty1760 |= 8;
         v = 7;
-        *(u32*)(b + 0xf7c) = v;
-        switch ((u8)i) {
-        case 0:
-                v = 0;
-            break;
+        if ((u8)i != 0) {
+            v = 0;
         }
         *(u32*)(b + 0x1070) = 7;
         *(u32*)(b + 0x1074) = 5;
@@ -567,19 +565,19 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
         layer->dirty1760 |= 8;
         b = (u8*)layer + (u8)i * 16;
         v = 0xf;
-        if ((u8)i == 0) {
+        if ((u8)i != 0) {
             v = 0;
         }
         *(u32*)(b + 0xf70) = 8;
         *(u32*)(b + 0xf74) = 0xf;
-        v = 7;
         *(u32*)(b + 0xf78) = 0xf;
         *(u32*)(b + 0xf7c) = v;
         *(u32*)((u8*)layer + 0x16d4) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x178c) |= bit;
         layer->dirty1760 |= 8;
-        if ((u8)i == 0) {
+        v = 7;
+        if ((u8)i != 0) {
             v = 0;
         }
         *(u32*)(b + 0x1070) = 7;

@@ -267,10 +267,10 @@ extern "C" void GSgfxRender(void) {
         list->fifo = GSgfxGPUGetImmediateFifo();
         list->start = _renderPrepareFrameStart;
         list->end = _renderPrepareFrameEnd;
-        list++;
-        gsgfxState->fifoList = list;
-        list->fifo = 0;
         list->color = 0x808080;
+        list++;
+        list->fifo = 0;
+        gsgfxState->fifoList = list;
         GSgfxLayerBuildRenderList();
         GSgfxPerfbarGPUStart();
         gsgfxState->fifoList = &_renderFifoList[0];

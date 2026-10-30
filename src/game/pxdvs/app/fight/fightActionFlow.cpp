@@ -1314,7 +1314,7 @@ loop_42:
                     }
                 }
             }
-            if ((fightFloorIsNowEncountHostEnemyPokemonKime((FIGHT_FLOOR*)(NULL)) == 1) && (fightTargetIsHostSide((void*)(temp_r3_2), (u16) fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 0)) {
+            if ((fightFloorIsNowEncountHostEnemyPokemonKime((FIGHT_FLOOR*)(NULL)) == 1) && (fightTargetIsHostSide((void*)(temp_r3_2), (u8)fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 0)) {
                 u8 cmpv = fightFloor_GetFightKind((FIGHT_FLOOR*)(NULL));
                 if (cmpv == 0xC) {
                     var_r22 = (enum TsE)(0x4FF6);
@@ -1430,7 +1430,7 @@ loop_67:
             if ((fightFloor_GetFightKindHostEnemyMsgFlag((FIGHT_FLOOR*)(NULL)) == 1) && (var_r28 == 0x5F)) {
                 WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *) temp_r31), var_r28, 4U)));
             }
-            if ((fightFloorIsNowEncountHostEnemyPokemonKime((FIGHT_FLOOR*)(NULL)) == 1) && (fightTargetIsHostSide((void*)(temp_r3_2), (u16) fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 0)) {
+            if ((fightFloorIsNowEncountHostEnemyPokemonKime((FIGHT_FLOOR*)(NULL)) == 1) && (fightTargetIsHostSide((void*)(temp_r3_2), (u8)fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 0)) {
                 var_r20_2 = 0;
                 while (var_r20_2 < 2U) {
                     WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(var_r25), 0x9FU, 4U)));
@@ -1568,8 +1568,8 @@ s32 fightActionFlowKaisiNyuujouPokemon(FightAction* action) {
     u16 var_r17_2;
     s32 saved_reg_r26;
     u16 var_r17_5;
-    s32 saved_reg_r23;
-    s32 var_r18;
+    u16 saved_reg_r23;
+    u16 var_r18;
     FIGHT_TRAINER *temp_r3_5;
     s32 var_r19;
     u16 var_r19_2;
@@ -1640,7 +1640,7 @@ loop_17:
         }
         var_r21 += 1;
     }
-    if ((fightFloorIsNowEncountHostEnemyPokemonKime((FIGHT_FLOOR*)(NULL)) == 1) && (fightTargetIsHostSide((void*)(var_r23), (u16) fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 0)) {
+    if ((fightFloorIsNowEncountHostEnemyPokemonKime((FIGHT_FLOOR*)(NULL)) == 1) && (fightTargetIsHostSide((void*)(var_r23), (u8)fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 0)) {
         var_r17 = 0;
         while (var_r17 < temp_r28) {
             var_r18 = 0;
@@ -1674,7 +1674,7 @@ loop_17:
                     var_r18_2 += 1;
                 }
             }
-            var_r17_2 = var_r17_2 + 1;
+            var_r17_2 += 1;
         }
     } else {
         var_r17_3 = 0;
@@ -1934,7 +1934,7 @@ loop_33:
                         if ((pokemonCheckFightOut((Pokemon*)(temp_r3_3)) != 0) && (fightTrainerCheckTemotiPokemonFightEntry((FIGHT_TRAINER *)((FightTrainer*)(temp_r31)), (Pokemon *)((Pokemon*)(temp_r3_3))) == NULL)) {
                             if ((fightFloorIsNowEncountVirtualBattle((FIGHT_FLOOR*)(NULL)) == 1) || (fightFloorIsNowEncountOpeningVirtualBattle((FIGHT_FLOOR*)(NULL)) == 1)) {
                                 temp_r17_3 = fightEncountDataBiosGetDiskId((FightEncountData*)(fightEncountDataBiosGetPtr(fightGetFightEncountDataId())));
-                                if (fightTargetIsHostSide((void*)(temp_r31), (u16) fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 1) {
+                                if (fightTargetIsHostSide((void*)(temp_r31), (u8)fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 1) {
                                     var_r4 = deckDataVirtualDB_GetAllyJoutai(temp_r17_3, var_r22);
                                 } else {
                                     var_r4 = deckDataVirtualDB_GetEnemyJoutai(temp_r17_3, var_r22);
@@ -1960,7 +1960,7 @@ loop_51:
                         if ((pokemonCheckValid((Pokemon*)(temp_r3_4)) != 0) && (fightTrainerCheckTemotiPokemonFightEntry((FIGHT_TRAINER *)((FightTrainer*)(temp_r31)), (Pokemon *)((Pokemon*)(temp_r3_4))) == NULL)) {
                             if ((fightFloorIsNowEncountVirtualBattle((FIGHT_FLOOR*)(NULL)) == 1) || (fightFloorIsNowEncountOpeningVirtualBattle((FIGHT_FLOOR*)(NULL)) == 1)) {
                                 temp_r17_5 = fightEncountDataBiosGetDiskId((FightEncountData*)(fightEncountDataBiosGetPtr(fightGetFightEncountDataId())));
-                                if (fightTargetIsHostSide((void*)(temp_r31), (u16) fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 1) {
+                                if (fightTargetIsHostSide((void*)(temp_r31), (u8)fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 1) {
                                     var_r4_2 = deckDataVirtualDB_GetAllyJoutai((u8)temp_r17_5, var_r23);
                                 } else {
                                     var_r4_2 = deckDataVirtualDB_GetEnemyJoutai(temp_r17_5, var_r23);

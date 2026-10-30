@@ -1360,12 +1360,16 @@ void ModelSequence::UpdateLookAt() {
     }
 }
 
+static inline GSpart* _getAttachPart(_GSmodel* model, u16 joint) {
+    return GSmodelGetPart(model, joint);
+}
+
 void ModelSequence::Update(f32 dt) {
     if (m_unk64 != 0 && m_unk62 != 0) {
         void* camera = m_camera ? m_camera : GScameraGetActiveCamera();
         GSpart* part;
         if (camera != 0) {
-            part = GSmodelGetPart(m_unk64, m_unk62);
+            part = _getAttachPart(m_unk64, m_unk62);
             if (part != 0) {
                 GSvec rot;
                 GSvec pos;

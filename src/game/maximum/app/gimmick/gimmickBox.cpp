@@ -340,6 +340,8 @@ static u8 _gimmickBoxTranslateKenToBoxPushPosition() {
 
 static u8 _gimmickBoxRoatateKenToBoxPushRotationReady() {
     switch (pd.direction) {
+    case 0:
+        break;
     case 3:
     case 4:
         if (pd.kenPos.x < (pd.boxPos.x - 0.5f)) {
@@ -358,8 +360,8 @@ static u8 _gimmickBoxRoatateKenToBoxPushRotationReady() {
         } else if (pd.kenPos.z > (0.5f + pd.boxPos.z)) {
             _gimmickBoxRotateToAngle(3.1415927f, 0.1f);
         } else {
-            pd.walkFrame = GSmodelGetAnimFrame(0);
             peopleBiosGetModelPtr(pd.ken);
+            pd.walkFrame = GSmodelGetAnimFrame(0);
         }
         break;
     }

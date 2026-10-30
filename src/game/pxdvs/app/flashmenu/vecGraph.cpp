@@ -362,7 +362,7 @@ static void SBdec(u32 p0, s16 p1, u32 p2) {
                     *var_r10 = temp_r6_2 + 1;
                     *(var_r10 + ((temp_r6_2 * 2) + 2)) = temp_r12 + 1;
                 }
-                var_r9 += 4;
+                var_r9 += 1;
                 var_r10 += 0x14A8;
                 var_ctr -= 1;
             } while (var_ctr != 0);
@@ -385,7 +385,7 @@ static void SBdec(u32 p0, s16 p1, u32 p2) {
                     *var_r10_2 = temp_r6_4 + 1;
                     *(var_r10_2 + ((temp_r6_4 * 2) + 2)) = temp_r0 + 3;
                 }
-                var_r9_2 += 4;
+                var_r9_2 += 1;
                 var_r10_2 += 0x14A8;
                 var_ctr_2 -= 1;
             } while (var_ctr_2 != 0);
@@ -408,7 +408,7 @@ static void SBdec(u32 p0, s16 p1, u32 p2) {
                     *var_r10_3 = temp_r6_6 + 1;
                     *(var_r10_3 + ((temp_r6_6 * 2) + 2)) = temp_r0_2 + 5;
                 }
-                var_r9_3 += 4;
+                var_r9_3 += 1;
                 var_r10_3 += 0x14A8;
                 var_ctr_3 -= 1;
             } while (var_ctr_3 != 0);
@@ -431,7 +431,7 @@ static void SBdec(u32 p0, s16 p1, u32 p2) {
                     *var_r8 = temp_r4_2 + 1;
                     *(var_r8 + ((temp_r4_2 * 2) + 2)) = temp_r0_3 + 7;
                 }
-                var_r7 += 4;
+                var_r7 += 1;
                 var_r8 += 0x14A8;
                 var_ctr_4 -= 1;
             } while (var_ctr_4 != 0);
@@ -772,11 +772,11 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
                     *var_r6 = temp_r7;
                     *var_r5 = temp_r0_4;
                 }
-                var_r5 += 2;
+                var_r5 += 1;
                 var_ctr_2 -= 1;
             } while (var_ctr_2 != 0);
         }
-        var_r6 += 2;
+        var_r6 += 1;
         var_r8 += 1;
     }
     var_r4_2 = sp20;
@@ -851,7 +851,7 @@ loop_40:
         }
         memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp28), 4U);
         M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
-        var_r23 += 2;
+        var_r23 += 1;
         var_r20 += 1;
         *lList += 1;
         M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
@@ -1104,7 +1104,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
                         if ((gVecDat.styles[si << 7] & 0x40) != 0) {
                             switch ((sd->flags & 1)) {
                             case 0:
-                                    y = 0;
+                                    int y = 0;
                                     x = 0;
                                 break;
                             }

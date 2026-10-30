@@ -21,7 +21,7 @@ extern "C" {
 extern "C" {
 void flcalcBezier3(void *p0, void *p1, f32 p2);
 s32 flcalcBlend(s32 p0, s32 p1, f32 p2);
-s32 flcalcBlendColor(u8 p0, u8 p1, f32 p2);
+s32 flcalcBlendColor(u32 from, u32 to, f32 t);
 void flcalcConvFlashMatrix(void *p0, void *p1);
 void flcalcCreateCxform(void *p0, u32 color);
 void flcalcMatrix(void *p0, void *p1, void *p2);
@@ -30,11 +30,19 @@ void flcalcMatrixScale(void *p0, void *p1, void *p2);
 void flcalcMatrixTranslate(void *p0, void *p1, void *p2);
 void flcalcMulCxform(void *p0, void *p1, void *p2);
 void flcalcMulMatrixf(void *p0, void *p1, void *p2);
-s32 flcalcMultiTransformColor(void *p0, u8 p1);
+s32 flcalcMultiTransformColor(void* ct, u32 color);
 void flcalcUnitCxform(void *p0);
 void flcalcUnitMatrix(void *p0);
 void flcalcUnitMatrix2(void *p0);
 }
+
+struct FlMatrix {
+    f32 a, b, c, d;
+    f32 tx, ty;
+};
+struct FlPoint {
+    f32 x, y;
+};
 
 void flcalcBezier3(void *p0, void *p1, f32 p2) {
     f32 temp_f5;
@@ -50,28 +58,35 @@ void flcalcBezier3(void *p0, void *p1, f32 p2) {
 }
 
 extern "C" {
-void flcalcConvFlashMatrix(void *p0, void *p1) {
-    M2C_FIELD(p0, f32 *, 4) = (f32) ((f32) M2C_FIELD((u8)p1, s32 *, 4) / 65536.0f);
-    M2C_FIELD(p0, f32 *, 8) = (f32) ((f32) M2C_FIELD(p1, s32 *, 8) / 65536.0f);
-    M2C_FIELD((u16)p0, f32 *, 0) = (f32) ((f32) M2C_FIELD((u16)p1, s32 *, 0) / 65536.0f);
-    M2C_FIELD(p0, f32 *, 0x10) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0x10) / 20.0f);
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0xC) / 65536.0f);
-    M2C_FIELD(p0, f32 *, 0x14) = (f32) ((f32) M2C_FIELD(p1, s32 *, 0x14) / 20.0f);
+void flcalcConvFlashMatrix(void* dst, void* src) {
+    FlMatrix* out = (FlMatrix*)dst;
+    s32* in = (s32*)src;
+    f32 a = in[0] / 65536.0f;
+    f32 b = in[1] / 65536.0f;
+    f32 c = in[2] / 65536.0f;
+    f32 d = in[3] / 65536.0f;
+    f32 tx = in[4] / 20.0f;
+    f32 ty = in[5] / 20.0f;
+    out->a = a;
+    out->b = b;
+    out->c = c;
+    out->d = d;
+    out->tx = tx;
+    out->ty = ty;
 }
 }
 
 extern "C" {
-s32 flcalcBlendColor(u8 p0, u8 p1, f32 p2) {
-    volatile f32 temp_f28;
-    volatile f32 temp_f29;
-    f32 temp_f30;
-    f32 temp_f3;
-
-    temp_f3 = (f32) (p0 >> 0x18U);
-    temp_f29 = (f32) (u8) (p0 >> 0x10U);
-    temp_f30 = (f32) p0;
-    temp_f28 = (f32) (u8) (p0 >> 8U);
-    return ((u32) ((p2 * ((f32) (u8) (p1 >> 8U) - temp_f28)) + temp_f28) << 8) | (((u32) ((p2 * ((f32) (u8) (p1 >> 0x10U) - temp_f29)) + temp_f29) << 0x10) | ((u32) ((p2 * ((f32) p1 - temp_f30)) + temp_f30) | ((u32) ((p2 * ((f32) (p1 >> 0x18U) - temp_f3)) + temp_f3) << 0x18)));
+s32 flcalcBlendColor(u32 from, u32 to, f32 t) {
+    f32 a = from & 0xFF;
+    f32 r = from >> 24;
+    f32 g = (from >> 16) & 0xFF;
+    f32 b = (from >> 8) & 0xFF;
+    u32 rr = t * ((f32)(to >> 24) - r) + r;
+    u32 ra = t * ((f32)(to & 0xFF) - a) + a;
+    u32 rg = t * ((f32)((to >> 16) & 0xFF) - g) + g;
+    u32 rb = t * ((f32)((to >> 8) & 0xFF) - b) + b;
+    return ra | (rr << 24) | (rg << 16) | (rb << 8);
 }
 }
 
@@ -107,28 +122,17 @@ void flcalcCreateCxform(void* p0, u32 color) {
 }
 
 extern "C" {
-s32 flcalcMultiTransformColor(void *p0, u8 p1) {
-    u32 var_r4;
-    u32 var_r5;
-    u32 var_r6;
-    u32 var_r7;
-
-    var_r5 = ((u32) ((p1 >> 0x18U) * M2C_FIELD(p0, s16 *, 4)) >> 8U);
-    var_r5 += M2C_FIELD((u8)p0, s16 *, 6);
-    var_r5 = var_r5 < 0xFFU ? var_r5 : 0xFF;
-    var_r6 = ((u32) ((u8) (p1 >> 0x10U) * M2C_FIELD((u16)p0, s16 *, 8)) >> 8U);
-    var_r6 += M2C_FIELD((u16)p0, s16 *, 0xA);
-    var_r6 = var_r6 < 0xFFU ? var_r6 : 0xFF;
-    var_r4 = ((u32) ((u8) (p1 >> 8U) * M2C_FIELD(p0, s16 *, 0xC)) >> 8U);
-    var_r4 += M2C_FIELD(p0, s16 *, 0xE);
-    var_r4 = var_r4 < 0xFFU ? var_r4 : 0xFF;
-    var_r7 = M2C_FIELD(p0, s16 *, 2) + ((u32) (p1 * M2C_FIELD(p0, s16 *, 0)) >> 8U);
-    if (var_r7 < 0xFFU) {
-
-    } else {
-        var_r7 = 0xFF;
-    }
-    return (var_r4 << 8) | ((var_r6 << 0x10) | (var_r7 | (var_r5 << 0x18)));
+#define FLCALC_CLAMP(x) ((x) < 0xFF ? (x) : 0xFF)
+s32 flcalcMultiTransformColor(void* ct, u32 color) {
+    u32 cr = color >> 24;
+    u32 cg = (color >> 16) & 0xFF;
+    u32 cb = (color >> 8) & 0xFF;
+    u32 ca = color & 0xFF;
+    u32 r = FLCALC_CLAMP(((cr * M2C_FIELD(ct, s16 *, 4)) >> 8) + M2C_FIELD(ct, s16 *, 6));
+    u32 g = FLCALC_CLAMP(((cg * M2C_FIELD(ct, s16 *, 8)) >> 8) + M2C_FIELD(ct, s16 *, 0xA));
+    u32 b = FLCALC_CLAMP(((cb * M2C_FIELD(ct, s16 *, 0xC)) >> 8) + M2C_FIELD(ct, s16 *, 0xE));
+    u32 a = FLCALC_CLAMP(((ca * M2C_FIELD(ct, s16 *, 0)) >> 8) + M2C_FIELD(ct, s16 *, 2));
+    return a | (r << 24) | (g << 16) | (b << 8);
 }
 }
 
@@ -203,61 +207,47 @@ void flcalcMatrixCopy(void *p0, void *p1) {
 }
 
 extern "C" {
-void flcalcMatrixTranslate(void *p0, void *p1, void *p2) {
-    f32 kc59 = 1.0f;
-    f32 kc80 = 0.0f;
-    M2C_FIELD(p0, f32 *, 0) = (f32) ((M2C_FIELD(p1, f32 *, 0) * kc59) + (M2C_FIELD(p1, f32 *, 4) * kc80));
-    f32 kc208 = 0.0f;
-    f32 kc230 = 1.0f;
-    M2C_FIELD(p0, f32 *, 4) = (f32) ((M2C_FIELD(p1, f32 *, 0) * kc208) + (M2C_FIELD(p1, f32 *, 4) * kc230));
-    f32 kc361 = 1.0f;
-    f32 kc383 = 0.0f;
-    M2C_FIELD(p0, f32 *, 8) = (f32) ((M2C_FIELD(p1, f32 *, 8) * kc361) + (M2C_FIELD(p1, f32 *, 0xC) * kc383));
-    f32 kc516 = 0.0f;
-    f32 kc538 = 1.0f;
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((M2C_FIELD(p1, f32 *, 8) * kc516) + (M2C_FIELD(p1, f32 *, 0xC) * kc538));
-    f32 kc673 = 1.0f;
-    f32 kc695 = 0.0f;
-    M2C_FIELD(p0, f32 *, 0x10) = (f32) (M2C_FIELD(p2, f32 *, 0) + ((M2C_FIELD(p1, f32 *, 0x10) * kc673) + (M2C_FIELD(p1, f32 *, 0x14) * kc695)));
-    f32 kc863 = 0.0f;
-    f32 kc885 = 1.0f;
-    M2C_FIELD(p0, f32 *, 0x14) = (f32) (M2C_FIELD(p2, f32 *, 4) + ((M2C_FIELD(p1, f32 *, 0x10) * kc863) + (M2C_FIELD(p1, f32 *, 0x14) * kc885)));
+static inline void flcalcMulMatrixElems(FlMatrix* out, const FlMatrix* in, f32 a, f32 b, f32 c, f32 d, f32 tx, f32 ty) {
+    out->a = in->a * a + in->b * c;
+    out->b = in->a * b + in->b * d;
+    out->c = in->c * a + in->d * c;
+    out->d = in->c * b + in->d * d;
+    out->tx = tx + (in->tx * a + in->ty * c);
+    out->ty = ty + (in->tx * b + in->ty * d);
+}
+
+void flcalcMatrixTranslate(void* out, void* in, void* pos) {
+    f32 x = ((FlPoint*)pos)->x;
+    f32 y = ((FlPoint*)pos)->y;
+    flcalcMulMatrixElems((FlMatrix*)out, (FlMatrix*)in, 1.0f, 0.0f, 0.0f, 1.0f, x, y);
 }
 }
 
 extern "C" {
-void flcalcMatrixScale(void *p0, void *p1, void *p2) {
+static inline void flcalcMulMatrix2x2(FlMatrix* out, const FlMatrix* in, f32 a, f32 b, f32 c, f32 d) {
+    out->a = in->a * a + in->b * c;
+    out->b = in->a * b + in->b * d;
+    out->c = in->c * a + in->d * c;
+    out->d = in->c * b + in->d * d;
+    out->tx = in->tx;
+    out->ty = in->ty;
+}
 
-    f32 kc56 = 0.0f;
-    M2C_FIELD(p0, f32 *, 0) = (f32) ((M2C_FIELD(p1, f32 *, 0) * (M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 4) * kc56));
-    M2C_FIELD(p0, f32 *, 4) = (f32) ((M2C_FIELD(p1, f32 *, 0) * (f32)(0.0f)) + (M2C_FIELD(p1, f32 *, 4) * (M2C_FIELD(p2, f32 *, 4))));
-    f32 kc356 = 0.0f;
-    M2C_FIELD(p0, f32 *, 8) = (f32) ((M2C_FIELD(p1, f32 *, 8) * (M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 0xC) * kc356));
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((M2C_FIELD(p1, f32 *, 8) * (f32)(0.0f)) + (M2C_FIELD(p1, f32 *, 0xC) * (M2C_FIELD(p2, f32 *, 4))));
-    M2C_FIELD(p0, f32 *, 0x10) = (f32) M2C_FIELD(p1, f32 *, 0x10);
-    M2C_FIELD(p0, f32 *, 0x14) = (f32) M2C_FIELD(p1, f32 *, 0x14);
+void flcalcMatrixScale(void* out, void* in, void* scale) {
+    f32 x = ((FlPoint*)scale)->x;
+    f32 y = ((FlPoint*)scale)->y;
+    flcalcMulMatrix2x2((FlMatrix*)out, (FlMatrix*)in, x, 0.0f, 0.0f, y);
 }
 }
 
 extern "C" {
-struct FlMatrix {
-    f32 a, b, c, d;
-    f32 tx, ty;
-};
-struct FlPoint {
-    f32 x, y;
-};
 
 void flcalcMatrix(void* p0, void* p1, void* p2) {
     FlPoint* out = (FlPoint*)p0;
     FlMatrix* m = (FlMatrix*)p1;
     FlPoint p = *(FlPoint*)p2;
-    f32 x = p.y;
-    x *= m->c;
-    x += m->a * p.x;
-    f32 y = p.y;
-    y *= m->d;
-    y += m->b * p.x;
+    f32 x = m->a * p.x + m->c * p.y;
+    f32 y = m->b * p.x + m->d * p.y;
     out->x = x + m->tx;
     out->y = y + m->ty;
 }

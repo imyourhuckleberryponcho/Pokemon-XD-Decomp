@@ -187,9 +187,14 @@ static inline void setPokemon(u16 place, s32 id) {
 
 extern "C" {
 
+static inline u32 createFit(Pokemon* pokemon, u16 id, u32 hero) {
+    pokemonCreate(pokemon, id, 10, gamedataGetStatus(0, 1));
+    pokemonBiosSetCatchTrainerRnd(pokemon, hero);
+    return pokemonCreateRndFit(pokemon, -1, -1, 0, hero);
+}
+
 void esabaSetPokemon(u16 place, u16 id) {
     Pokemon pokemon;
-    u32 hero;
     u32 rnd;
 
     if (id == 0) {
@@ -201,10 +206,7 @@ void esabaSetPokemon(u16 place, u16 id) {
         switch (id) {
         case 0x19D:
         case 0x19E:
-            hero = heroGetStatus(0, 2, 0);
-            pokemonCreate(&pokemon, id, 10, gamedataGetStatus(0, 1));
-            pokemonBiosSetCatchTrainerRnd(&pokemon, hero);
-            rnd = pokemonCreateRndFit(&pokemon, -1, -1, 0, hero);
+            rnd = createFit(&pokemon, id, heroGetStatus(0, 2, 0));
             GSflagSet(esabadata[place].flagRnd, rnd);
             break;
         default:
@@ -240,7 +242,8 @@ s32 esabaGet(s32 place) {
 
     if (menuPanelInputNumber(0, &num, 0, num, 1)) {
         left = -num;
-        left = GSflagGet(esabadata[place].flagNum) + left;
+        u32 n = GSflagGet(esabadata[place].flagNum);
+        left = n + left;
         GSflagSet(esabadata[place].flagNum, left);
         if (left == 0) {
             GSflagSet(esabadata[place].flag4, 0);
@@ -258,7 +261,8 @@ s32 esabaPut(s32 place) {
 
     if (menuPanelInputNumber(0, &num, 0, 10 - num, 1)) {
         total = (s16)num;
-        total = GSflagGet(esabadata[place].flagNum) + total;
+        s16 n = GSflagGet(esabadata[place].flagNum);
+        total = n + total;
         GSflagSet(esabadata[place].flagNum, total);
         if (total == 0) {
             GSflagSet(esabadata[place].flag4, 0);
@@ -536,7 +540,8 @@ static void _esabaAppearPokemonSub2(u16 place) {
 }
 
 static void _esabaAppearPokemonSub(u16 place) {
-    u16 count = getMax((u16)place);
+    u16 place_c = (u16)place;
+    u16 count = getMax(place_c);
     u16 roll = (u16)HSD_Rand() % 100;
     u16 total = 0;
     u16 probA = esabapokemondata_EX[0].prob;
@@ -550,10 +555,12 @@ static void _esabaAppearPokemonSub(u16 place) {
         probB = 0;
     }
     roll = (u16)HSD_Rand() % 100;
-    if (roll < probA) {
-        setPokemon(place, esabapokemondata_EX[0].id);
+    if ((u32)roll < probA) {
+        s32 rf_t = esabapokemondata_EX[0].id;
+        setPokemon(place_c, rf_t);
     } else if (roll < (u16)(probA ? probA + probB : probB)) {
-        setPokemon(place, esabapokemondata_EX[1].id);
+        s32 rf_t = esabapokemondata_EX[1].id;
+        setPokemon(place_c, rf_t);
     } else {
         roll = (u16)HSD_Rand() % 100;
         for (k = 0; k < count; k++) {

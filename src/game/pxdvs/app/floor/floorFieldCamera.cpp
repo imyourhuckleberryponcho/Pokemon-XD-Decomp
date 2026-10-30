@@ -667,13 +667,9 @@ static void _floorFieldCameraDetectMode() {
     FieldCamera* cam = gFieldCameraList;
     g_updateMode = 0;
     for (u32 i = 0; i < gNumFieldCameras; i++, cam++) {
-        if (cam->radius <= 0.001f) {
+        if (cam->radius <= 0.001f || cam->blendTime < 0.0f) {
             return;
         }
-        if (cam->blendTime >= 0.0f) {
-            continue;
-        }
-        return;
     }
     g_updateMode = 1;
 }
@@ -789,10 +785,10 @@ inline f32 GSvec2Length(const GSvec2* v) { return std::sqrtf(v->x * v->x + v->z 
 inline void GSvec2Rot(GSvec2* r, const GSvec2* v, f32 angle) {
     f32 c = std::cosf(angle);
     f32 s = std::sinf(angle);
-    f32 z = v->z;
-    f32 x = v->x;
-    r->x = x * c + z * s;
-    r->z = -x * s + z * c;
+    f32 rx = v->x * c + v->z * s;
+    f32 rz = -v->x * s + v->z * c;
+    r->x = rx;
+    r->z = rz;
 }
 #pragma scheduling off
 inline void GSvec2Sub(GSvec2* r, const GSvec2* a, const GSvec2* b) {

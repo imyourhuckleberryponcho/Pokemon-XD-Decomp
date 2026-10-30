@@ -238,11 +238,14 @@ void* tableResBiosGetResPtr(u32 index);
 f32 timeGetLastFrameSec(void);
 extern s32 floordata;
 extern s32* floordata_number;
-extern s32 msgctrlcode;
+extern s32 msgctrlcode[];
 struct XdBlob94 { u8 data[0x94]; };
 extern XdBlob94 systemVars;
 f32 __cvt_ull_flt(s32, s32);
-extern s32 _clearAddress;
+static const u32 _clearAddress[32] = {
+    0x17EB, 0x2FEA, 0x183, 0x1EA, 0x283, 0x2EA, 0x383, 0x3EA, 0x483, 0x4EA, 0x583, 0x5EA, 0x683, 0x6EA, 0x783, 0x7EA,
+    0x883, 0x8EA, 0x983, 0xBEA, 0xC83, 0xCEA, 0xD83, 0xEEA, 0xF83, 0x12EA, 0x1383, 0x13EA, 0x1483, 0x16EA, 0x1783, 0x17EA,
+};
 extern s32 init;
 }
 extern "C++" {
@@ -259,7 +262,7 @@ static void _pokecoloShutdown();
 static void _setSystemVars();
 }
 static s32 _AntiActionReplayTimer;
-static s32 _frameTime;
+static u64 _frameTime;
 static f32 _resettimer;
 s32 pokecoloFrameCounter;
 s32 pokecoloGappAntiActionReplayHandle;
@@ -274,15 +277,15 @@ extern "C" {
 void mainAntiActionReplay();
 void pokecoloMain(int argc, char** argv);
 }
-static s32 common_fnt_S2162;
-static s32 common_tbl_S2164;
-static s32 debug_menu_fnt_S2163;
-static s32 resident_fnt_S2161;
+extern s32 common_fnt_S2162[];
+extern s32 common_tbl_S2164[];
+extern s32 debug_menu_fnt_S2163[];
+extern s32 resident_fnt_S2161[];
 static s32 system_error_fnt_S2165;
-static s32 system_error_tbl_S2166;
+extern s32 system_error_tbl_S2166[];
 
 extern "C" {
-extern s32 lbl_8038FBE0;
+extern s32 lbl_8038FBE0[];
 u64 __div2u(s32, s32, s32, s32);
 }
 
@@ -385,7 +388,7 @@ u32 pokecoloGetRomVersion(void) {
 }
 extern "C" {
 f32 pokecoloGetFrameTime() {
-    return (__cvt_ull_flt(M2C_FIELD(&_frameTime, s32 *, 0), M2C_FIELD(&_frameTime, s32 *, 4)) / 1000.0f) / 1000.0f;
+    return (f32)_frameTime / 1000.0f / 1000.0f;
 }
 }
 
@@ -418,18 +421,10 @@ void pokecoloCheckDiskTray() {
 #pragma pop
 extern "C" {
 #pragma push
-#pragma optimize_for_size on
-void pokecoloMain(int p0, char** p1) {
-    volatile s32 var_r0;
-    s32 var_r28_2;
-    u32 temp_r6;
-    u32 var_r28_3;
-    u64 temp_ret;
-    u64 temp_ret_2;
-    u64 temp_ret_3;
-    u64 temp_ret_4;
-    u64 var_r29;
-    u8 var_r28;
+void pokecoloMain(int argc, char** argv) {
+    u64 start;
+    u8 progressive;
+    s32 i;
 
     GSgfxRelocToScratch();
     pokecoloFrameCounter = 0;
@@ -446,22 +441,17 @@ void pokecoloMain(int p0, char** p1) {
     }
     GSthreadInit(0x14);
     fn_8005C068(2);
-    var_r28 = 0;
+    progressive = 0;
     if (_pokecoloCheckExDisc() == 1) {
-        if (OSGetProgressiveMode() == 1U) {
-            var_r28 = 1;
+        if (OSGetProgressiveMode() == 1) {
+            progressive = 1;
         }
-    } else if (OSGetProgressiveMode() == 1U) {
-        if ((u32) (OSGetResetCode() & 0x80000000) != 0) {
-            var_r0 = 1;
-        } else {
-            var_r0 = 0;
-        }
-        if (var_r0 == 1) {
-            var_r28 = 1;
+    } else if (OSGetProgressiveMode() == 1) {
+        if (((OSGetResetCode() & 0x80000000) ? 1 : 0) == 1) {
+            progressive = 1;
         }
     }
-    if (var_r28 != 0) {
+    if (progressive != 0) {
         GSgfxVideoSetMode(0, 1, 0, 0, 1);
     }
     pauseInit();
@@ -474,28 +464,26 @@ void pokecoloMain(int p0, char** p1) {
     shapeInit(0x20);
     GSparticleInit(0x20);
     GSinputInit();
-    var_r28_2 = 1;
-    do {
-        GSinputOpen(var_r28_2);
-        GSinputSetClamping(var_r28_2, 2);
-        GSinputSetSmoothingRate(var_r28_2, 7);
-        GSinputSetSmoothingFunc(var_r28_2, 1);
-        var_r28_2 += 1;
-    } while (var_r28_2 <= 4);
+    for (i = 1; i <= 4; i++) {
+        GSinputOpen(i);
+        GSinputSetClamping(i, 2);
+        GSinputSetSmoothingRate(i, 7);
+        GSinputSetSmoothingFunc(i, 1);
+    }
     GSgappInit(0x14, 4);
     GSresInit(0x15E);
     GSfloorInit(4, 0x10, 0x10, 0x10);
     GScolsys2Init();
     GSmsgInit(2, 5);
-    GSmsgSetCtrlFunc(&msgctrlcode);
+    GSmsgSetCtrlFunc(msgctrlcode);
     GSnetworkInit();
-    GSmsgFontOpen(&resident_fnt_S2161);
-    GSmsgFontOpen(&common_fnt_S2162);
-    GSmsgOpen(&common_tbl_S2164);
+    GSmsgFontOpen(resident_fnt_S2161);
+    GSmsgFontOpen(common_fnt_S2162);
+    GSmsgOpen(common_tbl_S2164);
     GSmsgFontOpen(&system_error_fnt_S2165);
-    GSmsgOpen(&system_error_tbl_S2166);
-    GSmsgFontOpen(&debug_menu_fnt_S2163);
-    GSmsgOpen(&lbl_8038FBE0);
+    GSmsgOpen(system_error_tbl_S2166);
+    GSmsgFontOpen(debug_menu_fnt_S2163);
+    GSmsgOpen(lbl_8038FBE0);
     GSdvdSetErrorMsg(0x65, 0x66, 0x67, 0x68, 0x69);
     GSvtrInit();
     GSlensFlareInit();
@@ -510,13 +498,13 @@ void pokecoloMain(int p0, char** p1) {
     pokecoloGappGBAReadHandle = GSgappCreate(1, 1, 0, (GSgappFunc)(_mainGBARead));
     GSgappSetName(pokecoloGappGBAReadHandle, "GBARead");
     pokecoloGappThreadHandle = GSgappCreate(1, 0xA, 0, (GSgappFunc)(_mainThreadExec));
-    GSgappSetName(pokecoloGappThreadHandle, (const char*)(&_clearAddress + 0x80));
+    GSgappSetName(pokecoloGappThreadHandle, "mainThread");
     GSgappSetPauseLevel(pokecoloGappThreadHandle, 1);
     GSvtrRegisterGSgapp(pokecoloGappThreadHandle);
     pokecoloGappAntiActionReplayHandle = GSgappCreate(1, 0xFD, 0, (GSgappFunc)(mainAntiActionReplay));
-    GSgappSetName(pokecoloGappAntiActionReplayHandle, (const char*)(&_clearAddress + 0x8C));
+    GSgappSetName(pokecoloGappAntiActionReplayHandle, "AntiActionReplay");
     pokecoloGappMainDeamonHandle = GSgappCreate(1, 0xFE, 0, (GSgappFunc)(_mainDaemon));
-    GSgappSetName(pokecoloGappMainDeamonHandle, (const char*)(&_clearAddress + 0xA0));
+    GSgappSetName(pokecoloGappMainDeamonHandle, "mainDeamon");
     GSgfxResetEnable();
     GSgfxResetSetShutdownCallback(_pokecoloShutdown);
     fadeInit();
@@ -524,22 +512,15 @@ void pokecoloMain(int p0, char** p1) {
     GSeffectInitSystem();
     deckInit();
     GSthreadCreate(0, 0x3E8, 0x4000, 1, 1, (void (*)(void))(_pokecoloInit));
-    temp_ret = OSGetTime();
-    var_r28_3 = (u32) temp_ret;
-    var_r29 = temp_ret;
-loop_23:
-    var_r28_3 = (u32) temp_ret_4;
-    GSgappUpdate();
-    pokecoloCheckDiskTray();
-    var_r29 = temp_ret_4;
-    temp_r6 = (u32) temp_ret_2 - var_r28_3;
-    temp_ret_2 = OSGetTime();
-    temp_ret_3 = __div2u(((((temp_ret_2 - var_r29) - !M2C_CARRY) * 8) & ~7) | (temp_r6 >> 0x1DU), temp_r6 * 8, 0, *(u32 *)0x800000F8 / 500000);
-    M2C_FIELD(&_frameTime, s32 *, 0) = temp_ret_3;
-    M2C_FIELD(&_frameTime, u32 *, 4) = (u32) temp_ret_3;
-    temp_ret_4 = OSGetTime();
-    pokecoloFrameCounter += 1;
-    goto loop_23;
+    start = OSGetTime();
+    while (true) {
+        GSgappUpdate();
+        pokecoloCheckDiskTray();
+        u64 now = OSGetTime();
+        _frameTime = (now - start) * 8 / ((*(u32*)0x800000F8 / 4) / 125000);
+        start = OSGetTime();
+        pokecoloFrameCounter++;
+    }
 }
 #pragma pop
 }
@@ -613,30 +594,14 @@ void fn_8005C8EC() {
 }
 extern "C" {
 void mainAntiActionReplay() {
-    s32 *var_r31;
-    s32 temp_r6;
-    s32 temp_r6_2;
-    u32 var_r30;
-
-    switch (_AntiActionReplayTimer) {
-
-    case 0:
-            var_r30 = 0U;
-            var_r31 = &_clearAddress;
-            do {
-                temp_r6 = M2C_FIELD(var_r31, s32 *, 0);
-                temp_r6_2 = temp_r6 + 0x15;
-                memset((void *)((void*)(temp_r6 + 0x80000015)), (int)(0), (unsigned long)((M2C_FIELD(var_r31, s32 *, 4) + 0x16) - temp_r6_2));
-                var_r31 += 8;
-                var_r30 += 2;
-            } while (var_r30 < 0x20U);
-            memset((void*)(0x80001801), 0, 0x17FF);
-            _AntiActionReplayTimer = 0x64;
-
-        break;
-
+    if (_AntiActionReplayTimer == 0) {
+        for (u32 i = 0; i < 32; i += 2) {
+            memset((void*)(_clearAddress[i] + 0x80000015), 0, (_clearAddress[i + 1] + 0x16) - (_clearAddress[i] + 0x15));
+        }
+        memset((void*)0x80001801, 0, 0x17FF);
+        _AntiActionReplayTimer = 100;
     }
-    _AntiActionReplayTimer -= 1;
+    _AntiActionReplayTimer--;
 }
 }
 
@@ -686,8 +651,6 @@ extern "C++" {
 
 extern "C++" {
 static void _mainThreadExec(unsigned long p0, unsigned long p1) {
-    s32 arg1;
-    s32 arg0;
     f32 temp_f1;
     u8 temp_r31;
 
@@ -703,7 +666,7 @@ static void _mainThreadExec(unsigned long p0, unsigned long p1) {
     }
     GSthreadExecuteAll();
     if ((menuFieldIsOpen() == 0) && (peopleIsBlock() == 0)) {
-        peopleDaemon(arg0, arg1);
+        peopleDaemon(p0, p1);
         return;
     }
     peopleUpdateShadow();

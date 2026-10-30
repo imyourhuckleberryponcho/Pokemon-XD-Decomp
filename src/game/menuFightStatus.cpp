@@ -451,7 +451,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             layer->beginSurface(4);
             GXPosition2s16(0, 0);
             GXColor1u32(barColor);
-            GXPosition2s16(0, x);
+            GXPosition2s16(x, 0);
             GXColor1u32(barColor);
             GXPosition2s16(0, sprite->height);
             GXColor1u32(barColor);
@@ -491,7 +491,8 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 windowDrawSprite2(0, 0, shown, sprite->height, color, window, 0x92, 0, winSpriteGetLayerID(window, sprite));
             } else if (anim->expDone != 0) {
                 windowDrawSprite2(0, 0, sprite->width, sprite->height, color, window, 0x92, 0, winSpriteGetLayerID(window, sprite));
-                layer = GSgfxLayerFindByID(winSpriteGetLayerID(window, sprite));
+                GSgfxLayer* found = GSgfxLayerFindByID(winSpriteGetLayerID(window, sprite));
+                layer = found;
                 c = (s32)(255.0f - 254.0f * cFlash);
                 layer->primitive = 0x80;
                 layer->colorCount = 6;
@@ -643,11 +644,15 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
 }
 }
 
+static inline void* _getMsgStr(u32 id) {
+    return GSmsgGetGSchar(id);
+}
+
 static s32 menuFightDrawDarkPanel(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, Pokemon* pokemon, MENU_POKEMON_STATUS*) {
     s16 x;
 
     if (pokemon != 0 && pokemon->isDarkPokemon()) {
-        msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(0x4443));
+        msgctrlSetValue(0x37, (s32)_getMsgStr(0x4443));
         x = GSmsgGetRect(0x4278) >> 16;
         GSmsgPrint2(winSpriteGetLayerID(window, sprite), sprite->width - x, 0, window->colorAlpha | 0xFFFFFF00, 0x4278);
         msgctrlSetValue(0x5F, deckGetDeckDarkPokemon(pokemon->getDarkPokemon()->getDarkPokemonID())->getPlayerLevel());

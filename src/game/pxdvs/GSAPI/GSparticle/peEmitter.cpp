@@ -225,7 +225,7 @@ f32 PSVECSquareMag(const register Vec* v);
 asm void PSVECSubtract(const register Vec* a, const register Vec* b, register Vec* a_b);
 double atan2(double y, double x);
 void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t);
-void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx);
+void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, u32 useGfx);
 f32 peSplineGetValue(peSpline* s, f32 t);
 extern f32 __float_nan;
 
@@ -350,72 +350,68 @@ void peEmitterContainer::Render() {
 
 extern "C++" {
 u8 peEmitterContainer::DoRender() {
-    s32 temp_r0;
-    s32 temp_r4;
-
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
-        return 0U;
+    if (started == 0) {
+        return 0;
     }
-    temp_r4 = *M2C_FIELD(this, s32 **, 0x20);
-    if ((u16) M2C_FIELD(this, u16 *, 0x14) == 0) {
-        return 0U;
+    u32 flags = *(u32*)data;
+    if (count == 0) {
+        return 0;
     }
-    if (temp_r4 & 0x80000000) {
-        return 0U;
+    if (flags & 0x80000000) {
+        return 0;
     }
-    switch ((s32) g_render_pass) {
+    switch (g_render_pass) {
     case 0:
-        if (!(temp_r4 & 0x800)) {
-            return 0U;
-        }
-block_15:
-        temp_r0 = M2C_FIELD(g_current_layer, s32 *, 0x28);
-        switch (temp_r0) {
-        case 0:
-            if (temp_r4 & 0x2000) {
-                return 1U;
-            }
-            return 0U;
-        case 2:
-            if (temp_r4 & 0x4000) {
-                return 1U;
-            }
-            if (!(temp_r4 & 0x0380E000)) {
-                return 1U;
-            }
-            return 0U;
-        case 4:
-            if (temp_r4 & 0x8000) {
-                return 1U;
-            }
-            return 0U;
-        case 1:
-            if (temp_r4 & 0x800000) {
-                return 1U;
-            }
-            return 0U;
-        case 3:
-            if (temp_r4 & 0x01000000) {
-                return 1U;
-            }
-            return 0U;
-        case 5:
-            if (temp_r4 & 0x02000000) {
-                return 1U;
-            }
-            return 0U;
-        default:
-            return 0U;
+        if (!(flags & 0x800)) {
+            return 0;
         }
         break;
     case 1:
-        if (!(temp_r4 & 0x1000)) {
-            return 0U;
+        if (!(flags & 0x1000)) {
+            return 0;
         }
-        goto block_15;
-    case 3:    default:
-        return 0U;
+        break;
+    default:
+        return 0;
     }
+    switch (M2C_FIELD(g_current_layer, s32 *, 0x28)) {
+    case 0:
+        if (flags & 0x2000) {
+            return 1;
+        }
+        break;
+    case 2:
+        if (flags & 0x4000) {
+            return 1;
+        }
+        if (!(flags & 0x0380E000)) {
+            return 1;
+        }
+        break;
+    case 4:
+        if (flags & 0x8000) {
+            return 1;
+        }
+        break;
+    case 1:
+        if (flags & 0x800000) {
+            return 1;
+        }
+        break;
+    case 3:
+        if (flags & 0x01000000) {
+            return 1;
+        }
+        break;
+    case 5:
+        if (flags & 0x02000000) {
+            return 1;
+        }
+        break;
+    default:
+        return 0;
+    }
+    return 0;
 }
 }
 
@@ -1510,7 +1506,7 @@ static inline void quatMulE(Quaternion* dst, Quaternion* a, Quaternion* b) {
 
 void peEmitterNode::CreateWorldParams() {
     peEmitterNodeW* self = (peEmitterNodeW*)this;
-    s16 flags = *self->def;
+    int flags = *self->def;
     peXformE local;
     Vec d;
     Vec diff;

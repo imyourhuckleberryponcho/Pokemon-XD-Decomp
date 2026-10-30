@@ -178,8 +178,8 @@ void gbaCommandEntryResult(s32, s32*);
 void gbaCommandEntryPokemon(s32, u8*);
 u8 GSsndPlay(u32, s32, u32);
 bool pauseIsPause(void);
-u32 GSinputButtonsChanged(s32);
-u32 GSinputButtonsPressed(s32);
+u32 GSinputButtonsChanged(GSinputDevice);
+u32 GSinputButtonsPressed(GSinputDevice);
 u16* windowGetKeyInfo(void);
 void* windowSearchID(s32);
 void menuCBPokemonEntryTexWorkInit(void);
@@ -524,7 +524,7 @@ static void _menuCBPokemonEntryEntCheckDebug(long) {
 }
 
 extern "C++" {
-static inline u32 _btnTrg(s32 dev) {
+static inline u32 _btnTrg(GSinputDevice dev) {
     return GSinputButtonsPressed(dev) & GSinputButtonsChanged(dev);
 }
 

@@ -553,10 +553,10 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 inline bool peParticleContainer::updateNode(peNodeView* node, f32 dt) {
+    char* buf = (char*)(&bufA)[cur];
     peParticleNodeData* n = (peParticleNodeData*)node;
     peParticleDef* p = (peParticleDef*)data;
     peEmitterNode* e = emitter;
-    char* buf = (char*)(&bufA)[cur];
     if (buf == NULL) {
         return false;
     }

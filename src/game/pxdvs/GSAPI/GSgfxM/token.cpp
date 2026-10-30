@@ -74,15 +74,13 @@ static inline bool _tokenIsPending(u16 token) {
     start = _tokenFrameStart;
     end = _tokenFrameEnd;
     if (start <= end) {
-        if (token < start || token > end) {
-            return true;
+        if (token >= start && token <= end) {
+            return false;
         }
+    } else if (token >= start || token <= end) {
         return false;
     }
-    if (token < start && token > end) {
-        return true;
-    }
-    return false;
+    return true;
 }
 
 static inline bool _tokenCleared(u16 token) {
@@ -99,7 +97,7 @@ void GSgfxTokenWaitForClearAndReset(u16* tokenPtr) {
     if (token == 0) {
         return;
     }
-    if (_tokenIsPending(token)) {
+    if (_tokenIsPending(*tokenPtr)) {
         GSgfxRenderWaitData wait;
         GSgfxRenderWaitInit(&wait);
         while (!_tokenIsCleared(token)) {
@@ -115,7 +113,7 @@ void GSgfxTokenIfClearedReset(u16* tokenPtr) {
     if (token == 0) {
         return;
     }
-    if (_tokenCleared((u8)token) == true) {
+    if (_tokenCleared(token) == true) {
         *tokenPtr = 0;
     }
 }
@@ -138,10 +136,10 @@ bool GSgfxTokenCleared(u16 token) {
 }
 
 u16 GSgfxTokenMark_Sub() {
-    enum TsE { TsE0 };
-    enum TsE token = (enum TsE)(_tokenCurrent);
-    if (token == _tokenFrameEnd) {
-        return token;
+    u32 token = _tokenCurrent;
+    u16 end = _tokenFrameEnd;
+    if (token == end) {
+        return end;
     }
     GXSetDrawSync(token);
     if (++_tokenCurrent >= _tokenMaximum) {

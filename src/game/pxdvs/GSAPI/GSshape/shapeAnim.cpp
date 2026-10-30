@@ -535,7 +535,8 @@ tagGScol4ub GsKeyObject::GetShapeColor(const tagGsFilePrimKeyFrame* a, const tag
                 v[i] = 255.0f;
             }
         } else {
-            v[i] = it * (f32)a->color[i] + t * (f32)b->color[i];
+            u32 i_c = i;
+            v[i_c] = it * (f32)a->color[i_c] + t * (f32)b->color[i_c];
         }
     }
     col.r = (s8)v[0];

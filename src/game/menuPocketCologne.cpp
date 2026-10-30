@@ -47,8 +47,14 @@ struct Hero {
 struct MenuItem {
     u8 _draft[1];
 };
+struct POCKET_COLOGNE_ITEM {
+    u16 id;
+    u16 pad;
+};
 struct POCKET_COLOGNE_ARG {
-    u8 _draft[1];
+    u32 param;
+    POCKET_COLOGNE_ITEM items[4];
+    s32 count;
 };
 struct tagSPRITE_WORK {
     u8 _draft[1];
@@ -85,7 +91,7 @@ void msgctrlSetValue(s32 id, u32 value);
 void winSeqSetMenu(s32 menuID, u32 id);
 s32 winSpriteGetLayerID(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
 void winSpriteSetDisp(tagSPRITE_WORK* sp, bool on);
-s32 windowDrawSpriteCursor(s32, s32, s32, void*, s32, s32, s32, s32*);
+s32 windowDrawSpriteCursor(s32, s32, s32, void*, s32, s32, s32, f32*, s32);
 s32 windowGetActiveID(void);
 u32 windowGetKeyRepeat(void);
 extern s32 jtbl_2063;
@@ -104,98 +110,6 @@ static f32 ActMenuCursorBlinkTime;
 
 static s32 first_S1990;
 static u8 init_S1991;
-static s32 getItemNum(unsigned short p0) {
-    u8 *var_r30;
-    s32 var_r29;
-    s32 var_r28;
-    u16 sp8;
-
-    var_r28 = 0;
-    var_r30 = (unsigned char *)(heroItemGetItemKindToItemAryPtr((Hero*)(NULL), itemDataBiosGetKind((u8*)(itemDataBiosGetPtr(p0))), (u16*)(&sp8), (u16*)(NULL), (u8*)(NULL), (u8*)(NULL)));
-    if (var_r30 == NULL) {
-        return 0U;
-    }
-    var_r29 = 0;
-    while (var_r29 < (s32) sp8) {
-        if ((itemCheckValid((u32) var_r30) != 0) && (p0 == itemGetStatus((u32) var_r30, 0U, 0x1BU, 0U))) {
-            var_r28 += itemBiosGetNum((u8*)(var_r30));
-        }
-        var_r29 += 1;
-        var_r30 += 4;
-    }
-    return var_r28;
-}
-}
-
-extern "C++" {
-static u32 getStockMax(unsigned short p0) {
-    u16 sp8;
-
-    heroItemGetItemKindToItemAryPtr((Hero*)(NULL), itemDataBiosGetKind((u8*)(itemDataBiosGetPtr(p0))), (u16*)(NULL), (u16*)(&sp8), (u8*)(NULL), (u8*)(NULL));
-    return sp8;
-}
-}
-
-extern "C++" {
-static u32 getItemName(unsigned long item) {
-    return itemDataBiosGetName((u8*)itemDataBiosGetPtr((u16)item));
-}
-}
-
-extern "C" {
-s32 menuPocketColognDrawLineCursor(void *p0, void *p1) {
-    MenuItem *temp_r31;
-
-    temp_r31 = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), (u32) M2C_FIELD(p1, s16 *, 6));
-    M2C_FIELD(p1, s16 *, 0x52) = (s16) (M2C_FIELD(temp_r31, s16 *, 8) + (M2C_FIELD(p0, s16 *, 0x9E) * getLineHeight((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0))));
-    return 0;
-}
-}
-
-extern "C++" {
-static s32 getLineHeight(tagWINDOW_WORK* p0) {
-    MenuItem *temp_r31;
-    s32 var_r3;
-
-    temp_r31 = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x12BU);
-    var_r3 = M2C_FIELD(temp_r31, s16 *, 8) - M2C_FIELD(menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x12CU), s16 *, 8);
-    if (var_r3 < 0) {
-        var_r3 = -var_r3;
-    }
-    return var_r3;
-}
-}
-
-extern "C" {
-s32 menuPocketColognDrawCursor(void *p0, void *p1) {
-    s32 temp_r9;
-    s32 sp24;
-    s32 sp20;
-    volatile s32 sp1C;
-    s32 sp18;
-    f32 sp14;
-    s32 sp10;
-    volatile s32 sp28;
-    volatile s32 sp8;
-
-    sp1C = M2C_FIELD(&jtbl_2063, s32 *, 0);
-    sp20 = M2C_FIELD(&jtbl_2063, s32 *, 4);
-    sp24 = M2C_FIELD(&jtbl_2063, s32 *, 8);
-    sp28 = M2C_FIELD(&jtbl_2063, s32 *, 0xC);
-    if ((s16) M2C_FIELD((u16)p1, s16 *, 6) == (s32) (&sp1C)[M2C_FIELD((u16)p0, s16 *, 0x9E)]) {
-        sp14 = M2C_FIELD(&jtbl_2066, f32 *, 0);
-        sp18 = M2C_FIELD(&jtbl_2066, s32 *, 4);
-        sp10 = -1;
-        if ((s32) M2C_FIELD(p0, s32 *, 4) == windowGetActiveID()) {
-            menuSubCursorAnimeValGet((f32*)(&sp14), (s32*)(&sp10));
-        }
-        temp_r9 = winSpriteGetLayerID((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0), (tagSPRITE_WORK*)((tagSPRITE_WORK *) p1));
-        sp8 = sp10;
-        windowDrawSpriteCursor(0, 0, -1, p0, 0xC2, 0, temp_r9, (s32 *) &sp14);
-    }
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return 0;
-}
 }
 
 extern "C" {
@@ -206,50 +120,76 @@ struct ColognList {
     } entry[5];
     s32 count;
 };
+}
 
-s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp) {
-    s16 id = *(s16*)((u8*)sp + 6);
-    ColognList* list = *(ColognList**)((u8*)win + 0x68);
-    s32 ids[4] = {0x130, 0x12F, 0x12E, 0x12D};
-    s32 i;
-    u32 name;
-    s16 base;
-    s16 width;
+extern "C" {
+u16 menuPocketCologne(s32 param) {
+    POCKET_COLOGNE_ARG arg;
+    s32 sel;
+    u16 item;
 
-    if (id == 0x127) {
-        u32 name;
-        s16 base;
-        s16 width;
-        name = getItemName(0x200);
-        base = *(s16*)((u8*)menuItemBiosGetPtr(*(s32*)((u8*)win + 4), 0x127) + 0xA);
-        width = GSmsgGetRect(name) >> 16;
-        GSmsgPrint2(winSpriteGetLayerID(win, sp), (base - width) / 2, 0, -1, name);
-        return 0;
+    if ((s8)init_S1991 == 0) {
+        first_S1990 = 1;
+        init_S1991 = 1;
     }
-    for (i = 0; i < 4; i++) {
-        if (id == ids[i]) {
-            break;
+    if (first_S1990 != 0) {
+        first_S1990 = 0;
+    }
+    makePocketCologneArg(&arg, param);
+    sel = menuOpenCustom(0x32, windowGetActiveID(), 0, 0, 1, 1, &arg);
+    menuClose(0x32);
+    menuCloseSync(0x32, 1);
+    if (sel >= 0 && sel < arg.count) {
+        item = arg.items[sel].id;
+        if (getItemNum(item) != 0) {
+            return item;
         }
-    }
-    if (i < 0 || i >= list->count) {
         return 0;
     }
-    if (list->entry[i + 1].item == 0) {
-        name = 0x4295;
-    } else {
-        name = getItemName(list->entry[i + 1].item);
-    }
-    GSmsgPrint2(winSpriteGetLayerID(win, sp), 0, 0, -1, name);
-    if (list->entry[i + 1].item != 0) {
-        base = *(s16*)((u8*)menuItemBiosGetPtr(*(s32*)((u8*)win + 4), 0x130) + 0xA);
-        s32 tmp1 = getStockMax(list->entry[i + 1].item);
-        msgctrlSetValue(0x34, tmp1);
-        width = (s16)(GSmsgGetRect(0x426F) >> 16);
-        width += (s16)(GSmsgGetRect(0x428F) >> 16);
-        GSmsgPrint2(winSpriteGetLayerID(win, sp), base - width, 0, -1, 0x428F);
-        msgctrlSetValue(0x34, getItemNum(list->entry[i + 1].item));
-        width = GSmsgGetRect(0x426F) >> 16;
-        GSmsgPrint2(winSpriteGetLayerID(win, sp), base - width, 0, -1, 0x426F);
+    return 0;
+}
+}
+
+extern "C++" {
+static void makePocketCologneArg(POCKET_COLOGNE_ARG* arg, unsigned long param) {
+    arg->param = param;
+    arg->items[0].id = 0x201;
+    arg->items[1].id = 0x202;
+    arg->items[2].id = 0x203;
+    arg->items[3].id = 0;
+    arg->count = 4;
+}
+}
+
+extern "C" {
+s32 menuPocketColognCtrl(void *p0) {
+    f32 temp_f1;
+    u8 temp_r0;
+
+    temp_r0 = M2C_FIELD(p0, u8 *, 1);
+    switch ((s8) temp_r0) {
+    case 0:
+        if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
+            winSeqSetMenu(0x32, 0x60U);
+            ActMenuCursorBlinkTime = 0.0f;
+            M2C_FIELD(p0, u8 *, 2) = 1U;
+            menuSubCursorAnimeInit();
+        }
+        break;
+    case 2:
+        temp_f1 = ActMenuCursorBlinkTime + 0.033333335f;
+        ActMenuCursorBlinkTime = temp_f1;
+        if (temp_f1 > 1.0f) {
+            ActMenuCursorBlinkTime = 0.0f;
+        }
+        menuSubCursorAnimeMain();
+        break;
+    case 3:
+        if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
+            winSeqSetMenu(0x32, 0x64U);
+            M2C_FIELD(p0, u8 *, 2) = 1U;
+        }
+        break;
     }
     return 0;
 }
@@ -290,79 +230,130 @@ s32 menuPocketColognCursor(void *p0) {
 }
 
 extern "C" {
-s32 menuPocketColognCtrl(void *p0) {
-    f32 temp_f1;
-    u8 temp_r0;
+s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp) {
+    s16 id = *(s16*)((u8*)sp + 6);
+    ColognList* list = *(ColognList**)((u8*)win + 0x68);
+    s32 ids[4] = {0x130, 0x12F, 0x12E, 0x12D};
+    s32 i;
+    u32 name;
+    s16 width;
+    s16 base;
 
-    temp_r0 = M2C_FIELD(p0, u8 *, 1);
-    switch ((s8) temp_r0) {
-    case 0:
-        if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
-            winSeqSetMenu(0x32, 0x60U);
-            ActMenuCursorBlinkTime = 0.0f;
-            M2C_FIELD(p0, u8 *, 2) = 1U;
-            menuSubCursorAnimeInit();
+    if (id == 0x127) {
+        s16 width;
+        u32 name;
+        s16 base;
+        name = getItemName(0x200);
+        base = *(s16*)((u8*)menuItemBiosGetPtr(*(s32*)((u8*)win + 4), 0x127) + 0xA);
+        width = GSmsgGetRect(name) >> 16;
+        GSmsgPrint2(winSpriteGetLayerID(win, sp), (base - width) / 2, 0, -1, name);
+        return 0;
+    }
+    for (i = 0; i < 4; i++) {
+        if (id == ids[i]) {
+            break;
         }
-        break;
-    case 2:
-        temp_f1 = ActMenuCursorBlinkTime + 0.033333335f;
-        ActMenuCursorBlinkTime = temp_f1;
-        if (temp_f1 > 1.0f) {
-            ActMenuCursorBlinkTime = 0.0f;
-        }
-        menuSubCursorAnimeMain();
-        break;
-    case 3:
-        if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
-            winSeqSetMenu(0x32, 0x64U);
-            M2C_FIELD(p0, u8 *, 2) = 1U;
-        }
-        break;
+    }
+    if (i < 0 || i >= list->count) {
+        return 0;
+    }
+    if (*(u16*)((u8*)list + i * 4 + 4) == 0) {
+        name = 0x4295;
+    } else {
+        name = getItemName(*(u16*)((u8*)list + i * 4 + 4));
+    }
+    GSmsgPrint2(winSpriteGetLayerID(win, sp), 0, 0, -1, name);
+    if (*(u16*)((u8*)list + i * 4 + 4) != 0) {
+        base = *(s16*)((u8*)menuItemBiosGetPtr(*(s32*)((u8*)win + 4), 0x130) + 0xA);
+        s32 tmp1 = getStockMax(*(u16*)((u8*)list + i * 4 + 4));
+        msgctrlSetValue(0x34, tmp1);
+        width = (s16)(GSmsgGetRect(0x426F) >> 16);
+        width += (s16)(GSmsgGetRect(0x428F) >> 16);
+        GSmsgPrint2(winSpriteGetLayerID(win, sp), base - width, 0, -1, 0x428F);
+        s32 num = getItemNum(*(u16*)((u8*)list + i * 4 + 4));
+        msgctrlSetValue(0x34, num);
+        width = GSmsgGetRect(0x426F) >> 16;
+        GSmsgPrint2(winSpriteGetLayerID(win, sp), base - width, 0, -1, 0x426F);
     }
     return 0;
 }
 }
 
-extern "C++" {
-static void makePocketCologneArg(POCKET_COLOGNE_ARG* p0, unsigned long p1) {
-    M2C_FIELD(p0, u32 *, 0) = p1;
-    M2C_FIELD(p0, s16 *, 4) = 0x201;
-    M2C_FIELD(p0, s16 *, 8) = 0x202;
-    M2C_FIELD(p0, s16 *, 0xC) = 0x203;
-    M2C_FIELD(p0, s16 *, 0x10) = 0;
-    M2C_FIELD(p0, s32 *, 0x14) = 4;
-}
 extern "C" {
-u16 menuPocketCologne(s32 p0) {
-    volatile s32 sp1C;
-    u8 spC[16];
-    f32 unksp8;
-    s32 temp_r31_2;
-    s32 temp_ret;
-    u16 temp_r31;
-
-    if ((s8) init_S1991 == 0) {
-        first_S1990 = 1;
-        init_S1991 = 1;
-    }
-    if ((s32) first_S1990 != 0) {
-        first_S1990 = 0;
-    }
-    makePocketCologneArg((POCKET_COLOGNE_ARG*)(&unksp8), (u32) p0);
-    temp_ret = windowGetActiveID();
-    temp_r31_2 = menuOpenCustom(0x32, temp_ret, 0, 0, 1, 1, &unksp8);
-    menuClose(0x32);
-    menuCloseSync(0x32, 1);
-    if ((0 <= temp_r31_2) && (temp_r31_2 < sp1C)) {
-        temp_r31 = (&spC[0])[temp_r31_2];
-        if (getItemNum(temp_r31) != 0) {
-            return temp_r31;
+s32 menuPocketColognDrawCursor(void* win, void* sp) {
+    s32 ids[4] = {0x12C, 0x12B, 0x12A, 0x129};
+    if (*(s16*)((u8*)sp + 6) == ids[*(s16*)((u8*)win + 0x9E)]) {
+        f32 anim[2] = {0.0f, 0.0f};
+        s32 color = -1;
+        if (*(s32*)((u8*)win + 4) == windowGetActiveID()) {
+            menuSubCursorAnimeValGet(anim, &color);
         }
+        windowDrawSpriteCursor(0, 0, -1, win, 0xC2, 0, winSpriteGetLayerID((tagWINDOW_WORK*)win, (tagSPRITE_WORK*)sp), anim, color);
+    }
+    winSpriteSetDisp((tagSPRITE_WORK*)sp, 0);
+    return 0;
+}
+}
+
+extern "C++" {
+static s32 getLineHeight(tagWINDOW_WORK* p0) {
+    MenuItem *temp_r31;
+    s32 var_r3;
+
+    temp_r31 = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x12BU);
+    var_r3 = M2C_FIELD(temp_r31, s16 *, 8) - M2C_FIELD(menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x12CU), s16 *, 8);
+    if (var_r3 < 0) {
+        var_r3 = -var_r3;
+    }
+    return var_r3;
+}
+}
+
+extern "C" {
+s32 menuPocketColognDrawLineCursor(void *p0, void *p1) {
+    MenuItem *temp_r31;
+
+    temp_r31 = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), (u32) M2C_FIELD(p1, s16 *, 6));
+    M2C_FIELD(p1, s16 *, 0x52) = (s16) (M2C_FIELD(temp_r31, s16 *, 8) + (M2C_FIELD(p0, s16 *, 0x9E) * getLineHeight((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0))));
+    return 0;
+}
+}
+
+extern "C++" {
+static u32 getItemName(unsigned long item) {
+    return itemDataBiosGetName((u8*)itemDataBiosGetPtr((u16)item));
+}
+}
+
+extern "C++" {
+static u32 getStockMax(unsigned short p0) {
+    u16 sp8;
+
+    heroItemGetItemKindToItemAryPtr((Hero*)(NULL), itemDataBiosGetKind((u8*)(itemDataBiosGetPtr(p0))), (u16*)(NULL), (u16*)(&sp8), (u8*)(NULL), (u8*)(NULL));
+    return sp8;
+}
+}
+
+extern "C++" {
+static s32 getItemNum(unsigned short p0) {
+    u8 *var_r30;
+    s32 var_r29;
+    s32 var_r28;
+    u16 sp8;
+
+    var_r28 = 0;
+    var_r30 = (unsigned char *)(heroItemGetItemKindToItemAryPtr((Hero*)(NULL), itemDataBiosGetKind((u8*)(itemDataBiosGetPtr(p0))), (u16*)(&sp8), (u16*)(NULL), (u8*)(NULL), (u8*)(NULL)));
+    if (var_r30 == NULL) {
         return 0U;
     }
-    return 0U;
+    var_r29 = 0;
+    while (var_r29 < (s32) sp8) {
+        if ((itemCheckValid((u32) var_r30) != 0) && (p0 == itemGetStatus((u32) var_r30, 0U, 0x1BU, 0U))) {
+            var_r28 += itemBiosGetNum((u8*)(var_r30));
+        }
+        var_r29 += 1;
+        var_r30 += 4;
+    }
+    return var_r28;
 }
 }
-
-}
-

@@ -88,17 +88,17 @@ struct GSlight {
     u8 _draft[1];
 };
 struct GSstreamFileOutput {
-    u8 _draft[1];
+    u8 data[0x14];
     bool open(const char*);
     GSstreamFileOutput();
     ~GSstreamFileOutput();
     bool writePrintf(const char*, ...);
 };
 struct GSvec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 struct GXColor {
-    u8 _draft[1];
+    u8 r, g, b, a;
 };
 struct LightEditor {
     u8 _draft[1];
@@ -437,124 +437,98 @@ void LightEditor::editPosition(GSlight* p0) {
 }
 
 extern "C++" {
-void LightEditor::editType(GSlight* p0) {
-    s32 temp_r30;
-    s32 var_r29;
+void LightEditor::editType(GSlight* light) {
+    s32 type;
+    s32 next;
 
-    if (((s8) M2C_FIELD(this, u8 *, 1) == 0) && (GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)(floorDataBiosGetCurrentPtr()))) != p0)) {
-        temp_r30 = GSlightGetType((GSlight*)((u16)p0));
-        var_r29 = 0xFF;
-        if (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x400) {
-            switch (temp_r30) {
-            case 0:
-                var_r29 = 3;
-                break;
-            case 1:
-                var_r29 = 0;
-                break;
-            case 2:
-                var_r29 = 1;
-                break;
-            case 3:
-                var_r29 = 2;
-                break;
-            }
+    if (M2C_FIELD(this, s8 *, 1) != 0) {
+        return;
+    }
+    if (GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)floorDataBiosGetCurrentPtr())) == light) {
+        return;
+    }
+    type = GSlightGetType(light);
+    next = 0xFF;
+    if (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x400) {
+        if (type == 0) {
+            next = 3;
+        } else if (type == 1) {
+            next = 0;
+        } else if (type == 2) {
+            next = 1;
+        } else if (type == 3) {
+            next = 2;
         }
-        if (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x800) {
-            switch (temp_r30) {
-            case 0:
-                var_r29 = 1;
-                break;
-            case 1:
-                var_r29 = 2;
-                break;
-            case 2:
-                var_r29 = 3;
-                break;
-            case 3:
-                var_r29 = 0;
-                break;
-            }
+    }
+    if (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x800) {
+        if (type == 0) {
+            next = 1;
+        } else if (type == 1) {
+            next = 2;
+        } else if (type == 2) {
+            next = 3;
+        } else if (type == 3) {
+            next = 0;
         }
-        if (var_r29 != 0xFF) {
-            GSlightSetType((GSlight*)(p0), var_r29);
-        }
+    }
+    if (next != 0xFF) {
+        GSlightSetType(light, next);
     }
 }
 }
 
 extern "C++" {
 void LightEditor::editCommand() {
-    f32 sp1C;
-    f32 sp20;
-    volatile f32 sp9;
-    f32 sp18;
-    f32 unksp24;
-    f32 unksp8;
-    f32 spA;
-    f32 spC;
-    u8 temp_ret;
-    s32 *var_r29;
-    s32 var_r28;
-    s32 temp_r3;
-    s32 var_r27;
-    s8 *temp_r4;
-    f32 var_f1;
-    GSlight *temp_r26;
-    bool temp_r31_2;
+    GSstreamFileOutput out;
+    GSvec pos;
+    GSvec target;
+    GXColor color;
 
-    temp_r4 = (signed char *)("lightinfo.txt");
-    ((GSstreamFileOutput*)(&unksp24))->GSstreamFileOutput();
     if (!(GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x100)) {
-        ((GSstreamFileOutput*)(&unksp24))->~GSstreamFileOutput();
         return;
     }
-    temp_ret = ((GSstreamFileOutput*)(&unksp24))->open((const char*)((u16)temp_r4));
-    if (temp_ret == 0) {
-        ((GSstreamFileOutput*)(&unksp24))->~GSstreamFileOutput();
+    if (!out.open("lightinfo.txt")) {
         return;
     }
-    ((GSstreamFileOutput*)(&unksp24))->writePrintf((const char*)(temp_r4 + 0x10), M2C_BITWISE(f32, temp_ret));
-    var_r27 = 0;
-    while (var_r27 < lightGetLightSize()) {
-        temp_r26 = (GSlight *)(lightGetLight(var_r27));
-        temp_r31_2 = GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)(floorDataBiosGetCurrentPtr()))) == temp_r26;
-        var_r28 = 0;
-        temp_r3 = GSlightGetType((GSlight*)(temp_r26));
-        switch (temp_r3) {
+    out.writePrintf("//type, color, pos/dir\n");
+    for (s32 i = 0; i < lightGetLightSize(); i++) {
+        const char* name;
+        GSlight* light = (GSlight*)lightGetLight(i);
+        bool shadow = GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)floorDataBiosGetCurrentPtr())) == light;
+        bool hasPos = false;
+        switch (GSlightGetType(light)) {
         case 0:
-            var_r29 = (long *)("Amb");
+            name = "Amb";
             break;
         case 1:
-            var_r29 = (long *)("Dir");
-            var_r28 = 1;
+            name = "Dir";
+            hasPos = true;
             break;
         case 2:
-            var_r29 = (long *)("Pnt");
-            var_r28 = 1;
+            name = "Pnt";
+            hasPos = true;
             break;
         case 3:
-            var_r29 = (long *)("Spt");
-            var_r28 = 1;
+            name = "Spt";
+            hasPos = true;
             break;
         default:
-            var_r29 = (long *)("???");
+            name = "???";
             break;
         }
-        GSlightGetPosition((GSlight*)(temp_r26), (f32*)(&sp18));
-        GSlightGetTarget((GSlight*)(temp_r26), (f32*)(&spC));
-        GSlightGetColor((GSlight*)(temp_r26), (GXColor*)(&unksp8));
-        var_f1 = M2C_BITWISE(f32, ((GSstreamFileOutput*)(&unksp24))->writePrintf((const char*)(temp_r4 + 0x28), unksp8, spA, sp9, M2C_BITWISE(f32, ((GSstreamFileOutput*)(&unksp24))->writePrintf((const char*)("%s: "), var_r29))));
-        if (var_r28 != 0) {
-            var_f1 = M2C_BITWISE(f32, ((GSstreamFileOutput*)(&unksp24))->writePrintf((const char*)(temp_r4 + 0x34), sp18, sp1C, sp20));
+        GSlightGetPosition(light, (f32*)&pos);
+        GSlightGetTarget(light, (f32*)&target);
+        GSlightGetColor(light, &color);
+        out.writePrintf("%s: ", name);
+        out.writePrintf("(%d,%d,%d) ", color.r, color.b, color.g);
+        if (hasPos) {
+            out.writePrintf("(%.2f,%.2f,%.2f)", pos.x, pos.y, pos.z);
         }
-        if (temp_r31_2 != 0) {
-            var_f1 = M2C_BITWISE(f32, ((GSstreamFileOutput*)(&unksp24))->writePrintf((const char*)(temp_r4 + 0x48), var_f1));
+        if (shadow) {
+            out.writePrintf("\t// shadow light");
         }
-        ((GSstreamFileOutput*)(&unksp24))->writePrintf((const char*)("\n"), var_f1);
-        var_r27 += 1;
+        out.writePrintf("\n");
     }
-    ((GSstreamFileOutput*)(&unksp24))->~GSstreamFileOutput();
 }
 }
 
@@ -618,12 +592,12 @@ void LightEditor::editUpdate() {
             temp_r31 = GSlightGetType((GSlight*)(temp_r3_3));
             if (temp_r3 & 2) {
                 temp_r3_4 = M2C_FIELD(this, u8 *, 1);
-                switch (temp_r3_4) {
-                case 0:
+                switch (temp_r3_4 - 1) {
+                case -1:
                     M2C_FIELD(this, u8 *, 1) = 1U;
                     M2C_FIELD(this, u8 *, 2) = 0U;
                     break;
-                case 1:
+                case 0:
                     M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) > 2) {
                         if (temp_r31 == 0) {
@@ -634,7 +608,7 @@ void LightEditor::editUpdate() {
                         M2C_FIELD(this, u8 *, 2) = 0U;
                     }
                     break;
-                case 2:
+                case 1:
                     M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) > 2) {
                         M2C_FIELD(this, u8 *, 1) = 0U;
@@ -645,8 +619,8 @@ void LightEditor::editUpdate() {
             }
             if (temp_r3 & 1) {
                 temp_r3_5 = M2C_FIELD(this, u8 *, 1);
-                switch (temp_r3_5) {
-                case 0:
+                switch (temp_r3_5 - 1) {
+                case -1:
                     if (temp_r31 == 0) {
                         M2C_FIELD(this, u8 *, 1) = 1U;
                         M2C_FIELD(this, u8 *, 2) = 2U;
@@ -655,14 +629,14 @@ void LightEditor::editUpdate() {
                     }
                     M2C_FIELD(this, u8 *, 2) = 2U;
                     break;
-                case 1:
+                case 0:
                     M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) - 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) < 0) {
                         M2C_FIELD(this, u8 *, 1) = 0U;
                         M2C_FIELD(this, u8 *, 2) = 0U;
                     }
                     break;
-                case 2:
+                case 1:
                     M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) - 1);
                     if ((s8) M2C_FIELD(this, u8 *, 2) < 0) {
                         M2C_FIELD((u8)this, u8 *, 1) = 1U;

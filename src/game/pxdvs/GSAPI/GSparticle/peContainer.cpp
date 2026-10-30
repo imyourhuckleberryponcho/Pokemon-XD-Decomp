@@ -299,7 +299,7 @@ peRenderContainer::peRenderContainer(peEmitterNode* e, u32 nodeSize, u16 max, GS
     u32 verts = max * vertsPerNode;
     GSgfxDLCreate(&dl[0], prim, vf, verts);
     if (!dl[0].valid()) {
-        if ((u16)mem) {
+        if (mem) {
             GSmemFree(mem);
         }
         return;
@@ -309,8 +309,8 @@ peRenderContainer::peRenderContainer(peEmitterNode* e, u32 nodeSize, u16 max, GS
     }
     u32 sz = GSmemGetSize(mem);
     g_particle_debug_stats.dlMem += dl[0].size + dl[1].size;
-    g_particle_debug_stats.total += dl[0].size + dl[1].size + sz;
     g_particle_debug_stats.bufMem += sz;
+    g_particle_debug_stats.total = g_particle_debug_stats.total + dl[0].size + dl[1].size + sz;
     if (dl[1].valid()) {
         DCFlushRange(mem, aligned * 2);
         u8* p = mem + 0x40000000;

@@ -142,7 +142,24 @@ bool deckDataVirtualDB_GetFlagData(u16 id);
 void menuPtPlaySe(u32 id);
 }
 namespace {
-u8 Data[0x28];
+struct MenuPos {
+    s16 top;
+    s16 cursor;
+};
+struct BattleDiskData {
+    u8 unk0[8];
+    s32 count;
+    MenuPos pos;
+    f32 scroll;
+    u8 scrollDown;
+    u8 pad15[3];
+    f32 unk18;
+    u8 active;
+    u8 pad1D[3];
+    s32 unk20;
+    u8 pad24[4];
+};
+BattleDiskData Data;
 }
 
 extern "C" {
@@ -325,91 +342,80 @@ loop_1:
 
 namespace {
 static void _controlCursor() {
-    volatile s32 unkspA;
-    s32 sp8;
-    s16 temp_r0;
-    s16 temp_r0_2;
-    s16 temp_r3_2;
-    s16 temp_r3_3;
-    s32 temp_r3_4;
-    s32 temp_r6;
-    u32 temp_r3;
-    u32 var_r29;
+    u16 key = windowGetKeyRepeat();
+    u32 se = 0;
+    s32 n = Data.count + 1;
+    s32 pages = (n + 7) / 8;
 
-    temp_r3 = windowGetKeyRepeat();
-    var_r29 = 0;
-    temp_r6 += 1;
-    temp_r6 = M2C_FIELD(&Data, s32 *, 8);
-    if (M2C_FIELD(&Data, f32 *, 0x10) == 0.0f) {
-        if ((u8) M2C_FIELD(&Data, u8 *, 0x1C) == 0) {
-            return;
-        }
-        sp8 = M2C_FIELD(&Data, s32 *, 0xC);
-        if ((s32) (temp_r3 & 8) != 0) {
-            temp_r0 = temp_r6 - 8;
-            if ((s32) ((s32) (temp_r6 + 7) / 8) == 1) {
-                M2C_FIELD(&Data, s16 *, 0xE) = (s16) (temp_r6 - 1);
-            } else if ((s16) M2C_FIELD(&Data, s32 *, 0xC) == temp_r0) {
-                M2C_FIELD(&Data, s16 *, 0xE) = 7;
+    if (Data.scroll != 0.0f) {
+        return;
+    }
+    if (Data.active != 0) {
+        MenuPos old = Data.pos;
+        if (key & 8) {
+            s16 last = n - 8;
+            if (pages == 1) {
+                Data.pos.cursor = n - 1;
+            } else if (Data.pos.top == last) {
+                Data.pos.cursor = 7;
             } else {
-                temp_r3_2 = (s16) M2C_FIELD(&Data, s32 *, 0xC) + 8;
-                M2C_FIELD(&Data, s32 *, 0xC) = temp_r3_2;
-                if (temp_r3_2 > temp_r0) {
-                    M2C_FIELD(&Data, s32 *, 0xC) = temp_r0;
+                Data.pos.top += 8;
+                if (Data.pos.top > last) {
+                    Data.pos.top = last;
                 }
             }
-            if ((sp8 != (s16) M2C_FIELD(&Data, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data, s16 *, 0xE))) {
-                menuPtPlaySe(0x44DU);
+            if (old.top != Data.pos.top || old.cursor != Data.pos.cursor) {
+                menuPtPlaySe(0x44D);
             }
-        } else if ((s32) (temp_r3 & 4) != 0) {
-            if ((s16) M2C_FIELD(&Data, s32 *, 0xC) == 0) {
-                M2C_FIELD(&Data, s16 *, 0xE) = 0;
+        } else if (key & 4) {
+            if (Data.pos.top == 0) {
+                Data.pos.cursor = 0;
             } else {
-                temp_r3_3 = (s16) M2C_FIELD(&Data, s32 *, 0xC) - 8;
-                M2C_FIELD(&Data, s32 *, 0xC) = temp_r3_3;
-                if (temp_r3_3 < 0) {
-                    M2C_FIELD(&Data, s32 *, 0xC) = 0;
+                Data.pos.top -= 8;
+                if (Data.pos.top < 0) {
+                    Data.pos.top = 0;
                 }
             }
-            if (((s16) sp8 != (s16) M2C_FIELD(&Data, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data, s16 *, 0xE))) {
-                menuPtPlaySe(0x44DU);
+            if (old.top != Data.pos.top || old.cursor != Data.pos.cursor) {
+                menuPtPlaySe(0x44D);
             }
-        } else if ((temp_r3 & 2) != 0) {
-            temp_r0_2 = M2C_FIELD(&Data, s16 *, 0xE) + 1;
-            M2C_FIELD(&Data, s16 *, 0xE) = temp_r0_2;
-            if ((s32) (temp_r0_2 + M2C_FIELD(&Data, s32 *, 0xC)) >= temp_r6) {
-                M2C_FIELD(&Data, s16 *, 0xE) = (s16) (temp_r0_2 - 1);
+        } else if (key & 2) {
+            Data.pos.cursor++;
+            if (Data.pos.cursor + Data.pos.top >= n) {
+                Data.pos.cursor--;
             } else {
-                if (temp_r0_2 >= 8) {
-                    M2C_FIELD(&Data, s32 *, 0xC) = ((s16) M2C_FIELD(&Data, s32 *, 0xC) + 1);
-                    var_r29 = 0x10;
-                    M2C_FIELD(&Data, s16 *, 0xE) = (s16) (temp_r0_2 - 1);
-                    M2C_FIELD(&Data, s8 *, 0x14) = 1;
+                if (Data.pos.cursor >= 8) {
+                    Data.pos.top++;
+                    se = 0x10;
+                    Data.pos.cursor--;
+                    Data.scrollDown = 1;
                 } else {
-                    var_r29 = 0x10;
-                    M2C_FIELD(&Data, s8 *, 0x14) = 0;
+                    se = 0x10;
+                    Data.scrollDown = 0;
                 }
-                M2C_FIELD(&Data, f32 *, 0x10) = -(f32)(30.0f);
+                Data.scroll = -30.0f;
             }
         }
-        if (((s32) (temp_r3 & 1) != 0) && (((s16) M2C_FIELD(&Data, s16 *, 0xE) > 0) || (M2C_FIELD(&Data, s32 *, 0xC) > 0))) {
-            M2C_FIELD(&Data, s16 *, 0xE)--;
-            if (M2C_FIELD(&Data, s16 *, 0xE) < 0) {
-                var_r29 = 0x10;
-                M2C_FIELD(&Data, s32 *, 0xC) = (M2C_FIELD(&Data, s32 *, 0xC) - 1);
-                M2C_FIELD(&Data, s16 *, 0xE) = 0;
-                M2C_FIELD(&Data, s8 *, 0x14) = 1;
-            } else {
-                var_r29 = 0x10;
-                M2C_FIELD(&Data, s8 *, 0x14) = 0;
+        if (key & 1) {
+            if (Data.pos.cursor > 0 || Data.pos.top > 0) {
+                Data.pos.cursor--;
+                if (Data.pos.cursor < 0) {
+                    Data.pos.cursor = 0;
+                    se = 0x10;
+                    Data.pos.top--;
+                    Data.scrollDown = 1;
+                } else {
+                    se = 0x10;
+                    Data.scrollDown = 0;
+                }
+                Data.scroll = 30.0f;
             }
-            M2C_FIELD(&Data, f32 *, 0x10) = 30.0f;
         }
-        if (((s16) sp8 != M2C_FIELD(&Data, s32 *, 0xC)) || (unkspA != (s16) M2C_FIELD(&Data, s16 *, 0xE))) {
+        if (old.top != Data.pos.top || old.cursor != Data.pos.cursor) {
             menuSubCursorAnimeStart();
         }
-        if (var_r29 != 0) {
-            menuPtPlaySe(var_r29);
+        if (se != 0) {
+            menuPtPlaySe(se);
         }
     }
 }
@@ -417,7 +423,6 @@ static void _controlCursor() {
 
 namespace {
 static void printItemList(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
-    s32 temp_r22;
     s32 var_r28;
     s32 temp_r27;
     s32 var_r4;
@@ -425,7 +430,8 @@ static void printItemList(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
     s32 var_r25;
     s32 var_r24;
     s32 var_r23;
-    volatile u16 temp_r3;
+    u16 temp_r3;
+    s32 temp_r22;
 
     var_r4 = 0;
     var_r25 = 8;

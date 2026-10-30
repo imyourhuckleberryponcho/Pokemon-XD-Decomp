@@ -826,7 +826,8 @@ static s32 _WsHuuinSub(void* pokemon, u16 id, void* user) {
         if (pokemonWazaCheckValid((void*)other, value) == 0) {
             continue;
         }
-        if (pokemonSearchWazaDataId(pk, pokemon_GetPokemonWazaDataId((void*)other, (s32)value)) < 0) {
+        u32 waza = pokemon_GetPokemonWazaDataId((void*)other, (s32)value);
+        if (pokemonSearchWazaDataId(pk, waza) < 0) {
             continue;
         }
         ctx->flag = 1;
@@ -1933,6 +1934,7 @@ void WS_NOROI(void) {
 
 extern "C" {
 void WS_IYASHINOSUZU(void) {
+    extern u32 heroGetStatus(void*, u32, u16);
     u32 n;
     FightOutPokemon* atk;
     void* hero;
@@ -3019,8 +3021,8 @@ extern "C" {
 void WS_TEXTURE(void) {
     s32 ary[4];
     u8* cmd;
-    FightOutPokemon* atk;
-    s32 n;
+    u16 n;
+    FightOutPokemon *atk;
     s32 pick;
     u8 i;
     cmd = (u8*)fightSeq_GetWazaSeq();

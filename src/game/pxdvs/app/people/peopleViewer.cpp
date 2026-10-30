@@ -37,7 +37,7 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 struct GSgfxLayer;
 struct GSlight;
 struct GSvec;
-enum GXColor { GXColor_draft_dummy };
+struct GXColor { u8 r, g, b, a; };
 struct Hero;
 struct PeopleInfo;
 struct PeopleWork;
@@ -122,7 +122,7 @@ s32 gimmickBoxDrawString(s32, s32, struct _struct_motiontype_str_0x20*);
 f32 gimmickBoxGetFrameCount(f32*, s32);
 s32 gimmickSetMotion(s32, s32, s32, s32, s32);
 void* lightGetLight(s32 index);
-void* peopleBiosGetPos(PeopleWork* work);
+void peopleBiosGetPos(PeopleWork* work, GSvec* out);
 void* peopleBiosGetPosPtr(PeopleWork* work);
 f32* peopleBiosGetPrevPosPtr(PeopleWork* work);
 void peopleBiosSetFlagOff(PeopleWork* work, u32 flags);
@@ -155,7 +155,7 @@ void peopleViewerThread();
 int sprintf(char* s, const char* format, ...);
 u32 timeGetLastFrameTime(void);
 extern s32 init;
-extern s32 jtbl_2208;
+extern GXColor jtbl_2208;
 }
 extern "C++" {
 void GSprimSetup2DRender(GSgfxLayer* layer);
@@ -203,15 +203,7 @@ extern "C" {
 s32 peopleViewerDisplayDaemonInfo(void *p0);
 void peopleViewerSetHeroPos();
 }
-static u8 bTest_S2269;
-static f32 degree_S2360;
-static u8 init_S2270;
-static u8 init_S2361;
 static void _peopleViewerInitChara() {
-    f32 sp10;
-    volatile f32 spC;
-    f32 sp8;
-
     M2C_FIELD(m_pChara, s8 *, 0x54) = 0;
     m_anim_number = 0;
     peoplePartAnimationBlinkStop((tagPeopleWork*)(m_pChara));
@@ -222,49 +214,48 @@ static void _peopleViewerInitChara() {
     peopleSetPos(0, 0x64, (f32*)&init_hero_pos);
     peopleSetRot(0, 0x64, &init_hero_rot);
     M2C_FIELD(m_pChara, s8 *, 0x54) = 6;
-    if ((s8) init_S2361 == 0) {
-        init_S2361 = 1;
-        degree_S2360 = 0.0f;
-    }
-    sp8 = 0.0f;
-    spC = 0.017453292f * degree_S2360;
-    sp10 = 0.0f;
-    peopleBiosSetRot((PeopleWork*)((PeopleWork *) m_pChara), (void*)(&sp8));
+    static f32 degree = 0.0f;
+    GSvec rot;
+    rot.x = 0.0f;
+    rot.y = 0.017453292f * degree;
+    rot.z = 0.0f;
+    peopleBiosSetRot((PeopleWork*)m_pChara, (void*)&rot);
 }
 }
 static s32 _peopleViewerFallMotion() {
-    volatile f32 spC;
-    s32 unksp8;
-    f32 temp_f1;
-    f32 temp_f31_2;
+    GSvec pos;
+    f32 vsync;
+    f32 speed;
+    f32 fall;
+    f32 y;
 
-    peopleGetPos(0xFA1, 0, (GSvec*)(&unksp8));
-    temp_f31_2 = m_play_speed_rate * ((30.0f * (f32) timeGetLastFrameTime()) / (f32)((f32) GSgfxVideoGetVsyncRate()));
-    temp_f1 = spC - (1.3f * temp_f31_2);
-    if (temp_f1 > 0.0f) {
+    peopleGetPos(0xFA1, 0, &pos);
+    vsync = GSgfxVideoGetVsyncRate();
+    speed = m_play_speed_rate * (30.0f * timeGetLastFrameTime() / vsync);
+    fall = 1.3f * speed;
+    y = pos.y - fall;
+    if (y > 0.0f) {
         if (m_fall_loop_anim_num > 0.0f) {
-            spC = temp_f1;
-            if (temp_f1 < 0.0f) {
-                spC = 0.0f;
+            pos.y = y;
+            if (y < 0.0f) {
+                pos.y = 0.0f;
             }
         }
-        peopleSetPos((long)(0xFA1), (long)(0), (float *)(&unksp8));
+        peopleSetPos(0xFA1, 0, (f32*)&pos);
         m_anim_number = 0x27;
-        gimmickSetMotion(0xFA1, 0, 0x27, (s32) m_fall_loop_anim_num, 1);
-        m_fall_loop_anim_num += temp_f31_2;
-        goto block_8;
-    }
-    if (m_fall_end_anim_num < m_fall_end_frame_count) {
-        spC = 0.0f;
-        peopleSetPos((long)(0xFA1), (long)(0), (float *)(&unksp8));
+        gimmickSetMotion(0xFA1, 0, 0x27, (s32)m_fall_loop_anim_num, 1);
+        m_fall_loop_anim_num += speed;
+    } else if (m_fall_end_anim_num < m_fall_end_frame_count) {
+        pos.y = 0.0f;
+        peopleSetPos(0xFA1, 0, (f32*)&pos);
         m_anim_number = 0x28;
-        gimmickSetMotion(0xFA1, 0, 0x28, (s32) m_fall_end_anim_num, 0);
-        m_fall_end_anim_num += temp_f31_2;
-block_8:
-        return 0;
+        gimmickSetMotion(0xFA1, 0, 0x28, (s32)m_fall_end_anim_num, 0);
+        m_fall_end_anim_num += speed;
+    } else {
+        _peopleViewerFallReady(m_fall_height);
+        return 1;
     }
-    _peopleViewerFallReady(m_fall_height);
-    return 1;
+    return 0;
 }
 }
 
@@ -307,6 +298,8 @@ static void _peopleViewerInit() {
     tagPeopleWork *temp_r3_2;
     u32 temp_r30;
     volatile s8 spE;
+    GXColor color;
+    GXColor copy;
 
     if (GSfloorGetCurrent() == 0xFA1U) {
         m_b_speak_mode = 0;
@@ -316,7 +309,7 @@ static void _peopleViewerInit() {
         peoplePartAnimationSpeakStop((tagPeopleWork*)(m_pChara));
         temp_r3 = Hero::getHeroPtr();
         temp_r31 = ((Hero*)(temp_r3))->getFollowerGrpID();
-        temp_r30 = ((Hero*)((u16)temp_r3))->getFollowerResID();
+        temp_r30 = ((Hero*)(temp_r3))->getFollowerResID();
         peopleSetDisp(0, 0x64, m_b_rinto_disp);
         peopleSetDisp((s32) temp_r31, (s32) temp_r30, 0U);
         peopleSetFlagOff(0, 0x64, 0x100);
@@ -346,11 +339,11 @@ static void _peopleViewerInit() {
                 m_play_speed_rate = 1.0f;
                 cameraSetType(5U);
                 temp_r3_4 = (GSlight *)(lightGetLight(0));
-                spC = 0xFF;
-                spD = 0xFF;
-                spE = 0xFF;
-                sp8 = (s32) spC;
-                GSlightSetColor((GSlight*)(temp_r3_4), (const GXColor*)((GXColor *) &sp8));
+                color.r = 0xFF;
+                color.g = 0xFF;
+                color.b = 0xFF;
+                copy = color;
+                GSlightSetColor(temp_r3_4, &copy);
             }
         }
     }
@@ -440,7 +433,8 @@ static void _peopleViewerMain() {
             _peopleViewerFallMotion();
         }
         if (((_GSmodel *) M2C_FIELD(m_pKen, _GSmodel **, 8) != NULL) && ((_GSmodel *) M2C_FIELD(m_pChara, _GSmodel **, 8) != NULL)) {
-            peopleBiosGetPos((PeopleWork*)((PeopleWork *) m_pKen));
+            GSvec pos;
+            peopleBiosGetPos((PeopleWork*)m_pKen, &pos);
             _peopleViewerDrawParams();
             dbgMenuIsOpen();
         }
@@ -450,29 +444,23 @@ static void _peopleViewerMain() {
 
 extern "C" {
 void peopleViewerSetHeroPos() {
-    f32 sp14;
-    volatile f32 sp10;
-    volatile f32 sp1C;
-    volatile f32 sp8;
+    GSvec heroPos;
+    GSvec charaPos;
 
-    if ((GSfloorGetCurrent() == 0xFA1U) && ((f32 *) m_pKen != NULL) && ((u32) M2C_FIELD(m_pKen, u32 *, 8) != 0U) && ((tagPeopleWork *) m_pChara != NULL)) {
-        if ((u32) M2C_FIELD(m_pChara, u32 *, 8) == 0U) {
-            return;
+    if (GSfloorGetCurrent() != 0xFA1U || m_pKen == NULL || M2C_FIELD(m_pKen, u32*, 8) == 0 || m_pChara == NULL ||
+        M2C_FIELD(m_pChara, u32*, 8) == 0) {
+        return;
+    }
+    if ((u32)(m_current_motion_type - 1) <= 2 || m_current_motion_type == 4) {
+        peopleBiosGetPos((PeopleWork*)m_pKen, &heroPos);
+        peopleBiosGetPos((PeopleWork*)m_pChara, &charaPos);
+        heroPos.x = charaPos.x;
+        if (m_current_motion_type == 3 || m_current_motion_type == 4) {
+            heroPos.z = charaPos.z + (init_hero_pos.z - init_chara_pos.z);
         }
-        if (((u32) (m_current_motion_type - 1) <= 2U) || ((s32) m_current_motion_type == 4)) {
-            peopleBiosGetPos((PeopleWork*)((PeopleWork *) m_pKen));
-            peopleBiosGetPos((PeopleWork*)((PeopleWork *) m_pChara));
-            sp14 = sp8;
-            if (((s32) m_current_motion_type == 3) || ((s32) m_current_motion_type == 4)) {
-                sp1C = sp10 + (init_hero_pos.z - init_chara_pos.z);
-            }
-            if ((s8) init_S2270 == 0) {
-                bTest_S2269 = 1;
-                init_S2270 = 1;
-            }
-            if ((u8) bTest_S2269 != 0) {
-                peopleSetPos(0, 0x64, &sp14);
-            }
+        static bool bTest = true;
+        if (bTest) {
+            peopleSetPos(0, 0x64, (f32*)&heroPos);
         }
     }
 }
@@ -518,8 +506,7 @@ static void _peopleViewerDrawParams() {
     temp_r4 = (long *)("SNATCHDAN_0000");
     GSprimSetup2DRender((GSgfxLayer*)(GSgfxLayerFindByID(7)));
     GSprimSetBlendMode(1);
-    sp8 = jtbl_2208;
-    GSprimDraw2DQuad((GXColor)((s32) &sp8), 10.0f, 10.0f, 630.0f, 72.0f);
+    GSprimDraw2DQuad(jtbl_2208, 10.0f, 10.0f, 630.0f, 72.0f);
     gimmickBoxDrawString((long)(0), (long)(0), (_struct_motiontype_str_0x20 *)(temp_r4 + 0x9D0));
     gimmickBoxDrawString(0, 1, char_tbl[m_char_number].unk8);
     gimmickBoxDrawInt(0, 2, m_char_number);

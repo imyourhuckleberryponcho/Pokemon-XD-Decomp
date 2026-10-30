@@ -35,7 +35,7 @@ public:
     u8* current;
     s32 size;
     u16 read16() { u16 n = ((u16)current[0] << 8) | (u16)current[1]; current += 2; return n; }
-    u32 read32() { u8* p = current; u32 n = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3]; current += 4; return n; }
+    u32 read32() { u32 n = (current[0] << 24) | (current[1] << 16) | (current[2] << 8) | current[3]; current += 4; return n; }
     f32 readFloat() { union { u32 n; f32 f; f64 align; } value; value.n = read32(); return value.f; }
     void read(void* dst, u32 n) { memcpy(dst, current, n); current += n; }
     void skip(u32 n) { current += n; }

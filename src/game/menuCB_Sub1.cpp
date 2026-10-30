@@ -990,10 +990,10 @@ void menuCB_GCEntryCursolDisp(CBWin* win, void* unused, u8 flag) {
     f32 k;
     s16 a;
     s16 b;
-    s16 y;
+    int y;
     int n;
     u32 color;
-    s16 x;
+    int x;
     MenuSpriteVal* v;
     if (flag) {
         t = _f_menuCB_circleAnimationTime / 0.5f;

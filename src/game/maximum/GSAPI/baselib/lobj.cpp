@@ -860,9 +860,11 @@ void HSD_LObjSetupInit(HSD_CObj* cobj)
     int i, idx;
     s32 num;
     HSD_SList* list;
+    HSD_LObj** lights;
 
     lightmask_diffuse = GX_LIGHT_NULL;
     list = current_lights;
+    lights = active_lights;
     vmtx = cobj->view_mtx;
     for (i = 0; i < MAX_GXLIGHT; i++) {
         active_lights[i] = NULL;
@@ -917,7 +919,7 @@ void HSD_LObjSetupInit(HSD_CObj* cobj)
         }
     }
 
-    if (active_lights[HSD_LightID2Index(GX_MAX_LIGHT)] == NULL) {
+    if (lights[HSD_LightID2Index(GX_MAX_LIGHT)] == NULL) {
         for (; list; list = list->next) {
             HSD_LObj* lobj = list->data;
             if (lobj == NULL) {

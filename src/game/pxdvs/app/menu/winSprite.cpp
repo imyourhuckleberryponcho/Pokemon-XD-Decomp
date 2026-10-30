@@ -531,9 +531,9 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             break;
         }
         case 2: {
-            u8 b2 = (u16)sp->uw * b / 255;
             u8 r2 = (u16)sp->u * r / 255;
             u8 g2 = (u16)sp->v * g / 255;
+            u8 b2 = (u16)sp->uw * b / 255;
             gfx->primitive = 0x98;
             gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
             gfx->beginSurface(4);

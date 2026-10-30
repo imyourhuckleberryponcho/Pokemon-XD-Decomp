@@ -252,6 +252,8 @@ void HSD_SetupChannelMode(u32 rendermode) {
 }
 
 void HSD_SetupPEMode(u32 flags, HSD_PEDesc* pe) {
+    u8 update;
+
     if (pe != NULL) {
         HSD_StateSetColorUpdate(pe->flags & 1);
         HSD_StateSetAlphaUpdate(pe->flags & 2);
@@ -267,7 +269,8 @@ void HSD_SetupPEMode(u32 flags, HSD_PEDesc* pe) {
     HSD_StateSetAlphaUpdate(0);
     HSD_StateSetDstAlpha(0, 0);
     HSD_StateSetBlendMode((flags & 0x40000000) ? 1 : 0, 4, 5, 0xF);
-    HSD_StateSetZMode(1, (flags & 0x08000000) ? 7 : 3, (flags & 0x20000000) ? FALSE : TRUE);
+    update = (flags & 0x20000000) ? FALSE : TRUE;
+    HSD_StateSetZMode(1, (flags & 0x08000000) ? 7 : 3, update);
     if (!(flags & 0x20000000) && (flags & 0x40000000)) {
         HSD_StateSetZCompLoc(0);
         HSD_StateSetAlphaCompare(4, 0, 0, 4, 0);
@@ -344,9 +347,9 @@ void HSD_StateSetBlendMode(s32 type, s32 src_factor, s32 dst_factor, s32 op) {
 }
 
 void HSD_StateSetZMode(s32 enable, s32 func, s32 update) {
-    u8 on = enable ? TRUE : FALSE;
-    u8 write = update ? TRUE : FALSE;
-    if (state_z_enable != on || state_z_func != func || state_z_update != write) {
+    int on = enable ? TRUE : FALSE;
+    int write = update ? TRUE : FALSE;
+    if (state_z_enable != (u8)on || state_z_func != func || state_z_update != (u8)write) {
         GXSetZMode(on, func, write);
         state_z_enable = on;
         state_z_func = func;
@@ -382,25 +385,25 @@ void HSD_StateSetColorUpdate(s32 enable) {
 }
 
 void HSD_StateSetAlphaUpdate(s32 enable) {
-    u8 on = enable ? TRUE : FALSE;
-    if (state_alpha_update != on) {
+    int on = enable ? TRUE : FALSE;
+    if (state_alpha_update != (u8)on) {
         GXSetAlphaUpdate(on);
         state_alpha_update = on;
     }
 }
 
 void HSD_StateSetDstAlpha(s32 enable, u8 alpha) {
-    u8 on = enable ? TRUE : FALSE;
-    if (state_enable_dst_alpha != on || state_dst_alpha != alpha) {
+    int on = enable ? TRUE : FALSE;
+    if (state_enable_dst_alpha != (u8)on || state_dst_alpha != alpha) {
         GXSetDstAlpha(on, alpha);
-        state_dst_alpha = alpha;
         state_enable_dst_alpha = on;
+        state_dst_alpha = alpha;
     }
 }
 
 void HSD_StateSetZCompLoc(s32 before_tex) {
-    u8 on = before_tex ? TRUE : FALSE;
-    if (state_before_tex != on) {
+    int on = before_tex ? TRUE : FALSE;
+    if (state_before_tex != (u8)on) {
         GXSetZCompLoc(on);
         state_before_tex = on;
     }

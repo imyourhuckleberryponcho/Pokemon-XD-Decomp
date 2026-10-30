@@ -98,8 +98,7 @@ void menuGBACSetRomVer(u16 ver, u16 idx);
 
 static u8 _menu_ports[4] = {1, 2, 4, 8};
 static s8 chans[4] = {1, 2, 3, 0};
-static s16 gba_player_number[4] = {1, 2, 3, 0};
-static u16 GBA_ROM_VERSION_FLAG[4] = {0, 0, 0, 0};
+static u16 gba_player_number[4] = {1, 2, 3, 0};
 
 static const s32 _initial_phase[4][4] = {
     {8, 1, 0, 0},
@@ -520,20 +519,14 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
     s32 j;
     s32 res;
     Hero* status;
-    GBAInfo info;
+    u32 info;
     bool ok;
-    s8* chp;
-    s16* gpn;
-    u32 a;
-    u32 b;
 
     AGB_Terminate_init();
-    a = flags & 1;
-    if (a == 1) {
+    if ((flags & 1) == 1) {
         nameIdx = 1;
     }
-    b = flags & 2;
-    if (b == 2) {
+    if ((flags & 2) == 2) {
         nameIdx = 0;
     }
     switch (pokecoloGetCountryCode()) {
@@ -556,7 +549,7 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
             status = (Hero*)savedataGetStatus(0, 2);
             work->channel = 0;
             work->phase.v[0] = 8;
-            if (b != 0) {
+            if (flags & 2) {
                 _message(0x4437, 0);
                 _menuWait(1.0f);
                 if (!menuCBRule_CheckHero(status)) {
@@ -575,9 +568,8 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
         }
     }
     menuGBACSetRomVer(0, 0xFFFF);
-    chp = chans;
-    for (i = 0, gpn = gba_player_number; i < 4; i++, chp++, gpn++) {
-        ch = *chp;
+    for (i = 0; i < sizeof(chans); i++) {
+        ch = chans[i];
         work->channel = ch;
         if (heroes != 0 && heroes[ch] != 0) {
             hero = heroes[ch];
@@ -585,8 +577,9 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
             hero = &localHero;
         }
         if (ch == 0) {
-            work->timeout[0] = 4;
-            if (work->timeout[0]) {
+            nameIdx = 4;
+            work->timeout[0] = nameIdx;
+            if (nameIdx != 0) {
                 work->timeout[0] = 3;
                 work->f48[0] = 1;
             }
@@ -636,37 +629,43 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
                 _menuWait(1.0f);
             }
             heroInit(hero);
-            *(u32*)&info = 0;
-            AGB_GetPokemon(ch, hero, (u32*)&info);
+            info = 0;
+            AGB_GetPokemon(ch, hero, &info);
             res = _waitComplete(work);
-            if (res == 4) {
+            switch (res) {
+            case 4:
                 return _poweroff(work, (_GBA_PHASE)6);
             }
-            menuGBACSetRomVer(info.ver, *gpn);
-            if (info.err != 0) {
+            menuGBACSetRomVer(((info >> 10) & 0xF), gba_player_number[i]);
+            if (((info >> 8) & 3) != 0) {
                 if (_error(work, 0x4422, (_GBA_PHASE)6)) {
                     continue;
                 }
                 return 0;
             }
-            if (!_check_langarea(info.lang)) {
+            if (!_check_langarea(((info >> 4) & 0xF))) {
                 if (_error(work, 0x4423, (_GBA_PHASE)6)) {
                     continue;
                 }
                 return 0;
             }
-            if (res != 0 || !info.b1) {
+            switch (res) {
+            case 0:
+                if (info & 2) {
+                    break;
+                }
+            default:
                 if (_error(work, 0x4422, (_GBA_PHASE)6)) {
                     continue;
                 }
                 return 0;
             }
-            if (a != 0) {
+            if (flags & 1) {
                 ok = true;
-                switch (info.ver) {
+                switch (((info >> 10) & 0xF)) {
                 case 1:
                 case 2:
-                    if (!info.f14) {
+                    if (!(info & 0x4000)) {
                         ok = false;
                     }
                     if (!ok) {
@@ -678,7 +677,7 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
                     break;
                 case 3:
                 case 4:
-                    if (!info.b3) {
+                    if (!(info & 8)) {
                         ok = false;
                     }
                     if (!ok) {
@@ -689,7 +688,7 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
                     }
                     break;
                 case 5:
-                    if (!info.f14) {
+                    if (!(info & 0x4000)) {
                         ok = false;
                     }
                     if (!ok) {
@@ -706,32 +705,39 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
                     return 0;
                 }
             }
-            if (b != 0) {
-                if (!info.b0) {
+            if (flags & 2) {
+                if (!(info & 1)) {
                     if (_error(work, 0x4424, (_GBA_PHASE)6)) {
                         continue;
                     }
                     return 0;
                 }
                 if (!menuCBRule_CheckHero(hero)) {
-                    menuCBRule_ErrorFlagSet(hero, *gpn);
+                    menuCBRule_ErrorFlagSet(hero, gba_player_number[i]);
                     menuCB_MessageDispOff();
                     menuCB_SE_Play(0x15);
                     menuCloseCustom(0xb0, 0, 1);
-                    menuCB_Pokemon_ErrorDisp(hero, *gpn);
+                    menuCB_Pokemon_ErrorDisp(hero, gba_player_number[i]);
                     if ((flags & 8) == 0) {
                         return 0;
                     }
-                    work->saved = work->phase;
+                    work->saved.v[0] = work->phase.v[0];
+                    work->saved.v[1] = work->phase.v[1];
+                    work->saved.v[2] = work->phase.v[2];
+                    work->saved.v[3] = work->phase.v[3];
                     work = _open_menu(type, flags, i);
                     if (ch == 0) {
-                        work->timeout[0] = 4;
-                        if (work->timeout[0]) {
+                        nameIdx = 4;
+                        work->timeout[0] = nameIdx;
+                        if (nameIdx != 0) {
                             work->timeout[0] = 3;
                             work->f48[0] = 1;
                         }
                     }
-                    work->phase = work->saved;
+                    work->phase.v[0] = work->saved.v[0];
+                    work->phase.v[1] = work->saved.v[1];
+                    work->phase.v[2] = work->saved.v[2];
+                    work->phase.v[3] = work->saved.v[3];
                     work->phase.v[ch] = 6;
                     GSthreadSwitch();
                     for (k = 0; k < i; k++) {
@@ -781,7 +787,7 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
             }
             break;
         }
-        work->channel = chp[1];
+        work->channel = chans[i + 1];
         if (!_waitAction(work, (_GBA_WAIT_FLAG)7)) {
             return _poweroff(work, (_GBA_PHASE)6);
         }
@@ -809,6 +815,8 @@ s32 openMenuGBA(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
     AGB_FileBuffFree();
     return ok ? 0 : -1;
 }
+
+static u16 GBA_ROM_VERSION_FLAG[4] = {0, 0, 0, 0};
 
 void menuGBACSetRomVer(u16 ver, u16 idx)
 {

@@ -1916,21 +1916,21 @@ static void _fightTrainerCreateRndCheckRare(Hero* hero, bool rare) {
 extern "C" {
 
 void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* hero, u16 encountId_in) {
+    u16 encountId = encountId_in;
+    u8 maxLevel;
     u8 i;
     Hero* player;
+    u16 item;
+    Pokemon* p;
     u32 num;
     u8 fightKind;
-    u32 sex;
-    u8 maxLevel;
-    u16 item;
     u16 disk;
-    Pokemon* p;
-    u16 encountId = encountId_in;
+    u32 sex;
 
     if (encountId == 0) {
         encountId = fightGetFightEncountDataId();
     }
-    fightKind = fightEncountDataBiosGetFightKind(fightEncountDataBiosGetPtr((u8)encountId));
+    fightKind = fightEncountDataBiosGetFightKind(fightEncountDataBiosGetPtr(encountId));
     if (hero == 0) {
         return;
     }
@@ -1952,7 +1952,8 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* her
             return;
         }
         if (fightKind == 13) {
-            heroCreate(hero, heroBiosGetNamePtr(player), 0);
+            u16* name = heroBiosGetNamePtr(player);
+            heroCreate(hero, name, 0);
             _fightTrainerCreateDeckBingo(id, hero);
             _fightTrainerCreateRndCheckRare(hero, false);
         } else if (fightKind == 15 || fightKind == 14) {

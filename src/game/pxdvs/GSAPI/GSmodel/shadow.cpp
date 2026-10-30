@@ -573,8 +573,8 @@ void modelShadowRender(GSgfxLayer* layer)
     u32 i;
     u32 k;
 
-    slot = r;
-    for (j = 0; j < 5; j++, slot++) {
+    for (j = 0; j < 5; j++) {
+    slot = &r[j];
         if (slot->model != 0) {
             GSgfxTokenWaitForClearAndReset(&slot->unk52);
             if (slot->model != 0) {

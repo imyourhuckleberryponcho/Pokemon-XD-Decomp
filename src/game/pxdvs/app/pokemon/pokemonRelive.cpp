@@ -86,7 +86,7 @@ struct SequenceWaza {
     u8 _draft[1];
 };
 struct Vec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 struct WazaSequence {
     u8 _draft[1];
@@ -255,33 +255,29 @@ static s8 _cbWazaForget(Pokemon* p0, unsigned short p1, long p2) {
 
 extern "C++" {
 #pragma peephole off
-static void _preReliveDisplayHokoraParticleThreadFunc() {
-    volatile f32 sp10;
-    f32 spC;
-    f32 sp8;
-    s32 temp_cr0_eq;
-    s32 temp_r3;
-
-    sp8 = 0.0f;
-    temp_cr0_eq = (u8) isHokoraParticleLoaded == 1;
-    spC = 7.0f;
-    sp10 = 0.0f;
-    if ((temp_cr0_eq != 0) && (temp_cr0_eq != 0)) {
-        GSparticleDestroyGenerator((u16)hokoraParticleGen, 1);
-        hokoraParticleGen = 0;
-        isHokoraParticleLoaded = 0;
-    }
-    temp_r3 = (long)(GSparticleCreateGenerator((GSparticleBank*)(GSresGetResource(floorGetCurrentGroupID(), 0x0FAE1400U)), 0, 0));
-    hokoraParticleGen = temp_r3;
-    GSparticleSetGeneratorPosition((GSparticleGenerator*)((GSparticleGenerator *) temp_r3), (Vec*)((Vec *) &sp8));
-    isHokoraParticleLoaded = 1;
-    soundOpenPlay(0x597, 0, 0x7F);
-    waitTime(4.0f);
-    if ((u8) isHokoraParticleLoaded == 1) {
+static inline void _preReliveDestroyHokoraParticle() {
+    if (isHokoraParticleLoaded == 1) {
         GSparticleDestroyGenerator(hokoraParticleGen, 1);
         hokoraParticleGen = 0;
         isHokoraParticleLoaded = 0;
     }
+}
+
+static void _preReliveDisplayHokoraParticleThreadFunc() {
+    Vec pos;
+    pos.x = 0.0f;
+    pos.y = 7.0f;
+    pos.z = 0.0f;
+
+    if (isHokoraParticleLoaded == 1) {
+        _preReliveDestroyHokoraParticle();
+    }
+    hokoraParticleGen = (s32)GSparticleCreateGenerator((GSparticleBank*)GSresGetResource(floorGetCurrentGroupID(), 0x0FAE1400), 0, 0);
+    GSparticleSetGeneratorPosition((GSparticleGenerator*)hokoraParticleGen, &pos);
+    isHokoraParticleLoaded = 1;
+    soundOpenPlay(0x597, 0, 0x7F);
+    waitTime(4.0f);
+    _preReliveDestroyHokoraParticle();
     lbl_804EB994 = NULL;
 }
 #pragma peephole reset
@@ -357,7 +353,7 @@ static u8 _expRecover(Pokemon* pokemon, unsigned long gainExp) {
             newLevel = pokemonBiosGetLevel(pokemon);
             soundOpenPlayME(0x3C7, 0, 0xFF);
             msgctrlSetValue(0x2F, (u8)newLevel);
-            winMsgOpenField((void*)0x44CE, 1, 0);
+            winMsgOpenField((void*)0xC367, 1, 0);
             status.hp = (s16)pokemonGetStatus(pokemon, 0, 0x87, 0);
             status.attack = (s16)pokemonGetStatus(pokemon, 0, 0x88, 0);
             status.defense = (s16)pokemonGetStatus(pokemon, 0, 0x89, 0);
@@ -491,7 +487,7 @@ static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2) {
                         if (temp_r3_4 == (u16) *var_r4) {
                             var_r5 = 1;
                         } else {
-                            var_r4 += 2;
+                            var_r4 += 1;
                             var_ctr -= 1;
                             if (var_ctr != 0) {
                                 goto loop_54;

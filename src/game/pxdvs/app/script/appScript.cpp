@@ -44,8 +44,7 @@ struct tigaVariant {
         return getCnvString(buf);
     }
     inline GSvec* getVector() {
-        if (type == 4) return (GSvec*)value.pointer;
-        return getCnvVector();
+        return type == 4 ? (GSvec*)value.pointer : getCnvVector();
     }
     inline void* getObject(s16 expected, const char* message) {
         if (type == expected) return value.pointer;
@@ -324,9 +323,9 @@ s32 floorTresureGetResID(u16);
 u8 wazaDB_GetHidenFlag(u16);
 f32 PSVECDistance(GSvec*, GSvec*);
 void GSresFreeResource(s32, s32);
-void scriptGlowStart(f32, u8, u8, u8, u8, u8);
+void scriptGlowStart(f32, u8, bool, bool, bool, u8);
 void scriptGlowEnd();
-void scriptSetLensFlare(s32, u8, f32, f32, f32);
+void scriptSetLensFlare(s32, bool, f32, f32, f32);
 u8 GSgfxVideoGetVsyncRate();
 s32 pokecoloGetCountryCode();
 s32 pokecoloGetLanguage();
@@ -413,323 +412,418 @@ s32 AppScript::cmpEsaba(int command, GSscript::tigaVariant* args, GSscript::tiga
     return 0;
 }
 
-s32 AppScript::cmpDarkPokemon(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    Hero* hero = savedataGetStatus(0, 2);
-    DarkPokemon* dark = darkPokemonGetDarkPokemon(args[1].getInteger());
-    if (dark == 0) {
-        result->setInteger(0);
-        return 1;
-    }
-    switch (command) {
-    case 0x10:
-        if (dark->getStatus() == 4) {
-            result->setInteger(1);
-        } else {
-            result->setInteger(0);
-        }
-        break;
-    case 0x11:
-        if (dark->getStatus() >= 3) {
-            result->setInteger(1);
-        } else {
-            result->setInteger(0);
-        }
-        break;
-    case 0x12: dark->setStatus((darkPokemonStatus)args[2].getInteger()); break;
-    case 0x13: result->setInteger(dark->getPokemonID()); break;
-    case 0x14: result->setInteger(dark->getStatus()); break;
-    case 0x15: {
-        u8 count = hero->getMeetDarkPokemonCount();
-        hero->setMeetDarkPokemonCount(count + 1);
-        dark->setSnatchIndex(count);
-        dark->addStatus((darkPokemonStatus)1);
-        dark->setCatchFloorId(0xB5);
-        dark->setUpdate(true);
-        break;
-    }
-    case 0x16: dark->setPlace((darkPokemonWhere)args[2].getInteger(), args[3].getInteger()); break;
-    }
-    return 0;
-}
-
-s32 AppScript::cmpWaza(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    GSscript::tigaWaza* waza;
-    switch (command) {
-    case 0x10:
-        waza = allocWazaPtr();
-        if (waza == 0) break;
-        waza->sequence = Sequence_CreateNull();
-        result->setObject(0x3A, waza);
-        wazaCount++;
-        break;
-    case 0x11:
-        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
-        if (waza == 0) break;
-        if (waza->waza == 0) {
-            waza->waza = Sequence_LoadWaza(waza->sequence, args[1].getInteger(), args[2].getInteger(), args[3].getInteger());
-        }
-        WazaSequence_Start(waza->waza, 0);
-        if (args[4].getInteger() == 1) {
-            while (WazaSequence_IsActive(waza->waza)) {
-                GSthreadSwitch();
-            }
-        }
-        break;
-    case 0x12:
-        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
-        if (waza == 0) break;
-        Sequence_SetPosition(waza->sequence, args[1].getVector());
-        break;
-    case 0x13: {
-        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
-        if (waza == 0) break;
-        GSvec* rot = args[1].getVector();
-        rot->x = DEG_TO_RAD * rot->x;
-        rot->y = DEG_TO_RAD * rot->y;
-        rot->z = DEG_TO_RAD * rot->z;
-        Sequence_SetRotation(waza->sequence, rot);
-        break;
-    }
-    case 0x14:
-        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
-        if (waza == 0) break;
-        Sequence_SetScale(waza->sequence, args[1].getVector());
-        break;
-    case 0x15:
-        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
-        if (waza == 0) break;
-        while (WazaSequence_IsActive(waza->waza)) {
-            GSthreadSwitch();
-        }
-        break;
-    case 0x16:
-        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
-        if (waza) {
-            if (waza->waza) WazaSequence_Free(waza->waza);
-            if (waza->sequence) Sequence_Free(waza->sequence);
-            freeWazaPtr(waza);
-        }
-        wazaCount--;
-        break;
-    }
-    return 0;
-}
-
-s32 AppScript::cmpSodateya(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    switch (command) {
-    case 0x11: result->setInteger(sodateyaGetPokemonLevelUpValue()); break;
-    case 0x12: result->setInteger(sodateyaGetPokemonDPValue()); break;
-    case 0x13: sodateyaRaise(args[1].getInteger()); break;
-    case 0x14: sodateyaReclaim(args[1].getInteger()); break;
-    case 0x16: result->setInteger(sodateyaCalcPrice(args[1].getInteger())); break;
-    case 0x17: result->setInteger(sodateyaeChekcRais()); break;
-    case 0x18: result->setObject(0x25, sodateyaGetPokemonPtr(0)); break;
-    }
-    return 0;
-}
-
-s32 AppScript::cmpTv(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    switch (command) {
-    case 0x10: result->setInteger(controlTV(args[1].getInteger())); break;
-    case 0x11: result->setInteger(controlTVScreen()); break;
-    }
-    return 0;
-}
-
-s32 AppScript::cmpDirection(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    switch (command) {
-    case 0x10: evolution(); break;
-    case 0x11: preReliveSetParameter(args[1].getInteger(), args[2].getInteger(), args[3].getInteger() != 0); break;
-    case 0x12: reliveMain(); break;
-    case 0x13: preReliveDisplayHokoraParticle(); break;
-    case 0x14: result->setInteger(menuUseItemScriptCologn(args[1].getInteger(), args[2].getInteger())); break;
-    case 0x15: result->setInteger(underTakerGetMiraboPlace()); break;
-    case 0x16: underTakerMiraboDisAppear(); break;
-    }
-    return 0;
-}
-
-s32 AppScript::cmpMail(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    switch (command) {
-    case 0x10: mailMainSendByScrpt(args[1].getInteger()); break;
-    case 0x11: result->setInteger(scriptSetMemoFlag()); break;
-    case 0x12: menuScriptReciveMail(); break;
-    case 0x13: menuScriptReadMail(args[1].getInteger()); break;
-    case 0x14:
-        menuScriptReciveMail();
-        mailMainSendByScrpt(args[1].getInteger());
-        menuScriptReadMail(args[1].getInteger());
-        break;
-    }
-    return 0;
-}
-
 s32 motorFun(u8 a, u8 b, u32 time, u8 c, bool enable);
-
-s32 AppScript::cmpPad(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    switch (command) {
-    case 0x10: result->setInteger(scriptIsButtonPush()); break;
-    case 0x11: result->setInteger(scriptIsMoveButtonPush()); break;
-    case 0x12: result->setInteger(scriptIsTrigerPush()); break;
-    case 0x13:
-        if (gamedatasaveGetStatus(0, 9) == 0) {
-            void* thread = floorCreateThread(0x80, 0, 1, (void*)motorFun);
-            GSthreadSetArgs(thread, 5, args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), 1);
-        }
-        break;
-    case 0x14: result->setInteger(GSinputButtonsPressed(1)); break;
-    }
-    return 0;
-}
-
-s32 motorFun(u8 a, u8 b, u32 time, u8 c, bool enable)
-{
-    u32 n = time;
-    if (!enable) {
-        return 0;
-    }
-    while (n != 0) {
-        GSinputMotorStart(1, a, b, time, c);
-        GSthreadSwitch();
-        n--;
-    }
-    return 0;
-}
-
-s32 AppScript::cmpSound(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    switch (command) {
-    case 0x10: result->setInteger(soundOpenPlay(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
-    case 0x11: result->setInteger(soundOpenPlayEnv(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
-    case 0x12: result->setInteger(soundStop(args[1].getInteger(), args[2].getInteger())); break;
-    case 0x13: result->setInteger(soundStopEnv(args[1].getInteger())); break;
-    case 0x14: result->setInteger(soundCreateEmitter(args[1].getInteger(), args[2].getSingle(), args[3].getSingle(), args[4].getSingle())); break;
-    case 0x15: result->setInteger(soundCreateListener()); break;
-    case 0x16: result->setInteger(soundSetVolume(args[1].getInteger(), args[2].getInteger())); break;
-    case 0x17: result->setInteger(scriptSoundOpenPlayME(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
-    case 0x18: result->setInteger(soundSetVolumeID(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
-    case 0x19: result->setInteger(soundOpenPlayFadeOutIn(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger())); break;
-    case 0x1A: result->setInteger(soundOpenPlayEnvFadeOutIn(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger())); break;
-    case 0x1B: result->setInteger(soundGetBGMID()); break;
-    case 0x1C: peopleTalkMessageBgmMask(args[1].getInteger() != 0); break;
-    case 0x1D: peopleTalkMessageBgmSetFadeSpeed(args[1].getSingle(), args[2].getSingle()); break;
-    case 0x1E: peopleTalkMessageBgmSetVolumeRate(args[1].getSingle()); break;
-    case 0x1F: soundPlayWait(args[1].getInteger()); break;
-    case 0x20: result->setInteger(soundPlayME(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
-    case 0x21: {
-        void* thread = floorCreateThread(0x80, 0, 1, (void*)appScriptPlayME_Thread);
-        GSthreadSetArgs(thread, 4, args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger());
-        break;
-    }
-    }
-    return 0;
-}
-
-s32 AppScript::cmpCol(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    switch (command) {
-    case 0x10: scriptSetCol(args[1].getInteger(), args[2].getInteger() != 0); break;
-    case 0x11: scriptGetEventColID(); break;
-    case 0x12: scriptSetEventCol(args[1].getInteger() != 0); break;
-    }
-    return 0;
-}
 
 static void _appScriptModelSetVisibility(_GSmodel* model, void* visible);
 
-s32 AppScript::cmpModel(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+#pragma defer_codegen on
+
+AppScript* scriptCreateAppScript()
 {
-    void* model;
-    switch (command) {
-    case 0x10: result->setInteger(scriptModelOpen(args[1].getInteger())); break;
-    case 0x11: scriptModelClose(args[1].getInteger()); break;
-    case 0x12: scriptModelSetDisp(args[1].getInteger(), args[2].getInteger()); break;
-    case 0x13: scriptModelSetMotion(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger()); break;
-    case 0x14: scriptModelStopMotion(args[1].getInteger()); break;
-    case 0x15: result->setInteger(scriptModelWaitMotion(args[1].getInteger(), args[2].getInteger())); break;
-    case 0x16: result->setInteger(scriptModelAttach(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
-    case 0x17: result->setInteger(scriptModelDetach(args[1].getInteger())); break;
-    case 0x18: scriptModelSetParticle(args[1].getInteger(), args[2].getInteger(), args[3].getInteger()); break;
-    case 0x19: scriptModelDeleteParticle(args[1].getInteger(), args[2].getInteger() != 0); break;
-    case 0x1A: {
-        model = GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger());
-        if (model == 0) {
-            return 0;
+    return new AppScript;
+}
+
+AppScript::AppScript()
+{
+    memset(waza, 0, sizeof(waza));
+}
+
+AppScript::~AppScript() {}
+
+void AppScript::mapping()
+{
+    memset(waza, 0, sizeof(waza));
+}
+
+void AppScript::unmapping() {}
+
+GSscript::tigaWaza* AppScript::allocWazaPtr()
+{
+    for (GSscript::tigaWaza* w = waza; w != &waza[7]; w++) {
+        if (w->sequence == 0) {
+            w->sequence = 0;
+            w->waza = 0;
+            return w;
         }
-        void* part = GSmodelGetPart(model, args[2].getInteger());
-        GSvec pos;
-        GSpartGetTransform(part, &pos, 0, 0);
-        GSpartFree(part);
-        setRpVec(&pos);
-        break;
-    }
-    case 0x1B:
-        model = GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger());
-        if (model == 0) {
-            return 0;
-        }
-        GSmodelAddPosition(model, args[2].getVector());
-        break;
-    case 0x1C: GSmodelIterateList(_appScriptModelSetVisibility, (void*)args[1].getInteger()); break;
-    case 0x1D: scriptModelSetMotionRate(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getSingle(), args[5].getInteger()); break;
-    case 0x1E:
-        model = GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger());
-        GSmodelSetBoundCheck(model, args[2].getInteger() != 0);
-        break;
-    case 0x1F: result->setInteger(scriptModelSetEndedMotion(args[1].getInteger(), args[2].getInteger(), args[3].getInteger() != 0)); break;
-    case 0x20: scriptModelPartPaticle(args[1].getInteger(), args[2].getInteger(), args[3].getInteger()); break;
-    case 0x21: scriptModelSetFractionalFramesFlag(args[1].getInteger(), args[2].getInteger() != 0); break;
-    case 0x22: GSmodelRecalculateBound(GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger())); break;
-    case 0x23: GSmodelUseRootJointAnimation(GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger()), 1); break;
     }
     return 0;
 }
 
-static void _appScriptModelSetVisibility(_GSmodel* model, void* visible)
+void AppScript::freeWazaPtr(GSscript::tigaWaza* p)
 {
-    GSmodelSetVisibility(model, visible != 0);
+    if (p == 0) return;
+    for (GSscript::tigaWaza* w = waza; w != &waza[7]; w++) {
+        if (w == p) {
+            p->sequence = 0;
+            p->waza = 0;
+        }
+    }
 }
 
-s32 AppScript::cmpLight(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+void AppScript::unload()
+{
+    for (GSscript::tigaWaza* w = waza; w != &waza[7]; w++) {
+        if (w->waza != 0 || w->sequence != 0) {
+            if (w->waza) {
+                WazaSequence_Stop(w->waza);
+                WazaSequence_Free(w->waza);
+            }
+            if (w->sequence) {
+                Sequence_Free(w->sequence);
+            }
+            wazaCount--;
+            w->sequence = 0;
+            w->waza = 0;
+        }
+    }
+}
+
+s32 AppScript::execExtendMethod(int classID, int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    s32 ret = 0;
+    switch (classID) {
+    case 0x23: ret = cmpPeople(command, args, result); break;
+    case 0x21: ret = cmpCamera(command, args, result); break;
+    case 0x25: ret = cmpPokemon(command, args, result); break;
+    case 0x26: ret = cmpFloor(command, args, result); break;
+    case 0x27: ret = cmpTask(command, args, result); break;
+    case 0x28: ret = cmpMenu(command, args, result); break;
+    case 0x29: ret = cmpFade(command, args, result); break;
+    case 0x2A: ret = cmpFight(command, args, result); break;
+    case 0x2B: ret = cmpHero(command, args, result); break;
+    case 0x2C: ret = cmpLight(command, args, result); break;
+    case 0x2D: ret = cmpModel(command, args, result); break;
+    case 0x2E: ret = cmpCol(command, args, result); break;
+    case 0x2F: ret = cmpSound(command, args, result); break;
+    case 0x30: ret = cmpPad(command, args, result); break;
+    case 0x31: ret = cmpMail(command, args, result); break;
+    case 0x32: ret = cmpDirection(command, args, result); break;
+    case 0x33: ret = cmpTv(command, args, result); break;
+    case 0x34: ret = cmpSodateya(command, args, result); break;
+    case 0x3A: ret = cmpWaza(command, args, result); break;
+    case 0x3B: ret = cmpDarkPokemon(command, args, result); break;
+    case 0x3C: ret = cmpEsaba(command, args, result); break;
+    }
+    return ret;
+}
+
+s32 AppScript::execExtendGlobalFunction(int function, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    GSresID id;
+    GSresID* res;
+    switch (function) {
+    case 0x81: {
+        u32 id = args[0].getInteger();
+        if (id != 0 && id <= *flag_data_number) GSflagOn(id);
+        break;
+    }
+    case 0x82: {
+        u32 id = args[0].getInteger();
+        if (id != 0 && id <= *flag_data_number) GSflagOff(id);
+        break;
+    }
+    case 0x83: {
+        u32 id = args[0].getInteger();
+        s32 value = args[1].getInteger();
+        if (id != 0 && id <= *flag_data_number) GSflagSet(id, value);
+        break;
+    }
+    case 0x84: {
+        u32 id = args[0].getInteger();
+        if (id != 0 && id <= *flag_data_number) result->setInteger(GSflagTest(id));
+        break;
+    }
+    case 0x85: {
+        u32 id = args[0].getInteger();
+        if (id != 0 && id <= *flag_data_number) result->setInteger(GSflagGet(id));
+        break;
+    }
+    case 0x88: fncPrintf(args); break;
+    case 0x89: result->setInteger(scriptGetRandom(args[0].getInteger())); break;
+    case 0x8A: darkPokemonBiosSetInfomation(args[0].getInteger(), args[1].getInteger()); break;
+    case 0x8B: result->setInteger(andFlagTest(args)); break;
+    case 0x8C: result->setInteger(orFlagTest(args)); break;
+    case 0x8E: commonCall(args, result); break;
+    case 0x8F: floorSetDispScriptInfo(args[0].getInteger() != 0); break;
+    case 0x91: floorSetHumanColision(args[0].getInteger() != 0); break;
+    case 0x92: result->setInteger(floorGetHumanColision()); break;
+    case 0x93: peopleSetTresureSearchDistance(args[0].getInteger(), args[1].getSingle()); break;
+    case 0x94: result->setObject(8, GSmsgGetGSchar(args[0].getInteger())); break;
+    case 0x95: {
+        id.group = floorGetCurrentGroupID();
+        id.id = floorTresureGetResID(args[0].getInteger());
+        s32 index = m_cpCurrentObject->objManager.getResourceIdx(&id);
+        if (index == -1) {
+            res = m_cpCurrentObject->objManager.newResource();
+            if (res) {
+                *res = id;
+            }
+        } else {
+            res = m_cpCurrentObject->objManager.getResource(index);
+        }
+        result->setObject(0x23, res);
+        result->dupIfNeeded();
+        break;
+    }
+    case 0x96: result->setInteger(pokemonDB_GetName(args[0].getInteger())); break;
+    case 0x97: {
+        result->setInteger(((GSscript::tigaArrayFixed*)args[0].getObject(7, "pokemon not access"))->get(args[1].getInteger())->getInteger());
+        break;
+    }
+    case 0x98: result->setInteger(wazaDB_GetHidenFlag(args[0].getInteger())); break;
+    case 0x99: {
+        result->setSingle(PSVECDistance(args[0].getVector(), args[1].getVector()));
+        break;
+    }
+    case 0x9A:
+        if (args[0].type == 0x23) {
+            ScriptPeople* people = (ScriptPeople*)args[0].getObject(0x23, "people not access");
+            GSresFreeResource(floorGetCurrentGroupID(), people->object);
+        } else if (args[0].type == 1) {
+            s32 res = args[0].getInteger();
+            GSresFreeResource(floorGetCurrentGroupID(), res);
+        }
+        break;
+    case 0x9B: scriptGlowStart(args[0].getSingle(), args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
+    case 0x9C: scriptGlowEnd(); break;
+    case 0x9D: scriptSetLensFlare(args[0].getInteger(), args[1].getSingle(), args[2].getSingle(), args[3].getSingle(), args[4].getSingle()); break;
+    case 0x9E: {
+        id.group = floorGetCurrentGroupID();
+        id.id = args[0].getInteger();
+        s32 index = m_cpCurrentObject->objManager.getResourceIdx(&id);
+        if (index == -1) {
+            res = m_cpCurrentObject->objManager.newResource();
+            if (res) {
+                *res = id;
+            }
+        } else {
+            res = m_cpCurrentObject->objManager.getResource(index);
+        }
+        result->setObject(0x23, res);
+        result->dupIfNeeded();
+        break;
+    }
+    case 0x9F: result->setSingle(GSgfxVideoGetVsyncRate()); break;
+    case 0xA0: result->setInteger(pokecoloGetCountryCode()); break;
+    case 0xA1: result->setInteger(pokecoloGetLanguage()); break;
+    }
+    return 0;
+}
+
+s32 AppScript::getExtendVariable(GSscript::tigaVariant* v, int id, int)
+{
+    if (id >= 0x80 && id <= 0x120) {
+        v->setObject(0x23, &people[id - 0x80]);
+        return 1;
+    }
+    if (id >= 0x200 && id <= 0x2FF) {
+        s32 n = id - 0x200;
+        if (n >= 0 && n < objectCount) {
+            v->setObject(7, objects[n]);
+        } else {
+            v->setInteger(0);
+        }
+        return 1;
+    }
+    return 0;
+}
+
+s32 AppScript::setExtendVariable(GSscript::tigaVariant*, int, int)
+{
+    return 0;
+}
+
+s32 AppScript::fncPrintf(GSscript::tigaVariant* args)
+{
+    PrintBuffer storage = emptyPrintBuffer;
+    int len = 0;
+    int argn = 1;
+    const char* fmt;
+
+    for (fmt = args[0].getString(stringBuffer); *fmt != 0; fmt++) {
+        if (*fmt == '%') {
+            fmt++;
+            if (*fmt == 'd' || *fmt == 'D') {
+                if (args[argn].type == 1) {
+                    len = sprintf(storage.bytes, "%s%d", storage.bytes, args[argn].getInteger());
+                } else {
+                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
+                    return 0;
+                }
+            } else if (*fmt == 'f' || *fmt == 'F') {
+                if (args[argn].type == 2) {
+                    len = sprintf(storage.bytes, "%s%f", storage.bytes, args[argn].getSingle());
+                } else {
+                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
+                    return 0;
+                }
+            } else if (*fmt == 's' || *fmt == 'S') {
+                if (args[argn].type == 3) {
+                    len = sprintf(storage.bytes, "%s%s", storage.bytes, args[argn].getString(stringBuffer));
+                } else {
+                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
+                    return 0;
+                }
+            } else if (*fmt == 'c' || *fmt == 'C') {
+                if (args[argn].type == 3) {
+                    len = sprintf(storage.bytes, "%s%c", storage.bytes, args[argn].getString(stringBuffer));
+                } else {
+                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
+                    return 0;
+                }
+            } else if (*fmt == 'v' || *fmt == 'V') {
+                if (args[argn].type == 4) {
+                    GSvec* v = args[argn].getVector();
+                    len = sprintf(storage.bytes, "%s x:%f y:%f z:%f", storage.bytes, v->x, v->y, v->z);
+                } else {
+                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
+                    return 0;
+                }
+            } else if (*fmt == 'p' || *fmt == 'P') {
+                if (args[argn].type == 0x23) {
+                    ScriptPeople* people = (ScriptPeople*)args[argn].getObject(0x23, "people not access");
+                    len = sprintf(storage.bytes, "%s grpID:%d resID:%d", storage.bytes, people->group, people->object);
+                } else {
+                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
+                    return 0;
+                }
+            }
+            argn++;
+        } else if (*fmt == '\\') {
+            fmt++;
+            if (*fmt == 'n') {
+                sprintf(storage.bytes, "%s\n", storage.bytes);
+                GSlogWrite(storage.bytes);
+                for (int i = 0; i < 0x100; i++) {
+                    storage.bytes[i] = 0;
+                }
+                len = 0;
+            } else if (*fmt == 't') {
+                len = sprintf(storage.bytes, "%s\t", storage.bytes);
+            }
+        } else {
+            storage.bytes[len] = *fmt;
+            len++;
+        }
+    }
+    if (storage.bytes[len] != '\n' && len != 0) {
+        storage.bytes[len] = '\n';
+        GSlogWrite(storage.bytes);
+    }
+    return 0;
+}
+
+s32 AppScript::andFlagTest(GSscript::tigaVariant* args)
+{
+    int index = 1;
+    u8 result = 1;
+    const char* p;
+    for (p = args[0].getString(stringBuffer); *p != 0; p++) {
+        if (*p == '0') {
+            if (GSflagTest(args[index].getInteger()) == 1) {
+                result = 0;
+            }
+            index++;
+        } else if (*p == '1') {
+            if (GSflagTest(args[index].getInteger()) == 0) {
+                result = 0;
+            }
+            index++;
+        } else {
+            return -1;
+        }
+    }
+    return result;
+}
+
+s32 AppScript::orFlagTest(GSscript::tigaVariant* args)
+{
+    int index = 1;
+    u8 result = 0;
+    const char* p;
+    for (p = args[0].getString(stringBuffer); *p != 0; p++) {
+        if (*p == '0') {
+            if (GSflagTest(args[index].getInteger()) == 0) {
+                result = 1;
+            }
+            index++;
+        } else if (*p == '1') {
+            if (GSflagTest(args[index].getInteger()) == 1) {
+                result = 1;
+            }
+            index++;
+        } else {
+            return -1;
+        }
+    }
+    return result;
+}
+
+s32 AppScript::commonCall(GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    s32 function = args[0].getInteger();
+    s32 count = args[1].getInteger();
+    floorGetCommonScript()->runParamsWait(function, &args[2], count, 0);
+    return 1;
+}
+
+s32 AppScript::cmpPokemon(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    Pokemon* pokemon;
+    if (command != 0x10) {
+        if (args[0].type != 0x25) {
+            result->setInteger(0);
+            return 1;
+        }
+        pokemon = (Pokemon*)args[0].getObject(0x25, "pokemon not access");
+    }
+    switch (command) {
+    case 0x10: scriptPlayPokemonNakigoe(args[1].getInteger()); break;
+    case 0x13: pokemonPlayVoice(pokemon); break;
+    case 0x12: pokemonWazaCopy(pokemon, args[1].getInteger(), args[2].getInteger()); break;
+    case 0x11: pokemonWazaForget(pokemon, args[1].getInteger()); break;
+    case 0x14: result->setInteger(pokemonGetWazaCount(pokemon)); break;
+    case 0x15: result->setInteger(pokemonBiosGetCatchBallId(pokemon)); break;
+    case 0x16: result->setObject(8, pokemon_GetNicknamePtr(pokemon)); break;
+    case 0x18: result->setInteger(pokemonBiosGetDarkFlag(pokemon)); break;
+    case 0x19: result->setInteger(pokemonBiosGetPokemonWazaDataId(pokemon, args[1].getInteger())); break;
+    case 0x1A: result->setInteger(pokemonBiosGetHp(pokemon)); break;
+    case 0x1B: result->setInteger(pokemonBiosGetDp(pokemon)); break;
+    case 0x1C: result->setInteger(pokemonBiosGetPokemonDataId(pokemon)); break;
+    case 0x1D: result->setInteger(pokemon->isLegend()); break;
+    case 0x1E: result->setInteger(pokemonBiosGetFriend(pokemon)); break;
+    case 0x1F: result->setInteger(pokemonDB_GetName(pokemonBiosGetPokemonDataId(pokemon))); break;
+    case 0x20: result->setInteger(pokemonBiosGetItemDataId(pokemon)); break;
+    case 0x21: result->setInteger(pokemonBiosGetCatchTrainerRnd(pokemon)); break;
+    case 0x22: result->setInteger(pokemonSetWazaStatus(pokemon, args[1].getInteger(), args[2].getInteger() != 0)); break;
+    case 0x23: result->setInteger(scriptPokemonRememberWaza(pokemon, args[1].getInteger())); break;
+    case 0x24:
+        result->setInteger(pokemonDB_GetTeachWaza(pokemonBiosGetPokemonDataId(pokemon), scriptPokemonTeachWazaIndex(args[1].getInteger())));
+        break;
+    case 0x25: result->setInteger(menuPokemonStatusOpenWazaLearn(pokemon, args[1].getInteger())); break;
+    case 0x26: result->setInteger(menuPokemonStatusOpenWazaLearnList(pokemon, args[1].getInteger())); break;
+    }
+    return 0;
+}
+
+s32 AppScript::cmpTask(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
 {
     switch (command) {
-    case 0x10: scriptLightSetDisp(args[1].getInteger(), args[2].getInteger()); break;
-    case 0x11: scriptLightSetMotion(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger()); break;
-    case 0x12: scriptLightStopMotion(args[1].getInteger()); break;
-    case 0x13: result->setInteger(scriptLighgtWaitMotion(args[1].getInteger(), args[2].getInteger())); break;
-    case 0x14: {
-        GSlight* light = lightGetLight(args[1].getInteger());
-        GSlightSetType(light, args[2].getInteger());
-        break;
+    case 0x10: floorExecScriptInteger(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
+    case 0x11: floorExecScriptIntegerThread(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
+    case 0x12: floorExecScriptIntegerByName(args[1].getString(stringBuffer), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
+    case 0x13: floorExecScriptIntegerByNameThread(args[1].getString(stringBuffer), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
+    case 0x14: result->setInteger(floorGetScriptResult()); break;
+    case 0x15: scriptWaitTime(args[1].getSingle()); break;
     }
-    case 0x15: {
-        GSlight* light = lightGetLight(args[1].getInteger());
-        GSlightSetPosition(light, args[2].getVector());
-        break;
-    }
-    case 0x16: {
-        GSlight* light = lightGetLight(args[1].getInteger());
-        GXColor color;
-        color.r = args[2].getInteger();
-        color.g = args[3].getInteger();
-        color.b = args[4].getInteger();
-        color.a = args[5].getInteger();
-        GSlightSetColor(light, color);
-        break;
-    }
-    case 0x17: {
-        GSvec pos;
-        GSlightGetPosition(lightGetLight(args[1].getInteger()), &pos);
-        setRpVec(&pos);
-        break;
-    }
+    return 0;
+}
+
+s32 AppScript::cmpFade(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    switch (command) {
+    case 0x10: fadeSet(args[1].getInteger(), args[2].getSingle()); break;
+    case 0x11: result->setInteger(fadeCheck(args[1].getInteger() != 0)); break;
     }
     return 0;
 }
@@ -829,412 +923,318 @@ s32 AppScript::cmpFight(int command, GSscript::tigaVariant* args, GSscript::tiga
     return 0;
 }
 
-s32 AppScript::cmpFade(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+s32 AppScript::cmpLight(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
 {
     switch (command) {
-    case 0x10: fadeSet(args[1].getInteger(), args[2].getSingle()); break;
-    case 0x11: result->setInteger(fadeCheck(args[1].getInteger() != 0)); break;
+    case 0x10: scriptLightSetDisp(args[1].getInteger(), args[2].getInteger()); break;
+    case 0x11: scriptLightSetMotion(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger()); break;
+    case 0x12: scriptLightStopMotion(args[1].getInteger()); break;
+    case 0x13: result->setInteger(scriptLighgtWaitMotion(args[1].getInteger(), args[2].getInteger())); break;
+    case 0x14: {
+        GSlight* light = lightGetLight(args[1].getInteger());
+        GSlightSetType(light, args[2].getInteger());
+        break;
+    }
+    case 0x15: {
+        GSlight* light = lightGetLight(args[1].getInteger());
+        GSlightSetPosition(light, args[2].getVector());
+        break;
+    }
+    case 0x16: {
+        GSlight* light = lightGetLight(args[1].getInteger());
+        GXColor color;
+        color.r = args[2].getInteger();
+        color.g = args[3].getInteger();
+        color.b = args[4].getInteger();
+        color.a = args[5].getInteger();
+        GSlightSetColor(light, color);
+        break;
+    }
+    case 0x17: {
+        GSvec pos;
+        GSlightGetPosition(lightGetLight(args[1].getInteger()), &pos);
+        setRpVec(&pos);
+        break;
+    }
     }
     return 0;
 }
 
-s32 AppScript::cmpTask(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+static void _appScriptModelSetVisibility(_GSmodel* model, void* visible)
 {
+    GSmodelSetVisibility(model, visible != 0);
+}
+
+s32 AppScript::cmpModel(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    void* model;
     switch (command) {
-    case 0x10: floorExecScriptInteger(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
-    case 0x11: floorExecScriptIntegerThread(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
-    case 0x12: floorExecScriptIntegerByName(args[1].getString(stringBuffer), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
-    case 0x13: floorExecScriptIntegerByNameThread(args[1].getString(stringBuffer), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), args[5].getInteger()); break;
-    case 0x14: result->setInteger(floorGetScriptResult()); break;
-    case 0x15: scriptWaitTime(args[1].getSingle()); break;
+    case 0x10: result->setInteger(scriptModelOpen(args[1].getInteger())); break;
+    case 0x11: scriptModelClose(args[1].getInteger()); break;
+    case 0x12: scriptModelSetDisp(args[1].getInteger(), args[2].getInteger()); break;
+    case 0x13: scriptModelSetMotion(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger()); break;
+    case 0x14: scriptModelStopMotion(args[1].getInteger()); break;
+    case 0x15: result->setInteger(scriptModelWaitMotion(args[1].getInteger(), args[2].getInteger())); break;
+    case 0x16: result->setInteger(scriptModelAttach(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
+    case 0x17: result->setInteger(scriptModelDetach(args[1].getInteger())); break;
+    case 0x18: scriptModelSetParticle(args[1].getInteger(), args[2].getInteger(), args[3].getInteger()); break;
+    case 0x19: scriptModelDeleteParticle(args[1].getInteger(), args[2].getInteger() != 0); break;
+    case 0x1A: {
+        model = GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger());
+        if (model == 0) {
+            return 0;
+        }
+        void* part = GSmodelGetPart(model, args[2].getInteger());
+        GSvec pos;
+        GSpartGetTransform(part, &pos, 0, 0);
+        GSpartFree(part);
+        setRpVec(&pos);
+        break;
+    }
+    case 0x1B:
+        model = GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger());
+        if (model == 0) {
+            return 0;
+        }
+        GSmodelAddPosition(model, args[2].getVector());
+        break;
+    case 0x1C: GSmodelIterateList(_appScriptModelSetVisibility, (void*)args[1].getInteger()); break;
+    case 0x1D: scriptModelSetMotionRate(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getSingle(), args[5].getInteger()); break;
+    case 0x1E:
+        model = GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger());
+        GSmodelSetBoundCheck(model, args[2].getInteger() != 0);
+        break;
+    case 0x1F: result->setInteger(scriptModelSetEndedMotion(args[1].getInteger(), args[2].getInteger(), args[3].getInteger() != 0)); break;
+    case 0x20: scriptModelPartPaticle(args[1].getInteger(), args[2].getInteger(), args[3].getInteger()); break;
+    case 0x21: scriptModelSetFractionalFramesFlag(args[1].getInteger(), args[2].getInteger() != 0); break;
+    case 0x22: GSmodelRecalculateBound(GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger())); break;
+    case 0x23: GSmodelUseRootJointAnimation(GSresGetResource(floorGetCurrentGroupID(), args[1].getInteger()), 1); break;
     }
     return 0;
 }
 
-s32 AppScript::cmpPokemon(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+s32 AppScript::cmpCol(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
 {
-    Pokemon* pokemon;
-    if (command != 0x10) {
-        if (args[0].type != 0x25) {
+    switch (command) {
+    case 0x10: scriptSetCol(args[1].getInteger(), args[2].getInteger() != 0); break;
+    case 0x11: scriptGetEventColID(); break;
+    case 0x12: scriptSetEventCol(args[1].getInteger() != 0); break;
+    }
+    return 0;
+}
+
+s32 AppScript::cmpSound(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    switch (command) {
+    case 0x10: result->setInteger(soundOpenPlay(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
+    case 0x11: result->setInteger(soundOpenPlayEnv(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
+    case 0x12: result->setInteger(soundStop(args[1].getInteger(), args[2].getInteger())); break;
+    case 0x13: result->setInteger(soundStopEnv(args[1].getInteger())); break;
+    case 0x14: result->setInteger(soundCreateEmitter(args[1].getInteger(), args[2].getSingle(), args[3].getSingle(), args[4].getSingle())); break;
+    case 0x15: result->setInteger(soundCreateListener()); break;
+    case 0x16: result->setInteger(soundSetVolume(args[1].getInteger(), args[2].getInteger())); break;
+    case 0x17: result->setInteger(scriptSoundOpenPlayME(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
+    case 0x18: result->setInteger(soundSetVolumeID(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
+    case 0x19: result->setInteger(soundOpenPlayFadeOutIn(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger())); break;
+    case 0x1A: result->setInteger(soundOpenPlayEnvFadeOutIn(args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger())); break;
+    case 0x1B: result->setInteger(soundGetBGMID()); break;
+    case 0x1C: peopleTalkMessageBgmMask(args[1].getInteger() != 0); break;
+    case 0x1D: peopleTalkMessageBgmSetFadeSpeed(args[1].getSingle(), args[2].getSingle()); break;
+    case 0x1E: peopleTalkMessageBgmSetVolumeRate(args[1].getSingle()); break;
+    case 0x1F: soundPlayWait(args[1].getInteger()); break;
+    case 0x20: result->setInteger(soundPlayME(args[1].getInteger(), args[2].getInteger(), args[3].getInteger())); break;
+    case 0x21: {
+        void* thread = floorCreateThread(0x80, 0, 1, (void*)appScriptPlayME_Thread);
+        GSthreadSetArgs(thread, 4, args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger());
+        break;
+    }
+    }
+    return 0;
+}
+
+s32 motorFun(u8 a, u8 b, u32 time, u8 c, bool enable)
+{
+    u32 n = time;
+    if (!enable) {
+        return 0;
+    }
+    while (n != 0) {
+        GSinputMotorStart(1, a, b, time, c);
+        GSthreadSwitch();
+        n--;
+    }
+    return 0;
+}
+
+s32 AppScript::cmpPad(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    switch (command) {
+    case 0x10: result->setInteger(scriptIsButtonPush()); break;
+    case 0x11: result->setInteger(scriptIsMoveButtonPush()); break;
+    case 0x12: result->setInteger(scriptIsTrigerPush()); break;
+    case 0x13:
+        if (gamedatasaveGetStatus(0, 9) == 0) {
+            void* thread = floorCreateThread(0x80, 0, 1, (void*)motorFun);
+            GSthreadSetArgs(thread, 5, args[1].getInteger(), args[2].getInteger(), args[3].getInteger(), args[4].getInteger(), 1);
+        }
+        break;
+    case 0x14: result->setInteger(GSinputButtonsPressed(1)); break;
+    }
+    return 0;
+}
+
+s32 AppScript::cmpMail(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    switch (command) {
+    case 0x10: mailMainSendByScrpt(args[1].getInteger()); break;
+    case 0x11: result->setInteger(scriptSetMemoFlag()); break;
+    case 0x12: menuScriptReciveMail(); break;
+    case 0x13: menuScriptReadMail(args[1].getInteger()); break;
+    case 0x14:
+        menuScriptReciveMail();
+        mailMainSendByScrpt(args[1].getInteger());
+        menuScriptReadMail(args[1].getInteger());
+        break;
+    }
+    return 0;
+}
+
+s32 AppScript::cmpDirection(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    switch (command) {
+    case 0x10: evolution(); break;
+    case 0x11: preReliveSetParameter(args[1].getInteger(), args[2].getInteger(), args[3].getInteger() != 0); break;
+    case 0x12: reliveMain(); break;
+    case 0x13: preReliveDisplayHokoraParticle(); break;
+    case 0x14: result->setInteger(menuUseItemScriptCologn(args[1].getInteger(), args[2].getInteger())); break;
+    case 0x15: result->setInteger(underTakerGetMiraboPlace()); break;
+    case 0x16: underTakerMiraboDisAppear(); break;
+    }
+    return 0;
+}
+
+s32 AppScript::cmpTv(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    switch (command) {
+    case 0x10: result->setInteger(controlTV(args[1].getInteger())); break;
+    case 0x11: result->setInteger(controlTVScreen()); break;
+    }
+    return 0;
+}
+
+s32 AppScript::cmpSodateya(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    switch (command) {
+    case 0x11: result->setInteger(sodateyaGetPokemonLevelUpValue()); break;
+    case 0x12: result->setInteger(sodateyaGetPokemonDPValue()); break;
+    case 0x13: sodateyaRaise(args[1].getInteger()); break;
+    case 0x14: sodateyaReclaim(args[1].getInteger()); break;
+    case 0x16: result->setInteger(sodateyaCalcPrice(args[1].getInteger())); break;
+    case 0x17: result->setInteger(sodateyaeChekcRais()); break;
+    case 0x18: result->setObject(0x25, sodateyaGetPokemonPtr(0)); break;
+    }
+    return 0;
+}
+
+s32 AppScript::cmpWaza(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    GSscript::tigaWaza* waza;
+    switch (command) {
+    case 0x10:
+        waza = allocWazaPtr();
+        if (waza == 0) break;
+        waza->sequence = Sequence_CreateNull();
+        result->setObject(0x3A, waza);
+        wazaCount++;
+        break;
+    case 0x11:
+        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
+        if (waza == 0) break;
+        if (waza->waza == 0) {
+            waza->waza = Sequence_LoadWaza(waza->sequence, args[1].getInteger(), args[2].getInteger(), args[3].getInteger());
+        }
+        WazaSequence_Start(waza->waza, 0);
+        if (args[4].getInteger() == 1) {
+            while (WazaSequence_IsActive(waza->waza)) {
+                GSthreadSwitch();
+            }
+        }
+        break;
+    case 0x12:
+        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
+        if (waza == 0) break;
+        Sequence_SetPosition(waza->sequence, args[1].getVector());
+        break;
+    case 0x13: {
+        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
+        if (waza == 0) break;
+        GSvec* rot = args[1].getVector();
+        rot->x = DEG_TO_RAD * rot->x;
+        rot->y = DEG_TO_RAD * rot->y;
+        rot->z = DEG_TO_RAD * rot->z;
+        Sequence_SetRotation(waza->sequence, rot);
+        break;
+    }
+    case 0x14:
+        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
+        if (waza == 0) break;
+        Sequence_SetScale(waza->sequence, args[1].getVector());
+        break;
+    case 0x15:
+        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
+        if (waza == 0) break;
+        while (WazaSequence_IsActive(waza->waza)) {
+            GSthreadSwitch();
+        }
+        break;
+    case 0x16:
+        waza = (GSscript::tigaWaza*)args[0].getObject(0x3A, "waza not access");
+        if (waza) {
+            if (waza->waza) WazaSequence_Free(waza->waza);
+            if (waza->sequence) Sequence_Free(waza->sequence);
+            freeWazaPtr(waza);
+        }
+        wazaCount--;
+        break;
+    }
+    return 0;
+}
+s32 AppScript::cmpDarkPokemon(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
+{
+    Hero* hero = savedataGetStatus(0, 2);
+    DarkPokemon* dark = darkPokemonGetDarkPokemon(args[1].getInteger());
+    if (dark == 0) {
+        result->setInteger(0);
+        return 1;
+    }
+    switch (command) {
+    case 0x10:
+        if (dark->getStatus() == 4) {
+            result->setInteger(1);
+        } else {
             result->setInteger(0);
-            return 1;
         }
-        pokemon = (Pokemon*)args[0].getObject(0x25, "pokemon not access");
-    }
-    switch (command) {
-    case 0x10: scriptPlayPokemonNakigoe(args[1].getInteger()); break;
-    case 0x13: pokemonPlayVoice(pokemon); break;
-    case 0x12: pokemonWazaCopy(pokemon, args[1].getInteger(), args[2].getInteger()); break;
-    case 0x11: pokemonWazaForget(pokemon, args[1].getInteger()); break;
-    case 0x14: result->setInteger(pokemonGetWazaCount(pokemon)); break;
-    case 0x15: result->setInteger(pokemonBiosGetCatchBallId(pokemon)); break;
-    case 0x16: result->setObject(8, pokemon_GetNicknamePtr(pokemon)); break;
-    case 0x18: result->setInteger(pokemonBiosGetDarkFlag(pokemon)); break;
-    case 0x19: result->setInteger(pokemonBiosGetPokemonWazaDataId(pokemon, args[1].getInteger())); break;
-    case 0x1A: result->setInteger(pokemonBiosGetHp(pokemon)); break;
-    case 0x1B: result->setInteger(pokemonBiosGetDp(pokemon)); break;
-    case 0x1C: result->setInteger(pokemonBiosGetPokemonDataId(pokemon)); break;
-    case 0x1D: result->setInteger(pokemon->isLegend()); break;
-    case 0x1E: result->setInteger(pokemonBiosGetFriend(pokemon)); break;
-    case 0x1F: result->setInteger(pokemonDB_GetName(pokemonBiosGetPokemonDataId(pokemon))); break;
-    case 0x20: result->setInteger(pokemonBiosGetItemDataId(pokemon)); break;
-    case 0x21: result->setInteger(pokemonBiosGetCatchTrainerRnd(pokemon)); break;
-    case 0x22: result->setInteger(pokemonSetWazaStatus(pokemon, args[1].getInteger(), args[2].getInteger() != 0)); break;
-    case 0x23: result->setInteger(scriptPokemonRememberWaza(pokemon, args[1].getInteger())); break;
-    case 0x24:
-        result->setInteger(pokemonDB_GetTeachWaza(pokemonBiosGetPokemonDataId(pokemon), scriptPokemonTeachWazaIndex(args[1].getInteger())));
         break;
-    case 0x25: result->setInteger(menuPokemonStatusOpenWazaLearn(pokemon, args[1].getInteger())); break;
-    case 0x26: result->setInteger(menuPokemonStatusOpenWazaLearnList(pokemon, args[1].getInteger())); break;
+    case 0x11:
+        if (dark->getStatus() >= 3) {
+            result->setInteger(1);
+        } else {
+            result->setInteger(0);
+        }
+        break;
+    case 0x12: dark->setStatus((darkPokemonStatus)args[2].getInteger()); break;
+    case 0x13: result->setInteger(dark->getPokemonID()); break;
+    case 0x14: result->setInteger(dark->getStatus()); break;
+    case 0x15: {
+        u8 count = hero->getMeetDarkPokemonCount();
+        hero->setMeetDarkPokemonCount(count + 1);
+        dark->setSnatchIndex(count);
+        dark->addStatus((darkPokemonStatus)1);
+        dark->setCatchFloorId(0xB5);
+        dark->setUpdate(true);
+        break;
+    }
+    case 0x16: dark->setPlace((darkPokemonWhere)args[2].getInteger(), args[3].getInteger()); break;
     }
     return 0;
-}
-
-s32 AppScript::commonCall(GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    s32 function = args[0].getInteger();
-    s32 count = args[1].getInteger();
-    floorGetCommonScript()->runParamsWait(function, &args[2], count, 0);
-    return 1;
-}
-
-s32 AppScript::orFlagTest(GSscript::tigaVariant* args)
-{
-    int index = 1;
-    u8 result = 0;
-    const char* p;
-    for (p = args[0].getString(stringBuffer); *p != 0; p++) {
-        if (*p == '0') {
-            if (GSflagTest(args[index].getInteger()) == 0) {
-                result = 1;
-            }
-            index++;
-        } else if (*p == '1') {
-            if (GSflagTest(args[index].getInteger()) == 1) {
-                result = 1;
-            }
-            index++;
-        } else {
-            return -1;
-        }
-    }
-    return result;
-}
-
-s32 AppScript::andFlagTest(GSscript::tigaVariant* args)
-{
-    int index = 1;
-    u8 result = 1;
-    const char* p;
-    for (p = args[0].getString(stringBuffer); *p != 0; p++) {
-        if (*p == '0') {
-            if (GSflagTest(args[index].getInteger()) == 1) {
-                result = 0;
-            }
-            index++;
-        } else if (*p == '1') {
-            if (GSflagTest(args[index].getInteger()) == 0) {
-                result = 0;
-            }
-            index++;
-        } else {
-            return -1;
-        }
-    }
-    return result;
-}
-
-s32 AppScript::fncPrintf(GSscript::tigaVariant* args)
-{
-    PrintBuffer storage = emptyPrintBuffer;
-    int len = 0;
-    int argn = 1;
-    const char* fmt;
-
-    for (fmt = args[0].getString(stringBuffer); *fmt != 0; fmt++) {
-        if (*fmt == '%') {
-            fmt++;
-            if (*fmt == 'd' || *fmt == 'D') {
-                if (args[argn].type == 1) {
-                    len = sprintf(storage.bytes, "%s%d", storage.bytes, args[argn].getInteger());
-                } else {
-                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
-                    return 0;
-                }
-            } else if (*fmt == 'f' || *fmt == 'F') {
-                if (args[argn].type == 2) {
-                    len = sprintf(storage.bytes, "%s%f", storage.bytes, args[argn].getSingle());
-                } else {
-                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
-                    return 0;
-                }
-            } else if (*fmt == 's' || *fmt == 'S') {
-                if (args[argn].type == 3) {
-                    len = sprintf(storage.bytes, "%s%s", storage.bytes, args[argn].getString(stringBuffer));
-                } else {
-                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
-                    return 0;
-                }
-            } else if (*fmt == 'c' || *fmt == 'C') {
-                if (args[argn].type == 3) {
-                    len = sprintf(storage.bytes, "%s%c", storage.bytes, args[argn].getString(stringBuffer));
-                } else {
-                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
-                    return 0;
-                }
-            } else if (*fmt == 'v' || *fmt == 'V') {
-                if (args[argn].type == 4) {
-                    GSvec* v = args[argn].getVector();
-                    len = sprintf(storage.bytes, "%s x:%f y:%f z:%f", storage.bytes, v->x, v->y, v->z);
-                } else {
-                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
-                    return 0;
-                }
-            } else if (*fmt == 'p' || *fmt == 'P') {
-                if (args[argn].type == 0x23) {
-                    ScriptPeople* people = (ScriptPeople*)args[argn].getObject(0x23, "people not access");
-                    len = sprintf(storage.bytes, "%s grpID:%d resID:%d", storage.bytes, people->group, people->object);
-                } else {
-                    GSlogWrite("script error line[%d] : printf argument %d error \n", m_cpCurrentObject->thread->line, argn);
-                    return 0;
-                }
-            }
-            argn++;
-        } else if (*fmt == '\\') {
-            fmt++;
-            if (*fmt == 'n') {
-                sprintf(storage.bytes, "%s\n", storage.bytes);
-                GSlogWrite(storage.bytes);
-                for (int i = 0; i < 0x100; i++) {
-                    storage.bytes[i] = 0;
-                }
-                len = 0;
-            } else if (*fmt == 't') {
-                len = sprintf(storage.bytes, "%s\t", storage.bytes);
-            }
-        } else {
-            storage.bytes[len] = *fmt;
-            len++;
-        }
-    }
-    if (storage.bytes[len] != '\n' && len != 0) {
-        storage.bytes[len] = '\n';
-        GSlogWrite(storage.bytes);
-    }
-    return 0;
-}
-
-s32 AppScript::setExtendVariable(GSscript::tigaVariant*, int, int)
-{
-    return 0;
-}
-
-s32 AppScript::getExtendVariable(GSscript::tigaVariant* v, int id, int)
-{
-    if (id >= 0x80 && id <= 0x120) {
-        v->setObject(0x23, &people[id - 0x80]);
-        return 1;
-    }
-    if (id >= 0x200 && id <= 0x2FF) {
-        s32 n = id - 0x200;
-        if (n >= 0 && n < objectCount) {
-            v->setObject(7, objects[n]);
-        } else {
-            v->setInteger(0);
-        }
-        return 1;
-    }
-    return 0;
-}
-
-s32 AppScript::execExtendGlobalFunction(int function, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    GSresID id;
-    GSresID* res;
-    switch (function) {
-    case 0x81: {
-        int id = args[0].getInteger();
-        if (id != 0 && id <= *flag_data_number) GSflagOn(id);
-        break;
-    }
-    case 0x82: {
-        u32 id = args[0].getInteger();
-        if (id != 0 && id <= *flag_data_number) GSflagOff(id);
-        break;
-    }
-    case 0x83: {
-        u32 id = args[0].getInteger();
-        s32 value = args[1].getInteger();
-        if (id != 0 && id <= *flag_data_number) GSflagSet(id, value);
-        break;
-    }
-    case 0x84: {
-        u32 id = args[0].getInteger();
-        if (id != 0 && id <= *flag_data_number) result->setInteger(GSflagTest(id));
-        break;
-    }
-    case 0x85: {
-        u32 id = args[0].getInteger();
-        if (id != 0 && id <= *flag_data_number) result->setInteger(GSflagGet(id));
-        break;
-    }
-    case 0x88: fncPrintf(args); break;
-    case 0x89: result->setInteger(scriptGetRandom(args[0].getInteger())); break;
-    case 0x8A: darkPokemonBiosSetInfomation(args[0].getInteger(), args[1].getInteger()); break;
-    case 0x8B: result->setInteger(andFlagTest(args)); break;
-    case 0x8C: result->setInteger(orFlagTest(args)); break;
-    case 0x8E: commonCall(args, result); break;
-    case 0x8F: floorSetDispScriptInfo(args[0].getInteger() != 0); break;
-    case 0x91: floorSetHumanColision(args[0].getInteger() != 0); break;
-    case 0x92: result->setInteger(floorGetHumanColision()); break;
-    case 0x93: peopleSetTresureSearchDistance(args[0].getInteger(), args[1].getSingle()); break;
-    case 0x94: result->setObject(8, GSmsgGetGSchar(args[0].getInteger())); break;
-    case 0x95: {
-        id.group = floorGetCurrentGroupID();
-        id.id = floorTresureGetResID(args[0].getInteger());
-        s32 index = m_cpCurrentObject->objManager.getResourceIdx(&id);
-        if (index == -1) {
-            res = m_cpCurrentObject->objManager.newResource();
-            if (res) {
-                *res = id;
-            }
-        } else {
-            res = m_cpCurrentObject->objManager.getResource(index);
-        }
-        result->setObject(0x23, res);
-        result->dupIfNeeded();
-        break;
-    }
-    case 0x96: result->setInteger(pokemonDB_GetName(args[0].getInteger())); break;
-    case 0x97: {
-        result->setInteger(((GSscript::tigaArrayFixed*)args[0].getObject(7, "pokemon not access"))->get(args[1].getInteger())->getInteger());
-        break;
-    }
-    case 0x98: result->setInteger(wazaDB_GetHidenFlag(args[0].getInteger())); break;
-    case 0x99: {
-        result->setSingle(PSVECDistance(args[0].getVector(), args[1].getVector()));
-        break;
-    }
-    case 0x9A:
-        if (args[0].type == 0x23) {
-            ScriptPeople* people = (ScriptPeople*)args[0].getObject(0x23, "people not access");
-            GSresFreeResource(floorGetCurrentGroupID(), people->object);
-        } else if (args[0].type == 1) {
-            s32 res = args[0].getInteger();
-            GSresFreeResource(floorGetCurrentGroupID(), res);
-        }
-        break;
-    case 0x9B: scriptGlowStart(args[0].getSingle(), args[1].getInteger(), args[2].getInteger() != 0, args[3].getInteger() != 0, args[4].getInteger() != 0, args[5].getInteger()); break;
-    case 0x9C: scriptGlowEnd(); break;
-    case 0x9D: scriptSetLensFlare(args[0].getInteger(), args[1].getSingle() != 0.0f, args[2].getSingle(), args[3].getSingle(), args[4].getSingle()); break;
-    case 0x9E: {
-        id.group = floorGetCurrentGroupID();
-        id.id = args[0].getInteger();
-        s32 index = m_cpCurrentObject->objManager.getResourceIdx(&id);
-        if (index == -1) {
-            res = m_cpCurrentObject->objManager.newResource();
-            if (res) {
-                *res = id;
-            }
-        } else {
-            res = m_cpCurrentObject->objManager.getResource(index);
-        }
-        result->setObject(0x23, res);
-        result->dupIfNeeded();
-        break;
-    }
-    case 0x9F: result->setSingle(GSgfxVideoGetVsyncRate()); break;
-    case 0xA0: result->setInteger(pokecoloGetCountryCode()); break;
-    case 0xA1: result->setInteger(pokecoloGetLanguage()); break;
-    }
-    return 0;
-}
-
-s32 AppScript::execExtendMethod(int classID, int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
-{
-    s32 ret = 0;
-    switch (classID) {
-    case 0x23: ret = cmpPeople(command, args, result); break;
-    case 0x21: ret = cmpCamera(command, args, result); break;
-    case 0x25: ret = cmpPokemon(command, args, result); break;
-    case 0x26: ret = cmpFloor(command, args, result); break;
-    case 0x27: ret = cmpTask(command, args, result); break;
-    case 0x28: ret = cmpMenu(command, args, result); break;
-    case 0x29: ret = cmpFade(command, args, result); break;
-    case 0x2A: ret = cmpFight(command, args, result); break;
-    case 0x2B: ret = cmpHero(command, args, result); break;
-    case 0x2C: ret = cmpLight(command, args, result); break;
-    case 0x2D: ret = cmpModel(command, args, result); break;
-    case 0x2E: ret = cmpCol(command, args, result); break;
-    case 0x2F: ret = cmpSound(command, args, result); break;
-    case 0x30: ret = cmpPad(command, args, result); break;
-    case 0x31: ret = cmpMail(command, args, result); break;
-    case 0x32: ret = cmpDirection(command, args, result); break;
-    case 0x33: ret = cmpTv(command, args, result); break;
-    case 0x34: ret = cmpSodateya(command, args, result); break;
-    case 0x3A: ret = cmpWaza(command, args, result); break;
-    case 0x3B: ret = cmpDarkPokemon(command, args, result); break;
-    case 0x3C: ret = cmpEsaba(command, args, result); break;
-    }
-    return ret;
-}
-
-void AppScript::unload()
-{
-    for (GSscript::tigaWaza* w = waza; w != &waza[7]; w++) {
-        if (w->waza != 0 || w->sequence != 0) {
-            if (w->waza) {
-                WazaSequence_Stop(w->waza);
-                WazaSequence_Free(w->waza);
-            }
-            if (w->sequence) {
-                Sequence_Free(w->sequence);
-            }
-            wazaCount--;
-            w->sequence = 0;
-            w->waza = 0;
-        }
-    }
-}
-
-void AppScript::freeWazaPtr(GSscript::tigaWaza* p)
-{
-    if (p == 0) return;
-    for (GSscript::tigaWaza* w = waza; w != &waza[7]; w++) {
-        if (w == p) {
-            p->sequence = 0;
-            p->waza = 0;
-        }
-    }
-}
-
-GSscript::tigaWaza* AppScript::allocWazaPtr()
-{
-    for (GSscript::tigaWaza* w = waza; w != &waza[7]; w++) {
-        if (w->sequence == 0) {
-            w->sequence = 0;
-            w->waza = 0;
-            return w;
-        }
-    }
-    return 0;
-}
-
-void AppScript::unmapping() {}
-
-void AppScript::mapping()
-{
-    memset(waza, 0, sizeof(waza));
-}
-
-AppScript::~AppScript() {}
-
-AppScript::AppScript()
-{
-    memset(waza, 0, sizeof(waza));
-}
-
-AppScript* scriptCreateAppScript()
-{
-    return new AppScript;
 }

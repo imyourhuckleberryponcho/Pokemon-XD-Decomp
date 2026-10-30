@@ -103,15 +103,15 @@ static inline void vecScale(Vec3* dst, const Vec3* a, f32 k) {
     *dst = t;
 }
 
-static inline void quatToMtx(Mtx34* m, Quat q) {
-    PSMTXQuat(m, &q);
+static inline void quatInverse(Quat* dst, const Quat* a) {
+    Quat t;
+    PSQUATInverse(a, &t);
+    *dst = t;
 }
 
-static inline void rotateInverse(Vec3* v, peXform* xf) {
+static inline void rotateBy(Vec3* v, const Quat* q) {
     Mtx34 m;
-    Quat q;
-    PSQUATInverse(&xf->rot, &q);
-    quatToMtx(&m, q);
+    PSMTXQuat(&m, q);
     PSMTXMultVecSR(&m, v, v);
 }
 
@@ -140,10 +140,9 @@ void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx) {
     Quat q;
 
     {
-        f32 pz = b->pos.z * a->scale.z;
-        f32 py = a->scale.y;
-        py *= b->pos.y;
         f32 px = b->pos.x * a->scale.x;
+        f32 py = b->pos.y * a->scale.y;
+        f32 pz = b->pos.z * a->scale.z;
         out->pos = vec3(px, py, pz);
     }
     PSMTXQuat(&mtx, &a->rot);
@@ -153,7 +152,7 @@ void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx) {
         C_QUATMtx(&out->rot, GSgfxMatrixGetPtr(3));
     } else {
         PSQUATMultiply(&a->rot, &b->rot, &q);
-        out->rot = q;
+        out->rot = Quat(q);
     }
     {
         f32 sy = b->scale.y * a->scale.y;
@@ -187,7 +186,11 @@ bool peNode::Update(peEmitterNode* e, f32 dt) {
     if (moving) {
         dirA = e->dir;
         if (!(params->flags & 0x100)) {
-            rotateInverse(&dirA, xform);
+            {
+                Quat q;
+                quatInverse(&q, &xform->rot);
+                rotateBy(&dirA, &q);
+            }
         }
         if (params->flags & 0x10000) {
             f32 mag;
@@ -207,19 +210,37 @@ bool peNode::Update(peEmitterNode* e, f32 dt) {
     vecScale(&dirB, &vel, dt);
     PSVECAdd(&pos, &dirB, &pos);
     if (moving && (params->flags & 0x200)) {
-        dirB = vec3(pos.x * xform->scale.x, pos.y * xform->scale.y, pos.z * xform->scale.z);
+        {
+            f32 y = pos.y * xform->scale.y;
+            f32 z = pos.z * xform->scale.z;
+            f32 x = pos.x * xform->scale.x;
+            dirB = vec3(x, y, z);
+        }
         rotateForward(&dirB, xform);
         PSVECAdd(&dirB, &xform->pos, &dirB);
-        if (dirB.y <= 0.0f) {
+        if (dirB.y < 0.0f && dirB.y < 0.0f) {
             dirB.y = 0.0f;
             PSVECSubtract(&dirB, &xform->pos, &dirB);
-            rotateInverse(&dirB, xform);
+            {
+                Quat q;
+                quatInverse(&q, &xform->rot);
+                rotateBy(&dirB, &q);
+            }
             divScale(&dirB, xform);
             pos = dirB;
-            dirB = vec3(vel.x * xform->scale.x, vel.y * xform->scale.y, vel.z * xform->scale.z);
+            {
+                f32 y = vel.y * xform->scale.y;
+                f32 z = vel.z * xform->scale.z;
+                f32 x = vel.x * xform->scale.x;
+                dirB = vec3(x, y, z);
+            }
             rotateForward(&dirB, xform);
             dirB.y *= params->bounce;
-            rotateInverse(&dirB, xform);
+            {
+                Quat q;
+                quatInverse(&q, &xform->rot);
+                rotateBy(&dirB, &q);
+            }
             divScale(&dirB, xform);
             vel = dirB;
         }

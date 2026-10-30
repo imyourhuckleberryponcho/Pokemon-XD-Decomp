@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #pragma peephole off
+#pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -58,14 +59,18 @@ struct FloorData;
 enum FloorEnterMode { FloorEnterMode_draft_dummy };
 struct FloorModuleEntry;
 struct FloorModuleInterface;
-struct FloorModuleInterface {
-    u32 data[11];
-};
 struct FloorModuleList;
-enum FloorModuleType { FloorModuleType_draft_dummy };
+enum FloorModuleType { FloorTypeFunc, FloorTypeGSvm, FloorTypeTpc, FloorTypeSingleGSvm, FloorTypeSingleTpc, FloorTypeAny };
 struct FloorScriptModule;
 enum FloorState { FloorState_draft_dummy };
 enum FloorStateMode { FloorStateMode_draft_dummy };
+struct FloorModuleInterface {
+    u32 data[7];
+    void (*pushState)(FloorStateMode mode, void* buf, u32 size);
+    void (*popState)(FloorStateMode mode, void* buf, u32 size);
+    u32 (*getPushSize)(FloorStateMode mode);
+    u32 (*getID)();
+};
 struct GSthread;
 struct ScriptTpcNode;
 
@@ -107,7 +112,7 @@ class FloorModuleEntry {
 public:
     FloorModuleEntry* getNext() const;
     bool isBlock() const;
-    u32 getType() const;
+    FloorModuleType getType() const;
     u32 getGroupID() const;
     FloorModuleEntry* getPrev() const;
     u32 getHandle() const;
@@ -121,7 +126,7 @@ public:
     FloorModuleEntry* next;
     u32 handle;
     u32 unkC;
-    u32 type;
+    FloorModuleType type;
     u32 groupID;
     u8 priority;
     bool blocked;
@@ -135,7 +140,7 @@ public:
     bool isTpcScript() const;
     void setModule(unsigned char, unsigned long, FloorModuleInterface*);
     void block();
-    void* getModuleInterface();
+    FloorModuleInterface* getModuleInterface();
     void setScriptModule(unsigned char, unsigned long, unsigned long, unsigned long, unsigned long);
     void exec(FloorState, unsigned int, FloorEnterMode);
     void terminate();
@@ -162,13 +167,13 @@ struct FloorModuleList {
     u32 count;
     u32 nextHandle;
     FloorModuleEntry* head;
-    u32 unk10;
+    u32 pushSize;
     void restorePopState(void*, FloorStateMode, bool);
     void removeFuncFromList(FloorModuleEntry*);
     void waitFloorScript(FloorState);
     FloorModuleEntry* findFree();
     void insertFuncIntoList(FloorModuleEntry*);
-    void* getFMEEnd();
+    FloorModuleEntry* getFMEEnd();
     void unblockModule(unsigned long);
     void* makePushState(FloorStateMode);
     u8 executeIsDone(FloorState);
@@ -221,7 +226,7 @@ s32 __ct__16FloorModuleEntryFv(s32);
 }
 extern "C++" {
 static void _dispModuleName(FloorModuleInterface* p0, const char* p1);
-static void* _floorStateToStr(FloorState p0);
+static const char* _floorStateToStr(FloorState p0);
 }
 
 extern "C" {
@@ -231,46 +236,38 @@ extern "C" {
 u8 FloorModuleInterface_exec(s32 *p0, s32 p1, s32 p2, s32 p3, bool p4);
 }
 
+#pragma push
+#pragma dont_inline on
 void FloorModuleList::dumpModule() {
 }
+#pragma pop
 extern "C++" {
-void FloorModuleList::restorePopState(void* p0, FloorStateMode p1, bool p2) {
-    u32 temp_r23;
-    s32 temp_r22;
-    u8 *var_r27;
-    u8 *temp_r24;
-    u8 *temp_r3;
-    FloorModuleEntry *var_r25;
-
-    if (p0 != NULL) {
-        ((FloorModuleList*)(this))->dumpModule();
-        var_r27 = ((u8*)(p0) + 8);
-        temp_r24 = (u8 *)p0 + M2C_FIELD(p0, s32 *, 4);
-        if ((u32) (M2C_FIELD(p0, s32 *, 0) + 0xB9B40000) != 0x4F52U) {
-            return;
-        }
-loop_11:
-        if (var_r27 < temp_r24) {
-            temp_r23 = M2C_FIELD(var_r27, u32 *, 0);
-            temp_r22 = M2C_FIELD(var_r27, s32 *, 4);
-            var_r27 += 8;
-            var_r25 = M2C_FIELD(this, FloorModuleEntry **, 0xC);
-loop_10:
-            if (var_r25 != NULL) {
-                temp_r3 = (unsigned char *)(((FloorModuleEntry*)(var_r25))->getModuleInterface());
-                if ((temp_r3 != NULL) && ((u32) M2C_FIELD(temp_r3, u32 *, 0x24) != 0U) && (temp_r23 == M2C_FIELD(temp_r3, u32 (**)(), 0x28)())) {
-                    M2C_FIELD(temp_r3, s32 (**)(s32, void *, s32), 0x20)(p1, var_r27, temp_r22 - 8);
-                    var_r27 = (temp_r22 + var_r27) - 8;
-                } else {
-                    var_r25 = ((FloorModuleEntry*)(var_r25))->getNext();
-                    goto loop_10;
-                }
+void FloorModuleList::restorePopState(void* state, FloorStateMode mode, bool free) {
+    if (state == 0) {
+        return;
+    }
+    dumpModule();
+    u8* p = (u8*)state + 8;
+    u8* end = (u8*)state + ((u32*)state)[1];
+    if (((u32*)state)[0] != 0x464C4F52) {
+        return;
+    }
+    while (p < end) {
+        u32* hdr = (u32*)p;
+        p += 8;
+        u32 id = hdr[0];
+        u32 size = hdr[1];
+        for (FloorModuleEntry* entry = head; entry != 0; entry = entry->getNext()) {
+            FloorModuleInterface* iface = entry->getModuleInterface();
+            if (iface != 0 && iface->getPushSize != 0 && id == iface->getID()) {
+                iface->popState(mode, p, size - 8);
+                p += size - 8;
+                break;
             }
-            goto loop_11;
         }
-        if (p2 != 0) {
-            GSmemFree((void*)(p0));
-        }
+    }
+    if (free) {
+        GSmemFree(state);
     }
 }
 }
@@ -354,37 +351,36 @@ u8 FloorModuleList::executeIsDone(FloorState state) {
 }
 
 extern "C++" {
-void FloorModuleList::executeAll(unsigned int p0, FloorState p1, FloorModuleType p2, FloorEnterMode p3, unsigned long p4) {
-    FloorModuleEntry *var_r31;
-    FloorModuleEntry *temp_r30_2;
-    FloorModuleEntry *temp_r30;
-    FloorModuleEntry *var_r31_2;
+void FloorModuleList::executeAll(unsigned int arg, FloorState state, FloorModuleType type, FloorEnterMode mode, unsigned long group) {
+    FloorModuleEntry* entry;
+    FloorModuleEntry* prev;
+    FloorModuleEntry* next;
 
-    if ((p1 == 6) || (p1 == 8)) {
-        var_r31 = (FloorModuleEntry *)(((FloorModuleList*)(this))->getFMEEnd());
-        while (var_r31 != NULL) {
-            temp_r30 = ((FloorModuleEntry*)(var_r31))->getPrev();
-            if (((p4 == ((FloorModuleEntry*)(var_r31))->getGroupID()) || (((FloorModuleEntry*)(var_r31))->isBlock() == 0)) && ((p2 == 0xFF) || (p2 == ((FloorModuleEntry*)(var_r31))->getType()))) {
-                ((FloorModuleEntry*)(var_r31))->exec((FloorState)((u16)p1), p0, (FloorEnterMode)(p3));
+    if (state == 6 || state == 8) {
+        entry = getFMEEnd();
+        while (entry != 0) {
+            prev = entry->getPrev();
+            if ((group == entry->getGroupID() || entry->isBlock() == 0) && (type == 0xFF || type == entry->getType())) {
+                entry->exec(state, arg, mode);
             }
-            if (((FloorModuleEntry*)(var_r31))->getPrev() != NULL) {
-                var_r31 = ((FloorModuleEntry*)(var_r31))->getPrev();
+            if (entry->getPrev() != 0) {
+                entry = entry->getPrev();
             } else {
-                var_r31 = temp_r30;
+                entry = prev;
             }
         }
         return;
     }
-    var_r31_2 = M2C_FIELD(this, FloorModuleEntry **, 0xC);
-    while (var_r31_2 != NULL) {
-        temp_r30_2 = ((FloorModuleEntry*)(var_r31_2))->getNext();
-        if (((p4 == ((FloorModuleEntry*)(var_r31_2))->getGroupID()) || (((FloorModuleEntry*)(var_r31_2))->isBlock() == 0)) && ((p2 == 0xFF) || (p2 == ((FloorModuleEntry*)(var_r31_2))->getType()))) {
-            ((FloorModuleEntry*)(var_r31_2))->exec((FloorState)(p1), p0, (FloorEnterMode)(p3));
+    entry = head;
+    while (entry != 0) {
+        next = entry->getNext();
+        if ((group == entry->getGroupID() || entry->isBlock() == 0) && (type == 0xFF || type == entry->getType())) {
+            entry->exec(state, arg, mode);
         }
-        if (((FloorModuleEntry*)(var_r31_2))->getNext() != NULL) {
-            var_r31_2 = ((FloorModuleEntry*)(var_r31_2))->getNext();
+        if (entry->getNext() != 0) {
+            entry = entry->getNext();
         } else {
-            var_r31_2 = temp_r30_2;
+            entry = next;
         }
     }
 }
@@ -392,80 +388,55 @@ void FloorModuleList::executeAll(unsigned int p0, FloorState p1, FloorModuleType
 
 extern "C++" {
 extern "C++" {
-void* FloorModuleList::makePushState(FloorStateMode p0) {
-    FloorModuleEntry *var_r25;
-    FloorModuleEntry *var_r29;
-    s32 (*temp_r12_3)();
-    s32 temp_r28;
-    s32 temp_r5;
-    s32 var_r26;
-    u32 (*temp_r12)(s32);
-    u32 (*temp_r12_2)(s32);
-    u8 *var_r27;
-    u32 temp_r3_5;
-    u8 *temp_r26;
-    u8 *temp_r3;
-    u8 *temp_r3_2;
-    u8 *temp_r3_4;
-    u32 temp_r3_3;
+void* FloorModuleList::makePushState(FloorStateMode mode) {
+    FloorModuleInterface* iface;
+    u32 size;
+    u8* p;
+    u8* data;
+    u32 total;
+    FloorModuleEntry* entry;
 
-    ((FloorModuleList*)(this))->dumpModule();
-    var_r25 = M2C_FIELD((u16)this, FloorModuleEntry **, 0xC);
-    var_r26 = 0;
-    while (var_r25 != NULL) {
-        temp_r3_2 = (unsigned char *)(((FloorModuleEntry*)(var_r25))->getModuleInterface());
-        if (temp_r3_2 != NULL) {
-            temp_r12 = M2C_FIELD(temp_r3_2, u32 (**)(s32), 0x24);
-            if (temp_r12 != NULL) {
-                temp_r3_3 = temp_r12((u16)p0);
-                if (temp_r3_3 != 0U) {
-                    var_r26 = ((temp_r3_3 + 3) & 0xFFFFFFFC) + var_r26 + 8;
-                }
+    dumpModule();
+    total = 0;
+    for (entry = head; entry != 0; entry = entry->getNext()) {
+        iface = entry->getModuleInterface();
+        if (iface != 0 && iface->getPushSize != 0) {
+            size = iface->getPushSize(mode);
+            if (size != 0) {
+                total += ((size + 3) & ~3) + 8;
             }
         }
-        var_r25 = ((FloorModuleEntry*)(var_r25))->getNext();
     }
-    temp_r3 = (unsigned char *)(GSmemAlloc(var_r26 + 8));
-    if (temp_r3 == NULL) {
-        return NULL;
+    u32* state = (u32*)GSmemAlloc(total + 8);
+    if (state == 0) {
+        return 0;
     }
-    temp_r5 = var_r26 + 8;
-    M2C_FIELD(this, s32 *, 0x10) = temp_r5;
-    M2C_FIELD(temp_r3, s32 *, 0) = 0x464C4F52;
-    var_r27 = temp_r3 + 8;
-    M2C_FIELD(temp_r3, s32 *, 4) = temp_r5;
-    var_r29 = M2C_FIELD(this, FloorModuleEntry **, 0xC);
-loop_19:
-    if (var_r29 == NULL) {
-        return temp_r3;
-    }
-    temp_r3_4 = (unsigned char *)(((FloorModuleEntry*)(var_r29))->getModuleInterface());
-    if (temp_r3_4 != NULL) {
-        temp_r12_2 = M2C_FIELD(temp_r3_4, u32 (**)(s32), 0x24);
-        if (temp_r12_2 != NULL) {
-            temp_r3_5 = temp_r12_2(p0);
-            if (temp_r3_5 == 0U) {
-                if (p0 == 3) {
-                    M2C_FIELD(temp_r3_4, s32 (**)(s32, void *, s32), 0x1C)(p0, NULL, 0);
+    pushSize = total + 8;
+    state[0] = 0x464C4F52;
+    p = (u8*)(state + 2);
+    state[1] = total + 8;
+    for (entry = head; entry != 0; entry = entry->getNext()) {
+        iface = entry->getModuleInterface();
+        if (iface != 0 && iface->getPushSize != 0) {
+            size = iface->getPushSize(mode);
+            if (size == 0) {
+                if (mode == 3) {
+                    iface->pushState(mode, 0, 0);
                 }
-                goto block_18;
+            } else {
+                size = (size + 3) & ~3;
+                if (iface->getID == 0) {
+                    return 0;
+                }
+                ((u32*)p)[0] = iface->getID();
+                data = p + 8;
+                ((u32*)p)[1] = size + 8;
+                iface->pushState(mode, data, size);
+                p = data + size;
             }
-            temp_r12_3 = M2C_FIELD(temp_r3_4, s32 (**)(), 0x28);
-            temp_r28 = (temp_r3_5 + 3) & 0xFFFFFFFC;
-            if (temp_r12_3 == NULL) {
-                return NULL;
-            }
-            M2C_FIELD(var_r27, s32 *, 0) = temp_r12_3();
-            temp_r26 = var_r27 + 8;
-            M2C_FIELD(var_r27, s32 *, 4) = (s32) (temp_r28 + 8);
-            M2C_FIELD(temp_r3_4, s32 (**)(s32, void *, s32), 0x1C)(p0, temp_r26, temp_r28);
-            var_r27 = temp_r26 + temp_r28;
-            goto block_18;
         }
     }
-block_18:
-    var_r29 = ((FloorModuleEntry*)(var_r29))->getNext();
-    goto loop_19;
+    return state;
 }
 }
 
@@ -1243,7 +1214,7 @@ void FloorModuleList::insertFuncIntoList(FloorModuleEntry* entry) {
 extern "C++" {
 extern "C++" {
 extern "C++" {
-void* FloorModuleList::getFMEEnd() {
+FloorModuleEntry* FloorModuleList::getFMEEnd() {
     FloorModuleEntry *var_r31;
     FloorModuleEntry *var_r3;
 
@@ -1404,7 +1375,7 @@ void FloorModuleEntry::init() {
 extern "C++" {
 void FloorModuleEntry::setModule(unsigned char priority, unsigned long group, FloorModuleInterface* iface) {
     init();
-    type = 0;
+    type = FloorTypeFunc;
     groupID = group;
     this->priority = priority;
     *(FloorModuleInterface*)module = *iface;
@@ -1649,34 +1620,46 @@ void FloorScriptModule::setIDs(unsigned long initID, unsigned long enterID, unsi
 }
 
 extern "C++" {
-static void* _floorStateToStr(FloorState p0) {
-    s8 *temp_r4;
-
-    temp_r4 = (signed char *)("NoramlThread");
-    if ((u32) p0 <= 8U) {
-        switch (p0) {
-        case 0:
-            return temp_r4 + 0x88;
-        case 1:
-            return temp_r4 + 0x9C;
-        case 2:
-            return temp_r4 + 0xB0;
-        case 3:
-            return temp_r4 + 0xC0;
-        case 4:
-            return temp_r4 + 0xD4;
-        case 5:
-            return temp_r4 + 0xE8;
-        case 6:
-            return temp_r4 + 0x100;
-        case 7:
-            return temp_r4 + 0x110;
-        case 8:
-            return temp_r4 + 0x124;
-        }
-    } else {
-        return temp_r4 + 0x134;
+static const char* _floorTypeToStr(FloorModuleType type) {
+    switch (type) {
+    case 0:
+        return "FloorTypeFunc";
+    case 1:
+        return "FloorTypeGSvm";
+    case 2:
+        return "FloorTypeTpc";
+    case 3:
+        return "FloorTypeSingleGSvm";
+    case 4:
+        return "FloorTypeSingleTpc";
+    case 5:
+        return "FloorTypeAny";
     }
+    return "FloorUnknown";
+}
+
+static const char* _floorStateToStr(FloorState state) {
+    switch (state) {
+    case 0:
+        return "FloorStateUnused";
+    case 1:
+        return "FloorStateCreate";
+    case 2:
+        return "FloorStatePre";
+    case 3:
+        return "FloorStatePreWait";
+    case 4:
+        return "FloorStateNormal";
+    case 5:
+        return "FloorStateNormalWait";
+    case 6:
+        return "FloorStatePost";
+    case 7:
+        return "FloorStatePostWait";
+    case 8:
+        return "FloorStateFree";
+    }
+    return "unknownState";
 }
 }
 }
@@ -1689,7 +1672,7 @@ bool FloorModuleEntry::isBlock() const {
     return blocked;
 }
 
-u32 FloorModuleEntry::getType() const {
+FloorModuleType FloorModuleEntry::getType() const {
     return type;
 }
 
@@ -1701,9 +1684,9 @@ FloorModuleEntry* FloorModuleEntry::getPrev() const {
     return prev;
 }
 extern "C++" {
-void* FloorModuleEntry::getModuleInterface() {
+FloorModuleInterface* FloorModuleEntry::getModuleInterface() {
     if ((s32) M2C_FIELD(this, s32 *, 0x10) == 0) {
-        return module;
+        return (FloorModuleInterface*)module;
     }
     return NULL;
 }

@@ -75,7 +75,7 @@ s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial);
 void menuTitleCursorAnime(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
 void menuTitleCursorAnimeMain();
 void menuToolSetSelect(s32 sel);
-double timeGetLastFrameSec();
+f32 timeGetLastFrameSec(void);
 void winMsgClose(bool flag);
 s32 winMsgOpen(s8 type, s32 msg, bool a, bool b);
 void winSeqSetMenu(s32 menuID, u32 id);
@@ -166,10 +166,8 @@ s32 menuTitleOptionCursorControl(tagWINDOW_WORK* w) {
 }
 
 static void _menuTitleOptionSetFrameSec() {
-    double d = timeGetLastFrameSec();
-    f32 f = d;
-    _menuTitleOptionWork.dt = d;
-    _menuTitleOptionWork.t2 += f;
+    _menuTitleOptionWork.dt = timeGetLastFrameSec();
+    _menuTitleOptionWork.t2 += _menuTitleOptionWork.dt;
     if (_menuTitleOptionWork.t2 >= 1.0f) {
         _menuTitleOptionWork.t2 = 0.0f;
     }

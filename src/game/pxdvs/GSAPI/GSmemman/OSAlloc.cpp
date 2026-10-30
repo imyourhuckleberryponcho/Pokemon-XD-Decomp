@@ -64,7 +64,7 @@ struct GSmemHeapDesc {
 
 extern "C" {
 s16 GSmemGetCurrentLayer();
-s32 GSmemVisitHeapAllocated(s32 p0, void *p1, s32 p2, s32 p3);
+s32 GSmemVisitHeapAllocated(s32 heap, void (*func)(u32, s32, u64), u64 user);
 void* OSAllocFromHeap(OSHeapHandle heap, u32 size);
 s32 OSCheckHeap(OSHeapHandle heap);
 s32 OSCreateExternalHeap(s32 p0, s32 p1, s32 *p2, s32 p3);
@@ -79,7 +79,7 @@ s32 OSReferentSize(void *p0);
 void OSReport(const char* msg, ...);
 s32 OSSetAllocMethodHeap(s32 p0, s32 p1);
 OSHeapHandle OSSetCurrentHeap(OSHeapHandle heap);
-s32 OSShrinkHeap(s32 p0, u32 p1, s32 p2);
+s32 OSShrinkHeap(OSHeapHandle heap, void* ptr, u32 size);
 void* memset(void* dst, int val, size_t n);
 }
 extern "C++" {
@@ -116,35 +116,30 @@ s32 OSGetHeapType(s32 heap) {
 }
 
 extern "C" {
-s32 OSGetHeapFreeSize(s32 p0, s32 *p1, s32 *p2) {
-    s32 var_r30;
-    s32 var_r29;
-    u8 *var_r31;
-
-    var_r30 = 0;
-    var_r29 = 0;
-    if ((p0 < 0) || (p0 >= (s32) NumHeaps)) {
-        if (p1 != NULL) {
-            *p1 = 0;
+s32 OSGetHeapFreeSize(s32 heap, s32* total, s32* largest) {
+    s32 sum = 0;
+    s32 max = 0;
+    if (heap < 0 || heap >= NumHeaps) {
+        if (total != NULL) {
+            *total = 0;
         }
-        if (p2 != NULL) {
-            *p2 = 0;
+        if (largest != NULL) {
+            *largest = 0;
         }
         return 0;
     }
-    var_r31 = M2C_FIELD(((u8 *)HeapArray + (p0 * 0x30)), u8 **, 4);
-    while (var_r31 != NULL) {
-        var_r30 += M2C_FIELD(var_r31, s32 *, 8);
-        if ((s32) M2C_FIELD(var_r31, s32 *, 8) > var_r29) {
-            var_r29 = M2C_FIELD(var_r31, s32 *, 8);
+    GSmemHeapDesc* hd = &((GSmemHeapDesc*)HeapArray)[heap];
+    for (GSmemCell* cell = hd->free; cell != NULL; cell = cell->next) {
+        sum += cell->size;
+        if (cell->size > max) {
+            max = cell->size;
         }
-        var_r31 = M2C_FIELD(var_r31, u8 **, 4);
     }
-    if (p1 != NULL) {
-        *p1 = var_r30;
+    if (total != NULL) {
+        *total = sum;
     }
-    if (p2 != NULL) {
-        *p2 = var_r29;
+    if (largest != NULL) {
+        *largest = max;
     }
     return 1;
 }
@@ -162,30 +157,20 @@ s32 OSGetHeapSize(s32 heap) {
 }
 
 extern "C" {
-s32 GSmemVisitHeapAllocated(s32 p0, void *p1, s32 p2, s32 p3) {
-    volatile s32 spC;
-    volatile s32 sp8;
-    GSmemCell *var_r31;
-    s32 var_r30;
-
-    var_r30 = 0;
-    sp8 = p2;
-    spC = p3;
-    if (((s32) *(s32 *)((u8 *)HeapArray + (p0 * 0x30)) <= 0) || (p1 == NULL)) {
+s32 GSmemVisitHeapAllocated(s32 heap, void (*func)(u32, s32, u64), u64 user) {
+    s32 count = 0;
+    if (((GSmemHeapDesc*)HeapArray)[heap].size <= 0 || func == NULL) {
         return 0;
     }
-    if ((s32) *(s32 *)((u8 *)HeapArray + (p0 * 0x30)) >= 0) {
-        var_r31 = (GSmemCell *)(*(s32 *)((u8 *)HeapArray + ((p0 * 0x30) + 8)));
-        while (var_r31 != NULL) {
-            if (p1 != NULL) {
-                ((GSmemCell*)(var_r31))->get_area((GSmemHeapDesc*)((u8 *)HeapArray + (p0 * 0x30)));
-                ((s32 (*)(s32, s32, s32)) p1)(M2C_FIELD(var_r31, s32 *, 8), sp8, spC);
+    if (((GSmemHeapDesc*)HeapArray)[heap].size >= 0) {
+        for (GSmemCell* cell = ((GSmemHeapDesc*)HeapArray)[heap].allocated; cell != NULL; cell = cell->next) {
+            if (func != NULL) {
+                func(cell->get_area(&((GSmemHeapDesc*)HeapArray)[heap]), cell->size, user);
             }
-            var_r31 = M2C_FIELD(var_r31, GSmemCell **, 4);
-            var_r30 += 1;
+            count++;
         }
     }
-    return var_r30;
+    return count;
 }
 }
 
@@ -272,47 +257,38 @@ void OSDestroyHeap(OSHeapHandle heap) {
 }
 
 extern "C" {
-#pragma push
-#pragma peephole off
-s32 OSCreateExternalHeap(s32 p0, s32 p1, s32 *p2, s32 p3) {
-    GSmemHeapDesc *temp_r31;
-    s32 *temp_r29;
-    s32 temp_r27;
-    s32 var_r28;
-    s32 var_r30;
+s32 OSCreateExternalHeap(s32 start, s32 end, s32* cells, s32 count) {
+    GSmemHeapDesc* hd;
+    GSmemCell* cell;
+    s32 i;
+    s32 heap;
 
-    temp_r27 = (p0 + 0x1F) & 0xFFFFFFE0;
-    memset((void*)(p2), 0, p3 * 0x14);
-    var_r30 = 0;
-loop_7:
-    if (var_r30 >= (s32) NumHeaps) {
-        return -1;
-    }
-    temp_r31 = (GSmemHeapDesc *)((u8 *)HeapArray + (var_r30 * 0x30));
-    if ((s32) M2C_FIELD(temp_r31, s32 *, 0) < 0) {
-        M2C_FIELD(temp_r31, s32 *, 0) = (s32) ((p1 & 0xFFFFFFE0) - temp_r27);
-        M2C_FIELD(temp_r31, s32 *, 0x10) = 0;
-        M2C_FIELD(temp_r31, s32 **, 0x18) = p2;
-        M2C_FIELD(temp_r31, s32 *, 0x1C) = p3;
-        M2C_FIELD(temp_r31, s32 *, 0xC) = 1;
-        M2C_FIELD(temp_r31, s32 *, 0x14) = 1;
-        temp_r29 = M2C_FIELD(temp_r31, s32 **, 0x18);
-        ((GSmemCell*)((GSmemCell *) temp_r29))->init(M2C_FIELD(temp_r31, s32 *, 0));
-        M2C_FIELD(temp_r29, s32 *, 0xC) = temp_r27;
-        var_r28 = 0;
-        M2C_FIELD(temp_r31, s32 **, 4) = temp_r29;
-        M2C_FIELD(temp_r31, s32 *, 8) = 0;
-        M2C_FIELD(temp_r31, s32 *, 0x20) = 0;
-        while (var_r28 < p3) {
-            ((GSmemHeapDesc*)(temp_r31))->addfreeCellList((GSmemCell*)((u8*)p2 + (var_r28 * 0x14)));
-            var_r28 += 1;
+    end = end & ~0x1F;
+    start = (start + 0x1F) & ~0x1F;
+    memset(cells, 0, count * sizeof(GSmemCell));
+    for (heap = 0; heap < NumHeaps; heap++) {
+        hd = &((GSmemHeapDesc*)HeapArray)[heap];
+        if (hd->size < 0) {
+            hd->size = end - start;
+            hd->unk10 = 0;
+            hd->unk18 = (s32)cells;
+            hd->unk1C = count;
+            hd->type = 1;
+            hd->unk14 = 1;
+            cell = (GSmemCell*)hd->unk18;
+            cell->init(hd->size);
+            cell->addr = start;
+            hd->free = cell;
+            hd->allocated = NULL;
+            hd->freeCells = NULL;
+            for (i = 0; i < count; i++) {
+                hd->addfreeCellList(&((GSmemCell*)cells)[i]);
+            }
+            return heap;
         }
-        return var_r30;
     }
-    var_r30 += 1;
-    goto loop_7;
+    return -1;
 }
-#pragma pop
 }
 
 extern "C" {
@@ -385,50 +361,47 @@ OSHeapHandle OSSetCurrentHeap(OSHeapHandle p0) {
 }
 
 extern "C" {
-s32 OSShrinkHeap(s32 p0, u32 p1, s32 p2) {
-    s32 *var_r31;
-    volatile s32 sp8;
-    GSmemHeapDesc *temp_r30;
-    s32 *var_r29;
-    s32 spC;
-    s32 temp_r28;
-    u32 temp_r27;
+s32 OSShrinkHeap(OSHeapHandle heap, void* ptr, u32 size) {
+    GSmemHeapDesc* hd;
+    GSmemCell* cell;
+    GSmemCell* newCell;
+    u32 leftoverSize;
+    s32 oldSize;
 
-    sp8 = p0;
-    if (p2 == 0) {
+    if (size == 0) {
         return 0;
     }
-    temp_r30 = (GSmemHeapDesc *)((u8 *)HeapArray + (sp8 * 0x30));
-    temp_r28 = (p2 + ((GSmemHeapDesc*)((u16)temp_r30))->getHeaderSize() + 0x1F) & 0xFFFFFFE0;
-    if ((s32) M2C_FIELD(temp_r30, s32 *, 0xC) == 0) {
-        if (p1 == 0) {
+    hd = &((GSmemHeapDesc*)HeapArray)[heap];
+    size += hd->getHeaderSize();
+    size = (size + 0x1F) & 0xFFFFFFE0;
+    if (hd->type == 0) {
+        if (ptr == NULL) {
             return 0;
         }
-        var_r31 = (long *)(p1 - 0x20);
-        goto block_7;
+        cell = (GSmemCell*)((u8*)ptr - 0x20);
+    } else {
+        cell = hd->searchAllocCell(ptr);
     }
-    var_r31 = (s32*)((GSmemHeapDesc*)(temp_r30))->searchAllocCell((void*)((u8 *) p1));
-block_7:
-    temp_r27 = M2C_FIELD(var_r31, s32 *, 8) - temp_r28;
-    spC = M2C_FIELD(var_r31, s32 *, 8);
-    if (temp_r27 < 0x40U) {
+    oldSize = cell->getSize();
+    leftoverSize = cell->getSize() - size;
+    if (leftoverSize < 0x40) {
         return 1;
     }
-    if ((s32) M2C_FIELD(temp_r30, s32 *, 0xC) == 1) {
-        var_r29 = (s32*)((GSmemHeapDesc*)(temp_r30))->createNewCell();
-        if (var_r29 == NULL) {
+    if (hd->type == 1) {
+        newCell = hd->createNewCell();
+        if (newCell == NULL) {
             return 0;
         }
-        M2C_FIELD(var_r31, s32 *, 8) = temp_r28;
-        M2C_FIELD(var_r29, s32 **, 0xC) = var_r29;
-        goto block_14;
+        cell->size = size;
+        newCell->addr = (u32)newCell;
+    } else {
+        newCell = (GSmemCell*)((u8*)cell->start() + size);
+        cell->size = size;
+        u32 end = cell->end();
+        newCell->addr = end;
     }
-    var_r29 = (long *)(M2C_FIELD(var_r31, s32 *, 0xC) + temp_r28);
-    M2C_FIELD(var_r31, s32 *, 8) = temp_r28;
-    M2C_FIELD(var_r29, s32 *, 0xC) = (s32) (M2C_FIELD(var_r31, s32 *, 0xC) + M2C_FIELD(var_r31, s32 *, 8));
-block_14:
-    ((GSmemCell*)((GSmemCell *) var_r29))->init((s32) temp_r27);
-    M2C_FIELD(temp_r30, GSmemCell **, 4) = (GSmemCell *)(DLInsert((GSmemCell*)(M2C_FIELD(temp_r30, GSmemCell **, 4)), (GSmemCell*)((GSmemCell *) var_r29), (GSmemHeapDesc*)(temp_r30)));
+    newCell->init(leftoverSize);
+    hd->free = DLInsert(hd->free, newCell, hd);
     return 1;
 }
 }
@@ -559,6 +532,7 @@ extern "C++" {
 static GSmemCell* DLInsert(GSmemCell* list, GSmemCell* cell, GSmemHeapDesc* hd) {
     GSmemCell* prev;
     GSmemCell* next;
+    GSmemCell* merged;
 
     for (next = list, prev = NULL; next; prev = next, next = next->next) {
         if (cell->start() <= next->start()) {
@@ -570,7 +544,7 @@ static GSmemCell* DLInsert(GSmemCell* list, GSmemCell* cell, GSmemHeapDesc* hd) 
     if (next) {
         next->prev = cell;
         if (cell->end() == next->start()) {
-            GSmemCell* merged = next;
+            merged = next;
             cell->size += next->size;
             cell->next = next = next->next;
             if (next) {
@@ -585,14 +559,15 @@ static GSmemCell* DLInsert(GSmemCell* list, GSmemCell* cell, GSmemHeapDesc* hd) 
     if (prev) {
         prev->next = cell;
         if (prev->end() == cell->start()) {
+            merged = cell;
             prev->size += cell->size;
             prev->next = next;
             if (next) {
                 next->prev = prev;
             }
-            cell->size = 0;
+            merged->size = 0;
             if (hd != NULL && hd->type == 1) {
-                hd->addfreeCellList(cell);
+                hd->addfreeCellList(merged);
             }
         }
         return list;

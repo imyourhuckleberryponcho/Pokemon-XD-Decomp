@@ -43,7 +43,7 @@ struct GSvec {
     u8 _draft[1];
 };
 struct Pokemon {
-    u8 _draft[1];
+    u8 data[0xC4];
 };
 struct PokemonData {
     u8 _draft[1];
@@ -66,7 +66,6 @@ struct _struct_CancelStep_0x8 {
 };
 struct _struct_StepSeqTbl_0x8 {
      u16 unk0;                             
-     char pad2[2];
      s32 unk4;                             
 };
 extern "C" {
@@ -108,7 +107,7 @@ void evolutionMain();
 s32 evolutionOpen(void*, void*, s32, u16*, s32, u8*);
 s32 evolutionStart(s32 *p0, s32 *p1, s32 p2, u16 *p3, s32 p4, u8 *p5);
 s32 evolutionWazaLearn(Pokemon* p0, u32 p1, s8 *p2, EVOLUTION_WINDOW_TYPE p3, void *p4, u32 *p5);
-static s32 evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc(u32 *p0, s32 p1, s32 *p2, s32 *p3, u16 *p4, s32 p5, u8 *p6);
+extern "C++" static s32 evolution__Main(WORK* work, int mode, Pokemon* pokemon, Pokemon* evolved, u16* moves, s32 count, u8* result);
 s8 fadeCheck(bool);
 void fadeSet(s32 type, f32 time);
 void floorSetFadeScript(u32 out, u32 in);
@@ -152,13 +151,13 @@ static s32 evolutionDemo(WORK* p0, int p1, Pokemon* p2, Pokemon* p3);
 static u16 getPkxID(Pokemon* p0);
 static PokemonData* getPokemonData(Pokemon* pokemon);
 static s32 getStepSeq(WORK* p0, STEP p1);
-static s8 getYesNo(EVOLUTION_WINDOW_TYPE p0);
+static s32 getYesNo(EVOLUTION_WINDOW_TYPE p0);
 static s32 loadAll(WORK* p0, Pokemon* p1, Pokemon* p2);
 static u8 loadSequenceAfter(WORK* p0, Pokemon* p1);
 static u8 loadSequenceBefore(WORK* p0, Pokemon* p1);
 static u32 loadSequence(Pokemon* p0, int p1);
 static void openMsgWin(unsigned long p0, EVOLUTION_WINDOW_TYPE p1);
-static u16 playPokemonVoice(Pokemon* p0);
+static s32 playPokemonVoice(Pokemon* p0);
 static void restoreCamera(CAM_STORE* p0);
 static void restoreSound(WORK* p0);
 static void stopSound(WORK* p0);
@@ -284,7 +283,7 @@ static PokemonData* getPokemonData(Pokemon* p0) {
 }
 
 extern "C++" {
-static u16 playPokemonVoice(Pokemon* p0) {
+static s32 playPokemonVoice(Pokemon* p0) {
     PokemonData *temp_r3_2;
     s32 temp_r3;
 
@@ -300,7 +299,7 @@ static u16 playPokemonVoice(Pokemon* p0) {
 
 extern "C++" {
 static s32 dispMsgYesNo(unsigned long p0, EVOLUTION_WINDOW_TYPE p1) {
-    s8 temp_r31;
+    s32 temp_r31;
     openMsgWin(p0, (EVOLUTION_WINDOW_TYPE)(p1));
     temp_r31 = getYesNo((EVOLUTION_WINDOW_TYPE)(p1));
     closeMsgWin((EVOLUTION_WINDOW_TYPE)(p1));
@@ -316,7 +315,7 @@ static s32 dispMsgYesNo(unsigned long p0, EVOLUTION_WINDOW_TYPE p1) {
 }
 
 extern "C++" {
-static s8 getYesNo(EVOLUTION_WINDOW_TYPE p0) {
+static s32 getYesNo(EVOLUTION_WINDOW_TYPE p0) {
     if (p0 == 0) {
         return menuSubOpenYesNoField();
     }
@@ -383,36 +382,30 @@ static u16 getPkxID(Pokemon* p0) {
 }
 
 extern "C++" {
-static u32 loadSequence(Pokemon* p0, int p1) {
-    struct _struct_StepSeqTbl_0x8 *var_r31;
-    s32 var_r30;
-    u32 temp_r3;
-    s32 temp_r3_2;
-    u32 temp_r30;
+static u32 loadSequence(Pokemon* pokemon, int step) {
+    s32 i;
+    u32 seq;
+    u16 id;
+    u32 rnd;
 
-    temp_r3_2 = getPkxID((Pokemon*)(p0));
-    if (temp_r3_2 == -1U) {
-        return 0U;
+    id = getPkxID(pokemon);
+    if (id == 0xFFFF) {
+        return 0;
     }
-    temp_r30 = pokemonBiosGetRnd((Pokemon*)(p0));
-    temp_r3 = Sequence_LoadPokemon(temp_r3_2, temp_r30, pokemonGetStatus((void*)(p0), 0U, 0xC1U, 0U) != 0);
-    if (temp_r3 == 0) {
-        return 0U;
+    rnd = pokemonBiosGetRnd(pokemon);
+    seq = Sequence_LoadPokemon(id, rnd, pokemonGetStatus(pokemon, 0, 0xC1, 0) != 0);
+    if (seq == 0) {
+        return 0;
     }
-    var_r30 = 0;
-    var_r31 = (_struct_StepSeqTbl_0x8 *)(StepSeqTbl);
-loop_5:
-    if ((p1 != (s32) var_r31->unk4) || (Sequence_LoadWaza((Sequence*)((Sequence *) temp_r3), var_r31->unk0, 4U, 0) != NULL)) {
-        var_r30 += 1;
-        var_r31 += 8;
-        if (var_r30 < 5) {
-            goto loop_5;
+    for (i = 0; i < 5; i++) {
+        if (step == StepSeqTbl[i].unk4 && Sequence_LoadWaza((Sequence*)seq, StepSeqTbl[i].unk0, 4, 0) == NULL) {
+            break;
         }
     }
-    if (var_r30 < 5) {
-        return 0U;
+    if (i < 5) {
+        return 0;
     }
-    return temp_r3;
+    return seq;
 }
 }
 
@@ -542,64 +535,40 @@ static s8 cbWazaForget(Pokemon* p0, unsigned short p1, long p2) {
 }
 
 extern "C++" {
-static s32 doWazaSequence(WORK* p0, STEP p1, int p2, FADE_CTRL p3_in) {
-    FADE_CTRL p3 = p3_in;
-    u8 unksp8[sizeof(s32) + 48];
-    Sequence *var_r3;
-    WazaSequence *temp_r3;
-    s32 var_r31;
-    s32 var_r30;
-    s32 var_r29;
-    s32 var_r3_2;
-    s32 var_r3_3;
+static s32 doWazaSequence(WORK* work, STEP step, int canSkip, FADE_CTRL fade) {
+    CAM_STORE cam;
+    WazaSequence* seq;
+    s32 time = 0;
+    s32 skipped = 0;
 
-    var_r29 = p3;
-    var_r31 = 0;
-    var_r30 = 0;
-    if ((p1 < 0) || (p1 >= 5)) {
+    if (step < 0 || step >= 5) {
         return 0;
     }
-    if ((s32) StepSeqTbl[p1].unk4 != 0) {
-        var_r3 = M2C_FIELD(p0, Sequence **, 4);
-    } else {
-        var_r3 = M2C_FIELD(p0, Sequence **, 0);
-    }
-    temp_r3 = Sequence_GetWaza((Sequence*)(var_r3), StepSeqTbl[p1].unk0, 4U);
-    WazaSequence_Start((WazaSequence*)(temp_r3), 1);
-loop_15:
-    if (var_r30 == 0) {
-        if (var_r29 & 0xA) {
-            var_r3_2 = 4;
-            if (var_r29 & 2) {
-                var_r3_2 = 2;
-            }
-            fadeSet(var_r3_2, 0.5f);
-            var_r29 &= ~0xA;
+    seq = Sequence_GetWaza(StepSeqTbl[step].unk4 != 0 ? M2C_FIELD(work, Sequence **, 4) : M2C_FIELD(work, Sequence **, 0), StepSeqTbl[step].unk0, 4);
+    WazaSequence_Start(seq, 1);
+    while (skipped == 0) {
+        if (fade & 0xA) {
+            fadeSet((fade & 2) ? 2 : 4, 0.5f);
+            fade = (FADE_CTRL)(fade & ~0xA);
         }
-        if (WazaSequence_IsActive((WazaSequence*)(temp_r3)) != 0) {
-            GSthreadSwitch();
-            storeCamera((CAM_STORE*)(&unksp8));
-            var_r31 += timeGetLastFrameTime();
-            if (p2 != 0) {
-                if (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x200) {
-                    var_r30 = 1;
-                }
-            }
-            goto loop_15;
+        if (WazaSequence_IsActive(seq) == 0) {
+            break;
+        }
+        GSthreadSwitch();
+        storeCamera(&cam);
+        time += timeGetLastFrameTime();
+        if (canSkip != 0 && (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x200)) {
+            skipped = 1;
         }
     }
-    restoreCamera((CAM_STORE*)(&unksp8));
-    if (var_r29 & 0x14) {
-        var_r3_3 = 5;
-        if (var_r29 & 4) {
-            var_r3_3 = 3;
-        }
-        fadeSet(var_r3_3, 0.5f);
+    restoreCamera(&cam);
+    if (fade & 0x14) {
+        fadeSet((fade & 4) ? 3 : 5, 0.5f);
         fadeCheck(1);
     }
-    WazaSequence_Free((WazaSequence*)(temp_r3));
-    if (var_r30 != 0) {
-        return var_r31;
+    WazaSequence_Free(seq);
+    if (skipped != 0) {
+        return time;
     }
     return -1;
 }
@@ -644,142 +613,136 @@ static s32 wazaSeqStart(WORK* p0, STEP p1) {
 }
 
 extern "C++" {
-static s32 evolutionDemo(WORK* p0, int p1, Pokemon* p2, Pokemon* p3) {
-    s32 saved_reg_r22;
-    s32 var_r22;
-    s16 temp_r26;
-    u32 var_r25;
-    s32 var_r24;
-    s32 var_r4;
-    s32 var_r23;
-    s16 temp_r28_2;
-    s16 temp_r28_3;
-    u32 temp_r28;
-    s32 var_r27;
+static s32 evolutionDemo(WORK* work, int canCancel, Pokemon* pokemon, Pokemon* evolved) {
+    s32 first;
+    u32 voice;
+    u32 elapsed;
+    s32 cancelled;
+    s32 state;
+    s32 wait;
+    s32 step;
 
-    var_r22 = saved_reg_r22;
-    toVisible((WORK*)(p0), 0, 1);
-    msgctrlSetValue((long)(0x32), (unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)(p2))));
-    openMsgWin(0xC419U, (EVOLUTION_WINDOW_TYPE)(0));
-    temp_r26 = playPokemonVoice((Pokemon*)(p2));
-    wazaSeqStart((WORK*)((u16)p0), (STEP)(0));
-    var_r27 = 1;
-    var_r24 = 0;
-    var_r23 = 0;
-    var_r25 = 0U;
-loop_19:
-    if (var_r25 < 0x23AU) {
-        if ((p1 != 0) && (var_r25 >= 0x78U) && (var_r23 >= 2) && (temp_r28 = GSinputButtonsChanged(1), (((GSinputButtonsPressed(1) & temp_r28 & 0x200) == 0) == 0))) {
-            var_r24 = 1;
-        } else if (wazaSeqUpdate((WORK*)(p0)) != 0) {
-            switch (var_r23) {
-            case 0:
-                if (GSsndGetStatus((u32) temp_r26) != 2) {
-                    soundOpenPlay(0x3D0, 0, 0xFF);
-                    var_r22 = 0;
-                    var_r23 = 1;
-                }
-                break;
-            case 1:
-                if (GSsndGetStatus(0x3D0U) != 2) {
-                    var_r22 += timeGetLastFrameTime();
-                    if (var_r22 >= 0x1E) {
-                        soundOpenPlay(0x3D1, 0, 0xFF);
-                        var_r23 = 2;
-                    }
-                }
-                break;
-            }
-            if (var_r27 != 0) {
-                fadeSet(2, 0.5f);
-                var_r27 = 0;
-            }
-            GSthreadSwitch();
-            var_r25 += timeGetLastFrameTime();
-            goto loop_19;
+    toVisible(work, 0, 1);
+    char* name = pokemonBiosGetNicknamePtr(pokemon);
+    msgctrlSetValue(0x32, (u32)name);
+    openMsgWin(0xC419, (EVOLUTION_WINDOW_TYPE)0);
+    voice = playPokemonVoice(pokemon);
+    wazaSeqStart(work, (STEP)0);
+    first = 1;
+    cancelled = 0;
+    state = 0;
+    elapsed = 0;
+    while (elapsed < 0x23A) {
+        if (canCancel != 0 && elapsed >= 0x78 && state >= 2 && (GSinputButtonsPressed(1) & GSinputButtonsChanged(1) & 0x200)) {
+            cancelled = 1;
+            break;
         }
+        if (wazaSeqUpdate(work) == 0) {
+            break;
+        }
+        switch (state) {
+        case 0:
+            if (GSsndGetStatus(voice) != 2) {
+                soundOpenPlay(0x3D0, 0, 0xFF);
+                wait = 0;
+                state = 1;
+            }
+            break;
+        case 1:
+            if (GSsndGetStatus(0x3D0) != 2) {
+                wait += timeGetLastFrameTime();
+                if (wait >= 0x1E) {
+                    soundOpenPlay(0x3D1, 0, 0xFF);
+                    state = 2;
+                }
+            }
+            break;
+        }
+        if (first != 0) {
+            fadeSet(2, 0.5f);
+            first = 0;
+        }
+        GSthreadSwitch();
+        elapsed += timeGetLastFrameTime();
     }
     fadeSet(5, 0.5f);
     while (fadeCheck(0) != 0) {
-        wazaSeqUpdate((WORK*)(p0));
+        wazaSeqUpdate(work);
         GSthreadSwitch();
     }
-    wazaSeqEnd((WORK*)(p0));
+    wazaSeqEnd(work);
     waitTime(1.0f);
-    if (var_r24 != 0) {
-        closeMsgWin((EVOLUTION_WINDOW_TYPE)(0));
+    if (cancelled != 0) {
+        closeMsgWin((EVOLUTION_WINDOW_TYPE)0);
         soundStop(0x3D1, 0x32);
-        var_r4 = 0;
-        if ((u32) CancelStep->unk0 < var_r25) {
-            var_r4 = 1;
-            if ((u32) CancelStep[1].unk0 < var_r25) {
-                var_r4 = 2;
+        step = 0;
+        if (CancelStep[0].unk0 < elapsed) {
+            step = 1;
+            if (CancelStep[1].unk0 < elapsed) {
+                step = 2;
             }
         }
-        doWazaSequence((WORK*)(p0), (STEP)(CancelStep[var_r4].unk4), 0, (FADE_CTRL)(8));
-        temp_r28_2 = playPokemonVoice((Pokemon*)(p2));
-        while (GSsndGetStatus((u32) temp_r28_2) == 2) {
+        doWazaSequence(work, (STEP)CancelStep[step].unk4, 0, (FADE_CTRL)8);
+        voice = playPokemonVoice(pokemon);
+        while (GSsndGetStatus(voice) == 2) {
             GSthreadSwitch();
         }
-        msgctrlSetValue((long)(0x32), (unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)(p2))));
-        dispMsg(0xC41BU, (EVOLUTION_WINDOW_TYPE)(0));
+        msgctrlSetValue(0x32, (u32)pokemonBiosGetNicknamePtr(pokemon));
+        dispMsg(0xC41B, (EVOLUTION_WINDOW_TYPE)0);
         fadeSet(3, 0.5f);
         fadeCheck(1);
         return 0;
     }
-    toVisible((WORK*)(p0), 0, 0);
-    toVisible((WORK*)(p0), 1, 1);
-    doWazaSequence((WORK*)(p0), (STEP)(1), 0, (FADE_CTRL)(8));
-    closeMsgWin((EVOLUTION_WINDOW_TYPE)(0));
+    toVisible(work, 0, 0);
+    toVisible(work, 1, 1);
+    doWazaSequence(work, (STEP)1, 0, (FADE_CTRL)8);
+    closeMsgWin((EVOLUTION_WINDOW_TYPE)0);
     soundStop(0x3D1, 0x32);
-    temp_r28_3 = playPokemonVoice((Pokemon*)(p3));
-    while (GSsndGetStatus((u32) temp_r28_3) == 2) {
+    voice = playPokemonVoice(evolved);
+    while (GSsndGetStatus(voice) == 2) {
         GSthreadSwitch();
     }
-    msgctrlSetValue((long)(0x32), (unsigned long)(pokemonBiosGetNicknamePtr((Pokemon*)(p2))));
-    msgctrlSetValue(0x4E, (u32) pokemonBiosGetPokemonDataId((Pokemon*)(p3)));
-    msgctrlSetValue(0x5D, 0x3CFU);
-    dispMsg(0xC41AU, (EVOLUTION_WINDOW_TYPE)(0));
+    msgctrlSetValue(0x32, (u32)pokemonBiosGetNicknamePtr(pokemon));
+    u16 id = pokemonBiosGetPokemonDataId(evolved);
+    msgctrlSetValue(0x4E, id);
+    msgctrlSetValue(0x5D, 0x3CF);
+    dispMsg(0xC41A, (EVOLUTION_WINDOW_TYPE)0);
     waitTime(0.5f);
     return 1;
 }
 }
 
 extern "C" {
-static s32 evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc(u32 *p0, s32 p1, s32 *p2, s32 *p3, u16 *p4, s32 p5, u8 *p6) {
-    s32 unkspC;
-    s8 sp8;
-    s32 temp_r30;
-    s32 var_r28;
-    u16 *var_r24;
-    u16 temp_r27;
-    u8 *var_r26;
+extern "C++" {
+static s32 evolution__Main(WORK* work, int mode, Pokemon* pokemon, Pokemon* evolved, u16* moves, s32 count, u8* result) {
+    u8 sel;
+    Pokemon copy;
+    s32 i;
+    u16 waza;
+    u32* arg = (u32*)work;
 
-    var_r24 = p4;
-    var_r26 = p6;
-    stopSound((WORK*)((WORK *) p0));
-    temp_r30 = evolutionDemo((WORK*)((WORK *) p0), p1, (Pokemon*)((Pokemon *) p2), (Pokemon*)((Pokemon *) p3));
-    restoreSound((WORK*)((WORK *) p0));
-    if (temp_r30 == 0) {
+    stopSound(work);
+    s32 ok = evolutionDemo(work, mode, pokemon, evolved);
+    restoreSound(work);
+    if (ok == 0) {
         return 0;
     }
-    pokemonBiosCopy((Pokemon*)(&unkspC), (const Pokemon*)((Pokemon *) p3));
-    var_r28 = 0;
-    while (var_r28 < p5) {
-        temp_r27 = *var_r24;
-        if (evolutionWazaLearn((Pokemon*)&unkspC, temp_r27, &sp8, (EVOLUTION_WINDOW_TYPE)0, cbWazaForget, p0) != 0) {
-            pokemonWazaCreate((Pokemon*)(&unkspC), (u16) sp8, temp_r27);
+    pokemonBiosCopy(&copy, evolved);
+    for (i = 0; i < count; i++) {
+        u16 waza = *moves;
+        if (evolutionWazaLearn(&copy, waza, (s8*)&sel, (EVOLUTION_WINDOW_TYPE)0, cbWazaForget, arg) != 0) {
+            pokemonWazaCreate(&copy, sel, waza);
         } else {
-            sp8 = -1;
+            sel = 0xFF;
         }
-        var_r28 += 1;
-        var_r24 += 2;
-        *var_r26 = (u8) sp8;
-        var_r26 += 1;
+        moves++;
+        *result = sel;
+        result++;
     }
     fadeSet(3, 0.5f);
     fadeCheck(1);
     return 1;
+}
 }
 }
 
@@ -790,7 +753,7 @@ s32 evolutionStart(s32 *p0, s32 *p1, s32 p2, u16 *p3, s32 p4, u8 *p5) {
     if (loadAll((WORK*)(&unksp8), (Pokemon*)((Pokemon *) p0), (Pokemon*)((Pokemon *) p1)) == 0) {
         return 2;
     }
-    if (evolution__Main__FP4WORKiP7PokemonP7PokemonPUslPUc((unsigned long *)(&unksp8), (long)(p2), (long *)(p0), (long *)(p1), (unsigned short *)(p3), (long)(p4), (unsigned char *)(p5)) == 0) {
+    if (evolution__Main(&unksp8, p2, (Pokemon*)p0, (Pokemon*)p1, p3, p4, p5) == 0) {
         return 1;
     }
     return 0;

@@ -1195,7 +1195,7 @@ void menuPtSpriteDrawArrow(u16 p0, u32 p1, f32 p2, int p3) {
         GSgfxVertex2f(M2C_FIELD(var_r27, f32 *, 0), M2C_FIELD(var_r27, f32 *, 4));
         GSgfxColor4u8(sp10, unksp11, unksp12, unksp13);
         GSgfxTexCoord2f(M2C_FIELD(var_r29_2, f32 *, 0), M2C_FIELD(var_r29_2, f32 *, 4));
-        var_r27 += 8;
+        var_r27 += 2;
         var_r29_2 += 8;
         var_r26 += 1;
     } while (var_r26 < 4);
@@ -1380,9 +1380,13 @@ f32 CMenuReliveHall::starTimeFromBorn(f32& x, f32& y, f32 dir)
     return 0.0f;
 }
 
+static inline f32 _starRate(CMenuReliveHall* self) {
+    return self->calcAnimationTimeRate0to1(6.0f);
+}
+
 f32 CMenuReliveHall::calcStarDir(int i, int n)
 {
-    return 2.0f * (3.1415927f * ((f32)i / (f32)n)) + 6.2831855f * calcAnimationTimeRate0to1(6.0f);
+    return 2.0f * (3.1415927f * ((f32)i / (f32)n)) + 6.2831855f * _starRate(this);
 }
 
 void CMenuReliveHall::infoMessageDisplay3Line(u32 msg)
@@ -2218,7 +2222,8 @@ int CMenuReliveHall::cursorMoveDirSearch(PocketVec<short>* tbl, int dir, int ran
     for (int i = 0; i < 11; i++) {
         if (curIdx == 7 && i >= 9) break;
         if (i != cursor->index && pos[i].x != -1) {
-            int d = degreeSubHalf((u16)dir, xyxy2dirDegree(pos[i], cur));
+            int deg = xyxy2dirDegree(pos[i], cur);
+            int d = degreeSubHalf(dir, deg);
             if (d <= 0) d = -d;
             if (d <= range) {
                 f32 dist = xyxy2distance(pos[i], cur);
@@ -2593,11 +2598,11 @@ void CMenuReliveHall::stateMainProc() {
     CReliveHall *temp_r3_4;
     u16 temp_r0;
     u16 temp_r0_2;
-    u32 temp_r26;
+    bool temp_r26;
     bool temp_r31;
     u8 var_r26;
-    s32 var_r29;
     u8 *temp_r30;
+    s32 var_r29;
 
     memset((void*)((u8*)this + 0x620), 0, 0xCU);
     temp_r30 = (unsigned char *)((u8*)this + 0x290);
@@ -2934,7 +2939,7 @@ void CStick::update()
     s8 lx = GSinputGetLeftStickXData(1, 0);
     s8 ly = GSinputGetLeftStickYData(1, 0);
     s8 rx = GSinputGetRightStickXData(1, 0);
-    s8 t;
+    s32 t;
     dir = 0.0f;
     if (t < 0) t = -t;
     t = lx;
@@ -3078,9 +3083,9 @@ void CMenuReliveHall::dancerMoveAnimationKick(f32* p0, f32* p1, bool p2, f32 p3)
     s32 var_ctr_2;
     s32 var_r8;
     u8 *temp_r3_2;
-    u8 *var_r4;
     f32 *var_r6_2;
     f32 *var_r5_2;
+    u8 *var_r4;
 
     temp_r3 = ((CReliveStage*)(M2C_FIELD(this, CReliveStage **, 0x33C)))->getDancerQuantity();
     var_r8 = 0;
@@ -3152,12 +3157,12 @@ void CMenuReliveHall::dancerMoveAnimationKick(f32* p0, f32* p1, bool p2, f32 p3)
                     M2C_FIELD(var_r5, f32 *, 0x564) = temp_f0_14;
                     M2C_FIELD(var_r5, f32 *, 0x578) = (f32) M2C_FIELD(var_r5, f32 *, 0x574);
                     temp_f0_15 = M2C_FIELD(var_r6, f32 *, 0x1C);
-                    var_r6 += 0x20;
+                    var_r6 += 8;
                     M2C_FIELD(var_r5, f32 *, 0x57C) = temp_f0_15;
                     M2C_FIELD(var_r5, f32 *, 0x574) = temp_f0_15;
                     M2C_FIELD(var_r5, f32 *, 0x5B8) = (f32) M2C_FIELD(var_r5, f32 *, 0x5B4);
                     temp_f0_16 = M2C_FIELD(var_r7, f32 *, 0x1C);
-                    var_r7 += 0x20;
+                    var_r7 += 8;
                     M2C_FIELD(var_r5, f32 *, 0x5BC) = temp_f0_16;
                     M2C_FIELD(var_r5, f32 *, 0x5B4) = temp_f0_16;
                     var_ctr -= 1;
@@ -3166,19 +3171,19 @@ void CMenuReliveHall::dancerMoveAnimationKick(f32* p0, f32* p1, bool p2, f32 p3)
             }
         }
         var_r5_2 = &p0[var_r8];
-        var_r4 = (unsigned char *)(this + (var_r8 * 0x50));
+        var_r4 = (unsigned char *)((u8*)this + (var_r8 * 0x50));
         var_ctr_2 = temp_r3 - var_r8;
         var_r6_2 = &p1[var_r8];
         if (var_r8 < temp_r3) {
             do {
                 M2C_FIELD(var_r4, f32 *, 0x348) = (f32) M2C_FIELD(var_r4, f32 *, 0x344);
                 temp_f0_17 = *var_r5_2;
-                var_r5_2 += 4;
+                var_r5_2 += 1;
                 M2C_FIELD(var_r4, f32 *, 0x34C) = temp_f0_17;
                 M2C_FIELD(var_r4, f32 *, 0x344) = temp_f0_17;
                 M2C_FIELD(var_r4, f32 *, 0x388) = (f32) M2C_FIELD(var_r4, f32 *, 0x384);
                 temp_f0_18 = *var_r6_2;
-                var_r6_2 += 4;
+                var_r6_2 += 1;
                 M2C_FIELD(var_r4, f32 *, 0x38C) = temp_f0_18;
                 M2C_FIELD(var_r4, f32 *, 0x384) = temp_f0_18;
                 var_r4 += 0x50;
@@ -3266,8 +3271,8 @@ void CMenuReliveHall::resetViewAll() {
         ((CAnt*)(((u8*)((s32)var_r26) + 0x350)))->initByPokemon((Pokemon*)((Pokemon *) temp_r4));
         ((CAnt*)(((u8*)(var_r26) + 0x350)))->setAnimation(1);
         var_r26 += 0x50;
-        var_r25 += 4;
-        var_r24 += 4;
+        var_r25 += 1;
+        var_r24 += 1;
         var_r29 += 1;
     }
     temp_r3_2 = ((CMenuReliveHall*)(this))->getQuantityMarkerDancerEmpty();

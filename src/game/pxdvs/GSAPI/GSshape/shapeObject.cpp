@@ -81,6 +81,12 @@ struct GSgfxBlendSet {
     dirty[1].words[word] |= (bits);   \
     dirty[1].groups |= (group);
 
+struct GSgfxTunitMap {
+    u32 texCoord;
+    u32 texMap;
+    u32 color;
+};
+
 struct GSgfxTevOp {
     u32 op;
     u32 bias;
@@ -128,13 +134,12 @@ public:
         GFX_DIRTY(10, 1 << unit, 8)
     }
     void tunitMapping(u8 stage, u8 a, u8 b, u8 c) {
-        u32* e = (u32*)((u8*)this + 0xEB0 + stage * 12);
-        e[1] = b;
-        e[0] = a;
+        tunitMaps[stage].texCoord = a;
+        tunitMaps[stage].texMap = b;
         if (c != 0xFF) {
-            e[2] = c + 4;
+            tunitMaps[stage].color = c + 4;
         } else {
-            e[2] = 0xFF;
+            tunitMaps[stage].color = 0xFF;
         }
         *(u32*)((u8*)this + 0x16D0) |= 1 << stage;
         *(u32*)((u8*)this + 0x16A8) |= 8;
@@ -207,7 +212,8 @@ public:
 
     u8 unk0[0xD8C];
     u32 cullMode;
-    u8 unkD90[0x1E0];
+    u8 unkD90[0x120];
+    GSgfxTunitMap tunitMaps[16];
     u32 colorArgs[16][4];
     u32 alphaArgs[16][4];
     GSgfxTevOp colorOps[16];
@@ -331,6 +337,8 @@ public:
     bool FreeShapeDrawBuffer(s16 idx);
     bool CreateShapeDrawBuffer(s16 idx);
     inline bool SetupVF(u16 n);
+    inline f32 RimFromDot(f32 dot);
+    inline f32 RimFactor(Vec3* n, Vec3* v);
     void MakeMatrixBillboard(GSmtx* m, f32 f);
     bool DeformVertexCoordCylinderEx(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2, bool angOwn,
                                      f32 f3, bool scaled, const f32* C);
@@ -423,7 +431,7 @@ static inline Vec3 vscale(const Vec3* v, f32 s) {
     return r;
 }
 
-static inline Vec3 vadd(Vec3 a, Vec3 b) {
+static inline Vec3 vadd(const Vec3& a, const Vec3& b) {
     Vec3 r;
     PSVECAdd(&a, &b, &r);
     return r;
@@ -509,8 +517,8 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
 #pragma push
 #pragma dont_inline on
 #define LAYER_DIRTY(word, bits, group)     l->dirty[0].words[word] |= (bits);     l->dirty[0].groups |= (group);         l->dirty[1].words[word] |= (bits);     l->dirty[1].groups |= (group);
-#define KCOLOR(s, v) l->kcolorSel[s] = (v); LAYER_DIRTY(20, 1 << (s), 0x10)
-#define KALPHA(s, v) l->kalphaSel[s] = (v); LAYER_DIRTY(21, 1 << (s), 0x10)
+#define KCOLOR(s, v) l->kcolorSel[(u8)(s)] = (v); LAYER_DIRTY(20, 1 << (u8)(s), 0x10)
+#define KALPHA(s, v) l->kalphaSel[(u8)(s)] = (v); LAYER_DIRTY(21, 1 << (u8)(s), 0x10)
 #define CARG(s, a, b, c, d) l->tunitColorArg(s, (GSgfxTunitCArg)(a), (GSgfxTunitCArg)(b), (GSgfxTunitCArg)(c), (GSgfxTunitCArg)(d))
 #define AARG(s, a, b, c, d) l->tunitAlphaArg(s, (GSgfxTunitAArg)(a), (GSgfxTunitAArg)(b), (GSgfxTunitAArg)(c), (GSgfxTunitAArg)(d))
 #define COP(s, op, reg) l->tunitColorOp(s, (GSgfxTunitOp)(op), (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)(reg))
@@ -522,20 +530,21 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
     const int kalpha[4] = {28, 29, 30, 31};
     int kalphaLast = kalpha[1];
     u8 stage = 0;
-    int sel;
     u8 ti = 0;
     u8 texN = data->texCount;
     int last = texN - 1;
     for (; ti < texN; ti++) {
-        u32 map = ti;
+        int map = ti;
         GsShapeTexInfo* info = data->texInfo[ti];
         GsShapeTexture* t = texes + info->index;
         int mip = 1;
         if (info->filter) {
             mip = 2;
         }
-        enum TsE mag = (enum TsE)(1);
-        mag = (enum TsE)(!(info->filterB) ? mag : 2);
+        int mag = 1;
+        if (info->filterB) {
+            mag = 2;
+        }
         int min = 1;
         if (info->filter) {
             min = 2;
@@ -571,12 +580,12 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
             }
         } else if (ti < 2) {
             if (t->info->mode != 0) {
-                bool s1 = stage + 1;
-                u32 s2 = stage + 2;
+                int s1 = stage + 1;
+                int s2 = stage + 2;
+                KCOLOR(stage, kcolor[map * 2]);
                 KALPHA(stage, kalpha[map * 2]);
                 KCOLOR(s1, kcolor[map * 2 + 1]);
                 KALPHA(s1, kalpha[map * 2 + 1]);
-                KCOLOR(stage, kcolor[map * 2]);
                 KALPHA(s2, kalphaLast);
                 l->texSelect(map, tex);
                 l->tunitMapping(stage, map, map, 0);
@@ -592,29 +601,15 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
                 l->tunitMapping(s2, map, map, 0);
                 switch (info->kind) {
                 case 0:
-                    sel = 0;
-                    sel = ti != 0 ? sel : 12;
-                    CARG(s2, 15, 4, sel, 15);
+                    CARG(s2, 15, 4, ti == 0 ? (GSgfxTunitCArg)12 : (GSgfxTunitCArg)0, 15);
                     COP(s2, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 6;
-                    }
-                    AARG(s2, 7, 2, sel, 7);
+                    AARG(s2, 7, 2, ti == 0 ? (GSgfxTunitAArg)6 : (GSgfxTunitAArg)0, 7);
                     AOP(s2, 0, 0);
                     break;
                 case 2:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 4;
-                    }
-                    CARG(s2, sel, 4, 9, 15);
+                    CARG(s2, ti == 0 ? (GSgfxTunitCArg)4 : (GSgfxTunitCArg)0, 4, 9, 15);
                     COP(s2, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 2;
-                    }
-                    AARG(s2, sel, 2, 4, 7);
+                    AARG(s2, ti == 0 ? (GSgfxTunitAArg)2 : (GSgfxTunitAArg)0, 2, 4, 7);
                     AOP(s2, 0, 0);
                     break;
                 case 3:
@@ -624,68 +619,36 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
                     AOP(s2, 0, 0);
                     break;
                 case 4:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 15;
-                    }
-                    CARG(s2, 4, 15, 15, sel);
+                    CARG(s2, 4, 15, 15, ti == 0 ? (GSgfxTunitCArg)15 : (GSgfxTunitCArg)0);
                     COP(s2, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 7;
-                    }
-                    AARG(s2, 2, 7, 7, sel);
+                    AARG(s2, 2, 7, 7, ti == 0 ? (GSgfxTunitAArg)7 : (GSgfxTunitAArg)0);
                     AOP(s2, 0, 0);
                     break;
                 case 5:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 15;
-                    }
-                    CARG(s2, 4, 15, 15, sel);
+                    CARG(s2, 4, 15, 15, ti == 0 ? (GSgfxTunitCArg)15 : (GSgfxTunitCArg)0);
                     COP(s2, ti != 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 7;
-                    }
-                    AARG(s2, 2, 7, 7, sel);
+                    AARG(s2, 2, 7, 7, ti == 0 ? (GSgfxTunitAArg)7 : (GSgfxTunitAArg)0);
                     AOP(s2, 0, 0);
                     break;
                 case 9:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 4;
-                    }
-                    CARG(s2, 15, 15, 15, sel);
+                    CARG(s2, 15, 15, 15, ti == 0 ? (GSgfxTunitCArg)4 : (GSgfxTunitCArg)0);
                     COP(s2, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 6;
-                    }
-                    AARG(s2, 7, 2, sel, 7);
+                    AARG(s2, 7, 2, ti == 0 ? (GSgfxTunitAArg)6 : (GSgfxTunitAArg)0, 7);
                     AOP(s2, 0, 0);
                     break;
                 default:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 10;
-                    }
-                    CARG(s2, 4, 15, 15, sel);
+                    CARG(s2, 4, 15, 15, ti == 0 ? (GSgfxTunitCArg)10 : (GSgfxTunitCArg)0);
                     COP(s2, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 5;
-                    }
-                    AARG(s2, 2, 7, 7, sel);
+                    AARG(s2, 2, 7, 7, ti == 0 ? (GSgfxTunitAArg)5 : (GSgfxTunitAArg)0);
                     AOP(s2, 0, 0);
                     break;
                 }
                 stage += 3;
             } else {
-                u32 s1 = stage + 1;
+                int s1 = stage + 1;
                 KCOLOR(stage, kcolor[map * 2]);
                 KALPHA(stage, kalpha[map * 2]);
-                KALPHA((u8)s1, kalphaLast);
+                KALPHA(s1, kalphaLast);
                 l->texSelect(map, tex);
                 l->tunitMapping(stage, map, map, 0);
                 CARG(stage, 15, 14, 8, 15);
@@ -695,31 +658,15 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
                 l->tunitMapping(s1, map, map, 0);
                 switch (info->kind) {
                 case 0:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 12;
-                    }
-                    sel = 0;
-                    CARG(s1, 15, sel, 2, 15);
+                    CARG(s1, 15, ti == 0 ? (GSgfxTunitCArg)12 : (GSgfxTunitCArg)0, 2, 15);
                     COP(s1, 0, 0);
-                    if (ti == 0) {
-                        sel = 6;
-                    }
-                    AARG(s1, 7, sel, 1, 7);
+                    AARG(s1, 7, ti == 0 ? (GSgfxTunitAArg)6 : (GSgfxTunitAArg)0, 1, 7);
                     AOP(s1, 0, 0);
                     break;
                 case 2:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 12;
-                    }
-                    CARG(s1, sel, 2, 9, 15);
+                    CARG(s1, ti == 0 ? (GSgfxTunitCArg)12 : (GSgfxTunitCArg)0, 2, 9, 15);
                     COP(s1, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 6;
-                    }
-                    AARG(s1, sel, 1, 4, 7);
+                    AARG(s1, ti == 0 ? (GSgfxTunitAArg)6 : (GSgfxTunitAArg)0, 1, 4, 7);
                     AOP(s1, 0, 0);
                     break;
                 case 3:
@@ -729,59 +676,27 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
                     AOP(s1, 0, 0);
                     break;
                 case 4:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 15;
-                    }
-                    CARG(s1, 2, 15, 15, sel);
+                    CARG(s1, 2, 15, 15, ti == 0 ? (GSgfxTunitCArg)15 : (GSgfxTunitCArg)0);
                     COP(s1, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 7;
-                    }
-                    AARG(s1, 1, 7, 7, sel);
+                    AARG(s1, 1, 7, 7, ti == 0 ? (GSgfxTunitAArg)7 : (GSgfxTunitAArg)0);
                     AOP(s1, 0, 0);
                     break;
                 case 5:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 15;
-                    }
-                    CARG(s1, 2, 15, 15, sel);
+                    CARG(s1, 2, 15, 15, ti == 0 ? (GSgfxTunitCArg)15 : (GSgfxTunitCArg)0);
                     COP(s1, ti != 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 7;
-                    }
-                    AARG(s1, 1, 7, 7, sel);
+                    AARG(s1, 1, 7, 7, ti == 0 ? (GSgfxTunitAArg)7 : (GSgfxTunitAArg)0);
                     AOP(s1, 0, 0);
                     break;
                 case 9:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 8;
-                    }
-                    CARG(s1, 15, 15, 15, sel);
+                    CARG(s1, 15, 15, 15, ti == 0 ? (GSgfxTunitCArg)8 : (GSgfxTunitCArg)0);
                     COP(s1, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 6;
-                    }
-                    AARG(s1, 7, sel, 1, 7);
+                    AARG(s1, 7, ti == 0 ? (GSgfxTunitAArg)6 : (GSgfxTunitAArg)0, 1, 7);
                     AOP(s1, 0, 0);
                     break;
                 default:
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 15;
-                    }
-                    CARG(s1, 2, 15, 15, sel);
+                    CARG(s1, 2, 15, 15, ti == 0 ? (GSgfxTunitCArg)15 : (GSgfxTunitCArg)0);
                     COP(s1, 0, 0);
-                    sel = 0;
-                    if (ti == 0) {
-                        sel = 7;
-                    }
-                    AARG(s1, 1, 7, 7, sel);
+                    AARG(s1, 1, 7, 7, ti == 0 ? (GSgfxTunitAArg)7 : (GSgfxTunitAArg)0);
                     AOP(s1, 0, 0);
                     break;
                 }
@@ -857,20 +772,17 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
 #pragma pop
 
 void GsShapeObject::SetStateMode(GSgfxLayer* l) {
-    s16 zw = data->unk6;
-    u8 zr = data->unk5;
-    bool a = zw != 0;
-    s8 b = zr != 0;
-    u8 mode = data->mode;
-    if (mode == 8) {
+    int b = data->unk5 != 0;
+    int a = data->unk6 != 0;
+    if (data->mode == 8) {
         b = true;
         a = true;
     }
     l->zCompare(b, 1);
     l->pixelMode(1, 1, a);
     l->setCullMode(data->cull);
-    u32 rf_t = data->texCount;
-    if (mode == 10 && rf_t >= 2) {
+    u8 mode = data->mode;
+    if (mode == 10 && data->texCount >= 2) {
         u8 k = data->texInfo[1]->kind;
         switch (k) {
         case 2:
@@ -996,41 +908,31 @@ void GsShapeObject::MakeDisplayListShape() {
     }
 }
 
-static inline Vec3 bilerp(Vec3* pos, int a, int b, int c, int d, f32 wa, f32 wb, f32 wc, f32 wd) {
-    Vec3 s0;
-    Vec3 s1;
-    Vec3 s2;
-    Vec3 s3;
-    Vec3 t;
-    Vec3 p;
-    s0 = vscale(&pos[a], wa);
-    s1 = vscale(&pos[b], wb);
-    s2 = vscale(&pos[c], wc);
-    s3 = vscale(&pos[d], wd);
-    t = vadd(s3, s2);
-    t = vadd(t, s1);
-    p = vadd(t, s0);
-    return p;
-}
-
 bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f);
 
-static inline f32 rimFactor(Vec3* n, Vec3* v, f32 sharp) {
+inline f32 GsShapeObject::RimFromDot(f32 dot) {
+    f32 d = (f32)fabs(dot);
+    f32 sharp = data->sharp;
+    if (d > 1.0f || sharp < 0.00001f) {
+        return 1.0f;
+    }
+    f32 s = sqrtf(1.0f - d);
+    f32 th = 1.0f - sharp;
+    f32 r;
+    if (s <= th) {
+        r = 1.0f;
+    } else {
+        f32 c = (f32)cos((1.5707964f * (s - th)) / sharp);
+        r = c * c;
+    }
+    return r;
+}
+
+inline f32 GsShapeObject::RimFactor(Vec3* n, Vec3* v) {
     if (PSVECSquareMag(n) > 9.9999994e-11f && PSVECSquareMag(v) > 9.9999994e-11f) {
         PSVECNormalize(n, n);
         PSVECNormalize(v, v);
-        f32 d = (f32)fabs(PSVECDotProduct(n, v));
-        if (d > 1.0f || sharp < 0.00001f) {
-            return 1.0f;
-        }
-        f32 s = sqrtf(1.0f - d);
-        f32 r = 1.0f;
-        f32 th = 1.0f - sharp;
-        if (!(s <= th)) {
-            f32 c = (f32)cos((1.5707964f * (s - th)) / sharp);
-            r = c * c;
-        }
-        return r;
+        return RimFromDot(PSVECDotProduct(n, v));
     }
     return 0.0f;
 }
@@ -1057,15 +959,14 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
     vp[5] = 1.0f;
     Mtx34 tmp;
     Mtx34 viewMtx;
-    void** texSlot = (void**)&texArray[0];
     int texBytes = data->vertCount * 8;
-    for (; layer < data->texCount; layer++, texSlot++) {
+    for (; layer < data->texCount; layer++) {
         Vec3* pos = data->pos2;
         Vec3* src = (Vec3*)data->pos;
         if (pos == 0) {
             continue;
         }
-        f32* out = (f32*)*texSlot;
+        f32* out = (f32*)texArray[layer];
         if (out == 0) {
             continue;
         }
@@ -1122,20 +1023,38 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
                 if (b == 0 && y == rows1 - 1) {
                     b = r;
                 }
-                volatile int k = a + b * cols1;
+                int k = a + b * cols1;
                 if (a == lastCol) {
                     if (b == rows1 - 1) {
                         p = pos[k];
                     } else {
                         int k2 = cols1 + k;
-                        p = bilerp(pos, k2 + 1, (u16)k2, k - 1, k, w00, w10, w01, w11);
+                        Vec3 s0 = vscale(&pos[k2 + 1], w00);
+                        Vec3 s1 = vscale(&pos[k2], w10);
+                        Vec3 s2 = vscale(&pos[k - 1], w01);
+                        Vec3 s3 = vscale(&pos[k], w11);
+                        Vec3 t0 = vadd(s3, s2);
+                        Vec3 t1 = vadd(t0, s1);
+                        p = vadd(t1, s0);
                     }
                 } else if (b == rows1 - 1) {
                     int k2 = k - cols1;
-                    p = bilerp(pos, k2 + 1, k2, k + 1, k, w00, w10, w01, w11);
+                    Vec3 s0 = vscale(&pos[k2 + 1], w00);
+                    Vec3 s1 = vscale(&pos[k2], w10);
+                    Vec3 s2 = vscale(&pos[k + 1], w01);
+                    Vec3 s3 = vscale(&pos[k], w11);
+                    Vec3 t0 = vadd(s3, s2);
+                    Vec3 t1 = vadd(t0, s1);
+                    p = vadd(t1, s0);
                 } else {
                     int k2 = cols1 + k;
-                    p = bilerp(pos, k2 + 1, k2, k + 1, k, w00, w10, w01, w11);
+                    Vec3 s0 = vscale(&pos[k2 + 1], w00);
+                    Vec3 s1 = vscale(&pos[k2], w10);
+                    Vec3 s2 = vscale(&pos[k + 1], w01);
+                    Vec3 s3 = vscale(&pos[k], w11);
+                    Vec3 t0 = vadd(s3, s2);
+                    Vec3 t1 = vadd(t0, s1);
+                    p = vadd(t1, s0);
                 }
                 PSMTXMultVecSR(tmp, &p, &p);
                 Vec3* sv = (Vec3*)((u8*)src + o);
@@ -1147,15 +1066,15 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
                     GXProject(sv->x, sv->y, sv->z, viewMtx, projArr, vp, &sx, &sy, &sz);
                     if ((f32)fabs(p.x) > 0.00001f || (f32)fabs(p.y) > 0.00001f || (f32)fabs(p.z) > 0.00001f) {
                         PSVECNormalize(&p, &p);
-                        if (p.x >= 0.0f) {
-                            sx = p.x * (640.0f - sx) + sx;
-                        } else {
+                        if (p.x <= 0.0f) {
                             sx = sx * (1.0f + p.x);
-                        }
-                        if (p.y >= 0.0f) {
-                            sy += -p.y * (480.0f - sy);
                         } else {
-                            sy *= 1.0f - p.y;
+                            sx = p.x * (640.0f - sx) + sx;
+                        }
+                        if (p.y <= 0.0f) {
+                            sy = -p.y * (480.0f - sy) + sy;
+                        } else {
+                            sy = sy * (1.0f - p.y);
                         }
                     }
                     q[0] = sx / 640.0f;
@@ -1175,32 +1094,33 @@ bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmt
 }
 
 bool GsShapeObject::ShadeVertexColor(GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f, bool b) {
-    enum TsE { TsE0 };
     if (colArray == 0) {
         return false;
     }
     Mtx34 m;
     Mtx34 rot;
-    Vec3 axisCross;
-    Vec3 up;
+    Vec3 nIn;
+    Vec3 pIn;
     Vec3 nv;
     Vec3 pv;
+    Vec3 up;
+    Vec3 axisCross;
     PSMTXCopy(m2->m, m);
     PSMTXConcat(m1->m, m, m);
     PSMTXConcat(m3->m, m, m);
-    Vec3* normals = data->pos2;
+    Vec3* normals;
     Vec3* pos;
-    u8* col = (u8*)colArray;
-    int i;
+    u8* col;
     int o;
-    o = 0;
-    i = 0;
+    int i;
     int n;
+    i = 0;
+    o = 0;
+    col = (u8*)colArray;
     n = data->vertCount;
+    normals = data->pos2;
     pos = (Vec3*)data->pos;
     for (; i < n; i++, normals++, pos++, col += 4, o += 4) {
-        Vec3 nIn;
-        Vec3 pIn;
         nIn.x = normals->x;
         nIn.y = normals->y;
         nIn.z = normals->z;
@@ -1212,19 +1132,16 @@ bool GsShapeObject::ShadeVertexColor(GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f, boo
         f32 depth = pv.z;
         pv.z = depth - f;
         f32 factor;
-        switch (data->unk9) {
-        case 1:
+        if (data->unk9 == 1) {
             nv.y = 0.0f;
             pv.y = 0.0f;
-            factor = rimFactor(&nv, &pv, data->sharp);
-            break;
-        case 2:
+            factor = RimFactor(&nv, &pv);
+        } else if (data->unk9 == 2) {
             nv.x = 0.0f;
             pv.x = 0.0f;
-            factor = rimFactor(&nv, &pv, data->sharp);
-            break;
-        case 3:
-            if ((data->kind == 31 && data->unkCE == 1 && b == 0) || (data->kind == 32 && (data->unkCC & 1) == 0)) {
+            factor = RimFactor(&nv, &pv);
+        } else if (data->unk9 == 3) {
+            if ((data->kind == 31 && data->unkCE == 1 && b == 0) || (data->kind == 32 && data->unkCC % 2 == 0)) {
                 up.x = 0.0f;
                 up.y = 0.0f;
                 up.z = 1.0f;
@@ -1233,20 +1150,17 @@ bool GsShapeObject::ShadeVertexColor(GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f, boo
                 if (PSVECSquareMag(&axisCross) > 9.9999994e-11f && PSVECSquareMag(&pv) > 9.9999994e-11f) {
                     PSVECNormalize(&axisCross, &axisCross);
                     PSVECNormalize(&pv, &pv);
-                    f32 d = PSVECDotProduct(&up, &pv);
-                    PSMTXRotAxisRad(rot, &axisCross, 1.5707964f - (f32)acos(d));
+                    PSMTXRotAxisRad(rot, &axisCross, 1.5707964f - (f32)acos(PSVECDotProduct(&up, &pv)));
                     PSMTXMultVecSR(rot, &nv, &nv);
-                    factor = rimFactor(&nv, &pv, data->sharp);
+                    factor = RimFromDot(PSVECDotProduct(&nv, &pv));
                 } else {
                     factor = 0.0f;
                 }
             } else {
-                factor = rimFactor(&nv, &pv, data->sharp);
+                factor = RimFactor(&nv, &pv);
             }
-            break;
-        default:
+        } else {
             factor = 1.0f;
-            break;
         }
         if (depth > 0.0f && f > 0.00001f) {
             f32 k;
@@ -1257,14 +1171,17 @@ bool GsShapeObject::ShadeVertexColor(GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f, boo
             }
             factor *= k;
         }
-        u8* dst = (u8*)colArray;
-        enum TsE mode = (enum TsE)(data->mode);
-        if (mode == 8 || mode == 2 || mode == 10) {
-            dst[o + 3] = (u8)(factor * col[3]);
-        } else {
-            dst[o] = (u8)(factor * col[0]);
-            dst[o + 1] = (u8)(factor * col[1]);
-            dst[o + 2] = (u8)(factor * col[2]);
+        switch (data->mode) {
+        case 2:
+        case 8:
+        case 10:
+            ((u8*)colArray)[o + 3] = (u8)(factor * col[3]);
+            break;
+        default:
+            ((u8*)colArray)[o] = (u8)(factor * col[0]);
+            ((u8*)colArray)[o + 1] = (u8)(factor * col[1]);
+            ((u8*)colArray)[o + 2] = (u8)(factor * col[2]);
+            break;
         }
     }
     return true;
@@ -1352,36 +1269,9 @@ void GsShapeObject::MakeMatrixBillboard(GSmtx* m, f32 f) {
     }
 }
 
-static inline void fastSinCos(f32 x, f32* ps, f32* pc) {
-    f32 a = x;
-    if (x > 3.1415927f) {
-        a = x - 6.2831855f * (f32)(int)(x / 6.2831855f);
-        if (a > 3.1415927f) {
-            a -= 6.2831855f;
-        }
-    } else if (x < -3.1415927f) {
-        a = x - 6.2831855f * (f32)(int)(x / 6.2831855f);
-        if (a < -3.1415927f) {
-            a += 6.2831855f;
-        }
-    }
-    f32 y;
-    if (a < -1.5707964f) {
-        y = -3.1415927f - a;
-    } else if (a <= 1.5707964f) {
-        y = a;
-    } else {
-        y = 3.1415927f - a;
-    }
-    f32 t = 2.0f * y;
-    f32 t2 = t * t;
-    f32 s = t * (t2 * (t2 * (-0.0000015500992f * t2 + 0.00026041668f) + -0.020833334f) + 0.5f);
-    f32 c = t2 * (t2 * (-0.00002170139f * t2 + 0.0026041667f) + -0.125f) + 1.0f;
-    if (fabsf(a) > 1.5707964f) {
-        c = -c;
-    }
-    *ps = s;
-    *pc = c;
+static inline f32 fabsFloat(f32 x) {
+    (*(int*)&x) &= 0x7fffffff;
+    return x;
 }
 
 static inline f32 reduceAngle(f32 x) {
@@ -1400,34 +1290,17 @@ static inline f32 reduceAngle(f32 x) {
     return a;
 }
 
-static inline f32 foldAngle(f32 a) {
-    f32 y;
-    if (a < -1.5707964f) {
-        y = -3.1415927f - a;
-    } else if (a <= 1.5707964f) {
-        y = a;
-    } else {
-        y = 3.1415927f - a;
-    }
-    return y;
-}
-
-static inline f32 fastSin(f32 x) {
-    f32 t = 2.0f * foldAngle(reduceAngle(x));
-    f32 t2 = t * t;
-    return t * (t2 * (t2 * (-0.0000015500992f * t2 + 0.00026041668f) + -0.020833334f) + 0.5f);
-}
-
-static inline f32 fastCos(f32 x) {
+static inline void fastSinCos(f32 x, f32* ps, f32* pc) {
     f32 a = reduceAngle(x);
-    f32 t = foldAngle(a);
-    t *= 2.0f;
+    f32 t = 2.0f * (a < -1.5707964f ? -3.1415927f - a : (a <= 1.5707964f ? a : 3.1415927f - a));
     f32 t2 = t * t;
+    f32 s = t * (t2 * (t2 * (-0.0000015500992f * t2 + 0.00026041668f) + -0.020833334f) + 0.5f);
     f32 c = t2 * (t2 * (-0.00002170139f * t2 + 0.0026041667f) + -0.125f) + 1.0f;
-    if (fabsf(a) > 1.5707964f) {
+    if (fabsFloat(a) > 1.5707964f) {
         c = -c;
     }
-    return c;
+    *ps = s;
+    *pc = c;
 }
 
 bool GsShapeObject::WaveTextureCoord(u32 idx, f32 u, f32 v, const GSmtx* m, bool keep) {
@@ -1474,15 +1347,15 @@ bool GsShapeObject::WaveTextureCoord(u32 idx, f32 u, f32 v, const GSmtx* m, bool
     for (; y < rows1; y++) {
         int o = base * 8;
         for (x = 0; x < cols1; x++) {
-            volatile u16 c = data->cols;
+            u16 c = data->cols;
             u16 r = data->rows;
             int a = (x + iu) % c;
             int b = (y + iv) % r;
             Vec3 p;
-            if (a == 0 && cols1 == x - 1) {
+            if (a == 0 && x == cols1 - 1) {
                 a = c;
             }
-            if (b == 0 && rows1 == y - 1) {
+            if (b == 0 && y == rows1 - 1) {
                 b = r;
             }
             int k = a + b * cols1;
@@ -1490,18 +1363,13 @@ bool GsShapeObject::WaveTextureCoord(u32 idx, f32 u, f32 v, const GSmtx* m, bool
                 p = pos[k];
             } else {
                 int k2 = k + cols1;
-                Vec3 s0;
-                Vec3 s1;
-                Vec3 s2;
-                Vec3 s3;
-                Vec3 t;
-                s0 = vscale(&pos[k2 + 1], w00);
-                s1 = vscale(&pos[k2], w10);
-                s2 = vscale(&pos[k + 1], w01);
-                s3 = vscale(&pos[k], w11);
-                t = vadd(s3, s2);
-                t = vadd(t, s1);
-                p = vadd(t, s0);
+                Vec3 s0 = vscale(&pos[k2 + 1], w00);
+                Vec3 s1 = vscale(&pos[k2], w10);
+                Vec3 s2 = vscale(&pos[k + 1], w01);
+                Vec3 s3 = vscale(&pos[k], w11);
+                Vec3 t0 = vadd(s3, s2);
+                Vec3 t1 = vadd(t0, s1);
+                p = vadd(t1, s0);
             }
             PSMTXMultVecSR(m->m, &p, &p);
             f32* q = (f32*)((u8*)out + o);
@@ -1515,19 +1383,21 @@ bool GsShapeObject::WaveTextureCoord(u32 idx, f32 u, f32 v, const GSmtx* m, bool
 }
 
 bool GsShapeObject::DeformTextureCoord(u32 idx, bool a, const f32* A, const f32* B, bool b, const f32* C) {
-    f32* out = (f32*)texArray[idx];
-    if (out == 0) {
+    if (texArray[idx] == 0) {
         return false;
     }
-    f32* src = (f32*)data->tex;
     int rows = data->rows;
+    int j;
+    f32* out = (f32*)texArray[idx];
     int cols = data->cols + 1;
+    f32* src = (f32*)data->tex;
     rows += 1;
     f32 off = 0.0f;
     int i = 0;
     for (; i < rows; i++, B++, C++) {
-        int j;
-        off = b != 1 ? off : *C;
+        if (b == 1) {
+            off = *C;
+        }
         if (a == 1) {
             for (j = 0; j < cols; j++) {
                 out[0] = off + A[j];
@@ -1557,19 +1427,17 @@ void GsShapeObject::SetVertexColorAlpha(int mode, int type, f32 f, bool b);
 extern "C++" {
 bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                            bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C) {
-    Vec3* out = (Vec3*)posArray;
-    if (out == 0) {
+    if (posArray == 0) {
         return false;
     }
-    int rows1;
-    int cols1;
-    cols1 = data->cols + 1;
-    rows1 = data->rows + 1;
+    Vec3* out = (Vec3*)posArray;
+    int cols1 = data->cols + 1;
+    int rows1 = data->rows + 1;
     if (!own) {
-        f2 = data->sizeY;
         f1 = data->sizeX;
+        f2 = data->sizeY;
     }
-    if (angOwn != 0) {
+    if (!angOwn) {
         f3 = data->angle;
         f4 = data->angle2;
     }
@@ -1585,32 +1453,36 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
     if (f4 > 360.0f) {
         f4 = 360.0f;
     }
-    volatile f32 start;
-    f32 start2;
+    f32 start;
     if (f3 < 0.00001f) {
         start = 0.0f;
     } else {
         start = 0.5f * (360.0f - f3);
     }
+    start += 90.0f;
+    f32 start2;
     if (f4 < 0.00001f) {
         start2 = 0.0f;
     } else {
         start2 = 0.5f * (360.0f - f4);
     }
+    start2 += 180.0f;
     int i;
-    for (s32 i = 0; i < rows1; B++, i++) {
-        int j;
+    const f32* b = B;
+    for (i = 0; i < rows1; i++, b++) {
         f32 t;
-        const f32* a = A;
         if (useUV) {
-            t = *B;
+            t = *b;
         } else {
             t = (f32)i / (f32)(rows1 - 1);
         }
-        f32 kc977 = 0.017453292f;
-        f32 kc1011 = 180.0f;
-        f32 a2 = f4 * kc977 * t + (start2 + kc1011) * 0.017453292f;
-        f32 radius = f2 * fastCos(a2) + f1;
+        f32 sn2;
+        f32 cs2;
+        fastSinCos(f4 * 0.017453292f * t + start2 * 0.017453292f, &sn2, &cs2);
+        f32 z = f2 * sn2;
+        f32 r = f2 * cs2 + f1;
+        const f32* a = A;
+        int j;
         for (j = 0; j < cols1; j++, a++, out++) {
             f32 u;
             if (useUV) {
@@ -1618,19 +1490,18 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
             } else {
                 u = (f32)j / (f32)(cols1 - 1);
             }
-            f32 kc1352 = 0.017453292f;
-            f32 ang = f3 * kc1352 * u + (start + 90.0f) * 0.017453292f;
-            f32 cs;
+            f32 ang = f3 * 0.017453292f * u + start * 0.017453292f;
             f32 sn;
-            if (j == 0 || cols1 == j - 1) {
+            f32 cs;
+            if (j == 0 || j == cols1 - 1) {
                 sn = (f32)sin(ang);
                 cs = (f32)cos(ang);
             } else {
                 fastSinCos(ang, &sn, &cs);
             }
-            out->z = f2 * fastSin(a2);
-            out->y = sn * radius;
-            out->x = radius * cs;
+            out->x = r * cs;
+            out->y = r * sn;
+            out->z = z;
         }
     }
     return true;
@@ -1638,201 +1509,93 @@ bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* 
 }
 
 extern "C++" {
-bool GsShapeObject::DeformVertexCoordSphere(bool p0, const f32* p1, const f32* p2, bool p3, f32 p4, f32 p5, bool p6, f32 p7, f32 p8, bool p9, const f32* p10) {
-    u32 saved_reg_f24;
-    f64 sp38;
-    f64 sp30;
-    f64 sp28;
-    f64 sp20;
-    f32 spC;
-    f32 sp8;
-    f32 *var_r27;
-    s32 var_r26;
-    s32 var_r25;
-    f32 temp_f0;
-    s32 temp_r24;
-    f32 temp_f23;
-    f32 temp_f31;
-    f32 temp_f4;
-    f32 temp_f4_2;
-    f32 temp_f5;
-    f32 var_f0;
-    f32 var_f0_2;
-    f32 var_f0_3;
-    f32 var_f0_4;
-    f32 var_f0_5;
-    f32 var_f0_6;
-    f32 var_f1;
-    f32 var_f22;
-    f32 var_f23;
-    f32 var_f24;
-    f32 var_f25;
-    f32 var_f27;
-    f32 var_f29;
-    f32 var_f3;
-    f32 var_f4;
-    f32 var_f4_2;
-    s32 temp_r23;
-    u8 *var_r22;
-    f32 *var_r29;
-    f32 *var_r28;
-    u8 *temp_r11;
-    u8 *temp_r12;
-    f32 temp_f1;
-
-    var_f24 = saved_reg_f24;
-    var_f3 = p7;
-    var_f4 = p8;
-    temp_r12 = M2C_FIELD(this, u8 **, 0x444);
-    var_f22 = p4;
-    if (temp_r12 == NULL) {
-        return 0;
+bool GsShapeObject::DeformVertexCoordSphere(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
+                                            bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C) {
+    if (posArray == 0) {
+        return false;
     }
-    temp_r11 = M2C_FIELD(this, u8 **, 0);
-    var_r22 = temp_r12;
-    temp_r24 = M2C_FIELD(temp_r11, u16 *, 0xA) + 1;
-    temp_r23 = M2C_FIELD(temp_r11, u16 *, 0xC) + 1;
-    if (p6 != 0) {
-
+    Vec3* out = (Vec3*)posArray;
+    int cols1 = data->cols + 1;
+    int rows1 = data->rows + 1;
+    if (!angOwn) {
+        f3 = data->angle;
+        f4 = data->angle2;
+    }
+    if (f3 < 0.00001f) {
+        f3 = 0.00001f;
+    }
+    if (f3 > 360.0f) {
+        f3 = 360.0f;
+    }
+    if (f4 < 0.00001f) {
+        f4 = 0.00001f;
+    }
+    if (f4 > 360.0f) {
+        f4 = 360.0f;
+    }
+    f32 start;
+    if (f3 < 0.00001f) {
+        start = 0.0f;
     } else {
-        var_f3 = M2C_FIELD(temp_r11, f32 *, 0x5C);
-        var_f4 = M2C_FIELD((u16)temp_r11, f32 *, 0x60);
+        start = 0.5f * (360.0f - f3);
     }
-    if (var_f3 < 0.00001f) {
-        var_f3 = 0.00001f;
-    }
-    if (var_f3 > 360.0f) {
-        var_f3 = 360.0f;
-    }
-    if (var_f4 < 0.00001f) {
-        var_f4 = 0.00001f;
-    }
-    if (var_f4 > 360.0f) {
-        var_f4 = 360.0f;
-    }
-    if (var_f3 < 0.00001f) {
-        var_f29 = 0.0f;
+    start += 90.0f;
+    f32 start2;
+    if (data->unkCF == 0) {
+        start2 = 0.017453292f * (0.5f * -f4);
     } else {
-        var_f29 = 0.5f * (360.0f - var_f3);
+        start2 = -1.5707964f;
     }
-    if ((u8) M2C_FIELD((u16)temp_r11, u8 *, 0xCF) == 0) {
-        var_f27 = 0.017453292f * (0.5f * -var_f4);
-    } else {
-        f32 kc1768 = 1.5707964f;
-        var_f27 = -kc1768;
+    if (!own) {
+        f1 = data->sizeX;
     }
-    if (p3 == 0) {
-        var_f22 = M2C_FIELD(temp_r11, f32 *, 0x3C);
-    }
-    var_r28 = (float *)(p10);
-    var_r27 = (float *)(p2);
-    sp20 = 4.904352253e-315;
-    var_r25 = 0;
-    sp28 = 1.574918751e-314;
-    sp30 = 5.263544247e-315;
-    sp38 = 5.287201034e-315;
-    while (var_r25 < temp_r23) {
-        if (p9 == 1) {
-            var_f24 = 1.0f + *var_r28;
+    f32 scale;
+    int i;
+    const f32* b = B;
+    const f32* c = C;
+    for (i = 0; i < rows1; i++, b++, c++) {
+        f32 t;
+        if (scaled == 1) {
+            scale = 1.0f + *c;
         }
-        if (p0 != 0) {
-            var_f0 = *var_r27;
+        if (useUV) {
+            t = *b;
         } else {
-            var_f0 = (f32) var_r25 / (f32) (temp_r23 - 1);
+            t = (f32)i / (f32)(rows1 - 1);
         }
-        temp_f4 = (0.017453292f * var_f4 * var_f0) + var_f27;
-        if (var_f1 < temp_f4) var_f1 = temp_f4;
-        if (temp_f4 > 3.1415927f) {
-            var_f1 = -((6.2831855f * (f32) (s32) (temp_f4 / 6.2831855f)) - temp_f4);
-            if (var_f1 > 3.1415927f) {
-                var_f1 -= 6.2831855f;
-            }
-        } else if (temp_f4 < -3.1415927f) {
-            var_f1 = -((6.2831855f * (f32) (s32) (temp_f4 / 6.2831855f)) - temp_f4);
-            if (var_f1 < -3.1415927f) {
-                var_f1 += 6.2831855f;
-            }
-        }
-        if (var_f1 < -1.5707964f) {
-            var_f0_2 = -3.1415927f - var_f1;
-        } else {
-            M2C_ERROR( );
-            if (var_f1 == 1.5707964f) {
-                var_f0_2 = var_f1;
+        f32 sn2;
+        f32 cs2;
+        fastSinCos(0.017453292f * f4 * t + start2, &sn2, &cs2);
+        f32 r = f1 * cs2;
+        f32 z = f1 * sn2;
+        const f32* a = A;
+        int j;
+        for (j = 0; j < cols1; j++, a++, out++) {
+            f32 u;
+            if (useUV) {
+                u = *a;
             } else {
-                var_f0_2 = 3.1415927f - var_f1;
+                u = (f32)j / (f32)(cols1 - 1);
             }
-        }
-        temp_f5 = 2.0f * var_f0_2;
-        spC = var_f1;
-        spC = M2C_BITWISE(s32, spC) & 0x7FFFFFFF;
-        var_f0_3 = (temp_f4_2 * ((temp_f4_2 * ((-0.00002170139f * temp_f4_2) + (f32) sp20)) + (f32) sp28)) + (f32) sp30;
-        temp_f4_2 = temp_f5 * temp_f5;
-        if (M2C_BITWISE(f32, spC) > (f32) sp38) {
-            var_f0_3 = -var_f0_3;
-        }
-        temp_f31 = var_f22 * var_f0_3;
-        var_r29 = (float *)(p1);
-        var_r26 = 0;
-        while (var_r26 < temp_r24) {
-            if (p0 != 0) {
-                var_f0_4 = *var_r29;
+            f32 rr = r;
+            f32 ang = f3 * 0.017453292f * u + start * 0.017453292f;
+            if (scaled == 1) {
+                rr = r * scale;
+            }
+            f32 sn;
+            f32 cs;
+            if (j == 0 || j == cols1 - 1) {
+                sn = (f32)sin(ang);
+                cs = (f32)cos(ang);
             } else {
-                var_f0_4 = (f32) var_r26 / (f32) (temp_r24 - 1);
+                fastSinCos(ang, &sn, &cs);
             }
-            var_f25 = temp_f31;
-            temp_f23 = (var_f3 * 0.017453292f * var_f0_4) + ((var_f29 + 90.0f) * 0.017453292f);
-            if (p9 == 1) {
-                var_f25 = temp_f31 * var_f24;
-            }
-            if ((var_r26 == 0) || (var_r26 == (s32) (temp_r24 - 1))) {
-                var_f23 = (f32) sin((f64) temp_f23);
-                var_f0_5 = (f32) cos((f64) temp_f23);
-            } else {
-                var_f4_2 = temp_f23;
-                if (temp_f23 > 3.1415927f) {
-                    var_f4_2 = -((6.2831855f * (f32) (s32) (temp_f23 / 6.2831855f)) - temp_f23);
-                    if (var_f4_2 > 3.1415927f) {
-                        var_f4_2 -= 6.2831855f;
-                    }
-                } else if (temp_f23 < -3.1415927f) {
-                    var_f4_2 = -((6.2831855f * (f32) (s32) (temp_f23 / 6.2831855f)) - temp_f23);
-                    if (var_f4_2 < -3.1415927f) {
-                        var_f4_2 += 6.2831855f;
-                    }
-                }
-                if (var_f4_2 < -1.5707964f) {
-                    var_f0_6 = -3.1415927f - var_f4_2;
-                } else {
-                    M2C_ERROR( );
-                    if (var_f4_2 == 1.5707964f) {
-                        var_f0_6 = var_f4_2;
-                    } else {
-                        var_f0_6 = 3.1415927f - var_f4_2;
-                    }
-                }
-                temp_f1 = 2.0f * var_f0_6;
-                temp_f0 = temp_f1 * temp_f1;
-                sp8 = M2C_BITWISE(s32, sp8) & 0x7FFFFFFF;
-                sp8 = var_f4_2;
-                var_f23 = temp_f1 * ((temp_f0 * ((temp_f0 * ((-0.0000015500992f * temp_f0) + 0.00026041668f)) + -0.020833334f)) + 0.5f);
-                var_f0_5 = (temp_f0 * ((temp_f0 * ((-0.00002170139f * temp_f0) + 0.0026041667f)) + -0.125f)) + 1.0f;
-                if (M2C_BITWISE(f32, (s32)sp8) > 1.5707964f) {
-                    var_f0_5 = -var_f0_5;
-                }
-            }
-            var_r29 += 4;
-            var_r26 += 1;
-            M2C_FIELD(var_r22, f32 *, 0) = (f32) (var_f25 * var_f0_5);
-            M2C_FIELD(var_r22, f32 *, 4) = (f32) (var_f25 * var_f23);
-            M2C_FIELD(var_r22, f32 *, 8) = (f32) (var_f22 * (temp_f5 * ((temp_f4_2 * ((temp_f4_2 * ((-0.0000015500992f * temp_f4_2) + 0.00026041668f)) + -0.020833334f)) + 0.5f)));
-            var_r22 += 0xC;
+            out->x = rr * cs;
+            out->y = rr * sn;
+            out->z = z;
         }
-        var_r28 += 4;
-        var_r27 += 4;
-        var_r25 += 1;
     }
-    return 1;
+    return true;
 }
 }
 
@@ -1840,10 +1603,10 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
                                             bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C) {
     int j;
     f32 q;
-    Vec3* out = (Vec3*)posArray;
-    if (out == 0) {
+    if (posArray == 0) {
         return false;
     }
+    Vec3* out = (Vec3*)posArray;
     int cols1 = data->cols + 1;
     int rows1 = data->rows + 1;
     f32 scale;
@@ -1855,14 +1618,20 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
     if (angOwn) {
         normals = data->pos2;
     } else {
-        f4 = data->angle2;
         f3 = data->angle;
+        f4 = data->angle2;
     }
     f32 diff = f2 - f1;
     f32 height = data->height;
+    f32 ang0 = 0.017453292f * f3;
+    f32 dang = 0.017453292f * (f4 - f3);
     f32 hh = height * height;
-    f32 len = sqrtf(hh + diff * diff);
-    volatile u8 flags = data->unkCC;
+    f32 dd = diff * diff;
+    f32 pitchA = data->pitchA;
+    f32 pitchB = data->pitchB;
+    f32 len = sqrtf(hh + dd);
+    bool even = data->unkCC % 2 == 0;
+    bool two = data->unkCC == 2;
     f32 qh = 0.25f * hh;
     f32 shrink = 1.0f;
     shrink -= 2.0f / (f32)data->cols;
@@ -1887,16 +1656,14 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
             }
             f32 inv = 1.0f - u;
             f32 w = u;
-            f32 ang = f3;
-            ang += 0.017453292f * (f4 - f3) * u;
-            ang *= 0.017453292f;
-            f32 z0 = data->pitchA * inv;
-            z0 += data->pitchB * u;
+            f32 ang = ang0 + dang * u;
+            f32 z0 = pitchA * inv;
+            z0 += pitchB * u;
             f32 sn;
             f32 cs;
             f32 r;
-            if ((flags & 1) == 0 || len < 0.00001f) {
-                if (flags == 2) {
+            if (even || len < 0.00001f) {
+                if (two) {
                     w = (u - 0.5f) * shrink + 0.5f;
                     r = f1 * (1.0f - w) + f2 * w;
                     f32 h = height * (f32)fabs(w - 0.5f);
@@ -1919,7 +1686,7 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
                 f32 v2 = (u - 0.5f) * (1.0f - w2) + 0.5f;
                 f32 m = -(0.5f * w2 - v2);
                 m += w2 * t;
-                if (flags == 2) {
+                if (two) {
                     m = ((m - 0.5f) * shrink) + 0.5f;
                     r = f1 * (1.0f - m) + f2 * m;
                     f32 h = height * (f32)fabs(m - 0.5f);
@@ -1954,16 +1721,14 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
 bool GsShapeObject::DeformVertexCoordCylinderEx(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                                 bool angOwn, f32 f3, bool scaled, const f32* C) {
     int j;
-    Vec3* out = (Vec3*)posArray;
-    if (out == 0) {
+    if (posArray == 0) {
         return false;
     }
+    Vec3* out = (Vec3*)posArray;
     int cols1 = data->cols + 1;
     int rows1 = data->rows + 1;
-    volatile f32 scale;
-    if (angOwn != 0) {
-        f3 = data->angle;
-    }
+    f32 scale;
+    f3 = angOwn ? f3 : data->angle;
     if (f3 < 0.00001f) {
         f3 = 0.0f;
     }
@@ -1976,8 +1741,7 @@ bool GsShapeObject::DeformVertexCoordCylinderEx(bool useUV, const f32* A, const 
     } else {
         start = 0.5f * (360.0f - f3);
     }
-    f32 kc455 = 0.017453292f;
-    f32 angStep = f3 * kc455;
+    f32 angStep = f3 * 0.017453292f;
     start = (start + 90.0f) * 0.017453292f;
     if (!own) {
         f1 = data->sizeX;
@@ -1986,18 +1750,21 @@ bool GsShapeObject::DeformVertexCoordCylinderEx(bool useUV, const f32* A, const 
     f32 rad = f1 - f2;
     f32 height = data->height;
     int i;
-    for (i = 0; i < rows1; i++, C++, B++) {
+    const f32* b = B;
+    const f32* c = C;
+    for (i = 0; i < rows1; i++, c++, b++) {
         f32 t;
         const f32* a = A;
         if (scaled == 1) {
-            scale = 1.0f + *C;
+            scale = 1.0f + *c;
         }
         if (useUV) {
-            t = *B;
+            t = *b;
         } else {
             t = (f32)i / (f32)(rows1 - 1);
         }
         f32 r = rad * t + f2;
+        f32 z = height * t;
         for (j = 0; j < cols1; j++, a++, out++) {
             f32 u;
             if (useUV) {
@@ -2020,7 +1787,7 @@ bool GsShapeObject::DeformVertexCoordCylinderEx(bool useUV, const f32* A, const 
             }
             out->x = rr * cs;
             out->y = rr * sn;
-            out->z = height * t;
+            out->z = z;
         }
     }
     return true;
@@ -2029,42 +1796,52 @@ bool GsShapeObject::DeformVertexCoordCylinderEx(bool useUV, const f32* A, const 
 bool GsShapeObject::DeformVertexCoord(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                       bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C) {
     GsShapeData* d = data;
+    int rows1;
+    int cols1;
+    Vec3* out;
+    f32 offY;
+    f32 offX;
+    f32 sy;
+    f32 sx;
+    f32 shear;
+    int i;
+    int j;
+    f32 z;
+    f32 t;
+    f32 dx;
+    f32 y;
+    f32 u;
     switch (d->kind) {
     case 30: {
-        Vec3* out = (Vec3*)posArray;
+        out = (Vec3*)posArray;
         if (out == 0) {
             return false;
         }
-        f32 sx = d->sizeX;
-        f32 offX = 0.5f * -sx;
-        f32 sy = d->sizeY;
-        f32 offY = 0.5f * -sy;
-        int cols1 = d->cols + 1;
-        int rows1 = d->rows + 1;
-        f32 shear = 0.0f;
-        f3 = angOwn == 0 ? f3 : d->angle;
+        sx = d->sizeX;
+        offX = 0.5f * -sx;
+        sy = d->sizeY;
+        offY = 0.5f * -sy;
+        cols1 = d->cols + 1;
+        rows1 = d->rows + 1;
+        shear = 0.0f;
+        f3 = angOwn ? f3 : d->angle;
         if ((f32)fabs(f3) > 0.00001f) {
             shear = data->sizeY * (f32)tan(0.017453292f * f3);
         }
-        int i = 0;
+        i = 0;
         const f32* b = B;
-        for (; i < rows1; i++, C++, b++) {
-            const f32* a = A;
-            int j;
-            f32 z = 0.0f;
-            f32 t;
-            if (scaled) {
-                z = *C;
-            }
+        const f32* c = C;
+        for (; i < rows1; i++, c++, b++) {
+            z = scaled ? *c : 0.0f;
             if (useUV) {
                 t = *b;
             } else {
                 t = (f32)i / (f32)(rows1 - 1);
             }
-            f32 dx = shear * t;
-            f32 y = sy * t + offY;
+            const f32* a = A;
+            dx = shear * t;
+            y = sy * t + offY;
             for (j = 0; j < cols1; j++, a++, out++) {
-                f32 u;
                 if (useUV) {
                     u = *a;
                 } else {
@@ -2091,14 +1868,13 @@ bool GsShapeObject::DeformVertexCoord(bool useUV, const f32* A, const f32* B, bo
 
 void GsShapeObject::SetVertexColorGradation(u8 perVertex, const tagGScol4ub* colors, int mode, f32 f, bool b) {
     if (colArray != 0) {
-        const tagGScol4ub* row = colors;
-        int cols = data->cols + 1;
+            int cols = data->cols + 1;
         int rows = data->rows + 1;
         tagGScol4ub* dst = (tagGScol4ub*)colArray;
         int i;
         int j;
         if (mode == 2 || mode == 4) {
-            for (i = 0; i < rows; row++, i++) {
+            for (i = 0; i < rows; i++) {
                 const tagGScol4ub* s = colors;
                 if (perVertex == 0) {
                     for (j = 0; j < cols; j++, s++, dst++) {
@@ -2109,15 +1885,15 @@ void GsShapeObject::SetVertexColorGradation(u8 perVertex, const tagGScol4ub* col
                     }
                 } else {
                     for (j = 0; j < cols; j++, dst++) {
-                        dst->r = row->r;
-                        dst->g = row->g;
-                        dst->b = row->b;
-                        dst->a = (u8)(f * row->a);
+                        dst->r = colors[i].r;
+                        dst->g = colors[i].g;
+                        dst->b = colors[i].b;
+                        dst->a = (u8)(f * colors[i].a);
                     }
                 }
             }
         } else {
-            for (s32 i = 0; i < rows; row++, i++) {
+            for (i = 0; i < rows; i++) {
                 const tagGScol4ub* s = colors;
                 if (perVertex == 0) {
                     for (j = 0; j < cols; j++, s++, dst++) {
@@ -2128,10 +1904,10 @@ void GsShapeObject::SetVertexColorGradation(u8 perVertex, const tagGScol4ub* col
                     }
                 } else {
                     for (j = 0; j < cols; j++, dst++) {
-                        dst->r = (u8)(f * ((f32)row->r * ((f32)row->a / 255.0f)));
-                        dst->g = (u8)(f * ((f32)row->g * ((f32)row->a / 255.0f)));
-                        dst->b = (u8)(f * ((f32)row->b * ((f32)row->a / 255.0f)));
-                        dst->a = row->a;
+                        dst->r = (u8)(f * ((f32)colors[i].r * ((f32)colors[i].a / 255.0f)));
+                        dst->g = (u8)(f * ((f32)colors[i].g * ((f32)colors[i].a / 255.0f)));
+                        dst->b = (u8)(f * ((f32)colors[i].b * ((f32)colors[i].a / 255.0f)));
+                        dst->a = colors[i].a;
                     }
                 }
             }
@@ -2188,10 +1964,13 @@ void GsShapeObject::SetVertexColorAlpha(int mode, int type, f32 f, bool b) {
             for (i = 0; i < rows; i++) {
                 for (j = 0; j < cols; j++) {
                     u8 a = src->a;
+                    u8 r = src->r;
+                    u8 g = src->g;
+                    u8 bl = src->b;
                     f32 s = (a / 255.0f) * f;
-                    dst->g = (u8)(s * src->g);
-                    dst->r = (u8)(s * src->r);
-                    dst->b = (u8)(src->b * s);
+                    dst->r = (u8)(r * s);
+                    dst->g = (u8)(g * s);
+                    dst->b = (u8)(bl * s);
                     dst->a = a;
                     dst++;
                     src++;

@@ -220,7 +220,7 @@ static inline void primSetTevAlphaIn(u32 a, u32 b, u32 c, u32 d) {
 
 extern "C" {
 
-void GSprimDraw2DTexQuad4VCA(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor* color, GXColorS10* tevColor) {
+void GSprimDraw2DTexQuad4VCA(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor color, GXColorS10* tevColor) {
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(6));
     primSetTexture(tex);
     primSetTevColorS10(*tevColor);
@@ -230,18 +230,17 @@ void GSprimDraw2DTexQuad4VCA(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor* col
     primSetTevAlphaIn(7, 5, 4, 1);
     primData.layer->primitive = primData.quadVtx;
     primData.layer->beginSurface(4);
-    GXColor c = *color;
     primPosV2(v[0]);
-    primColor(c);
+    primColor(color);
     GXTexCoord2f32(uv[0].x, uv[0].y);
     primPosV2(v[1]);
-    primColor(c);
+    primColor(color);
     GXTexCoord2f32(uv[1].x, uv[1].y);
     primPosV2(v[2]);
-    primColor(c);
+    primColor(color);
     GXTexCoord2f32(uv[2].x, uv[2].y);
     primPosV2(v[3]);
-    primColor(c);
+    primColor(color);
     GXTexCoord2f32(uv[3].x, uv[3].y);
     primData.layer->endSurface();
 }

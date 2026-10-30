@@ -5,7 +5,7 @@ struct FightPokemon;
 struct Pokemon;
 struct FightActionData;
 struct DeckTrainer;
-struct FightOutPokemon { u32 data[548]; };
+struct FightOutPokemon { u32 data[0x894 / 4]; };
 struct ComboData { u8 type; u8 order; u8 data[10]; };
 
 extern "C" {
@@ -128,16 +128,19 @@ s32 fightTrainerAiSelectFightActionIrekae(FIGHT_TRAINER* trainer, FightOutPokemo
 s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8, FightOutPokemon* pokemon)
 {
     FightPokemon* candidate;
+    FightOutPokemon* opponent;
     FightOutPokemon saved;
-    FightPokemon* party[25];
+    FightPokemon* party[24];
     FightPokemon* candidates[6];
     s32 values[6];
     FightOutPokemon* opponents[8];
     FightOutPokemon* active[8];
     u16 moves[8];
     u16 ai = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
+    u16 type;
+    u16 move;
     u8 revise = fightTrainerAiDB_GetLastValueRevise();
-    volatile s32 weather = fightTrainerAiGetFightFloorNowTenkouDataId(trainer, 0, 1);
+    u8 weather = fightTrainerAiGetFightFloorNowTenkouDataId(trainer, 0, 1);
     for (u8 i = 0; i < 6; i++) values[i] = 0;
     fightOutPokemonBiosCopy(&saved, pokemon);
     if (fightOutPokemonCheckFightOut(pokemon) == 1) fightOutPokemonIsFightActionAttackWazaOut(pokemon, 0xE2, 0);
@@ -179,8 +182,8 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
             }
         }
     }
-    s32 reviseLong;
     s32 partyCountLong;
+    s32 reviseLong;
     partyCountLong = partyCount;
     reviseLong = revise;
     s32 reviseRange = revise * 2 + 1;
@@ -192,7 +195,7 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
         u16 moveCount = fightTrainerAiGetFightOutPokemonWazaDataIdAry(trainer, pokemon, moves, 0, 1);
         u8 canHit = 0;
         for (u8 j = 0; j < opponentCount; j++) {
-            FightOutPokemon* opponent = opponents[j];
+            opponent = opponents[j];
             if (opponent != 0) {
                 for (u16 k = 0; k < moveCount; k++) {
                     u16 move = moves[k];
@@ -220,19 +223,19 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
         if (maxSpeed <= fightTrainerAiGetFightPokemonSubayasa(trainer, candidate)) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x24);
         if (maxAffinity <= fightTrainerAiGetFightPokemonZokuseiAisyouValue(trainer, candidate, 2)) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x23);
         for (u8 j = 0; j < opponentCount; j++) {
-            FightOutPokemon* opponent = opponents[j];
+            opponent = opponents[j];
             if (opponent != 0) {
                 for (u16 k = 0; k < moveCount; k++) {
-                    u16 move = moves[k];
+                    move = moves[k];
                     if (move == 0) continue;
-                    u16 type = fightTrainerAiGetWazaZokuseiDataId(trainer, move, pokemon);
+                    type = fightTrainerAiGetWazaZokuseiDataId(trainer, move, pokemon);
                     if (type != 9 && fightTrainerAiIsWazaTypeId(trainer, move, 1) != 0 && fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(trainer, opponent, type, fightTrainerAiGetWazaIryoku(trainer, move)) == 0x41)
                         values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x25);
                 }
             }
         }
         for (u8 j = 0; j < opponentCount; j++) {
-            FightOutPokemon* opponent = opponents[j];
+            opponent = opponents[j];
             if (opponent != 0) {
                 u16 n = fightTrainerAiGetFightOutPokemonWazaDataIdAry(trainer, opponent, moves, 0, 0);
                 for (u16 k = 0; k < n; k++) {
@@ -261,28 +264,23 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
         }
         u16 add = fightTrainerAiGetFightPokemonIrekaeDasuTokuseiAddsubDataId(trainer, candidate);
         if (add != 0) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, add);
-        switch (weather) {
-        case 2:
+        if (weather == 2) {
             if (fightTrainerAiIsFightPokemonTokuseiDataId(trainer, candidate, 0x21) == 1 || fightTrainerAiIsFightPokemonTokuseiDataId(trainer, candidate, 0x2C) == 1) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x2C);
-            break;
-        case 1:
+        } else if (weather == 1) {
             if (fightTrainerAiIsFightPokemonTokuseiDataId(trainer, candidate, 0x22) == 1) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x2D);
-            break;
-        case 3: {
+        } else if (weather == 3) {
             u8 immune = 0;
             if (fightTrainerAiIsFightPokemonTokuseiDataId(trainer, candidate, 8) == 1) immune = 1;
             if (fightTrainerAiIsFightPokemonZokuseiDataId(trainer, candidate, 8) == 1 || fightTrainerAiIsFightPokemonZokuseiDataId(trainer, candidate, 5) == 1 || fightTrainerAiIsFightPokemonZokuseiDataId(trainer, candidate, 4) == 1) immune = 1;
             if (immune == 1) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x2E);
-            break;
-        }
-        case 4:
+        } else if (weather == 4) {
             if (fightTrainerAiIsFightPokemonZokuseiDataId(trainer, candidate, 0xF) == 1) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x2F);
-            break;
         }
         for (u8 j = 0; j < opponentCount; j++) {
-            FightOutPokemon* opponent = opponents[j];
+            opponent = opponents[j];
             if (opponent != 0 && fightTrainerAiIsFightOutPokemonJoutaiDataId(trainer, opponent, 0x22) == 1) {
-                s32 damage = fightTrainerAiWazaDoWazaDamageFightPokemonFunc(trainer, opponent, fightOutPokemon_GetMotoWazaDataId(opponent), candidate, 0);
+                u16 waza = fightOutPokemon_GetMotoWazaDataId(opponent);
+                s32 damage = fightTrainerAiWazaDoWazaDamageFightPokemonFunc(trainer, opponent, waza, candidate, 0);
                 if (damage >= pokemon_GetHp(fightPokemon_GetPokemonBuffPtr(candidate))) values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x31);
             }
         }

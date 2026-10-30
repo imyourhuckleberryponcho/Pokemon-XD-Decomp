@@ -105,8 +105,8 @@ s32 GSgfxProjectFastList(const Vec* points, Vec* screen, u32 count) {
         Vec camDir;
         f32 depth;
 
-        VEC_SET(&camDir, g_projInvCameraMatrix[0][1], g_projInvCameraMatrix[0][2], g_projInvCameraMatrix[1][2]);
-        VEC_SET(&rel, g_projInvCameraMatrix[0][4], g_projInvCameraMatrix[0][3], g_projInvCameraMatrix[1][3]);
+        VecSet(&camDir, g_projInvCameraMatrix[0][2], g_projInvCameraMatrix[1][2], g_projInvCameraMatrix[2][2]);
+        VecSet(&rel, g_projInvCameraMatrix[0][3], g_projInvCameraMatrix[1][3], g_projInvCameraMatrix[2][3]);
         PSVECSubtract(in, &rel, &rel);
         depth = PSVECDotProduct(&camDir, &rel);
         if (depth <= -g_projProjectMatrix[2][3] && depth >= g_projProjectMatrix[2][3]) {

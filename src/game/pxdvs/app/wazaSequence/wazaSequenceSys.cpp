@@ -1383,8 +1383,9 @@ void wazaSequenceSysApplyStop() {
     }
 }
 
-static inline void freeSequenceRes(u16 id) {
-    if (id != 0) {
+void wazaSequenceSysFreeSequenceResource(ModelSequence* seq) {
+    if (seq->m_resID != 0) {
+        u16 id = seq->m_resID;
         NullSequence* s;
         int count;
         ModelSequence* m;
@@ -1401,10 +1402,6 @@ static inline void freeSequenceRes(u16 id) {
             GSfsysFree(id);
         }
     }
-}
-
-void wazaSequenceSysFreeSequenceResource(ModelSequence* seq) {
-    freeSequenceRes(seq->m_resID);
 }
 
 static inline void freeWazaRes(u16 id) {

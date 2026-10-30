@@ -1486,8 +1486,7 @@ static void _peopleMoveTypeList(tagPeopleWork* work, bool loop) {
         if ((work->pointIndex >= work->pointCount - 1 && work->moveType == 2) || work->f7C) {
             dist = PSVECDistance(peopleBiosGetPosPtr(work), &work->destPos);
             f32 vsync = (u8)GSgfxVideoGetVsyncRate();
-            f32 time = timeGetLastFrameTime();
-            if (dist < peopleViewerGetPlaySpeedRate(work) * (speed * ((30.0f * time) / vsync))) {
+            if (dist < peopleViewerGetPlaySpeedRate(work) * (speed * ((30.0f * (f32)(timeGetLastFrameTime())) / vsync))) {
                 arrived = true;
             }
         } else {
@@ -1890,7 +1889,7 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
                     work->setAnimRate(0.5f, true);
                     work->followState = 5;
                     return;
-                default:
+                case 0:                default:
                     work->f17F = 1;
                     return;
                 }

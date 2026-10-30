@@ -523,9 +523,9 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     CURSOR cursor = _getCursor();
     int count = memoDataGetCount(0);
     int layer = winSpriteGetLayerID(window, sprite);
-    MenuItem* type1 = menuItemBiosGetPtr(0x78, 0xEF);
     MenuItem* type2 = menuItemBiosGetPtr(0x78, 0xF0);
     MenuItem* base = menuItemBiosGetPtr(0x78, 0xF1);
+    MenuItem* type1 = menuItemBiosGetPtr(0x78, 0xEF);
     MenuItem* area = menuItemBiosGetPtr(0x78, 0xEE);
     MenuItem* self = menuItemBiosGetPtr(0x78, sprite->id);
     spriteSetScissor(layer, area->x - self->x, area->y - self->y, area->width, area->height);
@@ -543,14 +543,12 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             msgctrlSetValue(0x37, name);
             GSmsgPrint2(layer, 0, (s32)(y + offset), window->alpha | ~0xFF, 0x4277);
             u16 type = pokemonGetStatus(0, pokemonGetStatus(mon, 0, 0x6E, 0), 0x16, 0);
-            u16 sprID = zokuseiBiosGetSmallSpriteID(type);
             windowDrawSprite2(type1->x - base->x, (s32)y, type1->width, type1->height, window->alpha | ~0xFF, window,
-                              sprID, 0, layer);
+                              zokuseiBiosGetSmallSpriteID(type), 0, layer);
             u16 type2ID = pokemonGetStatus(0, pokemonGetStatus(mon, 0, 0x6E, 0), 0x16, 1);
             if (type2ID != 0 && type2ID != type) {
-                s32 sprID2 = zokuseiBiosGetSmallSpriteID(type2ID);
                 windowDrawSprite2(type2->x - base->x, (s32)y, type2->width, type2->height, window->alpha | ~0xFF,
-                                  window, (u16)sprID2, 0, layer);
+                                  window, zokuseiBiosGetSmallSpriteID(type2ID), 0, layer);
             }
         }
         y += 27.0f;

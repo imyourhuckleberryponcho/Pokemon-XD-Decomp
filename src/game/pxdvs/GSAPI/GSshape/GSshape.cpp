@@ -154,9 +154,8 @@ static void _shapeFastRender() {
 
 extern "C" {
 
-s32 shapeInit(u16 count) {
+static inline void _shapeFreeAll() {
     u16 i;
-    g_primitiveEditorMode = 0;
     for (i = 0; i < g_shapeRenderNum; i++) {
         if (g_shapeRender[i] != 0) {
             g_shapeRender[i]->FreeShapeRender();
@@ -164,6 +163,11 @@ s32 shapeInit(u16 count) {
             g_shapeRender[i] = 0;
         }
     }
+}
+
+s32 shapeInit(u16 count) {
+    g_primitiveEditorMode = 0;
+    _shapeFreeAll();
     if (g_shapeRender != 0) {
         GSmemFree(g_shapeRender);
         g_shapeRender = 0;
@@ -264,6 +268,14 @@ s32 shapeGetInstancedMemorySizeAll() {
     return g_instancedMemorySizeAll;
 }
 
+static inline void _shapeUpdateAll() {
+    for (u16 i = 0; i < g_shapeRenderNum; i++) {
+        if (g_shapeRender[i] != 0) {
+            shapeUpdate(i, g_primitiveFrameSec, g_primitiveInstanceId);
+        }
+    }
+}
+
 void shapePrimitiveEditorRender(GSgfxLayerID layerId) {
     GSgfxLayer* layer;
     s32 usedMemory;
@@ -279,18 +291,10 @@ void shapePrimitiveEditorRender(GSgfxLayerID layerId) {
             case 0:
                 rate = GSgfxVideoGetVsyncRate();
                 g_primitiveFrameSec += GSgfxVideoGetLastRenderTime() / rate;
-                for (u16 i = 0; i < g_shapeRenderNum; i++) {
-                    if (g_shapeRender[i] != 0) {
-                        shapeUpdate(i, g_primitiveFrameSec, g_primitiveInstanceId);
-                    }
-                }
+                _shapeUpdateAll();
                 break;
             case 1:
-                for (u16 i = 0; i < g_shapeRenderNum; i++) {
-                    if (g_shapeRender[i] != 0) {
-                        shapeUpdate(i, g_primitiveFrameSec, g_primitiveInstanceId);
-                    }
-                }
+                _shapeUpdateAll();
                 if (g_shapeRenderNum != 0) {
                     GsShapeRender* r = g_shapeRender[0];
                     if (r != 0 && r->anim != 0 && r->anim->fps >= 1) {

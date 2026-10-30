@@ -119,10 +119,25 @@ void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t) {
 }
 
 f32 peSplineGetValue(peSpline* s, f32 t) {
-    u8 type = s->flags & 3;
-    u8 n;
+    f32 w;
+    f32 u3;
+    f32 c;
+    f32 h01;
+    f32 b;
     u8 i;
+    f32* r;
     f32* data;
+    f32 a;
+    f32 h10;
+    f32* q;
+    f32 h00;
+    f32 lo;
+    f32* d;
+    f32* p;
+    f32 v;
+    u8 n;
+    u8 type = s->flags & 3;
+    f32 u2;
     if (type == 0) {
         return 1.0f;
     }
@@ -150,9 +165,8 @@ f32 peSplineGetValue(peSpline* s, f32 t) {
         }
         return s->cur;
     } else {
-        f32 w;
         i = 0;
-        f32* p = data + (n + 1);
+        p = data + (n + 1);
         while ((w = *p) < t) {
             i++;
             t -= w;
@@ -161,27 +175,26 @@ f32 peSplineGetValue(peSpline* s, f32 t) {
                 return 1.0f;
             }
         }
-        f32* q = p + n;
-        volatile f32* d = data + i;
-        f32* r = q + n;
+        q = p + n;
+        d = data + i;
+        r = q + n;
         t = t * *q;
         switch (type) {
         case 3: {
-            f32 u2 = t * t;
-            f32 u3 = u2 * t;
-            f32 a = u3 - u2;
-            f32 b = (u2 + u2) - u3;
-            f32 c = a - u2;
-            f32 h01 = b - a;
-            f32 h00 = 1.0f - h01;
-            f32 h10 = t + c;
-            f32 lo;
+            u2 = t * t;
+            u3 = u2 * t;
+            a = u3 - u2;
+            b = (u2 + u2) - u3;
+            c = a - u2;
+            h01 = b - a;
+            h00 = 1.0f - h01;
+            h10 = t + c;
             if (s->flags & 4) {
                 lo = -1.0f;
             } else {
                 lo = 0.0f;
             }
-            f32 v = hermite(d[0], d[1], r[0], r[n], h00, h01, h10, a, w);
+            v = hermite(d[0], d[1], r[0], r[n], h00, h01, h10, a, w);
             if (v < lo) {
                 v = lo;
             } else if (v > 1.0f) {

@@ -56,7 +56,7 @@ void spriteSetEnv(s32);
 void menuSubDrawMsgWindow2(s32, s32, s16, s16, s16, u8, u8);
 void GSmsgMain(s32, void*, u32, bool);
 void GSmsgKill(void*);
-s8 GSmsgGetRect(void*);
+u32 GSmsgGetRect(void*);
 void GSmsgExec(void*, u8, u8);
 s32 GSmsgIsCheck(void*);
 u32 windowGetParam(tagWINDOW_WORK*, u32);
@@ -100,16 +100,17 @@ s32 winMsgDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
         mw = sp->w;
         mh = sp->h;
     }
-    spriteSetOffset(layer, w->offX + sp->x, sp->y + ((s16)(sp->h - 4 - mh) + w->offY));
+    s16 d = sp->h - 4 - mh;
+    spriteSetOffset(layer, w->offX + sp->x, w->offY + sp->y + d);
     spriteSetEnv(layer);
     switch (w->menuID) {
-    case 0x14:
+    case 0x52:
+    case 0x53:
         menuSubDrawMsgWindow2(layer, 0, menuPos, mw, mh, w->b93, 1);
         break;
     case 0x2a:
         break;
-    case 0x52:
-    case 0x53:
+    case 0x14:
         menuSubDrawMsgWindow2(layer, 0, menuPos, mw, mh, w->b93, 1);
         break;
     }
@@ -182,17 +183,15 @@ s32 winMsgCtrl(tagWINDOW_WORK* w)
         }
         if (w->menuID == 0x53) {
             u32 r = GSmsgGetRect(fw->msg);
-            fw->h = r;
             fw->w = r >> 16;
+            fw->h = (u16)r;
         }
         break;
     case 2:
-        switch (w->seqSet) {
-        case 0:
-                s32 rf_t = fw->b4;
-                GSmsgExec(fw->msg, rf_t, fw->b5);
-                w->seqSet = 1;
-            break;
+        if (w->seqSet == 0) {
+            s32 layer = fw->b4;
+            GSmsgExec(fw->msg, layer, fw->b5);
+            w->seqSet = 1;
         }
         if (GSmsgIsCheck(fw->msg) != 0) {
             w->pad_a4 = 0;
@@ -351,8 +350,8 @@ s32 winMsgOpen(s8 type, void* msg, bool a, bool b)
 
 static s32 _winMsgOpenSub(s8 type, void* msg, bool a, bool b, bool c, u8 d, bool e)
 {
-    s32 parentID;
     u8 flags = 0;
+    s32 parentID;
     if (_winMsgGetMenuID(type) == 0) {
         return 0;
     }
@@ -374,7 +373,8 @@ static s32 _winMsgOpenSub(s8 type, void* msg, bool a, bool b, bool c, u8 d, bool
     if (c) {
         flags |= 2;
     }
-    return menuOpenCustom(_winMsgGetMenuID((u16)type), (u8)parentID, 0, e ? 2 : 0, a, 3, msg, flags, (u32)d);
+    s32 menuID = _winMsgGetMenuID(type);
+    return menuOpenCustom(menuID, parentID, 0, e ? 2 : 0, a, 3, msg, flags, d);
 }
 
 static s32 _winMsgGetMenuID(s8 type)

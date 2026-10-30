@@ -155,9 +155,9 @@ void fadeInit(void) {
 
 extern "C" {
 void fadeDaemon(void) {
-    const FadeColor white = {255, 255, 255, 255};
-    const FadeColor black = {0, 0, 0, 255};
-    int r, g, b;
+    FadeColor white = {255, 255, 255, 255};
+    FadeColor black = {0, 0, 0, 255};
+    u8 r, g, b;
     u8 a;
     GSgfxLayer* layer = GSgfxLayerFindByID(7);
     if (layer == 0) {

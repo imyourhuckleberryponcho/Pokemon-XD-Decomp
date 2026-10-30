@@ -574,7 +574,19 @@ GSmaterial* GSpartGetMaterial(GSpart* part, u32 index) {
     if (mobj == 0) {
         return 0;
     }
-    return partFindModelMaterial(part->model, mobj);
+
+    GSmaterial* mat = part->model ? part->model->materials : 0;
+    u32 count = part->model ? part->model->materialCount : 0;
+    u32 i;
+    if (mat == 0 || count == 0) {
+        return 0;
+    }
+    for (i = 0; i < count; i++, mat++) {
+        if (mat->mobj == mobj) {
+            return mat;
+        }
+    }
+    return 0;
 }
 
 void GSpartInitMaterial(GSmaterial* material, GSpart* part, u32 index) {

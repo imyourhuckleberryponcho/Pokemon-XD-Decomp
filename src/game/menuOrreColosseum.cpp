@@ -631,6 +631,8 @@ void menuOrre::Init() {
     InitSub();
 }
 
+static inline void _copyPokemon(void* dst, void* src) { pokemonBiosCopy(dst, src); }
+
 void menuOrre::Main() {
     u8 full;
     u16* cursorPtr;
@@ -759,7 +761,7 @@ void menuOrre::Main() {
             pokemonInit(heroBiosGetPokemonPtr(hero, i));
         }
         for (k = 0; k < 4; k++) {
-            pokemonBiosCopy(heroBiosGetPokemonPtr(hero, k), GetTemochiPokemonPtr(m_sel[k]));
+            _copyPokemon(heroBiosGetPokemonPtr(hero, k), GetTemochiPokemonPtr(m_sel[k]));
         }
         fightSetMenuCtrlHero(fightGetMenuCtrlHero());
         _fightresult = fightEncount(m_deck);

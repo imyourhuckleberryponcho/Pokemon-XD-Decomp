@@ -223,15 +223,13 @@ static u32 _primRenderBuf(f32 x, f32 y, char* buf, u32 len, bool write) {
             str += 6;
             break;
         default: {
-            volatile u8* p = _primChar2Ptr(*str);
+            u8* p = (u8*)_primChar2Ptr(*str);
             int n = *p++;
-            int i = n;
             count += n;
             if (write == true) {
-                while (i--) {
-                    u32 a = p[0];
-                    s16 rf_t = p[1];
-                    u32 b = rf_t;
+                while (n--) {
+                    int a = p[0];
+                    int b = p[1];
                     p += 2;
                     GXWGFifo.f32 = (0.11f * (a >> 4)) * _primTextXpel + x;
                     GXWGFifo.f32 = (0.11f * (a & 0xF)) * _primTextYpel + y;

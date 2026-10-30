@@ -307,45 +307,47 @@ bool WazaSequence::Load(u8* data, u32 a, u32 b) {
         }
         p = p + (((u32)hdr->cameraSize + 0x1F) & ~0x1F);
     }
-    for (i = 0; i < count; i++) {
-        switch (*(u32*)(p + 4)) {
-        case 1:
-            if (!CameraEntry::Load(&p)) {
+    if (count != 0) {
+        for (i = 0; i < count; i++) {
+            switch (*(u32*)(p + 4)) {
+            case 1:
+                if (!CameraEntry::Load(&p)) {
+                    return false;
+                }
+                break;
+            case 2:
+                if (!ModelEntry::Load(&p)) {
+                    return false;
+                }
+                break;
+            case 3:
+                if (!ParticleEntry::Load(&p)) {
+                    return false;
+                }
+                break;
+            case 4:
+                if (!EffectEntry::Load(&p)) {
+                    return false;
+                }
+                break;
+            case 5:
+                if (!SoundEntry::Load(&p)) {
+                    return false;
+                }
+                break;
+            case 6:
+                if (!EventEntry::Load(&p)) {
+                    return false;
+                }
+                break;
+            case 7:
+                if (!LensFlareEntry::Load(&p)) {
+                    return false;
+                }
+                break;
+            default:
                 return false;
             }
-            break;
-        case 2:
-            if (!ModelEntry::Load(&p)) {
-                return false;
-            }
-            break;
-        case 3:
-            if (!ParticleEntry::Load(&p)) {
-                return false;
-            }
-            break;
-        case 4:
-            if (!EffectEntry::Load(&p)) {
-                return false;
-            }
-            break;
-        case 5:
-            if (!SoundEntry::Load(&p)) {
-                return false;
-            }
-            break;
-        case 6:
-            if (!EventEntry::Load(&p)) {
-                return false;
-            }
-            break;
-        case 7:
-            if (!LensFlareEntry::Load(&p)) {
-                return false;
-            }
-            break;
-        default:
-            return false;
         }
     }
     return true;
@@ -368,31 +370,33 @@ void WazaSequence::Unload(u8* data) {
     if (hdr->cameraSize != 0) {
         p = p + (((u32)hdr->cameraSize + 0x1F) & ~0x1F);
     }
-    for (i = 0; i < count; i++) {
-        switch (*(u32*)(p + 4)) {
-        case 1:
-            CameraEntry::Unload(&p);
-            break;
-        case 2:
-            ModelEntry::Unload(&p);
-            break;
-        case 3:
-            ParticleEntry::Unload(&p);
-            break;
-        case 4:
-            EffectEntry::Unload(&p);
-            break;
-        case 5:
-            SoundEntry::Unload(&p);
-            break;
-        case 6:
-            EventEntry::Unload(&p);
-            break;
-        case 7:
-            LensFlareEntry::Unload(&p);
-            break;
-        default:
-            break;
+    if (count != 0) {
+        for (i = 0; i < count; i++) {
+            switch (*(u32*)(p + 4)) {
+            case 1:
+                CameraEntry::Unload(&p);
+                break;
+            case 2:
+                ModelEntry::Unload(&p);
+                break;
+            case 3:
+                ParticleEntry::Unload(&p);
+                break;
+            case 4:
+                EffectEntry::Unload(&p);
+                break;
+            case 5:
+                SoundEntry::Unload(&p);
+                break;
+            case 6:
+                EventEntry::Unload(&p);
+                break;
+            case 7:
+                LensFlareEntry::Unload(&p);
+                break;
+            default:
+                break;
+            }
         }
     }
 }
@@ -850,7 +854,7 @@ WazaSequence* Sequence_LoadWaza(NullSequence* owner, u16 wazaID, u8 kind, u8 var
     }
     if (seq->m_error != 0) {
         delete seq;
-        seq = 0;
+        int seq = 0;
     }
     return seq;
 }

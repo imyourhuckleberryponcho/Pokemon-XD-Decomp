@@ -257,7 +257,10 @@ s32 menuFaceLoadFromID_Tool(u16 id, FaceFn fn, void* arg) {
         if (menuFaceCheckLoading()) {
             return 1;
         }
-        pMenuFaceList[_menuFaceSearchList(id)].state = 1;
+        {
+            s32 idx = _menuFaceSearchList(id);
+            pMenuFaceList[idx].state = 1;
+        }
         _menuFaceLoadCallBackFlag = 0;
         GSfsysReadIDEX(0x5C0, tex, (s32)_menuFaceLoadCallBack, 0, id);
         return 1;
@@ -309,7 +312,10 @@ s32 menuFaceLoadFromID(u16 id, FaceFn fn, void* arg) {
         if (menuFaceCheckLoading()) {
             return 1;
         }
-        pMenuFaceList[_menuFaceSearchList(id)].state = 1;
+        {
+            s32 idx = _menuFaceSearchList(id);
+            pMenuFaceList[idx].state = 1;
+        }
         _menuFaceLoadCallBackFlag = 1;
         GSfsysReadIDEX(0x5C0, tex, (s32)_menuFaceLoadCallBack, 0, id);
         return 1;
@@ -604,12 +610,13 @@ static s32 _menuFaceAddList(u16 id, FaceFn fn, void* arg) {
         pMenuFaceList[n].arg = arg;
         return n;
     }
-    eTex = pMenuFaceList[idx].texID;
-    eFace = pMenuFaceList[idx].faceId;
-    eState = pMenuFaceList[idx].state;
-    eIdx = pMenuFaceList[idx].texIdx;
-    eFn = pMenuFaceList[idx].fn;
-    eArg = pMenuFaceList[idx].arg;
+    d = &pMenuFaceList[idx];
+    eTex = d->texID;
+    eFace = d->faceId;
+    eState = d->state;
+    eIdx = d->texIdx;
+    eFn = d->fn;
+    eArg = d->arg;
     for (; idx < n - 1; idx++) {
         pMenuFaceList[idx] = pMenuFaceList[idx + 1];
     }

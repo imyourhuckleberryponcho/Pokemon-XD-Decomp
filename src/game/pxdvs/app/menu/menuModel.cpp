@@ -395,7 +395,8 @@ static s32 _menuModelAdjustCamera(MENU_MODEL* m, bool first) {
     if (m->size[0] > m->size[1]) width = m->size[0];
     else width = m->size[1];
     f32 t = (f32)tan(0.017453292f * fov / 2.0f);
-    camPos.z = (((0.8f * (width / sizeScale)) / t * scale) / aspectScale) / m->zoom;
+    f32 d = (0.8f * (width / sizeScale)) / t;
+    camPos.z = ((d * scale) / aspectScale) / m->zoom;
     camPos.x = 0.0f;
     camPos.y = 0.0f;
     PSMTXRotRad(mtxA, 0x58, m->angle[0]);
@@ -530,7 +531,7 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
     depth = (a->size[1] >= b->size[1]) ? a->size[1] : b->size[1];
     f32 negB = -b->size[0];
     f32 kc1917 = 0.5f;
-    mid = (width * kc1917) + negB;
+    mid = (depth * kc1917) + negB;
     GSmodelGetPosition(modelA, &spos);
     spos.y = 0.0f;
     spos.x = -(a->size[0] / 2.0f) + mid;
@@ -564,7 +565,8 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
     }
     width = (width > depth) ? width : depth;
     f32 t = (f32)tan(0.017453292f * fov / 2.0f);
-    camPos.z = (((0.8f * (width / sizeScale)) / t * scale) / dispScale) / a->zoom;
+    f32 d = (0.8f * (width / sizeScale)) / t;
+    camPos.z = ((d * scale) / dispScale) / a->zoom;
     target2.y = 0.75f * depth;
     camPos.x = 0.0f;
     camPos.y = 0.0f;

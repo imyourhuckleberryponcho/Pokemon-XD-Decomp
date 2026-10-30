@@ -425,7 +425,7 @@ struct peNodeView {
 inline void peParticleStripContainer::hideNode(peNodeView* n) {
     peDLView* d = (peDLView*)dl[cur];
     u16* idx;
-    u32 hasColor2 = (*(u32*)data >> 18) & 1;
+    u16 hasColor2 = (*(u32*)data >> 18) & 1;
     if (d->flags & 1) {
         idx = (u16*)(d->buf + 3);
     } else {
@@ -661,10 +661,10 @@ void peParticleStripContainer::Render() {
 
 extern "C++" {
 inline bool peParticleStripContainer::updateNode(peNodeView* node, f32 dt) {
+    char* buf = (char*)(&bufA)[cur];
     peStripNodeData* n = (peStripNodeData*)node;
     _peParticleStrip* p = data;
     peEmitterNode* e = emitter;
-    char* buf = (char*)(&bufA)[cur];
     if (buf == NULL) {
         return false;
     }
@@ -756,32 +756,28 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 void peParticleStripContainer::Start() {
-    volatile s32 spC;
-    volatile s16 sp8;
-    s32 temp_r31;
-
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
-        M2C_FIELD(this, u8 *, 0x19) = 1U;
-        temp_r31 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 *, 0);
-        ((peRenderContainer*)((peRenderContainer *) this))->InitSwap();
-        if (temp_r31 & 0x400000) {
-            peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
-        }
-        if (temp_r31 & 0x800000) {
-            peContainer::SetLayerVisibility((GSgfxLayerID)3, true);
-        }
-        if (temp_r31 & 0x01000000) {
-            peContainer::SetLayerVisibility((GSgfxLayerID)5, true);
-        }
-        if ((u32) (temp_r31 & 0xC00) == 0xC00) {
-            sp8 = (s16) *M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 **, 0x1C);
-            HSD_Randf();
-            M2C_FIELD((u16)this, u8 *, 0x5C) = spC;
-        } else {
-            M2C_FIELD(this, u8 *, 0x5C) = 0U;
-        }
-        M2C_FIELD(this, f32 *, 0x58) = (f32) M2C_FIELD(M2C_FIELD(M2C_FIELD(this, u8 **, 0), u8 **, 0xFC), f32 *, 0x28);
+    if (M2C_FIELD(this, u8 *, 0x19) != 0) {
+        return;
     }
+    M2C_FIELD(this, u8 *, 0x19) = 1;
+    u32 flags = *M2C_FIELD(this, u32 **, 0x54);
+    InitSwap();
+    if (flags & 0x400000) {
+        peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
+    }
+    if (flags & 0x800000) {
+        peContainer::SetLayerVisibility((GSgfxLayerID)3, true);
+    }
+    if (flags & 0x01000000) {
+        peContainer::SetLayerVisibility((GSgfxLayerID)5, true);
+    }
+    if ((flags & 0xC00) == 0xC00) {
+        f32 range = u16tof32S(*M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 **, 0x1C));
+        M2C_FIELD(this, u8 *, 0x5C) = OSf32tou8(range * HSD_Randf());
+    } else {
+        M2C_FIELD(this, u8 *, 0x5C) = 0;
+    }
+    M2C_FIELD(this, f32 *, 0x58) = M2C_FIELD(M2C_FIELD(M2C_FIELD(this, u8 **, 0), u8 **, 0xFC), f32 *, 0x28);
 }
 }
 

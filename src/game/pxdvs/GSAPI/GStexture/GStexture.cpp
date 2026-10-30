@@ -474,20 +474,19 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void
     }
     levels = mipLevels;
     levels = (u8)(levels + 1);
-    tex->mipLevels = levels;
     tex->inUse = 1;
     tex->format = format;
+    tex->mipLevels = levels;
     tex->dirty = 1;
-    tex->wrapS = 0;
     tex->tlutFormat = tlutFormat;
-    tex->mipFilter = 0;
+    tex->wrapS = 0;
     tex->wrapT = 0;
     tex->minFilter = 2;
     tex->magFilter = 2;
     tex->mipData[1] = 0;
     tex->memHandle = 0;
     tex->mipData[0] = data;
-    tex->totalSize = 0;
+    tex->mipFilter = 0;
     tex->tlutData = 0;
     size = (tex->bitsPerPixel * (width * height)) >> 3;
     _textureCalcSize(tex, levels, size);

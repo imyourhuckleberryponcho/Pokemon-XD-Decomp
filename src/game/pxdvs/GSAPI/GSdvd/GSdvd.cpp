@@ -224,11 +224,16 @@ u32 GSdvdRemove(void) {
     return 0;
 }
 
+#pragma push
+#pragma optimization_level 1
 u32 GSdvdCreate(void) {
+    u32 result = 0;
     if (_initFlag == 0) {
+        return result;
     }
-    return 0;
+    return result;
 }
+#pragma pop
 
 u32 GSdvdGetLength(GSDVDWork* work) {
     if (_initFlag == 0) {

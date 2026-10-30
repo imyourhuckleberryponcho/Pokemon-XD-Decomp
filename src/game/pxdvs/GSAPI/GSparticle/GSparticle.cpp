@@ -94,7 +94,13 @@ struct GSgfxLayer {
     void FlushState();
 };
 struct GSgfxRenderModule {
-    u8 _draft[1];
+    void (*init)(void* user);
+    void (*preUpdate)(f32 dt);
+    void (*render)(GSgfxLayer* layer, GSgfxLayerPass pass);
+    void (*renderFast)(void);
+    void (*postUpdate)(f32 dt);
+    void (*frameUpdate)(void);
+    u32 id;
 };
 struct GSpart {
     u8 _draft[1];
@@ -132,11 +138,25 @@ struct Vec {
 struct _GSmodel {
     u8 _draft[1];
 };
-struct _GSparticleBank {
-    u8 _draft[1];
+struct _GSparticleGenData {
+    u32 unk0;
+    u32 serial;
+    HSD_Generator* generator;
+    u8 unkC[0x154];
+    HSD_CObj* camera;
 };
 struct _GSparticleGen {
-    u8 _draft[1];
+    u8 native;
+    u8 unk1[0x37];
+    _GSparticleGenData* data;
+};
+struct _GSparticleBank {
+    u8 active;
+    u8 unk1[2];
+    u8 genCount;
+    u8 unk4[8];
+    _GSparticleGen* gens;
+    HSD_CObj* camera;
 };
 struct _HSD_JObj {
     u8 _draft[1];
@@ -167,7 +187,7 @@ void GSpartFree(GSpart* part);
 s32 GSpartGetJObjIndex(void*, void*);
 void GSpartGetTransform(GSpart* part, GSvec* pos, GSvec* rot, GSvec* scale);
 void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4, u8 p5);
-void GSparticleBankSetCamera(void *p0, s32 p1);
+void GSparticleBankSetCamera(_GSparticleBank* bank, HSD_CObj* camera);
 GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* bank, s32 index, s32);
 void GSparticleDestroyAllGenerators(GSparticleBank* bank, bool children);
 void GSparticleDestroyGenerator(void *p0, bool p1);
@@ -1185,38 +1205,27 @@ void GSparticleGeneratorSetCamera(void *p0, s32 p1) {
 }
 
 extern "C" {
-void GSparticleBankSetCamera(void *p0, s32 p1) {
-    u8 *var_r31;
-    s32 temp_cr0_eq_2;
-    s32 var_r30;
-    u8 *temp_r3;
-    s32 temp_cr0_eq;
-
-    if (p0 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) == 0) {
-            return;
-        }
-        var_r31 = M2C_FIELD(p0, u8 **, 0xC);
-        M2C_FIELD(p0, s32 *, 0x10) = p1;
-        var_r30 = M2C_FIELD(p0, u8 *, 3);
-loop_11:
-        temp_cr0_eq = var_r30 == 0;
-        var_r30 -= 1;
-        if (temp_cr0_eq == 0) {
-            temp_r3 = M2C_FIELD(var_r31, u8 **, 0x38);
-            temp_cr0_eq_2 = temp_r3 == NULL;
-            if ((temp_cr0_eq_2 == 0) && (temp_cr0_eq_2 == 0)) {
-                if ((u8) M2C_FIELD(var_r31, u8 *, 0) != 0) {
-                    if (temp_r3 != NULL) {
-                        M2C_FIELD(temp_r3, s32 *, 0x160) = p1;
-                    }
-                } else {
-                    psGeneratorSetCamera((HSD_Generator*)(M2C_FIELD(temp_r3, HSD_Generator **, 8)), (HSD_CObj*)((HSD_CObj *) p1));
+void GSparticleBankSetCamera(_GSparticleBank* bank, HSD_CObj* camera) {
+    if (bank == NULL || bank->active == 0) {
+        return;
+    }
+    bank->camera = camera;
+    _GSparticleGen* gen;
+    u8 n;
+    n = bank->genCount;
+    gen = bank->gens;
+    while (n--) {
+        _GSparticleGenData* data = gen->data;
+        if (data != NULL && gen->data != NULL) {
+            if (gen->native) {
+                if (data != NULL) {
+                    data->camera = camera;
                 }
+            } else {
+                psGeneratorSetCamera(data->generator, camera);
             }
-            var_r31 += 0x3C;
-            goto loop_11;
         }
+        gen++;
     }
 }
 }
@@ -2267,52 +2276,30 @@ extern "C" {
 #pragma push
 #pragma dont_inline on
 extern "C" {
-#pragma push
-#pragma peephole off
-void GSparticleInit(u32 p0) {
-    s32 sp20;
-    s32 sp1C;
-    s32 sp18;
-    s32 sp14;
-    s32 sp10;
-    s32 spC;
-    s32 sp8;
-    s32 var_r5;
-    u32 var_r6;
-    u8 *temp_r3;
+void GSparticleInit(u32 count) {
+    GSgfxRenderModule module = { NULL, _particlePreUpdate, _particleRender, NULL, _particlePostUpdate, NULL, 0xB29A48E1 };
+    u32 i;
 
-    sp8 = M2C_FIELD(&jtbl_1991, s32 *, 0);
-    spC = M2C_FIELD(&jtbl_1991, s32 *, 4);
-    sp10 = M2C_FIELD(&jtbl_1991, s32 *, 8);
-    sp14 = M2C_FIELD(&jtbl_1991, s32 *, 0xC);
-    sp18 = M2C_FIELD(&jtbl_1991, s32 *, 0x10);
-    _particleBankStructList = temp_r3;
-    sp1C = M2C_FIELD(&jtbl_1991, s32 *, 0x14);
-    sp20 = M2C_FIELD(&jtbl_1991, s32 *, 0x18);
-    memset((void*)(g_particle_cameras), 0, 0x10U);
-    _particleBankStructCount = p0;
+    memset(g_particle_cameras, 0, sizeof(g_particle_cameras));
+    _particleBankStructCount = count;
     g_particle_cameras_count = 0;
-    temp_r3 = (unsigned char *)(GSmemAlloc(p0 * 0x14));
-    if (temp_r3 != NULL) {
-        var_r5 = 0;
-        var_r6 = 0U;
-        while (var_r6 < (u32) _particleBankStructCount) {
-            var_r6 += 1;
-            _particleBankStructList[var_r5] = 0;
-            var_r5 += 0x14;
-        }
-        psSetToken(0U);
-        psInitParticle(0);
-        psInitGenerator(0);
-        psInitAppSRT(0, 0x74U);
-        HSD_JObjSetSPtclCallback((void (*)(s32, s32, s32, HSD_JObj*))(_particleJObjCallback));
-        HSD_JObjSetDPtclCallback((DPCtlCallback)((s32) _particleJObjCallback));
-        HSD_JObjSetPtclTargetCallback((void (*)(HSD_JObj*, s32))(&psSetPointJObjNodup));
-        particleEngineInit();
-        GSgfxRenderModuleRegister(0x40U, (GSgfxRenderModule*)((GSgfxRenderModule *) &sp8), (void*)(NULL));
+    _particleBankStructList = (u8*)GSmemAlloc(count * 0x14);
+    if (_particleBankStructList == NULL) {
+        return;
     }
+    for (i = 0; i < _particleBankStructCount; i++) {
+        _particleBankStructList[i * 0x14] = 0;
+    }
+    psSetToken(0);
+    psInitParticle(0);
+    psInitGenerator(0);
+    psInitAppSRT(0, 0x74);
+    HSD_JObjSetSPtclCallback((void (*)(s32, s32, s32, HSD_JObj*))_particleJObjCallback);
+    HSD_JObjSetDPtclCallback((DPCtlCallback)_particleJObjCallback);
+    HSD_JObjSetPtclTargetCallback((void (*)(HSD_JObj*, s32))psSetPointJObjNodup);
+    particleEngineInit();
+    GSgfxRenderModuleRegister(0x40, &module, NULL);
 }
-#pragma pop
 }
 #pragma pop
 }
@@ -2322,35 +2309,19 @@ void GSparticleInit(u32 p0) {
 extern "C" {
 extern "C" {
 extern "C++" {
-static void _particleBankDestroyOldestGenerator(_GSparticleBank* p0) {
-    u8 *var_r4;
-    s32 var_ctr;
-    u32 temp_r0_2;
-    u32 var_r7;
-    s32 var_r8;
-    s32 var_r3;
-
-    var_r7 = -1U;
-    var_r8 = -1;
-    var_r3 = 0;
-    var_r4 = (M2C_FIELD(p0, u8 **, 0xC));
-    var_ctr = (M2C_FIELD((s32)p0, u8 *, 3));
-    if ((s32) (M2C_FIELD(p0, u8 *, 3)) > 0) {
-        do {
-            if ((M2C_FIELD(var_r4, u8 **, 0x38)) != NULL) {
-                temp_r0_2 = M2C_FIELD((M2C_FIELD(var_r4, u8 **, 0x38)), u32 *, 4);
-                if (temp_r0_2 < var_r7) {
-                    var_r7 = temp_r0_2;
-                    var_r8 = var_r3;
-                }
-            }
-            var_r3 += 1;
-            var_r4 += 0x3C;
-            var_ctr -= 1;
-        } while (var_ctr != 0);
+static void _particleBankDestroyOldestGenerator(_GSparticleBank* bank) {
+    _GSparticleGen* gen = bank->gens;
+    s32 i;
+    u32 oldest = 0xFFFFFFFF;
+    s32 found;
+    for (i = 0, found = -1; i < bank->genCount; i++, gen++) {
+        if (gen->data != NULL && gen->data->serial < oldest) {
+            oldest = gen->data->serial;
+            found = i;
+        }
     }
-    if (var_r8 != -1) {
-        GSparticleDestroyGenerator((M2C_FIELD(p0, u8 **, 0xC)) + (var_r8 * 0x3C), 1U);
+    if (found != -1) {
+        GSparticleDestroyGenerator(&bank->gens[found], 1);
     }
 }
 }

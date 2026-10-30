@@ -1569,6 +1569,8 @@ void _printItemKinomi(GSgfxLayerID layer, int x, int y, int tab, int pos)
 namespace {
 void _printItemWazaMachine(GSgfxLayerID layer, int x, int y, int tab, int pos)
 {
+    int px;
+    s16 w2;
     u8* item = itemDataBiosGetPtr(_getItemIDFromMenuPos(tab, pos));
     u8 machine = itemDataBiosGetWazaMachineNo(item);
     int num = machine + 1;
@@ -1581,7 +1583,7 @@ void _printItemWazaMachine(GSgfxLayerID layer, int x, int y, int tab, int pos)
         label = 0x3A9F;
     }
     GSmsgPrint2(layer, x, y, -1, label);
-    int px = x + (GSmsgGetRect(label) >> 16);
+    px = x + (GSmsgGetRect(label) >> 16);
     if (hiden != 0xFF) {
         msgctrlSetValue(0x34, hidenNum);
         GSmsgPrint2(layer, px, y, -1, 0x4270);
@@ -1604,7 +1606,7 @@ void _printItemWazaMachine(GSgfxLayerID layer, int x, int y, int tab, int pos)
     w += (s16)(GSmsgGetRect(0x428F) >> 16);
     GSmsgPrint2(layer, x + menuItemBiosGetPtr(0x2C, 0xB4)->w - w, y, -1, 0x428F);
     msgctrlSetValue(0x34, _getItemNumFromMenuPos(tab, pos));
-    s16 w2 = GSmsgGetRect(0x4270) >> 16;
+    w2 = GSmsgGetRect(0x4270) >> 16;
     GSmsgPrint2(layer, x + menuItemBiosGetPtr(0x2C, 0xB4)->w - w2 + 1, y, -1, 0x4270);
 }
 }
@@ -2176,7 +2178,7 @@ int _makeActMenu(SActionMenuItem* out, int mode, int tab, int pos)
             dst->msg = cur->msg;
             dst->func = cur->func;
             dst->flags = cur->flags;
-            dst->pad = 0;
+            dst->flags = 0;
             dst++;
         }
     }

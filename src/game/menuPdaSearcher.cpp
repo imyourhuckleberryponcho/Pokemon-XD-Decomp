@@ -253,37 +253,59 @@ static void _updateTimer(u16 id)
 
 static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
 {
-    _updateTimer(id);
+    MenuSpriteVal2* val;
+    f32 scale;
+    u16 xs;
+    void* tex;
+    u16 ys;
+    void* spr;
+    f32 v;
+    f32 radius;
     f32 s;
-    f32 t = _esaTimer[id] / 6.2831855f;
-    f32 v = 1.0f - t;
+    GSgfxLayer* layer;
+    f32 angle;
+    f32 t;
+    f32 tc[4][3];
+    f32 u0;
+    f32 u1;
+    f32 v0;
+    f32 v1;
+    f32 cx;
+    f32 cy;
+    GSgfxVF* vf;
+    _updateTimer(id);
+
+    t = _esaTimer[id] / 6.2831855f;
+    v = 1.0f - t;
     v = 255.0f * v;
     if (v >= 255.0f) {
         v = 255.0f;
     }
     sp->alpha = (u8)(w->alpha * (u8)(s32)v / 255);
-    f32 scale = GSlerpGetLinearInterpolationFloat(_maxscale[0], _maxscale[1], t);
-    GSgfxLayer* layer = GSgfxLayerFindByID(winSpriteGetLayerID(w, sp));
-    void* spr = menuSpriteBiosGetPtr(0x2de);
-    MenuSpriteVal2* val = menuSpriteBiosGetValPtr(spr);
-    void* tex = GSresGetResourceAllGroup(val->res);
-    u16 xs = GStextureGetXsize(tex);
-    u32 ys = GStextureGetYsize(tex);
-    f32 radius = scale * (f32)(val->w / 2);
-    f32 angle = _startangle;
+    scale = GSlerpGetLinearInterpolationFloat(_maxscale[0], _maxscale[1], t);
+    layer = GSgfxLayerFindByID(winSpriteGetLayerID(w, sp));
+    spr = menuSpriteBiosGetPtr(0x2de);
+    val = menuSpriteBiosGetValPtr(spr);
+    tex = GSresGetResourceAllGroup(val->res);
+    xs = GStextureGetXsize(tex);
+    ys = GStextureGetYsize(tex);
+    radius = scale * (f32)(val->w / 2);
+    angle = _startangle;
     menuItemBiosGetPtr(w->menuID, sp->id);
-    f32 tc[4][3];
-    f32 u0 = (f32)val->x / (f32)xs;
-    s8 rf_t = val->y;
-    f32 v0 = (f32)rf_t / (f32)ys;
-    f32 v1 = (f32)(val->y + val->h) / (f32)ys;
-    f32 u1 = (f32)(val->w + val->x) / (f32)xs;
-    tc[3][1] = tc[2][1] = v1;
-    tc[0][0] = tc[3][0] = u0;
-    tc[1][0] = tc[2][0] = u1;
-    tc[0][1] = tc[1][1] = v0;
-    f32 cx = (f32)(val->w / 2);
-    f32 cy = (f32)(val->h / 2);
+    u0 = (f32)val->x / (f32)xs;
+    cx = (f32)(val->w / 2);
+    cy = (f32)(val->h / 2);
+    u1 = (f32)(val->x + val->w) / (f32)xs;
+    v0 = (f32)val->y / (f32)ys;
+    v1 = (f32)(val->y + val->h) / (f32)ys;
+    tc[3][0] = u0;
+    tc[0][0] = u0;
+    tc[2][0] = u1;
+    tc[1][0] = u1;
+    tc[1][1] = v0;
+    tc[0][1] = v0;
+    tc[3][1] = v1;
+    tc[2][1] = v1;
 
     layer->colorUpdate = 1;
     layer->alphaUpdate = 0;
@@ -337,7 +359,7 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
     U32_AT_L(layer, 0x107c) = 7;
     layer->mark(8, 0x16d8, 1);
     layer->primType = 0x80;
-    GSgfxVF* vf = GSgfxVFGetPredef(7);
+    vf = GSgfxVFGetPredef(7);
     layer->primType = 0xa0;
     layer->setRenderStateAndSelect(vf);
     if (layer->tex1740 != (GStexture*)tex || layer->tex17f8 != (GStexture*)tex || ((u8*)tex)[7] != 0) {
@@ -355,12 +377,8 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
         angle += 1.5707964f;
         GXWGFifo.s16 = (s16)(radius * s + cx);
         GXWGFifo.s16 = (s16)(radius * c + cy);
-        GXWGFifo.u8 = sp->alpha;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.u8 = 0xFF;
-        GXWGFifo.f32 = tu;
-        GXWGFifo.f32 = tv;
+        GXColor4u8(0xFF, 0xFF, 0xFF, sp->alpha);
+        GXTexCoord2f32(tu, tv);
     }
     layer->endSurface();
 }

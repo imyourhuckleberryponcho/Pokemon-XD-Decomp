@@ -132,7 +132,7 @@ struct __GSmovieStreaming {
     u8 loop;
     u8 startOffset;
     u16 token;
-    s16 f1A;
+    u8 f1A;
     THPPlayer* player;
 };
 

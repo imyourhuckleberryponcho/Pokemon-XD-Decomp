@@ -1,4 +1,12 @@
 #include <dolphin/types.h>
+typedef union {
+    u8 u8;
+    u16 u16;
+    s16 s16;
+    u32 u32;
+    f32 f32;
+} PPCWGPipe;
+volatile PPCWGPipe GXWGFifo : 0xCC008000;
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -265,7 +273,7 @@ void GSgfxLayer::EffectScreenClear(bool p0, bool p1, bool p2) {
 
     if ((p0 != 0) || (p1 != 0) || (p2 != 0)) {
         if (p0 == 1) {
-            M2C_FIELD((u16)this, s8 *, 0x1656) = 1;
+            M2C_FIELD(this, s8 *, 0x1656) = 1;
         } else {
             M2C_FIELD(this, s8 *, 0x1656) = 0;
         }
@@ -348,34 +356,34 @@ void GSgfxLayer::EffectScreenClear(bool p0, bool p1, bool p2) {
         ((GSgfxLayer*)(this))->setRenderStateAndSelect((GSgfxVF*)(GSgfxVFGetPredef(0)));
         M2C_FIELD(this, s32 *, 0x1998) = 0x98;
         ((GSgfxLayer*)(this))->beginSurface(4U);
-        *(f32 *)0xCC008000 = 0.0f;
-        *(f32 *)0xCC008000 = 0.0f;
-        *(f32 *)0xCC008000 = 640.0f;
-        *(f32 *)0xCC008000 = 29999.0f;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0.0f;
-        *(f32 *)0xCC008000 = 29999.0f;
-        *(f32 *)0xCC008000 = 480.0f;
-        *(f32 *)0xCC008000 = 640.0f;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0.0f;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 480.0f;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 29999.0f;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 29999.0f;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
-        *(f32 *)0xCC008000 = 0;
+        GXWGFifo.f32 = 0.0f;
+        GXWGFifo.f32 = 0.0f;
+        GXWGFifo.f32 = 29999.0f;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.f32 = 640.0f;
+        GXWGFifo.f32 = 0.0f;
+        GXWGFifo.f32 = 29999.0f;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.f32 = 0.0f;
+        GXWGFifo.f32 = 480.0f;
+        GXWGFifo.f32 = 29999.0f;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.f32 = 640.0f;
+        GXWGFifo.f32 = 480.0f;
+        GXWGFifo.f32 = 29999.0f;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
+        GXWGFifo.u8 = 0;
         ((GSgfxLayer*)(this))->endSurface();
     }
 }
@@ -580,22 +588,22 @@ void GSgfxLayer::EffectDistortion() {
     M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 1);
     M2C_FIELD(this, s32 *, 0x1998) = 0x98;
     ((GSgfxLayer*)(this))->beginSurface(4U);
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0x280;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 1;
-    *(s16 *)0xCC008000 = 0x1E0;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 0;
-    *(s16 *)0xCC008000 = 1;
-    *(s16 *)0xCC008000 = 0x280;
-    *(s16 *)0xCC008000 = 0x1E0;
-    *(s16 *)0xCC008000 = 1;
-    *(s16 *)0xCC008000 = 1;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.s16 = 640;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.u8 = 1;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.s16 = 0;
+    GXWGFifo.s16 = 480;
+    GXWGFifo.u8 = 0;
+    GXWGFifo.u8 = 1;
+    GXWGFifo.s16 = 640;
+    GXWGFifo.s16 = 480;
+    GXWGFifo.u8 = 1;
+    GXWGFifo.u8 = 1;
     ((GSgfxLayer*)(this))->endSurface();
     M2C_FIELD(this, s8 *, 0x14B0) = 0;
     M2C_FIELD(this, s32 *, 0x16EC) = (s32) (M2C_FIELD(this, s32 *, 0x16EC) | 1);

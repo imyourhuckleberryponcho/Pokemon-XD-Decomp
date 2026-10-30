@@ -1615,18 +1615,23 @@ u8 fightSeqRegulationOverTwoCheck(u16 type, u32 arg) {
 }
 
 u16 fightSeqRegulationGetJoutaiCount(u16 id, u32 arg) {
-    enum TsE { TsE0 };
-    u16 count = 0;
-    void* side = fightTargetGetPtrAsNowFightType(2, arg);
-    enum TsE trainerNum = (enum TsE)(fightFloor_GetFightTypeTrainerNum(0));
+    u16 count;
+    void* side;
+    u32 trainerNum;
     u16 i;
+    void* trainer;
+    u16 j;
+    void* pokemon;
+
+    count = 0;
+    side = fightTargetGetPtrAsNowFightType(2, arg);
+    trainerNum = fightFloor_GetFightTypeTrainerNum(0);
     fightFloor_GetFightTypeEntryPokemonNum(0);
     for (i = 0; i < trainerNum; i++) {
-        void* trainer = fightSideGetValidFightTrainerPtr(side, i);
+        trainer = fightSideGetValidFightTrainerPtr(side, i);
         if (trainer != 0) {
-            u16 j;
             for (j = 0; j < 6; j++) {
-                void* pokemon = fightTrainerGetValidFightPokemonPtr(trainer, j);
+                pokemon = fightTrainerGetValidFightPokemonPtr(trainer, j);
                 if (pokemon != 0 && fightPokemonCheckFightOut(pokemon) != 0 && fightPokemonIsJoutaiDataId(pokemon, id) == 1) {
                     count++;
                 }
@@ -2510,6 +2515,7 @@ void WS_PP_DEC(void) {
     enum TsE tokusei;
     u8 range;
     s8 slot;
+    u8 banme;
     u8 pp;
     fightSeq_GetWazaSeq();
     attacker = fightTargetGetPtrAsNowFightType(0x11, 0);
@@ -2519,7 +2525,8 @@ void WS_PP_DEC(void) {
     tokusei = (enum TsE)(fightOutPokemonGetTokuseiDataId(defender));
     if (!(ServerStatusFlag & 0xA00)) {
         range = wazaDB_GetRangeId(fightOutPokemon_GetUseWazaDataId(attacker));
-        slot = fightWaza_GetWazaBanme(waza);
+        banme = fightWaza_GetWazaBanme(waza);
+        slot = banme;
         pp = pokemon_GetPokemonWazaPp(pokemon, slot);
         if (fightOutPokemon_GetNoPressureFlag(attacker) == 0) {
             switch (range) {
@@ -2540,7 +2547,7 @@ void WS_PP_DEC(void) {
         if (pp != 0) {
             fightOutPokemon_SetPassPpdecFlag(attacker, 1);
             pokemon_SetPokemonWazaPp(pokemon, slot, pp > dec ? pp - dec : 0);
-            fightSeqPpdecMonomane(attacker, slot, 0);
+            fightSeqPpdecMonomane(attacker, (u8)banme, 0);
         }
     }
     ServerStatusFlag &= 0xFFFFF7FF;
@@ -3333,15 +3340,18 @@ void fightSeqTuikaAct(u8 a, u8 b) {
 
 extern "C" {
 u8 fightSeqWazaFloorJoutaiCheck(void* side, FightOutPokemon* target, u16 waza) {
-    s32 waza_c = (s32)waza;
+    void fightSeqWazaSeqSet(u8, u16);
     u8 type = fightFloor_GetFightType(0);
     u16 id;
-    wazaDB_GetSeqId(waza_c);
+    wazaDB_GetSeqId(waza);
     fightFloorGetNowTenkouDataId(0, 1);
     id = fightTargetGetTragetPtrToRelativeHostSideFightTargetId(side, type);
-    if (fightOutPokemonIsJoutaiDataId(target, 0x1D) == 1 && fightOutPokemonGetUserFightTargetIdJoutaiDataId(target, 0x1D) == id) {
-        fightSeqWazaSeqSet(7, waza);
-        return 1;
+    if (fightOutPokemonIsJoutaiDataId(target, 0x1D) == 1) {
+        u16 user = fightOutPokemonGetUserFightTargetIdJoutaiDataId(target, 0x1D);
+        if (user == id) {
+            fightSeqWazaSeqSet(7, waza);
+            return 1;
+        }
     }
     if (!(ServerStatusFlag & 0x10000) && fightOutPokemonIsJoutaiDataId(target, 0x1F) == 1) {
         fightFloor_SetAttackPokemonFightWazaJoutaiDataId(0, 0x40);
@@ -3367,11 +3377,11 @@ u8 fightSeqWazaFloorJoutaiCheck(void* side, FightOutPokemon* target, u16 waza) {
         }
     }
     ServerStatusFlag &= 0xFFFBFFFF;
-    if (fightSeqIsTenkouHit(waza_c) == 1) {
+    if (fightSeqIsTenkouHit(waza) == 1) {
         fightSeqWazaSeqSet(7, waza);
         return 1;
     }
-    if (fightSeqIsAllwaysHit(waza_c) == 1) {
+    if (fightSeqIsAllwaysHit(waza) == 1) {
         fightSeqWazaSeqSet(7, waza);
         return 1;
     }

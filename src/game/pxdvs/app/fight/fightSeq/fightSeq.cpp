@@ -1834,7 +1834,7 @@ u8 fightSeqAttackPokemonJoutaiCheck(void) {
     FightWaza* fw = fightOutPokemon_GetFightWazaPtr(p);
     void* side = fightTargetGetPtrAsNowFightType(2, p);
     u16 tokusei = fightOutPokemonGetTokuseiDataId(p);
-    u16 waza = fightOutPokemon_GetUseWazaDataId(p);
+    u32 waza = fightOutPokemon_GetUseWazaDataId(p);
     u16 iryoku = wazaDB_GetIryoku(waza);
     u16 seqId = wazaDB_GetSeqId(waza);
     u8 result = 0;
@@ -1856,7 +1856,12 @@ u8 fightSeqAttackPokemonJoutaiCheck(void) {
                     fightSeq_CallWazaSeq(WAZA_Mezame);
                     result = 2;
                 } else {
-                    s8 now = tokusei == 0x30 ? 2 : 1;
+                    s8 now;
+                    if (tokusei == 0x30) {
+                        now = 2;
+                    } else {
+                        now = 1;
+                    }
                     now += fightOutPokemonGetNowKaisuuJoutaiDataId(p, 8);
                     enum TsE cmpv = (enum TsE)(fightOutPokemonGetKaisuuJoutaiDataId(p, 8));
                     if (now >= cmpv) {
@@ -2024,7 +2029,7 @@ u8 fightSeqAttackPokemonJoutaiCheck(void) {
                 s8 now = fightOutPokemonGetNowKaisuuJoutaiDataId(p, 0xC);
                 if ((s8)(now + 1) >= fightOutPokemonGetKaisuuJoutaiDataId(p, 0xC)) {
                     FightOutPokemon* target;
-                    s32 damage;
+                    s16 damage;
                     fightOutPokemonInitJoutaiDataId(p, 0xC);
                     fightOutPokemonInitJoutaiDataId(p, 0x22);
                     ServerStatusFlag |= 0x02000000;
@@ -2860,8 +2865,8 @@ s32 fightSeqWazaDamageCalcHikaePokemon(FightOutPokemon* attacker, FightPokemon* 
     u16 activeCount;
     u32 i;
     s32 offset;
-    u16 atkValue;
-    u16 defValue;
+    u32 atkValue;
+    u32 defValue;
     s32 damage;
 
     tenkou = fightFloorGetNowTenkouDataId(0, 1);
@@ -3140,8 +3145,8 @@ s32 fightSeqWazaDamageCalc(FightOutPokemon* attacker, FightOutPokemon* defender,
     u16 activeCount;
     u32 i;
     s32 offset;
-    u16 atkValue;
-    u16 defValue;
+    u32 atkValue;
+    u32 defValue;
     s32 damage;
 
     tenkou = fightFloorGetNowTenkouDataId(0, 1);

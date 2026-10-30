@@ -28,8 +28,6 @@ struct tagWINDOW_WORK;
 
 extern "C" {
 
-extern u32 _menuTitleStartStatus;
-
 extern "C" {
 struct FightEncountData {
     u8 _draft[1];
@@ -50,7 +48,13 @@ struct MenuData {
     u8 _draft[1];
 };
 struct WorldMapModel {
-    u8 _draft[1];
+    void* m_offscreen;
+    WorldMapModel() { m_offscreen = 0; }
+    ~WorldMapModel() {
+        if (m_offscreen != 0) {
+            releaseOffscreenData();
+        }
+    }
     s32 releaseOffscreenData();
     s32 SetModel(unsigned long, unsigned long, bool);
     s32 UnloadModel(unsigned long, unsigned long);
@@ -112,7 +116,7 @@ void fn_800A39A8();
 void fn_800A39E4();
 void fn_800A3A1C();
 void fn_800A3A48(u32 id, s16 anim, u8 loop, f32 frame);
-void fn_800A3B34(s32 p0, s32 p1, s32 p2);
+void fn_800A3B34(s32 p0, s32 p1, bool p2);
 void fn_800A3BD4(s32 p0, s32 p1);
 u32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind);
 s32 memcardTaskCall(s32, s32, s32);
@@ -169,17 +173,18 @@ static void _menuTitlePreReadFightRegWzxData();
 static void _menuTitleSetSE(unsigned long p0);
 static s32 _selectMenu();
 }
-static GSthread* _gsthread_ptr_fight_reg_wzx;
-static f32 _menuTitleAutoDemoCount;
+static u32 _menuTitleStartStatus;
 static s32 _menuTitleDiskCoverOpen;
-static f32 _menuTitleFrameCount;
-static f32 _menuTitleFrameSec;
-static s32 _menuTitleSeCount;
-static f32 _menuTitleSeFrame;
-s32 _menuTitleSkipFlag;
 static s32 _menuTitleStatus;
 static f32 _menuTitleTimer;
+static f32 _menuTitleFrameSec;
+static f32 _menuTitleSeFrame;
+static s32 _menuTitleSeCount;
 static s32 _menuTitleType;
+static f32 _menuTitleFrameCount;
+static f32 _menuTitleAutoDemoCount;
+s32 _menuTitleSkipFlag;
+static GSthread* _gsthread_ptr_fight_reg_wzx;
 s16 _menuTitleWork[0x26];
 static s32 _menuTitleWorkPat = 3;
 static s16 _titleCursorTimer;
@@ -278,7 +283,8 @@ void menuTitleCursorAnime(void *p0, void *p1) {
         temp_r0 = _titleCursorTimer % 60;
         M2C_FIELD(p1, s32 *, 0x64) = -1;
         if (temp_r0 < 0x1E) {
-            M2C_FIELD(p1, u8 *, 0x67) -= (u8) (128.0f * (f32) sin((f64) (3.14f * ((f32) temp_r0 / 30.0f))));
+            f32 s = sin(3.14f * (temp_r0 / 30.0f));
+            M2C_FIELD(p1, u8 *, 0x67) -= (u8)(128.0f * s);
         }
     } else {
         M2C_FIELD(p1, u8 *, 0x67) = 0xFFU;
@@ -313,32 +319,21 @@ block_5:
 }
 
 extern "C++" {
-static void _cursorSpriteOnOff(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
-    s16 temp_r0;
-    s32 var_r10;
+static void _cursorSpriteOnOff(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
+    s16 cursor = M2C_FIELD(win, s16 *, 0x9E);
+    s32 ids[5] = { 0x3D, 0x3E, 0x3F, 0x42, 0x43 };
+    s32 i;
 
-    var_r10 = 0;
-    temp_r0 = M2C_FIELD(p1, s16 *, 6);
-    if (temp_r0 != (s32) M2C_FIELD(&jtbl_2298, s32 *, 0)) {
-        var_r10 = 1;
-        if (temp_r0 != (s32) M2C_FIELD(&jtbl_2298, s32 *, 4)) {
-            var_r10 = 2;
-            if (temp_r0 != (s32) M2C_FIELD(&jtbl_2298, s32 *, 8)) {
-                var_r10 = 3;
-                if (temp_r0 != (s32) M2C_FIELD(&jtbl_2298, s32 *, 0xC)) {
-                    var_r10 = 4;
-                    if (temp_r0 != (s32) M2C_FIELD(&jtbl_2298, s32 *, 0x10)) {
-                        var_r10 = 5;
-                    }
-                }
-            }
+    for (i = 0; i < 5; i++) {
+        if (M2C_FIELD(sprite, s16 *, 6) == ids[i]) {
+            break;
         }
     }
-    if (var_r10 == (s16) M2C_FIELD(p0, s16 *, 0x9E)) {
-        winSpriteSetDisp((tagSPRITE_WORK*)(p1), 1U);
-        return;
+    if (i == cursor) {
+        winSpriteSetDisp(sprite, true);
+    } else {
+        winSpriteSetDisp(sprite, false);
     }
-    winSpriteSetDisp((tagSPRITE_WORK*)(p1), 0U);
 }
 }
 
@@ -494,44 +489,22 @@ void fn_800A3A48(u32 id, s16 anim, u8 loop, f32 frame) {
 }
 
 extern "C" {
-void fn_800A3B34(s32 p0, s32 p1, s32 p2) {
-    u32 temp_cr0_eq;
-    u32 *temp_r3;
-
-    temp_r3 = (unsigned long *)(operator new(4U));
-    if (temp_r3 != NULL) {
-        temp_r3 = 0;
+void fn_800A3B34(s32 group, s32 id, bool flag) {
+    WorldMapModel* model = new WorldMapModel;
+    model->SetModel(group, id, flag);
+    if (model != NULL) {
+        delete model;
     }
-    ((WorldMapModel*)((WorldMapModel *) temp_r3))->SetModel((u32) p0, (u32) p1, p2);
-    temp_cr0_eq = temp_r3 == NULL;
-    if (!(temp_cr0_eq == 0) && (temp_cr0_eq == 0)) {
-        return;
-    }
-    if ((u32) *temp_r3 != 0) {
-        ((WorldMapModel*)((WorldMapModel *) temp_r3))->releaseOffscreenData();
-    }
-    operator delete((void*)(temp_r3));
 }
 }
 
 extern "C" {
-void fn_800A3BD4(s32 p0, s32 p1) {
-    u32 temp_cr0_eq;
-    u32 *temp_r3;
-
-    temp_r3 = (unsigned long *)(operator new(4U));
-    if (temp_r3 != NULL) {
-        *temp_r3 = 0;
+void fn_800A3BD4(s32 group, s32 id) {
+    WorldMapModel* model = new WorldMapModel;
+    model->UnloadModel(group, id);
+    if (model != NULL) {
+        delete model;
     }
-    ((WorldMapModel*)((WorldMapModel *) temp_r3))->UnloadModel((u32) p0, (u32) p1);
-    temp_cr0_eq = temp_r3 == NULL;
-    if (!(temp_cr0_eq == 0) && (temp_cr0_eq == 0)) {
-        return;
-    }
-    if ((u32) *temp_r3 != 0) {
-        ((WorldMapModel*)((WorldMapModel *) temp_r3))->releaseOffscreenData();
-    }
-    operator delete((void*)(temp_r3));
 }
 }
 

@@ -1228,6 +1228,12 @@ void menuBattleDiskExit(void) {
     fightFreeResourceID(0x842, 0x18513400);
 }
 
+static inline void tsLoopHelper1309() {
+    for (int i = 0; i < 15; i++) {
+        menuItemBiosSetSelectFlag(0x109, cBattleDisk::mContentsCurIdx[i], 0);
+    }
+}
+
 void menuBattleDiskMain(void) {
     int arg1 = 0;
     int arg2;
@@ -1266,9 +1272,7 @@ void menuBattleDiskMain(void) {
             menuFaceLoad(0, loadPkmFace, &faceOut);
             gBDisk.pokeNum = deckDataVirtualDB_GetPokemonNum(id);
             gBDisk.selectId = id;
-            for (int i = 0; i < 15; i++) {
-                menuItemBiosSetSelectFlag(0x109, cBattleDisk::mContentsCurIdx[i], 0);
-            }
+            tsLoopHelper1309();
             while (menuFaceCheckLoading()) {
                 GSthreadSwitch();
             }

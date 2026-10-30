@@ -562,10 +562,10 @@ extern "C++" {
 
 extern "C++" {
 inline bool peDistortionContainer::updateNode(peNodeView* node, f32 dt) {
+    char* buf = (char*)(&bufA)[cur];
     peDistortionNodeData* n = (peDistortionNodeData*)node;
     peDistortionDef* p = (peDistortionDef*)data;
     peEmitterNode* e = emitter;
-    char* buf = (char*)(&bufA)[cur];
     if (buf == NULL) {
         return false;
     }

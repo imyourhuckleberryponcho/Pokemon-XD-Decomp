@@ -718,7 +718,8 @@ bool GsShapeRender::LoadShapeRender(void* file) {
     }
     polygonCount = 0;
     for (s32 i = 0; i < shapeCount; i++) {
-        polygonCount += shapes[i].GetPolygonCount();
+        u32 i_c = i;
+        polygonCount += shapes[i_c].GetPolygonCount();
     }
     loaded = 1;
     usedMemory = 0;

@@ -384,7 +384,8 @@ void memcardUnlockWaitGBA(u8 flag)
         hi = HSD_Rand();
         _memcardStatusPtr->delay = ((hi << 16) | lo) % 60;
         _memcardStatusPtr->delay++;
-        _memcardStatusPtr->delay += (int)(u16)HSD_Rand() % 60;
+        u16 r = HSD_Rand();
+        _memcardStatusPtr->delay += r % 60;
     } else {
         _memcardStatusPtr->msgType = 0xf;
         _memcardStatusPtr->state = 0x2b;
@@ -1616,7 +1617,7 @@ static u8 _memcard_Decryption(void* data)
     u16* d = (u16*)data;
     u32 sums[10];
     u32 stored[4];
-    int i;
+    u8 i;
     sums[2] = 0;
     sums[0] = 0;
     sums[1] = 0;

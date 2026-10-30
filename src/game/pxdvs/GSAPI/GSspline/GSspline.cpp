@@ -116,10 +116,10 @@ GSspline* GSsplineCreate(s32 interpolation, s32 dataType, u8 count) {
             else {
                 void* data = GSmemAlloc(count * 8);
                 if (data) {
+                    spline->dataAllocation = data;
                     spline->values = data;
                     spline->coefficients = 0;
                     spline->times = (f32*)data + count;
-                    spline->dataAllocation = data;
                     spline->capacity = count;
                     spline->dataType = 0;
                 } else { GSmemFree(spline->allocation); spline = 0; }
@@ -140,10 +140,10 @@ GSspline* GSsplineCreate(s32 interpolation, s32 dataType, u8 count) {
             else {
                 void* data = GSmemAlloc((count + (count + 2) / 3) * 4);
                 if (data) {
+                    spline->dataAllocation = data;
                     spline->values = data;
                     spline->coefficients = 0;
                     spline->times = (f32*)data + count;
-                    spline->dataAllocation = data;
                     spline->capacity = count;
                     spline->dataType = 0;
                 } else { GSmemFree(spline->allocation); spline = 0; }

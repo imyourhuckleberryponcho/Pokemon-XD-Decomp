@@ -242,25 +242,19 @@ void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2);
 void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5);
 }
 
-void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5) {
-    s32 temp_r3_2;
-    s32 temp_r4;
-    u8 *temp_r3;
-    u8 *temp_r4_2;
-
-    GStextureSetWrap((GStexture*)((GStexture *) p1), (u32) p2, (u32) p3);
-    GStextureSetFilter((GStexture*)((GStexture *) p1), p4, p5, 0U);
-    temp_r4 = (p0 * 4) & 0x3FC;
-    temp_r3 = (unsigned char *)(g_current_layer + temp_r4);
-    if (!((u32) M2C_FIELD(temp_r3, u32 *, 0x1740) != (u32)(p1)) || ((u32) M2C_FIELD(temp_r3, u32 *, 0x17F8) != (u32)(p1)) || ((u8) M2C_FIELD(p1, u8 *, 7) != 0)) {
-        return;
+void particleEngineSetupTexture(u8 slot, void* texture, s32 wrapS, s32 wrapT, s32 minFilter, s32 magFilter) {
+    GStexture* tex = (GStexture*)texture;
+    GStextureSetWrap(tex, wrapS, wrapT);
+    GStextureSetFilter(tex, minFilter, magFilter, 0);
+    u8* layer = (u8*)g_current_layer;
+    u8* entry = layer + slot * 4;
+    if (*(GStexture**)(entry + 0x1740) != tex || *(GStexture**)(entry + 0x17F8) != tex || M2C_FIELD(tex, u8 *, 7) != 0) {
+        *(GStexture**)(entry + 0x1740) = tex;
+        M2C_FIELD(layer, u32 *, 0x173C) |= 1 << slot;
+        entry = layer + slot * 4;
+        *(GStexture**)(entry + 0x17F8) = tex;
+        M2C_FIELD(layer, u32 *, 0x17F4) |= 1 << slot;
     }
-    temp_r4_2 = (unsigned char *)(g_current_layer + temp_r4);
-    M2C_FIELD(temp_r4_2, u8 **, 0x1740) = (unsigned char *)(p1);
-    temp_r3_2 = 1 << p0;
-    M2C_FIELD((s32)g_current_layer, s32 *, 0x173C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x173C) | temp_r3_2);
-    M2C_FIELD(temp_r4_2, u8 **, 0x17F8) = (unsigned char *)(p1);
-    M2C_FIELD(g_current_layer, s32 *, 0x17F4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17F4) | temp_r3_2);
 }
 
 }

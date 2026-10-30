@@ -173,23 +173,35 @@ u8 fightEncountCheckZenmetu(void) {
     return 1;
 }
 
-u32 fightEncount(u16 id) {
-    u32 env;
-    FightEncountData* data;
-    u32 bgm;
-    Hero* hero;
-    bool snapshot;
-    FIGHT_ENCOUNT* enc = fightEncountGetStrObj();
-    u8 i;
-    u8 kind;
-    s32 cur;
-    FightEncountWipeData* wipe;
-    u16 floorId;
-    u32 snd;
-    u16 sndId;
-    void* fn;
-    u8 index;
+#pragma dont_inline off
+static inline void _fadeSetWipe(FightEncountWipeData* wipe, void* fn, bool snapshot) {
+    fadeSetEX(9, (void (*)(void))fn, snapshot, 1.0f, fightEncountDataBiosGetWipeEffectTime(wipe));
+}
 
+static inline void _encountWipe(FightEncountData* data) {
+    FightEncountWipeData* wipe = fightEncountWipeDataBiosGetPtr(fightEncountDataBiosGetWipeId(data));
+    u16 sndId;
+    _fadeSetWipe(wipe, fightEncountDataBiosGetWipeFunction(wipe), fightEncountDataBiosGetWipeSnapshotUse(wipe));
+    sndId = fightEncountDataBiosGetWipeEffectSndID(wipe);
+    if (sndId != 0) {
+        GSsndPlay(sndId, 0, 0);
+    }
+}
+
+u32 fightEncount(u16 id) {
+    u16 floorId;
+    FIGHT_ENCOUNT* enc;
+    u32 snd;
+    u8 kind;
+    u32 bgm;
+    u8 index;
+    FightEncountData* data;
+    u32 env;
+    Hero* hero;
+    u8 i;
+    s32 cur;
+
+    enc = fightEncountGetStrObj();
     enc->getField();
     enc->getFightMode();
     enc->getDestroyFlag();
@@ -223,14 +235,7 @@ u32 fightEncount(u16 id) {
             soundOpenPlay(snd, 0, 0xFF);
         }
     } else {
-        wipe = fightEncountWipeDataBiosGetPtr(fightEncountDataBiosGetWipeId(data));
-        snapshot = fightEncountDataBiosGetWipeSnapshotUse(wipe);
-        fn = fightEncountDataBiosGetWipeFunction(wipe);
-        fadeSetEX(9, (void (*)(void))fn, snapshot, 1.0f, fightEncountDataBiosGetWipeEffectTime(wipe));
-        sndId = fightEncountDataBiosGetWipeEffectSndID(wipe);
-        if (sndId != 0) {
-            GSsndPlay(sndId, 0, 0);
-        }
+        _encountWipe(data);
     }
     fightSoundOpenPlayInit();
     fightFreeDeck(id);
@@ -266,6 +271,7 @@ u32 fightEncount(u16 id) {
     fightFloorSetStatus(0, 0, 13, 0, 0);
     return fightGetFightResultId();
 }
+#pragma dont_inline on
 
 u32 fightEncountGetEnvSndDataId(u16 id) {
     return fightFloorDB_GetEnvSndId(fightEncountDataBiosGetFightFloorDataId(fightEncountDataBiosGetPtr(id)));

@@ -128,7 +128,7 @@ u16 menuCB_Battle(BattleWork* work) {
 s32 menuCB_InitBattle(BattleWork* work) {
     void* encounter;
     s32 encId = 0;
-    s8 count;
+    u16 count;
     int baseA;
     u16 baseB;
     u32 bgm;
@@ -140,13 +140,13 @@ s32 menuCB_InitBattle(BattleWork* work) {
         baseA = VS_TRAINER_RANK_SELECT_TBL[work->row][work->col][1];
         baseB = VS_TRAINER_RANK_SELECT_TBL[work->row][work->col][2];
         if (work->col == 0) {
-            work->trainers[0].rank = baseA + (u16)HSD_Rand() % (u16)count;
-            work->trainers[1].rank = baseB + (u16)HSD_Rand() % (u16)count;
+            work->trainers[0].rank = baseA + (u16)HSD_Rand() % count;
+            work->trainers[1].rank = baseB + (u16)HSD_Rand() % count;
         } else {
             u16 b = baseB;
-            work->trainers[0].rank = baseA + (u16)HSD_Rand() % (u16)count;
+            work->trainers[0].rank = baseA + (u16)HSD_Rand() % count;
             do {
-                work->trainers[1].rank = b + (u16)HSD_Rand() % (u16)count;
+                work->trainers[1].rank = b + (u16)HSD_Rand() % count;
             } while (work->trainers[0].rank == work->trainers[1].rank);
             if ((u16)HSD_Rand() & 0x80) {
                 work->trainers[0].rank += 5;

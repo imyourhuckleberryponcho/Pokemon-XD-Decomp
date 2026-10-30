@@ -916,7 +916,7 @@ loop_138:
                 var_r4_3 = !((s32) M2C_FIELD(var_r17, s32 *, 0xC) == 1) ? var_r4_3 : (long *)("before");
                 GSprimWriteStr(60.0f, var_f26_2, "redirected %s: %s %s pass", var_r4_3, &sp8C, var_r6_2);
                 var_f26_2 += 12.0f;
-                var_r17 += 0x10;
+                var_r17 += 4;
                 var_r18 += 1;
             }
         }
@@ -1216,7 +1216,7 @@ void GSgfxLayer::SendFifoToRenderer(_gsgfxLayerFifo* fifo) {
     PassFifo* f = (PassFifo*)fifo;
     u32* start;
     u32 n;
-    u8 empty;
+    bool empty;
     int i;
     RenderHook* hook;
 

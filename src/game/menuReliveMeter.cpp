@@ -80,7 +80,7 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
     if (scale < 50) gap /= 2;
     color.r = color.g = color.b = 0;
     color.a = alpha;
-    rect(layer, x, (u16)y, width*5+(gap*4+2+x), height+y+2, color);
+    rect(layer, x, y, width*5+gap*4+2+x, height+y+2, color);
     color.b = color.r = color.g = 117;
     color.a = alpha;
     s32 i;
@@ -128,7 +128,9 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
         }
     } else {
         color.r = color.g = color.b = 255;
-        f32 a = 150.0f*(1.0f+(f32)sin(6.2831855f*meterCount));
+        f32 a = (f32)sin(6.2831855f*meterCount);
+        a = 1.0f+a;
+        a = 150.0f*a;
         if (a >= max_alpha) a = max_alpha;
         u16 opacity = (u16)a*alpha/255;
         for (i = 0; i < 5; i++) {

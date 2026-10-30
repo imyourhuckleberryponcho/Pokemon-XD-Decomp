@@ -615,6 +615,8 @@ void HSD_PObjAnimAll(HSD_PObj* pobj)
     }
 }
 
+static inline HSD_ShapeSet* loadShapeSet(HSD_ShapeSetDesc* sdesc) { return loadShapeSetDesc(sdesc); }
+
 static s32 PObjLoad(HSD_PObj* pobj, HSD_PObjDesc* desc)
 {
     pobj->next = HSD_PObjLoadDesc(desc->next);
@@ -624,7 +626,7 @@ static s32 PObjLoad(HSD_PObj* pobj, HSD_PObjDesc* desc)
     pobj->display = desc->display;
     switch (pobj_type(pobj)) {
     case POBJ_SHAPEANIM:
-        pobj->u.shape_set = loadShapeSetDesc(desc->u.shape_set);
+        pobj->u.shape_set = loadShapeSet(desc->u.shape_set);
         break;
 
     case POBJ_ENVELOPE:

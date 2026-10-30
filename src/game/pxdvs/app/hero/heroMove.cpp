@@ -627,6 +627,14 @@ u32 heroMoveGetKenObjID() {
 }
 }
 
+static inline void tsLoopHelper2226() {
+    for (int i = 0; i < 4; i++) {
+        if (heroMoveIsMember((HEROMOVE_MEMBER)i)) {
+            heroMoveSetNeckMode(i, heroMoveGetNeckMode(i));
+        }
+    }
+}
+
 static void initFloor() {
     f32 h;
     f32 bestAny;
@@ -688,11 +696,7 @@ static void initFloor() {
         initFootWork((FOOTWORK*)((u8*)m + 0x14));
         m++;
     }
-    for (int i = 0; i < 4; i++) {
-        if (heroMoveIsMember((HEROMOVE_MEMBER)i)) {
-            heroMoveSetNeckMode(i, heroMoveGetNeckMode(i));
-        }
-    }
+    tsLoopHelper2226();
     HeroMove.members[0].unk10 = 300;
     HeroMove.members[1].unk10 = 300;
     HeroMove.members[2].unk10 = 300;

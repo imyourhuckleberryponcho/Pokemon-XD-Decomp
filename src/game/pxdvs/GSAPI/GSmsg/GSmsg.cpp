@@ -3631,7 +3631,7 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
             }
         }
     }
-    out = 0;
+    *out = 0;
     return dst;
 }
 }
