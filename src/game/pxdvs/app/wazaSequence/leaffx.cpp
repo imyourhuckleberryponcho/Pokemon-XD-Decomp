@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -19,7 +20,7 @@ class GSeffect;
 struct GSmaterial;
 struct HSD_Archive;
 struct ModelBank;
-enum Mtx { Mtx_draft_dummy };
+typedef f32 Mtx[3][4];
 struct Quaternion;
 struct Vec;
 struct _GSmodel;
@@ -59,16 +60,24 @@ struct ModelBank {
     u8 _draft[1];
 };
 struct Quaternion {
-    u8 _draft[1];
+    f32 x, y, z, w;
 };
 struct Vec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 struct _GSmodel {
     u8 _draft[1];
 };
 struct leafData {
-    u8 _draft[1];
+    Vec p0;
+    Vec p1;
+    Vec p2;
+    Vec p3;
+    Quaternion q0;
+    Quaternion q1;
+    f32 scale;
+    f32 t;
+    _GSmodel* model;
 };
 class leafEffect : public GSeffect {
 public:
@@ -179,81 +188,64 @@ void leafEffect::_stop() {
 }
 
 extern "C++" {
-bool leafEffect::_update(float p0) {
-    s32 sp24;
-    volatile f32 v18[2];
-    f32 unksp8;
-    u32 sp20;
-    GSmaterial *var_r30;
-    _GSmodel *temp_r31;
-    f32 temp_f2;
-    f32 temp_f30;
-    f32 temp_f3;
-    f32 var_f31;
-    leafData *var_r30_2;
-    u32 var_r29;
-    u32 var_r29_2;
-    u32 var_r31;
-    u8 *temp_r3;
-    f32 temp_f30_2;
-
-    if ((u8 *) M2C_FIELD(this, u8 **, 0x10) == NULL) {
+bool leafEffect::_update(float dt) {
+    if (model == NULL) {
         return 0;
     }
-    M2C_FIELD(this, f32 *, 0x44) = (f32) (M2C_FIELD(this, f32 *, 0x44) + p0);
-    if (M2C_FIELD(this, f32 *, 0x44) >= M2C_FIELD(this, f32 *, 0x48)) {
+    unk44 = unk44 + dt;
+    if (unk44 >= unk48) {
         return 0;
     }
-    var_f31 = M2C_FIELD(this, f32 *, 0x34) * (f32) (u32) (p0 * (f32) GSgfxVideoGetVsyncRate());
-    temp_f3 = M2C_FIELD(this, f32 *, 0x44);
-    temp_f2 = M2C_FIELD(this, f32 *, 0x40);
-    if (temp_f3 < temp_f2) {
-        var_f31 *= 2.0f - (temp_f3 / temp_f2);
+    f32 step = params[7] * (f32)(u32)(dt * (f32)GSgfxVideoGetVsyncRate());
+    f32 t = unk44;
+    f32 start = unk40;
+    if (t < start) {
+        step *= 2.0f - (t / start);
     } else {
-        temp_r3 = M2C_FIELD(this, u8 **, 0x10);
-        temp_f30 = 1.0f - ((temp_f3 - temp_f2) / (M2C_FIELD(this, f32 *, 0x48) - temp_f2));
-        if (temp_r3 != NULL) {
-            var_r29 = M2C_FIELD(temp_r3, u32 *, 0x5E4);
+        f32 alpha = 1.0f - ((t - start) / (unk48 - start));
+        u32 i;
+        GSmaterial* mat;
+        u32 n;
+        if (model != NULL) {
+            n = M2C_FIELD(model, u32*, 0x5E4);
         } else {
-            var_r29 = 0U;
+            n = 0U;
         }
-        if (temp_r3 != NULL) {
-            var_r30 = M2C_FIELD(temp_r3, GSmaterial **, 0x5E0);
+        if (model != NULL) {
+            mat = M2C_FIELD(model, GSmaterial**, 0x5E0);
         } else {
-            var_r30 = NULL;
+            mat = NULL;
         }
-        var_r31 = 0U;
-        while (var_r31 < var_r29) {
-            GSmaterialSetAlpha((GSmaterial*)(var_r30), temp_f30);
-            var_r31 += 1;
-            var_r30 += 0x34;
+        for (i = 0; i < n; i++, mat = (GSmaterial*)((u8*)mat + 0x34)) {
+            GSmaterialSetAlpha(mat, alpha);
         }
     }
-    var_r30_2 = M2C_FIELD(this, leafData **, 0xC);
-    var_r29_2 = 0U;
-    while (var_r29_2 < (u32) M2C_FIELD(this, u32 *, 0x4C)) {
-        if ((_GSmodel *) M2C_FIELD(var_r30_2, _GSmodel **, 0x58) != NULL) {
-            M2C_FIELD(var_r30_2, f32 *, 0x54) = (f32) (M2C_FIELD(var_r30_2, f32 *, 0x54) + var_f31);
-            if (M2C_FIELD(var_r30_2, f32 *, 0x54) >= 1.0f) {
-                ((leafEffect*)(this))->UpdateLeafData((leafData*)(var_r30_2));
+    u32 j;
+    leafData* d = (leafData*)unkC;
+    for (j = 0; j < (u32)unk4C; j++, d++) {
+        if (d->model != NULL) {
+            d->t = d->t + step;
+            if (d->t >= 1.0f) {
+                UpdateLeafData(d);
             }
-            GSbezierCalculateVector((Vec*)(v18), (GSbezier*)((GSbezier *) var_r30_2), M2C_FIELD(var_r30_2, f32 *, 0x54));
-            if (v18[1] < 0.0f) {
-                GSmodelSetVisibility((_GSmodel*)(M2C_FIELD(var_r30_2, _GSmodel **, 0x58)), 0U);
-                GSmodelFree((_GSmodel*)(M2C_FIELD(var_r30_2, _GSmodel **, 0x58)));
-                M2C_FIELD(var_r30_2, _GSmodel **, 0x58) = NULL;
+            Vec pos;
+            GSbezierCalculateVector(&pos, (GSbezier*)d, d->t);
+            if (pos.y < 0.0f) {
+                GSmodelSetVisibility(d->model, 0U);
+                GSmodelFree(d->model);
+                d->model = NULL;
             } else {
-                temp_r31 = M2C_FIELD(var_r30_2, _GSmodel **, 0x58);
-                C_QUATSlerp((const Quaternion*)(((u8*)(var_r30_2) + 0x30)), (const Quaternion*)(((u8*)(var_r30_2) + 0x40)), (Quaternion*)(&unksp8), M2C_FIELD(var_r30_2, f32 *, 0x54));
-                PSMTXQuat((Mtx)((s32) &sp24), (const Quaternion *)((const register Quaternion*)(&unksp8)));
-                PSMTXScaleApply((const Mtx)((s32) &sp24), (Mtx)((s32) &sp24), (float)(temp_f30_2), (float)(temp_f30_2), (float)(temp_f30_2));
-                PSMTXTransApply((const Mtx)((s32) &sp24), (Mtx)((s32) &sp24), (float)(v18[0]), (float)(v18[1]), (float)(sp20));
-                GSmodelSetMatrix((_GSmodel*)(temp_r31), (Mtx)((s32) &sp24));
-                temp_f30_2 = M2C_FIELD(var_r30_2, f32 *, 0x50);
+                _GSmodel* m = d->model;
+                f32 scale = d->scale;
+                Quaternion q;
+                Mtx mtx;
+                C_QUATSlerp(&d->q0, &d->q1, &q, d->t);
+                PSMTXQuat(mtx, &q);
+                PSMTXScaleApply(mtx, mtx, scale, scale, scale);
+                PSMTXTransApply(mtx, mtx, pos.x, pos.y, pos.z);
+                GSmodelSetMatrix(m, mtx);
             }
         }
-        var_r29_2 += 1;
-        var_r30_2 += 0x5C;
     }
     return 1;
 }
@@ -334,211 +326,171 @@ leafEffect::leafEffect(unsigned char** p0, float p1) {
 }
 
 extern "C++" {
-void leafEffect::UpdateLeafData(leafData* p0) {
-    volatile f32 sp10;
-    volatile f32 spC;
-    f32 sp8;
-    Vec *temp_r31;
-    Vec *temp_r31_2;
-    Vec *temp_r31_3;
-    f32 temp_f1;
-    f32 temp_f31_3;
-    f32 temp_f31_4;
-    f32 temp_f30_2;
-    f32 temp_f29_2;
-    f32 temp_f29_3;
-    f32 temp_f29;
-    f32 temp_f28_2;
-    f32 temp_f28_3;
-    f32 temp_f28;
-    f32 temp_f30;
-    f32 temp_f30_3;
-    f32 temp_f30_4;
-    f32 temp_f30_5;
-    f32 temp_f31;
-    f32 temp_f31_2;
-    f32 temp_f27;
-    f32 temp_f27_2;
+void leafEffect::UpdateLeafData(leafData* leaf) {
+    Vec axis;
+    Vec* v;
 
-    M2C_FIELD(p0, f32 *, 0x54) = (f32) (M2C_FIELD(p0, f32 *, 0x54) - 1.0f);
-    M2C_FIELD(p0, f32 *, 0x30) = (f32) M2C_FIELD((s32)p0, f32 *, 0x40);
-    M2C_FIELD(p0, f32 *, 0x34) = (f32) M2C_FIELD(p0, f32 *, 0x44);
-    M2C_FIELD(p0, f32 *, 0x38) = (f32) M2C_FIELD(p0, f32 *, 0x48);
-    M2C_FIELD(p0, f32 *, 0x3C) = (f32) M2C_FIELD(p0, f32 *, 0x4C);
-    temp_f30 = 6.2831855f * HSD_Randf();
-    temp_f31 = 3.1415927f * HSD_Randf();
-    temp_f29 = (f32) sin((f64) temp_f31);
-    temp_f28 = (f32) sin((f64) temp_f30);
-    temp_f31_2 = (f32) cos((f64) temp_f31);
-    temp_f1 = (f32) cos((f64) temp_f30);
-    spC = temp_f31_2;
-    sp8 = temp_f29 * temp_f1;
-    sp10 = temp_f29 * temp_f28;
-    C_QUATRotAxisRad((Quaternion*)(((u8*)(p0) + 0x40)), (const Vec*)((Vec *) &sp8), 6.2831855f * HSD_Randf());
-    temp_r31 = (Vec *)(((u8*)((u16)p0) + 0x18));
-    M2C_FIELD(p0, f32 *, 0) = (f32) M2C_FIELD(p0, f32 *, 0xC);
-    M2C_FIELD(p0, f32 *, 4) = (f32) M2C_FIELD(p0, f32 *, 0x10);
-    M2C_FIELD(p0, f32 *, 8) = (f32) M2C_FIELD(p0, f32 *, 0x14);
-    M2C_FIELD(p0, f32 *, 0x18) = (f32) M2C_FIELD((s32)p0, f32 *, 0x24);
-    M2C_FIELD(p0, f32 *, 0x1C) = (f32) M2C_FIELD(p0, f32 *, 0x28);
-    M2C_FIELD(p0, f32 *, 0x20) = (f32) M2C_FIELD(p0, f32 *, 0x2C);
-    PSVECSubtract((const register Vec*)(temp_r31), (const register Vec*)(((u8*)((u16)p0) + 0xC)), (register Vec*)(temp_r31));
-    PSVECNormalize((const register Vec*)(temp_r31), (register Vec*)(temp_r31));
-    PSVECScale((const register Vec*)(temp_r31), (register Vec*)(temp_r31), -(((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28)) * M2C_FIELD(p0, f32 *, 0x50)));
-    PSVECAdd((const register Vec*)(temp_r31), (const register Vec*)((Vec *) p0), (register Vec*)(temp_r31));
-    temp_r31_2 = (Vec *)(((u8*)(p0) + 0xC));
-    temp_f27 = 6.2831855f * HSD_Randf();
-    temp_f30_2 = 3.1415927f * HSD_Randf();
-    temp_f28_2 = (f32) sin((f64) temp_f30_2);
-    temp_f31_3 = ((M2C_FIELD(this, f32 *, 0x24) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x20));
-    temp_f31_3 *= M2C_FIELD(p0, f32 *, 0x50);
-    temp_f29_2 = (f32) sin((f64) temp_f27);
-    temp_f30_3 = (f32) cos((f64) temp_f30_2);
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) (temp_f28_2 * (f32) cos((f64) temp_f27));
-    M2C_FIELD(temp_r31_2, f32 *, 4) = temp_f30_3;
-    M2C_FIELD(temp_r31_2, f32 *, 8) = (f32) (temp_f28_2 * temp_f29_2);
-    PSVECScale((const register Vec*)(temp_r31_2), (register Vec*)(temp_r31_2), temp_f31_3);
-    M2C_FIELD(temp_r31_2, f32 *, 4) = (f32) (M2C_FIELD(temp_r31_2, f32 *, 4) + M2C_FIELD(this, f32 *, 0x30));
-    PSVECAdd((const register Vec*)(temp_r31_2), (const register Vec*)((Vec *) p0), (register Vec*)(temp_r31_2));
-    temp_r31_3 = (Vec *)(((u8*)(p0) + 0x24));
-    temp_f27_2 = 6.2831855f * HSD_Randf();
-    temp_f30_4 = 3.1415927f * HSD_Randf();
-    temp_f28_3 = (f32) sin((f64) temp_f30_4);
-    temp_f31_4 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28));
-    temp_f31_4 *= M2C_FIELD(p0, f32 *, 0x50);
-    temp_f29_3 = (f32) sin((f64) temp_f27_2);
-    temp_f30_5 = (f32) cos((f64) temp_f30_4);
-    M2C_FIELD(p0, f32 *, 0x24) = (f32) (temp_f28_3 * (f32) cos((f64) temp_f27_2));
-    M2C_FIELD(temp_r31_3, f32 *, 4) = temp_f30_5;
-    M2C_FIELD(temp_r31_3, f32 *, 8) = (f32) (temp_f28_3 * temp_f29_3);
-    PSVECScale((const register Vec*)(temp_r31_3), (register Vec*)(temp_r31_3), temp_f31_4);
-    PSVECAdd((const register Vec*)(temp_r31_3), (const register Vec*)(((u8*)(p0) + 0xC)), (register Vec*)(temp_r31_3));
+    leaf->t -= 1.0f;
+    leaf->q0 = leaf->q1;
+    {
+        f32 theta = 6.2831855f * HSD_Randf();
+        f32 phi = 3.1415927f * HSD_Randf();
+        f32 sinPhi = sin(phi);
+        f32 sinTheta = sin(theta);
+        f32 cosPhi = cos(phi);
+        f32 cosTheta = cos(theta);
+        axis.y = cosPhi;
+        axis.x = sinPhi * cosTheta;
+        axis.z = sinPhi * sinTheta;
+        C_QUATRotAxisRad(&leaf->q1, &axis, 6.2831855f * HSD_Randf());
+    }
+
+    v = &leaf->p2;
+    leaf->p0 = leaf->p1;
+    leaf->p2 = leaf->p3;
+    PSVECSubtract(v, &leaf->p1, v);
+    PSVECNormalize(v, v);
+    f32 len = params[5] * (2.0f * HSD_Randf() - 1.0f) + params[4];
+    len *= leaf->scale;
+    PSVECScale(v, v, -len);
+    PSVECAdd(v, &leaf->p0, v);
+
+    v = &leaf->p1;
+    {
+        f32 theta = 6.2831855f * HSD_Randf();
+        f32 phi = 3.1415927f * HSD_Randf();
+        f32 sinPhi = sin(phi);
+        f32 len = params[3] * (2.0f * HSD_Randf() - 1.0f) + params[2];
+        len *= leaf->scale;
+        f32 sinTheta = sin(theta);
+        f32 cosPhi = cos(phi);
+        v->x = sinPhi * (f32)cos(theta);
+        v->y = cosPhi;
+        v->z = sinPhi * sinTheta;
+        PSVECScale(v, v, len);
+        v->y += params[6];
+        PSVECAdd(v, &leaf->p0, v);
+    }
+
+    v = &leaf->p3;
+    {
+        f32 theta = 6.2831855f * HSD_Randf();
+        f32 phi = 3.1415927f * HSD_Randf();
+        f32 sinPhi = sin(phi);
+        f32 len = params[5] * (2.0f * HSD_Randf() - 1.0f) + params[4];
+        len *= leaf->scale;
+        f32 sinTheta = sin(theta);
+        f32 cosPhi = cos(phi);
+        v->x = sinPhi * (f32)cos(theta);
+        v->y = cosPhi;
+        v->z = sinPhi * sinTheta;
+        PSVECScale(v, v, len);
+        PSVECAdd(v, &leaf->p1, v);
+    }
 }
 }
 
 extern "C++" {
-s32 leafEffect::GenerateLeafData(leafData* p0) {
-    volatile s32 sp20;
-    volatile f32 sp1C;
-    volatile f32 sp18;
-    f32 sp14;
-    volatile f32 sp10;
-    volatile f32 spC;
-    f32 sp8;
-    Vec *temp_r31;
-    Vec *temp_r31_2;
-    Vec *temp_r31_3;
-    _GSmodel *temp_r3;
-    _GSmodel *temp_ret;
-    f32 temp_f1;
-    f32 temp_f1_2;
-    f32 temp_f1_3;
-    f32 temp_f27_2;
-    f32 temp_f28;
-    f32 temp_f28_2;
-    f32 temp_f28_3;
-    f32 temp_f28_4;
-    f32 temp_f28_5;
-    f32 temp_f29;
-    f32 temp_f29_2;
-    f32 temp_f29_3;
-    f32 temp_f29_4;
-    f32 temp_f29_5;
-    f32 temp_f30;
-    f32 temp_f30_2;
-    f32 temp_f30_3;
-    f32 temp_f30_4;
-    f32 temp_f30_5;
-    f32 temp_f31_4;
-    f32 temp_f30_7;
-    f32 temp_f30_8;
-    f32 temp_f30_9;
-    f32 temp_f31;
-    f32 temp_f31_2;
-    f32 temp_f31_3;
-    f32 temp_f27;
-    f32 temp_f31_6;
-    f32 temp_f27_3;
-    f32 temp_f30_6;
-    f32 temp_f31_7;
+s32 leafEffect::GenerateLeafData(leafData* leaf) {
+    Mtx m;
+    Vec axisA;
+    Vec axisB;
+    Vec* v;
+    _GSmodel* clone;
+    f32 scale;
 
-    temp_ret = GSmodelClone((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x10)));
-    M2C_FIELD(p0, _GSmodel **, 0x58) = temp_ret;
-    temp_r3 = M2C_FIELD(p0, _GSmodel **, 0x58);
-    if (temp_r3 == NULL) {
-        GSlogWrite((const char*)("_leaffxGenerateLeafData: Could not create leaf clone model.\n"), (u32) (u64) temp_ret, M2C_BITWISE(f32, (s32)temp_ret));
+    leaf->model = GSmodelClone(model);
+    clone = leaf->model;
+    if (clone == NULL) {
+        GSlogWrite("_leaffxGenerateLeafData: Could not create leaf clone model.\n");
         return 0;
     }
-    GSmodelSetVisibility((_GSmodel*)(temp_r3), 1U);
-    M2C_FIELD(p0, f32 *, 0x50) = (f32) ((M2C_FIELD(this, f32 *, 0x1C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x18));
-    M2C_FIELD(p0, f32 *, 0x50) = (f32) (M2C_FIELD(p0, f32 *, 0x50) * M2C_FIELD(this, f32 *, 0x14));
-    M2C_FIELD(p0, f32 *, 0x54) = 0.0f;
-    temp_f30 = 6.2831855f * HSD_Randf();
-    temp_f31 = 3.1415927f * HSD_Randf();
-    temp_f29 = (f32) sin((f64) temp_f31);
-    temp_f28 = (f32) sin((f64) temp_f30);
-    temp_f31_2 = (f32) cos((f64) temp_f31);
-    temp_f1 = (f32) cos((f64) temp_f30);
-    sp18 = temp_f31_2;
-    sp14 = temp_f29 * temp_f1;
-    sp1C = temp_f29 * temp_f28;
-    C_QUATRotAxisRad((Quaternion*)(((u8*)((s32)p0) + 0x30)), (const Vec*)((Vec *) &sp14), 6.2831855f * HSD_Randf());
-    temp_f31_3 = 6.2831855f * HSD_Randf();
-    temp_f30_2 = 3.1415927f * HSD_Randf();
-    temp_f28_2 = (f32) sin((f64) temp_f30_2);
-    temp_f29_2 = (f32) sin((f64) temp_f31_3);
-    temp_f30_3 = (f32) cos((f64) temp_f30_2);
-    temp_f1_2 = (f32) cos((f64) temp_f31_3);
-    spC = temp_f30_3;
-    sp8 = temp_f28_2 * temp_f1_2;
-    sp10 = temp_f28_2 * temp_f29_2;
-    C_QUATRotAxisRad((Quaternion*)(((u8*)(p0) + 0x40)), (const Vec*)((Vec *) &sp8), 6.2831855f * HSD_Randf());
-    temp_r31 = (Vec *)(((u8*)(p0) + 0x18));
-    M2C_FIELD(p0, f32 *, 0) = (f32) M2C_FIELD(this, f32 *, 0x54);
-    M2C_FIELD(p0, f32 *, 4) = (f32) M2C_FIELD(this, f32 *, 0x58);
-    M2C_FIELD(p0, f32 *, 8) = (f32) M2C_FIELD(this, f32 *, 0x5C);
-    temp_f31_4 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28));
-    temp_f31_4 *= M2C_FIELD(p0, f32 *, 0x50);
-    temp_f27 = 6.2831855f * HSD_Randf();
-    temp_f30_4 = 3.1415927f * HSD_Randf();
-    temp_f28_3 = (f32) sin((f64) temp_f30_4);
-    temp_f29_3 = (f32) sin((f64) temp_f27);
-    temp_f30_5 = (f32) cos((f64) temp_f30_4);
-    M2C_FIELD(p0, f32 *, 0x18) = (f32) (temp_f28_3 * (f32) cos((f64) temp_f27));
-    M2C_FIELD(temp_r31, f32 *, 4) = temp_f30_5;
-    M2C_FIELD(temp_r31, f32 *, 8) = (f32) (temp_f28_3 * temp_f29_3);
-    PSVECScale((const register Vec*)(temp_r31), (register Vec*)(temp_r31), temp_f31_4);
-    PSVECAdd((const register Vec*)(temp_r31), (const register Vec*)(this + 0x54), (register Vec*)(temp_r31));
-    temp_r31_2 = (Vec *)(((u8*)(p0) + 0xC));
-    temp_f27_2 = 6.2831855f * HSD_Randf();
-    temp_f30_6 = 1.5707964f * HSD_Randf();
-    temp_f28_4 = (f32) sin((f64) temp_f30_6);
-    temp_f31_6 = ((M2C_FIELD(this, f32 *, 0x24) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x20)) * ((M2C_FIELD(this, f32 *, 0x3C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x38)) * M2C_FIELD(p0, f32 *, 0x50);
-    temp_f29_4 = (f32) sin((f64) temp_f27_2);
-    temp_f30_7 = (f32) cos((f64) temp_f30_6);
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) (temp_f28_4 * (f32) cos((f64) temp_f27_2));
-    M2C_FIELD(temp_r31_2, f32 *, 4) = temp_f30_7;
-    M2C_FIELD(temp_r31_2, f32 *, 8) = (f32) (temp_f28_4 * temp_f29_4);
-    PSVECScale((const register Vec*)(temp_r31_2), (register Vec*)(temp_r31_2), temp_f31_6);
-    PSVECAdd((const register Vec*)(temp_r31_2), (const register Vec*)(this + 0x54), (register Vec*)(temp_r31_2));
-    temp_r31_3 = (Vec *)(((u8*)(p0) + 0x24));
-    temp_f27_3 = 6.2831855f * HSD_Randf();
-    temp_f30_8 = 3.1415927f * HSD_Randf();
-    temp_f28_5 = (f32) sin((f64) temp_f30_8);
-    temp_f31_7 = ((M2C_FIELD(this, f32 *, 0x2C) * ((2.0f * HSD_Randf()) - 1.0f)) + M2C_FIELD(this, f32 *, 0x28));
-    temp_f31_7 *= M2C_FIELD(p0, f32 *, 0x50);
-    temp_f29_5 = (f32) sin((f64) temp_f27_3);
-    temp_f30_9 = (f32) cos((f64) temp_f30_8);
-    M2C_FIELD(p0, f32 *, 0x24) = (f32) (temp_f28_5 * (f32) cos((f64) temp_f27_3));
-    M2C_FIELD(temp_r31_3, f32 *, 4) = temp_f30_9;
-    M2C_FIELD(temp_r31_3, f32 *, 8) = (f32) (temp_f28_5 * temp_f29_5);
-    PSVECScale((const register Vec*)(temp_r31_3), (register Vec*)(temp_r31_3), temp_f31_7);
-    PSVECAdd((const register Vec*)(temp_r31_3), (const register Vec*)(((u8*)((s32)p0) + 0xC)), (register Vec*)(temp_r31_3));
-    PSMTXQuat((Mtx)((s32) &sp20), (const Quaternion *)((const register Quaternion*)(((u8*)(p0) + 0x30))));
-    temp_f1_3 = M2C_FIELD(p0, f32 *, 0x50);
-    PSMTXScaleApply((const Mtx)((s32) &sp20), (Mtx)((s32) &sp20), (float)(temp_f1_3), (float)(temp_f1_3), (float)(temp_f1_3));
-    PSMTXTransApply((const Mtx)((s32) &sp20), (Mtx)((s32) &sp20), (float)(M2C_FIELD(this, f32 *, 0x54)), (float)(M2C_FIELD(this, f32 *, 0x58)), (float)(M2C_FIELD(this, f32 *, 0x5C)));
-    GSmodelSetMatrix((_GSmodel*)(M2C_FIELD(p0, _GSmodel **, 0x58)), (Mtx)((s32) &sp20));
+    GSmodelSetVisibility(clone, 1U);
+    leaf->scale = params[1] * (2.0f * HSD_Randf() - 1.0f) + params[0];
+    leaf->scale = leaf->scale * unk14;
+    leaf->t = 0.0f;
+
+    {
+        f32 theta = 6.2831855f * HSD_Randf();
+        f32 phi = 3.1415927f * HSD_Randf();
+        f32 sinPhi = sin(phi);
+        f32 sinTheta = sin(theta);
+        f32 cosPhi = cos(phi);
+        f32 cosTheta = cos(theta);
+        axisA.y = cosPhi;
+        axisA.x = sinPhi * cosTheta;
+        axisA.z = sinPhi * sinTheta;
+        C_QUATRotAxisRad(&leaf->q0, &axisA, 6.2831855f * HSD_Randf());
+    }
+
+    {
+        f32 theta = 6.2831855f * HSD_Randf();
+        f32 phi = 3.1415927f * HSD_Randf();
+        f32 sinPhi = sin(phi);
+        f32 sinTheta = sin(theta);
+        f32 cosPhi = cos(phi);
+        f32 cosTheta = cos(theta);
+        axisB.y = cosPhi;
+        axisB.x = sinPhi * cosTheta;
+        axisB.z = sinPhi * sinTheta;
+        C_QUATRotAxisRad(&leaf->q1, &axisB, 6.2831855f * HSD_Randf());
+    }
+
+    v = &leaf->p2;
+    leaf->p0.x = unk54;
+    leaf->p0.y = unk58;
+    leaf->p0.z = unk5C;
+    f32 len = params[5] * (2.0f * HSD_Randf() - 1.0f) + params[4];
+    len *= leaf->scale;
+    {
+        f32 theta = 6.2831855f * HSD_Randf();
+        f32 phi = 3.1415927f * HSD_Randf();
+        f32 sinPhi = sin(phi);
+        f32 sinTheta = sin(theta);
+        f32 cosPhi = cos(phi);
+        v->x = sinPhi * (f32)cos(theta);
+        v->y = cosPhi;
+        v->z = sinPhi * sinTheta;
+        PSVECScale(v, v, len);
+        PSVECAdd(v, (Vec*)&unk54, v);
+    }
+
+    v = &leaf->p1;
+    {
+        f32 theta = 6.2831855f * HSD_Randf();
+        f32 phi = 1.5707964f * HSD_Randf();
+        f32 sinPhi = sin(phi);
+        f32 len = leaf->scale * (params[9] * (2.0f * HSD_Randf() - 1.0f) + params[8]) * (params[3] * (2.0f * HSD_Randf() - 1.0f) + params[2]);
+        f32 sinTheta = sin(theta);
+        f32 cosPhi = cos(phi);
+        v->x = sinPhi * (f32)cos(theta);
+        v->y = cosPhi;
+        v->z = sinPhi * sinTheta;
+        PSVECScale(v, v, len);
+        PSVECAdd(v, (Vec*)&unk54, v);
+    }
+
+    v = &leaf->p3;
+    {
+        f32 theta = 6.2831855f * HSD_Randf();
+        f32 phi = 3.1415927f * HSD_Randf();
+        f32 sinPhi = sin(phi);
+        f32 len = params[5] * (2.0f * HSD_Randf() - 1.0f) + params[4];
+        len *= leaf->scale;
+        f32 sinTheta = sin(theta);
+        f32 cosPhi = cos(phi);
+        v->x = sinPhi * (f32)cos(theta);
+        v->y = cosPhi;
+        v->z = sinPhi * sinTheta;
+        PSVECScale(v, v, len);
+        PSVECAdd(v, &leaf->p1, v);
+    }
+
+    PSMTXQuat(m, &leaf->q0);
+    scale = leaf->scale;
+    PSMTXScaleApply(m, m, scale, scale, scale);
+    PSMTXTransApply(m, m, unk54, unk58, unk5C);
+    GSmodelSetMatrix(leaf->model, m);
     return 1;
 }
 }

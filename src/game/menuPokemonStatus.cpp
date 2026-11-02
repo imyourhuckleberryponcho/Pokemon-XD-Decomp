@@ -1019,8 +1019,8 @@ void menuPokemonStatusDrawTitle(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         break;
     }
     case 0x805: {
-        s32 id = menuPokemonGetJoutaiSpriteID(pk, 1);
-        windowDrawSprite(0, 0, win, id, 0, winSpriteGetLayerID(win, sprite));
+        name = menuPokemonGetJoutaiSpriteID(pk, 1);
+        windowDrawSprite(0, 0, win, name, 0, winSpriteGetLayerID(win, sprite));
         break;
     }
     case 0x25D: {
@@ -1137,7 +1137,7 @@ bool _menuPokemonStatusCheckDanny(Pokemon* pokemon) {
 extern "C" {
 void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     u16 id;
-    u16 place;
+    u8 place;
     s32 x;
     MenuStatus* st = &_menuStatus;
     Pokemon* pk = st->pokemon;
@@ -1724,7 +1724,7 @@ void menuPokemonStatusDrawWaza(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         }
         waza = _menuPokemonStatusGetWazaDataID(pk, idx);
         half = (sprite->w - (s16)(GSmsgGetRect(0x3AE8) >> 16)) / 2;
-        GSmsgPrint2(winSpriteGetLayerID(win, sprite), (u16)half, 0, color, 0x3AE8);
+        GSmsgPrint2(winSpriteGetLayerID(win, sprite), half, 0, color, 0x3AE8);
         switch (NotDarkWaza(waza)) {
         case 0:
             GSmsgPrintRight(winSpriteGetLayerID(win, sprite), 0, 0, half, sprite->h, color, 0x3AF5);

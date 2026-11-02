@@ -771,7 +771,7 @@ inline void psDispSubAPPSRTPoint(HSD_Particle* pp)
         }
     } else {
         if (prevPointSize != (s32) w) {
-            s32 prevPointSize = w;
+            prevPointSize = w;
             GXSetPointSize((u16)w, GX_TO_ONE);
         }
         if (pp->kind & DispTexture) {

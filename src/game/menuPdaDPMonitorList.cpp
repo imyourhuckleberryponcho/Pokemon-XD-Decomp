@@ -174,7 +174,7 @@ void spriteSetScissor(s32, s32, s32, s32, s32);
 u8 winSeqCheckMove(void*);
 void winSeqSetMenu(void*, s32);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
-void windowDrawSprite2(s16, s32, s32, s32, u32, tagWINDOW_WORK*, s32, s32, s32);
+void windowDrawSprite2(s16, s32, s32, s32, u32, tagWINDOW_WORK*, u16, s32, s32);
 WindowKeyInfo* windowGetKeyInfo(void);
 u16 windowGetKeyRepeat(void);
 }
@@ -449,9 +449,9 @@ void menuPdaDPMList::ScrollBar(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
 void menuPdaDPMList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     CURSOR cursor = _getCursor();
     int n = count;
-    MenuItem* placeItem = menuItemBiosGetPtr(0x74, 0x49);
     MenuItem* base = menuItemBiosGetPtr(0x74, 0x4B);
     MenuItem* meter = menuItemBiosGetPtr(0x74, 0x4A);
+    MenuItem* placeItem = menuItemBiosGetPtr(0x74, 0x49);
     MenuItem* ball = menuItemBiosGetPtr(0x74, 0x45);
     MenuItem* area = menuItemBiosGetPtr(0x74, 0x48);
     MenuItem* self = menuItemBiosGetPtr(0x74, sprite->id);
@@ -616,7 +616,6 @@ s32 menuPdaDPMList::SortPlace() {
         SortSetTemp(temp2, temp, n);
     }
     for (int fl = 0; fl < 9; fl++) {
-        s32 n;
         for (i = 0, n = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
@@ -634,8 +633,6 @@ s32 menuPdaDPMList::SortPlace() {
         }
     }
     for (int fl = 0; fl < 8; fl++) {
-        int i;
-        s32 n;
         for (i = 0, n = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
@@ -653,8 +650,8 @@ s32 menuPdaDPMList::SortPlace() {
         }
     }
     {
-        s32 n = 0;
-        for (int i = 0; i < total; i++) {
+        n = 0;
+        for (i = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
             dark->getPlace(place, floor);
@@ -672,8 +669,8 @@ s32 menuPdaDPMList::SortPlace() {
         }
     }
     {
-        s32 n = 0;
-        for (int i = 0; i < total; i++) {
+        n = 0;
+        for (i = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
             dark->getPlace(place, floor);
@@ -690,15 +687,15 @@ s32 menuPdaDPMList::SortPlace() {
         }
     }
     {
-        s32 n = 0;
-        for (int i = 0; i < total; i++) {
+        n = 0;
+        for (i = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
             if (!dark->isSnach()) {
                 u16 pid = dark->getPokemonID();
                 temp[n].key = dark->getSnatchIndex();
-                temp[n].darkID = did;
                 temp[n].pokemonID = pid;
+                temp[n].darkID = did;
                 n++;
             }
         }
@@ -874,10 +871,9 @@ void menuPdaDPMList::Cursor(tagWINDOW_WORK* window) {
         }
         s16 p = c.pos;
         if (p < 0) {
+            c.top += p;
             c.pos = 0;
-            s32 t1 = c.top + p;
-            c.top = t1;
-            if (t1 < 0) {
+            if (c.top < 0) {
                 c.top = 0;
                 c.pos = 0;
             }

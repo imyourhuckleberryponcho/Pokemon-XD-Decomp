@@ -412,7 +412,29 @@ u8 GSgfxVideoGetVsyncRate() {
 }
 
 bool GSgfxVideoSetXFBReady(void* xfb) {
-    return setXFBReadyImpl(xfb);
+    GSgfxXFB* e;
+    s32 level = OSDisableInterrupts();
+    if (_videoState.xfbCount == 1) {
+        e = _videoState.cur;
+    } else {
+        e = findXFBByBuf(xfb);
+        if (e == 0) {
+            OSRestoreInterrupts(level);
+            return 0;
+        }
+        if (_videoState.xfbCount == 3) {
+            GSgfxXFB* old = findXFBByState(2);
+            if (old != 0) {
+                old->state = 3;
+            }
+        }
+        OSTime now = OSGetTime();
+        _videoState.renderTime = (f32)(now - _videoState.lastTime) / (f32)(OS_TIMER_CLOCK / _videoState.vsyncRate);
+        _videoState.lastTime = now;
+    }
+    e->state = 2;
+    OSRestoreInterrupts(level);
+    return 1;
 }
 
 void* GSgfxVideoFindFreeXFB(bool wait) {

@@ -15,3 +15,34 @@ block_relocations:
 - source: .text:0x8018F10C
 - source: .text:0x8018F184
 - source: .text:0x8018F194
+
+# Font/message blobs embedded in pokecolo.cpp (function statics); extracted at build time, not stored in the repo.
+extract:
+- symbol: resident_fnt$2161
+  binary: pokecolo/resident_fnt.bin
+  header: pokecolo/resident_fnt.inc
+  header_type: raw
+- symbol: common_fnt$2162
+  binary: pokecolo/common_fnt.bin
+  header: pokecolo/common_fnt.inc
+  header_type: raw
+- symbol: common_tbl$2164
+  binary: pokecolo/common_tbl.bin
+  header: pokecolo/common_tbl.inc
+  header_type: raw
+- symbol: system_error_tbl$2166
+  binary: pokecolo/system_error_tbl.bin
+  header: pokecolo/system_error_tbl.inc
+  header_type: raw
+- symbol: lbl_8038FBE0
+  binary: pokecolo/debug_menu_tbl.bin
+  header: pokecolo/debug_menu_tbl.inc
+  header_type: raw
+- symbol: debug_menu_fnt$2163
+  binary: pokecolo/debug_menu_fnt.bin
+  header: pokecolo/debug_menu_fnt.inc
+  header_type: raw
+- symbol: system_error_fnt$2165
+  binary: pokecolo/system_error_fnt.bin
+  header: pokecolo/system_error_fnt.inc
+  header_type: raw

@@ -62,12 +62,10 @@ void GSmemFreePool(GSmemPoolAllocator* pool, void* cell) {
     }
 }
 
-#pragma push
-#pragma peephole off
 void* GSmemAllocPool(GSmemPoolAllocator* pool) {
-    return pool->allocCell();
+    GSmemPoolAllocator* p = pool;
+    return p->allocCell();
 }
-#pragma pop
 
 GSmemPoolAllocator* GSmemCreatePool(unsigned long num, unsigned long size) {
     int i;
@@ -107,8 +105,9 @@ u32 GSmemPoolAllocator::getFreeCell() const {
 
 void GSmemPoolAllocator::freeCell(void* cell) {
     if (cell != NULL) {
-        void** link = (void**)((u8*)cell - 4);
         unsigned long dabr;
+        cell = (void**)cell - 1;
+        void** link = (void**)cell;
         *link = m_free;
         m_used--;
         dabr = _getDabr();

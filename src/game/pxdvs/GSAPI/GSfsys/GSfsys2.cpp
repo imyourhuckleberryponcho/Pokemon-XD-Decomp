@@ -865,10 +865,9 @@ static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, s32 a, 
 }
 
 static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, s32 a, s32 b, s32 c) {
-    enum TsE { TsE0 };
     BOOL intr;
     FsysWork* work;
-    enum TsE gid = (enum TsE)(id);
+    int gid = (id);
 
     intr = OSDisableInterrupts();
     _fsysFreeStatus(id);
@@ -918,14 +917,15 @@ s32 GSfsysGetStatus(u32 id) {
     if (_initFlag == 0) {
         return -2;
     }
-    group = _fsysGetGROUP(id);
+    s32 gid = id;
+    group = _fsysGetGROUP(gid);
     if (group == 0) {
         return -1;
     }
     if (group->flags & 1) {
         return 0;
     }
-    work = _fsysGetWork(id, 0);
+    work = _fsysGetWork(gid, 0);
     if (work == 0) {
         return -1;
     }
@@ -1365,11 +1365,11 @@ static void _fsysForegroundTask(FsysWork* work) {
             break;
         }
         break;
+    case 6:
+    case 7:
     case 9:
         _fsysCheckExpandCompleteAll(work);
         break;
-    case 6:
-    case 7:
     case 10:
         switch (work->mode) {
         case 1:
@@ -1413,9 +1413,11 @@ static void _fsysForegroundTask(FsysWork* work) {
         }
         break;
     case -999:
+    case -992:
     case 0:
     case 1:
     case 2:
+    case 12:
         break;
     }
     intr = OSDisableInterrupts();

@@ -369,20 +369,15 @@ void CAnt::initByPokemon(Pokemon* p) {
                 0x1E803200, 0x1E813200, 0x1E823200, 0x1E833200, 0x1E553200, 0x1E563200, 0x1E6F3200, 0x1E703200
             };
             u8 form = pokemonGetAnnonKatati(pokemonGetStatus(p, 0, 0x6F, 0));
-            if ((u8)pokemonCheckRare(p) != 0) {
-                key = tbl[form * 2 + 1];
-            } else {
-                key = tbl[form * 2];
-            }
+            key = ((u8)pokemonCheckRare(p) != 0) ? tbl[form * 2 + 1] : tbl[form * 2];
         } else if (id == 0xF9 && p->isDarkPokemon()) {
             key = 0x20083200;
         } else {
-            key = pokemonDB_GetPokebodyId(id, p->isRare());
+            bool rare = p->isRare();
+            key = pokemonDB_GetPokebodyId(id, rare);
         }
-        switch ((key) != 0 && res) {
-        case 0:
-                res = antLookup((key));
-            break;
+        if (key != 0 && res == 0) {
+            res = (key == 0) ? 0 : antLookup(key);
         }
     }
 }

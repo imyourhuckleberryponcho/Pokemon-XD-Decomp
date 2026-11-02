@@ -260,7 +260,7 @@ static inline s32 HSD_JObjMtxIsDirty(HSD_JObj* jobj) {
         __assert("jobj.h", 605, "jobj");
     }
     result = false;
-    if (HSD_JObjFlagIsClear(jobj, JOBJ_USER_DEF_MTX) && (jobj->flags & JOBJ_MTX_DIRTY)) {
+    if ((jobj->flags & JOBJ_USER_DEF_MTX) == 0 && (jobj->flags & JOBJ_MTX_DIRTY)) {
         result = true;
     }
     return result;
@@ -1214,19 +1214,19 @@ void GSmodelAdvanceAnimation(_GSmodel* model, f32 dt) {
     if (model->flags & 0x4000) {
         s32 animType;
         u32 animIndex;
-        u32 animLoopFlag;
         u32 animStopFlag;
+        u32 animLoopFlag;
 
         if (!(model->flags & 0x80)) {
             animIndex = model->animIndex;
             animType = model->animType;
-            animStopFlag = 0x20;
             animLoopFlag = 0x4000;
+            animStopFlag = 0x20;
         } else {
             animIndex = model->blendAnimIndex;
             animType = model->blendAnimType;
-            animStopFlag = 0x20;
             animLoopFlag = 0x4000;
+            animStopFlag = 0x20;
         }
         modelAnimEnded(model, animType, animStopFlag, animLoopFlag, 1, animIndex, false);
     }

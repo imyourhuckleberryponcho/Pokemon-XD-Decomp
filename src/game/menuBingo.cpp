@@ -515,13 +515,13 @@ static inline bool hasGrid1() {
     return false;
 }
 
-static inline u16 faceKey(cBingo* self, BingoPanel* p, u32 n) {
+static inline u32 faceKey(cBingo* self, BingoPanel* p, u32 n) {
     void* pdata = mPokemon[p->idx].pkm.getPokemonDataPtr();
     u8 type = ((bingo_bios*)self)->getPanelType(self->sheet, self->panel[(u16)n].idx);
     return cBingo::ClosePanelIdx[pokemonDataBiosGetZokuseiDataId(pdata, (u16)(type % 18))];
 }
 
-static inline u16 faceKeyShuf(cBingo* self, BingoPanel* q) {
+static inline u32 faceKeyShuf(cBingo* self, BingoPanel* q) {
     void* pdata = mPokemon[q->idx].pkm.getPokemonDataPtr();
     u8 type = ((bingo_bios*)self)->getPanelType(self->sheet, q->idx);
     return cBingo::ClosePanelIdx[pokemonDataBiosGetZokuseiDataId(pdata, (u16)(type % 18))];
@@ -615,7 +615,7 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     case 0x88B: {
         u32 cnt = countPokemon();
         if (n < cnt) {
-            int i = findPokemonOrder(n + 1);
+            int i = findPokemonNo((u8)n);
             u32 waza = wazaGetStatus(0, BIOS->getPanelWaza(gBingo.sheet, i), 1, 0);
             if (waza != 0) {
                 msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(0xDB44));
@@ -636,7 +636,7 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         u32 cnt = countPokemon();
         if (n < cnt) {
             findPokemonOrder(n + 1);
-            int i = findPokemonOrder(n + 1);
+            int i = findPokemonNo((u8)n);
             u32 key = zokuseiBiosGetSpriteID(wazaDB_GetZokuseiDataId(BIOS->getPanelWaza(gBingo.sheet, i)));
             if (key != 0) {
                 windowDrawSprite(0, 0, w, key, 0, layer);
@@ -698,10 +698,9 @@ static inline BingoPokemon* panelPokemon(int i) {
 }
 
 s32 menuBingoMessageDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
-    enum TsE { TsE0 };
     s16 b;
     u32 msg = gBingo.f13c;
-    char* nick;
+    s32 nick;
     switch (sp->id) {
     case 0x8D8: {
         gBingo.f140 += timeGetLastFrameSec();
@@ -727,10 +726,10 @@ s32 menuBingoMessageDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             break;
         }
         case 0xDAEE: {
-            int ep = gBingo.epoint;
-            if (ep < 0) break;
+            nick = gBingo.epoint;
+            if (nick < 0) break;
             msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(msg));
-            msgctrlSetValue(0x2F, ep);
+            msgctrlSetValue(0x2F, nick);
             sp->msgID = 0x4276;
             break;
         }
@@ -738,14 +737,14 @@ s32 menuBingoMessageDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         case 0xDAF3:
         case 0xDB22:
             if (panelPokemon(gBingo.f134) == 0) break;
-            nick = panelPokemon(gBingo.f134)->pkm.getNicknamePtr();
+            nick = (s32)panelPokemon(gBingo.f134)->pkm.getNicknamePtr();
             msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(msg));
             msgctrlSetValue(0x32, (u32)nick);
             sp->msgID = 0x4276;
             break;
         case 0xDAF4: {
             if (panelPokemon(gBingo.f138) == 0) break;
-            nick = panelPokemon(gBingo.f138)->pkm.getNicknamePtr();
+            nick = (s32)panelPokemon(gBingo.f138)->pkm.getNicknamePtr();
             msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(msg));
             msgctrlSetValue(0x32, (u32)nick);
             sp->msgID = 0x4276;
@@ -754,7 +753,7 @@ s32 menuBingoMessageDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         case 0xDAE7: {
             if (pokemonNo(gBingo.f12c) == 0) break;
             int j = findPokemonNo(gBingo.f12c);
-            nick = mPokemon[j].pkm.getNicknamePtr();
+            nick = (s32)mPokemon[j].pkm.getNicknamePtr();
             msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(msg));
             msgctrlSetValue(0x32, (u32)nick);
             sp->msgID = 0x4276;
@@ -763,25 +762,25 @@ s32 menuBingoMessageDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         case 0xDAEA: {
             BingoPanel* panels = gBingo.panel;
             if (panels[gBingo.f134].state == 0) break;
-            int m = -1;
-            int g = m;
+            nick = -1;
+            int g = nick;
             if (panels[gBingo.f134].state != 0) {
                 g = BIOS->getGridGrid(gBingo.sheet, panels[gBingo.f134].idx);
             }
             switch (g) {
             case 1:
-                m = 0xDAED;
+                nick = 0xDAED;
                 break;
             case 2:
-                m = 0xDAEB;
+                nick = 0xDAEB;
                 break;
             case 3:
-                m = 0xDAEC;
+                nick = 0xDAEC;
                 break;
             }
-            if (m < 0) break;
+            if (nick < 0) break;
             msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(msg));
-            msgctrlSetValue(0x4D, (u32)GSmsgGetGSchar(m));
+            msgctrlSetValue(0x4D, (u32)GSmsgGetGSchar(nick));
             sp->msgID = 0x4276;
             break;
         }

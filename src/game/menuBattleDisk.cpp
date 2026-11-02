@@ -942,11 +942,19 @@ static int getPanelIdx(u32 slot, u8 pokeNum) {
 }
 
 static void drawPkmPanel(u32 idx, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
-    int layer = winSpriteGetLayerID(w, sp);
-    u32 n = idx;
-    int base;
-    Hero* hero;
+    Pokemon* pk;
+    u32 msg;
     int off;
+    s16 offs;
+    int base;
+    u32 n;
+    Hero* hero;
+    GSvec2 pos;
+    u32 v83;
+    u32 v77;
+    u32 v7a;
+    int layer = winSpriteGetLayerID(w, sp);
+    n = idx;
     if (idx < 6) {
         base = 0;
         hero = &gBDisk.hero[0];
@@ -966,20 +974,19 @@ static void drawPkmPanel(u32 idx, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         }
     }
     if (heroGetPokeomCount(hero) > n) {
-        s16 offs = off;
-        GSvec2 pos;
+        offs = off;
         pos.x = offs + sRect[base * 4];
         pos.y = sRect[base * 4 + 1];
-        Pokemon* pk = heroBiosGetPokemonPtr(hero, (u16)n);
+        pk = heroBiosGetPokemonPtr(hero, (u16)n);
         if (pk != 0) {
-            u32 v77 = pokemonGetStatus(pk, 0, 0x77, 0);
-            u32 v83 = pokemonGetStatus(pk, 0, 0x83, 0);
-            u32 v7a = pokemonGetStatus(pk, 0, 0x7A, 0);
+            v77 = pokemonGetStatus(pk, 0, 0x77, 0);
+            v83 = pokemonGetStatus(pk, 0, 0x83, 0);
+            v7a = pokemonGetStatus(pk, 0, 0x7A, 0);
             dispFace(idx, &pos, w, sp, pk);
             windowDrawSprite2((s16)(offs + sRect[(base + 1) * 4]), sRect[(base + 1) * 4 + 1], sRect[(base + 1) * 4 + 2], sRect[(base + 1) * 4 + 3],
                               w->alpha | 0xFFFFFF00, w, 0x2FC, 0, layer);
             msgctrlSetValue(0x37, v77);
-            GSmsgPrintRect((u16)layer, offs + sRect[(base + 2) * 4], sRect[(base + 2) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4277);
+            GSmsgPrintRect(layer, offs + sRect[(base + 2) * 4], sRect[(base + 2) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4277);
             msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(0x42D4));
             GSmsgPrintRect(layer, offs + sRect[(base + 3) * 4], sRect[(base + 3) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4276);
             msgctrlSetValue(0x34, v7a);
@@ -990,7 +997,6 @@ static void drawPkmPanel(u32 idx, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             msgctrlSetValue(0x34, v83);
             GSmsgPrintRect(layer, offs + sRect[(base + 4) * 4] + 0x1C, sRect[(base + 4) * 4 + 1], sp->w, sp->h,
                            w->alpha | 0xFFFFFF00, 0x426F);
-            u32 msg;
             switch ((u8)menuSubGetPokemonSexForDisp(pk)) {
             case 0:
                 msg = 0x9C5;
@@ -1237,12 +1243,13 @@ static inline void tsLoopHelper1309() {
 void menuBattleDiskMain(void) {
     int arg1 = 0;
     int arg2;
-    bool running;
     bool ok;
     Hero* hero0;
     int sel;
     Hero* hero1;
     int faceOut;
+    int i;
+    bool running;
     running = true;
     switch (gBDisk.mode) {
     case 0: {
@@ -1259,7 +1266,7 @@ void menuBattleDiskMain(void) {
                 continue;
             }
             gBDisk.savedCursor = sel;
-            for (int i = 0; i < 6; i++) {
+            for (i = 0; i < 6; i++) {
                 GSthreadSwitch();
             }
             sel += gBDisk.row;
@@ -1290,7 +1297,7 @@ void menuBattleDiskMain(void) {
                     gBDisk.timer += timeGetLastFrameSec();
                 }
                 menuClose(0xEB);
-                for (int i = 0; i < 15; i++) {
+                for (i = 0; i < 15; i++) {
                     ok = true;
                     if (getPanelIdx(i, gBDisk.pokeNum) == -1) {
                         ok = false;
@@ -1311,10 +1318,10 @@ void menuBattleDiskMain(void) {
                             if (gBDisk.pokeNum != 1) ok = false;
                             break;
                         case 7:
-                            if (gBDisk.pokeNum == 2 && heroGetPokeomCount(hero1) == 1) ok = false;
+                            if (gBDisk.pokeNum == 2 && (s32)heroGetPokeomCount(hero1) == 1) ok = false;
                             break;
                         case 8:
-                            if (gBDisk.pokeNum != 2 || heroGetPokeomCount(hero1) != 1) ok = false;
+                            if (gBDisk.pokeNum != 2 || (s32)heroGetPokeomCount(hero1) != 1) ok = false;
                             break;
                         case 9:
                             if (menuItemBiosGetSelectFlag(0x109, cBattleDisk::mContentsCurIdx[8])) {

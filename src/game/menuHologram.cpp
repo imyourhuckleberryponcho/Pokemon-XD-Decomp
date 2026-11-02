@@ -1159,7 +1159,8 @@ void CMenuHologram::stageAllModelLoad()
     }
     for (int i = 0; i < dancers; i++) {
         ModelSlot* slot = modelPokemonLoad(i + 3);
-        s16 idx = plateIndexTbl[st][dancers][(dancers + i - stage->hit) % dancers + 1];
+        int k = (dancers + (i - stage->hit)) % dancers + 1;
+        int idx = plateIndexTbl[st][dancers][k];
         GSpart* part = GSmodelGetPart(models[1].model, ((u8*)relivehall_data)[idx + 6]);
         GSmodelAttachToGSpart(slot->model, part, 7, 0, 1);
         GSpartFree(part);
@@ -1187,8 +1188,9 @@ void CMenuHologram::stageAllModelLoad()
         GSmaterialEnableExtension(mat, 1);
     }
     for (int i = 0; i < dancers; i++) {
-        GSgfxColAu8 c = pokemonToAisyouColor(stage->getDancerPointer((u16)i), (Pokemon*)(stage->getDancerPointer((i + 1) % dancers)));
-        u8 pl = ((u8*)relivehall_data)[colorLineIndexTbl[st][dancers][(dancers + i - stage->hit) % dancers + 1] + 6];
+        GSgfxColAu8 c = pokemonToAisyouColor(stage->getDancerPointer(i), (Pokemon*)(stage->getDancerPointer((i + 1) % dancers)));
+        int k = (dancers + (i - stage->hit)) % dancers + 1;
+        u8 pl = ((u8*)relivehall_data)[colorLineIndexTbl[st][dancers][k] + 6];
         GSmaterial* mat = (GSmaterial*)((u8*)mats + (pl - 1) * 0x34);
         GSmaterialSetModulate(mat, &c);
         GSmaterialEnableExtension(mat, 1);

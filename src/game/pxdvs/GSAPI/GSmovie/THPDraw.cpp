@@ -72,7 +72,7 @@ public:
         mark(8, 0x16E4, 2);
     }
     inline void tevKColor(int id, GXColor c) {
-        *(GXColor*)((u8*)this + 0x14F4 + id * 4) = c;
+        *(u32*)((u8*)this + 0x14F4 + id * 4) = *(u32*)&c;
         mark(0x10, 0x16F8, 1 << id);
     }
     inline void tevSwapTable(int table, u32 r, u32 g, u32 b, u32 a) {
@@ -154,8 +154,8 @@ public:
     u8 pad16a8[0x1990 - 0x16a8];
     u8* curBlend;
     s32 blendIdx;
-    GSgfxVF* vf;
     u32 primType;
+    GSgfxVF* vf;
     u8* hwMtx;
     u8 pad19A4[0x4];
 };
@@ -198,12 +198,13 @@ struct TevKColor {
 };
 
 static inline void bindTexture(int slot, GStexture* t) {
+    GSgfxLayer* l = thpLayer;
     u32 off = 0x1740 + slot * 4;
-    if (*(GStexture**)((u8*)thpLayer + off) != t || *(GStexture**)((u8*)thpLayer + off + 0xb8) != t || t->dirty != 0) {
-        *(GStexture**)((u8*)thpLayer + off) = t;
-        W(0x173c) |= 1 << slot;
-        *(GStexture**)((u8*)thpLayer + off + 0xb8) = t;
-        W(0x17f4) |= 1 << slot;
+    if (*(GStexture**)((u8*)l + off) != t || *(GStexture**)((u8*)l + off + 0xb8) != t || t->dirty != 0) {
+        *(GStexture**)((u8*)l + off) = t;
+        LW(l, 0x173c) |= 1 << slot;
+        *(GStexture**)((u8*)l + off + 0xb8) = t;
+        LW(l, 0x17f4) |= 1 << slot;
     }
 }
 
@@ -317,7 +318,7 @@ void THPGXYuv2RgbSetup(void) {
     thpLayer->tevSwapMode(3, 0, 0);
     thpLayer->tevKColorSel(3, 0xE);
     {
-        volatile GXColorS10 c = {-90, 0, -114, 135};
+        GXColorS10 c = {-90, 0, -114, 135};
         thpLayer->tevColorS10(1, c);
     }
     {

@@ -217,9 +217,9 @@ void DarkPokemon::setReversPattern(u8 pattern) {
 u8 DarkPokemon::getReversPattern() const {
     return *(reinterpret_cast<const u8*>(this) + 0x40);
 }
-u16 DarkPokemon::getInitDarkPointDirect() const {
+s32 DarkPokemon::getInitDarkPointDirect() const {
     u16 id = *reinterpret_cast<const u16*>(reinterpret_cast<const u8*>(this) + 0x3E);
-    return darkPokemonBiosGetDarkPoint(id);
+    return (u16)darkPokemonBiosGetDarkPoint(id);
 }
 void DarkPokemon::setCatchBallID(u16 ballId) {
     reinterpret_cast<DarkPokemonCatchBall*>(reinterpret_cast<u8*>(this) + 0x06)->ballId = ballId;

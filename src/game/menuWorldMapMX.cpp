@@ -999,16 +999,18 @@ s8 WorldMap::GetPadIndex3(f32 ang, s32 k, f32 tol) {
 
 struct Mtx34 { f32 m[12]; };
 
+static inline f32 iconDistance(void* p0, void* p1) { return PSVECDistance(p0, p1); }
+
 void WorldMap::CalcModel2D(f32 fov, bool init) {
-    s32 i;
-    s32 a;
+    void* view;
     WorldMapIconWork* ia;
     void* camera = GSresGetResource(0, 0);
     f32 nk;
     f32 dist;
     f32 k;
     s32 b;
-    void* view = GScameraGetMatrixPtr();
+    view = GScameraGetMatrixPtr();
+    s32 i;
     Mtx34 proj;
     {
         f32* src = (f32*)GScameraGetProjMatrixPtr((s32)camera);
@@ -1033,19 +1035,19 @@ void WorldMap::CalcModel2D(f32 fov, bool init) {
         ic->sy = 240.0f + dy;
         ic->sz = 0.0f;
     }
-    a = 0;
-    while (a < GetDataNum()) {
+    i = 0;
+    while (i < GetDataNum()) {
         b = 0;
-        ia = &icons[a];
+        ia = &icons[i];
         while (b < GetDataNum()) {
             WorldMapIconWork* ib = &icons[b];
-            if (a != b) {
+            if (i != b) {
                 f32 ang;
-                if (GetFlagData(a) == 0 || GetFlagData(b) == 0) {
+                if (GetFlagData(i) == 0 || GetFlagData(b) == 0) {
                     dist = 0.0f;
                     ang = 0.0f;
                 } else {
-                    dist = PSVECDistance(&ia->sx, &ib->sx);
+                    dist = iconDistance(&ia->sx, &ib->sx);
                     ang = (f32)atan2(ib->sy - ia->sy, ib->sx - ia->sx);
                     if (ang < 0.0f) {
                         ang = 6.2831855f + ang;
@@ -1059,37 +1061,38 @@ void WorldMap::CalcModel2D(f32 fov, bool init) {
             }
             b++;
         }
-        a++;
+        i++;
     }
     CheckPadIndex(init);
 }
 
 void WorldMap::CheckPadIndex(bool) {
+    WorldMapIconWork* ic;
+    s32 b;
     f32 angle = _checkAngleStart;
     s32 i = 0;
+    s32 k;
     f32 step = _checkAngleAdd;
     while (i < GetDataNum()) {
         WorldMapIconWork* ic = &icons[i];
         i++;
-        s32 k;
         for (k = 0; k < 8; k++) {
             ic->pad[k] = -1;
         }
     }
     do {
-        s32 a = 0;
-        while (a < GetDataNum()) {
+        i = 0;
+        while (i < GetDataNum()) {
             int dist[8];
             s8 idx[8];
-            s32 k;
             memset(dist, 0, 0x20);
             for (k = 0; k < 8; k++) {
                 idx[k] = -1;
             }
-            s32 b = 0;
-            WorldMapIconWork* ic = &icons[a];
+            b = 0;
+            ic = &icons[i];
             while (b < GetDataNum()) {
-                if (a != b && GetFlagData(a) != 0 && GetFlagData(b) != 0) {
+                if (i != b && GetFlagData(i) != 0 && GetFlagData(b) != 0) {
                     for (k = 0; k < 8; k++) {
                         s8 pad = GetPadIndex3(ic->sub[b].angle, k, angle);
                         if (pad >= 0 && ic->pad[pad] < 0) {
@@ -1113,7 +1116,7 @@ void WorldMap::CheckPadIndex(bool) {
                     ic->pad[k] = idx[k];
                 }
             }
-            a++;
+            i++;
         }
         angle += step;
     } while (angle <= _checkAngle);

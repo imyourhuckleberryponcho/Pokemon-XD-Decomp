@@ -3121,14 +3121,14 @@ u32 GSmsgGetRect(u32 key)
             }
             _msgCallCtrlFunc(t, ctrl);
             if (quote && t->curX == t->x) {
-                t->curX = t->curX + (f32)t->fontW;
+                t->curX = t->curX + (f32)(s32)t->fontW;
             }
         } else {
             if (t->ruby == 2) {
                 continue;
             }
             if (code == 0x20) {
-                t->charW = (f32)(t->fontW >> 1) * t->scaleX;
+                t->charW = (f32)(t->fontW / 2) * t->scaleX;
             } else {
                 FontEntry* e = _msgGetCodeInfo(t, code, 0);
                 if (e == 0) {
@@ -3589,46 +3589,48 @@ u16* GSmsgMakeGScharStr(u16* dst, s32 size, u32 key)
     t->mode = 1;
     while (1) {
         u16 code;
+        u32 countStart;
         outStart = out;
-        u32 countStart = count;
+        countStart = count;
         code = msgReadCode(t);
         if (code == 0) {
             break;
         }
         count += 2;
         if (limit < count) {
-            out = outStart;
             break;
         }
         *out = code;
         out++;
-        if (code == 0xFFFF) {
-            u8 ctrl;
-            ctrl = *t->ip++;
-            count++;
-            if (limit < count) {
-                out = outStart;
-                break;
-            }
+        if (code != 0xFFFF) {
+            continue;
+        }
+        u8 ctrl = *t->ip++;
+        count++;
+        if (limit >= count) {
             *(u8*)out = ctrl;
             out = (u16*)((u8*)out + 1);
-            p = t->ip;
-            depth = t->depth;
-            _msgCallCtrlFunc(t, ctrl);
-            if (depth == t->depth) {
-                count += t->ip - p;
-                if (limit < count) {
-                    out = outStart;
-                    break;
-                }
+        } else {
+            out = outStart;
+            break;
+        }
+        p = t->ip;
+        depth = t->depth;
+        _msgCallCtrlFunc(t, ctrl);
+        if (depth == t->depth) {
+            count += t->ip - p;
+            if (limit >= count) {
                 while (t->ip > p) {
                     *(u8*)out = *p++;
                     out = (u16*)((u8*)out + 1);
                 }
             } else {
-                if (out < outStart) out = outStart;
-                count = countStart;
+                out = outStart;
+                break;
             }
+        } else {
+            out = outStart;
+            count = countStart;
         }
     }
     *out = 0;

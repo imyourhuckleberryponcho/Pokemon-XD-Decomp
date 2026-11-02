@@ -41,6 +41,11 @@ extern DbgMenuData* (*debugMenuDataGetPtr)(s32);
 
 }
 
+static s32 _dbgLayerID = -1;
+static u8 _dbgMenuEnable;
+static s32* _pCursorUnused;
+static u8 _dbgMenuMode;
+
 static s32 _dbgMenuSub(s32);
 static s32 _dbgMenuGetMenuNum(tagWINDOW_WORK*, s32*);
 static s32 _dbgMenuCheckTerminate(tagWINDOW_WORK*, s32);
@@ -48,21 +53,29 @@ static s32 _dbgMenuGetMenuNo(s32);
 static s32 _dbgMenuGetMsgID(tagWINDOW_WORK*, s32);
 static s32 _dbgMenuGetItemNo(tagWINDOW_WORK*, s32);
 
-inline s32 debugMenuGetNum(void) {
-    if (debugMenuDataGetNum == 0) {
-        return 0;
-    }
-    return debugMenuDataGetNum();
-}
+typedef s32 (*DbgMenuFunc)(s32, s32);
 
-inline DbgMenuData* dbgMenuGetPtr(s32 index) {
+DbgMenuData* dbgMenuGetPtr(s32 index) {
     if (debugMenuDataGetPtr == 0) {
         return 0;
     }
     return debugMenuDataGetPtr(index);
 }
 
-typedef s32 (*DbgMenuFunc)(s32, s32);
+s32 debugMenuGetNum(void) {
+    if (debugMenuDataGetNum == 0) {
+        return 0;
+    }
+    return debugMenuDataGetNum();
+}
+
+s16 dbgMenuGetLink(s32 index) {
+    DbgMenuData* data = dbgMenuGetPtr(index);
+    if (data == 0) {
+        return 0;
+    }
+    return data->link;
+}
 
 inline DbgMenuFunc dbgMenuGetFunc(s32 index) {
     DbgMenuData* data = dbgMenuGetPtr(index);
@@ -72,15 +85,19 @@ inline DbgMenuFunc dbgMenuGetFunc(s32 index) {
     return data->func;
 }
 
-inline s16 dbgMenuGetLink(s32 index) {
-    DbgMenuData* data = dbgMenuGetPtr(index);
-    if (data == 0) {
-        return 0;
-    }
-    return data->link;
+static s32 _dbgMenuGetIndex(tagWINDOW_WORK* window) {
+    s32 index = -1;
+    s32 base = _menu_data_number + 1;
+    s32 id = window->menuID;
+    index = id < base ? index : id - base;
+    return index;
 }
 
-static inline s16 _dbgMenuGetLink(s32 item) {
+static tagWINDOW_WORK* _dbgMenuGetWin(s32 depth) {
+    return windowSearchID(depth < 0 ? 0 : _menu_data_number + 1 + depth);
+}
+
+static s16 _dbgMenuGetLink(s32 item) {
     s16 link;
 
     if (item <= 0 || debugMenuGetNum() <= item) {
@@ -92,24 +109,6 @@ static inline s16 _dbgMenuGetLink(s32 item) {
     }
     return link;
 }
-
-static inline tagWINDOW_WORK* _dbgMenuGetWin(s32 depth) {
-    s32 id = _menu_data_number + depth;
-    return windowSearchID(depth < 0 ? 0 : id + 1);
-}
-
-static inline s32 _dbgMenuGetIndex(tagWINDOW_WORK* window) {
-    s32 index = -1;
-    s32 base = _menu_data_number + 1;
-    s32 id = window->menuID;
-    index = id < base ? index : id - base;
-    return index;
-}
-
-static s32 _dbgLayerID = -1;
-static u8 _dbgMenuEnable;
-static s32* _pCursorUnused;
-static u8 _dbgMenuMode;
 
 static inline s32 _isOpen(void) {
     s32 open = menuIsCheck(_menu_data_number + 1) != 0;
@@ -123,91 +122,129 @@ static inline void _close(void) {
 
 extern "C" {
 
-s32 dbgMenuGetLayerID(void) {
-    return _dbgLayerID;
 }
 
-void dbgMenuSetLayerID(s32 id) {
-    _dbgLayerID = id;
+extern "C++" {
+static s32 _dbgMenuGetItemNo(tagWINDOW_WORK* window, s32 index) {
+    int depth;
+    s32 base;
+    s32 item;
+    tagWINDOW_WORK* parent;
+
+    depth = _dbgMenuGetIndex(window);
+    if (depth < 0) {
+        return 0;
+    }
+    if (depth == 0) {
+        base = dbgMenuGetRootMenu();
+    } else {
+        parent = _dbgMenuGetWin(depth - 1);
+        if (parent == 0) {
+            item = dbgMenuGetRootMenu();
+        } else {
+            item = _dbgMenuGetItemNo(parent, parent->top + parent->cursor);
+        }
+        base = _dbgMenuGetLink(item);
+    }
+    return base + index;
+}
 }
 
-void dbgMenuCursor(tagWINDOW_WORK* window) {
+extern "C++" {
+static s32 _dbgMenuGetMsgID(tagWINDOW_WORK* window, s32 index) {
+    DbgMenuData* data;
+
+    data = dbgMenuGetPtr(_dbgMenuGetItemNo(window, index));
+    if (data == 0) {
+        return 0;
+    }
+    return data->msgID;
+}
+}
+
+extern "C++" {
+static s32 _dbgMenuGetMenuNo(s32 depth) {
+    tagWINDOW_WORK* window;
+    s32 item;
+    s16 link;
+    s32 i;
     s32 count;
-    s32 repeat = windowGetKeyInfo()->repeat;
-    count = (s8)_dbgMenuGetMenuNum(window, 0);
-    s16 cursor;
-    s16 top;
-    s8 visible = menuDataBiosGetDispMax(window->menuID);
+    DbgMenuData* data;
+    u8 end;
 
-    if (count < visible) {
-        visible = count;
-    }
-    top = window->top;
-    cursor = window->cursor;
-    if (repeat & 1) {
-        cursor -= 1;
-    } else if (repeat & 2) {
-        cursor += 1;
-    }
-    if (cursor < 0) {
-        top += cursor;
-        cursor = 0;
-        if (top < 0) {
-            cursor = (s8)(visible - 1);
-            top = (s8)(count - visible);
-        }
-    } else if (cursor >= visible) {
-        top = top + (cursor - (visible - 1));
-        cursor = (s8)(visible - 1);
-        if (top + cursor >= count) {
-            cursor = top = 0;
-        }
-    }
-    window->top = top;
-    window->cursor = cursor;
-}
-
-u8 dbgMenuGetEnable(void) {
-    return _dbgMenuEnable;
-}
-
-void dbgMenuSetEnable(u8 enable) {
-    _dbgMenuEnable = enable;
-}
-
-s32 dbgMenuIsOpen(void) {
-    return _isOpen();
-}
-
-void dbgMenuClose(void) {
-    _close();
-}
-
-void dbgMenuMain(u8 mode) {
-    u32 count;
-
-    if (_dbgLayerID == -1 || GSgfxLayerFindByID(_dbgLayerID) == 0) {
-        if (_isOpen()) {
-            _close();
+    window = windowSearchID(depth);
+    if (window != 0) {
+        item = _dbgMenuGetItemNo(window, window->top + window->cursor);
+        link = _dbgMenuGetLink(item);
+        count = 0;
+        for (i = 0; i < link; i++) {
+            data = dbgMenuGetPtr(i);
+            if (data == 0) {
+                end = 1;
+            } else {
+                end = data->end != 0;
+            }
+            if (end) {
+                count++;
+            }
         }
     } else {
-        if (debugMenuDataGetNum == 0) {
-            count = 0;
-        } else {
-            count = debugMenuDataGetNum();
-        }
-        if (count != 0 && _dbgMenuEnable != 0) {
-            if (!_isOpen()) {
-                _dbgMenuMode = mode;
-                do {
-                } while (_dbgMenuSub(0) >= 0 && _dbgMenuMode == 1);
+        count = 0;
+        for (i = 0; i < dbgMenuGetRootMenu(); i++) {
+            data = dbgMenuGetPtr(i);
+            if (data == 0) {
+                end = 1;
+            } else {
+                end = data->end != 0;
+            }
+            if (end) {
+                count++;
             }
         }
     }
+    return count;
+}
 }
 
+extern "C++" {
+static s32 _dbgMenuCheckTerminate(tagWINDOW_WORK* window, s32 index) {
+    DbgMenuData* data;
+    u8 result;
+
+    data = dbgMenuGetPtr(_dbgMenuGetItemNo(window, index));
+    if (data == 0) {
+        result = 1;
+    } else {
+        result = data->end != 0;
+    }
+    return result;
+}
 }
 
+extern "C++" {
+static s32 _dbgMenuGetMenuNum(tagWINDOW_WORK* window, s32* width) {
+    s32 i;
+    u32 w;
+    s32 msg;
+
+    if (width != 0) {
+        *width = 0;
+    }
+    i = 0;
+    do {
+        msg = _dbgMenuGetMsgID(window, i);
+        if (width != 0) {
+            w = GSmsgGetRect(msg) >> 16;
+            if (*width < (s32)w) {
+                *width = w;
+            }
+        }
+    } while (_dbgMenuCheckTerminate(window, i++) == 0);
+    return i;
+}
+}
+
+extern "C++" {
 static s32 _dbgMenuSub(s32 depth) {
     s32 result;
     s32 menuID;
@@ -265,113 +302,103 @@ static s32 _dbgMenuSub(s32 depth) {
     menuClose(menuID);
     return result;
 }
-
-static s32 _dbgMenuGetMenuNum(tagWINDOW_WORK* window, s32* width) {
-    s32 i;
-    u32 w;
-    s32 msg;
-
-    if (width != 0) {
-        *width = 0;
-    }
-    i = 0;
-    do {
-        msg = _dbgMenuGetMsgID(window, i);
-        if (width != 0) {
-            w = GSmsgGetRect(msg) >> 16;
-            if (*width < (s32)w) {
-                *width = w;
-            }
-        }
-    } while (_dbgMenuCheckTerminate(window, i++) == 0);
-    return i;
 }
 
-static s32 _dbgMenuCheckTerminate(tagWINDOW_WORK* window, s32 index) {
-    DbgMenuData* data;
-    u8 result;
+extern "C" {
+void dbgMenuMain(u8 mode) {
+    u32 count;
 
-    data = dbgMenuGetPtr(_dbgMenuGetItemNo(window, index));
-    if (data == 0) {
-        result = 1;
-    } else {
-        result = data->end != 0;
-    }
-    return result;
-}
-
-static s32 _dbgMenuGetMenuNo(s32 depth) {
-    tagWINDOW_WORK* window;
-    s32 item;
-    s16 link;
-    s32 i;
-    s32 count;
-    DbgMenuData* data;
-    u8 end;
-
-    window = windowSearchID(depth);
-    if (window != 0) {
-        item = _dbgMenuGetItemNo(window, window->top + window->cursor);
-        link = _dbgMenuGetLink(item);
-        count = 0;
-        for (i = 0; i < link; i++) {
-            data = dbgMenuGetPtr(i);
-            if (data == 0) {
-                end = 1;
-            } else {
-                end = data->end != 0;
-            }
-            if (end) {
-                count++;
-            }
+    if (_dbgLayerID == -1 || GSgfxLayerFindByID(_dbgLayerID) == 0) {
+        if (_isOpen()) {
+            _close();
         }
     } else {
-        count = 0;
-        for (i = 0; i < dbgMenuGetRootMenu(); i++) {
-            data = dbgMenuGetPtr(i);
-            if (data == 0) {
-                end = 1;
-            } else {
-                end = data->end != 0;
-            }
-            if (end) {
-                count++;
-            }
-        }
-    }
-    return count;
-}
-
-static s32 _dbgMenuGetMsgID(tagWINDOW_WORK* window, s32 index) {
-    DbgMenuData* data;
-
-    data = dbgMenuGetPtr(_dbgMenuGetItemNo(window, index));
-    if (data == 0) {
-        return 0;
-    }
-    return data->msgID;
-}
-
-static s32 _dbgMenuGetItemNo(tagWINDOW_WORK* window, s32 index) {
-    int depth;
-    s32 base;
-    s32 item;
-    tagWINDOW_WORK* parent;
-
-    depth = _dbgMenuGetIndex(window);
-    if (depth < 0) {
-        return 0;
-    }
-    if (depth == 0) {
-        base = dbgMenuGetRootMenu();
-    } else {
-        parent = _dbgMenuGetWin(depth - 1);
-        if (parent == 0) {
-            item = dbgMenuGetRootMenu();
+        if (debugMenuDataGetNum == 0) {
+            count = 0;
         } else {
-            item = _dbgMenuGetItemNo(parent, parent->top + parent->cursor);
+            count = debugMenuDataGetNum();
         }
-        base = _dbgMenuGetLink(item);
+        if (count != 0 && _dbgMenuEnable != 0) {
+            if (!_isOpen()) {
+                _dbgMenuMode = mode;
+                do {
+                } while (_dbgMenuSub(0) >= 0 && _dbgMenuMode == 1);
+            }
+        }
     }
-    return base + index;
+}
+}
+
+extern "C" {
+void dbgMenuClose(void) {
+    _close();
+}
+}
+
+extern "C" {
+s32 dbgMenuIsOpen(void) {
+    return _isOpen();
+}
+}
+
+extern "C" {
+void dbgMenuSetEnable(u8 enable) {
+    _dbgMenuEnable = enable;
+}
+}
+
+extern "C" {
+u8 dbgMenuGetEnable(void) {
+    return _dbgMenuEnable;
+}
+}
+
+extern "C" {
+void dbgMenuCursor(tagWINDOW_WORK* window) {
+    s32 count;
+    s32 repeat = windowGetKeyInfo()->repeat;
+    count = (s8)_dbgMenuGetMenuNum(window, 0);
+    s16 cursor;
+    s16 top;
+    s8 visible = menuDataBiosGetDispMax(window->menuID);
+
+    if (count < visible) {
+        visible = count;
+    }
+    top = window->top;
+    cursor = window->cursor;
+    if (repeat & 1) {
+        cursor -= 1;
+    } else if (repeat & 2) {
+        cursor += 1;
+    }
+    if (cursor < 0) {
+        top += cursor;
+        cursor = 0;
+        if (top < 0) {
+            cursor = (s8)(visible - 1);
+            top = (s8)(count - visible);
+        }
+    } else if (cursor >= visible) {
+        top = top + (cursor - (visible - 1));
+        cursor = (s8)(visible - 1);
+        if (top + cursor >= count) {
+            cursor = top = 0;
+        }
+    }
+    window->top = top;
+    window->cursor = cursor;
+}
+}
+
+extern "C" {
+void dbgMenuSetLayerID(s32 id) {
+    _dbgLayerID = id;
+}
+}
+
+extern "C" {
+s32 dbgMenuGetLayerID(void) {
+    return _dbgLayerID;
+}
 }

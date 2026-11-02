@@ -31,14 +31,16 @@ struct _MENUCBWORK {
     u8 pad0[0x18];
     _MENUCBTRAINER trainer[4];
     _MENUCBTRAINER trainerOrg[4];
-    u8 rest[0xB5F4 - 0x9918];
+    u8 pad9918[0xB524 - 0x9918];
+    void* dancer[9][4];
+    u8 rest[0xB5F4 - 0xB5B4];
 };
 
 struct TunaideSelect {
     s32 mode;
     s32 unk4;
     s32 homePlace;
-    u8 ctl[4];
+    s8 ctl[4];
 };
 
 extern "C" {
@@ -186,35 +188,29 @@ static u8 menuCB_SubWinDisp_GCENTRY();
 static void _tempHeroInitAll();
 
 extern "C" void fn_8004429C(void) {
-    u8* slot;
-    u8* row = (u8*)&_CB;
-    for (s32 s = 0; s < 9; row += 0x10, s++) {
-        slot = row;
-        for (s32 i = 0; i < 4; slot += 4, i++) {
-            if (*(u32*)(slot + 0xB524) != 0) {
-                GSmemFree((void*)*(u32*)(slot + 0xB524));
-                *(u32*)(slot + 0xB524) = 0;
+    for (s32 s = 0; s < 9; s++) {
+        for (s32 i = 0; i < 4; i++) {
+            if (_CB.dancer[s][i] != 0) {
+                GSmemFree(_CB.dancer[s][i]);
+                _CB.dancer[s][i] = 0;
             }
         }
     }
 }
 
 extern "C" void fn_80044314(void) {
-    u8* slot;
-    u8* row = (u8*)&_CB;
-    u8* row2 = (u8*)&_CB;
-    for (s32 s = 0; s < 9; row += 0x10, s++) {
-        slot = row;
-        for (s32 i = 0; i < 4; slot += 4, i++) {
-            *(void**)(slot + 0xB524) = GSmemAllocAlign(0xC4, 0x20);
-            pokemonInit(*(void**)(slot + 0xB524));
+    s32 s;
+    s32 i;
+    for (s = 0; s < 9; s++) {
+        for (i = 0; i < 4; i++) {
+            _CB.dancer[s][i] = GSmemAllocAlign(0xC4, 0x20);
+            pokemonInit(_CB.dancer[s][i]);
         }
     }
-    for (s32 s = 0; s < 9; row2 += 0x10, s++) {
+    for (s = 0; s < 9; s++) {
         void* stage = getStage__11CReliveHallFl(getPointer__11CReliveHallFv(), s);
-        u8* slot = row2;
-        for (s32 i = 0; i < 4; slot += 4, i++) {
-            pokemonBiosCopy(*(void**)(slot + 0xB524), getDancerPointer__12CReliveStageFl(stage, i));
+        for (i = 0; i < 4; i++) {
+            pokemonBiosCopy(_CB.dancer[s][i], getDancerPointer__12CReliveStageFl(stage, i));
         }
     }
 }
@@ -612,7 +608,7 @@ static s32 _menuCB_SaveRule() {
 }
 
 static s32 _colosseumbattlemenu_teamselect(long) {
-    static const s32 sta[3] = { 0x10203, 0x20103, 0x30102 };
+    static const s8 sta[3][4] = { { 0, 1, 2, 3 }, { 0, 2, 1, 3 }, { 0, 3, 1, 2 } };
     CB(s32, 0xB198) = 0;
     CB(s32, 0xB06C) = 0;
     CB(s32, 0xAFEC) = 0;
@@ -620,25 +616,28 @@ static s32 _colosseumbattlemenu_teamselect(long) {
     menuOpen(0xAC, 1);
     menuCB_SE_Play(0x15);
     menuCloseCustom(0xAC, 0, 1);
-    if ((u16)CB(s32, 0xB198) != 0 || CB(s32, 0xB06C) == 1) {
+    s32 sel = CB(s32, 0xAFEC);
+    if (CB(s32, 0xB198) != 0 || CB(s32, 0xB06C) == 1) {
         menuCB_GBADisconnectedErrorJob();
         return menuCB_MenuRollback(0xA9);
     }
-    volatile s32 next = 0xB1;
-    s32 sel = CB(s32, 0xAFEC);
-    if (sel != 3 && sel < 3) {
-        if (sel < 0) goto fail;
-        const u8* e = (const u8*)&sta[sel];
-        u8 a = e[0], b = e[1], c = e[2];
-        CB(s32, 0x5FE0) = (s8)b;
-        CB(s32, 0x4CC0) = (s8)a;
-        CB(s32, 0x7300) = (s8)c;
-        CB(s32, 0x8620) = (s8)e[3];
+    s32 next = 0xB1;
+    switch (sel) {
+    case 0:
+    case 1:
+    case 2: {
+        CB(s32, 0x4CC0) = sta[sel][0];
+        CB(s32, 0x5FE0) = sta[sel][1];
+        CB(s32, 0x7300) = sta[sel][2];
+        CB(s32, 0x8620) = sta[sel][3];
         menuCB_InitBattle(&_CB);
-    } else {
-    fail:
+        break;
+    }
+    case 3:
+    default:
         menuCB_GBADisconnectedErrorJob();
         next = menuCB_MenuRollback(0xA9);
+        break;
     }
     return next;
 }
@@ -772,13 +771,17 @@ loop:
     again:
         if (CB(s32, 0xAFE0) >= 0x10) CB(s32, 0xAFE0) = CB(s32, 0xAFE0) - 0x10;
         menuCB_TUNAIDE01_Rule_SELECT();
-        if ((u32)CB(s32, 0xAFE0) <= 0x13) {
-            switch (CB(s32, 0xAFE0)) {
+        {
+            switch (CB(u32, 0xAFE0)) {
             case 1:
                 menuCB_RuleNameChengeBeforeJob(0);
                 menuCB_RuleCustomJobDisp(1);
                 menuCB_RuleNameChengeAfterJob(0);
                 goto again;
+            case 0:
+            case 5: case 6: case 7: case 8:
+            case 9: case 10: case 11: case 12: case 13: case 14: case 15: case 16: case 19:
+                break;
             case 17:
                 menuCB_RuleNameChengeBeforeJob(0);
                 menuCB_RuleCustomJobDisp(0);
@@ -787,8 +790,8 @@ loop:
             case 18: {
                 menuCB_RuleNameChengeBeforeJob(1);
                 u16* name = (u16*)menuCB_RuleTitleNameGet(CB(s32, 0xB004));
-                volatile u16 save[21];
-                for (s32 k = 0; k < 21; k++) save[k] = name[k];
+                u16 save[21];
+                for (s32 k = 0; k < 21; k++) save[k] = *(u16*)((u8*)&_CB + CB(s32, 0xB004) * 0x90 + 0x9936 + k * 2);
                 s32 r = menuNameEntryOpen(6, name);
                 menuCB_RuleNameChengeAfterJob(1);
                 if (r != 0) {
@@ -805,8 +808,6 @@ loop:
                 }
                 goto again;
             }
-            default:
-                break;
             }
         }
     }
@@ -840,13 +841,12 @@ loop:
         CB(s32, 8) = tunaide_select[CB(s32, 0xAFF4)].mode;
         if (CB(s32, 0xAFFC) == 6) CB(s32, 0x10) = 0;
         else CB(s32, 0x10) = tunaide_select_field[CB(s32, 0xAFFC)];
-        void* t0 = &CB(u8, 0x4C98);
-        menuCBTrainerBios_SetHomePlace(t0, tunaide_select[CB(s32, 0xAFF4)].homePlace);
-        menuCBTrainerBios_SetControlerID(t0, (s8)tunaide_select[CB(s32, 0xAFF4)].ctl[0]);
-        u8* t = &CB(u8, 0x4C98) + 0x1320;
-        for (int i = 1; i < 4; t += 0x1320, i++) {
-            menuCBTrainerBios_SetHomePlace(t, 1);
-            menuCBTrainerBios_SetControlerID(t, (s8)tunaide_select[CB(s32, 0xAFF4)].ctl[i]);
+        menuCBTrainerBios_SetHomePlace(&CB(u8, 0x4C98), tunaide_select[CB(s32, 0xAFF4)].homePlace);
+        menuCBTrainerBios_SetControlerID(&CB(u8, 0x4C98), tunaide_select[CB(s32, 0xAFF4)].ctl[0]);
+        u8* t = (u8*)&_CB + 0x1320;
+        for (u32 i = 1; i < 4; t += 0x1320, i++) {
+            menuCBTrainerBios_SetHomePlace(t + 0x4C98, 1);
+            menuCBTrainerBios_SetControlerID(t + 0x4C98, tunaide_select[CB(s32, 0xAFF4)].ctl[i]);
         }
         if (CB(s32, 0xAFF8) == 0) CB(s32, 8) = 0;
         else CB(s32, 8) = 1;
@@ -1002,139 +1002,21 @@ extern "C" void menuColosseumBattleInit(void) {
 }
 extern "C" {
 void menuColosseumBattle(s32 p0) {
-    s32 *var_r4;
-    s32 var_ctr;
-    u8 *temp_r3;
-    u8 *temp_r4;
-    u8 *temp_r4_2;
-    u8 *temp_r4_3;
-    u8 *temp_r4_4;
-    u8 *temp_r4_5;
-    u8 *temp_r4_6;
-    u8 *temp_r4_7;
-
+    s32 i;
     menuCBBios_UnlockContext();
-    var_r4 = (long *)(&_CB);
     M2C_FIELD(&_CB, s32 *, 4) = p0;
-    if (0 < 0x20) {
-        var_ctr = 2;
-        do {
-            M2C_FIELD(var_r4, s32 *, 0xB054) = 0;
-            temp_r4 = (unsigned char *)(var_r4 + 0x20);
-            M2C_FIELD(var_r4, s32 *, 0xAFD4) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xB058) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xAFD8) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xB05C) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xAFDC) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xB060) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xAFE0) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xB064) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xAFE4) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xB068) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xAFE8) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xB06C) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xAFEC) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xB070) = 0;
-            M2C_FIELD(var_r4, s32 *, 0xAFF0) = 0;
-            temp_r3 = temp_r4 + 0x10000;
-            var_r4 = (long *)(temp_r4 + 0x20);
-            M2C_FIELD(temp_r3, s32 *, -0x4FAC) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x502C) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x4FA8) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x5028) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x4FA4) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x5024) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x4FA0) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x5020) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x4F9C) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x501C) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x4F98) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x5018) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x4F94) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x5014) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x4F90) = 0;
-            M2C_FIELD(temp_r3, s32 *, -0x5010) = 0;
-            var_ctr -= 1;
-        } while (var_ctr != 0);
+    for (i = 0; i < 0x20; i++) {
+        ((s32*)&_CB)[i + 0xB054 / 4] = 0;
+        ((s32*)&_CB)[i + 0xAFD4 / 4] = 0;
     }
-    if (0 < 0x30) {
-        temp_r4_2 = (unsigned char *)(&_CB + 0x20);
-        M2C_FIELD(&_CB, s32 *, 0xB0EC) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0D4) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0D8) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0DC) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0E0) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0E4) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0E8) = 0;
-        temp_r4_3 = temp_r4_2;
-        temp_r4_3 += 0x20;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0EC) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB0F0) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0D4) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0D8) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0DC) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0E0) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0E4) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0E8) = 0;
-        temp_r4_4 = temp_r4_3 + 0x20;
-        M2C_FIELD(temp_r4_3, s32 *, 0xB0D4) = 0;
-        M2C_FIELD(temp_r4_2, s32 *, 0xB0F0) = 0;
-        M2C_FIELD(temp_r4_3, s32 *, 0xB0D8) = 0;
-        M2C_FIELD(temp_r4_3, s32 *, 0xB0DC) = 0;
-        M2C_FIELD(temp_r4_3, s32 *, 0xB0E0) = 0;
-        M2C_FIELD(temp_r4_3, s32 *, 0xB0E4) = 0;
-        M2C_FIELD(temp_r4_3, s32 *, 0xB0E8) = 0;
-        M2C_FIELD(temp_r4_3, s32 *, 0xB0EC) = 0;
-        M2C_FIELD(temp_r4_3, s32 *, 0xB0F0) = 0;
-        temp_r4_5 = temp_r4_4 + 0x20;
-        M2C_FIELD(temp_r4_4, s32 *, 0xB0D4) = 0;
-        M2C_FIELD(temp_r4_4, s32 *, 0xB0D8) = 0;
-        M2C_FIELD(temp_r4_4, s32 *, 0xB0DC) = 0;
-        M2C_FIELD(temp_r4_4, s32 *, 0xB0E0) = 0;
-        M2C_FIELD(temp_r4_4, s32 *, 0xB0E4) = 0;
-        M2C_FIELD(temp_r4_4, s32 *, 0xB0E8) = 0;
-        M2C_FIELD(temp_r4_4, s32 *, 0xB0EC) = 0;
-        M2C_FIELD(temp_r4_4, s32 *, 0xB0F0) = 0;
-        temp_r4_6 = temp_r4_5;
-        temp_r4_6 += 0x20;
-        M2C_FIELD(temp_r4_5, s32 *, 0xB0D4) = 0;
-        M2C_FIELD(temp_r4_5, s32 *, 0xB0D8) = 0;
-        M2C_FIELD(temp_r4_5, s32 *, 0xB0DC) = 0;
-        M2C_FIELD(temp_r4_5, s32 *, 0xB0E0) = 0;
-        M2C_FIELD(temp_r4_5, s32 *, 0xB0E4) = 0;
-        M2C_FIELD(temp_r4_5, s32 *, 0xB0E8) = 0;
-        M2C_FIELD(temp_r4_5, s32 *, 0xB0EC) = 0;
-        M2C_FIELD(temp_r4_5, s32 *, 0xB0F0) = 0;
-        M2C_FIELD(temp_r4_6, s32 *, 0xB0D4) = 0;
-        M2C_FIELD(temp_r4_6, s32 *, 0xB0D8) = 0;
-        M2C_FIELD(temp_r4_6, s32 *, 0xB0DC) = 0;
-        M2C_FIELD(temp_r4_6, s32 *, 0xB0E0) = 0;
-        M2C_FIELD(temp_r4_6, s32 *, 0xB0E4) = 0;
-        M2C_FIELD(temp_r4_6, s32 *, 0xB0E8) = 0;
-        M2C_FIELD(temp_r4_6, s32 *, 0xB0EC) = 0;
-        M2C_FIELD(temp_r4_6, s32 *, 0xB0F0) = 0;
+    for (i = 0; i < 0x30; i++) {
+        ((s32*)&_CB)[i + 0xB0D4 / 4] = 0;
     }
-    if (0 < 0x10) {
-        temp_r4_7 = (unsigned char *)(&_CB + 0x20);
-        M2C_FIELD(&_CB, s32 *, 0xB194) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB198) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB19C) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB1A0) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB1A4) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB1A8) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB1AC) = 0;
-        M2C_FIELD(&_CB, s32 *, 0xB1B0) = 0;
-        M2C_FIELD(temp_r4_7, s32 *, 0xB194) = 0;
-        M2C_FIELD(temp_r4_7, s32 *, 0xB198) = 0;
-        M2C_FIELD(temp_r4_7, s32 *, 0xB19C) = 0;
-        M2C_FIELD(temp_r4_7, s32 *, 0xB1A0) = 0;
-        M2C_FIELD(temp_r4_7, s32 *, 0xB1A4) = 0;
-        M2C_FIELD(temp_r4_7, s32 *, 0xB1A8) = 0;
-        M2C_FIELD(temp_r4_7, s32 *, 0xB1AC) = 0;
-        M2C_FIELD(temp_r4_7, s32 *, 0xB1B0) = 0;
+    for (i = 0; i < 0x10; i++) {
+        ((s32*)&_CB)[i + 0xB194 / 4] = 0;
     }
-    GSfloorPush(0x395U);
     _flashBackFlag = 1;
+    GSfloorPush(0x395U);
     floorSetFadeScript(0U, 0U);
     floorWaitForChange();
 }

@@ -86,7 +86,7 @@ void pokemonSetCountAsJoutaiDataId(Pokemon* p, u16 id, u32 value);
 void pokemonSetOnZukanFlag(Pokemon* p, u8 caught);
 void pokemonSetOnDarkPokemonFlag(Pokemon* p, u8 snatched);
 u8 pokemonDB_GetGet(u16 id);
-bool pokemonDB_GetTukamaetaFlag(u16 id);
+s32 pokemonDB_GetTukamaetaFlag(u16 id);
 u8 darkPokemonBiosGetLevel(u16 id);
 u8 darkPokemonBiosGetHokakuritu(u16 id);
 u8 darkPokemonBiosGetSnatchSuccessFlag(u16 id);
@@ -293,23 +293,26 @@ void WS_BALL_THROW(void) {
     u32 value;
     u8 bonus;
     u8 rate = 0;
+    FightOutPokemon* target;
     u8 shakes;
     bonus = 0;
     u8 work[8];
     fightFloor_GetEncountDataId(0);
     fightSeq_GetWazaSeq();
+    Pokemon* pokemon;
     u32 tikei = fightFloor_GetTikeiDataId(0);
     FightOutPokemon* attacker = fightTargetGetPtrAsNowFightType(0x11, 0);
+    u16 monsId;
     FightItem* item = fightOutPokemon_GetFightItemPtr(attacker);
     fightItem_GetCount(item);
     u16 ball = fightItem_GetItemDataId(item);
-    FightOutPokemon* target = fightTargetGetPtrAsNowFightType(0x12, 0);
-    Pokemon* pokemon = fightOutPokemonGetPokemonPtr(target);
+    target = fightTargetGetPtrAsNowFightType(0x12, 0);
+    pokemon = fightOutPokemonGetPokemonPtr(target);
     u16 darkId = pokemon_GetDarkpokemonDataId(pokemon);
-    u16 monsId = pokemon_GetPokemonDataId(pokemon);
+    monsId = pokemon_GetPokemonDataId(pokemon);
     u32 level = figthOutPokemonGetLevel(target);
-    u32 hp = pokemon_GetHp(pokemon);
-    u32 maxHp = pokemon_GetMaxHp(pokemon);
+    s32 hp = pokemon_GetHp(pokemon);
+    s32 maxHp = pokemon_GetMaxHp(pokemon);
     FIGHT_TRAINER* trainer = fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, attacker);
     u8 catchRate;
     if (pokemonIsDarkPokemon(pokemon) == 1) {
@@ -358,7 +361,7 @@ void WS_BALL_THROW(void) {
             if (darkPokemonBiosGetSnatchSuccessFlag(darkId) == 1) {
                 bonus = 1;
             }
-        } else if (pokemonDB_GetTukamaetaFlag(0) == 1) {
+        } else if ((bool)pokemonDB_GetTukamaetaFlag(0) == 1) {
             bonus = 1;
         }
         if (bonus == 1) {

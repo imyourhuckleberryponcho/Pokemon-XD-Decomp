@@ -73,40 +73,18 @@ static inline void _openRandomMsg() {
     winMsgOpenFieldWithSE(local[RAND16() % 5], 1, 0, 1);
 }
 
+static inline s32 mewAbs(s16 x) {
+    return x < 0 ? -x : x;
+}
+
 static inline void _scale(MEWPOINTS* mp, u8 sel, u32 rem, s32 base) {
-    enum TsE { TsE0 };
     if (sel == 0) {
         mp->a = ((s32)(rem + base) * mp->a) >> 8;
+    } else if (mewAbs(mp->b) > mewAbs(mp->c) && mewAbs(mp->b) > mewAbs(mp->d)) {
+        mp->b = ((s32)(rem + base) * mp->b) >> 8;
+    } else if (mewAbs(mp->c) > mewAbs(mp->b) && mewAbs(mp->c) > mewAbs(mp->d)) {
+        mp->c = ((s32)(rem + base) * mp->c) >> 8;
     } else {
-        s16 c = mp->c;
-        s32 ac = c < 0 ? -c : c;
-        s32 ab = mp->b < 0 ? -mp->b : mp->b;
-        if (ab > ac) {
-            enum TsE ad = (enum TsE)(mp->d);
-            if (ad < 0) {
-                ad = (enum TsE)(-ad);
-            }
-            s32 ab2 = mp->b < 0 ? -mp->b : mp->b;
-            if (ab2 > ad) {
-                mp->b = ((s32)(rem + base) * mp->b) >> 8;
-                return;
-            }
-        }
-        if ((mp->b) < 0) {
-            (mp->b) = -(mp->b);
-        }
-        s32 ac2 = c < 0 ? -c : c;
-        if (ac2 > (mp->b)) {
-            int ad = (enum TsE)(mp->d);
-            if (ad < 0) {
-                ad = (enum TsE)(-ad);
-            }
-            s32 ac3 = c < 0 ? -c : c;
-            if (ac3 > ad) {
-                mp->c = ((s32)(rem + base) * c) >> 8;
-                return;
-            }
-        }
         mp->d = ((s32)(rem + base) * mp->d) >> 8;
     }
 }
@@ -231,6 +209,10 @@ static s32 _mewSequence(MEWPOINTS* mp) {
     }
 }
 
+static inline u32 mewRand(u32 n) {
+    return (u16)HSD_Rand() % n;
+}
+
 static void _question_3(MEWPOINTS* mp) {
     s32 q[2];
     s32 res;
@@ -250,24 +232,23 @@ static void _question_3(MEWPOINTS* mp) {
     do {
         res = menuSubOpenSelect3(0, q, 2, 0x34, 0xd1, 0, 2, 1, 0);
     } while (res < 0);
-    sel = y;
-    sel = res != 0 ? sel : x;
+    sel = res == 0 ? x : y;
     winMsgClose(1);
     switch (sel) {
     case 0:
         mp->b += 2;
         break;
     case 1:
-        mp->b = (s16)(RAND16() % 3) + mp->b + 1;
+        mp->b += (s16)mewRand(3) + 1;
         break;
     case 2:
-        mp->c = (RAND16() % 3) + mp->c + 1;
+        mp->c += (s16)mewRand(3) + 1;
         break;
     case 3:
         if (RAND16() % 10 < 5) {
             mp->b -= 2;
         } else {
-            mp->c = (s16)(RAND16() % 5) + mp->c - 1;
+            mp->c += (s16)mewRand(5) - 1;
         }
         break;
     }
@@ -294,25 +275,25 @@ static void _question_4(MEWPOINTS* mp) {
             mp->a <<= 1;
         } else {
             mp->d += 3;
-            mp->a = mp->a * ((s16)(RAND16() % 3) + 1);
+            mp->a *= (s16)mewRand(3) + 1;
         }
         break;
     case 1:
         if ((u8)res == 0) {
-            mp->d = mp->d - ((s16)(RAND16() % 3) + 2);
+            mp->d -= (s16)mewRand(3) + 2;
             mp->a <<= 1;
         } else {
-            mp->d = (RAND16() % 3) + mp->d + 2;
-            mp->a = mp->a * ((s16)(RAND16() % 3) + 1);
+            mp->d += (s16)mewRand(3) + 2;
+            mp->a *= (s16)mewRand(3) + 1;
         }
         break;
     case 2:
         if ((u8)res == 0) {
-            mp->d = mp->d - ((HSD_Rand() & 3) + 1);
+            mp->d -= (s16)(HSD_Rand() & 3) + 1;
             mp->a <<= 1;
         } else {
-            mp->d = (HSD_Rand() & 3) + mp->d + 1;
-            mp->a = mp->a * ((s16)(RAND16() % 3) + 1);
+            mp->d += (s16)(HSD_Rand() & 3) + 1;
+            mp->a *= (s16)mewRand(3) + 1;
         }
         break;
     }
@@ -356,7 +337,6 @@ static void _question_5(MEWPOINTS* mp) {
 }
 
 static s32 _tmplSelect(MEWPOINTS* mp) {
-    enum TsE { TsE0 };
     u8 kinds[3];
     s32 vals[3];
     s32 i;
@@ -402,19 +382,19 @@ static s32 _tmplSelect(MEWPOINTS* mp) {
         return 4;
     }
     {
-        enum TsE t = (enum TsE)(mp->b);
+        int t = (mp->b);
         if ((s16)t < 0) {
-            t = (enum TsE)(-t);
+            t = (-t);
         }
         mp->a = mp->a + t;
-        t = (enum TsE)(mp->c);
+        t = (mp->c);
         if ((s16)t < 0) {
-            t = (enum TsE)(-t);
+            t = (-t);
         }
         mp->a = mp->a + t;
-        t = (enum TsE)(mp->d);
+        t = (mp->d);
         if ((s16)t < 0) {
-            t = (enum TsE)(-t);
+            t = (-t);
         }
         mp->a = mp->a + t;
     }
@@ -538,9 +518,9 @@ static s32 _fillTmplate(u16* tmpl, MEWPOINTS* mp) {
     skip *= 4;
     base = &mWazaTbl[start];
     cur = base;
+    tries = 0;
     for (i = 0; i < 4; i++) {
         if (tmpl[i] & 0x8000) {
-            tries = 0;
             for (;;) {
                 n = _searchwaza(cur, tmpl[i], tmpl, i, 0);
                 if (n != 0) {
@@ -588,8 +568,21 @@ static s32 _searchwaza(MWAZA* tbl, long mode, u16* used, long usedCount, long nt
             return count;
         }
         switch (mode) {
-        case 0x8001:
-            if (tbl->flags & 1) {
+        case 0x800F:
+            ok = w;
+            break;
+        case 0x800C:
+            if (tbl->flags & 0xC) {
+                ok = w;
+            }
+            break;
+        case 0x8008:
+            if (tbl->flags & 8) {
+                ok = w;
+            }
+            break;
+        case 0x8004:
+            if (tbl->flags & 4) {
                 ok = w;
             }
             break;
@@ -598,30 +591,13 @@ static s32 _searchwaza(MWAZA* tbl, long mode, u16* used, long usedCount, long nt
                 ok = w;
             }
             break;
-        case 0x8003:
-            break;
-        case 0x8004:
-            if (tbl->flags & 4) {
-                ok = w;
-            }
-            break;
-        case 0x8005:
-            break;
-        case 0x8008:
-            if (tbl->flags & 8) {
-                ok = w;
-            }
-            break;
-        case 0x800C:
-            if (tbl->flags & 0xC) {
-                ok = w;
-            }
-            break;
-        case 0x800F:
-            ok = w;
-            break;
         case 0x8102:
             if (!(tbl->flags & 2)) {
+                ok = w;
+            }
+            break;
+        case 0x8001:
+            if (tbl->flags & 1) {
                 ok = w;
             }
             break;

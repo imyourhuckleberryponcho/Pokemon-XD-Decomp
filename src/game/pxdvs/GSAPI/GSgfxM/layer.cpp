@@ -178,11 +178,6 @@ struct GSgfxState {
 };
 extern "C" GSgfxState* gsgfxState;
 
-GStexture* GSgfxLayer::fbTexPtr;
-u16 GSgfxLayer::fbTexRefCount;
-GStexture* GSgfxLayer::distTexPtr;
-u16 GSgfxLayer::distTexRefCount;
-
 static GSgfxLayer* _layerBottom;
 static u8 _layerRenderStats;
 extern "C" u8 gsgfx_layer_inPrimitive;
@@ -429,8 +424,8 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     u32 sp70;
     u32 sp6C;
     u32 sp68;
-    s32 var_r21;
     s32 sp60;
+    s32 *temp_r24;
     s32 sp5C;
     s32 sp58;
     s32 sp54;
@@ -440,11 +435,11 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     s32 sp44;
     s32 sp40;
     s32 sp3C;
-    s32 sp38;
+    u16 sp38;
     s32 sp34;
     s32 sp30;
-    s32 sp2C;
-    s32 sp28;
+    u16 sp2C;
+    u16 sp28;
     f32 var_f27;
     s32 sp20;
     s32 sp1C;
@@ -459,7 +454,7 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     u8 spA;
     u8 sp9;
     u8 sp8;
-    s32 *temp_r24;
+    s32 var_r21;
     s32 *temp_r3_2;
     s32 *var_r20;
     s32 *var_r3;
@@ -474,7 +469,6 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     s32 temp_r0;
     s32 temp_r0_2;
     s32 temp_r0_3;
-    s32 temp_r16_2;
     s32 temp_r22;
     s32 var_r18;
     s32 sp64;
@@ -484,7 +478,6 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     s32 var_r31;
     s32 var_r4;
     s8 var_r0_2;
-    u32 temp_r7;
     u32 var_r0;
     u32 var_r5;
     u8 temp_r4;
@@ -499,6 +492,8 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     u8 *temp_r16;
     u8 *temp_r4_2;
     u8 *temp_r4_3;
+    u32 temp_r7;
+    s32 temp_r16_2;
 
     RedirectLegend legend[4] = {
         { '#', NULL, 2, 0 },
@@ -507,13 +502,13 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
         { '+', NULL, 2, 0 },
     };
     var_r25 = saved_reg_r25;
+    sp58 = jtbl_1814;
     var_r26 = saved_reg_r26;
     var_f26 = saved_reg_f26;
     sp80 = jtbl_1810;
     sp64 = jtbl_1811;
     sp60 = jtbl_1812;
     sp5C = jtbl_1813;
-    sp58 = jtbl_1814;
     sp54 = jtbl_1815;
     if ((u8) _layerRenderStats != 0) {
         var_r31 = 0;
@@ -794,12 +789,12 @@ loop_138:
                 }
                 var_r0_3 = 1;
             }
-            if (var_r0_3 == 1) {
+            if ((s16)var_r0_3 == 1) {
                 sp38 = sp54;
                 GSprimSetTextColor((PrimColor)((s32) &sp38));
                 GSprimWriteChar((s8) *((s32*)legend + var_r30), 295.0f, var_f26);
-                var_r31 += 1;
                 var_r30 += 0x10;
+                var_r31 += 1;
                 f32 kc15772 = 295.0f;
                 f32 kc15810 = 11.0f;
                 var_f27 = kc15772 + kc15810;
@@ -855,8 +850,8 @@ loop_138:
                 sp28 = sp54;
                 GSprimSetTextColor((PrimColor)((s32) &sp28));
                 GSprimWriteChar((s8) *((s32*)legend + var_r30), 470.0f, var_f26);
-                var_r31 += 1;
                 var_r30 += 0x10;
+                var_r31 += 1;
                 f32 kc18405 = 470.0f;
                 f32 kc18443 = 11.0f;
                 var_f27_2 = kc18405 + kc18443;
@@ -1263,8 +1258,7 @@ void GSgfxLayer::SendFifoToRenderer(_gsgfxLayerFifo* fifo) {
 
 extern "C++" {
 void GSgfxLayer::Prerender() {
-    enum TsE { TsE0 };
-    enum TsE spD;
+    bool spD;
     bool spC;
     bool spB;
     u8 spA;
@@ -1281,13 +1275,11 @@ void GSgfxLayer::Prerender() {
     u8 sp8;
     u8 *temp_r3;
 
-    ((GSgfxLayer*)((u16)this))->PrerenderPass((GSgfxLayerPass)(0));
+    ((GSgfxLayer*)(this))->PrerenderPass((GSgfxLayerPass)(0));
     ((GSgfxLayer*)(this))->PrerenderPass((GSgfxLayerPass)(1));
     temp_r3 = M2C_FIELD(this, u8 **, 0);
     if (temp_r3 == NULL) {
-        var_r6 = 0;
-        var_r4 = 0;
-        var_r3 = 0;
+        var_r3 = var_r4 = var_r6 = 0;
     } else {
         if (&sp8 != NULL) {
             sp8 = ((u32) M2C_FIELD(temp_r3, u32 *, 4) >> 6U) & 1;
@@ -1312,7 +1304,7 @@ void GSgfxLayer::Prerender() {
         var_r3 = var_r3_4 != 0;
     }
     if (&spD != NULL) {
-        spD = (enum TsE)(var_r6);
+        spD = var_r6;
     }
     if (&spC != NULL) {
         spC = var_r4;
@@ -1332,10 +1324,10 @@ void GSgfxLayer::Prerender() {
     if (M2C_FIELD(this, s32 *, 4) & 1) {
         temp_r0 = M2C_FIELD(this, s32 *, 0x2C);
         switch (temp_r0) {
-        case 4:
-            break;
         case 1:
             ((GSgfxLayer*)(this))->EffectDistortion();
+            break;
+        case 4:
             break;
         }
     }

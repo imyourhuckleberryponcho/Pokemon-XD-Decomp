@@ -401,11 +401,14 @@ static inline f32 OSu8tof32(u8 in) {
 }
 
 static inline u8 OSf32tou8(register f32 inF) {
-    u8 out;
-    u8* outP = &out;
-    register u8* ptr = outP;
-    asm { psq_st inF, 0(ptr), 1, 2 }
-    return *ptr;
+    u32 tmp;
+    register u32* tmpPtr = &tmp;
+    register u8 ret;
+    asm {
+        psq_st inF, 0(tmpPtr), 1, 2
+        lbz ret, 0(tmpPtr)
+    }
+    return ret;
 }
 
 struct peDLView {

@@ -1076,19 +1076,19 @@ namespace {
 
 s32 CMenuPokemonChange::selectPokemonMenuOpen()
 {
-    s32 player = m_player;
+    Hero* hero;
+    enumPlayerIndex player = (enumPlayerIndex)m_player;
     windowSearchID(0xD6);
     MenuDataBios* data = menuDataBiosGetPtr(0xD6);
     MenuItemBios* item = menuItemBiosGetPtr(0xD6, data->first);
     for (s32 i = 0; i < 2; i++) {
-        Hero* hero;
         if (i == 0) {
             hero = m_hero0;
         } else {
             hero = (Hero*)m_hero1;
         }
         for (s32 j = 0; j < 6; j++) {
-            item->valid = _isPokemonValid(hero->getPokemon(j), (enumPlayerIndex)player);
+            item->valid = _isPokemonValid(hero->getPokemon(j), player);
             item = menuItemBiosGetPtr(0xD6, item->next);
         }
     }
@@ -1227,17 +1227,19 @@ namespace {
 
 void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, u32 itemId)
 {
+    bool visible;
     s32 waza;
-    Pokemon* target;
     u16 item;
+    Pokemon *target;
     MENU_MODEL* model;
     s32 player = windowGetParam(window, 0);
     u32 color;
     Hero* hero = (player == 0) ? m_hero0 : (Hero*)m_hero1;
-    Pokemon* pokemon = getSelPokemon((enumPlayerIndex)player);
+    s32 rf_t = m_sel[player];
+    Pokemon* pokemon = (Pokemon*)getPokemonByIndex(rf_t);
     u8 pulse;
     u32 msg;
-    bool visible;
+    s32 index;
     u8 windowAlpha = window->alpha;
     sprite->rgba.a = windowAlpha;
     color = (windowAlpha & 0xFF) | 0xFFFFFF00;
@@ -1347,8 +1349,8 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x619:
     case 0x61A: {
         s32 index = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x615);
-        u32 msg;
         Pokemon* target;
+        u32 msg;
         target = hero->getPokemon(index);
         msg = 0x4277;
         switch (_getPokemonState(target, (enumPlayerIndex)player)) {
@@ -1370,7 +1372,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
             u32 rect = GSmsgGetRect(msg);
             s16 rectW = rect >> 16;
             u32 rf_t = sprite->w;
-            s16 x = (s16)(rf_t / 2 - rectW / 2);
+            s16 x = rf_t / 2 - rectW / 2;
             GSmsgPrint2(window->msgHandle, x - 1, 0, color, 0x4277);
             winSpriteSetDisp(sprite, 1);
         } else {
@@ -1420,14 +1422,19 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x8D2:
     case 0x8D3: {
         s32 value = windowGetValue(0xD6);
-        s32 index = value;
+        index = value;
         if (value >= getQuantityHeroPokemon(PLAYER_1)) {
             index -= getQuantityHeroPokemon(PLAYER_1);
         }
-        s32 who = (value >= getQuantityHeroPokemon(PLAYER_1)) ? 1 : 0;
+        s32 who;
+        if (value >= getQuantityHeroPokemon(PLAYER_1)) {
+            who = 1;
+        } else {
+            who = 0;
+        }
         s32 spriteIndex = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x8CE);
         visible = false;
-        if (spriteIndex == index && player == who && m_state.current != 0x10
+        if (spriteIndex == index && who == player && m_state.current != 0x10
             && spriteIndex < getQuantityHeroPokemon((enumPlayerIndex)who)) {
             visible = true;
         }
@@ -1447,9 +1454,8 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x8D4: {
         s32 value = windowGetValue(0xD6);
         s32 count2 = getQuantityHeroPokemon(PLAYER_2);
-        s32 count1 = getQuantityHeroPokemon(PLAYER_1);
+        winSpriteSetDisp(sprite, value == (s32)(getQuantityHeroPokemon(PLAYER_1)) + count2);
         sprite->rgba.a = pulse;
-        winSpriteSetDisp(sprite, value == count1 + count2);
         break;
     }
 
@@ -1506,8 +1512,8 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         case 1:
             msg = 0x9C6;
             break;
-        case 3:
-        case 2:        default:
+        case 2:
+        default:
             msg = 0;
             break;
         }

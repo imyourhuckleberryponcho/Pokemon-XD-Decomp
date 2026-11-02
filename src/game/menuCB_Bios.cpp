@@ -13,7 +13,7 @@ struct CBRule {
     s16 a14, a16;
     u8 a18, a19;
     s16 a1A, a1C;
-    u16 name[7][3];
+    u16 name[21];
     struct { s32 a, b; } a48;
     u16 a50;
     u8 f[0x3C];
@@ -411,15 +411,13 @@ void menuCBBios_InitContext(_MENUCBWORK* cb) {
 }
 
 static inline void ruleNameFill(u16* src, _TOOL_SAVEDATA* save, int n) {
-    for (int k = 0; k < 7; k++) {
-        for (int j = 0; j < 3; j++) {
-            if (src != 0) {
-                if (*src == 0xFFFF) src += 2;
-                save->rule[n].name[k][j] = *src;
-                if (*src != 0) src += 1;
-            } else {
-                save->rule[n].name[k][j] = 0;
-            }
+    for (int i = 0; i < 21; i++) {
+        if (src != 0) {
+            if (*src == 0xFFFF) src += 2;
+            save->rule[n].name[i] = *src;
+            if (*src != 0) src += 1;
+        } else {
+            save->rule[n].name[i] = 0;
         }
     }
 }

@@ -64,7 +64,8 @@ struct GSgfxMatrixStack;
 enum GSgfxTunitKReg { GSgfxTunitKReg_draft_dummy };
 struct GSgfxVF;
 struct GSmtx;
-enum Mtx { Mtx_draft_dummy };
+typedef f32 Mtx[3][4];
+typedef f32 (*MtxPtr)[4];
 struct Quaternion;
 struct Vec;
 struct _EmitParams;
@@ -202,11 +203,12 @@ asm void PSVECSubtract(const register Vec* a, const register Vec* b, register Ve
 double atan2(double y, double x);
 s32 particleEngineSetDefaultRenderState(s32);
 s32 particleEngineSetupBlendMode(s32);
-s32 particleEngineSetupTexture(s32, s32, s32, s32, s32, s32);
+enum GStexFilter { GS_TEXFILTER_NEAR = 0, GS_TEXFILTER_LINEAR = 2 };
+void particleEngineSetupTexture(u8, s32, s32, s32, s32, s32);
 void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t);
 void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx);
 f32 peSplineGetValue(peSpline* s, f32 t);
-extern f32 __float_nan;
+extern f32 __float_nan[];
 extern Vec g_CameraLookDir;
 extern s32 g_CameraMatrix;
 extern Vec g_CameraPosition;
@@ -226,8 +228,7 @@ struct ParticleDebugStats {
 };
 extern ParticleDebugStats g_particle_debug_stats;
 extern s32 g_render_pass;
-struct XdBlobC { u8 data[0xC]; };
-extern XdBlobC unitScaleVector;
+extern Vec unitScaleVector;
 extern s32 jtbl_1954;
 extern s32 this_;
 extern s32 jtbl_1843;
@@ -260,6 +261,84 @@ static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
     LAYER_FIELD(l, u32, 0x16A8) |= sum;
     LAYER_FIELD(l, u32, off + 0xB8) |= bit;
     LAYER_FIELD(l, u32, 0x1760) |= sum;
+}
+
+struct peShapeLightVec : Vec {
+    peShapeLightVec(const Vec& o) {
+        x = o.x;
+        y = o.y;
+        z = o.z;
+    }
+    peShapeLightVec(f32 x_, f32 y_, f32 z_) {
+        x = x_;
+        y = y_;
+        z = z_;
+    }
+};
+
+struct peShapeLight {
+    u16 dirty;
+    u8 pad2[2];
+    s32 type;
+    u32 color;
+    Vec pos;
+    Vec dir;
+};
+
+static inline void lightSetPos(GSgfxLight* light, const Vec& p) {
+    peShapeLight* l = (peShapeLight*)light;
+    Vec v;
+    v.x = p.x;
+    v.y = p.y;
+    v.z = p.z;
+    switch (l->type) {
+    case 0:
+        return;
+    case 1:
+        l->pos.x = v.x;
+        l->pos.y = v.y;
+        l->pos.z = v.z;
+        break;
+    case 2:
+        l->pos.x = v.x;
+        l->pos.y = v.y;
+        l->pos.z = v.z;
+        break;
+    }
+    l->dirty |= 2;
+}
+
+static inline void lightSetDir(GSgfxLight* light, Vec* dir) {
+    peShapeLight* l = (peShapeLight*)light;
+    switch (l->type) {
+    case 0:
+    case 1:
+        l->dir.x = dir->x;
+        l->dir.y = dir->y;
+        l->dir.z = dir->z;
+        l->dirty |= 4;
+        break;
+    }
+}
+
+struct peShapeLayerLights {
+    u8 pad0[0xD94];
+    u8 numLights;
+    u8 padD95[3];
+    GSgfxLight* lights[8];
+};
+
+static inline void layerSetLights(GSgfxLayer* l, u8 n, GSgfxLight** lights) {
+    peShapeLayerLights* ll = (peShapeLayerLights*)l;
+    ll->numLights = n;
+    for (u8 i = 0; i < 8; i++) {
+        if (i < n) {
+            ll->lights[i] = lights[i];
+        } else {
+            ll->lights[i] = NULL;
+        }
+    }
+    layerMark(l, 4, 0x16BC, 0x10);
 }
 
 static inline bool canRender(peShapeContainer* c) {
@@ -315,38 +394,11 @@ static inline bool canRender(peShapeContainer* c) {
 
 extern "C++" {
 #pragma push
-#pragma optimize_for_size on
 void peShapeContainer::Render() {
-    f32 sp24;
-    volatile f32 sp30;
-    f32 sp2C;
-    volatile f32 sp28;
-    volatile f32 sp3C;
-    f32 sp38;
-    f32 sp34;
-    GSgfxLight *sp1C;
-    volatile f32 unksp20;
-    GSgfxLight *sp18;
-    volatile f32 sp40;
-    GSgfxLight *sp14;
-    GSgfxLight *sp10;
-    s32 sp8;
-    GSgfxLight *temp_r11;
-    GSgfxLight *temp_r9;
-    _peShape *temp_r5;
     peShapeNode *var_r30_2;
-    s32 temp_cr0_eq;
-    s32 temp_r0;
-    s32 temp_r0_2;
-    s32 temp_r0_3;
     s32 temp_r31;
-    s32 temp_r4;
-    s32 temp_r9_2;
     s32 var_r7;
     s32 var_r8;
-    u8 var_r0;
-    u8 var_r30;
-    u8 var_r7_2;
 
     if (M2C_FIELD(this, u8 *, 0x19)) {
         if (canRender(this)) {
@@ -368,23 +420,22 @@ void peShapeContainer::Render() {
             if (temp_r31 & 0x40) {
                 var_r8 = 2;
             }
-            var_r7 = 0;
-            var_r7 = !(temp_r31 & 0x20) ? var_r7 : 2;
-            u16 tmp1 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), s32 *, 0x74);
-            particleEngineSetupTexture(0, tmp1, 0, 0, var_r7, var_r8);
+            _peShape* sh = M2C_FIELD(this, _peShape **, 0x20);
+            particleEngineSetupTexture(0, M2C_FIELD(sh, s32 *, 0x74), 0, 0, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, var_r8);
             particleEngineSetupBlendMode(2);
             if (temp_r31 & 0x200) {
-                temp_r9 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), GSgfxLight **, 0x78);
-                var_r30 = 1;
-                sp18 = M2C_FIELD(&jtbl_1954, GSgfxLight **, 0);
-                M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 1;
-                sp14 = temp_r9;
-                sp1C = M2C_FIELD(&jtbl_1954, GSgfxLight **, 4);
-                M2C_FIELD(g_current_layer, s32 *, 0x16CC) = (s32) (M2C_FIELD((u16)g_current_layer, s32 *, 0x16CC) | 1);
-                sp18 = temp_r9;
-                M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 8);
-                M2C_FIELD(g_current_layer, s32 *, 0x1784) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1784) | 1);
-                M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 8);
+                GSgfxLight* light0;
+                GSgfxLight* light1;
+                GSgfxLight* lights[2] = {NULL, NULL};
+                u8 numLights;
+                light0 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), GSgfxLight **, 0x78);
+                numLights = 1;
+                lights[0] = light0;
+                {
+                    GSgfxLayer* l = g_current_layer;
+                    LAYER_FIELD(l, s8, 0xEAC) = 1;
+                    layerMark(l, 8, 0x16CC, 1);
+                }
                 {
                     GSgfxLayer* l = g_current_layer;
                     LAYER_FIELD(l, s8, 0xDB8) = 1;
@@ -429,36 +480,17 @@ void peShapeContainer::Render() {
                     LAYER_FIELD(l, s32, 0x107C) = 7;
                     layerMark(l, 8, 0x16D8, 1);
                 }
-                PSMTXMultVec((const Mtx)(g_CameraMatrix), (const Vec *)((const register Vec*)(M2C_FIELD(this, _peShape **, 0x20) + 0x5C)), (Vec *)((register Vec*)(&unksp20)));
-                temp_r0_2 = M2C_FIELD(sp14, s32 *, 4);
-                sp38 = unksp20;
-                sp3C = sp24;
-                sp40 = sp28;
-                switch (temp_r0_2) {
-                case 2:
-                    M2C_FIELD(sp14, f32 *, 0xC) = unksp20;
-                    M2C_FIELD(sp14, f32 *, 0x10) = sp24;
-                    M2C_FIELD(sp14, f32 *, 0x14) = sp28;
-                default:
-block_48:
-                    M2C_FIELD(sp14, u16 *, 0) = (u16) (M2C_FIELD(sp14, u16 *, 0) | 2);
-                    break;
-                case 1:
-                    M2C_FIELD(sp14, f32 *, 0x10) = sp24;
-                    M2C_FIELD(sp14, f32 *, 0xC) = unksp20;
-                    M2C_FIELD(sp14, f32 *, 0x14) = sp28;
-                    goto block_48;
-                }
-                sp8 = 2;
-                ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(0U, (GSgfxCunitAlpha)(0), (GSgfxCunitSrc)(0), (GSgfxCunitSrc)(0), 1U, (GSgfxLight**)(&sp14), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR( )));
+                Vec pos;
+                PSMTXMultVec((MtxPtr)(g_CameraMatrix), (Vec*)((u8*)M2C_FIELD(this, _peShape **, 0x20) + 0x5C), &pos);
+                lightSetPos(light0, pos);
+                g_current_layer->cunitChannelGen(0, (GSgfxCunitAlpha)0, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 1, &light0, (GSgfxLightType)2, (GSgfxDiffuseFunc)2);
                 if (temp_r31 & 0x400) {
-                    temp_r11 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), GSgfxLight **, 0x7C);
-                    sp10 = temp_r11;
-                    M2C_FIELD(g_current_layer, s8 *, 0xEAC) = 2;
-                    var_r30 = 2;
-                    sp1C = temp_r11;
+                    light1 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), GSgfxLight **, 0x7C);
+                    numLights = 2;
+                    lights[1] = light1;
                     {
                         GSgfxLayer* l = g_current_layer;
+                        LAYER_FIELD(l, s8, 0xEAC) = 2;
                         layerMark(l, 8, 0x16CC, 1);
                     }
                     {
@@ -507,47 +539,22 @@ block_48:
                         LAYER_FIELD(l, s8, 0xDB8) = 2;
                         layerMark(l, 4, 0x16BC, 1);
                     }
-                    sp8 = 2;
-                    ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(1U, (GSgfxCunitAlpha)(0), (GSgfxCunitSrc)(0), (GSgfxCunitSrc)(0), 1U, (GSgfxLight**)(&sp10), (GSgfxLightType)(0), (GSgfxDiffuseFunc)(M2C_ERROR( )));
-                    if (PSVECSquareMag((const register Vec*)(M2C_FIELD(this, _peShape **, 0x20) + 0x5C)) < 0.00001f) {
-                        sp2C = 0.0f;
-                        sp30 = -1.0f;
-                        sp34 = 0.0f;
+                    g_current_layer->cunitChannelGen(1, (GSgfxCunitAlpha)0, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 1, &light1, (GSgfxLightType)0, (GSgfxDiffuseFunc)2);
+                    Vec dir;
+                    Vec* src = (Vec*)((u8*)M2C_FIELD(this, _peShape **, 0x20) + 0x5C);
+                    if (PSVECSquareMag(src) < 0.00001f) {
+                        dir.x = 0.0f;
+                        dir.y = -1.0f;
+                        dir.z = 0.0f;
                     } else {
-                        temp_r5 = M2C_FIELD(this, _peShape **, 0x20);
-                        sp30 = -M2C_FIELD(temp_r5, f32 *, 0x60);
-                        sp34 = -M2C_FIELD(temp_r5, f32 *, 0x64);
-                        sp2C = -M2C_FIELD((u16)temp_r5, f32 *, 0x5C);
-                        PSVECNormalize((const register Vec*)((Vec *) &sp2C), (register Vec*)((Vec *) &sp2C));
+                        Vec* p = (Vec*)((u8*)M2C_FIELD(this, _peShape **, 0x20) + 0x5C);
+                        dir = peShapeLightVec(-p->x, -p->y, -p->z);
+                        PSVECNormalize(&dir, &dir);
                     }
-                    PSMTXMultVecSR((const Mtx)(g_CameraMatrix), (const Vec *)((const register Vec*)((Vec *) &sp2C)), (Vec *)((register Vec*)((Vec *) &sp2C)));
-                    temp_r0_3 = M2C_FIELD(sp10, s32 *, 4);
-                    if (temp_r0_3 < 2) {
-                        if (temp_r0_3 < 0) {
-
-                        } else {
-                            M2C_FIELD((u16)sp10, f32 *, 0x18) = sp2C;
-                            M2C_FIELD(sp10, f32 *, 0x1C) = sp30;
-                            M2C_FIELD(sp10, u16 *, 0) = (u16) (M2C_FIELD(sp10, u16 *, 0) | 4);
-                            M2C_FIELD(sp10, f32 *, 0x20) = sp34;
-                        }
-                    }
+                    PSMTXMultVecSR((MtxPtr)(g_CameraMatrix), &dir, &dir);
+                    lightSetDir(light1, &dir);
                 }
-                var_r7_2 = 0;
-                M2C_FIELD(g_current_layer, u8 *, 0xD94) = var_r30;
-                while (var_r7_2 < 8U) {
-                    if (var_r7_2 < var_r30) {
-                        temp_r9_2 = (var_r7_2 * 4) & 0x3FC;
-                        *((u8*)(g_current_layer) + (temp_r9_2 + 0xD98)) = (unsigned char)(*(&sp18 + temp_r9_2));
-                    } else {
-                        *((u8*)(g_current_layer) + (((var_r7_2 * 4) & 0x3FC) + 0xD98)) = 0;
-                    }
-                    var_r7_2 += 1;
-                }
-                {
-                    GSgfxLayer* l = g_current_layer;
-                    layerMark(l, 4, 0x16BC, 0x10);
-                }
+                layerSetLights(g_current_layer, numLights, lights);
             } else {
                 {
                     GSgfxLayer* l = g_current_layer;
@@ -1390,471 +1397,382 @@ peShapeContainer::peShapeContainer(peEmitterNode* p0, _peShape* p1, unsigned sho
 }
 }
 
+#pragma push
+#pragma dont_inline off
 extern "C++" {
-void peShapeNode::Render(_peShape* p0) {
-    volatile f32 unksp50;
-    volatile s32 sp10;
-    s32 sp1C;
-    volatile s32 sp18;
-    s32 sp14;
-    volatile s32 sp20;
-    s32 spC;
-    s32 sp8;
-    s32 temp_r31;
-    s32 temp_r3;
-    s32 temp_r4;
-    s32 temp_r4_2;
-    s32 temp_r5;
-    u32 temp_r0;
+struct peShapeColor {
+    u32 rgba;
+};
 
-    temp_r31 = M2C_FIELD(p0, s32 *, 0);
-    temp_r4 = M2C_FIELD(this, s32 *, 0x98);
-    sp1C = jtbl_1843;
-    M2C_FIELD(g_current_layer, s32 *, 0x14F4) = temp_r4;
-    sp18 = temp_r4;
-    M2C_FIELD(g_current_layer, s32 *, 0x16F8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16F8) | 1);
-    M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 0x10);
-    M2C_FIELD(g_current_layer, s32 *, 0x17B0) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x17B0) | 1);
-    M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 0x10);
-    if (temp_r31 & 0x200) {
-        temp_r5 = M2C_FIELD(this, s32 *, 0x98);
-        temp_r4_2 = M2C_FIELD(p0, s32 *, 0x68);
-        sp10 = temp_r5;
-        M2C_FIELD(g_current_layer, s32 *, 0xE9C) = temp_r4_2;
-        M2C_FIELD(g_current_layer, s32 *, 0xEA4) = temp_r5;
-        sp14 = temp_r4_2;
-        M2C_FIELD(g_current_layer, s32 *, 0x16C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16C4) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x16C8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16C8) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 4);
-        M2C_FIELD(g_current_layer, s32 *, 0x177C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x177C) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x1780) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1780) | 1);
-        M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 4);
-        if (temp_r31 & 0x400) {
-            temp_r3 = M2C_FIELD(this, s32 *, 0x98);
-            sp8 = temp_r3;
-            M2C_FIELD(g_current_layer, s32 *, 0xEA0) = (s32) jtbl_1843;
-            M2C_FIELD(g_current_layer, s32 *, 0xEA8) = temp_r3;
-            spC = jtbl_1843;
-            M2C_FIELD(g_current_layer, s32 *, 0x16C4) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16C4) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x16C8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16C8) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x16A8) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x16A8) | 4);
-            M2C_FIELD(g_current_layer, s32 *, 0x177C) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x177C) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x1780) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1780) | 2);
-            M2C_FIELD(g_current_layer, s32 *, 0x1760) = (s32) (M2C_FIELD(g_current_layer, s32 *, 0x1760) | 4);
+static inline void peShapeSetKColor(GSgfxLayer* layer, peShapeColor c) {
+    *(peShapeColor*)((u8*)layer + 0x14F4) = c;
+    M2C_FIELD(layer, u32 *, 0x16F8) |= 1;
+    M2C_FIELD(layer, u32 *, 0x16A8) |= 0x10;
+    M2C_FIELD(layer, u32 *, 0x17B0) |= 1;
+    M2C_FIELD(layer, u32 *, 0x1760) |= 0x10;
+}
+
+static inline void peShapeSetChanColor(GSgfxLayer* layer, int ch, peShapeColor amb, peShapeColor mat) {
+    ((peShapeColor*)((u8*)layer + 0xE9C))[ch] = amb;
+    ((peShapeColor*)((u8*)layer + 0xEA4))[ch] = mat;
+    M2C_FIELD(layer, u32 *, 0x16C4) |= 1 << ch;
+    M2C_FIELD(layer, u32 *, 0x16C8) |= 1 << ch;
+    M2C_FIELD(layer, u32 *, 0x16A8) |= 4;
+    M2C_FIELD(layer, u32 *, 0x177C) |= 1 << ch;
+    M2C_FIELD(layer, u32 *, 0x1780) |= 1 << ch;
+    M2C_FIELD(layer, u32 *, 0x1760) |= 4;
+}
+
+struct peShapeSpline {
+    u8 flags;
+    u8 pad1[3];
+    f32 value;
+    f32 time;
+};
+struct peShapeVecC : Vec {
+    peShapeVecC(const Vec& o) {
+        x = o.x;
+        y = o.y;
+        z = o.z;
+    }
+};
+struct peShapeQuat {
+    f32 x, y, z, w;
+};
+struct peShapeXform {
+    Vec pos;
+    peShapeQuat rot;
+    Vec scale;
+};
+struct peShapeEmitParams {
+    u32 flags;
+};
+struct peShapeEmitter {
+    u8 pad0[0x38];
+    f32 color[4];
+    u8 pad48[0xFC - 0x48];
+    peShapeEmitParams* params;
+};
+struct peShapeDef {
+    u32 flags;
+    f32 rotX;
+    f32 rotY;
+    f32 rotZ;
+    Vec spin;
+    Vec base;
+    Vec jitter;
+    peShapeSpline* rotXSpline;
+    peShapeSpline* rotYSpline;
+    peShapeSpline* rotZSpline;
+    peShapeSpline* sclXSpline;
+    peShapeSpline* sclYSpline;
+    peShapeSpline* sclZSpline;
+    peColorSpline* color;
+    peShapeSpline* alpha;
+};
+struct peShapeNodeData {
+    f32 life0;
+    f32 life;
+    Vec pos;
+    Vec vel;
+    peShapeXform* xform;
+    f32 speed;
+    void* prev;
+    void* next;
+    peShapeXform world;
+    peShapeQuat spinQuat;
+    peShapeQuat rotQuat;
+    Vec offset;
+    f32 sortKey;
+    u32 flip;
+    Vec spinRate;
+    u8 color[4];
+};
+
+inline int __fpclassifyf(float x) {
+    switch ((*(s32*)&x) & 0x7F800000) {
+    case 0x7F800000:
+        if ((*(s32*)&x) & 0x007FFFFF) {
+            return 1;
+        } else {
+            return 2;
+        }
+    case 0:
+        if ((*(s32*)&x) & 0x007FFFFF) {
+            return 5;
+        } else {
+            return 3;
         }
     }
-    PSMTXQuat((Mtx)((s32) &sp20), (const Quaternion *)((const register Quaternion*)(this + 0x3C)));
-    PSMTXScale((Mtx)((s32) &unksp50), (float)(M2C_FIELD(this, f32 *, 0x4C)), (float)(M2C_FIELD(this, f32 *, 0x50)), (float)(M2C_FIELD(this, f32 *, 0x54)));
-    PSMTXConcat((const Mtx)(&sp20), (const Mtx)((s32) &unksp50), (Mtx)((s32) &unksp50));
-    PSMTXTransApply((const Mtx)((s32) &unksp50), (Mtx)((s32) &unksp50), (float)(M2C_FIELD(this, f32 *, 0x30)), (float)(M2C_FIELD(this, f32 *, 0x34)), (float)(M2C_FIELD(this, f32 *, 0x38)));
-    ((GSgfxMatrixStack*)(M2C_FIELD(g_current_layer, GSgfxMatrixStack **, 0x19A0)))->pushMult((GSmtx*)(&unksp50));
-    temp_r0 = temp_r31 & 7;
-    switch (temp_r0) {
-    case 0:
-        ((GSgfxLayer*)(g_current_layer))->drawCube();
-        break;
-    case 1:
-        ((GSgfxLayer*)(g_current_layer))->drawCylinder(M2C_FIELD(p0, u8 *, 0x59));
-        break;
-    case 2:
-        ((GSgfxLayer*)(g_current_layer))->drawDodecaedron();
-        break;
-    case 3:
-        ((GSgfxLayer*)(g_current_layer))->drawIcosahedron();
-        break;
-    case 4:
-        ((GSgfxLayer*)(g_current_layer))->drawOctahedron();
-        break;
-    case 7:
-        ((GSgfxLayer*)(g_current_layer))->drawTorus(M2C_FIELD(p0, f32 *, 0x54), M2C_FIELD(p0, u8 *, 0x58), M2C_FIELD(p0, u8 *, 0x59));
-        break;
-    case 6:
-        ((GSgfxLayer*)(g_current_layer))->drawSphere(M2C_FIELD(p0, u8 *, 0x59));
-        break;
-    default:
-        ((GSgfxLayer*)(g_current_layer))->drawSphere(M2C_FIELD(p0, u8 *, 0x58), M2C_FIELD(p0, u8 *, 0x59));
-        break;
+    return 4;
+}
+
+inline float sqrtf(float x) {
+    if (x > 0.0f) {
+        double guess = __frsqrte((double)x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        return (float)(x * guess);
+    } else if (x < 0.0) {
+        return __float_nan[0];
+    } else if (__fpclassifyf(x) == 1) {
+        return __float_nan[0];
     }
-    ((GSgfxMatrixStack*)(M2C_FIELD(g_current_layer, GSgfxMatrixStack **, 0x19A0)))->pop();
+    return x;
+}
+
+static inline f32 __OSu8tof32(register const u8* arg) {
+    register f32 ret;
+    asm { psq_l ret, 0(arg), 1, 2 }
+    return ret;
+}
+
+static inline f32 OSu8tof32(u8 in) {
+    return __OSu8tof32(&in);
+}
+
+static inline u8 __OSf32tou8(register f32 inF) {
+    u32 tmp;
+    register u32* tmpPtr = &tmp;
+    register u8 ret;
+    asm {
+        psq_st inF, 0(tmpPtr), 1, 2
+        lbz ret, 0(tmpPtr)
+    }
+    return ret;
+}
+
+static inline u8 OSf32tou8(f32 in) {
+    return __OSf32tou8(in);
+}
+
+static inline f32 evalSpline(peShapeSpline* s, f32 t) {
+    if (s == 0 || (s->flags & 3) == 0) {
+        return 1.0f;
+    }
+    f32 d = s->time - t;
+    if (d < 0.0f) {
+        d = -d;
+    }
+    if (d <= 0.00001f) {
+        return s->value;
+    }
+    return peSplineGetValue((peSpline*)s, t);
+}
+
+#pragma defer_codegen on
+
+extern "C++" {
+void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
+    peShapeNodeData* n = (peShapeNodeData*)this;
+    peShapeEmitter* e = (peShapeEmitter*)p0;
+    peShapeDef* s = (peShapeDef*)p1;
+    u32 flags = s->flags;
+    Vec euler;
+    Vec jitter;
+    ((peNode*)this)->Start(p0, p2);
+    n->flip = 0;
+    PSVECScale(&s->jitter, &jitter, HSD_Randf());
+    n->offset = peShapeVecC(jitter);
+    PSVECAdd(&n->offset, &s->base, &n->offset);
+    n->spinQuat.x = 0.0f;
+    n->spinQuat.y = 0.0f;
+    n->spinQuat.z = 0.0f;
+    n->spinQuat.w = 1.0f;
+    n->world.pos.x = 0.0f;
+    n->world.pos.y = 0.0f;
+    n->world.pos.z = 0.0f;
+    n->world.rot.x = 0.0f;
+    n->world.rot.y = 0.0f;
+    n->world.rot.z = 0.0f;
+    n->world.rot.w = 1.0f;
+    n->world.scale = unitScaleVector;
+    if (!(e->params->flags & 0x400)) {
+        EulerToQuat((Vec*)&s->rotX, (Quaternion*)&n->rotQuat);
+        if (flags & 0x1C7000) {
+            Vec* ep = &euler;
+            if (flags & 0x1000) {
+                ep->x = 6.2831855f * HSD_Randf();
+            } else {
+                ep->x = 0.0f;
+            }
+            if (flags & 0x2000) {
+                ep->y = 6.2831855f * HSD_Randf();
+            } else {
+                ep->y = 0.0f;
+            }
+            if (flags & 0x4000) {
+                ep->z = 6.2831855f * HSD_Randf();
+            } else {
+                ep->z = 0.0f;
+            }
+            if (flags & 0x40000) {
+                if (HSD_Randf() < 0.5f) {
+                    n->flip |= 1;
+                }
+            }
+            if (flags & 0x80000) {
+                if (HSD_Randf() < 0.5f) {
+                    n->flip |= 2;
+                }
+            }
+            if (flags & 0x100000) {
+                if (HSD_Randf() < 0.5f) {
+                    n->flip |= 4;
+                }
+            }
+            EulerToQuat(&euler, (Quaternion*)&n->spinQuat);
+        }
+    }
+    n->spinRate = s->spin;
+    if (flags & 0x8000) {
+        n->spinRate.x *= HSD_Randf();
+    }
+    if (flags & 0x10000) {
+        n->spinRate.y *= HSD_Randf();
+    }
+    if (flags & 0x20000) {
+        n->spinRate.z *= HSD_Randf();
+    }
+}
 }
 }
 
 extern "C++" {
 u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
-    f32 temp_f31;
-    s32 sp14;
-    volatile s32 sp18;
-    s32 sp24;
-    s32 sp28;
-    s32 sp2C;
-    u32 sp34;
-    s32 sp38;
-    s32 sp40;
-    s32 sp44;
-    s32 spC;
-    s32 unksp20;
-    s32 unksp30;
-    u32 unksp3C;
-    s32 unksp54;
-    f32 spE0;
-    f32 spDC;
-    f32 spD8;
-    f32 spD4;
-    f32 spD0;
-    f32 spCC;
-    f32 spC8;
-    f32 spC4;
-    f32 spC0;
-    f32 spBC;
-    s32 sp8C;
-    volatile f32 sp88;
-    volatile f32 sp84;
-    f32 sp80;
-    f32 sp7C;
-    volatile f32 sp78;
-    volatile f32 sp74;
-    f32 sp70;
-    f32 sp6C;
-    f32 sp68;
-    f32 sp64;
-    f32 sp50;
-    f32 sp4C;
-    f32 sp48;
-    f32 sp1C;
-    u8 spA;
-    u8 sp9;
-    u8 sp8;
-    Quaternion *temp_r3_6;
-    f32 temp_f1_4;
-    s32 sp10;
-    f32 var_f0;
-    f32 var_f1;
-    f32 var_f1_10;
-    f32 var_f1_11;
-    f32 var_f1_12;
-    f32 var_f1_2;
-    f32 var_f1_3;
-    f32 var_f1_4;
-    f32 var_f1_5;
-    f32 var_f1_6;
-    f32 var_f1_7;
-    f32 var_f1_8;
-    f32 var_f1_9;
-    f32 var_f2;
-    f32 var_f2_2;
-    f64 temp_f1;
-    f64 temp_f1_2;
-    f64 temp_f1_3;
-    peSpline *temp_r3_10;
-    peSpline *temp_r3_3;
-    peSpline *temp_r3_4;
-    peSpline *temp_r3_5;
-    peSpline *temp_r3_7;
-    peSpline *temp_r3_8;
-    peSpline *temp_r3_9;
-    s32 temp_r3;
-    s32 temp_r3_2;
-    s32 var_r0;
-
-    if (((peNode*)((peNode *) this))->Update((peEmitterNode*)(p0), p2) == 0) {
-        return 0U;
+    peShapeNodeData* n = (peShapeNodeData*)this;
+    peShapeEmitter* e = (peShapeEmitter*)p0;
+    peShapeDef* s = (peShapeDef*)p1;
+    if (!((peNode*)this)->Update(p0, p2)) {
+        return 0;
     }
-    temp_r3 = *M2C_FIELD(p0, s32 **, 0xFC);
-    temp_f31 = 1.0f - (M2C_FIELD(this, f32 *, 4) / M2C_FIELD(this, f32 *, 0));
-    if (temp_r3 & 0x400) {
-        sp64 = M2C_FIELD(this, f32 *, 0x14);
-        sp68 = M2C_FIELD(this, f32 *, 0x18);
-        sp6C = M2C_FIELD(this, f32 *, 0x1C);
-        if (temp_r3 & 0x40) {
-            PSMTXQuat((Mtx)((s32) &sp8C), (const Quaternion *)((const register Quaternion*)(M2C_FIELD(this, peXform **, 0x20) + 0xC)));
-            PSMTXMultVecSR((const Mtx)((s32) &sp8C), (const Vec *)((const register Vec*)((Vec *) &sp64)), (Vec *)((register Vec*)((Vec *) &sp64)));
+    f32 t = 1.0f - n->life / n->life0;
+    u32 pf = e->params->flags;
+    Vec euler;
+    peShapeXform local;
+    peShapeQuat fq;
+    Vec v;
+    peShapeQuat q;
+    Vec d2;
+    Vec d;
+    Vec delta;
+    f32 mtx[3][4];
+    peShapeQuat out;
+    if (pf & 0x400) {
+        v.x = n->vel.x;
+        v.y = n->vel.y;
+        v.z = n->vel.z;
+        if (pf & 0x40) {
+            PSMTXQuat(mtx, (Quaternion*)&n->xform->rot);
+            PSMTXMultVecSR(mtx, &v, &v);
         }
-        var_f2 = (sp6C * sp6C);
-        var_f2 += (sp64 * sp64);
-        if (var_f2 > 1.0f) {
-            temp_f1 = __frsqrte(var_f2);
-            temp_f1_2 = 0.5 * temp_f1 * -(((f64) var_f2 * (temp_f1 * temp_f1)) - 3.0);
-            temp_f1_3 = 0.5 * temp_f1_2 * -(((f64) var_f2 * (temp_f1_2 * temp_f1_2)) - 3.0);
-            var_f2 = (f32) ((f64) var_f2 * (0.5 * temp_f1_3 * -(((f64) var_f2 * (temp_f1_3 * temp_f1_3)) - 3.0)));
-        } else if (var_f2 < M2C_BITWISE(f32, 0.0)) {
-            var_f2 = __float_nan;
-        } else {
-            sp1C = var_f2;
-            temp_r3_2 = M2C_BITWISE(s32, sp1C) & 0x7F800000;
-            switch (temp_r3_2) {
-            case 0x7F800000:
-                if (M2C_BITWISE(s32, sp1C) & 0x7FFFFF) {
-                    var_r0 = 1;
-                } else {
-                    var_r0 = 2;
-                }
-                break;
-            case 0x0:
-                if (M2C_BITWISE(s32, sp1C) & 0x7FFFFF) {
-                    var_r0 = 5;
-                } else {
-                    var_r0 = 3;
-                }
-                break;
-            default:
-                var_r0 = 4;
-                break;
-            }
-            switch (var_r0) {
-            case 1:
-                    var_f2 = __float_nan;
-                break;
-            }
-        }
-        sp80 = (f32) atan2(-sp68, (f64) var_f2);
-        temp_f1_4 = (f32) atan2((f64) sp64, (f64) sp6C);
-        sp88 = 0.0f;
-        sp84 = temp_f1_4;
-        EulerToQuat((Vec*)((Vec *) &sp80), (Quaternion*)(this + 0x68));
-    } else if (M2C_FIELD(p1, s32 *, 0) & 0x100) {
-        temp_r3_3 = M2C_FIELD(p1, peSpline **, 0x34);
-        if ((temp_r3_3 == NULL) || !(M2C_FIELD(temp_r3_3, u8 *, 0) & 3)) {
-            var_f1 = 1.0f;
-        } else {
-            var_f1_2 = M2C_FIELD(temp_r3_3, f32 *, 8) - temp_f31;
-            if (var_f1_2 < 0.0f) {
-                var_f1_2 = -var_f1_2;
-            }
-            if (var_f1_2 <= 0.00001f) {
-                var_f1 = M2C_FIELD(temp_r3_3, f32 *, 4);
-            } else {
-                var_f1 = peSplineGetValue((peSpline*)(temp_r3_3), temp_f31);
-            }
-        }
-        sp80 = M2C_FIELD(p1, f32 *, 4) * var_f1;
-        temp_r3_4 = M2C_FIELD(p1, peSpline **, 0x38);
-        if ((temp_r3_4 == NULL) || !(M2C_FIELD(temp_r3_4, u8 *, 0) & 3)) {
-            var_f1_3 = 1.0f;
-        } else {
-            var_f1_4 = M2C_FIELD(temp_r3_4, f32 *, 8) - temp_f31;
-            if (var_f1_4 < 0.0f) {
-                var_f1_4 = -var_f1_4;
-            }
-            if (var_f1_4 <= 0.00001f) {
-                var_f1_3 = M2C_FIELD(temp_r3_4, f32 *, 4);
-            } else {
-                var_f1_3 = peSplineGetValue((peSpline*)(temp_r3_4), temp_f31);
-            }
-        }
-        sp84 = M2C_FIELD(p1, f32 *, 8) * var_f1_3;
-        temp_r3_5 = M2C_FIELD(p1, peSpline **, 0x3C);
-        if ((temp_r3_5 == NULL) || !(M2C_FIELD(temp_r3_5, u8 *, 0) & 3)) {
-            var_f1_5 = 1.0f;
-        } else {
-            var_f1_6 = M2C_FIELD(temp_r3_5, f32 *, 8) - temp_f31;
-            if (var_f1_6 < 0.0f) {
-                var_f1_6 = -var_f1_6;
-            }
-            if (var_f1_6 <= 0.00001f) {
-                var_f1_5 = M2C_FIELD(temp_r3_5, f32 *, 4);
-            } else {
-                var_f1_5 = peSplineGetValue((peSpline*)(temp_r3_5), temp_f31);
-            }
-        }
-        sp88 = M2C_FIELD(p1, f32 *, 0xC) * var_f1_5;
-        EulerToQuat((Vec*)((Vec *) &sp80), (Quaternion*)(this + 0x68));
+        f32 len = sqrtf(v.x * v.x + v.z * v.z);
+        euler.x = (f32)atan2(-v.y, len);
+        euler.y = (f32)atan2(v.x, v.z);
+        euler.z = 0.0f;
+        EulerToQuat(&euler, (Quaternion*)&n->rotQuat);
+    } else if (s->flags & 0x100) {
+        euler.x = s->rotX * evalSpline(s->rotXSpline, t);
+        euler.y = s->rotY * evalSpline(s->rotYSpline, t);
+        euler.z = s->rotZ * evalSpline(s->rotZSpline, t);
+        EulerToQuat(&euler, (Quaternion*)&n->rotQuat);
     } else {
-        PSVECScale((const register Vec*)(this + 0x8C), (register Vec*)(&unksp30), p2);
-        sp80 = unksp30;
-        sp84 = sp34;
-        sp88 = sp38;
-        EulerToQuat((Vec*)((Vec *) &sp80), (Quaternion*)(&unksp54));
-        temp_r3_6 = (Quaternion *)(this + 0x68);
-        PSQUATMultiply((const register Quaternion*)(temp_r3_6), (const register Quaternion*)(&unksp54), (register Quaternion*)(temp_r3_6));
+        PSVECScale(&n->spinRate, &delta, p2);
+        euler.x = delta.x;
+        euler.y = delta.y;
+        euler.z = delta.z;
+        EulerToQuat(&euler, (Quaternion*)&q);
+        PSQUATMultiply((Quaternion*)&n->rotQuat, (Quaternion*)&q, (Quaternion*)&n->rotQuat);
     }
-    temp_r3_7 = M2C_FIELD(p1, peSpline **, 0x40);
-    if ((temp_r3_7 == NULL) || !(M2C_FIELD(temp_r3_7, u8 *, 0) & 3)) {
-        var_f1_7 = 1.0f;
+    euler.x = n->offset.x * evalSpline(s->sclXSpline, t);
+    euler.y = n->offset.y * evalSpline(s->sclYSpline, t);
+    euler.z = n->offset.z * evalSpline(s->sclZSpline, t);
+    peColorSplineGetValue(n->color, s->color, t);
+    n->color[0] = OSf32tou8(e->color[0] * OSu8tof32(n->color[0]));
+    n->color[1] = OSf32tou8(e->color[1] * OSu8tof32(n->color[1]));
+    n->color[2] = OSf32tou8(e->color[2] * OSu8tof32(n->color[2]));
+    n->color[3] = OSf32tou8(255.0f * e->color[3] * evalSpline(s->alpha, t));
+    fq.x = (n->flip & 1) ? -n->rotQuat.x : n->rotQuat.x;
+    if (n->flip & 2) {
+        fq.y = -n->rotQuat.y;
     } else {
-        var_f1_8 = M2C_FIELD(temp_r3_7, f32 *, 8) - temp_f31;
-        if (var_f1_8 < 0.0f) {
-            var_f1_8 = -var_f1_8;
-        }
-        if (var_f1_8 <= 0.00001f) {
-            var_f1_7 = M2C_FIELD(temp_r3_7, f32 *, 4);
-        } else {
-            var_f1_7 = peSplineGetValue((peSpline*)(temp_r3_7), temp_f31);
-        }
+        fq.y = n->rotQuat.y;
     }
-    sp80 = M2C_FIELD(this, f32 *, 0x78) * var_f1_7;
-    temp_r3_8 = M2C_FIELD(p1, peSpline **, 0x44);
-    if ((temp_r3_8 == NULL) || !(M2C_FIELD(temp_r3_8, u8 *, 0) & 3)) {
-        var_f1_9 = 1.0f;
+    if (n->flip & 4) {
+        fq.z = -n->rotQuat.z;
     } else {
-        var_f1_10 = M2C_FIELD(temp_r3_8, f32 *, 8) - temp_f31;
-        if (var_f1_10 < 0.0f) {
-            var_f1_10 = -var_f1_10;
-        }
-        if (var_f1_10 <= 0.00001f) {
-            var_f1_9 = M2C_FIELD(temp_r3_8, f32 *, 4);
-        } else {
-            var_f1_9 = peSplineGetValue((peSpline*)(temp_r3_8), temp_f31);
-        }
+        fq.z = n->rotQuat.z;
     }
-    sp84 = M2C_FIELD(this, f32 *, 0x7C) * var_f1_9;
-    temp_r3_9 = M2C_FIELD(p1, peSpline **, 0x48);
-    if ((temp_r3_9 == NULL) || !(M2C_FIELD(temp_r3_9, u8 *, 0) & 3)) {
-        var_f2_2 = 1.0f;
-    } else {
-        var_f1_11 = M2C_FIELD(temp_r3_9, f32 *, 8) - temp_f31;
-        if (var_f1_11 < 0.0f) {
-            var_f1_11 = -var_f1_11;
-        }
-        if (var_f1_11 <= 0.00001f) {
-            var_f2_2 = M2C_FIELD(temp_r3_9, f32 *, 4);
-        } else {
-            var_f2_2 = peSplineGetValue((peSpline*)(temp_r3_9), temp_f31);
-        }
-    }
-    sp88 = M2C_FIELD(this, f32 *, 0x80);
-    sp88 *= var_f2_2;
-    spA = M2C_FIELD(this, u8 *, 0x98);
-    M2C_FIELD(this, u8 *, 0x98) = sp14;
-    peColorSplineGetValue((u8*)((u8*)this + 0x98), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 0x4C)), temp_f31);
-    sp9 = M2C_FIELD(this, u8 *, 0x99);
-    M2C_FIELD(this, u8 *, 0x99) = sp10;
-    sp8 = M2C_FIELD(this, u8 *, 0x9A);
-    M2C_FIELD(this, u8 *, 0x9A) = spC;
-    temp_r3_10 = M2C_FIELD((u16)p1, peSpline **, 0x50);
-    if ((temp_r3_10 == NULL) || !(M2C_FIELD(temp_r3_10, u8 *, 0) & 3)) {
-
-    } else {
-        var_f1_12 = M2C_FIELD(temp_r3_10, f32 *, 8) - temp_f31;
-        if (var_f1_12 < 0.0f) {
-            var_f1_12 = -var_f1_12;
-        }
-        if (var_f1_12 <= 0.00001f) {
-
-        } else {
-            peSplineGetValue((peSpline*)(temp_r3_10), temp_f31);
-        }
-    }
-    M2C_FIELD(this, u8 *, 0x9B) = sp18;
-    if (M2C_FIELD(this, s32 *, 0x88) & 1) {
-        var_f0 = -M2C_FIELD(this, f32 *, 0x68);
-    } else {
-        var_f0 = M2C_FIELD(this, f32 *, 0x68);
-    }
-    sp70 = var_f0;
-    if (M2C_FIELD((s32)this, s32 *, 0x88) & 2) {
-        sp74 = -M2C_FIELD(this, f32 *, 0x6C);
-    } else {
-        sp74 = M2C_FIELD(this, f32 *, 0x6C);
-    }
-    if (M2C_FIELD(this, s32 *, 0x88) & 4) {
-        sp78 = -M2C_FIELD(this, f32 *, 0x70);
-    } else {
-        sp78 = M2C_FIELD(this, f32 *, 0x70);
-    }
-    sp7C = M2C_FIELD(this, f32 *, 0x74);
-    spBC = M2C_FIELD((u16)this, f32 *, 8);
-    spC0 = M2C_FIELD(this, f32 *, 0xC);
-    spC4 = M2C_FIELD(this, f32 *, 0x10);
-    PSQUATMultiply((const register Quaternion*)(this + 0x58), (const register Quaternion*)((Quaternion *) &sp70), (register Quaternion*)(&unksp20));
-    spC8 = unksp20;
-    spCC = sp24;
-    spD0 = sp28;
-    spD4 = sp2C;
-    spD8 = sp80;
-    spE0 = sp88;
-    peNodeTransformsConcat((peXform*)(this + 0x30), (peXform*)(M2C_FIELD(this, peXform **, 0x20)), (peXform*)((peXform *) &spBC), 0U);
-    sp48 = unksp3C;
-    if (spDC < sp84) spDC = sp84;
-    PSVECSubtract((const register Vec*)(this + 0x30), (const register Vec*)(&g_CameraPosition), (register Vec*)(&unksp3C));
-    sp4C = sp40;
-    sp50 = sp44;
-    M2C_FIELD(this, f32 *, 0x84) = PSVECDotProduct((const register Vec*)(&g_CameraLookDir), (const register Vec*)((Vec *) &sp48));
-    return 1U;
+    fq.w = n->rotQuat.w;
+    local.pos.x = n->pos.x;
+    local.pos.y = n->pos.y;
+    local.pos.z = n->pos.z;
+    PSQUATMultiply((Quaternion*)&n->spinQuat, (Quaternion*)&fq, (Quaternion*)&out);
+    local.rot.x = out.x;
+    local.rot.y = out.y;
+    local.rot.z = out.z;
+    local.rot.w = out.w;
+    local.scale.x = euler.x;
+    local.scale.y = euler.y;
+    local.scale.z = euler.z;
+    peNodeTransformsConcat((peXform*)&n->world, (peXform*)n->xform, (peXform*)&local, false);
+    PSVECSubtract(&n->world.pos, &g_CameraPosition, &d);
+    d2.x = d.x;
+    d2.y = d.y;
+    d2.z = d.z;
+    n->sortKey = PSVECDotProduct(&g_CameraLookDir, &d2);
+    return 1;
 }
 }
 
-extern "C++" {
-#pragma optimize_for_size on
-void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
-    volatile f32 sp18;
-    f32 spC;
-    f32 sp14;
-    volatile f32 sp1C;
-    volatile f32 unksp8;
-    Vec *temp_r3;
-    s32 temp_r31;
-    volatile f32 sp10;
-
-    ((peNode*)((peNode *) this))->Start((peEmitterNode*)((u16)p0), (_EmitParams*)(p2));
-    M2C_FIELD(this, s32 *, 0x88) = 0;
-    PSVECScale((const register Vec*)(((u8*)(p1) + 0x28)), (register Vec*)(&unksp8), HSD_Randf());
-    temp_r31 = M2C_FIELD(p1, s32 *, 0);
-    temp_r3 = (Vec *)(this + 0x78);
-    M2C_FIELD(this, f32 *, 0x78) = unksp8;
-    M2C_FIELD(this, f32 *, 0x7C) = spC;
-    M2C_FIELD(this, f32 *, 0x80) = sp10;
-    PSVECAdd((const register Vec*)(temp_r3), (const register Vec*)(((u8*)(p1) + 0x1C)), (register Vec*)(temp_r3));
-    M2C_FIELD(this, f32 *, 0x58) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x5C) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x60) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x64) = 1.0f;
-    M2C_FIELD(this, f32 *, 0x30) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x34) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x38) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x3C) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x40) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x44) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x48) = 1.0f;
-    M2C_FIELD(this, f32 *, 0x4C) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 0);
-    M2C_FIELD(this, f32 *, 0x50) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 4);
-    M2C_FIELD(this, f32 *, 0x54) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 8);
-    if (!(*M2C_FIELD(p0, s32 **, 0xFC) & 0x400)) {
-        EulerToQuat((Vec*)(((u8*)(p1) + 4)), (Quaternion*)(this + 0x68));
-        if (temp_r31 & 0x1C7000) {
-            if (temp_r31 & 0x1000) {
-                sp14 = HSD_Randf();
-                sp14 *= 6.2831855f;
-            } else {
-                sp14 = 0.0f;
-            }
-            if (temp_r31 & 0x2000) {
-                sp18 = HSD_Randf();
-                sp18 *= 6.2831855f;
-            } else {
-                sp18 = 0.0f;
-            }
-            if (temp_r31 & 0x4000) {
-                sp1C *= HSD_Randf();
-                sp1C = 6.2831855f;
-            } else {
-                sp1C = 0.0f;
-            }
-            if ((temp_r31 & 0x40000) && (HSD_Randf() < 0.5f)) {
-                M2C_FIELD(this, s32 *, 0x88) = (s32) (M2C_FIELD(this, s32 *, 0x88) | 1);
-            }
-            if ((temp_r31 & 0x80000) && (HSD_Randf() < 0.5f)) {
-                M2C_FIELD(this, s32 *, 0x88) = (s32) (M2C_FIELD(this, s32 *, 0x88) | 2);
-            }
-            if ((temp_r31 & 0x100000) && (HSD_Randf() < 0.5f)) {
-                M2C_FIELD(this, s32 *, 0x88) = (s32) (M2C_FIELD(this, s32 *, 0x88) | 4);
-            }
-            EulerToQuat((Vec*)((Vec *) &sp14), (Quaternion*)(this + 0x58));
+void peShapeNode::Render(_peShape* shape) {
+    u32 flags = M2C_FIELD(shape, u32 *, 0);
+    peShapeColor black = {0};
+    f32 m[3][4];
+    f32 rot[3][4];
+    peShapeSetKColor(g_current_layer, M2C_FIELD(this, peShapeColor *, 0x98));
+    if (flags & 0x200) {
+        peShapeSetChanColor(g_current_layer, 0, M2C_FIELD(shape, peShapeColor *, 0x68), M2C_FIELD(this, peShapeColor *, 0x98));
+        if (flags & 0x400) {
+            peShapeSetChanColor(g_current_layer, 1, black, M2C_FIELD(this, peShapeColor *, 0x98));
         }
     }
-    M2C_FIELD(this, f32 *, 0x8C) = (f32) M2C_FIELD(p1, f32 *, 0x10);
-    M2C_FIELD(this, f32 *, 0x90) = (f32) M2C_FIELD(p1, f32 *, 0x14);
-    M2C_FIELD(this, f32 *, 0x94) = (f32) M2C_FIELD(p1, f32 *, 0x18);
-    if (temp_r31 & 0x8000) {
-        M2C_FIELD(this, f32 *, 0x8C) = (f32) (M2C_FIELD(this, f32 *, 0x8C) * HSD_Randf());
+    PSMTXQuat(rot, (const Quaternion*)((u8*)this + 0x3C));
+    PSMTXScale(m, M2C_FIELD(this, f32 *, 0x4C), M2C_FIELD(this, f32 *, 0x50), M2C_FIELD(this, f32 *, 0x54));
+    PSMTXConcat(rot, m, m);
+    PSMTXTransApply(m, m, M2C_FIELD(this, f32 *, 0x30), M2C_FIELD(this, f32 *, 0x34), M2C_FIELD(this, f32 *, 0x38));
+    M2C_FIELD(g_current_layer, GSgfxMatrixStack **, 0x19A0)->pushMult((GSmtx*)m);
+    switch (flags & 7) {
+    case 0:
+        g_current_layer->drawCube();
+        break;
+    case 1:
+        g_current_layer->drawCylinder(M2C_FIELD(shape, u8 *, 0x59));
+        break;
+    case 2:
+        g_current_layer->drawDodecaedron();
+        break;
+    case 3:
+        g_current_layer->drawIcosahedron();
+        break;
+    case 4:
+        g_current_layer->drawOctahedron();
+        break;
+    case 7:
+        g_current_layer->drawTorus(M2C_FIELD(shape, f32 *, 0x54), M2C_FIELD(shape, u8 *, 0x58), M2C_FIELD(shape, u8 *, 0x59));
+        break;
+    case 6:
+        g_current_layer->drawSphere(M2C_FIELD(shape, u8 *, 0x59));
+        break;
+    default:
+        g_current_layer->drawSphere(M2C_FIELD(shape, u8 *, 0x58), M2C_FIELD(shape, u8 *, 0x59));
+        break;
     }
-    if (temp_r31 & 0x10000) {
-        M2C_FIELD(this, f32 *, 0x90) = (f32) (M2C_FIELD(this, f32 *, 0x90) * HSD_Randf());
-    }
-    if (temp_r31 & 0x20000) {
-        M2C_FIELD(this, f32 *, 0x94) = (f32) (M2C_FIELD(this, f32 *, 0x94) * HSD_Randf());
-    }
-}
-#pragma optimize_for_size reset
+    M2C_FIELD(g_current_layer, GSgfxMatrixStack **, 0x19A0)->pop();
 }
 }
+#pragma pop
 }
+
+#pragma dont_inline off

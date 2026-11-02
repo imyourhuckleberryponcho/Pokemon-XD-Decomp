@@ -17,7 +17,7 @@ struct DarkPokemon {
     void setRnd(u32 rnd);
     void setReversPattern(u8 pattern);
     u8 getReversPattern() const;
-    u16 getInitDarkPointDirect() const;
+    s32 getInitDarkPointDirect() const;
     void setCatchBallID(u16 ballId);
     u8 getCatchBallID() const;
     void setDarkPokemonID(u16 id);

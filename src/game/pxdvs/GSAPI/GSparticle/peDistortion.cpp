@@ -173,7 +173,8 @@ asm void PSVECSubtract(const register Vec* a, const register Vec* b, register Ve
 double atan2(double y, double x);
 s32 particleEngineSetupBlendMode(s32);
 s32 particleEngineSetupTevStages(s32, s32, s32);
-s32 particleEngineSetupTexture(s32, s32, s32, s32, s32, s32);
+enum GStexFilter { GS_TEXFILTER_NEAR = 0, GS_TEXFILTER_LINEAR = 2 };
+void particleEngineSetupTexture(u8, s32, s32, s32, s32, s32);
 f32 peSplineGetValue(peSpline* s, f32 t);
 extern f32 __float_nan;
 
@@ -476,17 +477,8 @@ static inline bool canRender(peDistortionContainer* c) {
 
 extern "C++" {
 void peDistortionContainer::Render() {
-    u8 *temp_r29;
-    s32 temp_cr0_eq;
-    s32 temp_r0;
-    u8 *temp_r4_2;
-    s32 var_r8;
     u32 temp_r31;
-    u32 temp_r4;
-    s32 temp_r0_2;
-    u8 var_r0;
     GSgfxVF *var_r31;
-    s32 var_r7;
 
     if (M2C_FIELD(this, u8 *, 0x19)) {
         if (canRender(this)) {
@@ -530,25 +522,18 @@ void peDistortionContainer::Render() {
             }
             particleEngineSetupBlendMode(0);
             particleEngineSetupTevStages(0, 0, 0);
-            var_r8 = 0;
-            if (temp_r31 & 0x40) {
-                var_r8 = 2;
-            }
-            var_r7 = !(temp_r31 & 0x20) ? var_r7 : 2;
-            particleEngineSetupTexture(0, M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 *, 0x60), temp_r31 & 3, (temp_r31 >> 2U) & 3, var_r7, var_r8);
-            temp_r29 = M2C_FIELD((this + (temp_r0_2 * 4)), u8 **, 0x48);
-            var_r7 = 0;
-            temp_r0_2 = M2C_FIELD(this, u8 *, 0x21);
-            temp_r4_2 = (unsigned char *)(this + ((temp_r0_2 * 0x10) + 0x28));
-            if (M2C_FIELD((s16)temp_r4_2, s16 *, 0) & 1) {
-                var_r31 = M2C_FIELD(temp_r4_2, GSgfxVF **, 0xC);
+            particleEngineSetupTexture(0, M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 *, 0x60), temp_r31 & 3, (temp_r31 >> 2U) & 3, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, (temp_r31 & 0x40) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
+            u8* verts = (&bufA)[cur];
+            u8* dlp = dl[cur];
+            if (M2C_FIELD(dlp, u16 *, 0) & 1) {
+                var_r31 = M2C_FIELD(dlp, GSgfxVF **, 0xC);
             } else {
                 var_r31 = NULL;
             }
-            GSgfxVFSetArray((GSgfxVF*)(var_r31), 9, 3, (void*)(temp_r29), 4, M2C_FIELD(this, s32 *, 0x24));
-            GSgfxVFSetArray((GSgfxVF*)(var_r31), 0xB, 3, (void*)(temp_r29 + 0x30), 4, M2C_FIELD(this, s32 *, 0x24));
+            GSgfxVFSetArray((GSgfxVF*)(var_r31), 9, 3, (void*)(verts), 4, bufSize);
+            GSgfxVFSetArray((GSgfxVF*)(var_r31), 0xB, 3, (void*)(verts + 0x30), 4, bufSize);
             GSgfxVFSetArray((GSgfxVF*)(var_r31), 0xD, 3, (void*)((u8*)this + 0x58), 4, 0x20);
-            ((GSgfxLayer*)(g_current_layer))->dlDraw((GSgfxDL*)(this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28)));
+            ((GSgfxLayer*)(g_current_layer))->dlDraw((GSgfxDL*)dl[cur]);
             ((peRenderContainer*)((peRenderContainer *) this))->MarkForSwap();
         }
     }

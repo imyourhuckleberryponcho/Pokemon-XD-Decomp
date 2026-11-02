@@ -231,6 +231,7 @@ s32 menuPocketColognCursor(void *p0) {
 
 extern "C" {
 s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp) {
+    u16* item;
     s16 id = *(s16*)((u8*)sp + 6);
     ColognList* list = *(ColognList**)((u8*)win + 0x68);
     s32 ids[4] = {0x130, 0x12F, 0x12E, 0x12D};
@@ -257,20 +258,21 @@ s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp) {
     if (i < 0 || i >= list->count) {
         return 0;
     }
-    if (*(u16*)((u8*)list + i * 4 + 4) == 0) {
+    item = (u16*)((u8*)list + i * 4 + 4);
+    if (*item == 0) {
         name = 0x4295;
     } else {
-        name = getItemName(*(u16*)((u8*)list + i * 4 + 4));
+        name = getItemName(*item);
     }
     GSmsgPrint2(winSpriteGetLayerID(win, sp), 0, 0, -1, name);
-    if (*(u16*)((u8*)list + i * 4 + 4) != 0) {
+    if (*item != 0) {
         base = *(s16*)((u8*)menuItemBiosGetPtr(*(s32*)((u8*)win + 4), 0x130) + 0xA);
-        s32 tmp1 = getStockMax(*(u16*)((u8*)list + i * 4 + 4));
+        s32 tmp1 = getStockMax(*item);
         msgctrlSetValue(0x34, tmp1);
         width = (s16)(GSmsgGetRect(0x426F) >> 16);
         width += (s16)(GSmsgGetRect(0x428F) >> 16);
         GSmsgPrint2(winSpriteGetLayerID(win, sp), base - width, 0, -1, 0x428F);
-        s32 num = getItemNum(*(u16*)((u8*)list + i * 4 + 4));
+        s32 num = getItemNum(*item);
         msgctrlSetValue(0x34, num);
         width = GSmsgGetRect(0x426F) >> 16;
         GSmsgPrint2(winSpriteGetLayerID(win, sp), base - width, 0, -1, 0x426F);

@@ -77,7 +77,7 @@ void msgctrlSetValue(s32 id, u32 value);
 s32 winMsgOpen(s32, s32 msgID, s32, s32);
 void winMsgClose(s32 flag);
 void heroAddPokedoru(void* hero, u32 offset);
-s32 heroItemAddItemDataId(void* hero, u32 itemID, u32 amount, u32 index);
+s32 heroItemAddItemDataId(void* hero, u16 itemID, u16 amount, s32 index);
 u16 pcboxAddItem(void* box, u16 item, u16 count);
 void peopleSetMotion(u32, u32, u32, u32, u32);
 void peopleSetFlagOn(s32, s32, s32);
@@ -196,8 +196,8 @@ s32 floorEventChangeTresure(u32 index, u16 val, u8 byte) {
 
 s32 floorEventGetTresureEx(u8 type, u32 item, s32 count, u8 playFanfare) {
     s32 result;
-    u8 boxed = 0;
     u32 message = 0;
+    u8 boxed = 0;
 
     for (;;) {
         if (GSsndGetStatus(0x3CE) != 2) {
@@ -530,6 +530,8 @@ s32 floorEventCtrlElevator(s32 floor, u32 index, u16 command, s32 group, s32 per
     return (s32)(100.0f * ((2.0f * frame) / (f32)GSgfxVideoGetVsyncRate()));
 }
 
+static inline u32 _getF(u32 id) { return peopleGetFlags(0, id); }
+
 s32 floorEventCtrlDoor(s32 floor, u32 index, u8 mode) {
     u32 savedB;
     FloorEventDoor* door;
@@ -667,16 +669,16 @@ s32 floorEventCtrlDoor(s32 floor, u32 index, u8 mode) {
     switch (mode) {
     case 0:
     case 2: {
-        u32 savedHero = peopleGetFlags(0, 0x64);
-        u32 savedPartner = peopleGetFlags(0, 0x65);
-        u32 savedA = peopleGetFlags(0, 0x69);
-        savedB = peopleGetFlags(0, 0x68);
+        u32 savedHero = _getF(0x64);
+        u32 savedPartner = _getF(0x65);
+        u32 savedA = _getF(0x69);
+        savedB = _getF(0x68);
         heroMoveInitEvent();
         _floorEventWaitMotion(model);
         heroMoveTermEvent();
-        peopleSetFlags(0, 0x64, (u16)savedHero);
-        peopleSetFlags(0, 0x65, (u16)savedPartner);
-        peopleSetFlags(0, 0x69, (u16)savedA);
+        peopleSetFlags(0, 0x64, savedHero);
+        peopleSetFlags(0, 0x65, savedPartner);
+        peopleSetFlags(0, 0x69, savedA);
         peopleSetFlags(0, 0x68, savedB);
         break;
     }
@@ -687,15 +689,14 @@ s32 floorEventCtrlDoor(s32 floor, u32 index, u8 mode) {
 
 s32 floorEventExecScript(s8 type, u32 arg) {
     u32 current;
-    u32 off;
     FloorEventEntry* e;
     u32 i;
     s32 count = 0;
 
     EvlogSet(type, arg);
     current = GSfloorGetCurrent();
-    for (i = 0, off = 0; i < *floor_event_list_number; off += sizeof(FloorEventEntry), i++) {
-        e = (FloorEventEntry*)((u8*)floor_event_list + off);
+    for (i = 0; i < *floor_event_list_number; i++) {
+        e = &floor_event_list[i];
         if (e->floorID == current && e->type == type && e->arg == arg && e->script != 0) {
             scriptSetEventColID(arg);
             floorExecScriptInteger(e->script, e->args[0], e->args[1], e->args[2], e->args[3]);

@@ -21,8 +21,8 @@ s32 GSmsgPrint2(s32, s32, s32, s32, u32);
 void GSmsgPrintRight(s32, s32, s32, s16, s16, s32, u32);
 void fadeCheck(s32);
 void fadeSet(s32, f32);
-s32 heroItemAddItemDataId(Hero*, u32, u16, s32);
-s32 heroItemCheckAddItemDataId(Hero*, u32);
+s32 heroItemAddItemDataId(Hero*, u16, u16, s32);
+s32 heroItemCheckAddItemDataId(Hero*, u16);
 u16 itemBiosGetItemDataId(u8*);
 u16 itemBiosGetNum(u8*);
 u8 itemCheckValid(u8*);
@@ -42,7 +42,7 @@ void menuSubCursorAnimeMain(void);
 void menuSubCursorAnimeStart(void);
 void menuSubCursorAnimeValGet(f32*, s32*);
 void msgctrlSetValue(s32, u32);
-void pcboxDelItem(void*, u32, u16);
+void pcboxDelItem(void*, u16, u16);
 u8* pcboxGetItem(void*, s16);
 u16 pcboxGetNbItemSlot(void*);
 void pcboxSwapItemSlot(void*, s16, s16);
@@ -129,7 +129,7 @@ static s32 _getItemListLineHeight(void) {
     return 0x22;
 }
 
-static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color);
+static s32 printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color);
 static u32 getItemNameMsg(u16 id);
 static u16 getItemIDFromMenuPos(int pos);
 static u16 getItemNumFromMenuPos(int pos);
@@ -170,8 +170,7 @@ void menuPcBoxDouguHikidashi(MENU_PCBOX_DOUGU_HIKIDASHI_MODE mode) {
 }
 
 static void hikidasu(int pos) {
-    enum TsE { TsE0 };
-    enum TsE id = (enum TsE)(getItemIDFromMenuPos(pos));
+    u16 id = getItemIDFromMenuPos(pos);
     s32 n;
     setExplanationMsgID(0x3BBD);
     if (getItemKind(id) != 5) {
@@ -196,8 +195,8 @@ static void hikidasu(int pos) {
 }
 
 static void suteru(int pos) {
-    u16 id = getItemIDFromMenuPos(pos);
     s32 n;
+    u16 id = getItemIDFromMenuPos(pos);
     if (getItemKind(id) == 5) {
         menuPtPlaySe__FUl(0x13);
         winMsgOpen(2, 0x3BC5, 1, 0);
@@ -212,8 +211,8 @@ static void suteru(int pos) {
         setExplanationMsgID(0x3BBF);
         if (menuPcBoxDouguConfirm() != 0) {
             pcboxDelItem(0, id, n);
-            msgctrlSetValue(0x2F, n);
             msgctrlSetValue(0x2D, (u16)id);
+            msgctrlSetValue(0x2F, n);
             winMsgOpen(2, 0x3BC4, 1, 0);
             winMsgClose(1);
         }
@@ -279,7 +278,7 @@ void menuPcBoxDouguHikidashiButton(tagWINDOW_WORK* w) {
 s32 menuPcBoxDouguHikidashiCursor(tagWINDOW_WORK* w) {
     u16 repeat = windowGetKeyRepeat();
     u16 trg = windowGetKeyTrg();
-    s32 cur, ofs;
+    s32 ofs, cur;
     s32 pos, limit, pages;
     if (CurPos != 0.0f) {
         return 0;
@@ -304,8 +303,8 @@ s32 menuPcBoxDouguHikidashiCursor(tagWINDOW_WORK* w) {
     }
     limit = getNbItemSlot() + 1;
     pages = (limit + 7) / 8;
-    cur = CursorPos;
     ofs = CursorOfs;
+    cur = CursorPos;
     if ((repeat & 2) != 0) {
         s32 next = cur + 1;
         CursorPos = next;
@@ -324,9 +323,7 @@ s32 menuPcBoxDouguHikidashiCursor(tagWINDOW_WORK* w) {
         }
     } else if ((repeat & 1) != 0) {
         if (cur > 0 || ofs > 0) {
-            s32 prev = CursorPos - 1;
-            CursorPos = prev;
-            if (prev < 0) {
+            if (--CursorPos < 0) {
                 CursorPos = 0;
                 CursorOfs = CursorOfs - 1;
                 IsScroll = 1;
@@ -439,8 +436,9 @@ s32 menuPcBoxDouguHikidasuDrawItemText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 }
 }
 
-static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color) {
+static s32 printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color) {
     s16 w2;
+    s32 y;
     s32 idx;
     s32 last;
     s32 scroll;
@@ -488,9 +486,10 @@ static void printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color)
         }
     }
     if (row < last) {
-        id = row * _getItemListLineHeight();
-        GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, (id - scroll), (u16)color, 0x3BBA);
+        y = row * _getItemListLineHeight() - scroll;
+        GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, y, color, 0x3BBA);
     }
+    return 0;
 }
 
 extern "C" {

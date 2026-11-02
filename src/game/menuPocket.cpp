@@ -1516,14 +1516,14 @@ void _printItemList(GSgfxLayerID layer, int x, int tab, CURSOR& cursor)
         y += 30;
     }
     if (i < maxLines) {
-        int yy = i * 30;
         u32 msg;
+        y = i * 30 - scroll;
         if (Data.mode == 4) {
             msg = 0x3BBA;
         } else {
             msg = 0x3A9E;
         }
-        GSmsgPrint2((u16)layer, x, yy - scroll, -1, msg);
+        GSmsgPrint2(layer, x, y, -1, msg);
     }
 }
 }

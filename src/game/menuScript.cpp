@@ -845,7 +845,7 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
             u16* src;
             u16* dst = buf1;
             src = text;
-            int k = 0;
+            k = 0;
             n++;
             for (;;) {
                 u16 ch = *src;
@@ -1202,7 +1202,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
             MenuItem* a = menuItemBiosGetPtr(w->menuID, 0x6D5);
             MenuItem* b = menuItemBiosGetPtr(w->menuID, sprite->id);
             spriteSetScissor(layer, a->x - b->x, a->y - b->y, a->w, a->h);
-            s16 y = -c.top * 0x1F;
+            u16 y = -c.top * 0x1F;
             for (u16 i = 0; i < n; y += 0x1F, i++) {
                 if (i >= c.top - 1 && i < c.top + 10) {
                     WAZAOSHIEDEF* p = _getWaza2Pointer(i);
@@ -1211,7 +1211,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
                         if (w->menuID == 0xE4) {
                             msgctrlSetValue(0x50, 1000);
                             u32 r = GSmsgGetRect(0x4359);
-                            GSmsgPrint2(layer, sprite->w - (r >> 16), (u8)y, color, 0x4359);
+                            GSmsgPrint2(layer, sprite->w - (r >> 16), y, color, 0x4359);
                         } else if (p->flag) {
                             MenuSpriteVal* v = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0x241));
                             windowDrawSprite(b->w - v->x, y + (0x12 - v->w) / 2, w, 0x241, 0, layer);
@@ -1230,16 +1230,15 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
         if (waza) {
             if (waza->id != 0) {
                 GSmsgPrint2(layer, 0, 0, color, waza->doc);
-            } else if (w->menuID == 0xE4) {
-                GSmsgPrint2(layer, 0, 0, color, 0xC6DA);
             } else {
-                GSmsgPrint2(layer, 0, 0, color, 0xC73B);
+                GSmsgPrint2(layer, 0, 0, color, w->menuID == 0xE4 ? 0xC6DA : 0xC73B);
             }
         }
         break;
     case 0x6D6:
         if (w->menuID == 0xE4) {
-            msgctrlSetValue(0x50, heroBiosGetPokecoupon(savedataGetStatus(0, 2)));
+            s32 tmp1 = heroBiosGetPokecoupon(savedataGetStatus(0, 2));
+            msgctrlSetValue(0x50, tmp1);
             u32 r = GSmsgGetRect(0x434E);
             GSmsgPrint2(layer, sprite->w - (r >> 16), 0, color, 0x434E);
         }

@@ -126,7 +126,7 @@ MenuSprite* menuSpriteBiosGetPtr(u32 id);
 MenuSpriteVal* menuSpriteBiosGetValPtr(MenuSprite* sprite);
 void menuSubCursorAnimeStart(void);
 void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx, u16 key, u32 flags, s32 layer);
-u32 windowGetKeyRepeat(void);
+u16 windowGetKeyRepeat(void);
 }
 namespace {
 static void _controlCursor();
@@ -347,76 +347,74 @@ static void _controlCursor() {
     s32 n = Data.count + 1;
     s32 pages = (n + 7) / 8;
 
-    if (Data.scroll != 0.0f) {
+    if (Data.scroll != 0.0f || Data.active == 0) {
         return;
     }
-    if (Data.active != 0) {
-        MenuPos old = Data.pos;
-        if (key & 8) {
-            s16 last = n - 8;
-            if (pages == 1) {
-                Data.pos.cursor = n - 1;
-            } else if (Data.pos.top == last) {
-                Data.pos.cursor = 7;
-            } else {
-                Data.pos.top += 8;
-                if (Data.pos.top > last) {
-                    Data.pos.top = last;
-                }
-            }
-            if (old.top != Data.pos.top || old.cursor != Data.pos.cursor) {
-                menuPtPlaySe(0x44D);
-            }
-        } else if (key & 4) {
-            if (Data.pos.top == 0) {
-                Data.pos.cursor = 0;
-            } else {
-                Data.pos.top -= 8;
-                if (Data.pos.top < 0) {
-                    Data.pos.top = 0;
-                }
-            }
-            if (old.top != Data.pos.top || old.cursor != Data.pos.cursor) {
-                menuPtPlaySe(0x44D);
-            }
-        } else if (key & 2) {
-            Data.pos.cursor++;
-            if (Data.pos.cursor + Data.pos.top >= n) {
-                Data.pos.cursor--;
-            } else {
-                if (Data.pos.cursor >= 8) {
-                    Data.pos.top++;
-                    se = 0x10;
-                    Data.pos.cursor--;
-                    Data.scrollDown = 1;
-                } else {
-                    se = 0x10;
-                    Data.scrollDown = 0;
-                }
-                Data.scroll = -30.0f;
-            }
-        }
-        if (key & 1) {
-            if (Data.pos.cursor > 0 || Data.pos.top > 0) {
-                Data.pos.cursor--;
-                if (Data.pos.cursor < 0) {
-                    Data.pos.cursor = 0;
-                    se = 0x10;
-                    Data.pos.top--;
-                    Data.scrollDown = 1;
-                } else {
-                    se = 0x10;
-                    Data.scrollDown = 0;
-                }
-                Data.scroll = 30.0f;
+    MenuPos old = Data.pos;
+    if (key & 8) {
+        s16 last = n - 8;
+        if (pages == 1) {
+            Data.pos.cursor = n - 1;
+        } else if (Data.pos.top == last) {
+            Data.pos.cursor = 7;
+        } else {
+            Data.pos.top += 8;
+            if (Data.pos.top > last) {
+                Data.pos.top = last;
             }
         }
         if (old.top != Data.pos.top || old.cursor != Data.pos.cursor) {
-            menuSubCursorAnimeStart();
+            menuPtPlaySe(0x44D);
         }
-        if (se != 0) {
-            menuPtPlaySe(se);
+    } else if (key & 4) {
+        if (Data.pos.top == 0) {
+            Data.pos.cursor = 0;
+        } else {
+            Data.pos.top -= 8;
+            if (Data.pos.top < 0) {
+                Data.pos.top = 0;
+            }
         }
+        if (old.top != Data.pos.top || old.cursor != Data.pos.cursor) {
+            menuPtPlaySe(0x44D);
+        }
+    } else if (key & 2) {
+        Data.pos.cursor++;
+        if (Data.pos.cursor + Data.pos.top >= n) {
+            Data.pos.cursor--;
+        } else {
+            if (Data.pos.cursor >= 8) {
+                Data.pos.top++;
+                se = 0x10;
+                Data.pos.cursor--;
+                Data.scrollDown = 1;
+            } else {
+                se = 0x10;
+                Data.scrollDown = 0;
+            }
+            Data.scroll = -30.0f;
+        }
+    }
+    if (key & 1) {
+        if (Data.pos.cursor > 0 || Data.pos.top > 0) {
+            Data.pos.cursor--;
+            if (Data.pos.cursor < 0) {
+                Data.pos.cursor = 0;
+                se = 0x10;
+                Data.pos.top--;
+                Data.scrollDown = 1;
+            } else {
+                se = 0x10;
+                Data.scrollDown = 0;
+            }
+            Data.scroll = 30.0f;
+        }
+    }
+    if (old.top != Data.pos.top || old.cursor != Data.pos.cursor) {
+        menuSubCursorAnimeStart();
+    }
+    if (se != 0) {
+        menuPtPlaySe(se);
     }
 }
 }
@@ -455,7 +453,7 @@ static void printItemList(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
             temp_r3 = getItemIDFromMenuPos((s32) var_r26);
             u32 msg = getItemNameMsg((u32) temp_r3);
             if (msg != 0U) {
-                if (deckDataVirtualDB_GetFlagData((u16) (temp_r3 - 0x215)) != 0) {
+                if (deckDataVirtualDB_GetFlagData((u16)((u16)temp_r3 - 0x215)) != 0) {
                     diskUsedMarkDisplay((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1), temp_r22);
                 }
                 GSmsgPrint2(winSpriteGetLayerID((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1)), 0, temp_r22, -1U, msg);

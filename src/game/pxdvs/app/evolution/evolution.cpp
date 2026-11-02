@@ -717,9 +717,9 @@ extern "C++" {
 static s32 evolution__Main(WORK* work, int mode, Pokemon* pokemon, Pokemon* evolved, u16* moves, s32 count, u8* result) {
     u8 sel;
     Pokemon copy;
+    u32* arg;
     s32 i;
     u16 waza;
-    u32* arg = (u32*)work;
 
     stopSound(work);
     s32 ok = evolutionDemo(work, mode, pokemon, evolved);
@@ -728,6 +728,7 @@ static s32 evolution__Main(WORK* work, int mode, Pokemon* pokemon, Pokemon* evol
         return 0;
     }
     pokemonBiosCopy(&copy, evolved);
+    arg = (u32*)work;
     for (i = 0; i < count; i++) {
         u16 waza = *moves;
         if (evolutionWazaLearn(&copy, waza, (s8*)&sel, (EVOLUTION_WINDOW_TYPE)0, cbWazaForget, arg) != 0) {

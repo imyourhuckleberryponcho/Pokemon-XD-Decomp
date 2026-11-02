@@ -65,12 +65,12 @@ u32 menuSubCalcColor(tagWINDOW_WORK*, tagSPRITE_WORK*);
 u8* itemDataBiosGetPtr(u16);
 u8 itemDataBiosGetKind(u8*);
 u32 itemDataBiosGetWazaMachineNo(u8*);
-u32 itemDataBiosGetWazaIDByWazaMachineNo(u32);
+u16 itemDataBiosGetWazaIDByWazaMachineNo(u32);
 u8 pokemonIsDarkPokemon(Pokemon*);
 u16 pokemonBiosGetPokemonDataId(Pokemon*);
 void* pokemonDataBiosGetPtr(u16);
 bool pokemonDataBiosGetWazaMcn(void*, u8);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, u32);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, u16);
 u8 pokemonDB_GetTeachWaza(u16, u16);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void winSpriteSetDisp(tagSPRITE_WORK*, bool);
@@ -243,7 +243,7 @@ u16 menuPokemonGetJoutaiSpriteID(Pokemon* pokemon, u8 status) {
     static u16 top_joutai_tbl[8] = {0, 0x142, 0x146, 0x143, 0x144, 0x145, 0x148, 0};
     static u16 status_joutai_tbl[7] = {0, 0x7E, 0x83, 0x80, 0x81, 0x82, 0x85};
     u16 idx;
-    if (((u16)pokemonGetStatus(pokemon, 0, 0x7B, 0) != 0) == 1) {
+    if ((bool)pokemonGetStatus(pokemon, 0, 0x7B, 0) == 1) {
         idx = 1;
     } else {
         switch (pokemonGetJoutaiMenuSpriteId(pokemon)) {
@@ -387,7 +387,6 @@ static u8 _menuPokemonMovePanel(s32 index, u8 mode) {
 }
 
 static s32 _menuPokemonActionField(s8 index) {
-    enum TsE { TsE0 };
     s32 r;
     do {
         _menuPokemon.listKind = 1;
@@ -406,12 +405,12 @@ static s32 _menuPokemonActionField(s8 index) {
             break;
         case 0x1AF:
         case 0x171: {
-            enum TsE other;
+            int other;
             Pokemon* a;
             Pokemon* b;
             _menuPokemon.swapSel = index;
             _menuPokemon.listKind = 2;
-            other = (enum TsE)(_menuPokemonOpenList(true));
+            other = _menuPokemonOpenList(true);
             _menuPokemon.swapSel = -1;
             if (menuGetCursorItemID(0x4C) != 0x163 && other != -1) {
                 a = _menuPokemonGetPokemonPtr(index);
@@ -486,8 +485,7 @@ static s32 _menuPokemonActionFight(s8 index) {
 }
 
 static s32 _menuPokemonActionGive(s8 index, s16 slot, u16 item, u16* outItem) {
-    enum TsE { TsE0 };
-    enum TsE yes;
+    int yes;
     u16 have;
     Pokemon* pokemon;
     void* hero;
@@ -518,7 +516,7 @@ static s32 _menuPokemonActionGive(s8 index, s16 slot, u16 item, u16* outItem) {
     } else if (have != 0) {
         msgctrlSetValue(0x2D, have);
         winMsgOpen(2, (void*)0x3ACA, 1, 0);
-        yes = (enum TsE)(menuSubOpenYesNo(0, -1, -1, 0));
+        yes = menuSubOpenYesNo(0, -1, -1, 0);
         winMsgClose(1);
         if (yes != 0) {
             return -1;
@@ -820,11 +818,10 @@ s32 menuPokemonCtrl(tagWINDOW_WORK* w) {
 
 extern "C" {
 void menuPokemonCursor(tagWINDOW_WORK* w) {
-    enum TsE { TsE0 };
     s8 cur = (s8)w->cursor;
     u8 valid[8];
     u8* p = valid;
-    enum TsE dir = (enum TsE)(0);
+    int dir = 0;
     s32 i = 0;
     u16 key;
     do {
@@ -839,7 +836,7 @@ void menuPokemonCursor(tagWINDOW_WORK* w) {
     valid[i] = 1;
     key = windowGetKeyRepeat();
     if (key & 8) {
-        dir = (enum TsE)(1);
+        dir = 1;
         if ((s8)_menuPokemon.side == 0) {
             if (cur == 0) {
                 if ((s8)_menuPokemon.prevSel == 3) {
@@ -862,7 +859,7 @@ void menuPokemonCursor(tagWINDOW_WORK* w) {
             }
         }
     } else if (key & 4) {
-        dir = (enum TsE)(-1);
+        dir = -1;
         if ((s8)_menuPokemon.side == 0) {
             switch (cur) {
             case 1:
@@ -875,25 +872,28 @@ void menuPokemonCursor(tagWINDOW_WORK* w) {
                 break;
             }
         } else if ((s8)_menuPokemon.side == 1) {
-            if (cur < 4) {
-                if (cur >= 2) {
-                    cur = 0;
-                }
-            } else if (cur < 6) {
+            switch (cur) {
+            case 2:
+            case 3:
+                cur = 0;
+                break;
+            case 4:
+            case 5:
                 cur = 1;
+                break;
             }
         }
     }
     if (key & 1) {
         cur--;
-        dir = (enum TsE)(-1);
+        dir = -1;
         if (cur < 0) {
             cur = 6;
         }
     } else if (key & 2) {
-        dir = (enum TsE)(1);
+        dir = 1;
         cur++;
-        cur = cur < menuDataBiosGetDispMax(w->menuID) ? cur : 0;
+        cur = cur >= menuDataBiosGetDispMax(w->menuID) ? 0 : cur;
     }
     if (dir != 0) {
         u8* q = &valid[cur];
@@ -1092,6 +1092,7 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     MENU_POKEMON_STATUS_TBL* info;
     u32 color;
     s32 item;
+    s16 i;
     s16 width;
     s16 x;
     u32 msg;
@@ -1121,7 +1122,6 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             case 0x142: {
                 u32 machine;
                 u16 waza;
-                s16 i;
                 Pokemon* pokemon;
                 machine = itemDataBiosGetWazaMachineNo((u8*)item);
                 pokemon = _menuPokemonGetPokemonPtr(idx);
@@ -1187,15 +1187,27 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     switch (sp->id) {
     case 0x132:
     case 0x13C:
-        winSpriteSetDisp(sp, info->unk29 == 0);
+        if (info->unk29 == 0) {
+            winSpriteSetDisp(sp, true);
+        } else {
+            winSpriteSetDisp(sp, false);
+        }
         break;
     case 0x13D:
     case 0x1C4:
-        winSpriteSetDisp(sp, info->unk29 == 1);
+        if (info->unk29 == 1) {
+            winSpriteSetDisp(sp, true);
+        } else {
+            winSpriteSetDisp(sp, false);
+        }
         break;
     case 0x2CF:
     case 0x2D0:
-        winSpriteSetDisp(sp, info->unk29 == 2);
+        if (info->unk29 == 2) {
+            winSpriteSetDisp(sp, true);
+        } else {
+            winSpriteSetDisp(sp, false);
+        }
         break;
     case 0x13B:
     case 0x146:
@@ -1205,8 +1217,11 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         break;
     case 0x13A:
     case 0x145:
-        s16 rf_t = info->unk2A;
-        winSpriteSetDisp(sp, rf_t != 0);
+        if (info->unk2A != 0) {
+            winSpriteSetDisp(sp, true);
+        } else {
+            winSpriteSetDisp(sp, false);
+        }
         break;
     case 0x136:
     case 0x141:
@@ -1311,7 +1326,11 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         break;
     }
     case 0x162:
-        winSpriteSetDisp(sp, (s8)_menuPokemon.sel == 6);
+        if ((s8)_menuPokemon.sel == 6) {
+            winSpriteSetDisp(sp, true);
+        } else {
+            winSpriteSetDisp(sp, false);
+        }
         break;
     case 0x163:
     case 0x164:

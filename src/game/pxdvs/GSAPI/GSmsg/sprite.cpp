@@ -109,8 +109,9 @@ void spriteClearScissor(s32 layer) {
     }
 }
 
+#pragma push
+#pragma opt_lifetimes off
 void spriteSetScissor(s32 layer, s32 x, s32 y, s32 w, s32 h) {
-    enum TsE { TsE0 };
     s16 idx;
     if (layer == floorGetMenuLayerID()) {
         idx = 0;
@@ -123,19 +124,19 @@ void spriteSetScissor(s32 layer, s32 x, s32 y, s32 w, s32 h) {
     GSgfxLayer* l = GSgfxLayerFindByID(layer);
     _TargetLayer = l;
     if (l != 0) {
-        s32 sx = work->offX + (f32)x;
-        enum TsE sy = (enum TsE)(work->offY + (f32)y);
+        x = work->offX + (f32)x;
+        y = work->offY + (f32)y;
         f32 scaleX = work->scaleX;
         f32 scaleY = work->scaleY;
-        sx = (f32)sx * scaleX;
-        sy = (enum TsE)((f32)sy * scaleY);
+        x = (f32)x * scaleX;
+        y = (f32)y * scaleY;
         w = (f32)w * scaleX;
         h = (f32)h * scaleY;
-        if (sx >= 640) {
-            sx = 640;
+        if (x >= 640) {
+            x = 640;
         }
-        if (sy >= 480) {
-            sy = (enum TsE)(480);
+        if (y >= 480) {
+            y = 480;
         }
         if (w >= 640) {
             w = 640;
@@ -143,11 +144,11 @@ void spriteSetScissor(s32 layer, s32 x, s32 y, s32 w, s32 h) {
         if (h >= 480) {
             h = 480;
         }
-        if (sx < 0) {
-            sx = 0;
+        if (x < 0) {
+            x = 0;
         }
-        if (sy < 0) {
-            sy = (enum TsE)(0);
+        if (y < 0) {
+            y = 0;
         }
         if (w < 0) {
             w = 0;
@@ -155,8 +156,8 @@ void spriteSetScissor(s32 layer, s32 x, s32 y, s32 w, s32 h) {
         if (h < 0) {
             h = 0;
         }
-        l->scissorX = sx;
-        l->scissorY = sy;
+        l->scissorX = x;
+        l->scissorY = y;
         l->scissorW = w;
         l->scissorH = h;
         l->dirty16b8 |= 1;
@@ -165,6 +166,7 @@ void spriteSetScissor(s32 layer, s32 x, s32 y, s32 w, s32 h) {
         l->dirty1760 |= 2;
     }
 }
+#pragma pop
 
 void spriteClearEnv(s32 layer) {
     GSgfxLayer* l = GSgfxLayerFindByID(layer);
@@ -213,19 +215,19 @@ void spriteSetEnv(s32 layer) {
         cy = height * kc544;
         f32 fov = 0.2617994f;
         f32 dist = cy / (f32)tan(fov);
-        up.z = 0.0f;
-        up.x = 0.0f;
-        at.y = cy - work->offY;
-        eye.x = cx - work->offX;
         eye.y = cy - work->offY;
         eye.z = dist;
-        up.y = -1.0f;
-        at.z = 0.0f;
+        eye.x = cx - work->offX;
         at.x = cx - work->offX;
+        at.y = cy - work->offY;
+        at.z = 0.0f;
+        up.x = 0.0f;
+        up.y = -1.0f;
+        up.z = 0.0f;
         C_MTXLookAt(view, &eye, &up, &at);
+        l = _TargetLayer;
         GSmtx44Perspective(proj, 30.0f, -(width / height), 0.1f, 30000.0f);
 
-        l = _TargetLayer;
         l->projType = 0;
         l->proj[0] = proj[0][0];
         l->proj[1] = proj[0][2];

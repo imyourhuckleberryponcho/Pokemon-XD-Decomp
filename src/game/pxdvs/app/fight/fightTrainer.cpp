@@ -482,6 +482,21 @@ static inline EsabaPokemonTable* _esabaGetPokemonTable(u32 index) {
     return *esabadata[index].pokemon;
 }
 
+static inline u16 _esabaGetPokemonId(u32 index, u8 k) {
+    EsabaPokemonTable* table = _esabaGetPokemonTable(index);
+    return table != 0 ? table->data[k].pokemonId : 0;
+}
+
+static inline u8 _esabaGetMaxLevel(u32 index, u8 k) {
+    EsabaPokemonTable* table = _esabaGetPokemonTable(index);
+    return table != 0 ? table->data[k].maxLevel : 0;
+}
+
+static inline u8 _esabaGetMinLevel(u32 index, u8 k) {
+    EsabaPokemonTable* table = _esabaGetPokemonTable(index);
+    return table != 0 ? table->data[k].minLevel : 0;
+}
+
 extern "C" {
 
 void fightTrainerBallThrowEffect(FightTrainer* trainer, FightOutPokemon* fo, u8 mode) {
@@ -1186,29 +1201,28 @@ u8 fightTrainerCheckTrainerDataIdValid(u16 id, s32 allowNoAi) {
 }
 
 u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon, u32 unused, u16 darkId, u16 encountId) {
-    enum TsE { TsE0 };
-    u16 rndKinds[6] = {0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
-    enum TsE sex;
+    Hero* save;
+    u8 random;
     u8 statusRnd[6];
     u8 statusEffort[6];
     u16 waza[4];
     DeckPokemon* deck;
-    u8 darkFlag;
-    Hero* save;
+    DarkPokemon* dark;
+    u16 rndKinds[6] = {0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
     u8 fightKind;
     u16 pokemonId;
     u32 heroRnd;
     u8 level;
     u32 friendLevel;
     u16 effortKinds[6] = {0x8D, 0x8E, 0x8F, 0x90, 0x91, 0x92};
-    u8 seikaku;
     u8 tokusei;
     u16 item;
     u8 combo;
+    u8 seikaku;
     u8 i;
-    DarkPokemon* dark;
+    u8 darkFlag;
     u32 floorId;
-    u8 random;
+    u8 sex;
     u16 total;
     u16 tries;
     u8 j;
@@ -1230,7 +1244,7 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     random = deck->getRandomSetting() != 0;
     level = deck->getLevel();
     friendLevel = deck->getFriendLevel();
-    sex = (enum TsE)(deck->getSex());
+    sex = deck->getSex();
     seikaku = deck->getSeikakuID();
     tokusei = deck->getTokuseiFlag();
     item = deck->getHoldItem();
@@ -1351,7 +1365,7 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
         pokemonSetDarkPokemonStatus(pokemon, darkId);
         if (darkFlag == 0) {
             rnd = pokemonCreateRndFit(pokemon, -1, -1, 0, heroRnd);
-            darkPokemonBiosSetRnd((u16)darkId, rnd);
+            darkPokemonBiosSetRnd(darkId, rnd);
             pokemon_SetRnd(pokemon, rnd);
             if (dark != 0) {
                 dark->setRnd(rnd);
@@ -1691,10 +1705,9 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
     u32 rnd;
     s32 esabaIndex;
     u8 k;
-    EsabaPokemonTable* table;
-    u32 maxLevel;
+    s16 maxLevel;
     u8 minLevel;
-    u32 levelRnd;
+    s32 levelRnd;
     Pokemon pokemon;
     u16 item0;
     u16 item1;
@@ -1729,16 +1742,13 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
         }
     }
     for (k = 0; k < 3; k++) {
-        table = _esabaGetPokemonTable(esabaIndex);
-        if (pokemonId == (table != 0 ? table->data[k].pokemonId : 0)) {
+        if (pokemonId == _esabaGetPokemonId(esabaIndex, k)) {
             slot = k;
             break;
         }
     }
-    table = _esabaGetPokemonTable(esabaIndex);
-    maxLevel = table != 0 ? table->data[slot].maxLevel : 0;
-    table = _esabaGetPokemonTable(esabaIndex);
-    minLevel = table != 0 ? table->data[slot].minLevel : 0;
+    maxLevel = _esabaGetMaxLevel(esabaIndex, slot);
+    minLevel = _esabaGetMinLevel(esabaIndex, slot);
     levelRnd = HSD_Rand();
     trainerPokemonId = fightTrainerDB_GetTemotiPokemonId(id, 0);
     DeckTrainer::getDeckTrainerObj(id)->getDarkPokemonDataID(0);
@@ -1916,8 +1926,8 @@ static void _fightTrainerCreateRndCheckRare(Hero* hero, bool rare) {
 extern "C" {
 
 void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* hero, u16 encountId_in) {
-    u16 encountId = encountId_in;
     u8 maxLevel;
+    u16 encountId = encountId_in;
     u8 i;
     Hero* player;
     u16 item;
@@ -1930,7 +1940,7 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* her
     if (encountId == 0) {
         encountId = fightGetFightEncountDataId();
     }
-    fightKind = fightEncountDataBiosGetFightKind(fightEncountDataBiosGetPtr(encountId));
+    fightKind = fightEncountDataBiosGetFightKind(fightEncountDataBiosGetPtr((s32)encountId));
     if (hero == 0) {
         return;
     }

@@ -3409,6 +3409,7 @@ static void _fadeEffectSnapshotRotate(GSgfxLayer* layer, GStexture* tex, GSvec* 
 }
 
 static void _fadeDistortionDoSecond(u32 amount, bool flag) {
+    unsigned int range;
     f32* p;
     f32* tex;
     int cx;
@@ -3463,8 +3464,9 @@ static void _fadeDistortionDoSecond(u32 amount, bool flag) {
                         sy = fadeRandInline(3) != 0 ? 1.0f : -1.0f;
                     }
                 }
-                p[0] = invX * (f32)x + sx * (f32)fadeRandInline(amount) / 1000.0f;
-                p[1] = fy + sy * (f32)fadeRandInline(amount) / 1000.0f;
+                range = amount;
+                p[0] = invX * (f32)x + sx * (f32)fadeRandInline(range) / 1000.0f;
+                p[1] = fy + sy * (f32)fadeRandInline(range) / 1000.0f;
                 tex += 2;
                 p += 2;
             }

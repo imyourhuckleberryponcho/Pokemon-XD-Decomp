@@ -783,9 +783,8 @@ static void _floorUpdate(unsigned int id, FloorEnterMode mode) {
 }
 
 static void _floorFinalize(unsigned int id, FloorEnterMode mode) {
-    switch (mode) {
-    case 1:
-        break;
+    if (mode == 1) {
+        return;
     }
 }
 
@@ -1908,7 +1907,7 @@ static void _floorMakeStateData(FloorStateMode mode, void* data, unsigned long s
             floorReleaseOffscreen();
         }
         memset(d, 0, 0x10);
-        d[0] = soundGetBGMID();
+        *(u32*)data = soundGetBGMID();
         d[1] = soundGetVolume(d[0]);
         d[2] = soundGetEnvID();
         d[3] = soundGetVolume(d[2]);

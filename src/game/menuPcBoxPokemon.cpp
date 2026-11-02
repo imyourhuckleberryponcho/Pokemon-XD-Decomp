@@ -1316,19 +1316,18 @@ bool CMenuPokemonLeave::cursorMoveDown(long& idx)
     if (a >= 1 && a <= 2) {
         idx = 0;
     } else {
-        s16 b = idx;
-        if (b >= 0x22) {
+        if (idx >= 0x22) {
             if ((a - 10) % 6 <= 2) {
                 idx = 1;
             } else {
                 idx = 2;
             }
-        } else if (b >= 10) {
-            idx = b + 6;
-        } else if (b == 0) {
+        } else if (10 <= idx) {
+            idx += 6;
+        } else if (idx == 0) {
             idx = f37E0 + 10;
-        } else if (a >= 3 && b <= 9) {
-            idx = b >= 9 ? 3 : a + 1;
+        } else if (a >= 3 && idx <= 9) {
+            idx = idx >= 9 ? 3 : a + 1;
         } else {
             return false;
         }

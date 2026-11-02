@@ -485,7 +485,7 @@ extern "C++" {
 #pragma push
 #pragma dont_inline off
 void peEmitterNode::Init(_peEmitter* p0) {
-    _peEmitter *temp_r30;
+    void *temp_r30;
     peContainer *temp_r0_2;
     peContainer *temp_r0_3;
     peContainer *temp_r3;
@@ -510,17 +510,19 @@ void peEmitterNode::Init(_peEmitter* p0) {
     M2C_FIELD(this, _peEmitter **, 0xFC) = p0;
     temp_r29 = (u16) M2C_FIELD(p0, s32 *, 4);
     for (var_r28 = M2C_FIELD(p0, u8 **, 0x138); var_r28 != NULL; var_r28 = M2C_FIELD(var_r28, u8 **, 0xC)) {
-        temp_r30 = M2C_FIELD(var_r28, _peEmitter **, 8);
+        temp_r30 = M2C_FIELD(var_r28, void **, 8);
         if (temp_r30 != NULL) {
             temp_r0 = M2C_FIELD(var_r28, u32 *, 4);
             var_r4 = NULL;
             switch (temp_r0) {
-            case 0:
-                if ((u32) M2C_FIELD(temp_r30, u32 *, 0x138) != 0U) {
-                    temp_r3 = new peEmitterContainer(this, temp_r30, temp_r29);
+            case 0: {
+                _peEmitter* em = (_peEmitter*)temp_r30;
+                if ((u32) M2C_FIELD(em, u32 *, 0x138) != 0U) {
+                    temp_r3 = new peEmitterContainer(this, em, temp_r29);
                     var_r4 = temp_r3;
                 }
                 break;
+            }
             case 1:
                 if ((s32) M2C_FIELD(temp_r30, s32 *, 0x54) != 0) {
                     var_r4 = new peParticleContainer(this, (_peParticle*)temp_r30, temp_r29);

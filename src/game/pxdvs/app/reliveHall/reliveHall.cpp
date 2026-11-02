@@ -20,7 +20,7 @@ void GSmemFree(void* p);
 void GSthreadSwitch();
 bool darkPokemonBiosGetInformationFlag(u16 id);
 bool darkPokemonBiosGetReliveFlag(u16 id);
-u16 darkPokemonBiosGetSteps(u16 id);
+u32 darkPokemonBiosGetSteps(u16 id);
 void darkPokemonBiosSetSteps(u16 id, u32 steps);
 s32 heroMoveAddStepCallback(void (*cb)(long, FootStepCounter, long), s32);
 void heroMoveInitEvent();
@@ -406,7 +406,7 @@ Pokemon* CReliveStage::heroWalkReliveCallBack(long steps, bool pay) {
     if (darkPokemonBiosGetReliveFlag(id) != 0) return 0;
     if (v->getDarkPointDirect() == 0) return 0;
     cur = darkPokemonBiosGetSteps(id);
-    if (cur >= relivehall_data->steps && pay) {
+    if ((u16)cur >= relivehall_data->steps && pay) {
         pokemonAddDp(v, (f32)-getPassion());
         darkPokemonBiosSetSteps(id, cur - relivehall_data->steps);
         if (v->getDarkPointDirect() != 0) return 0;
@@ -503,14 +503,16 @@ bool CReliveHall::isReliveReadyDarkLugiaExist() {
     u32 i;
     for (i = 0; i < 9; i++) {
         Pokemon* v = VISITOR_OR_NULL(&stage[i]);
-        if (v != 0 && v->getPokemonDataId() == 0xF9) break;
+        if (v != 0 && v->getPokemonDataId() == 0xF9) goto found;
     }
-    if (i >= 9) return false;
+    return false;
+found:
     for (u32 s = 0; s < 9; s++) {
         CReliveStage* st = &stage[s];
         s32 n = countDancers(st);
+        s32 tb = _tempoBase[n];
         s32 sum = pairSum(st, n);
-        if (sum + _tempoBase[n] != 0x60) return false;
+        if (sum + tb != 0x60) return false;
     }
     return true;
 }
@@ -580,20 +582,20 @@ void CReliveHall::debugPokemonSetup(long mode) {
         u32 base = 0;
         for (s32 s = 0; s < 8; s++, base += 2) {
             s32 counts[10] = { 4, 3, 2, 1, 1, 1, 1, 1, 1, 0 };
-            u16 id = base;
+            u32 id = base;
             for (s32 d = 0; d < counts[s]; d++, id++) {
-                s32 pick;
+                u16 pick;
                 if (s == 0) pick = tempMaxTbl2294[d];
                 else if (s == 1) pick = tempMaxTbl2298[d];
                 else pick = id;
-                menuPocketDebugMakePokemonByID(*(Pokemon*)tmp, (u8)pick, false, 0.0f);
+                menuPocketDebugMakePokemonByID(*(Pokemon*)tmp, pick, false, 0.0f);
                 s32 slot = findEmptySlot(&stage[s]);
                 Pokemon* dst = stageDancer(&stage[s], slot);
                 memcpy(dst, tmp, 0xC4);
                 pokemonSetupAfterInsert(this, &stage[s], dst);
                 pokemonInit((u32)(Pokemon*)tmp);
             }
-            menuPocketDebugMakePokemonByID(*(Pokemon*)tmp, dptbl[s], true, darkRateTbl[(mode != 1) * 10 + s]);
+            menuPocketDebugMakePokemonByID(*(Pokemon*)tmp, dptbl[s], true, darkRateTbl[s + (mode != 1) * 10]);
             memcpy(stageVisitor(&stage[s]), tmp, 0xC4);
             pokemonSetupAfterInsert(this, &stage[s], stageVisitor(&stage[s]));
             pokemonInit((u32)(Pokemon*)tmp);

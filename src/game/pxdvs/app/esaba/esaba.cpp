@@ -150,6 +150,10 @@ static inline u32 getRate(u16 place) {
     return getRateID(place, GSflagGet(esabadata[place].flagID));
 }
 
+static inline u32 getNum(s32 place) {
+    return GSflagGet(esabadata[place].flagNum);
+}
+
 static inline void setNum(s32 place, s32 n) {
     GSflagSet(esabadata[place].flagNum, n);
     if (n == 0) {
@@ -234,26 +238,17 @@ u32 esabaGetEsaItemNum(void) {
     return itemQuantity__4HeroFUs(getHeroPtr__4HeroFv(), 0x1FF);
 }
 
-#pragma push
-#pragma peephole off
 s32 esabaGet(s32 place) {
     s32 left;
-    s32 num = GSflagGet(esabadata[place].flagNum);
+    s32 num = getNum(place);
 
     if (menuPanelInputNumber(0, &num, 0, num, 1)) {
         left = -num;
-        u32 n = GSflagGet(esabadata[place].flagNum);
-        left = n + left;
-        GSflagSet(esabadata[place].flagNum, left);
-        if (left == 0) {
-            GSflagSet(esabadata[place].flag4, 0);
-            GSflagSet(esabadata[place].flag8, 0);
-        }
+        setNum(place, getNum(place) + left);
         return num;
     }
     return 0;
 }
-#pragma pop
 
 s32 esabaPut(s32 place) {
     s32 total;
@@ -261,13 +256,8 @@ s32 esabaPut(s32 place) {
 
     if (menuPanelInputNumber(0, &num, 0, 10 - num, 1)) {
         total = (s16)num;
-        s16 n = GSflagGet(esabadata[place].flagNum);
-        total = n + total;
-        GSflagSet(esabadata[place].flagNum, total);
-        if (total == 0) {
-            GSflagSet(esabadata[place].flag4, 0);
-            GSflagSet(esabadata[place].flag8, 0);
-        }
+        s32 n = GSflagGet(esabadata[place].flagNum);
+        setNum(place, n + total);
         return num;
     }
     return 0;

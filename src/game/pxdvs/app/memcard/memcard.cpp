@@ -276,7 +276,8 @@ extern "C" {
 void memcardInitialize(void)
 {
     if (!_memcardInitializeFlag) {
-        u32 lo, hi;
+        u32 lo;
+        u16 hi;
         CARDInit();
         lo = HSD_Rand();
         hi = HSD_Rand();

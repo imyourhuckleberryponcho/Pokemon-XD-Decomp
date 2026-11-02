@@ -109,8 +109,9 @@ void GSgfxTokenWaitForClearAndReset(u16* tokenPtr) {
 }
 
 void GSgfxTokenIfClearedReset(u16* tokenPtr) {
-    u16 token = *tokenPtr;
-    if (token == 0) {
+    s16 token = *tokenPtr;
+    u16 timer = token;
+    if (timer == 0) {
         return;
     }
     if (_tokenCleared(token) == true) {

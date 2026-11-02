@@ -350,22 +350,20 @@ bool GsKeyObject::GetDeformParameterU(f32* out, const tagGsFilePrimKeyFrame* a, 
 }
 
 bool GsKeyObject::GetLinearParameterV(f32* out, const tagGsFilePrimKeyFrame* a) {
-    u32 n;
-    f32 last = (f32)(n - 1);
-    s16 rf_t = a->nDeformV;
-    n = rf_t;
-    for (u32 i = 0; i < n; i++) {
+    u32 i;
+    u32 n = a->nDeformV;
+    f32 last = n - 1;
+    for (i = 0; i < n; i++) {
         out[i] = (f32)i / last;
     }
     return true;
 }
 
 bool GsKeyObject::GetLinearParameterU(f32* out, const tagGsFilePrimKeyFrame* a) {
-    u32 n;
-    f32 last = (f32)(n - 1);
-    s16 rf_t = a->nDeformU;
-    n = rf_t;
-    for (u32 i = 0; i < n; i++) {
+    u32 i;
+    u32 n = a->nDeformU;
+    f32 last = n - 1;
+    for (i = 0; i < n; i++) {
         out[i] = (f32)i / last;
     }
     return true;

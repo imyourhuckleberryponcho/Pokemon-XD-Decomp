@@ -33,11 +33,12 @@ inline int __fpclassifyf(float x)
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
-        double guess = __frsqrte((double) x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        return (float) (x * guess);
+        double xd = (double) x;
+        double guess = __frsqrte(xd);
+        guess = 0.5 * guess * (3.0 - guess * guess * xd);
+        guess = 0.5 * guess * (3.0 - guess * guess * xd);
+        guess = 0.5 * guess * (3.0 - guess * guess * xd);
+        return (float) (xd * guess);
     } else if (x < 0.0) {
         return NAN;
     } else if (__fpclassifyf(x) == 1) {
@@ -106,7 +107,7 @@ static void _inputInitRepeat(InputDevice* d);
 static void _inputUpdateSmoothing(InputDevice* d);
 static void _inputDoSmoothing(InputDevice* d, s8 tx, s8 ty, u8* px, u8* py, f32* dx, f32* dy, f32* sx, f32* sy);
 static void _inputDoClamping(InputDevice* d);
-static void ClampCircle(u8* x, u8* y, s8 radius, s8 dead);
+static void ClampCircle(s8* x, s8* y, s8 radius, s8 dead);
 
 void GSinputClearButtonData(s32 pad, u32 buttons)
 {
@@ -218,9 +219,9 @@ void GSinputResetRightSmoothing(s32 pad, s8 x, s8 y)
     InputDevice* d = _inputFindDevice(pad);
     if (d) {
         d->smoothRX = x;
-        d->prevRY = y;
         d->smoothRY = y;
         d->prevRX = x;
+        d->prevRY = y;
     }
 }
 
@@ -229,9 +230,9 @@ void GSinputResetLeftSmoothing(s32 pad, s8 x, s8 y)
     InputDevice* d = _inputFindDevice(pad);
     if (d) {
         d->smoothLX = x;
-        d->prevLY = y;
         d->smoothLY = y;
         d->prevLX = x;
+        d->prevLY = y;
     }
 }
 
@@ -616,16 +617,16 @@ static void _inputDoClamping(InputDevice* d)
         break;
     case 2: {
         u8 v[2];
-        ClampCircle((u8*) &d->cur.stickX, (u8*) &d->cur.stickY, 56, 10);
-        ClampCircle((u8*) &d->cur.substickX, (u8*) &d->cur.substickY, 44, 10);
+        ClampCircle((s8*) &d->cur.stickX, (s8*) &d->cur.stickY, 56, 10);
+        ClampCircle((s8*) &d->cur.substickX, (s8*) &d->cur.substickY, 44, 10);
         v[1] = (s32) d->smoothLX;
         v[0] = (s32) d->smoothLY;
-        ClampCircle(&v[1], &v[0], 56, 10);
+        ClampCircle((s8*) &v[1], (s8*) &v[0], 56, 10);
         d->outLX = v[1];
         d->outLY = v[0];
         v[1] = (s32) d->smoothRX;
         v[0] = (s32) d->smoothRY;
-        ClampCircle(&v[1], &v[0], 44, 10);
+        ClampCircle((s8*) &v[1], (s8*) &v[0], 44, 10);
         d->outRX = v[1];
         d->outRY = v[0];
         break;
@@ -646,10 +647,10 @@ static InputDevice* _inputFindDevice(s32 id)
     return 0;
 }
 
-static void ClampCircle(u8* x, u8* y, s8 radius, s8 dead)
+static void ClampCircle(s8* x, s8* y, s8 radius, s8 dead)
 {
-    s32 vx = (s8) *x;
-    s32 vy = (s8) *y;
+    s32 vx = *x;
+    s32 vy = *y;
     s32 sq;
     if (-dead < vx && vx < dead) {
         vx = 0;

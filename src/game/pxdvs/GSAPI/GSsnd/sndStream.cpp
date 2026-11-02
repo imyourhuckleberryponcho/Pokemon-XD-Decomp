@@ -234,7 +234,7 @@ static void _sndStreamPrepareGetDataCallback_Exec(SndStream* s, SndStream* maste
     u8* dst;
 
     if (half) {
-        dst = s->buf + (s->bufSize / 2 + cur);
+        dst = s->buf + s->bufSize / 2 + cur;
     } else {
         dst = s->buf + cur;
     }

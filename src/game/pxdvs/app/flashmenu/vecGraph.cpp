@@ -20,6 +20,7 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #endif
 
 #pragma pool_strings off
+#pragma peephole off
 
 extern "C" {
 double sin(double);
@@ -66,6 +67,26 @@ int printf(const char*, ...);
 struct GSvec2 {
     f32 x, y;
 };
+
+static inline f32 __OSs16tof32(register const s16* arg) {
+    register f32 ret;
+    asm { psq_l ret, 0(arg), 1, 5 }
+    return ret;
+}
+
+static inline f32 OSs16tof32(s16 v) {
+    return __OSs16tof32(&v);
+}
+
+static inline void __OSf32tos16(register f32 arg, volatile register s16* out) {
+    asm { psq_st arg, 0(out), 1, 5 }
+}
+
+static inline s16 OSf32tos16(f32 in) {
+    s16 out;
+    __OSf32tos16(in, &out);
+    return out;
+}
 struct GStexture;
 struct GSgfxLayer;
 
@@ -76,7 +97,7 @@ struct FLASHMATRIX {
     s32 a, b, c, d, tx, ty;
 };
 struct FLASHCXFORM {
-    s32 ra, rb, ga, gb, ba, bb, aa, ab;
+    s16 ra, rb, ga, gb, ba, bb, aa, ab;
 };
 
 struct _SHAPERECORD;
@@ -135,7 +156,7 @@ struct VEC_GRAPH_DATA {
     f32 sinB;
     f32 cosB;
     u32 palette[0x100];
-    s16 cross[0x800];
+    s16 cross[0x100][8];
 };
 
 struct LPOINT {
@@ -149,8 +170,14 @@ extern "C" {
 int GSgfxLayerFindByID(int id);
 int GSgfxLayerGetActive();
 void GSprimDraw2DLineListC(void* verts, u32 count, void* colors);
-void GSprimDraw2DTexQuad4V(GSvec2* pos, GSvec2* uv, GStexture* tex, void* col);
-void GSprimDraw2DTexQuad4VCA(GSvec2* pos, GSvec2* uv, GStexture* tex, void* col, void* add);
+struct SDCol4 {
+    u8 c[4];
+};
+struct SDAdd4 {
+    s16 v[4];
+};
+void GSprimDraw2DTexQuad4V(GSvec2* pos, GSvec2* uv, GStexture* tex, SDCol4 col);
+void GSprimDraw2DTexQuad4VCA(GSvec2* pos, GSvec2* uv, GStexture* tex, SDCol4 col, SDAdd4 add);
 void GSprimSetLineWidth(f32 w);
 void GSprimSetQuadVertexOrder(s32 order);
 void flcalcBezier3(GSvec2* out, GSvec2* pts, f32 t);
@@ -203,8 +230,8 @@ static inline void lListPush(u32 color, s16 x, s16 y) {
     }
     memcpy(&lList[1 + lList[0]], &color, 4);
     f32* v = (f32*)&lList[0x201];
-    v[lList[0] * 2] = (f32)x;
-    v[lList[0] * 2 + 1] = (f32)y;
+    v[lList[0] * 2] = __OSs16tof32(&x);
+    v[lList[0] * 2 + 1] = __OSs16tof32(&y);
     lList[0] += 1;
 }
 
@@ -318,123 +345,50 @@ static inline void buildGradient(VEC_GRAPH_DATA* d) {
 }
 
 extern "C++" {
-static void SBdec(u32 p0, s16 p1, u32 p2) {
-    s32 *var_r7;
-    u8 *var_r8;
-    s32 *var_r9_2;
-    s32 *var_r9_3;
-    s32 temp_r0;
-    s32 temp_r0_2;
-    s32 temp_r0_3;
-    s32 temp_r12;
-    s32 *var_r9;
-    u8 *var_r10_3;
-    u32 var_ctr_3;
-    u32 var_ctr_4;
-    u8 *var_r10;
-    u8 *var_r10_2;
-    u32 var_ctr_2;
-    u32 var_ctr;
-    u8 temp_r4;
-    u8 temp_r4_2;
-    u8 temp_r6;
-    u8 temp_r6_2;
-    u8 temp_r6_3;
-    u8 temp_r6_4;
-    u8 temp_r6_5;
-    u8 temp_r6_6;
-
-    if ((u8) p0 != 0) {
-        temp_r12 = 8;
-        temp_r12 *= p1;
-        var_r10 = (unsigned char *)(lPoint);
-        var_r9 = (long *)(&bit_value);
-        var_ctr = p2;
-        if (p2 > 0U) {
-            do {
-                if ((u32) (p0 & M2C_FIELD(var_r9, s32 *, 0)) != 0) {
-                    temp_r6 = *var_r10;
-                    *var_r10 = temp_r6 + 1;
-                    *(var_r10 + (((s8) temp_r6 * 2) + 2)) = temp_r12;
-                }
-                if ((u32) (p0 & M2C_FIELD(var_r9, s32 *, 0x10)) != 0) {
-                    temp_r6_2 = *var_r10;
-                    *var_r10 = temp_r6_2 + 1;
-                    *(var_r10 + ((temp_r6_2 * 2) + 2)) = temp_r12 + 1;
-                }
-                var_r9 += 1;
-                var_r10 += 0x14A8;
-                var_ctr -= 1;
-            } while (var_ctr != 0);
+static void SBdec(u32 mask, s16 x, u32 n) {
+    if ((u8)mask != 0) {
+        s16 base = x;
+        base *= 8;
+        for (u32 i = 0; i < n; i++) {
+            if (mask & bit_value[i]) {
+                lPoint[i].x[lPoint[i].n++] = base;
+            }
+            if (mask & bit_value[i + 4]) {
+                lPoint[i].x[lPoint[i].n++] = (s16)(base + 1);
+            }
         }
     }
-    if ((u32) (p0 & 0xFF00) != 0) {
-        temp_r0 = p1 * 8;
-        var_r9_2 = (long *)(&bit_value);
-        var_r10_2 = (unsigned char *)(lPoint);
-        var_ctr_2 = p2;
-        if (p2 > 0U) {
-            do {
-                if ((u32) (p0 & M2C_FIELD(var_r9_2, s32 *, 0x20)) != 0) {
-                    temp_r6_3 = *var_r10_2;
-                    *var_r10_2 = temp_r6_3 + 1;
-                    *(var_r10_2 + ((temp_r6_3 * 2) + 2)) = temp_r0 + 2;
-                }
-                if ((u32) (p0 & M2C_FIELD(var_r9_2, s32 *, 0x30)) != 0) {
-                    temp_r6_4 = *var_r10_2;
-                    *var_r10_2 = temp_r6_4 + 1;
-                    *(var_r10_2 + ((temp_r6_4 * 2) + 2)) = temp_r0 + 3;
-                }
-                var_r9_2 += 1;
-                var_r10_2 += 0x14A8;
-                var_ctr_2 -= 1;
-            } while (var_ctr_2 != 0);
+    if ((mask & 0xFF00) != 0) {
+        s16 base = x * 8;
+        for (u32 i = 0; i < n; i++) {
+            if (mask & bit_value[i + 8]) {
+                lPoint[i].x[lPoint[i].n++] = (s16)(base + 2);
+            }
+            if (mask & bit_value[i + 12]) {
+                lPoint[i].x[lPoint[i].n++] = (s16)(base + 3);
+            }
         }
     }
-    if ((u32) (p0 & 0xFF0000) != 0) {
-        temp_r0_2 = p1 * 8;
-        var_r9_3 = (long *)(&bit_value);
-        var_r10_3 = (unsigned char *)(lPoint);
-        var_ctr_3 = p2;
-        if (p2 > 0U) {
-            do {
-                if ((u32) (p0 & M2C_FIELD(var_r9_3, s32 *, 0x40)) != 0) {
-                    temp_r6_5 = *var_r10_3;
-                    *var_r10_3 = temp_r6_5 + 1;
-                    *(var_r10_3 + ((temp_r6_5 * 2) + 2)) = temp_r0_2 + 4;
-                }
-                if ((u32) (p0 & M2C_FIELD(var_r9_3, s32 *, 0x50)) != 0) {
-                    temp_r6_6 = *var_r10_3;
-                    *var_r10_3 = temp_r6_6 + 1;
-                    *(var_r10_3 + ((temp_r6_6 * 2) + 2)) = temp_r0_2 + 5;
-                }
-                var_r9_3 += 1;
-                var_r10_3 += 0x14A8;
-                var_ctr_3 -= 1;
-            } while (var_ctr_3 != 0);
+    if ((mask & 0xFF0000) != 0) {
+        s16 base = x * 8;
+        for (u32 i = 0; i < n; i++) {
+            if (mask & bit_value[i + 16]) {
+                lPoint[i].x[lPoint[i].n++] = (s16)(base + 4);
+            }
+            if (mask & bit_value[i + 20]) {
+                lPoint[i].x[lPoint[i].n++] = (s16)(base + 5);
+            }
         }
     }
-    if ((u32) (p0 & 0xFF000000) != 0) {
-        temp_r0_3 = p1 * 8;
-        var_r7 = (long *)(&bit_value);
-        var_r8 = (unsigned char *)(lPoint);
-        if (var_ctr_4 < p2) var_ctr_4 = p2;
-        if (p2 > 0U) {
-            do {
-                if ((u32) (p0 & M2C_FIELD(var_r7, s32 *, 0x60)) != 0) {
-                    temp_r4 = *var_r8;
-                    *var_r8 = temp_r4 + 1;
-                    *(var_r8 + ((temp_r4 * 2) + 2)) = temp_r0_3 + 6;
-                }
-                if ((u32) (p0 & M2C_FIELD(var_r7, s32 *, 0x70)) != 0) {
-                    temp_r4_2 = *var_r8;
-                    *var_r8 = temp_r4_2 + 1;
-                    *(var_r8 + ((temp_r4_2 * 2) + 2)) = temp_r0_3 + 7;
-                }
-                var_r7 += 1;
-                var_r8 += 0x14A8;
-                var_ctr_4 -= 1;
-            } while (var_ctr_4 != 0);
+    if ((mask & 0xFF000000) != 0) {
+        s16 base = x * 8;
+        for (u32 i = 0; i < n; i++) {
+            if (mask & bit_value[i + 24]) {
+                lPoint[i].x[lPoint[i].n++] = (s16)(base + 6);
+            }
+            if (mask & bit_value[i + 28]) {
+                lPoint[i].x[lPoint[i].n++] = (s16)(base + 7);
+            }
         }
     }
 }
@@ -622,11 +576,11 @@ static _SHAPERECORD* SpriteCode(u32, _SHAPERECORD* rec, u16 id, FLASHMATRIXF* mf
 }
 
 static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2* pts, VEC_GRAPH_DATA* d, FLASHCXFORM* cx) {
-    GSvec2 pos[5];
-    GSvec2 uv[4];
     FLASHMATRIXF mm;
-    s16 add[4];
-    u8 col[5];
+    GSvec2 uv[4];
+    GSvec2 pos[4];
+    SDAdd4 add;
+    SDCol4 col;
     if (tex != 0) {
         mm.a = (f32)m->a / 1310720.0f;
         mm.b = (f32)m->b / 1310720.0f;
@@ -635,25 +589,27 @@ static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2*
         mm.tx = (f32)m->tx / 20.0f;
         mm.ty = (f32)m->ty / 20.0f;
         getUV(pos, uv, pts, mf, &mm, tex);
-        s16 a1 = (s16)cx->rb;
-        s16 a2 = (s16)cx->gb;
-        s16 a3 = (s16)cx->bb;
-        s16 a4 = (s16)cx->ab;
-        col[3] = (u8)((cx->ra * 0xFF) >> 8);
-        col[1] = (u8)((cx->ba * 0xFF) >> 8);
-        col[0] = (u8)((cx->ga * 0xFF) >> 8);
-        col[2] = (u8)((cx->aa * 0xFF) >> 8);
-        add[1] = a2;
-        add[2] = a3;
-        add[3] = a4;
-        add[0] = a1;
+        s16 a1 = cx->rb;
+        s16 a2 = cx->gb;
+        s16 a3 = cx->bb;
+        s16 a4 = cx->ab;
+        u8 c3 = (u8)((cx->ra * 0xFF) >> 8);
+        u8 c0 = (u8)((cx->ga * 0xFF) >> 8);
+        u8 c1 = (u8)((cx->ba * 0xFF) >> 8);
+        u8 c2 = (u8)((cx->aa * 0xFF) >> 8);
+        add.v[3] = a1;
+        col.c[3] = c3;
+        col.c[0] = c0;
+        col.c[1] = c1;
+        col.c[2] = c2;
+        add.v[0] = a2;
+        add.v[1] = a3;
+        add.v[2] = a4;
         if ((a4 | (a3 | (a1 | a2))) == 0) {
-            s32 c = *(s32*)col;
-            GSprimDraw2DTexQuad4V(pos, uv, tex, &c);
+            GSprimDraw2DTexQuad4V(pos, uv, tex, col);
             return;
         }
-        s32 c = *(s32*)col;
-        GSprimDraw2DTexQuad4VCA(pos, uv, tex, &c, add);
+        GSprimDraw2DTexQuad4VCA(pos, uv, tex, col, add);
     }
 }
 
@@ -696,315 +652,99 @@ static void getUV(GSvec2* out, GSvec2* uv, GSvec2* pts, FLASHMATRIXF* mat, FLASH
 }
 
 extern "C++" {
-#pragma peephole off
-static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
-    s32 sp24;
-    s32 sp1C;
-    volatile s32 sp20;
-    u8 sp34[4];
-    s32 sp30;
-    s32 sp2C;
-    s32 sp28;
-    s32 var_ctr_2;
-    s32 var_r20;
-    s16 sp14;
-    volatile s16 sp12;
-    s16 sp10;
-    s16 spE;
-    s16 spC;
-    volatile s16 spA;
-    s16 sp8;
-    s16 *var_r23;
-    s16 *var_r5;
-    s16 *var_r6;
-    s16 temp_r0_2;
-    u32 temp_r6;
-    s16 temp_r7;
-    s16 var_r3;
-    s16 var_r3_2;
-    s16 var_r4_2;
-    s32 temp_r0_3;
-    s32 temp_r25;
-    s32 temp_r9;
-    s32 sp18;
-    volatile s16 sp16;
-    s32 var_r31;
-    s32 var_r4;
-    u16 var_r8;
-    u32 temp_r0_5;
-    u32 temp_r0_6;
-    u32 temp_r3;
-    u32 temp_r4;
-    u32 temp_r4_2;
-    u32 temp_r4_3;
-    s16 temp_r0_4;
-    s32 temp_r0;
-    s32 var_ctr;
-
-    var_r31 = 0;
-    var_r4 = 0;
-    temp_r0 = *M2C_FIELD(p3, s8 **, 0x40);
-    var_ctr = temp_r0;
-    if ((s32) temp_r0 > 0) {
-        do {
-            temp_r0_2 = M2C_FIELD(p3, s16 *, 0x18) + ((s32) (*((u8*)(p3) + ((((s32) ((p2 - M2C_FIELD(p3, s16 *, 0x1A)) << 8) / (s16) M2C_FIELD(p3, s16 *, 0x26)) * 0x10) + var_r4 + 0x464)) * M2C_FIELD(p3, s16 *, 0x24)) / 256);
-            if ((p0 < temp_r0_2) && (p1 > temp_r0_2)) {
-                temp_r0_3 = var_r31 * 2;
-                var_r31 += 1;
-                *(&sp34[0] + temp_r0_3) = temp_r0_2;
-            }
-            var_r4 += 2;
-            var_ctr -= 1;
-        } while (var_ctr != 0);
-    }
-    var_r23 = (short *)(&sp34[0]);
-    var_r8 = 0;
-    var_r6 = var_r23;
-    while (var_r8 < (var_r31 - 1)) {
-        temp_r9 = var_r8 + 1;
-        var_r5 = (short *)(&(&sp34[0])[temp_r9]);
-        var_ctr_2 = var_r31 - temp_r9;
-        if (temp_r9 < var_r31) {
-            do {
-                temp_r0_4 = *var_r6;
-                temp_r7 = *var_r5;
-                if (temp_r0_4 > temp_r7) {
-                    *var_r6 = temp_r7;
-                    *var_r5 = temp_r0_4;
-                }
-                var_r5 += 1;
-                var_ctr_2 -= 1;
-            } while (var_ctr_2 != 0);
-        }
-        var_r6 += 1;
-        var_r8 += 1;
-    }
-    var_r4_2 = sp20;
-    if (var_r4_2 < 0) {
-        var_r4_2 = 0;
-    }
-    if (var_r4_2 >= 0x100) {
-        var_r4_2 = 0xFF;
-    }
-    sp14 = p2;
-    temp_r6 = (u32) var_r4_2 >> 0x1FU;
-    temp_r0_5 = (var_r4_2 << 0x18) - temp_r6;
-    sp16 = p0;
-    sp30 = M2C_FIELD(((u8*)(p3) + ((((temp_r0_5 << 8) | (temp_r0_5 >> 0x18U)) + temp_r6) * 4)), s32 *, 0x64);
-    if ((u32) *lList >= 0x200U) {
-        if ((s32) debugstep == 0x1229) {
-            *lList = 0;
-        } else {
-            if ((u32) *lList != 0) {
-                GSprimDraw2DLineListC(&lList[0x201], (u32) *lList >> 1U, &lList[1]);
-            }
-            *lList = 0;
-        }
-    }
-    memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp30), 4U);
-    var_r20 = 0;
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
-    *lList += 1;
-loop_40:
-    if (var_r20 < var_r31) {
-        var_r3 = sp1C;
-        if (var_r3 < 0) {
-            var_r3 = 0;
-        }
-        if (var_r3 >= 0x100) {
-            var_r3 = 0xFF;
-        }
-        temp_r4 = (u32) var_r3 >> 0x1FU;
-        temp_r3 = (var_r3 << 0x18) - temp_r4;
-        sp10 = p2;
-        sp12 = *var_r23;
-        temp_r25 = *((u8*)(p3) + (((((temp_r3 << 8) | (temp_r3 >> 0x18U)) + temp_r4) * 4) + 0x64));
-        sp2C = temp_r25;
-        if ((u32) *lList >= 0x200U) {
-            if ((s32) debugstep == 0x1229) {
-                *lList = 0;
-            } else {
-                if ((u32) *lList != 0) {
-                    GSprimDraw2DLineListC(&lList[0x201], (u32) *lList >> 1U, &lList[1]);
-                }
-                *lList = 0;
-            }
-        }
-        memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp2C), 4U);
-        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
-        sp28 = temp_r25;
-        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
-        spC = p2;
-        temp_r4_2 = *lList + 1;
-        *lList = temp_r4_2;
-        spE = *var_r23;
-        if (temp_r4_2 >= 0x200U) {
-            if ((s32) debugstep == 0x1229) {
-                *lList = 0;
-            } else {
-                if (temp_r4_2 != 0) {
-                    GSprimDraw2DLineListC(&lList[0x201], temp_r4_2 >> 1U, &lList[1]);
-                }
-                *lList = 0;
-            }
-        }
-        memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp28), 4U);
-        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
-        var_r23 += 1;
-        var_r20 += 1;
-        *lList += 1;
-        M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
-        goto loop_40;
-    }
-    var_r3_2 = sp18;
-    if (var_r3_2 < 0) {
-        var_r3_2 = 0;
-    }
-    if (var_r3_2 >= 0x100) {
-        var_r3_2 = 0xFF;
-    }
-    sp8 = p2;
-    temp_r4_3 = (u32) var_r3_2 >> 0x1FU;
-    temp_r0_6 = (var_r3_2 << 0x18) - temp_r4_3;
-    spA = p1;
-    sp24 = M2C_FIELD(((u8*)(p3) + ((((temp_r0_6 << 8) | (temp_r0_6 >> 0x18U)) + temp_r4_3) * 4)), s32 *, 0x64);
-    if ((u32) *lList >= 0x200U) {
-        if ((s32) debugstep == 0x1229) {
-            *lList = 0;
-        } else {
-            if ((u32) *lList != 0) {
-                GSprimDraw2DLineListC(&lList[0x201], (u32) *lList >> 1U, &lList[1]);
-            }
-            *lList = 0;
-        }
-    }
-    memcpy((void*)(&lList[*lList] + 4), (const void*)(&sp24), 4U);
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x804) = (f32) M2C_ERROR( );
-    M2C_FIELD((lList + (*lList * 8)), f32 *, 0x808) = (f32) M2C_ERROR( );
-    *lList += 1;
+static inline u32 gradColor(VEC_GRAPH_DATA* d, s16 x, s16 y) {
+    s32 gyv = d->gy + ((y - d->minY) << 8) / d->h;
+    s32 gxv = ((x - d->minX) << 8) / d->w - d->gx;
+    f32 fy = (f32)gyv - 128.0f;
+    f32 fx = (f32)gxv - 128.0f;
+    s16 idx = OSf32tos16(128.0f + (fx * d->cosB - fy * d->sinB) / d->gScale);
+    if (idx < 0) idx = 0;
+    if (idx >= 0x100) idx = 0xFF;
+    return d->palette[idx % 256];
 }
-#pragma peephole reset
+
+static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
+    s16 xs[10];
+    s32 n = 0;
+    s32 cnt = *p3->grad;
+    for (s32 i = 0; i < cnt; i++) {
+        s16 v = p3->minX + (p3->cross[((p2 - p3->minY) << 8) / p3->h][i] * p3->w) / 256;
+        if (p0 < v && p1 > v) {
+            xs[n++] = v;
+        }
+    }
+    s16* a = xs;
+    for (u16 i = 0; i < n - 1; i++, a++) {
+        s16* b = &xs[i + 1];
+        for (s32 j = i + 1; j < n; j++, b++) {
+            if (*a > *b) {
+                s16 t = *a;
+                *a = *b;
+                *b = t;
+            }
+        }
+    }
+    lListPush(gradColor(p3, p0, p2), p0, p2);
+    for (s32 i = 0; i < n; i++) {
+        u32 c = gradColor(p3, xs[i], p2);
+        lListPush(c, xs[i], p2);
+        lListPush(c, xs[i], p2);
+    }
+    lListPush(gradColor(p3, p1, p2), p1, p2);
+}
 }
 
 extern "C++" {
 static void getCrossPoint(long p0, short p1, short p2, short p3, short p4, short p5, VEC_GRAPH_DATA* p6) {
-    f32 temp_f0;
-    f32 temp_f0_2;
-    f32 temp_f3;
-    u8 *var_r3_2;
-    f32 temp_f8;
-    s32 temp_r0;
-    s32 temp_r10;
-    s16 temp_r10_2;
-    s16 temp_r5_2;
-    s16 var_r10;
-    s32 var_r11;
-    s32 var_r11_2;
-    s16 var_r5;
-    s32 temp_r4;
-    u32 temp_r5;
-    s32 temp_r8;
-    s32 var_ctr;
-    s32 var_ctr_2;
-    s32 var_r8;
-    u8 *var_r3;
-
-    temp_r8 = p2 - p5;
-    temp_r5 = p3 - p5;
-    temp_f8 = M2C_FIELD(p6, f32 *, 0x58);
-    temp_r10 = (s16) ((temp_f8 * (f32) temp_r4) - ((M2C_FIELD(p6, f32 *, 0x54)) * (f32) temp_r8));
-    temp_r5_2 = (s16) ((temp_f8 * (f32) temp_r4) - ((M2C_FIELD(p6, f32 *, 0x54)) * (f32) temp_r5));
-    temp_r4 = p1 - p4;
-    M2C_FIELD(&vecRect, s16 *, 4) = temp_r5_2;
-    M2C_FIELD(&vecRect, s16 *, 2) = (s16) (((M2C_FIELD(p6, f32 *, 0x54)) * (f32) temp_r4) + (temp_f8 * (f32) temp_r8));
-    M2C_FIELD(&vecRect, s16 *, 0) = temp_r10;
-    M2C_FIELD(&vecRect, s16 *, 6) = (s16) (((M2C_FIELD(p6, f32 *, 0x54)) * (f32) temp_r4) + (temp_f8 * (f32) temp_r5));
-    if (temp_r5_2 > temp_r10) {
-        var_r5 = temp_r5_2 - temp_r10;
+    s32 dy0 = p2 - p5;
+    s32 dy1 = p3 - p5;
+    s32 dx0 = p1 - p4;
+    f32 cs = p6->cosA;
+    s16 x0 = (s16)(cs * (f32)dx0 - p6->sinA * (f32)dy0);
+    s16 x1 = (s16)(cs * (f32)dx0 - p6->sinA * (f32)dy1);
+    vecRect.y0 = (s16)(p6->sinA * (f32)dx0 + cs * (f32)dy0);
+    vecRect.y1 = (s16)(p6->sinA * (f32)dx0 + cs * (f32)dy1);
+    vecRect.x0 = x0;
+    vecRect.x1 = x1;
+    s32 dx;
+    if (x1 > x0) {
+        dx = x1 - x0;
     } else {
-        var_r5 = temp_r10 - temp_r5_2;
+        dx = x0 - x1;
     }
-    M2C_FIELD(&vecRect, s16 *, 0xC) = var_r5;
-    if (!((s16) M2C_FIELD(&vecRect, s16 *, 6) > (s16) M2C_FIELD(&vecRect, s16 *, 2))) {
-        var_r11 = M2C_FIELD(&vecRect, s16 *, 2) - M2C_FIELD(&vecRect, s16 *, 6);
+    vecRect.dx = dx;
+    s32 dy;
+    if (vecRect.y1 > vecRect.y0) {
+        dy = vecRect.y1 - vecRect.y0;
     } else {
-        var_r11 = M2C_FIELD(&vecRect, s16 *, 6) - M2C_FIELD(&vecRect, s16 *, 2);
+        dy = vecRect.y0 - vecRect.y1;
     }
-    M2C_FIELD(&vecRect, s16 *, 0xE) = var_r11;
-    if (((s16) M2C_FIELD(&vecRect, s16 *, 0xC) == 0) || (var_r11 == 0)) {
-        temp_r0 = M2C_FIELD(&vecRect, s16 *, 0) + p4;
-        if (0 < 0x100) {
-            var_r3 = (u8*)(p6) + (p0 * 2);
-            var_ctr = 8;
-            do {
-                M2C_FIELD(var_r3, s16 *, 0x464) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x474) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x484) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x494) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x4A4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x4B4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x4C4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x4D4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x4E4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x4F4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x504) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x514) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x524) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x534) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x544) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x554) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x564) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x574) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x584) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x594) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x5A4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x5B4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x5C4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x5D4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x5E4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x5F4) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x604) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x614) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x624) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x634) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x644) = temp_r0;
-                M2C_FIELD(var_r3, s16 *, 0x654) = temp_r0;
-                var_r3 += 0x200;
-                var_ctr -= 1;
-            } while (var_ctr != 0);
+    vecRect.dy = dy;
+    if (vecRect.dx == 0 || dy == 0) {
+        s16 v = vecRect.x0 + p4;
+        for (s32 i = 0; i < 0x100; i++) {
+            p6->cross[i][p0] = v;
         }
     } else {
-        var_r8 = 0;
-        var_r3_2 = (u8*)(p6) + (p0 * 2);
-        var_ctr_2 = 0x100;
-        do {
-            temp_r10_2 = (M2C_FIELD(p6, s32 *, 0x48) + var_r8) - p5;
-            if (!(temp_r10_2 > (s16) M2C_FIELD(&vecRect, s16 *, 2))) {
-                var_r11_2 = M2C_FIELD(&vecRect, s16 *, 2) - temp_r10_2;
+        for (s32 i = 0; i < 0x100; i++) {
+            s16 y = (p6->gy + i) - p5;
+            s32 d;
+            if (y > vecRect.y0) {
+                d = y - vecRect.y0;
             } else {
-                var_r11_2 = temp_r10_2;
-                var_r11_2 -= M2C_FIELD(&vecRect, s16 *, 2);
+                d = vecRect.y0 - y;
             }
-            temp_f3 = (f32) var_r11_2 / (f32) M2C_FIELD(&vecRect, s16 *, 0xE);
-            if ((s16) M2C_FIELD(&vecRect, s16 *, 0) < (s16) M2C_FIELD(&vecRect, s16 *, 4)) {
-                temp_f0 = ((f32) M2C_FIELD(&vecRect, s16 *, 0xC) * temp_f3) + (f32) M2C_FIELD(&vecRect, s16 *, 0);
-                var_r10 = (s16) temp_f0;
-                if ((s16) M2C_FIELD(&vecRect, s16 *, 4) < (s16) temp_f0) {
-                    var_r10 = M2C_FIELD(&vecRect, s16 *, 4);
-                }
+            f32 t = (f32)d / (f32)vecRect.dy;
+            s16 r;
+            if (vecRect.x0 < vecRect.x1) {
+                r = (s16)((f32)vecRect.dx * t + (f32)vecRect.x0);
+                if (vecRect.x1 < r) r = vecRect.x1;
             } else {
-                temp_f0_2 = -(((f32) M2C_FIELD(&vecRect, s16 *, 0xC) * temp_f3) - (f32) M2C_FIELD(&vecRect, s16 *, 0));
-                var_r10 = (s16) temp_f0_2;
-                if ((s16) M2C_FIELD(&vecRect, s16 *, 4) > (s16) temp_f0_2) {
-                    var_r10 = M2C_FIELD(&vecRect, s16 *, 4);
-                }
+                r = (s16)(-((f32)vecRect.dx * t - (f32)vecRect.x0));
+                if (vecRect.x1 > r) r = vecRect.x1;
             }
-            M2C_FIELD(var_r3_2, s16 *, 0x464) = (s16) (var_r10 + p4);
-            var_r3_2 += 0x10;
-            var_r8 += 1;
-            var_ctr_2 -= 1;
-        } while (var_ctr_2 != 0);
+            p6->cross[i][p0] = r + p4;
+        }
     }
 }
 }
@@ -1076,10 +816,10 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             if ((sd->flags & 0x10) != 0 && sd->newStyles != 0) {
                 SBscan();
                 gVecDat.minY = 0x7FFF;
-                gVecDat.maxY = -0x8000;
                 gVecDat.minX = 0x7FFF;
-                memset(scanline_buffer, 0, 0x25800);
+                gVecDat.maxY = -0x8000;
                 gVecDat.maxX = -0x8000;
+                memset(scanline_buffer, 0, 0x25800);
                 gVecDat.styles = (u8*)sd->newStyles;
                 gVecDat.idx[1] = 0;
                 gVecDat.idx[0] = 0;

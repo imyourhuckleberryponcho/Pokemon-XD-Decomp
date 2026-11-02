@@ -336,7 +336,10 @@ struct Vec {
     u8 _draft[1];
 };
 struct WazaSequence {
-    u8 _draft[1];
+    u8 _pad0[8];
+    s32 flags;
+    u8 _pad1[0x18];
+    ModelSequence* seq;
     void* GetEntryFromID(unsigned char);
 };
 struct _GSmodel {
@@ -371,8 +374,8 @@ void GSmodelGetFrameCount(_GSmodel* model, f32* count, f32* blendCount);
 GSpart* GSmodelGetPart(_GSmodel* model, s32 index);
 void GSmodelGetPosition(_GSmodel* model, GSvec* position);
 void GSmodelGetRotation(_GSmodel* model, GSvec* rotation);
-u8 GSmodelHasAnimationEnded(_GSmodel* model);
-u32 GSmodelHasTexAnimationEnded(_GSmodel* model);
+bool GSmodelHasAnimationEnded(_GSmodel* model);
+bool GSmodelHasTexAnimationEnded(_GSmodel* model);
 u8 GSmodelIsAnimating(_GSmodel* model);
 void GSmodelRemoveNull(_GSmodel* model);
 void GSmodelSet60fpsAnimFlag(_GSmodel* model, u8 enable);
@@ -1314,16 +1317,8 @@ void ModelEntry::SetRenderCamera(_GScamera* camera) {
 
 extern "C++" {
 s32 ModelEntry::Start() {
-    f32 sp30;
-    s32 unksp24;
-    s32 unksp18;
-    f32 sp38;
-    volatile f32 sp34;
-    volatile f32 sp14;
-    s32 unkspC;
-    f32 sp10;
     s32 sp8;
-    GSpart *temp_r27_3;
+    s32 var_r31;
     GSpart *var_r30_2;
     ModelSequence *var_r30;
     ModelSequence *var_r3;
@@ -1331,25 +1326,30 @@ s32 ModelEntry::Start() {
     _GSmodel *temp_r27_2;
     _GSmodel *temp_r3_6;
     _GSmodel *var_r28;
-    f32 *temp_r3_4;
     f32 temp_f1;
     WazaSequence *temp_r3;
-    s32 temp_r30;
+    ModelSequence *ms;
+    GSvec scl;
+    GSvec rot;
+    GSvec pos;
+    GSvec tmp;
     s32 temp_r3_7;
-    s32 var_r31;
+    GSpart *temp_r27_3;
     u16 temp_r3_3;
     u8 temp_r0;
     u8 temp_r4;
     u8 temp_r4_2;
     u8 *temp_r3_2;
     u8 *temp_r3_5;
+    f32 *temp_r3_4;
 
     if ((_GSmodel *) M2C_FIELD(this, _GSmodel **, 0x4C) == NULL) {
         return 0;
     }
-    temp_r28 = M2C_FIELD(temp_r3, s32 *, 8);
-    temp_r3 = M2C_FIELD((u16)this, WazaSequence **, 0x2C);
-    if (!(temp_r28 & 0x2000) && ((u8) M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 *, 6) == 0)) {
+    temp_r3 = M2C_FIELD(this, WazaSequence **, 0x2C);
+    temp_r28 = temp_r3->flags;
+    ms = temp_r3->seq;
+    if (!(temp_r28 & 0x2000) && ((u8) M2C_FIELD(ms, u8 *, 6) == 0)) {
         M2C_FIELD(this, s32 *, 0x18) = 2;
         M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
         return 1;
@@ -1381,14 +1381,14 @@ s32 ModelEntry::Start() {
         var_r31 = 0;
         break;
     }
-    if ((s32) M2C_FIELD((M2C_FIELD((s32)temp_r3, ModelSequence **, 0x24)), s32 *, 8) == 1) {
-        var_r30 = (M2C_FIELD(temp_r3, ModelSequence **, 0x24));
+    if ((s32) M2C_FIELD(ms, s32 *, 8) == 1) {
+        var_r30 = ms;
     } else {
         var_r30 = NULL;
     }
     if (var_r30 != NULL) {
-        M2C_FIELD(M2C_FIELD((M2C_FIELD((s32)temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x10)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &unksp18);
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x14)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &unksp24);
+        ms->GetPosition(&pos);
+        ms->GetRotation(&rot);
         if (M2C_FIELD(this, u16 *, 0xA) & 1) {
             temp_r4 = M2C_FIELD(this, u8 *, 5);
             if ((temp_r4 != 0) && (temp_r4 != 0xFF)) {
@@ -1397,81 +1397,79 @@ s32 ModelEntry::Start() {
                     temp_r27_2 = M2C_FIELD(temp_r3_2, _GSmodel **, 0x4C);
                     if (temp_r27_2 != NULL) {
                         GSmodelForceAnimTransformUpdate((_GSmodel*)(temp_r27_2));
-                        GSmodelGetPosition((_GSmodel*)(temp_r27_2), (GSvec*)(&unksp18));
-                        GSmodelGetRotation((_GSmodel*)(temp_r27_2), (GSvec*)(&unksp24));
+                        GSmodelGetPosition((_GSmodel*)(temp_r27_2), &pos);
+                        GSmodelGetRotation((_GSmodel*)(temp_r27_2), &rot);
                     }
                 }
             }
         }
         temp_f1 = ((ModelSequence*)(var_r30))->GetModelScale((temp_r28 & 0x10000000) == 0);
-        sp30 = temp_f1;
-        sp34 = temp_f1;
-        sp38 = temp_f1;
+        scl.x = temp_f1;
+        scl.y = temp_f1;
+        scl.z = temp_f1;
     } else {
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x10)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &unksp18);
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x14)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &unksp24);
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, f32 *), 0x18)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &sp30);
+        ms->GetPosition(&pos);
+        ms->GetRotation(&rot);
+        ms->GetScale(&scl);
     }
     if (M2C_FIELD(this, u16 *, 0xA) & 0x20) {
-        sp38 = 1.0f;
-        sp34 = 1.0f;
-        sp30 = 1.0f;
+        scl.z = 1.0f;
+        scl.y = 1.0f;
+        scl.x = 1.0f;
     }
     var_r28 = NULL;
     M2C_FIELD(this, s8 *, 0x4B) = 0;
     temp_r3_3 = M2C_FIELD(this, u16 *, 0xA);
     if (temp_r3_3 & 4) {
         if (temp_r3_3 & 8) {
-            battleGridGetNormalisedScale((GSvec*)((GSvec *) &sp30));
+            battleGridGetNormalisedScale(&scl);
             if (M2C_FIELD(this, u16 *, 0xA) & 0x10) {
-                sp34 = 1.0f;
+                scl.y = 1.0f;
             }
-            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &sp30));
+            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &scl);
         }
     } else {
-        if (var_r30 != NULL) {
-            var_r28 = M2C_FIELD(var_r30, _GSmodel **, 0x94);
-        }
+        var_r28 = var_r30 == NULL ? var_r28 : M2C_FIELD(var_r30, _GSmodel **, 0x94);
         if (var_r31 != 0) {
             if ((u8) M2C_FIELD(this, u8 *, 0x4A) != 0) {
                 temp_r27_3 = GSmodelGetPart((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), M2C_FIELD(this, s32 *, 0x44));
-                GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp18));
-                GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp24));
+                GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &pos);
+                GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &rot);
                 if ((var_r31 != 7) && (var_r31 != 3) && (var_r31 != 5) && (var_r31 != 6)) {
-                    GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &sp30));
+                    GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &scl);
                 }
                 if ((var_r28 != NULL) && ((u8) M2C_FIELD(var_r30, u8 *, 0x58) == 0) && (temp_r27_3 != NULL)) {
                     if (M2C_FIELD(this, u16 *, 0x48) & 0x10) {
                         temp_r3_4 = (float *)(GSmodelGetBound((_GSmodel*)(var_r28)));
                         GSboundGetWorldPosition(temp_r3_4);
-                        GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unkspC));
-                        GSboundGetLocalPosition((long)((s32) temp_r3_4), (float *)(&unkspC));
-                        unkspC = -unkspC;
-                        sp10 = -sp10;
-                        sp14 = -sp14;
-                        GSmodelAddNull((_GSmodel*)(var_r28), (Vec*)(&unkspC), (Vec*)(NULL), (Vec*)(NULL));
+                        GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &tmp);
+                        GSboundGetLocalPosition((long)((s32) temp_r3_4), (float *)&tmp);
+                        tmp.x = -tmp.x;
+                        tmp.y = -tmp.y;
+                        tmp.z = -tmp.z;
+                        GSmodelAddNull((_GSmodel*)(var_r28), (Vec*)&tmp, (Vec*)(NULL), (Vec*)(NULL));
                     }
                     GSmodelAttachToGSpart((_GSmodel*)(var_r28), (GSpart*)(temp_r27_3), var_r31, 0U, 1U);
-                    M2C_FIELD(var_r30, u8 *, 0x58) = 1U;
                     M2C_FIELD(this, s8 *, 0x4B) = 1;
+                    M2C_FIELD(var_r30, u8 *, 0x58) = 1U;
                     GSpartFree((GSpart*)(temp_r27_3));
                     if ((u32) var_r31 <= 7U) {
                         switch (var_r31) {
                         case 1:
                         case 6:
-                            GSmodelSetRotation((_GSmodel*)(var_r28), (GSvec*)(&unksp24));
+                            GSmodelSetRotation((_GSmodel*)(var_r28), &rot);
                             break;
                         case 2:
                         case 5:
-                            GSmodelSetPosition((_GSmodel*)(var_r28), (GSvec*)(&unksp18));
+                            GSmodelSetPosition((_GSmodel*)(var_r28), &pos);
                             break;
                         case 3:
-                            GSmodelSetRotation((_GSmodel*)(var_r28), (GSvec*)(&unksp24));
-                            GSmodelSetPosition((_GSmodel*)(var_r28), (GSvec*)(&unksp18));
+                            GSmodelSetRotation((_GSmodel*)(var_r28), &rot);
+                            GSmodelSetPosition((_GSmodel*)(var_r28), &pos);
                             break;
                         case 0:
-                            GSmodelSetRotation((_GSmodel*)(var_r28), (GSvec*)(&unksp24));
-                            GSmodelSetPosition((_GSmodel*)(var_r28), (GSvec*)(&unksp18));
+                            GSmodelSetRotation((_GSmodel*)(var_r28), &rot);
+                            GSmodelSetPosition((_GSmodel*)(var_r28), &pos);
                             break;
                         }
                     }
@@ -1507,25 +1505,25 @@ block_68:
                     if ((u32) var_r31 <= 7U) {
                         switch (var_r31) {
                         case 4:
-                            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &sp30));
+                            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &scl);
                             break;
                         case 1:
-                            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &sp30));
-                            GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp24));
+                            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &scl);
+                            GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &rot);
                             break;
                         case 5:
-                            GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp18));
+                            GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &pos);
                             break;
                         case 2:
-                            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)((GSvec *) &sp30));
-                            GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp18));
+                            GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &scl);
+                            GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &pos);
                             break;
                         case 6:
-                            GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp24));
+                            GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &rot);
                             break;
                         case 3:
-                            GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp18));
-                            GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp24));
+                            GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &pos);
+                            GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), &rot);
                             break;
                         }
                     }
@@ -1570,8 +1568,7 @@ block_68:
     if ((M2C_FIELD(this, u16 *, 0x48) & 0x20) && (wazaSequenceSysGetModelShadowLight() != 0) && (wazaSequenceSysGetModelShadowCount() != 0)) {
         GSmodelSetShadowFlags((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), 1U);
         GSmodelSetShadowLight((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSlight*)(wazaSequenceSysGetModelShadowLight()));
-        temp_r30 = wazaSequenceSysGetModelShadowList();
-        GSmodelSetShadowSurface((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), wazaSequenceSysGetModelShadowCount(), (void*)((u8 *) temp_r30));
+        GSmodelSetShadowSurface((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), wazaSequenceSysGetModelShadowCount(), (void*)((u8 *) wazaSequenceSysGetModelShadowList()));
     }
     M2C_FIELD(this, s32 *, 0x18) = 1;
     M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
@@ -1580,64 +1577,66 @@ block_68:
 }
 
 extern "C++" {
-bool ModelEntry::Update(float p0) {
-    s32 unksp20;
-    s32 unksp14;
-    volatile s32 temp_r0_2;
-    volatile s32 temp_r0;
-    s32 unksp8;
-    s32 temp_r3;
-    u32 var_r30;
-    u32 var_r3;
-    u32 var_r4;
-
-    M2C_FIELD(this, f32 *, 0x20) = (f32) (M2C_FIELD(this, f32 *, 0x20) + p0);
-    if ((_GSmodel *) M2C_FIELD(this, _GSmodel **, 0x4C) == NULL) {
+bool ModelEntry::Update(float dt) {
+    unk20 += dt;
+    _GSmodel* model = M2C_FIELD(this, _GSmodel**, 0x4C);
+    if (model == 0) {
         return 0;
     }
-    if ((s32) M2C_FIELD(this, s32 *, 0x18) == 3) {
+    if (unk18 == 3) {
         return 1;
     }
-    if (((s32) M2C_FIELD((M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), u8 **, 0x24)), s32 *, 8) != 1) && !(M2C_FIELD(this, u16 *, 0xA) & 4) && ((u8) M2C_FIELD(this, u8 *, 0x4A) == 0) && ((u8) M2C_FIELD(this, u8 *, 0x4B) == 0)) {
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetPosition((f32*)&unksp20);
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetRotation((f32*)&unksp14);
-        M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24)->GetScale((f32*)&unksp8);
-        GSmodelSetPosition((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp20));
-        GSmodelSetRotation((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp14));
-        GSmodelSetScale((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)), (GSvec*)(&unksp8));
+    ModelSequence* ms = M2C_FIELD(seq, ModelSequence**, 0x24);
+    if (M2C_FIELD(ms, s32*, 8) != 1 && !(unk0A & 4) && M2C_FIELD(this, u8*, 0x4A) == 0 &&
+        M2C_FIELD(this, u8*, 0x4B) == 0) {
+        GSvec pos;
+        GSvec rot;
+        GSvec scale;
+        ms->GetPosition(&pos);
+        ms->GetRotation(&rot);
+        ms->GetScale(&scale);
+        GSmodelSetPosition(M2C_FIELD(this, _GSmodel**, 0x4C), &pos);
+        GSmodelSetRotation(M2C_FIELD(this, _GSmodel**, 0x4C), &rot);
+        GSmodelSetScale(M2C_FIELD(this, _GSmodel**, 0x4C), &scale);
     }
-    if ((s32) M2C_FIELD(this, s32 *, 0x38) < 0) {
-        var_r30 = 1;
+    bool ended;
+    if (M2C_FIELD(this, s32*, 0x38) < 0) {
+        ended = 1;
     } else {
-        if ((temp_r0 = M2C_FIELD(this, s32 *, 0x34)) != 1) {
-            if (temp_r0 < 1) {
-
+        switch (M2C_FIELD(this, s32*, 0x34)) {
+        case 1:
+            {
+                f32* e = (f32*)params;
+                e += unk08;
+                ended = unk1C + e[-1] >= M2C_FIELD(seq, f32*, 0);
             }
-            var_r30 = GSmodelHasAnimationEnded((_GSmodel*)(M2C_FIELD(this, _GSmodel **, 0x4C)));
-        } else {
-            M2C_ERROR( );
-            var_r30 = ((u32) M2C_ERROR( ) >> 0x1DU) & 1;
+            break;
+        case 0:
+        default:
+            ended = GSmodelHasAnimationEnded(M2C_FIELD(this, _GSmodel**, 0x4C));
+            break;
         }
     }
-    if (((s32) M2C_FIELD(this, s32 *, 0x38) != (temp_r3 = M2C_FIELD(this, s32 *, 0x40))) && (temp_r3 >= 0)) {
-        if ((temp_r0_2 = M2C_FIELD(this, s32 *, 0x3C)) != 1) {
-            if (temp_r0_2 < 1) {
-
+    if (M2C_FIELD(this, s32*, 0x38) != M2C_FIELD(this, s32*, 0x40) && 0 <= M2C_FIELD(this, s32*, 0x40)) {
+        bool texEnded;
+        switch (M2C_FIELD(this, s32*, 0x3C)) {
+        case 1:
+            {
+                f32* e = (f32*)params;
+                e += unk08;
+                texEnded = unk1C + e[-1] >= M2C_FIELD(seq, f32*, 0);
             }
-            var_r3 = GSmodelHasTexAnimationEnded((_GSmodel*)(M2C_FIELD((u16)this, _GSmodel **, 0x4C)));
-        } else {
-            M2C_ERROR( );
-            var_r3 = ((u32) M2C_ERROR( ) >> 0x1DU) & 1;
+            break;
+        case 0:
+        default:
+            texEnded = GSmodelHasTexAnimationEnded(M2C_FIELD(this, _GSmodel**, 0x4C));
+            break;
         }
-        var_r4 = 0;
-        if (((u8) var_r30 != 0) && ((u8) var_r3 != 0)) {
-            var_r4 = 1;
-        }
-        var_r30 = var_r4;
+        ended = ended && texEnded;
     }
-    if ((u8) var_r30 != 0) {
-        if (M2C_FIELD(this, u16 *, 0x48) & 2) {
-            M2C_FIELD(this, s32 *, 0x18) = 3;
+    if (ended) {
+        if (M2C_FIELD(this, u16*, 0x48) & 2) {
+            unk18 = 3;
             return 1;
         }
         return 0;
@@ -1714,23 +1713,22 @@ void ParticleEntry::SetRenderCamera(_GScamera* camera) {
 
 extern "C++" {
 s32 ParticleEntry::Start() {
-    s32 unksp14;
-    s32 unksp20;
-    volatile f32 sp10;
-    s32 temp_r30_3;
-    f32 sp8;
+    s32 temp_r29;
     GSpart *var_r27;
     GSparticleGenerator *temp_r3_3;
-    ModelSequence *var_r29;
+    u32 temp_r27;
     ModelSequence *var_r3;
     WazaSequence *temp_r3;
+    ModelSequence *ms;
+    GSvec pos;
+    GSvec rot;
+    GSvec scl;
     _GSmodel *temp_r30_2;
     _GSmodel *temp_r3_6;
     f32 temp_f1;
-    s32 temp_r27;
-    s32 temp_r29;
+    ModelSequence *var_r29;
+    s32 temp_r30_3;
     s32 var_r31;
-    f32 spC;
     u16 temp_r3_4;
     u32 temp_r0_2;
     u8 temp_r0;
@@ -1743,8 +1741,9 @@ s32 ParticleEntry::Start() {
         return 0;
     }
     temp_r3 = M2C_FIELD(this, WazaSequence **, 0x2C);
-    temp_r27 = M2C_FIELD((u16)temp_r3, s32 *, 8);
-    if (!(temp_r27 & 0x2000) && ((u8) M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 *, 6) == 0)) {
+    temp_r27 = temp_r3->flags;
+    ms = temp_r3->seq;
+    if (!(temp_r27 & 0x2000) && ((u8) M2C_FIELD(ms, u8 *, 6) == 0)) {
         M2C_FIELD(this, s32 *, 0x18) = 2;
         M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
         return 1;
@@ -1776,14 +1775,14 @@ s32 ParticleEntry::Start() {
         var_r31 = 0;
         break;
     }
-    if ((s32) M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), s32 *, 8) == 1) {
-        var_r29 = (M2C_FIELD(temp_r3, ModelSequence **, 0x24));
+    if ((s32) M2C_FIELD(ms, s32 *, 8) == 1) {
+        var_r29 = ms;
     } else {
         var_r29 = NULL;
     }
     if (var_r29 != NULL) {
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x10)((M2C_FIELD((s32)temp_r3, ModelSequence **, 0x24)), &unksp20);
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x14)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &unksp14);
+        ms->GetPosition(&pos);
+        ms->GetRotation(&rot);
         if (M2C_FIELD(this, u16 *, 0xA) & 1) {
             temp_r4 = M2C_FIELD(this, u8 *, 5);
             if ((temp_r4 != 0) && (temp_r4 != 0xFF)) {
@@ -1792,25 +1791,25 @@ s32 ParticleEntry::Start() {
                     temp_r30_2 = M2C_FIELD(temp_r3_2, _GSmodel **, 0x4C);
                     if (temp_r30_2 != NULL) {
                         GSmodelForceAnimTransformUpdate((_GSmodel*)(temp_r30_2));
-                        GSmodelGetPosition((_GSmodel*)(temp_r30_2), (GSvec*)(&unksp20));
-                        GSmodelGetRotation((_GSmodel*)(temp_r30_2), (GSvec*)(&unksp14));
+                        GSmodelGetPosition((_GSmodel*)(temp_r30_2), &pos);
+                        GSmodelGetRotation((_GSmodel*)(temp_r30_2), &rot);
                     }
                 }
             }
         }
         temp_f1 = ((ModelSequence*)(var_r29))->GetModelScale((temp_r27 & 0x10000000) == 0);
-        sp8 = temp_f1;
-        spC = temp_f1;
-        sp10 = temp_f1;
+        scl.x = temp_f1;
+        scl.y = temp_f1;
+        scl.z = temp_f1;
     } else {
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x10)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &unksp20);
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x14)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &unksp14);
-        M2C_FIELD(M2C_FIELD((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), u8 **, 0), s32 (**)(ModelSequence *, f32 *), 0x18)((M2C_FIELD(temp_r3, ModelSequence **, 0x24)), &sp8);
+        ms->GetPosition(&pos);
+        ms->GetRotation(&rot);
+        ms->GetScale(&scl);
     }
     if (M2C_FIELD(this, u16 *, 0xA) & 0x20) {
-        sp10 = 1.0f;
-        spC = 1.0f;
-        sp8 = 1.0f;
+        scl.z = 1.0f;
+        scl.y = 1.0f;
+        scl.x = 1.0f;
     }
     M2C_FIELD(this, GSparticleGenerator **, 0x3C) = GSparticleCreateGenerator((GSparticleBank*)(M2C_FIELD(this, GSparticleBank **, 0x38)), M2C_FIELD(this, s32 *, 0x30), M2C_FIELD(this, u32 *, 0x34) & 1);
     M2C_FIELD(this, s32 *, 0x40) = 0;
@@ -1842,13 +1841,13 @@ s32 ParticleEntry::Start() {
         GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)((Vec *) &zeroVector));
         GSparticleSetGeneratorRotation((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), (f32 *) &zeroVector);
         if (M2C_FIELD(this, u16 *, 0xA) & 8) {
-            battleGridGetNormalisedScale((GSvec*)((GSvec *) &sp8));
-            GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
+            battleGridGetNormalisedScale(&scl);
+            GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), (f32*)&scl, temp_r30_3, temp_r29);
         } else {
-            spC = 1.0f;
-            sp8 = 1.0f;
-            GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
-            sp10 = 1.0f;
+            scl.x = 1.0f;
+            scl.y = 1.0f;
+            scl.z = 1.0f;
+            GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), (f32*)&scl, temp_r30_3, temp_r29);
         }
         M2C_FIELD(this, s32 *, 0x18) = 1;
         M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
@@ -1869,7 +1868,7 @@ s32 ParticleEntry::Start() {
             goto block_60;
         }
     } else {
-        var_r3 = M2C_FIELD(M2C_FIELD(this, WazaSequence **, 0x2C), ModelSequence **, 0x24);
+        var_r3 = ((WazaSequence*)M2C_FIELD(this, WazaSequence **, 0x2C))->seq;
         var_r3 = (s32) M2C_FIELD(var_r3, s32 *, 8) == 1 ? var_r3 : NULL;
         if (var_r3 != NULL) {
             var_r27 = ((ModelSequence*)(var_r3))->GetPart((enumNullJointName)((s32) M2C_FIELD(this, u8 *, 0x10)));
@@ -1882,31 +1881,32 @@ block_60:
         if (var_r31 != 0) {
             GSparticleAttachGeneratorToGSpart((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)((u32) var_r27), (long)(var_r31), (long)(((u16) M2C_FIELD(this, u16 *, 0xA) >> 1U) & 1), (long)(1), (long)(((u32) M2C_FIELD(this, u32 *, 0x34) >> 1U) & 1));
             M2C_FIELD(this, s32 *, 0x40) = 1;
-            if ((u32) var_r31 <= 7U) {
-                switch (var_r31) {
+            switch (var_r31) {
                 case 1:
-                    GSparticleSetGeneratorRotation((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)(&unksp14));
+                    GSparticleSetGeneratorRotation((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)&rot);
                 case 4:
-                    GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
+                    GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), (f32*)&scl, temp_r30_3, temp_r29);
                     break;
                 case 2:
-                    GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
+                    GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), (f32*)&scl, temp_r30_3, temp_r29);
                 case 5:
-                    GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)(&unksp20));
+                    GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)&pos);
                     break;
                 case 3:
-                    GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)(&unksp20));
+                    GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)&pos);
                 case 6:
-                    GSparticleSetGeneratorRotation((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)(&unksp14));
+                    GSparticleSetGeneratorRotation((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)&rot);
+                    break;
+                case 0:
+                case 7:
                     break;
                 }
-            }
         }
         GSpartFree((GSpart*)(var_r27));
     } else {
-        GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)(&unksp20));
-        GSparticleSetGeneratorRotation((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)(&unksp14));
-        GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), &sp8, temp_r30_3, temp_r29);
+        GSparticleSetGeneratorPosition((GSparticleGenerator*)(M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (Vec*)&pos);
+        GSparticleSetGeneratorRotation((unsigned long)((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C)), (float *)&rot);
+        GSparticleSetGeneratorScale((u32) M2C_FIELD(this, GSparticleGenerator **, 0x3C), (f32*)&scl, temp_r30_3, temp_r29);
     }
     M2C_FIELD(this, s32 *, 0x18) = 1;
     M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
@@ -1927,11 +1927,11 @@ bool ParticleEntry::Update(float dt) {
     }
     SeqCameraTarget* target = M2C_FIELD(M2C_FIELD(this, u8 **, 0x2C), SeqCameraTarget **, 0x24);
     if (M2C_FIELD(target, s32 *, 8) != 1 && !(M2C_FIELD(this, u16 *, 0xA) & 4) && M2C_FIELD(this, s32 *, 0x40) == 0) {
+        u32 flags = M2C_FIELD(this, u32 *, 0x34);
         target->GetPosition((f32*)&pos);
         target->GetRotation((f32*)&rot);
         target->GetScale((f32*)&scale);
-        u32 flags = M2C_FIELD(this, u32 *, 0x34);
-        u32 local = (flags >> 5) & 1;
+        u16 local = (flags >> 5) & 1;
         GSparticleSetGeneratorPosition((GSparticleGenerator*)M2C_FIELD(this, u32 *, 0x3C), (Vec*)&pos);
         GSparticleSetGeneratorRotation(M2C_FIELD(this, u32 *, 0x3C), (f32*)&rot);
         GSparticleSetGeneratorScale(M2C_FIELD(this, u32 *, 0x3C), (f32*)&scale, local, (flags >> 9) & 1);
@@ -2078,159 +2078,131 @@ void LensFlareEntry::Stop(bool p0) {
 
 extern "C++" {
 s32 EffectEntry::Start() {
-    f32 v8[3];
-    u8 var_r3;
-    GSeffect *temp_r4_2;
-    GSeffect *temp_r4_3;
-    GSeffect *temp_r5;
-    GSpart *var_r29_2;
-    ModelSequence *temp_r31;
-    ModelSequence *var_r30;
-    ModelSequence *var_r3_2;
-    _GSmodel *temp_r3_4;
-    f32 var_f31;
-    s32 temp_r3;
-    s32 var_r29;
-    u8 temp_r0;
-    u8 temp_r3_2;
-    u8 temp_r4_4;
-    u8 var_r0;
-    GSeffect *temp_r30;
-    u8 *temp_r3_3;
-    u8 *temp_r4;
-
-    temp_r31 = M2C_FIELD(M2C_FIELD(this, WazaSequence **, 0x2C), ModelSequence **, 0x24);
-    if ((s32) M2C_FIELD(temp_r31, s32 *, 8) == 1) {
-        var_r30 = temp_r31;
+    ModelSequence* model = M2C_FIELD(seq, ModelSequence**, 0x24);
+    ModelSequence* owner;
+    if (M2C_FIELD(model, s32*, 8) == 1) {
+        owner = model;
     } else {
-        var_r30 = NULL;
+        owner = 0;
     }
-    var_r29 = 0;
-    var_f31 = 1.0f;
-    if ((GSeffect *) M2C_FIELD(this, GSeffect **, 0x30) == NULL) {
+    bool alpha;
+    s32 val = 0;
+    f32 scale = 1.0f;
+    if (m_effect == 0) {
         return 0;
     }
-    if ((u8) M2C_FIELD(this, u8 *, 0x40) != 0) {
-        if (((u32) M2C_FIELD(this, u32 *, 0x34) == 0U) || ((u8) M2C_FIELD(this, u8 *, 0x3C) == 0)) {
+    if (m_keyed != 0) {
+        if (m_keys == 0 || m_keyCount == 0) {
             return 0;
         }
-        M2C_FIELD(this, f32 *, 0x38) = 0.0f;
-        M2C_FIELD(this, u8 *, 0x3D) = 0U;
-        goto block_11;
+        m_time = 0.0f;
+        m_curKey = 0;
+    } else {
+        m_elapsed = 0.0f;
     }
-    M2C_FIELD(this, u32 *, 0x34) = 0.0f;
-block_11:
-    temp_r3 = M2C_FIELD(M2C_FIELD(this, WazaSequence **, 0x2C), s32 *, 8);
-    if (!(temp_r3 & 0x2000) && ((u8) M2C_FIELD(temp_r31, u8 *, 6) == 0)) {
-        M2C_FIELD(this, s32 *, 0x18) = 2;
-        M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
+    u32 flags = M2C_FIELD(seq, u32*, 8);
+    if (!(flags & 0x2000) && M2C_FIELD(model, u8*, 6) == 0) {
+        unk18 = 2;
+        unk20 = unk1C;
         return 1;
     }
-    if (var_r30 != NULL) {
-        var_r29 = M2C_FIELD(var_r30, s32 *, 0x94);
-        var_f31 = ((ModelSequence*)(var_r30))->GetModelScale((temp_r3 & 0x10000000) == 0);
+    if (owner != 0) {
+        val = M2C_FIELD(owner, s32*, 0x94);
+        scale = owner->GetModelScale(!(flags & 0x10000000));
     }
-    temp_r3_2 = M2C_FIELD(this, u8 *, 0x41);
-    switch (temp_r3_2) {
-    case 0:
-        temp_r5 = M2C_FIELD(this, GSeffect **, 0x30);
-        if ((u8) M2C_FIELD(temp_r5, u8 *, 0x18) == 2) {
-            M2C_FIELD(temp_r5, s32 *, 0xC) = var_r29;
+    switch (m_type) {
+    case 0: {
+        GSeffect* e = m_effect;
+        if (M2C_FIELD(e, u8*, 0x18) == 2) {
+            M2C_FIELD(e, s32*, 0xC) = val;
         }
-        if ((var_r30 != NULL) && ((u8) M2C_FIELD((u16)temp_r5, u8 *, 0x18) == 2)) {
-            M2C_FIELD(temp_r5, u8 *, 0x15) = (u8) M2C_FIELD(var_r30, u8 *, 0x60);
+        if (owner != 0 && M2C_FIELD(e, u8*, 0x18) == 2) {
+            M2C_FIELD(e, u8*, 0x15) = M2C_FIELD(owner, u8*, 0x60);
         }
-        temp_r4 = (unsigned char *)(M2C_FIELD(this, u32 *, 0x34) + (M2C_FIELD(this, u8 *, 0x3D) * 0x10));
-        M2C_FIELD(temp_r5, u8 *, 0x19) = (u8) M2C_FIELD(temp_r4, u8 *, 0);
-        M2C_FIELD(temp_r5, u8 *, 0x1A) = (u8) M2C_FIELD(temp_r4, u8 *, 1);
-        M2C_FIELD(temp_r5, u8 *, 0x1B) = (u8) M2C_FIELD(temp_r4, u8 *, 2);
-        var_r3 = !(((u8) M2C_FIELD(temp_r5, u8 *, 0x18) == 0) || ((u8) M2C_FIELD(temp_r5, u8 *, 0x14) != 0)) ? var_r3 : 1;
-        var_r3 = 0;
-        if (var_r3 != 0) {
-            var_r0 = M2C_FIELD(temp_r4, u8 *, 3);
-        } else {
-            var_r0 = 0xFF;
+        u8* key = (u8*)&m_keys[m_curKey];
+        M2C_FIELD(e, u8*, 0x19) = key[0];
+        M2C_FIELD(e, u8*, 0x1A) = key[1];
+        M2C_FIELD(e, u8*, 0x1B) = key[2];
+        alpha = false;
+        if (M2C_FIELD(e, u8*, 0x18) == 0 || M2C_FIELD(e, u8*, 0x14) != 0) {
+            alpha = true;
         }
-        M2C_FIELD(temp_r5, u8 *, 0x1C) = var_r0;
-    case 1:
-block_59:
-        if (((GSeffect*)(M2C_FIELD((u16)this, GSeffect **, 0x30)))->Start() == 0) {
+        M2C_FIELD(e, u8*, 0x1C) = alpha ? key[3] : 0xFF;
+        break;
+    }
+    case 6: {
+        GSeffect* e = m_effect;
+        if (owner == 0) {
             return 0;
         }
-        M2C_FIELD(this, s32 *, 0x18) = 1;
-        M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(this, f32 *, 0x1C);
-        return 1;
-    case 6:
-        temp_r4_2 = M2C_FIELD(this, GSeffect **, 0x30);
-        if (var_r30 == NULL) {
+        M2C_FIELD(e, s32*, 0xC) = val;
+        M2C_FIELD(e, f32*, 0x18) = m_keys[m_curKey].value.from;
+        break;
+    }
+    case 7: {
+        GSeffect* e = m_effect;
+        if (M2C_FIELD(e, u8*, 0x14) == 0 && owner == 0) {
             return 0;
         }
-        M2C_FIELD(temp_r4_2, s32 *, 0xC) = var_r29;
-        M2C_FIELD(temp_r4_2, u8 *, 0x18) = *(M2C_FIELD(this, u32 **, 0x34) + (M2C_FIELD(this, u8 *, 0x3D) * 0x10));
-        goto block_59;
-    case 7:
-        temp_r4_3 = M2C_FIELD(this, GSeffect **, 0x30);
-        temp_r0 = M2C_FIELD(temp_r4_3, u8 *, 0x14);
-        if (temp_r0 == 0) {
-            if (var_r30 == NULL) {
-                return 0;
-            }
-            if (temp_r0 == 0) {
-                M2C_FIELD(temp_r4_3, s32 *, 0xC) = var_r29;
-            }
-            goto block_38;
+        if (M2C_FIELD(e, u8*, 0x14) == 0) {
+            M2C_FIELD(e, s32*, 0xC) = val;
         }
-block_38:
-        M2C_FIELD(temp_r4_3, u8 *, 0x18) = *(M2C_FIELD(this, u32 **, 0x34) + (M2C_FIELD(this, u8 *, 0x3D) * 0x10));
-        goto block_59;
-    case 5:
-        temp_r30 = M2C_FIELD(this, GSeffect **, 0x30);
-        if (M2C_FIELD(this, u16 *, 0xA) & 1) {
-            temp_r4_4 = M2C_FIELD(this, u8 *, 5);
-            if ((temp_r4_4 != 0) && (temp_r4_4 != 0xFF) && (temp_r3_3 = (unsigned char *)(((WazaSequence*)(M2C_FIELD(this, WazaSequence **, 0x2C)))->GetEntryFromID(temp_r4_4)), (((s32) M2C_FIELD(temp_r3_3, s32 *, 0xC) == 2) != 0))) {
-                temp_r3_4 = M2C_FIELD(temp_r3_3, _GSmodel **, 0x4C);
-                if (M2C_FIELD(temp_r3_3, f32 *, 0x1C) > M2C_FIELD(this, f32 *, 0x1C)) {
-                    var_r29_2 = NULL;
-                } else if (temp_r3_4 != NULL) {
-                    var_r29_2 = GSmodelGetPart((_GSmodel*)(temp_r3_4), (s32) M2C_FIELD(this, s16 *, 0x12));
-                } else {
-                    goto block_52;
+        M2C_FIELD(e, f32*, 0x18) = m_keys[m_curKey].value.from;
+        break;
+    }
+    case 5: {
+        GSpart* part;
+        GSeffect* e;
+        e = m_effect;
+        part = 0;
+        GSvec pos;
+        if (unk0A & 1) {
+            u8 id = unk05;
+            if (id != 0 && id != 0xFF) {
+                SequenceEntry* ent = (SequenceEntry*)seq->GetEntryFromID(id);
+                if (M2C_FIELD(ent, s32*, 0xC) == 2) {
+                    _GSmodel* gm = M2C_FIELD(ent, _GSmodel**, 0x4C);
+                    if (ent->unk1C > unk1C) {
+                        part = 0;
+                    } else if (gm != 0) {
+                        part = GSmodelGetPart(gm, M2C_FIELD(this, s16*, 0x12));
+                    }
                 }
-            } else {
-                goto block_52;
             }
         } else {
-            var_r3_2 = M2C_FIELD(M2C_FIELD(this, WazaSequence **, 0x2C), ModelSequence **, 0x24);
-            var_r3_2 = (s32) M2C_FIELD(var_r3_2, s32 *, 8) == 1 ? var_r3_2 : NULL;
-            if (var_r3_2 != NULL) {
-                var_r29_2 = ((ModelSequence*)(var_r3_2))->GetPart((enumNullJointName)((s32) M2C_FIELD(this, u8 *, 0x10)));
-            } else {
-block_52:
-                var_r29_2 = NULL;
+            ModelSequence* m = M2C_FIELD(seq, ModelSequence**, 0x24);
+            m = M2C_FIELD(m, s32*, 8) == 1 ? m : 0;
+            if (m != 0) {
+                part = m->GetPart((enumNullJointName)unk10);
             }
         }
-        if (var_r29_2 != NULL) {
-            GSpartGetTransform((GSpart*)(var_r29_2), (GSvec*)(v8), (GSvec*)(NULL), (GSvec*)(NULL));
-            GSpartFree((GSpart*)(var_r29_2));
+        if (part != 0) {
+            GSpartGetTransform(part, &pos, 0, 0);
+            GSpartFree(part);
         } else {
-            M2C_FIELD(M2C_FIELD(temp_r31, u8 **, 0), s32 (**)(ModelSequence *, s32 *), 0x10)(temp_r31, (long *)(v8));
+            model->GetPosition(&pos);
         }
-        M2C_FIELD(temp_r30, f32 *, 0x54) = v8[0];
-        M2C_FIELD(temp_r30, f32 *, 0x58) = v8[1];
-        M2C_FIELD(temp_r30, f32 *, 0x5C) = v8[2];
-        M2C_FIELD(temp_r30, f32 *, 0x14) = var_f31;
-        goto block_59;
-    case -1:
-    case 2:
-    case 3:
-    case 4:
-    case 8:
-        M2C_FIELD(M2C_FIELD((u8)this, GSeffect **, 0x30), u8 *, 0x14) = (unsigned char)(var_r30);
-        goto block_59;
+        M2C_FIELD(e, f32*, 0x54) = M2C_FIELD(&pos, f32*, 0);
+        M2C_FIELD(e, f32*, 0x58) = M2C_FIELD(&pos, f32*, 4);
+        M2C_FIELD(e, f32*, 0x5C) = M2C_FIELD(&pos, f32*, 8);
+        M2C_FIELD(e, f32*, 0x14) = scale;
+        break;
+    }
+    case 1:
+        M2C_FIELD(m_effect, ModelSequence**, 0x14) = owner;
+        break;
     case 9:
+        break;
+    case -1:
     default:
         return 0;
     }
+    if (m_effect->Start() == 0) {
+        return 0;
+    }
+    unk18 = 1;
+    unk20 = unk1C;
+    return 1;
 }
 }
 
@@ -2664,9 +2636,13 @@ static inline f32 OSu8tof32(u8 in) {
     return __OSu8tof32(&tmp);
 }
 
+static inline SequenceEntry* seqFirstEntry(WazaSequence* s) {
+    return M2C_FIELD(s, SequenceEntry **, 0x20);
+}
+
 void SequenceEntry::Link() {
-    SequenceEntry* e = M2C_FIELD(seq, SequenceEntry **, 0x20);
     SequenceEntry* base;
+    SequenceEntry* e = seqFirstEntry(seq);
 
     if (unk05 != 0 && (base = (SequenceEntry*)seq->GetEntryFromID(unk05)) != NULL) {
         unk1C = base->unk1C;
@@ -2676,42 +2652,42 @@ void SequenceEntry::Link() {
         u8* target = M2C_FIELD(s, u8 **, 0x24);
         u8* model = M2C_FIELD(target, s32 *, 8) == 1 ? target : NULL;
         if (model != NULL) {
-            unk1C = *(f32*)(M2C_FIELD(model, u8 **, 0x9C) + (M2C_FIELD(s, u8 *, 0x13) * 0xD0 + 0xC + unk07 * 4));
+            unk1C = ((f32*)(M2C_FIELD(model, u8**, 0x9C) + M2C_FIELD(s, u8 *, 0x13) * 0xD0 + 0xC))[unk07];
         } else {
             unk1C = OSu8tof32(unk07);
         }
     }
     unk1C -= ((f32*)params)[unk06];
     unk20 = unk1C;
-    if (e == NULL) {
+    if (e != NULL) {
+        if (e->unk1C > unk1C || (type == 6 && e->unk1C == unk1C)) {
+            child = e;
+            unk28 = 0;
+            e->unk28 = (s32)this;
+            M2C_FIELD(seq, SequenceEntry **, 0x20) = this;
+            return;
+        }
+        SequenceEntry* next;
+        while ((next = e->child) != NULL) {
+            if (next->unk1C > unk1C) {
+                break;
+            }
+            if (type == 6 && e->unk1C == unk1C) {
+                break;
+            }
+            e = next;
+        }
+        child = next;
+        if (child != NULL) {
+            child->unk28 = (s32)this;
+        }
+        e->child = this;
+        unk28 = (s32)e;
+    } else {
         M2C_FIELD(seq, SequenceEntry **, 0x20) = this;
         child = NULL;
         unk28 = 0;
-        return;
     }
-    if (e->unk1C > unk1C || (type == 6 && e->unk1C == unk1C)) {
-        child = e;
-        unk28 = 0;
-        e->unk28 = (s32)this;
-        M2C_FIELD(seq, SequenceEntry **, 0x20) = this;
-        return;
-    }
-    SequenceEntry* next;
-    while ((next = e->child) != NULL) {
-        if (next->unk1C > unk1C) {
-            break;
-        }
-        if (type == 6 && e->unk1C == unk1C) {
-            break;
-        }
-        e = next;
-    }
-    child = next;
-    if (child != NULL) {
-        child->unk28 = (s32)this;
-    }
-    e->child = this;
-    unk28 = (s32)e;
 }
 }
 

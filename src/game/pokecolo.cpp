@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #pragma pool_strings off
+#define ATTRIBUTE_ALIGN(num) __attribute__((aligned(num)))
 #pragma peephole off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -86,11 +87,6 @@ enum resFreeFunc { resFreeFunc_draft_dummy };
 
 extern "C" {
 
-extern u8 pokecolo_DVDETHMode;
-extern u32 _pokecoloCurrentLanguage;
-extern u8 __pokecolo_CountPlayTime;
-extern u32 _RomVer;
-
 struct GStexture {
     u8 _draft[1];
 };
@@ -149,9 +145,9 @@ void GSmodelInit(void);
 void GSmodelSetMarukageTexture(GStexture* tex);
 s32 GSmovieInit();
 s32 GSmsgDaemon();
-s32 GSmsgFontOpen(s32*);
+s32 GSmsgFontOpen(void*);
 s32 GSmsgInit(s32, s32);
-s32 GSmsgOpen(s32*);
+s32 GSmsgOpen(void*);
 s32 GSmsgSetCtrlFunc(s32*);
 s32 GSnetworkInit();
 s32 GSpartInit(s32);
@@ -261,31 +257,29 @@ static void _pokecoloInit();
 static void _pokecoloShutdown();
 static void _setSystemVars();
 }
-static s32 _AntiActionReplayTimer;
+u8 __pokecolo_renderXluc = 1;
+static u8 __pokecolo_CountPlayTime;
+static u8 pokecolo_DVDETHMode;
+static u32 _RomVer;
 static u64 _frameTime;
 static f32 _resettimer;
+s8 pokecoloWaitVSync;
 s32 pokecoloFrameCounter;
-s32 pokecoloGappAntiActionReplayHandle;
+s32 pokecoloGappThreadHandle;
+s32 pokecoloGappPadReadHandle;
 s32 pokecoloGappGBAReadHandle;
 s32 pokecoloGappMainDeamonHandle;
-s32 pokecoloGappPadReadHandle;
 s32 pokecoloGappRenderHandle;
-s32 pokecoloGappThreadHandle;
-s8 pokecoloWaitVSync;
+s32 pokecoloGappAntiActionReplayHandle;
+extern s32 _AntiActionReplayTimer;
+extern u32 _pokecoloCurrentLanguage;
 
 extern "C" {
 void mainAntiActionReplay();
 void pokecoloMain(int argc, char** argv);
 }
-extern s32 common_fnt_S2162[];
-extern s32 common_tbl_S2164[];
-extern s32 debug_menu_fnt_S2163[];
-extern s32 resident_fnt_S2161[];
-static s32 system_error_fnt_S2165;
-extern s32 system_error_tbl_S2166[];
 
 extern "C" {
-extern s32 lbl_8038FBE0[];
 u64 __div2u(s32, s32, s32, s32);
 }
 
@@ -422,6 +416,27 @@ void pokecoloCheckDiskTray() {
 extern "C" {
 #pragma push
 void pokecoloMain(int argc, char** argv) {
+    static u8 resident_fnt[] ATTRIBUTE_ALIGN(4) = {
+#include "pokecolo/resident_fnt.inc"
+    };
+    static u8 common_fnt[] ATTRIBUTE_ALIGN(4) = {
+#include "pokecolo/common_fnt.inc"
+    };
+    static u8 common_tbl[] ATTRIBUTE_ALIGN(4) = {
+#include "pokecolo/common_tbl.inc"
+    };
+    static u8 system_error_fnt[] ATTRIBUTE_ALIGN(4) = {
+#include "pokecolo/system_error_fnt.inc"
+    };
+    static u8 system_error_tbl[] ATTRIBUTE_ALIGN(4) = {
+#include "pokecolo/system_error_tbl.inc"
+    };
+    static u8 debug_menu_tbl[] ATTRIBUTE_ALIGN(4) = {
+#include "pokecolo/debug_menu_tbl.inc"
+    };
+    static u8 debug_menu_fnt[] ATTRIBUTE_ALIGN(4) = {
+#include "pokecolo/debug_menu_fnt.inc"
+    };
     u64 start;
     u8 progressive;
     s32 i;
@@ -477,13 +492,13 @@ void pokecoloMain(int argc, char** argv) {
     GSmsgInit(2, 5);
     GSmsgSetCtrlFunc(msgctrlcode);
     GSnetworkInit();
-    GSmsgFontOpen(resident_fnt_S2161);
-    GSmsgFontOpen(common_fnt_S2162);
-    GSmsgOpen(common_tbl_S2164);
-    GSmsgFontOpen(&system_error_fnt_S2165);
-    GSmsgOpen(system_error_tbl_S2166);
-    GSmsgFontOpen(debug_menu_fnt_S2163);
-    GSmsgOpen(lbl_8038FBE0);
+    GSmsgFontOpen(resident_fnt);
+    GSmsgFontOpen(common_fnt);
+    GSmsgOpen(common_tbl);
+    GSmsgFontOpen(system_error_fnt);
+    GSmsgOpen(system_error_tbl);
+    GSmsgFontOpen(debug_menu_fnt);
+    GSmsgOpen(debug_menu_tbl);
     GSdvdSetErrorMsg(0x65, 0x66, 0x67, 0x68, 0x69);
     GSvtrInit();
     GSlensFlareInit();
@@ -592,6 +607,10 @@ extern "C" {
 void fn_8005C8EC() {
     GSfsysReadWait(0xA);
 }
+extern "C++" {
+static void _setSystemVars() {
+}
+}
 extern "C" {
 void mainAntiActionReplay() {
     if (_AntiActionReplayTimer == 0) {
@@ -610,6 +629,8 @@ static void _mainRender(unsigned long p0, unsigned long p1) {
     static s32 frame = 0;
     GSgfxRender();
 }
+static s32 _AntiActionReplayTimer;
+static u32 _pokecoloCurrentLanguage;
 extern "C++" {
 static void _mainDaemon(unsigned long p0, unsigned long p1) {
 
@@ -639,11 +660,6 @@ static void _mainDaemon(unsigned long p0, unsigned long p1) {
 
 }
 
-}
-
-extern "C++" {
-static void _setSystemVars() {
-}
 }
 
 extern "C" {
@@ -696,6 +712,10 @@ static void _mainPadRead(unsigned long p0, unsigned long p1) {
         }
     }
     GSinputReadEnd();
+}
+
+static const char* _debugDeckRequestName() {
+    return "debug/_deckrequest.bin";
 }
 }
 }

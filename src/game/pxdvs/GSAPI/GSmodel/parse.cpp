@@ -67,7 +67,7 @@ struct _HSD_JObj {
 #define JOBJ_MTX_DIRTY (1 << 6)
 #define JOBJ_INSTANCE (1 << 12)
 #define JOBJ_SPLINE (1 << 14)
-#define union_type_dobj(o) ((o)->flags & (JOBJ_PTCL | JOBJ_SPLINE) ? false : true)
+#define union_type_dobj(o) ((o)->flags & (JOBJ_PTCL | JOBJ_SPLINE) ? 0 : 1)
 #define JOBJ_USER_DEF_MTX (1 << 23)
 
 enum HSD_TrspMask {
@@ -280,7 +280,6 @@ static void _modelParseJObjDispSub(HSD_JObj* jobj, GSmtx* vmtx, GSmtx* pmtx, HSD
     HSD_DObjSetCurrent(0);
     HSD_JObjSetCurrent(0);
 }
-#pragma dont_inline reset
 
 static void _modelParseJObjDispDObj(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
     if (!(jobj->flags & JOBJ_HIDDEN)) {
@@ -307,6 +306,7 @@ static void _modelParseJObjDispDObj(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask tr
         }
     }
 }
+#pragma dont_inline reset
 
 static void _modelParseJObjDisp(HSD_JObj* jobj, GSmtx* vmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
     if (jobj != 0 && union_type_dobj(jobj)) {

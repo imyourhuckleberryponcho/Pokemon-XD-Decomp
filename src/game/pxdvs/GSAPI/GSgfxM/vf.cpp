@@ -196,11 +196,10 @@ static inline GSgfxVFFmt* vfFindFmt(GSgfxVF* vf, s32 type) {
 }
 
 static inline GSgfxVFFmt* vfFindInsertPos(GSgfxVF* vf, u32 idx) {
-    s32* p = &_vfElemTable[idx];
     while (idx != 0) {
         GSgfxVFFmt* f;
         idx--;
-        f = vfFindFmt(vf, *--p);
+        f = vfFindFmt(vf, _vfElemTable[idx]);
         if (f != NULL) {
             return f + 1;
         }
@@ -220,6 +219,22 @@ static inline u32 vfElemIndex(s32 type) {
     return 0;
 }
 
+static inline GSgfxVFFmt* vfAddFmt(GSgfxVF* vf, s32 type) {
+    GSgfxVFFmt* f;
+    GSgfxVFFmt* ins = vfFindInsertPos(vf, vfElemIndex(type));
+    if (ins == NULL) {
+        ins = vf->fmt;
+    }
+    for (f = ins; f->type != 0xFF; f++) {
+    }
+    for (; f >= ins; f--) {
+        f[1].type = f->type;
+        f[1].unk8 = f->unk8;
+        f[1].unk2 = f->unk2;
+    }
+    return ins;
+}
+
 void GSgfxVFSetArray(GSgfxVF* vf, s32 type, s32 compData, void* array, s32 size, u32 stride) {
     GSgfxVFFmt* fmt;
 
@@ -227,19 +242,7 @@ void GSgfxVFSetArray(GSgfxVF* vf, s32 type, s32 compData, void* array, s32 size,
     vfFindComp(vf, type)->unk4 = compData;
     fmt = vfFindFmt(vf, type);
     if (fmt == NULL) {
-        GSgfxVFFmt* f;
-        GSgfxVFFmt* ins = vfFindInsertPos(vf, vfElemIndex(type));
-        if (ins == NULL) {
-            ins = vf->fmt;
-        }
-        for (f = ins; f->type != 0xFF; f++) {
-        }
-        for (; f >= ins; f--) {
-            f[1].type = f->type;
-            f[1].unk8 = f->unk8;
-            f[1].unk2 = f->unk2;
-        }
-        fmt = ins;
+        fmt = vfAddFmt(vf, type);
     }
     fmt->flags = 0;
     fmt->type = type;
@@ -469,6 +472,28 @@ GSgfxVF* GSgfxVFGetPredef(s32 p0) {
 }
 }
 
+static inline void _vfCreate(GSgfxVF* vf) {
+    int i;
+    u32 index = _vfAllocIndex;
+    u32 next = index + 1;
+    if (next >= 8) {
+        next = 0;
+    }
+    _vfAllocIndex = next;
+    vf->index = index;
+    vf->flags |= 1;
+    for (i = 0; i < 27; i++) {
+        vf->attr[i].type = 0xFF;
+    }
+    for (i = 0; i < 27; i++) {
+        vf->comp[i].type = 0xFF;
+    }
+    for (i = 0; i < 27; i++) {
+        vf->fmt[i].type = 0xFF;
+    }
+    vf->flags |= 6;
+}
+
 extern "C" {
 void GSgfxVFCreate(GSgfxVF* vf) {
     int i;
@@ -593,27 +618,8 @@ GSgfxVF* GSgfxVFBuildTemp(s32 posType, s32 posCnt, u8 hasNormal, s32 normalType,
 
 extern "C++" {
 void GSgfxVFInit() {
-    int i;
-    GSgfxVF* vf = (GSgfxVF*)_vfLocal;
     _vfAllocIndex = 0;
-    u32 index = _vfAllocIndex;
-    u32 next = index + 1;
-    if (next >= 8) {
-        next = 0;
-    }
-    _vfAllocIndex = next;
-    vf->index = index;
-    vf->flags |= 1;
-    for (i = 0; i < 27; i++) {
-        vf->attr[i].type = 0xFF;
-    }
-    for (i = 0; i < 27; i++) {
-        vf->comp[i].type = 0xFF;
-    }
-    for (i = 0; i < 27; i++) {
-        vf->fmt[i].type = 0xFF;
-    }
-    vf->flags |= 6;
+    _vfCreate((GSgfxVF*)_vfLocal);
 }
 }
 

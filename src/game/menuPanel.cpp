@@ -154,9 +154,8 @@ void menuPanelInputNumberCtrl(tagWINDOW_WORK* w) {
 }
 
 s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
-    enum TsE { TsE0 };
     u32* items;
-    enum TsE maxCount;
+    int maxCount;
     u32* p;
     s32 i;
     u8 type;
@@ -182,7 +181,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
     items = windowGetAllocPtr(w);
     count = (s8)windowGetParam(w, 2);
     vis = count;
-    maxCount = (enum TsE)(windowGetParam(w, 3));
+    maxCount = (windowGetParam(w, 3));
     if (vis > maxCount) {
         vis = maxCount;
     }
@@ -200,7 +199,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
     }
     total -= off;
     width = maxH + 0x1A + _addwidth;
-    switch ((u16)type) {
+    switch (type) {
     case 0:
         menuSubDrawNormalWindow2(w->layer, 0, 0, width + 2, total, w->alpha);
         break;
@@ -290,11 +289,10 @@ s32 menuPanelCtrlSelect2(tagWINDOW_WORK* w) {
     return 0;
 }
 s32 menuPanelCursorSelect2(tagWINDOW_WORK* w) {
-    enum TsE { TsE0 };
     u16 key = windowGetKeyInfo()->trg;
     s8 count;
     s8 disp;
-    bool wrap;
+    u8 wrap;
     CURSOR cur;
     CURSOR old;
     key |= windowGetKeyRepeat();
@@ -304,10 +302,8 @@ s32 menuPanelCursorSelect2(tagWINDOW_WORK* w) {
     if (count < disp) {
         disp = count;
     }
-    cur.top = w->top;
-    cur.pos = w->cursor;
-    old.top = w->top;
-    old.pos = w->cursor;
+    cur = *(CURSOR*)&w->top;
+    old = cur;
     if (key & 1) {
         cur.pos--;
     } else if (key & 2) {
@@ -326,16 +322,16 @@ s32 menuPanelCursorSelect2(tagWINDOW_WORK* w) {
             cur.top = 0;
         }
     } else if (cur.pos >= disp) {
-        enum TsE last = (enum TsE)(disp - 1);
+        int last = disp - 1;
         cur.top = cur.top + (cur.pos - last);
-        cur.pos = last;
+        cur.pos = (s8)last;
         if (wrap) {
-            if (cur.top + last >= count) {
+            if (cur.top + cur.pos >= count) {
                 cur.top = 0;
                 cur.pos = 0;
             }
-        } else if (cur.top + last >= count) {
-            cur.pos = last;
+        } else if (cur.top + cur.pos >= count) {
+            cur.pos = (s8)last;
             cur.top = (s8)(count - disp);
         }
     }
@@ -474,10 +470,8 @@ s32 menuPanelCursorSelect(tagWINDOW_WORK* w) {
     if (!lt) {
         disp = count;
     }
-    cur.top = w->top;
-    cur.pos = w->cursor;
-    old.top = w->top;
-    old.pos = w->cursor;
+    cur = *(CURSOR*)&w->top;
+    old = cur;
     if (key & 1) {
         cur.pos--;
     } else if (key & 2) {
@@ -485,8 +479,8 @@ s32 menuPanelCursorSelect(tagWINDOW_WORK* w) {
     }
     s16 p = cur.pos;
     if (p < 0) {
-        cur.pos = 0;
         cur.top += p;
+        cur.pos = 0;
         if (cur.top < 0) {
             cur.pos = (s8)(disp - 1);
             cur.top = (s8)(count - disp);
@@ -503,8 +497,7 @@ s32 menuPanelCursorSelect(tagWINDOW_WORK* w) {
     if (menuCursorCmp(old, cur)) {
         menuSubCursorAnimeStart();
     }
-    w->top = cur.top;
-    w->cursor = cur.pos;
+    *(CURSOR*)&w->top = cur;
     w->cursor88 = cur.top + cur.pos;
     return 0;
 }

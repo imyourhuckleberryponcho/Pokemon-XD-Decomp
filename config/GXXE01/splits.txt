@@ -2751,7 +2751,7 @@ game/pxdvs/GSAPI/GSmovie/GSmovie.cpp:
 
 game/pxdvs/GSAPI/GSmovie/THPDraw.cpp:
 	.text       start:0x801E425C end:0x801E51CC
-	.sbss       start:0x804EB780 end:0x804EB7A0
+	.sbss       start:0x804EB780 end:0x804EB784
 	.sdata2     start:0x804EE9B8 end:0x804EE9E0
 
 game/pxdvs/GSAPI/GSmovie/THPDec.cpp:
@@ -3070,7 +3070,7 @@ game/pxdvs/app/memo/memo.cpp:
 game/pxdvs/app/evolution/evolution.cpp:
 	.text       start:0x80234E58 end:0x80236114
 	.rodata     start:0x802F9298 end:0x802F92D8
-	.bss        start:0x804B0F40 end:0x804B0F60
+	.bss        start:0x804B0F40 end:0x804B0F5C
 	.sdata2     start:0x804EEC20 end:0x804EEC38
 
 game/pxdvs/app/charName/charNameBios.cpp:

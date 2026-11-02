@@ -88,6 +88,13 @@ extern u32* flag_etc_number;
 
 static FlagCursor _dbgMenuFlagCursor = {0, 0};
 
+static inline u16 flagKeyRepeat() {
+    return windowGetKeyInfo()->repeat;
+}
+static inline u16 flagKeyTrigger() {
+    return windowGetKeyInfo()->trigger;
+}
+
 extern "C" {
 static char* _dbgMenuFlagInfoGetMsg(s32 index);
 static u16 _dbgMenuFlagGetID(s32 index);
@@ -130,8 +137,8 @@ void dbgMenuFlagInfoDraw(FlagWindow* window) {
 }
 
 void dbgMenuFlagInfoCursor(FlagWindow* window) {
-    u16 repeat = windowGetKeyInfo()->repeat;
-    u16 trigger = windowGetKeyInfo()->trigger;
+    s32 repeat = flagKeyRepeat();
+    s32 trigger = flagKeyTrigger();
     s16 total = flag_data_number->num;
     s16 disp = menuDataBiosGetDispMax(window->menu);
     FlagCursorU u;
@@ -139,15 +146,17 @@ void dbgMenuFlagInfoCursor(FlagWindow* window) {
         disp = total;
     }
     u.raw = *(u32*)&_dbgMenuFlagCursor;
-    if (repeat & 1) {
+    if ((u16)repeat & 1) {
         u.c.pos--;
-    } else if (repeat & 2) {
+    } else if ((u16)repeat & 2) {
         u.c.pos++;
     }
-    if (repeat & 4) {
+    if ((u16)repeat & 4) {
         u.c.pos = u.c.pos - (menuDataBiosGetDispMax(window->menu) - 1);
-    } else if (repeat & 8) {
-        u.c.pos = menuDataBiosGetDispMax(window->menu) + u.c.pos - 1;
+    } else if ((u16)repeat & 8) {
+        s32 sum = menuDataBiosGetDispMax(window->menu);
+        sum += u.c.pos;
+        u.c.pos = sum - 1;
     }
     if (u.c.pos < 0) {
         u.c.top += u.c.pos;
@@ -164,9 +173,9 @@ void dbgMenuFlagInfoCursor(FlagWindow* window) {
             u.c.pos = 0;
         }
     }
-    if (trigger & 0x80) {
+    if ((u16)trigger & 0x80) {
         GSflagOn(u.c.top + u.c.pos);
-    } else if (trigger & 0x40) {
+    } else if ((u16)trigger & 0x40) {
         GSflagOff(u.c.top + u.c.pos);
     }
     *(u32*)&_dbgMenuFlagCursor = u.raw;
@@ -200,35 +209,37 @@ static u16 _dbgMenuFlagGetID(s32 index) {
 }
 
 void dbgMenuFlagCursor(FlagWindow* window) {
-    u16 repeat = windowGetKeyInfo()->repeat;
+    s32 repeat = flagKeyRepeat();
     s8 total = _dbgMenuFlagGetMenuNum(window, 0);
     s8 disp = menuDataBiosGetDispMax(window->menu);
     FlagCursorU u;
-    if (total - 48 < disp) {
+    if (total < disp) {
         disp = total;
     }
     u.raw = *(u32*)&window->cursor;
-    if (repeat & 1) {
+    if ((u16)repeat & 1) {
         u.c.pos--;
-    } else if (repeat & 2) {
+    } else if ((u16)repeat & 2) {
         u.c.pos++;
     }
-    if (repeat & 4) {
+    if ((u16)repeat & 4) {
         u.c.pos = u.c.pos - (disp - 1);
-    } else if (repeat & 8) {
-        u16 rf_t = u.c.pos;
-        u.c.pos = disp + rf_t - 1;
+    } else if ((u16)repeat & 8) {
+        s32 sum = disp;
+        sum += u.c.pos;
+        u.c.pos = sum - 1;
     }
     if (u.c.pos < 0) {
         u.c.top += u.c.pos;
         u.c.pos = 0;
-        if (u.c.top < 0) {
-            u.c.pos = disp - 1;
-            u.c.top = total - disp;
+        s32 rf_t = u.c.top;
+        if (rf_t < 0) {
+            u.c.pos = (s8)(disp - 1);
+            u.c.top = (s8)(total - disp);
         }
     } else if (u.c.pos >= disp) {
         u.c.top += u.c.pos - (disp - 1);
-        u.c.pos = disp - 1;
+        u.c.pos = (s8)(disp - 1);
         if (u.c.top + u.c.pos >= total) {
             u.c.top = 0;
             u.c.pos = 0;

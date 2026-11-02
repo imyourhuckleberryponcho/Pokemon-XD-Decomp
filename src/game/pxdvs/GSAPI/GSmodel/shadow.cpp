@@ -80,7 +80,7 @@ struct GScameraShadow {
 };
 
 struct ShadowVolume {
-    u8 data[0x2c];
+    u8 data[0x20];
 };
 
 struct _GSmodel {
@@ -1129,14 +1129,15 @@ static inline u32 _shadowBoundSize(GSbound* bound)
     return (u32)(f32)ceil(m);
 }
 
-static inline ShadowReceive* _shadowFindFreeSlot(ShadowReceive* r)
+static inline ShadowReceive* _shadowFindReceiveModel(_GSmodel* model)
 {
-    ShadowReceive* p;
+    ShadowReceive* slot;
     u32 i;
 
-    for (i = 0, p = r; i < 5; i++, p++) {
-        if (p->model == 0) {
-            return p;
+    for (i = 0; i < 5; i++) {
+        slot = &_modelShadowReceiveList[i];
+        if (slot->model == model) {
+            return slot;
         }
     }
     return 0;
@@ -1168,46 +1169,45 @@ static inline bool _shadowAddReceiver(ShadowReceive* slot, _GSmodel* receiveMode
 
 static bool _modelShadowAddAsNewReceiver(_GSmodel* model, _GSmodel* receiveModel, GSlight* light, GSbound* bound)
 {
-    _GSmodel* rm;
-    ShadowReceive* r = _modelShadowReceiveList;
     ShadowReceive* slot;
+    u32 i;
+    bool valid;
+    u32 j;
+    _GSmodel* receiver;
     u32 n;
-    u32 k;
-    s32 idx;
 
-    slot = _shadowFindFreeSlot(r);
+    slot = _shadowFindReceiveModel(0);
     if (slot == 0) {
         slot = _modelShadowFindValidReceiveModel(model, receiveModel, light, 0);
         if (slot != 0) {
-            for (k = 0; k < 16; k++) {
-                _GSmodel* rm = slot->receivers[k];
-                if (rm != 0 && (rm->flags & 0x40000000)) {
+            for (i = 0; i < 16; i++) {
+                receiver = slot->receivers[i];
+                if (receiver != 0 && (receiver->flags & 0x40000000)) {
                     slot = 0;
                     break;
                 }
             }
         }
         if (slot == 0) {
-            bool ok = false;
-            u32 i;
-
-            for (i = 0; i < 5; r++, i++) {
-                slot = r;
-                if (slot->model == model) {
-                    ok = true;
-                    for (k = 0; k < 16; k++) {
-                        rm = slot->receivers[i];
-                        if (rm != 0 && (rm->flags & 0x40000000)) {
-                            ok = false;
-                            break;
-                        }
-                    }
-                    if (ok) {
+            valid = false;
+            for (i = 0; i < 5; i++) {
+                slot = &_modelShadowReceiveList[i];
+                if (slot->model != model) {
+                    continue;
+                }
+                valid = true;
+                for (j = 0; j < 16; j++) {
+                    receiver = slot->receivers[i];
+                    if (receiver != 0 && (receiver->flags & 0x40000000)) {
+                        valid = false;
                         break;
                     }
                 }
+                if (valid) {
+                    break;
+                }
             }
-            if (!ok) {
+            if (!valid) {
                 return false;
             }
         }

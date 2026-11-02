@@ -2018,8 +2018,7 @@ void GSgfx_GCReset() {
     gsgfxState->scisOff[0] = 0;
     gsgfxState->scisOff[1] = 0;
     GSgfxVideoGetEFBSize(&gsgfxState->scis[2], &gsgfxState->scis[3]);
-    u8 rf_t = gsgfxState->scis[2];
-    GSgfx_GCWriteScissor(0, 0, rf_t, gsgfxState->scis[3], 0, 0);
+    GSgfx_GCWriteScissor(0, 0, gsgfxState->scis[2], gsgfxState->scis[3], 0, 0);
     gsgfxState->vp[0] = 0.0f;
     gsgfxState->vp[1] = 0.0f;
     gsgfxState->vp[2] = GSu16tof32(gsgfxState->scis[2]);
@@ -2097,7 +2096,7 @@ void GSgfx_GCReset() {
         GSgfx_GCWriteTevKAlphaSel(i, 0x1c);
         gsgfxState->tv.swapSel[i][1] = 0;
         gsgfxState->tv.swapSel[i][0] = 0;
-        GSgfx_GCWriteTevSwapMode((u16)i, 0, 0);
+        GSgfx_GCWriteTevSwapMode(i, 0, 0);
     }
     tsLoopHelper4270();
     for (i = 0; i < 16; i++) {

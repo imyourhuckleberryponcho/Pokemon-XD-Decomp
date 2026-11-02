@@ -152,7 +152,7 @@ u16 pokemonDataBiosGetWeight(void*);
 u8 pokemonDataBiosGetZokuseiDataId(void*, u16);
 u32 pokemonTokuseiDataBiosGetDoc(void*);
 u32 pokemonTokuseiDataBiosGetName(void*);
-void* pokemonTokuseiDataBiosGetPtr(u8);
+void* pokemonTokuseiDataBiosGetPtr(u16);
 u8 winSeqCheckMove(s32);
 void winSeqSetMenu(void*, s32);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
@@ -168,7 +168,7 @@ u16 zokuseiGetWazaJoutai_PokemonId(u16, u16);
 static menuPdaMemoXD* pMemo;
 static CURSOR _cursor;
 static u8 _akagi;
-static s16 heightBuf[12];
+static u16 heightBuf[12];
 
 extern "C" {
 
@@ -406,6 +406,7 @@ void menuPdaMemoXD::SetModelAngle(short item) {
 extern "C++" {
 void menuPdaMemoXD::Cursor(tagWINDOW_WORK* window) {
     s32 last;
+    int prev;
     WindowKeyInfo* key = windowGetKeyInfo();
     CURSOR* c = window->contents->cursor;
     int count = memoDataGetCount(0);
@@ -413,7 +414,8 @@ void menuPdaMemoXD::Cursor(tagWINDOW_WORK* window) {
     int visible = 8;
     s16 newItem = item;
     if (menuPdaMemoListIsTermModel() != 1) {
-        int prev = c->pos + c->top;
+        prev = c->pos;
+        prev += c->top;
         if (count < 8) {
             visible = count;
         }
@@ -638,7 +640,7 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
     int n1;
     CURSOR* c = contents->cursor;
     void* mon = pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
-    volatile MenuItem* item = menuItemBiosGetPtr(0x7E, sprite->id);
+    MenuItem* item = menuItemBiosGetPtr(0x7E, sprite->id);
     GSmsgGetGSchar(0x3BBC);
     u32 first = pokemonDataBiosGetTokuseiDataId(mon, 0);
     u16 tid = pokemonDataBiosGetTokuseiDataId(mon, slot);
@@ -653,15 +655,15 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
         u16* buf2 = new u16[len + 2];
         u16* name = buf1;
         int n;
+        n = 0;
         int best = 0;
         u8 wrap = 0;
-        n = 0;
         do {
-            int spaces = 0;
+            int spaces;
             int prev = n;
             u16* src = text;
             u16* dst = buf1;
-            int k = 0;
+            k = spaces = 0;
             n++;
             for (;;) {
                 u16 ch = *src;
@@ -687,8 +689,7 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
             if (width <= item->width) {
                 best = n;
             }
-            u16 rf_t = item->width;
-            if (!(rf_t >= width)) {
+            if (!(item->width >= width)) {
                 wrap = 1;
             }
         } while (k < len);
@@ -836,28 +837,30 @@ void menuPdaMemoXD::PokemonHeight(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
     MenuItem* item = menuItemBiosGetPtr(0x7C, sprite->id);
     s32 layer = winSpriteGetLayerID(window, sprite);
     u16 height = pokemonDataBiosGetHeight(data);
+    u32 value;
     if (pokecoloGetLanguage() == 2) {
-        u32 inches = (u32)(0.5f + 39.37f * ((f32)height / 10.0f));
-        s32 pos = 7;
+        f32 inch = 39.37f * (height / 10.0f);
+        u32 inches = 0.5f + inch;
+        s32 pos = 10;
         s32 digits = 3;
-        s32 value = (inches % 12) + (inches / 12) * 100;
-        heightBuf[9] = 0;
-        heightBuf[8] = 0x27;
-        heightBuf[7] = 0x27;
+        value = (inches % 12) + (inches / 12) * 100;
+        heightBuf[--pos] = 0;
+        heightBuf[--pos] = 0x27;
+        heightBuf[--pos] = 0x27;
         for (;;) {
             u32 digit = value % 10;
             value /= 10;
-            if (digits > 0 || digit != 0) {
-                digits--;
-                pos--;
-                heightBuf[pos] = digit + 0x30;
-                if (digits == 1) {
-                    pos--;
-                    heightBuf[pos] = 0x27;
+            if (digits <= 0) {
+                if (digit == 0) {
+                    break;
                 }
-                continue;
+            } else {
+                digits--;
             }
-            break;
+            heightBuf[--pos] = digit + 0x30;
+            if (digits == 1) {
+                heightBuf[--pos] = 0x27;
+            }
         }
         msgctrlSetValue(0x37, (u32)&heightBuf[pos]);
         GSmsgPrintRight(layer, 0, 0, item->width, item->height, window->alpha | ~0xFF, 0x4276);
@@ -1004,12 +1007,12 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         break;
     case 0x159: {
         void* mon = pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(contents->cursor->pos + contents->cursor->top));
-        u32 first = pokemonDataBiosGetTokuseiDataId(mon, 0);
-        u32 second = pokemonDataBiosGetTokuseiDataId(mon, 1);
+        u16 first = pokemonDataBiosGetTokuseiDataId(mon, 0);
+        u16 second = pokemonDataBiosGetTokuseiDataId(mon, 1);
         if (second == first) {
             second = 0;
         }
-        if ((u16)(bool)second) {
+        if (second) {
             s32 name = (u32)GSmsgGetGSchar(0x3B68);
             msgctrlSetValue(0x4D, name);
             s32 text = (u32)GSmsgGetGSchar(0x3B6A);

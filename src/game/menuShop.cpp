@@ -228,7 +228,7 @@ static int memCardSave(VPC_BOX* box);
 static void memCardDecCouponAddItem(int coupon, u16 id, int n, VPC_BOX* box);
 static int memCardConnect(VPC_BOX* box);
 static bool checkExchangeVpc(VPC_BOX* box);
-static bool writeBackPcBox(int shop, u8 kind, VPC_BOX* box);
+static int writeBackPcBox(int shop, u8 kind, VPC_BOX* box);
 static void waitTime(f32 seconds);
 static void decCouponAddItem(int coupon, u16 id, int n, u8 kind, VPC_BOX* box);
 static int checkAddItem(u16 id, u8 kind);
@@ -306,9 +306,9 @@ static int _getBattleDiskShopID(void) {
     u16* list;
     for (i = 0; i < 3; i++) {
         list = getGoodsList(_shopDataBattleDiskTbl[i], &count);
-        flags[i * 3] = list[0] - 0x215;
-        flags[i * 3 + 1] = list[1] - 0x215;
-        flags[i * 3 + 2] = list[2] - 0x215;
+        for (int k = 0; k < 3; k++) {
+            flags[i * 3 + k] = list[k] - 0x215;
+        }
     }
     if (!deckDataVirtualDB_GetFlagData(flags[0]) || !deckDataVirtualDB_GetFlagData(flags[1]) || !deckDataVirtualDB_GetFlagData(flags[2])) {
         return 0x10;
@@ -552,16 +552,16 @@ static int selectExchangeMode(void) {
     }
 }
 static void couponExchangeMain(int shop, u8 kind) {
-    SHOP_MENU_ARG arg;
     u8 se;
-    int total;
-    int price;
-    int ok;
-    int num;
     s8 answer;
     u16 item;
-    int done = 0;
     int max;
+    SHOP_MENU_ARG arg;
+    int price;
+    int total;
+    int done = 0;
+    int num;
+    int ok;
     switch (kind) {
     case 2:
         ok = memCardConnect(&arg.box);
@@ -1382,7 +1382,7 @@ static void waitTime(f32 seconds) {
         i = (int)((f32)i + GSgfxVideoGetLastRenderTime());
     }
 }
-static bool writeBackPcBox(int shop, u8 kind, VPC_BOX* box) {
+static int writeBackPcBox(int shop, u8 kind, VPC_BOX* box) {
     u8 se;
     s8 answer;
     if (!checkExchangeVpc(box)) {

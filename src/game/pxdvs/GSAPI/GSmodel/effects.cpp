@@ -33,7 +33,7 @@ struct GSparticleGenerator;
 struct GStexture;
 struct GSvec;
 struct ModelBank;
-enum Mtx { Mtx_draft_dummy };
+typedef f32 Mtx[3][4];
 struct Vec;
 struct _GSmodel;
 
@@ -45,7 +45,7 @@ struct GSgfxLayer {
     u8 _draft[1];
     s32 tunitIndTexMtx(GSgfxIndTexMtxID, float(*)[3], signed char);
     s32 tunitFunc(unsigned char, GSgfxTunitFunc);
-    GStexture* GetFBTexture();
+    static GStexture* GetFBTexture();
     s32 tgenFunc(unsigned char, GSgfxTgenFunc, GSgfxTgenSrc, GSmtx*, bool, GSmtx*);
     void SetLayerVisibility(bool);
     s32 dlDrawExt(unsigned char*, unsigned long);
@@ -54,7 +54,7 @@ struct GSgfxLayer {
 struct GSgfxLayerConfig {
     u8 _draft[1];
     static void Remove(GSgfxLayerID);
-    s32 Add(char*, unsigned long, unsigned long, unsigned long, GSgfxLayerType, bool, bool, bool, GSgfxLayerID, GSgfxLayerOffset);
+    static s32 Add(char*, unsigned long, unsigned long, unsigned long, GSgfxLayerType, bool, bool, bool, GSgfxLayerID, GSgfxLayerOffset);
 };
 struct GSgfxMatrixStack {
     u8 _draft[1];
@@ -68,7 +68,7 @@ struct GSmaterial {
     u8 _draft[1];
 };
 struct GSmtx {
-    u8 _draft[1];
+    f32 m[3][4];
 };
 struct GSpart {
     u8 _draft[1];
@@ -89,7 +89,7 @@ struct ModelBank {
     u8 _draft[1];
 };
 struct Vec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 struct _GSmodel {
     u8 _draft[1];
@@ -120,8 +120,8 @@ GSpart* GSmodelGetPart(_GSmodel* model, s32 index);
 void GSmodelGetPosition(_GSmodel* model, GSvec* position);
 void GSmodelGetRotation(_GSmodel* model, GSvec* rotation);
 void GSpartFree(GSpart* part);
-u32 GSpartGetMaterial(u8);
-s32 GSpartGetMatrix(s32*);
+GSmaterial* GSpartGetMaterial(GSpart* part, u32 index);
+void GSpartGetMatrix(GSpart* part, Mtx out);
 void GSpartGetTransform(GSpart* part, GSvec* pos, GSvec* rot, GSvec* scale);
 GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* bank, s32 index, s32);
 void GSparticleSetGeneratorPosition(GSparticleGenerator* gen, Vec* pos);
@@ -144,8 +144,8 @@ void modelDustUpdate(_GSmodel* p0);
 s8 g_distortion_layer_name[0x14] = "model distortion";
 static u8 g_distortion_layer_ref_count;
 void modelDistortionRender() {
-    f32 unksp20;
-    f32 sp14;
+    Mtx unksp20;
+    Vec sp14;
     f32 sp10;
     f32 spC;
     f32 sp8;
@@ -154,7 +154,6 @@ void modelDistortionRender() {
     GStexture *temp_r3_3;
     _GSmodel *var_r28;
     _GSmodel *var_r4;
-    s32 temp_cr0_eq;
     GScamera *temp_r3;
     s32 temp_r3_4;
     s32 temp_r3_5;
@@ -163,24 +162,22 @@ void modelDistortionRender() {
     u8 temp_r4;
     u8 var_r5;
 
-    temp_r29 = GSgfxLayerFindByName((const char*)("model distortion"));
+    temp_r29 = GSgfxLayerFindByName((const char*)g_distortion_layer_name);
     temp_r3 = GScameraGetActiveCamera();
     if ((temp_r3 != NULL) && (temp_r29 != NULL)) {
         temp_r3_2 = ((GSgfxLayer*)(temp_r29))->IsLayerVisible();
         if (temp_r3_2 != 0) {
-            temp_r3_3 = ((GSgfxLayer*)((GSgfxLayer *) temp_r3_2))->GetFBTexture();
+            temp_r3_3 = GSgfxLayer::GetFBTexture();
             if (temp_r3_3 != NULL) {
                 var_r4 = _modelTopPtr;
                 var_r5 = 0;
-loop_9:
-                if (var_r4 != NULL) {
+                while (var_r4 != NULL) {
                     temp_r3_4 = M2C_FIELD(var_r4, s32 *, 0);
-                    if ((temp_r3_4 & 0x04000000) && ((u32) ((temp_r3_4 & 0x80000) + 0xFFF80000) == 0U)) {
+                    if ((temp_r3_4 & 0x04000000) && (temp_r3_4 & 0x80000) == 0x80000) {
                         var_r5 = 1;
-                    } else {
-                        var_r4 = M2C_FIELD(var_r4, _GSmodel **, 4);
-                        goto loop_9;
+                        break;
                     }
+                    var_r4 = M2C_FIELD(var_r4, _GSmodel **, 4);
                 }
                 if (var_r5 != 0) {
                     temp_r27 = GSgfxPerfbarCPUEntry(0x8080FF);
@@ -194,7 +191,7 @@ loop_9:
                     GScameraLoadActiveCameraMatrix((GSgfxLayerID)(M2C_FIELD(temp_r29, s32 *, 0x28)));
                     GScameraGetPerspective((GScamera*)(temp_r3), (f32*)(&sp10), (f32*)(&spC), (f32*)(&sp8), (f32*)(&sp8));
                     GScameraGetPosition((GScamera*)(temp_r3), (f32*)(&sp14));
-                    C_MTXLightPerspective((Mtx)((s32) &unksp20), sp10, spC, 0.5f, -0.5f, 0.5f, 0.5f);
+                    C_MTXLightPerspective(unksp20, sp10, spC, 0.5f, -0.5f, 0.5f, 0.5f);
                     M2C_FIELD(temp_r29, s32 *, 0xD8C) = 0;
                     M2C_FIELD(temp_r29, s32 *, 0x16B8) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x16B8) | 2);
                     M2C_FIELD(temp_r29, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x16A8) | 2);
@@ -241,7 +238,7 @@ loop_9:
                     M2C_FIELD(temp_r29, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x17C4) | 0x10);
                     M2C_FIELD(temp_r29, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x1760) | 0x40);
                     M2C_FIELD(temp_r29, s8 *, 0x1654) = 0;
-                    M2C_FIELD(temp_r29, s8 *, 0x1655) = 0xFF;
+                    M2C_FIELD(temp_r29, u8 *, 0x1655) = 0xFF;
                     M2C_FIELD(temp_r29, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x170C) | 2);
                     M2C_FIELD(temp_r29, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x16A8) | 0x40);
                     M2C_FIELD(temp_r29, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x17C4) | 2);
@@ -333,7 +330,6 @@ loop_9:
                         }
                         var_r28 = M2C_FIELD(var_r28, _GSmodel **, 4);
                     }
-                    temp_cr0_eq = temp_r31 == 0;
                     M2C_FIELD(temp_r29, s32 *, 0x1420) = 0;
                     M2C_FIELD(temp_r29, s32 *, 0x16E8) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x16E8) | 1);
                     M2C_FIELD(temp_r29, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x16A8) | 8);
@@ -344,11 +340,11 @@ loop_9:
                     M2C_FIELD(temp_r29, s32 *, 0x16A8) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x16A8) | 0x80);
                     M2C_FIELD(temp_r29, s32 *, 0x17A4) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x17A4) | 1);
                     M2C_FIELD(temp_r29, s32 *, 0x1760) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x1760) | 0x80);
-                    if (temp_cr0_eq) {
+                    if (temp_r31 != 0) {
                         M2C_FIELD(temp_r29, u8 *, 0x16A7) = temp_r31;
                         M2C_FIELD(temp_r29, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x170C) | 0x40);
                         M2C_FIELD(temp_r29, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x17C4) | 0x40);
-                        if (temp_cr0_eq) {
+                        if (temp_r31 != 0) {
                             M2C_FIELD(temp_r29, s32 *, 0x170C) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x170C) | 0x200);
                             M2C_FIELD(temp_r29, s32 *, 0x17C4) = (s32) (M2C_FIELD(temp_r29, s32 *, 0x17C4) | 0x200);
                             if ((u8) M2C_FIELD(temp_r29, u8 *, 0x16A6) != 0) {
@@ -368,108 +364,65 @@ loop_9:
 }
 
 extern "C++" {
-static void _modelDrawDistortionSub(_GSmodel* p0, GSgfxLayer* p1, GSmtx* p2, GSvec* p3) {
-    volatile f32 sp28;
-    s32 sp34;
-    s32 sp38;
-    s32 sp3C;
-    s32 sp40;
-    s32 sp44;
-    s32 sp48;
-    s32 sp4C;
-    s32 sp50;
-    s32 sp54;
-    s32 sp58;
-    s32 sp98;
-    s32 spA8;
-    s32 spB8;
-    s32 unksp8C;
-    s32 sp88;
-    s32 sp84;
-    s32 sp80;
-    s32 sp7C;
-    s32 sp78;
-    s32 sp74;
-    s32 sp70;
-    s32 sp6C;
-    s32 sp68;
-    s32 sp64;
-    volatile s32 sp60;
-    s32 sp5C;
-    volatile f32 sp18;
-    s32 sp14;
-    s32 sp2C;
-    volatile s32 sp30;
-    f32 sp10;
-    f32 spC;
-    f32 sp8;
-    GSpart *temp_r3;
-    f32 temp_f31;
-    f32 var_f1;
-    u8 temp_r3_2;
-    u8 temp_r3_3;
-    u8 *temp_r31;
-    u8 *temp_r3_4;
+static void _modelDrawDistortionSub(_GSmodel* model, GSgfxLayer* layer, GSmtx* view, GSvec* camPos) {
+    if ((M2C_FIELD(model, s32 *, 0) & 0x80000) == 0x80000 && M2C_FIELD(model, u32 *, 0x61C) != 0) {
+        u8* dl = M2C_FIELD(model, u8 **, 0x614);
+        if (dl != NULL) {
+            GSpart* part = GSmodelGetPart(model, M2C_FIELD(model, u16 *, 0x610));
+            if (part != NULL) {
+                GSmtx partMtx;
+                GSmtx texMtx;
+                GSmtx concat;
+                f32 ind[2][3];
+                Vec pos;
+                f32 dist;
+                f32 scale;
+                u8 flags;
+                u8* tex;
 
-    if (((u32) ((M2C_FIELD(p0, s32 *, 0) & 0x80000) + 0xFFF80000) == 0U) && ((u32) M2C_FIELD(p0, u32 *, 0x61C) != 0U)) {
-        temp_r31 = M2C_FIELD(p0, u8 **, 0x614);
-        if (temp_r31 != NULL) {
-            temp_r3 = GSmodelGetPart((_GSmodel*)(p0), (s32) M2C_FIELD(p0, u16 *, 0x610));
-            if (temp_r3 != NULL) {
-                GSpartGetMatrix((s32 *) temp_r3);
-                sp8 = sp98;
-                spC = spA8;
-                sp10 = spB8;
-                GSpartFree((GSpart*)(temp_r3));
-                var_f1 = PSVECDistance((const register Vec*)((Vec *) &sp8), (const register Vec*)((Vec *) p3));
-                if (var_f1 < 1.0f) {
-                    var_f1 = 1.0f;
+                GSpartGetMatrix(part, partMtx.m);
+                pos.x = partMtx.m[0][3];
+                pos.y = partMtx.m[1][3];
+                pos.z = partMtx.m[2][3];
+                GSpartFree(part);
+                dist = PSVECDistance(&pos, (Vec*)camPos);
+                if (dist < 1.0f) {
+                    dist = 1.0f;
                 }
-                temp_f31 = 1.0f / var_f1;
-                memset((void*)(&sp14), 0, 0x18U);
-                temp_r3_2 = M2C_FIELD((s32)p0, u8 *, 0x613);
-                if (temp_r3_2 & 1) {
-                    if (temp_r3_2 & 4) {
-                        sp18 = -0.5f * temp_f31;
+                scale = 1.0f / dist;
+                memset(ind, 0, sizeof(ind));
+                flags = M2C_FIELD(model, u8 *, 0x613);
+                if (flags & 1) {
+                    if (flags & 4) {
+                        ind[0][1] = -0.5f * scale;
                     } else {
-                        sp18 = 0.5f * temp_f31;
+                        ind[0][1] = 0.5f * scale;
                     }
                 }
-                temp_r3_3 = M2C_FIELD(p0, u8 *, 0x613);
-                if (temp_r3_3 & 2) {
-                    if (temp_r3_3 & 8) {
-                        sp28 = -0.5f * temp_f31;
+                flags = M2C_FIELD(model, u8 *, 0x613);
+                if (flags & 2) {
+                    if (flags & 8) {
+                        ind[1][2] = -0.5f * scale;
                     } else {
-                        sp28 = 0.5f * temp_f31;
+                        ind[1][2] = 0.5f * scale;
                     }
                 }
-                temp_r3_4 = M2C_FIELD(p0, u8 **, 0x618);
-                if (((u8 *) M2C_FIELD(p1, u8 **, 0x1740) != temp_r3_4) || ((u8 *) M2C_FIELD(p1, u8 **, 0x17F8) != temp_r3_4) || ((u8) M2C_FIELD(temp_r3_4, u8 *, 7) != 0)) {
-                    M2C_FIELD(p1, u8 **, 0x1740) = temp_r3_4;
-                    M2C_FIELD(p1, s32 *, 0x173C) = (s32) (M2C_FIELD(p1, s32 *, 0x173C) | 1);
-                    M2C_FIELD(p1, u8 **, 0x17F8) = temp_r3_4;
-                    M2C_FIELD(p1, s32 *, 0x17F4) = (s32) (M2C_FIELD(p1, s32 *, 0x17F4) | 1);
+                tex = M2C_FIELD(model, u8 **, 0x618);
+                if (M2C_FIELD(layer, u8 **, 0x1740) != tex || M2C_FIELD(layer, u8 **, 0x17F8) != tex || tex[7] != 0) {
+                    M2C_FIELD(layer, u8 **, 0x1740) = tex;
+                    M2C_FIELD(layer, s32 *, 0x173C) |= 1;
+                    M2C_FIELD(layer, u8 **, 0x17F8) = tex;
+                    M2C_FIELD(layer, s32 *, 0x17F4) |= 1;
                 }
-                ((GSgfxMatrixStack*)(M2C_FIELD(p1, GSgfxMatrixStack **, 0x19A0)))->pushMult((GSmtx*)(&unksp8C));
-                PSMTXConcat((const Mtx)((s32) p2), (const Mtx)(M2C_FIELD(M2C_FIELD(p1, GSgfxMatrixStack **, 0x19A0), s32 *, 4) + 4), (Mtx)((s32) &sp2C));
-                sp5C = sp2C;
-                if (sp60 < sp30) sp60 = sp30;
-                sp64 = sp34;
-                sp68 = sp38;
-                sp6C = sp3C;
-                sp70 = sp40;
-                sp74 = sp44;
-                sp78 = sp48;
-                sp7C = sp4C;
-                sp80 = sp50;
-                sp84 = sp54;
-                sp88 = sp58;
-                PSMTXCopy((const Mtx)((s32) &sp5C), (Mtx)((s32) &unksp8C));
-                ((GSgfxLayer*)(p1))->tgenFunc(1U, (GSgfxTgenFunc)(0), (GSgfxTgenSrc)(0), (GSmtx*)(&unksp8C), 0U, (GSmtx*)(NULL));
-                ((GSgfxLayer*)(p1))->tunitIndTexMtx((GSgfxIndTexMtxID)(1), (float(*)[3])(&sp14), 1);
-                M2C_FIELD(p1, u32 *, 0x199C) = (u32) M2C_FIELD(p0, u32 *, 0x61C);
-                ((GSgfxLayer*)(p1))->dlDrawExt((unsigned char*)(M2C_FIELD(temp_r31, u8 **, 0x10)), M2C_FIELD(temp_r31, u16 *, 0xE) << 5);
-                ((GSgfxMatrixStack*)(M2C_FIELD(p1, GSgfxMatrixStack **, 0x19A0)))->pop();
+                M2C_FIELD(layer, GSgfxMatrixStack **, 0x19A0)->pushMult(&partMtx);
+                PSMTXConcat(view->m, (f32(*)[4])(M2C_FIELD(M2C_FIELD(layer, GSgfxMatrixStack **, 0x19A0), u8 **, 4) + 4), concat.m);
+                texMtx = concat;
+                PSMTXCopy(texMtx.m, partMtx.m);
+                layer->tgenFunc(1, (GSgfxTgenFunc)0, (GSgfxTgenSrc)0, &partMtx, 0, NULL);
+                layer->tunitIndTexMtx((GSgfxIndTexMtxID)1, ind, 1);
+                M2C_FIELD(layer, u32 *, 0x199C) = M2C_FIELD(model, u32 *, 0x61C);
+                layer->dlDrawExt(M2C_FIELD(dl, u8 **, 0x10), M2C_FIELD(dl, u16 *, 0xE) << 5);
+                M2C_FIELD(layer, GSgfxMatrixStack **, 0x19A0)->pop();
             }
         }
     }
@@ -519,80 +472,76 @@ void GSmodelFreeDistortion(void *p0) {
 }
 
 extern "C" {
-void GSmodelCreateDistortion(void *p0, u16 p1, u8 p2, u8 p3) {
-    u8 *temp_r31;
-    s32 sp8;
-    GSgfxLayer *temp_r3_3;
-    GSgfxLayer *var_r28;
-    GSpart *temp_r3;
-    u32 temp_r4;
-    s32 temp_r5;
-    u32 temp_r26;
-    u32 temp_r3_4;
-    u8 var_r30;
-    u8 *temp_r25;
-    s32 spC;
-    u8 *temp_r3_2;
-    u8 *var_r25;
+struct DistortionVtxDesc {
+    s32 attr;
+    s32 type;
+    s32 cnt;
+    s32 compType;
+    u8 frac;
+    u8 pad11;
+    u16 stride;
+    void* data;
+};
 
-    var_r30 = p3;
-    if (((ModelBank *) M2C_FIELD(p0, ModelBank **, 0x618) == NULL) && (p1 != 0)) {
-        temp_r3 = GSmodelGetPart((_GSmodel*)((_GSmodel *) p0), (s32) p1);
-        if (temp_r3 != NULL) {
-            temp_r25 = M2C_FIELD(temp_r3, u8 **, 8);
-            temp_r26 = GSpartGetMaterial((u8) temp_r3);
-            GSpartFree((GSpart*)(temp_r3));
-            if ((temp_r26 != 0) && !(M2C_FIELD(temp_r25, s32 *, 0x14) & 0x4020)) {
-                temp_r3_2 = M2C_FIELD(temp_r25, u8 **, 0x18);
-                if (temp_r3_2 != NULL) {
-                    temp_r31 = M2C_FIELD(temp_r3_2, u8 **, 0xC);
-                    if ((temp_r31 != NULL) && ((u8 *) M2C_FIELD(temp_r31, u8 **, 8) != NULL) && ((u16) M2C_FIELD(temp_r31, u16 *, 0xE) != 0) && ((u32) M2C_FIELD(temp_r31, u32 *, 0x10) != 0U) && ((s32) (M2C_FIELD(temp_r31, u16 *, 0xC) & 0x3000) != 0x1000)) {
-                        M2C_FIELD(p0, u16 *, 0x610) = p1;
-                        M2C_FIELD(p0, u8 *, 0x612) = p2;
-                        M2C_FIELD(p0, u8 **, 0x614) = temp_r31;
-                        M2C_FIELD(p0, ModelBank **, 0x618) = GSmemAllocClr(0x80U);
-                        if ((ModelBank *) M2C_FIELD(p0, ModelBank **, 0x618) != NULL) {
-                            if (var_r30 == 0) {
-                                var_r30 = 1;
+void GSmodelCreateDistortion(void *model, u16 partIndex, u8 material, u8 flags) {
+    GSpart* part;
+    GSgfxLayer* layer;
+    GSmaterial* mat;
+    u8* dl;
+    u8* shape;
+    u8* sub;
+    DistortionVtxDesc* desc;
+
+    if (M2C_FIELD(model, ModelBank **, 0x618) == NULL && partIndex != 0) {
+        part = GSmodelGetPart((_GSmodel*)model, partIndex);
+        if (part != NULL) {
+            shape = M2C_FIELD(part, u8 **, 8);
+            mat = GSpartGetMaterial(part, material);
+            GSpartFree(part);
+            if (mat != NULL && (M2C_FIELD(shape, s32 *, 0x14) & 0x4020 ? 0 : 1) && (sub = M2C_FIELD(shape, u8 **, 0x18)) != NULL) {
+                dl = M2C_FIELD(sub, u8 **, 0xC);
+                if (dl != NULL && M2C_FIELD(dl, u8 **, 8) != NULL && M2C_FIELD(dl, u16 *, 0xE) != 0 && M2C_FIELD(dl, u32 *, 0x10) != 0 &&
+                    (M2C_FIELD(dl, u16 *, 0xC) & 0x3000) != 0x1000) {
+                    M2C_FIELD(model, u16 *, 0x610) = partIndex;
+                    M2C_FIELD(model, u8 *, 0x612) = material;
+                    M2C_FIELD(model, u8 **, 0x614) = dl;
+                    M2C_FIELD(model, ModelBank **, 0x618) = GSmemAllocClr(0x80);
+                    if (M2C_FIELD(model, ModelBank **, 0x618) != NULL) {
+                        if (flags == 0) {
+                            flags = 1;
+                        }
+                        M2C_FIELD(model, u8 *, 0x613) = flags;
+                        GSmaterialGetTexture(mat, (GStexture*)M2C_FIELD(model, ModelBank **, 0x618));
+                        GStextureSetWrap((GStexture*)M2C_FIELD(model, ModelBank **, 0x618), 0, 0);
+                        GStextureSetFilter((GStexture*)M2C_FIELD(model, ModelBank **, 0x618), 2, 2, 0);
+                        layer = GSgfxLayerFindByName((const char*)g_distortion_layer_name);
+                        if (layer == NULL) {
+                            layer = (GSgfxLayer*)GSgfxLayerFindByID(GSgfxLayerConfig::Add((char*)g_distortion_layer_name, 0, 0x1400, 2,
+                                                                                           (GSgfxLayerType)4, 0, 0, 0, (GSgfxLayerID)2,
+                                                                                           (GSgfxLayerOffset)2));
+                            if (layer != NULL) {
+                                layer->SetLayerVisibility(0);
                             }
-                            M2C_FIELD(p0, u8 *, 0x613) = var_r30;
-                            GSmaterialGetTexture((GSmaterial*)((GSmaterial *) temp_r26), (GStexture*)((GStexture *) M2C_FIELD(p0, ModelBank **, 0x618)));
-                            GStextureSetWrap((GStexture*)((GStexture *) M2C_FIELD(p0, ModelBank **, 0x618)), 0U, 0U);
-                            GStextureSetFilter((GStexture*)((GStexture *) M2C_FIELD(p0, ModelBank **, 0x618)), 2, 2, 0U);
-                            var_r28 = GSgfxLayerFindByName((const char*)("model distortion"));
-                            if (var_r28 == NULL) {
-                                sp8 = 2;
-                                spC = 2;
-                                temp_r3_3 = (GSgfxLayer *)(GSgfxLayerFindByID(((GSgfxLayerConfig*)((GSgfxLayerConfig *) "model distortion"))->Add((char*)(NULL), 0x1400U, 2U, 4U, (GSgfxLayerType)(0), 0U, 0U, M2C_ERROR( ), (GSgfxLayerID)(M2C_ERROR( )), (GSgfxLayerOffset)(M2C_ERROR( )))));
-                                var_r28 = temp_r3_3;
-                                if (var_r28 != NULL) {
-                                    ((GSgfxLayer*)(temp_r3_3))->SetLayerVisibility(0U);
+                        }
+                        g_distortion_layer_ref_count++;
+                        if (layer == NULL) {
+                            GStextureFree((GStexture*)M2C_FIELD(model, ModelBank **, 0x618));
+                            M2C_FIELD(model, ModelBank **, 0x618) = NULL;
+                            M2C_FIELD(model, u8 **, 0x614) = NULL;
+                        }
+                        M2C_FIELD(model, u32 *, 0x61C) = (u32)operator new(0x440);
+                        if (M2C_FIELD(model, u32 *, 0x61C) != 0) {
+                            GSgfxVFInit((GSgfxVF*)M2C_FIELD(model, u32 *, 0x61C));
+                            GSgfxVFCreate((GSgfxVF*)M2C_FIELD(model, u32 *, 0x61C));
+                            s32 attr;
+                            for (desc = M2C_FIELD(dl, DistortionVtxDesc **, 8); (attr = desc->attr) != 0xFF; desc++) {
+                                if (attr >= 9 || attr < 0) {
+                                    GSgfxVFSetElement((GSgfxVF*)M2C_FIELD(model, u32 *, 0x61C), attr, desc->cnt, desc->compType,
+                                                      desc->frac);
                                 }
-                            }
-                            g_distortion_layer_ref_count += 1;
-                            if (var_r28 == NULL) {
-                                GStextureFree((GStexture*)((GStexture *) M2C_FIELD(p0, ModelBank **, 0x618)));
-                                M2C_FIELD(p0, ModelBank **, 0x618) = NULL;
-                                M2C_FIELD(p0, u8 **, 0x614) = NULL;
-                            }
-                            M2C_FIELD(p0, u32 *, 0x61C) = (unsigned long)(operator new(0x440U));
-                            temp_r3_4 = M2C_FIELD(p0, u32 *, 0x61C);
-                            if (temp_r3_4 != 0) {
-                                GSgfxVFInit((GSgfxVF*)((GSgfxVF *) temp_r3_4));
-                                GSgfxVFCreate((GSgfxVF*)((GSgfxVF *) M2C_FIELD(p0, u32 *, 0x61C)));
-                                var_r25 = M2C_FIELD(temp_r31, u8 **, 8);
-loop_27:
-                                temp_r4 = M2C_FIELD(var_r25, s32 *, 0);
-                                if (temp_r4 != 0xFF) {
-                                    if ((temp_r4 >= 9) || (temp_r4 < 0)) {
-                                        GSgfxVFSetElement((GSgfxVF*)((GSgfxVF *) M2C_FIELD(p0, u32 *, 0x61C)), temp_r4, M2C_FIELD(var_r25, s32 *, 8), M2C_FIELD(var_r25, s32 *, 0xC), (s32) M2C_FIELD(var_r25, u8 *, 0x10));
-                                    }
-                                    temp_r5 = M2C_FIELD(var_r25, s32 *, 4);
-                                    if (temp_r5 != 1) {
-                                        GSgfxVFSetArray((GSgfxVF*)((GSgfxVF *) M2C_FIELD(p0, u32 *, 0x61C)), M2C_FIELD(var_r25, s32 *, 0), temp_r5, (void*)(M2C_FIELD(var_r25, u8 **, 0x14)), (s32) (u8) M2C_FIELD(var_r25, u16 *, 0x12), 0);
-                                    }
-                                    var_r25 += 0x18;
-                                    goto loop_27;
+                                if (desc->type != 1) {
+                                    GSgfxVFSetArray((GSgfxVF*)M2C_FIELD(model, u32 *, 0x61C), desc->attr, desc->type, desc->data,
+                                                    (u8)desc->stride, 0);
                                 }
                             }
                         }
@@ -609,7 +558,7 @@ void GSmodelEnableDistortion(void *p0) {
     GSgfxLayer *temp_r3;
 
     if (((u32) ((M2C_FIELD(p0, s32 *, 0) & 0x80000) + 0xFFF80000) != 0U) && ((u32) M2C_FIELD(p0, u32 *, 0x614) != 0U) && ((u32) M2C_FIELD(p0, u32 *, 0x618) != 0U)) {
-        temp_r3 = GSgfxLayerFindByName((const char*)("model distortion"));
+        temp_r3 = GSgfxLayerFindByName((const char*)g_distortion_layer_name);
         if (temp_r3 != NULL) {
             ((GSgfxLayer*)(temp_r3))->SetLayerVisibility(1U);
             M2C_FIELD(p0, s32 *, 0) = (s32) (M2C_FIELD(p0, s32 *, 0) | 0x80000);

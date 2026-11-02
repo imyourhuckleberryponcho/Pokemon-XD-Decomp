@@ -402,7 +402,6 @@ void WazaSequence::Unload(u8* data) {
 }
 
 WazaSequence::WazaSequence(NullSequence* owner, u16 wazaID, u8 kind, u8 variation) {
-    ModelSequence* owner_c = (ModelSequence*)owner;
     m_time = 0.0f;
     m_duration = 0.0f;
     m_flags = 0;
@@ -424,40 +423,35 @@ WazaSequence::WazaSequence(NullSequence* owner, u16 wazaID, u8 kind, u8 variatio
 
     if (owner == 0) {
         m_error = 1;
-    } else if (kind == 0) {
+        return;
+    }
+    if (kind == 0) {
         m_error = 1;
-    } else {
-        ModelSequence* ms = 0;
-        u16 resID;
-        switch (owner->m_kind) {
-        case 1:
-                ms = owner_c;
-            break;
-        }
-        resID = wazaSequenceSysGetResourceID(ms, wazaID, kind, variation);
-        if (resID == 0) {
-            m_error = 1;
-        } else {
-            u32 a = waza_resource_data[resID].groupID;
-            u32 b = waza_resource_data[resID].unk4;
-            u8* data;
-            if (a == 0 || b == 0) {
-                m_error = 1;
-            } else {
-                data = wazaSequenceSysLoadResource(a, b);
-                m_resID = a;
-                if (data == 0) {
-                    m_error = 1;
-                } else {
-                    m_wazaID = wazaID;
-                    m_kind = kind;
-                    owner->Add(this);
-                    if (!LoadData(data)) {
-                        m_error = 2;
-                    }
-                }
-            }
-        }
+        return;
+    }
+    ModelSequence* ms = owner->m_kind == 1 ? (ModelSequence*)owner : 0;
+    u16 resID = wazaSequenceSysGetResourceID(ms, wazaID, kind, variation);
+    if (resID == 0) {
+        m_error = 1;
+        return;
+    }
+    u32 a = waza_resource_data[resID].groupID;
+    u32 b = waza_resource_data[resID].unk4;
+    if (a == 0 || b == 0) {
+        m_error = 1;
+        return;
+    }
+    u8* data = wazaSequenceSysLoadResource(a, b);
+    m_resID = a;
+    if (data == 0) {
+        m_error = 1;
+        return;
+    }
+    m_wazaID = wazaID;
+    m_kind = kind;
+    owner->Add(this);
+    if (!LoadData(data)) {
+        m_error = 2;
     }
 }
 
@@ -526,9 +520,9 @@ void WazaSequence::SetRenderCamera(_GScamera* camera) {
 }
 
 void WazaSequence::Start(bool camera) {
-    _GSmodel* model;
     ModelSequence* ms;
     SequenceEntry* e;
+    _GSmodel* model;
     GSgfxLayer* layer;
 
     if (m_active) {
@@ -544,7 +538,7 @@ void WazaSequence::Start(bool camera) {
             wazaSequenceSysResetAnimationExcept(ms);
         }
         if (m_flags & 0x80000000) {
-            ms->DestroyParticles((m_flags & 0x8000) == 0, false);
+            ms->DestroyParticles(!(m_flags & 0x8000), false);
         }
         if (m_flags & 0x08000000) {
             GSmodelLinkToGSparticleBank(model, 0);
@@ -751,15 +745,20 @@ bool WazaSequence::LoadData(u8* data) {
     }
     ms = AsModel(m_owner);
     if (ms != 0) {
-        bool sec = m_section;
-        if (sec == 11) {
-            if (ms->m_maxSection < sec) {
+        switch (m_section) {
+        case 11:
+            if (ms->m_maxSection < m_section) {
                 m_section = 0;
             }
-        } else if (sec >= 12 && sec < 16) {
-            if (ms->m_maxSection < sec) {
+            break;
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+            if (ms->m_maxSection < m_section) {
                 m_section = 1;
             }
+            break;
         }
     }
     m_flags = hdr->flags;
@@ -782,46 +781,48 @@ bool WazaSequence::LoadData(u8* data) {
     } else {
         m_camera = 0;
     }
-    for (i = 0; i < m_numEntries; i++) {
-        switch (*(u32*)(p + 4)) {
-        case 1:
-            e = new CameraEntry(this, &p);
-            break;
-        case 2:
-            e = new ModelEntry(this, &p);
-            break;
-        case 3:
-            e = new ParticleEntry(this, &p);
-            break;
-        case 4:
-            e = new EffectEntry(this, &p);
-            break;
-        case 5:
-            e = new SoundEntry(this, &p);
-            break;
-        case 6:
-            e = new EventEntry(this, &p);
-            break;
-        case 7:
-            e = new LensFlareEntry(this, &p);
-            break;
-        default:
-            return false;
+    if (m_numEntries != 0) {
+        for (i = 0; i < m_numEntries; i++) {
+            switch (*(u32*)(p + 4)) {
+            case 1:
+                e = new CameraEntry(this, &p);
+                break;
+            case 2:
+                e = new ModelEntry(this, &p);
+                break;
+            case 3:
+                e = new ParticleEntry(this, &p);
+                break;
+            case 4:
+                e = new EffectEntry(this, &p);
+                break;
+            case 5:
+                e = new SoundEntry(this, &p);
+                break;
+            case 6:
+                e = new EventEntry(this, &p);
+                break;
+            case 7:
+                e = new LensFlareEntry(this, &p);
+                break;
+            default:
+                return false;
+            }
+            e->Link();
         }
-        e->Link();
-    }
-    e = m_entries;
-    m_duration = 0.0f;
-    for (; e != 0; e = e->m_next) {
-        if (e->m_start < m_duration) {
-            m_duration = e->m_start;
+        e = m_entries;
+        m_duration = 0.0f;
+        for (; e != 0; e = e->m_next) {
+            if (e->m_start < m_duration) {
+                m_duration = e->m_start;
+            }
         }
-    }
-    if (m_duration < 0.0f) {
-        m_duration = -m_duration;
-        for (e = m_entries; e != 0; e = e->m_next) {
-            e->m_start += m_duration;
-            e->m_nextTime += m_duration;
+        if (m_duration < 0.0f) {
+            m_duration = -m_duration;
+            for (e = m_entries; e != 0; e = e->m_next) {
+                e->m_start += m_duration;
+                e->m_nextTime += m_duration;
+            }
         }
     }
     return true;
@@ -847,16 +848,19 @@ void WazaSequence_Free(WazaSequence* seq) {
     }
 }
 
-WazaSequence* Sequence_LoadWaza(NullSequence* owner, u16 wazaID, u8 kind, u8 variation) {
-    WazaSequence* seq = new WazaSequence(owner, wazaID, kind, variation);
+static inline WazaSequence* checkSeq(WazaSequence* seq) {
     if (seq == 0) {
         return 0;
     }
     if (seq->m_error != 0) {
         delete seq;
-        int seq = 0;
+        seq = 0;
     }
     return seq;
+}
+
+WazaSequence* Sequence_LoadWaza(NullSequence* owner, u16 wazaID, u8 kind, u8 variation) {
+    return checkSeq(new WazaSequence(owner, wazaID, kind, variation));
 }
 
 bool WazaSequence_IsActive(WazaSequence* seq) {

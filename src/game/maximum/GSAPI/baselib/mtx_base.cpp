@@ -116,15 +116,15 @@ int HSD_MtxInverseConcat(Mtx inv, Mtx src, Mtx dst)
 {
     f32 i02;
     f32 i11;
+    f32 i00;
     f32 i10;
     f32 i01;
-    f32 i00;
+    f32 i21;
     f32 det;
     f32 i12;
     f32 i20;
     f32 i22;
     Mtx result;
-    f32 i21;
     f32 tx;
     f32 tz;
     f32 ty;
@@ -143,7 +143,7 @@ int HSD_MtxInverseConcat(Mtx inv, Mtx src, Mtx dst)
     i02 = (inv[0][1] * inv[1][2] - inv[1][1] * inv[0][2]);
     i02 *= det;
     i20 = det * (inv[1][0] * inv[2][1] - inv[2][0] * inv[1][1]);
-    i21 = det * -(-(inv[2][0] * inv[0][1] - inv[0][0] * inv[2][1]));
+    i21 = det * -(inv[0][0] * inv[2][1] - inv[2][0] * inv[0][1]);
     i22 = det * (inv[0][0] * inv[1][1] - inv[1][0] * inv[0][1]);
 
     tx = -(i02 * inv[2][3] - (-i00 * inv[0][3] - i01 * inv[1][3]));

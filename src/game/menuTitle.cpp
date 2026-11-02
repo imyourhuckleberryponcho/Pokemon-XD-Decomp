@@ -210,17 +210,10 @@ void menuTitleSetSelect(s32 p0, s16 p1) {
 
 extern "C" {
 void menuTitleFunc() {
-    f32 temp_f1_2;
-    f32 temp_f2;
-    f64 temp_f1;
-
     menuTitleCursorAnimeMain();
-    temp_f1 = timeGetLastFrameSec();
-    temp_f2 = _menuTitleFrameCount;
-    temp_f2 += ((f32) temp_f1 * 0.5f);
-    _menuTitleFrameSec = temp_f1;
-    _menuTitleFrameCount = temp_f2;
-    if (temp_f2 >= 1.0f) {
+    _menuTitleFrameSec = timeGetLastFrameSec();
+    _menuTitleFrameCount += _menuTitleFrameSec / 2.0f;
+    if (_menuTitleFrameCount >= 1.0f) {
         _menuTitleFrameCount = 0.0f;
     }
     if (_menuTitleStatus >= 0x1E) {

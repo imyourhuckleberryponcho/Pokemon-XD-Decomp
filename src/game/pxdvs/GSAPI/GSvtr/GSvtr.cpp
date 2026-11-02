@@ -271,10 +271,10 @@ static void _vtrTexDispFunc() {
         M2C_FIELD(layer, u8 **, 0x1990) = (u8*)layer + 0x1818 + M2C_FIELD(layer, s32 *, 0x1994) * 0xBC;
     }
     M2C_FIELD(layer, s32 *, 0x1644) = 1;
-    M2C_FIELD(layer, s32 *, 0x1648) = 1;
     M2C_FIELD(layer, s32 *, 0x164C) = 0;
     M2C_FIELD(layer, s32 *, 0x1650) = 5;
     M2C_FIELD(layer, u32 *, 0x170C) |= 1;
+    M2C_FIELD(layer, s32 *, 0x1648) = 1;
     M2C_FIELD(layer, u32 *, 0x16A8) |= 0x40;
     M2C_FIELD(layer, u32 *, 0x17C4) |= 1;
     M2C_FIELD(layer, u32 *, 0x1760) |= 0x40;

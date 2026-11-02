@@ -151,18 +151,22 @@ static inline f32 __OSu8tof32(register const u8* arg) {
 }
 
 static inline f32 OSu8tof32(u8 in) {
-    u8 tmp = in;
-    return __OSu8tof32(&tmp);
+    return __OSu8tof32(&in);
 }
 
-static inline void __OSf32tou8(register f32 arg, volatile register u8* out) {
-    asm { psq_st arg, 0(out), 1, 2 }
+static inline u8 __OSf32tou8(register f32 inF) {
+    u32 tmp;
+    register u32* tmpPtr = &tmp;
+    register u8 ret;
+    asm {
+        psq_st inF, 0(tmpPtr), 1, 2
+        lbz ret, 0(tmpPtr)
+    }
+    return ret;
 }
 
 static inline u8 OSf32tou8(f32 in) {
-    u8 out;
-    __OSf32tou8(in, &out);
-    return out;
+    return __OSf32tou8(in);
 }
 
 class glowEffect : public GSeffect {
@@ -324,11 +328,14 @@ static inline void _glowTex2(f32 a, f32 b) {
 }
 
 void glowEffect::_renderOffset(GSgfxLayer* layer) {
+    u32 stage;
     f32 weights[2];
     weights[0] = 0.24197073f;
     weights[1] = 0.053990968f;
     f32 size = 0.25f * OSu8tof32(m_samples);
-    u32 i;
+    f32 zero = 0.0f;
+    f32 one = 1.0f;
+    u8 i;
     u32 j;
 
     layer->vf = GSgfxVFBuildTemp(0, 2, 0, 0, 1, 5, 4, 1, 4);
@@ -349,8 +356,8 @@ void glowEffect::_renderOffset(GSgfxLayer* layer) {
     layer->dirty16a8 |= 8;
     *(u32*)((u8*)layer + 0x1784) |= 1;
     layer->dirty1760 |= 8;
-    for (i = 0; (u8)i < 4; i++) {
-        u8 stage = (u8)i;
+    for (i = 0; i < 4; i++) {
+        stage = i;
         bool last;
         u32 bit;
         u32 v;
@@ -368,12 +375,12 @@ void glowEffect::_renderOffset(GSgfxLayer* layer) {
         if (last) {
             v = 3;
         }
-        a = (u8*)layer + (u8)i * 0x14;
-        bit = 1 << stage;
-        *(u32*)(a + 0x1170) = 0;
-        *(u32*)(a + 0x1174) = 0;
+        a = (u8*)layer + i * 0x14;
         *(u32*)(a + 0x1178) = v;
-        *(u8*)(a + 0x117c) = ((u8)i == 3);
+        bit = 1 << stage;
+        *(u32*)(a + 0x1174) = 0;
+        *(u32*)(a + 0x1170) = 0;
+        *(u8*)(a + 0x117c) = (i == 3);
         *(u32*)(a + 0x1180) = 0;
         *(u32*)((u8*)layer + 0x16dc) |= bit;
         layer->dirty16a8 |= 8;
@@ -381,7 +388,7 @@ void glowEffect::_renderOffset(GSgfxLayer* layer) {
         layer->dirty1760 |= 8;
         last = false;
         if (m_flag != 0) {
-            if ((u8)i == 3) {
+            if (i == 3) {
                 last = true;
             }
         }
@@ -390,40 +397,40 @@ void glowEffect::_renderOffset(GSgfxLayer* layer) {
             v = 3;
         }
         *(u32*)(a + 0x12b0) = 0;
-        *(u32*)(a + 0x12b4) = 0;
         *(u32*)(a + 0x12b8) = v;
-        *(u8*)(a + 0x12bc) = ((u8)i == 3);
+        *(u32*)(a + 0x12b4) = 0;
+        *(u8*)(a + 0x12bc) = (i == 3);
         *(u32*)(a + 0x12c0) = 0;
         *(u32*)((u8*)layer + 0x16e0) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x1798) |= bit;
         layer->dirty1760 |= 8;
-        b = (u8*)layer + (u8)i * 16;
-        v = 0xf;
-        if ((u8)i != 0) {
-            v = 0;
-        }
+        b = (u8*)layer + i * 16;
         *(u32*)(b + 0xf70) = 8;
         *(u32*)(b + 0xf74) = 0xf;
         *(u32*)(b + 0xf78) = 0xf;
+        v = 0xf;
+        if (i != 0) {
+            v = 0;
+        }
         *(u32*)(b + 0xf7c) = v;
         *(u32*)((u8*)layer + 0x16d4) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x178c) |= bit;
         layer->dirty1760 |= 8;
-        v = 7;
-        if ((u8)i != 0) {
-            v = 0;
-        }
         *(u32*)(b + 0x1070) = 7;
         *(u32*)(b + 0x1074) = 5;
         *(u32*)(b + 0x1078) = 4;
+        v = 7;
+        if (i != 0) {
+            v = 0;
+        }
         *(u32*)(b + 0x107c) = v;
         *(u32*)((u8*)layer + 0x16d8) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x1790) |= bit;
         layer->dirty1760 |= 8;
-        c = (u8*)layer + (u8)i * 12;
+        c = (u8*)layer + stage * 12;
         *(u32*)(c + 0xeb0) = stage;
         *(u32*)(c + 0xeb4) = 0;
         *(u32*)(c + 0xeb8) = 4;
@@ -433,34 +440,32 @@ void glowEffect::_renderOffset(GSgfxLayer* layer) {
         layer->dirty1760 |= 8;
     }
     layer->beginSurface((u16)((m_passes * 4) * (m_passes + 1)));
-    for (i = 0; (u8)i < m_passes; i++) {
-        f32 step = size * OSu8tof32((u8)(i + 1));
-        f32 kc3439 = 0.0015625f;
-        f32 dx = step * kc3439;
+    for (i = 0; i < m_passes; i++) {
+        f32 dx = 0.0015625f * (size * OSu8tof32((u8)(i + 1)));
         f32 dy = 0.0020833334f * (size * OSu8tof32((u8)(i + 1)));
-        u8 alpha = OSf32tou8(0.25f * (255.0f * (m_strength * weights[(u8)i])) + 0.5f);
+        u8 alpha = OSf32tou8(0.25f * (255.0f * (m_strength * weights[i])) + 0.5f);
         _glowHead(0, 0, alpha);
-        _glowTex2(-dx, 0.0f);
-        _glowTex2(0.0f, -dy);
-        _glowTex2(dx, 0.0f);
-        _glowTex2(0.0f, dy);
+        _glowTex2(-dx, zero);
+        _glowTex2(zero, -dy);
+        _glowTex2(dx, zero);
+        _glowTex2(zero, dy);
         _glowHead(640, 0, alpha);
-        _glowTex2(1.0f - dx, 0.0f);
-        _glowTex2(1.0f, -dy);
-        _glowTex2(1.0f + dx, 0.0f);
-        _glowTex2(1.0f, dy);
+        _glowTex2(one - dx, zero);
+        _glowTex2(one, -dy);
+        _glowTex2(one + dx, zero);
+        _glowTex2(one, dy);
         _glowHead(640, 480, alpha);
-        _glowTex2(1.0f - dx, 1.0f);
-        _glowTex2(1.0f, 1.0f - dy);
-        _glowTex2(1.0f + dx, 1.0f);
-        _glowTex2(1.0f, 1.0f + dy);
+        _glowTex2(one - dx, one);
+        _glowTex2(one, one - dy);
+        _glowTex2(one + dx, one);
+        _glowTex2(one, one + dy);
         _glowHead(0, 480, alpha);
-        _glowTex2(-dx, 1.0f);
-        _glowTex2(0.0f, 1.0f - dy);
-        _glowTex2(dx, 1.0f);
-        _glowTex2(0.0f, 1.0f + dy);
+        _glowTex2(-dx, one);
+        _glowTex2(zero, one - dy);
+        _glowTex2(dx, one);
+        _glowTex2(zero, one + dy);
         for (j = 0; (u8)j < m_passes; j++) {
-            u32 alphaj = OSf32tou8(0.25f * (255.0f * ((m_strength * weights[(u8)i]) * weights[(u8)j])) + 0.5f);
+            u32 alphaj = OSf32tou8(0.25f * (255.0f * ((m_strength * weights[i]) * weights[(u8)j])) + 0.5f);
             f32 dyj = 0.0020833334f * (size * OSu8tof32((u8)(j + 1)));
             _glowHead(0, 0, alphaj);
             _glowTex2(-dx, -dyj);
@@ -468,20 +473,20 @@ void glowEffect::_renderOffset(GSgfxLayer* layer) {
             _glowTex2(dx, -dyj);
             _glowTex2(dx, dyj);
             _glowHead(640, 0, alphaj);
-            _glowTex2(1.0f - dx, -dyj);
-            _glowTex2(1.0f - dx, dyj);
-            _glowTex2(1.0f + dx, -dyj);
-            _glowTex2(1.0f + dx, dyj);
+            _glowTex2(one - dx, -dyj);
+            _glowTex2(one - dx, dyj);
+            _glowTex2(one + dx, -dyj);
+            _glowTex2(one + dx, dyj);
             _glowHead(640, 480, alphaj);
-            _glowTex2(1.0f - dx, 1.0f - dyj);
-            _glowTex2(1.0f - dx, 1.0f + dyj);
-            _glowTex2(1.0f + dx, 1.0f - dyj);
-            _glowTex2(1.0f + dx, 1.0f + dyj);
+            _glowTex2(one - dx, one - dyj);
+            _glowTex2(one - dx, one + dyj);
+            _glowTex2(one + dx, one - dyj);
+            _glowTex2(one + dx, one + dyj);
             _glowHead(0, 480, alphaj);
-            _glowTex2(-dx, 1.0f - dyj);
-            _glowTex2(-dx, 1.0f + dyj);
-            _glowTex2(dx, 1.0f - dyj);
-            _glowTex2(dx, 1.0f + dyj);
+            _glowTex2(-dx, one - dyj);
+            _glowTex2(-dx, one + dyj);
+            _glowTex2(dx, one - dyj);
+            _glowTex2(dx, one + dyj);
         }
     }
     layer->endSurface();
@@ -494,7 +499,7 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
     weights[2] = 0.0647588f;
     weights[3] = 0.026995484f;
     f32 size = 0.25f * OSu8tof32(m_samples);
-    u32 i;
+    u8 i;
 
     layer->vf = GSgfxVFBuildTemp(0, 2, 0, 0, 1, 5, 2, 1, 4);
     *(u8*)((u8*)layer + 0xdb8) = 1;
@@ -514,8 +519,8 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
     layer->dirty16a8 |= 8;
     *(u32*)((u8*)layer + 0x1784) |= 1;
     layer->dirty1760 |= 8;
-    for (i = 0; (u8)i < 2; i++) {
-        u32 stage = (u8)i;
+    for (i = 0; i < 2; i++) {
+        u32 stage = i;
         bool last;
         u32 bit;
         u8* b;
@@ -533,12 +538,12 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
         if (last) {
             v = 3;
         }
-        a = (u8*)layer + (u8)i * 0x14;
+        a = (u8*)layer + i * 0x14;
         bit = 1 << stage;
         *(u32*)(a + 0x1170) = 0;
         *(u32*)(a + 0x1174) = 0;
         *(u32*)(a + 0x1178) = v;
-        *(u8*)(a + 0x117c) = ((u8)i == 1);
+        *(u8*)(a + 0x117c) = (i == 1);
         *(u32*)(a + 0x1180) = 0;
         *(u32*)((u8*)layer + 0x16dc) |= bit;
         layer->dirty16a8 |= 8;
@@ -546,7 +551,7 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
         layer->dirty1760 |= 8;
         last = false;
         if (m_flag != 0) {
-            if ((u8)i == 1) {
+            if (i == 1) {
                 last = true;
             }
         }
@@ -557,38 +562,38 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
         *(u32*)(a + 0x12b0) = 0;
         *(u32*)(a + 0x12b4) = 0;
         *(u32*)(a + 0x12b8) = v;
-        *(u8*)(a + 0x12bc) = ((u8)i == 1);
+        *(u8*)(a + 0x12bc) = (i == 1);
         *(u32*)(a + 0x12c0) = 0;
         *(u32*)((u8*)layer + 0x16e0) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x1798) |= bit;
         layer->dirty1760 |= 8;
-        b = (u8*)layer + (u8)i * 16;
-        v = 0xf;
-        if ((u8)i != 0) {
-            v = 0;
-        }
+        b = (u8*)layer + i * 16;
         *(u32*)(b + 0xf70) = 8;
         *(u32*)(b + 0xf74) = 0xf;
         *(u32*)(b + 0xf78) = 0xf;
+        v = 0xf;
+        if (i != 0) {
+            v = 0;
+        }
         *(u32*)(b + 0xf7c) = v;
         *(u32*)((u8*)layer + 0x16d4) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x178c) |= bit;
         layer->dirty1760 |= 8;
-        v = 7;
-        if ((u8)i != 0) {
-            v = 0;
-        }
         *(u32*)(b + 0x1070) = 7;
-        *(u32*)((u8*)layer + 0x16d8) |= bit;
         *(u32*)(b + 0x1074) = 5;
         *(u32*)(b + 0x1078) = 4;
+        v = 7;
+        if (i != 0) {
+            v = 0;
+        }
         *(u32*)(b + 0x107c) = v;
+        *(u32*)((u8*)layer + 0x16d8) |= bit;
         layer->dirty16a8 |= 8;
         *(u32*)((u8*)layer + 0x1790) |= bit;
         layer->dirty1760 |= 8;
-        c = (u8*)layer + (u8)i * 12;
+        c = (u8*)layer + i * 12;
         *(u32*)(c + 0xeb0) = stage;
         *(u32*)(c + 0xeb4) = 0;
         *(u32*)(c + 0xeb8) = 4;
@@ -598,12 +603,10 @@ void glowEffect::_renderScale(GSgfxLayer* layer) {
         layer->dirty1760 |= 8;
     }
     layer->beginSurface((u16)(m_passes * 8));
-    for (i = 0; (u8)i < m_passes * 2; i++) {
-        f32 ox = (size * OSu8tof32((u8)(i + 1)));
-        ox *= 0.0015625f;
-        f32 oy = 0.0020833334f;
-        oy *= (size * OSu8tof32((u8)(i + 1)));
-        u8 alpha = OSf32tou8(0.25f * (255.0f * (m_strength * weights[(u8)i])) + 0.5f);
+    for (i = 0; i < m_passes * 2; i++) {
+        f32 ox = 0.0015625f * (size * OSu8tof32((u8)(i + 1)));
+        f32 oy = 0.0020833334f * (size * OSu8tof32((u8)(i + 1)));
+        u8 alpha = OSf32tou8(255.0f * (m_strength * weights[i]) + 0.5f);
         _glowHead(0, 0, alpha);
         _glowTex2(-ox, -oy);
         _glowTex2(ox, oy);

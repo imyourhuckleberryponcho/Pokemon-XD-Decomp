@@ -350,6 +350,7 @@ struct CBBall {
     s8 on[4][6];
 };
 #define CBH (*(CBHP*)&_CB)
+#define CBH_ROWS(off) ((f32(*)[6])((u8*)&_CB + (off)))
 struct CBRuleData {
     s16 v[3];
     u8 pad6[0xE];
@@ -365,6 +366,7 @@ static inline void ruleDispTitle(CBWin* win, CBItem* item) {
     GSmsgPrint2(win->layer, (s16)(item->w / 2 - w / 2), 0, win->alpha | ~0xFF, 0x4416);
 }
 #define CBB (*(CBBall*)&_CB)
+#define CBB_ROWS(type, off) ((type(*)[6])((u8*)&_CB + (off)))
 #define CB32(o) (*(s32*)((u8*)&_CB + (o)))
 #define CBF32(o) (*(f32*)((u8*)&_CB + (o)))
 #define CB16(o) (*(s16*)((u8*)&_CB + (o)))
@@ -521,7 +523,7 @@ void toolBattle_tunaideMenu02menuTempBuffSet(u32 mask);
 void menuCB_Trainer_Error_Disp(CBWin* win, CBItem* item, s32 idx, s32 mode);
 void toolBattleRuleErrorFlagClear(s32 player, u32 idx);
 u8 menuCB_Trainer_Error_Check(u32 player, s32 idx);
-void menuCB_Pokemon_ErrorDisp(void* src, s8 player);
+void menuCB_Pokemon_ErrorDisp(void* src, s32 player);
 void menuCBtrainerFaceReadWait();
 void menuCBpokemonFaceReadWait();
 void toobattle_drawHeroName2(CBWin* win, CBItem* item, s32 player);
@@ -1769,9 +1771,9 @@ void menuCBPokemonEntryGCControlDisp(CBSprite* sprite, s32 b) {
 void menuCBPokemonEntryBallAnaDisp(CBItem* item, s32 player, u32 idx) {
     u32 max = menuCBBios_ParticipationPokemonMax();
     u16 num = toolentryTaisenGetPokemonNum(player);
-    CBB.x[player][idx] = item->x;
-    if (CBB.on[player][idx] == 0) {
-        CBB.y[player][idx] = 0x32;
+    CBB_ROWS(s16, 0xB426)[player][idx] = item->x;
+    if (CBB_ROWS(s8, 0xB487)[player][idx] == 0) {
+        CBB_ROWS(s16, 0xB456)[player][idx] = 0x32;
     }
     num = num < max ? num : max;
     if (idx > num) {
@@ -1782,15 +1784,14 @@ void menuCBPokemonEntryBallAnaDisp(CBItem* item, s32 player, u32 idx) {
 }
 
 void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
-    enum TsE { TsE0 };
     s8* flag;
     u16 max = (u16)menuCBBios_ParticipationPokemonMax();
     u16 num = toolentryTaisenGetPokemonNum(player);
-    enum TsE order = (enum TsE)(toolentryTaisengetEtnryPokemonOrderNum(player));
+    int order = (toolentryTaisengetEtnryPokemonOrderNum(player));
     num = num < max ? num : max;
     if (idx > num || idx > order) {
         if (pauseIsPause()) {
-            if (CBB.on[player][idx] == 0) {
+            if (CBB_ROWS(s8, 0xB487)[player][idx] == 0) {
                 winSpriteSetDisp(item, 0);
                 return;
             }
@@ -1798,21 +1799,21 @@ void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
             return;
         }
         winSpriteSetDisp(item, 0);
-        CBB.on[player][idx] = 0;
+        CBB_ROWS(s8, 0xB487)[player][idx] = 0;
         return;
     }
     if (pauseIsPause()) {
-        flag = &CBB.on[player][idx];
+        flag = &CBB_ROWS(s8, 0xB487)[player][idx];
         if (*flag != 1) {
             winSpriteSetDisp(item, 0);
             *flag = 0;
             return;
         }
     }
-    CBB.on[player][idx] = 1;
-    item->x = CBB.x[player][idx] + CBB.y[player][idx];
-    if (CBB.y[player][idx] != 0) {
-        CBB.y[player][idx] -= 5;
+    CBB_ROWS(s8, 0xB487)[player][idx] = 1;
+    item->x = CBB_ROWS(s16, 0xB426)[player][idx] + CBB_ROWS(s16, 0xB456)[player][idx];
+    if (CBB_ROWS(s16, 0xB456)[player][idx] != 0) {
+        CBB_ROWS(s16, 0xB456)[player][idx] -= 5;
     }
     winSpriteSetDisp(item, 1);
     if (*(s32*)((u8*)&_CB + player * 0x1320 + idx * 4 + 0x1C) == 0xF) {
@@ -2526,9 +2527,9 @@ void menuCB2DPokemonDisp2(CBWin* win, CBItem* item, u32 type, u32 index) {
         if (i < 0x1E) {
             spriteSetScissor(win->layer, 0x12, 0x51, 0x180, 0x140);
         }
-        pos.x = item->x + win->x8C + 0x20;
+        pos.x = item->x + 0x20 + win->x8C;
         pos.y = item->y + 0x20;
-        if ((s16)CB32(0xB150) < 0) {
+        if ((s32)CB32(0xB150) < 0) {
             a = &antR[i];
             a->initByPokemonAndSetColorAnimationInAny(p);
             antR[i].setPos(pos);
@@ -2556,7 +2557,7 @@ void menuCB2DPokemonDisp(CBWin* win, CBItem* item, u32 type, u32 index) {
     CAnt* a;
     Pokemon* p = menuCBPokemonPtrGet(type, index);
     u32 i = menuCBPokemonGetIndex(type, index);
-    volatile CAntPos pos;
+    CAntPos pos;
     if (i == 0x1E) {
         _menuCB2DPokemonNewSet(0);
         _menuCB2DPokemonNewSet(1);
@@ -2568,8 +2569,7 @@ void menuCB2DPokemonDisp(CBWin* win, CBItem* item, u32 type, u32 index) {
         if (i < 0x1E) {
             spriteSetScissor(win->layer, 0x12, 0x51, 0x180, 0x140);
         }
-        u16 rf_t = item->x;
-        pos.x = rf_t + win->x8C + 0x20;
+        pos.x = item->x + 0x20 + win->x8C;
         pos.y = item->y + 0x20;
         a = &ant[i];
         a->initByPokemonAndSetColorAnimationInAny(p);
@@ -2615,13 +2615,13 @@ void menuCBBattleBABatuMark(CBItem* sprite, s32 p, s32 i) {
         winSpriteSetDisp(sprite, 0);
         return;
     }
-    if (CBH.f1[p][i] == 0.0f && CBH.f0[p][i] == 0.0f) {
+    if (CBH_ROWS(0xB248)[p][i] == 0.0f && CBH_ROWS(0xB1E8)[p][i] == 0.0f) {
         winSpriteSetDisp(sprite, 1);
-        CBH.f4[p][i] = CBH.f4[p][i] + CBH.f5[p][i];
-        if (CBH.f4[p][i] >= 1.0f) {
-            CBH.f4[p][i] = 1.0f;
+        CBH_ROWS(0xB368)[p][i] = CBH_ROWS(0xB368)[p][i] + CBH_ROWS(0xB3C8)[p][i];
+        if (CBH_ROWS(0xB368)[p][i] >= 1.0f) {
+            CBH_ROWS(0xB368)[p][i] = 1.0f;
         }
-        f32 v = CBH.f4[p][i];
+        f32 v = CBH_ROWS(0xB368)[p][i];
         sprite->scaleY = v;
         sprite->scaleX = v;
         return;
@@ -2668,10 +2668,9 @@ void menuCB_BattleBA_HPBarDispSet(CBItem* sprite, s32 p, s32 i) {
     if (menuCBBattleStartGetStatus() != 0 && menuCBPokemonGetDataId(p, i) != 0) {
         winSpriteSetDisp(sprite, 1);
         if (battleEndHPStartFlag == 0) {
-            CBH.f1[p][i] = CBH.f1[p][i] - CBH.f3[p][i];
-            f32 lo = CBH.f0[p][i];
-            if (CBH.f1[p][i] < lo) {
-                CBH.f1[p][i] = lo;
+            CBH_ROWS(0xB248)[p][i] = CBH_ROWS(0xB248)[p][i] - CBH_ROWS(0xB308)[p][i];
+            if (CBH_ROWS(0xB248)[p][i] < CBH_ROWS(0xB1E8)[p][i]) {
+                CBH_ROWS(0xB248)[p][i] = CBH_ROWS(0xB1E8)[p][i];
             }
         } else {
             if (!pauseIsPause()) {
@@ -2681,8 +2680,8 @@ void menuCB_BattleBA_HPBarDispSet(CBItem* sprite, s32 p, s32 i) {
                 menuCB_SE_Play(0x5D0);
             }
         }
-        f32 max = CBH.f2[p][i];
-        f32 cur = CBH.f1[p][i];
+        f32 max = CBH_ROWS(0xB2A8)[p][i];
+        f32 cur = CBH_ROWS(0xB248)[p][i];
         s16 w = 48.0f * ((max - (max - cur)) / max);
         if (20.0f * max / 100.0f >= cur) {
             menuCB_SetSprite((CBWin*)sprite, menuSpriteBiosGetPtr(BATTLE_BA_HP_Bar_Char[2]));
@@ -2998,16 +2997,20 @@ u8 menuCB_Trainer_Error_Check(u32 player, s32 idx) {
     return 1;
 }
 
-void menuCB_Pokemon_ErrorDisp(void* src, s8 player) {
+static inline void* _cbHero(s32 player) {
+    return (u8*)&_CB + player * 0x1320 + 0x9BC;
+}
+
+void menuCB_Pokemon_ErrorDisp(void* src, s32 player) {
     void* cur;
     void* backup;
-    _CB.errPlayer = player;
+    _CB.errPlayer = (s8)player;
     menuCBPokemonEntryPokemonFaceFree();
     menuCBBattleStartSetStatus(0);
     backup = (u8*)&_CB + 0x9CE4;
-    cur = (u8*)&_CB + player * 0x1320 + 0x9BC;
+    cur = _cbHero(player);
     heroBiosCopy(backup, cur);
-    heroBiosCopy(cur, src);
+    heroBiosCopy(_cbHero(player), src);
     menuCBPokemonEntryLoadTex();
     menuCBpokemonFaceReadWait();
     CB32(0xB088) = 0;
@@ -3052,7 +3055,7 @@ void menuCB_Pokemon_ErrorDisp(void* src, s8 player) {
     menuCB_SE_Play(0x15);
     menuCloseCustom(0xA6, 0, 1);
     menuCBPokemonEntryPokemonFaceFree();
-    heroBiosCopy(cur, backup);
+    heroBiosCopy(_cbHero(player), backup);
 }
 
 void menuCBtrainerFaceReadWait() {

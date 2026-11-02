@@ -89,118 +89,102 @@ bool pachiruEffectCreate(PachiruEffect* effect, GSmodel* model, u32 seed) {
 
 }
 
-static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spot, unsigned long seed) {
-    u16* srcImage;
+static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spotTex, unsigned long seed) {
+    u16* output;
+    u16* source;
     GStexture* texture;
-    s16 heightTemp;
-    u32 image;
-    s32 width;
-    s32 height;
+    u16* outputPixels;
+    u16* sourcePixels;
+    u16* lastOutputPixel;
+    s16 baseWidth;
+    s16 baseHeight;
+    s16 spotWidth;
+    s16 spotHeight;
+    s32 pixelCount;
     s32 size;
-    s32 scratch;
+    s16 column;
+    s16 row;
+    s16 spot;
+    s32 startPixel;
+    s32 x;
+    s32 y;
+    s16 outputIndex;
+    s16 sourceIndex;
 
-    srcImage = NULL;
-    width = (s16)GStextureGetXsize(base);
-    heightTemp = (s16)GStextureGetYsize(base);
-    height = heightTemp;
-    texture = GStextureCreate(width, height, GStextureGetFormat(base), GStextureGetTlutFormat(base),
+    sourcePixels = NULL;
+    baseWidth = GStextureGetXsize(base);
+    baseHeight = GStextureGetYsize(base);
+    texture = GStextureCreate(baseWidth, baseHeight, GStextureGetFormat(base), GStextureGetTlutFormat(base),
                               GStextureGetMiplevels(base));
-    image = (u32)GStextureLockImage(texture, 0);
-    if (image == 0) {
+    outputPixels = GStextureLockImage(texture, 0);
+    if (outputPixels == NULL) {
+        goto fail;
+    }
+    sourcePixels = GStextureLockImage(base, 0);
+    if (sourcePixels == NULL) {
         goto fail;
     }
 
-    srcImage = GStextureLockImage(base, 0);
-    if (srcImage == NULL) {
-        goto fail;
-    }
-
-    size = width * height;
-    scratch = size * (s32)sizeof(u16);
-    memcpy((void*)image, srcImage, scratch);
-    DCFlushRange((void*)image, scratch);
+    pixelCount = baseWidth * baseHeight;
+    size = pixelCount * 2;
+    memcpy(outputPixels, sourcePixels, size);
+    DCFlushRange(outputPixels, size);
     GStextureUnlockImage(base);
 
     GStextureConvertFromHW(texture);
-    GStextureConvertFromHW(spot);
-    srcImage = GStextureLockImage(spot, 0);
-    if (srcImage == NULL) {
+    GStextureConvertFromHW(spotTex);
+    sourcePixels = GStextureLockImage(spotTex, 0);
+    if (sourcePixels == NULL) {
         goto fail;
     }
 
-    {
-        u16* end;
-        s16 spotHeight;
-        s32 row;
-        s32 i;
-        s32 x;
-        s32 start;
-        const u8* coords;
-        s32 dstIndex;
-        s16 srcIndex;
-        s32 y;
-        s32 dx;
-        s32 dy;
+    spotWidth = GStextureGetXsize(spotTex);
+    spotHeight = GStextureGetYsize(spotTex);
+    if (spotWidth > (baseWidth >> 2) || spotHeight > (baseHeight >> 2)) {
+        goto fail;
+    }
 
-        scratch = (s16)GStextureGetXsize(spot);
-        spotHeight = (s16)GStextureGetYsize(spot);
-        if (scratch > (width >> 2) || spotHeight > (height >> 2)) {
-            goto fail;
-        }
-
-        end = (u16*)image + (size - 1);
-        i = 0;
-        coords = gPachiruCoords[0];
-        for (; (s16)i < 4;) {
-            dy = (s16)((s16)((seed >> 4) & 0xF) - 8);
-            dstIndex = (s16)(seed & 0xF) - 8;
-            dx = (s16)dstIndex;
-            seed >>= 8;
-            y = (s32)(3.4f * (f32)dy) + coords[1];
-            x = (s32)(3.4f * (f32)dx);
-            dy = y * width;
-            x = x + coords[0];
-            start = (s16)(x + dy);
-
-            for (row = 0; (s16)row < spotHeight; row++) {
-                srcIndex = (s16)(row * scratch);
-                dstIndex = (s16)(start + row * width);
-                if (dstIndex >= 0) {
-                    u16* src;
-                    u16* dst;
-                    s32 col;
-
-                    dst = (u16*)image + dstIndex;
-                    if (dst <= end) {
-                        src = srcImage + srcIndex;
-                        for (col = 0; (s16)col < scratch;) {
-                            if (dst <= end && *src > *dst) {
-                                *dst = *src;
-                            }
-                            col++;
-                            dst++;
-                            src++;
+    lastOutputPixel = outputPixels + (pixelCount - 1);
+    for (spot = 0; spot < 4; spot++) {
+        x = (s32)(3.4f * (s16)((s16)(seed & 0xF) - 8));
+        y = (s32)(3.4f * (s16)((s16)((seed >> 4) & 0xF) - 8));
+        seed >>= 8;
+        y += gPachiruCoords[spot][1];
+        x += gPachiruCoords[spot][0];
+        startPixel = (s16)(x + y * baseWidth);
+        for (row = 0; row < spotHeight; row++) {
+            sourceIndex = row * spotWidth;
+            outputIndex = startPixel + row * baseWidth;
+            if (outputIndex >= 0) {
+                output = outputPixels + outputIndex;
+                if (output <= lastOutputPixel) {
+                    source = sourcePixels + sourceIndex;
+                    for (column = 0; column < spotWidth;) {
+                        if (output <= lastOutputPixel && *source > *output) {
+                            *output = *source;
                         }
+                        column++;
+                        output++;
+                        source++;
                     }
                 }
             }
-            coords += 2;
-            i++;
         }
-        GStextureUnlockImage(texture);
-        GStextureUnlockImage(spot);
-        GStextureConvertToHW(spot);
-        GStextureConvertToHW(texture);
-        return texture;
     }
+
+    GStextureUnlockImage(texture);
+    GStextureUnlockImage(spotTex);
+    GStextureConvertToHW(spotTex);
+    GStextureConvertToHW(texture);
+    return texture;
 
 fail:
     GSlogWrite("Failed to create Patchiru texture\n");
-    if (image != 0) {
+    if (outputPixels != NULL) {
         GStextureUnlockImage(texture);
     }
-    if (srcImage != NULL) {
-        GStextureUnlockImage(spot);
+    if (sourcePixels != NULL) {
+        GStextureUnlockImage(spotTex);
     }
     if (texture != NULL) {
         GStextureFree(texture);

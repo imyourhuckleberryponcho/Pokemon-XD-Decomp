@@ -94,7 +94,7 @@ u8 fightFloorIsNowEncountSnatchOnly(FIGHT_FLOOR* floor);
 u32 fightFloor_GetEnvSndId(FIGHT_FLOOR* floor);
 s32 fightFloor_GetFightType(FIGHT_FLOOR* floor);
 s8 fightFloor_GetStatusMenuCnt(u8 status);
-void fightFloor_SetStatusMenuCnt(u8 status, s8 cnt);
+void fightFloor_SetStatusMenuCnt(s32 status, s8 cnt);
 void fightFreeDeck(u16 id);
 void fightFreeResourceDeclArchive();
 void fightFreeResourceID(s32 p0, s32 p1);

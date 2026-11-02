@@ -289,17 +289,17 @@ struct ItemUseEntry {
 
 void WS_STATUS_RECOVER(void) {
     ItemUseEntry entries[33];
-    Pokemon* pk;
-    void* waza;
     s32 amount;
-    s32 hp;
+    void* waza;
+    FightPokemon* moto;
     FightOutPokemon* p;
+    void* seq;
+    Pokemon* pk;
     FightPokemon* fp;
     u8 itemType;
     s16 count;
-    FightPokemon* moto;
+    s32 hp;
     u16 item;
-    void* seq;
     amount = 0;
     fightSeq_GetWazaSeq();
     p = fightTargetGetPtrAsNowFightType(0x11, 0);

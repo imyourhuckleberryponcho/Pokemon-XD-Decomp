@@ -259,8 +259,8 @@ extern "C" void GSpartFree(void*);
 extern "C" f32 GSgfxVideoGetLastRenderTime(void);
 extern "C" u32 GSinputButtonsChanged(s32);
 extern "C" u32 GSinputButtonsPressed(s32);
-extern "C" u32 GSgfxVideoGetVsyncRate(void);
-extern "C" u32 timeGetLastFrameTime(u8);
+extern "C" u8 GSgfxVideoGetVsyncRate(void);
+extern "C" u32 timeGetLastFrameTime();
 extern "C" f32 PSVECMag(const Vec3*);
 extern "C" void PSVECSubtract(const Vec3*, const Vec3*, Vec3*);
 extern "C" s32 pokecoloFrameCounter;
@@ -780,7 +780,8 @@ s32 heroMoveJoinMember(s32 member) {
     if (member < 0 || member >= 4) {
         return 0;
     }
-    if (heroMoveIsMember((HEROMOVE_MEMBER)member)) {
+    HEROMOVE_MEMBER m = (HEROMOVE_MEMBER)member;
+    if (heroMoveIsMember(m)) {
         return 1;
     }
     hero = Hero::getHeroPtr();
@@ -802,7 +803,7 @@ s32 heroMoveJoinMember(s32 member) {
     HeroMove.members[member].flags |= 1;
     heroMoveSetNeckMode(member, 1);
     remakeFormation();
-    setDisp((HEROMOVE_MEMBER)member, true);
+    setDisp(m, true);
     return 1;
 }
 }
@@ -998,10 +999,7 @@ static f32 moveLeader(HEROMOVE_MEMBER member) {
 }
 
 static f32 moveLeaderPosition(HEROMOVE_MEMBER member) {
-    u8 rate = GSgfxVideoGetVsyncRate();
-    volatile f32 rateF = rate;
-    u32 frame = timeGetLastFrameTime(rate);
-    f32 dt = (30.0f * (f32)frame) / rateF;
+    f32 dt = (30.0f * (f32)timeGetLastFrameTime()) / (f32)GSgfxVideoGetVsyncRate();
     Vec3 before;
     Vec3 after;
     Vec3 diff;

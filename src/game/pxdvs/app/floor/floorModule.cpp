@@ -254,8 +254,8 @@ void FloorModuleList::restorePopState(void* state, FloorStateMode mode, bool fre
     }
     while (p < end) {
         u32* hdr = (u32*)p;
-        p += 8;
         u32 id = hdr[0];
+        p += 8;
         u32 size = hdr[1];
         for (FloorModuleEntry* entry = head; entry != 0; entry = entry->getNext()) {
             FloorModuleInterface* iface = entry->getModuleInterface();

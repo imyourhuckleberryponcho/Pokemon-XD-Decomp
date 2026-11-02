@@ -334,7 +334,7 @@ s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, 
             }
         }
     } else if (slot < 0) {
-        do {
+        for (;;) {
             ITEM* p = itemFindNotFull(ary, n, (u16)id, max);
             if (p != 0) {
                 s32 r = itemAddOne(p, id, rem, max);
@@ -348,7 +348,8 @@ s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, 
                 sort = 1;
                 rem = r;
             }
-        } while (rem > 0);
+            if (rem <= 0) break;
+        }
     } else {
         p = ary + slot;
         rem = itemAddOne(p, id, c16, max);

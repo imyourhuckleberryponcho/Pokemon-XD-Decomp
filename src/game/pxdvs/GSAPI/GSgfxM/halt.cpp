@@ -18,29 +18,24 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 enum OSError { OSError_draft_dummy };
 enum OSErrorHandler { OSErrorHandler_draft_dummy };
 
-extern "C++" {
-
-
 
 extern "C" {
 asm void DCFlushRange(register void* addr, register u32 nBytes);
-void GSgfxHalt(s32 p0, s32 *p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, f64 p8, f64 p9, f64 p10, f64 p11, f64 p12, f64 p13, f64 p14, f64 p15);
 asm BOOL OSDisableInterrupts(void);
-void OSPanic(s32 p0, s32 p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, f64 p8, f64 p9, f64 p10, f64 p11, f64 p12, f64 p13, f64 p14, f64 p15);
 asm BOOL OSRestoreInterrupts(register BOOL level);
 OSErrorHandler OSSetErrorHandler(OSError error, OSErrorHandler handler);
 void* memcpy(void* dst, const void* src, size_t n);
 void* memset(void* dst, int val, size_t n);
 extern s32 __OSFpscrEnableBits;
-extern s32 sp;
+void GSgfxHalt(s32 type, s32* context, ...);
+void OSPanic(const char* file, s32 line, const char* msg, ...);
 }
-extern "C++" {
 void GSgfxHaltInit();
-static s32 _haltAlignmentHandler();
-static s32 _haltDSIHandler();
-static s32 _haltISIHandler();
+static void _haltDSIHandler();
+static void _haltISIHandler();
+static void _haltAlignmentHandler();
 static void _haltProcessException();
-}
+
 
 static u8 _haltOldDSIHandler[0x74];
 static u8 _haltOldISIHandler[0x34];
@@ -48,246 +43,198 @@ static u8 _haltOldAlignmentHandler[0x34];
 static u8 _haltOldProgramHandler[0x34];
 static u8 _haltTex[0x80];
 static s32 _haltContext[0xB2];
+static u8 _haltCallStack[0x3C];
 static s8 _haltHandlerInstalled;
 static s32 _haltExceptionType;
-static s32 _haltISIHandler() {
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    return 3;
-}
+
+static asm void _haltDSIHandler() {
+    nofralloc
+    mtsprg 1, r3
+    mtsprg 2, r4
+    mfdsisr r3
+    lis r4, 0x40
+    and r3, r3, r4
+    cmplwi r3, 0
+    beq L_notDSI
+    lis r3, _haltOldDSIHandler@h
+    ori r3, r3, _haltOldDSIHandler@l
+    lis r4, 0x3fff
+    ori r4, r4, 0xffff
+    and r3, r3, r4
+    mtctr r3
+    mfsprg r3, 1
+    mfsprg r4, 2
+    bctr
+L_notDSI:
+    mfsprg r4, 2
+    mfsrr0 r3
+    mtsprg 2, r3
+    mfsrr1 r3
+    mtsprg 3, r3
+    mfmsr r3
+    ori r3, r3, 0x2030
+    mtsrr1 r3
+    lis r3, _haltProcessException@h
+    ori r3, r3, _haltProcessException@l
+    mtsrr0 r3
+    li r3, 2
+    rfi
 }
 
-extern "C++" {
-static s32 _haltAlignmentHandler() {
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    M2C_ERROR( );
-    return 5;
-}
-}
-
-extern "C++" {
-static void _haltProcessException() {
-    f32 saved_reg_f14;
-    f32 saved_reg_f15;
-    f32 saved_reg_f16;
-    f32 saved_reg_f17;
-    f32 saved_reg_f18;
-    f32 saved_reg_f19;
-    f32 saved_reg_f20;
-    f32 saved_reg_f21;
-    f32 saved_reg_f22;
-    f32 saved_reg_f23;
-    f32 saved_reg_f24;
-    f32 saved_reg_f25;
-    f32 saved_reg_f26;
-    f32 saved_reg_f27;
-    f32 saved_reg_f28;
-    f32 saved_reg_f29;
-    f32 saved_reg_f30;
-    f32 saved_reg_f31;
-    s32 saved_reg_lr;
-    s32 saved_reg_r13;
-    s32 saved_reg_r14;
-    s32 saved_reg_r15;
-    s32 saved_reg_r16;
-    s32 saved_reg_r17;
-    s32 saved_reg_r18;
-    s32 saved_reg_r19;
-    s32 saved_reg_r2;
-    s32 saved_reg_r20;
-    s32 saved_reg_r21;
-    s32 saved_reg_r22;
-    s32 saved_reg_r23;
-    s32 saved_reg_r24;
-    s32 saved_reg_r25;
-    s32 saved_reg_r26;
-    s32 saved_reg_r27;
-    s32 saved_reg_r28;
-    s32 saved_reg_r29;
-    s32 saved_reg_r30;
-    s32 saved_reg_r31;
-    _haltExceptionType = M2C_ERROR( );
-    M2C_FIELD(_haltContext, s32 *, 0) = M2C_ERROR( );
-    _haltContext[1] = (s32) sp;
-    _haltContext[2] = saved_reg_r2;
-    _haltContext[4] = M2C_ERROR( );
-    _haltContext[5] = M2C_ERROR( );
-    _haltContext[6] = M2C_ERROR( );
-    _haltContext[7] = M2C_ERROR( );
-    _haltContext[8] = M2C_ERROR( );
-    _haltContext[9] = M2C_ERROR( );
-    _haltContext[0xA] = M2C_ERROR( );
-    _haltContext[0xB] = M2C_ERROR( );
-    _haltContext[0xC] = M2C_ERROR( );
-    _haltContext[0xD] = saved_reg_r13;
-    _haltContext[0xE] = saved_reg_r14;
-    _haltContext[0xF] = saved_reg_r15;
-    _haltContext[0x10] = saved_reg_r16;
-    _haltContext[0x11] = saved_reg_r17;
-    _haltContext[0x12] = saved_reg_r18;
-    _haltContext[0x13] = saved_reg_r19;
-    _haltContext[0x14] = saved_reg_r20;
-    _haltContext[0x15] = saved_reg_r21;
-    _haltContext[0x16] = saved_reg_r22;
-    _haltContext[0x17] = saved_reg_r23;
-    _haltContext[0x18] = saved_reg_r24;
-    _haltContext[0x19] = saved_reg_r25;
-    _haltContext[0x1A] = saved_reg_r26;
-    _haltContext[0x1B] = saved_reg_r27;
-    _haltContext[0x1C] = saved_reg_r28;
-    _haltContext[0x1D] = saved_reg_r29;
-    _haltContext[0x1E] = saved_reg_r30;
-    _haltContext[0x1F] = saved_reg_r31;
-    _haltContext[3] = M2C_ERROR( );
-    _haltContext[0x66] = M2C_ERROR( );
-    _haltContext[0x67] = M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0x90) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0x98) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xA0) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xA8) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xB0) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xB8) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xC0) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xC8) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xD0) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xD8) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xE0) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xE8) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xF0) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0xF8) = (f64) M2C_ERROR( );
-    M2C_FIELD(_haltContext, f64 *, 0x100) = (f64) saved_reg_f14;
-    M2C_FIELD(_haltContext, f64 *, 0x108) = (f64) saved_reg_f15;
-    M2C_FIELD(_haltContext, f64 *, 0x110) = (f64) saved_reg_f16;
-    M2C_FIELD(_haltContext, f64 *, 0x118) = (f64) saved_reg_f17;
-    M2C_FIELD(_haltContext, f64 *, 0x120) = (f64) saved_reg_f18;
-    M2C_FIELD(_haltContext, f64 *, 0x128) = (f64) saved_reg_f19;
-    M2C_FIELD(_haltContext, f64 *, 0x130) = (f64) saved_reg_f20;
-    M2C_FIELD(_haltContext, f64 *, 0x138) = (f64) saved_reg_f21;
-    M2C_FIELD(_haltContext, f64 *, 0x140) = (f64) saved_reg_f22;
-    M2C_FIELD(_haltContext, f64 *, 0x148) = (f64) saved_reg_f23;
-    M2C_FIELD(_haltContext, f64 *, 0x150) = (f64) saved_reg_f24;
-    M2C_FIELD(_haltContext, f64 *, 0x158) = (f64) saved_reg_f25;
-    M2C_FIELD(_haltContext, f64 *, 0x160) = (f64) saved_reg_f26;
-    M2C_FIELD(_haltContext, f64 *, 0x168) = (f64) saved_reg_f27;
-    M2C_FIELD(_haltContext, f64 *, 0x170) = (f64) saved_reg_f28;
-    M2C_FIELD(_haltContext, f64 *, 0x178) = (f64) saved_reg_f29;
-    M2C_FIELD(_haltContext, f64 *, 0x180) = (f64) saved_reg_f30;
-    M2C_FIELD(_haltContext, f64 *, 0x188) = (f64) saved_reg_f31;
-    M2C_FIELD(_haltContext, f64 *, 0x190) = (f64) M2C_ERROR( );
-    M2C_SYNC();
-    M2C_ERROR( );
-    M2C_ERROR( );
-    _haltContext[0x69] = M2C_ERROR( );
-    _haltContext[0x6A] = M2C_ERROR( );
-    _haltContext[0x6B] = M2C_ERROR( );
-    _haltContext[0x6C] = M2C_ERROR( );
-    _haltContext[0x6D] = M2C_ERROR( );
-    _haltContext[0x6E] = M2C_ERROR( );
-    _haltContext[0x6F] = M2C_ERROR( );
-    _haltContext[0x70] = M2C_ERROR( );
-    _haltContext[0x20] = M2C_ERROR( );
-    _haltContext[0x21] = saved_reg_lr;
-    _haltContext[0x22] = M2C_ERROR( );
-    _haltContext[0x23] = M2C_ERROR( );
-    M2C_SYNC();
-    M2C_ERROR( );
-    M2C_SYNC();
-    GSgfxHalt(_haltExceptionType, _haltContext, M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ), M2C_ERROR( ));
-}
+static asm void _haltISIHandler() {
+    nofralloc
+    mtsprg 1, r3
+    mfsrr0 r3
+    mtsprg 2, r3
+    mfsrr1 r3
+    mtsprg 3, r3
+    mfmsr r3
+    ori r3, r3, 0x2030
+    mtsrr1 r3
+    lis r3, _haltProcessException@h
+    ori r3, r3, _haltProcessException@l
+    mtsrr0 r3
+    li r3, 3
+    rfi
 }
 
-extern "C" {
-void OSPanic(s32 p0, s32 p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, f64 p8, f64 p9, f64 p10, f64 p11, f64 p12, f64 p13, f64 p14, f64 p15) {
-    f64 sp60;
-    f64 sp58;
-    f64 sp50;
-    f64 sp48;
-    f64 sp40;
-    f64 sp38;
-    f64 sp30;
-    f64 sp28;
-    s32 sp24;
-    s32 sp20;
-    s32 sp1C;
-    s32 sp18;
-    s32 sp14;
-    s32 sp10;
-    s32 spC;
-    s32 sp8;
-
-    if (M2C_ERROR( )) {
-        sp28 = p8;
-        sp30 = p9;
-        sp38 = p10;
-        sp40 = p11;
-        sp48 = p12;
-        sp50 = p13;
-        sp58 = p14;
-        sp60 = p15;
-    }
-    sp8 = p0;
-    spC = p1;
-    sp10 = p2;
-    sp14 = p3;
-    sp18 = p4;
-    sp1C = p5;
-    sp20 = p6;
-    sp24 = p7;
-}
+static asm void _haltAlignmentHandler() {
+    nofralloc
+    mtsprg 1, r3
+    mfsrr0 r3
+    mtsprg 2, r3
+    mfsrr1 r3
+    mtsprg 3, r3
+    mfmsr r3
+    ori r3, r3, 0x2030
+    mtsrr1 r3
+    lis r3, _haltProcessException@h
+    ori r3, r3, _haltProcessException@l
+    mtsrr0 r3
+    li r3, 5
+    rfi
 }
 
-extern "C" {
-void GSgfxHalt(s32 p0, s32 *p1, s32 p2, s32 p3, s32 p4, s32 p5, s32 p6, s32 p7, f64 p8, f64 p9, f64 p10, f64 p11, f64 p12, f64 p13, f64 p14, f64 p15) {
-    f64 sp60;
-    f64 sp58;
-    f64 sp50;
-    f64 sp48;
-    f64 sp40;
-    f64 sp38;
-    f64 sp30;
-    f64 sp28;
-    s32 sp24;
-    s32 sp20;
-    s32 sp1C;
-    s32 sp18;
-    s32 sp14;
-    s32 sp10;
-    s32 *spC;
-    s32 sp8;
-
-    if (M2C_ERROR( )) {
-        sp28 = p8;
-        sp30 = p9;
-        sp38 = p10;
-        sp40 = p11;
-        sp48 = p12;
-        sp50 = p13;
-        sp58 = p14;
-        sp60 = p15;
-    }
-    sp8 = p0;
-    spC = p1;
-    sp10 = p2;
-    sp14 = p3;
-    sp18 = p4;
-    sp1C = p5;
-    sp20 = p6;
-    sp24 = p7;
+static asm void _haltProcessException() {
+    nofralloc
+    stw r3, _haltExceptionType
+    lis r3, _haltContext@h
+    ori r3, r3, _haltContext@l
+    stw r0, 0x0(r3)
+    stw r1, 0x4(r3)
+    stw r2, 0x8(r3)
+    stw r4, 0x10(r3)
+    stw r5, 0x14(r3)
+    stw r6, 0x18(r3)
+    stw r7, 0x1c(r3)
+    stw r8, 0x20(r3)
+    stw r9, 0x24(r3)
+    stw r10, 0x28(r3)
+    stw r11, 0x2c(r3)
+    stw r12, 0x30(r3)
+    stw r13, 0x34(r3)
+    stw r14, 0x38(r3)
+    stw r15, 0x3c(r3)
+    stw r16, 0x40(r3)
+    stw r17, 0x44(r3)
+    stw r18, 0x48(r3)
+    stw r19, 0x4c(r3)
+    stw r20, 0x50(r3)
+    stw r21, 0x54(r3)
+    stw r22, 0x58(r3)
+    stw r23, 0x5c(r3)
+    stw r24, 0x60(r3)
+    stw r25, 0x64(r3)
+    stw r26, 0x68(r3)
+    stw r27, 0x6c(r3)
+    stw r28, 0x70(r3)
+    stw r29, 0x74(r3)
+    stw r30, 0x78(r3)
+    stw r31, 0x7c(r3)
+    mfsprg r4, 1
+    stw r4, 0xc(r3)
+    mfsprg r4, 2
+    stw r4, 0x198(r3)
+    mfsprg r4, 3
+    stw r4, 0x19c(r3)
+    stfd f0, 0x90(r3)
+    stfd f1, 0x98(r3)
+    stfd f2, 0xa0(r3)
+    stfd f3, 0xa8(r3)
+    stfd f4, 0xb0(r3)
+    stfd f5, 0xb8(r3)
+    stfd f6, 0xc0(r3)
+    stfd f7, 0xc8(r3)
+    stfd f8, 0xd0(r3)
+    stfd f9, 0xd8(r3)
+    stfd f10, 0xe0(r3)
+    stfd f11, 0xe8(r3)
+    stfd f12, 0xf0(r3)
+    stfd f13, 0xf8(r3)
+    stfd f14, 0x100(r3)
+    stfd f15, 0x108(r3)
+    stfd f16, 0x110(r3)
+    stfd f17, 0x118(r3)
+    stfd f18, 0x120(r3)
+    stfd f19, 0x128(r3)
+    stfd f20, 0x130(r3)
+    stfd f21, 0x138(r3)
+    stfd f22, 0x140(r3)
+    stfd f23, 0x148(r3)
+    stfd f24, 0x150(r3)
+    stfd f25, 0x158(r3)
+    stfd f26, 0x160(r3)
+    stfd f27, 0x168(r3)
+    stfd f28, 0x170(r3)
+    stfd f29, 0x178(r3)
+    stfd f30, 0x180(r3)
+    stfd f31, 0x188(r3)
+    mffs f0
+    stfd f0, 0x190(r3)
+    sync
+    lfd f0, 0x90(r3)
+    mtfsb0 0
+    mtfsb0 5
+    mfspr r4, GQR0
+    stw r4, 0x1a4(r3)
+    mfspr r4, GQR1
+    stw r4, 0x1a8(r3)
+    mfspr r4, GQR2
+    stw r4, 0x1ac(r3)
+    mfspr r4, GQR3
+    stw r4, 0x1b0(r3)
+    mfspr r4, GQR4
+    stw r4, 0x1b4(r3)
+    mfspr r4, GQR5
+    stw r4, 0x1b8(r3)
+    mfspr r4, GQR6
+    stw r4, 0x1bc(r3)
+    mfspr r4, GQR7
+    stw r4, 0x1c0(r3)
+    mfcr r4
+    stw r4, 0x80(r3)
+    mflr r4
+    stw r4, 0x84(r3)
+    mfctr r4
+    stw r4, 0x88(r3)
+    mfxer r4
+    stw r4, 0x8c(r3)
+    mfdsisr r5
+    mfdar r6
+    lwz r4, 0x19c(r3)
+    sync
+    mtmsr r4
+    sync
+    lwz r3, _haltExceptionType
+    lis r4, _haltContext@h
+    ori r4, r4, _haltContext@l
+    b GSgfxHalt
 }
+
+void OSPanic(const char* file, s32 line, const char* msg, ...) {
+}
+
+void GSgfxHalt(s32 type, s32* context, ...) {
 }
 
 extern "C++" {

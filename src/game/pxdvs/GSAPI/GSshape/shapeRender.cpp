@@ -620,7 +620,7 @@ bool GsShapeRender::LoadShapeRender(void* file) {
     shapeCount = *(u32*)(shapeSec + 4);
     shapes = (GsShapeObject*)GSmemAlloc(shapeCount * 0x8A4);
     s32 i;
-    volatile bool needRefract;
+    bool needRefract;
     for (i = 0, needRefract = false; i < shapeCount; i++) {
         u8* sd = base + shapeOffsets[i];
         shapes[i].data = (GsShapeData*)sd;

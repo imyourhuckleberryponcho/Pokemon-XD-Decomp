@@ -8,13 +8,15 @@ struct GSvec : Vec3 {
     GSvec();
 };
 
+struct GSnorm : Vec3 {};
+
 struct GSmtx {
     f32 m[3][4];
 };
 
 extern struct {
     GSvec v[3];
-    Vec3 normal;
+    GSnorm normal;
     u16 id;
 } eventTriDummy;
 #define EventTri __typeof__(eventTriDummy)
@@ -102,7 +104,7 @@ static bool getMdlEventList(GSvec* start, GSvec* end, GSvec* dir, CCD_CHECKMDL_H
             cur->v[0].x = verts[0].x; cur->v[0].y = verts[0].y; cur->v[0].z = verts[0].z;
             cur->v[1].x = verts[1].x; cur->v[1].y = verts[1].y; cur->v[1].z = verts[1].z;
             cur->v[2].x = verts[2].x; cur->v[2].y = verts[2].y; cur->v[2].z = verts[2].z;
-            cur->normal = normal;
+            cur->normal.x = normal.x; cur->normal.y = normal.y; cur->normal.z = normal.z;
             cur->id = id;
             cur++;
         }
@@ -111,24 +113,26 @@ static bool getMdlEventList(GSvec* start, GSvec* end, GSvec* dir, CCD_CHECKMDL_H
 }
 
 static int getEventList(GSvec* start, GSvec* end, EventTri* out) {
-    u32 i;
-    CheckObj* obj;
-    CCDFileHead* head;
-    int count = 0;
-    EventTri temp[4];
+    GSmtx mtx;
     Vec3 dir;
     bool enable;
-    GSmtx mtx;
+    CheckObj* obj;
+    CCD_CHECKMDL_HEAD* mdl;
+    CCDFileHead* head;
+    EventTri* src;
+    u32 i;
+    int count = 0;
+    int k;
+    u32 rf_t;
+    EventTri temp[4];
+    int j;
     GSmtx rot;
+    int n;
 
     head = GScolsys2GetCCDFileHead();
     PSVECSubtract(end, start, &dir);
     obj = head->objs;
     for (i = 0; i < head->numObjs && count < 4; i++, obj++) {
-        CCD_CHECKMDL_HEAD* mdl;
-        EventTri* src;
-        int k;
-        int n;
 
         GScolsys2GetObjEnable(i, &enable);
         if (!enable) {
@@ -143,9 +147,8 @@ static int getEventList(GSvec* start, GSvec* end, EventTri* out) {
         n = getMdlEventList(start, end, (GSvec*)&dir, mdl, &mtx, &rot, temp);
         src = temp;
         for (k = 0; k < n && count < 4; src++, k++) {
-            int j;
             for (j = 0; j < count; j++) {
-                u32 rf_t = out[j].id;
+                rf_t = out[j].id;
                 if (rf_t == src->id) {
                     break;
                 }

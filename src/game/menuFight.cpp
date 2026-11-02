@@ -259,10 +259,8 @@ void menuFightSetStatus(s32);
 
 struct TargetSecretEntry {
     s32 unk0;
-    s32 idA;
-    s32 unk8[2];
-    s32 idB;
-    s32 unk14;
+    s32 id;
+    s32 unk8;
 };
 
 struct WindowKeyInfo {
@@ -1945,14 +1943,17 @@ void menuFightCurIkousan(void)
 void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
 {
     static s32 waza_no[2] = { -1, -1 };
+    WazaAlloc* alloc;
+    TargetArg* arg;
     WindowKeyInfo* key;
     s32 sel;
-    tagWINDOW_WORK* w;
-    tagWINDOW_WORK* w1;
+    void* pk;
+    u16 trig;
+    u16 stick;
+    u16 stick2;
+    u16 left;
     tagWINDOW_WORK* w2;
     {
-        WindowKeyInfo* key;
-        u16 trig;
         if (menuIsCheck(0x11d)) {
             if (menuIsCheck(0x115)) {
                 menuClose(0x115);
@@ -1960,7 +1961,7 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
             if (menuIsCheck(0xa2)) {
                 menuClose(0xa2);
             }
-            w1 = windowSearchID(0x11d);
+            w2 = windowSearchID(0x11d);
             if (menuCB_GetBattleController2P() == 1) {
                 key = windowGetPortKeyInfo(1);
             } else {
@@ -1968,22 +1969,20 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
             }
             trig = key->trigger;
             if (trig & 0x10) {
-                w1->done = 1;
-                w1->cursor88 = w1->cursor;
-                menuPlaySe(w1->menuID, 2);
+                w2->done = 1;
+                w2->cursor88 = w2->cursor;
+                menuPlaySe(w2->menuID, 2);
                 return;
             } else if (trig & 0x20) {
-                w1->cancel = 1;
-                w1->cursor88 = -1;
-                menuPlaySe(w1->menuID, 3);
+                w2->cancel = 1;
+                w2->cursor88 = -1;
+                menuPlaySe(w2->menuID, 3);
                 return;
             }
-            menuFightButtonTimeOutCheck(w1);
+            menuFightButtonTimeOutCheck(w2);
         }
     }
     {
-        WindowKeyInfo* key;
-        u16 trig;
         if (menuIsCheck(0x11c)) {
             if (menuIsCheck(0x114)) {
                 menuClose(0x114);
@@ -2007,11 +2006,6 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
         }
     }
     {
-        WazaAlloc* alloc;
-        s32 sel;
-        void* pk;
-        u16 stick2;
-        u16 stick;
         sel = -1;
         if (menuIsCheck(0xa1)) {
             w2 = windowSearchID(0xa1);
@@ -2081,20 +2075,14 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
         }
     }
     {
-        WindowKeyInfo* key;
-        s32 sel;
-        u16 stick;
-        u16 stick2;
-        WazaAlloc* alloc;
-        void* pk;
         sel = -1;
         if (menuIsCheck(0x9e)) {
             w2 = windowSearchID(0x9e);
             alloc = (WazaAlloc*)windowGetAllocPtr(w2);
             pk = fightOutPokemonGetPokemonPtr(alloc->fightOut);
             key = windowGetPortKeyInfo(1);
-            stick2 = _menuFightGetRightStickInfo(0, 0);
             stick = _menuFightGetRightStickInfo(0, 1);
+            stick2 = _menuFightGetRightStickInfo(0, 0);
             if (menuIsCheck(0x9f)) {
                 if (!(key->press & 0x40)) {
                     menuClose(0x9f);
@@ -2148,10 +2136,6 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
         }
     }
     {
-        u16 left;
-        WindowKeyInfo* key;
-        s32 sel;
-        TargetArg* arg;
         sel = -1;
         if (menuIsCheck(0xa3)) {
             w2 = windowSearchID(0xa3);
@@ -2196,13 +2180,10 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
         }
     }
     {
-        u16 left;
-        TargetArg* arg;
-        WindowKeyInfo* key;
         sel = -1;
         if (menuIsCheck(0xa0)) {
-            w = windowSearchID(0xa0);
-            arg = (TargetArg*)windowGetParam(w, 0);
+            w2 = windowSearchID(0xa0);
+            arg = (TargetArg*)windowGetParam(w2, 0);
             _menuFightGetRightStickInfo(0, 1);
             left = _menuFightGetLeftKeyInfo(0);
             key = windowGetPortKeyInfo(1);
@@ -2216,9 +2197,9 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
                 } else if (left & 4) {
                     sel = 3;
                 } else if (key->trigger & 0x200) {
-                    w->done = 1;
-                    w->cancel = 1;
-                    w->cursor88 = -1;
+                    w2->done = 1;
+                    w2->cancel = 1;
+                    w2->cursor88 = -1;
                 }
             }
             if (sel >= 0) {
@@ -2228,13 +2209,13 @@ void menuFightButtonIwaza1p(tagWINDOW_WORK* window)
                         if (sel > 2) {
                             sel = 2;
                         }
-                        w->done = 1;
-                        w->cursor88 = sel;
+                        w2->done = 1;
+                        w2->cursor88 = sel;
                         return;
                     }
                 }
             }
-            menuFightButtonTimeOutCheck(w);
+            menuFightButtonTimeOutCheck(w2);
         }
     }
 }
@@ -3559,16 +3540,8 @@ void menuFightButtonTargetSecret(tagWINDOW_WORK* window)
     }
     if (sel >= 0) {
         int i;
-        for (i = 0; i < 2; i++, p++) {
-            if (sel == targetSecretCursor(p->idA)) {
-                if (sel > 2) {
-                    sel = 2;
-                }
-                window->done = 1;
-                window->cursor88 = sel;
-                return;
-            }
-            if (sel == targetSecretCursor(p->idB)) {
+        for (i = 0; i < 4; i++) {
+            if (sel == targetSecretCursor(p[i].id)) {
                 if (sel > 2) {
                     sel = 2;
                 }
@@ -3585,12 +3558,9 @@ void menuFightDrawTargetSecret(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
 {
     TargetSecretEntry* p = (TargetSecretEntry*)windowGetParam(window, 0);
     int i;
-    for (i = 0; i < 2; i++, p++) {
-        if (sprite->id == targetSecretSpriteID(p->idA)) {
-            winSpriteSetDisp(sprite, 1);
-            return;
-        }
-        if ((u8)(targetSecretSpriteID(p->idB)) == sprite->id) {
+    for (i = 0; i < 4; i++) {
+        s32 value = targetSecretSpriteID(p[i].id);
+        if (value == sprite->id) {
             winSpriteSetDisp(sprite, 1);
             return;
         }

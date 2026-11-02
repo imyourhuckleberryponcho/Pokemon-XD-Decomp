@@ -61,8 +61,8 @@ enum GSgfxTgenSrc { GSgfxTgenSrc_draft_dummy };
 struct GSgfxVF;
 struct GSmtx;
 struct GStexture;
-enum Mtx { Mtx_draft_dummy };
-enum MtxPtr { MtxPtr_draft_dummy };
+typedef f32 Mtx[3][4];
+typedef f32 (*MtxPtr)[4];
 struct Vec;
 
 struct BlendState {
@@ -184,7 +184,7 @@ struct GSgfxLight {
     u8 _draft[1];
 };
 struct GSgfxVF {
-    u8 _draft[1];
+    u8 _data[0x440];
 };
 struct GSmtx {
     u8 _draft[1];
@@ -193,7 +193,7 @@ struct GStexture {
     u8 _draft[1];
 };
 struct Vec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 
 extern "C" {
@@ -228,8 +228,18 @@ extern s32 init;
 void* g_particleBanks;
 GScamera* g_Camera;
 s32 g_CameraMatrix;
+GSgfxLayer* g_current_layer;
 s32 g_render_pass;
-s32 g_particle_debug_stats;
+struct ParticleDebugStats {
+    u32 v[9];
+};
+ParticleDebugStats g_particle_debug_stats;
+Vec g_CameraPosition;
+Vec g_CameraLookDir;
+Vec g_CameraUpDir;
+Vec g_CameraSideDir;
+GSgfxVF g_vertex_format;
+GSgfxVF g_ext_vertex_format;
 static s8 g_afterZWriteState;
 extern "C" {
 
@@ -239,21 +249,32 @@ extern "C" {
 s32 particleEnginePrepareRender(u32 p0);
 s32 particleEnginePrepareUpdate(u32 p0);
 void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2);
-void particleEngineSetupTexture(u8 p0, void *p1, s32 p2, s32 p3, s32 p4, s32 p5);
+void particleEngineSetupTexture(u8 p0, GStexture* p1, s32 p2, s32 p3, s32 p4, s32 p5);
 }
 
-void particleEngineSetupTexture(u8 slot, void* texture, s32 wrapS, s32 wrapT, s32 minFilter, s32 magFilter) {
-    GStexture* tex = (GStexture*)texture;
+struct peTexLayerView {
+    u8 pad0[0x173C];
+    u32 texDirty;
+    GStexture* tex[0x2D];
+    u32 texDirtyShadow;
+    GStexture* texShadow[0x2D];
+};
+
+static inline void layerSetTexture(u8* layer, u8 slot, GStexture* tex) {
+    peTexLayerView* l = (peTexLayerView*)layer;
+    l->tex[slot] = tex;
+    l->texDirty |= 1 << slot;
+    l->texShadow[slot] = tex;
+    l->texDirtyShadow |= 1 << slot;
+}
+
+void particleEngineSetupTexture(u8 slot, GStexture* tex, s32 wrapS, s32 wrapT, s32 minFilter, s32 magFilter) {
     GStextureSetWrap(tex, wrapS, wrapT);
     GStextureSetFilter(tex, minFilter, magFilter, 0);
     u8* layer = (u8*)g_current_layer;
-    u8* entry = layer + slot * 4;
-    if (*(GStexture**)(entry + 0x1740) != tex || *(GStexture**)(entry + 0x17F8) != tex || M2C_FIELD(tex, u8 *, 7) != 0) {
-        *(GStexture**)(entry + 0x1740) = tex;
-        M2C_FIELD(layer, u32 *, 0x173C) |= 1 << slot;
-        entry = layer + slot * 4;
-        *(GStexture**)(entry + 0x17F8) = tex;
-        M2C_FIELD(layer, u32 *, 0x17F4) |= 1 << slot;
+    peTexLayerView* l = (peTexLayerView*)layer;
+    if (l->tex[slot] != tex || l->texShadow[slot] != tex || M2C_FIELD(tex, u8 *, 7) != 0) {
+        layerSetTexture(layer, slot, tex);
     }
 }
 
@@ -843,7 +864,7 @@ s32 particleEnginePrepareRender(u32 p0) {
         return 1;
     }
     g_Camera = (GScamera *) var_r31;
-    g_CameraMatrix = GScameraGetMatrixPtr((GScamera*)((GScamera *) var_r31));
+    g_CameraMatrix = (s32)GScameraGetMatrixPtr((GScamera*)((GScamera *) var_r31));
     if ((GSgfxLayer *) g_current_layer != NULL) {
         GScameraLoadCameraMatrix((GScamera*)((GScamera *) var_r31), (GSgfxLayerID)(M2C_FIELD(g_current_layer, s32 *, 0x28)));
     } else {
@@ -883,93 +904,47 @@ void particleEngineUpdate(f32 p0) {
     }
 }
 extern "C" {
-s32 particleEnginePrepareUpdate(u32 p0) {
-    s32 sp14;
-    s32 sp18;
-    s32 sp1C;
-    s32 sp20;
-    s32 sp24;
-    s32 sp28;
-    s32 sp2C;
-    s32 sp30;
-    s32 sp34;
-    s32 sp38;
-    s32 sp3C;
-    s32 sp40;
-    f32 sp78;
-    f32 sp84;
-    f32 sp88;
-    f32 sp94;
-    f32 sp98;
-    f32 spC;
-    u8 *temp_r4;
-    f32 sp74;
-    s32 sp70;
-    s32 sp6C;
-    s32 sp68;
-    s32 sp64;
-    s32 sp60;
-    s32 sp5C;
-    s32 sp58;
-    s32 sp54;
-    s32 sp50;
-    s32 sp4C;
-    s32 sp48;
-    s32 sp44;
-    f32 sp10;
-    Vec *temp_r28;
-    Vec *temp_r3;
-    u32 var_r28;
-    f32 unksp8;
+struct ParticleMtx {
+    Mtx m;
+};
 
-    var_r28 = p0;
-    if (GScameraIsValid((GScamera*)((GScamera *) p0)) == 0) {
-        var_r28 = (unsigned long)(GScameraGetActiveCamera());
-        if (var_r28 == 0) {
+s32 particleEnginePrepareUpdate(u32 p0) {
+    GScamera* cam = (GScamera*)p0;
+    Mtx m;
+    ParticleMtx v;
+    ParticleMtx t;
+    Vec side;
+    if (GScameraIsValid(cam) == 0) {
+        cam = GScameraGetActiveCamera();
+        if (cam == NULL) {
             g_CameraMatrix = 0;
             return 0;
         }
     }
-    if ((u32)(g_Camera) == (u32)(var_r28)) {
+    if (g_Camera == cam) {
         return 1;
     }
-    g_Camera = (GScamera *) var_r28;
-    g_CameraMatrix = GScameraGetMatrixPtr((GScamera*)((GScamera *) var_r28));
-    GScameraLoadCameraMatrix((GScamera*)((GScamera *) var_r28), (GSgfxLayerID)(-1));
-    GSgfxProjectSetupCameraParameters((GScamera*)((GScamera *) var_r28));
-    GScameraGetPosition((GScamera*)((GScamera *) var_r28), (f32*)(&g_particle_debug_stats + 0x24));
-    PSMTXTranspose((const Mtx)(g_CameraMatrix), (Mtx)((s32) &sp14));
-    sp44 = sp14;
-    sp48 = sp18;
-    sp4C = sp1C;
-    sp50 = sp20;
-    sp54 = sp24;
-    sp58 = sp28;
-    sp5C = sp2C;
-    sp60 = sp30;
-    sp64 = sp34;
-    sp68 = sp38;
-    sp6C = sp3C;
-    sp70 = sp40;
-    temp_r3 = (Vec *)(&g_particle_debug_stats + 0x3C);
-    temp_r28 = (Vec *)(&g_particle_debug_stats + 0x48);
-    PSMTXCopy((const Mtx)((s32) &sp44), (Mtx)((s32) &sp74));
-    M2C_FIELD(&g_particle_debug_stats, f32 *, 0x48) = sp74;
-    M2C_FIELD(temp_r28, f32 *, 4) = sp84;
-    M2C_FIELD(temp_r28, f32 *, 8) = sp94;
-    M2C_FIELD(&g_particle_debug_stats, f32 *, 0x3C) = sp78;
-    M2C_FIELD((u16)temp_r3, f32 *, 4) = sp88;
-    M2C_FIELD((u16)temp_r3, f32 *, 8) = sp98;
-    PSVECNormalize((const register Vec*)((u16)temp_r3), (register Vec*)(temp_r3));
-    PSVECNormalize((const register Vec*)(temp_r28), (register Vec*)(temp_r28));
-    M2C_FIELD(&g_particle_debug_stats, f32 *, 0x48) = (f32) -M2C_FIELD(&g_particle_debug_stats, f32 *, 0x48);
-    M2C_FIELD(temp_r28, f32 *, 8) = (f32) -M2C_FIELD(temp_r28, f32 *, 8);
-    M2C_FIELD(temp_r28, f32 *, 4) = (f32) -M2C_FIELD(temp_r28, f32 *, 4);
-    M2C_FIELD(temp_r4, f32 *, 4) = spC;
-    PSVECCrossProduct((const register Vec*)(temp_r28), (const register Vec*)(&g_particle_debug_stats + 0x3C), (register Vec*)(&unksp8));
-    temp_r4 = (unsigned char *)(&g_particle_debug_stats + 0x30);
-    M2C_FIELD(&g_particle_debug_stats, f32 *, 0x30) = unksp8;
-    M2C_FIELD(temp_r4, f32 *, 8) = sp10;
+    g_Camera = cam;
+    g_CameraMatrix = (s32)GScameraGetMatrixPtr(cam);
+    GScameraLoadCameraMatrix(cam, (GSgfxLayerID)-1);
+    GSgfxProjectSetupCameraParameters(cam);
+    GScameraGetPosition(cam, (f32*)&g_CameraPosition);
+    PSMTXTranspose(*(Mtx*)g_CameraMatrix, t.m);
+    v = t;
+    PSMTXCopy(v.m, m);
+    g_CameraSideDir.x = m[0][0];
+    g_CameraSideDir.y = m[1][0];
+    g_CameraSideDir.z = m[2][0];
+    g_CameraUpDir.x = m[0][1];
+    g_CameraUpDir.y = m[1][1];
+    g_CameraUpDir.z = m[2][1];
+    PSVECNormalize(&g_CameraUpDir, &g_CameraUpDir);
+    PSVECNormalize(&g_CameraSideDir, &g_CameraSideDir);
+    g_CameraSideDir.x = -g_CameraSideDir.x;
+    g_CameraSideDir.y = -g_CameraSideDir.y;
+    g_CameraSideDir.z = -g_CameraSideDir.z;
+    PSVECCrossProduct(&g_CameraSideDir, &g_CameraUpDir, &side);
+    g_CameraLookDir = side;
     return 1;
 }
 }
@@ -979,31 +954,32 @@ s32 particleEnginePrepareUpdate(u32 p0) {
 extern "C" {
 extern "C" {
 void particleEngineInit() {
-    GSgfxVFInit((GSgfxVF*)(&g_particle_debug_stats + 0x494));
-    GSgfxVFCreate((GSgfxVF*)(&g_particle_debug_stats + 0x494));
-    GSgfxVFSetElement((GSgfxVF*)(&g_particle_debug_stats + 0x494), 9, 1, 4, 0);
-    GSgfxVFSetElement((GSgfxVF*)(&g_particle_debug_stats + 0x494), 0xB, 1, 5, 0);
-    GSgfxVFSetElement((GSgfxVF*)(&g_particle_debug_stats + 0x494), 0xC, 1, 5, 0);
-    GSgfxVFSetElement((GSgfxVF*)(&g_particle_debug_stats + 0x494), 0xD, 1, 4, 0);
-    GSgfxVFSetArray((GSgfxVF*)(&g_particle_debug_stats + 0x494), 9, 3, (void*)(NULL), 0, -1);
-    GSgfxVFSetArray((GSgfxVF*)(&g_particle_debug_stats + 0x494), 0xB, 3, (void*)(NULL), 0, -1);
-    GSgfxVFSetArray((GSgfxVF*)(&g_particle_debug_stats + 0x494), 0xC, 3, (void*)(NULL), 0, -1);
-    GSgfxVFSetArray((GSgfxVF*)(&g_particle_debug_stats + 0x494), 0xD, 3, (void*)(NULL), 0, -1);
-    GSgfxVFInit((GSgfxVF*)(&g_particle_debug_stats + 0x54));
-    GSgfxVFCreate((GSgfxVF*)(&g_particle_debug_stats + 0x54));
-    GSgfxVFSetElement((GSgfxVF*)(&g_particle_debug_stats + 0x54), 9, 1, 4, 0);
-    GSgfxVFSetElement((GSgfxVF*)(&g_particle_debug_stats + 0x54), 0xB, 1, 5, 0);
-    GSgfxVFSetElement((GSgfxVF*)(&g_particle_debug_stats + 0x54), 0xD, 1, 4, 0);
-    GSgfxVFSetArray((GSgfxVF*)(&g_particle_debug_stats + 0x54), 9, 3, (void*)(NULL), 0, -1);
-    GSgfxVFSetArray((GSgfxVF*)(&g_particle_debug_stats + 0x54), 0xB, 3, (void*)(NULL), 0, -1);
-    GSgfxVFSetArray((GSgfxVF*)(&g_particle_debug_stats + 0x54), 0xD, 3, (void*)(NULL), 0, -1);
-    memset((void*)(&g_particle_debug_stats), 0, 0x24U);
+    GSgfxVFInit(&g_ext_vertex_format);
+    GSgfxVFCreate(&g_ext_vertex_format);
+    GSgfxVFSetElement(&g_ext_vertex_format, 9, 1, 4, 0);
+    GSgfxVFSetElement(&g_ext_vertex_format, 0xB, 1, 5, 0);
+    GSgfxVFSetElement(&g_ext_vertex_format, 0xC, 1, 5, 0);
+    GSgfxVFSetElement(&g_ext_vertex_format, 0xD, 1, 4, 0);
+    GSgfxVFSetArray(&g_ext_vertex_format, 9, 3, NULL, 0, -1);
+    GSgfxVFSetArray(&g_ext_vertex_format, 0xB, 3, NULL, 0, -1);
+    GSgfxVFSetArray(&g_ext_vertex_format, 0xC, 3, NULL, 0, -1);
+    GSgfxVFSetArray(&g_ext_vertex_format, 0xD, 3, NULL, 0, -1);
+    GSgfxVFInit(&g_vertex_format);
+    GSgfxVFCreate(&g_vertex_format);
+    GSgfxVFSetElement(&g_vertex_format, 9, 1, 4, 0);
+    GSgfxVFSetElement(&g_vertex_format, 0xB, 1, 5, 0);
+    GSgfxVFSetElement(&g_vertex_format, 0xD, 1, 4, 0);
+    GSgfxVFSetArray(&g_vertex_format, 9, 3, NULL, 0, -1);
+    GSgfxVFSetArray(&g_vertex_format, 0xB, 3, NULL, 0, -1);
+    GSgfxVFSetArray(&g_vertex_format, 0xD, 3, NULL, 0, -1);
+    memset(&g_particle_debug_stats, 0, sizeof(g_particle_debug_stats));
 }
 }
 
 extern "C" {
 static void __sinit_particleEngine_cpp() {
 }
+__declspec(section ".ctors") extern void* const __sinit_particleEngine_cpp_reference = (void*)__sinit_particleEngine_cpp;
 }
 }
 }

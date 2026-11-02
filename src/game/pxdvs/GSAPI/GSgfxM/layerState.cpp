@@ -1507,18 +1507,19 @@ inline void GSgfx_GCSetTevKColor(u32 i, GSColor c) {
     }
 }
 
+static inline int indStagePair(int stage) { return stage >> 1; }
+
 inline void GSgfx_GCSetIndTexCoordScale(s32 stage, s32 s, s32 t) {
     int pair;
     u32 ss = stage;
     if (gsgfxState->indScale[ss][0] != s || gsgfxState->indScale[ss][1] != t) {
-        pair = stage >> 1;
+        pair = indStagePair(stage);
         if (stage & 1) {
             gsgfxState->ras1ss[pair].s1 = s;
             gsgfxState->ras1ss[pair].t1 = t;
         } else {
             gsgfxState->ras1ss[pair].s0 = s;
-            u32 pair_c = pair;
-            gsgfxState->ras1ss[pair_c].t1 = t;
+            gsgfxState->ras1ss[pair].t1 = t;
         }
         gsgfxState->dIref |= 1 << pair;
         gsgfxState->indScale[stage][0] = s;
@@ -1703,13 +1704,18 @@ inline void GSgfx_GCSetTevOrder(s32 stage, s32 coord, s32 map, s32 color) {
     }
 }
 
+inline void GSWriteXfColorC(u32 reg, GSColor c) {
+    GX_WGPIPE.u8 = 0x10;
+    GX_WGPIPE.u16 = 0;
+    GX_WGPIPE.u16 = reg;
+    GX_WGPIPE.u32 = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+}
+
 inline void GSgfx_GCSetMatColor(s32 ch, GSColor c) {
     int idx = (ch - 4) * 5;
     if (*(u32*)((u8*)gsgfxState + idx + 0x4c3) != RAW(c) || *((u8*)gsgfxState + idx + 0x4c2) == 1) {
-        u32 v = RAW(c);
-        u8* s = (u8*)gsgfxState;
-        *(u32*)(s + idx + 0x4c3) = v;
-        GSWriteXfColor(0x100c + (ch & 1), v);
+        GSWriteXfColorC(0x100c + (ch & 1), c);
+        *(u32*)((u8*)gsgfxState + idx + 0x4c3) = RAW(c);
         *((u8*)gsgfxState + idx + 0x4c2) = 0;
     }
 }
@@ -1717,10 +1723,8 @@ inline void GSgfx_GCSetMatColor(s32 ch, GSColor c) {
 inline void GSgfx_GCSetAmbColor(s32 ch, GSColor c) {
     int idx = (ch - 4) * 5;
     if (*(u32*)((u8*)gsgfxState + idx + 0x4b9) != RAW(c) || *((u8*)gsgfxState + idx + 0x4b8) == 1) {
-        u32 v = RAW(c);
-        u8* s = (u8*)gsgfxState;
-        *(u32*)(s + idx + 0x4b9) = v;
-        GSWriteXfColor(0x100a + (ch & 1), v);
+        GSWriteXfColorC(0x100a + (ch & 1), c);
+        *(u32*)((u8*)gsgfxState + idx + 0x4b9) = RAW(c);
         *((u8*)gsgfxState + idx + 0x4b8) = 0;
     }
 }
@@ -1731,7 +1735,7 @@ inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 light
         c[chan].w[3] != diff || c[chan].w[4] != attn) {
         s32 d = diff;
         if (attn == 0) {
-            int d = 0;
+            d = 0;
         }
         GX_WGPIPE.u8 = 0x10;
         GX_WGPIPE.u16 = 0;

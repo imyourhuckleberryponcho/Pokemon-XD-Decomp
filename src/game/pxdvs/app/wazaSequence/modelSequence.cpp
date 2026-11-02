@@ -31,16 +31,28 @@ enum GSmodelAnimType {
 };
 
 static inline u16 __OSf32tou16(register f32 inF) {
-    u16 tmp;
-    register u16* tmpPtr = &tmp;
-    asm { psq_st inF, 0(tmpPtr), 1, 3 }
-    return *tmpPtr;
+    u32 tmp;
+    register u32* tmpPtr = &tmp;
+    register u16 ret;
+    asm {
+        psq_st inF, 0(tmpPtr), 1, 3
+        lhz ret, 0(tmpPtr)
+    }
+    return ret;
+}
+
+static inline u16 OSf32tou16(f32 in) {
+    return __OSf32tou16(in);
 }
 
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
     asm { psq_l ret, 0(arg), 1, 3 }
     return ret;
+}
+
+static inline f32 OSu16tof32(u16 in) {
+    return __OSu16tof32(&in);
 }
 
 struct MotionEntry {
@@ -922,8 +934,8 @@ void ModelSequence::SetVisibility(bool visible) {
 u8 ModelSequence::LoadData(u8* data) {
     GSpart* part;
     s32 list;
-    PkxHeader* hdr = (PkxHeader*)data;
     s32 resID = wazaSequenceSysGetResID();
+    PkxHeader* hdr = (PkxHeader*)data;
     if (hdr->size == 0) {
         return 0;
     }
@@ -957,7 +969,8 @@ u8 ModelSequence::LoadData(u8* data) {
     m_modelID = hdr->count;
     for (; i < m_modelID; i++, sec++) {
         MotionEntry* motion = sec->motions;
-        for (s32 n = sec->count; n > 0; motion++, n--) {
+        s32 count = sec->count;
+        for (s32 j = 0; j < count; j++, motion++) {
             if (motion->type == 0) {
                 motion->index = 1;
             }
@@ -990,8 +1003,8 @@ u8 ModelSequence::LoadData(u8* data) {
     if (m_colors->mod[0] != 0x7F || m_colors->mod[1] != 0x7F || m_colors->mod[2] != 0x7F || m_colors->mod[3] != 0x7F) {
         m_modulation = 1;
     }
-    void* archive = hdr->model;
-    if (archive == 0) {
+    void* archive;
+    if (hdr->model == 0) {
         archive = operator new(0x44);
         if (archive == 0) {
             return 0;
@@ -1004,8 +1017,9 @@ u8 ModelSequence::LoadData(u8* data) {
         m_unkAC = archive;
         memcpy(m_unkA8, body, ALIGN32(hdr->size));
         DCFlushRange(m_unkA8, ALIGN32(hdr->size));
-        s16 rf_t = hdr->size;
-        HSD_ArchiveParse(archive, (u8*)m_unkA8, rf_t);
+        HSD_ArchiveParse(archive, (u8*)m_unkA8, hdr->size);
+    } else {
+        archive = hdr->model;
     }
     loadModel(archive, 0x4E20, 0, resID);
     GSresIsUniqueID(0x4E20, resID, 0);
@@ -1042,8 +1056,10 @@ u8 ModelSequence::LoadData(u8* data) {
     if (flags & 1) {
         u8 mode = 0;
         if (flags & 2) {
-            mode = 1;
-            mode = !(flags & 8) ? mode : 1 | 4;
+            mode |= 1;
+            if (flags & 8) {
+                mode |= 4;
+            }
         }
         if (flags & 4) {
             mode |= 2;
@@ -1677,7 +1693,8 @@ bool ModelSequence::ModelMotionStart() {
     if (m_flags & 4) {
         return true;
     }
-    if (m_timer == 0) {
+    u16 timer = m_timer;
+    if (timer == 0) {
         m_step = 0;
         m_stepRestart = 0;
         DoAnimation(motion->index, (enumSectionMotionType)motion->type, false);
@@ -1697,22 +1714,21 @@ bool ModelSequence::ModelMotionStart() {
         if (frames < 1.0f) {
             frames = 1.0f;
         }
-        u16 t = (m_timer >> 1) & 0x7FFF;
+        u16 t = (timer >> 1) & 0x7FFF;
         u16 rem = t;
         if (t != 0) {
             rem = t - 1;
         }
-        u16 divisor = __OSf32tou16(frames);
+        u16 divisor = OSf32tou16(frames);
         m_timer = rem / divisor;
-        u16 mod = __OSf32tou16(0.5f + frames);
-        u16 part = rem % mod;
+        u16 mod = OSf32tou16(0.5f + frames);
+        u16 part = divisor % mod;
         if (part == 0 && m_timer != 0) {
-            u16 whole = __OSf32tou16(0.5f + frames);
-            s32 part = whole;
+            part = OSf32tou16(0.5f + frames);
             m_timer--;
         }
         m_stepRestart = 1;
-        GSmodelSetAnimFrame(m_model, frames - __OSu16tof32(&part));
+        GSmodelSetAnimFrame(m_model, frames - OSu16tof32(part));
         GSmodelStartAnimation(m_model);
     }
     return true;

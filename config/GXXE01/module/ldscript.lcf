@@ -31,4 +31,77 @@ FORCEACTIVE
     menuMoveDemoInit
     menuPdaMain
     menuPdaInit
+    evolutionExit
+    evolutionMain
+    evolutionInit
+    // relglobal.c: unnamed .sbss used only by REL modules
+    relglobal_unk48
+    relglobal_unk270
+    relglobal_unk1E74
+    contest_data
+    contest_data_number
+    contest_type
+    contest_type_number
+    deoxys_pokemon_data
+    deoxys_pokemon_data_number
+    esabaappdata_number
+    esabapokemondata_E1
+    esabapokemondata_E1_number
+    esabapokemondata_E1_top
+    esabapokemondata_E2
+    esabapokemondata_E2_number
+    esabapokemondata_E2_top
+    esabapokemondata_E3
+    esabapokemondata_E3_number
+    esabapokemondata_E3_top
+    esabapokemondata_EX_number
+    esabapokemondata_EX_top
+    fight_orre_data
+    fight_orre_data_number
+    flag_item
+    flag_item_number
+    flag_level_number
+    flag_party
+    flag_party_number
+    flag_pokemon
+    flag_pokemon_number
+    flag_value
+    flag_value_number
+    kinomiData
+    kinomiData_number
+    mailDarkPokemonList
+    mailDarkPokemonList_number
+    relivehall_data_number
+    shopData_number
+    shopExchanger_number
+    shopGoods_number
+    shopSalesman_number
+    undertakerdata_number
+    // menuUseItem.cpp: item-use handlers called only from REL modules
+    menuUseItemEventUsohachiPhoto
+    menuUseItemEventMirraboradar
+    menuUseItemEventCraneMemo
+    menuUseItemEventNotConsum
+    menuUseItemBattleNazonomi
+    menuUseItemBattleBall
+    menuUseItemStatusUp
+    menuUseItemFieldNazonomi
+    menuUseItemSkill
+    menuUseItemScriptCologn
+    menuUseItemCologn
+    menuUseItemEvolution
+    menuUseItemWPointUp
+    menuUseItemListLVUp
+    menuUseItemAlldeathRcv
+    menuUseItemPPRecovery
+    menuUseItemRecovery
+    menuUseItemNoPokecolo
+    menuUseItemNoEffects
+    menuUseItemDummy
+    // menuTitle.cpp: entry points called only from REL modules
+    menuTitleInit
+    menuTitleMain
+    menuTitleExit
+    item_crane_memo
+    item_crane_memo_number
 }

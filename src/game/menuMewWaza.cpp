@@ -42,7 +42,7 @@ void spriteSetEnv(s32 layer);
 void* GSmsgGetGSchar(char* str);
 void msgctrlSetValue(s32 id, void* value);
 void GSmsgPrint2(s32 layer, s32, s32, u32 color, u32 msgID);
-void menuSubDrawMsgWindow2(s32 layer, s32, s32, s16 width, s16 height, u8 alpha, s32);
+void menuSubDrawMsgWindow2(s32 layer, s32, s32, s32 width, s32 height, u8 alpha, s32);
 void GSmsgMain(s32 layer, s32, s32, bool);
 u16 mewWazaGet(long index);
 void* wazaDataBiosGetPtr(u16 id);
@@ -55,15 +55,14 @@ s32 menuMewWazaGetMenuDataID(void) {
 s32 menuMewWazaDraw(MewWazaWindow* window, MewWazaItem* item) {
     WindowFreeWork* work = windowGetFreeWork(window);
     s32 layer = winSpriteGetLayerID(window, item);
+    s32 width;
     s16 height;
-    s16 width;
-    s32 top;
 
     GSgfxLayerFindByID(layer);
-    height = item->height;
     width = item->width;
-    top = height - 4;
-    spriteSetOffset(layer, window->x + item->x, window->y + (item->y + (s16)(top - height)));
+    height = item->height;
+    s16 d = item->height - 4 - height;
+    spriteSetOffset(layer, window->x + item->x, window->y + item->y + d);
     spriteSetEnv(layer);
 
     switch (item->id) {

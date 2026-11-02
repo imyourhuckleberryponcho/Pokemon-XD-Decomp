@@ -128,27 +128,24 @@ u16 battleGridGetNumPokemonsForTrainer(NullSequence* seq) {
 }
 
 void battleGridRestoreModelVisibilityFlags(void) {
-    bool* backup;
-    BattleGridFull* grid = (BattleGridFull*)&gBattleGrid;
-    BattleGridEntry* g = grid->entries;
+    BattleGridEntry* g = gBattleGrid.entries;
     u16 i;
     u16 j;
     u16 idx = 0;
     if (gVisibilityBackedUp) {
-        backup = grid->backup;
         for (i = 0; i < 4; i++, g++) {
             if (g->slot != 0) {
-                g->slot->NullSequence::SetVisibility(grid->backup[idx]);
+                g->slot->NullSequence::SetVisibility(gBackupVisibilityCodes[idx]);
             }
             idx++;
             for (j = 0; j < 2; idx++, j++) {
                 if (g->pokemon[j] != 0) {
-                    g->pokemon[j]->NullSequence::SetVisibility(backup[idx]);
+                    g->pokemon[j]->NullSequence::SetVisibility(gBackupVisibilityCodes[idx]);
                 }
             }
         }
         gVisibilityBackedUp = 0;
-        memcpy(grid->saved, grid->backup, 12);
+        memcpy(gSavedVisibilityCodes, gBackupVisibilityCodes, 12);
     }
 }
 
@@ -280,10 +277,12 @@ static inline void PlaceModel(ModelSequence* m, GSvec* pos, GSvec* rot, u8 mirro
 }
 
 void battleGridUpdate(void) {
-    enum TsE { TsE0 };
     u16 i;
-    enum TsE count = (enum TsE)(gBattleGrid.count);
+    u16 count = gBattleGrid.count;
     BattleGridEntry* g = gBattleGrid.entries;
+    bool found;
+    ModelSequence** p;
+    u16 a;
     wazaSequenceSysGetActiveWazaNum();
     if (count != 0) {
         f32 distance;
@@ -299,18 +298,17 @@ void battleGridUpdate(void) {
         GSvec rot;
         GSvec slotPos;
         GSvec pairPos;
-        s16 b;
+        u16 b;
         BattleGridEntry* e;
-        bool found;
-        u16 a;
 
         found = false;
         e = gBattleGrid.entries;
         g_max_model_size = -2;
-        for (a = 0; a < 4; a++, e++) {
+        for (a = 0; a < 4; e++, a++) {
             if (e->slot != 0) {
-                for (b = 0; b < 2; b++) {
-                    ModelSequence* m = e->pokemon[b];
+                p = e->pokemon;
+                for (b = 0; b < 2; b++, p++) {
+                    ModelSequence* m = *p;
                     if (m != 0) {
                         s32 size = m->modelSize;
                         found = true;
@@ -341,7 +339,6 @@ void battleGridUpdate(void) {
 
         for (i = 0; i < 4; i++, g++) {
             if (g->slot != 0) {
-                f32 depth;
                 g->slot->LinkTo(0);
                 if (g->arg1 != 0) {
                     slotPos.x = slotXMirror;
@@ -352,14 +349,13 @@ void battleGridUpdate(void) {
                     pos.x = modelX;
                     rot.y = -1.5707964f;
                 }
-                depth = depthScale * (f32)(s8)g->arg2;
-                slotPos.z = depth;
-                pos.z = depth;
+                slotPos.z = depthScale * (f32)(s8)g->arg2;
+                pos.z = slotPos.z;
                 switch (g->count) {
                 case 0:
                     break;
                 case 1:
-                    slotPos.z = depth + soloOffset;
+                    slotPos.z += soloOffset;
                     if (g->pokemon[0] != 0) {
                         g->pokemon[0]->LinkTo(g->slot);
                         PlaceModel(g->pokemon[0], &pos, &rot, g->arg1);

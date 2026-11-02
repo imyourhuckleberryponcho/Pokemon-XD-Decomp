@@ -88,7 +88,7 @@ void GSgfxPixelMode(u8 colorUpdate, u8 alphaUpdate, u8 dither);
 void GSgfxSetLineWidth(f32 width);
 void GSgfxSetPrimitiveType(u32 type);
 void GSgfxSetupRenderAndSelect(GSgfxVF* vf);
-s32 GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32);
+s32 GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 void GSgfxVertex3f(f32 x, f32 y, f32 z);
 asm void PSVECAdd(const register Vec* a, const register Vec* b, register Vec* ab);
 f32 PSVECDistance(const register Vec* a, const register Vec* b);
@@ -151,8 +151,6 @@ inline float sqrtf(float x)
     }
     return x;
 }
-static f32 fix_S2135;
-static u8 init_S2136;
 struct HumanEvent {
     s32 key0;
     u32 key1;
@@ -198,78 +196,66 @@ f32 GScolsys2HumanGetHumanRadius(s32 index) {
 
 extern "C" {
 void GScolsys2HumanDispColision() {
-    volatile f32 sp18;
-    f32 sp14;
-    volatile f32 sp10;
-    f32 temp_f28;
-    volatile f32 temp_f26;
-    f32 temp_f27;
-    f32 temp_f27_2;
-    volatile s32 sp8;
-    f32 temp_f28_2;
-    f32 temp_f4;
-    s32 var_r29;
-    s32 var_r29_2;
-    u16 temp_r3_2;
-    u8 *temp_r3;
-    u8 *var_r28;
-
-    temp_r3 = (unsigned char *)(GScolsys2GetCurFloor());
-    if (temp_r3 != NULL) {
+    f32 s;
+    u8* floor = (u8*)GScolsys2GetCurFloor();
+    if (floor != NULL) {
         GSgfxLayerSetActive(2);
         GScameraLoadActiveCameraMatrix((GSgfxLayerID)(2));
         GSgfxCullMode(0U);
-        sp8 = 0;
-        GSgfxSetupRenderAndSelect((GSgfxVF*)(GSgfxVFBuildTemp(1, 4, 0, 0, 1, 5, 0, 0)));
+        GSgfxSetupRenderAndSelect((GSgfxVF*)(GSgfxVFBuildTemp(1, 4, 0, 0, 1, 5, 0, 0, 0)));
         GSgfxBlendMode(1, 4U, 5U);
         GSgfxPixelMode(1U, 1U, 1U);
         GSgfxSetLineWidth(2.0f);
-        var_r28 = temp_r3 + 0xA00;
-        while (var_r28 != (u8 *) (temp_r3 + 0xDC0)) {
-            temp_r3_2 = M2C_FIELD(var_r28, u16 *, 0x10);
-            if ((temp_r3_2 & 1) && !(temp_r3_2 & 2)) {
-                sp18 = 0.0f;
-                sp10 = 0.0f;
-                peopleGetPos(M2C_FIELD(var_r28, s32 *, 0), M2C_FIELD(var_r28, s32 *, 4), (GSvec*)((GSvec *) &sp10));
+        u8* event = floor + 0xA00;
+        while (event != floor + 0xDC0) {
+            u16 flags = M2C_FIELD(event, u16 *, 0x10);
+            if ((flags & 1) && !(flags & 2)) {
+                GSvec pos;
+                pos.z = 0.0f;
+                pos.y = 0.0f;
+                pos.x = 0.0f;
+                peopleGetPos(M2C_FIELD(event, s32 *, 0), M2C_FIELD(event, s32 *, 4), &pos);
                 GSgfxSetPrimitiveType(0xA0U);
                 GSgfxBeginSurface(0x12U);
-                GSgfxVertex3f(sp10, 0.1f + sp14, sp18);
+                GSgfxVertex3f(pos.x, 0.1f + pos.y, pos.z);
                 GSgfxColor4u8(0U, 0x7FU, 0x7FU, 0xC0U);
-                sp14 = 0.0f;
-                var_r29 = 0;
+                s32 i = 0;
                 do {
-                    temp_f27 = (f32) var_r29;
-                    temp_f27 *= 0.3926991f;
-                    temp_f28 = (f32) sin((f64) temp_f27);
-                    temp_f4 = M2C_FIELD(var_r28, f32 *, 8);
-                    GSgfxVertex3f((temp_f4 * (f32) cos((f64) temp_f27)) + sp10, 0.1f + sp14, (temp_f4 * temp_f28) + sp18);
+                    f32 angle = (f32) i;
+                    angle *= 0.3926991f;
+                    s = (f32) sin((f64) angle);
+                    f32 c = (f32) cos((f64) angle);
+                    f32 r = M2C_FIELD(event, f32 *, 8);
+                    GSgfxVertex3f((r * c) + pos.x, 0.1f + pos.y, (r * s) + pos.z);
                     GSgfxColor4u8(0U, 0x7FU, 0x7FU, 0xC0U);
-                    var_r29 += 1;
-                } while (var_r29 < 0x11);
+                    i += 1;
+                } while (i < 0x11);
                 GSgfxEndSurface();
                 GSgfxSetPrimitiveType(0xB0U);
                 GSgfxBeginSurface(0x11U);
-                temp_f26 = M2C_FIELD(var_r28, f32 *, 8) + peopleGetTalkDistance(M2C_FIELD(var_r28, s32 *, 0), M2C_FIELD(var_r28, s32 *, 4));
-                var_r29_2 = 0;
+                f32 talk = M2C_FIELD(event, f32 *, 8) + peopleGetTalkDistance(M2C_FIELD(event, s32 *, 0), M2C_FIELD(event, s32 *, 4));
+                i = 0;
                 do {
-                    temp_f27_2 = 0.3926991f * (f32) var_r29_2;
-                    temp_f28_2 = (f32) sin((f64) temp_f27_2);
-                    GSgfxVertex3f((temp_f26 * (f32) cos((f64) temp_f27_2)) + sp10, 0.15f + sp14, (temp_f26 * temp_f28_2) + sp18);
+                    f32 s;
+                    f32 angle;
+                    angle = (f32) i;
+                    angle *= 0.3926991f;
+                    s = (f32) sin((f64) angle);
+                    GSgfxVertex3f((talk * (f32) cos((f64) angle)) + pos.x, 0.15f + pos.y, (talk * s) + pos.z);
                     GSgfxColor4u8(0x7FU, 0x7FU, 0xFFU, 0xC0U);
-                    var_r29_2 += 1;
-                } while (var_r29_2 < 0x11);
+                    i += 1;
+                } while (i < 0x11);
                 GSgfxEndSurface();
             }
-            var_r28 += 0x14;
+            event += 0x14;
         }
     }
 }
+
 extern "C++" {
 static u8 checkCollisionHeadToHead(GSCOLSYS2_HUMAN* p0, GSCOLSYS2_HUMAN* p1, GSvec* p2, GSvec* p3) {
-    volatile f32 sp14;
-    s32 sp10;
+    GSvec heroPos;
     bool temp_r31;
-    f32 sp8;
     f32 temp_f1_4;
     f32 temp_f1_5;
     f32 temp_f28;
@@ -300,14 +286,13 @@ static u8 checkCollisionHeadToHead(GSCOLSYS2_HUMAN* p0, GSCOLSYS2_HUMAN* p1, GSv
     }
     var_f29 = M2C_FIELD(p2, f32 *, 8) - M2C_FIELD(temp_r3_2, f32 *, 8);
     var_f30 = M2C_FIELD(p2, f32 *, 0) - M2C_FIELD(temp_r3_2, f32 *, 0);
-    var_f31 = (var_f30 * var_f30) + (var_f29 * var_f29);
-    var_f31 = sqrtf(var_f31);
+    var_f31 = sqrtf((var_f30 * var_f30) + (var_f29 * var_f29));
     temp_f3 = M2C_FIELD(p0, f32 *, 8);
     spC = temp_f3 + M2C_FIELD(p1, f32 *, 8);
     temp_r31 = gimmickBoxFixDistanceForPushBox(&spC, temp_r3, var_f30, var_f29, temp_f3) == 0;
     if (gimmickBoxIsBox(temp_r3) != 0) {
-        heroMoveGetHeroPos(&sp10);
-        temp_f1_4 = (M2C_FIELD(temp_r3_2, f32 *, 4) + M2C_FIELD(p0, f32 *, 0xC)) - sp14;
+        heroMoveGetHeroPos((s32*)&heroPos);
+        temp_f1_4 = (M2C_FIELD(temp_r3_2, f32 *, 4) + M2C_FIELD(p0, f32 *, 0xC)) - heroPos.y;
         if ((temp_f1_4 < 0.00001f) && (temp_f1_4 > -0.00001f) && (temp_r31 == 0)) {
             return 0;
         }
@@ -315,7 +300,7 @@ static u8 checkCollisionHeadToHead(GSCOLSYS2_HUMAN* p0, GSCOLSYS2_HUMAN* p1, GSv
     }
     temp_f2 = M2C_FIELD(p2, f32 *, 4);
     temp_f1_5 = M2C_FIELD(temp_r3_2, f32 *, 4);
-    if ((temp_f1_5 >= (temp_f2 + M2C_FIELD(p1, f32 *, 0xC))) || (M2C_ERROR( ), (((temp_f1_5 + M2C_FIELD(p0, f32 *, 0xC)) == temp_f2) != 0))) {
+    if ((temp_f1_5 >= (temp_f2 + M2C_FIELD(p1, f32 *, 0xC))) || ((temp_f1_5 + M2C_FIELD(p0, f32 *, 0xC)) <= temp_f2)) {
         return 0;
     }
 block_29:
@@ -337,15 +322,12 @@ block_29:
             return 0;
         }
     }
-    if ((s8) init_S2136 == 0) {
-        init_S2136 = 1;
-        fix_S2135 = 0.99f;
-    }
+    static f32 fix = 0.99f;
     if (heroGetFollower() != 0U) {
         if ((((tagPeopleWork*)((tagPeopleWork *) temp_r3_4))->isHero() != 0) && (((tagPeopleWork*)((tagPeopleWork *) temp_r3))->isFollower() != 0)) {
-            spC *= fix_S2135;
+            spC *= fix;
         } else if ((((tagPeopleWork*)((tagPeopleWork *) temp_r3))->isHero() != 0) && (((tagPeopleWork*)((tagPeopleWork *) temp_r3_4))->isFollower() != 0)) {
-            spC *= fix_S2135;
+            spC *= fix;
         }
     }
     if (var_f31 >= spC) {
@@ -353,7 +335,7 @@ block_29:
     }
     temp_f28_2 = (0.0001f + spC) / var_f31;
     if ((gimmickBoxIsBox(temp_r3) != 0) && (temp_r31 != 0)) {
-        if (fabs(var_f30) > (f32) fabs(var_f29)) {
+        if ((f32) fabs(var_f30) > (f32) fabs(var_f29)) {
             var_f30 *= temp_f28_2;
         } else {
             var_f29 *= temp_f28_2;
@@ -362,10 +344,13 @@ block_29:
         var_f30 *= temp_f28_2;
         var_f29 *= temp_f28_2;
     }
+    f32 outX = M2C_FIELD(temp_r3_2, f32 *, 0) + var_f30;
+    f32 outY = M2C_FIELD(p2, f32 *, 4);
+    f32 outZ = M2C_FIELD(temp_r3_2, f32 *, 8) + var_f29;
     if (p3 != NULL) {
-        M2C_FIELD(p3, f32 *, 4) = (f32) M2C_FIELD(p2, f32 *, 4);
-        M2C_FIELD(p3, f32 *, 8) = (f32) (M2C_FIELD(temp_r3_2, f32 *, 8) + var_f29);
-        M2C_FIELD(p3, f32 *, 0) = (f32) (M2C_FIELD(temp_r3_2, f32 *, 0) + var_f30);
+        M2C_FIELD(p3, f32 *, 0) = outX;
+        M2C_FIELD(p3, f32 *, 4) = outY;
+        M2C_FIELD(p3, f32 *, 8) = outZ;
     }
     return 1;
 }

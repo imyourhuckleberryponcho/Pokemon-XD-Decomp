@@ -1456,7 +1456,7 @@ static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon) {
     u8 spA;
     u8 sp9;
     u8 sp8;
-    u32 species;
+    u16 species;
     u8 level;
     void* trainer;
     void* pokemon;

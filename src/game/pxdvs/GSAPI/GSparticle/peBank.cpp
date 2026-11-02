@@ -536,8 +536,6 @@ void peBankFreeFile(_gpdHeader* file) {
 
 }
 
-#pragma push
-#pragma peephole off
 _gpdHeader* peBankLoadFile(_gpdHeader* file) {
     _gpdResourceItem* items = file->items;
     if (_peConvertFileData(file, items, (_particleData*)(items + file->count), (const char*)file)) {
@@ -545,7 +543,6 @@ _gpdHeader* peBankLoadFile(_gpdHeader* file) {
     }
     return 0;
 }
-#pragma pop
 
 }
 
@@ -683,6 +680,9 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
     u32 n = h->count;
     u32 m = h->dataCount;
     _gpdResourceItem* it = items;
+    HSD_JObj* jobj;
+    u32 id;
+    u32* e;
     for (; n != 0; it++, n--) {
         u32 v = (u32)it->data;
         if (isOffset(v)) {
@@ -716,7 +716,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             }
             u32* arr = (u32*)it->data;
             u32 cnt = arr[0];
-            u32* e = arr + 1;
+            e = arr + 1;
             u32 i = 0;
             for (; i < cnt; i++, e++) {
                 u32 ev = *e;
@@ -732,7 +732,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
         case 3: {
             u16 idx = shapeGenerateIndex() + 1;
             if (idx != 0) {
-                u32 id = idx - 1;
+                id = idx - 1;
                 if (shapeLoad(id, it->data)) {
                     u32 mem = shapeGetUsedMemorySize(id);
                     g_particle_debug_stats.shapeMem += mem;
@@ -747,11 +747,13 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
         }
         }
     }
-    for (; m != 0; data++, m--) {
+    while (m != 0) {
         fix((u32*)&data->emitter, (u32)name);
         fix((u32*)&data->next, (u32)name);
         void* p = data->emitter;
         if (p == 0) {
+            data++;
+            m--;
             continue;
         }
         switch (data->type) {
@@ -885,37 +887,37 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
                             break;
                         }
                         u32** scene = (u32**)**(u32**)d;
-                        HSD_JObj* jobj = HSD_JObjLoadJoint((HSD_Joint*)*(u32*)scene[0]);
-                        if (jobj == 0) {
-                            t->res = 0;
-                            break;
-                        }
-                        t->res = (s32)jobj;
-                        t->frame = 0.0f;
-                        t->endFrame = 0.0f;
-                        void* a = 0;
-                        void* b = 0;
-                        void* c = 0;
-                        if (scene[1] != 0) {
-                            a = *(void**)scene[1];
-                        }
-                        if (scene[2] != 0) {
-                            b = *(void**)scene[2];
-                        }
-                        if (scene[3] != 0) {
-                            c = *(void**)scene[3];
-                        }
-                        HSD_JObjAddAnimAll(jobj, a, b, c);
-                        if (t->flags & 4) {
-                            HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)HSD_AObjSetFlags, 3, 0x20000000);
+                        jobj = HSD_JObjLoadJoint((HSD_Joint*)scene[0]);
+                        if (jobj != 0) {
+                            t->res = (s32)jobj;
+                            t->frame = 0.0f;
+                            t->endFrame = 0.0f;
+                            void* a = 0;
+                            void* b = 0;
+                            void* c = 0;
+                            if (scene[1] != 0) {
+                                a = *(void**)scene[1];
+                            }
+                            if (scene[2] != 0) {
+                                b = *(void**)scene[2];
+                            }
+                            if (scene[3] != 0) {
+                                c = *(void**)scene[3];
+                            }
+                            HSD_JObjAddAnimAll(jobj, a, b, c);
+                            if (t->flags & 4) {
+                                HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)HSD_AObjSetFlags, 3, 0x20000000);
+                            } else {
+                                HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)HSD_AObjClearFlags, 3, 0x20000000);
+                            }
+                            HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)HSD_AObjSetRate, 1, 0.0);
+                            HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)_modelGetEndFrame, 2, &t->endFrame);
+                            HSD_JObjReqAnimAll(jobj, 0.0f);
+                            HSD_JObjAnimAll(jobj);
+                            t->endFrame = t->endFrame / 60.0f;
                         } else {
-                            HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)HSD_AObjClearFlags, 3, 0x20000000);
+                            t->res = 0;
                         }
-                        HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)HSD_AObjSetRate, 1, 0.0);
-                        HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)_modelGetEndFrame, 2, &t->endFrame);
-                        HSD_JObjReqAnimAll(jobj, 0.0f);
-                        HSD_JObjAnimAll(jobj);
-                        t->endFrame = t->endFrame / 60.0f;
                         break;
                     }
                     t->res = 0;
@@ -962,12 +964,12 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
                     l->MakeDiff((GSgfxColAu8*)t->color, &zeroVector, false);
                     t->diff = l;
                     if (t->flags & 0x400) {
-                        GSgfxLight* l2 = new GSgfxLight;
-                        if (l2 != 0) {
+                        l = new GSgfxLight;
+                        if (l != 0) {
                             g_particle_debug_stats.bankMem += 0x80;
                             g_particle_debug_stats.total += 0x80;
-                            l2->MakeSpec((GSgfxColAu8*)t->color, &zAxisVector, t->shine, 0);
-                            t->spec = l2;
+                            l->MakeSpec((GSgfxColAu8*)t->color, &zAxisVector, t->shine, 0);
+                            t->spec = l;
                         } else {
                             t->flags &= ~0x400;
                         }
@@ -979,6 +981,8 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             break;
         }
         }
+        data++;
+        m--;
     }
     return true;
 }

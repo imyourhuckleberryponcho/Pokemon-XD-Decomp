@@ -432,30 +432,32 @@ void menuSubCursorAnimeValGet(f32* pos, s32* color) {
 
 void menuSubCursorAnimeMain(void) {
     f32 ratio;
-    f32 value;
-    s16 time;
+    s16 value;
+    int time;
+    MenuSubCursorAnimeWork* w = &_cursorAnimeWork;
 
-    if (_cursorAnimeWork.x != 0.0f) {
-        _cursorAnimeWork.time = time;
-        time = _cursorAnimeWork.time + timeGetLastFrameTime();
-        ratio = (f32)time / (f32)_cursorAnimeWork.duration;
-        value = ((((f32)time * (f32)time) / (f32)_cursorAnimeWork.duration / (f32)_cursorAnimeWork.duration) *
-                          (_cursorAnimeWork.endX - _cursorAnimeWork.startX) +
-                      _cursorAnimeWork.startX);
-        _cursorAnimeWork.x = value;
-        _cursorAnimeWork.cur[0] = ratio * (f32)(_cursorAnimeWork.to[0] - _cursorAnimeWork.from[0]) + (f32)_cursorAnimeWork.from[0];
-        _cursorAnimeWork.cur[1] = ratio * (f32)(_cursorAnimeWork.to[1] - _cursorAnimeWork.from[1]) + (f32)_cursorAnimeWork.from[1];
-        _cursorAnimeWork.cur[2] = ratio * (f32)(_cursorAnimeWork.to[2] - _cursorAnimeWork.from[2]) + (f32)_cursorAnimeWork.from[2];
-        _cursorAnimeWork.cur[3] = ratio * (f32)(_cursorAnimeWork.to[3] - _cursorAnimeWork.from[3]) + (f32)_cursorAnimeWork.from[3];
-        if (value > 0.0f) {
-            _cursorAnimeWork.x = 0.0f;
-            _cursorAnimeWork.cur[3] = -1;
-            _cursorAnimeWork.cur[2] = -1;
-            _cursorAnimeWork.cur[1] = -1;
-            _cursorAnimeWork.cur[0] = -1;
+    if (w->x != 0.0f) {
+        time = (s16)(w->time + timeGetLastFrameTime());
+        value = (f32)(s16)time * (f32)(s16)time / (f32)w->duration / (f32)w->duration *
+                    (w->endX - w->startX) +
+                w->startX;
+        w->time = time;
+        w->x = value;
+        ratio = (f32)time / (f32)w->duration;
+        w->cur[0] = ratio * (f32)(w->to[0] - w->from[0]) + (f32)w->from[0];
+        w->cur[1] = ratio * (f32)(w->to[1] - w->from[1]) + (f32)w->from[1];
+        w->cur[2] = ratio * (f32)(w->to[2] - w->from[2]) + (f32)w->from[2];
+        w->cur[3] = ratio * (f32)(w->to[3] - w->from[3]) + (f32)w->from[3];
+        if (w->x > 0.0f) {
+            w->x = 0.0f;
+            w->cur[3] = -1;
+            w->cur[2] = -1;
+            w->cur[1] = -1;
+            w->cur[0] = -1;
         }
-        _cursorAnimeWork.color = _cursorAnimeWork.cur[3] | (_cursorAnimeWork.cur[2] << 8) |
-                                 (_cursorAnimeWork.cur[0] << 24) | (_cursorAnimeWork.cur[1] << 16);
+        s16 rf_t = w->cur[3];
+        w->color = rf_t | (w->cur[2] << 8) |
+                                 (w->cur[0] << 24) | (w->cur[1] << 16);
     }
     _cursorAnimeWork.timer += timeGetLastFrameSec();
 }
@@ -710,12 +712,10 @@ void menuSubDrawSimpleWindow(s32 layer, s32 x, s32 y, s32 w, s32 h) {
         y0 -= 10;
         GXWGFifo.s16 = x0;
         GXWGFifo.s16 = y0;
-        x1 = (w + 10);
-        x1 += x;
-        y1 = y;
+        x1 = x + w + 10;
         GXWGFifo.u32 = 0xC0;
         GXWGFifo.s16 = x1;
-        y1 += (h + 10);
+        y1 = y + h + 10;
         GXWGFifo.s16 = y0;
         GXWGFifo.u32 = 0xC0;
         GXWGFifo.s16 = x0;

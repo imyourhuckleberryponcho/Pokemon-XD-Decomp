@@ -529,7 +529,7 @@ static inline GStexture* _textureGetFree(void)
     return 0;
 }
 
-GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u32 mipLevels)
+GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u8 mipLevels)
 {
     u16 h;
     u16 w;
@@ -629,11 +629,11 @@ GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u3
     default:
         return 0;
     }
-    size = (tex->bitsPerPixel * (w * h)) >> 3;
-    _textureCalcSize(tex, (u8)mipLevels, size);
-    mipLevels = mipLevels + 1;
+    size = (u32)(tex->bitsPerPixel * (w * h)) >> 3;
+    mipLevels++;
+    _textureCalcSize(tex, mipLevels, size);
     if (tlutEntries != 0) {
-        if (tlutFormat > 0 && tlutFormat < 4) {
+        if (tlutFormat != 0 && tlutFormat >= 0 && tlutFormat < 4) {
             tex->totalSize += (tlutEntries << 4) >> 3;
         } else {
             return 0;
@@ -662,7 +662,7 @@ GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u3
     }
     tex->refCount = 0;
     tex->pad52 = 0;
-    size = (tex->bitsPerPixel * (tex->width * tex->height)) >> 3;
+    size = (u32)(tex->bitsPerPixel * (w * h)) >> 3;
     for (i = 1; i < 8; i++) {
         if (i < tex->mipLevels) {
             tex->mipData[i] = (u8*)tex->mipData[i - 1] + size;
@@ -671,10 +671,15 @@ GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u3
             tex->mipData[i] = 0;
         }
     }
-    if (tlutFormat < 4 && tlutFormat >= 1) {
+    switch (tlutFormat) {
+    case 1:
+    case 2:
+    case 3:
         tex->tlutData = (u8*)tex->mipData[tex->mipLevels - 1] + size;
-    } else {
+        break;
+    default:
         tex->tlutData = 0;
+        break;
     }
     _textureInitObjs(tex);
     tex->dirty = 1;

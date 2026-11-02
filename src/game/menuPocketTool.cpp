@@ -1286,7 +1286,9 @@ void menuPtSpriteDrawCenterColor(u16 id, long x, long y, u32 color)
     MENU_SPRITE_dd_* spr = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(id));
     s16 w = spr->w;
     s16 h = spr->h;
-    windowDrawSprite2(x - w / 2, y - h / 2, w, h, color, 0, id, 0, 7);
+    x -= w / 2;
+    y -= h / 2;
+    windowDrawSprite2(x, y, w, h, color, 0, id, 0, 7);
 }
 
 void menuPtSpriteDrawColor(u16 id, long x, long y, long w, long h, u32 color)

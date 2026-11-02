@@ -624,7 +624,6 @@ void windowCloseMain(tagWINDOW_WORK* w)
 
 s32 windowClose(tagWINDOW_WORK* w, u32 flags)
 {
-    tagWINDOW_WORK* a;
     tagWINDOW_WORK* d;
     tagWINDOW_WORK* c;
     bool found = false;
@@ -650,11 +649,11 @@ s32 windowClose(tagWINDOW_WORK* w, u32 flags)
             }
         }
     }
-    a = windowSearchID(windowGetActiveID());
-    while (a != 0) {
-        if (a->closeFlag != 0 || a->flag18 != 0) {
+    w = windowSearchID(windowGetActiveID());
+    while (w != 0) {
+        if (w->closeFlag != 0 || w->flag18 != 0) {
             for (d = winSysWork.head; d != 0; d = d->next) {
-                if (d->closeFlag == 0 && d->flag18 == 0 && _windowCheckParent(d, a->parent)) {
+                if (d->closeFlag == 0 && d->flag18 == 0 && _windowCheckParent(d, w->parent)) {
                     found = true;
                     winSysWork.activeID = d->menuID;
                 }
@@ -663,12 +662,12 @@ s32 windowClose(tagWINDOW_WORK* w, u32 flags)
                 break;
             }
         } else {
-            winSysWork.activeID = a->menuID;
+            winSysWork.activeID = w->menuID;
             break;
         }
-        a = a->parent;
+        w = w->parent;
     }
-    if (a == 0) {
+    if (w == 0) {
         winSysWork.activeID = 0;
     }
     return 0;
@@ -930,9 +929,10 @@ static bool _windowCheckParent(tagWINDOW_WORK* w, tagWINDOW_WORK* p)
     if (w == p) {
         return false;
     }
-    while (w != 0) {
-        w = w->parent;
-        if (w == p) {
+    tagWINDOW_WORK* cur = w;
+    while (cur != 0) {
+        cur = cur->parent;
+        if (cur == p) {
             return true;
         }
     }

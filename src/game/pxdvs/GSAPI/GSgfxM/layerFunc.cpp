@@ -120,7 +120,6 @@ void GXDrawTorus(f32 rc, u8 numc, u8 numt);
 void GXLoadTexMtxImm(const f32 mtx[][4], u32 id, GXTexMtxType type);
 void GXSetVtxDescv(const GXVtxDescList *attrPtr);
 void* memset(void* dst, int val, size_t n);
-extern s32 arg_sp8;
 extern s32 this_;
 }
 extern "C++" {
@@ -621,145 +620,83 @@ void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
 }
 
 extern "C++" {
-void GSgfxLayer::cunitChannelGen(unsigned char p0, GSgfxCunitAlpha p1, GSgfxCunitSrc p2, GSgfxCunitSrc p3, unsigned long p4, GSgfxLight** p5, GSgfxLightType p6, GSgfxDiffuseFunc p7) {
-    GSgfxLight **var_r4;
-    u8 *var_r3;
-    s32 temp_r29;
-    s32 temp_r4;
-    int temp_r4_2;
-    int temp_r4_3;
-    s32 var_ctr;
-    s32 var_ctr_2;
-    GSgfxLight **var_r5_2;
-    s32 var_r28;
-    u32 temp_r6;
-    u32 temp_r6_2;
-    u32 temp_r6_3;
-    u32 temp_r6_4;
-    u32 temp_r6_5;
-    u32 temp_r6_6;
-    u32 var_r6;
-    u32 var_r6_2;
-    u8 var_r31;
-    u8 *temp_r3;
-    s32 var_r27;
-    u8 *var_r5;
+struct GSgfxChanState {
+    u8 enable;
+    s32 ambSrc;
+    s32 matSrc;
+    s32 unkC;
+    s32 diffuse;
+    s32 attn;
+    GSgfxLight* lights[8];
+};
 
-    var_r28 = arg_sp8;
-    var_r27 = p6;
-    temp_r29 = p0 + 2;
-    var_r31 = 0;
-    if ((p5 != NULL) && (p4 != 0)) {
-        var_r31 = 1;
+struct GSgfxLayerChans {
+    u8 pad[0xDBC];
+    GSgfxChanState chans[4];
+};
+#define CHANS (((GSgfxLayerChans*)this)->chans)
+
+void GSgfxLayer::cunitChannelGen(unsigned char chan, GSgfxCunitAlpha alpha, GSgfxCunitSrc amb, GSgfxCunitSrc mat,
+                                 unsigned long numLights, GSgfxLight** lights, GSgfxLightType type,
+                                 GSgfxDiffuseFunc diffuse) {
+    u32 colorChan = chan;
+    u32 alphaChan = colorChan + 2;
+    u8 enable = 0;
+    u32 i;
+
+    if (lights != NULL && numLights != 0) {
+        enable = 1;
     }
-    if (var_r31 == 0) {
-        var_r27 = 2;
-        var_r28 = 0;
-    } else if (var_r27 == 0) {
-        var_r28 = 0;
+    if (enable == 0) {
+        type = (GSgfxLightType)2;
+        diffuse = (GSgfxDiffuseFunc)0;
+    } else if (type == 0) {
+        diffuse = (GSgfxDiffuseFunc)0;
     }
-    if ((p1 == 0) || (p1 == 2)) {
-        temp_r4 = p0 * 0x38;
-        var_r5 = (unsigned char *)(((s32)this) + temp_r4);
-        M2C_FIELD(var_r5, u8 *, 0xDBC) = var_r31;
-        M2C_FIELD(var_r5, s32 *, 0xDC0) = p2;
-        M2C_FIELD(var_r5, s32 *, 0xDC4) = p3;
-        M2C_FIELD(var_r5, s32 *, 0xDC8) = 0;
-        M2C_FIELD(var_r5, s32 *, 0xDCC) = var_r28;
-        M2C_FIELD(var_r5, s32 *, 0xDD0) = var_r27;
-        if (var_r31 != 0) {
-            var_r4 = p5;
-            var_r6 = 0U;
-            var_ctr = 2;
-            do {
-                if (var_r6 < p4) {
-                    M2C_FIELD(var_r5, GSgfxLight **, 0xDD4) = (GSgfxLight *) M2C_FIELD(var_r4, GSgfxLight **, 0);
+    if (alpha == 0 || alpha == 2) {
+        CHANS[colorChan].enable = enable;
+        CHANS[colorChan].ambSrc = amb;
+        CHANS[colorChan].matSrc = mat;
+        CHANS[colorChan].unkC = 0;
+        CHANS[colorChan].diffuse = diffuse;
+        CHANS[colorChan].attn = type;
+        if (enable) {
+            for (i = 0; i < 8; i++) {
+                if (i < numLights) {
+                    CHANS[colorChan].lights[i] = lights[i];
                 } else {
-                    M2C_FIELD(var_r5, GSgfxLight **, 0xDD4) = NULL;
+                    CHANS[colorChan].lights[i] = NULL;
                 }
-                temp_r6 = var_r6 + 1;
-                if (temp_r6 < p4) {
-                    M2C_FIELD(var_r5, s32 *, 0xDD8) = (s32) M2C_FIELD(var_r4, s32 *, 4);
-                } else {
-                    M2C_FIELD(var_r5, s32 *, 0xDD8) = 0;
-                }
-                temp_r6_2 = temp_r6 + 1;
-                if (temp_r6_2 < p4) {
-                    M2C_FIELD(var_r5, s32 *, 0xDDC) = (s32) M2C_FIELD(var_r4, s32 *, 8);
-                } else {
-                    M2C_FIELD(var_r5, s32 *, 0xDDC) = 0;
-                }
-                temp_r6_3 = temp_r6_2 + 1;
-                if (temp_r6_3 < p4) {
-                    M2C_FIELD(var_r5, s32 *, 0xDE0) = (s32) M2C_FIELD(var_r4, s32 *, 0xC);
-                } else {
-                    M2C_FIELD(var_r5, s32 *, 0xDE0) = 0;
-                }
-                var_r4 += 0x10;
-                var_r5 += 0x10;
-                var_r6 = temp_r6_3;
-                var_r6 += 1;
-                var_ctr -= 1;
-            } while (var_ctr != 0);
+            }
         } else {
-            memset((void*)(((s32)this) + (temp_r4 + 0xDD4)), 0, 0x20U);
+            memset(CHANS[colorChan].lights, 0, sizeof(CHANS[colorChan].lights));
         }
-        temp_r4_2 = 1 << p0;
-        M2C_FIELD(((s32)this), s32 *, 0x16C0) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x16C0) | temp_r4_2);
-        M2C_FIELD(((s32)this), s32 *, 0x1778) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x1778) | temp_r4_2);
+        M2C_FIELD(this, u32 *, 0x16C0) |= 1 << colorChan;
+        M2C_FIELD(this, u32 *, 0x1778) |= 1 << colorChan;
     }
-    if ((p1 == 1) || (p1 == 2)) {
-        temp_r3 = (unsigned char *)(((s32)this) + (temp_r29 * 0x38));
-        M2C_FIELD(temp_r3, u8 *, 0xDBC) = var_r31;
-        M2C_FIELD(temp_r3, s32 *, 0xDC0) = p2;
-        M2C_FIELD(temp_r3, s32 *, 0xDC4) = p3;
-        M2C_FIELD(temp_r3, s32 *, 0xDC8) = 0;
-        M2C_FIELD(temp_r3, s32 *, 0xDCC) = var_r28;
-        M2C_FIELD(temp_r3, s32 *, 0xDD0) = var_r27;
-        if (var_r31 != 0) {
-            var_r6_2 = 0U;
-            var_r5_2 = p5;
-            var_r3 = (unsigned char *)(((s32)this) + (p0 * 0x38));
-            var_ctr_2 = 2;
-            do {
-                if (var_r6_2 - 48 < p4) {
-                    M2C_FIELD(var_r3, GSgfxLight **, 0xDD4) = (GSgfxLight *) M2C_FIELD(var_r5_2, GSgfxLight **, 0);
+    if (alpha == 1 || alpha == 2) {
+        CHANS[alphaChan].enable = enable;
+        CHANS[alphaChan].ambSrc = amb;
+        CHANS[alphaChan].matSrc = mat;
+        CHANS[alphaChan].unkC = 0;
+        CHANS[alphaChan].diffuse = diffuse;
+        CHANS[alphaChan].attn = type;
+        if (enable) {
+            for (i = 0; i < 8; i++) {
+                if (i < numLights) {
+                    CHANS[colorChan].lights[i] = lights[i];
                 } else {
-                    M2C_FIELD(var_r3, GSgfxLight **, 0xDD4) = NULL;
+                    CHANS[colorChan].lights[i] = NULL;
                 }
-                temp_r6_4 = var_r6_2 + 1;
-                if (temp_r6_4 < p4) {
-                    M2C_FIELD(var_r3, s32 *, 0xDD8) = (s32) M2C_FIELD(var_r5_2, s32 *, 4);
-                } else {
-                    M2C_FIELD(var_r3, s32 *, 0xDD8) = 0;
-                }
-                temp_r6_5 = temp_r6_4 + 1;
-                if (temp_r6_5 < p4) {
-                    M2C_FIELD(var_r3, s32 *, 0xDDC) = (s32) M2C_FIELD(var_r5_2, s32 *, 8);
-                } else {
-                    M2C_FIELD(var_r3, s32 *, 0xDDC) = 0;
-                }
-                temp_r6_6 = temp_r6_5 + 1;
-                if (temp_r6_6 < p4) {
-                    M2C_FIELD(var_r3, s32 *, 0xDE0) = (s32) M2C_FIELD(var_r5_2, s32 *, 0xC);
-                } else {
-                    M2C_FIELD(var_r3, s32 *, 0xDE0) = 0;
-                }
-                var_r3 += 0x10;
-                var_r5_2 += 0x10;
-                var_r6_2 += 1;
-                var_r6_2 = temp_r6_6;
-                var_ctr_2 -= 1;
-            } while (var_ctr_2 != 0);
+            }
         } else {
-            memset((void*)(((s32)this) + ((p0 * 0x38) + 0xDD4)), 0, 0x20U);
+            memset(CHANS[colorChan].lights, 0, sizeof(CHANS[colorChan].lights));
         }
-        temp_r4_3 = 1 << temp_r29;
-        M2C_FIELD(((s32)this), s32 *, 0x16C0) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x16C0) | temp_r4_3);
-        M2C_FIELD(((s32)this), s32 *, 0x1778) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x1778) | temp_r4_3);
+        M2C_FIELD(this, u32 *, 0x16C0) |= 1 << alphaChan;
+        M2C_FIELD(this, u32 *, 0x1778) |= 1 << alphaChan;
     }
-    M2C_FIELD(((s32)this), s32 *, 0x16A8) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x16A8) | 4);
-    M2C_FIELD(((s32)this), s32 *, 0x1760) = (s32) (M2C_FIELD(((s32)this), s32 *, 0x1760) | 4);
+    M2C_FIELD(this, u32 *, 0x16A8) |= 4;
+    M2C_FIELD(this, u32 *, 0x1760) |= 4;
 }
 }
 

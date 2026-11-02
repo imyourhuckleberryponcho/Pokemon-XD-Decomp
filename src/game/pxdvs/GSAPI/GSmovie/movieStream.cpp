@@ -285,9 +285,9 @@ static inline void _ringAdvance(__GSmovieStreaming* s, u64 total) {
     }
 }
 static u32 StreamUpdateCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
-    THPPlayer* p;
     __GSmovieStreaming* s = (__GSmovieStreaming*)user;
     u32 n;
+    THPPlayer* p;
     if (s == 0) {
         return 0;
     }
@@ -301,12 +301,11 @@ static u32 StreamUpdateCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 
     p->total = p->played + len1 + len2;
     _ringAdvance(s, p->total);
     if (len1 + len2 >= n) {
-        s16* left = p->audioWork0;
-        if (buf1 == left) {
+        if (buf1 == p->audioWork0) {
             if (p->audioInfo.sndChannels == 2) {
-                FillStreamBuffer(s, left, p->audioWork1, n);
+                FillStreamBuffer(s, p->audioWork0, p->audioWork1, n);
             } else {
-                FillStreamBuffer(s, left, 0, n);
+                FillStreamBuffer(s, p->audioWork0, 0, n);
             }
             DCFlushRange(p->audioWork0, n * 2);
             sndStreamARAMUpdate(p->sndStream0, 0, n, 0, 0);
@@ -316,9 +315,9 @@ static u32 StreamUpdateCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 
             }
         } else {
             if (p->audioInfo.sndChannels == 2) {
-                FillStreamBuffer(s, left + n, p->audioWork1 + n, n);
+                FillStreamBuffer(s, p->audioWork0 + n, p->audioWork1 + n, n);
             } else {
-                FillStreamBuffer(s, left + n, 0, n);
+                FillStreamBuffer(s, p->audioWork0 + n, 0, n);
             }
             DCFlushRange(p->audioWork0 + n, n * 2);
             sndStreamARAMUpdate(p->sndStream0, n, n, 0, 0);
@@ -336,7 +335,7 @@ static u32 StreamUpdateCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 
 static u32 GetAudioSample(__GSmovieStreaming* s, s16* left, s16* right, u32 count, s32* status) {
     THPPlayer* p = s->player;
     THPAudioBuffer* ab;
-    s16 n;
+    u32 n;
     s16* src;
     if (p->playAudioBuffer == 0) {
         if (p->audioBuffer[p->audioGetIdx].ready == 0) {
@@ -349,7 +348,7 @@ static u32 GetAudioSample(__GSmovieStreaming* s, s16* left, s16* right, u32 coun
     n = ab->validSample;
     if (n != 0) {
         u32 i;
-        n = n < count ? n : count;
+        n = count <= n ? count : n;
         src = ab->curPtr;
         if (right == 0) {
             for (i = 0; i < n; i++) {

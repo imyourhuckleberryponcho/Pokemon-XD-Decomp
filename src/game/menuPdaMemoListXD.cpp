@@ -523,9 +523,9 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     CURSOR cursor = _getCursor();
     int count = memoDataGetCount(0);
     int layer = winSpriteGetLayerID(window, sprite);
-    MenuItem* type2 = menuItemBiosGetPtr(0x78, 0xF0);
     MenuItem* base = menuItemBiosGetPtr(0x78, 0xF1);
     MenuItem* type1 = menuItemBiosGetPtr(0x78, 0xEF);
+    MenuItem* type2 = menuItemBiosGetPtr(0x78, 0xF0);
     MenuItem* area = menuItemBiosGetPtr(0x78, 0xEE);
     MenuItem* self = menuItemBiosGetPtr(0x78, sprite->id);
     spriteSetScissor(layer, area->x - self->x, area->y - self->y, area->width, area->height);
@@ -547,7 +547,7 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                               zokuseiBiosGetSmallSpriteID(type), 0, layer);
             u16 type2ID = pokemonGetStatus(0, pokemonGetStatus(mon, 0, 0x6E, 0), 0x16, 1);
             if (type2ID != 0 && type2ID != type) {
-                windowDrawSprite2(type2->x - base->x, (s32)y, type2->width, type2->height, window->alpha | ~0xFF,
+                windowDrawSprite2(type2->x - base->x, (int)y, type2->width, type2->height, window->alpha | ~0xFF,
                                   window, zokuseiBiosGetSmallSpriteID(type2ID), 0, layer);
             }
         }
@@ -808,7 +808,11 @@ void pdaMemoList::Cursor(tagWINDOW_WORK* window) {
     if (count < 8) {
         visible = count;
     }
-    s32 prev = c.pos + c.top;
+    s32 top;
+    s32 pos;
+    pos = c.pos;
+    top = c.top;
+    s32 prev = pos + top;
     u16 key = windowGetKeyRepeat();
     if ((key & 1) != 0) {
         if (prev != 0) {
@@ -816,12 +820,12 @@ void pdaMemoList::Cursor(tagWINDOW_WORK* window) {
         }
         c.pos -= 1;
     } else if ((key & 2) != 0) {
-        if (count - 1 != prev) {
+        if (count - 1 != top + pos) {
             GSsndPlayNow(0x450);
         }
         c.pos += 1;
     } else if ((key & 8) != 0) {
-        if (count - 1 != prev) {
+        if (count - 1 != top + pos) {
             GSsndPlayNow(0x453);
         }
         c.pos += visible;
@@ -842,14 +846,13 @@ void pdaMemoList::Cursor(tagWINDOW_WORK* window) {
         s32 last = visible - 1;
         c.top = c.top + (c.pos - last);
         c.pos = last;
-        if (c.top + last >= count) {
+        if (c.top + c.pos >= count) {
             c.pos = last;
             c.top = count - visible;
         }
     }
     _setCursor(c);
-    s8 rf_t = c.top;
-    window->top = rf_t;
+    window->top = c.top;
     window->pos = c.pos;
     if (prev != c.pos + c.top) {
         LoadPokemon(c.pos + c.top);

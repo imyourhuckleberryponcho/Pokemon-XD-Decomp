@@ -329,11 +329,12 @@ void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
     p = GSparticleLoad(res);
     if (p != 0) {
         GSresRegisterResource(p, group, id, _unloadParticles);
-        fd = (FloorData*)dc_ataBiosGetCurrentPtr;
-        _HSD_SceneDesc* desc = (_HSD_SceneDesc*)HSD_ArchiveGetPublicAddress(GSresGetResource(floorGetCurrentGroupID(), fd->mapResID), "scene_data");
-        if (GSresGetResource(floorGetCurrentGroupID(), fd->mapResID) == 0) {
+        fd = (FloorData*)floorDataBiosGetCurrentPtr();
+        void* arc = GSresGetResource(floorGetCurrentGroupID(), fd->mapResID);
+        if (arc == 0) {
             return 0;
         }
+        _HSD_SceneDesc* desc = (_HSD_SceneDesc*)HSD_ArchiveGetPublicAddress(arc, "scene_data");
         if (desc == 0) {
             return 0;
         }
