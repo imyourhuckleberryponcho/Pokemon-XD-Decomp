@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -72,7 +74,7 @@ extern "C" {
 void GScameraLoadActiveCameraMatrix(GSgfxLayerID id);
 void* GScolsys2GetCurFloor();
 s32 GScolsys2HumanAddCurrentFloor(s32 *p0, void *p1);
-s32 GScolsys2HumanCollision(int p0, s32 p1, s32 p2, s32 p3);
+s32 GScolsys2HumanCollision(int p0, GCsptr p1, GCsptr p2, GCsptr p3);
 void GScolsys2HumanDispColision();
 s32 GScolsys2HumanEnable(s32 index, u8 enable);
 f32 GScolsys2HumanGetHumanRadius(s32 p0);
@@ -88,14 +90,19 @@ void GSgfxPixelMode(u8 colorUpdate, u8 alphaUpdate, u8 dither);
 void GSgfxSetLineWidth(f32 width);
 void GSgfxSetPrimitiveType(u32 type);
 void GSgfxSetupRenderAndSelect(GSgfxVF* vf);
-s32 GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
+GSgfxVF * GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 void GSgfxVertex3f(f32 x, f32 y, f32 z);
 asm void PSVECAdd(const register Vec* a, const register Vec* b, register Vec* ab);
 f32 PSVECDistance(const register Vec* a, const register Vec* b);
 void PSVECScale(const register Vec* src, register Vec* dst, register f32 scale);
 asm void PSVECSubtract(const register Vec* a, const register Vec* b, register Vec* a_b);
 double cos(double x);
+#ifdef __MWERKS__
 u8 gimmickBoxFixDistanceForPushBox(f32*, s32, f32, f32, f32);
+#else
+s32 gimmickBoxFixDistanceForPushBox(f32 fx, f32 fz, f32* dist, void* w);
+#define gimmickBoxFixDistanceForPushBox(d, w, fx, fz, extra) ((void)(extra), gimmickBoxFixDistanceForPushBox((fx), (fz), (d), (void*)(uintptr_t)(u32)(w)))
+#endif
 u8 gimmickBoxIsBox(s32);
 s32 heroGetFollower();
 s32 heroMoveGetHeroPos(s32*);
@@ -103,7 +110,7 @@ void* peopleBiosGetPosPtr(PeopleWork* work);
 u32 peopleGetHumanID(s32, s32);
 void peopleGetPos(s32, s32, GSvec*);
 f32 peopleGetTalkDistance(s32, s32);
-s32 peopleSearchID();
+void* peopleSearchID(u32 searchID);
 double sin(double x);
 extern f32 __float_nan[];
 }
@@ -114,6 +121,9 @@ static u8 checkCollision(GSCOLSYS2_HUMAN* p0, int p1, GSvec* p2, GSvec* p3, GSve
 
 extern "C" {
 f32 GScolsys2HumanGetWalkHeight(void *p0);
+#ifndef __MWERKS__
+static
+#endif
 inline double fabs(double x) { return __fabs(x); }
 }
 
@@ -136,6 +146,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -268,15 +281,14 @@ static u8 checkCollisionHeadToHead(GSCOLSYS2_HUMAN* p0, GSCOLSYS2_HUMAN* p1, GSv
     f64 temp_f1;
     f64 temp_f1_2;
     f64 temp_f1_3;
-    s32 temp_r3;
+    GCsptr temp_r3;
     s32 temp_r3_3;
-    s32 temp_r3_4;
+    GCsptr temp_r3_4;
     s32 var_r0;
     f32 spC;
     u8 *temp_r3_2;
 
-    peopleGetHumanID(M2C_FIELD(p0, s32 *, 0), M2C_FIELD(p0, s32 *, 4));
-    temp_r3 = peopleSearchID();
+    temp_r3 = (GCsptr)(peopleSearchID(peopleGetHumanID(M2C_FIELD(p0, s32 *, 0), M2C_FIELD(p0, s32 *, 4))));
     if (temp_r3 == 0) {
         return 0;
     }
@@ -311,8 +323,7 @@ block_29:
         var_f30 = 1.0f;
         var_f31 = 1.0f;
     }
-    peopleGetHumanID(M2C_FIELD(p1, s32 *, 0), M2C_FIELD(p1, s32 *, 4));
-    temp_r3_4 = peopleSearchID();
+    temp_r3_4 = (GCsptr)(peopleSearchID(peopleGetHumanID(M2C_FIELD(p1, s32 *, 0), M2C_FIELD(p1, s32 *, 4))));
     if (temp_r3_4 == 0) {
         return 0;
     }
@@ -406,7 +417,7 @@ static u8 checkCollision(GSCOLSYS2_HUMAN* human, int index, GSvec* start, GSvec*
 
 extern "C" {
 
-s32 GScolsys2HumanCollision(int index, s32 start, s32 end, s32 result) {
+s32 GScolsys2HumanCollision(int index, GCsptr start, GCsptr end, GCsptr result) {
     HumanEvent* event;
     f32 delta[3];
     f32 segmentStart[3];

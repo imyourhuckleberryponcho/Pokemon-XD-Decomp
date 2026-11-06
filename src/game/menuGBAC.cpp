@@ -1,6 +1,9 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/bitfield.h>
 
 struct Hero {
     u8 data[0x978];
@@ -29,15 +32,16 @@ struct _GBA_Connect_WORK {
 };
 
 struct GBAInfo {
-    u32 pad : 17;
-    u32 f14 : 1;
-    u32 ver : 4;
-    u32 err : 2;
-    u32 lang : 4;
-    u32 b3 : 1;
-    u32 b2 : 1;
-    u32 b1 : 1;
-    u32 b0 : 1;
+    GC_BITS9(
+    u32 pad : 17,
+    u32 f14 : 1,
+    u32 ver : 4,
+    u32 err : 2,
+    u32 lang : 4,
+    u32 b3 : 1,
+    u32 b2 : 1,
+    u32 b1 : 1,
+    u32 b0 : 1)
 };
 
 struct KeyInfo2 {
@@ -54,12 +58,12 @@ struct CBTail {
 extern "C" {
 extern CBTail _CB;
 void AGB_Terminate_init(void);
-long AGB_Prepare(const char* name);
-long AGB_Upload(long ch, long type);
-long AGB_GetPokemon(long ch, Hero* hero, u32* out);
-long AGB_GetStatus(long ch);
-long AGB_IsComplete(long ch);
-long AGB_Terminate(long ch);
+s32 AGB_Prepare(const char* name);
+s32 AGB_Upload(s32 ch, s32 type);
+s32 AGB_GetPokemon(s32 ch, Hero* hero, u32* out);
+s32 AGB_GetStatus(s32 ch);
+s32 AGB_IsComplete(s32 ch);
+s32 AGB_Terminate(s32 ch);
 void AGB_FileBuffAlloc(void);
 void AGB_FileBuffFree(void);
 bool gbaCommandIsConnected(s32 gba);
@@ -79,8 +83,8 @@ void* savedataGetStatus(void* save, s32 kind);
 void heroInit(Hero* hero);
 void heroBiosCopy(Hero* dst, Hero* src);
 u8 menuCBRule_CheckHero(Hero* hero);
-void menuCBRule_ErrorFlagSet(Hero* hero, u16 id);
-void menuCB_Pokemon_ErrorDisp(Hero* hero, u16 id);
+void menuCBRule_ErrorFlagSet(Hero* hero, PCARG(u16, s32) id);
+void menuCB_Pokemon_ErrorDisp(Hero* hero, PCARG(u16, s32) id);
 u8 menuGetEnablePort(void);
 u8 menuSetEnablePort(u8 ports);
 bool menuIsCheck(s32 menuID);
@@ -91,7 +95,7 @@ void menuCB_MessageDispOff(void);
 s8 menuCB_MessageDispCheck(void);
 void menuCB_SE_Play(s32 id);
 void winMsgClose(bool flag);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 KeyInfo2* windowGetKeyInfo(void);
 void menuGBACSetRomVer(u16 ver, u16 idx);
 }
@@ -148,13 +152,13 @@ u8 fn_8004FB00(void)
 }
 }
 
-static void _message(u32 msg, long port)
+static void _message(u32 msg, s32 port)
 {
     msgctrlSetValue(0x2f, port + 1);
     menuCB_MessageDispOn(msg, 0);
 }
 
-static void _message_type2(u32 msg, long port)
+static void _message_type2(u32 msg, s32 port)
 {
     msgctrlSetValue(0x2f, port + 1);
     menuCB_MessageDispOn(msg, 1);
@@ -380,7 +384,7 @@ static u8 _poweroff(_GBA_Connect_WORK* work, _GBA_PHASE phase)
     return 0;
 }
 
-static _GBA_Connect_WORK* _open_menu(_MENU_GBAC_TYPE type, u32 flags, long ch)
+static _GBA_Connect_WORK* _open_menu(_MENU_GBAC_TYPE type, u32 flags, s32 ch)
 {
     _GBA_Connect_WORK* w = &gbaConectGBA_Connect_WORK;
     w->flags = flags;

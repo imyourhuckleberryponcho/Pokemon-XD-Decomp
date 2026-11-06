@@ -6,15 +6,15 @@ enum FloorEnterMode { FLOOR_ENTER_MODE_0, FLOOR_ENTER_MODE_1, FLOOR_ENTER_MODE_2
 enum FloorStateMode { FLOOR_STATE_MODE_0, FLOOR_STATE_MODE_1, FLOOR_STATE_MODE_2, FLOOR_STATE_MODE_3 };
 
 struct FloorModuleInterface {
-    u32 unk0;
+    void (*unk0)(unsigned int groupID, FloorEnterMode mode);
     void (*enterFloor)(unsigned int groupID, FloorEnterMode mode);
     void (*update)(unsigned int groupID, FloorEnterMode mode);
-    u32 unkC;
+    void* unkC;
     void (*exitFloor)(unsigned int groupID, FloorEnterMode mode);
-    u32 unk14;
+    void (*unk14)(unsigned int groupID, FloorEnterMode mode);
     const char* (*getModuleName)(void);
-    void (*makeStateData)(FloorStateMode mode, void* data, unsigned long size);
-    void (*restoreStateData)(FloorStateMode mode, void* data, unsigned long size);
+    void (*makeStateData)(FloorStateMode mode, void* data, u32 size);
+    void (*restoreStateData)(FloorStateMode mode, void* data, u32 size);
     u32 (*getStateSize)(FloorStateMode mode);
     u32 (*getUID)(void);
 };

@@ -1,4 +1,10 @@
 #include <dolphin/types.h>
+#ifndef __MWERKS__
+struct Pokemon;
+struct FightPokemon;
+class FightOutPokemon { public: u8 getComboFuncId(); void setComboFuncId(u8); FightPokemon* getFightPokemonPtr(); };
+#define getFightPokemonPtr__15FightOutPokemonFv(o, ...) ((FightOutPokemon*)((FightOutPokemon*)(o))->getFightPokemonPtr(__VA_ARGS__))
+#endif
 
 struct FIGHT_TRAINER;
 struct FightOutPokemon;
@@ -21,7 +27,9 @@ u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(FIGHT_TRAINER*, FightOutPokemo
 u8 fightTrainerAiIsFightOutPokemonAvoidCntHikui(FIGHT_TRAINER*, FightOutPokemon*);
 u8 fightTrainerAiIsFightPokemonTokuseiDataId(FIGHT_TRAINER*, FightPokemon*, u16);
 s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER*, u8, u8, FightOutPokemon*);
+#ifdef __MWERKS__
 FightOutPokemon* getFightPokemonPtr__15FightOutPokemonFv(FightOutPokemon*);
+#endif
 }
 
 extern "C" {

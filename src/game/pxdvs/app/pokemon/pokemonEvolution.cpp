@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 #pragma dont_inline on
 
@@ -9,7 +11,7 @@ struct POKEMON_EVOLUTION_INFO { u8 kind; u8 reserved; u16 parameter; };
 static const u16 shedinjaName[6] = { 0x30CC, 0x30B1, 0x30CB, 0x30F3, 0, 0 };
 
 extern "C" {
-u32 heroGetStatus(Hero*, u16, u16);
+StatusU32 heroGetStatus(Hero*, PCARG(u16, u32), u16);
 u8 pokemonCheckValid(Pokemon*);
 void heroAddPokemon(Hero*, Pokemon*);
 void memoDataSet(s32, Pokemon*);
@@ -47,15 +49,15 @@ u8 pokemonBiosGetBeautiful(Pokemon*);
 u8 fightIsFight();
 void* fightFloorGetGcHeroFightTrainerPtr(s32);
 Hero* fightTrainerGetStatus(void*, s32, u16, u16);
-u8 heroItemCheckHaveItemDataId(Hero*, u16);
+u8 heroItemCheckHaveItemDataId(Hero*, PCARG(u16, u32));
 u16 pokemonGetSoubiItemDataId(Pokemon*);
 void* itemDataBiosGetPtr(u16);
 u16 itemDataBiosGetItemSoubiDataId(void*);
 void fadeSet(s32, f32);
 void fadeCheck(s32);
 s32 evolutionOpen(Pokemon*, Pokemon*, s32, u16*, s32, u8*);
-void pokemonWazaCreate(Pokemon*, u8, u16);
-void heroItemDecItemDataId(Hero*, u16, s32, s32);
+void pokemonWazaCreate(Pokemon*, PCARG(u8, u16), u16);
+void heroItemDecItemDataId(Hero*, PCARG(u16, u32), s32, s32);
 s32 pokemonEvolutionCreateAddPokemon(Pokemon*, Pokemon*, u16);
 s32 pokemonEvolution(Pokemon*, Pokemon*, u16, POKEMON_EVOLUTION_INFO*, u16*);
 }

@@ -1,11 +1,18 @@
 
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/pecontainer.h>
 
 #pragma pool_strings off
 
 
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 #define NAN (__float_nan[0])
 extern "C" {
 double atan2(double y, double x);
@@ -31,6 +38,9 @@ inline int __fpclassifyf(float x) {
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
@@ -87,7 +97,12 @@ struct peEmitParams {
 };
 
 struct peEmitterNode {
-    u8 pad0[0x9C];
+    u8 pad0[0x20];
+    void* slot20;
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x6C];
     Vec3 dir;
     u8 padA8[0x54];
     peEmitParams* params;
@@ -103,21 +118,57 @@ struct _EmitParams {
     Vec3 xscale;
 };
 
+#ifdef __MWERKS__
 struct HSD_JObj {
     u8 unk0[0x14];
     u32 flags;
     u8 unk18[0x2C];
     f32 mtx[3][4];
 };
+#else
+struct HSD_JObj {
+    u8 unk0[0x28];
+    u32 flags;
+    u8 unk2C[0x60 - 0x2C];
+    f32 mtx[3][4];
+    u8 pc90[0xB8 - 0x90];
+};
+#endif
 
 struct peSpline {
     u8 flags;
     u8 pad1[3];
-    f32 value;
-    f32 time;
+    gc_bef32 value;
+    gc_bef32 time;
 };
 
 
+#ifdef __MWERKS__
+#define PE_MODEL_SHAPE(m) ((GCsptr)(m)->jobj)
+#else
+#define PE_MODEL_SHAPE(m) ((GCsptr)(m)->jobj.gc())
+#endif
+#ifndef __MWERKS__
+
+
+struct _peModel {
+    gc_be32 flags;
+    gc_bef32 rotX;
+    gc_bef32 rotY;
+    gc_bef32 rotZ;
+    gc_vec3 spin;
+    gc_vec3 base;
+    gc_vec3 jitter;
+    gc_ptr32(peSpline) rotXSpline;
+    gc_ptr32(peSpline) rotYSpline;
+    gc_ptr32(peSpline) rotZSpline;
+    gc_ptr32(peSpline) sclXSpline;
+    gc_ptr32(peSpline) sclYSpline;
+    gc_ptr32(peSpline) sclZSpline;
+    gc_ptr32(HSD_JObj) jobj;
+    gc_bef32 loopTime;
+};
+#else
 struct _peModel {
     u32 flags;
     f32 rotX;
@@ -135,8 +186,9 @@ struct _peModel {
     HSD_JObj* jobj;
     f32 loopTime;
 };
+#endif
 
-class peNode {
+struct peNode {
 public:
     f32 life0;
     f32 life;
@@ -162,6 +214,7 @@ public:
     Vec3 spinRate;
     f32 sortKey;
 
+    void Render(_peModel* m);
     bool Update(peEmitterNode* e, _peModel* m, f32 dt);
     void Start(peEmitterNode* e, _peModel* m, _EmitParams* p);
 };
@@ -172,30 +225,23 @@ public:
     void pop();
 };
 
-struct GSgfxLayer {
-    u8 pad0[0x28];
-    s32 id;
-    u8 pad2C[0x19A0 - 0x2C];
-    GSgfxMatrixStack* matrixStack;
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
     void InvalidateState();
 };
 
 struct GScamera {
-    u8 pad0[8];
+    u8 pad0[4];
+    void* desc;
     void* cobj;
 };
 
 class peContainer {
 public:
-    void* emitter;
-    u32 unk4;
-    void* buffer;
-    peNode* freeList;
-    peNode* activeList;
-    u16 count;
-    u16 maxCount;
-    u8 dirty;
-    u8 started;
+    PE_CONTAINER_MEMBERS
 
     peContainer(peEmitterNode* e, u32 nodeSize, u16 max);
     virtual ~peContainer();
@@ -214,7 +260,7 @@ public:
 
 class peModelContainer : public peContainer {
 public:
-    _peModel* model;
+    PE_MODEL_CONTAINER_MEMBERS
 
     peModelContainer(peEmitterNode* e, _peModel* m, u16 max);
     virtual ~peModelContainer();
@@ -233,14 +279,14 @@ struct ParticleDebugStats {
     u32 total;
     u32 pad18[3];
 };
-extern ParticleDebugStats g_particle_debug_stats;
-extern s32 g_render_pass;
-extern GSgfxLayer* g_current_layer;
-extern _EmitParams* g_emitParams;
-extern void* g_currentBound;
-extern Vec3 g_CameraPosition;
-extern Vec3 g_CameraLookDir;
-extern Vec3 unitScaleVector;
+extern "C" ParticleDebugStats g_particle_debug_stats;
+extern "C" s32 g_render_pass;
+extern "C" GSgfxLayer* g_current_layer;
+extern "C" _EmitParams* g_emitParams;
+extern "C" void* g_currentBound;
+extern "C" Vec3 g_CameraPosition;
+extern "C" Vec3 g_CameraLookDir;
+extern "C" Vec3 unitScaleVector;
 static s32 _primitive_instance_memory;
 
 extern "C" {
@@ -268,7 +314,12 @@ void HSD_JObjReqAnimAll(HSD_JObj* jobj, f32 frame);
 void HSD_JObjAnimAll(HSD_JObj* jobj);
 void HSD_JObjDispAll(HSD_JObj* jobj, Mtx34* vmtx, u32 flags, u32 rendermode);
 u8 GSgfxVideoGetVsyncRate();
+#ifdef __MWERKS__
 void shapeUpdate(u16 id, s16 instance, f32 dt);
+#else
+void shapeUpdate(u16 id, f32 dt, s16 instance);
+#define shapeUpdate(i, n, t) shapeUpdate((i), (t), (n))
+#endif
 void shapeRender(u16 id, s16 instance, s32 layer);
 void shapeFreePrimitiveInstance(u16 id, s16 instance);
 s16 shapeCreatePrimitiveInstance(u16 id);
@@ -324,7 +375,7 @@ static inline f32 evalSpline(peSpline* s, f32 t) {
 
 
 static inline void freeShapeInstance(_peModel* m, peModelNode* n) {
-    shapeFreePrimitiveInstance((u16)((s32)m->jobj - 1), n->instance);
+    shapeFreePrimitiveInstance((u16)(PE_MODEL_SHAPE(m) - 1), n->instance);
     g_particle_debug_stats.shapeMem -= _primitive_instance_memory;
     g_particle_debug_stats.total -= _primitive_instance_memory;
     _primitive_instance_memory = shapeGetInstancedMemorySizeAll();
@@ -361,7 +412,7 @@ static inline bool canRender(peModelContainer* c) {
     if (g_render_pass != 1) {
         return false;
     }
-    switch (g_current_layer->id) {
+    switch ((*(s32*)&g_current_layer->id)) {
     case 2:
         if (flags & 2) {
             return false;
@@ -378,6 +429,49 @@ static inline bool canRender(peModelContainer* c) {
     return true;
 }
 
+inline void peModelNode::Render(_peModel* m) {
+    Mtx rot;
+    Mtx mtx;
+    u16 id;
+    u32 mode;
+    HSD_JObj* jobj;
+    PSMTXQuat((Mtx34*)rot, &world.rot);
+    PSMTXScale((Mtx34*)mtx, world.scale.x, world.scale.y, world.scale.z);
+    PSMTXConcat((Mtx34*)rot, (Mtx34*)mtx, (Mtx34*)mtx);
+    PSMTXTransApply((Mtx34*)mtx, (Mtx34*)mtx, world.pos.x, world.pos.y, world.pos.z);
+    if (m->flags & 0x40) {
+        id = PE_MODEL_SHAPE(m) - 1;
+        shapeUpdate(id, instance, life0 - life);
+        (*(GSgfxMatrixStack**)&g_current_layer->matrixStack)->pushMult((GSmtx*)mtx);
+        shapeRender(id, instance, (*(s32*)&g_current_layer->id));
+        (*(GSgfxMatrixStack**)&g_current_layer->matrixStack)->pop();
+    } else {
+        jobj = m->jobj;
+        if (jobj != 0) {
+            switch (g_render_pass) {
+            case 0:
+                mode = 1;
+                break;
+            case 1:
+                mode = 6;
+                break;
+            default:
+                return;
+            }
+            HSD_JObjCopyMtx(jobj, *(Mtx*)(&mtx));
+            jobj->flags |= 0x3800000;
+            HSD_JObjSetMtxDirty(jobj);
+            if (m->loopTime > 0.00001f) {
+                f32 t = (life0 - life) * (f32)GSgfxVideoGetVsyncRate();
+                f32 f = (f32)fmod(t, m->loopTime);
+                HSD_JObjReqAnimAll(jobj, f);
+                HSD_JObjAnimAll(jobj);
+                HSD_JObjDispAll(jobj, 0, mode, 0);
+            }
+        }
+    }
+}
+
 void peModelContainer::Render() {
     if (started) {
         if (canRender(this)) {
@@ -392,47 +486,7 @@ void peModelContainer::Render() {
                 GSlightSetupLights(cam->cobj);
             }
             for (peNode* n = activeList; n != 0; n = n->prev) {
-                peModelNode* node = (peModelNode*)n;
-                HSD_JObj* jobj;
-                _peModel* m = model;
-                Mtx mtx;
-                Mtx rot;
-                PSMTXQuat((Mtx34*)rot, &node->world.rot);
-                PSMTXScale((Mtx34*)mtx, node->world.scale.x, node->world.scale.y, node->world.scale.z);
-                PSMTXConcat((Mtx34*)rot, (Mtx34*)mtx, (Mtx34*)mtx);
-                PSMTXTransApply((Mtx34*)mtx, (Mtx34*)mtx, node->world.pos.x, node->world.pos.y, node->world.pos.z);
-                if (m->flags & 0x40) {
-                    u16 id = (s32)m->jobj - 1;
-                    shapeUpdate(id, node->instance, node->life0 - node->life);
-                    g_current_layer->matrixStack->pushMult((GSmtx*)mtx);
-                    shapeRender(id, node->instance, g_current_layer->id);
-                    g_current_layer->matrixStack->pop();
-                } else {
-                    jobj = m->jobj;
-                    if (jobj != 0) {
-                        u32 mode;
-                        switch (g_render_pass) {
-                        case 0:
-                            mode = 1;
-                            break;
-                        case 1:
-                            mode = 6;
-                            break;
-                        default:
-                            continue;
-                        }
-                        HSD_JObjCopyMtx(jobj, *(Mtx*)(&mtx));
-                        jobj->flags |= 0x3800000;
-                        HSD_JObjSetMtxDirty(jobj);
-                        if (m->loopTime > 0.00001f) {
-                            f32 t = (node->life0 - node->life) * (f32)GSgfxVideoGetVsyncRate();
-                            f32 f = (f32)fmod(t, m->loopTime);
-                            HSD_JObjReqAnimAll(jobj, f);
-                            HSD_JObjAnimAll(jobj);
-                            HSD_JObjDispAll(jobj, 0, mode, 0);
-                        }
-                    }
-                }
+                ((peModelNode*)n)->Render(model);
             }
             if (!(model->flags & 0x40)) {
                 g_current_layer->InvalidateState();
@@ -501,7 +555,7 @@ peModelContainer::~peModelContainer() {
     g_particle_debug_stats.total -= 0x24;
 }
 
-peModelContainer::peModelContainer(peEmitterNode* e, _peModel* m, u16 max) : peContainer(e, 0x98, max) {
+peModelContainer::peModelContainer(peEmitterNode* e, _peModel* m, u16 max) : peContainer(e, PE_NODE_SIZE(0x98, peModelNode), max) {
     model = m;
     g_particle_debug_stats.nodeMem += 0x24;
     g_particle_debug_stats.total += 0x24;
@@ -594,9 +648,9 @@ void peModelNode::Start(peEmitterNode* e, _peModel* m, _EmitParams* p) {
     Vec3 jitter;
     peNode::Start(e, p);
     flip = 0;
-    PSVECScale(&m->jitter, &jitter, HSD_Randf());
+    PSVECScale(GC_VEC3P(Vec3, &m->jitter), &jitter, HSD_Randf());
     offset = Vec3C(jitter);
-    PSVECAdd(&offset, &m->base, &offset);
+    PSVECAdd(&offset, GC_VEC3P(Vec3, &m->base), &offset);
     spinQuat.x = 0.0f;
     spinQuat.y = 0.0f;
     spinQuat.z = 0.0f;
@@ -610,7 +664,11 @@ void peModelNode::Start(peEmitterNode* e, _peModel* m, _EmitParams* p) {
     world.rot.w = 1.0f;
     world.scale = unitScaleVector;
     if (!(e->params->flags & 0x400)) {
+        #ifdef __MWERKS__
         EulerToQuat((Vec3*)&m->rotX, &rotQuat);
+#else
+        EulerToQuat((Vec3*)GC_VEC3P(Vec3, (gc_vec3*)&m->rotX), &rotQuat);
+#endif
         if (flags & 0xE380) {
             Vec3* e = &euler;
             if (flags & 0x80) {
@@ -646,7 +704,11 @@ void peModelNode::Start(peEmitterNode* e, _peModel* m, _EmitParams* p) {
             EulerToQuat(&euler, &spinQuat);
         }
     }
+#ifdef __MWERKS__
     spinRate = m->spin;
+#else
+    GC_VEC3(spinRate, m->spin);
+#endif
     if (flags & 0x400) {
         spinRate.x *= HSD_Randf();
     }
@@ -657,7 +719,7 @@ void peModelNode::Start(peEmitterNode* e, _peModel* m, _EmitParams* p) {
         spinRate.z *= HSD_Randf();
     }
     if (m->flags & 0x40) {
-        instance = shapeCreatePrimitiveInstance((u16)((s32)m->jobj - 1));
+        instance = shapeCreatePrimitiveInstance((u16)(PE_MODEL_SHAPE(m) - 1));
         g_particle_debug_stats.shapeMem -= _primitive_instance_memory;
         g_particle_debug_stats.total -= _primitive_instance_memory;
         _primitive_instance_memory = shapeGetInstancedMemorySizeAll();
@@ -665,3 +727,8 @@ void peModelNode::Start(peEmitterNode* e, _peModel* m, _EmitParams* p) {
         g_particle_debug_stats.total += _primitive_instance_memory;
     }
 }
+
+#ifndef __MWERKS__
+
+static_assert(sizeof(peNode) == sizeof(peNodeHead), "node head");
+#endif

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/worldMapData.h>
 #pragma peephole off
 struct _GSparticleGen;
 enum GSattachMode { Attach0 };
@@ -7,12 +8,24 @@ public:
     WorldMapModel() : mOffscreenData(0) {}
     ~WorldMapModel() { if (mOffscreenData) releaseOffscreenData(); }
     void releaseOffscreenData();
+#ifdef __MWERKS__
     void SetModel(u32,u32,bool);
+#else
+    void* SetModel(u32 groupID, u32 modelID, bool attachLights);
+#endif
     void SetMotion(u32,s16,f32,bool);
     f32 GetAnimeFrameCount(u32,u32);
     f32 GetAnimeFrame(u32);
+#ifdef __MWERKS__
     void ModelAttach(u32,u32,s32,GSattachMode);
+#else
+    bool ModelAttach(u32 a, u32 b, s32 part, GSattachMode mode);
+#endif
+#ifdef __MWERKS__
     void ModelDetach(u32);
+#else
+    bool ModelDetach(u32 id);
+#endif
     _GSparticleGen* SetModelPartPaticle(u32,u32,s32,GSattachMode,bool,bool,bool);
     void DetachModelPartPaticle(_GSparticleGen*,bool);
     void* mOffscreenData;
@@ -43,7 +56,6 @@ public:
     void Init(); void* cameraPlay(u32,s32,bool); void playBGM(u16);
     glowEffect* glow; DemoState* state;
 };
-struct WorldMapData { u8 pad[0x118]; u32 returnFloor; u8 pad11c[0x1D8-0x11c]; s32 flag; u8 pad1dc[0x1F0-0x1dc]; u32 nextFloor; };
 extern "C" {
 extern WorldMapData* worldmapXD_data;
 u32 GSflagGet(s32); void GSflagSet(s32,u32); void GSthreadSwitch();
@@ -93,11 +105,11 @@ void kyogreMoveDemo::Main() {
 u32 kyogreMoveDemo::GetNextFloorID() {
     u32 floor=0;
     switch (state->type) {
-    case 1: floor=worldmapXD_data->returnFloor; break;
+    case 1: floor=worldmapXD_data[7].floorID; break;
     case 0: {
-        s32 flag=worldmapXD_data->flag;
+        s32 flag=worldmapXD_data[13].flag;
         if (GSflagGet(flag)<2) { GSflagSet(flag,2); floor=0x56; }
-        else floor=worldmapXD_data->nextFloor;
+        else floor=worldmapXD_data[13].floorID;
         break;
     }
     }

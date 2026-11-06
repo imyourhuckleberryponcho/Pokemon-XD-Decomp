@@ -4,7 +4,7 @@
 #include <libc/string.h>
 
 extern "C" {
-s32 GSdvdWrite(void* file, const char* data, long size, s32 offset);
+s32 GSdvdWrite(void* file, const char* data, s32 size, s32 offset);
 bool GSdvdOpenTest(const char* path);
 s32 GSdvdRemove(const char* path);
 void* GSdvdCreate(const char* path);
@@ -17,7 +17,7 @@ public:
     ~GSstreamFileOutput();
     bool open(const char* path);
     bool is_open() const;
-    bool write(const char* data, long size);
+    bool write(const char* data, s32 size);
     bool writeString(const char* str);
     bool writePrintf(const char* fmt, ...);
 
@@ -35,12 +35,12 @@ bool GSstreamFileOutput::writePrintf(const char* fmt, ...) {
 }
 
 bool GSstreamFileOutput::writeString(const char* str) {
-    long len = strlen(str);
+    s32 len = strlen(str);
     write(str, len);
     return true;
 }
 
-bool GSstreamFileOutput::write(const char* data, long size) {
+bool GSstreamFileOutput::write(const char* data, s32 size) {
     if (GSdvdWrite(m_file, data, size, m_offset) < 0) {
         return false;
     }

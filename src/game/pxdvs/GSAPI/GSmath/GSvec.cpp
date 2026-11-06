@@ -15,11 +15,13 @@ double asin(double x);
 double atan(double x);
 }
 
+extern "C" {
 GSvec xAxisVector(1.0f, 0.0f, 0.0f);
 GSvec yAxisVector(0.0f, 1.0f, 0.0f);
 GSvec zAxisVector(0.0f, 0.0f, 1.0f);
 GSvec zeroVector(0.0f, 0.0f, 0.0f);
 GSvec unitScaleVector(1.0f, 1.0f, 1.0f);
+}
 
 extern "C" {
 

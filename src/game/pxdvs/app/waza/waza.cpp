@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 extern "C" {
 void* wazaDataBiosGetPtr(u16);
@@ -29,9 +31,9 @@ void wazaDataBiosSetFightKoukaDataId(void*, u16);
 u16 wazaDataBiosGetFightKoukaDataId(void*);
 void wazaDataBiosSetSeqId(void*, u16);
 u16 wazaDataBiosGetSeqId(void*);
-void wazaDataBiosSetFightAttackTunagiMsgId(void*, u16);
+void wazaDataBiosSetFightAttackTunagiMsgId(void*, PCARG(u16, u32));
 u32 wazaDataBiosGetFightAttackTunagiMsgId(void*);
-void wazaDataBiosSetFightAttackMsgId(void*, u16);
+void wazaDataBiosSetFightAttackMsgId(void*, PCARG(u16, u32));
 u32 wazaDataBiosGetFightAttackMsgId(void*);
 void wazaDataBiosSetAddFightKoukaAvg(void*, u8);
 u8 wazaDataBiosGetAddFightKoukaAvg(void*);
@@ -102,7 +104,7 @@ u8 fightWazaBiosGetKaisuu(void*);
 void fightWazaBiosSetAutoMakeFlag(void*, u8);
 u8 fightWazaBiosGetAutoMakeFlag(void*);
 
-u32 wazaGetStatus(void*, u16, u16, u32);
+StatusU32 wazaGetStatus(void*, u16, u16, u32);
 }
 
 extern "C" {
@@ -338,7 +340,7 @@ void wazaSetStatus(void* ptr, u16 dataID, u16 status, u32 index, u32 value) {
     }
 }
 
-u32 wazaGetStatus(void* ptr, u16 dataID, u16 status, u32 index) {
+StatusU32 wazaGetStatus(void* ptr, u16 dataID, u16 status, u32 index) {
     if (status == 0 || status >= 0x35) {
         return 0;
     }
@@ -428,7 +430,7 @@ u32 wazaGetStatus(void* ptr, u16 dataID, u16 status, u32 index) {
     case 41:
         return (u16)fightWazaBiosGetTargetDataId(ptr);
     case 42:
-        return (u32)fightWazaBiosGetJoutaiPtr(ptr, index);
+        return (StatusU32)fightWazaBiosGetJoutaiPtr(ptr, index);
     case 43:
         return (u8)fightWazaBiosGetCritical(ptr);
     case 44:

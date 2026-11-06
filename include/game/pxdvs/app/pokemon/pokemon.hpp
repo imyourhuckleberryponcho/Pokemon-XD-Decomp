@@ -2,9 +2,11 @@
 #define POKEMON_H
 
 #include <global.h>
+#include <game/statusval.h>
+#include <game/bitfield.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
-class Hero;
+struct Hero;
 
 struct PokemonStatusRnd {
   u8 maxHp;
@@ -30,20 +32,21 @@ struct PokemonStatusRnd {
 
 union Ribbon {
   struct {
-    u32 champ : 1;
-    u32 winning : 1;
-    u32 victory : 1;
-    u32 bromide : 1;
-    u32 ganba : 1;
-    u32 marine : 1;
-    u32 land : 1;
-    u32 sky : 1;
-    u32 country : 1;
-    u32 national : 1;
-    u32 earth: 1;
-    u32 world : 1;
-    u32 amari : 8;
-    u32 unk2 : 8;
+    GC_BITS15(
+    u32 champ : 1,
+    u32 winning : 1,
+    u32 victory : 1,
+    u32 bromide : 1,
+    u32 ganba : 1,
+    u32 marine : 1,
+    u32 land : 1,
+    u32 sky : 1,
+    u32 country : 1,
+    u32 national : 1,
+    u32 earth: 1,
+    u32 world : 1,
+    u32 amari : 8,
+    u32 unk2 : 8, u32 : 4)
   } bits;
   u32 allBits;
 };
@@ -62,10 +65,11 @@ struct ExpandStatus {
 
 union PokemonFlags {
   struct {
-    u8 tamago: 1;
-    u8 tokusei: 1;
-    u8 fusei : 1;
-    u8 unk : 5;
+    GC_BITS4(
+    u8 tamago: 1,
+    u8 tokusei: 1,
+    u8 fusei : 1,
+    u8 unk : 5)
   } bits;
   u8 allBits;
 };
@@ -258,18 +262,18 @@ extern "C" u32 pokemonCheckRare(Pokemon*);
 extern "C" void pokemonGrowBasisStatus(Pokemon*,u32);
 extern "C" void pokemonResetBasisStatus(Pokemon*);
 extern "C" void pokemonSetStatus(Pokemon*, u32, u16, u32, u32);
-extern "C" u32 pokemonGetStatus(Pokemon*, u32, u16, u32);
+extern "C" StatusU32 pokemonGetStatus(Pokemon*, u32, u16, u32);
 extern "C" u32 pokemonAdjustValueBySeikaku(u32, u16, u32);
 static u8 _pokemonGetSeikaku(Pokemon*);
 extern "C" u8 pokemonGetSeikakuAsRnd(u32);
 static u8 _pokemonGetHinsi(Pokemon*);
 static void _pokemonSetLevelBasisStatus(Pokemon*, u8);
-static u16 _pokemonGetLevelOneStatus(Pokemon*, u8, u16, u16, u16, u16, long);
+static u16 _pokemonGetLevelOneStatus(Pokemon*, u8, u16, u16, u16, u16, s32);
 extern "C" u16 pokemonCreateBasisStatus(u16, u8, u16, u8, s32);
 static u8 _pokemonGetNowExpToLevel(Pokemon*);
 extern "C" u8 pokemonGetExpToLevel(u8, u32);
 static int _pokemonGetLevelToExp(u8, u8);
-extern "C" int pokemonCheckRareRnd(unsigned long, unsigned long);
-static int _pokemonCheckRare(unsigned long, unsigned long);
+extern "C" int pokemonCheckRareRnd(u32, u32);
+static int _pokemonCheckRare(u32, u32);
 
 #endif

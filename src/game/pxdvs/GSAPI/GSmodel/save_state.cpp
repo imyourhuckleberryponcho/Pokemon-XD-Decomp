@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gsmodelview.h>
 
 #pragma pool_strings off
 
@@ -6,6 +8,7 @@ struct Vec {
     f32 x, y, z;
 };
 
+#ifdef __MWERKS__
 struct HSD_JObj {
     u8 unk0[0x1C];
     Vec rotate;
@@ -13,6 +16,26 @@ struct HSD_JObj {
     Vec scale;
     Vec translate;
 };
+#else
+struct HSD_JObj {
+    void* pcObject[2];
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
+    void* dobj;
+    Vec rotate;
+    f32 rotateW;
+    Vec scale;
+    Vec translate;
+    f32 mtx[3][4];
+    void* scl;
+    void* envelopemtx;
+    void* aobj;
+    void* robj;
+    u32 id;
+};
+#endif
 
 struct GSmodelNull {
     u8 unk0[0x10];
@@ -21,18 +44,78 @@ struct GSmodelNull {
 
 struct _GSmodel {
     u32 flags;
-    u8 unk4[8];
+    _GSmodel* next;
+    void* set;
     GSmodelNull* null;
-    u8 unk10[0x64];
+    void* blendJObj;
+    void* blendDest;
+    f32 position[3];
+    f32 rotation[3];
+    f32 scale[3];
+    GSmodelBoundView bound;
+    void* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
     s32 animType;
     s32 animIndex;
-    u8 unk7C[4];
+    f32 animRate;
     f32 animFrame;
-    u8 unk84[0x28];
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
     s32 texAnimType;
     s32 texAnimIndex;
-    u8 unkB4[4];
+    f32 texAnimRate;
     f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
+    GSmodelPartMixView partMix[12];
+    f32 blendFactor;
+    u8 animDirty;
+    u8 texAnimDirty;
+    u8 unk21E[2];
+    void* animEndedCallback;
+    void* animEndedCallbackArg;
+    GSmodelPartAnimView partAnim[16];
+    s32 attachMode;
+    _GSmodel* attachModel;
+    u32 attachIndex;
+    f32 attachPosition[3];
+    f32 attachRotation[3];
+    f32 attachScale[3];
+    void* particleBank;
+    u32 particleAttachMode;
+    void* materials;
+    u32 materialCount;
+    u32 shadowSurfaceCount;
+    void* shadowSurfaces;
+    void* shadowLight;
+    f32 groundPlane;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
 struct GSmodelState {

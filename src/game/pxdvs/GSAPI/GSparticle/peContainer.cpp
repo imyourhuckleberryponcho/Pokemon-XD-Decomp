@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pecontainer.h>
 
 extern "C" {
 void* memset(void*, int, u32);
@@ -6,7 +7,7 @@ void* memcpy(void*, const void*, u32);
 void DCFlushRange(void*, u32);
 }
 
-class GSgfxLayer {
+struct GSgfxLayer {
 public:
     u16 tokenMark();
     void SetLayerVisibility(bool visible);
@@ -21,7 +22,11 @@ struct GSgfxDL {
     u16 count;
     u8* data;
     u32 size;
+#ifdef __MWERKS__
     u32 pad;
+#else
+    struct GSgfxVF* vf;
+#endif
 
     bool valid() const { return (flags & 1) == 1; }
     u8* colorPtr() { return (flags & 1) ? data + 3 : 0; }
@@ -39,7 +44,7 @@ void* GSmemAllocClr(u32 size);
 void* GSmemAllocAlignClr(u32 size, u32 align);
 }
 
-extern GSgfxLayer* g_current_layer;
+extern "C" GSgfxLayer* g_current_layer;
 extern u16 g_bank_token;
 
 struct ParticleDebugStats {
@@ -51,34 +56,33 @@ struct ParticleDebugStats {
     u32 total;
     u32 pad18[3];
 };
-extern ParticleDebugStats g_particle_debug_stats;
+extern "C" ParticleDebugStats g_particle_debug_stats;
 
 struct peEmitParamsC {
     u32 flags;
 };
 struct peEmitterNode {
-    u8 pad0[0xFC];
+    u8 pad0[0x20];
+    void* slot20;
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0xCC];
     peEmitParamsC* params;
 };
 
-class peNode {
+struct peNode {
 public:
-    u8 pad[0x28];
+    u8 pad0[0x20];
+    void* slot20;
+    u8 pad24[0x4];
     peNode* prev;
     peNode* next;
 };
 
 class peContainer {
 public:
-    peEmitterNode* emitter;
-    u32 unk4;
-    void* buffer;
-    peNode* freeList;
-    peNode* activeList;
-    u16 count;
-    u16 maxCount;
-    u8 dirty;
-    u8 started;
+    PE_CONTAINER_MEMBERS
 
     peContainer(peEmitterNode* e, u32 nodeSize, u16 max);
     virtual ~peContainer();
@@ -98,13 +102,7 @@ public:
 
 class peRenderContainer : public peContainer {
 public:
-    u8 swapPending;
-    u8 cur;
-    u32 bufSize;
-    GSgfxDL dl[2];
-    u8* bufA;
-    u8* bufB;
-    u16 tokens[2];
+    PE_RENDER_MEMBERS_DL(GSgfxDL dl[2])
 
     peRenderContainer(peEmitterNode* e, u32 nodeSize, u16 max, GSgfxVF* vf, GSgfxPrimType prim, u8 vertsPerNode,
                       u8 bytesPerVert, bool dbl);
@@ -120,7 +118,7 @@ public:
 peContainer::peContainer(peEmitterNode* e, u32 nodeSize, u16 max) {
     u8* e_c = (u8*)e;
     emitter = e;
-    unk4 = 0;
+    next = 0;
     buffer = 0;
     freeList = 0;
     activeList = 0;
@@ -148,10 +146,14 @@ peContainer::peContainer(peEmitterNode* e, u32 nodeSize, u16 max) {
         node = (peNode*)cur;
         cur += nodeSize;
         if (hasPos) {
-            *(u8**)((u8*)node + 0x20) = cur;
+            PE_NODE_XFORM(node) = cur;
             cur += 0x28;
         } else {
-            *(u8**)((u8*)node + 0x20) = e_c + 0xa8;
+#ifdef __MWERKS__
+            PE_NODE_XFORM(node) = e_c + 0xa8;
+#else
+            PE_NODE_XFORM(node) = &PE_NODE_F(e_c, u8, 0xa8);
+#endif
         }
         node->next = prevNode;
         if (prevNode) {
@@ -281,12 +283,12 @@ peRenderContainer::peRenderContainer(peEmitterNode* e, u32 nodeSize, u16 max, GS
                                      u8 vertsPerNode, u8 bytesPerVert, bool dbl)
     : peContainer(e, nodeSize, max) {
     u32 aligned;
-    u32 total = max * bytesPerVert;
     swapPending = 0;
+    u32 total = max * bytesPerVert;
     cur = 0;
     bufSize = 0;
-    memset(&dl[0], 0, 0x10);
-    memset(&dl[1], 0, 0x10);
+    memset(&dl[0], 0, sizeof(dl[0]));
+    memset(&dl[1], 0, sizeof(dl[1]));
     bufA = 0;
     bufB = 0;
     tokens[0] = 0;
@@ -310,7 +312,7 @@ peRenderContainer::peRenderContainer(peEmitterNode* e, u32 nodeSize, u16 max, GS
     u32 sz = GSmemGetSize(mem);
     g_particle_debug_stats.dlMem += dl[0].size + dl[1].size;
     g_particle_debug_stats.bufMem += sz;
-    g_particle_debug_stats.total = g_particle_debug_stats.total + dl[0].size + dl[1].size + sz;
+    g_particle_debug_stats.total = g_particle_debug_stats.total + (dl[0].size + dl[1].size) + sz;
     if (dl[1].valid()) {
         DCFlushRange(mem, aligned * 2);
         u8* p = mem + 0x40000000;
@@ -321,10 +323,12 @@ peRenderContainer::peRenderContainer(peEmitterNode* e, u32 nodeSize, u16 max, GS
         bufA = mem + 0x40000000;
     }
     bufSize = total;
-    memset(dl[0].colorPtr(), 0xff, max * (vertsPerNode * dl[0].vertCount()));
+    u8* color = dl[0].colorPtr();
+    memset(color, 0xff, max * (vertsPerNode * dl[0].vertCount()));
     dl[0].flags |= 2;
     if (dl[1].valid()) {
-        memset(dl[1].colorPtr(), 0xff, max * (vertsPerNode * dl[1].vertCount()));
+        color = dl[1].colorPtr();
+        memset(color, 0xff, max * (vertsPerNode * dl[1].vertCount()));
         dl[1].flags |= 2;
     }
 }

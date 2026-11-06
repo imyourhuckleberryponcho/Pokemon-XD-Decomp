@@ -1,43 +1,5 @@
 #include <dolphin/types.h>
-
-struct FsysResHeader {
-    u8 unk0[0xC];
-    u32 flags;
-    u8 unk10[4];
-    u32 size;
-    u8 unk18[0x14];
-    void* cache;
-    u8 unk30[0x14];
-    u32 remaining;
-    u8 unk48[4];
-    u32 readBlocks;
-};
-
-struct FsysHeader {
-    u8 unk0[0xC];
-    u32 resNum;
-};
-
-struct Fsys {
-    u8 unk0[0x10];
-    s32 state;
-};
-
-struct FsysReadRequest {
-    u8 unk0[0x10];
-    void* data;
-};
-
-typedef void (*FsysStreamCallback)(void* data, u32 arg0, u32 arg1);
-
-struct FsysArqTrans {
-    u8 unk0[0x30];
-    FsysReadRequest* request;
-    FsysResHeader* res;
-    FsysStreamCallback callback;
-    u32 arg0;
-    u32 arg1;
-};
+#include <game/pxdvs/GSAPI/GSfsys/fsys.h>
 
 extern "C" {
 
@@ -74,7 +36,7 @@ BOOL _fsysStreamGetData(Fsys* fsys, u32 id, void* dst, u32 size, u32 offset, u32
         res->flags &= ~0x08000000;
         if (_fsysReadCacheEX(fsys, res, dst, size, offset, _fsysStreamGetDataCallback, arg5, arg6, arg7) == 1) {
             if (res->flags & 0x00800000) {
-                res->remaining = res->size;
+                res->remaining = res->size14;
             } else {
                 res->remaining -= size;
                 res->readBlocks &= ~_fsysStreamGetReadBlockFlag(offset);
@@ -98,12 +60,12 @@ static void _fsysStreamGetDataCallback(void* arq) {
         return;
     }
     {
-        FsysReadRequest* request = trans->request;
+        FsysReadRequest* request = (FsysReadRequest*)trans->fsys;
         trans->res->flags |= 0x08000000;
-        if (trans->callback != NULL) {
-            trans->callback(request->data, trans->arg0, trans->arg1);
+        if (trans->arg0 != 0) {
+            FSYS_U32_TO_PTR(FsysStreamCallback, trans->arg0)(request->data, trans->arg1, trans->arg2);
         }
-        trans->callback = NULL;
+        trans->arg0 = 0;
     }
 }
 
@@ -113,7 +75,7 @@ void _fsysStreamFreeCacheAll(Fsys* fsys) {
     FsysResHeader* res;
     s32 i;
 
-    if (fsys != NULL && fsys->state == 4) {
+    if (fsys != NULL && fsys->mode == 4) {
         intr = OSDisableInterrupts();
         header = _fsysGetHeader(fsys);
         if (header != NULL) {

@@ -1,7 +1,16 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/bitfield.h>
 #include <game/shared/menu_work.h>
+#ifdef __MWERKS__
+#define BD_SPRITE_BYTES 0x78
+#else
+#define BD_SPRITE_BYTES sizeof(tagSPRITE_WORK)
+#endif
 
 struct KeyInfo {
     u16 on;
@@ -18,27 +27,29 @@ struct MenuData {
 };
 
 struct MenuItem {
-    u8 flagA : 1;
-    u8 flagB : 1;
-    u8 unk0b : 6;
+    GC_BITS3(
+    u8 flagA : 1,
+    u8 flagB : 1,
+    u8 unk0b : 6)
     u8 unk1[5];
     s16 x;
     s16 y;
     s16 w;
     s16 h;
-    u8 unkE[0xA];
+    u8 unkE[0x6];
+    void* slot14;
     s16 next;
 };
 
-class DarkPokemon;
+struct DarkPokemon;
 
-class Pokemon {
+struct Pokemon {
 public:
     void* getPokemonDataPtr() const;
     u8 data[0xC4];
 };
 
-class Hero {
+struct Hero {
 public:
     Hero() {}
     Pokemon* getPokemon(s32 index);
@@ -192,10 +203,10 @@ void GSthreadSwitch(void);
 f32 timeGetLastFrameSec(void);
 s32 winSpriteGetLayerID(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
 void winSpriteSetDisp(tagSPRITE_WORK* sp, bool on);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 u32 heroGetPokeomCount(Hero* hero);
-u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
-s32 wazaGetStatus(void* ptr, u16 dataID, u16 status, u32 index);
+StatusU32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
+StatusS32 wazaGetStatus(void* ptr, u16 dataID, u16 status, u32 index);
 u16 pokemonGetSoubiItemDataId(Pokemon* pokemon);
 s32 menuSubGetPokemonSexForDisp(void* pokemon);
 u32 pokemonDataBiosGetZokuseiDataId(PokemonData* pdata, u16 index);
@@ -458,7 +469,7 @@ s32 BattleDiskStatus(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             break;
         }
         if (msg != 0) {
-            msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(msg));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(msg));
             GSmsgPrint2(layer, 0, 0, w->alpha | 0xFFFFFF00, 0x4276);
         }
         break;
@@ -537,7 +548,7 @@ s32 BattleDiskStatus(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         u32 v = pokemonGetStatus(pk, 0, 0x7F, (u16)slot);
         if (v != 0) {
             if (wazaGetStatus(0, (u16)v, 1, 0) != 0) {
-                msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(wazaGetStatus(0, (u16)v, 1, 0)));
+                msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(wazaGetStatus(0, (u16)v, 1, 0)));
                 GSmsgPrintRect(winSpriteGetLayerID(w, sp), 0, 0, sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4277);
             }
         }
@@ -568,7 +579,7 @@ s32 BattleDiskStatus(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             msgctrlSetValue(0x2D, pokemonGetSoubiItemDataId(pk));
             GSmsgPrintRect(winSpriteGetLayerID(w, sp), 0, 0, sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x3AE7);
         } else {
-            msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(0x3C1A));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0x3C1A));
             GSmsgPrintRect(winSpriteGetLayerID(w, sp), 0, 0, sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4277);
         }
         break;
@@ -672,11 +683,11 @@ s32 BattleDiskBorADraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         }
         break;
     case 0x74D:
-        msgctrlSetValue(0x37, (u32)heroBiosGetNamePtr(&gBDisk.hero[1]));
+        msgctrlSetValue(0x37, (GCuptr)heroBiosGetNamePtr(&gBDisk.hero[1]));
         GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, 0, w->alpha | 0xFFFFFF00, 0x4276);
         break;
     case 0x74E:
-        msgctrlSetValue(0x37, (u32)heroBiosGetNamePtr(&gBDisk.hero[0]));
+        msgctrlSetValue(0x37, (GCuptr)heroBiosGetNamePtr(&gBDisk.hero[0]));
         GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, 0, w->alpha | 0xFFFFFF00, 0x4276);
         break;
     case 0x7F2:
@@ -987,12 +998,12 @@ static void drawPkmPanel(u32 idx, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
                               w->alpha | 0xFFFFFF00, w, 0x2FC, 0, layer);
             msgctrlSetValue(0x37, v77);
             GSmsgPrintRect(layer, offs + sRect[(base + 2) * 4], sRect[(base + 2) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4277);
-            msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(0x42D4));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0x42D4));
             GSmsgPrintRect(layer, offs + sRect[(base + 3) * 4], sRect[(base + 3) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4276);
             msgctrlSetValue(0x34, v7a);
             GSmsgPrintRect(layer, offs + sRect[(base + 3) * 4] + 0x18, sRect[(base + 3) * 4 + 1], sp->w, sp->h,
                            w->alpha | 0xFFFFFF00, 0x426F);
-            msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(0x42D5));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0x42D5));
             GSmsgPrintRect(layer, offs + sRect[(base + 4) * 4], sRect[(base + 4) * 4 + 1], sp->w, sp->h, w->alpha | 0xFFFFFF00, 0x4276);
             msgctrlSetValue(0x34, v83);
             GSmsgPrintRect(layer, offs + sRect[(base + 4) * 4] + 0x1C, sRect[(base + 4) * 4 + 1], sp->w, sp->h,
@@ -1010,7 +1021,7 @@ static void drawPkmPanel(u32 idx, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
                 break;
             }
             if (msg != 0) {
-                msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(msg));
+                msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(msg));
                 GSmsgPrint2(layer, offs + sRect[(base + 5) * 4], sRect[(base + 5) * 4 + 1], w->alpha | 0xFFFFFF00, 0x4276);
             }
             if (pokemonGetSoubiItemDataId(pk) != 0) {
@@ -1023,15 +1034,15 @@ static void drawPkmPanel(u32 idx, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 
 static void dispFace(u32 slot, GSvec2* pos, tagWINDOW_WORK* w, tagSPRITE_WORK* sp, Pokemon* pk) {
     u32 face = pokemonDataBiosGetStatusFaceMenuSpriteId((PokemonData*)pk->getPokemonDataPtr(), 0);
-    u8 save[0x78];
-    memcpy(save, sp, 0x78);
+    u8 save[BD_SPRITE_BYTES];
+    memcpy(save, sp, BD_SPRITE_BYTES);
     sp->h = 0x2A;
     sp->w = 0x2A;
     if (slot < 6) {
         sp->w *= -1;
     }
     menuFaceDispFromID2(w, sp, face, pos);
-    memcpy(sp, save, 0x78);
+    memcpy(sp, save, BD_SPRITE_BYTES);
 }
 
 static void* loadPkmFace(void* arg) {
@@ -1495,11 +1506,11 @@ s32 menuBattleDiskOpenDocPush(u8 id) {
     return gBDisk.docMenu;
 }
 
-u16 menuBattleDiskGetResult(void) {
+PCRET(u16) menuBattleDiskGetResult(void) {
     return gBDisk.result;
 }
 
-u8 menuBattleDiskGetSelectID(void) {
+PCRET(u8) menuBattleDiskGetSelectID(void) {
     return gBDisk.selectId;
 }
 

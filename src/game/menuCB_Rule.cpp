@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma peephole off
 
@@ -570,7 +571,7 @@ u8 menuCBRule_DEOKISISUCamouflage(void) {
     return menuCBBios_CurrentRule()->a19;
 }
 
-s16 menuCBRule_GetCommandTimeLimit(void) {
+PCRET(s16) menuCBRule_GetCommandTimeLimit(void) {
     return menuCBBios_CurrentRule()->a16;
 }
 

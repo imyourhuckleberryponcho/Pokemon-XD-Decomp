@@ -1,54 +1,66 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
+#include <game/bitfield.h>
 #include <game/pxdvs/app/pokemon/pokemonBios.hpp>
 #include <game/pxdvs/app/pokemon/pokemonDB.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 #include <game/relglobal.h>
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 
 struct DarkPokemonCatchBall {
-    u8 flags : 4;
-    u8 ballId : 4;
+    GC_BITS2(
+    u8 flags : 4,
+    u8 ballId : 4)
 };
 
 struct DarkPokemonStatusBits {
-    u8 status : 3;
-    u8 reserved : 1;
-    u8 snatchInfoLevel : 3;
-    u8 snatchFromWho : 1;
+    GC_BITS4(
+    u8 status : 3,
+    u8 reserved : 1,
+    u8 snatchInfoLevel : 3,
+    u8 snatchFromWho : 1)
 };
 
 struct DarkPokemonPoolExpBits {
-    u32 exp : 20;
-    u32 unused : 12;
+    GC_BITS2(
+    u32 exp : 20,
+    u32 unused : 12)
 };
 
 struct DarkPokemonReverseBits {
-    u8 unused : 1;
-    u8 revers : 1;
-    u8 reserved : 6;
+    GC_BITS3(
+    u8 unused : 1,
+    u8 revers : 1,
+    u8 reserved : 6)
 };
 
 struct DarkPokemonInformationBits {
-    u8 information : 1;
-    u8 reserved : 7;
+    GC_BITS2(
+    u8 information : 1,
+    u8 reserved : 7)
 };
 
 struct DarkPokemonUpdateBits {
-    u8 unused : 1;
-    u8 revers : 1;
-    u8 update : 1;
-    u8 reserved : 5;
+    GC_BITS4(
+    u8 unused : 1,
+    u8 revers : 1,
+    u8 update : 1,
+    u8 reserved : 5)
 };
 
 struct DarkPokemonPlaceBits {
-    u32 unused : 14;
-    u32 where : 3;
-    u32 reserved : 15;
+    GC_BITS3(
+    u32 unused : 14,
+    u32 where : 3,
+    u32 reserved : 15)
 };
 
 struct DarkPokemonWazaNewBits {
-    u8 unused : 3;
-    u8 wazaNew : 3;
-    u8 reserved : 2;
+    GC_BITS3(
+    u8 unused : 3,
+    u8 wazaNew : 3,
+    u8 reserved : 2)
 };
 
 extern "C" {
@@ -67,8 +79,9 @@ struct DarkPokemonStatusRndArray {
 };
 
 struct DarkPokemonWhereBits {
-    u8 where : 3;
-    u8 reserved : 5;
+    GC_BITS2(
+    u8 where : 3,
+    u8 reserved : 5)
 };
 
 void Pokemon::setReversMode(bool revers) {

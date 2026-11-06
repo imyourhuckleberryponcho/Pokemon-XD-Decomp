@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/statusval.h>
+#include <game/tigadata.h>
 
 #pragma pool_strings off
 struct PrintBuffer { char bytes[0x100]; };
@@ -8,7 +12,11 @@ static const PrintBuffer emptyPrintBuffer = { 0 };
 
 struct GSvec { f32 x, y, z; };
 struct Pokemon {
+#ifdef __MWERKS__
     u8 isLegend() const;
+#else
+    bool isLegend() const;
+#endif
 };
 struct _GSmodel;
 struct GSlight;
@@ -20,11 +28,10 @@ namespace GSscript {
 void tigaErrMessage(const char*);
 struct tigaVariant;
 struct tigaArrayFixed { tigaVariant* get(int); };
-struct tigaWaza { void* sequence; void* waza; };
 struct tigaVariant {
-    s16 type;
-    u16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_be16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
     s32 getCnvInteger();
     char* getCnvString(char*);
     GSvec* getCnvVector();
@@ -56,41 +63,24 @@ struct tigaVariant {
     inline void setObject(s16 t, void* p) { type = t; value.pointer = p; }
     inline void dupIfNeeded();
 };
-struct TigaThread {
-    u8 reserved[0x14C];
-    s32 line;
-};
-struct TigaObjManager {
+struct TigaObjManager : public TigaObjManagerView {
     s32 getResourceIdx(GSresID*);
     GSresID* newResource();
     GSresID* getResource(int);
 };
-struct tigaCellMemory {
+class tigaCellMemory {
+public:
     void dupVariant(tigaVariant*);
 };
 struct TigaContext {
-    u8 reserved[0x10];
-    tigaVariant result;
-    u8 reserved18[0x120];
-    GSvec vector;
+    GSSCRIPT_TIGACONTEXT_DATA(tigaVariant, GSvec)
+};
+struct TigaThread {
+    GSSCRIPT_TIGATHREAD_DATA(TigaContext, tigaVariant)
 };
 class Tiga {
 public:
-    u8 reserved[0x18];
-    TigaObjManager objManager;
-    u8 reserved19[0x8F7];
-    tigaCellMemory* cellMemory;
-    TigaContext* context;
-    u8 reserved918[0x1C];
-    s32 wazaCount;
-    u8 reserved938[0x1C];
-    char* stringBuffer;
-    u8 reserved958[0xC];
-    ScriptPeople* people;
-    s32 objectCount;
-    void** objects;
-    u8 reserved970[0x10];
-    TigaThread* thread;
+    GSSCRIPT_TIGA_DATA(TigaChankView, TigaObjManager, TigaContext)
 
     static Tiga* m_cpCurrentObject;
 
@@ -102,11 +92,15 @@ public:
     virtual void mapping();
     virtual void unmapping();
     virtual ~Tiga();
+#ifdef __MWERKS__
     void runParamsWait(int, tigaVariant*, int, tigaVariant*);
+#else
+    s32 runParamsWait(int id, tigaVariant* args, int count, tigaVariant* out);
+#endif
     inline void setRpVec(const GSvec* v) {
         context->vector = *v;
-        context->result.value.pointer = &context->vector;
-        context->result.type = 4;
+        context->regs[0].value.pointer = &context->vector;
+        context->regs[0].type = 4;
     }
 };
 }
@@ -120,7 +114,7 @@ inline void tigaVariant::dupIfNeeded()
 }
 }
 
-class AppScript : public GSscript::Tiga {
+struct AppScript : public GSscript::Tiga {
 public:
     GSscript::tigaWaza waza[7];
 
@@ -165,7 +159,7 @@ public:
 
 enum darkPokemonStatus {};
 enum darkPokemonWhere {};
-class DarkPokemon {
+struct DarkPokemon {
 public:
     s32 getStatus() const;
     u16 getPokemonID() const;
@@ -176,7 +170,7 @@ public:
     void setUpdate(bool);
     void setPlace(darkPokemonWhere, u8);
 };
-class Hero {
+struct Hero {
 public:
     u8 getMeetDarkPokemonCount() const;
     void setMeetDarkPokemonCount(u8);
@@ -190,30 +184,46 @@ public:
     void setField(u16);
     u16 getMsg(u8) const;
     void setMsg(u8, u16);
+#ifdef __MWERKS__
     s32 getAddMode() const;
+#else
+    u8 getAddMode() const;
+#endif
     u8 getAddPlace() const;
     u8 getAddID() const;
     void setAddMode(u8);
     void setAddPlace(u8);
     void setAddID(u8);
+#ifdef __MWERKS__
     s32 getSwapMode() const;
+#else
+    u8 getSwapMode() const;
+#endif
     u16 getSwapDeckNO() const;
     void setSwapMode(u8);
     void setSwapDeckNO(u16);
     void setFightMode(u8);
+#ifdef __MWERKS__
     s32 getDestroyFlag() const;
+#else
+    u8 getDestroyFlag() const;
+#endif
     void setDestroyFlag(u8);
     u8 getTrainerKind() const;
     void setTrainerKind(u8);
+#ifdef __MWERKS__
     s32 getRoundNo() const;
+#else
+    u32 getRoundNo() const;
+#endif
     void setRoundNo(u32);
 };
 
 extern "C" {
-void soundOpenPlayME(s32, s32, u8);
-u8 soundPlayME(s32, s32, u8);
-u8 soundOpenPlay(s32, s32, u8);
-u8 soundOpenPlayEnv(s32, s32, u8);
+void soundOpenPlayME(s32, s32, PCARG(u8, s32));
+u8 soundPlayME(s32, s32, PCARG(u8, s32));
+u8 soundOpenPlay(s32, s32, PCARG(u8, s32));
+u8 soundOpenPlayEnv(s32, s32, PCARG(u8, s32));
 u8 soundStop(s32, s32);
 u8 soundStopEnv(s32);
 u8 soundCreateEmitter(s32, f32, f32, f32);
@@ -221,8 +231,8 @@ u8 soundCreateListener();
 u8 soundSetVolume(s32, s32);
 u8 scriptSoundOpenPlayME(s32, s32, u8);
 u8 soundSetVolumeID(s32, s32, s32);
-u8 soundOpenPlayFadeOutIn(s32, s32, s32, u8);
-u8 soundOpenPlayEnvFadeOutIn(s32, s32, s32, u8);
+u8 soundOpenPlayFadeOutIn(s32, s32, s32, PCARG(u8, s32));
+u8 soundOpenPlayEnvFadeOutIn(s32, s32, s32, PCARG(u8, s32));
 s32 soundGetBGMID();
 void peopleTalkMessageBgmMask(u8);
 void peopleTalkMessageBgmSetFadeSpeed(f32, f32);
@@ -263,7 +273,12 @@ s32 scriptLighgtWaitMotion(s32, s32);
 GSlight* lightGetLight(s32);
 void GSlightSetType(GSlight*, s32);
 void GSlightSetPosition(GSlight*, GSvec*);
+#ifdef __MWERKS__
 void GSlightSetColor(GSlight*, GXColor);
+#else
+void GSlightSetColor(GSlight*, const GXColor*);
+#define GSlightSetColor(l, c) do { GXColor lightColor_ = (c); GSlightSetColor((l), &lightColor_); } while (0)
+#endif
 void GSlightGetPosition(GSlight*, GSvec*);
 s32 scriptEncount(u16, u8, s32);
 u16 fightEncount(u16);
@@ -288,12 +303,12 @@ s32 pokemonGetWazaCount(Pokemon*);
 u8 pokemonBiosGetCatchBallId(Pokemon*);
 char* pokemon_GetNicknamePtr(Pokemon*);
 u8 pokemonBiosGetDarkFlag(Pokemon*);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, u16);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
 u16 pokemonBiosGetHp(Pokemon*);
 s32 pokemonBiosGetDp(Pokemon*);
 u16 pokemonBiosGetPokemonDataId(Pokemon*);
 u16 pokemonBiosGetFriend(Pokemon*);
-s32 pokemonDB_GetName(u16);
+const char * pokemonDB_GetName(u16);
 u16 pokemonBiosGetItemDataId(Pokemon*);
 s32 pokemonBiosGetCatchTrainerRnd(Pokemon*);
 s8 pokemonSetWazaStatus(Pokemon*, u16, u8);
@@ -313,11 +328,11 @@ void GSflagOff(u32);
 void GSflagSet(u32, s32);
 s32 GSflagGet(u32);
 s32 scriptGetRandom(s32);
-void darkPokemonBiosSetInfomation(u16, u16);
+void darkPokemonBiosSetInfomation(u16, PCARG(u16, s32));
 void floorSetDispScriptInfo(u8);
 void floorSetHumanColision(u8);
 u8 floorGetHumanColision();
-void peopleSetTresureSearchDistance(u16, f32);
+void peopleSetTresureSearchDistance(PCARG(u16, u32), f32);
 char* GSmsgGetGSchar(s32);
 s32 floorTresureGetResID(u16);
 u8 wazaDB_GetHidenFlag(u16);
@@ -336,7 +351,7 @@ void esabaSetEsaNum(s32, s32);
 s32 esabaGetEsaNum(s32);
 u8 esabaGetPokemonIsRare(s32);
 Hero* savedataGetStatus(s32, s32);
-DarkPokemon* darkPokemonGetDarkPokemon(u16);
+DarkPokemon* darkPokemonGetDarkPokemon(PCARG(u16, u32));
 void* Sequence_CreateNull();
 void* Sequence_LoadWaza(void*, u16, u8, u8);
 void Sequence_SetPosition(void*, GSvec*);
@@ -362,14 +377,14 @@ void preReliveDisplayHokoraParticle();
 s32 menuUseItemScriptCologn(s32, s32);
 s32 underTakerGetMiraboPlace();
 void underTakerMiraboDisAppear();
-void mailMainSendByScrpt(u16);
+void mailMainSendByScrpt(PCARG(u16, int));
 u8 scriptSetMemoFlag();
 void menuScriptReciveMail();
 void menuScriptReadMail(s32);
 s32 scriptIsButtonPush();
 s32 scriptIsMoveButtonPush();
 s32 scriptIsTrigerPush();
-s32 gamedatasaveGetStatus(s32, s32);
+StatusS32 gamedatasaveGetStatus(s32, s32);
 void* floorCreateThread(s32, s32, s32, void*);
 void GSthreadSetArgs(void*, s32, ...);
 s32 GSinputButtonsPressed(s32);
@@ -565,7 +580,7 @@ s32 AppScript::execExtendGlobalFunction(int function, GSscript::tigaVariant* arg
         result->dupIfNeeded();
         break;
     }
-    case 0x96: result->setInteger(pokemonDB_GetName(args[0].getInteger())); break;
+    case 0x96: result->setInteger(GC_ADDR32(pokemonDB_GetName(args[0].getInteger()))); break;
     case 0x97: {
         result->setInteger(((GSscript::tigaArrayFixed*)args[0].getObject(7, "pokemon not access"))->get(args[1].getInteger())->getInteger());
         break;
@@ -618,8 +633,8 @@ s32 AppScript::getExtendVariable(GSscript::tigaVariant* v, int id, int)
     }
     if (id >= 0x200 && id <= 0x2FF) {
         s32 n = id - 0x200;
-        if (n >= 0 && n < objectCount) {
-            v->setObject(7, objects[n]);
+        if (n >= 0 && n < arrayCount) {
+            v->setObject(7, arrays[n]);
         } else {
             v->setInteger(0);
         }
@@ -792,7 +807,7 @@ s32 AppScript::cmpPokemon(int command, GSscript::tigaVariant* args, GSscript::ti
     case 0x1C: result->setInteger(pokemonBiosGetPokemonDataId(pokemon)); break;
     case 0x1D: result->setInteger(pokemon->isLegend()); break;
     case 0x1E: result->setInteger(pokemonBiosGetFriend(pokemon)); break;
-    case 0x1F: result->setInteger(pokemonDB_GetName(pokemonBiosGetPokemonDataId(pokemon))); break;
+    case 0x1F: result->setInteger(GC_ADDR32(pokemonDB_GetName(pokemonBiosGetPokemonDataId(pokemon)))); break;
     case 0x20: result->setInteger(pokemonBiosGetItemDataId(pokemon)); break;
     case 0x21: result->setInteger(pokemonBiosGetCatchTrainerRnd(pokemon)); break;
     case 0x22: result->setInteger(pokemonSetWazaStatus(pokemon, args[1].getInteger(), args[2].getInteger() != 0)); break;

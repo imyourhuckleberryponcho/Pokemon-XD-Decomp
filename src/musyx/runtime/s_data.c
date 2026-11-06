@@ -59,28 +59,28 @@ ARAMInfo* dataARAMDefaultGetInfo() { return &gsDefault.aramInfo; }
 #endif
 
 static MEM_DATA* GetPoolAddr(u16 id, MEM_DATA* m) {
-  while (m->nextOff != 0xFFFFFFFF) {
-    if (m->id == id) {
+  while (MD32(m->nextOff) != 0xFFFFFFFF) {
+    if (MD16(m->id) == id) {
       return m;
     }
 
-    m = (MEM_DATA*)((u8*)m + m->nextOff);
+    m = (MEM_DATA*)((u8*)m + MD32(m->nextOff));
   }
   return NULL;
 }
 
 static MEM_DATA* GetMacroAddr(u16 id, POOL_DATA* pool) {
-  return pool == NULL ? NULL : GetPoolAddr(id, (MEM_DATA*)((u8*)pool + pool->macroOff));
+  return pool == NULL ? NULL : GetPoolAddr(id, (MEM_DATA*)((u8*)pool + MD32(pool->macroOff)));
 }
 
 static MEM_DATA* GetCurveAddr(u16 id, POOL_DATA* pool) {
-  return pool == NULL ? NULL : GetPoolAddr(id, (MEM_DATA*)((u8*)pool + pool->curveOff));
+  return pool == NULL ? NULL : GetPoolAddr(id, (MEM_DATA*)((u8*)pool + MD32(pool->curveOff)));
 }
 static MEM_DATA* GetKeymapAddr(u16 id, POOL_DATA* pool) {
-  return pool == NULL ? NULL : GetPoolAddr(id, (MEM_DATA*)((u8*)pool + pool->keymapOff));
+  return pool == NULL ? NULL : GetPoolAddr(id, (MEM_DATA*)((u8*)pool + MD32(pool->keymapOff)));
 }
 static MEM_DATA* GetLayerAddr(u16 id, POOL_DATA* pool) {
-  return pool == NULL ? NULL : GetPoolAddr(id, (MEM_DATA*)((u8*)pool + pool->layerOff));
+  return pool == NULL ? NULL : GetPoolAddr(id, (MEM_DATA*)((u8*)pool + MD32(pool->layerOff)));
 }
 
 static void InsertData(u16 id, void* data, u8 dataType, u32 remove) {
@@ -115,7 +115,7 @@ static void InsertData(u16 id, void* data, u8 dataType, u32 remove) {
     id |= 0x8000;
     if (!remove) {
       if ((m = GetLayerAddr(id, data)) != NULL) {
-        dataInsertLayer(id, &m->data.layer.entry, m->data.layer.num);
+        dataInsertLayer(id, &m->data.layer.entry, MD32(m->data.layer.num));
       } else {
         dataInsertLayer(id, NULL, 0);
       }
@@ -155,17 +155,17 @@ static void InsertData(u16 id, void* data, u8 dataType, u32 remove) {
 static void ScanIDList(u16* ref, void* data, u8 dataType, u32 remove) {
   u16 id;
 
-  while (*ref != 0xFFFF) {
-    if ((*ref & 0x8000)) {
-      id = *ref & 0x3fff;
-      while (id <= ref[1]) {
+  while (MD16(*ref) != 0xFFFF) {
+    if ((MD16(*ref) & 0x8000)) {
+      id = MD16(*ref) & 0x3fff;
+      while (id <= MD16(ref[1])) {
         InsertData(id, data, dataType, remove);
         ++id;
       }
       ref += 2;
 
     } else {
-      InsertData(*ref++, data, dataType, remove);
+      InsertData(MD16(*ref++), data, dataType, remove);
     }
   }
 }
@@ -174,28 +174,28 @@ static void ScanIDListReverse(u16* refBase, void* data, u8 dataType, u32 remove)
   s16 id;
   u16* ref;
 
-  if (*refBase != 0xffff) {
+  if (MD16(*refBase) != 0xffff) {
     ref = refBase;
-    while (*ref != 0xffff) {
+    while (MD16(*ref) != 0xffff) {
       ref++;
     }
     ref--;
 
     while (ref >= refBase) {
       if (ref != refBase) {
-        if ((ref[-1] & 0x8000) != 0) {
-          id = *ref;
-          while (id >= (s16)(ref[-1] & 0x3fff)) {
+        if ((MD16(ref[-1]) & 0x8000) != 0) {
+          id = MD16(*ref);
+          while (id >= (s16)(MD16(ref[-1]) & 0x3fff)) {
             InsertData(id, data, dataType, remove);
             id--;
           }
           ref -= 2;
         } else {
-          InsertData(*ref, data, dataType, remove);
+          InsertData(MD16(*ref), data, dataType, remove);
           ref--;
         }
       } else {
-        InsertData(*ref, data, dataType, remove);
+        InsertData(MD16(*ref), data, dataType, remove);
         ref--;
       }
     }
@@ -230,7 +230,7 @@ static void RemoveSamples(unsigned short* ref, void* sdir) {
   dataRemoveSDir(sdir);
 }
 
-static void InsertFXTab(unsigned short gid, FX_DATA* fd) { dataInsertFX(gid, fd->fx, fd->num); }
+static void InsertFXTab(unsigned short gid, FX_DATA* fd) { dataInsertFX(gid, fd->fx, MD16(fd->num)); }
 
 static void RemoveFXTab(unsigned short gid) { dataRemoveFX(gid); }
 
@@ -246,25 +246,25 @@ bool sndPushGroup(void* prj_data, u16 gid, void* samples, void* sdir, void* pool
   if (sndActive && SP_CURRENT < 128) {
     g = prj_data;
 
-    while (g->nextOff != 0xFFFFFFFF) {
-      if (g->id == gid) {
+    while (MD32(g->nextOff) != 0xFFFFFFFF) {
+      if (MD16(g->id) == gid) {
         GS_CURRENT[SP_CURRENT].gAddr = g;
         GS_CURRENT[SP_CURRENT].prjAddr = prj_data;
         GS_CURRENT[SP_CURRENT].sdirAddr = sdir;
-        InsertSamples((u16*)((u8*)prj_data + g->sampleOff), samples, sdir);
-        InsertMacros((u16*)((u8*)prj_data + g->macroOff), pool);
-        InsertCurves((u16*)((u8*)prj_data + g->curveOff), pool);
-        InsertKeymaps((u16*)((u8*)prj_data + g->keymapOff), pool);
-        InsertLayers((u16*)((u8*)prj_data + g->layerOff), pool);
-        if (g->type == 1) {
-          InsertFXTab(gid, (FX_DATA*)((u8*)prj_data + g->data.song.normpageOff));
+        InsertSamples((u16*)((u8*)prj_data + MD32(g->sampleOff)), samples, sdir);
+        InsertMacros((u16*)((u8*)prj_data + MD32(g->macroOff)), pool);
+        InsertCurves((u16*)((u8*)prj_data + MD32(g->curveOff)), pool);
+        InsertKeymaps((u16*)((u8*)prj_data + MD32(g->keymapOff)), pool);
+        InsertLayers((u16*)((u8*)prj_data + MD32(g->layerOff)), pool);
+        if (MD16(g->type) == 1) {
+          InsertFXTab(gid, (FX_DATA*)((u8*)prj_data + MD32(g->data.song.normpageOff)));
         }
         hwSyncSampleMem();
         ++SP_CURRENT;
         return TRUE;
       }
 
-      g = (GROUP_DATA*)((u8*)prj_data + g->nextOff);
+      g = (GROUP_DATA*)((u8*)prj_data + MD32(g->nextOff));
     }
   }
 
@@ -285,25 +285,25 @@ bool sndPopGroup() {
   sdir = GS_CURRENT[SP_CURRENT].sdirAddr;
   hwDisableIrq();
 
-  if (g->type == 1) {
-    fd = (FX_DATA*)((u8*)prj + g->data.song.normpageOff);
-    s3dKillEmitterByFXID(fd->fx, fd->num);
+  if (MD16(g->type) == 1) {
+    fd = (FX_DATA*)((u8*)prj + MD32(g->data.song.normpageOff));
+    s3dKillEmitterByFXID(fd->fx, MD16(fd->num));
   } else {
-    seqKillInstancesByGroupID(g->id);
+    seqKillInstancesByGroupID(MD16(g->id));
   }
 
-  synthKillVoicesByMacroReferences((u16*)((u8*)prj + g->macroOff));
+  synthKillVoicesByMacroReferences((u16*)((u8*)prj + MD32(g->macroOff)));
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
-  synthKillVoicesBySampleReferences((u16*)((u8*)prj + g->sampleOff));
+  synthKillVoicesBySampleReferences((u16*)((u8*)prj + MD32(g->sampleOff)));
 #endif
   hwEnableIrq();
-  RemoveSamples((u16*)((u8*)prj + g->sampleOff), sdir);
-  RemoveMacros((u16*)((u8*)prj + g->macroOff));
-  RemoveCurves((u16*)((u8*)prj + g->curveOff));
-  RemoveKeymaps((u16*)((u8*)prj + g->keymapOff));
-  RemoveLayers((u16*)((u8*)prj + g->layerOff));
-  if (g->type == 1) {
-    RemoveFXTab(g->id);
+  RemoveSamples((u16*)((u8*)prj + MD32(g->sampleOff)), sdir);
+  RemoveMacros((u16*)((u8*)prj + MD32(g->macroOff)));
+  RemoveCurves((u16*)((u8*)prj + MD32(g->curveOff)));
+  RemoveKeymaps((u16*)((u8*)prj + MD32(g->keymapOff)));
+  RemoveLayers((u16*)((u8*)prj + MD32(g->layerOff)));
+  if (MD16(g->type) == 1) {
+    RemoveFXTab(MD16(g->id));
   }
   return 1;
 }
@@ -418,18 +418,18 @@ u32 seqPlaySong(u16 sgid, u16 sid, void* arrfile, SND_PLAYPARA* para, u8 irq_cal
   for (gsi = gsRoot; gsi != NULL; gsi = gsi->next) {
 #endif
     for (i = 0; i < SP_GSI; ++i) {
-      if (GS_GSI[i].gAddr->id != sgid) {
+      if (MD16(GS_GSI[i].gAddr->id) != sgid) {
         continue;
       }
 
-      if (GS_GSI[i].gAddr->type == 0) {
+      if (MD16(GS_GSI[i].gAddr->type) == 0) {
         g = GS_GSI[i].gAddr;
         prj = GS_GSI[i].prjAddr;
-        norm = (PAGE*)((size_t)prj + g->data.song.normpageOff);
-        drum = (PAGE*)((size_t)prj + g->data.song.drumpageOff);
-        midiSetup = (MIDISETUP*)((size_t)prj + g->data.song.midiSetupOff);
-        while (midiSetup->songId != 0xFFFF) {
-          if (midiSetup->songId == sid) {
+        norm = (PAGE*)((size_t)prj + MD32(g->data.song.normpageOff));
+        drum = (PAGE*)((size_t)prj + MD32(g->data.song.drumpageOff));
+        midiSetup = (MIDISETUP*)((size_t)prj + MD32(g->data.song.midiSetupOff));
+        while (MD16(midiSetup->songId) != 0xFFFF) {
+          if (MD16(midiSetup->songId) == sid) {
             if (irq_call != 0) {
               seqId = seqStartPlay(norm, drum, midiSetup, arrfile, para, studio, sgid);
             } else {
@@ -487,18 +487,18 @@ static inline u32 _seqPlaySong(u16 sgid, u16 sid, void* arrfile, SND_PLAYPARA* p
   for (gsi = gsRoot; gsi != NULL; gsi = gsi->next) {
 #endif
     for (i = 0; i < SP_GSI; ++i) {
-      if (GS_GSI[i].gAddr->id != sgid) {
+      if (MD16(GS_GSI[i].gAddr->id) != sgid) {
         continue;
       }
 
-      if (GS_GSI[i].gAddr->type == 0) {
+      if (MD16(GS_GSI[i].gAddr->type) == 0) {
         g = GS_GSI[i].gAddr;
         prj = GS_GSI[i].prjAddr;
-        norm = (PAGE*)((size_t)prj + g->data.song.normpageOff);
-        drum = (PAGE*)((size_t)prj + g->data.song.drumpageOff);
-        midiSetup = (MIDISETUP*)((size_t)prj + g->data.song.midiSetupOff);
-        while (midiSetup->songId != 0xFFFF) {
-          if (midiSetup->songId == sid) {
+        norm = (PAGE*)((size_t)prj + MD32(g->data.song.normpageOff));
+        drum = (PAGE*)((size_t)prj + MD32(g->data.song.drumpageOff));
+        midiSetup = (MIDISETUP*)((size_t)prj + MD32(g->data.song.midiSetupOff));
+        while (MD16(midiSetup->songId) != 0xFFFF) {
+          if (MD16(midiSetup->songId) == sid) {
             if (irq_call != 0) {
               seqId = seqStartPlay(norm, drum, midiSetup, arrfile, para, studio, sgid);
             } else {

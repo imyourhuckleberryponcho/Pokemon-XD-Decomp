@@ -1,6 +1,6 @@
 #include <dolphin/types.h>
 
-class FightPokemon;
+struct FightPokemon;
 class FightOutPokemon;
 
 extern "C" {

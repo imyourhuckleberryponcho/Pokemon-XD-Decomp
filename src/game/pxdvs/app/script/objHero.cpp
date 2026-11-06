@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/tigadata.h>
 
 #pragma pool_strings off
 #pragma peephole off
@@ -12,9 +15,9 @@ void tigaErrMessage(const char*);
 struct tigaVariant;
 struct tigaArrayFixed { tigaVariant* get(int); };
 struct tigaVariant {
-    s16 type;
-    u16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_be16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
     s32 getCnvInteger();
     GSvec* getCnvVector();
     inline s32 getInteger() {
@@ -35,20 +38,34 @@ struct tigaVariant {
     inline void setPokemon(Pokemon* p) { type = 0x25; value.pointer = p; }
 };
 }
+typedef f32 HeroScriptVec3[3];
 struct HeroScriptContext {
-    u8 reserved[0x10];
-    GSscript::tigaVariant result;
-    u8 reserved18[0x20];
-    char text[0x100];
+    GSSCRIPT_TIGACONTEXT_DATA(GSscript::tigaVariant, HeroScriptVec3)
 };
-class AppScript {
-    u8 reserved[0x914];
-    HeroScriptContext* context;
+struct AppScript {
+    GSSCRIPT_TIGA_DATA(GSscript::TigaChankView, GSscript::TigaObjManagerView, HeroScriptContext)
+    virtual ~AppScript();
+    GSscript::tigaWaza waza[7];
 public:
     s32 cmpHero(int, GSscript::tigaVariant*, GSscript::tigaVariant*);
 };
 
+#ifndef __MWERKS__
+#include <game/pxdvs/app/hero/hero.hpp>
+struct CReliveHall { public: static CReliveHall* getPointer(); bool isReliveReadyPokemonExist(); };
+struct PCBOX { public: static PCBOX* getPointer(); bool isPokemonFull(); };
+#define getHeroPtr__4HeroFv() Hero::getHeroPtr()
+#define getPokemon__4HeroFl(h, i) ((h)->getPokemon((s32)(i)))
+#define deletePokemon__4HeroFl(h, i) ((u8)(h)->deletePokemon((s32)(i)))
+#define setHeroStyle__4HeroFUcb(h, a, b) ((h)->setHeroStyle((u8)(a), (b) != 0))
+#define getLegendPokemonSize__4HeroCFv(h) ((u8)(h)->getLegendPokemonSize())
+#define getPointer__11CReliveHallFv() ((void*)CReliveHall::getPointer())
+#define isReliveReadyPokemonExist__11CReliveHallFv(p) ((u8)((CReliveHall*)(p))->isReliveReadyPokemonExist())
+#define getPointer__5PCBOXFv() ((void*)PCBOX::getPointer())
+#define isPokemonFull__5PCBOXFv(p) ((u8)((PCBOX*)(p))->isPokemonFull())
+#endif
 extern "C" {
+#ifdef __MWERKS__
 Hero* getHeroPtr__4HeroFv();
 Pokemon* getPokemon__4HeroFl(Hero*, s32);
 u8 deletePokemon__4HeroFl(Hero*, s32);
@@ -58,6 +75,7 @@ void* getPointer__11CReliveHallFv();
 u8 isReliveReadyPokemonExist__11CReliveHallFv(void*);
 void* getPointer__5PCBOXFv();
 u8 isPokemonFull__5PCBOXFv(void*);
+#endif
 char* strncpy(char*, const char*, u32);
 s32 heroMoveInit(GSvec*, GSvec*);
 s32 heroMoveMain();
@@ -67,7 +85,7 @@ void heroMoveAddAutoEvent(s32, s32, s32, s32, s32);
 void scriptPartyChange(u8);
 u8 heroMoveSetNeckMode(s32, s32);
 u8 scriptCheckHizukiFollow();
-s32 scriptHeroCtrlElevator(u16, s32, u16, s32);
+s32 scriptHeroCtrlElevator(PCARG(u16, s32), s32, u16, s32);
 s32 scriptHizukiAway(s32, s32);
 s32 scriptGetItem(s32, s32);
 s32 scriptAddItem(s32, s32);
@@ -84,9 +102,9 @@ s16 scriptCatchPokemon(u8);
 s32 scriptGetDarkPointZeroPokemonNum();
 void recoveryPokemon();
 s32 scriptBattleMountainEnd(u8);
-s32 heroGetLivingPokemonCount();
-s32 heroGetEmptySlot();
-s32 heroGetPokeomCount();
+s32 heroGetLivingPokemonCount(Hero* hero);
+s32 heroGetEmptySlot(Hero* hero);
+s32 heroGetPokeomCount(Hero* hero);
 u8 heroIsMinePokemon(Hero*, Pokemon*);
 void peopleChangeFollower(s32);
 s32 heroGetFollower();
@@ -94,8 +112,8 @@ void heroSetFollower(s32, s32, s32);
 void heroSetFollowerWithID(u8, u8);
 s32 darkPokemonGetSnatchSuccessNum();
 void heroMoveSlowStop();
-void scriptStoreTemochiPokemon();
-u8 scriptCheckTemochiPokemon();
+void scriptStoreTemochiPokemon(Hero* hero);
+u8 scriptCheckTemochiPokemon(Hero* hero);
 void recoveryEventCommon(s32);
 void recoveryEventPC(s32, s32, s32, s32*, s32*);
 s32 darkPokemonGetReliveNum();
@@ -177,17 +195,17 @@ s32 AppScript::cmpHero(int command, GSscript::tigaVariant* args, GSscript::tigaV
     case 0x24: {
         const char* name = scriptGetPokemonNickName(args[1].getInteger());
         strncpy(context->text, name, 0xFF);
-        context->result.value.pointer = context->text;
-        context->result.type = 3;
+        context->regs[0].value.pointer = context->text;
+        context->regs[0].type = 3;
         break;
     }
     case 0x25: result->setInteger(scriptCatchPokemon(args[1].getInteger())); break;
     case 0x26: result->setInteger(scriptGetDarkPointZeroPokemonNum()); break;
     case 0x27: recoveryPokemon(); break;
     case 0x28: result->setInteger(scriptBattleMountainEnd(args[1].getInteger() != 0) != 0); break;
-    case 0x29: result->setInteger(heroGetLivingPokemonCount()); break;
-    case 0x2A: result->setInteger(heroGetEmptySlot()); break;
-    case 0x2B: result->setInteger(heroGetPokeomCount()); break;
+    case 0x29: result->setInteger(heroGetLivingPokemonCount(hero)); break;
+    case 0x2A: result->setInteger(heroGetEmptySlot(hero)); break;
+    case 0x2B: result->setInteger(heroGetPokeomCount(hero)); break;
     case 0x2C: result->setPokemon(getPokemon__4HeroFl(hero, (u16)args[1].getInteger())); break;
     case 0x2D: result->setInteger(heroIsMinePokemon(hero, (Pokemon*)args[1].getObject(0x25, "pokemon not access"))); break;
     case 0x2E: peopleChangeFollower(args[1].getInteger()); break;
@@ -208,8 +226,8 @@ s32 AppScript::cmpHero(int command, GSscript::tigaVariant* args, GSscript::tigaV
     case 0x33: result->setInteger(isReliveReadyPokemonExist__11CReliveHallFv(getPointer__11CReliveHallFv())); break;
     case 0x34: result->setInteger(isPokemonFull__5PCBOXFv(getPointer__5PCBOXFv())); break;
     case 0x35: result->setInteger(getLegendPokemonSize__4HeroCFv(hero)); break;
-    case 0x37: scriptStoreTemochiPokemon(); break;
-    case 0x38: result->setInteger(scriptCheckTemochiPokemon()); break;
+    case 0x37: scriptStoreTemochiPokemon(hero); break;
+    case 0x38: result->setInteger(scriptCheckTemochiPokemon(hero)); break;
     case 0x39: recoveryEventCommon(args[1].getInteger()); break;
     case 0x3A: {
         s32 party[6];

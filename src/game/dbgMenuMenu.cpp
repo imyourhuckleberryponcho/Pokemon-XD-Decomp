@@ -1,5 +1,12 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/worldMapData.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
+#ifndef __MWERKS__
+void makePocketDeubugMakeDarkPokemonReset();
+#define makePocketDeubugMakeDarkPokemonReset__Fv(...) (makePocketDeubugMakeDarkPokemonReset(__VA_ARGS__))
+#endif
 
 #pragma peephole off
 #pragma force_active on
@@ -17,9 +24,24 @@ struct DbgWorldMapData {
 struct DbgWindow {
     u8 unk0[4];
     s32 menuID;
-    u8 unk8[0x60];
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
     void* data;
-    u8 unk6C[0x32];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x16];
     s16 cursor;
 };
 
@@ -27,12 +49,6 @@ struct DbgKeyInfo {
     u16 unk0;
     u8 unk2[4];
     u16 repeat;
-};
-
-struct WorldMapXDData {
-    u8 unk0[4];
-    u32 flag;
-    u8 unk8[0x1C];
 };
 
 struct DbgTableEntry {
@@ -51,7 +67,7 @@ s32 GSfloorGetCurrentFloorGroupID(void);
 void GSfloorPush(s32);
 void* GSthreadCreate(s32, s32, s32, s32, s32, void (*)(void));
 void GSthreadSetArgs(void*, s32, ...);
-void d2presentOpen(void);
+void d2presentOpen(u32 param);
 void darkPokemonBiosSetFightFlag(u16, s32);
 DarkPokemon* darkPokemonGetDarkPokemon(u32);
 u16 darkpokemonBiosGetScenarioNum(void);
@@ -64,11 +80,13 @@ void esabaSetPokemonRnd(s32, s32);
 void evolutionOpen(void*, void*, s32, u16*, s32, u8*);
 void fadeCheck(s32);
 void fadeSet(s32, f32);
-s32 gamedataGetStatus(s32, s32);
+StatusS32 gamedataGetStatus(s32, s32);
 void* heroBiosGetPokemonPtr(void*, s32);
 void heroCatchPokemon(s32, void*, s32, s32, s32);
 void* heroGetStatus(s32, s32, s32);
+#ifdef __MWERKS__
 void makePocketDeubugMakeDarkPokemonReset__Fv(void);
+#endif
 s32 memoDataGetPokemonRndFromID(s32, u16);
 s32 memoDataGetPokemonTrainerRndFromID(s32, u16);
 void memoDataSetMemoFlag(s32);
@@ -81,7 +99,7 @@ void menuCloseSync(s32, s32);
 void menuIntUnderTakerOpenIcon(void);
 u8 menuIsCheck(s32);
 void menuMoveDemo(s32);
-void menuNameEntryOpen(s32, s32);
+void menuNameEntryOpen(s32, GCsptr);
 void menuNintendoWarning(void);
 s32 menuOpenCustom(s32, ...);
 void menuOrreColosseum(u16);
@@ -108,7 +126,7 @@ u8 menuSubOpenNumberInput(s32, u32*, s32, s32, s32, s32);
 s32 menuSubOpenSelect2(s32, void*, s32, s32, s32, s32, s32, s32);
 void menuWorldMapMXDebug(void);
 void mewWazaSequence(void);
-void msgctrlSetValue(s32, s32);
+void msgctrlSetValue(s32, GCuptr);
 void pcboxDebugPokemonSetup(void);
 void pcboxDebugPokemonSetupFull(void);
 void pokemonBiosSetCatchTrainerRnd(void*, s32);
@@ -125,7 +143,7 @@ void undertakerSetPlace(s32);
 s32 windowGetActiveID(void);
 DbgKeyInfo* windowGetKeyInfo(void);
 
-extern WorldMapXDData* worldmapXD_data;
+extern WorldMapData* worldmapXD_data;
 extern s32* worldmapXD_data_number;
 
 }
@@ -580,8 +598,8 @@ s32 dbgMenuMenuTestD2Present(s32 mode) {
 
 }
 
-static void testD2Present(D2PRESENT_MODE) {
-    d2presentOpen();
+static void testD2Present(D2PRESENT_MODE mode) {
+    d2presentOpen(mode);
 }
 
 static void _dbgMenuMenuTestPdaFlagSet(u32 flag) {
@@ -847,12 +865,12 @@ u32 dbgMenuMenuTestEsabaPokemon(void) {
             case 0:
                 _esabaSetPokemon(_esabaPlace, _esabaSelectPokemon);
                 _pokemonCreate(&pokemon, _esabaSelectPokemon, (u32)hero);
-                rnd = pokemonCreateRndFit(&pokemon, -1, -1, 0, (s32)hero);
+                rnd = pokemonCreateRndFit(&pokemon, -1, -1, 0, (GCsptr)hero);
                 esabaSetPokemonRnd(_esabaPlace, rnd);
                 break;
             case 1:
                 _esabaSetPokemon(_esabaPlace, _esabaSelectPokemon);
-                esabaSetPokemonRnd(_esabaPlace, (s32)hero);
+                esabaSetPokemonRnd(_esabaPlace, (GCsptr)hero);
                 break;
             }
         }

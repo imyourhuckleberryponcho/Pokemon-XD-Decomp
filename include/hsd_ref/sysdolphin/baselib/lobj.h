@@ -24,9 +24,9 @@ struct HSD_LightPoint {
 };
 
 struct HSD_LightPointDesc {
-    f32 ref_br;
-    f32 ref_dist;
-    u32 dist_func;
+    gc_bef32 ref_br;
+    gc_bef32 ref_dist;
+    gc_be32 dist_func;
 };
 
 struct HSD_LightSpot {
@@ -38,12 +38,13 @@ struct HSD_LightSpot {
 };
 
 struct HSD_LightSpotDesc {
-    f32 cutoff;
-    u32 spot_func;
-    f32 ref_br;
-    f32 ref_dist;
-    u32 dist_func;
+    gc_bef32 cutoff;
+    gc_be32 spot_func;
+    gc_bef32 ref_br;
+    gc_bef32 ref_dist;
+    gc_be32 dist_func;
 };
+
 
 struct HSD_LightAttn {
     f32 a0;
@@ -78,22 +79,22 @@ struct HSD_LObj {
 };
 
 struct HSD_LightDesc {
-    /* 0x00 */ char* class_name;
-    /* 0x04 */ HSD_LightDesc* next;
-    /* 0x08 */ u16 flags;
-    /* 0x0A */ u16 attnflags;
+    /* 0x00 */ gc_ptr32(char) class_name;
+    /* 0x04 */ gc_ptr32(HSD_LightDesc) next;
+    /* 0x08 */ gc_be16 flags;
+    /* 0x0A */ gc_be16 attnflags;
     /* 0x0C */ GXColor color;
-    /* 0x10 */ HSD_WObjDesc* position;
-    /* 0x14 */ HSD_WObjDesc* interest;
+    /* 0x10 */ gc_ptr32(HSD_WObjDesc) position;
+    /* 0x14 */ gc_ptr32(HSD_WObjDesc) interest;
     union HSD_LightDesc_u {
-        void* p DAT_IF(false);
-        f32* shininess DAT_IF((flags & LOBJ_TYPE_MASK) == LOBJ_INFINITE);
-        HSD_LightPointDesc* point DAT_IF((flags & LOBJ_TYPE_MASK) ==
+        gc_ptr32(void) p DAT_IF(false);
+        gc_ptr32(gc_bef32) shininess DAT_IF((flags & LOBJ_TYPE_MASK) == LOBJ_INFINITE);
+        gc_ptr32(HSD_LightPointDesc) point DAT_IF((flags & LOBJ_TYPE_MASK) ==
                                              LOBJ_POINT &&
                                          !(attnflags & LOBJ_LIGHT_ATTN));
-        HSD_LightSpotDesc* spot DAT_IF((flags & LOBJ_TYPE_MASK) == LOBJ_SPOT &&
+        gc_ptr32(HSD_LightSpotDesc) spot DAT_IF((flags & LOBJ_TYPE_MASK) == LOBJ_SPOT &&
                                        attnflags == 0);
-        HSD_LightAttn* attn DAT_IF(((flags & LOBJ_TYPE_MASK) == LOBJ_POINT &&
+        gc_ptr32(HSD_LightAttn) attn DAT_IF(((flags & LOBJ_TYPE_MASK) == LOBJ_POINT &&
                                     (attnflags & LOBJ_LIGHT_ATTN)) ||
                                    ((flags & LOBJ_TYPE_MASK) == LOBJ_SPOT &&
                                     attnflags != 0));
@@ -101,10 +102,10 @@ struct HSD_LightDesc {
 };
 
 struct HSD_LightAnim {
-    HSD_LightAnim* next;
-    HSD_AObjDesc* aobjdesc;
-    HSD_WObjAnim* position_anim;
-    HSD_WObjAnim* interest_anim;
+    gc_ptr32(HSD_LightAnim) next;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
+    gc_ptr32(HSD_WObjAnim) position_anim;
+    gc_ptr32(HSD_WObjAnim) interest_anim;
 };
 
 struct HSD_LObjInfo {

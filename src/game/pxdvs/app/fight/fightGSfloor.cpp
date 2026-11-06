@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/statusval.h>
 
 struct GSvec {
     f32 x, y, z;
@@ -70,8 +71,8 @@ u8 fightFloorIsNowEncountSnatchOnly(FIGHT_FLOOR* floor);
 void fightFloorSetShadow(void);
 u32 fightEvtGetSequence(void);
 void fightEvtSetSequence(u32 seq);
-u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
-u32 fightTrainerGetStatus(void* trainer, u16 id, u16 kind, u16 arg);
+StatusU32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
+StatusU32 fightTrainerGetStatus(void* trainer, u16 id, u16 kind, u16 arg);
 void GSmodelPushState(_GSmodel* model, GSmodelState* state);
 void GSmodelPopState(_GSmodel* model, GSmodelState* state);
 void GSmodelGetPosition(_GSmodel* model, GSvec* v);

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct FightWazaJoutai {
     u8 unk0[0x10];
@@ -20,36 +21,7 @@ struct FightWaza {
     u8 autoMakeFlag;
 };
 
-struct WazaData {
-    u8 pri;
-    u8 pp;
-    u8 zokuseiDataId;
-    u8 rangeId;
-    u8 avg;
-    u8 addFightKoukaAvg;
-    u8 dageki;
-    u8 mamoru;
-    u8 majikku;
-    u8 yokodori;
-    u8 oumugaesi;
-    u8 oujanosirusi;
-    u8 unkC[4];
-    u8 bouon;
-    u8 unk11;
-    u8 hidenFlag;
-    u8 darkWazaKind;
-    u8 riskFlag;
-    u8 compatible;
-    u8 unk16[2];
-    s16 iryoku;
-    u8 unk1A[2];
-    u16 seqId;
-    u16 wazaFuncDataId;
-    u32 name;
-    u8 unk24[0xC];
-    u32 wazawzxdataId;
-    u8 typeId[3];
-};
+#include <game/pxdvs/app/waza/wazaData.h>
 
 struct WazaFuncData {
     void* aiValue;
@@ -66,7 +38,7 @@ WazaData* wazaDataBiosGetPtr(u16 id);
 u16 wazaDataBiosGetWazaFuncDataId(WazaData* data);
 WazaFuncData* wazaFuncDataBiosGetPtr(u16 id);
 u8 wazaCheckDarkWaza(u16 id);
-u8 zokuseiBiosGetWazaKind(u8 zokusei);
+u8 zokuseiBiosGetWazaKind(PCARG(u8, u16) zokusei);
 
 static inline u8 wazaDB_GetDarkWazaKind(u16 id) {
     WazaData* data = wazaDataBiosGetPtr(id);
@@ -169,7 +141,7 @@ u16 fightWaza_GetZokusei(FightWaza* waza) {
     return waza->zokusei;
 }
 
-u16 fightWaza_GetIryoku(FightWaza* waza) {
+PCRET(u16) fightWaza_GetIryoku(FightWaza* waza) {
     if (waza == 0) {
         return 0;
     }
@@ -221,14 +193,14 @@ u16 fightWaza_GetTargetDataId(FightWaza* waza) {
     return waza->targetDataId;
 }
 
-u16 fightWaza_GetUseWazaDataId(FightWaza* waza) {
+PCRET(u16) fightWaza_GetUseWazaDataId(FightWaza* waza) {
     if (waza == 0) {
         return 0;
     }
     return waza->useWazaDataId;
 }
 
-u16 fightWaza_GetMotoWazaDataId(FightWaza* waza) {
+PCRET(u16) fightWaza_GetMotoWazaDataId(FightWaza* waza) {
     if (waza == 0) {
         return 0;
     }
@@ -421,7 +393,7 @@ u8 wazaDB_GetAddFightKoukaAvg(u16 id) {
     return data->addFightKoukaAvg;
 }
 
-u16 wazaDB_GetSeqId(u16 id) {
+PCRET(u16) wazaDB_GetSeqId(u16 id) {
     WazaData* data = wazaDataBiosGetPtr(id);
     if (data == 0) {
         return 0;
@@ -429,7 +401,7 @@ u16 wazaDB_GetSeqId(u16 id) {
     return data->seqId;
 }
 
-s16 wazaDB_GetIryoku(u16 id) {
+PCRET(s16) wazaDB_GetIryoku(u16 id) {
     WazaData* data = wazaDataBiosGetPtr(id);
     if (data == 0) {
         return 0;
@@ -445,7 +417,7 @@ u8 wazaDB_GetAvg(u16 id) {
     return data->avg;
 }
 
-u8 wazaDB_GetRangeId(u16 id) {
+PCRET(u8) wazaDB_GetRangeId(u16 id) {
     WazaData* data = wazaDataBiosGetPtr(id);
     if (data == 0) {
         return 0;
@@ -461,7 +433,7 @@ s32 wazaDB_GetPri(u16 id) {
     return (s8)data->pri;
 }
 
-u8 waza_GetZokuseiKindData(u16 id) {
+PCRET(u8) waza_GetZokuseiKindData(u16 id) {
     WazaData* data = wazaDataBiosGetPtr(id);
     if (data == 0) {
         return 0;
@@ -472,7 +444,7 @@ u8 waza_GetZokuseiKindData(u16 id) {
     return zokuseiBiosGetWazaKind(data->zokuseiDataId);
 }
 
-u8 wazaDB_GetZokuseiDataId(u16 id) {
+PCRET(u8) wazaDB_GetZokuseiDataId(u16 id) {
     WazaData* data = wazaDataBiosGetPtr(id);
     if (data == 0) {
         return 0;

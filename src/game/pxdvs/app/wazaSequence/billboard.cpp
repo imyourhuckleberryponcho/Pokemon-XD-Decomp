@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 struct GSgfxLayer;
 enum GSgfxLayerPass {
@@ -84,13 +85,13 @@ public:
 };
 
 struct BillboardData {
-    s32 size;
-    void* archive;
-    s32 unk8;
-    s32 unkC;
-    s32 animIndex;
-    s32 particleIndex;
-    s32 animType;
+    gc_bes32 size;
+    gc_ptr32(void) archive;
+    gc_bes32 unk8;
+    gc_bes32 unkC;
+    gc_bes32 animIndex;
+    gc_bes32 particleIndex;
+    gc_bes32 animType;
 };
 
 class billboardEffect : public GSeffect {
@@ -249,3 +250,7 @@ billboardEffect::~billboardEffect() {
         GSresFreeResource(0x4e20, m_resID2);
     }
 }
+
+#ifndef __MWERKS__
+static_assert(sizeof(billboardEffect) == 0x40, "billboardEffect PC size changed: update wazaSequenceEntry.cpp's placeholder");
+#endif

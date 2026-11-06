@@ -1,35 +1,5 @@
 #include <dolphin/types.h>
-
-struct FightKindData {
-    u8 backSaveDataFlag;
-    u8 doBadgeCheckFlag;
-    u8 doZukanMitaFlag;
-    u8 doZukanTukamaetaFlag;
-    u8 useItemFlag;
-    u8 callFlag;
-    u8 nigeruFlag;
-    u8 drawFlag;
-    u8 getExpFlag;
-    u8 getOkaneFlag;
-    u8 okanePoolFlag;
-    u8 getNekoniKobanFlag;
-    u8 getFriendFlag;
-    u8 getInfectPokerusFlag;
-    u8 doCriticalAttackFlag;
-    u8 doHizukiAiFlag;
-    u8 doHizukiMiyaburiFlag;
-    u8 doItemSoubiTokukoutokubouupFlag;
-    u8 keikentihueruFlag;
-    u8 bossFlag;
-    u8 dorobouFlag;
-    u8 monohiroiFlag;
-    u8 darkpokemonHypermodeFlag;
-    u8 pokemonStatusMenuSubbarFlag;
-    u8 hostEnemyMsgFlag;
-    u8 regulationFlag;
-    u8 unk1A[2];
-    u32 name;
-};
+#include <game/pxdvs/app/fight/fightData.h>
 
 extern "C" {
 

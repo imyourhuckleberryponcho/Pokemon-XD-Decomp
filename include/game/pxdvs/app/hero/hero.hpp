@@ -6,20 +6,24 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 
 class Item;
+struct HeroItemSlot {
+  u16 itemDataId;
+  u16 num;
+};
 
-class Hero {
+struct Hero {
 private:
   char16 heroName[11];
   char16 heroNameCopy[11];
   u32 heroRnd;
   Pokemon partyPokemon[6];
-  Item *items[30];
-  Item *keyItems[43];
-  Item *ballItems[16];
-  Item *TMHMItems[64];
-  Item *berryItems[46];
-  Item *cologneItems[3];
-  Item *battleCDItems[60];
+  HeroItemSlot items[30];
+  HeroItemSlot keyItems[43];
+  HeroItemSlot ballItems[16];
+  HeroItemSlot TMHMItems[64];
+  HeroItemSlot berryItems[46];
+  HeroItemSlot cologneItems[3];
+  HeroItemSlot battleCDItems[60];
   u8 sexDataID;
   u8 homePlace;
   u16 x8e2;
@@ -36,8 +40,8 @@ private:
   u8 badge08Flag;
   u8 hizukiFlag;
   u8 x8f9;
-  Item *hizukiItems[10];
-  u8 x922[20];
+  HeroItemSlot hizukiItems[10];
+  u8 x922[22];
   u8 meetShadowPokemonCount;
   u8 followerID;
   s16 restartPosUnknownHalfWord;
@@ -65,7 +69,7 @@ public:
   s16 pokemonGet(HeroPokemonGetParam *, bool);
   u32 getLegendPokemonSize() const;
   u16 itemQuantity(u16);
-  Hero *getHeroPtr();
+  static Hero *getHeroPtr();
   void getRestertPos(GSvec *, short &) const;
   void setRestertPos();
   bool deletePokemon(s32);

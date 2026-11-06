@@ -6,24 +6,16 @@
 
 struct GSgfxVF;
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderStateAndSelect(GSgfxVF* vf);
     void beginSurface(u16 count);
     void endSurface();
 
-    u8 pad0[0xd34];
-    u8 lineWidth;
-    u8 padd35[3];
-    s32 lineOffsets;
-    u8 padd3c[0x16a8 - 0xd3c];
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad16b0[0x1760 - 0x16b0];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad1768[0x1998 - 0x1768];
-    u32 primType;
 };
 
 struct PrimData {
@@ -113,12 +105,12 @@ static u8* _primChar2Ptr(char c);
 static inline void primApplyTextWidth() {
     if (primData.f4 != 2) {
         GSgfxLayer* l = primData.layer;
-        l->lineWidth = (u8)(6.0f * primData.textWidth);
-        l->lineOffsets = 0;
-        l->dirty16ac |= 4;
-        l->dirty16a8 |= 1;
-        l->dirty1764 |= 4;
-        l->dirty1760 |= 1;
+        (*(u8*)&l->hw.lineWidth) = (u8)(6.0f * primData.textWidth);
+        (*(s32*)&l->hw.lineOffset) = 0;
+        (*(u32*)&l->dirty[0].geom) |= 4;
+        (*(u32*)&l->dirty[0].groups) |= 1;
+        (*(u32*)&l->dirty[1].geom) |= 4;
+        (*(u32*)&l->dirty[1].groups) |= 1;
         primData.f4 = 2;
     }
 }
@@ -136,7 +128,7 @@ void GSprimWriteStr(f32 x, f32 y, char* fmt, ...) {
     len = strlen(buf);
     primApplyTextWidth();
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(2));
-    primData.layer->primType = 0xA8;
+    (*(u32*)&primData.layer->unk1998) = 0xA8;
     count = _primRenderBuf(x, y, buf, len, false);
     primData.layer->beginSurface((u16)(count * 2));
     _primRenderBuf(x, y, buf, len, true);
@@ -150,7 +142,7 @@ void GSprimWriteChar(char c, f32 x, f32 y) {
     str[0] = c;
     primApplyTextWidth();
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(2));
-    primData.layer->primType = 0xA8;
+    (*(u32*)&primData.layer->unk1998) = 0xA8;
     count = _primRenderBuf(x, y, str, 1, false);
     primData.layer->beginSurface((u16)(count * 2));
     _primRenderBuf(x, y, str, 1, true);

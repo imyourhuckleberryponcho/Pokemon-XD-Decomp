@@ -40,7 +40,12 @@ struct peEmitParams {
 };
 
 struct peEmitterNode {
-    u8 pad0[0x9C];
+    u8 pad0[0x20];
+    void* slot20;
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x6C];
     Vec3 dir;
     u8 padA8[0x54];
     peEmitParams* params;
@@ -56,7 +61,7 @@ struct _EmitParams {
     Vec3 xscale;
 };
 
-class peNode {
+struct peNode {
 public:
     f32 life0;
     f32 life;

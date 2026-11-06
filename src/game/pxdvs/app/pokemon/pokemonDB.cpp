@@ -1,4 +1,6 @@
+#include <game/pcret.h>
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
+#include <game/bitfield.h>
 #include <game/pxdvs/app/pokemon/pokemonBios.hpp>
 #include <game/pxdvs/app/pokemon/pokemonDB.hpp>
 #include <game/pxdvs/GSAPI/GSflag/GSflag.h>
@@ -13,14 +15,18 @@ struct FightItem {
     u8 data[0xC];
 };
 struct FightAction {
-    u8 data[0x30];
+    u8 data[0x8];
+    void* slot8;
+    void* slotC;
+    u8 pad10[0x4];
+    void* slot14;
+    void* slot18;
+    u8 pad1C[0x14];
 };
 struct WazaMenuCur {
     u8 data[4];
 };
-struct FightOutPokemonEnemy {
-    u8 data[0xC];
-};
+#include <game/fightrecords.h>
 struct Sequence;
 struct FightOutPokemon;
 
@@ -51,14 +57,15 @@ void fightWazaInitJoutai(FightWaza*);
 }
 
 struct ComboPartnerBits {
-    u8 b10 : 1;
-    u8 b00 : 1;
-    u8 b11 : 1;
-    u8 b01 : 1;
-    u8 b12 : 1;
-    u8 b02 : 1;
-    u8 b13 : 1;
-    u8 b03 : 1;
+    GC_BITS8(
+    u8 b10 : 1,
+    u8 b00 : 1,
+    u8 b11 : 1,
+    u8 b01 : 1,
+    u8 b12 : 1,
+    u8 b02 : 1,
+    u8 b13 : 1,
+    u8 b03 : 1)
 };
 
 extern "C" {
@@ -1228,7 +1235,7 @@ FightOutPokemonEnemy* fightOutPokemon_GetFightOutPokemonEnemyPtr(FightOutPokemon
     return &fop->enemy[idx];
 }
 
-s16 fightOutPokemon_GetIrekaeTargetEntryId(FightOutPokemon* fop) {
+PCRET(s16) fightOutPokemon_GetIrekaeTargetEntryId(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return -1;
     }
@@ -1389,7 +1396,7 @@ WazaMenuCur* fightOutPokemon_GetWazaMenuCurPtr(FightOutPokemon* fop) {
     return &fop->wazaMenuCur;
 }
 
-u16 fightOutPokemon_GetTokuseiDataId(FightOutPokemon* fop) {
+PCRET(u16) fightOutPokemon_GetTokuseiDataId(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
@@ -1535,49 +1542,49 @@ u16 fightOutPokemon_GetFightoutTurnCount(FightOutPokemon* fop) {
     return fop->fightoutTurnCount;
 }
 
-u8 fightOutPokemon_GetAbicntAvoid(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemon_GetAbicntAvoid(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
     return fop->abicntAvoid;
 }
 
-u8 fightOutPokemon_GetAbicntAverage(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemon_GetAbicntAverage(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
     return fop->abicntAverage;
 }
 
-u8 fightOutPokemon_GetAbicntNimbleness(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemon_GetAbicntNimbleness(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
     return fop->abicntNimbleness;
 }
 
-u8 fightOutPokemon_GetAbicntSpeDef(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemon_GetAbicntSpeDef(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
     return fop->abicntSpeDef;
 }
 
-u8 fightOutPokemon_GetAbicntSpeAtk(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemon_GetAbicntSpeAtk(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
     return fop->abicntSpeAtk;
 }
 
-u8 fightOutPokemon_GetAbicntPhyDef(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemon_GetAbicntPhyDef(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
     return fop->abicntPhyDef;
 }
 
-u8 fightOutPokemon_GetAbicntPhyAtk(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemon_GetAbicntPhyAtk(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
@@ -1658,7 +1665,7 @@ u16 fightOutPokemon_GetMotoWazaDataId(FightOutPokemon* fop) {
     return fightWaza_GetMotoWazaDataId(waza);
 }
 
-u16 fightOutPokemon_GetUseWazaDataId(FightOutPokemon* fop) {
+PCRET(u16) fightOutPokemon_GetUseWazaDataId(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
@@ -1735,7 +1742,7 @@ u8 fightPokemon_GetCatchEntryFlag(FightPokemon* fp) {
     return fp->catchEntryFlag;
 }
 
-s16 fightPokemon_GetEntryId(FightPokemon* fp) {
+PCRET(s16) fightPokemon_GetEntryId(FightPokemon* fp) {
     if (fp == nullptr) {
         return -1;
     }
@@ -1825,7 +1832,7 @@ u32 pokemon_GetInitDp(Pokemon* poke) {
     return darkPokemonBiosGetDarkPoint(id);
 }
 
-u16 pokemon_GetDarkpokemonDataId(Pokemon* poke) {
+PCRET(u16) pokemon_GetDarkpokemonDataId(Pokemon* poke) {
     if (poke == nullptr) {
         return 0;
     }
@@ -1848,7 +1855,7 @@ u8 pokemon_GetNowExpToLevel(Pokemon* poke) {
     return pokemonGetExpToLevel(grow, exp);
 }
 
-u8 pokemon_GetSeikaku(Pokemon* poke) {
+PCRET(u8) pokemon_GetSeikaku(Pokemon* poke) {
     if (poke == nullptr) {
         return 0;
     }
@@ -1862,7 +1869,7 @@ bool pokemon_GetFuseiFlag(Pokemon* poke) {
     return poke->flags.bits.fusei;
 }
 
-u8 pokemon_GetTokuseiFlag(Pokemon* poke) {
+PCRET(u8) pokemon_GetTokuseiFlag(Pokemon* poke) {
     if (poke == nullptr) {
         return 0;
     }
@@ -1920,7 +1927,7 @@ u8 pokemon_GetMaxHpRnd(Pokemon* poke) {
     return pokemonBiosGetMaxHpRnd(poke);
 }
 
-u16 pokemon_GetNimbleness(Pokemon* poke) {
+PCRET(u16) pokemon_GetNimbleness(Pokemon* poke) {
     return pokemonBiosGetNimbleness(poke);
 }
 
@@ -1944,7 +1951,7 @@ u16 pokemon_GetMaxHp(Pokemon* poke) {
     return pokemonBiosGetMaxHp(poke);
 }
 
-u16 pokemon_GetHp(Pokemon* poke) {
+PCRET(u16) pokemon_GetHp(Pokemon* poke) {
     if (poke == 0) {
         return 0;
     }
@@ -1982,7 +1989,7 @@ u8 pokemon_GetPokemonWazaPp(Pokemon* poke, u32 wazaNum) {
     return waza->pp;
 }
 
-u16 pokemon_GetPokemonWazaDataId(Pokemon* poke, u32 wazaNum) {
+PCRET(u16) pokemon_GetPokemonWazaDataId(Pokemon* poke, u32 wazaNum) {
     if (poke == nullptr) {
         return 0;
     }
@@ -2033,7 +2040,7 @@ u32 pokemon_GetCatchTrainerRnd(Pokemon* poke) {
     return poke->catchTrainerRnd;
 }
 
-u8 pokemon_GetCatchBallId(Pokemon* poke) {
+PCRET(u8) pokemon_GetCatchBallId(Pokemon* poke) {
     if (poke == nullptr)
     {
         return 0;
@@ -2073,7 +2080,7 @@ u32 pokemonDB_GetPkxDataId(u16 id) {
     return data->pkxDataId;
 }
 
-bool pokemonDB_GetTukamaetaFlag(u16 id) {
+PCRET(bool) pokemonDB_GetTukamaetaFlag(u16 id) {
     PokemonData* data = pokemonDataBiosGetPtr(id);
     if (data == nullptr) {
         return 0;
@@ -2081,7 +2088,7 @@ bool pokemonDB_GetTukamaetaFlag(u16 id) {
     return GSflagGet(data->tukamaetaFlag);
 }
 
-u16 pokemonDB_GetShout(u16 id) {
+PCRET(u16) pokemonDB_GetShout(u16 id) {
     PokemonData* data = pokemonDataBiosGetPtr(id);
     if (data == nullptr) {
         return 0;
@@ -2089,7 +2096,7 @@ u16 pokemonDB_GetShout(u16 id) {
     return data->shout;
 }
 
-u16 pokemonDB_GetVoice(u16 id) {
+PCRET(u16) pokemonDB_GetVoice(u16 id) {
     PokemonData* data = pokemonDataBiosGetPtr(id);
     if (data == nullptr) {
         return 0;
@@ -2097,7 +2104,7 @@ u16 pokemonDB_GetVoice(u16 id) {
     return data->voice;
 }
 
-u16 pokemonDB_GetWeight(u16 id) {
+PCRET(u16) pokemonDB_GetWeight(u16 id) {
     PokemonData* data = pokemonDataBiosGetPtr(id);
     if (data == nullptr) {
         return 0;
@@ -2173,7 +2180,7 @@ u16 pokemonDB_GetItemDataId(u16 id, u16 idx) {
     return data->itemDataId[idx];
 }
 
-u16 pokemonDB_GetInitFriend(u16 id) {
+PCRET(u16) pokemonDB_GetInitFriend(u16 id) {
     PokemonData* data = pokemonDataBiosGetPtr(id);
     if (data == nullptr) {
         return 0;
@@ -2197,7 +2204,7 @@ u8 pokemonDB_GetGet(u16 id) {
     return data->get;
 }
 
-u8 pokemonDB_GetGrowDataId(u16 id) {
+PCRET(u8) pokemonDB_GetGrowDataId(u16 id) {
     PokemonData* data = pokemonDataBiosGetPtr(id);
     if (data == nullptr) {
         return 0;
@@ -2237,7 +2244,7 @@ u16 pokemonDB_GetBasisSpeAtk(u16 id) {
     return status->speAtk;
 }
 
-u16 pokemonDB_GetBasisPhyDef(u16 id) {
+PCRET(u16) pokemonDB_GetBasisPhyDef(u16 id) {
     BasisStatus* status = pokemonDataBiosGetBasisStatusPtr(pokemonDataBiosGetPtr(id), 0);
     if (status == nullptr) {
         return 0;
@@ -2245,7 +2252,7 @@ u16 pokemonDB_GetBasisPhyDef(u16 id) {
     return status->phyDef;
 }
 
-u16 pokemonDB_GetBasisPhyAtk(u16 id) {
+PCRET(u16) pokemonDB_GetBasisPhyAtk(u16 id) {
     BasisStatus* status = pokemonDataBiosGetBasisStatusPtr(pokemonDataBiosGetPtr(id), 0);
     if (status == nullptr) {
         return 0;
@@ -2266,7 +2273,11 @@ const char* pokemonDB_GetName(u16 id) {
     if (data == nullptr) {
         return 0;
     }
-    return data->name;
+    return (const char*)data->name;
 }
 
 }
+
+#ifndef __MWERKS__
+static_assert(sizeof(FightOutPokemon) == FIGHT_OUT_POKEMON_SIZE, "FightOutPokemon PC size changed: update the blob copies");
+#endif

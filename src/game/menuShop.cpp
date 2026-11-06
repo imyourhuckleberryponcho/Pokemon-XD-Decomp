@@ -1,3 +1,4 @@
+#ifdef __MWERKS__
 #define _STDARG_H_
 struct __va_list_struct {
     char gpr;
@@ -9,8 +10,19 @@ struct __va_list_struct {
 typedef __va_list_struct va_list[1];
 #define va_start(ap, fmt) ((void)fmt, __builtin_va_info(&ap))
 extern "C" void* __va_arg(va_list, unsigned char);
+#else
+#include <stdarg.h>
+#endif
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/shopData.h>
 #include <game/shared/menu_work.h>
+#ifndef __MWERKS__
+void menuPtPlaySe(u32);
+#define menuPtPlaySe__FUl(...) (menuPtPlaySe(__VA_ARGS__))
+#endif
 
 #pragma peephole off
 #pragma pool_strings off
@@ -50,24 +62,6 @@ struct NUM_MENU_ARG {
     s32 coupon;
 };
 
-struct SHOP_DATA {
-    u8 unk0;
-    u8 mode;
-    u16 goodsIdx;
-};
-
-struct SHOP_SALESMAN {
-    u8 se;
-    u8 pad[3];
-    u32 msg[14];
-};
-
-struct SHOP_EXCHANGER {
-    u8 se;
-    u8 pad[3];
-    u32 msg[18];
-};
-
 struct SHOP_WORK {
     s32 shop;
     s32 terminate;
@@ -95,8 +89,8 @@ int memcardTaskCall(int, int, int);
 void itemInitAry(void*, u16);
 void* savedataGetStatus(void*, int);
 void* memcpy(void*, const void*, u32);
-u32 heroGetStatus(Hero*, u32, u16);
-void heroSetStatus(Hero*, u32, u32);
+StatusU32 heroGetStatus(Hero*, u32, u16);
+void heroSetStatus(Hero*, u32, StatusU32);
 int winMsgOpenWithSE(s8, u32, bool, bool, u8);
 int menuSubOpenYesNo(u8, s16, s16, int);
 void winMsgClose(bool);
@@ -107,10 +101,10 @@ void heroDecPokecoupon(Hero*, int);
 void heroDecPokedoru(Hero*, u32);
 void pcboxAddItem(void*, u16, u16);
 u16 pcboxGetItemCapacity(void*, u16);
-int heroItemCheckAddItemDataId(Hero*, u16);
-int heroItemAddItemDataId(Hero*, u16, u16, int);
+int heroItemCheckAddItemDataId(Hero*, PCARG(u16, u32));
+int heroItemAddItemDataId(Hero*, PCARG(u16, u32), PCARG(u16, u32), int);
 void* heroItemGetItemKindToItemAryPtr(Hero*, u8, u16*, u16*, u8*, u8*);
-u32 itemGetStatus(void*, u32, u32, u32);
+StatusU32 itemGetStatus(void*, u32, u32, u32);
 u8* itemDataBiosGetPtr(u16);
 u32 itemDataBiosGetCoupon(u8*);
 u32 itemDataBiosGetPrice(u8*);
@@ -118,9 +112,11 @@ u8 itemDataBiosGetKind(u8*);
 u32 itemDataBiosGetDoc(u8*);
 u32 itemDataBiosGetName(u8*);
 u32 itemDataBiosGetWazaMachineNo(u8*);
-u16 itemDataBiosGetWazaIDByWazaMachineNo(u8);
-void msgctrlSetValue(int, u32);
+u16 itemDataBiosGetWazaIDByWazaMachineNo(PCARG(u8, u32));
+void msgctrlSetValue(int, GCuptr);
+#ifdef __MWERKS__
 void menuPtPlaySe__FUl(u32);
+#endif
 int GSmsgGetRect(int);
 void GSmsgPrint2(int, int, int, int, int);
 void GSmsgPrintRight(int, int, int, int, int, u32, u32);
@@ -165,10 +161,10 @@ u8 heroItemCheckHaveItemDataId(Hero*, u32);
 
 bool deckDataVirtualDB_GetFlagData(u16);
 u8 heroItemCheckHaveItemDataId(Hero*, u32);
-extern SHOP_DATA* shopData;
-extern u16* shopGoods;
-extern SHOP_EXCHANGER* shopExchanger;
-extern SHOP_SALESMAN* shopSalesman;
+extern "C" SHOP_DATA* shopData;
+extern "C" u16* shopGoods;
+extern "C" SHOP_EXCHANGER* shopExchanger;
+extern "C" SHOP_SALESMAN* shopSalesman;
 
 static inline SHOP_MENU_ARG* shopArg(tagWINDOW_WORK* w) { return (SHOP_MENU_ARG*)w->params[0]; }
 
@@ -391,7 +387,10 @@ static void shopProc(int shop, u8 kind) {
             menuPocket2Call(3, shop, 0);
             break;
         }
-        winMsgOpenWithSE(2, menuShopGetMsgID(&se, shop, (MENU_SHOP_MSG_CODE)1, -1), 1, 0, se);
+        {
+            u32 msgId_ = menuShopGetMsgID(&se, shop, (MENU_SHOP_MSG_CODE)1, -1);
+            winMsgOpenWithSE(2, msgId_, 1, 0, se);
+        }
     }
     openMsgWin(shop, (MENU_SHOP_MSG_CODE)2, -1);
 }
@@ -446,7 +445,10 @@ static void shopBuyMain(int shop, u8 kind) {
             }
         }
         total = num * price;
-        winMsgOpenWithSE(2, menuShopGetMsgID(&se, shop, (MENU_SHOP_MSG_CODE)3, 0x2D, item, 0x2F, num, 0x4B, total, -1), 1, 0, se);
+        {
+            u32 msgId_ = menuShopGetMsgID(&se, shop, (MENU_SHOP_MSG_CODE)3, 0x2D, item, 0x2F, num, 0x4B, total, -1);
+            winMsgOpenWithSE(2, msgId_, 1, 0, se);
+        }
         answer = menuSubOpenYesNo(0, -1, -1, 0);
         winMsgClose(1);
         if (answer == 1 || answer == -1) {
@@ -505,7 +507,10 @@ static void couponProc(int shop, u8 kind) {
     int done = 0;
     PPcboxBackup = GSmemAlloc(0xBC50);
     msgctrlSetValue(0x59, 0x1772);
-    winMsgOpenWithSE(2, menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)0, -1), 1, 0, se);
+    {
+        u32 msgId_ = menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)0, -1);
+        winMsgOpenWithSE(2, msgId_, 1, 0, se);
+    }
     while ((mode = selectExchangeMode()) != 3) {
         winMsgClose(1);
         switch (mode) {
@@ -525,7 +530,10 @@ static void couponProc(int shop, u8 kind) {
         if (done != 0) {
             break;
         }
-        winMsgOpenWithSE(2, menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)1, -1), 1, 0, se);
+        {
+            u32 msgId_ = menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)1, -1);
+            winMsgOpenWithSE(2, msgId_, 1, 0, se);
+        }
     }
     if (kind != 2) {
         openCouponMsgWin(shop, (MENU_COUPON_MSG_CODE)2, -1);
@@ -596,7 +604,10 @@ static void couponExchangeMain(int shop, u8 kind) {
                     continue;
                 }
                 total = num * price;
-                winMsgOpenWithSE(2, menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)5, 0x2D, item, 0x2F, num, 0x4B, total, -1), 1, 0, se);
+                {
+                    u32 msgId_ = menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)5, 0x2D, item, 0x2F, num, 0x4B, total, -1);
+                    winMsgOpenWithSE(2, msgId_, 1, 0, se);
+                }
                 answer = menuSubOpenYesNo(0, -1, -1, 0);
                 winMsgClose(1);
                 if (answer == 1 || answer == -1) {
@@ -612,7 +623,10 @@ static void couponExchangeMain(int shop, u8 kind) {
                 if (kind != 4) {
                     continue;
                 }
-                winMsgOpenWithSE(2, menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)7, -1), 1, 0, se);
+                {
+                    u32 msgId_ = menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)7, -1);
+                    winMsgOpenWithSE(2, msgId_, 1, 0, se);
+                }
                 answer = menuSubOpenYesNo(0, -1, -1, 0);
                 winMsgClose(1);
                 if (answer == -1 || answer == 1) {
@@ -1035,13 +1049,8 @@ int menuShopDrawMoneyText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 }
 extern "C" {
 int menuShopDrawPointEmblem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
-    bool show = false;
     SHOP_MENU_ARG* arg = (SHOP_MENU_ARG*)w->params[0];
-    s8 rf_t = sp->id;
-    if (rf_t == 0x6F && (arg->flags & 1) == 0 && (arg->mode == 2 || arg->mode == 3 || arg->mode == 4)) {
-        show = true;
-    }
-    winSpriteSetDisp(sp, show);
+    winSpriteSetDisp(sp, sp->id == 0x6F && (arg->flags & 1) == 0 && (arg->mode == 2 || arg->mode == 3 || arg->mode == 4));
     return 0;
 }
 }
@@ -1224,7 +1233,10 @@ static void openMsgWin(int shop, MENU_SHOP_MSG_CODE code, int arg, ...) {
         break;
     }
     va_start(args, arg);
-    winMsgOpenWithSE(2, getMsgID(&se, shop, code, arg, args), 1, 0, se);
+    {
+        u32 msgId_ = getMsgID(&se, shop, code, arg, args);
+        winMsgOpenWithSE(2, msgId_, 1, 0, se);
+    }
     winMsgClose(1);
 }
 static void openCouponMsgWin(int shop, MENU_COUPON_MSG_CODE code, int arg, ...) {
@@ -1238,7 +1250,10 @@ static void openCouponMsgWin(int shop, MENU_COUPON_MSG_CODE code, int arg, ...) 
         break;
     }
     va_start(args, arg);
-    winMsgOpenWithSE(2, getCouponMsgID(&se, shop, code, arg, args), 1, 0, se);
+    {
+        u32 msgId_ = getCouponMsgID(&se, shop, code, arg, args);
+        winMsgOpenWithSE(2, msgId_, 1, 0, se);
+    }
     winMsgClose(1);
 }
 extern "C" {
@@ -1297,7 +1312,11 @@ static u32 getMsgID(u8* se, int shop, MENU_SHOP_MSG_CODE code, int arg, va_list 
                 item = v;
             }
         }
+#ifdef __MWERKS__
         v = *(int*)__va_arg(args, 1);
+#else
+        v = va_arg(args, int);
+#endif
     }
     return _msgIdWazaMachineChange(item, *(u32*)((u8*)msgs + off));
 }
@@ -1323,7 +1342,11 @@ static u32 getCouponMsgID(u8* se, int shop, MENU_COUPON_MSG_CODE code, int arg, 
                 item = v;
             }
         }
+#ifdef __MWERKS__
         v = *(int*)__va_arg(args, 1);
+#else
+        v = va_arg(args, int);
+#endif
     }
     return _msgIdWazaMachineChange(item, *(u32*)((u8*)msgs + off));
 }
@@ -1386,7 +1409,10 @@ static int writeBackPcBox(int shop, u8 kind, VPC_BOX* box) {
     u8 se;
     s8 answer;
     if (!checkExchangeVpc(box)) {
-        winMsgOpenWithSE(2, menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)0xD, -1), 1, 0, se);
+        {
+            u32 msgId_ = menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)0xD, -1);
+            winMsgOpenWithSE(2, msgId_, 1, 0, se);
+        }
         answer = menuSubOpenYesNo(0, -1, -1, 0);
         winMsgClose(1);
         if (answer == 1 || answer == -1) {
@@ -1394,7 +1420,10 @@ static int writeBackPcBox(int shop, u8 kind, VPC_BOX* box) {
         }
         return true;
     }
-    winMsgOpenWithSE(2, menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)0xF, -1), 1, 0, se);
+    {
+        u32 msgId_ = menuShopGetCouponMsgID(&se, shop, (MENU_COUPON_MSG_CODE)0xF, -1);
+        winMsgOpenWithSE(2, msgId_, 1, 0, se);
+    }
     answer = menuSubOpenYesNo(0, -1, -1, 0);
     winMsgClose(1);
     if (answer == 1 || answer == -1) {

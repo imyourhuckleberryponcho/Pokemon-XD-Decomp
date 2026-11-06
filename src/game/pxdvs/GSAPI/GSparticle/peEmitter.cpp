@@ -1,4 +1,9 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/pecontainer.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -107,7 +112,36 @@ struct _peParticleStrip {
     u8 _draft[1];
 };
 struct _pePositionFunction {
-    u8 _draft[1];
+    gc_be16 flags;
+    union {
+        struct {
+            gc_vec(Vec) center;
+            gc_vec(Vec) spread;
+            gc_vec(Vec) dir;
+            gc_vec(Vec) axis;
+            gc_bef32 radBase;
+            gc_bef32 radRange;
+            gc_bef32 spin;
+        } sphere;
+        struct {
+            gc_vec(Vec) start;
+            gc_vec(Vec) axis;
+            gc_bef32 radBase;
+            gc_bef32 radRange;
+            gc_bef32 angBase;
+            gc_bef32 angRange;
+            gc_bef32 angSpeed;
+            gc_bef32 spin;
+        } ring;
+        struct {
+            gc_vec(Vec) center;
+            gc_vec(Vec) dir;
+            gc_vec(Vec) axis;
+            gc_bef32 radBase;
+            gc_bef32 radRange;
+            gc_bef32 spin;
+        } line;
+    };
 };
 struct _peShape {
     u8 _draft[1];
@@ -117,17 +151,9 @@ struct peColorSpline {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;
-    u32 unk4;
-    void* buffer;
-    peNode* freeList;
-    peNode* activeList;
-    u16 count;
-    u16 maxCount;
-    u8 dirty;
-    u8 started;
+    PE_CONTAINER_MEMBERS
 
-    peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
+    peContainer(peEmitterNode* e, u32 nodeSize, unsigned short max);
     virtual ~peContainer();
     virtual void Start();
     virtual void PreUpdate();
@@ -136,14 +162,26 @@ public:
     virtual void Render();
     virtual void Stop();
 
+#ifdef __MWERKS__
     s32 RemoveNode(peNode*);
+#else
+    void RemoveNode(peNode* node);
+#endif
     u16 CreateNodes(unsigned short);
+#ifdef __MWERKS__
     s32 RemoveAll();
+#else
+    void RemoveAll();
+#endif
+#ifdef __MWERKS__
     s32 MoveNode(peNode*, peNode*);
+#else
+    void MoveNode(peNode* node, peNode* after);
+#endif
 };
 class peEmitterContainer : public peContainer {
 public:
-    _peEmitter* data;
+    PE_EMITTER_CONTAINER_MEMBERS
     peEmitterContainer(peEmitterNode* e, _peEmitter* em, unsigned short n);
     virtual ~peEmitterContainer();
     virtual void Stop();
@@ -155,31 +193,34 @@ public:
 };
 class peShapeContainer : public peContainer {
 public:
-    u8 unk20[0x4];
+    PE_SHAPE_CONTAINER_MEMBERS
     peShapeContainer(peEmitterNode*, _peShape*, unsigned short);
     virtual ~peShapeContainer();
 };
 class peModelContainer : public peContainer {
 public:
-    u8 unk20[0x4];
+    PE_MODEL_CONTAINER_MEMBERS
     peModelContainer(peEmitterNode*, _peModel*, unsigned short);
     virtual ~peModelContainer();
 };
 class peDistortionContainer : public peContainer {
 public:
-    u8 unk20[0x58];
+    PE_RENDER_MEMBERS
+    PE_DISTORTION_CONTAINER_MEMBERS
     peDistortionContainer(peEmitterNode*, _peDistortion*, unsigned short);
     virtual ~peDistortionContainer();
 };
 class peParticleStripContainer : public peContainer {
 public:
-    u8 unk20[0x40];
+    PE_RENDER_MEMBERS
+    PE_STRIP_CONTAINER_MEMBERS
     peParticleStripContainer(peEmitterNode*, _peParticleStrip*, unsigned short);
     virtual ~peParticleStripContainer();
 };
 class peParticleContainer : public peContainer {
 public:
-    u8 unk20[0x5C];
+    PE_RENDER_MEMBERS
+    PE_PARTICLE_CONTAINER_MEMBERS
     peParticleContainer(peEmitterNode*, _peParticle*, unsigned short);
     virtual ~peParticleContainer();
 };
@@ -190,7 +231,7 @@ struct peEmitterNode {
     void CreateParameters(unsigned short, float);
     void Start(peEmitterNode*, _peEmitter*, _EmitParams*);
     void Render(_peEmitter*);
-    void GetPositionParameter(GSvec*, GSvec*, _pePositionFunction*, float);
+    static void GetPositionParameter(GSvec*, GSvec*, _pePositionFunction*, float);
     void Init(_peEmitter*);
     u8 Update(peEmitterNode*, _peEmitter*, float);
     void Stop(_peEmitter*);
@@ -227,7 +268,7 @@ double atan2(double y, double x);
 void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t);
 void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, u32 useGfx);
 f32 peSplineGetValue(peSpline* s, f32 t);
-extern f32 __float_nan;
+extern f32 __float_nan[];
 
 inline int __fpclassifyf(float x) {
     switch ((*(s32*)&x) & 0x7F800000) {
@@ -247,7 +288,11 @@ inline int __fpclassifyf(float x) {
     return 4;
 }
 
+#ifdef __MWERKS__
 inline float sqrtf(float x) {
+#else
+static inline float sqrtf(float x) {
+#endif
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
@@ -255,9 +300,9 @@ inline float sqrtf(float x) {
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         return (float)(x * guess);
     } else if (x < 0.0) {
-        return __float_nan;
+        return __float_nan[0];
     } else if (__fpclassifyf(x) == 1) {
-        return __float_nan;
+        return __float_nan[0];
     }
     return x;
 }
@@ -278,14 +323,129 @@ struct ParticleDebugStats {
     s32 unk20;
 };
 extern ParticleDebugStats g_particle_debug_stats;
-inline peEmitterContainer::peEmitterContainer(peEmitterNode* e, _peEmitter* em, unsigned short n) : peContainer(e, 0x104, n) {
+
+struct peXformE {
+    Vec pos;
+    Quaternion rot;
+    Vec scale;
+};
+
+struct _EmitParamsE {
+    f32 life;
+    f32 speed;
+    Vec pos;
+    Vec vel;
+    peXformE xf;
+};
+
+struct peEmitterDefE {
+    gc_be32 flags;
+    gc_be32 maxNodes;
+    gc_bef32 rate;
+    gc_bef32 countBase;
+    gc_bef32 countRange;
+    gc_ptr32(peSpline) countSpline;
+    gc_bef32 start;
+    gc_bef32 duration;
+    gc_bef32 lifeBase;
+    gc_bef32 lifeRange;
+    gc_bef32 length;
+    gc_bef32 speedBase;
+    gc_bef32 speedRange;
+    gc_be16 posFlags;
+    u8 pad36[0x3e];
+    gc_be16 velFlags;
+    u8 pad76[2];
+    gc_vec(Vec) dir;
+    gc_vec(Vec) axis;
+    gc_bef32 magBase;
+    gc_bef32 magRange;
+    gc_bef32 coneBase;
+    gc_bef32 coneRange;
+    u8 padA0[0xc];
+    gc_vec(Vec) vAC;
+    gc_ptr32(peSpline) vACSpline[3];
+    gc_vec(Vec) vC4;
+    gc_ptr32(peSpline) vC4Spline[3];
+    gc_vec(Vec) euler;
+    gc_ptr32(peSpline) eulerSpline[3];
+    gc_vec(Vec) spinBase;
+    gc_vec(Vec) spinRange;
+    gc_ptr32(peSpline) spinSpline[3];
+    gc_vec(Vec) scale;
+    gc_ptr32(peSpline) scaleSpline[3];
+    gc_ptr32(peColorSpline) color;
+    gc_ptr32(peSpline) alpha;
+    gc_ptr32(struct peEffectItemE) items;
+};
+
+struct peEffectItemE {
+    gc_be32 unk0;
+    gc_be32 type;
+    gc_ptr32(void) data;
+    gc_ptr32(peEffectItemE) next;
+};
+
+struct peEmitterNodeE {
+    f32 life0;
+    f32 life;
+    u8 pad8[0xc];
+    Vec pos;
+    peXformE* xf;
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
+    f32 time;
+    f32 emitAcc;
+    f32 color[4];
+    u16 flags;
+    u16 emitted;
+    Vec scaleBase;
+    Vec scale;
+    Quaternion rot;
+    Vec unk74;
+    Quaternion rot2;
+    Vec spin;
+    Vec unk9C;
+    peXformE cur;
+    peXformE prev;
+    f32 depth;
+    peEmitterDefE* def;
+    peContainer* containers;
+};
+
+#ifdef __MWERKS__
+#define PEC(x, T, off, m) M2C_FIELD(x, T, off)
+#define PEN(x, T, off, m) M2C_FIELD(x, T, off)
+#define PECR(x, T, off, m) (*(T)((u8*)(x) + (off)))
+#define PENR(x, T, off, m) (*(T)((u8*)(x) + (off)))
+#define PE_EMITTER_NODE_SIZE 0x104
+#define PED(x, T, off, m) M2C_FIELD(x, T, off)
+#define PEI(x, T, off, m) M2C_FIELD(x, T, off)
+#define PE_LAYER_ID(l) M2C_FIELD(l, s32 *, 0x28)
+#else
+extern "C++" { template <class P> struct pe_pointee;
+template <class X> struct pe_pointee<X*> { typedef X type; }; }
+#define PED(x, T, off, m) ((pe_pointee<T>::type)(((peEmitterDefE*)(x))->m))
+#define PEI(x, T, off, m) ((pe_pointee<T>::type)(((peEffectItemE*)(x))->m))
+enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
+enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
+#include <game/gsgfxlayer.h>
+#define PE_LAYER_ID(l) (*(s32*)&((GSgfxLayerData*)(l))->id)
+#define PEC(x, T, off, m) (*(T)&((peEmitterContainer*)(x))->m)
+#define PEN(x, T, off, m) (*(T)&((peEmitterNodeE*)(x))->m)
+#define PECR PEC
+#define PENR PEN
+#define PE_EMITTER_NODE_SIZE sizeof(peEmitterNodeE)
+#endif
+inline peEmitterContainer::peEmitterContainer(peEmitterNode* e, _peEmitter* em, unsigned short n) : peContainer(e, PE_EMITTER_NODE_SIZE, n) {
     peEmitterNode* node;
     peEmitterNode* next;
 
     data = em;
     node = (peEmitterNode*)freeList;
     while (node != 0) {
-        next = M2C_FIELD(node, peEmitterNode **, 0x28);
+        next = PEN(node, peEmitterNode **, 0x28, slot28);
         node->Init(em);
         node = next;
     }
@@ -294,12 +454,11 @@ inline peEmitterContainer::peEmitterContainer(peEmitterNode* e, _peEmitter* em, 
 }
 
 extern s32 g_render_pass;
-struct XdBlobC { u8 data[0xC]; };
-extern XdBlobC unitScaleVector;
+extern Vec unitScaleVector;
 extern s32 this_;
 }
 extern "C++" {
-void* operator new(unsigned long);
+void* operator new(size_t);
 }
 
 void peEmitterContainer::Stop() {
@@ -307,16 +466,16 @@ void peEmitterContainer::Stop() {
     u8 *temp_r30;
     u8 *var_r3;
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
+    if ((u8) PEC(this, u8 *, 0x19, started) != 0) {
         ((peContainer*)this)->PreUpdate();
-        M2C_FIELD(this, u8 *, 0x19) = 0U;
-        var_r3 = M2C_FIELD(this, u8 **, 0x10);
+        PEC(this, u8 *, 0x19, started) = 0U;
+        var_r3 = PEC(this, u8 **, 0x10, activeList);
         while (var_r3 != NULL) {
-            temp_r30 = M2C_FIELD(var_r3, u8 **, 0x28);
-            var_r31 = M2C_FIELD(var_r3, u8 **, 0x100);
+            temp_r30 = PEN(var_r3, u8 **, 0x28, slot28);
+            var_r31 = PEN(var_r3, u8 **, 0x100, containers);
             while (var_r31 != NULL) {
                 ((peContainer*)var_r31)->Stop();
-                var_r31 = M2C_FIELD(var_r31, u8 **, 4);
+                var_r31 = PEC(var_r31, u8 **, 0x4, next);
             }
             var_r3 = temp_r30;
         }
@@ -330,19 +489,17 @@ void peEmitterContainer::Render() {
     u8 *var_r31;
     u8 *var_r30;
 
-    if (((u8) M2C_FIELD(this, u8 *, 0x19) != 0) && (((peEmitterContainer*)(this))->DoRender() != 0)) {
-        var_r30 = M2C_FIELD(this, u8 **, 0x10);
-        while (var_r30 != NULL) {
-            var_r31 = M2C_FIELD(var_r30, u8 **, 0x100);
-            if ((u16) M2C_FIELD(var_r30, u16 *, 0x4A) == 0) {
-
+    if (((u8) PEC(this, u8 *, 0x19, started) != 0) && (((peEmitterContainer*)(this))->DoRender() != 0)) {
+        for (var_r30 = PEC(this, u8 **, 0x10, activeList); var_r30 != NULL; var_r30 = PEN(var_r30, u8 **, 0x28, slot28)) {
+            var_r31 = PEN(var_r30, u8 **, 0x100, containers);
+            if ((u16) PEN(var_r30, u16 *, 0x4A, emitted) == 0) {
+                continue;
             } else {
                 while (var_r31 != NULL) {
                     ((peContainer*)var_r31)->Render();
-                    var_r31 = M2C_FIELD(var_r31, u8 **, 4);
+                    var_r31 = PEC(var_r31, u8 **, 0x4, next);
                 }
             }
-            var_r30 = M2C_FIELD(var_r30, u8 **, 0x28);
         }
     }
 }
@@ -353,7 +510,7 @@ u8 peEmitterContainer::DoRender() {
     if (started == 0) {
         return 0;
     }
-    u32 flags = *(u32*)data;
+    u32 flags = GC_AT(u32, data, 0);
     if (count == 0) {
         return 0;
     }
@@ -374,7 +531,7 @@ u8 peEmitterContainer::DoRender() {
     default:
         return 0;
     }
-    switch (M2C_FIELD(g_current_layer, s32 *, 0x28)) {
+    switch (PE_LAYER_ID(g_current_layer)) {
     case 0:
         if (flags & 0x2000) {
             return 1;
@@ -415,6 +572,68 @@ u8 peEmitterContainer::DoRender() {
 }
 }
 
+void peEmitterContainer::Update(float dt) {
+    u8* child;
+    peNode* node;
+    peNode* next;
+    peNode* pos;
+    peNode* prev;
+    f32 depth;
+
+    if (PECR(this, u8*, 0x19, started) == 0) {
+        return;
+    }
+    for (node = PECR(this, peNode**, 0x10, activeList); node != NULL; node = next) {
+        next = PENR(node, peNode**, 0x28, slot28);
+        if (!((peEmitterNode*)node)->Update(PECR(this, peEmitterNode**, 0x0, emitter), PECR(this, _peEmitter**, 0x20, data), dt)) {
+            for (child = PENR(node, u8**, 0x100, containers); child != NULL; child = PECR(child, u8**, 0x4, next)) {
+                ((peContainer*)child)->Stop();
+            }
+            ((peContainer*)this)->RemoveNode(node);
+        }
+    }
+    if (PECR(this, u8*, 0x19, started) != 0 && (*PECR(this, u32**, 0x20, data) & 0x40000) && PECR(this, u16*, 0x14, count) >= 2) {
+        for (node = *(peNode**)(PECR(this, u8**, 0x10, activeList) + 0x28); node != NULL; node = next) {
+            depth = PENR(node, f32*, 0xF8, depth);
+            pos = node;
+            for (prev = PENR(node, peNode**, 0x2C, slot2C); prev != NULL && PENR(prev, f32*, 0xF8, depth) < depth;
+                 prev = PENR(prev, peNode**, 0x2C, slot2C)) {
+                pos = prev;
+            }
+            next = PENR(node, peNode**, 0x28, slot28);
+            if (pos != node) {
+                ((peContainer*)this)->MoveNode(node, pos);
+            }
+        }
+    }
+}
+
+extern "C++" {
+u16 peEmitterContainer::Emit(unsigned short count) {
+    u16 var_r31;
+    _EmitParams *var_r30;
+    peEmitterNode *var_r3;
+    peEmitterNode *temp_r29;
+    u16 temp_r28;
+
+    if ((u8) PEC(this, u8 *, 0x19, started) == 0) {
+        return 0U;
+    }
+    var_r31 = ((peContainer*)this)->CreateNodes(count);
+    var_r30 = g_emitParams;
+    var_r3 = PEC(this, peEmitterNode **, 0x10, activeList);
+    temp_r28 = var_r31;
+    while (var_r31 != 0) {
+        temp_r29 = PEN(var_r3, peEmitterNode **, 0x28, slot28);
+        ((peEmitterNode*)(var_r3))->Start((peEmitterNode*)(PEC(this, peEmitterNode **, 0x0, emitter)), (_peEmitter*)(PEC(this, _peEmitter **, 0x20, data)), (_EmitParams*)(var_r30));
+        var_r3 = temp_r29;
+        var_r31 -= 1;
+        var_r30 += 0x48;
+    }
+    return temp_r28;
+}
+}
+
 extern "C++" {
 extern "C++" {
 #pragma peephole off
@@ -425,9 +644,9 @@ extern "C++" {
 void peEmitterContainer::PreUpdate() {
     u8 *var_r3;
 
-    var_r3 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x20), u8 **, 0x138);
+    var_r3 = PED(PEC(this, u8 **, 0x20, data), u8 **, 0x138, items);
     while (var_r3 != NULL) {
-        var_r3 = M2C_FIELD(var_r3, u8 **, 0xC);
+        var_r3 = PEI(var_r3, u8 **, 0xC, next);
     }
 }
 }
@@ -441,15 +660,15 @@ peEmitterContainer::~peEmitterContainer() {
 
     node = freeList;
     while (node != 0) {
-        next = M2C_FIELD(node, peNode **, 0x28);
-        child = M2C_FIELD(node, peContainer **, 0x100);
+        next = PEN(node, peNode **, 0x28, slot28);
+        child = PEN(node, peContainer **, 0x100, containers);
         while (child != 0) {
-            nextChild = (peContainer*)child->unk4;
+            nextChild = child->next;
             child->Stop();
             delete child;
             child = nextChild;
         }
-        M2C_FIELD(node, peContainer **, 0x100) = 0;
+        PEN(node, peContainer **, 0x100, containers) = 0;
         node = next;
     }
     g_particle_debug_stats.unk4 -= 0x24;
@@ -462,813 +681,18 @@ void peEmitterNode::Release() {
     u8 *temp_r31;
     u8 *var_r30;
 
-    var_r30 = M2C_FIELD(this, u8 **, 0x100);
+    var_r30 = PEN(this, u8 **, 0x100, containers);
     while (var_r30 != NULL) {
-        temp_r31 = M2C_FIELD(var_r30, u8 **, 4);
+        temp_r31 = (u8*)((peContainer*)var_r30)->next;
         ((peContainer*)var_r30)->Stop();
         delete (peContainer*)var_r30;
         var_r30 = temp_r31;
     }
-    M2C_FIELD(this, u8 **, 0x100) = NULL;
+    PEN(this, u8 **, 0x100, containers) = NULL;
 }
 }
 
-extern "C++" {
-extern "C++" {
-extern "C++" {
-extern "C++" {
-
-extern "C++" {
-#pragma push
-#pragma dont_inline on
-extern "C++" {
-#pragma push
-#pragma dont_inline off
-void peEmitterNode::Init(_peEmitter* p0) {
-    void *temp_r30;
-    peContainer *temp_r0_2;
-    peContainer *temp_r0_3;
-    peContainer *temp_r3;
-    peContainer *var_r3_2;
-    peContainer *var_r4;
-    peDistortionContainer *temp_r3_4;
-    peDistortionContainer *var_r0_3;
-    peEmitterNode *temp_r30_2;
-    peEmitterNode *var_r3;
-    peModelContainer *temp_r3_5;
-    peModelContainer *var_r0_4;
-    peParticleContainer *temp_r3_2;
-    peParticleContainer *var_r0;
-    peParticleStripContainer *temp_r3_3;
-    peParticleStripContainer *var_r0_2;
-    peShapeContainer *temp_r3_6;
-    peShapeContainer *var_r0_5;
-    u16 temp_r29;
-    u32 temp_r0;
-    u8 *var_r28;
-
-    M2C_FIELD(this, _peEmitter **, 0xFC) = p0;
-    temp_r29 = (u16) M2C_FIELD(p0, s32 *, 4);
-    for (var_r28 = M2C_FIELD(p0, u8 **, 0x138); var_r28 != NULL; var_r28 = M2C_FIELD(var_r28, u8 **, 0xC)) {
-        temp_r30 = M2C_FIELD(var_r28, void **, 8);
-        if (temp_r30 != NULL) {
-            temp_r0 = M2C_FIELD(var_r28, u32 *, 4);
-            var_r4 = NULL;
-            switch (temp_r0) {
-            case 0: {
-                _peEmitter* em = (_peEmitter*)temp_r30;
-                if ((u32) M2C_FIELD(em, u32 *, 0x138) != 0U) {
-                    temp_r3 = new peEmitterContainer(this, em, temp_r29);
-                    var_r4 = temp_r3;
-                }
-                break;
-            }
-            case 1:
-                if ((s32) M2C_FIELD(temp_r30, s32 *, 0x54) != 0) {
-                    var_r4 = new peParticleContainer(this, (_peParticle*)temp_r30, temp_r29);
-                }
-                break;
-            case 6:
-                if ((s32) M2C_FIELD(temp_r30, s32 *, 0x1C) != 0) {
-                    var_r4 = new peParticleStripContainer(this, (_peParticleStrip*)temp_r30, temp_r29);
-                }
-                break;
-            case 3:
-                if ((s32) M2C_FIELD(temp_r30, s32 *, 0x60) != 0) {
-                    var_r4 = new peDistortionContainer(this, (_peDistortion*)temp_r30, temp_r29);
-                }
-                break;
-            case 2:
-                if ((s32) M2C_FIELD(temp_r30, s32 *, 0x4C) != 0) {
-                    var_r4 = new peModelContainer(this, (_peModel*)temp_r30, temp_r29);
-                }
-                break;
-            case 4:
-                if ((s32) M2C_FIELD(temp_r30, s32 *, 0x74) != 0) {
-                    var_r4 = new peShapeContainer(this, (_peShape*)temp_r30, temp_r29);
-                }
-                break;
-            }
-            if (var_r4 != NULL) {
-                temp_r0_2 = M2C_FIELD(this, peContainer **, 0x100);
-                if (temp_r0_2 == NULL) {
-                    M2C_FIELD(this, peContainer **, 0x100) = var_r4;
-                } else {
-                    var_r3_2 = temp_r0_2;
-                    while (M2C_FIELD(var_r3_2, peContainer **, 4) != NULL) {
-                        var_r3_2 = M2C_FIELD(var_r3_2, peContainer **, 4);
-                    }
-                    M2C_FIELD(var_r3_2, peContainer **, 4) = var_r4;
-                }
-            }
-        }
-    }
-}
-#pragma pop
-}
-
-extern "C++" {
-void peEmitterNode::Stop(_peEmitter* p0) {
-    peContainer* c;
-
-    for (c = M2C_FIELD(this, peContainer **, 0x100); c != NULL; c = (peContainer*)c->unk4) {
-        c->Stop();
-    }
-}
-}
-
-extern "C++" {
-void peEmitterNode::Render(_peEmitter* p0) {
-    peContainer* c = M2C_FIELD(this, peContainer **, 0x100);
-    if (M2C_FIELD(this, u16 *, 0x4A) == 0) {
-        return;
-    }
-    while (c != NULL) {
-        c->Render();
-        c = (peContainer*)c->unk4;
-    }
-}
-}
-#pragma pop
-}
-
-extern "C++" {
-#pragma push
-#pragma dont_inline on
-void peEmitterContainer::Update(float dt) {
-    u8* child;
-    peNode* node;
-    peNode* next;
-    peNode* pos;
-    peNode* prev;
-    f32 depth;
-
-    if (*((u8*)this + 0x19) == 0) {
-        return;
-    }
-    for (node = *(peNode**)((u8*)this + 0x10); node != NULL; node = next) {
-        next = *(peNode**)((u8*)node + 0x28);
-        if (!((peEmitterNode*)node)->Update(*(peEmitterNode**)this, *(_peEmitter**)((u8*)this + 0x20), dt)) {
-            for (child = *(u8**)((u8*)node + 0x100); child != NULL; child = *(u8**)(child + 4)) {
-                ((peContainer*)child)->Stop();
-            }
-            ((peContainer*)this)->RemoveNode(node);
-        }
-    }
-    if (*((u8*)this + 0x19) != 0 && (**(u32**)((u8*)this + 0x20) & 0x40000) && *(u16*)((u8*)this + 0x14) >= 2) {
-        for (node = *(peNode**)(*(u8**)((u8*)this + 0x10) + 0x28); node != NULL; node = next) {
-            depth = *(f32*)((u8*)node + 0xF8);
-            pos = node;
-            for (prev = *(peNode**)((u8*)node + 0x2C); prev != NULL && *(f32*)((u8*)prev + 0xF8) < depth;
-                 prev = *(peNode**)((u8*)prev + 0x2C)) {
-                pos = prev;
-            }
-            next = *(peNode**)((u8*)node + 0x28);
-            if (pos != node) {
-                ((peContainer*)this)->MoveNode(node, pos);
-            }
-        }
-    }
-}
-extern "C++" {
-u16 peEmitterContainer::Emit(unsigned short count) {
-    u16 var_r31;
-    _EmitParams *var_r30;
-    peEmitterNode *var_r3;
-    peEmitterNode *temp_r29;
-    u16 temp_r28;
-
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
-        return 0U;
-    }
-    var_r31 = ((peContainer*)this)->CreateNodes(count);
-    var_r30 = g_emitParams;
-    var_r3 = M2C_FIELD(this, peEmitterNode **, 0x10);
-    temp_r28 = var_r31;
-    while (var_r31 != 0) {
-        temp_r29 = M2C_FIELD(var_r3, peEmitterNode **, 0x28);
-        ((peEmitterNode*)(var_r3))->Start((peEmitterNode*)(M2C_FIELD(this, peEmitterNode **, 0)), (_peEmitter*)(M2C_FIELD(this, _peEmitter **, 0x20)), (_EmitParams*)(var_r30));
-        var_r3 = temp_r29;
-        var_r31 -= 1;
-        var_r30 += 0x48;
-    }
-    return temp_r28;
-}
-}
-#pragma pop
-}
-u8 peEmitterNode::Update(peEmitterNode* p0, _peEmitter* p1, float p2) {
-    u8 *var_r28_2;
-    s32 sp14;
-    volatile f32 sp38;
-    volatile s32 sp1E;
-    f32 sp30;
-    s32 sp48;
-    volatile f32 sp44;
-    volatile f32 sp40;
-    s32 unksp20;
-    volatile s32 sp1D;
-    f32 sp34;
-    f32 sp3C;
-    volatile u8 sp1C;
-    f32 sp18;
-    u16 spC;
-    u8 spA;
-    u8 sp9;
-    u8 sp8;
-    Quaternion *temp_r3_10;
-    f32 temp_f1_4;
-    f32 temp_f29;
-    f32 var_f1;
-    f32 var_f1_10;
-    f32 var_f1_11;
-    f32 var_f1_12;
-    f32 var_f1_13;
-    f32 var_f1_14;
-    f32 var_f1_15;
-    f32 var_f1_16;
-    f32 var_f1_17;
-    f32 var_f1_18;
-    f32 var_f1_19;
-    f32 var_f1_20;
-    f32 var_f1_21;
-    f32 var_f1_22;
-    f32 var_f1_23;
-    f32 var_f1_24;
-    f32 var_f1_25;
-    f32 var_f1_26;
-    f32 var_f1_27;
-    f32 var_f1_28;
-    f32 var_f1_29;
-    f32 var_f1_2;
-    f32 var_f1_30;
-    f32 var_f1_31;
-    f32 var_f1_32;
-    f32 var_f1_33;
-    f32 var_f1_34;
-    f32 var_f1_35;
-    f32 var_f1_3;
-    f32 var_f1_4;
-    f32 var_f1_5;
-    f32 var_f1_6;
-    f32 var_f1_7;
-    f32 var_f1_8;
-    f32 var_f1_9;
-    f32 var_f2;
-    f32 var_f31;
-    f64 temp_f1;
-    f64 temp_f1_2;
-    f64 temp_f1_3;
-    peSpline *temp_r3;
-    peSpline *temp_r3_11;
-    peSpline *temp_r3_12;
-    peSpline *temp_r3_13;
-    peSpline *temp_r3_14;
-    peSpline *temp_r3_15;
-    peSpline *temp_r3_16;
-    peSpline *temp_r3_17;
-    peSpline *temp_r3_18;
-    peSpline *temp_r3_19;
-    peSpline *temp_r3_4;
-    peSpline *temp_r3_5;
-    peSpline *temp_r3_6;
-    peSpline *temp_r3_7;
-    peSpline *temp_r3_8;
-    peSpline *temp_r3_9;
-    volatile s32 temp_r29;
-    s32 temp_r3_2;
-    s32 temp_r3_3;
-    s32 var_r0;
-    s32 temp_r3_20;
-    s32 var_r29;
-    u32 var_r3;
-    u8 *temp_r3_21;
-    u8 *temp_r4;
-    u8 *var_r28;
-    volatile s32 sp10;
-    u8 *var_r28_3;
-
-    temp_r29 = M2C_FIELD(p1, s32 *, 0);
-    if (((peNode*)((peNode *) this))->Update((peEmitterNode*)(p0), p2) == 0) {
-        if ((p0 == NULL) && (temp_r29 & 1)) {
-            if (M2C_FIELD(this, u16 *, 0x48) & 0x40) {
-                return 0U;
-            }
-            M2C_FIELD(this, u16 *, 0x48) = (u16) (M2C_FIELD(this, u16 *, 0x48) & 0xFFFFFFDF);
-            M2C_FIELD(this, f32 *, 4) = (f32) (M2C_FIELD(this, f32 *, 4) + M2C_FIELD(p1, f32 *, 0x1C));
-            M2C_FIELD(this, f32 *, 0x30) = (f32) (M2C_FIELD(this, f32 *, 0x30) - (M2C_FIELD(p1, f32 *, 0x28) - M2C_FIELD(p1, f32 *, 0x18)));
-            M2C_FIELD(this, u16 *, 0x4A) = 0U;
-            goto block_8;
-        }
-        return 0U;
-    }
-block_8:
-    if (M2C_FIELD(this, u16 *, 0x48) & 0x20) {
-        var_f31 = 1.0f - (M2C_FIELD(this, f32 *, 4) / M2C_FIELD(this, f32 *, 0));
-    } else {
-        var_f31 = 1.0f;
-    }
-    peColorSplineGetValue((u8*)(&sp1C), (peColorSpline*)(M2C_FIELD(p1, peColorSpline **, 0x130)), var_f31);
-    spA = sp1C;
-    M2C_FIELD(this, f32 *, 0x38) = (f32) (0.00390625f * (2.0f * M2C_ERROR( )));
-    if (sp9 < sp1D) sp9 = sp1D;
-    M2C_FIELD(this, f32 *, 0x3C) = (f32) (0.00390625f * (2.0f * M2C_ERROR( )));
-    sp8 = sp1E;
-    M2C_FIELD(this, f32 *, 0x40) = (f32) (0.00390625f * (2.0f * M2C_ERROR( )));
-    temp_r3 = M2C_FIELD(p1, peSpline **, 0x134);
-    if ((temp_r3 == NULL) || !(M2C_FIELD(temp_r3, u8 *, 0) & 3)) {
-        var_f1 = 1.0f;
-    } else {
-        var_f1_2 = M2C_FIELD((u16)temp_r3, f32 *, 8);
-        var_f1_2 -= var_f31;
-        if (var_f1_2 < 0.0f) {
-            var_f1_2 = -var_f1_2;
-        }
-        if (var_f1_2 <= 0.00001f) {
-            var_f1 = M2C_FIELD(temp_r3, f32 *, 4);
-        } else {
-            var_f1 = peSplineGetValue((peSpline*)(temp_r3), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0x44) = var_f1;
-    if (p0 != NULL) {
-        M2C_FIELD(this, f32 *, 0x38) = (f32) (M2C_FIELD(this, f32 *, 0x38) * M2C_FIELD(p0, f32 *, 0x38));
-        M2C_FIELD(this, f32 *, 0x3C) = (f32) (M2C_FIELD(this, f32 *, 0x3C) * M2C_FIELD(p0, f32 *, 0x3C));
-        M2C_FIELD(this, f32 *, 0x40) = (f32) (M2C_FIELD(this, f32 *, 0x40) * M2C_FIELD(p0, f32 *, 0x40));
-        M2C_FIELD(this, f32 *, 0x44) = (f32) (M2C_FIELD(this, f32 *, 0x44) * M2C_FIELD(p0, f32 *, 0x44));
-    }
-    if (!(temp_r29 & 2)) {
-        if ((p0 != NULL) && (temp_r3_2 = *M2C_FIELD(p0, s32 **, 0xFC), (((temp_r3_2 & 0x400) == 0) == 0))) {
-            sp30 = M2C_FIELD(this, f32 *, 0x14);
-            sp34 = M2C_FIELD(this, f32 *, 0x18);
-            sp38 = M2C_FIELD(this, f32 *, 0x1C);
-            if (temp_r3_2 & 0x40) {
-                PSMTXQuat((f32 (*)[4])(&sp48), (const Quaternion *)((const register Quaternion*)(M2C_FIELD(this, s32 *, 0x20) + 0xC)));
-                PSMTXMultVecSR((f32 (*)[4])(&sp48), (const Vec *)((const register Vec*)((Vec *) &sp30)), (Vec *)((register Vec*)((Vec *) &sp30)));
-            }
-            var_f2 = (sp38 * sp38);
-            var_f2 += (sp30 * sp30);
-            var_f2 = sqrtf(var_f2);
-            sp3C = (f32) atan2(-sp34, (f64) var_f2);
-            temp_f1_4 = (f32) atan2((f64) sp30, (f64) sp38);
-            sp44 = 0.0f;
-            sp40 = temp_f1_4;
-            EulerToQuat((Vec*)((Vec *) &sp3C), (Quaternion*)(this + 0x64));
-        } else if (temp_r29 & 0x80) {
-            temp_r3_4 = M2C_FIELD(p1, peSpline **, 0xE8);
-            if ((temp_r3_4 == NULL) || !(M2C_FIELD(temp_r3_4, u8 *, 0) & 3)) {
-                var_f1_3 = 1.0f;
-            } else {
-                var_f1_4 = M2C_FIELD(temp_r3_4, f32 *, 8) - var_f31;
-                if (var_f1_4 < 0.0f) {
-                    var_f1_4 = -var_f1_4;
-                }
-                if (var_f1_4 <= 0.00001f) {
-                    var_f1_3 = M2C_FIELD(temp_r3_4, f32 *, 4);
-                } else {
-                    var_f1_3 = peSplineGetValue((peSpline*)(temp_r3_4), var_f31);
-                }
-            }
-            sp3C = M2C_FIELD(p1, f32 *, 0xDC) * var_f1_3;
-            temp_r3_5 = M2C_FIELD(p1, peSpline **, 0xEC);
-            if ((temp_r3_5 == NULL) || !(M2C_FIELD(temp_r3_5, u8 *, 0) & 3)) {
-                var_f1_5 = 1.0f;
-            } else {
-                var_f1_6 = M2C_FIELD(temp_r3_5, f32 *, 8) - var_f31;
-                if (var_f1_6 < 0.0f) {
-                    var_f1_6 = -var_f1_6;
-                }
-                if (var_f1_6 <= 0.00001f) {
-                    var_f1_5 = M2C_FIELD(temp_r3_5, f32 *, 4);
-                } else {
-                    var_f1_5 = peSplineGetValue((peSpline*)(temp_r3_5), var_f31);
-                }
-            }
-            sp40 = M2C_FIELD(p1, f32 *, 0xE0) * var_f1_5;
-            temp_r3_6 = M2C_FIELD(p1, peSpline **, 0xF0);
-            if ((temp_r3_6 == NULL) || !(M2C_FIELD(temp_r3_6, u8 *, 0) & 3)) {
-                var_f1_7 = 1.0f;
-            } else {
-                var_f1_8 = M2C_FIELD(temp_r3_6, f32 *, 8) - var_f31;
-                if (var_f1_8 < 0.0f) {
-                    var_f1_8 = -var_f1_8;
-                }
-                if (var_f1_8 <= 0.00001f) {
-                    var_f1_7 = M2C_FIELD(temp_r3_6, f32 *, 4);
-                } else {
-                    var_f1_7 = peSplineGetValue((peSpline*)(temp_r3_6), var_f31);
-                }
-            }
-            sp44 = M2C_FIELD(p1, f32 *, 0xE4) * var_f1_7;
-            EulerToQuat((Vec*)((Vec *) &sp3C), (Quaternion*)(this + 0x64));
-        } else {
-            temp_r3_7 = M2C_FIELD(p1, peSpline **, 0x10C);
-            if ((temp_r3_7 == NULL) || !(M2C_FIELD(temp_r3_7, u8 *, 0) & 3)) {
-                var_f1_9 = 1.0f;
-            } else {
-                var_f1_10 = M2C_FIELD(temp_r3_7, f32 *, 8) - var_f31;
-                if (var_f1_10 < 0.0f) {
-                    var_f1_10 = -var_f1_10;
-                }
-                if (var_f1_10 <= 0.00001f) {
-                    var_f1_9 = M2C_FIELD(temp_r3_7, f32 *, 4);
-                } else {
-                    var_f1_9 = peSplineGetValue((peSpline*)(temp_r3_7), var_f31);
-                }
-            }
-            sp3C = p2 * (M2C_FIELD(this, f32 *, 0x90) * var_f1_9);
-            temp_r3_8 = M2C_FIELD(p1, peSpline **, 0x110);
-            if ((temp_r3_8 == NULL) || !(M2C_FIELD(temp_r3_8, u8 *, 0) & 3)) {
-                var_f1_11 = 1.0f;
-            } else {
-                var_f1_12 = M2C_FIELD(temp_r3_8, f32 *, 8) - var_f31;
-                if (var_f1_12 < 0.0f) {
-                    var_f1_12 = -var_f1_12;
-                }
-                if (var_f1_12 <= 0.00001f) {
-                    var_f1_11 = M2C_FIELD(temp_r3_8, f32 *, 4);
-                } else {
-                    var_f1_11 = peSplineGetValue((peSpline*)(temp_r3_8), var_f31);
-                }
-            }
-            sp40 = p2 * (M2C_FIELD(this, f32 *, 0x94) * var_f1_11);
-            temp_r3_9 = M2C_FIELD(p1, peSpline **, 0x114);
-            if ((temp_r3_9 == NULL) || !(M2C_FIELD(temp_r3_9, u8 *, 0) & 3)) {
-                var_f1_13 = 1.0f;
-            } else {
-                var_f1_14 = M2C_FIELD(temp_r3_9, f32 *, 8) - var_f31;
-                if (var_f1_14 < 0.0f) {
-                    var_f1_14 = -var_f1_14;
-                }
-                if (var_f1_14 <= 0.00001f) {
-                    var_f1_13 = M2C_FIELD(temp_r3_9, f32 *, 4);
-                } else {
-                    var_f1_13 = peSplineGetValue((peSpline*)(temp_r3_9), var_f31);
-                }
-            }
-            sp44 = p2 * (M2C_FIELD(this, f32 *, 0x98) * var_f1_13);
-            EulerToQuat((Vec*)((Vec *) &sp3C), (Quaternion*)(&unksp20));
-            temp_r3_10 = (Quaternion *)(this + 0x64);
-            PSQUATMultiply((const register Quaternion*)(temp_r3_10), (const register Quaternion*)(&unksp20), (register Quaternion*)(temp_r3_10));
-        }
-    }
-    temp_r3_11 = M2C_FIELD(p1, peSpline **, 0x124);
-    if ((temp_r3_11 == NULL) || !(M2C_FIELD(temp_r3_11, u8 *, 0) & 3)) {
-        var_f1_15 = 1.0f;
-    } else {
-        var_f1_16 = M2C_FIELD(temp_r3_11, f32 *, 8) - var_f31;
-        if (var_f1_16 < 0.0f) {
-            var_f1_16 = -var_f1_16;
-        }
-        if (var_f1_16 <= 0.00001f) {
-            var_f1_15 = M2C_FIELD(temp_r3_11, f32 *, 4);
-        } else {
-            var_f1_15 = peSplineGetValue((peSpline*)(temp_r3_11), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0x58) = (f32) (M2C_FIELD(this, f32 *, 0x4C) * var_f1_15);
-    temp_r3_12 = M2C_FIELD(p1, peSpline **, 0x128);
-    if ((temp_r3_12 == NULL) || !(M2C_FIELD(temp_r3_12, u8 *, 0) & 3)) {
-        var_f1_17 = 1.0f;
-    } else {
-        var_f1_18 = M2C_FIELD(temp_r3_12, f32 *, 8) - var_f31;
-        if (var_f1_18 < 0.0f) {
-            var_f1_18 = -var_f1_18;
-        }
-        if (var_f1_18 <= 0.00001f) {
-            var_f1_17 = M2C_FIELD(temp_r3_12, f32 *, 4);
-        } else {
-            var_f1_17 = peSplineGetValue((peSpline*)(temp_r3_12), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0x5C) = (f32) (M2C_FIELD(this, f32 *, 0x50) * var_f1_17);
-    temp_r3_13 = M2C_FIELD(p1, peSpline **, 0x12C);
-    if ((temp_r3_13 == NULL) || !(M2C_FIELD(temp_r3_13, u8 *, 0) & 3)) {
-        var_f1_19 = 1.0f;
-    } else {
-        var_f1_20 = M2C_FIELD(temp_r3_13, f32 *, 8) - var_f31;
-        if (var_f1_20 < 0.0f) {
-            var_f1_20 = -var_f1_20;
-        }
-        if (var_f1_20 <= 0.00001f) {
-            var_f1_19 = M2C_FIELD(temp_r3_13, f32 *, 4);
-        } else {
-            var_f1_19 = peSplineGetValue((peSpline*)(temp_r3_13), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0x60) = (f32) (M2C_FIELD(this, f32 *, 0x54) * var_f1_19);
-    temp_r3_14 = M2C_FIELD(p1, peSpline **, 0xD0);
-    if ((temp_r3_14 == NULL) || !(M2C_FIELD(temp_r3_14, u8 *, 0) & 3)) {
-        var_f1_21 = 1.0f;
-    } else {
-        var_f1_22 = M2C_FIELD(temp_r3_14, f32 *, 8) - var_f31;
-        if (var_f1_22 < 0.0f) {
-            var_f1_22 = -var_f1_22;
-        }
-        if (var_f1_22 <= 0.00001f) {
-            var_f1_21 = M2C_FIELD(temp_r3_14, f32 *, 4);
-        } else {
-            var_f1_21 = peSplineGetValue((peSpline*)(temp_r3_14), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0x74) = (f32) (M2C_FIELD(p1, f32 *, 0xC4) * var_f1_21);
-    temp_r3_15 = M2C_FIELD(p1, peSpline **, 0xD4);
-    if ((temp_r3_15 == NULL) || !(M2C_FIELD(temp_r3_15, u8 *, 0) & 3)) {
-        var_f1_23 = 1.0f;
-    } else {
-        var_f1_24 = M2C_FIELD(temp_r3_15, f32 *, 8) - var_f31;
-        if (var_f1_24 < 0.0f) {
-            var_f1_24 = -var_f1_24;
-        }
-        if (var_f1_24 <= 0.00001f) {
-            var_f1_23 = M2C_FIELD(temp_r3_15, f32 *, 4);
-        } else {
-            var_f1_23 = peSplineGetValue((peSpline*)(temp_r3_15), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0x78) = (f32) (M2C_FIELD(p1, f32 *, 0xC8) * var_f1_23);
-    temp_r3_16 = M2C_FIELD(p1, peSpline **, 0xD8);
-    if ((temp_r3_16 == NULL) || !(M2C_FIELD(temp_r3_16, u8 *, 0) & 3)) {
-        var_f1_25 = 1.0f;
-    } else {
-        var_f1_26 = M2C_FIELD(temp_r3_16, f32 *, 8) - var_f31;
-        if (var_f1_26 < 0.0f) {
-            var_f1_26 = -var_f1_26;
-        }
-        if (var_f1_26 <= 0.00001f) {
-            var_f1_25 = M2C_FIELD(temp_r3_16, f32 *, 4);
-        } else {
-            var_f1_25 = peSplineGetValue((peSpline*)(temp_r3_16), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0x7C) = (f32) (M2C_FIELD(p1, f32 *, 0xCC) * var_f1_25);
-    temp_r3_17 = M2C_FIELD(p1, peSpline **, 0xB8);
-    if ((temp_r3_17 == NULL) || !(M2C_FIELD(temp_r3_17, u8 *, 0) & 3)) {
-        var_f1_27 = 1.0f;
-    } else {
-        var_f1_28 = M2C_FIELD(temp_r3_17, f32 *, 8) - var_f31;
-        if (var_f1_28 < 0.0f) {
-            var_f1_28 = -var_f1_28;
-        }
-        if (var_f1_28 <= 0.00001f) {
-            var_f1_27 = M2C_FIELD(temp_r3_17, f32 *, 4);
-        } else {
-            var_f1_27 = peSplineGetValue((peSpline*)(temp_r3_17), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0x9C) = (f32) (M2C_FIELD(p1, f32 *, 0xAC) * var_f1_27);
-    temp_r3_18 = M2C_FIELD(p1, peSpline **, 0xBC);
-    if ((temp_r3_18 == NULL) || !(M2C_FIELD(temp_r3_18, u8 *, 0) & 3)) {
-        var_f1_29 = 1.0f;
-    } else {
-        var_f1_30 = M2C_FIELD(temp_r3_18, f32 *, 8) - var_f31;
-        if (var_f1_30 < 0.0f) {
-            var_f1_30 = -var_f1_30;
-        }
-        if (var_f1_30 <= 0.00001f) {
-            var_f1_29 = M2C_FIELD(temp_r3_18, f32 *, 4);
-        } else {
-            var_f1_29 = peSplineGetValue((peSpline*)(temp_r3_18), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0xA0) = (f32) (M2C_FIELD(p1, f32 *, 0xB0) * var_f1_29);
-    temp_r3_19 = M2C_FIELD(p1, peSpline **, 0xC0);
-    if ((temp_r3_19 == NULL) || !(M2C_FIELD(temp_r3_19, u8 *, 0) & 3)) {
-        var_f1_31 = 1.0f;
-    } else {
-        var_f1_32 = M2C_FIELD(temp_r3_19, f32 *, 8) - var_f31;
-        if (var_f1_32 < 0.0f) {
-            var_f1_32 = -var_f1_32;
-        }
-        if (var_f1_32 <= 0.00001f) {
-            var_f1_31 = M2C_FIELD(temp_r3_19, f32 *, 4);
-        } else {
-            var_f1_31 = peSplineGetValue((peSpline*)(temp_r3_19), var_f31);
-        }
-    }
-    M2C_FIELD(this, f32 *, 0xA4) = (f32) (M2C_FIELD(p1, f32 *, 0xB4) * var_f1_31);
-    ((peEmitterNode*)(this))->CreateWorldParams();
-    var_r28 = M2C_FIELD(this, u8 **, 0x100);
-    while (var_r28 != NULL) {
-        ((peContainer*)var_r28)->PreUpdate();
-        var_r28 = M2C_FIELD(var_r28, u8 **, 4);
-    }
-    temp_r3_20 = M2C_FIELD((s32)this, u16 *, 0x48);
-    if (temp_r3_20 & 0x40) {
-        var_r3 = 0;
-    } else if (!(temp_r3_20 & 8) && (M2C_FIELD(this, f32 *, 0x30) < M2C_FIELD(M2C_FIELD(this, u8 **, 0xFC), f32 *, 0x18))) {
-        var_r3 = 0;
-    } else {
-        M2C_FIELD(this, u16 *, 0x48) = (u16) (M2C_FIELD(this, u16 *, 0x48) | 8);
-        if ((M2C_FIELD((s32)this, u16 *, 0x48) & 0x10) && (temp_r3_21 = M2C_FIELD(this, u8 **, 0xFC), ((M2C_FIELD(this, f32 *, 0x30) > (M2C_FIELD(temp_r3_21, f32 *, 0x18) + M2C_FIELD(temp_r3_21, f32 *, 0x1C))) != 0))) {
-            var_r3 = 0;
-        } else {
-            temp_r4 = M2C_FIELD(this, u8 **, 0xFC);
-            M2C_FIELD(this, u16 *, 0x48) = (u16) (M2C_FIELD(this, u16 *, 0x48) | 0x10);
-            temp_f29 = (M2C_FIELD(temp_r4, f32 *, 0x10) * HSD_Randf()) + M2C_FIELD(temp_r4, f32 *, 0xC);
-            if (((M2C_FIELD(temp_r4, peSpline **, 0x14)) == NULL) || !(M2C_FIELD((M2C_FIELD(temp_r4, peSpline **, 0x14)), u8 *, 0) & 3)) {
-                var_f1_33 = 1.0f;
-            } else {
-                var_f1_34 = M2C_FIELD((M2C_FIELD(temp_r4, peSpline **, 0x14)), f32 *, 8) - var_f31;
-                if (var_f1_34 < 0.0f) {
-                    var_f1_34 = -var_f1_34;
-                }
-                if (var_f1_34 <= 0.00001f) {
-                    var_f1_33 = M2C_FIELD((M2C_FIELD(temp_r4, peSpline **, 0x14)), f32 *, 4);
-                } else {
-                    var_f1_33 = peSplineGetValue((peSpline*)((M2C_FIELD(temp_r4, peSpline **, 0x14))), var_f31);
-                }
-            }
-            if (M2C_FIELD(M2C_FIELD(this, u8 **, 0xFC), f32 *, 0x1C) <= 0.00001f) {
-                M2C_FIELD(this, f32 *, 0x34) = 0.0f;
-                var_r3 = sp14;
-            } else {
-                var_r3 = sp10;
-                spC = var_r3;
-                M2C_FIELD(this, f32 *, 0x34) = (f32) (((temp_f29 * var_f1_33 * p2) + M2C_FIELD(this, f32 *, 0x34)) - M2C_ERROR( ));
-                if ((var_r3 == 0) && ((u16) M2C_FIELD(this, u16 *, 0x4A) == 0)) {
-                    var_r3 = 1;
-                    M2C_FIELD(this, f32 *, 0x34) = 0.0f;
-                }
-            }
-        }
-    }
-    var_r29 = var_r3;
-    if (var_r3 != 0) {
-        if (var_r3 > (u16) g_maxEmitParams) {
-            var_r29 = g_maxEmitParams;
-        }
-        if (M2C_FIELD(p1, f32 *, 0x1C) > 0.00001f) {
-            var_f1_35 = p2;
-        } else {
-            var_f1_35 = 0.0f;
-        }
-        ((peEmitterNode*)(this))->CreateParameters(var_r29, var_f1_35);
-        var_r28_2 = M2C_FIELD(this, u8 **, 0x100);
-        while (var_r28_2 != NULL) {
-            M2C_FIELD(this, u16 *, 0x4A) = (u16) (M2C_FIELD(this, u16 *, 0x4A) + ((peContainer*)var_r28_2)->Emit(var_r29));
-            var_r28_2 = M2C_FIELD(var_r28_2, u8 **, 4);
-        }
-    }
-    var_r28_3 = M2C_FIELD(this, u8 **, 0x100);
-    while (var_r28_3 != NULL) {
-        ((peContainer*)var_r28_3)->Update(p2);
-        var_r28_3 = M2C_FIELD(var_r28_3, u8 **, 4);
-    }
-    M2C_FIELD(this, f32 *, 0x30) = (f32) (M2C_FIELD(this, f32 *, 0x30) + p2);
-    return 1U;
-}
-}
-
-extern "C++" {
-void peEmitterNode::Start(peEmitterNode* p0, _peEmitter* p1, _EmitParams* p2) {
-    volatile f32 sp10;
-    volatile f32 spC;
-    f32 sp8;
-    s32 temp_r31;
-    u8 *var_r29;
-
-    temp_r31 = M2C_FIELD(p1, s32 *, 0);
-    ((peNode*)((peNode *) this))->Start((peEmitterNode*)(p0), (_EmitParams*)(p2));
-    if ((p0 == NULL) && (temp_r31 & 1)) {
-        M2C_FIELD(this, f32 *, 4) = (f32) (M2C_FIELD(p1, f32 *, 0x18) + M2C_FIELD(p1, f32 *, 0x1C));
-    } else {
-        M2C_FIELD(this, f32 *, 4) = (f32) M2C_FIELD(p1, f32 *, 0x28);
-    }
-    M2C_FIELD(this, f32 *, 0) = (f32) M2C_FIELD(p1, f32 *, 0x28);
-    M2C_FIELD(this, f32 *, 0x30) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x34) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x44) = 0.0f;
-    M2C_FIELD(this, s16 *, 0x4A) = 0;
-    M2C_FIELD(this, u16 *, 0x48) = 0x20U;
-    M2C_FIELD(this, f32 *, 0x64) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x68) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x6C) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x70) = 1.0f;
-    M2C_FIELD(this, f32 *, 0x80) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x84) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x88) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x8C) = 1.0f;
-    M2C_FIELD(this, f32 *, 0xD0) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xD4) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xD8) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xDC) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xE0) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xE4) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xE8) = 1.0f;
-    M2C_FIELD(this, f32 *, 0xEC) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 0);
-    M2C_FIELD(this, f32 *, 0xF0) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 4);
-    M2C_FIELD(this, f32 *, 0xF4) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 8);
-    M2C_FIELD(this, f32 *, 0xA8) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xAC) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xB0) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xB4) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xB8) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xBC) = 0.0f;
-    M2C_FIELD(this, f32 *, 0xC0) = 1.0f;
-    M2C_FIELD(this, f32 *, 0xC4) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 0);
-    M2C_FIELD(this, f32 *, 0xC8) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 4);
-    M2C_FIELD(this, f32 *, 0xCC) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 8);
-    if (!(temp_r31 & 2) && ((p0 == NULL) || ((u32) (*M2C_FIELD(p0, s32 **, 0xFC) & 0x400) != 0x400))) {
-        if ((u32) (temp_r31 & 0x80) != 0x80) {
-            EulerToQuat((Vec*)(((u8*)(p1) + 0xDC)), (Quaternion*)(this + 0x64));
-        }
-        if (temp_r31 & 0x700038) {
-            if (temp_r31 & 8) {
-                sp8 = HSD_Randf();
-                sp8 *= 6.2831855f;
-            } else {
-                sp8 = 0.0f;
-            }
-            if (temp_r31 & 0x10) {
-                spC = 6.2831855f;
-                spC *= HSD_Randf();
-            } else {
-                spC = 0.0f;
-            }
-            if (temp_r31 & 0x20) {
-                sp10 = 6.2831855f;
-                sp10 *= HSD_Randf();
-            } else {
-                sp10 = 0.0f;
-            }
-            if ((temp_r31 & 0x100000) && (HSD_Randf() < 0.5f)) {
-                M2C_FIELD(this, u16 *, 0x48) = (u16) (M2C_FIELD(this, u16 *, 0x48) | 1);
-                sp8 = -sp8;
-            }
-            if ((temp_r31 & 0x200000) && (HSD_Randf() < 0.5f)) {
-                M2C_FIELD(this, u16 *, 0x48) = (u16) (M2C_FIELD(this, u16 *, 0x48) | 2);
-                spC = -spC;
-            }
-            if ((temp_r31 & 0x400000) && (HSD_Randf() < 0.5f)) {
-                M2C_FIELD(this, u16 *, 0x48) = (u16) (M2C_FIELD(this, u16 *, 0x48) | 4);
-                sp10 = -sp10;
-            }
-            EulerToQuat((Vec*)((Vec *) &sp8), (Quaternion*)(this + 0x80));
-        }
-    }
-    if ((u32) (temp_r31 & 0x80) != 0x80) {
-        M2C_FIELD(this, f32 *, 0x90) = (f32) ((M2C_FIELD(p1, f32 *, 0x100) * HSD_Randf()) + M2C_FIELD(p1, f32 *, 0xF4));
-        M2C_FIELD(this, f32 *, 0x94) = (f32) ((M2C_FIELD(p1, f32 *, 0x104) * HSD_Randf()) + M2C_FIELD(p1, f32 *, 0xF8));
-        M2C_FIELD(this, f32 *, 0x98) = (f32) ((M2C_FIELD(p1, f32 *, 0x108) * HSD_Randf()) + M2C_FIELD(p1, f32 *, 0xFC));
-    }
-    M2C_FIELD(this, f32 *, 0x4C) = (f32) M2C_FIELD(p1, f32 *, 0x118);
-    M2C_FIELD(this, f32 *, 0x50) = (f32) M2C_FIELD(p1, f32 *, 0x11C);
-    M2C_FIELD(this, f32 *, 0x54) = (f32) M2C_FIELD(p1, f32 *, 0x120);
-    var_r29 = M2C_FIELD(this, u8 **, 0x100);
-    while (var_r29 != NULL) {
-        ((peContainer*)var_r29)->Start();
-        var_r29 = M2C_FIELD(var_r29, u8 **, 4);
-    }
-}
-extern "C++" {
 typedef f32 PeMtx[3][4];
-
-struct peXformE {
-    Vec pos;
-    Quaternion rot;
-    Vec scale;
-};
-
-struct _EmitParamsE {
-    f32 life;
-    f32 speed;
-    Vec pos;
-    Vec vel;
-    peXformE xf;
-};
-
-struct peEmitterDefE {
-    u32 flags;
-    u8 pad4[4];
-    f32 rate;
-    u8 padc[0x14];
-    f32 lifeBase;
-    f32 lifeRange;
-    u8 pad28[4];
-    f32 speedBase;
-    f32 speedRange;
-    u16 posFlags;
-    u8 pad36[0x3e];
-    u16 velFlags;
-    u8 pad76[2];
-    Vec dir;
-    Vec axis;
-    f32 magBase;
-    f32 magRange;
-    f32 coneBase;
-    f32 coneRange;
-};
-
-struct peEmitterNodeE {
-    u8 pad0[0x4a];
-    u16 emitted;
-    u8 pad4c[0x5c];
-    peXformE cur;
-    peXformE prev;
-    u8 padf8[4];
-    peEmitterDefE* def;
-};
 
 static inline void peMtxQuat(PeMtx m, Quaternion* q) {
     PSMTXQuat(m, q);
@@ -1291,8 +715,10 @@ static inline void rotateForwardE(Vec* v, Quaternion* q) {
 static inline void rotateInverseE(Vec* v, Quaternion* rot) {
     PeMtx m;
     Quaternion q;
+    Quaternion t;
     PSQUATInverse(rot, &q);
-    quatToMtxE(m, q);
+    t = q;
+    peMtxQuat(m, &t);
     peMtxMultVecSR(m, v, v);
 }
 
@@ -1309,18 +735,28 @@ static inline void divScaleE(Vec* v, Vec* s) {
 }
 
 static inline void lerpVecE(Vec* dst, Vec* a, Vec* b, f32 t) {
-    Vec d;
     Vec r;
+    Vec d;
     PSVECSubtract(a, b, &d);
     r = d;
     PSVECScale(&r, &r, t);
     PSVECAdd(&r, b, &r);
-    *dst = r;
+    f32 z, y, x;
+    x = r.x;
+    y = r.y;
+    z = r.z;
+    dst->x = x;
+    dst->y = y;
+    dst->z = z;
 }
 
 static inline f32 __OSu16tof32E(register const u16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 
@@ -1328,132 +764,159 @@ static inline f32 u16tof32E(u16 v) {
     return __OSu16tof32E(&v);
 }
 
-void peEmitterNode::CreateParameters(unsigned short count, float dt) {
-    peEmitterNodeE* self = (peEmitterNodeE*)this;
-    peEmitterDefE* def = self->def;
-    f32 rate = def->rate;
-    f32 phase = rate * u16tof32E(self->emitted + count);
-    f32 inv = 1.0f / u16tof32E(count);
-    _EmitParamsE* ep = (_EmitParamsE*)g_emitParams;
-    u32 interp;
-    _pePositionFunction* posFn;
-    posFn = (_pePositionFunction*)&def->posFlags;
-    interp = (def->flags >> 6) & 1;
-    f32 lerpT = 1.0f;
-    f32 timeOff = 0.0f;
-    f32 dtStep = dt * inv;
+static inline void vecScaleE(Vec* dst, Vec* a, f32 k) {
+    Vec t;
+    PSVECScale(a, &t, k);
+    f32 z, y, x;
+    x = t.x;
+    y = t.y;
+    z = t.z;
+    dst->x = x;
+    dst->y = y;
+    dst->z = z;
+}
 
-    while (count-- != 0) {
-        Vec dir;
-        GetPositionParameter((GSvec*)&ep->pos, (GSvec*)&dir, posFn, phase);
-        switch (def->velFlags & 2) {
-        case 0: {
-            Quaternion q;
-            PeMtx m;
-            Vec t;
-            C_QUATRotAxisRad(&q, &def->axis, HSD_Randf() * def->coneRange + def->coneBase);
-            peMtxQuat(m, &q);
-            peMtxMultVecSR(m, &def->dir, &t);
-            ep->vel = t;
-            C_QUATRotAxisRad(&q, &def->dir, 3.1415927f * (2.0f * HSD_Randf()));
-            rotateForwardE(&ep->vel, &q);
-            f32 s;
-            if (def->velFlags & 0x20) {
-                s = phase * def->magRange;
-                s += def->magBase;
-            } else {
-                s = HSD_Randf() * def->magRange + def->magBase;
-            }
-            PSVECScale(&ep->vel, &ep->vel, s);
-            break;
-        }
-        case 2: {
-            Vec t;
-            f32 s;
-            if (def->velFlags & 0x20) {
-                s = phase * def->dir.y + def->dir.x;
-            } else {
-                s = HSD_Randf() * def->dir.y + def->dir.x;
-            }
-            PSVECScale(&dir, &t, s);
-            ep->vel = t;
-            break;
-        }
-        default:
-            ep->vel.x = 0.0f;
-            ep->vel.y = 0.0f;
-            ep->vel.z = 0.0f;
-            break;
-        }
-        {
-            Vec t;
-            PSVECScale(&ep->vel, &t, timeOff);
-            dir = t;
-            PSVECAdd(&ep->pos, &dir, &ep->pos);
-        }
-        ep->life = (HSD_Randf() * self->def->lifeRange + self->def->lifeBase) - timeOff;
-        ep->speed = HSD_Randf() * self->def->speedRange + self->def->speedBase;
-        if (interp) {
-            Quaternion q;
-            lerpVecE(&ep->xf.pos, &self->cur.pos, &self->prev.pos, lerpT);
-            C_QUATLerp(&self->prev.rot, &self->cur.rot, &q, lerpT);
-            ep->xf.rot = q;
-            lerpVecE(&ep->xf.scale, &self->cur.scale, &self->prev.scale, lerpT);
-            if (def->posFlags & 0x100) {
-                PSVECSubtract(&ep->pos, &ep->xf.pos, &ep->pos);
-                rotateInverseE(&ep->pos, &ep->xf.rot);
-                divScaleE(&ep->pos, &ep->xf.scale);
-            }
-            if (def->velFlags & 0x10) {
-                rotateInverseE(&ep->vel, &ep->xf.rot);
-            }
-        } else {
-            if (def->posFlags & 0x100) {
-                PSVECSubtract(&ep->pos, &self->cur.pos, &ep->pos);
-                rotateInverseE(&ep->pos, &self->cur.rot);
-                divScaleE(&ep->pos, &self->cur.scale);
-            }
-            if (def->velFlags & 0x10) {
-                rotateInverseE(&ep->vel, &self->cur.rot);
-            }
-        }
-        phase -= rate;
-        ep++;
-        lerpT -= inv;
-        timeOff += dtStep;
+static inline void mtxMultVecSRE(Vec* dst, PeMtx m, Vec* a) {
+    Vec t;
+    peMtxMultVecSR(m, a, &t);
+    f32 z, y, x;
+    x = t.x;
+    y = t.y;
+    z = t.z;
+    dst->x = x;
+    dst->y = y;
+    dst->z = z;
+}
+
+static inline f32 absE(f32 x) {
+    if (x < 0.0f) {
+        x = -x;
     }
-}
-}
-
+    return x;
 }
 
-extern "C++" {
-void peEmitterNode::SetLastLoop() {
-    f32 temp_f0;
-    f32 temp_f2;
-    u16 temp_r5;
-    u8 *temp_r4;
+static inline void vecCopyE(Vec* dst, Vec* src) {
+    f32 z, y, x;
+    x = src->x;
+    y = src->y;
+    z = src->z;
+    dst->x = x;
+    dst->y = y;
+    dst->z = z;
+}
 
-    temp_r5 = M2C_FIELD(this, u16 *, 0x48);
-    if (!(temp_r5 & 0x40) && (M2C_FIELD(M2C_FIELD(this, u8 **, 0xFC), s32 *, 0) & 1)) {
-        M2C_FIELD(this, u16 *, 0x48) = (u16) (temp_r5 | 0x40);
-        temp_r4 = M2C_FIELD(this, u8 **, 0xFC);
-        temp_f2 = M2C_FIELD(temp_r4, f32 *, 0x18) + M2C_FIELD(temp_r4, f32 *, 0x1C);
-        if (M2C_FIELD(this, f32 *, 4) < (temp_f0 = M2C_FIELD(temp_r4, f32 *, 0x28) - temp_f2)) {
-            M2C_FIELD(this, f32 *, 4) = temp_f0;
-            M2C_FIELD(this, f32 *, 0x30) = temp_f2;
-        }
+struct peSplineHdrE {
+    u8 flags;
+    gc_bef32 value;
+    gc_bef32 time;
+};
+
+struct GSColorE {
+    u8 r, g, b, a;
+};
+
+static inline f32 evalSplineE(peSpline* sp, f32 t) {
+    peSplineHdrE* s = (peSplineHdrE*)sp;
+    if (s == 0 || (s->flags & 3) == 0) {
+        return 1.0f;
     }
-}
+    f32 d = s->time - t;
+    if (d < 0.0f) {
+        d = -d;
+    }
+    if (d <= 0.00001f) {
+        return s->value;
+    }
+    return peSplineGetValue(sp, t);
 }
 
-extern "C++" {
+static inline f32 __OSu8tof32E(register const u8* arg) {
+    register f32 ret;
+#ifdef __MWERKS__
+    asm { psq_l ret, 0(arg), 1, 2 }
+#else
+    ret = PSQ_LOAD(arg, 0, 2);
+#endif
+    return ret;
+}
+
+static inline f32 u8tof32E(u8 v) {
+    return __OSu8tof32E(&v);
+}
+
+static inline u16 f32tou16E(register f32 inF) {
+    u32 out;
+    u32* outP = &out;
+    register u32* ptr = outP;
+#ifdef __MWERKS__
+    asm { psq_st inF, 0(ptr), 1, 3 }
+#else
+    PSQ_STORE(ptr, 0, inF, 3);
+#endif
+    return *(u16*)ptr;
+}
+
+static inline void quatIdentityE(Quaternion* q) {
+    q->x = 0.0f;
+    q->y = 0.0f;
+    q->z = 0.0f;
+    q->w = 1.0f;
+}
+
+static inline void xfInitE(peXformE* xf) {
+    xf->pos.x = 0.0f;
+    xf->pos.y = 0.0f;
+    xf->pos.z = 0.0f;
+    quatIdentityE(&xf->rot);
+    xf->scale = unitScaleVector;
+}
+
+static inline void vecNormalizeE(Vec* dst, Vec* src) {
+    Vec t;
+    PSVECNormalize(src, &t);
+    vecCopyE(dst, &t);
+}
+
+static inline u16 emitCountE(peEmitterNodeE* self, f32 t, f32 dt) {
+    u16 count;
+    if (self->flags & 0x40) {
+        return 0;
+    }
+    if (!(self->flags & 8) && self->time < self->def->start) {
+        return 0;
+    }
+    self->flags |= 8;
+    if ((self->flags & 0x10) && self->time > self->def->start + self->def->duration) {
+        return 0;
+    }
+    self->flags |= 0x10;
+    f32 r = HSD_Randf();
+    f32 n = self->def->countRange * r + self->def->countBase;
+    n *= evalSplineE(self->def->countSpline, t);
+    if (self->def->duration <= 0.00001f) {
+        self->emitAcc = 0.0f;
+        return f32tou16E(n);
+    }
+    n *= dt;
+    n += self->emitAcc;
+    count = f32tou16E(n);
+    self->emitAcc = n - u16tof32E(count);
+    if (count == 0 && self->emitted == 0) {
+        count = 1;
+        self->emitAcc = 0.0f;
+    }
+    return count;
+}
+
 struct peEmitterNodeW {
     u8 pad0[8];
     Vec pos;
     u8 pad14[0xc];
     peXform* parent;
-    u8 pad24[0x24];
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x18];
     u16 flipFlags;
     u16 emitted;
     u8 pad4c[0xc];
@@ -1467,7 +930,6 @@ struct peEmitterNodeW {
     f32 depth;
     u32* def;
 };
-
 static inline void xfCopyE(peXformE* d, peXformE* s) {
     d->pos.x = s->pos.x;
     d->pos.y = s->pos.y;
@@ -1504,6 +966,220 @@ static inline void quatMulE(Quaternion* dst, Quaternion* a, Quaternion* b) {
     dst->y = t.y;
     dst->z = t.z;
     dst->w = t.w;
+}
+
+#pragma defer_codegen on
+
+void peEmitterNode::GetPositionParameter(GSvec* outPos, GSvec* outDir, _pePositionFunction* fn, float t) {
+    PeMtx m2;
+    PeMtx m0;
+    PeMtx m1;
+    PeMtx m3;
+    Vec spread;
+    Quaternion q;
+
+    switch (fn->flags & 3) {
+    case 0:
+        GC_VEC3(*(Vec*)outDir, fn->sphere.dir);
+        if ((absE(fn->sphere.radBase) > 0.00001f || absE(fn->sphere.radRange) > 0.00001f) &&
+            PSVECSquareMag((Vec*)outDir) > 0.00001f) {
+            f32 a;
+            f32 s;
+            if (fn->flags & 0x80) {
+                a = 3.1415927f * (2.0f * (fn->sphere.spin * t));
+            } else {
+                f32 r = HSD_Randf();
+                a = 3.1415927f * (2.0f * r);
+            }
+            C_QUATRotAxisRad(&q, (Vec*)outDir, a);
+            peMtxQuat(m0, &q);
+            mtxMultVecSRE((Vec*)outPos, m0, GC_VEC3P(Vec, &fn->sphere.axis));
+            if (fn->flags & 0x20) {
+                s = t * fn->sphere.radRange + fn->sphere.radBase;
+            } else {
+                s = fn->sphere.radRange * HSD_Randf() + fn->sphere.radBase;
+            }
+            PSVECScale((Vec*)outPos, (Vec*)outPos, s);
+        } else {
+            outPos->x = 0.0f;
+            outPos->y = 0.0f;
+            outPos->z = 0.0f;
+        }
+        {
+            if (fn->flags & 0x10) {
+                vecScaleE(&spread, GC_VEC3P(Vec, &fn->sphere.spread), t);
+            } else {
+                vecScaleE(&spread, GC_VEC3P(Vec, &fn->sphere.spread), HSD_Randf());
+            }
+            PSVECAdd(&spread, GC_VEC3P(Vec, &fn->sphere.center), &spread);
+            PSVECAdd((Vec*)outPos, &spread, (Vec*)outPos);
+        }
+        if (PSVECSquareMag((Vec*)outPos) > 0.00001f) {
+            vecNormalizeE((Vec*)outDir, (Vec*)outPos);
+        } else {
+            outDir->x = 0.0f;
+            outDir->y = 0.0f;
+            outDir->z = 0.0f;
+        }
+        return;
+    case 1: {
+        f32 a;
+        f32 s;
+        if (fn->flags & 0x40) {
+            a = fn->ring.angRange * (fn->ring.angSpeed * t) + fn->ring.angBase;
+        } else {
+            a = fn->ring.angRange * HSD_Randf() + fn->ring.angBase;
+        }
+        C_QUATRotAxisRad(&q, GC_VEC3P(Vec, &fn->ring.axis), a);
+        peMtxQuat(m1, &q);
+        mtxMultVecSRE((Vec*)outDir, m1, GC_VEC3P(Vec, &fn->ring.start));
+        if (fn->flags & 0x80) {
+            a = 3.1415927f * (2.0f * (fn->ring.spin * t));
+        } else {
+            f32 r = HSD_Randf();
+            a = 3.1415927f * (2.0f * r);
+        }
+        C_QUATRotAxisRad(&q, GC_VEC3P(Vec, &fn->ring.start), a);
+        peMtxQuat(m2, &q);
+        peMtxMultVecSR(m2, (Vec*)outDir, (Vec*)outDir);
+        if (fn->flags & 0x20) {
+            s = t * fn->ring.radRange + fn->ring.radBase;
+        } else {
+            s = fn->ring.radRange * HSD_Randf() + fn->ring.radBase;
+        }
+        vecScaleE((Vec*)outPos, (Vec*)outDir, s);
+        return;
+    }
+    case 3: {
+        f32 a;
+        f32 s;
+        GC_VEC3(*(Vec*)outDir, fn->line.dir);
+        if (fn->flags & 0x80) {
+            a = 3.1415927f * (2.0f * (fn->line.spin * t));
+        } else {
+            f32 r = HSD_Randf();
+            a = 3.1415927f * (2.0f * r);
+        }
+        C_QUATRotAxisRad(&q, (Vec*)outDir, a);
+        peMtxQuat(m3, &q);
+        mtxMultVecSRE((Vec*)outPos, m3, GC_VEC3P(Vec, &fn->line.axis));
+        if (fn->flags & 0x20) {
+            s = t * fn->line.radRange + fn->line.radBase;
+        } else {
+            s = fn->line.radRange * HSD_Randf() + fn->line.radBase;
+        }
+        PSVECScale((Vec*)outPos, (Vec*)outPos, s);
+        PSVECAdd((Vec*)outPos, GC_VEC3P(Vec, &fn->line.center), (Vec*)outPos);
+        return;
+    }
+    default:
+    case 2:
+        outPos->x = 0.0f;
+        outPos->y = 0.0f;
+        outPos->z = 0.0f;
+        outDir->x = 0.0f;
+        outDir->y = 0.0f;
+        outDir->z = 0.0f;
+        return;
+    }
+}
+
+void peEmitterNode::CreateParameters(unsigned short count, float dt) {
+    peEmitterNodeE* self = (peEmitterNodeE*)this;
+    peEmitterDefE* def = self->def;
+    _EmitParamsE* ep;
+    int interp = (def->flags >> 6) & 1;
+    f32 rate = def->rate;
+    f32 phase = rate * u16tof32E(self->emitted + count);
+    f32 inv = 1.0f / u16tof32E(count);
+    ep = (_EmitParamsE*)g_emitParams;
+    _pePositionFunction* posFn;
+    posFn = (_pePositionFunction*)&def->posFlags;
+    f32 lerpT = 1.0f;
+    f32 timeOff = 0.0f;
+    f32 dtStep = dt * inv;
+
+    while (count-- != 0) {
+        Vec dir;
+        GetPositionParameter((GSvec*)&ep->pos, (GSvec*)&dir, posFn, phase);
+        switch (def->velFlags & 2) {
+        case 0: {
+            Quaternion q;
+            PeMtx m;
+            C_QUATRotAxisRad(&q, GC_VEC3P(Vec, &def->axis), HSD_Randf() * def->coneRange + def->coneBase);
+            peMtxQuat(m, &q);
+            mtxMultVecSRE(&ep->vel, m, GC_VEC3P(Vec, &def->dir));
+            f32 r = HSD_Randf();
+            C_QUATRotAxisRad(&q, GC_VEC3P(Vec, &def->dir), 3.1415927f * (2.0f * r));
+            rotateForwardE(&ep->vel, &q);
+            f32 s;
+            if (def->velFlags & 0x20) {
+                s = phase * def->magRange + def->magBase;
+            } else {
+                s = HSD_Randf() * def->magRange + def->magBase;
+            }
+            PSVECScale(&ep->vel, &ep->vel, s);
+            break;
+        }
+        case 2: {
+            f32 s;
+            if (def->velFlags & 0x20) {
+                s = phase * def->dir.y + def->dir.x;
+            } else {
+                s = HSD_Randf() * def->dir.y + def->dir.x;
+            }
+            vecScaleE(&ep->vel, &dir, s);
+            break;
+        }
+        default:
+            ep->vel.x = 0.0f;
+            ep->vel.y = 0.0f;
+            ep->vel.z = 0.0f;
+            break;
+        }
+        vecScaleE(&dir, &ep->vel, timeOff);
+        PSVECAdd(&ep->pos, &dir, &ep->pos);
+        f32 r = HSD_Randf();
+        ep->life = (self->def->lifeRange * r + self->def->lifeBase) - timeOff;
+        r = HSD_Randf();
+        ep->speed = self->def->speedRange * r + self->def->speedBase;
+        if (interp) {
+            Quaternion q;
+            lerpVecE(&ep->xf.pos, &self->cur.pos, &self->prev.pos, lerpT);
+            C_QUATLerp(&self->prev.rot, &self->cur.rot, &q, lerpT);
+            f32 x, y, z, w;
+            x = q.x;
+            y = q.y;
+            z = q.z;
+            w = q.w;
+            ep->xf.rot.x = x;
+            ep->xf.rot.y = y;
+            ep->xf.rot.z = z;
+            ep->xf.rot.w = w;
+            lerpVecE(&ep->xf.scale, &self->cur.scale, &self->prev.scale, lerpT);
+            if (posFn->flags & 0x100) {
+                PSVECSubtract(&ep->pos, &ep->xf.pos, &ep->pos);
+                rotateInverseE(&ep->pos, &ep->xf.rot);
+                divScaleE(&ep->pos, &ep->xf.scale);
+            }
+            if (def->velFlags & 0x10) {
+                rotateInverseE(&ep->vel, &ep->xf.rot);
+            }
+        } else {
+            if (posFn->flags & 0x100) {
+                PSVECSubtract(&ep->pos, &self->cur.pos, &ep->pos);
+                rotateInverseE(&ep->pos, &self->cur.rot);
+                divScaleE(&ep->pos, &self->cur.scale);
+            }
+            if (def->velFlags & 0x10) {
+                rotateInverseE(&ep->vel, &self->cur.rot);
+            }
+        }
+        phase -= rate;
+        ep++;
+        lerpT -= inv;
+        timeOff += dtStep;
+    }
 }
 
 void peEmitterNode::CreateWorldParams() {
@@ -1544,196 +1220,289 @@ void peEmitterNode::CreateWorldParams() {
         xfCopyE(&self->prev, &self->cur);
     }
 }
-}
 
-extern "C++" {
-#pragma optimize_for_size on
-#pragma optimize_for_size reset
-}
-
-extern "C++" {
-#pragma push
-#pragma optimize_for_size on
-void peEmitterNode::GetPositionParameter(GSvec* p0, GSvec* p1, _pePositionFunction* p2, float p3) {
-    f32 sp10;
-    f32 sp18;
-    f32 sp1C;
-    u32 unksp44;
-    f32 sp28;
-    u32 v38[3];
-    f32 sp34;
-    s32 sp48;
-    s32 sp4C;
-    volatile f32 sp54;
-    f32 sp58;
-    f32 sp6C;
-    s32 spD8;
-    f32 unksp50;
-    f32 unksp2C;
-    volatile f32 sp30;
-    volatile f32 sp24;
-    f32 unksp20;
-    s32 unksp5C;
-    s32 sp78;
-    s32 sp108;
-    f32 unksp14;
-    s32 spA8;
-    f32 unksp8;
-    f32 sp74;
-    f32 sp70;
-    volatile f32 spC;
-    f32 var_f1;
-    f32 var_f1_2;
-    f32 var_f1_3;
-    f32 var_f1_4;
-    f32 var_f1_5;
-    f32 var_f1_6;
-    f32 var_f1_7;
-    f32 var_f1_8;
-    f32 var_f1_9;
-    s32 temp_r0;
+void peEmitterNode::SetLastLoop() {
+    f32 temp_f0;
+    f32 temp_f2;
     u16 temp_r5;
+    u8 *temp_r4;
 
-    temp_r5 = M2C_FIELD(p1, u16 *, 0);
-    temp_r0 = temp_r5 & 3;
-    switch (temp_r0) {
-    case 0:
-        M2C_FIELD(p0, f32 *, 0) = (f32) M2C_FIELD(p1, f32 *, 0x1C);
-        M2C_FIELD(p0, f32 *, 4) = (f32) M2C_FIELD(p1, f32 *, 0x20);
-        M2C_FIELD(p0, f32 *, 8) = (f32) M2C_FIELD(p1, f32 *, 0x24);
-        var_f1 = M2C_FIELD(p1, f32 *, 0x34);
-        if (var_f1 < 0.0f) {
-            var_f1 = -var_f1;
+    temp_r5 = PEN(this, u16 *, 0x48, flags);
+    if (!(temp_r5 & 0x40) && (PED(PEN(this, u8 **, 0xFC, def), s32 *, 0, flags) & 1)) {
+        PEN(this, u16 *, 0x48, flags) = (u16) (temp_r5 | 0x40);
+        temp_r4 = PEN(this, u8 **, 0xFC, def);
+        temp_f2 = PED(temp_r4, f32 *, 0x18, start) + PED(temp_r4, f32 *, 0x1C, duration);
+        if (PEN(this, f32 *, 0x4, life) < (temp_f0 = PED(temp_r4, f32 *, 0x28, length) - temp_f2)) {
+            PEN(this, f32 *, 0x4, life) = temp_f0;
+            PEN(this, f32 *, 0x30, time) = temp_f2;
         }
-        if (!(var_f1 > 0.00001f)) {
-            var_f1_2 = M2C_FIELD(p1, f32 *, 0x38);
-            if (var_f1_2 < 0.0f) {
-                var_f1_2 = -var_f1_2;
-            }
-            if (var_f1_2 > 0.00001f) {
-                goto block_13;
-            }
-            goto block_21;
-        }
-block_13:
-        if (PSVECSquareMag((const register Vec*)((Vec *) p0)) > 0.00001f) {
-            if (M2C_FIELD(p1, u16 *, 0) & 0x80) {
-                var_f1_3 = 3.1415927f * (2.0f * (M2C_FIELD(p1, f32 *, 0x3C) * p3));
-            } else {
-                var_f1_3 = (2.0f * HSD_Randf());
-                var_f1_3 *= 3.1415927f;
-            }
-            C_QUATRotAxisRad((Quaternion*)(&unksp5C), (const Vec*)((Vec *) p0), var_f1_3);
-            PSMTXQuat((f32 (*)[4])(&spD8), (const Quaternion *)((const register Quaternion*)(&unksp5C)));
-            PSMTXMultVecSR((f32 (*)[4])(&spD8), (const Vec *)((const register Vec*)(((u8*)(p1) + 0x28))), (Vec *)((register Vec*)(&unksp50)));
-            M2C_FIELD(((s32)this), f32 *, 0) = unksp50;
-            M2C_FIELD(((s32)this), f32 *, 4) = sp54;
-            M2C_FIELD(((s32)this), f32 *, 8) = sp58;
-            if (M2C_FIELD((u16)p1, u16 *, 0) & 0x20) {
-                var_f1_4 = (p3 * M2C_FIELD(p1, f32 *, 0x38)) + M2C_FIELD(p1, f32 *, 0x34);
-            } else {
-                var_f1_4 = (M2C_FIELD(p1, f32 *, 0x38) * HSD_Randf()) + M2C_FIELD(p1, f32 *, 0x34);
-            }
-            PSVECScale((const register Vec*)((Vec *) ((s32)this)), (register Vec*)((Vec *) ((s32)this)), var_f1_4);
-        } else {
-block_21:
-            M2C_FIELD(((s32)this), f32 *, 0) = 0.0f;
-            M2C_FIELD(((s32)this), f32 *, 4) = 0.0f;
-            M2C_FIELD(((s32)this), f32 *, 8) = 0.0f;
-        }
-        if (M2C_FIELD(p1, u16 *, 0) & 0x10) {
-            PSVECScale((const register Vec*)(((u8*)(p1) + 0x10)), (register Vec*)(&unksp44), p3);
-            sp6C = unksp44;
-            sp70 = sp48;
-            sp74 = sp4C;
-        } else {
-            PSVECScale((const register Vec*)(((u8*)(p1) + 0x10)), (register Vec*)(v38), HSD_Randf());
-            sp6C = v38[0];
-            sp70 = v38[1];
-            sp74 = v38[2];
-        }
-        PSVECAdd((const register Vec*)((Vec *) &sp6C), (const register Vec*)(((u8*)(p1) + 4)), (register Vec*)((Vec *) &sp6C));
-        PSVECAdd((const register Vec*)((Vec *) ((s32)this)), (const register Vec*)((Vec *) &sp6C), (register Vec*)((Vec *) ((s32)this)));
-        if (PSVECSquareMag((const register Vec*)((Vec *) ((s32)this))) > 0.00001f) {
-            PSVECNormalize((const register Vec*)((Vec *) ((s32)this)), (register Vec*)(&unksp2C));
-            M2C_FIELD((u16)p0, f32 *, 0) = unksp2C;
-            M2C_FIELD(p0, f32 *, 4) = sp30;
-            M2C_FIELD(p0, f32 *, 8) = sp34;
-            return;
-        }
-        M2C_FIELD(p0, f32 *, 0) = 0.0f;
-        M2C_FIELD(p0, f32 *, 4) = 0.0f;
-        M2C_FIELD(p0, f32 *, 8) = 0.0f;
-        return;
-    case 1:
-        if (temp_r5 & 0x40) {
-            var_f1_5 = (M2C_FIELD(p1, f32 *, 0x28) * (M2C_FIELD(p1, f32 *, 0x2C) * p3)) + M2C_FIELD(p1, f32 *, 0x24);
-        } else {
-            var_f1_5 = (M2C_FIELD(p1, f32 *, 0x28) * HSD_Randf()) + M2C_FIELD(p1, f32 *, 0x24);
-        }
-        C_QUATRotAxisRad((Quaternion*)(&unksp5C), (const Vec*)(((u8*)(p1) + 0x10)), var_f1_5);
-        PSMTXQuat((f32 (*)[4])(&spA8), (const Quaternion *)((const register Quaternion*)(&unksp5C)));
-        PSMTXMultVecSR((f32 (*)[4])(&spA8), (const Vec *)((const register Vec*)(((u8*)((s32)p1) + 4))), (Vec *)((register Vec*)(&unksp20)));
-        M2C_FIELD(p0, f32 *, 0) = unksp20;
-        M2C_FIELD(p0, f32 *, 4) = sp24;
-        M2C_FIELD(p0, f32 *, 8) = sp28;
-        if (M2C_FIELD(p1, u16 *, 0) & 0x80) {
-            var_f1_6 = 3.1415927f * (2.0f * (M2C_FIELD(p1, f32 *, 0x30) * p3));
-        } else {
-            var_f1_6 = (2.0f * HSD_Randf());
-            var_f1_6 *= 3.1415927f;
-        }
-        C_QUATRotAxisRad((Quaternion*)(&unksp5C), (const Vec*)(((u8*)(p1) + 4)), var_f1_6);
-        PSMTXQuat((f32 (*)[4])(&sp108), (const Quaternion *)((const register Quaternion*)(&unksp5C)));
-        PSMTXMultVecSR((f32 (*)[4])(&sp108), (const Vec *)((const register Vec*)((Vec *) p0)), (Vec *)((register Vec*)((Vec *) p0)));
-        if (M2C_FIELD(p1, u16 *, 0) & 0x20) {
-            var_f1_7 = (p3 * M2C_FIELD(p1, f32 *, 0x20)) + M2C_FIELD(p1, f32 *, 0x1C);
-        } else {
-            var_f1_7 = (M2C_FIELD(p1, f32 *, 0x20) * HSD_Randf()) + M2C_FIELD(p1, f32 *, 0x1C);
-        }
-        PSVECScale((const register Vec*)((Vec *) p0), (register Vec*)(&unksp14), var_f1_7);
-        M2C_FIELD(((s32)this), f32 *, 0) = unksp14;
-        M2C_FIELD(((s32)this), f32 *, 4) = sp18;
-        M2C_FIELD(((s32)this), f32 *, 8) = sp1C;
-        return;
-    case 3:
-        M2C_FIELD(p0, f32 *, 0) = (f32) M2C_FIELD(p1, f32 *, 0x10);
-        M2C_FIELD(p0, f32 *, 4) = (f32) M2C_FIELD(p1, f32 *, 0x14);
-        M2C_FIELD(p0, f32 *, 8) = (f32) M2C_FIELD(p1, f32 *, 0x18);
-        if (M2C_FIELD(p1, u16 *, 0) & 0x80) {
-            var_f1_8 = 3.1415927f * (2.0f * (M2C_FIELD(p1, f32 *, 0x30) * p3));
-        } else {
-            var_f1_8 = (2.0f * HSD_Randf());
-            var_f1_8 *= 3.1415927f;
-        }
-        C_QUATRotAxisRad((Quaternion*)(&unksp5C), (const Vec*)((Vec *) p0), var_f1_8);
-        PSMTXQuat((f32 (*)[4])(&sp78), (const Quaternion *)((const register Quaternion*)(&unksp5C)));
-        PSMTXMultVecSR((f32 (*)[4])(&sp78), (const Vec *)((const register Vec*)(((u8*)(p1) + 0x1C))), (Vec *)((register Vec*)(&unksp8)));
-        M2C_FIELD(((s32)this), f32 *, 0) = unksp8;
-        M2C_FIELD(((s32)this), f32 *, 4) = spC;
-        M2C_FIELD(((s32)this), f32 *, 8) = sp10;
-        if (M2C_FIELD((u16)p1, u16 *, 0) & 0x20) {
-            var_f1_9 = (p3 * M2C_FIELD(p1, f32 *, 0x2C)) + M2C_FIELD(p1, f32 *, 0x28);
-        } else {
-            var_f1_9 = (M2C_FIELD(p1, f32 *, 0x2C) * HSD_Randf()) + M2C_FIELD(p1, f32 *, 0x28);
-        }
-        PSVECScale((const register Vec*)((Vec *) ((s32)this)), (register Vec*)((Vec *) ((s32)this)), var_f1_9);
-        PSVECAdd((const register Vec*)((Vec *) ((s32)this)), (const register Vec*)(((u8*)(p1) + 4)), (register Vec*)((Vec *) ((s32)this)));
-        return;
-    default:
-    case 2:
-        M2C_FIELD(((s32)this), f32 *, 0) = 0.0f;
-        M2C_FIELD(((s32)this), f32 *, 4) = 0.0f;
-        M2C_FIELD(((s32)this), f32 *, 8) = 0.0f;
-        M2C_FIELD(p0, f32 *, 0) = 0.0f;
-        M2C_FIELD(p0, f32 *, 4) = 0.0f;
-        M2C_FIELD(p0, f32 *, 8) = 0.0f;
-        return;
     }
 }
-#pragma pop
+
+void peEmitterNode::Start(peEmitterNode* parent, _peEmitter* em, _EmitParams* params) {
+    peEmitterNodeE* self = (peEmitterNodeE*)this;
+    peEmitterDefE* def = (peEmitterDefE*)em;
+    u32 dflags = def->flags;
+    Vec euler;
+    peContainer* c;
+
+    ((peNode*)this)->Start(parent, params);
+    if (parent == NULL && (dflags & 1)) {
+        self->life = def->start + def->duration;
+    } else {
+        self->life = def->length;
+    }
+    self->life0 = def->length;
+    self->time = 0.0f;
+    self->emitAcc = 0.0f;
+    self->color[3] = 0.0f;
+    self->emitted = 0;
+    self->flags = 0x20;
+    quatIdentityE(&self->rot);
+    quatIdentityE(&self->rot2);
+    xfInitE(&self->prev);
+    xfInitE(&self->cur);
+    if (!(dflags & 2) &&
+        (parent == NULL || (((peEmitterNodeE*)parent)->def->flags & 0x400) != 0x400)) {
+        if ((dflags & 0x80) != 0x80) {
+            EulerToQuat(GC_VEC3P(Vec, &def->euler), &self->rot);
+        }
+        if (dflags & 0x700038) {
+            Vec* e = &euler;
+            if (dflags & 8) {
+                e->x = 6.2831855f * HSD_Randf();
+            } else {
+                e->x = 0.0f;
+            }
+            if (dflags & 0x10) {
+                e->y = 6.2831855f * HSD_Randf();
+            } else {
+                e->y = 0.0f;
+            }
+            if (dflags & 0x20) {
+                e->z = 6.2831855f * HSD_Randf();
+            } else {
+                e->z = 0.0f;
+            }
+            if ((dflags & 0x100000) && HSD_Randf() < 0.5f) {
+                self->flags |= 1;
+                euler.x = -euler.x;
+            }
+            if ((dflags & 0x200000) && HSD_Randf() < 0.5f) {
+                self->flags |= 2;
+                euler.y = -euler.y;
+            }
+            if ((dflags & 0x400000) && HSD_Randf() < 0.5f) {
+                self->flags |= 4;
+                euler.z = -euler.z;
+            }
+            EulerToQuat(&euler, &self->rot2);
+        }
+    }
+    if ((dflags & 0x80) != 0x80) {
+        f32 r = HSD_Randf();
+        self->spin.x = def->spinRange.x * r + def->spinBase.x;
+        r = HSD_Randf();
+        self->spin.y = def->spinRange.y * r + def->spinBase.y;
+        r = HSD_Randf();
+        self->spin.z = def->spinRange.z * r + def->spinBase.z;
+    }
+    self->scaleBase.x = def->scale.x;
+    self->scaleBase.y = def->scale.y;
+    self->scaleBase.z = def->scale.z;
+    for (c = self->containers; c != NULL; c = c->next) {
+        c->Start();
+    }
 }
+
+u8 peEmitterNode::Update(peEmitterNode* parent, _peEmitter* em, float dt) {
+    peEmitterNodeE* self = (peEmitterNodeE*)this;
+    peEmitterDefE* def = (peEmitterDefE*)em;
+    u32 dflags = def->flags;
+    f32 t;
+    u16 count;
+    peContainer* c;
+
+    if (!((peNode*)this)->Update(parent, dt)) {
+        if (parent == NULL && (dflags & 1)) {
+            if (self->flags & 0x40) {
+                return 0;
+            }
+            self->life += def->duration;
+            self->time -= def->length - def->start;
+            self->emitted = 0;
+        } else {
+            return 0;
+        }
+        self->flags &= ~0x20;
+    }
+    if (self->flags & 0x20) {
+        t = 1.0f - self->life / self->life0;
+    } else {
+        t = 1.0f;
+    }
+    {
+        GSColorE col;
+        peColorSplineGetValue((u8*)&col, def->color, t);
+        self->color[0] = 0.00390625f * (2.0f * u8tof32E(col.r));
+        self->color[1] = 0.00390625f * (2.0f * u8tof32E(col.g));
+        self->color[2] = 0.00390625f * (2.0f * u8tof32E(col.b));
+    }
+    self->color[3] = evalSplineE(def->alpha, t);
+    if (parent != NULL) {
+        peEmitterNodeE* p = (peEmitterNodeE*)parent;
+        self->color[0] *= p->color[0];
+        self->color[1] *= p->color[1];
+        self->color[2] *= p->color[2];
+        self->color[3] *= p->color[3];
+    }
+    if (!(dflags & 2)) {
+        Vec e;
+        u32 pflags;
+        if (parent != NULL && ((pflags = ((peEmitterNodeE*)parent)->def->flags) & 0x400)) {
+            Vec d;
+            d = self->pos;
+            if (pflags & 0x40) {
+                PeMtx m;
+                PSMTXQuat(m, &self->xf->rot);
+                PSMTXMultVecSR(m, &d, &d);
+            }
+            e.x = atan2(-d.y, sqrtf(d.x * d.x + d.z * d.z));
+            e.y = atan2(d.x, d.z);
+            e.z = 0.0f;
+            EulerToQuat(&e, &self->rot);
+        } else if (dflags & 0x80) {
+            e.x = def->euler.x * evalSplineE(def->eulerSpline[0], t);
+            e.y = def->euler.y * evalSplineE(def->eulerSpline[1], t);
+            e.z = def->euler.z * evalSplineE(def->eulerSpline[2], t);
+            EulerToQuat(&e, &self->rot);
+        } else {
+            Quaternion q;
+            e.x = dt * (self->spin.x * evalSplineE(def->spinSpline[0], t));
+            e.y = dt * (self->spin.y * evalSplineE(def->spinSpline[1], t));
+            e.z = dt * (self->spin.z * evalSplineE(def->spinSpline[2], t));
+            EulerToQuat(&e, &q);
+            PSQUATMultiply(&self->rot, &q, &self->rot);
+        }
+    }
+    self->scale.x = self->scaleBase.x * evalSplineE(def->scaleSpline[0], t);
+    self->scale.y = self->scaleBase.y * evalSplineE(def->scaleSpline[1], t);
+    self->scale.z = self->scaleBase.z * evalSplineE(def->scaleSpline[2], t);
+    self->unk74.x = def->vC4.x * evalSplineE(def->vC4Spline[0], t);
+    self->unk74.y = def->vC4.y * evalSplineE(def->vC4Spline[1], t);
+    self->unk74.z = def->vC4.z * evalSplineE(def->vC4Spline[2], t);
+    self->unk9C.x = def->vAC.x * evalSplineE(def->vACSpline[0], t);
+    self->unk9C.y = def->vAC.y * evalSplineE(def->vACSpline[1], t);
+    self->unk9C.z = def->vAC.z * evalSplineE(def->vACSpline[2], t);
+    CreateWorldParams();
+    for (c = self->containers; c != NULL; c = c->next) {
+        c->PreUpdate();
+    }
+    count = emitCountE(self, t, dt);
+    if (count != 0) {
+        if (count > g_maxEmitParams) {
+            count = g_maxEmitParams;
+        }
+        CreateParameters(count, def->duration > 0.00001f ? dt : 0.0f);
+        for (c = self->containers; c != NULL; c = c->next) {
+            self->emitted += c->Emit(count);
+        }
+    }
+    for (c = self->containers; c != NULL; c = c->next) {
+        c->Update(dt);
+    }
+    self->time += dt;
+    return 1;
 }
+
+void peEmitterNode::Render(_peEmitter* p0) {
+    peContainer* c = PEN(this, peContainer **, 0x100, containers);
+    if (PEN(this, u16 *, 0x4A, emitted) == 0) {
+        return;
+    }
+    while (c != NULL) {
+        c->Render();
+        c = c->next;
+    }
 }
+
+void peEmitterNode::Stop(_peEmitter* p0) {
+    peContainer* c;
+
+    for (c = PEN(this, peContainer **, 0x100, containers); c != NULL; c = c->next) {
+        c->Stop();
+    }
 }
+
+void peEmitterNode::Init(_peEmitter* em) {
+    peEmitterNodeE* self = (peEmitterNodeE*)this;
+    peContainer* c;
+    void* data;
+    u16 n;
+    peEffectItemE* it;
+    peEmitterDefE* def;
+
+    self->def = (peEmitterDefE*)em;
+    def = (peEmitterDefE*)em;
+    n = def->maxNodes;
+    for (it = def->items; it != NULL; it = it->next) {
+        data = it->data;
+        if (data != NULL) {
+            c = NULL;
+            switch (it->type) {
+            case 0: {
+                _peEmitter* sub = (_peEmitter*)data;
+                if (((peEmitterDefE*)sub)->items != NULL) {
+                    c = new peEmitterContainer(this, sub, n);
+                }
+                break;
+            }
+            case 1:
+                if (*(s32*)((u8*)data + 0x54) != 0) {
+                    c = new peParticleContainer(this, (_peParticle*)data, n);
+                }
+                break;
+            case 6:
+                if (*(s32*)((u8*)data + 0x1C) != 0) {
+                    c = new peParticleStripContainer(this, (_peParticleStrip*)data, n);
+                }
+                break;
+            case 3:
+                if (*(s32*)((u8*)data + 0x60) != 0) {
+                    c = new peDistortionContainer(this, (_peDistortion*)data, n);
+                }
+                break;
+            case 2:
+                if (*(s32*)((u8*)data + 0x4C) != 0) {
+                    c = new peModelContainer(this, (_peModel*)data, n);
+                }
+                break;
+            case 4:
+                if (*(s32*)((u8*)data + 0x74) != 0) {
+                    c = new peShapeContainer(this, (_peShape*)data, n);
+                }
+                break;
+            }
+            if (c != NULL) {
+                if (self->containers == NULL) {
+                    self->containers = c;
+                } else {
+                    peContainer* last = self->containers;
+                    while (last->next != 0) {
+                        last = last->next;
+                    }
+                    last->next = c;
+                }
+            }
+        }
+    }
 }
+
+}
+
+#ifndef __MWERKS__
+#include <stddef.h>
+static_assert(offsetof(peEmitterNodeE, def) == offsetof(peEmitterNodeView, def), "emitter node view");
+static_assert(offsetof(peEmitterNodeE, containers) == offsetof(peEmitterNodeView, containers), "emitter node view");
+static_assert(offsetof(peEmitterNodeE, time) == sizeof(peNodeHead), "node head");
+#endif

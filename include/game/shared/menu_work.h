@@ -1,6 +1,7 @@
 #ifndef GAME_SHARED_MENU_WORK_H
 #define GAME_SHARED_MENU_WORK_H
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 struct tagSPRITE_WORK;
 struct tagSEQ_WORK;
@@ -27,8 +28,9 @@ struct tagWINDOW_WORK {
     u8 pad21[3];
     tagSPRITE_WORK* itemSprites;
     tagSPRITE_WORK* cursorSprites;
-    u8 seq[0x3C];
-    u32 params[8];
+    void* slot2C;
+    u8 pad30[0x38];
+    GCuptr params[8];
     s32 cursor88;
     s16 x;
     s16 y;
@@ -52,11 +54,13 @@ struct tagSPRITE_WORK {
     s8 kind;
     u8 flags;
     s16 id;
-    u8 pad8[0x14];
+    u8 pad8[0x4];
+    void* slotC;
+    u8 pad10[0xC];
     s32 layer;
     u8 pad20[0x28];
     void* hook;
-    s32 msgID;
+    GCsptr msgID;
     s16 x;
     s16 y;
     s16 w;

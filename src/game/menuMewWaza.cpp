@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #pragma peephole off
 
@@ -7,7 +8,24 @@ struct MewWazaWindow {
     s8 state;
     u8 unk2[2];
     s32 unk4;
-    u8 unk8[0x84];
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x4];
     s16 x;
     s16 y;
     u8 unk90[3];
@@ -30,13 +48,13 @@ struct WindowFreeWork {
     s32 unk8;
 };
 
-static char* _GetMewWazaName(long index);
+static char* _GetMewWazaName(s32 index);
 
 extern "C" {
 
 WindowFreeWork* windowGetFreeWork(MewWazaWindow* window);
 s32 winSpriteGetLayerID(MewWazaWindow* window, MewWazaItem* item);
-void* GSgfxLayerFindByID(s32 layer);
+void* GSgfxLayerFindByID(GCsptr layer);
 void spriteSetOffset(s32 layer, s16 x, s16 y);
 void spriteSetEnv(s32 layer);
 void* GSmsgGetGSchar(char* str);
@@ -44,7 +62,7 @@ void msgctrlSetValue(s32 id, void* value);
 void GSmsgPrint2(s32 layer, s32, s32, u32 color, u32 msgID);
 void menuSubDrawMsgWindow2(s32 layer, s32, s32, s32 width, s32 height, u8 alpha, s32);
 void GSmsgMain(s32 layer, s32, s32, bool);
-u16 mewWazaGet(long index);
+u16 mewWazaGet(s32 index);
 void* wazaDataBiosGetPtr(u16 id);
 char* wazaDataBiosGetName(void* data);
 
@@ -109,6 +127,6 @@ s32 menuMewWazaDraw(MewWazaWindow* window, MewWazaItem* item) {
 
 }
 
-static char* _GetMewWazaName(long index) {
+static char* _GetMewWazaName(s32 index) {
     return wazaDataBiosGetName(wazaDataBiosGetPtr(mewWazaGet(index)));
 }

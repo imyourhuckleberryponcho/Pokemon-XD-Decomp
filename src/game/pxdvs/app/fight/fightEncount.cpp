@@ -1,15 +1,24 @@
 #include <dolphin/types.h>
+#include <game/statusval.h>
 
 #pragma dont_inline on
 
 struct Pokemon {
     u8 getLevel() const;
 };
-class Hero {
+struct Hero {
 public:
     static Hero* getHeroPtr();
+#ifdef __MWERKS__
     u32 getBattleResumeFloorID() const;
+#else
+    u16 getBattleResumeFloorID() const;
+#endif
+#ifdef __MWERKS__
     u32 getBattleResumeFloorIndex() const;
+#else
+    u8 getBattleResumeFloorIndex() const;
+#endif
 };
 struct FIGHT_FLOOR;
 struct FightEncountData;
@@ -58,10 +67,10 @@ public:
     u8 dirtyFlag;
 };
 
-extern s8 underTakerDeckRand;
+extern "C" s8 underTakerDeckRand;
 
 extern "C" {
-u32 heroGetStatus(Hero* hero, u32 selector, u16 index);
+StatusU32 heroGetStatus(Hero* hero, u32 selector, u16 index);
 void heroDecPokedoru(Hero* hero, u32 offset);
 void recoveryPokemon(void);
 u16 fightGetFightEncountDataId(void);

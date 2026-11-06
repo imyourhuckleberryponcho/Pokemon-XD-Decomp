@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/tigadata.h>
 
 #pragma pool_strings off
 #pragma peephole off
@@ -8,7 +11,7 @@ struct GSvec {
     GSvec() {}
 };
 struct ScriptPeople { s32 group; s32 object; };
-struct PeopleWork { u8 reserved[0x54]; u8 flag54; };
+struct PeopleWork { u8 reserved[0x8]; void* model; u8 reserved0C[0x48]; u8 flag54; };
 struct PeopleMotionTable { s32 id[5]; };
 struct RareColor { u8 swap[4]; u8 color[4]; };
 
@@ -17,9 +20,9 @@ void tigaErrMessage(const char*);
 struct tigaVariant;
 struct tigaArrayFixed { tigaVariant* get(int); };
 struct tigaVariant {
-    s16 type;
-    u16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_be16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
     s32 getCnvInteger();
     GSvec* getCnvVector();
     f32 getCnvSingle();
@@ -32,21 +35,19 @@ struct tigaVariant {
     inline void setInteger(s32 n) { type = 1; value.integer = n; }
 };
 struct TigaContext {
-    u8 reserved[0x10];
-    tigaVariant result;
-    u8 reserved18[0x120];
-    GSvec vector;
+    GSSCRIPT_TIGACONTEXT_DATA(tigaVariant, GSvec)
 };
 class Tiga {
 public:
-    u8 reserved[0x914];
-    TigaContext* context;
+    GSSCRIPT_TIGA_VIEW_DATA
+    virtual ~Tiga();
     inline void setRpVec(const GSvec* v);
 };
 }
 
-class AppScript : public GSscript::Tiga {
+struct AppScript : public GSscript::Tiga {
 public:
+    GSscript::tigaWaza waza[7];
     s32 cmpPeople(int, GSscript::tigaVariant*, GSscript::tigaVariant*);
 };
 
@@ -82,7 +83,12 @@ void peopleSetRotXYZ(s32, s32, f32, f32, f32);
 void peopleSetRot(s32, s32, GSvec*);
 void peopleGetPos(s32, s32, GSvec*);
 void peopleWalkToXYZ(s32, s32, u8, f32, f32, f32);
+#ifdef __MWERKS__
 void peopleWalkToTarget(s32, s32, s32, s32, f32, u8);
+#else
+void peopleWalkToTarget(s32, s32, s32, s32, u8, f32);
+#define peopleWalkToTarget(a, b, c, d, e, f) peopleWalkToTarget((a), (b), (c), (d), (f), (e))
+#endif
 u8 peopleMoveCheck(s32, s32, u8);
 void peopleSetFlagOn(s32, s32, s32);
 void peopleSetFlagOff(s32, s32, s32);
@@ -110,7 +116,7 @@ void peopleDetach(s32, s32, u8);
 void peopleTaskSwich(s32, s32);
 u8 peopleInitWalkList(s32, s32, u16);
 u8 peopleAddWalkList(s32, s32, f32, f32, f32);
-u8 peopleStartWalkList(s32, s32, u8);
+u8 peopleStartWalkList(s32, s32, PCARG(u8, u32));
 u8 peopleStartWalkListStrict(s32, s32, s32);
 u8 peopleFreeWalkList(s32, s32);
 void peopleInitEvent(s32, s32);
@@ -156,7 +162,12 @@ void scriptGetItem(s32, s32);
 void scriptPlayPokemonNakigoe(u16);
 void scriptSetEndedMotion(s32, s32, s32, u8);
 void scriptModelPartPaticle(s32, s32, s32);
+#ifdef __MWERKS__
 u8 scriptPeopleInsideCheck(GSvec*, GSvec*, f32, GSvec*);
+#else
+u8 scriptPeopleInsideCheck(GSvec*, GSvec*, GSvec*, f32);
+#define scriptPeopleInsideCheck(a, b, c, d) scriptPeopleInsideCheck((a), (b), (d), (c))
+#endif
 }
 
 static RareColor _pokeRareCol[9] = {
@@ -625,8 +636,8 @@ s32 AppScript::cmpPeople(int command, GSscript::tigaVariant* args, GSscript::tig
 inline void GSscript::Tiga::setRpVec(const GSvec* v)
 {
     context->vector = *v;
-    context->result.value.pointer = &context->vector;
-    context->result.type = 4;
+    context->regs[0].value.pointer = &context->vector;
+    context->regs[0].type = 4;
 }
 
 inline GSscript::tigaArrayFixed* GSscript::tigaVariant::getArray()

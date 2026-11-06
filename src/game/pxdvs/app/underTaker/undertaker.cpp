@@ -1,48 +1,12 @@
 #include <dolphin/types.h>
-
-struct UnderTakerPlace {
-    u16 weight;
-    u16 id;
-    u32 msgID;
-};
-
-struct UnderTakerData {
-    u16 threshold;
-    u16 lowChance;
-    u16 midChance;
-    u16 randMod;
-    u16 maxCount;
-    u16 limit;
-    u32 flagStart;
-    u32 flagCounter;
-    u32 flagLevel;
-    u32 flagID;
-    u32 flagAway;
-    u32 flagDisable;
-    u32 unk24;
-    u32 etcLow;
-    u32 etcHigh;
-    u32 flagSide;
-    UnderTakerPlace places[7];
-};
-
-struct FlagEtcEntry {
-    u8 unk0[8];
-    u32 flagValue;
-    u8 unkC[0x20 - 0xC];
-};
-
-struct WorldMapXDInfo {
-    u8 unk0[0x94];
-    u32 flagA;
-    u8 unk98[0x190 - 0x98];
-    u32 flagB;
-};
+#include <game/miscTables.h>
+#include <game/worldMapData.h>
+#include <game/pxdvs/GSAPI/GSflag/flagData.h>
 
 extern "C" {
 extern UnderTakerData* undertakerdata;
-extern FlagEtcEntry* flag_etc;
-extern WorldMapXDInfo* worldmapXD_data;
+extern FlagEtc* flag_etc;
+extern WorldMapData* worldmapXD_data;
 
 u32 GSflagGet(u32);
 void GSflagSet(u32, s32);
@@ -95,14 +59,14 @@ static inline void _disappearWithMessage(void) {
 }
 
 static inline bool _isSpecialFloor(u32 floor) {
-    if (GSflagTest(worldmapXD_data->flagA) && floor != 0x71) {
+    if (GSflagTest(worldmapXD_data[4].flag) && floor != 0x71) {
         return true;
     }
     return false;
 }
 
 static inline bool _isFloorB(u32 floor) {
-    u32 flagB = worldmapXD_data->flagB;
+    u32 flagB = worldmapXD_data[11].flag;
     if (GSflagTest(0x8D1) && GSflagTest(flagB) && floor != 0x3B) {
         return true;
     }

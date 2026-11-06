@@ -1,3 +1,4 @@
+#include <game/gcdata.h>
 #include <dolphin/types.h>
 
 #pragma pool_strings off
@@ -6,8 +7,8 @@
 struct HSD_Archive;
 
 struct SceneData {
-    void** models;
-    void* camera;
+    gc_ptr32(gc_ptr32(void)) models;
+    gc_ptr32(void) camera;
 };
 
 extern "C" {

@@ -103,40 +103,40 @@ struct HSD_PEDesc {
 };
 
 typedef struct _HSD_MObjDesc {
-    char* class_name;
-    u32 rendermode;
-    struct _HSD_TObjDesc* texdesc;
-    HSD_Material* mat;
-    void* renderdesc;
-    HSD_PEDesc* pedesc;
+    gc_ptr32(char) class_name;
+    gc_be32 rendermode;
+    gc_ptr32(struct _HSD_TObjDesc) texdesc;
+    gc_ptr32(HSD_Material) mat;
+    gc_ptr32(void) renderdesc;
+    gc_ptr32(HSD_PEDesc) pedesc;
 } HSD_MObjDesc;
 
 typedef struct _HSD_ChanAnim {
-    struct _HSD_ChanAnim* next;
-    HSD_AObjDesc* aobjdesc;
+    gc_ptr32(struct _HSD_ChanAnim) next;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
 } HSD_ChanAnim;
 
 typedef struct _HSD_TevRegAnim {
-    struct _HSD_TevRegAnim* next;
-    HSD_AObjDesc* aobjdesc;
+    gc_ptr32(struct _HSD_TevRegAnim) next;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
 } HSD_TevRegAnim;
 
 typedef struct _HSD_RenderAnim {
-    struct _HSD_ChanAnim* chananim;
-    struct _HSD_TevRegAnim* reganim;
+    gc_ptr32(struct _HSD_ChanAnim) chananim;
+    gc_ptr32(struct _HSD_TevRegAnim) reganim;
 } HSD_RenderAnim;
 
 typedef struct _HSD_MatAnim {
-    struct _HSD_MatAnim* next;
-    HSD_AObjDesc* aobjdesc;
-    struct _HSD_TexAnim* texanim;
-    struct _HSD_RenderAnim* renderanim;
+    gc_ptr32(struct _HSD_MatAnim) next;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
+    gc_ptr32(struct _HSD_TexAnim) texanim;
+    gc_ptr32(struct _HSD_RenderAnim) renderanim;
 } HSD_MatAnim;
 
 struct HSD_MatAnimJoint {
-    HSD_MatAnimJoint* child;
-    HSD_MatAnimJoint* next;
-    HSD_MatAnim* matanim;
+    gc_ptr32(HSD_MatAnimJoint) child;
+    gc_ptr32(HSD_MatAnimJoint) next;
+    gc_ptr32(HSD_MatAnim) matanim;
 };
 
 struct HSD_MObjInfo {

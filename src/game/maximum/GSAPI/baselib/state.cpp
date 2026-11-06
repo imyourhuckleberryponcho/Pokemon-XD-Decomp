@@ -22,9 +22,14 @@ typedef struct HSD_Chan {
 } HSD_Chan;
 
 typedef struct HSD_LObj {
-    u8 unk0[8];
+    struct {
+        void* class_info;
+        u16 ref_count;
+        u16 ref_count_individual;
+    } parent;
     u16 flags;
-    u8 unkA[6];
+    u16 priority;
+    struct HSD_LObj* next;
     GXColor color;
 } HSD_LObj;
 

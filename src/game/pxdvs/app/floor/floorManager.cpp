@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
+#include <game/tigadata.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -52,7 +55,7 @@ enum floorTask {
 
 class GSBinWriteStream {
 public:
-    GSBinWriteStream(unsigned long size);
+    GSBinWriteStream(u32 size);
     ~GSBinWriteStream();
     u8* getTop() const;
 
@@ -68,59 +71,80 @@ namespace GSscript {
 class Tiga {
 public:
     bool isMapping();
+#ifdef __MWERKS__
     u32 getStateSize();
+#else
+    s32 getStateSize();
+#endif
     void makeStateData(GSBinWriteStream* stream);
-    u8 restoreStateData(void* data, unsigned long size);
+#ifdef __MWERKS__
+    u8 restoreStateData(void* data, u32 size);
+#else
+    s32 restoreStateData(void* data, u32 length);
+#endif
+#ifdef __MWERKS__
     void executeThread(float dt);
+#else
+    s32 executeThread(f32 dt);
+#endif
     void mappingScript(char* name);
     void unmappingScript();
 
-    u8 m_reserved[0x93c];
-    void* m_mapped;
-    u8 m_reserved2[0x44];
+    GSSCRIPT_TIGA_VIEW_DATA
     virtual ~Tiga();
 };
 
 }
 
-class AppScript : public GSscript::Tiga {
+struct AppScript : public GSscript::Tiga {
 public:
     AppScript();
     ~AppScript();
 
-    u8 m_waza[0x38];
+    GSscript::tigaWaza waza[7];
 };
 
 class FloorModuleList {
 public:
-    FloorModuleList(unsigned long num);
-    void unblockModule(unsigned long id);
-    void blockModule(unsigned long id);
-    u8 registerScriptModule(u8 kind, unsigned long a, unsigned long b, unsigned long c, unsigned long d);
-    u8 registerModule(u8 kind, unsigned long id, FloorModuleInterface* module);
+    FloorModuleList(u32 num);
+    void unblockModule(u32 id);
+    void blockModule(u32 id);
+#ifdef __MWERKS__
+    u8 registerScriptModule(u8 kind, u32 a, u32 b, u32 c, u32 d);
+#else
+    u32 registerScriptModule(unsigned char p0, u32 p1, u32 p2, u32 p3, u32 p4);
+#endif
+#ifdef __MWERKS__
+    u8 registerModule(u8 kind, u32 id, FloorModuleInterface* module);
+#else
+    u32 registerModule(unsigned char p0, u32 p1, FloorModuleInterface* p2);
+#endif
     void* makePushState(FloorStateMode mode);
     u32 getPushStateSize() const;
-    void unregisterModuleGroup(unsigned long group);
-    void blockModuleGroup(unsigned long group);
-    void unblockModuleGroup(unsigned long group);
-    void killModuleGroup(unsigned long group);
+    void unregisterModuleGroup(u32 group);
+    void blockModuleGroup(u32 group);
+    void unblockModuleGroup(u32 group);
+    void killModuleGroup(u32 group);
     void restorePopState(void* data, FloorStateMode mode, bool flag);
-    void executeAll(unsigned int floorID, FloorState state, FloorModuleType type, FloorEnterMode mode, unsigned long group);
+    void executeAll(unsigned int floorID, FloorState state, FloorModuleType type, FloorEnterMode mode, u32 group);
     void waitFloorScript(FloorState state);
 
-    u8 m_reserved[0x10];
+    void* m_entries;
+    u32 m_count;
+    u32 m_nextHandle;
+    void* m_head;
     u32 m_pushStateSize;
     virtual ~FloorModuleList();
 };
 
 class FloorStack {
 public:
-    void addResource(unsigned long group, unsigned long id);
+    void addResource(u32 group, u32 id);
     void freeAllResource();
-    void freeResource(unsigned long group, unsigned long id);
+    void freeResource(u32 group, u32 id);
     void reallocPushData();
-    void setPushState(void* data, unsigned long size);
-    void setFloorID(unsigned long floorID);
+    void setPushState(void* data, u32 size);
+    void setFloorID(u32 floorID);
     void clearFlag();
     void setPushFlag();
     AppScript* getScriptModule();
@@ -149,12 +173,12 @@ public:
 
 class FloorStackList {
 public:
-    FloorStackList(unsigned long num);
+    FloorStackList(u32 num);
     ~FloorStackList();
     void unblock();
     void block();
-    void setGroupID(unsigned long groupID);
-    void setPushState(void* data, unsigned long size);
+    void setGroupID(u32 groupID);
+    void setPushState(void* data, u32 size);
     void setUpdateState(FloorState state);
     int getObjective();
     GSfloor_dd_* getGSfloor();
@@ -162,17 +186,17 @@ public:
     FloorStack* pop();
     FloorStack* push(unsigned int floorID);
 
-    void freeResource(unsigned long group, unsigned long id);
+    void freeResource(u32 group, u32 id);
     FloorStack* getCurrentStack();
     FloorStack* getTopOfStack();
-    void addResource(unsigned long group, unsigned long id);
+    void addResource(u32 group, u32 id);
     FloorStack* getBottomOfStack();
     void freeState();
     void clearState();
     void* getPushState();
     void reallocPushData();
     void setPushFlag();
-    void setFloorID(unsigned long id);
+    void setFloorID(u32 id);
     void clearFlag();
     u32 getGroupID();
     void freeAllResource();
@@ -220,7 +244,7 @@ public:
     virtual ~FloorManager();
 
     FloorManager();
-    void init(unsigned long numStacks, unsigned long numModules);
+    void init(u32 numStacks, u32 numModules);
     u8 open(unsigned int floorID);
     u8 close();
     u8 push(unsigned int floorID);
@@ -251,29 +275,29 @@ public:
     SaveHeader* getStateData(StateDataPtr* ptr);
     FloorState getFloorState();
 
-    void freeResource(unsigned long group, unsigned long id) {
+    void freeResource(u32 group, u32 id) {
         m_stacks->freeResource(group, id);
     }
-    void addResource(unsigned long group, unsigned long id) {
+    void addResource(u32 group, u32 id) {
         m_stacks->addResource(group, id);
     }
-    void unblockModule(unsigned long id) {
+    void unblockModule(u32 id) {
         if (m_modules != 0) {
             m_modules->unblockModule(id);
         }
     }
-    void blockModule(unsigned long id) {
+    void blockModule(u32 id) {
         if (m_modules != 0) {
             m_modules->blockModule(id);
         }
     }
-    u8 registerScriptModule(u8 kind, unsigned long a, unsigned long b, unsigned long c, unsigned long d) {
+    u8 registerScriptModule(u8 kind, u32 a, u32 b, u32 c, u32 d) {
         if (m_modules == 0) {
             return 0;
         }
         return m_modules->registerScriptModule(kind, a, b, c, d);
     }
-    u8 registerModule(u8 kind, unsigned long id, FloorModuleInterface* module) {
+    u8 registerModule(u8 kind, u32 id, FloorModuleInterface* module) {
         if (m_modules == 0) {
             return 0;
         }
@@ -337,13 +361,17 @@ void psRemoveGenerator(void);
 void psRemoveAppSRT(void);
 void GSlightDeleteCurrentAll(void);
 void GSmodelFreeAllShadowTextures(void);
-s32 gamedatasaveGetStatus(s32, s32);
-void fn_8005C068(u8);
+StatusS32 gamedatasaveGetStatus(s32, s32);
+void fn_8005C068(PCARG(u8, u32));
 void floorLayerConfig(u32 floorID, u8 kind);
 void GSfsysReadWait(u32);
 void floorInitWazaSequence(u32 floorID);
 f32 timeGetLastFrameSec(void);
-void* __nw__FUl(unsigned long);
+#ifdef __MWERKS__
+void* __nw__FUl(u32);
+#else
+#define __nw__FUl(n) (operator new(n))
+#endif
 
 s32 floorGetCurrent(void);
 s32 floorGetCurrentFloorGroupID(void);
@@ -460,14 +488,14 @@ void floorBlockModule(u32 id) {
     }
 }
 
-u8 floorRegisterScriptModule(u8 kind, u32 a, u32 b, u32 c, u32 d) {
+PCRET(u8) floorRegisterScriptModule(u8 kind, u32 a, u32 b, u32 c, u32 d) {
     if (_floorManager == 0) {
         return 0;
     }
     return _floorManager->registerScriptModule(kind, a, b, c, d);
 }
 
-u8 floorRegisterModule(u8 kind, u32 id, FloorModuleInterface* module) {
+PCRET(u8) floorRegisterModule(u8 kind, u32 id, FloorModuleInterface* module) {
     if (_floorManager == 0) {
         return 0;
     }
@@ -507,7 +535,7 @@ void floorMappingScript(char* name) {
     }
 }
 
-u8 floorIsCurentScriptMode(void) {
+PCRET(u8) floorIsCurentScriptMode(void) {
     GSscript::Tiga* script = _floorManager->getCurrentScript();
     if (script != 0 && script->isMapping()) {
         return 1;
@@ -515,7 +543,7 @@ u8 floorIsCurentScriptMode(void) {
     return 0;
 }
 
-bool floorGetCurentScriptMode(void) {
+PCRET(bool) floorGetCurentScriptMode(void) {
     return _floorManager->getCurrentScriptMode();
 }
 
@@ -692,7 +720,7 @@ u32 FloorModuleList::getPushStateSize() const {
     return m_pushStateSize;
 }
 
-GSBinWriteStream::GSBinWriteStream(unsigned long size) {
+GSBinWriteStream::GSBinWriteStream(u32 size) {
     u8* p = (u8*)GSmemAlloc(size);
     m_buffer = p;
     m_cursor = p;
@@ -706,7 +734,7 @@ u8* GSBinWriteStream::getTop() const {
 }
 
 bool GSscript::Tiga::isMapping() {
-    return m_mapped != 0;
+    return codeCount != 0;
 }
 
 bool FloorStackList::isPushReady() const {
@@ -777,7 +805,7 @@ void FloorStackList::clearFlag() {
     getCurrentStack()->clearFlag();
 }
 
-void FloorStackList::setFloorID(unsigned long id) {
+void FloorStackList::setFloorID(u32 id) {
     getCurrentStack()->setFloorID(id);
 }
 
@@ -814,7 +842,7 @@ FloorState FloorStack::getUpdateState() {
     return m_updateState;
 }
 
-void FloorStackList::addResource(unsigned long group, unsigned long id) {
+void FloorStackList::addResource(u32 group, u32 id) {
     getCurrentStack()->addResource(group, id);
 }
 
@@ -826,7 +854,7 @@ FloorStack* FloorStackList::getCurrentStack() {
     return getTopOfStack();
 }
 
-void FloorStackList::freeResource(unsigned long group, unsigned long id) {
+void FloorStackList::freeResource(u32 group, u32 id) {
     getCurrentStack()->freeResource(group, id);
 }
 
@@ -849,7 +877,7 @@ FloorManager::~FloorManager() {
     }
 }
 
-void FloorManager::init(unsigned long numStacks, unsigned long numModules) {
+void FloorManager::init(u32 numStacks, u32 numModules) {
     if (m_modules != 0) {
         delete m_modules;
         m_modules = 0;

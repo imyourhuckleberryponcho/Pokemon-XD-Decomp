@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #pragma peephole off
 
@@ -18,16 +19,28 @@ struct tagWINDOW_WORK {
     s8 state;
     s8 seqSet;
     u8 unk3;
-    void* seq;
-    u8 unk8[0x60];
+    s32 seq;
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
     MailMenuParam* param;
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 unk8[0x44];
-    u32 msgID;
+    u8 unk8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    GCuptr msgID;
     u8 unk50[0x14];
     u8 color[3];
 };
@@ -46,8 +59,8 @@ void menuClose(s32 menuID);
 void menuCloseSync(s32 menuID, s32);
 WindowKeyInfo* windowGetKeyInfo(void);
 u16 windowGetKeyRepeat(void);
-bool winSeqCheckMove(void* seq);
-void winSeqSetMenu(void* seq, s32 menu);
+bool winSeqCheckMove(s32 menuID);
+void winSeqSetMenu(s32 menuID, s32 menu);
 void menuButtonNormal(tagWINDOW_WORK* window);
 int pdaMailGetMailID(int index);
 u32 mailGetAttachFileGroup(int id);
@@ -56,15 +69,15 @@ u32 mailGetSubject(int id);
 u32 mailGetContents(int id);
 int mailGetNbMailInMailbox(void);
 char* GSmsgGetGSchar(u32 msg);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 void GSsndPlayNow(u32 id);
-void menuPlaySe(void* seq, s32);
+void menuPlaySe(s32 menuID, s32);
 }
 
 static s32 _mailHonbun(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
 static s32 _mailSender(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
 static s32 _mailSubject(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
-static void _menuClose(long menuID);
+static void _menuClose(s32 menuID);
 
 static MailCursor _cursor;
 
@@ -249,7 +262,7 @@ static s32 _mailHonbun(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     return 0;
 }
 
-static void _menuClose(long menuID) {
+static void _menuClose(s32 menuID) {
     menuClose(menuID);
     menuCloseSync(menuID, 1);
 }

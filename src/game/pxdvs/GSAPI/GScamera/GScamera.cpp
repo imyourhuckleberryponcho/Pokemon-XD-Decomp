@@ -1,6 +1,11 @@
 
 
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
 #include <dolphin/mtx.h>
 
 #pragma pool_strings off
@@ -26,6 +31,9 @@ struct HSD_CObj {
     void** class_info;
     u16 ref_count;
     u16 pad6;
+#ifndef __MWERKS__
+    u32 pcPad;
+#endif
     u32 flags;
     f32 viewport_left;
     f32 viewport_right;
@@ -35,9 +43,27 @@ struct HSD_CObj {
     u16 scissor_right;
     u16 scissor_top;
     u16 scissor_bottom;
+#ifdef __MWERKS__
     u8 pad24[0x50 - 0x24];
+#else
+
+    void* eyepos;
+    void* interest;
+    f32 up[3];
+    f32 nearZ;
+    f32 farZ;
+    f32 projection_param[4];
+#endif
     u8 projection_type;
+#ifndef __MWERKS__
+    Mtx view_mtx;
+#endif
 };
+#ifdef __MWERKS__
+#define GSCAMERA_COBJ_VIEWMTX(cobj) ((MtxPtr)((u8*)(cobj) + 0x54))
+#else
+#define GSCAMERA_COBJ_VIEWMTX(cobj) ((cobj)->view_mtx)
+#endif
 
 struct GSgfxRenderModule {
     void (*init)(void* user);
@@ -51,36 +77,36 @@ struct GSgfxRenderModule {
 void GSgfxRenderModuleRegister(u8 priority, GSgfxRenderModule* module, void* user);
 
 struct GScameraWObjDesc {
-    char* class_name;
-    f32 x, y, z;
-    void* robjdesc;
+    gc_ptr32(char) class_name;
+    gc_bef32 x, y, z;
+    gc_ptr32(void) robjdesc;
 };
 
 struct GScameraCObjDesc {
-    char* class_name;
-    u16 flags;
-    u16 projection_type;
-    s16 viewport_left;
-    s16 viewport_right;
-    s16 viewport_top;
-    s16 viewport_bottom;
-    u16 scissor_left;
-    u16 scissor_right;
-    u16 scissor_top;
-    u16 scissor_bottom;
-    GScameraWObjDesc* position;
-    GScameraWObjDesc* interest;
-    f32 roll;
-    void* targetDesc;
-    f32 near;
-    f32 far;
-    f32 fov;
-    f32 aspect;
+    gc_ptr32(char) class_name;
+    gc_be16 flags;
+    gc_be16 projection_type;
+    gc_bes16 viewport_left;
+    gc_bes16 viewport_right;
+    gc_bes16 viewport_top;
+    gc_bes16 viewport_bottom;
+    gc_be16 scissor_left;
+    gc_be16 scissor_right;
+    gc_be16 scissor_top;
+    gc_be16 scissor_bottom;
+    gc_ptr32(GScameraWObjDesc) position;
+    gc_ptr32(GScameraWObjDesc) interest;
+    gc_bef32 roll;
+    gc_ptr32(void) targetDesc;
+    gc_bef32 near;
+    gc_bef32 far;
+    gc_bef32 fov;
+    gc_bef32 aspect;
 };
 
 struct GScameraDesc {
-    GScameraCObjDesc* cobjDesc;
-    void** anims;
+    gc_ptr32(GScameraCObjDesc) cobjDesc;
+    gc_ptr32(gc_ptr32(void)) anims;
 };
 
 struct _GScamera {
@@ -139,41 +165,10 @@ struct GSlayerCam {
     GSlayerMtx* data;
 };
 
-struct GSgfxLayer {
-    u8 pad0[0x28];
-    s32 id;
-    u8 pad2c[0xd54 - 0x2c];
-    s32 projType;
-    f32 proj[6];
-    s16 scissorX;
-    s16 scissorY;
-    s16 scissorW;
-    s16 scissorH;
-    f32 viewX;
-    f32 viewY;
-    f32 viewW;
-    f32 viewH;
-    u8 pad_d88[0x1684 - 0xd88];
-    f32 nearZ;
-    f32 farZ;
-    u8 pad_168c[0x16a6 - 0x168c];
-    u8 f16a6;
-    u8 f16a7;
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad_16b0[8];
-    u32 dirty16b8;
-    u8 pad_16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad_1710[0x1760 - 0x1710];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad_1768[8];
-    u32 dirty1770;
-    u8 pad_1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
-    u8 pad_17c8[0x19a0 - 0x17c8];
-    GSlayerCam* cam;
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 };
 
 extern "C" {
@@ -183,7 +178,7 @@ void __assert(const char*, int, const char*);
 void* GSmemAlloc(u32 size);
 u8 GSgfxVideoGetVsyncRate(void);
 void GSgfxVideoGetEFBSize(u16* w, u16* h);
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 void GSmtx44Perspective(f32* mtx, f32 fov, f32 aspect, f32 near, f32 far);
 void GSmtx44Ortho(f32* mtx, f32 l, f32 r, f32 t, f32 b, f32 near, f32 far);
 void HSD_ForeachAnim(void* object, u32 type, u32 mask, void* func, u32 callback_type, ...);
@@ -288,7 +283,11 @@ static inline void HSD_CObjClearFlags(HSD_CObj* cobj, u32 flags)
 static inline f32 __OSu16tof32(register const u16* arg)
 {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 
@@ -547,35 +546,35 @@ GScamera* GScameraGetActiveCamera(void)
 
 static inline void _layerDirtyViewport(GSgfxLayer* layer)
 {
-    layer->dirty16b8 |= 0x10;
-    layer->dirty16a8 |= 2;
-    layer->dirty1770 |= 0x10;
-    layer->dirty1760 |= 2;
+    (*(u32*)&layer->dirty[0].raster) |= 0x10;
+    (*(u32*)&layer->dirty[0].groups) |= 2;
+    (*(u32*)&layer->dirty[1].raster) |= 0x10;
+    (*(u32*)&layer->dirty[1].groups) |= 2;
 }
 
 static inline void _layerDirtyScissor(GSgfxLayer* layer)
 {
-    layer->dirty16b8 |= 1;
-    layer->dirty16a8 |= 2;
-    layer->dirty1770 |= 1;
-    layer->dirty1760 |= 2;
+    (*(u32*)&layer->dirty[0].raster) |= 1;
+    (*(u32*)&layer->dirty[0].groups) |= 2;
+    (*(u32*)&layer->dirty[1].raster) |= 1;
+    (*(u32*)&layer->dirty[1].groups) |= 2;
 }
 
 static inline void _layerSetViewport(GSgfxLayer* layer, f32 x, f32 y, f32 w, f32 h)
 {
-    layer->viewX = x;
-    layer->viewY = y;
-    layer->viewW = w;
-    layer->viewH = h;
+    (*(f32*)&layer->hw.viewport[0]) = x;
+    (*(f32*)&layer->hw.viewport[1]) = y;
+    (*(f32*)&layer->hw.viewport[2]) = w;
+    (*(f32*)&layer->hw.viewport[3]) = h;
     _layerDirtyViewport(layer);
 }
 
 static inline void _layerSetScissor(GSgfxLayer* layer, s16 x, s16 y, s16 w, s16 h)
 {
-    layer->scissorX = x;
-    layer->scissorY = y;
-    layer->scissorW = w;
-    layer->scissorH = h;
+    (*(s16*)&layer->hw.scissor[0]) = x;
+    (*(s16*)&layer->hw.scissor[1]) = y;
+    (*(s16*)&layer->hw.scissor[2]) = w;
+    (*(s16*)&layer->hw.scissor[3]) = h;
     _layerDirtyScissor(layer);
 }
 
@@ -610,9 +609,9 @@ s16 h = bottom - top;
             s16 w = right - left;
             _layerSetScissor(layer, left, top, w, h);
         } else {
-            layer->scissorX = 0;
-            layer->scissorY = 0;
-            GSgfxVideoGetEFBSize((u16*)&layer->scissorW, (u16*)&layer->scissorH);
+            (*(s16*)&layer->hw.scissor[0]) = 0;
+            (*(s16*)&layer->hw.scissor[1]) = 0;
+            GSgfxVideoGetEFBSize((u16*)&(*(s16*)&layer->hw.scissor[2]), (u16*)&(*(s16*)&layer->hw.scissor[3]));
             _layerDirtyScissor(layer);
         }
     }
@@ -622,47 +621,47 @@ s16 h = bottom - top;
 #pragma dont_inline reset
 static inline void _layerSetProjection(GSgfxLayer* layer, f32* m, s32 type)
 {
-    layer->projType = type;
-    layer->proj[0] = m[0];
-    layer->proj[1] = m[2];
-    layer->proj[2] = m[5];
-    layer->proj[3] = m[6];
-    layer->proj[4] = m[10];
-    layer->proj[5] = m[11];
+    (*(s32*)&layer->hw.projType) = type;
+    ((f32*)layer->hw.proj)[0] = m[0];
+    ((f32*)layer->hw.proj)[1] = m[2];
+    ((f32*)layer->hw.proj)[2] = m[5];
+    ((f32*)layer->hw.proj)[3] = m[6];
+    ((f32*)layer->hw.proj)[4] = m[10];
+    ((f32*)layer->hw.proj)[5] = m[11];
 }
 
 static inline void _layerSetOrthoProjection(GSgfxLayer* layer, f32* m)
 {
-    layer->projType = 1;
-    layer->proj[0] = m[0];
-    layer->proj[1] = m[3];
-    layer->proj[2] = m[5];
-    layer->proj[3] = m[7];
-    layer->proj[4] = m[10];
-    layer->proj[5] = m[11];
+    (*(s32*)&layer->hw.projType) = 1;
+    ((f32*)layer->hw.proj)[0] = m[0];
+    ((f32*)layer->hw.proj)[1] = m[3];
+    ((f32*)layer->hw.proj)[2] = m[5];
+    ((f32*)layer->hw.proj)[3] = m[7];
+    ((f32*)layer->hw.proj)[4] = m[10];
+    ((f32*)layer->hw.proj)[5] = m[11];
 }
 
 static inline void _layerSetDirty(GSgfxLayer* layer)
 {
-    if (layer->f16a7 != 0) {
-        if (layer->f16a6 != 0) {
-            layer->dirty170c |= 0x100;
-            layer->dirty17c4 |= 0x100;
+    if ((*(u8*)&layer->hw.fogEnable) != 0) {
+        if ((*(u8*)&layer->hw.fogRangeEnable) != 0) {
+            (*(u32*)&layer->dirty[0].pe) |= 0x100;
+            (*(u32*)&layer->dirty[1].pe) |= 0x100;
         }
-        layer->dirty170c |= 0x40;
-        layer->dirty16a8 |= 0x40;
-        layer->dirty17c4 |= 0x40;
-        layer->dirty1760 |= 0x40;
+        (*(u32*)&layer->dirty[0].pe) |= 0x40;
+        (*(u32*)&layer->dirty[0].groups) |= 0x40;
+        (*(u32*)&layer->dirty[1].pe) |= 0x40;
+        (*(u32*)&layer->dirty[1].groups) |= 0x40;
     }
-    layer->dirty16ac |= 0x20;
-    layer->dirty16a8 |= 1;
-    layer->dirty1764 |= 0x20;
-    layer->dirty1760 |= 1;
+    (*(u32*)&layer->dirty[0].geom) |= 0x20;
+    (*(u32*)&layer->dirty[0].groups) |= 1;
+    (*(u32*)&layer->dirty[1].geom) |= 0x20;
+    (*(u32*)&layer->dirty[1].groups) |= 1;
 }
 
 static inline void _layerSetCamMtx(GSgfxLayer* layer)
 {
-    GSlayerCam* cam = layer->cam;
+    GSlayerCam* cam = (*(GSlayerCam**)&layer->matrixStack);
     memcpy(cam->data->mtx, mtxIdent, 0x30);
     cam->data->flags |= 1;
 }
@@ -672,8 +671,8 @@ static inline void _layerPerspective(GSgfxLayer* layer, f32 fov, f32 aspect, f32
 
     GSmtx44Perspective((f32*)proj, fov, aspect, near, far);
     _layerSetProjection(layer, (f32*)proj, 0);
-    layer->nearZ = near;
-    layer->farZ = far;
+    (*(f32*)&layer->hw.fogNear) = near;
+    (*(f32*)&layer->hw.fogFar) = far;
     _layerSetDirty(layer);
 }
 
@@ -683,7 +682,7 @@ static inline void _layerSetPerspective(GScamera* camera, GSgfxLayer* layer, f32
     _layerPerspective(layer, *fov, *aspect, *near, *far, proj);
     _layerSetCamMtx(layer);
     {
-        GSlayerCam* cam = layer->cam;
+        GSlayerCam* cam = (*(GSlayerCam**)&layer->matrixStack);
         PSMTXConcat(cam->data->mtx, camera->viewMtx, cam->data->mtx);
         cam->data->flags |= 1;
     }
@@ -713,7 +712,7 @@ static void _cameraLoadCameraMatrix(GScamera* camera, GSgfxLayerID id)
         }
         HSD_CObj* cobj = camera->cobj;
         HSD_CObjSetFlags(cobj, 0x80000002);
-        PSMTXCopy(camera->viewMtx, (MtxPtr)((u8*)cobj + 0x54));
+        PSMTXCopy(camera->viewMtx, GSCAMERA_COBJ_VIEWMTX(cobj));
         if (layer != 0) {
             _layerSetPerspective(camera, layer, &p0, &p1, &p2, &p3, projA);
         }
@@ -722,8 +721,8 @@ static void _cameraLoadCameraMatrix(GScamera* camera, GSgfxLayerID id)
         GSmtx44Ortho((f32*)projO, p1, p3, p0, p2, 0.0f, -30000.0f);
         _layerSetOrthoProjection(layer, (f32*)projO);
         _layerSetCamMtx(layer);
-        layer->nearZ = 0.0f;
-        layer->farZ = 30000.0f;
+        (*(f32*)&layer->hw.fogNear) = 0.0f;
+        (*(f32*)&layer->hw.fogFar) = 30000.0f;
         _layerSetDirty(layer);
         _layerSetCamMtx(layer);
     }
@@ -760,7 +759,7 @@ void GScameraLoadProjection(GScamera* camera, GSgfxLayer* layer)
     if (camera != 0) {
         cobj = camera->cobj;
         if (cobj != 0) {
-            GScameraLoadCameraMatrix(camera, (GSgfxLayerID)layer->id);
+            GScameraLoadCameraMatrix(camera, (GSgfxLayerID)(*(s32*)&layer->id));
             HSD_CObjMakeProjectionMtx(cobj, proj);
             HSD_CObjSetupViewingMtx(cobj);
         }

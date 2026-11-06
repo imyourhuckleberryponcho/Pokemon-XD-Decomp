@@ -1,4 +1,9 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/bitfield.h>
+#include <game/gsvfarray.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -45,7 +50,13 @@ struct GSgfxVFArray {
     u8 stride;
     u8 pad3;
     s32 id;
+#ifdef __MWERKS__
     void* addr;
+#define VF_ARRAY_ADDR(a) ((a)->addr)
+#else
+    u32 addr;
+#define VF_ARRAY_ADDR(a) ((void*)(uintptr_t)(a)->addr)
+#endif
     u32 size;
 };
 struct GSgfxVF {
@@ -56,6 +67,7 @@ struct GSgfxVF {
     u8 vtxDesc[0x290 - 0x1b8];
     GSgfxVFArray arrays[1];
 };
+#ifdef __MWERKS__
 struct GSgfxTex {
     u16 w;
     u16 h;
@@ -67,8 +79,32 @@ struct GSgfxTex {
     u8 texObj[0x74 - 0x54];
     u8 tlutObj[8];
 };
+#else
+#define GSTEXTURE_NO_GX
+#include <game/gstexture.h>
+#include <stddef.h>
+struct GSgfxTex {
+    u16 w;
+    u16 h;
+    u8 pad4[3];
+    u8 reload;
+    u8 pad8[GSTEXTURE_PC_TLUTDATA - 8];
+    void* tlut;
+    u8 pad78[GSTEXTURE_PC_TEXOBJ - GSTEXTURE_PC_TLUTDATA - 8];
+    u8 texObj[GSTEXTURE_PC_TEXOBJ_SIZE];
+    u8 tlutObj[GSTEXTURE_PC_TLUTOBJ_SIZE];
+    u8 padE8[GSTEXTURE_PC_SIZE - GSTEXTURE_PC_TLUTOBJ - GSTEXTURE_PC_TLUTOBJ_SIZE];
+};
+static_assert(offsetof(GSgfxTex, texObj) == GSTEXTURE_PC_TEXOBJ, "GSgfxTex = GStexture");
+static_assert(offsetof(GSgfxTex, tlutObj) == GSTEXTURE_PC_TLUTOBJ, "GSgfxTex = GStexture");
+static_assert(sizeof(GSgfxTex) == GSTEXTURE_PC_SIZE, "GSgfxTex = GStexture");
+#endif
 struct GSgfxLight {
+#ifdef __MWERKS__
     void Load(u8 idx);
+#else
+    u32 Load(u8 id);
+#endif
 };
 typedef f32 Mtx[3][4];
 struct GSgfxMtxEntry {
@@ -89,12 +125,14 @@ enum GSgfxTunitFunc {};
 enum GSgfxTgenFunc {};
 enum GSgfxTgenSrc {};
 
-#define U8_AT(o) (*(u8*)((u8*)this + (o)))
-#define U32_AT(o) (*(u32*)((u8*)this + (o)))
 struct GSgfxCol {
     u32 v;
 };
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void FlushState();
     void InvalidateState();
@@ -116,55 +154,20 @@ public:
     void tgenFunc(u8 idx, GSgfxTgenFunc func, GSgfxTgenSrc src, GSmtx* m, bool norm, GSmtx* post);
 
     inline void mark(u32 sum, u32 off, u32 bit) {
-        U32_AT(off) |= bit;
-        U32_AT(0x16a8) |= sum;
-        U32_AT(off + 0xb8) |= bit;
-        U32_AT(0x1760) |= sum;
+        GSL_IN(this, u32, dirty[0], 0x16a8, off) |= bit;
+        dirty[0].groups |= sum;
+        GSL_IN(this, u32, dirty[1], 0x1760, off + 0xb8) |= bit;
+        dirty[1].groups |= sum;
     }
     inline void markCommon(u8 vc, u8 tex, u8 mode);
     inline void markStage(u32 i, u32 a, u32 b, u32 c);
-    u8 pad0[0x4];
-    u32 flags;
-    u8 pad8[0x30 - 0x8];
-    u8 hwState[0xc40];
-    struct RS {
-        u8 texCount;
-        u8 pad1[0x124 - 1];
-        u8 lightCount;
-        u8 pad125[3];
-        GSgfxLight* lights[8];
-    } rs;
-    u8 pad_db8[0x1420 - 0xdb8];
-    struct Stage {
-        u32 a;
-        u32 pad[8];
-    } stages[8];
-    u8 pad1540[0x1584 - 0x1540];
-    struct TexUnit {
-        u32 a, b;
-    } texUnits[8];
-    u8 pad15c4[0x16a8 - 0x15c4];
-    struct DirtyState {
-        u32 groups;
-        u8 pad4[0x10];
-        u32 lightDirty;
-        u8 pad18[0x68 - 0x18];
-        GSgfxVF* vf[8];
-        GSgfxVF* last;
-        GSgfxMtxEntry* mtx;
-        u8 mtxValid;
-        u8 pad91[3];
-        u32 texMask;
-        GSgfxTex* tex[8];
-    } dirty[2];
-    u8 pad1818[0x1994 - 0x1818];
-    int dirtyIdx;
-    u8 pad1998[4];
-    GSgfxVF* curVF;
-    GSgfxMtxStack* mtxStack;
 };
 
+#ifdef __MWERKS__
 u8 GSgfxRenderModuleIsRendering();
+#else
+bool GSgfxRenderModuleIsRendering();
+#endif
 extern "C" {
 u8 GSgfxVFGetColorCount(GSgfxVF*);
 u8 GSgfxVFGetTextureCount(GSgfxVF*);
@@ -174,113 +177,126 @@ void* memset(void*, int, u32);
 void* memcpy(void*, const void*, u32);
 }
 
-struct RegBlend { u32 id : 8; u32 pad : 8; u32 pad2 : 3; u32 lop : 1; u32 sub : 1; u32 src : 3; u32 dst : 3; u32 alphaUpd : 1; u32 colorUpd : 1; u32 dither : 1; u32 logic : 1; u32 blend : 1; };
-struct RegSS { u32 id : 8; u32 pad : 8; u32 t1 : 4; u32 s1 : 4; u32 t0 : 4; u32 s0 : 4; };
-struct RegAlphaCmp { u32 id : 8; u32 op : 2; u32 comp1 : 3; u32 comp0 : 3; u32 ref1 : 8; u32 ref0 : 8; };
+struct RegBlend { GC_BITS12(u32 id : 8, u32 pad : 8, u32 pad2 : 3, u32 lop : 1, u32 sub : 1, u32 src : 3, u32 dst : 3, u32 alphaUpd : 1, u32 colorUpd : 1, u32 dither : 1, u32 logic : 1, u32 blend : 1) };
+struct RegSS { GC_BITS6(u32 id : 8, u32 pad : 8, u32 t1 : 4, u32 s1 : 4, u32 t0 : 4, u32 s0 : 4) };
+struct RegAlphaCmp { GC_BITS6(u32 id : 8, u32 op : 2, u32 comp1 : 3, u32 comp0 : 3, u32 ref1 : 8, u32 ref0 : 8) };
 struct AlphaCache { s32 comp0, op, comp1; u8 ref0, ref1; };
 struct W5 { u32 w[5]; };
-struct RegScis { u32 id : 8; u32 x : 12; u32 y : 12; };
-struct RegFogRange { u32 id : 8; u32 pad : 13; u32 en : 1; u32 center : 10; };
-struct RegRangeAdj { u32 id : 8; u32 k : 12; u32 r : 12; };
-struct RegTevC { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 4; u32 b : 4; u32 c : 4; u32 d : 4; };
-struct RegTevA { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 3; u32 b : 3; u32 c : 3; u32 d : 3; u32 tswap : 2; u32 rswap : 2; };
+struct RegScis { GC_BITS3(u32 id : 8, u32 x : 12, u32 y : 12) };
+struct RegFogRange { GC_BITS4(u32 id : 8, u32 pad : 13, u32 en : 1, u32 center : 10) };
+struct RegRangeAdj { GC_BITS3(u32 id : 8, u32 k : 12, u32 r : 12) };
+struct RegTevC { GC_BITS10(u32 id : 8, u32 reg : 2, u32 scale : 2, u32 clamp : 1, u32 op : 1, u32 bias : 2, u32 a : 4, u32 b : 4, u32 c : 4, u32 d : 4) };
+struct RegTevA { GC_BITS12(u32 id : 8, u32 reg : 2, u32 scale : 2, u32 clamp : 1, u32 op : 1, u32 bias : 2, u32 a : 3, u32 b : 3, u32 c : 3, u32 d : 3, u32 tswap : 2, u32 rswap : 2) };
 struct RegPeCtrl {
-    u32 id : 8;
-    u32 pad : 17;
-    u32 zcomploc : 1;
-    u32 b5 : 1;
-    u32 zfmt : 2;
-    u32 pixfmt : 3;
+    GC_BITS6(
+    u32 id : 8,
+    u32 pad : 17,
+    u32 zcomploc : 1,
+    u32 b5 : 1,
+    u32 zfmt : 2,
+    u32 pixfmt : 3)
 };
 struct RegZMode {
-    u32 id : 8;
-    u32 pad : 19;
-    u32 update : 1;
-    u32 func : 3;
-    u32 enable : 1;
+    GC_BITS5(
+    u32 id : 8,
+    u32 pad : 19,
+    u32 update : 1,
+    u32 func : 3,
+    u32 enable : 1)
 };
 struct RegCMode0 {
-    u32 id : 8;
-    u32 pad : 19;
-    u32 alphaUpd : 1;
-    u32 colorUpd : 1;
-    u32 dither : 1;
-    u32 logic : 1;
-    u32 blend : 1;
+    GC_BITS7(
+    u32 id : 8,
+    u32 pad : 19,
+    u32 alphaUpd : 1,
+    u32 colorUpd : 1,
+    u32 dither : 1,
+    u32 logic : 1,
+    u32 blend : 1)
 };
 struct RegClearAR {
-    u32 id : 8;
-    u32 pad : 8;
-    u32 a : 8;
-    u32 r : 8;
+    GC_BITS4(
+    u32 id : 8,
+    u32 pad : 8,
+    u32 a : 8,
+    u32 r : 8)
 };
 struct RegClearZ {
-    u32 id : 8;
-    u32 z : 24;
+    GC_BITS2(
+    u32 id : 8,
+    u32 z : 24)
 };
 struct RegSrc {
-    u32 id : 8;
-    u32 pad : 4;
-    u32 y : 10;
-    u32 x : 10;
+    GC_BITS4(
+    u32 id : 8,
+    u32 pad : 4,
+    u32 y : 10,
+    u32 x : 10)
 };
 struct RegYScale {
-    u32 id : 8;
-    u32 pad : 15;
-    u32 scale : 9;
+    GC_BITS3(
+    u32 id : 8,
+    u32 pad : 15,
+    u32 scale : 9)
 };
 struct RegStride {
-    u32 id : 8;
-    u32 pad : 14;
-    u32 stride : 10;
+    GC_BITS3(
+    u32 id : 8,
+    u32 pad : 14,
+    u32 stride : 10)
 };
 struct RegDest {
-    u32 id : 8;
-    u32 pad : 3;
-    u32 addr : 21;
+    GC_BITS3(
+    u32 id : 8,
+    u32 pad : 3,
+    u32 addr : 21)
 };
 struct RegCopyCmd {
-    u32 id : 8;
-    u32 pad : 9;
-    u32 f14 : 1;
-    u32 f12_13 : 2;
-    u32 f11 : 1;
-    u32 f10 : 1;
-    u32 pad9 : 1;
-    u32 f7_8 : 2;
-    u32 pad2 : 5;
-    u32 clamp : 2;
+    GC_BITS10(
+    u32 id : 8,
+    u32 pad : 9,
+    u32 f14 : 1,
+    u32 f12_13 : 2,
+    u32 f11 : 1,
+    u32 f10 : 1,
+    u32 pad9 : 1,
+    u32 f7_8 : 2,
+    u32 pad2 : 5,
+    u32 clamp : 2)
 };
 struct RegMsLoc {
-    u32 id : 8;
-    u32 y2 : 4;
-    u32 x2 : 4;
-    u32 y1 : 4;
-    u32 x1 : 4;
-    u32 y0 : 4;
-    u32 x0 : 4;
+    GC_BITS7(
+    u32 id : 8,
+    u32 y2 : 4,
+    u32 x2 : 4,
+    u32 y1 : 4,
+    u32 x1 : 4,
+    u32 y0 : 4,
+    u32 x0 : 4)
 };
 struct RegCoeff {
-    u32 id : 8;
-    u32 c3 : 6;
-    u32 c2 : 6;
-    u32 c1 : 6;
-    u32 c0 : 6;
+    GC_BITS5(
+    u32 id : 8,
+    u32 c3 : 6,
+    u32 c2 : 6,
+    u32 c1 : 6,
+    u32 c0 : 6)
 };
 struct RegCopyTexCmd {
-    u32 id : 8;
-    u32 pad23 : 7;
-    u32 b16 : 1;
-    u32 b15 : 1;
-    u32 pad12 : 3;
-    u32 clear : 1;
-    u32 pad10 : 1;
-    u32 mip : 1;
-    u32 pad7 : 2;
-    u32 fmt : 3;
-    u32 fmt3 : 1;
-    u32 pad2 : 1;
-    u32 clamp : 2;
+    GC_BITS13(
+    u32 id : 8,
+    u32 pad23 : 7,
+    u32 b16 : 1,
+    u32 b15 : 1,
+    u32 pad12 : 3,
+    u32 clear : 1,
+    u32 pad10 : 1,
+    u32 mip : 1,
+    u32 pad7 : 2,
+    u32 fmt : 3,
+    u32 fmt3 : 1,
+    u32 pad2 : 1,
+    u32 clamp : 2)
 };
 struct CopyTexReq {
     u16 left, top, width, height, dstWidth;
@@ -290,59 +306,61 @@ struct CopyTexReq {
     u8 mip;
     u8 clear;
 };
-struct RegFog0 { u32 id : 8; u32 pad : 4; u32 a : 20; };
-struct RegFog1 { u32 id : 8; u32 bm : 24; };
-struct RegFog2 { u32 id : 8; u32 bs : 24; };
-struct RegFog3 { u32 id : 8; u32 fsel : 3; u32 proj : 1; u32 c : 20; };
+struct RegFog0 { GC_BITS3(u32 id : 8, u32 pad : 4, u32 a : 20) };
+struct RegFog1 { GC_BITS2(u32 id : 8, u32 bm : 24) };
+struct RegFog2 { GC_BITS2(u32 id : 8, u32 bs : 24) };
+struct RegFog3 { GC_BITS4(u32 id : 8, u32 fsel : 3, u32 proj : 1, u32 c : 20) };
 struct RegIndCmd {
-    u32 id : 8;
-    u32 pad : 3;
-    u32 addPrev : 1;
-    u32 utcLod : 1;
-    u32 wrapT : 3;
-    u32 wrapS : 3;
-    u32 matrix : 4;
-    u32 alpha : 2;
-    u32 bias : 3;
-    u32 fmt : 2;
-    u32 indId : 2;
+    GC_BITS11(
+    u32 id : 8,
+    u32 pad : 3,
+    u32 addPrev : 1,
+    u32 utcLod : 1,
+    u32 wrapT : 3,
+    u32 wrapS : 3,
+    u32 matrix : 4,
+    u32 alpha : 2,
+    u32 bias : 3,
+    u32 fmt : 2,
+    u32 indId : 2)
 };
 struct RegIndMtx {
-    u32 id : 8;
-    u32 scale : 2;
-    u32 hi : 11;
-    u32 lo : 11;
+    GC_BITS4(
+    u32 id : 8,
+    u32 scale : 2,
+    u32 hi : 11,
+    u32 lo : 11)
 };
-struct RegMatIdxA { u32 pad : 2; u32 t3 : 6; u32 t2 : 6; u32 t1 : 6; u32 t0 : 6; u32 pn : 6; };
-struct RegMatIdxB { u32 pad : 8; u32 t7 : 6; u32 t6 : 6; u32 t5 : 6; u32 t4 : 6; };
+struct RegMatIdxA { GC_BITS6(u32 pad : 2, u32 t3 : 6, u32 t2 : 6, u32 t1 : 6, u32 t0 : 6, u32 pn : 6) };
+struct RegMatIdxB { GC_BITS5(u32 pad : 8, u32 t7 : 6, u32 t6 : 6, u32 t5 : 6, u32 t4 : 6) };
 struct TexGenCache { s32 func; s32 src; u32 mtx; u8 norm; s32 post; };
-struct RegId24 { u32 id : 8; u32 v : 24; };
-struct RegTexImg { u32 id : 8; u32 pad : 2; u32 b21 : 1; u32 ch : 3; u32 cw : 3; u32 addr : 15; };
-union RegTlutW { RegId24 a; struct { u32 id : 8; u32 pad : 14; u32 tmem : 10; } b; };
+struct RegId24 { GC_BITS2(u32 id : 8, u32 v : 24) };
+struct RegTexImg { GC_BITS6(u32 id : 8, u32 pad : 2, u32 b21 : 1, u32 ch : 3, u32 cw : 3, u32 addr : 15) };
+union RegTlutW { RegId24 a; struct { GC_BITS3(u32 id : 8, u32 pad : 14, u32 tmem : 10) } b; };
 struct TlutCache { u32 a; s16 b; s16 c; };
 struct TexObj { u32 w0, w1, w2, w3; };
 struct TlutObj { u32 w0, w1; u16 h8; };
-struct RegIref { u32 id : 8; u32 c3 : 3; u32 m3 : 3; u32 c2 : 3; u32 m2 : 3; u32 c1 : 3; u32 m1 : 3; u32 c0 : 3; u32 m0 : 3; };
-struct RegTref { u32 id : 8; u32 pad2 : 2; u32 col1 : 3; u32 en1 : 1; u32 c1 : 3; u32 m1 : 3; u32 pad1 : 2; u32 col0 : 3; u32 en0 : 1; u32 c0 : 3; u32 m0 : 3; };
-struct RegGenMode { u32 id : 8; u32 pad23 : 4; u32 b19 : 1; u32 nInd : 3; u32 cull : 2; u32 nTev : 4; u32 pad6 : 4; u32 nChan : 2; u32 nTex : 4; };
-union RegTexImg0 { RegId24 a; struct { u32 id : 8; u32 fmt : 4; u32 rest : 20; } b; };
+struct RegIref { GC_BITS9(u32 id : 8, u32 c3 : 3, u32 m3 : 3, u32 c2 : 3, u32 m2 : 3, u32 c1 : 3, u32 m1 : 3, u32 c0 : 3, u32 m0 : 3) };
+struct RegTref { GC_BITS11(u32 id : 8, u32 pad2 : 2, u32 col1 : 3, u32 en1 : 1, u32 c1 : 3, u32 m1 : 3, u32 pad1 : 2, u32 col0 : 3, u32 en0 : 1, u32 c0 : 3, u32 m0 : 3) };
+struct RegGenMode { GC_BITS9(u32 id : 8, u32 pad23 : 4, u32 b19 : 1, u32 nInd : 3, u32 cull : 2, u32 nTev : 4, u32 pad6 : 4, u32 nChan : 2, u32 nTex : 4) };
+union RegTexImg0 { RegId24 a; struct { GC_BITS3(u32 id : 8, u32 fmt : 4, u32 rest : 20) } b; };
 struct GSState;
 
-struct RegX22 { u32 id : 8; u32 pad23 : 1; u32 b22 : 1; u32 f19 : 3; u32 f16 : 3; u32 pw : 8; u32 lw : 8; };
-struct RegX68 { u32 id : 8; u32 pad : 23; u32 b0 : 1; };
-struct RegCMode1 { u32 id : 8; u32 pad : 13; u32 f9 : 2; u32 en : 1; u32 alpha : 8; };
-struct Reg { u32 id : 8; u32 v : 24; };
-struct RegKcol { u32 id : 8; u32 pad : 1; u32 hi : 11; u32 pad2 : 1; u32 lo : 11; };
-struct RegKsel { u32 id : 8; u32 kasel1 : 5; u32 kcsel1 : 5; u32 kasel0 : 5; u32 kcsel0 : 5; u32 hi : 2; u32 lo : 2; };
-struct RegTlutLoad0 { u32 id : 8; u32 pad : 3; u32 a : 21; };
-struct RegTlutLoad1 { u32 id : 8; u32 pad : 3; u32 b : 11; u32 c : 10; };
-struct RegSu { u32 id : 8; u32 pad : 4; u32 pf : 1; u32 lf : 1; u32 pad2 : 2; u32 half : 16; };
-struct RegFogCol { u32 id : 8; u32 r : 8; u32 g : 8; u32 b : 8; };
-struct RegSuBits { u32 id : 8; u32 pad : 8; u32 hi : 4; u32 f11 : 1; u32 f10 : 1; u32 sz : 10; };
+struct RegX22 { GC_BITS7(u32 id : 8, u32 pad23 : 1, u32 b22 : 1, u32 f19 : 3, u32 f16 : 3, u32 pw : 8, u32 lw : 8) };
+struct RegX68 { GC_BITS3(u32 id : 8, u32 pad : 23, u32 b0 : 1) };
+struct RegCMode1 { GC_BITS5(u32 id : 8, u32 pad : 13, u32 f9 : 2, u32 en : 1, u32 alpha : 8) };
+struct Reg { GC_BITS2(u32 id : 8, u32 v : 24) };
+struct RegKcol { GC_BITS5(u32 id : 8, u32 pad : 1, u32 hi : 11, u32 pad2 : 1, u32 lo : 11) };
+struct RegKsel { GC_BITS7(u32 id : 8, u32 kasel1 : 5, u32 kcsel1 : 5, u32 kasel0 : 5, u32 kcsel0 : 5, u32 hi : 2, u32 lo : 2) };
+struct RegTlutLoad0 { GC_BITS3(u32 id : 8, u32 pad : 3, u32 a : 21) };
+struct RegTlutLoad1 { GC_BITS4(u32 id : 8, u32 pad : 3, u32 b : 11, u32 c : 10) };
+struct RegSu { GC_BITS6(u32 id : 8, u32 pad : 4, u32 pf : 1, u32 lf : 1, u32 pad2 : 2, u32 half : 16) };
+struct RegFogCol { GC_BITS4(u32 id : 8, u32 r : 8, u32 g : 8, u32 b : 8) };
+struct RegSuBits { GC_BITS6(u32 id : 8, u32 pad : 8, u32 hi : 4, u32 f11 : 1, u32 f10 : 1, u32 sz : 10) };
 struct ChanCache { u8 a; s32 w[5]; };
 struct TevOrderCache { s32 a, b, c; };
 struct TevInCache { s32 a, b, c, d; };
-struct TevOpCache { s32 op, bias, scale; u8 clamp; s32 reg; };
+typedef GSgfxLayerTevOp TevOpCache;
 struct GSState {
     u32 dirty;
     u32 dTref;
@@ -468,7 +486,10 @@ struct GSState {
 
 #define RAW(r) (*(u32*)&(r))
 extern "C" GSState* gsgfxState;
+extern "C" {
 u8* _layerStateLastHWState;
+}
+#ifdef __MWERKS__
 union GSWGPipe {
     u8 u8;
     u16 u16;
@@ -476,6 +497,10 @@ union GSWGPipe {
     f32 f32;
 };
 volatile GSWGPipe GSWGFifo : 0xCC008000;
+#else
+#include <dolphin/gx/GXVert.h>
+#define GSWGFifo GXWGFifo
+#endif
 #define GX_WGPIPE GSWGFifo
 
 extern "C" {
@@ -486,7 +511,7 @@ struct GXFogAdjTable {
 extern "C" {
 f32* GSgfxVideoGetViewport(void);
 inline void GSgfx_GCSetAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1);
-struct GSColor { u8 r; u8 g; u8 b; u8 a; };
+typedef GSgfxLayerRGBA GSColor;
 inline void GSgfx_GCSetAmbColor(s32 ch, GSColor c);
 inline void GSgfx_GCSetBlendMode(s32 type, s32 src, s32 dst, s32 lop);
 inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 lights, s32 diff, s32 attn);
@@ -517,7 +542,11 @@ extern s32 cm2hw_localstatic3_GSgfx_GCWriteCullMode;
 extern s32 jtbl_1693;
 }
 extern "C++" {
+#ifdef __MWERKS__
 s32 GSgfxVideoSetViewport(float, float, float, float, bool);
+#else
+void GSgfxVideoSetViewport(f32 x, f32 y, f32 x2, f32 y2, bool b);
+#endif
 }
 
 inline void GSIndSet(s32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, u8 ws, u8 wt, s32 addPrev, u8 utc, s32 alpha) {
@@ -533,7 +562,7 @@ inline void GSIndSet(s32 stage, u8 indId, u8 fmt, u8 bias, u8 mtx, u8 ws, u8 wt,
     gsgfxState->indDirty |= 1 << stage;
     gsgfxState->indStatus[stage] = 2;
 }
-struct XfCol { u32 r : 8; u32 g : 8; u32 b : 8; u32 a : 8; };
+struct XfCol { GC_BITS4(u32 r : 8, u32 g : 8, u32 b : 8, u32 a : 8) };
 inline void GSWriteXfColor(u32 reg, u32 v) {
     u8* p = (u8*)&v;
     GX_WGPIPE.u8 = 0x10;
@@ -554,8 +583,8 @@ void GSgfxLayer::InvalidateState() {
     if (GSgfxRenderModuleIsRendering() == 1) {
         GXFlush();
     }
-    memset((u8*)this + 0x16a8, 0, 0xb8);
-    memset((u8*)this + 0x1760, 0, 0xb8);
+    memset(&dirty[0], 0, sizeof(dirty[0]));
+    memset(&dirty[1], 0, sizeof(dirty[1]));
     flags |= 0x80000000;
 }
 
@@ -580,39 +609,38 @@ void GSgfxLayer::setRenderState(GSgfxVF* vf) {
 
 void GSgfxLayer::markCommon(u8 vc, u8 tex, u8 mode) {
     (void)mode;
-    U8_AT(0xc70) = tex;
+    hw.nTexGens = tex;
     mark(1, 0x16ac, 1);
-    U8_AT(0xeac) = vc;
+    hw.nTevStages = vc;
     mark(8, 0x16cc, 1);
-    U8_AT(0x14b0) = 0;
+    hw.nIndStages = 0;
     mark(0x80, 0x16ec, 1);
 }
 
 void GSgfxLayer::markStage(u32 i, u32 a, u32 b, u32 c) {
     u32 bit = 1 << i;
-    stages[i].a = 0;
-    U32_AT(0x16e8) |= bit;
-    U32_AT(0x16a8) |= 8;
-    U32_AT(0x17a0) |= bit;
-    U32_AT(0x1760) |= 8;
-    u32* t = (u32*)((u8*)this + i * 12);
-    t[0xeb0 / 4] = a;
-    t[0xeb4 / 4] = b;
-    t[0xeb8 / 4] = c;
+    hw.ind[i].type = 0;
+    dirty[0].ind |= bit;
+    dirty[0].groups |= 8;
+    dirty[1].ind |= bit;
+    dirty[1].groups |= 8;
+    hw.tevOrder[i][0] = a;
+    hw.tevOrder[i][1] = b;
+    hw.tevOrder[i][2] = c;
 }
 
 void GSgfxLayer::renderState_VC_NT() {
-    U8_AT(0xdb8) = 1;
+    hw.nChans = 1;
     mark(4, 0x16bc, 1);
     markCommon(1, 0, 0);
     cunitChannelGen(0, (GSgfxCunitAlpha)2, (GSgfxCunitSrc)0, (GSgfxCunitSrc)1, 0, 0, (GSgfxLightType)2, (GSgfxDiffuseFunc)0);
-    U32_AT(0xeb0) = 0xff;
-    U32_AT(0xeb4) = 0xff;
-    U32_AT(0xeb8) = 4;
+    hw.tevOrder[0][0] = 0xff;
+    hw.tevOrder[0][1] = 0xff;
+    hw.tevOrder[0][2] = 4;
     mark(8, 0x16d0, 1);
     tunitFunc(0, (GSgfxTunitFunc)4);
-    texUnits[0].a = 0;
-    texUnits[0].b = 0;
+    hw.swapSel[0][0] = 0;
+    hw.swapSel[0][1] = 0;
     mark(0x20, 0x1704, 1);
 }
 
@@ -650,123 +678,6 @@ void GSgfxLayer::ResetVertexFormat(GSgfxVF* vf) {
 extern "C" {
 
 extern "C++" {
-struct GSgfxLayerTexGen {
-    s32 func;
-    s32 src;
-    u32 mtx;
-    u8 norm;
-    u32 post;
-    u8* tex;
-};
-struct GSgfxLayerChan {
-    u8 enable;
-    s32 amb;
-    s32 mat;
-    u32 lightMask;
-    s32 diff;
-    s32 attn;
-    u8* lights[8];
-};
-struct GSgfxLayerTevColor {
-    u32 type;
-    union {
-        GSColor c;
-        s16 s10[4];
-    };
-};
-struct GSgfxLayerInd {
-    u32 type;
-    union {
-        struct {
-            u8 indId;
-            u8 pad[3];
-            s32 fmt, bias, mtx, ws, wt, alpha;
-            u8 addPrev, utc;
-        } ind;
-        struct {
-            u8 indId, signMod, wrap;
-            u8 pad;
-            s32 mtx;
-        } warp;
-        struct {
-            u8 indId;
-            u8 pad;
-            u16 sizeS, sizeT, spaceS, spaceT;
-            u16 pad2;
-            s32 fmt, mtx, bias, alpha;
-        } tile;
-        struct {
-            u8 indId;
-            u8 pad[3];
-            s32 mtx;
-        } bump;
-    };
-};
-struct GSgfxLayerHW {
-    u8 nTexGens;
-    GSgfxLayerTexGen texGen[8];
-    u8 lineWidth;
-    s32 lineOffset;
-    u8 pointSize;
-    s32 pointOffset;
-    u8 texOffsets[8][2];
-    s32 projType;
-    f32 proj[6];
-    u16 scissor[4];
-    f32 viewport[4];
-    u8 coPlanar;
-    s32 cullMode;
-    s32 clipMode;
-    u8 lightCount;
-    u8* lights[8];
-    u8 nChans;
-    GSgfxLayerChan chan[4];
-    GSColor amb[2];
-    GSColor mat[2];
-    u8 nTevStages;
-    s32 tevOrder[16][3];
-    s32 colorIn[16][4];
-    s32 alphaIn[16][4];
-    TevOpCache colorOp[16];
-    TevOpCache alphaOp[16];
-    GSgfxLayerTevColor tevColor[4];
-    GSgfxLayerInd ind[4];
-    u8 nIndStages;
-    s32 indOrder[4][2];
-    s32 indScale[4][2];
-    GSColor kcolor[4];
-    s32 kcsel[16];
-    s32 kasel[16];
-    s32 swapSel[16][2];
-    s32 swapTab[4][4];
-    s32 blend[4];
-    u8 dstAlphaEnable;
-    u8 dstAlpha;
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad9e9[3];
-    u8 zEnable;
-    s32 zFunc;
-    s32 alphaComp0;
-    s32 alphaCmpOp;
-    s32 alphaComp1;
-    u8 alphaRef0;
-    u8 alphaRef1;
-    u8 zCompLoc;
-    u8 pada03;
-    u8 dither;
-    s32 fogType;
-    f32 fogStart;
-    f32 fogEnd;
-    f32 fogNear;
-    f32 fogFar;
-    GSColor fogColor;
-    u16 fogTable[10];
-    u16 fogCenter;
-    u8 fogRangeEnable;
-    u8 fogEnable;
-};
 struct GSgfxLayerDirty {
     u32 groups;
     u32 geom;
@@ -1028,15 +939,19 @@ static inline u16 __OSf32tou16(register f32 inF) {
     u16 out;
     u16* outP = &out;
     register u16* ptr = outP;
+#ifdef __MWERKS__
     asm { psq_st inF, 0(ptr), 1, 3 }
+#else
+    PSQ_STORE(ptr, 0, inF, 3);
+#endif
     return *ptr;
 }
 
 void GSgfxLayer::SetupGPUState() {
     GSgfxLayerHW* hw;
-    GSgfxLayerDirty* d = (GSgfxLayerDirty*)((u8*)this + 0x16a8 + *(u32*)((u8*)this + 0x1994) * 0xb8);
+    GSgfxLayerDirty* d = (GSgfxLayerDirty*)&dirty[curPass];
     if (d->groups != 0) {
-        hw = (GSgfxLayerHW*)&rs;
+        hw = &this->hw;
         if (d->groups & 1) {
             if (d->geom & 1) {
                 GSgfx_GCSetNumTexGens(hw->nTexGens);
@@ -1191,9 +1106,9 @@ void GSgfxLayer::SetupGPUState() {
                 for (int i = 0; i < 4; i++) {
                     if (d->tevColor & (1 << i)) {
                         if (hw->tevColor[i].type == 0) {
-                            GSgfx_GCSetTevColor(i, hw->tevColor[i].c);
+                            GSgfx_GCSetTevColor(i, hw->tevColor[i].v.c);
                         } else {
-                            GSgfx_GCSetTevColorS10(i, *(GSColorS10*)hw->tevColor[i].s10);
+                            GSgfx_GCSetTevColorS10(i, *(GSColorS10*)hw->tevColor[i].v.s10);
                         }
                     }
                 }
@@ -1208,25 +1123,26 @@ void GSgfxLayer::SetupGPUState() {
                             GSgfx_GCSetTevDirect(i);
                             break;
                         case 1:
-                            GSgfx_GCSetTevIndirect(i, ind->ind.indId, ind->ind.fmt, ind->ind.bias, ind->ind.mtx,
-                                                   ind->ind.ws, ind->ind.wt, ind->ind.addPrev, ind->ind.utc,
-                                                   ind->ind.alpha);
+                            GSgfx_GCSetTevIndirect(i, ind->v.ind.indId, ind->v.ind.fmt, ind->v.ind.bias, ind->v.ind.mtx,
+                                                   ind->v.ind.ws, ind->v.ind.wt, ind->v.ind.addPrev, ind->v.ind.utc,
+                                                   ind->v.ind.alpha);
                             break;
-                        case 2:
-                            s32 rf_t = ind->warp.signMod;
-                            GSgfx_GCSetTevIndWarp(i, ind->warp.indId, rf_t, ind->warp.wrap,
-                                                  ind->warp.mtx);
+                        case 2: {
+                            s32 rf_t = ind->v.warp.signMod;
+                            GSgfx_GCSetTevIndWarp(i, ind->v.warp.indId, rf_t, ind->v.warp.wrap,
+                                                  ind->v.warp.mtx);
                             break;
+                        }
                         case 3:
-                            GSgfx_GCWriteTevIndTile(i, ind->tile.indId, ind->tile.sizeS, ind->tile.sizeT,
-                                                    ind->tile.spaceS, ind->tile.spaceT, ind->tile.fmt, ind->tile.mtx,
-                                                    ind->tile.bias, ind->tile.alpha);
+                            GSgfx_GCWriteTevIndTile(i, ind->v.tile.indId, ind->v.tile.sizeS, ind->v.tile.sizeT,
+                                                    ind->v.tile.spaceS, ind->v.tile.spaceT, ind->v.tile.fmt, ind->v.tile.mtx,
+                                                    ind->v.tile.bias, ind->v.tile.alpha);
                             break;
                         case 4:
-                            GSgfx_GCWriteTevIndBumpST(i, ind->bump.indId, ind->bump.mtx);
+                            GSgfx_GCWriteTevIndBumpST(i, ind->v.bump.indId, ind->v.bump.mtx);
                             break;
                         case 5:
-                            GSgfx_GCSetTevIndBumpXYZ(i, ind->bump.indId, ind->bump.mtx);
+                            GSgfx_GCSetTevIndBumpXYZ(i, ind->v.bump.indId, ind->v.bump.mtx);
                             break;
                         case 6:
                             GSgfx_GCSetTevIndRepeat(i);
@@ -1808,57 +1724,43 @@ inline void GSgfx_GCSetProjection(s32 type, u32* p) {
         gsgfxState->projCache[5] = p[5];
     }
 }
-
-}
-
-void GSgfxLayer::LoadHWState() {
-    if (_layerStateLastHWState != hwState) {
-        if (_layerStateLastHWState != 0) {
-            memcpy(_layerStateLastHWState, gsgfxState, 0xc40);
-        }
-        memcpy(gsgfxState, hwState, 0xc40);
-        _layerStateLastHWState = hwState;
-    }
-}
+extern "C++" {
 
 extern "C" {
 void GSgfx_GCInvalidateState();
-void GSgfx_GCWriteVtxDesc(void*);
-void GSgfx_GCWriteArray(s32 id, void* addr, u8 stride);
-void GSgfx_GCWriteVtxAttrFmt(u32 idx, void* fmt);
-void DCStoreRangeNoSync(void*, u32);
-void PPCSync();
-void GXLoadPosMtxImm(Mtx, u32);
-void GXLoadNrmMtxImm(Mtx, u32);
-void PSMTXInvXpose(const Mtx, Mtx);
-void GSgfx_GCFlushState();
-void GXInitTexObjTlut(void*, u32);
-void GSgfx_GCWriteLoadTlut(void*, u32);
-void GSgfx_GCWriteLoadTexObj(void*, u32);
 }
 int _foo;
-
-static inline void LoadLayerMtx(GSgfxLayer* l) {
-    GSgfxMtxEntry* m = l->mtxStack->top;
-    GSgfxLayer::DirtyState* d = &l->dirty[l->dirtyIdx];
-    if ((m->flags & 1) || m != d->mtx) {
-        GXLoadPosMtxImm(m->mtx, 0x1b);
-        GSgfxMtxStack* st = l->mtxStack;
-        m = st->top;
-        if (m->flags & 1) {
-            PSMTXInvXpose(m->mtx, m->invXpose);
-            st->top->flags &= ~1;
-        }
-        GXLoadNrmMtxImm(st->top->invXpose, 0x1b);
-        d->mtx = l->mtxStack->top;
-    }
-    if (d->mtxValid == 0) {
-        gsgfxState->matIdxA.pn = 0x1b;
-        gsgfxState->dirty |= 0x40;
-        d->mtxValid = 1;
-    }
+extern "C" {
+void GXInitTexObjTlut(void*, u32);
 }
-
+extern "C" {
+void GSgfx_GCWriteLoadTlut(void*, u32);
+}
+extern "C" {
+void GSgfx_GCWriteLoadTexObj(void*, u32);
+}
+extern "C" {
+void GSgfx_GCWriteVtxDesc(void*);
+}
+extern "C" {
+void GSgfx_GCWriteArray(s32 id, void* addr, u8 stride);
+#ifndef __MWERKS__
+void GSgfx_GCWriteArrayPC(s32 id, void* addr, u8 stride, u32 size, u8 native);
+#endif
+}
+extern "C" {
+void GSgfx_GCWriteVtxAttrFmt(u32 idx, void* fmt);
+}
+extern "C" {
+void DCStoreRangeNoSync(void*, u32);
+}
+extern "C" {
+void PPCSync();
+}
+static inline void LoadLayerMtx(GSgfxLayer* l);
+extern "C" {
+void GSgfx_GCFlushState();
+}
 void GSgfxLayer::SetupRenderState() {
     LoadHWState();
     if (flags & 0x80000000) {
@@ -1902,12 +1804,12 @@ void GSgfxLayer::SetupRenderState() {
     u8 i;
     u8 n;
     DirtyState* d;
-    RS* r;
-    r = &rs;
-    d = &dirty[dirtyIdx];
+    GSgfxLayerHW* r;
+    r = &hw;
+    d = &dirty[curPass];
     if ((d->groups & 4) && (d->lightDirty & 0x10)) {
         for (i = 0, n = r->lightCount; i < n; i++) {
-            r->lights[i]->Load(i);
+            ((GSgfxLight*)r->lights[i])->Load(i);
         }
         d->lightDirty &= ~0x10;
     }
@@ -1916,11 +1818,11 @@ void GSgfxLayer::SetupRenderState() {
     GSgfxTex* t;
     DirtyState* dd;
     GSgfxTex** tp;
-    dd = &dirty[dirtyIdx];
-    if (dd->texMask != 0 && rs.texCount != 0) {
+    dd = &dirty[curPass];
+    if (dd->texMask != 0 && hw.nTexGens != 0) {
         for (j = 0, tp = (GSgfxTex**)dd; j < 8; j++, tp++) {
             if (dd->texMask & (1 << j)) {
-                t = tp[0x98 / 4];
+                t = dd->tex[j];
                 if (t->w == 0 || t->h == 0) {
                     _foo++;
                 }
@@ -1936,12 +1838,16 @@ void GSgfxLayer::SetupRenderState() {
     }
     GSgfxVF* vf = curVF;
     if (vf != 0) {
-        DirtyState* v = &dirty[dirtyIdx];
+        DirtyState* v = &dirty[curPass];
         if (v->last != vf || (vf->flags & 4)) {
             GSgfx_GCWriteVtxDesc(vf->vtxDesc);
             GSgfxVFArray* a = vf->arrays;
             while (a->id != 0xff) {
-                GSgfx_GCWriteArray(a->id, a->addr, a->stride);
+#ifdef __MWERKS__
+                GSgfx_GCWriteArray(a->id, VF_ARRAY_ADDR(a), a->stride);
+#else
+                GSgfx_GCWriteArrayPC(a->id, VF_ARRAY_ADDR(a), a->stride, a->size, (a->flags & GSGFX_VF_ARRAY_NATIVE) != 0);
+#endif
                 a++;
             }
             v->last = vf;
@@ -1955,7 +1861,7 @@ void GSgfxLayer::SetupRenderState() {
         u8 sync = 0;
         while (a->id != 0xff) {
             if (a->flags & 1) {
-                DCStoreRangeNoSync(a->addr, a->size);
+                DCStoreRangeNoSync(VF_ARRAY_ADDR(a), a->size);
                 sync = 1;
                 a->flags &= ~1;
             }
@@ -1976,9 +1882,49 @@ void GSgfxLayer::SetupRenderState() {
     }
     GSgfx_GCFlushState();
 }
+}
+
+}
+
+void GSgfxLayer::LoadHWState() {
+    if (_layerStateLastHWState != hwState) {
+        if (_layerStateLastHWState != 0) {
+            memcpy(_layerStateLastHWState, gsgfxState, 0xc40);
+        }
+        memcpy(gsgfxState, hwState, 0xc40);
+        _layerStateLastHWState = hwState;
+    }
+}
+
+extern "C" {
+void GXLoadPosMtxImm(Mtx, u32);
+void GXLoadNrmMtxImm(Mtx, u32);
+void PSMTXInvXpose(const Mtx, Mtx);
+}
+
+static inline void LoadLayerMtx(GSgfxLayer* l) {
+    GSgfxMtxEntry* m = ((GSgfxMtxStack*)l->matrixStack)->top;
+    GSgfxLayer::DirtyState* d = &l->dirty[l->curPass];
+    if ((m->flags & 1) || m != d->mtx) {
+        GXLoadPosMtxImm(m->mtx, 0x1b);
+        GSgfxMtxStack* st = (GSgfxMtxStack*)l->matrixStack;
+        m = st->top;
+        if (m->flags & 1) {
+            PSMTXInvXpose(m->mtx, m->invXpose);
+            st->top->flags &= ~1;
+        }
+        GXLoadNrmMtxImm(st->top->invXpose, 0x1b);
+        d->mtx = ((GSgfxMtxStack*)l->matrixStack)->top;
+    }
+    if (d->mtxValid == 0) {
+        gsgfxState->matIdxA.pn = 0x1b;
+        gsgfxState->dirty |= 0x40;
+        d->mtxValid = 1;
+    }
+}
 
 void GSgfxLayer::renderState_NL_VC_T(u8 n) {
-    U8_AT(0xdb8) = 1;
+    hw.nChans = 1;
     mark(4, 0x16bc, 1);
     markCommon(n, n, 0);
     cunitChannelGen(0, (GSgfxCunitAlpha)2, (GSgfxCunitSrc)0, (GSgfxCunitSrc)1, 0, 0, (GSgfxLightType)2, (GSgfxDiffuseFunc)0);
@@ -1993,14 +1939,14 @@ void GSgfxLayer::renderState_NL_VC_T(u8 n) {
         } else {
             tunitFunc(i, (GSgfxTunitFunc)7);
         }
-        texUnits[i].a = 0;
-        texUnits[i].b = 0;
+        hw.swapSel[i][0] = 0;
+        hw.swapSel[i][1] = 0;
         mark(0x20, 0x1704, 1 << i);
     }
 }
 
 void GSgfxLayer::renderState_NL_NVC_T(u8 n) {
-    U8_AT(0xdb8) = 0;
+    hw.nChans = 0;
     mark(4, 0x16bc, 1);
     markCommon(n, n, 0);
     u8 i;
@@ -2015,8 +1961,8 @@ void GSgfxLayer::renderState_NL_NVC_T(u8 n) {
         } else {
             tunitFunc(i, (GSgfxTunitFunc)5);
         }
-        texUnits[i].a = 0;
-        texUnits[i].b = 0;
+        hw.swapSel[i][0] = 0;
+        hw.swapSel[i][1] = 0;
         mark(0x20, 0x1704, 1 << i);
     }
 }
@@ -2026,25 +1972,25 @@ void GSgfxLayer::renderState_NL_NVC_NT() {
     GSgfxCol a = g;
     GSgfxCol b = g;
     GSgfxCol c = g;
-    U8_AT(0xdb8) = 1;
+    hw.nChans = 1;
     mark(4, 0x16bc, 1);
     markCommon(1, 0, 0);
-    *(GSgfxCol*)((u8*)this + 0xe9c) = a;
-    *(GSgfxCol*)((u8*)this + 0xea4) = c;
-    U32_AT(0x16c4) |= 1;
-    U32_AT(0x16c8) |= 1;
-    U32_AT(0x16a8) |= 4;
-    U32_AT(0x177c) |= 1;
-    U32_AT(0x1780) |= 1;
-    U32_AT(0x1760) |= 4;
+    *(GSgfxCol*)&hw.amb[0] = a;
+    *(GSgfxCol*)&hw.mat[0] = c;
+    dirty[0].amb |= 1;
+    dirty[0].mat |= 1;
+    dirty[0].groups |= 4;
+    dirty[1].amb |= 1;
+    dirty[1].mat |= 1;
+    dirty[1].groups |= 4;
     cunitChannelGen(0, (GSgfxCunitAlpha)2, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 0, 0, (GSgfxLightType)2, (GSgfxDiffuseFunc)0);
-    U32_AT(0xeb0) = 0xff;
-    U32_AT(0xeb4) = 0xff;
-    U32_AT(0xeb8) = 4;
+    hw.tevOrder[0][0] = 0xff;
+    hw.tevOrder[0][1] = 0xff;
+    hw.tevOrder[0][2] = 4;
     mark(8, 0x16d0, 1);
     tunitFunc(0, (GSgfxTunitFunc)4);
-    texUnits[0].a = 0;
-    texUnits[0].b = 0;
+    hw.swapSel[0][0] = 0;
+    hw.swapSel[0][1] = 0;
     mark(0x20, 0x1704, 1);
 }
 

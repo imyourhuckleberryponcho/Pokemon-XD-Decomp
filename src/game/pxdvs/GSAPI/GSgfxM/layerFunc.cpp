@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#ifdef __MWERKS__
 typedef union {
     u8 u8;
     u16 u16;
@@ -9,12 +11,20 @@ typedef union {
     f32 f32;
 } PPCWGPipe;
 volatile PPCWGPipe GXWGFifo : 0xCC008000;
+#endif
 
+#ifndef __MWERKS__
+extern "C" void GXCallDisplayList(const void* list, u32 nbytes);
+#endif
 static inline void _layerCallDisplayList(u8* list, u32 size)
 {
+#ifdef __MWERKS__
     GXWGFifo.u8 = 0x40;
     GXWGFifo.u32 = (u32)list;
     GXWGFifo.u32 = size;
+#else
+    GXCallDisplayList(list, size);
+#endif
 }
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -67,17 +77,26 @@ struct GXVtxDescList;
 
 extern "C" u8 gsgfx_layer_inPrimitive;
 
-class GSgfxLayer {
+enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
+enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
+struct GSgfxVF;
+#include <game/gsgfxlayer.h>
+
+#ifdef __MWERKS__
+struct GSgfxLayer {
+#else
+struct GSgfxLayer : public GSgfxLayerData {
+#endif
 public:
     void endSurface();
 public:
-    void tokenMark();
+    u16 tokenMark();
     void tunitIndTexMtx(GSgfxIndTexMtxID, float(*)[3], signed char);
     void drawOctahedron();
     void dlDraw(GSgfxDL*);
     void drawDodecaedron();
     void tgenFunc(unsigned char, GSgfxTgenFunc, GSgfxTgenSrc, GSmtx*, bool, GSmtx*);
-    void cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, unsigned long, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
+    void cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, u32, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
     void drawIcosahedron();
     void SetDistortionParams(float(*)[3], signed char);
     void beginSurface(unsigned short);
@@ -85,17 +104,45 @@ public:
     void drawSphere(unsigned char, unsigned char);
     void InvalidateState();
     void drawCylinder(unsigned char);
+#ifdef __MWERKS__
     s32 SetupFifo();
+#else
+    void SetupFifo();
+#endif
     void drawSphere(unsigned char);
     void FlushState();
     void tunitFunc(unsigned char, GSgfxTunitFunc);
     void drawTorus(float, unsigned char, unsigned char);
-    void dlDrawExt(unsigned char*, unsigned long);
+    void dlDrawExt(unsigned char*, u32);
 };
 
+#ifdef __MWERKS__
 struct GSgfxDL {
     u8 _draft[1];
 };
+#define DL_F(d, T, off, member) M2C_FIELD(d, T, off)
+#define DL_VF(d) ((s32) M2C_FIELD(d, s32 *, 0xC))
+typedef s32 LAYER_VF_SAVE;
+#define LAYER_VF_ADDR(l) M2C_FIELD(l, s32 *, 0x199C)
+#define LAYER_VF_GET(l) M2C_FIELD(l, s32 *, 0x199C)
+#define LAYER_VF_SET(l, v) (M2C_FIELD(l, s32 *, 0x199C) = (v))
+#define LAYER_PASS_DATA(l, i) ((GSgfxPassFifo*)((u8*)(l) + 0x1818))[i].data
+#else
+struct GSgfxDL {
+    u16 flags;
+    u16 stride;
+    u8* data;
+    u32 size;
+    GSgfxVF* vf;
+};
+#define DL_F(d, T, off, member) (*(T)&(d)->member)
+#define DL_VF(d) ((d)->vf)
+typedef GSgfxVF* LAYER_VF_SAVE;
+#define LAYER_VF_ADDR(l) ((u8*)(l)->curVF)
+#define LAYER_VF_GET(l) ((l)->curVF)
+#define LAYER_VF_SET(l, v) ((l)->curVF = (v))
+#define LAYER_PASS_DATA(l, i) ((l)->passes[i].data)
+#endif
 struct GSgfxLight {
     u8 _draft[1];
 };
@@ -108,7 +155,7 @@ struct GXVtxDescList {
 
 extern "C" {
 asm void DCStoreRange(register void* addr, register u32 nBytes);
-s32 GSgfx_GCWriteIndTexMtx(GSgfxIndTexMtxID, f32 (*)[3], s8);
+s32 GSgfx_GCWriteIndTexMtx(GSgfxIndTexMtxID, f32 (*)[3], PCARG(s8, s32));
 void GXDrawCube(void);
 void GXDrawCylinder(u8 numEdges);
 void GXDrawDodeca(void);
@@ -128,66 +175,50 @@ u16 GSgfxTokenMark_Sub();
 
 extern "C++" {
 void GSgfxLayer::SetDistortionParams(float(*p0)[3], signed char p1) {
-    M2C_FIELD(this, f32 *, 0x19BC) = (f32) M2C_FIELD(p0, f32 *, 0);
-    M2C_FIELD(this, f32 *, 0x19C0) = (f32) M2C_FIELD(p0, f32 *, 4);
-    M2C_FIELD(this, f32 *, 0x19C4) = (f32) M2C_FIELD(p0, f32 *, 8);
-    M2C_FIELD(this, f32 *, 0x19C8) = (f32) M2C_FIELD(p0, f32 *, 0xC);
-    M2C_FIELD(this, f32 *, 0x19CC) = (f32) M2C_FIELD(p0, f32 *, 0x10);
-    M2C_FIELD(this, f32 *, 0x19D0) = (f32) M2C_FIELD(p0, f32 *, 0x14);
-    M2C_FIELD(this, s8 *, 0x19B8) = p1;
+    LAYER_F(this, f32 *, 0x19BC, distParams[0]) = (f32) M2C_FIELD(p0, f32 *, 0);
+    LAYER_F(this, f32 *, 0x19C0, distParams[1]) = (f32) M2C_FIELD(p0, f32 *, 4);
+    LAYER_F(this, f32 *, 0x19C4, distParams[2]) = (f32) M2C_FIELD(p0, f32 *, 8);
+    LAYER_F(this, f32 *, 0x19C8, distParams[3]) = (f32) M2C_FIELD(p0, f32 *, 0xC);
+    LAYER_F(this, f32 *, 0x19CC, distParams[4]) = (f32) M2C_FIELD(p0, f32 *, 0x10);
+    LAYER_F(this, f32 *, 0x19D0, distParams[5]) = (f32) M2C_FIELD(p0, f32 *, 0x14);
+    LAYER_F(this, s8 *, 0x19B8, distFlag) = p1;
 }
 }
 
 extern "C++" {
-void GSgfxLayer::tokenMark() {
+u16 GSgfxLayer::tokenMark() {
     ((GSgfxLayer*)(this))->SetupFifo();
-    GSgfxTokenMark_Sub();
+    return GSgfxTokenMark_Sub();
 }
 }
 
 extern "C++" {
+struct GSgfxPassFifo {
+    void* data;
+    u8 rest[0xB8];
+};
+
 void GSgfxLayer::tunitIndTexMtx(GSgfxIndTexMtxID id, float (*mtx)[3], signed char scale) {
     s32 cur;
     s32 other;
 
     SetupFifo();
     GSgfx_GCWriteIndTexMtx(id, mtx, scale);
-    cur = M2C_FIELD(this, s32*, 0x1994);
+    cur = LAYER_F(this, s32*, 0x1994, curPass);
     other = cur == 0;
-    if (M2C_FIELD(this, u32*, 0x1818 + other * 0xBC) != 0) {
+    if (LAYER_PASS_DATA(this, other) != 0) {
         if (cur != other) {
-            M2C_FIELD(this, s32*, 0x1994) = other;
-            M2C_FIELD(this, u8**, 0x1990) = (u8*)this + 0x1818 + M2C_FIELD(this, s32*, 0x1994) * 0xBC;
+            LAYER_F(this, s32*, 0x1994, curPass) = other;
+            LAYER_F(this, u8**, 0x1990, curFifo) = LAYER_CUR_PASS(this);
         }
         SetupFifo();
         GSgfx_GCWriteIndTexMtx(id, mtx, scale);
-        if (M2C_FIELD(this, s32*, 0x1994) != cur) {
-            M2C_FIELD(this, s32*, 0x1994) = cur;
-            M2C_FIELD(this, u8**, 0x1990) = (u8*)this + 0x1818 + M2C_FIELD(this, s32*, 0x1994) * 0xBC;
+        if (LAYER_F(this, s32*, 0x1994, curPass) != cur) {
+            LAYER_F(this, s32*, 0x1994, curPass) = cur;
+            LAYER_F(this, u8**, 0x1990, curFifo) = LAYER_CUR_PASS(this);
         }
         SetupFifo();
     }
-}
-}
-
-extern "C++" {
-
-extern "C++" {
-void GSgfxLayer::drawSphere(unsigned char p0) {
-    ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
-    GXDrawSphere1(p0);
-    ((GSgfxLayer*)(this))->InvalidateState();
-}
-}
-
-extern "C++" {
-void GSgfxLayer::drawSphere(unsigned char p0, unsigned char p1) {
-    ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
-    GXDrawSphere(p1, p0);
-    ((GSgfxLayer*)(this))->InvalidateState();
-}
 }
 }
 
@@ -198,19 +229,30 @@ struct GSgfxTgenState {
     s32 mtxId;
     u8 normalize;
     s32 postMtxId;
+#ifdef __MWERKS__
     s32 unk14;
+#else
+    u8* unk14;
+#endif
 };
 
 struct GSgfxLayerTgenView {
+#ifdef __MWERKS__
     u8 unk0[0xC74];
+#endif
     GSgfxTgenState tgen[8];
 };
 
-#define TGEN(id) (((GSgfxLayerTgenView*)this)->tgen[id])
-#define FIFO_INDEX M2C_FIELD(this, s32*, 0x1994)
+#ifdef __MWERKS__
+#define TGEN_VIEW(l) ((GSgfxLayerTgenView*)(l))
+#else
+#define TGEN_VIEW(l) ((GSgfxLayerTgenView*)(l)->hw.texGen)
+#endif
+#define TGEN(id) (TGEN_VIEW(this)->tgen[id])
+#define FIFO_INDEX LAYER_F(this, s32*, 0x1994, curPass)
 
 static inline void tgenLoadMtx(GSgfxLayer* layer, u8 id, GSgfxTgenFunc func, GSmtx* mtx, GSmtx* postMtx) {
-    GSgfxLayerTgenView* view = (GSgfxLayerTgenView*)layer;
+    GSgfxLayerTgenView* view = TGEN_VIEW(layer);
     if (mtx != NULL) {
         if (func == 1) {
             GXLoadTexMtxImm((const f32(*)[4])mtx, view->tgen[id].mtxId, (GXTexMtxType)1);
@@ -249,24 +291,24 @@ void GSgfxLayer::tgenFunc(unsigned char id, GSgfxTgenFunc func, GSgfxTgenSrc src
         tgenLoadMtx(this, id, func, mtx, postMtx);
         cur = FIFO_INDEX;
         other = cur == 0;
-        if (M2C_FIELD(this, u32*, 0x1818 + other * 0xBC) != 0) {
+        if (LAYER_PASS_DATA(this, other) != 0) {
             if (cur != other) {
                 FIFO_INDEX = other;
-                M2C_FIELD(this, u8**, 0x1990) = (u8*)this + 0x1818 + FIFO_INDEX * 0xBC;
+                LAYER_F(this, u8**, 0x1990, curFifo) = LAYER_CUR_PASS(this);
             }
             SetupFifo();
             tgenLoadMtx(this, id, func, mtx, postMtx);
             if (FIFO_INDEX != cur) {
                 FIFO_INDEX = cur;
-                M2C_FIELD(this, u8**, 0x1990) = (u8*)this + 0x1818 + FIFO_INDEX * 0xBC;
+                LAYER_F(this, u8**, 0x1990, curFifo) = LAYER_CUR_PASS(this);
             }
             SetupFifo();
         }
     }
-    M2C_FIELD(this, u32*, 0x16B0) |= 1 << id;
-    M2C_FIELD(this, u32*, 0x16A8) |= 1;
-    M2C_FIELD(this, u32*, 0x1768) |= 1 << id;
-    M2C_FIELD(this, u32*, 0x1760) |= 1;
+    LAYER_F(this, u32*, 0x16B0, dirty[0].texGen) |= 1 << id;
+    LAYER_F(this, u32*, 0x16A8, dirty[0].groups) |= 1;
+    LAYER_F(this, u32*, 0x1768, dirty[1].texGen) |= 1 << id;
+    LAYER_F(this, u32*, 0x1760, dirty[1].groups) |= 1;
 }
 
 #undef TGEN
@@ -274,347 +316,135 @@ void GSgfxLayer::tgenFunc(unsigned char id, GSgfxTgenFunc func, GSgfxTgenSrc src
 }
 
 extern "C++" {
-void GSgfxLayer::tunitFunc(unsigned char p0, GSgfxTunitFunc p1) {
-    u8 *temp_r9;
-    u8 *temp_r9_2;
-    u8 *temp_r7;
-    s32 temp_r0_4;
-    s32 temp_r0_5;
-    s32 temp_r4;
-    s32 temp_r4_2;
-    s32 temp_r4_3;
-    u8 *temp_r30;
-    u8 *temp_r10_2;
-    u8 *temp_r11;
-    u8 *temp_r11_2;
-    u8 *temp_r12;
-    u8 *temp_r12_2;
-    u8 *temp_r29;
-    u8 *temp_r29_2;
-    u8 *temp_r10;
-    u8 *temp_r31;
-    s32 temp_r0_3;
-    u8 *temp_r7_2;
-    u8 *temp_r8;
-    u8 *temp_r8_2;
-    s32 temp_r0;
-    s32 temp_r0_2;
+struct GSgfxTevColorOpState {
+    s32 op;
+    s32 bias;
+    s32 scale;
+    u8 clamp;
+    s32 outReg;
+};
 
-    if ((u32) p1 <= 7U) {
-        switch (p1) {
-        case 0:
-            temp_r29 = (unsigned char *)(this + (p0 * 0x14));
-            temp_r9 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
-            M2C_FIELD(temp_r29, s32 *, 0x1170) = 0;
-            temp_r0 = 1 << p0;
-            M2C_FIELD(temp_r29, s32 *, 0x1174) = 0;
-            M2C_FIELD(temp_r29, s32 *, 0x1178) = 0;
-            M2C_FIELD(temp_r29, s8 *, 0x117C) = 1;
-            M2C_FIELD(temp_r29, s32 *, 0x1180) = 0;
-            M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | temp_r0);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | temp_r0);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r9, s32 *, 0xF74) = 0xA;
-            M2C_FIELD(temp_r9, s32 *, 0xF70) = 0xF;
-            M2C_FIELD(temp_r9, s32 *, 0xF78) = 8;
-            M2C_FIELD(temp_r9, s32 *, 0xF7C) = 0xF;
-            M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | temp_r0);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | temp_r0);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r29, s32 *, 0x12B0) = 0;
-            M2C_FIELD(temp_r29, s32 *, 0x12B4) = 0;
-            M2C_FIELD(temp_r29, s32 *, 0x12B8) = 0;
-            M2C_FIELD(temp_r29, s8 *, 0x12BC) = 1;
-            M2C_FIELD(temp_r29, s32 *, 0x12C0) = 0;
-            M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | temp_r0);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | temp_r0);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r9, s32 *, 0x1070) = 7;
-            M2C_FIELD(temp_r9, s32 *, 0x1074) = 5;
-            M2C_FIELD(temp_r9, s32 *, 0x107C) = 7;
-            M2C_FIELD(temp_r9, s32 *, 0x1078) = 4;
-            M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | temp_r0);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | temp_r0);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            return;
-        case 1:
-            temp_r29_2 = (unsigned char *)(this + (p0 * 0x14));
-            temp_r9_2 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
-            M2C_FIELD(temp_r29_2, s32 *, 0x1170) = 0;
-            temp_r0_2 = 1 << p0;
-            M2C_FIELD(temp_r29_2, s32 *, 0x1174) = 0;
-            M2C_FIELD(temp_r29_2, s32 *, 0x1178) = 0;
-            M2C_FIELD(temp_r29_2, s8 *, 0x117C) = 1;
-            M2C_FIELD(temp_r29_2, s32 *, 0x1180) = 0;
-            M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | temp_r0_2);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | temp_r0_2);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r9_2, s32 *, 0xF70) = 0xA;
-            M2C_FIELD(temp_r9_2, s32 *, 0xF74) = 8;
-            M2C_FIELD(temp_r9_2, s32 *, 0xF78) = 9;
-            M2C_FIELD(temp_r9_2, s32 *, 0xF7C) = 0xF;
-            M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | temp_r0_2);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | temp_r0_2);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r29_2, s32 *, 0x12B0) = 0;
-            M2C_FIELD(temp_r29_2, s32 *, 0x12B4) = 0;
-            M2C_FIELD(temp_r29_2, s32 *, 0x12B8) = 0;
-            M2C_FIELD(temp_r29_2, s8 *, 0x12BC) = 1;
-            M2C_FIELD(temp_r29_2, s32 *, 0x12C0) = 0;
-            M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | temp_r0_2);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | temp_r0_2);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r9_2, s32 *, 0x1070) = 7;
-            M2C_FIELD(temp_r9_2, s32 *, 0x1074) = 7;
-            M2C_FIELD(temp_r9_2, s32 *, 0x1078) = 7;
-            M2C_FIELD(temp_r9_2, s32 *, 0x107C) = 5;
-            M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | temp_r0_2);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | temp_r0_2);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            return;
-        case 2:
-            temp_r31 = (unsigned char *)(this + (p0 * 0x14));
-            temp_r10 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
-            M2C_FIELD(temp_r31, s32 *, 0x1170) = 0;
-            temp_r0_3 = 1 << p0;
-            M2C_FIELD(temp_r31, s32 *, 0x1174) = 0;
-            M2C_FIELD(temp_r31, s32 *, 0x1178) = 0;
-            M2C_FIELD(temp_r31, s8 *, 0x117C) = 1;
-            M2C_FIELD(temp_r31, s32 *, 0x1180) = 0;
-            M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | temp_r0_3);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | temp_r0_3);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r10, s32 *, 0xF70) = 0xA;
-            M2C_FIELD(temp_r10, s32 *, 0xF74) = 0xC;
-            M2C_FIELD(temp_r10, s32 *, 0xF78) = 8;
-            M2C_FIELD(temp_r10, s32 *, 0xF7C) = 0xF;
-            M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | temp_r0_3);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | temp_r0_3);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r31, s32 *, 0x12B0) = 0;
-            M2C_FIELD(temp_r31, s32 *, 0x12B4) = 0;
-            M2C_FIELD(temp_r31, s32 *, 0x12B8) = 0;
-            M2C_FIELD(temp_r31, s8 *, 0x12BC) = 1;
-            M2C_FIELD(temp_r31, s32 *, 0x12C0) = 0;
-            M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | temp_r0_3);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | temp_r0_3);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r10, s32 *, 0x1070) = 7;
-            M2C_FIELD(temp_r10, s32 *, 0x1074) = 5;
-            M2C_FIELD(temp_r10, s32 *, 0x107C) = 7;
-            M2C_FIELD(temp_r10, s32 *, 0x1078) = 4;
-            M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | temp_r0_3);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | temp_r0_3);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            return;
-        case 3:
-            temp_r11 = (unsigned char *)(this + (p0 * 0x14));
-            temp_r7 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
-            M2C_FIELD(temp_r11, s32 *, 0x1170) = 0;
-            temp_r0_4 = 1 << p0;
-            M2C_FIELD(temp_r11, s32 *, 0x1174) = 0;
-            M2C_FIELD(temp_r11, s32 *, 0x1178) = 0;
-            M2C_FIELD(temp_r11, s8 *, 0x117C) = 1;
-            M2C_FIELD(temp_r11, s32 *, 0x1180) = 0;
-            M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | temp_r0_4);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | temp_r0_4);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r7, s32 *, 0xF70) = 8;
-            M2C_FIELD(temp_r7, s32 *, 0xF74) = 0xF;
-            M2C_FIELD(temp_r7, s32 *, 0xF78) = 0xF;
-            M2C_FIELD(temp_r7, s32 *, 0xF7C) = 0xF;
-            M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | temp_r0_4);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | temp_r0_4);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r11, s32 *, 0x12B0) = 0;
-            M2C_FIELD(temp_r11, s32 *, 0x12B4) = 0;
-            M2C_FIELD(temp_r11, s32 *, 0x12B8) = 0;
-            M2C_FIELD(temp_r11, s8 *, 0x12BC) = 1;
-            M2C_FIELD(temp_r11, s32 *, 0x12C0) = 0;
-            M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | temp_r0_4);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | temp_r0_4);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r7, s32 *, 0x1070) = 4;
-            M2C_FIELD(temp_r7, s32 *, 0x1074) = 7;
-            M2C_FIELD(temp_r7, s32 *, 0x1078) = 7;
-            M2C_FIELD(temp_r7, s32 *, 0x107C) = 7;
-            M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | temp_r0_4);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | temp_r0_4);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            return;
-        case 4:
-            temp_r11_2 = (unsigned char *)(this + (p0 * 0x14));
-            temp_r7_2 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
-            M2C_FIELD(temp_r11_2, s32 *, 0x1170) = 0;
-            temp_r0_5 = 1 << p0;
-            M2C_FIELD(temp_r11_2, s32 *, 0x1174) = 0;
-            M2C_FIELD(temp_r11_2, s32 *, 0x1178) = 0;
-            M2C_FIELD(temp_r11_2, s8 *, 0x117C) = 1;
-            M2C_FIELD(temp_r11_2, s32 *, 0x1180) = 0;
-            M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | temp_r0_5);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | temp_r0_5);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r7_2, s32 *, 0xF70) = 0xA;
-            M2C_FIELD(temp_r7_2, s32 *, 0xF74) = 0xF;
-            M2C_FIELD(temp_r7_2, s32 *, 0xF78) = 0xF;
-            M2C_FIELD(temp_r7_2, s32 *, 0xF7C) = 0xF;
-            M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | temp_r0_5);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | temp_r0_5);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r11_2, s32 *, 0x12B0) = 0;
-            M2C_FIELD(temp_r11_2, s32 *, 0x12B4) = 0;
-            M2C_FIELD(temp_r11_2, s32 *, 0x12B8) = 0;
-            M2C_FIELD(temp_r11_2, s8 *, 0x12BC) = 1;
-            M2C_FIELD(temp_r11_2, s32 *, 0x12C0) = 0;
-            M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | temp_r0_5);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | temp_r0_5);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r7_2, s32 *, 0x1070) = 5;
-            M2C_FIELD(temp_r7_2, s32 *, 0x1074) = 7;
-            M2C_FIELD(temp_r7_2, s32 *, 0x1078) = 7;
-            M2C_FIELD(temp_r7_2, s32 *, 0x107C) = 7;
-            M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | temp_r0_5);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | temp_r0_5);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            return;
-        case 5:
-            temp_r4 = 1 << p0;
-            temp_r8 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
-            temp_r12 = (unsigned char *)(this + (p0 * 0x14));
-            M2C_FIELD(temp_r12, s32 *, 0x1170) = 0;
-            M2C_FIELD(temp_r12, s32 *, 0x1174) = 0;
-            M2C_FIELD(temp_r12, s32 *, 0x1178) = 0;
-            M2C_FIELD(temp_r12, s8 *, 0x117C) = 1;
-            M2C_FIELD(temp_r12, s32 *, 0x1180) = 0;
-            M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | temp_r4);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | temp_r4);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r8, s32 *, 0xF70) = 8;
-            M2C_FIELD(temp_r8, s32 *, 0xF74) = 0xF;
-            M2C_FIELD(temp_r8, s32 *, 0xF78) = 0xF;
-            M2C_FIELD(temp_r8, s32 *, 0xF7C) = 0;
-            M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | temp_r4);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | temp_r4);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r12, s32 *, 0x12B0) = 0;
-            M2C_FIELD(temp_r12, s32 *, 0x12B4) = 0;
-            M2C_FIELD(temp_r12, s32 *, 0x12B8) = 0;
-            M2C_FIELD(temp_r12, s8 *, 0x12BC) = 1;
-            M2C_FIELD(temp_r12, s32 *, 0x12C0) = 0;
-            M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | temp_r4);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | temp_r4);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r8, s32 *, 0x1070) = 4;
-            M2C_FIELD(temp_r8, s32 *, 0x1074) = 7;
-            M2C_FIELD(temp_r8, s32 *, 0x1078) = 7;
-            M2C_FIELD(temp_r8, s32 *, 0x107C) = 0;
-            M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | temp_r4);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | temp_r4);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            return;
-        case 6:
-            temp_r4_2 = 1 << p0;
-            temp_r8_2 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
-            temp_r12_2 = (unsigned char *)(this + (p0 * 0x14));
-            M2C_FIELD(temp_r12_2, s32 *, 0x1170) = 0;
-            M2C_FIELD(temp_r12_2, s32 *, 0x1174) = 0;
-            M2C_FIELD(temp_r12_2, s32 *, 0x1178) = 0;
-            M2C_FIELD(temp_r12_2, s8 *, 0x117C) = 1;
-            M2C_FIELD(temp_r12_2, s32 *, 0x1180) = 0;
-            M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | temp_r4_2);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | temp_r4_2);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r8_2, s32 *, 0xF70) = 0xA;
-            M2C_FIELD(temp_r8_2, s32 *, 0xF74) = 0xF;
-            M2C_FIELD(temp_r8_2, s32 *, 0xF78) = 0xF;
-            M2C_FIELD(temp_r8_2, s32 *, 0xF7C) = 0;
-            M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | temp_r4_2);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | temp_r4_2);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r12_2, s32 *, 0x12B0) = 0;
-            M2C_FIELD(temp_r12_2, s32 *, 0x12B4) = 0;
-            M2C_FIELD(temp_r12_2, s32 *, 0x12B8) = 0;
-            M2C_FIELD(temp_r12_2, s8 *, 0x12BC) = 1;
-            M2C_FIELD(temp_r12_2, s32 *, 0x12C0) = 0;
-            M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | temp_r4_2);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | temp_r4_2);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r8_2, s32 *, 0x1070) = 5;
-            M2C_FIELD(temp_r8_2, s32 *, 0x1074) = 7;
-            M2C_FIELD(temp_r8_2, s32 *, 0x1078) = 7;
-            M2C_FIELD(temp_r8_2, s32 *, 0x107C) = 0;
-            M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | temp_r4_2);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | temp_r4_2);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            return;
-        case 7:
-            temp_r4_3 = 1 << p0;
-            temp_r30 = (unsigned char *)(this + (p0 * 0x14));
-            temp_r10_2 = (unsigned char *)(this + ((p0 * 0x10) & 0xFF0));
-            M2C_FIELD(temp_r30, s32 *, 0x1170) = 0;
-            M2C_FIELD(temp_r30, s32 *, 0x1174) = 0;
-            M2C_FIELD(temp_r30, s32 *, 0x1178) = 0;
-            M2C_FIELD(temp_r30, s8 *, 0x117C) = 1;
-            M2C_FIELD(temp_r30, s32 *, 0x1180) = 0;
-            M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | temp_r4_3);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | temp_r4_3);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r10_2, s32 *, 0xF70) = 0xF;
-            M2C_FIELD(temp_r10_2, s32 *, 0xF74) = 0xA;
-            M2C_FIELD(temp_r10_2, s32 *, 0xF78) = 8;
-            M2C_FIELD(temp_r10_2, s32 *, 0xF7C) = 0;
-            M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | temp_r4_3);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | temp_r4_3);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r30, s32 *, 0x12B0) = 0;
-            M2C_FIELD(temp_r30, s32 *, 0x12B4) = 0;
-            M2C_FIELD(temp_r30, s32 *, 0x12B8) = 0;
-            M2C_FIELD(temp_r30, s8 *, 0x12BC) = 1;
-            M2C_FIELD(temp_r30, s32 *, 0x12C0) = 0;
-            M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | temp_r4_3);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | temp_r4_3);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            M2C_FIELD(temp_r10_2, s32 *, 0x1070) = 7;
-            M2C_FIELD(temp_r10_2, s32 *, 0x1074) = 5;
-            M2C_FIELD(temp_r10_2, s32 *, 0x1078) = 4;
-            M2C_FIELD(temp_r10_2, s32 *, 0x107C) = 0;
-            M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | temp_r4_3);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-            M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | temp_r4_3);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-            break;
-        }
+struct GSgfxTevInState {
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+};
+
+struct GSgfxLayerTevView {
+#ifdef __MWERKS__
+    u8 unk0[0xF70];
+#endif
+    GSgfxTevInState colorIn[16];
+    GSgfxTevInState alphaIn[16];
+    GSgfxTevColorOpState colorOp[16];
+    GSgfxTevColorOpState alphaOp[16];
+};
+
+#ifdef __MWERKS__
+#define TEV (((GSgfxLayerTevView*)layer))
+#else
+#define TEV (((GSgfxLayerTevView*)layer->hw.colorIn))
+#endif
+
+static inline void tevColorOp(GSgfxLayer* layer, u8 id, s32 op, s32 bias, s32 scale, u8 clamp, s32 outReg) {
+    TEV->colorOp[id].op = op;
+    TEV->colorOp[id].bias = bias;
+    TEV->colorOp[id].scale = scale;
+    TEV->colorOp[id].clamp = clamp;
+    TEV->colorOp[id].outReg = outReg;
+    LAYER_F(layer, u32*, 0x16DC, dirty[0].colorOp) |= 1 << id;
+    LAYER_F(layer, u32*, 0x16A8, dirty[0].groups) |= 8;
+    LAYER_F(layer, u32*, 0x1794, dirty[1].colorOp) |= 1 << id;
+    LAYER_F(layer, u32*, 0x1760, dirty[1].groups) |= 8;
+}
+
+static inline void tevColorIn(GSgfxLayer* layer, u8 id, s32 a, s32 b, s32 c, s32 d) {
+    TEV->colorIn[id].a = a;
+    TEV->colorIn[id].b = b;
+    TEV->colorIn[id].c = c;
+    TEV->colorIn[id].d = d;
+    LAYER_F(layer, u32*, 0x16D4, dirty[0].colorIn) |= 1 << id;
+    LAYER_F(layer, u32*, 0x16A8, dirty[0].groups) |= 8;
+    LAYER_F(layer, u32*, 0x178C, dirty[1].colorIn) |= 1 << id;
+    LAYER_F(layer, u32*, 0x1760, dirty[1].groups) |= 8;
+}
+
+static inline void tevAlphaOp(GSgfxLayer* layer, u8 id, s32 op, s32 bias, s32 scale, u8 clamp, s32 outReg) {
+    TEV->alphaOp[id].op = op;
+    TEV->alphaOp[id].bias = bias;
+    TEV->alphaOp[id].scale = scale;
+    TEV->alphaOp[id].clamp = clamp;
+    TEV->alphaOp[id].outReg = outReg;
+    LAYER_F(layer, u32*, 0x16E0, dirty[0].alphaOp) |= 1 << id;
+    LAYER_F(layer, u32*, 0x16A8, dirty[0].groups) |= 8;
+    LAYER_F(layer, u32*, 0x1798, dirty[1].alphaOp) |= 1 << id;
+    LAYER_F(layer, u32*, 0x1760, dirty[1].groups) |= 8;
+}
+
+static inline void tevAlphaIn(GSgfxLayer* layer, u8 id, s32 a, s32 b, s32 c, s32 d) {
+    TEV->alphaIn[id].a = a;
+    TEV->alphaIn[id].b = b;
+    TEV->alphaIn[id].c = c;
+    TEV->alphaIn[id].d = d;
+    LAYER_F(layer, u32*, 0x16D8, dirty[0].alphaIn) |= 1 << id;
+    LAYER_F(layer, u32*, 0x16A8, dirty[0].groups) |= 8;
+    LAYER_F(layer, u32*, 0x1790, dirty[1].alphaIn) |= 1 << id;
+    LAYER_F(layer, u32*, 0x1760, dirty[1].groups) |= 8;
+}
+
+#undef TEV
+
+void GSgfxLayer::tunitFunc(unsigned char id, GSgfxTunitFunc func) {
+    switch (func) {
+    case 0:
+        tevColorOp(this, id, 0, 0, 0, 1, 0);
+        tevColorIn(this, id, 0xf, 0xa, 8, 0xf);
+        tevAlphaOp(this, id, 0, 0, 0, 1, 0);
+        tevAlphaIn(this, id, 7, 5, 4, 7);
+        break;
+    case 1:
+        tevColorOp(this, id, 0, 0, 0, 1, 0);
+        tevColorIn(this, id, 0xa, 8, 9, 0xf);
+        tevAlphaOp(this, id, 0, 0, 0, 1, 0);
+        tevAlphaIn(this, id, 7, 7, 7, 5);
+        break;
+    case 2:
+        tevColorOp(this, id, 0, 0, 0, 1, 0);
+        tevColorIn(this, id, 0xa, 0xc, 8, 0xf);
+        tevAlphaOp(this, id, 0, 0, 0, 1, 0);
+        tevAlphaIn(this, id, 7, 5, 4, 7);
+        break;
+    case 3:
+        tevColorOp(this, id, 0, 0, 0, 1, 0);
+        tevColorIn(this, id, 8, 0xf, 0xf, 0xf);
+        tevAlphaOp(this, id, 0, 0, 0, 1, 0);
+        tevAlphaIn(this, id, 4, 7, 7, 7);
+        break;
+    case 4:
+        tevColorOp(this, id, 0, 0, 0, 1, 0);
+        tevColorIn(this, id, 0xa, 0xf, 0xf, 0xf);
+        tevAlphaOp(this, id, 0, 0, 0, 1, 0);
+        tevAlphaIn(this, id, 5, 7, 7, 7);
+        break;
+    case 5:
+        tevColorOp(this, id, 0, 0, 0, 1, 0);
+        tevColorIn(this, id, 8, 0xf, 0xf, 0);
+        tevAlphaOp(this, id, 0, 0, 0, 1, 0);
+        tevAlphaIn(this, id, 4, 7, 7, 0);
+        break;
+    case 6:
+        tevColorOp(this, id, 0, 0, 0, 1, 0);
+        tevColorIn(this, id, 0xa, 0xf, 0xf, 0);
+        tevAlphaOp(this, id, 0, 0, 0, 1, 0);
+        tevAlphaIn(this, id, 5, 7, 7, 0);
+        break;
+    case 7:
+        tevColorOp(this, id, 0, 0, 0, 1, 0);
+        tevColorIn(this, id, 0xf, 0xa, 8, 0);
+        tevAlphaOp(this, id, 0, 0, 0, 1, 0);
+        tevAlphaIn(this, id, 7, 5, 4, 0);
+        break;
     }
 }
 }
@@ -631,16 +461,22 @@ struct GSgfxChanState {
 };
 
 struct GSgfxLayerChans {
+#ifdef __MWERKS__
     u8 pad[0xDBC];
+#endif
     GSgfxChanState chans[4];
 };
+#ifdef __MWERKS__
 #define CHANS (((GSgfxLayerChans*)this)->chans)
+#else
+#define CHANS (((GSgfxLayerChans*)this->hw.chan)->chans)
+#endif
 
 void GSgfxLayer::cunitChannelGen(unsigned char chan, GSgfxCunitAlpha alpha, GSgfxCunitSrc amb, GSgfxCunitSrc mat,
-                                 unsigned long numLights, GSgfxLight** lights, GSgfxLightType type,
+                                 u32 numLights, GSgfxLight** lights, GSgfxLightType type,
                                  GSgfxDiffuseFunc diffuse) {
     u32 colorChan = chan;
-    u32 alphaChan = colorChan + 2;
+    u32 alphaChan = chan + 2;
     u8 enable = 0;
     u32 i;
 
@@ -654,25 +490,25 @@ void GSgfxLayer::cunitChannelGen(unsigned char chan, GSgfxCunitAlpha alpha, GSgf
         diffuse = (GSgfxDiffuseFunc)0;
     }
     if (alpha == 0 || alpha == 2) {
-        CHANS[colorChan].enable = enable;
-        CHANS[colorChan].ambSrc = amb;
-        CHANS[colorChan].matSrc = mat;
-        CHANS[colorChan].unkC = 0;
-        CHANS[colorChan].diffuse = diffuse;
-        CHANS[colorChan].attn = type;
+        CHANS[chan].enable = enable;
+        CHANS[chan].ambSrc = amb;
+        CHANS[chan].matSrc = mat;
+        CHANS[chan].unkC = 0;
+        CHANS[chan].diffuse = diffuse;
+        CHANS[chan].attn = type;
         if (enable) {
             for (i = 0; i < 8; i++) {
                 if (i < numLights) {
-                    CHANS[colorChan].lights[i] = lights[i];
+                    CHANS[chan].lights[i] = lights[i];
                 } else {
-                    CHANS[colorChan].lights[i] = NULL;
+                    CHANS[chan].lights[i] = NULL;
                 }
             }
         } else {
             memset(CHANS[colorChan].lights, 0, sizeof(CHANS[colorChan].lights));
         }
-        M2C_FIELD(this, u32 *, 0x16C0) |= 1 << colorChan;
-        M2C_FIELD(this, u32 *, 0x1778) |= 1 << colorChan;
+        LAYER_F(this, u32 *, 0x16C0, dirty[0].chanCtrl) |= 1 << colorChan;
+        LAYER_F(this, u32 *, 0x1778, dirty[1].chanCtrl) |= 1 << colorChan;
     }
     if (alpha == 1 || alpha == 2) {
         CHANS[alphaChan].enable = enable;
@@ -692,18 +528,39 @@ void GSgfxLayer::cunitChannelGen(unsigned char chan, GSgfxCunitAlpha alpha, GSgf
         } else {
             memset(CHANS[colorChan].lights, 0, sizeof(CHANS[colorChan].lights));
         }
-        M2C_FIELD(this, u32 *, 0x16C0) |= 1 << alphaChan;
-        M2C_FIELD(this, u32 *, 0x1778) |= 1 << alphaChan;
+        LAYER_F(this, u32 *, 0x16C0, dirty[0].chanCtrl) |= 1 << alphaChan;
+        LAYER_F(this, u32 *, 0x1778, dirty[1].chanCtrl) |= 1 << alphaChan;
     }
-    M2C_FIELD(this, u32 *, 0x16A8) |= 4;
-    M2C_FIELD(this, u32 *, 0x1760) |= 4;
+    LAYER_F(this, u32 *, 0x16A8, dirty[0].groups) |= 4;
+    LAYER_F(this, u32 *, 0x1760, dirty[1].groups) |= 4;
+}
+}
+
+extern "C++" {
+
+extern "C++" {
+void GSgfxLayer::drawSphere(unsigned char p0) {
+    ((GSgfxLayer*)(this))->FlushState();
+    GXSetVtxDescv((const GXVtxDescList *)(LAYER_VF_ADDR(this) + 0x1B8));
+    GXDrawSphere1(p0);
+    ((GSgfxLayer*)(this))->InvalidateState();
+}
+}
+
+extern "C++" {
+void GSgfxLayer::drawSphere(unsigned char p0, unsigned char p1) {
+    ((GSgfxLayer*)(this))->FlushState();
+    GXSetVtxDescv((const GXVtxDescList *)(LAYER_VF_ADDR(this) + 0x1B8));
+    GXDrawSphere(p1, p0);
+    ((GSgfxLayer*)(this))->InvalidateState();
+}
 }
 }
 
 extern "C++" {
 void GSgfxLayer::drawTorus(float p0, unsigned char p1, unsigned char p2) {
     ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
+    GXSetVtxDescv((const GXVtxDescList *)(LAYER_VF_ADDR(this) + 0x1B8));
     GXDrawTorus(p0, p1, p2);
     ((GSgfxLayer*)(this))->InvalidateState();
 }
@@ -712,7 +569,7 @@ void GSgfxLayer::drawTorus(float p0, unsigned char p1, unsigned char p2) {
 extern "C++" {
 void GSgfxLayer::drawOctahedron() {
     ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
+    GXSetVtxDescv((const GXVtxDescList *)(LAYER_VF_ADDR(this) + 0x1B8));
     GXDrawOctahedron();
     ((GSgfxLayer*)(this))->InvalidateState();
 }
@@ -721,7 +578,7 @@ void GSgfxLayer::drawOctahedron() {
 extern "C++" {
 void GSgfxLayer::drawIcosahedron() {
     ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
+    GXSetVtxDescv((const GXVtxDescList *)(LAYER_VF_ADDR(this) + 0x1B8));
     GXDrawIcosahedron();
     ((GSgfxLayer*)(this))->InvalidateState();
 }
@@ -730,7 +587,7 @@ void GSgfxLayer::drawIcosahedron() {
 extern "C++" {
 void GSgfxLayer::drawDodecaedron() {
     ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
+    GXSetVtxDescv((const GXVtxDescList *)(LAYER_VF_ADDR(this) + 0x1B8));
     GXDrawDodeca();
     ((GSgfxLayer*)(this))->InvalidateState();
 }
@@ -739,7 +596,7 @@ void GSgfxLayer::drawDodecaedron() {
 extern "C++" {
 void GSgfxLayer::drawCylinder(unsigned char p0) {
     ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
+    GXSetVtxDescv((const GXVtxDescList *)(LAYER_VF_ADDR(this) + 0x1B8));
     GXDrawCylinder(p0);
     ((GSgfxLayer*)(this))->InvalidateState();
 }
@@ -748,7 +605,7 @@ void GSgfxLayer::drawCylinder(unsigned char p0) {
 extern "C++" {
 void GSgfxLayer::drawCube() {
     ((GSgfxLayer*)(this))->FlushState();
-    GXSetVtxDescv((const GXVtxDescList *)(M2C_FIELD(this, s32 *, 0x199C) + 0x1B8));
+    GXSetVtxDescv((const GXVtxDescList *)(LAYER_VF_ADDR(this) + 0x1B8));
     GXDrawCube();
     ((GSgfxLayer*)(this))->InvalidateState();
 }
@@ -756,23 +613,23 @@ void GSgfxLayer::drawCube() {
 
 extern "C++" {
 void GSgfxLayer::dlDraw(GSgfxDL* p0) {
-    s32 temp_r31;
+    LAYER_VF_SAVE temp_r31;
 
-    if (M2C_FIELD(p0, u16 *, 0) & 2) {
-        DCStoreRange((register void*)(M2C_FIELD(p0, u8 **, 4)), M2C_FIELD(p0, u32 *, 8));
-        M2C_FIELD(p0, u16 *, 0) = (u16) (M2C_FIELD(p0, u16 *, 0) & 0xFFFFFFFD);
+    if (DL_F(p0, u16 *, 0, flags) & 2) {
+        DCStoreRange((register void*)(DL_F(p0, u8 **, 4, data)), DL_F(p0, u32 *, 8, size));
+        DL_F(p0, u16 *, 0, flags) = (u16) (DL_F(p0, u16 *, 0, flags) & 0xFFFFFFFD);
     }
-    temp_r31 = M2C_FIELD(this, s32 *, 0x199C);
-    M2C_FIELD(this, s32 *, 0x199C) = (s32) M2C_FIELD(p0, s32 *, 0xC);
+    temp_r31 = LAYER_VF_GET(this);
+    LAYER_VF_SET(this, DL_VF(p0));
     ((GSgfxLayer*)(this))->FlushState();
-    _layerCallDisplayList(M2C_FIELD(p0, u8 **, 4), M2C_FIELD(p0, u32 *, 8));
-    M2C_FIELD(this, s32 *, 0x199C) = temp_r31;
+    _layerCallDisplayList(DL_F(p0, u8 **, 4, data), DL_F(p0, u32 *, 8, size));
+    LAYER_VF_SET(this, temp_r31);
 }
 }
 
 extern "C++" {
-void GSgfxLayer::dlDrawExt(unsigned char* p0, unsigned long p1) {
-    M2C_FIELD(M2C_FIELD(this, u8 **, 0x199C), s32 *, 4) = 0;
+void GSgfxLayer::dlDrawExt(unsigned char* p0, u32 p1) {
+    M2C_FIELD(LAYER_F(this, u8 **, 0x199C, curVF), s32 *, 4) = 0;
     ((GSgfxLayer*)(this))->FlushState();
     _layerCallDisplayList(p0, p1);
 }
@@ -785,8 +642,19 @@ void GSgfxLayer::endSurface() {
 extern "C++" {
 void GSgfxLayer::beginSurface(unsigned short p0) {
     ((GSgfxLayer*)(this))->FlushState();
-    GXWGFifo.u8 = M2C_FIELD(this, s32 *, 0x1998) | M2C_FIELD(M2C_FIELD(this, u8 **, 0x199C), s32 *, 4);
+    GXWGFifo.u8 = LAYER_F(this, s32 *, 0x1998, unk1998) | M2C_FIELD(LAYER_F(this, u8 **, 0x199C, curVF), s32 *, 4);
     GXWGFifo.u16 = p0;
     gsgfx_layer_inPrimitive = 1;
 }
 }
+
+#ifndef __MWERKS__
+#include <stddef.h>
+static_assert(sizeof(GSgfxTgenState) == sizeof(GSgfxLayerTexGen), "texgen view");
+static_assert(offsetof(GSgfxTgenState, unk14) == offsetof(GSgfxLayerTexGen, tex), "texgen view");
+static_assert(sizeof(GSgfxChanState) == sizeof(GSgfxLayerChan), "chan view");
+static_assert(offsetof(GSgfxChanState, lights) == offsetof(GSgfxLayerChan, lights), "chan view");
+static_assert(sizeof(GSgfxTevColorOpState) == sizeof(GSgfxLayerTevOp), "tev op view");
+static_assert(offsetof(GSgfxLayerTevView, alphaOp) ==
+              offsetof(GSgfxLayerHW, alphaOp) - offsetof(GSgfxLayerHW, colorIn), "tev view");
+#endif

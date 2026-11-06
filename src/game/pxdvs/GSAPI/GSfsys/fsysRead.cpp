@@ -1,5 +1,8 @@
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/pxdvs/GSAPI/GSfsys/fsys.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -14,52 +17,9 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
-struct Fsys;
-struct FsysArqTrans;
-struct FsysBG;
-struct FsysBlock;
-struct FsysHeader;
-struct FsysResHeader;
-struct FsysWork;
 struct GSdvdFile;
 
 extern "C" {
-struct Fsys {
-    u8 _draft[1];
-};
-struct FsysArqTrans {
-    u8 _draft[1];
-};
-struct FsysBG {
-    u8 _draft[1];
-};
-struct FsysBlock {
-    u8 unk0[8];
-    u8* buf;
-    s32 offset;
-};
-struct FsysHeader {
-    u8 unk0[0xC];
-    u32 count;
-    u8 unk10[0x30];
-    u32 offsetTable;
-};
-struct FsysResHeader {
-    s32 id;
-    u8 unk4[8];
-    u32 flags;
-    u8 unk10[4];
-    s32 size;
-    u8 unk18[8];
-    u32 type;
-    u8 unk24[4];
-    s32 pos;
-    u8 unk2C[4];
-    FsysBlock* blocks;
-};
-struct FsysWork {
-    u8 _draft[1];
-};
 struct GSdvdFile {
     u8 _draft[1];
 };
@@ -69,19 +29,19 @@ void GSdvdClose(GSdvdFile* file);
 u32 GSdvdGetLength(u32 file);
 GSdvdFile* GSdvdOpen(const char* name);
 u8 GSdvdOpenTest(const char* name);
-u8 GSdvdReadAsync(u32 file, void* dst, u32 len, s32 a, s32 b);
+u8 GSdvdReadAsync(u32 file, void* dst, u32 len, s32 a, void* callback);
 u8 GSdvdSeekAsync(s32, s32, void*);
 asm BOOL OSDisableInterrupts(void);
 asm BOOL OSRestoreInterrupts(register BOOL level);
 void _fsysAddBGWork(FsysBG* bg);
-void _fsysAddBlock(FsysBlock** list, FsysBlock* block);
+void _fsysAddBlock(FsysBlockSlot* list, FsysBlock* block);
 static u8 _fsysAdjustReadFile(void *p0);
 FsysBlock* _fsysAllocBlock(void);
 FsysArqTrans* _fsysArq2ArqTrans(void* arq);
 u8 _fsysCheckCache(s32, void*);
 static u8 _fsysExpandFile(void *p0);
 u8 _fsysExpandFileExec(void *p0, void *p1);
-BOOL _fsysFreeBlock(FsysBlock** list, u8 first);
+BOOL _fsysFreeBlock(FsysBlockSlot* list, u8 first);
 s32 _fsysGetActiveTask(s32 mode);
 s32* _fsysGetDataType(u32 p0);
 FsysHeader* _fsysGetHeader(Fsys* fsys);
@@ -93,13 +53,13 @@ u32 _fsysID2Index(FsysWork* work, u32 id);
 FsysWork* _fsysInfo2Work(u32 handle);
 void* _fsysMemAllocCache(Fsys* fsys, u32 id, u32 size, u32 arg);
 bool _fsysMemAllocHeader(Fsys* fsys);
-void _fsysMoveBlock(FsysBlock** from, FsysBlock** to);
+void _fsysMoveBlock(FsysBlockSlot* from, FsysBlockSlot* to);
 static void _fsysReadBlockCacheCallback(u32 request);
 static void _fsysReadBlockCacheWriteCallback(u32 request);
 static void _fsysReadBlockDvdCallback(s32 p0, s32 p1);
 static void _fsysReadBlockHandling(void *p0, void *p1);
 u8 _fsysReadCache(void*, void*, void*, s32, u32, void*);
-static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5, void *p6, void *p7, s32 p8);
+static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5, void *p6, void *p7, GCsptr p8);
 void* _fsysReadDataExec(void *p0, void *p1);
 static void _fsysReadDataNext(void *p0, void *p1);
 static void* _fsysReadFile(void *p0);
@@ -115,7 +75,8 @@ s32 _fsysSetLockCacheFlag(s32, void*, s32);
 u32 _fsysStreamGetCacheSize(void);
 u32 _fsysStreamGetReadBlockFlag(u32 offset);
 void _fsysWorkSetTaskStatus(FsysWork* work, u32 status);
-s32 _fsysWriteCache(void*, void*, s32, u32, void*, void*, void*);
+void _fsysWriteCache(Fsys* fsys, FsysResHeader* res, void* src, u32 base, u32 size, u32 offset,
+                     void (*callback)(u32));
 int sprintf(char* s, const char* format, ...);
 extern u32 _fsysBlockByteSize;
 struct FsysDataType {
@@ -129,7 +90,7 @@ extern u32 fsys_datatype_number;
 }
 
 void _fsysSeekRequest(void *p0) {
-    if (GSdvdSeekAsync(M2C_FIELD(p0, s32 *, 0xC), 0, _fsysSeekCallback) == 0) {
+    if (GSdvdSeekAsync(((FsysWork*)(p0))->file, 0, _fsysSeekCallback) == 0) {
         _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), -0x3E2U);
     }
 }
@@ -142,7 +103,7 @@ void _fsysReadRequest(void *p0) {
     FsysWork *temp_r3;
     u8 var_r28;
 
-    if (((u8 *) M2C_FIELD(p0, u8 **, 0x20) != NULL) && ((u8) M2C_FIELD(p0, u8 *, 0x2E) == 1)) {
+    if (((u8 *) ((FsysWork*)(p0))->header != NULL) && ((u8) ((FsysWork*)(p0))->headerValid == 1)) {
         _fsysReadHeaderCallbackSub(p0);
         return;
     }
@@ -156,42 +117,42 @@ loop_4:
                 _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), -0x3E4U);
             }
         } else {
-            M2C_FIELD(temp_r3, s32 *, 0x14) = 0;
+            ((FsysWork*)(temp_r3))->status = 0;
             OSRestoreInterrupts(level);
             goto loop_4;
         }
     } else {
         level = OSDisableInterrupts();
         var_r28 = 0;
-        if (_fsysCheckCache(M2C_FIELD(p0, s32 *, 0), (u8 *)0xFFFF) == 1) {
-            _fsysSetLockCacheFlag(M2C_FIELD(p0, s32 *, 0), (u8 *)0xFFFF, 1);
+        if (_fsysCheckCache(((FsysWork*)(p0))->id, (u8 *)0xFFFF) == 1) {
+            _fsysSetLockCacheFlag(((FsysWork*)(p0))->id, (u8 *)0xFFFF, 1);
             var_r28 = 1;
         }
         OSRestoreInterrupts(level);
-        _fsysReadData(p0, NULL, var_r28, 0xFFFF, M2C_FIELD(p0, u8**, 0x20), M2C_FIELD(M2C_FIELD(p0, u8**, 0x1C), u8**, 8), NULL,
-                      (void*)_fsysReadHeaderDvdCallback, (s32)_fsysReadHeaderCacheCallback);
+        _fsysReadData(p0, NULL, var_r28, 0xFFFF, ((FsysWork*)(p0))->header, (u8**)(u32)((FsysWork*)(p0))->group->headerSize, NULL,
+                      (void*)_fsysReadHeaderDvdCallback, (GCsptr)_fsysReadHeaderCacheCallback);
     }
 }
 }
 
 extern "C" {
-static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5, void *p6, void *p7, s32 p8) {
+static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5, void *p6, void *p7, GCsptr p8) {
     u32 temp_r3;
     u8 *var_r9;
 
     var_r9 = (unsigned char *)(p6);
-    M2C_FIELD(p0, s32 *, 4) = p3;
+    ((FsysWork*)(p0))->unk4 = p3;
     if (p2 == 1) {
-        if (_fsysReadCache(p0, p1, p4, (s32)p5, (u32)p6, (void*)p8) == 0) {
+        if (_fsysReadCache(p0, p1, p4, (GCsptr)p5, (u32)p6, (void*)p8) == 0) {
             _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), -0x3E4U);
             return NULL;
         }
         goto block_11;
     }
     if (p1 != NULL) {
-        temp_r3 = M2C_FIELD(p1, u32 *, 0x38);
+        temp_r3 = (u32)((FsysResHeader*)(p1))->dvdFile;
         if (temp_r3 != 0) {
-            if (GSdvdReadAsync(temp_r3, (void*)(p4), (u32) p5, (s32) var_r9, (s32) p7) == 0) {
+            if (GSdvdReadAsync(temp_r3, (void*)(p4), (u32) p5, (GCsptr) var_r9, p7) == 0) {
                 _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), -0x3E4U);
                 return NULL;
             }
@@ -199,9 +160,9 @@ static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5
         }
     }
     if (p1 != NULL) {
-        var_r9 += M2C_FIELD(p1, s32 *, 4);
+        var_r9 += ((FsysResHeader*)(p1))->unk4;
     }
-    if (GSdvdReadAsync(M2C_FIELD(p0, u32 *, 0xC), (void*)(p4), (u32) p5, (s32) var_r9, (s32) p7) == 0) {
+    if (GSdvdReadAsync(((FsysWork*)(p0))->file, (void*)(p4), (u32) p5, (GCsptr) var_r9, p7) == 0) {
         _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), -0x3E4U);
         return NULL;
     }
@@ -216,7 +177,7 @@ static void _fsysReadHeaderCacheCallback(u32 request) {
 
     temp_r3 = _fsysArq2ArqTrans((void*)request);
     if (temp_r3 != NULL) {
-        _fsysReadHeaderCallbackSub(M2C_FIELD(temp_r3, u8 **, 0x30));
+        _fsysReadHeaderCallbackSub(((FsysArqTrans*)(temp_r3))->fsys);
     }
 }
 }
@@ -232,9 +193,9 @@ static void _fsysReadHeaderDvdCallback(s32 p0, s32 p1) {
             _fsysWorkSetTaskStatus((FsysWork*)(temp_r3), -0x3E4U);
             return;
         }
-        temp_r3_2 = (unsigned char *)(_fsysMemAllocCache((Fsys*)((Fsys *) temp_r3), 0xFFFFU, M2C_FIELD(M2C_FIELD(temp_r3, u8 **, 0x1C), u32 *, 8), M2C_FIELD(temp_r3, u32 *, 0x3C)));
+        temp_r3_2 = (unsigned char *)(_fsysMemAllocCache((Fsys*)((Fsys *) temp_r3), 0xFFFFU, ((FsysWork*)(temp_r3))->group->headerSize, ((FsysWork*)(temp_r3))->groupId));
         if (temp_r3_2 != NULL) {
-            _fsysWriteCache(temp_r3, NULL, M2C_FIELD(temp_r3, s32 *, 0x20), (u32) temp_r3_2, (u8 *) M2C_FIELD(M2C_FIELD(temp_r3, u8 **, 0x1C), u32 *, 8), NULL, _fsysReadHeaderCacheWriteCallback);
+            _fsysWriteCache(temp_r3, NULL, ((FsysWork*)(temp_r3))->header, (u32) temp_r3_2, ((FsysWork*)(temp_r3))->group->headerSize, 0, (void (*)(u32))_fsysReadHeaderCacheWriteCallback);
         }
         _fsysReadHeaderCallbackSub(temp_r3);
     }
@@ -252,26 +213,26 @@ static void _fsysReadHeaderCallbackSub(void *p0) {
     s32 temp_r31;
 
     temp_r31 = OSDisableInterrupts();
-    M2C_FIELD(p0, s8 *, 0x2E) = 1;
-    temp_r0 = M2C_FIELD(p0, s32 *, 0x10);
+    ((FsysWork*)(p0))->headerValid = 1;
+    temp_r0 = ((FsysWork*)(p0))->mode;
     switch (temp_r0) {
     case 3:
         break;
     case 4:
     case 1:
-        if (_fsysID2Index((FsysWork*)((FsysWork *) p0), M2C_FIELD(p0, u32 *, 8)) != 0xFFFF) {
-            M2C_FIELD(p0, u32 *, 0x24) = _fsysID2Index((FsysWork*)((FsysWork *) p0), M2C_FIELD(p0, u32 *, 8));
-            M2C_FIELD(p0, u32 *, 0x28) = (u32) M2C_FIELD(p0, u32 *, 0x24);
+        if (_fsysID2Index((FsysWork*)((FsysWork *) p0), ((FsysWork*)(p0))->unk8) != 0xFFFF) {
+            ((FsysWork*)(p0))->unk24 = _fsysID2Index((FsysWork*)((FsysWork *) p0), ((FsysWork*)(p0))->unk8);
+            ((FsysWork*)(p0))->unk28 = (u32) ((FsysWork*)(p0))->unk24;
         }
         _fsysReadFile(p0);
         break;
     case 2:
-        if (_fsysID2Index((FsysWork*)((FsysWork *) p0), M2C_FIELD(p0, u32 *, 8)) != 0xFFFF) {
-            if (_fsysCheckCache((long)(M2C_FIELD(p0, s32 *, 0)), (void *)(_fsysID2Index((FsysWork*)((FsysWork *) p0), M2C_FIELD(p0, u32 *, 8)))) == 1) {
+        if (_fsysID2Index((FsysWork*)((FsysWork *) p0), ((FsysWork*)(p0))->unk8) != 0xFFFF) {
+            if (_fsysCheckCache((s32)(((FsysWork*)(p0))->id), (void *)(_fsysID2Index((FsysWork*)((FsysWork *) p0), ((FsysWork*)(p0))->unk8))) == 1) {
                 _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), 0xAU);
             } else {
-                M2C_FIELD(p0, u32 *, 0x24) = _fsysID2Index((FsysWork*)((FsysWork *) p0), M2C_FIELD(p0, u32 *, 8));
-                M2C_FIELD(p0, u32 *, 0x28) = (u32) M2C_FIELD(p0, u32 *, 0x24);
+                ((FsysWork*)(p0))->unk24 = _fsysID2Index((FsysWork*)((FsysWork *) p0), ((FsysWork*)(p0))->unk8);
+                ((FsysWork*)(p0))->unk28 = (u32) ((FsysWork*)(p0))->unk24;
                 _fsysReadFile(p0);
             }
         } else if (_fsysAdjustReadFile(p0) == 1) {
@@ -292,45 +253,45 @@ static void* _fsysReadFile(void* task) {
     char* name;
     s32 mode;
 
-    if (M2C_FIELD(task, u8 *, 0x2C) == 1) {
+    if (((FsysWork*)(task))->cancel == 1) {
         _fsysWorkSetTaskStatus((FsysWork*)task, 0xA);
         return NULL;
     }
-    res = _fsysGetResHeader((Fsys*)task, M2C_FIELD(task, u32 *, 0x24));
+    res = _fsysGetResHeader((Fsys*)task, ((FsysWork*)(task))->unk24);
     if (res != NULL) {
-        name = (char*)(M2C_FIELD(task, s32 *, 0x20) + M2C_FIELD(res, s32 *, 0x1C));
-        M2C_FIELD(res, s32 *, 0x28) = 0;
-        M2C_FIELD(res, s32 *, 0x2C) = 0;
-        M2C_FIELD(res, s32 *, 0x30) = 0;
-        M2C_FIELD(res, s32 *, 0x34) = 0;
-        M2C_FIELD(res, GSdvdFile **, 0x38) = NULL;
-        M2C_FIELD(res, s32 *, 0x3C) = 0;
-        M2C_FIELD(res, s32 *, 0x40) = 0xFFFF;
-        M2C_FIELD(res, u32 *, 0xC) &= 0xFF70FFF7;
-        M2C_FIELD(res, u32 *, 0xC) |= 0x800;
-        M2C_FIELD(res, s32 *, 0x44) = 0;
-        M2C_FIELD(res, s32 *, 0x4C) = 0;
-        M2C_FIELD(res, s32 *, 0x48) = 0;
-        M2C_FIELD(res, s32 *, 0x50) = 0;
-        M2C_FIELD(res, u32 *, 0x54) = M2C_FIELD(res, u32 *, 0x14);
-        if (M2C_FIELD(task, s32 *, 0x10) == 4 && (M2C_FIELD(res, u32 *, 0x20) == 0x14 || M2C_FIELD(res, u32 *, 0x20) == 0x16)) {
-            M2C_FIELD(res, u32 *, 0xC) |= 0x40000;
+        name = (char*)((FsysWork*)(task))->header + ((FsysResHeader*)(res))->unk1C;
+        ((FsysResHeader*)(res))->pos = 0;
+        ((FsysResHeader*)(res))->cache = 0;
+        ((FsysResHeader*)(res))->blockA = 0;
+        ((FsysResHeader*)(res))->blockB = 0;
+        ((FsysResHeader*)(res))->dvdFile = NULL;
+        ((FsysResHeader*)(res))->unk3C = 0;
+        ((FsysResHeader*)(res))->pending = 0xFFFF;
+        ((FsysResHeader*)(res))->flags &= 0xFF70FFF7;
+        ((FsysResHeader*)(res))->flags |= 0x800;
+        ((FsysResHeader*)(res))->remaining = 0;
+        ((FsysResHeader*)(res))->readBlocks = 0;
+        ((FsysResHeader*)(res))->unk48 = 0;
+        ((FsysResHeader*)(res))->loopPoint = 0;
+        ((FsysResHeader*)(res))->loopEnd = ((FsysResHeader*)(res))->size14;
+        if (((FsysWork*)(task))->mode == 4 && (((FsysResHeader*)(res))->type == 0x14 || ((FsysResHeader*)(res))->type == 0x16)) {
+            ((FsysResHeader*)(res))->flags |= 0x40000;
         }
-        if (M2C_FIELD(_fsysGetHeader((Fsys*)task), u32 *, 0x10) & 1) {
+        if (_fsysGetHeader((Fsys*)task)->flags & 1) {
             sprintf(path, "debug/%s", name);
             if (GSdvdOpenTest(path) == 1) {
-                M2C_FIELD(res, GSdvdFile **, 0x38) = GSdvdOpen(path);
-                M2C_FIELD(res, u32 *, 0xC) &= 0x7FFFFFFF;
-                M2C_FIELD(res, u32 *, 0x14) = GSdvdGetLength((u32)M2C_FIELD(res, GSdvdFile **, 0x38));
-                M2C_FIELD(res, u32 *, 8) = M2C_FIELD(res, u32 *, 0x14);
+                ((FsysResHeader*)(res))->dvdFile = GSdvdOpen(path);
+                ((FsysResHeader*)(res))->flags &= 0x7FFFFFFF;
+                ((FsysResHeader*)(res))->size14 = GSdvdGetLength((u32)((FsysResHeader*)(res))->dvdFile);
+                ((FsysResHeader*)(res))->size8 = ((FsysResHeader*)(res))->size14;
             }
         }
-        if (M2C_FIELD(task, s32 *, 0x10) != 4 && _fsysCheckCache(M2C_FIELD(task, s32 *, 0), (u8*)M2C_FIELD(task, u32 *, 0x24)) == 1) {
-            M2C_FIELD(res, u32 *, 0xC) |= 0x20000;
-            _fsysSetLockCacheFlag(M2C_FIELD(task, s32 *, 0), (u8*)M2C_FIELD(task, u32 *, 0x24), 1);
+        if (((FsysWork*)(task))->mode != 4 && _fsysCheckCache(((FsysWork*)(task))->id, (u8*)((FsysWork*)(task))->unk24) == 1) {
+            ((FsysResHeader*)(res))->flags |= 0x20000;
+            _fsysSetLockCacheFlag(((FsysWork*)(task))->id, (u8*)((FsysWork*)(task))->unk24, 1);
         }
-        mode = M2C_FIELD(task, s32 *, 0x10);
-        if ((mode == 1 || (mode == 4 && (M2C_FIELD(res, u32 *, 0xC) & 0x40000))) && _fsysExpandFile(task) == 0) {
+        mode = ((FsysWork*)(task))->mode;
+        if ((mode == 1 || (mode == 4 && (((FsysResHeader*)(res))->flags & 0x40000))) && _fsysExpandFile(task) == 0) {
             return NULL;
         }
         return _fsysReadDataExec(task, res);
@@ -342,15 +303,15 @@ static void* _fsysReadFile(void* task) {
 extern "C" {
 void* _fsysReadDataExec(void* task, void* resv) {
     s32 level;
-    s32 pos;
+    GCsptr pos;
     FsysBlock* block;
     u32 cached;
     FsysResHeader* res = (FsysResHeader*)resv;
     level = OSDisableInterrupts();
-    if (M2C_FIELD(task, s32 *, 0x10) == 4 && !(res->flags & 0x80000) && res->type != 0x14 && res->type != 0x16) {
+    if (((FsysWork*)(task))->mode == 4 && !(res->flags & 0x80000) && res->type != 0x14 && res->type != 0x16) {
         FsysResHeader* parent;
-        if (_fsysID2Index((FsysWork*)task, M2C_FIELD(task, u32 *, 8)) != 0xFFFF) {
-            parent = _fsysGetResHeader((Fsys*)task, _fsysID2Index((FsysWork*)task, M2C_FIELD(task, u32 *, 8)));
+        if (_fsysID2Index((FsysWork*)task, ((FsysWork*)(task))->unk8) != 0xFFFF) {
+            parent = _fsysGetResHeader((Fsys*)task, _fsysID2Index((FsysWork*)task, ((FsysWork*)(task))->unk8));
         } else {
             parent = _fsysGetResHeader((Fsys*)task, 0);
         }
@@ -366,7 +327,7 @@ void* _fsysReadDataExec(void* task, void* resv) {
         }
         s32 (*func)(s32, s32, s32) = (s32 (*)(s32, s32, s32))_fsysGetDataType(res->type)[2];
         if (func != NULL) {
-            func(M2C_FIELD(task, s32 *, 0), res->id, res->size);
+            func(((FsysWork*)(task))->id, res->id, res->size14);
         }
         res->flags |= 0x80000;
     }
@@ -377,13 +338,13 @@ void* _fsysReadDataExec(void* task, void* resv) {
         return NULL;
     }
     _fsysResHeaderSetTaskStatus(res, 1);
-    block->offset = res->pos;
-    _fsysAddBlock(&res->blocks, block);
+    block->unkC = res->pos;
+    _fsysAddBlock(&res->blockA, block);
     cached = (res->flags >> 17) & 1;
     pos = res->pos;
-    void* result = _fsysReadData(task, res, cached, M2C_FIELD(task, s32 *, 0x24), res->blocks->buf,
-                                 (void*)_fsysGetTransLength(res->size, pos), (void*)pos, (void*)_fsysReadBlockDvdCallback,
-                                 (s32)_fsysReadBlockCacheCallback);
+    void* result = _fsysReadData(task, res, cached, ((FsysWork*)(task))->unk24, res->blockA->data,
+                                 (void*)_fsysGetTransLength(res->size14, pos), (void*)pos, (void*)_fsysReadBlockDvdCallback,
+                                 (GCsptr)_fsysReadBlockCacheCallback);
     OSRestoreInterrupts(level);
     return result;
 }
@@ -392,13 +353,13 @@ void* _fsysReadDataExec(void* task, void* resv) {
 extern "C" {
 static void _fsysReadBlockCacheCallback(u32 request) {
     FsysArqTrans *temp_r3;
-    u8 *temp_r31;
-    u8 *temp_r30;
+    Fsys *temp_r31;
+    FsysResHeader *temp_r30;
 
     temp_r3 = _fsysArq2ArqTrans((void*)request);
     if (temp_r3 != NULL) {
-        temp_r30 = M2C_FIELD(temp_r3, u8 **, 0x34);
-        temp_r31 = M2C_FIELD(temp_r3, u8 **, 0x30);
+        temp_r30 = ((FsysArqTrans*)(temp_r3))->res;
+        temp_r31 = ((FsysArqTrans*)(temp_r3))->fsys;
         _fsysReadBlockHandling(temp_r31, temp_r30);
         _fsysReadDataNext(temp_r31, temp_r30);
     }
@@ -418,28 +379,28 @@ static void _fsysReadBlockDvdCallback(s32 p0, s32 p1) {
             _fsysWorkSetTaskStatus((FsysWork*)(temp_r3), -0x3E4U);
             return;
         }
-        temp_r3_2 = _fsysGetResHeader((Fsys*)((Fsys *) temp_r3), M2C_FIELD(temp_r3, u32 *, 0x24));
+        temp_r3_2 = _fsysGetResHeader((Fsys*)((Fsys *) temp_r3), ((FsysWork*)(temp_r3))->unk24);
         if (temp_r3_2 != NULL) {
-            temp_r3_3 = M2C_FIELD(temp_r3_2, s32 *, 0xC);
+            temp_r3_3 = ((FsysResHeader*)(temp_r3_2))->flags;
             if (!(temp_r3_3 & 0x10000)) {
-                if ((s32) M2C_FIELD(temp_r3, s32 *, 0x10) == 4) {
+                if ((s32) ((FsysWork*)(temp_r3))->mode == 4) {
                     if (temp_r3_3 & 0x40000) {
-                        M2C_FIELD(temp_r3_2, u8 **, 0x2C) = NULL;
+                        ((FsysResHeader*)(temp_r3_2))->cache = NULL;
                     } else {
-                        M2C_FIELD(temp_r3_2, u8 **, 0x2C) = (unsigned char *)(_fsysMemAllocCache((Fsys*)((Fsys *) temp_r3), M2C_FIELD(temp_r3, u32 *, 0x24), _fsysStreamGetCacheSize(), M2C_FIELD(temp_r3, u32 *, 0x3C)));
+                        ((FsysResHeader*)(temp_r3_2))->cache = (unsigned char *)(_fsysMemAllocCache((Fsys*)((Fsys *) temp_r3), ((FsysWork*)(temp_r3))->unk24, _fsysStreamGetCacheSize(), ((FsysWork*)(temp_r3))->groupId));
                     }
                 } else {
-                    M2C_FIELD(temp_r3_2, u8 **, 0x2C) = (unsigned char *)(_fsysMemAllocCache((Fsys*)((Fsys *) temp_r3), M2C_FIELD(temp_r3, u32 *, 0x24), M2C_FIELD(temp_r3_2, u32 *, 0x14), M2C_FIELD(temp_r3, u32 *, 0x3C)));
+                    ((FsysResHeader*)(temp_r3_2))->cache = (unsigned char *)(_fsysMemAllocCache((Fsys*)((Fsys *) temp_r3), ((FsysWork*)(temp_r3))->unk24, ((FsysResHeader*)(temp_r3_2))->size14, ((FsysWork*)(temp_r3))->groupId));
                 }
             }
-            M2C_FIELD(temp_r3_2, s32 *, 0xC) = (s32) (M2C_FIELD(temp_r3_2, s32 *, 0xC) | 0x10000);
-            if ((u8 *) M2C_FIELD(temp_r3_2, u8 **, 0x2C) != NULL) {
-                if ((s32) M2C_FIELD(temp_r3, s32 *, 0x10) == 4) {
-                    var_r31 = M2C_FIELD(temp_r3_2, s32 *, 0x48);
+            ((FsysResHeader*)(temp_r3_2))->flags = (s32) (((FsysResHeader*)(temp_r3_2))->flags | 0x10000);
+            if ((u8 *) ((FsysResHeader*)(temp_r3_2))->cache != NULL) {
+                if ((s32) ((FsysWork*)(temp_r3))->mode == 4) {
+                    var_r31 = ((FsysResHeader*)(temp_r3_2))->unk48;
                 } else {
-                    var_r31 = M2C_FIELD(temp_r3_2, s32 *, 0x28);
+                    var_r31 = ((FsysResHeader*)(temp_r3_2))->pos;
                 }
-                _fsysWriteCache((void *)(temp_r3), (void *)(temp_r3_2), (long)(M2C_FIELD(M2C_FIELD(temp_r3_2, u8 **, 0x30), s32 *, 8)), (unsigned long)((u32) M2C_FIELD(temp_r3_2, u8 **, 0x2C)), (void *)(_fsysGetTransLength((s32) M2C_FIELD(temp_r3_2, u32 *, 0x14), M2C_FIELD(temp_r3_2, s32 *, 0x28))), (void *)((u8 *) var_r31), (void *)(_fsysReadBlockCacheWriteCallback));
+                _fsysWriteCache(temp_r3, temp_r3_2, temp_r3_2->blockA->data, (u32) ((FsysResHeader*)(temp_r3_2))->cache, _fsysGetTransLength((s32) ((FsysResHeader*)(temp_r3_2))->size14, ((FsysResHeader*)(temp_r3_2))->pos), var_r31, _fsysReadBlockCacheWriteCallback);
             } else {
                 _fsysReadBlockHandling(temp_r3, temp_r3_2);
             }
@@ -467,7 +428,7 @@ static void _fsysReadBlockCacheWriteCallback(u32 request) {
 
     temp_r3 = _fsysArq2ArqTrans((void*)request);
     if (temp_r3 != NULL) {
-        _fsysReadBlockHandling(M2C_FIELD(temp_r3, u8 **, 0x30), M2C_FIELD(temp_r3, u8 **, 0x34));
+        _fsysReadBlockHandling(((FsysArqTrans*)(temp_r3))->fsys, ((FsysArqTrans*)(temp_r3))->res);
     }
 }
 }
@@ -476,12 +437,12 @@ extern "C" {
 static void _fsysReadBlockHandling(void *p0, void *p1) {
     s32 temp_r0;
 
-    temp_r0 = M2C_FIELD(p0, s32 *, 0x10);
-    if (((temp_r0 == 1) || ((temp_r0 == 4) && (M2C_FIELD(p1, s32 *, 0xC) & 0x40000))) && ((u8) M2C_FIELD(p0, u8 *, 0x2C) != 1)) {
-        _fsysMoveBlock((FsysBlock**)(((u8*)(p1) + 0x30)), (FsysBlock**)(((u8*)(p1) + 0x34)));
+    temp_r0 = ((FsysWork*)(p0))->mode;
+    if (((temp_r0 == 1) || ((temp_r0 == 4) && (((FsysResHeader*)(p1))->flags & 0x40000))) && ((u8) ((FsysWork*)(p0))->cancel != 1)) {
+        _fsysMoveBlock(&((FsysResHeader*)(p1))->blockA, &((FsysResHeader*)(p1))->blockB);
         return;
     }
-    _fsysFreeBlock((FsysBlock**)(((u8*)(p1) + 0x30)), 0U);
+    _fsysFreeBlock(&((FsysResHeader*)(p1))->blockA, 0U);
 }
 }
 
@@ -490,34 +451,34 @@ static void _fsysReadDataNext(void *p0, void *p1) {
     GSdvdFile *temp_r3;
     s32 temp_r4;
 
-    M2C_FIELD(p1, u32 *, 0x28) = (u32) (M2C_FIELD(p1, u32 *, 0x28) + _fsysBlockByteSize);
-    if (((s32) M2C_FIELD(p0, s32 *, 0x10) == 4) && !(M2C_FIELD(p1, s32 *, 0xC) & 0x40000)) {
-        M2C_FIELD(p1, u32 *, 0x44) = (u32) (M2C_FIELD(p1, u32 *, 0x44) + _fsysBlockByteSize);
-        M2C_FIELD(p1, s32 *, 0x4C) = (s32) (M2C_FIELD(p1, s32 *, 0x4C) | _fsysStreamGetReadBlockFlag(M2C_FIELD(p1, u32 *, 0x48)));
-        M2C_FIELD(p1, u32 *, 0x48) = (u32) (M2C_FIELD(p1, u32 *, 0x48) + _fsysBlockByteSize);
-        if ((u32) M2C_FIELD(p1, u32 *, 0x48) >= _fsysStreamGetCacheSize()) {
-            M2C_FIELD(p1, u32 *, 0x48) = 0U;
+    ((FsysResHeader*)(p1))->pos = (u32) (((FsysResHeader*)(p1))->pos + _fsysBlockByteSize);
+    if (((s32) ((FsysWork*)(p0))->mode == 4) && !(((FsysResHeader*)(p1))->flags & 0x40000)) {
+        ((FsysResHeader*)(p1))->remaining = (u32) (((FsysResHeader*)(p1))->remaining + _fsysBlockByteSize);
+        ((FsysResHeader*)(p1))->readBlocks = (s32) (((FsysResHeader*)(p1))->readBlocks | _fsysStreamGetReadBlockFlag(((FsysResHeader*)(p1))->unk48));
+        ((FsysResHeader*)(p1))->unk48 = (u32) (((FsysResHeader*)(p1))->unk48 + _fsysBlockByteSize);
+        if ((u32) ((FsysResHeader*)(p1))->unk48 >= _fsysStreamGetCacheSize()) {
+            ((FsysResHeader*)(p1))->unk48 = 0U;
         }
-        if ((u8) M2C_FIELD(p0, u8 *, 0x2C) == 1) {
+        if ((u8) ((FsysWork*)(p0))->cancel == 1) {
             _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), 0xAU);
             return;
         }
-        if ((u32) M2C_FIELD(p1, u32 *, 0x28) >= (u32) M2C_FIELD(p1, u32 *, 0x54)) {
-            if (M2C_FIELD(p1, s32 *, 0xC) & 0x800) {
+        if ((u32) ((FsysResHeader*)(p1))->pos >= (u32) ((FsysResHeader*)(p1))->loopEnd) {
+            if (((FsysResHeader*)(p1))->flags & 0x800) {
                 _fsysResHeaderSetTaskStatus((FsysResHeader*)((FsysResHeader *) p1), 2U);
                 return;
             }
-            if ((u32) M2C_FIELD(p1, u32 *, 0x28) < _fsysStreamGetCacheSize()) {
-                M2C_FIELD(p1, s32 *, 0xC) = (s32) (M2C_FIELD(p1, s32 *, 0xC) | 0x800000);
+            if ((u32) ((FsysResHeader*)(p1))->pos < _fsysStreamGetCacheSize()) {
+                ((FsysResHeader*)(p1))->flags = (s32) (((FsysResHeader*)(p1))->flags | 0x800000);
                 _fsysResHeaderSetTaskStatus((FsysResHeader*)((FsysResHeader *) p1), 2U);
-                M2C_FIELD(p1, s32 *, 0x4C) = -1;
+                ((FsysResHeader*)(p1))->readBlocks = -1;
                 return;
             }
-            M2C_FIELD(p1, u32 *, 0x28) = (u32) M2C_FIELD(p1, u32 *, 0x50);
+            ((FsysResHeader*)(p1))->pos = (u32) ((FsysResHeader*)(p1))->loopPoint;
             goto block_12;
         }
 block_12:
-        if ((u32) M2C_FIELD(p1, u32 *, 0x44) >= _fsysStreamGetCacheSize()) {
+        if ((u32) ((FsysResHeader*)(p1))->remaining >= _fsysStreamGetCacheSize()) {
             _fsysResHeaderSetTaskStatus((FsysResHeader*)((FsysResHeader *) p1), 5U);
             return;
         }
@@ -527,27 +488,27 @@ block_12:
         }
         goto block_28;
     }
-    if ((u32) M2C_FIELD(p1, u32 *, 0x28) >= (u32) M2C_FIELD(p1, u32 *, 0x14)) {
-        temp_r3 = M2C_FIELD(p1, GSdvdFile **, 0x38);
+    if ((u32) ((FsysResHeader*)(p1))->pos >= (u32) ((FsysResHeader*)(p1))->size14) {
+        temp_r3 = ((FsysResHeader*)(p1))->dvdFile;
         if (temp_r3 != NULL) {
-            M2C_FIELD(p1, GSdvdFile **, 0x38) = NULL;
+            ((FsysResHeader*)(p1))->dvdFile = NULL;
             GSdvdClose((GSdvdFile*)(temp_r3));
         }
-        if ((s32) M2C_FIELD(p0, s32 *, 0x10) == 4) {
-            temp_r4 = M2C_FIELD(p0, s32 *, 0x38);
+        if ((s32) ((FsysWork*)(p0))->mode == 4) {
+            temp_r4 = ((FsysWork*)(p0))->cbArg1;
             if (temp_r4 != 0) {
-                M2C_FIELD(p0, u32 *, 0x24) = _fsysID2Index((FsysWork*)((FsysWork *) p0), (u32) temp_r4);
+                ((FsysWork*)(p0))->unk24 = _fsysID2Index((FsysWork*)((FsysWork *) p0), (u32) temp_r4);
                 goto block_25;
             }
         }
-        if (_fsysID2Index((FsysWork*)((FsysWork *) p0), M2C_FIELD(p0, u32 *, 8)) != 0xFFFF) {
+        if (_fsysID2Index((FsysWork*)((FsysWork *) p0), ((FsysWork*)(p0))->unk8) != 0xFFFF) {
             _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), 0xAU);
             return;
         }
-        M2C_FIELD(p0, u32 *, 0x24) = (u32) (M2C_FIELD(p0, u32 *, 0x24) + 1);
+        ((FsysWork*)(p0))->unk24 = (u32) (((FsysWork*)(p0))->unk24 + 1);
 block_25:
         FsysHeader* h = _fsysGetHeader((Fsys*)p0);
-        if ((u32) M2C_FIELD(p0, u32 *, 0x24) >= (u32) M2C_FIELD(h, u32 *, 0xC)) {
+        if ((u32) ((FsysWork*)(p0))->unk24 >= (u32) ((FsysHeader*)(h))->resNum) {
             _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), 0xAU);
             return;
         }
@@ -565,20 +526,20 @@ FsysResHeader* _fsysGetResHeader(Fsys* fsys, u32 index) {
     if (header == NULL) {
         return NULL;
     }
-    if (index >= header->count) {
+    if (index >= header->resNum) {
         return NULL;
     }
-    return (FsysResHeader*)((u8*)header + *(u32*)((u8*)header + header->offsetTable + index * 4));
+    return (FsysResHeader*)((u8*)header + *(gc_be32*)((u8*)header + header->offsetTable + index * 4));
 }
 extern "C" {
 FsysHeader* _fsysGetHeader(Fsys* p0) {
     FsysHeader *temp_r4;
 
-    temp_r4 = M2C_FIELD(p0, FsysHeader **, 0x20);
+    temp_r4 = ((FsysWork*)(p0))->header;
     if (temp_r4 == NULL) {
         return NULL;
     }
-    if ((u8) M2C_FIELD(p0, u8 *, 0x2E) == 0) {
+    if ((u8) ((FsysWork*)(p0))->headerValid == 0) {
         return NULL;
     }
     return temp_r4;
@@ -590,15 +551,15 @@ static u8 _fsysAdjustReadFile(void *p0) {
     FsysHeader* hdr = _fsysGetHeader((Fsys*)p0);
     u16 i;
 
-    for (i = 0; i < M2C_FIELD(hdr, u32*, 0xC); i++) {
-        if (_fsysCheckCache(M2C_FIELD(p0, s32*, 0), (u8*)i) == 0) {
+    for (i = 0; i < ((FsysHeader*)(hdr))->resNum; i++) {
+        if (_fsysCheckCache(((FsysWork*)(p0))->id, (u8*)i) == 0) {
             break;
         }
     }
-    if (i >= M2C_FIELD(hdr, u32*, 0xC)) {
+    if (i >= ((FsysHeader*)(hdr))->resNum) {
         return 0;
     }
-    M2C_FIELD(p0, s32*, 0x24) = i;
+    ((FsysWork*)(p0))->unk24 = i;
     return 1;
 }
 }
@@ -609,14 +570,14 @@ static u8 _fsysExpandFile(void *p0) {
     FsysResHeader *temp_r3;
 
     void* h = _fsysGetHeader((Fsys*)p0);
-    if ((M2C_FIELD(p0, u32 *, 0x28)) >= (u32) M2C_FIELD(h, u32 *, 0xC)) {
+    if ((((FsysWork*)(p0))->unk28) >= (u32) ((FsysHeader*)(h))->resNum) {
         return 0U;
     }
-    temp_r3 = _fsysGetResHeader((Fsys*)((Fsys *) p0), (M2C_FIELD(p0, u32 *, 0x28)));
+    temp_r3 = _fsysGetResHeader((Fsys*)((Fsys *) p0), (((FsysWork*)(p0))->unk28));
     if (temp_r3 == NULL) {
         return 0U;
     }
-    M2C_FIELD(p0, u32 *, 0x28) = (u32) (M2C_FIELD(p0, u32 *, 0x28) + 1);
+    ((FsysWork*)(p0))->unk28 = (u32) (((FsysWork*)(p0))->unk28 + 1);
     return _fsysExpandFileExec(p0, temp_r3);
 }
 #pragma optimize_for_size reset
@@ -635,12 +596,12 @@ u8 _fsysExpandFileExec(void *p0, void *p1) {
         return 0U;
     }
     _fsysResHeaderSetTaskStatus((FsysResHeader*)((FsysResHeader *) p1), 1U);
-    M2C_FIELD(temp_r3, u8 **, 0x10) = (unsigned char *)(p1);
-    M2C_FIELD(temp_r3, u8 **, 0xC) = (unsigned char *)(p0);
-    if (M2C_FIELD(p1, s32 *, 0xC) & 0x80000000) {
-        M2C_FIELD(temp_r3, s8 *, 0xA) = 1;
+    ((FsysBG*)(temp_r3))->res = (FsysResHeader*)(p1);
+    ((FsysBG*)(temp_r3))->work = (FsysWork*)(p0);
+    if (((FsysResHeader*)(p1))->flags & 0x80000000) {
+        ((FsysBG*)(temp_r3))->type = 1;
     } else {
-        M2C_FIELD(temp_r3, s8 *, 0xA) = 0;
+        ((FsysBG*)(temp_r3))->type = 0;
     }
     _fsysAddBGWork((FsysBG*)(temp_r3));
     OSRestoreInterrupts(temp_r31);

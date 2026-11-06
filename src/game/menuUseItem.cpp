@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/miscTables.h>
 
 #pragma peephole off
 
@@ -19,12 +23,11 @@ struct tagWINDOW_WORK;
 
 struct underTakerBios {
     u8 data[4];
+#ifdef __MWERKS__
     u32 getPlaceMsg();
-};
-
-struct UnderTakerData {
-    u8 pad[0x14];
-    u32 flagId;
+#else
+    static u32 getPlaceMsg();
+#endif
 };
 
 struct ITEMUSE2POKEMON_LOG1 {
@@ -88,18 +91,18 @@ u8 GSsndPlayNow(u32 id);
 s32 GSsndGetStatus(u32 id);
 u8 GSsndPlayVolume(u32 id, s32 time, u8 vol, u32 flag);
 void GSthreadSwitch(void);
-s32 evolutionWazaLearn(Pokemon* p, u16 waza, u8* slot, s32 a, s8 (*cb)(Pokemon*, u16, s32), s32 b);
+s32 evolutionWazaLearn(Pokemon* p, PCARG(u16, u32) waza, u8* slot, s32 a, s8 (*cb)(Pokemon*, u16, s32), PCARG(s32, u32*) b);
 void fadeCheck(s32);
 void fadeSet(s32 type, f32 time);
 FIGHT_FLOOR* fightFloorGetNowPtr(void);
 s32 fightFloor_GetFightKind(FIGHT_FLOOR* floor);
 u32 fightFloor_GetStockPokemonNum(FIGHT_FLOOR* floor);
 u8 fightTrainerIsSelectedItemBall(FightTrainer* trainer);
-s32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind);
+StatusS32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind);
 u32 itemDataBiosGetHidenMachineNo(u8* p);
 u8 itemDataBiosGetItemEffectParam(u8* p);
 u8* itemDataBiosGetPtr(u16 index);
-u16 itemDataBiosGetWazaIDByWazaMachineNo(u8 machineNo);
+u16 itemDataBiosGetWazaIDByWazaMachineNo(PCARG(u8, u32) machineNo);
 u32 itemDataBiosGetWazaMachineNo(u8* p);
 void itemParamConvertOrigFormat(void* dst, void* src);
 u8 itemParamGetPPSelectFlag(const void* item);
@@ -120,14 +123,14 @@ s32 menuPokemonStatusOpenWazaMachine(Pokemon* pokemon, u16 sel);
 void menuPokemonUpdate(void);
 void menuScriptUsohachi2(void);
 s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial);
-void msgctrlSetValue(s32 id, s32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 u8 pcboxGetNbPokemonBox();
 s8 pcboxGetPokemonBoxNbEmptySlot(void* base, s8 b);
 void pokemonAddDpFormPokemonDpFilterId(Pokemon* pokemon, u16 itemDataId, u16 filterId);
 u8 pokemonBiosGetLevel(Pokemon* poke);
 char* pokemonBiosGetNicknamePtr(Pokemon* poke);
 u16 pokemonBiosGetPokemonDataId(Pokemon* poke);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u16 wazaNum);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, PCARG(u16, u32) wazaNum);
 bool pokemonCheckValid(Pokemon* pokemon);
 PokemonData* pokemonDataBiosGetPtr(u16 pokeNum);
 u16 pokemonDataBiosGetVoice(PokemonData* pdata);
@@ -138,14 +141,14 @@ f32 pokemonGetDp(Pokemon* pokemon);
 void pokemonGetFriendFormPokemonFriendFilterId(Pokemon* pokemon, u16 itemDataId, u16 filterId);
 u16 pokemonGetOboeWazaDataId(Pokemon* pokemon, u8 level, u8* cursor);
 u16 pokemonGetSoubiItemSoubiDataId(Pokemon* pokemon);
-s32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
+StatusS32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
 void pokemonInitJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId);
 u8 pokemonIsDarkPokemon(Pokemon* pokemon);
 bool pokemonIsJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId);
 s8 pokemonSearchWazaDataId(Pokemon* pokemon, u16 waza);
 void pokemonWazaCreate(Pokemon* pokemon, u16 wazaNum, u16 waza);
 void reliveHallInfomationPokemonDP0(Pokemon* p);
-void soundOpenPlayME(u32 id, u32, u8 volume);
+void soundOpenPlayME(u32 id, u32, PCARG(u8, s32) volume);
 s8 winMsgCheck(void);
 void winMsgClose(bool flag);
 void winMsgCloseLevelUpStatus(bool flag);
@@ -154,17 +157,17 @@ s32 winMsgOpenLevelUpFiledStatus(void* msg, bool a);
 tagWINDOW_WORK* windowSearchID(s32 id);
 }
 
-extern "C" u16* GSmsgMakeGScharStr(u16*, long, unsigned long);
+extern "C" u16* GSmsgMakeGScharStr(u16*, s32, u32);
 
 static PokemonData* getPokemonData(Pokemon* p);
 static u32 playPokemonVoice(Pokemon* p);
 static void waitTime(f32 t);
-static void playRecoverSE(unsigned long item);
+static void playRecoverSE(u32 item);
 static void getLogMsgBattle(u16* out, int idx, ITEMUSE2POKEMON_LOG1* log, short n, Pokemon* p);
 static void getLogMsgField(u16* out, int idx, ITEMUSE2POKEMON_LOG1* log, short n, Pokemon* p);
-static s32 dispMsgYesNo(unsigned long msg);
-static void dispMsg(unsigned long msg);
-static s8 cbForgetWazaSelect(Pokemon* p, unsigned short sel, long x);
+static s32 dispMsgYesNo(u32 msg);
+static void dispMsg(u32 msg);
+static s8 cbForgetWazaSelect(Pokemon* p, unsigned short sel, s32 x);
 static void getPokemonLvupStatus(MENU_LVUP_STATUS* dst, Pokemon* p);
 static void getDifLvupStatus(MENU_LVUP_STATUS* dst, MENU_LVUP_STATUS* a, MENU_LVUP_STATUS* b);
 static void wazaLean(Pokemon* p, unsigned short waza, unsigned char slot);
@@ -204,12 +207,12 @@ s32 menuUseItemRecovery(u32 item, s32* consume) {
                 menuPokemonUpdate();
             }
             getLogMsgField(text, 0x40, log, result, pokemon);
-            msgctrlSetValue(0x4D, (s32)text);
+            msgctrlSetValue(0x4D, (GCuptr)text);
             dispMsg(0x4289);
         } else {
             {
                 char* nick = pokemonBiosGetNicknamePtr(pokemon);
-                msgctrlSetValue(0x32, (s32)nick);
+                msgctrlSetValue(0x32, (GCuptr)nick);
             }
             dispMsg(0xC372);
             result = 0;
@@ -268,7 +271,7 @@ s32 menuUseItemPPRecovery(u32 item, s32* consume) {
         if (dark) {
             {
                 char* nick = pokemonBiosGetNicknamePtr(pokemon);
-                msgctrlSetValue(0x32, (s32)nick);
+                msgctrlSetValue(0x32, (GCuptr)nick);
             }
             dispMsg(0xC372);
             result = 0;
@@ -279,7 +282,7 @@ s32 menuUseItemPPRecovery(u32 item, s32* consume) {
                 menuPokemonUpdate();
             }
             getLogMsgField(text, 0x40, log, result, pokemon);
-            msgctrlSetValue(0x4D, (s32)text);
+            msgctrlSetValue(0x4D, (GCuptr)text);
             dispMsg(0x4289);
         }
     }
@@ -311,7 +314,7 @@ s32 menuUseItemAlldeathRcv(u32 item, s32* consume) {
                 playRecoverSE(item);
                 menuPokemonUpdate();
                 getLogMsgField(text, 0x40, log, result, pokemon);
-                msgctrlSetValue(0x4D, (s32)text);
+                msgctrlSetValue(0x4D, (GCuptr)text);
                 dispMsg(0x4289);
                 total += result;
             }
@@ -373,7 +376,7 @@ s32 menuUseItemListLVUp(u32 item, s32* consume) {
             soundOpenPlayME(0x3C7, 0, 0xFF);
             {
                 char* nick = pokemonBiosGetNicknamePtr(pokemon);
-                msgctrlSetValue(0x32, (s32)nick);
+                msgctrlSetValue(0x32, (GCuptr)nick);
             }
             u8 lv = pokemonBiosGetLevel(pokemon);
             msgctrlSetValue(0x2F, lv);
@@ -421,7 +424,7 @@ s32 menuUseItemListLVUp(u32 item, s32* consume) {
 
 }
 
-static s8 cbForgetWazaSelect(Pokemon* p, unsigned short sel, long x) {
+static s8 cbForgetWazaSelect(Pokemon* p, unsigned short sel, s32 x) {
     int r;
     fadeSet(3, 0.5f);
     fadeCheck(1);
@@ -484,7 +487,7 @@ s32 menuUseItemWPointUp(u32 item, s32* consume) {
         if (dark) {
             {
                 char* nick = pokemonBiosGetNicknamePtr(pokemon);
-                msgctrlSetValue(0x32, (s32)nick);
+                msgctrlSetValue(0x32, (GCuptr)nick);
             }
             dispMsg(0xC372);
             result = 0;
@@ -499,7 +502,7 @@ s32 menuUseItemWPointUp(u32 item, s32* consume) {
                     playRecoverSE(item);
                     menuPokemonUpdate();
                 }
-                msgctrlSetValue(0x4D, (s32)text);
+                msgctrlSetValue(0x4D, (GCuptr)text);
                 msgctrlSetValue(0x39, waza);
                 getLogMsgField(text, 0x40, log, result, pokemon);
                 dispMsg(0x4289);
@@ -593,7 +596,7 @@ s32 menuUseItemScriptCologn(u32 item, s32 slot) {
     }
     {
         char* nick = pokemonBiosGetNicknamePtr(pokemon);
-        msgctrlSetValue(0x32, (s32)nick);
+        msgctrlSetValue(0x32, (GCuptr)nick);
     }
     msgctrlSetValue(0x2D, item);
     dispMsg(table[i].msgA);
@@ -610,7 +613,7 @@ s32 menuUseItemScriptCologn(u32 item, s32 slot) {
     while (GSsndGetStatus(voice) == 2) {
         GSthreadSwitch();
     }
-    msgctrlSetValue(0x32, (s32)pokemonBiosGetNicknamePtr(pokemon));
+    msgctrlSetValue(0x32, (GCuptr)pokemonBiosGetNicknamePtr(pokemon));
     dispMsg(0xC3B7);
     if (pokemonIsJoutaiDataId(pokemon, 0x3E)) {
         pokemonInitJoutaiDataId(pokemon, 0x3E);
@@ -618,7 +621,7 @@ s32 menuUseItemScriptCologn(u32 item, s32 slot) {
     }
     if (pokemonGetDp(pokemon) > 0.0f && pokemon->getPokemonDataId() != 0xF9) {
         pokemonAddDpFormPokemonDpFilterId(pokemon, item, 4);
-        msgctrlSetValue(0x32, (s32)pokemonBiosGetNicknamePtr(pokemon));
+        msgctrlSetValue(0x32, (GCuptr)pokemonBiosGetNicknamePtr(pokemon));
         dispMsg(table[i].msgB);
         if (!pokemonGetDp(pokemon)) {
             reliveHallInfomationPokemonDP0(pokemon);
@@ -699,14 +702,14 @@ static s32 wazaMachineProc(Pokemon* p, int machineNo) {
     if (i < 4) {
         {
             char* nick = pokemonBiosGetNicknamePtr(p);
-            msgctrlSetValue(0x32, (s32)nick);
+            msgctrlSetValue(0x32, (GCuptr)nick);
         }
         msgctrlSetValue(0x39, waza);
         dispMsg(0xC368);
         return 0;
     }
     if (!pokemonDataBiosGetWazaMcn(pokemonDataBiosGetPtr(pokemonBiosGetPokemonDataId(p)), machineNo)) {
-        msgctrlSetValue(0x32, (s32)pokemonBiosGetNicknamePtr(p));
+        msgctrlSetValue(0x32, (GCuptr)pokemonBiosGetNicknamePtr(p));
         msgctrlSetValue(0x39, waza);
         dispMsg(0xC369);
         return 0;
@@ -772,7 +775,7 @@ s32 menuUseItemStatusUp(u32 item, s32* consume) {
     if (pokemonIsJoutaiDataId(pokemon, 0x3E)) {
         {
             char* nick = pokemonBiosGetNicknamePtr(pokemon);
-            msgctrlSetValue(0x32, (s32)nick);
+            msgctrlSetValue(0x32, (GCuptr)nick);
         }
         dispMsg(0xC372);
         return 1;
@@ -783,7 +786,7 @@ s32 menuUseItemStatusUp(u32 item, s32* consume) {
         menuPokemonUpdate();
     }
     getLogMsgBattle(text, 0x40, log, result, pokemon);
-    msgctrlSetValue(0x4D, (s32)text);
+    msgctrlSetValue(0x4D, (GCuptr)text);
     dispMsg(0x4289);
     if (result > 0) {
         *consume = 1;
@@ -899,7 +902,7 @@ s32 menuUseItemEventMirraboradar(u32 item, s32* consume) {
     } else if (GSflagGet(0x8EE)) {
         msg = 0x3C32;
     } else {
-        u16 n = GSflagGet(undertakerdata->flagId);
+        u16 n = GSflagGet(undertakerdata->flagLevel);
         if (n <= 2) {
             dispMsg(0x3C1C);
         } else if (n <= 5) {
@@ -912,7 +915,7 @@ s32 menuUseItemEventMirraboradar(u32 item, s32* consume) {
     }
     if (msg != 1) {
         char* str = GSmsgGetGSchar(msg);
-        msgctrlSetValue(0x4D, (s32)str);
+        msgctrlSetValue(0x4D, (GCuptr)str);
         dispMsg(0x3C1F);
     }
     return 2;
@@ -926,7 +929,7 @@ s32 menuUseItemEventUsohachiPhoto(u32 item, s32* consume) {
 
 }
 
-static void dispMsg(unsigned long msg) {
+static void dispMsg(u32 msg) {
     switch (msg) {
     case 0xC368:
     case 0xC369:
@@ -947,7 +950,7 @@ static void dispMsg(unsigned long msg) {
     winMsgClose(1);
 }
 
-static s32 dispMsgYesNo(unsigned long msg) {
+static s32 dispMsgYesNo(u32 msg) {
     s32 r;
     winMsgOpen(2, msg, 1, 0);
     r = menuSubOpenYesNo(0, -1, -1, 0);
@@ -1022,7 +1025,7 @@ static void getLogMsgField(u16* out, int idx, ITEMUSE2POKEMON_LOG1* log, short n
     }
     {
         char* nick = pokemonBiosGetNicknamePtr(p);
-        msgctrlSetValue(0x32, (s32)nick);
+        msgctrlSetValue(0x32, (GCuptr)nick);
     }
     msgctrlSetValue(0x2F, a);
     msgctrlSetValue(0x30, b);
@@ -1063,14 +1066,14 @@ static void getLogMsgBattle(u16* out, int idx, ITEMUSE2POKEMON_LOG1* log, short 
     b = log[j].b;
     {
         char* nick = pokemonBiosGetNicknamePtr(p);
-        msgctrlSetValue(0x32, (s32)nick);
+        msgctrlSetValue(0x32, (GCuptr)nick);
     }
     msgctrlSetValue(0x2F, a);
     msgctrlSetValue(0x30, b);
     GSmsgMakeGScharStr(out, idx + 1, msg);
 }
 
-static void playRecoverSE(unsigned long item) {
+static void playRecoverSE(u32 item) {
     u16 table[5] = { 0x27, 0x28, 0x29, 0x2A, 0x2B };
     int i;
     for (i = 0; i < 5; i++) {

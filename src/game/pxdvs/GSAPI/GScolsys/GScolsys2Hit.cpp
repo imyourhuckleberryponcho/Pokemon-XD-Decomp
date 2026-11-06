@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 struct GSvec {
     f32 x, y, z;
@@ -9,43 +10,43 @@ struct GSmtx {
 };
 
 struct CCD_TRI {
-    GSvec verts[3];
-    GSvec normal;
-    u16 flags;
+    gc_vec(GSvec) verts[3];
+    gc_vec(GSvec) normal;
+    gc_be16 flags;
     u8 pad32[2];
 };
 
 struct CCD_GRID_CELL {
-    u32 first;
-    u32 count;
+    gc_be32 first;
+    gc_be32 count;
 };
 
 struct CCD_HITMDL_HEAD {
-    CCD_TRI* tris;
-    u32 numTris;
-    CCD_GRID_CELL* cells;
-    u32* indices;
-    u16 cellsX;
-    u16 cellsZ;
-    f32 cellWidth;
-    f32 cellDepth;
-    f32 minX;
-    f32 minZ;
+    gc_ptr32(CCD_TRI) tris;
+    gc_be32 numTris;
+    gc_ptr32(CCD_GRID_CELL) cells;
+    gc_ptr32(gc_be32) indices;
+    gc_be16 cellsX;
+    gc_be16 cellsZ;
+    gc_bef32 cellWidth;
+    gc_bef32 cellDepth;
+    gc_bef32 minX;
+    gc_bef32 minZ;
 };
 
 struct CCD_OBJ {
     u8 unk0[0x28];
-    CCD_HITMDL_HEAD* hit;
+    gc_ptr32(CCD_HITMDL_HEAD) hit;
     u8 unk2C[8];
-    CCD_HITMDL_HEAD* hitAlt;
+    gc_ptr32(CCD_HITMDL_HEAD) hitAlt;
     u8 unk38[4];
-    u16 flags;
+    gc_be16 flags;
     u8 pad3E[2];
 };
 
 struct CCD_FILEHEAD {
-    CCD_OBJ* objs;
-    u32 numObjs;
+    gc_ptr32(CCD_OBJ) objs;
+    gc_be32 numObjs;
 };
 
 extern "C" {
@@ -148,7 +149,7 @@ static f32 unusedClampT(f32 t) {
 static bool checkHitFixedMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSvec* hitOut) {
     GSvec hit;
     CCD_GRID_CELL* cell;
-    u32* index;
+    gc_be32* index;
     CCD_TRI* tri;
     f32 radiusSq;
     GSvec min;
@@ -194,7 +195,7 @@ static bool checkHitFixedMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSve
             for (k = 0; k < cell->count && !found; k++, index++) {
                 tri = head->tris;
                 tri += *index;
-                found = chkFace(tri->verts, &tri->normal, pos, radiusSq, &hit);
+                found = chkFace(GC_VEC3AP(GSvec, tri->verts, 3), GC_VEC3P(GSvec, &tri->normal), pos, radiusSq, &hit);
             }
         }
     }
@@ -219,7 +220,7 @@ static bool checkHitFixedMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSve
                 if (!(tri->flags & 7)) {
                     continue;
                 }
-                found = chkEdges(tri->verts, &tri->normal, pos, radiusSq, &hit, tri->flags);
+                found = chkEdges(GC_VEC3AP(GSvec, tri->verts, 3), GC_VEC3P(GSvec, &tri->normal), pos, radiusSq, &hit, tri->flags);
             }
         }
     }
@@ -244,7 +245,7 @@ static bool checkHitFixedMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSve
                 if (!(tri->flags & 7)) {
                     continue;
                 }
-                found = chkVerts(tri->verts, &tri->normal, pos, radiusSq, &hit, tri->flags);
+                found = chkVerts(GC_VEC3AP(GSvec, tri->verts, 3), GC_VEC3P(GSvec, &tri->normal), pos, radiusSq, &hit, tri->flags);
             }
         }
     }
@@ -272,9 +273,9 @@ static bool checkHitMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSmtx* mt
     tri = head->tris;
     for (i = 0, found = false; i < head->numTris && !found; i++, tri++) {
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->verts[j], &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(GSvec, &tri->verts[j]), &verts[j]);
         }
-        PSMTXMultVec(rot, &tri->normal, &normal);
+        PSMTXMultVec(rot, GC_VEC3P(GSvec, &tri->normal), &normal);
         found = chkFace(verts, &normal, pos, radiusSq, &hit);
     }
     if (found) {
@@ -291,9 +292,9 @@ static bool checkHitMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSmtx* mt
             continue;
         }
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->verts[j], &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(GSvec, &tri->verts[j]), &verts[j]);
         }
-        PSMTXMultVec(rot, &tri->normal, &normal);
+        PSMTXMultVec(rot, GC_VEC3P(GSvec, &tri->normal), &normal);
         found = chkEdges(verts, &normal, pos, radiusSq, &hit, tri->flags);
     }
     if (found) {
@@ -310,9 +311,9 @@ static bool checkHitMdl(GSvec* pos, f32 radius, CCD_HITMDL_HEAD* head, GSmtx* mt
             continue;
         }
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->verts[j], &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(GSvec, &tri->verts[j]), &verts[j]);
         }
-        PSMTXMultVec(rot, &tri->normal, &normal);
+        PSMTXMultVec(rot, GC_VEC3P(GSvec, &tri->normal), &normal);
         found = chkVerts(verts, &normal, pos, radiusSq, &hit, tri->flags);
     }
     if (found) {

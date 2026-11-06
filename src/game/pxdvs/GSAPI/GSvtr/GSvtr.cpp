@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -20,15 +21,12 @@ struct GXColor { u8 r, g, b, a; };
 
 extern "C" {
 
-extern u32 _vtrState;
-extern u32 _vtrBlockState;
-extern u8 _vtrTexDisp;
-extern u8 _vtrTexDispBorder;
-extern u8 _vtrEnabled;
-
 extern "C" {
-struct GSgfxLayer {
-    u8 _draft[1];
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 };
 
 extern "C" {
@@ -36,7 +34,7 @@ void GSgappBlock(int id);
 int GSgappCreate(s32 type, u8 priority, void* arg, GSgappFunc func);
 void GSgappSetName(int id, const char* name);
 void GSgappUnblock(int id);
-int GSgfxLayerFindByID(int id);
+struct GSgfxLayer* GSgfxLayerFindByID(GCsint id);
 void GSgfxRenderPause(void);
 void GSgfxRenderUnpause(void);
 void GSprimDraw2DQuad(GXColor color, f32 x, f32 y, f32 w, f32 h);
@@ -59,119 +57,88 @@ extern s32 jtbl_1962;
 extern "C++" {
 void GSprimSetup2DRender(GSgfxLayer* layer);
 static void _vtrTexDispFunc();
-static void _vtrUpdateFunc(unsigned long p0, unsigned long p1);
+static void _vtrUpdateFunc(u32 p0, u32 p1);
 }
+static u8 _vtrEnabled;
+static u32 _vtrState;
+static u32 _vtrBlockState;
+static u32 _vtrGSgappCount;
+static u32 _vtrSlowPlayFrame;
+static u8 _vtrTexDisp;
+static u8 _vtrTexDispBorder;
+static void* _vtrTex;
 static u8 _vtrGSgfxIsPaused;
 static u32 _vtrGSgappHdlList[0xA];
-static void* _vtrTex;
-static u32 _vtrSlowPlayFrame;
-static u32 _vtrGSgappCount;
-void GSvtrSlowPlay() {
-    _vtrState = 4;
-    _vtrBlockState = 3;
-    _vtrSlowPlayFrame = 0U;
-}
-}
-void GSvtrSingleStep(void) {
-    _vtrState = 0x3;
-    _vtrBlockState = 0x3;
-}
-extern "C" {
-void GSvtrPlay() {
-    _vtrState = 2;
-    _vtrBlockState = 3;
-}
-}
-
-extern "C" {
-void GSvtrPause() {
-    _vtrState = 1;
-    if ((s32) _vtrBlockState != 2) {
-        _vtrBlockState = 1;
-    }
-}
-}
-
-u8 GSvtrGetInfoDisp(void) {
-    return _vtrTexDisp;
-}
-
-void GSvtrSetInfoDisp(u8 a, u8 b) {
-    _vtrTexDisp = a;
-    _vtrTexDispBorder = b;
-}
-
-u32 GSvtrGetState(void) {
-    return _vtrState;
-}
-
-u8 GSvtrIsActive(void) {
-    return _vtrEnabled;
-}
-extern "C" {
-void GSvtrDisable() {
-    u32 i;
-    _vtrState = 0;
-    _vtrEnabled = 0;
-    for (i = 0; i < _vtrGSgappCount; i++) {
-        if (_vtrGSgappHdlList[i] != 0) {
-            GSgappUnblock(_vtrGSgappHdlList[i]);
-        }
-    }
-    if (_vtrGSgfxIsPaused == 1) {
-        GSgfxRenderUnpause();
-        _vtrGSgfxIsPaused = 0;
-    }
-}
-}
-
-extern "C" {
-void GSvtrEnable() {
-    _vtrEnabled = 1;
-    _vtrState = 2;
-    _vtrBlockState = 3;
-}
-}
-
-extern "C" {
-void GSvtrLoadTexture() {
-    _vtrTex = GSresGetResourceAllGroup(0x0AB21200U);
-}
-}
-
-extern "C" {
-s32 GSvtrRegisterGSgapp(u32 handle) {
-    u32 i;
-    u32* list;
-    if (_vtrGSgappCount + 1 >= 4) {
-        return 0;
-    }
-    list = _vtrGSgappHdlList;
-    for (i = 0; i < 4; i++, list++) {
-        if (*list == 0) {
-            *list = handle;
-            _vtrGSgappCount++;
-            return 1;
-        }
-    }
-    return 0;
-}
-}
-
-extern "C" {
-void GSvtrInit() {
-    _vtrEnabled = 0;
-    _vtrState = 0;
-    _vtrGSgappCount = 0U;
-    _vtrTex = NULL;
-    _vtrTexDisp = 1;
-    memset((void*)(_vtrGSgappHdlList), 0, 0x10U);
-    GSgappSetName(GSgappCreate(1, 0xFDU, (void*)((u8 *)0xA), (GSgappFunc)((s32) _vtrUpdateFunc)), (const char*)("GSvtr"));
 }
 }
 
 extern "C++" {
-static void _vtrUpdateFunc(unsigned long, unsigned long) {
+#pragma optimize_for_size on
+#pragma defer_codegen on
+static void _vtrTexDispFunc() {
+    GXColor border = { 0xFF, 0x00, 0x00, 0xFF };
+    GXColor white = { 0xFF, 0xFF, 0xFF, 0xFF };
+    GSgfxLayer* layer;
+
+    if (_vtrEnabled == 0 || _vtrTexDisp == 0) {
+        return;
+    }
+    if (_vtrTex == NULL) {
+        return;
+    }
+    layer = (GSgfxLayer*)GSgfxLayerFindByID(7);
+    if (layer == NULL) {
+        return;
+    }
+    GSprimSetup2DRender(layer);
+    if (LAYER_F(layer, s32 *, 0x1994, curPass) != 1) {
+        LAYER_F(layer, s32 *, 0x1994, curPass) = 1;
+        LAYER_F(layer, u8 **, 0x1990, curFifo) = LAYER_CUR_PASS(layer);
+    }
+    LAYER_F(layer, s32 *, 0x1644, hw.blend[0]) = 1;
+    LAYER_F(layer, s32 *, 0x164C, hw.blend[2]) = 0;
+    LAYER_F(layer, s32 *, 0x1650, hw.blend[3]) = 5;
+    LAYER_F(layer, u32 *, 0x170C, dirty[0].pe) |= 1;
+    LAYER_F(layer, s32 *, 0x1648, hw.blend[1]) = 1;
+    LAYER_F(layer, u32 *, 0x16A8, dirty[0].groups) |= 0x40;
+    LAYER_F(layer, u32 *, 0x17C4, dirty[1].pe) |= 1;
+    LAYER_F(layer, u32 *, 0x1760, dirty[1].groups) |= 0x40;
+    if (_vtrTexDispBorder != 0) {
+        GSprimDraw2DQuad(border, 6.0f, 24.0f, 634.0f, 68.0f);
+    }
+    GSprimDraw2DTexQuad(_vtrTex, white, 12.0f, 28.0f, 628.0f, 64.0f);
+    switch ((s32)_vtrState) {
+    case 0:
+        GSprint(LAYER_F(layer, s32 *, 0x28, id), 0x230, 0x2C, -1, "???");
+        break;
+    case 1:
+        GSprint(LAYER_F(layer, s32 *, 0x28, id), 0x230, 0x2C, -1, "Pause");
+        break;
+    case 2:
+        GSprint(LAYER_F(layer, s32 *, 0x28, id), 0x230, 0x2C, -1, "Play");
+        break;
+    case 3:
+        switch ((s32)_vtrBlockState) {
+        case 0:
+        case 1:
+            GSprint(LAYER_F(layer, s32 *, 0x28, id), 0x230, 0x2C, -1, "SStep");
+            break;
+        case 2:
+        case 3:
+            GSprint(LAYER_F(layer, s32 *, 0x28, id), 0x230, 0x2C, -1, "Pause");
+            break;
+        }
+        break;
+    case 4:
+        GSprint(LAYER_F(layer, s32 *, 0x28, id), 0x230, 0x2C, -1, "Slow");
+        break;
+    }
+}
+#pragma optimize_for_size reset
+}
+
+extern "C++" {
+static void _vtrUpdateFunc(u32, u32) {
     u8 pause;
     u32 i;
     u32* hdl;
@@ -245,71 +212,119 @@ static void _vtrUpdateFunc(unsigned long, unsigned long) {
 }
 }
 
-extern "C++" {
-#pragma optimize_for_size on
-static void _vtrTexDispFunc() {
-    GXColor border = { 0xFF, 0x00, 0x00, 0xFF };
-    GXColor white = { 0xFF, 0xFF, 0xFF, 0xFF };
-    GSgfxLayer* layer;
+extern "C" {
+void GSvtrInit() {
+    _vtrEnabled = 0;
+    _vtrState = 0;
+    _vtrGSgappCount = 0U;
+    _vtrTex = NULL;
+    _vtrTexDisp = 1;
+    memset((void*)(_vtrGSgappHdlList), 0, 0x10U);
+    GSgappSetName(GSgappCreate(1, 0xFDU, (void*)((u8 *)0xA), (GSgappFunc)((GCsptr) _vtrUpdateFunc)), (const char*)("GSvtr"));
+}
+}
 
-    if (_vtrEnabled == 0) {
-        return;
+extern "C" {
+s32 GSvtrRegisterGSgapp(u32 handle) {
+    u32 i;
+    u32* list;
+    if (_vtrGSgappCount + 1 >= 4) {
+        return 0;
     }
-    if (_vtrTexDisp == 0) {
-        return;
-    }
-    if (_vtrTex == NULL) {
-        return;
-    }
-    layer = (GSgfxLayer*)GSgfxLayerFindByID(7);
-    if (layer == NULL) {
-        return;
-    }
-    GSprimSetup2DRender(layer);
-    if (M2C_FIELD(layer, s32 *, 0x1994) != 1) {
-        M2C_FIELD(layer, s32 *, 0x1994) = 1;
-        M2C_FIELD(layer, u8 **, 0x1990) = (u8*)layer + 0x1818 + M2C_FIELD(layer, s32 *, 0x1994) * 0xBC;
-    }
-    M2C_FIELD(layer, s32 *, 0x1644) = 1;
-    M2C_FIELD(layer, s32 *, 0x164C) = 0;
-    M2C_FIELD(layer, s32 *, 0x1650) = 5;
-    M2C_FIELD(layer, u32 *, 0x170C) |= 1;
-    M2C_FIELD(layer, s32 *, 0x1648) = 1;
-    M2C_FIELD(layer, u32 *, 0x16A8) |= 0x40;
-    M2C_FIELD(layer, u32 *, 0x17C4) |= 1;
-    M2C_FIELD(layer, u32 *, 0x1760) |= 0x40;
-    if (_vtrTexDispBorder != 0) {
-        GSprimDraw2DQuad(border, 6.0f, 24.0f, 634.0f, 68.0f);
-    }
-    GSprimDraw2DTexQuad(_vtrTex, white, 12.0f, 28.0f, 628.0f, 64.0f);
-    switch ((s32)_vtrState) {
-    case 0:
-        GSprint(M2C_FIELD(layer, s32 *, 0x28), 0x230, 0x2C, -1, "???");
-        break;
-    case 1:
-        GSprint(M2C_FIELD(layer, s32 *, 0x28), 0x230, 0x2C, -1, "Pause");
-        break;
-    case 2:
-        GSprint(M2C_FIELD(layer, s32 *, 0x28), 0x230, 0x2C, -1, "Play");
-        break;
-    case 3:
-        switch ((s32)_vtrBlockState) {
-        case 0:
-        case 1:
-            GSprint(M2C_FIELD(layer, s32 *, 0x28), 0x230, 0x2C, -1, "SStep");
-            break;
-        case 2:
-        case 3:
-            GSprint(M2C_FIELD(layer, s32 *, 0x28), 0x230, 0x2C, -1, "Pause");
-            break;
+    list = _vtrGSgappHdlList;
+    for (i = 0; i < 4; i++, list++) {
+        if (*list == 0) {
+            *list = handle;
+            _vtrGSgappCount++;
+            return 1;
         }
-        break;
-    case 4:
-        GSprint(M2C_FIELD(layer, s32 *, 0x28), 0x230, 0x2C, -1, "Slow");
-        break;
     }
+    return 0;
 }
-#pragma optimize_for_size reset
 }
 
+extern "C" {
+void GSvtrLoadTexture() {
+    _vtrTex = GSresGetResourceAllGroup(0x0AB21200U);
+}
+}
+
+extern "C" {
+void GSvtrEnable() {
+    _vtrEnabled = 1;
+    _vtrState = 2;
+    _vtrBlockState = 3;
+}
+}
+
+extern "C" {
+void GSvtrDisable() {
+    u32 i;
+    _vtrEnabled = _vtrState = i = 0;
+    for (; i < _vtrGSgappCount; i++) {
+        if (_vtrGSgappHdlList[i] != 0) {
+            GSgappUnblock(_vtrGSgappHdlList[i]);
+        }
+    }
+    if (_vtrGSgfxIsPaused == 1) {
+        GSgfxRenderUnpause();
+        _vtrGSgfxIsPaused = 0;
+    }
+}
+}
+
+extern "C" {
+u8 GSvtrIsActive(void) {
+    return _vtrEnabled;
+}
+}
+
+extern "C" {
+u32 GSvtrGetState(void) {
+    return _vtrState;
+}
+}
+
+extern "C" {
+void GSvtrSetInfoDisp(u8 a, u8 b) {
+    _vtrTexDisp = a;
+    _vtrTexDispBorder = b;
+}
+}
+
+extern "C" {
+u8 GSvtrGetInfoDisp(void) {
+    return _vtrTexDisp;
+}
+}
+
+extern "C" {
+void GSvtrPause() {
+    _vtrState = 1;
+    if ((s32) _vtrBlockState != 2) {
+        _vtrBlockState = 1;
+    }
+}
+}
+
+extern "C" {
+void GSvtrPlay() {
+    _vtrState = 2;
+    _vtrBlockState = 3;
+}
+}
+
+extern "C" {
+void GSvtrSingleStep(void) {
+    _vtrState = 0x3;
+    _vtrBlockState = 0x3;
+}
+}
+
+extern "C" {
+void GSvtrSlowPlay() {
+    _vtrState = 4;
+    _vtrBlockState = 3;
+    _vtrSlowPlayFrame = 0U;
+}
 }

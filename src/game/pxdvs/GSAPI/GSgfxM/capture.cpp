@@ -1,6 +1,6 @@
 #include <dolphin/types.h>
 
-class GSgfxLayer;
+struct GSgfxLayer;
 
 void GSgfxCaptureRenderFrameNumber(GSgfxLayer*) {}
 

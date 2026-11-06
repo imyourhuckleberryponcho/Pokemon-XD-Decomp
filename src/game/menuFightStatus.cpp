@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #include <dolphin/gx/GXVert.h>
 
 #pragma peephole off
@@ -30,42 +34,53 @@ struct tagWINDOW_WORK {
     s8 state;
     u8 unk2[2];
     s32 id;
-    u8 unk8[0x24];
-    u32 seq;
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    GCuptr seq;
     u8 unk30[0x38];
     void* source;
-    u8 unk6C[0x27];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 colorAlpha;
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 unk8[0x4C];
+    u8 unk8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x4];
     s16 width;
     s16 height;
     u8 unk58[0xC];
     union {
-        u32 color;
+        gc_be32 color;
         u8 rgba[4];
     };
 };
 
-class GSgfxVF;
-class GSgfxLayer {
+struct GSgfxVF;
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0xD34];
-    u8 colorCount;
-    u8 padD35[3];
-    u32 colorMode;
-    u8 padD3C[0x16A8 - 0xD3C];
-    u32 flagsA;
-    u32 flagsB;
-    u8 pad16B0[0x1760 - 0x16B0];
-    u32 flagsC;
-    u32 flagsD;
-    u8 pad1768[0x1998 - 0x1768];
-    u32 primitive;
     void setRenderStateAndSelect(GSgfxVF*);
     void beginSurface(u16);
     void endSurface();
@@ -75,14 +90,18 @@ class DeckDarkPokemon {
 public:
     u8 getPlayerLevel() const;
 };
-class DarkPokemon {
+struct DarkPokemon {
 public:
     u16 getDarkPokemonID() const;
 };
-class Pokemon {
+struct Pokemon {
 public:
     DarkPokemon* getDarkPokemon();
+#ifdef __MWERKS__
     u8 isDarkPokemon() const;
+#else
+    bool isDarkPokemon() const;
+#endif
 };
 struct MENU_POKEMON_STATUS;
 
@@ -112,8 +131,8 @@ void* memcpy(void*, const void*, u32);
 f32 timeGetLastFrameSec(void);
 void* GSmsgGetGSchar(u32);
 u32 GSmsgGetRect(u32);
-void GSmsgPrint2(s32, s16, s32, u32, u32);
-void msgctrlSetValue(s32, s32);
+void GSmsgPrint2(s32, PCARG(s16, s32), s32, u32, u32);
+void msgctrlSetValue(s32, GCuptr);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void winSpriteSetDisp(tagSPRITE_WORK*, u8);
 u8 winSpriteGetDisp(tagSPRITE_WORK*);
@@ -129,7 +148,7 @@ void windowDrawSprite2(s32, s32, s32, s32, s32, tagWINDOW_WORK*, u16, s32, s32);
 s32 menuCloseSync(s32, s32);
 s32 menuGetCursorItemID(s32);
 u16 gamedataBiosGetFlag(void*, u16, u16);
-s32 fightFloorGetStatus(s32, u32, s32, s32);
+StatusS32 fightFloorGetStatus(s32, u32, s32, s32);
 u8 menuCBBios_CurrentlyWorkingToolBattle(void);
 void* fightFloorGetNowPtr(void);
 void* fightFloorGetValidFightSidePtr(void*, u16);
@@ -137,7 +156,7 @@ void* fightSideGetValidFightTrainerPtr(void*, u16);
 u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(void*, void*, void**, u8, u8);
 u8 fightTrainerIsGcHero(void*);
 Pokemon* fightOutPokemonGetPokemonPtr(void*);
-GSgfxLayer* GSgfxLayerFindByID(s32);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 GSgfxVF* GSgfxVFGetPredef(s32);
 f64 sin(f64);
@@ -396,7 +415,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         break;
     case 0xE7:
     case 0xF3: {
-        msgctrlSetValue(0x37, (s32)state->unk0);
+        msgctrlSetValue(0x37, (GCuptr)state->unk0);
         GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0, 1, color, 0x4279);
         shown = (GSmsgGetRect(0x4279) >> 16) + 4;
         switch (state->kind) {
@@ -412,7 +431,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             break;
         }
         if (msg != 0) {
-            msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(msg));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(msg));
             GSmsgPrint2(winSpriteGetLayerID(window, sprite), shown, 0, color, 0x4278);
         }
         break;
@@ -446,7 +465,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             }
             barColor |= window->colorAlpha;
             x = (s32)((max - 1.0f + (f32)(from * sprite->width)) / max);
-            layer->primitive = 0x98;
+            (*(u32*)&layer->unk1998) = 0x98;
             layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
             layer->beginSurface(4);
             GXPosition2s16(0, 0);
@@ -485,7 +504,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             curI = maxI;
         }
         if (maxI > 0) {
-            shown = (maxI + curI * sprite->width - 1) / maxI;
+            shown = (maxI - 1 + curI * sprite->width) / maxI;
             if (shown != 0) {
                 cFlash = 0.0f;
                 windowDrawSprite2(0, 0, shown, sprite->height, color, window, 0x92, 0, winSpriteGetLayerID(window, sprite));
@@ -494,13 +513,13 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 GSgfxLayer* found = GSgfxLayerFindByID(winSpriteGetLayerID(window, sprite));
                 layer = found;
                 c = (s32)(255.0f - 254.0f * cFlash);
-                layer->primitive = 0x80;
-                layer->colorCount = 6;
-                layer->colorMode = 0;
-                layer->flagsB |= 4;
-                layer->flagsA |= 1;
-                layer->flagsD |= 4;
-                layer->flagsC |= 1;
+                (*(u32*)&layer->unk1998) = 0x80;
+                (*(u8*)&layer->hw.lineWidth) = 6;
+                (*(u32*)&layer->hw.lineOffset) = 0;
+                (*(u32*)&layer->dirty[0].geom) |= 4;
+                (*(u32*)&layer->dirty[0].groups) |= 1;
+                (*(u32*)&layer->dirty[1].geom) |= 4;
+                (*(u32*)&layer->dirty[1].groups) |= 1;
                 layer->setRenderStateAndSelect(GSgfxVFGetPredef(3));
                 layer->beginSurface(4);
                 GXPosition2s16(0, 0);
@@ -652,7 +671,7 @@ static s32 menuFightDrawDarkPanel(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
     s16 x;
 
     if (pokemon != 0 && pokemon->isDarkPokemon()) {
-        msgctrlSetValue(0x37, (s32)_getMsgStr(0x4443));
+        msgctrlSetValue(0x37, (GCuptr)_getMsgStr(0x4443));
         x = GSmsgGetRect(0x4278) >> 16;
         GSmsgPrint2(winSpriteGetLayerID(window, sprite), sprite->width - x, 0, window->colorAlpha | 0xFFFFFF00, 0x4278);
         msgctrlSetValue(0x5F, deckGetDeckDarkPokemon(pokemon->getDarkPokemon()->getDarkPokemonID())->getPlayerLevel());

@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/pxdvs/GSAPI/GSsnd/sndData.h>
 
 #pragma pool_strings off
 
@@ -35,45 +38,6 @@ struct SndWork {
     u32 voice;
     u32 res0;
     u32 res1;
-};
-
-struct SndData {
-    u8 group : 4;
-    u8 reverb : 4;
-    u8 b1;
-    u8 env : 1;
-    u8 stream : 1;
-    u8 se : 1;
-    u8 f3 : 1;
-    u8 open : 1;
-    u8 paused : 1;
-    u8 f6 : 2;
-    u8 b3;
-    u16 fxid;
-    u16 file;
-    SndWork* work;
-};
-
-struct SndFile {
-    u32 a;
-    u32 b;
-    u32 c;
-};
-
-struct SndWaveData {
-    u8 b0;
-    u8 loaded;
-    u16 gid;
-    u32 pad[5];
-};
-
-struct SndRevData {
-    f32 coloration;
-    f32 mix;
-    f32 time;
-    f32 damping;
-    f32 preDelay;
-    f32 crosstalk;
 };
 
 struct SndStream {
@@ -244,7 +208,7 @@ void _sndStreamGetDataCallback_EXEC_UPDATE();
 void _sndStreamPrepareGetData(SndStream* s);
 u32 _sndStreamNibble_HeaderON2OFF(u32 v);
 
-u8 GSsndClose(u32 id);
+PCRET(u8) GSsndClose(u32 id);
 u8 GSsndStop(u32 id, s32 time, u32 unused);
 u8 GSsndOpen(u32 id, u32 a, u32 b);
 s32 GSsndGetStatus(u32 id);
@@ -336,11 +300,28 @@ static inline SND_HOOKS _sndMakeHooks() {
     return hooks;
 }
 
+#ifndef __MWERKS__
+static void _sndStreamHeaderToNative(SndStream* s) {
+    u8* h = (u8*)&s->pad40 - 0x40;
+    u32 o;
+    for (o = 0x48; o < 0x6C; o += 4) {
+        GC_FIX32(*(u32*)(h + o));
+    }
+    for (o = 0; o < 0x2E; o += 2) {
+        GC_FIX16(*(u16*)(h + 0x80 + o));
+        GC_FIX16(*(u16*)(h + 0xC0 + o));
+    }
+}
+#endif
+
 void GSsndStreamPostFunc(u32 a, u32 b) {
     SndStream* s;
     if (_initFlag) {
         s = _sndGetStream(a);
         if (s) {
+#ifndef __MWERKS__
+            _sndStreamHeaderToNative(s);
+#endif
             s->state = 3;
             if (s->child) {
                 s->child->state = 3;
@@ -548,6 +529,9 @@ u8 GSsndIsPlayingStream(u32 id) {
         }
         return s->state == 9;
     }
+#ifndef __MWERKS__
+    return (u8)id;
+#endif
 }
 
 u8 GSsndCheckEnv(u32 id) {
@@ -634,7 +618,7 @@ void GSsndGetPushVolumeID(u32 id, u8* buf) {
     }
 }
 
-u8 GSsndGetVolume(u32 id) {
+PCRET(u8) GSsndGetVolume(u32 id) {
     if (!_initFlag) {
         return 0;
     }
@@ -1087,7 +1071,7 @@ u8 GSsndPlayNow(u32 id) {
     return _sndPlay(id, 0, 0x7F, 0);
 }
 
-u8 GSsndPlayVolume(u32 id, s32 time, u8 vol, u32 flag) {
+PCRET(u8) GSsndPlayVolume(u32 id, s32 time, u8 vol, u32 flag) {
     return _sndPlay(id, time, vol, flag);
 }
 
@@ -1095,7 +1079,7 @@ u8 GSsndPlay(u32 id, s32 time, u32 flag) {
     return _sndPlay(id, time, 0x7F, flag);
 }
 
-u8 GSsndClose(u32 id) {
+PCRET(u8) GSsndClose(u32 id) {
     return _sndClose(id, 1);
 }
 

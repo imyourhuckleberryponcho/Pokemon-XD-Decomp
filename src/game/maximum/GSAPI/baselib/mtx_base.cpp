@@ -5,11 +5,15 @@
 
 #define HSD_MtxInverseConcat HSD_MtxInverseConcat_hdr
 
+#ifdef __MWERKS__
 #define _MATH_H_
 double sin(double x);
 double cos(double x);
 double __fabs(double x);
 float sqrtf(float x);
+#else
+#include <math.h>
+#endif
 #include <sysdolphin/baselib/mtx.h>
 #undef HSD_MtxInverseConcat
 
@@ -47,7 +51,11 @@ static HSD_ObjAllocData mtx_alloc_data;
 double asin(double x);
 double atan2(double y, double x);
 
+#ifdef __cplusplus
+extern "C" int __float_nan[];
+#else
 extern int __float_nan[];
+#endif
 extern int __float_min[];
 #define XD_NAN (*(f32*) __float_nan)
 #define XD_FLOAT_MIN (*(f32*) __float_min)

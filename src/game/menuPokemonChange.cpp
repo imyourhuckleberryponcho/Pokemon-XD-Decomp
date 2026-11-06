@@ -1,15 +1,23 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/bitfield.h>
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 
 #pragma peephole off
 
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };
 
-class DarkPokemon {
+struct DarkPokemon {
 public:
     void setPlace(darkPokemonWhere, u8);
 };
 
-class Pokemon {
+struct Pokemon {
 public:
     DarkPokemon* getDarkPokemon();
     u8 getLevel() const;
@@ -21,7 +29,7 @@ public:
     u8 data[0xC4];
 };
 
-class Hero {
+struct Hero {
 public:
     static Hero* getHeroPtr();
     Pokemon* getPokemon(s32 index);
@@ -29,7 +37,14 @@ public:
 
 struct MENU_MODEL {
     MENU_MODEL() {}
-    u8 unk0[0xEC];
+    u8 unk0[0x58];
+    void* slot58;
+    u8 pad5C[0x10];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    u8 pad7C[0x70];
 };
 
 struct POKEMON_EVOLUTION_INFO {
@@ -47,10 +62,12 @@ struct MenuItem {
 };
 
 struct MenuItemBios {
-    u8 valid : 1;
+    GC_BITS2(
+    u8 valid : 1, u8 : 7)
     u8 pad0[5];
     s16 x;
-    u8 pad8[0x10];
+    u8 pad8[0xC];
+    void* slot14;
     s16 next;
 };
 
@@ -65,26 +82,47 @@ struct tagWINDOW_WORK {
     s8 seqSet;
     u8 pad3;
     s32 menuId;
-    u8 pad8[0x14];
+    u8 pad8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 msgHandle;
-    u8 pad20[0x6C];
+    u8 pad20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x4];
     s16 offset;
     u8 pad8E[5];
     u8 alpha;
 };
 
 struct tagSPRITE_WORK {
-    u8 pad0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 itemId;
-    u8 pad8[0x44];
-    u32 msg;
+    u8 pad8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    GCuptr msg;
     s16 x;
     s16 y;
     s16 w;
     s16 h;
     u8 pad58[0xC];
     union {
-        u32 color;
+        gc_be32 color;
         struct {
             u8 r, g, b, a;
         } rgba;
@@ -130,12 +168,12 @@ struct PortKeyInfo {
     u16 down;
 };
 
-extern WinSys winSysWork;
-extern WinSys winSysWork2;
+extern "C" WinSys winSysWork;
+extern "C" WinSys winSysWork2;
 
 extern "C" {
 u8 fn_80098B44(u8, Pokemon*);
-s32 windowGetParam(tagWINDOW_WORK*, s32);
+StatusS32 windowGetParam(tagWINDOW_WORK*, s32);
 void menuFaceDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, Pokemon*);
 u8 menuSubGetPokemonSexForFightDisp(Pokemon*);
 u32 GSmsgGetGSchar(u32);
@@ -147,13 +185,13 @@ u16 pokemonGetSoubiItemDataId(Pokemon*);
 u32 heroBiosGetNamePtr(Hero*);
 void menuCBMessageCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, u32);
 u32 itemDataBiosGetName(void*);
-u32 wazaGetStatus(s32, s32, s32, s32);
+StatusU32 wazaGetStatus(s32, s32, s32, s32);
 s32 pokemonBiosGetPokemonWazaDataId(Pokemon*, u16);
 u8 pokemonWazaCheckValid(Pokemon*, u16);
 u32 pokemonDataBiosGetName(void*);
 s32 pokecoloGetCountryCode();
 void menuModelAdjustCamera(MENU_MODEL*);
-void menuModelSetSize(MENU_MODEL*, s32, s16, s16, s16);
+void menuModelSetSize(MENU_MODEL*, s32, PCARG(s16, s32), PCARG(s16, s32), PCARG(s16, s32));
 void menuModelSetZoom(MENU_MODEL*, f32);
 void menuModelRender(MENU_MODEL*);
 u8 GSgfxVideoGetVsyncRate();
@@ -166,14 +204,14 @@ char* pokemonBiosGetNicknamePtr(Pokemon*);
 u16 pokemonEvolutionCheck(Pokemon*, s32, u16, u16*, POKEMON_EVOLUTION_INFO*);
 s32 pokemonEvolutionAll(Pokemon*, u16, u16, POKEMON_EVOLUTION_INFO*, Hero*, s32, s32, s32);
 void memoDataSet(s32, Pokemon*);
-u32 heroGetStatus(Hero*, s32, s32);
-void menuModelInit(MENU_MODEL*, s16, s16);
+StatusU32 heroGetStatus(Hero*, s32, s32);
+void menuModelInit(MENU_MODEL*, PCARG(s16, s32), PCARG(s16, s32));
 void menuModelLoadPokemon(MENU_MODEL*, Pokemon*);
 void menuModelCheck(MENU_MODEL*, s32);
 void menuFaceLoad(Pokemon*, void* (*)(void*), void*);
 s32 menuFaceGetID(Pokemon*);
 s8 menuFaceSearchEnable(s32);
-void cameraPlayAnime(s32, u32, f32, s32);
+void cameraPlayAnime(u32 group, u32 id, u8 loop, f32 frame);
 s32 floorGetCurrentGroupID();
 void scriptModelSetMotion(u32, s32, s32, s32);
 void cameraWaitSyncAnime(s32);
@@ -185,7 +223,7 @@ PortKeyInfo* windowGetPortKeyInfo(s32);
 s32 GSfsysGetDriveStatus();
 s32 openMenuGBA(s32, u32, Hero**);
 tagWINDOW_WORK* windowSearchID(s32);
-tagSPRITE_WORK* windowSearchItemID(tagWINDOW_WORK*, u16);
+tagSPRITE_WORK* windowSearchItemID(tagWINDOW_WORK*, PCARG(u16, u32));
 void windowSetParam(tagWINDOW_WORK*, s32, s32);
 void winSpriteSetDisp(tagSPRITE_WORK*, bool);
 void winSeqSetMenu(s32, s32);
@@ -211,7 +249,7 @@ s32 floorGetPrevFloorID();
 void floorLink(s32, s32);
 void scriptModelClose(s32);
 s32 scriptModelOpen(u32);
-s32 GSresGetResource(s32, s32);
+void * GSresGetResource(s32, s32);
 void cameraSetType(s32);
 void GSmodelSetVisibility(s32, s32);
 void fadeSet(s32, f32);
@@ -246,7 +284,7 @@ void GSthreadUnblockGroup(s32);
 void GSthreadSwitch();
 void floorMapSetDisp(s32);
 void scriptModelStopMotion(u32);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 void menuSetEnablePort(s32);
 u8 gbaCommandIsConnected(s32);
 s32 gbaCommandChangePokemon(s32, Pokemon*, s32, s32);
@@ -265,13 +303,14 @@ void menuModelTerm(MENU_MODEL*);
 
 enum MENU_POKEMON_CB_TYPE { CB_TYPE_0 = 0, CB_TYPE_1, CB_TYPE_2 };
 
-MenuItem* menuPtItemGetByMenuIdAndItemId(s32, u32, s32);
+struct MENU_ITEM_dd_;
+MENU_ITEM_dd_* menuPtItemGetByMenuIdAndItemId(s32, u32, s32);
 tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(s32, u32, s32);
 void menuPtSpriteWorkSetSpriteId(tagSPRITE_WORK*, u32);
 void menuPtWindowWorkDraw(tagWINDOW_WORK*);
 void menuPtWindowWorkDraw(s32);
 s32 menuPtSpriteWorkGetIndexFromId(tagWINDOW_WORK*, tagSPRITE_WORK*, u32);
-extern "C" void menuPokemonStatusOpenFromPokemonChange(Pokemon*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, s32), s32);
+extern "C" void menuPokemonStatusOpenFromPokemonChange(Pokemon*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr), GCsptr);
 
 namespace {
 
@@ -303,7 +342,7 @@ bool _pokemonChangeGetHinsi(Pokemon*);
 u8 _isPokemonItemExchangeOk(Pokemon*, enumPlayerIndex);
 s16 _selectDisplay_2p_offset();
 void* pokemonChangeRequestPokemonFaceLoadCallBack(void*);
-Pokemon* _cbMenuPokemonStatus(Pokemon*, MENU_POKEMON_CB_TYPE, s32);
+Pokemon* _cbMenuPokemonStatus(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr);
 
 class CMenuPokemonChange {
 public:
@@ -360,7 +399,7 @@ public:
 
     void loadModels(s32 menuId, u32 itemId)
     {
-        MenuItem* item = menuPtItemGetByMenuIdAndItemId(menuId, itemId, 0);
+        MenuItem* item = (MenuItem*)menuPtItemGetByMenuIdAndItemId(menuId, itemId, 0);
         for (s32 i = 0; i < 2; i++) {
             menuModelInit(&m_model[i], item->w, item->h);
             menuModelLoadPokemon(&m_model[i], getPokemonByIndex(m_sel[i]));
@@ -640,7 +679,7 @@ namespace {
 
 void CMenuPokemonChange::init()
 {
-    memset(this, 0, 0xC58);
+    memset(this, 0, sizeof(*this));
     m_hero0 = Hero::getHeroPtr();
     m_state.init();
     fadeSet(3, 0.0f);
@@ -658,8 +697,8 @@ void CMenuPokemonChange::bgModelLoad()
 {
     s32 group = floorGetCurrentGroupID();
     m_bgModel = scriptModelOpen(0x5681000);
-    m_bgGSmodel = GSresGetResource(group, m_bgModel);
-    cameraPlayAnime(0x37C, 0x5691800, 0.0f, 1);
+    m_bgGSmodel = GC_ADDR32(GSresGetResource(group, m_bgModel));
+    cameraPlayAnime(0x37C, 0x5691800, 1, 0.0f);
     cameraSetType(4);
     GSmodelSetVisibility(m_bgGSmodel, 0);
 }
@@ -799,7 +838,7 @@ void CMenuPokemonChange::loop()
 
 namespace {
 
-Pokemon* _cbMenuPokemonStatus(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, s32 player)
+Pokemon* _cbMenuPokemonStatus(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, GCsptr player)
 {
     return MenuPokemonChange.pokemonStatusCallback(pokemon, type, (enumPlayerIndex)player);
 }
@@ -898,8 +937,8 @@ namespace {
 
 s16 _selectDisplay_2p_offset()
 {
-    MenuItem* a = menuPtItemGetByMenuIdAndItemId(0xD4, 0x60D, 0);
-    MenuItem* b = menuPtItemGetByMenuIdAndItemId(0xD4, 0x60E, 0);
+    MenuItem* a = (MenuItem*)menuPtItemGetByMenuIdAndItemId(0xD4, 0x60D, 0);
+    MenuItem* b = (MenuItem*)menuPtItemGetByMenuIdAndItemId(0xD4, 0x60E, 0);
     return b->x - a->x;
 }
 
@@ -1319,7 +1358,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     case 0x613:
     case 0x614: {
         s32 index = menuPtSpriteWorkGetIndexFromId(window, sprite, 0x60F);
-        Pokemon* target = hero->getPokemon(index);
+        target = hero->getPokemon(index);
         msg = 0;
         s32 state = _getPokemonState(target, (enumPlayerIndex)player);
         if (state >= 3 || state < 0) {
@@ -1380,11 +1419,12 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         }
         break;
     }
-    case 0x61B:
+    case 0x61B: {
         s32 tmp1 = heroBiosGetNamePtr(hero);
         msgctrlSetValue(0x37, tmp1);
         GSmsgPrint2(window->msgHandle, 0, 0, color, 0x4277);
         break;
+    }
     case 0x605:
     case 0x606:
     case 0x607:
@@ -1491,7 +1531,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         GSmsgPrint2(window->msgHandle, 0, 0, color, 0x426F);
         break;
     case 0x7B3:
-        msgctrlSetValue(0x37, (u32)pokemon->getNicknamePtr());
+        msgctrlSetValue(0x37, (GCuptr)pokemon->getNicknamePtr());
         switch (pokecoloGetCountryCode()) {
         case 0:
             GSmsgPrint2(window->msgHandle, 0, 0, color, 0x4276);
@@ -1920,8 +1960,8 @@ void CMenuPokemonChange::stateFunctionExChangeStart()
     char* name1 = pokemonBiosGetNicknamePtr(getPokemonByIndex(m_sel[1]));
     msgctrlSetValue(0x4D, money1);
     msgctrlSetValue(0x57, money0);
-    msgctrlSetValue(0x32, (u32)name0);
-    msgctrlSetValue(0x33, (u32)name1);
+    msgctrlSetValue(0x32, (GCuptr)name0);
+    msgctrlSetValue(0x33, (GCuptr)name1);
     winMsgOpen(2, 0xC49A, 1, 0);
     winMsgOpen(2, 0xC49B, 1, 0);
     winMsgClose(1);
@@ -1953,7 +1993,7 @@ void CMenuPokemonChange::stateFunctionExChangeMain()
     bgDrawFadeIn(2.0f);
     _pokemonChangeFadeOut(0.0f);
     _pokemonChangeFadeIn(1.0f);
-    cameraPlayAnime(floorGetCurrentGroupID(), 0xFCD1800, 0.0f, 0);
+    cameraPlayAnime(floorGetCurrentGroupID(), 0xFCD1800, 0, 0.0f);
     GSthreadSwitch();
     GSsndPlayNow(0x462);
     floorMapSetDisp(1);
@@ -1983,8 +2023,8 @@ void CMenuPokemonChange::stateFunctionExChangeOK()
     char* name1 = pokemonBiosGetNicknamePtr(getPokemonByIndex(m_sel[1]));
     msgctrlSetValue(0x4D, money0);
     msgctrlSetValue(0x57, money1);
-    msgctrlSetValue(0x32, (u32)name0);
-    msgctrlSetValue(0x33, (u32)name1);
+    msgctrlSetValue(0x32, (GCuptr)name0);
+    msgctrlSetValue(0x33, (GCuptr)name1);
     winMsgOpen(2, 0xC49C, 1, 0);
     winMsgClose(1);
     setState(0x15);

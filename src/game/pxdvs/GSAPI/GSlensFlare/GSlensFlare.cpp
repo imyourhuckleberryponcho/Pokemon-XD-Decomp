@@ -1,4 +1,10 @@
+#ifndef __MWERKS__
+#include <game/gcdata.h>
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/string.h>
 
@@ -31,66 +37,17 @@ struct BlendState {
     u8 pad[0xbc];
 };
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void SetLayerVisibility(bool visible);
     void setRenderStateAndSelect(GSgfxVF* vf);
     void beginSurface(u16 count);
     void endSurface();
 
-    u8 pad0[0x28];
-    s32 id;
-    s32 kind;
-    u8 pad30[0xd54 - 0x30];
-    s32 projType;
-    f32 proj[6];
-    u8 pad_d70[0xd8c - 0xd70];
-    s32 d8c;
-    u8 pad_d90[0x1644 - 0xd90];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 pad_1654[2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad_1659[3];
-    u8 zEnable;
-    u8 pad_165d[3];
-    s32 zFunc;
-    u8 pad_1664[0x1684 - 0x1664];
-    f32 nearZ;
-    f32 farZ;
-    u8 pad_168c[0x16a6 - 0x168c];
-    u8 f16a6;
-    u8 f16a7;
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad_16b0[8];
-    u32 dirty16b8;
-    u8 pad_16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad_1710[0x173c - 0x1710];
-    u32 dirty173c;
-    GStexture* tex1740;
-    u8 pad_1744[0x1760 - 0x1744];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad_1768[8];
-    u32 dirty1770;
-    u8 pad_1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
-    u8 pad_17c8[0x17f4 - 0x17c8];
-    u32 dirty17f4;
-    GStexture* tex17f8;
-    u8 pad_17fc[0x1818 - 0x17fc];
-    BlendState blendTable[2];
-    BlendState* curBlend;
-    s32 curBlendIdx;
-    u32 primType;
-    u8 pad_199c[0x19a0 - 0x199c];
-    GSlayerCam* cam;
 };
 
 struct Vec {
@@ -98,32 +55,32 @@ struct Vec {
 };
 
 struct LensFlareElem {
-    u16 id;
-    u16 unk2;
-    u32 offset;
+    gc_be16 id;
+    gc_be16 unk2;
+    gc_be32 offset;
 };
 
 struct LensFlareData {
-    u32 magic;
-    u16 texCount;
-    u16 elemCount;
-    u32 flags;
-    u32 maxDist;
-    u32 fadeStart;
-    u32 glowStart;
-    f32 glowStrength;
-    f32 glowStrengthBack;
-    f32 sizeRef;
-    f32 minDist;
-    f32 sunRadius;
+    gc_be32 magic;
+    gc_be16 texCount;
+    gc_be16 elemCount;
+    gc_be32 flags;
+    gc_be32 maxDist;
+    gc_be32 fadeStart;
+    gc_be32 glowStart;
+    gc_bef32 glowStrength;
+    gc_bef32 glowStrengthBack;
+    gc_bef32 sizeRef;
+    gc_bef32 minDist;
+    gc_bef32 sunRadius;
 };
 
 struct LensFlareParam {
     u8 flags;
     u8 pad1;
-    u16 tex;
-    f32 pos;
-    f32 size;
+    gc_be16 tex;
+    gc_bef32 pos;
+    gc_bef32 size;
     u8 r, g, b, a;
 };
 
@@ -147,7 +104,7 @@ public:
 };
 
 extern "C" {
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 GStexture* GStextureLoad(u32 data);
 void GStextureSetFilter(GStexture* tex, s32 minFilter, s32 magFilter, s32);
 }
@@ -166,7 +123,7 @@ struct GSvec : Vec {
 struct GSmtx44 {
     f32 m[4][4];
 };
-extern GSmtx44 mtxIdent;
+extern "C" GSmtx44 mtxIdent;
 extern "C" {
 GScamera* GScameraGetActiveCamera(void);
 void* GScameraGetMatrixPtr(GScamera* camera);
@@ -263,7 +220,7 @@ u32 GSlensFlareLoad(u8* data) {
                     lf->m_elems = (LensFlareParam*)((u8*)lf->m_data + 0x2c);
                     e = (LensFlareElem*)((u8*)lf->m_elems + (lf->m_data->elemCount << 4));
                     for (n = 0; n < lf->m_data->texCount; e++, n++) {
-                        e->offset = e->offset + (u32)data;
+                        e->offset = e->offset + GC_ADDR32(data);
                         tex = GStextureLoad(e->offset);
                         GStextureSetFilter(tex, 2, 2, 0);
                         if (tex == 0) {
@@ -297,7 +254,11 @@ void GSlensFlareInit(void) {
 
 static inline f32 __OSu8tof32(register const u8* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 2 }
+#else
+    ret = PSQ_LOAD(arg, 0, 2);
+#endif
     return ret;
 }
 
@@ -308,7 +269,11 @@ static inline f32 OSu8tof32(u8 in) {
 
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 
@@ -318,7 +283,11 @@ static inline f32 OSu16tof32(u16 in) {
 }
 
 static inline void __OSf32tou8(register f32 arg, volatile register u8* out) {
+#ifdef __MWERKS__
     asm { psq_st arg, 0(out), 1, 2 }
+#else
+    PSQ_STORE(out, 0, arg, 2);
+#endif
 }
 
 static inline u8 OSf32tou8(f32 in) {
@@ -330,7 +299,11 @@ static inline u8 OSf32tou8(f32 in) {
 static inline u8 __OSf32tou8b(register f32 inF) {
     u8 tmp;
     register u8* tmpPtr = &tmp;
+#ifdef __MWERKS__
     asm { psq_st inF, 0(tmpPtr), 1, 2 }
+#else
+    PSQ_STORE(tmpPtr, 0, inF, 2);
+#endif
     return *tmpPtr;
 }
 
@@ -362,7 +335,7 @@ static inline void _lfAdd(GSvec* out, const Vec* sun, const Vec* dir, f32 k) {
 static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
     u8 projReady = 0;
     u8 orthoReady = 0;
-    s32 id = layer->id;
+    s32 id = (*(s32*)&layer->id);
     u16 i;
     f32 dist, cx, cy;
     f32 x0, y0, x1, sz;
@@ -387,7 +360,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
             continue;
         }
         d = lf->m_data;
-        if (layer->kind == 1) {
+        if ((*(s32*)&layer->type) == 1) {
             if (!(d->flags & 8)) {
                 continue;
             }
@@ -453,63 +426,63 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
             f32 mtx[16];
             GScameraLoadActiveCameraMatrix(id);
             GSmtx44Ortho(mtx, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-            layer->projType = 1;
-            layer->proj[0] = mtx[0];
-            layer->proj[1] = mtx[3];
-            layer->proj[2] = mtx[5];
-            layer->proj[3] = mtx[7];
-            layer->proj[4] = mtx[10];
-            layer->proj[5] = mtx[11];
-            GSlayerCam* cam = layer->cam;
+            (*(s32*)&layer->hw.projType) = 1;
+            ((f32*)layer->hw.proj)[0] = mtx[0];
+            ((f32*)layer->hw.proj)[1] = mtx[3];
+            ((f32*)layer->hw.proj)[2] = mtx[5];
+            ((f32*)layer->hw.proj)[3] = mtx[7];
+            ((f32*)layer->hw.proj)[4] = mtx[10];
+            ((f32*)layer->hw.proj)[5] = mtx[11];
+            GSlayerCam* cam = (*(GSlayerCam**)&layer->matrixStack);
             memcpy(cam->data + 1, &mtxIdent, 0x30);
             cam->data[0] |= 1;
-            layer->nearZ = 0.0f;
-            layer->farZ = 30000.0f;
-            if (layer->f16a7) {
-                if (layer->f16a6) {
-                    layer->dirty170c |= 0x100;
-                    layer->dirty17c4 |= 0x100;
+            (*(f32*)&layer->hw.fogNear) = 0.0f;
+            (*(f32*)&layer->hw.fogFar) = 30000.0f;
+            if ((*(u8*)&layer->hw.fogEnable)) {
+                if ((*(u8*)&layer->hw.fogRangeEnable)) {
+                    (*(u32*)&layer->dirty[0].pe) |= 0x100;
+                    (*(u32*)&layer->dirty[1].pe) |= 0x100;
                 }
-                layer->dirty170c |= 0x40;
-                layer->dirty16a8 |= 0x40;
-                layer->dirty17c4 |= 0x40;
-                layer->dirty1760 |= 0x40;
+                (*(u32*)&layer->dirty[0].pe) |= 0x40;
+                (*(u32*)&layer->dirty[0].groups) |= 0x40;
+                (*(u32*)&layer->dirty[1].pe) |= 0x40;
+                (*(u32*)&layer->dirty[1].groups) |= 0x40;
             }
-            layer->dirty16ac |= 0x20;
-            layer->dirty16a8 |= 1;
-            layer->dirty1764 |= 0x20;
-            layer->dirty1760 |= 1;
-            layer->colorUpdate = 1;
-            layer->alphaUpdate = 1;
-            layer->zUpdate = 0;
-            layer->dirty170c |= 4;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 4;
-            layer->dirty1760 |= 0x40;
-            layer->zEnable = 0;
-            layer->zFunc = 3;
-            layer->dirty170c |= 8;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 8;
-            layer->dirty1760 |= 0x40;
-            layer->d8c = 2;
-            layer->dirty16b8 |= 2;
-            layer->dirty16a8 |= 2;
-            layer->dirty1770 |= 2;
-            layer->dirty1760 |= 2;
-            layer->primType = 0x98;
-            if (layer->curBlendIdx != 1) {
-                layer->curBlendIdx = 1;
-                layer->curBlend = &layer->blendTable[layer->curBlendIdx];
+            (*(u32*)&layer->dirty[0].geom) |= 0x20;
+            (*(u32*)&layer->dirty[0].groups) |= 1;
+            (*(u32*)&layer->dirty[1].geom) |= 0x20;
+            (*(u32*)&layer->dirty[1].groups) |= 1;
+            (*(u8*)&layer->hw.colorUpdate) = 1;
+            (*(u8*)&layer->hw.alphaUpdate) = 1;
+            (*(u8*)&layer->hw.zUpdate) = 0;
+            (*(u32*)&layer->dirty[0].pe) |= 4;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 4;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            (*(u8*)&layer->hw.zEnable) = 0;
+            (*(s32*)&layer->hw.zFunc) = 3;
+            (*(u32*)&layer->dirty[0].pe) |= 8;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 8;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            (*(s32*)&layer->hw.cullMode) = 2;
+            (*(u32*)&layer->dirty[0].raster) |= 2;
+            (*(u32*)&layer->dirty[0].groups) |= 2;
+            (*(u32*)&layer->dirty[1].raster) |= 2;
+            (*(u32*)&layer->dirty[1].groups) |= 2;
+            (*(u32*)&layer->unk1998) = 0x98;
+            if ((*(s32*)&layer->curPass) != 1) {
+                (*(s32*)&layer->curPass) = 1;
+                layer->curFifo = &layer->passes[layer->curPass];
             }
-            layer->blendOp = 1;
-            layer->blendSrc = 4;
-            layer->blendDst = 1;
-            layer->blendLogic = 5;
-            layer->dirty170c |= 1;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 1;
-            layer->dirty1760 |= 0x40;
+            (*(s32*)&layer->hw.blend[0]) = 1;
+            (*(s32*)&layer->hw.blend[1]) = 4;
+            (*(s32*)&layer->hw.blend[2]) = 1;
+            (*(s32*)&layer->hw.blend[3]) = 5;
+            (*(u32*)&layer->dirty[0].pe) |= 1;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 1;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
             orthoReady = 1;
         }
         if (status == 2) {
@@ -549,17 +522,17 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                 GSlayerCam* cam;
                 GStexture* tex;
                 u8 cr, cg, cb, ca;
-                if (layer->kind == 1 && !(e->flags & 2)) {
+                if ((*(s32*)&layer->type) == 1 && !(e->flags & 2)) {
                     e++;
                     continue;
                 }
-                cam = layer->cam;
+                cam = (*(GSlayerCam**)&layer->matrixStack);
                 tex = lf->m_textures[e->tex];
                 memcpy(cam->data + 1, &mtxIdent, 0x30);
                 cam->data[0] |= 1;
                 sz = e->size;
                 if (e->flags & 1) {
-                    GSlayerCam* c2 = layer->cam;
+                    GSlayerCam* c2 = (*(GSlayerCam**)&layer->matrixStack);
                     PSMTXTransApply((f32(*)[4])(c2->data + 1), (f32(*)[4])(c2->data + 1), proj.x, proj.y, 0.0f);
                     c2->data[0] |= 1;
                 } else {
@@ -578,7 +551,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                     } else {
                         sz *= 1.0f + (baseSize - 1.0f) * PSVECMag(&off) / 800.0f;
                     }
-                    c2 = layer->cam;
+                    c2 = (*(GSlayerCam**)&layer->matrixStack);
                     PSMTXTransApply((f32(*)[4])(c2->data + 1), (f32(*)[4])(c2->data + 1), off.x + cx, off.y + cy, 0.0f);
                     c2->data[0] |= 1;
                 }
@@ -590,7 +563,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                     if (d->flags & 4) {
                         f32 m[12];
                         ang = (f32)atan2(scr.y, scr.x);
-                        cam = layer->cam;
+                        cam = (*(GSlayerCam**)&layer->matrixStack);
                         PSMTXRotRad((f32(*)[4])m, 'X', 0.0f);
                         PSMTXConcat((f32(*)[4])(cam->data + 1), (f32(*)[4])m, (f32(*)[4])(cam->data + 1));
                         PSMTXRotRad((f32(*)[4])m, 'Y', 0.0f);
@@ -601,7 +574,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                     } else {
                         f32 m2[12];
                         ang = (f32)atan2(scr.y, scr.x);
-                        cam = layer->cam;
+                        cam = (*(GSlayerCam**)&layer->matrixStack);
                         PSMTXRotRad((f32(*)[4])m2, 'X', 0.0f);
                         PSMTXConcat((f32(*)[4])(cam->data + 1), (f32(*)[4])m2, (f32(*)[4])(cam->data + 1));
                         PSMTXRotRad((f32(*)[4])m2, 'Y', 0.0f);
@@ -615,11 +588,11 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                 cg = OSf32tou8(fade * OSu8tof32(e->g));
                 cb = OSf32tou8(fade * OSu8tof32(e->b));
                 ca = OSf32tou8(bright * (lf->m_scale * (fade * OSu8tof32(e->a))) + 0.5f);
-                if (layer->tex1740 != tex || layer->tex17f8 != tex || tex->unk7 != 0) {
-                    layer->tex1740 = tex;
-                    layer->dirty173c |= 1;
-                    layer->tex17f8 = tex;
-                    layer->dirty17f4 |= 1;
+                if ((*(GStexture**)&layer->dirty[0].tex[0]) != tex || (*(GStexture**)&layer->dirty[1].tex[0]) != tex || tex->unk7 != 0) {
+                    (*(GStexture**)&layer->dirty[0].tex[0]) = tex;
+                    (*(u32*)&layer->dirty[0].texMask) |= 1;
+                    (*(GStexture**)&layer->dirty[1].tex[0]) = tex;
+                    (*(u32*)&layer->dirty[1].texMask) |= 1;
                 }
                 layer->beginSurface(4);
                 {
@@ -641,7 +614,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                 layer->endSurface();
                 e++;
             }
-            if (layer->kind == 0) {
+            if ((*(s32*)&layer->type) == 0) {
                 if (dist < (f32)d->fadeStart) {
                     f32 glow;
                     if (dist < (f32)d->glowStart) {
@@ -658,7 +631,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
     s32 ga = (s32)(255.0f * glow);
     GSlayerCam* cam;
     layer->setRenderStateAndSelect(GSgfxVFGetPredef(0));
-    cam = layer->cam;
+    cam = (*(GSlayerCam**)&layer->matrixStack);
     memcpy(cam->data + 1, &mtxIdent, 0x30);
     cam->data[0] |= 1;
     layer->beginSurface(4);
@@ -684,7 +657,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                     }
                 }
             }
-        } else if (layer->kind == 0) {
+        } else if ((*(s32*)&layer->type) == 0) {
             f32 glow;
             PSVECSubtract(&camPos, &lf->m_sun, &scr);
             PSVECAdd(&camPos, &scr, &scr);
@@ -708,7 +681,7 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
     s32 ga = (s32)(255.0f * glow);
     GSlayerCam* cam;
     layer->setRenderStateAndSelect(GSgfxVFGetPredef(0));
-    cam = layer->cam;
+    cam = (*(GSlayerCam**)&layer->matrixStack);
     memcpy(cam->data + 1, &mtxIdent, 0x30);
     cam->data[0] |= 1;
     layer->beginSurface(4);

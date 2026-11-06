@@ -1,68 +1,7 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/pxdvs/GSAPI/GSfsys/fsys.h>
 #pragma pool_strings off
-
-struct FsysGroup {
-    u32 id;
-    char* name;
-    u32 headerSize;
-    u32 flags;
-};
-
-struct FsysHeader {
-    u8 unk0[0xC];
-    u32 resNum;
-    u32 flags;
-};
-
-struct FsysWork {
-    u32 id;
-    u32 unk4;
-    u32 unk8;
-    u32 file;
-    s32 mode;
-    s32 status;
-    s32 pending;
-    FsysGroup* group;
-    FsysHeader* header;
-    u32 unk24;
-    u32 unk28;
-    u8 cancel;
-    s8 unk2D;
-    u8 unk2E;
-    u8 pad2F;
-    void (*callback)(u32, u32, u32);
-    u32 cbArg0;
-    u32 cbArg1;
-    u32 groupId;
-};
-
-struct FsysBlock {
-    u8 unk0[8];
-    u8* data;
-};
-
-struct FsysResHeader {
-    u32 id;
-    u8 unk4[4];
-    u32 size8;
-    u32 flags;
-    u8 unk10[4];
-    u32 size14;
-    void* data;
-    u8 unk1C[4];
-    u32 type;
-    u8 unk24[0xC];
-    FsysBlock* blockA;
-    FsysBlock* blockB;
-    u32 id38;
-    u32 unk3C;
-    s32 pending;
-    u32 unk44;
-    u8 unk48[4];
-    u32 readBlocks;
-    u32 loopPoint;
-    u32 loopEnd;
-};
 
 struct FsysQue {
     FsysQue* prev;
@@ -85,32 +24,9 @@ struct FsysTag {
 
 struct FsysTOC {
     u8 unk0[8];
-    u32 count;
+    gc_be32 count;
     u8 unkC[4];
-    u32 groupOffset;
-};
-
-struct FsysBG {
-    FsysBG* prev;
-    FsysBG* next;
-    u8 used;
-    u8 done;
-    u8 type;
-    u8 started;
-    FsysWork* work;
-    FsysResHeader* res;
-    u8 hdr[4];
-    u32 outSize;
-    u32 inSize;
-    u32 limit;
-    u8* window;
-    u32 off;
-    u32 wpos;
-    u32 flags;
-    u32 count;
-    u32 pos;
-    u32 dpos;
-    s32 state;
+    gc_be32 groupOffset;
 };
 
 struct FsysDataType {
@@ -137,7 +53,7 @@ extern u32 _fsysBlockByteSize;
 BOOL OSDisableInterrupts(void);
 BOOL OSRestoreInterrupts(BOOL level);
 void GSthreadSwitch(void);
-void GSdvdInit(void);
+void GSdvdInit(u32 maxWork);
 s32 GSdvdGetDriveStatus(void);
 bool _fsysMemFreeCacheGroup(u32);
 void* GSresGetResource(u32, u32);
@@ -145,9 +61,9 @@ u32 GSresAllocResourceAlign(u32, u32, u32, u32, void*);
 void OSLinkFixed(void*, void*);
 void OSUnlink(void*);
 void GSmovieStreamPostFunc(u32, u32);
-s32 GSmovieStreamPreFunc(void);
+void* GSmovieStreamPreFunc(u32 id);
 void GSsndStreamPostFunc(u32, u32);
-s32 GSsndStreamPreFunc(void);
+void* GSsndStreamPreFunc(u32 id);
 u32 _fsysStreamGetCacheSize(void);
 s32 _fsysStreamGetData(FsysWork*, u32, u32, u32, u32, u32, u32, u32);
 
@@ -234,12 +150,15 @@ static void _fsysBackgroundTaskNormalType(FsysBG*, u8);
 static void _fsysBackgroundTaskCompressType(FsysBG*);
 static u8 _fsysBGTaskCancel(FsysBG*);
 s32 _fsysGetTransLength(u32, u32);
-void _fsysFreeBlock(FsysBlock**, s32);
-void _fsysFreeBlockAll(FsysBlock**);
+void _fsysFreeBlock(FsysBlockSlot*, s32);
+void _fsysFreeBlockAll(FsysBlockSlot*);
 void* memcpy(void*, const void*, u32);
 void* memset(void*, int, u32);
 void DCFlushRange(void*, u32);
 
+#ifndef __MWERKS__
+alignas(32)
+#endif
 static u8 headerTop[0x20];
 static FsysQue* _fsysQueManageRoot[3];
 static u8 _initFlag;
@@ -260,10 +179,10 @@ static u32 _fsysWorkMax;
 
 s32 GSfsysStreamMoviePreFunc(u32 arg);
 s32 GSfsysStreamMovieHeaderPostFunc(void);
-s32 GSfsysStreamMovieHeaderPreFunc(void);
+void* GSfsysStreamMovieHeaderPreFunc(u32 id);
 s32 GSfsysStreamPreFunc(u32 arg);
 s32 GSfsysStreamHeaderPostFunc(void);
-s32 GSfsysStreamHeaderPreFunc(void);
+void* GSfsysStreamHeaderPreFunc(u32 id);
 u32 GSfsysOSLinkPreFunc(u32 a, u32 b, u32 size);
 void* GSfsysOSLinkPostFunc(u32 a, u32 b);
 typedef void* (*PreFn)(u32, u32, u32);
@@ -424,11 +343,11 @@ s32 GSfsysStreamMovieHeaderPostFunc(void) {
 }
 #pragma pop
 
-s32 GSfsysStreamMovieHeaderPreFunc(void) {
+void* GSfsysStreamMovieHeaderPreFunc(u32 id) {
     if (_initFlag == 0) {
         return 0;
     }
-    return GSmovieStreamPreFunc();
+    return GSmovieStreamPreFunc(id);
 }
 
 s32 GSfsysStreamPreFunc(u32 arg) {
@@ -455,15 +374,15 @@ s32 GSfsysStreamHeaderPostFunc(void) {
 }
 #pragma pop
 
-s32 GSfsysStreamHeaderPreFunc(void) {
+void* GSfsysStreamHeaderPreFunc(u32 id) {
     if (_initFlag == 0) {
         return 0;
     }
-    return GSsndStreamPreFunc();
+    return GSsndStreamPreFunc(id);
 }
 
-u8 GSfsysInit(void) {
-    GSdvdInit();
+u8 GSfsysInit(u32 maxWork) {
+    GSdvdInit(maxWork);
     return GSfsysInit2(0, 0, 0);
 }
 
@@ -526,9 +445,11 @@ void* GSfsysOSLinkPostFunc(u32 a, u32 b) {
     end = (u8*)res;
     end += res->count * 0x4C;
     OSLinkFixed(res, (void*)(((u32)end + 0x1F) & ~0x1F));
+#ifdef __MWERKS__
     if (res->linkFunc != 0) {
         res->linkFunc();
     }
+#endif
     return res;
 }
 
@@ -546,9 +467,11 @@ void GSfsysOSUnLink(u32 a, u32 b, u32 unused) {
     if (_initFlag != 0) {
         res = (OSLinkRes*)GSresGetResource(a, b);
         if (res != 0) {
+#ifdef __MWERKS__
             if (res->unlinkFunc != 0) {
                 res->unlinkFunc();
             }
+#endif
             OSUnlink(res);
         }
     }
@@ -876,6 +799,13 @@ static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, s32 a, s32 b, s32 c) {
         work = _fsysGetNewWork();
         if (work == 0) {
             OSRestoreInterrupts(intr);
+            if (work == 0) {
+#ifdef __MWERKS__
+                return;
+#else
+                return 0;
+#endif
+            }
             return 0;
         }
         work->header = 0;
@@ -890,7 +820,7 @@ static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, s32 a, s32 b, s32 c) {
     work->unk24 = 0;
     work->unk28 = 0;
     work->cancel = 0;
-    work->unk2D = flag;
+    work->cacheType = flag;
     work->callback = (void (*)(u32, u32, u32))a;
     work->cbArg0 = b;
     work->cbArg1 = c;
@@ -996,7 +926,11 @@ u8 GSfsysInit2(s32 unused, s32 a, s32 b) {
     _fsysWorkMax = 4;
     _fsysBGWorkMax = 0x10;
     _fsysQueManageMax = 0x18;
+#ifdef __MWERKS__
     _fsysWork = (FsysWork*)_fsysDoMalloc(0x100);
+#else
+    _fsysWork = (FsysWork*)_fsysDoMalloc(4 * sizeof(FsysWork));
+#endif
     if (_fsysWork == 0) {
         return 0;
     }
@@ -1012,7 +946,7 @@ u8 GSfsysInit2(s32 unused, s32 a, s32 b) {
         _fsysWork[i].status = 0;
         _fsysWork[i].pending = 0xFFFF;
         _fsysWork[i].header = 0;
-        _fsysWork[i].unk2E = 0;
+        _fsysWork[i].headerValid = 0;
     }
     for (i = 0; i < _fsysBGWorkMax; i++) {
         _fsysBGWork[i].used = 0;
@@ -1120,6 +1054,10 @@ static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
         }
         memset(bg->window, 0, 0xFEE);
         memcpy(&bg->hdr, block->data, 0x10);
+#ifndef __MWERKS__
+        bg->outSize = gc_rd32((u8*)&bg->outSize);
+        bg->inSize = gc_rd32((u8*)&bg->inSize);
+#endif
         bg->wpos = 0xFEE;
         bg->flags = 0;
         bg->limit = bg->inSize - 0x10;
@@ -1429,7 +1367,11 @@ static void _fsysForegroundTask(FsysWork* work) {
 }
 
 static void _fsysHeaderSizeReadDvdCallback(s32 result, u32 handle) {
+#ifdef __MWERKS__
     FsysWork* work = _fsysInfo2Work((u16)handle);
+#else
+    FsysWork* work = _fsysInfo2Work(handle);
+#endif
 
     if (work == 0) {
         _headerTop = 0;
@@ -1439,7 +1381,7 @@ static void _fsysHeaderSizeReadDvdCallback(s32 result, u32 handle) {
         _fsysWorkSetTaskStatus(work, 3);
     } else {
         FsysGroup* group = work->group;
-        group->headerSize = *(u32*)(_headerTop + 0x1C);
+        group->headerSize = ((FsysHeader*)_headerTop)->headerSize;
         _headerTop = 0;
         _fsysWorkSetTaskStatus(work, 5);
     }
@@ -1541,10 +1483,10 @@ static u8 _fsysCheckExpandComplete(FsysWork* work, u32 idx) {
                 _fsysResHeaderSetTaskStatus(res, 1);
             } else {
                 if (_fsysGetActiveTask(1) + (s32)(_fsysGetActiveTask(2)) == 0) {
-                    if (res->unk44 <= _fsysStreamGetNormalCacheSize()) {
+                    if (res->remaining <= _fsysStreamGetNormalCacheSize()) {
                         _fsysReadDataExec(work, res);
                     }
-                } else if (res->unk44 <= _fsysStreamGetMinimumCacheSize()) {
+                } else if (res->remaining <= _fsysStreamGetMinimumCacheSize()) {
                     _fsysReadDataExec(work, res);
                 }
             }
@@ -1635,7 +1577,7 @@ static s32 _fsysGetFilename(FsysWork* work, char* out) {
     if (group == 0) {
         return 0;
     }
-    sprintf(out, "%s.fsys", group->name);
+    sprintf(out, "%s.fsys", (char*)group->name);
     return 1;
 }
 
@@ -1846,7 +1788,7 @@ FsysWork* _fsysInfo2Work(u32 handle) {
         if (header != 0 && (header->flags & 1)) {
             for (j = 0; j < header->resNum; j++) {
                 res = _fsysGetResHeader(w, j);
-                if (res != 0 && res->id38 == handle) {
+                if (res != 0 && (u32)res->dvdFile == handle) {
                     return w;
                 }
             }

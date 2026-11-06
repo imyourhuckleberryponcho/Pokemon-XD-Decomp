@@ -21,10 +21,10 @@ struct HSD_DObj {
 };
 
 struct HSD_DObjDesc {
-    char* class_name;
-    HSD_DObjDesc* next;
-    HSD_MObjDesc* mobjdesc;
-    HSD_PObjDesc* pobjdesc;
+    gc_ptr32(char) class_name;
+    gc_ptr32(HSD_DObjDesc) next;
+    gc_ptr32(HSD_MObjDesc) mobjdesc;
+    gc_ptr32(HSD_PObjDesc) pobjdesc;
 };
 
 struct HSD_DObjInfo {
@@ -34,8 +34,8 @@ struct HSD_DObjInfo {
 };
 
 struct HSD_ShapeAnimDObj {
-    HSD_ShapeAnimDObj* next;
-    HSD_ShapeAnim* shapeanim;
+    gc_ptr32(HSD_ShapeAnimDObj) next;
+    gc_ptr32(HSD_ShapeAnim) shapeanim;
 };
 
 #define HSD_DOBJ(o) ((HSD_DObj*) (o))

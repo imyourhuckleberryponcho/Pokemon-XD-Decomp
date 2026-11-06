@@ -25,6 +25,7 @@ void HSD_Panic(const char* file, u32 line, const char* msg) {
     OSPanic(file, line, msg);
 }
 
+#ifdef __MWERKS__
 static asm void HSD_SaveContext(void) {
     nofralloc
     mtsprg 0, r3
@@ -66,3 +67,6 @@ static asm void HSD_SaveContext(void) {
     sth r4, 0x1a2(r3)
     b OSFillFPUContext
 }
+#else
+static void HSD_SaveContext(void) { }
+#endif

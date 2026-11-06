@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma peephole off
 #pragma dont_inline on
@@ -9,7 +10,24 @@ struct WindowKeyInfo {
 };
 
 struct Window {
-    u8 unk0[0x9E];
+    u8 unk0[0xC];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x16];
     s16 cursor;
 };
 
@@ -22,7 +40,7 @@ s32 menuOpen(s32 menuID, s32);
 void menuClose(s32 menuID);
 void menuCloseCustom(s32 menuID, s32, s32);
 void menuCloseSync(s32 menuID, s32);
-void heroItemAddItemDataId(void* hero, u16 id, u16 num, s32);
+void heroItemAddItemDataId(void* hero, PCARG(u16, u32) id, PCARG(u16, u32) num, s32);
 
 static BOOL initFlag;
 static s32 Num;

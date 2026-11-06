@@ -1,14 +1,29 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 
 struct PokemonEditWindow {
     u8 unk0[4];
     s32 menu;
-    u8 unk8[0x60];
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
     void* pokemon;
     s32* out;
-    u8 unk70[0x18];
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
     s32 selection;
     u8 unk8C[0x12];
     s16 cursor;
@@ -31,7 +46,7 @@ EditKeyInfo* windowGetKeyInfo(void);
 u8 pokemonCheckValid(void*);
 void* menuDataBiosGetPtr(s32);
 s32 menuGetCursorItemID(s32);
-s32 pokemonGetStatus(void*, u16, u16, u16);
+StatusS32 pokemonGetStatus(void*, u16, u16, u16);
 
 void dbgMenuPokemonEditButton(PokemonEditWindow* window) {
     void* pokemon = window->pokemon;
@@ -95,7 +110,7 @@ void dbgMenuPokemonEditButton(PokemonEditWindow* window) {
 extern "C" {
 void pokemonSetStatus(void*, u16, u16, u16, u32);
 void pokemonCreate(void*, u16, u8, void*);
-u32 gamedataGetStatus(void*, u32);
+StatusU32 gamedataGetStatus(void*, u32);
 void pokemonSetCatchStatus(void*, u32, u8, u32, u8, u32, void*);
 s32 menuOpenCustom(s32, ...);
 void menuCloseCustom(s32, s32, s32);
@@ -118,17 +133,17 @@ void pokemonInitJoutai(void*);
 u8 pokemonCheckWriteJoutaiDataId(void*, u16);
 void pokemonWriteJoutaiDataId(void*, u16, u32);
 s8 pokemonGetKaisuuJoutaiDataId(void*, u16);
-void pokemonSetKaisuuJoutaiDataId(void*, u16, s8);
+void pokemonSetKaisuuJoutaiDataId(void*, u16, PCARG(s8, u32));
 s8 pokemonGetNowKaisuuJoutaiDataId(void*, u16);
-void pokemonSetNowKaisuuJoutaiDataId(void*, u16, s8);
+void pokemonSetNowKaisuuJoutaiDataId(void*, u16, PCARG(s8, u32));
 s16 pokemonGetCountAsJoutaiDataId(void*, u16);
-void pokemonSetCountAsJoutaiDataId(void*, u16, s16);
+void pokemonSetCountAsJoutaiDataId(void*, u16, PCARG(s16, u32));
 u8 joutaiDataBiosGetMaxCount(u16);
 void pokemonInitDarkPokemon(void*);
 void pokemonSetDarkPokemonStatus(void*, u16);
 u8 pokemonIsDarkPokemon(void*);
 void pokemonInitJoutaiDataId(void*, u16);
-u32 fightTrainerGetStatus(void*, u16, u16, u16);
+StatusU32 fightTrainerGetStatus(void*, u16, u16, u16);
 void fightTrainerSetStatus(void*, u16, u16, u16, u32);
 u32 pokemonGetNowLevelToExp(void*);
 void pokemonGrowBasisStatus(void*, u32);

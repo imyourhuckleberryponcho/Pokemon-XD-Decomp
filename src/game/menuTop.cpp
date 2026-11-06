@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -10,17 +13,37 @@ struct tagWINDOW_WORK {
     s8 done;
     u8 pad3;
     s32 menuID;
-    u8 pad8[0x14];
+    u8 pad8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 msgWin;
-    u8 pad20[0x73];
+    u8 pad20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 colorA;
     u8 pad94[8];
     s32 data;
-    u8 padA0[0x68 - 0xA0 + 0xA0];
+    u8 padA0[0x18];
+    void* slotB8;
+    u8 padBC[0x4C];
 };
 
 struct tagSPRITE_WORK {
-    u8 pad0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
 };
 
@@ -50,37 +73,37 @@ extern "C" {
 void menuOpen(s32, s32);
 s32 menuOpenCustom(s32, ...);
 void menuCloseCustom(s32, s32, s32);
-u8 menuIsCheck();
+u8 menuIsCheck(s32 id);
 void winSeqSetMenu(s32, s32);
 void winSpriteSetDisp(void*, s32);
 void GSmsgPrint2(s32, s32, s32, s32, s32);
 u32 GSmsgGetRect(s32);
-void* menuItemBiosGetPtr(s32, s16);
+void* menuItemBiosGetPtr(s32, PCARG(s16, u32));
 s32 pokecoloGetRomVersion();
 s16 menuTitleGetSelect(s32 sel);
-void menuTitleCursorAnime();
+void menuTitleCursorAnime(void* window, void* sprite);
 void menuTitleCursorAnimeMain();
 u8 menuModelCheck(MenuModel*, s32);
-void menuModelSetSize(MenuModel*, s16, s16, s16, s16);
+void menuModelSetSize(MenuModel*, PCARG(s16, s32), PCARG(s16, s32), PCARG(s16, s32), PCARG(s16, s32));
 void menuModelAdjustCamera(MenuModel*);
 void menuModelRender(MenuModel*);
 void menuModelSetAngle(MenuModel*, f32*);
 void menuModelSetZoom(MenuModel*, f32);
 void menuModelSetMotion(MenuModel*, s32);
-void menuItemBiosSetSelectFlag(s32, s16, s32);
+void menuItemBiosSetSelectFlag(s32, PCARG(s16, u32), s32);
 u8 menuItemBiosGetSelectFlag(s32, s32);
-void menuTitleSetSelect(s16, s16);
+void menuTitleSetSelect(PCARG(s16, s32), s16);
 s32 windowGetActiveID();
 void fadeCheck(s32);
 void fadeSet(s32, f32);
 void menuTitleSetStartStatus(s32);
 void menuTitleCloseSelectAnime();
-u32 gamedatasaveGetStatus(s32, s32);
+StatusU32 gamedatasaveGetStatus(s32, s32);
 s32 winMsgOpen(s32, s32, s32, s32);
 void winMsgClose(s32);
 s8 menuSubOpenYesNo(s32, s32, s32, s32);
 void menuTitleBattlePreReadCheck();
-void menuNameEntryOpen(s32, s32);
+void menuNameEntryOpen(s32, GCsptr);
 void menuNameEntryGetLastName(u16*);
 void cursorBiosInit();
 void heroMoveSyncWithHero();
@@ -113,7 +136,7 @@ void pokecoloSetPlayTime(f64);
 s32 pokecoloGetPlayTimeValue();
 s32 darkPokemonGetReliveNum();
 s32 darkPokemonGetSnatchSuccessNum();
-void msgctrlSetValue(s32, s32);
+void msgctrlSetValue(s32, GCuptr);
 void floorSetContinueMode(s32);
 void floorClearReturnPoint();
 void floorReturnSavePoint();
@@ -160,7 +183,7 @@ void menuTopOpenFlashBack() {
 }
 
 void menuTopSelectCtrl(tagWINDOW_WORK* w) {
-    u8* p = *(u8**)((u8*)w + 0x68);
+    u8* p = (u8*)w->slot68;
     switch (w->type) {
     case 0:
         if (w->done == 0) {
@@ -196,7 +219,7 @@ void menuTopLoadHook() {
 }
 
 void menuTopHookMssageWindow(tagWINDOW_WORK* w) {
-    SelPair p = *(SelPair*)((u8*)w + 0x9C);
+    SelPair p = *(SelPair*)&w->data;
     if (pokecoloGetRomVersion() != 1 && p.sel >= 0) {
         s16 idx = menuTitleGetSelect(p.sel);
         GSmsgPrint2(w->msgWin, 0, -8, w->colorA | ~0xFF, _menuTopMsgTable[idx]);
@@ -204,7 +227,7 @@ void menuTopHookMssageWindow(tagWINDOW_WORK* w) {
 }
 
 void menuTopHookMssageBattleSelectWindow(tagWINDOW_WORK* w) {
-    SelPair p = *(SelPair*)((u8*)w + 0x9C);
+    SelPair p = *(SelPair*)&w->data;
     if (p.sel >= 0) {
         GSmsgPrint2(w->msgWin, 0, -8, w->colorA | ~0xFF, _menuTopMsgTableBattleSelect[p.sel]);
     }
@@ -213,11 +236,11 @@ void menuTopHookMssageBattleSelectWindow(tagWINDOW_WORK* w) {
 void fn_8002F668(tagWINDOW_WORK* w, tagSPRITE_WORK* s, s32 msg);
 
 void menuTopHook(tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
-    SelPair p = *(SelPair*)((u8*)w + 0x9C);
+    SelPair p = *(SelPair*)&w->data;
     switch (s->id) {
     case 0x70:
         if (p.sel == 0) {
-            menuTitleCursorAnime();
+            menuTitleCursorAnime(w, s);
             winSpriteSetDisp(s, 1);
         } else {
             winSpriteSetDisp(s, 0);
@@ -225,7 +248,7 @@ void menuTopHook(tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
         break;
     case 0x71:
         if (p.sel == 1) {
-            menuTitleCursorAnime();
+            menuTitleCursorAnime(w, s);
             winSpriteSetDisp(s, 1);
         } else {
             winSpriteSetDisp(s, 0);
@@ -233,7 +256,7 @@ void menuTopHook(tagWINDOW_WORK* w, tagSPRITE_WORK* s) {
         break;
     case 0x72:
         if (p.sel == 2) {
-            menuTitleCursorAnime();
+            menuTitleCursorAnime(w, s);
             winSpriteSetDisp(s, 1);
         } else {
             winSpriteSetDisp(s, 0);
@@ -621,7 +644,7 @@ static void _menuTopClose(s32 id) {
 }
 
 static void _menuTopClose2(s32 id, u32 n) {
-    if (menuIsCheck() == 1) {
+    if (menuIsCheck(id) == 1) {
         menuCloseCustom(id, n, 1);
     }
 }

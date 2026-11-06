@@ -38,22 +38,38 @@ extern f32 __float_min[];
 double atan2(double y, double x);
 void PSVECNormalize(const Vec* src, Vec* dst);
 
+#ifdef __MWERKS__
 #undef fabs
 #undef fabsf
+#ifndef __MWERKS__
+static
+#endif
 inline double fabs(double x)
 {
     return __fabs(x);
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float fabsf(float x)
 {
     return (float) fabs(x);
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float atan2f(float y, float x)
 {
     return (float) atan2(y, x);
 }
+#else
+#include <math.h>
+#ifndef __MWERKS__
+void HSD_VecGetOrthogonal(Vec3* in, Vec3* out);
+#endif
+#endif
 
 static inline int vecNormalize(Vec3* src, Vec3* dst)
 {
@@ -80,9 +96,9 @@ HSD_ObjAllocData shadow_alloc_data;
 static inline void freeImage(HSD_Shadow* shadow)
 {
     HSD_ImageDesc* idesc = shadow->texture->imagedesc;
-    if (idesc->image_ptr) {
-        GSmemFree(idesc->image_ptr);
-        idesc->image_ptr = NULL;
+    if (GC_PTR(void*, idesc->image_ptr)) {
+        GSmemFree(GC_PTR(void*, idesc->image_ptr));
+        GC_SETPTR(idesc->image_ptr, NULL);
     }
 }
 
@@ -148,10 +164,10 @@ HSD_Shadow* HSD_ShadowAlloc(void)
     shadow->transT = 0.5F;
     shadow->intensity = 0;
 
-    shadow->texture->imagedesc->format = 0;
-    shadow->texture->imagedesc->width = 256;
-    shadow->texture->imagedesc->height = 256;
-    shadow->texture->imagedesc->image_ptr = NULL;
+    GC_SETBE32(shadow->texture->imagedesc->format, 0);
+    GC_SETBE16(shadow->texture->imagedesc->width, 256);
+    GC_SETBE16(shadow->texture->imagedesc->height, 256);
+    GC_SETPTR(shadow->texture->imagedesc->image_ptr, NULL);
 
     HSD_CObjSetViewportfx4(shadow->camera, 0.0f, 256.f, 0.0f, 256.f);
     HSD_CObjSetScissorx4(shadow->camera, 0, 256, 0, 256);
@@ -169,19 +185,19 @@ void HSD_ShadowSetSize(HSD_Shadow* shadow, u16 width, u16 height)
     HSD_ASSERT(274, height > 0);
 
     idesc = shadow->texture->imagedesc;
-    if (!idesc->image_ptr || idesc->width != width || idesc->height != height)
+    if (!GC_PTR(void*, idesc->image_ptr) || GC_BE16(idesc->width) != width || GC_BE16(idesc->height) != height)
     {
-        if (idesc->image_ptr) {
+        if (GC_PTR(void*, idesc->image_ptr)) {
             freeImage(shadow);
         }
 
         size = GXGetTexBufferSize(width, height, GX_TF_I4, GX_FALSE, 0);
         HSD_ASSERT(283, size > 0);
-        idesc->image_ptr = GSmemAllocAlignFromEnd(size, 0x20);
-        if (idesc->image_ptr) {
-            DCFlushRange(idesc->image_ptr, size);
-            idesc->width = width;
-            idesc->height = height;
+        GC_SETPTR(idesc->image_ptr, GSmemAllocAlignFromEnd(size, 0x20));
+        if (GC_PTR(void*, idesc->image_ptr)) {
+            DCFlushRange(GC_PTR(void*, idesc->image_ptr), size);
+            GC_SETBE16(idesc->width, width);
+            GC_SETBE16(idesc->height, height);
 
             HSD_CObjSetViewportfx4(shadow->camera, 0, width, 0, height);
             HSD_CObjSetScissorx4(shadow->camera, 0, width, 0, height);
@@ -246,7 +262,7 @@ void HSD_ShadowRender(HSD_Shadow* shadow)
     if (shadow->objects) {
         cobj = shadow->camera;
         idesc = shadow->texture->imagedesc;
-        HSD_ASSERT(411, idesc->image_ptr);
+        HSD_ASSERTMSG(411, GC_PTR(void*, idesc->image_ptr), "idesc->image_ptr");
 
         HSD_StateInitTev();
         HSD_SetupTevStageAll(&tev);
@@ -260,8 +276,8 @@ void HSD_ShadowRender(HSD_Shadow* shadow)
 
         MTXOrtho(ortho, 1.0F, 0.0F, 0.0F, 1.0F, -1.0F, 1.0F);
         GXSetProjection(ortho, GX_ORTHOGRAPHIC);
-        GXSetViewport(0.0F, 0.0F, idesc->width, idesc->height, 0.0F, 1.0F);
-        GXSetScissor(0, 0, idesc->width, idesc->height);
+        GXSetViewport(0.0F, 0.0F, GC_BE16(idesc->width), GC_BE16(idesc->height), 0.0F, 1.0F);
+        GXSetScissor(0, 0, GC_BE16(idesc->width), GC_BE16(idesc->height));
         drawQuad();
 
         if (shadow_debug) {
@@ -269,14 +285,14 @@ void HSD_ShadowRender(HSD_Shadow* shadow)
             chan.mat_color.g = 0;
             chan.mat_color.b = 0;
             HSD_SetupChannelAll(&chan);
-            GXSetScissor(2, 2, idesc->width - 4, idesc->height - 4);
+            GXSetScissor(2, 2, GC_BE16(idesc->width) - 4, GC_BE16(idesc->height) - 4);
             drawQuad();
 
             chan.mat_color.r = 255;
             chan.mat_color.g = 255;
             chan.mat_color.b = 255;
             HSD_SetupChannelAll(&chan);
-            GXSetScissor(4, 4, idesc->width - 8, idesc->height - 8);
+            GXSetScissor(4, 4, GC_BE16(idesc->width) - 8, GC_BE16(idesc->height) - 8);
             drawQuad();
         }
 
@@ -287,7 +303,7 @@ void HSD_ShadowRender(HSD_Shadow* shadow)
 
         if (HSD_CObjGetEyeDistance(cobj) >= EPS) {
             HSD_CObjSetCurrent(cobj);
-            GXSetScissor(2, 2, idesc->width - 4, idesc->height - 4);
+            GXSetScissor(2, 2, GC_BE16(idesc->width) - 4, GC_BE16(idesc->height) - 4);
             for (list = shadow->objects; list != NULL; list = list->next) {
                 HSD_JObjDispAll(list->data, NULL,
                                 (HSD_TRSP_OPA | HSD_TRSP_TEXEDGE),
@@ -343,11 +359,11 @@ void HSD_ShadowCopyTex(HSD_Shadow* shadow)
     HSD_ASSERT(489, shadow);
 
     idesc = shadow->texture->imagedesc;
-    HSD_ASSERT(493, idesc->image_ptr);
+    HSD_ASSERTMSG(493, GC_PTR(void*, idesc->image_ptr), "idesc->image_ptr");
 
-    GXSetTexCopySrc(0, 0, idesc->width, idesc->height);
-    GXSetTexCopyDst(idesc->width, idesc->height, 0x20, 0);
-    GXCopyTex(idesc->image_ptr, 1);
+    GXSetTexCopySrc(0, 0, GC_BE16(idesc->width), GC_BE16(idesc->height));
+    GXSetTexCopyDst(GC_BE16(idesc->width), GC_BE16(idesc->height), 0x20, 0);
+    GXCopyTex(GC_PTR(void*, idesc->image_ptr), 1);
 }
 
 void HSD_ShadowCopyLightPos(HSD_Shadow* shadow, HSD_LObj* lobj, float distance)
@@ -390,8 +406,8 @@ void HSD_ShadowSetActive(HSD_Shadow* shadow, int active)
     shadow->active = active;
     if (active) {
         idesc = shadow->texture->imagedesc;
-        if (!idesc->image_ptr) {
-            HSD_ShadowSetSize(shadow, idesc->width, idesc->height);
+        if (!GC_PTR(void*, idesc->image_ptr)) {
+            HSD_ShadowSetSize(shadow, GC_BE16(idesc->width), GC_BE16(idesc->height));
         }
 
         HSD_MObjAddShadowTexture(shadow->texture);
@@ -592,3 +608,26 @@ void HSD_ViewingRectAddRect(HSD_ViewingRect* rect, Vec3* position, float top,
         rect->bottom = y + bottom;
     }
 }
+
+#ifndef __MWERKS__
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+int HSD_ShadowPCHasTexture(HSD_Shadow* shadow)
+{
+    if (shadow == NULL || shadow->texture == NULL || shadow->texture->imagedesc == NULL) {
+        return 0;
+    }
+    return GC_PTR(void*, shadow->texture->imagedesc->image_ptr) != NULL;
+}
+
+void HSD_ShadowPCSetIntensity(HSD_Shadow* shadow, u8 intensity)
+{
+    shadow->intensity = intensity;
+}
+#ifdef __cplusplus
+}
+#endif
+#endif

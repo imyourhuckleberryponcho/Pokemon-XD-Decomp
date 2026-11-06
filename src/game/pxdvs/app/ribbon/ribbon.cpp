@@ -1,9 +1,5 @@
 #include <dolphin/types.h>
-
-struct RibbonData {
-    u32 unk0;
-    u32 msgID;
-};
+#include <game/miscTables.h>
 
 extern "C" {
 

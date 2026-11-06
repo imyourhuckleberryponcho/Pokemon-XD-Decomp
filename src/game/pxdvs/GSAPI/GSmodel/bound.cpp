@@ -1,4 +1,7 @@
+#include <game/gcdata.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gsmodelview.h>
 
 struct Vec {
     f32 x, y, z;
@@ -9,19 +12,89 @@ struct GSmtx {
 };
 
 struct GSbound {
-    u8 unk0[0x10];
+    u16 flags;
+    u16 type;
+    void* data;
+    GSmodelBoundDataView u;
 };
 
 struct GSmodel {
-    u8 unk0[0x18];
+    u32 flags;
+    void* next;
+    void* set;
+    void* jobj;
+    void* blendJObj;
+    void* blendDest;
     Vec translate;
     Vec rotate;
     Vec scale;
     GSbound bound;
-    u8 unk4C[0x5D8 - 0x4C];
-    s32 unk5D8;
+    void* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
+    s32 animType;
+    u32 animIndex;
+    f32 animRate;
+    f32 animFrame;
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
+    s32 texAnimType;
+    u32 texAnimIndex;
+    f32 texAnimRate;
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
+    GSmodelPartMixView partMix[12];
+    f32 blendFactor;
+    u8 animDirty;
+    u8 texAnimDirty;
+    u8 unk21E[2];
+    void* animEndedCallback;
+    void* animEndedCallbackArg;
+    GSmodelPartAnimView partAnim[16];
+    s32 attachMode;
+    void* attachModel;
+    u32 attachIndex;
+    f32 attachPosition[3];
+    f32 attachRotation[3];
+    f32 attachScale[3];
+    void* unk5D8;
+    u32 particleAttachMode;
+    void* materials;
+    u32 materialCount;
+    u32 shadowSurfaceCount;
+    void* shadowSurfaces;
+    void* shadowLight;
+    f32 groundPlane;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    u32 unk614;
+    u32 unk618;
+    u32 unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
+#ifdef __MWERKS__
 struct _HSD_PObj {
     u8 unk0[8];
     void* display;
@@ -29,15 +102,25 @@ struct _HSD_PObj {
     u16 n_display;
     void* vertices;
 };
+#else
+struct _HSD_PObj {
+    void* pcClass;
+    void* pcNext;
+    void* display;
+    u8 unkC[2];
+    u16 n_display;
+    void* vertices;
+};
+#endif
 
 enum GSgfxPrimType {
     GS_GFX_PRIM_TYPE_0
 };
 
 struct GSgfxParseCallbacks {
-    void (*beginSurface)(GSgfxPrimType type, unsigned short n, unsigned long attr, void* user);
+    void (*beginSurface)(GSgfxPrimType type, unsigned short n, u32 attr, void* user);
     void* unk4;
-    void (*vertex)(unsigned long attr, void* data, void* user);
+    void (*vertex)(u32 attr, void* data, void* user);
     void* unkC;
     void* unk10;
 };
@@ -46,7 +129,7 @@ struct BoundParseContext {
     GSmodel* model;
     GSmtx* mtx;
     GSmtx* envelopeMtx;
-    unsigned long attr;
+    u32 attr;
 };
 
 extern "C" {
@@ -61,13 +144,13 @@ void PSMTXMultVec(const GSmtx* m, const Vec* src, Vec* dst);
 }
 
 static void _modelBoundPObj(_HSD_PObj* pobj, GSmtx* mtx0, GSmtx* mtx, GSmtx* envelopeMtx, void* user);
-static void _modelBoundVertex(unsigned long attr, void* data, void* user);
-static void _modelBoundBeginSurface(GSgfxPrimType type, unsigned short n, unsigned long attr, void* user);
+static void _modelBoundVertex(u32 attr, void* data, void* user);
+static void _modelBoundBeginSurface(GSgfxPrimType type, unsigned short n, u32 attr, void* user);
 
 extern "C" {
 
 void GSmodelRecalculateBound(GSmodel* model) {
-    s32 saved5D8;
+    void* saved5D8;
     Vec translate;
     Vec rotate;
     Vec scale;
@@ -110,7 +193,7 @@ static void _modelBoundPObj(_HSD_PObj* pobj, GSmtx* mtx0, GSmtx* mtx, GSmtx* env
     GSgfxParseDisplayList(pobj->display, pobj->vertices, pobj->n_display << 5, &cblist, &context);
 }
 
-static void _modelBoundVertex(unsigned long attr, void* data, void* user) {
+static void _modelBoundVertex(u32 attr, void* data, void* user) {
     static s32 mtxidx = 0;
     BoundParseContext* context = (BoundParseContext*)user;
     GSmtx* mtx;
@@ -124,7 +207,7 @@ static void _modelBoundVertex(unsigned long attr, void* data, void* user) {
         } else {
             mtx = context->mtx;
         }
-        f32* src = (f32*)data;
+        gc_bef32* src = (gc_bef32*)data;
         Vec pos;
         f32 x, y, z;
         z = src[2];
@@ -138,6 +221,6 @@ static void _modelBoundVertex(unsigned long attr, void* data, void* user) {
     }
 }
 
-static void _modelBoundBeginSurface(GSgfxPrimType type, unsigned short n, unsigned long attr, void* user) {
+static void _modelBoundBeginSurface(GSgfxPrimType type, unsigned short n, u32 attr, void* user) {
     ((BoundParseContext*)user)->attr = attr;
 }

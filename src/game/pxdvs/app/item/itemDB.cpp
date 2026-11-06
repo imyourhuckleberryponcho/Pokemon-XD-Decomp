@@ -24,20 +24,12 @@ struct ItemBallData {
     u32 yaseiPokeoutWzxDataId;
 };
 
-struct ItemData {
-    u8 kind;
-    u8 unk1[9];
-    u16 itemSoubiDataId;
-    u8 unkC[4];
-    u32 name;
-    u8 unk14[4];
-    u32 buff;
-};
+#include <game/pxdvs/app/item/itemData.h>
 
 extern "C" {
 
 ItemBallData* itemBallDataBiosGetPtr(u16 id);
-ItemData* itemDataBiosGetPtr(u16 id);
+ItemDataBiosRef* itemDataBiosGetPtr(u16 id);
 
 void item_SetNum(Item* item, u16 value) {
     if (item != NULL) {
@@ -186,7 +178,7 @@ u32 itemBallDB_GetInWzxDataId(u16 id) {
 }
 
 u32 itemDB_GetBuff(u16 id) {
-    ItemData* data = itemDataBiosGetPtr(id);
+    ItemDataBiosRef* data = itemDataBiosGetPtr(id);
     if (data == NULL) {
         return 0;
     }
@@ -194,7 +186,7 @@ u32 itemDB_GetBuff(u16 id) {
 }
 
 u16 itemDB_GetItemSoubiDataId(u16 id) {
-    ItemData* data = itemDataBiosGetPtr(id);
+    ItemDataBiosRef* data = itemDataBiosGetPtr(id);
     if (data == NULL) {
         return 0;
     }
@@ -202,7 +194,7 @@ u16 itemDB_GetItemSoubiDataId(u16 id) {
 }
 
 u8 itemDB_GetKind(u16 id) {
-    ItemData* data = itemDataBiosGetPtr(id);
+    ItemDataBiosRef* data = itemDataBiosGetPtr(id);
     if (data == NULL) {
         return 0;
     }
@@ -210,7 +202,7 @@ u8 itemDB_GetKind(u16 id) {
 }
 
 u32 itemDB_GetName(u16 id) {
-    ItemData* data = itemDataBiosGetPtr(id);
+    ItemDataBiosRef* data = itemDataBiosGetPtr(id);
     if (data == NULL) {
         return 0;
     }

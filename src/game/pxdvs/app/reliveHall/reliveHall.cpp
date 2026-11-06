@@ -1,4 +1,5 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
+#include <game/miscTables.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
 enum FootStepCounter { FOOTSTEP_0 };
@@ -6,11 +7,6 @@ enum FootStepCounter { FOOTSTEP_0 };
 struct FlagEtcData {
     u8 pad[0x428];
     u32 reliveOpenFlag;
-};
-
-struct ReliveHallData {
-    u16 a0;
-    u16 steps;
 };
 
 extern "C" {
@@ -22,7 +18,7 @@ bool darkPokemonBiosGetInformationFlag(u16 id);
 bool darkPokemonBiosGetReliveFlag(u16 id);
 u32 darkPokemonBiosGetSteps(u16 id);
 void darkPokemonBiosSetSteps(u16 id, u32 steps);
-s32 heroMoveAddStepCallback(void (*cb)(long, FootStepCounter, long), s32);
+s32 heroMoveAddStepCallback(void (*cb)(s32, FootStepCounter, s32), s32);
 void heroMoveInitEvent();
 void heroMoveSetColision(s32 on);
 void heroMoveTermEvent();
@@ -49,9 +45,9 @@ struct PokemonRaw {
     u8 d[0xC4];
 };
 
-class CReliveHall;
+struct CReliveHall;
 
-class CReliveStage {
+struct CReliveStage {
 public:
     u8 dancer[4][0xC4];
     u8 visitor[0xC4];
@@ -61,40 +57,40 @@ public:
     s32 getState();
     bool isLugiaReliveReady();
     bool isReliveReady();
-    Pokemon* heroWalkReliveCallBack(long steps, bool pay);
+    Pokemon* heroWalkReliveCallBack(s32 steps, bool pay);
     bool isPokemonZokuseiAllUnique(bool withVisitor);
     s32 getTempo();
     s32 getPassionWoBonus();
     bool isBonusGet();
     s32 getPassion();
     void pickupVisitor(Pokemon& out);
-    void insertDancer(Pokemon& in, long slot);
-    void pickupDancer(Pokemon& out, long slot);
+    void insertDancer(Pokemon& in, s32 slot);
+    void pickupDancer(Pokemon& out, s32 slot);
     void exchangeVisitor(Pokemon& p);
-    void exchangeDancer(Pokemon& p, long slot);
+    void exchangeDancer(Pokemon& p, s32 slot);
     s32 getDancerQuantity();
-    Pokemon* getDancerPointer(long i);
+    Pokemon* getDancerPointer(s32 i);
     void putVisitor(Pokemon& p);
     Pokemon* getVisitorPointer();
     void init();
 };
 
-class CReliveHall {
+struct CReliveHall {
 public:
     CReliveStage stage[9];
 
     static bool isOpen();
-    void debugPokemonSetup(long mode);
+    void debugPokemonSetup(s32 mode);
     void checkWithBackupSet();
     void allocMakeBackup();
     static CReliveHall* getPointer();
     bool isReliveReadyDarkLugiaExist();
     s32 getReliveReadyVisitorQuantity();
     bool isReliveReadyPokemonExist();
-    Pokemon* heroWalkReliveCallBack(long steps);
+    Pokemon* heroWalkReliveCallBack(s32 steps);
     s32 getReliveGiveStageQuantity();
     void init();
-    CReliveStage* getStage(long i);
+    CReliveStage* getStage(s32 i);
 };
 
 namespace {
@@ -103,7 +99,7 @@ s32 _tempoBase[5] = { 0, 5, 0xE, 0x1B, 0x30 };
 s32 _tempoGood[5] = { 0, 6, 6, 6, 12 };
 s32 _tempoNormal[5] = { 0, 2, 2, 2, 4 };
 s32 _bonusStageBonusTbl[10] = { 0, 0, 1, 5, 0xA, 0xF, 0x19, 0x23, 0x32, 0x64 };
-void _heroCallBackFunc(long, FootStepCounter, long);
+void _heroCallBackFunc(s32, FootStepCounter, s32);
 }
 static CReliveHall* _pRelivehallCopy;
 
@@ -158,8 +154,8 @@ static inline s32 pairAisyou(Pokemon* a, Pokemon* b) {
     s32 best = 0;
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 2; j++) {
-            s32 x = z[0][i];
             s32 y = z[1][j];
+            s32 x = z[0][i];
             s32 v;
             if (x == 0 && y == 0) {
                 v = 2;
@@ -196,9 +192,7 @@ static inline s32 pairSum(CReliveStage* s, s32 n) {
     s32 i;
     s32 sum = 0;
     for (i = 0; i < n; i++) {
-        Pokemon* a = validOrNull(stageDancer(s, i));
-        Pokemon* b = validOrNull(stageDancer(s, (i + 1) % n));
-        s32 rel = pairAisyou(a, b);
+        s32 rel = pairAisyou(validOrNull(stageDancer(s, i)), validOrNull(stageDancer(s, (i + 1) % n)));
         switch (rel) {
         case -1:
             add = 0;
@@ -253,7 +247,7 @@ void CReliveStage::putVisitor(Pokemon& p) {
     pokemonInit((u32)&p);
 }
 
-Pokemon* CReliveStage::getDancerPointer(long i) {
+Pokemon* CReliveStage::getDancerPointer(s32 i) {
     Pokemon* p = stageDancer(this, i);
     if (pokemonCheckValid(p)) return p;
     return 0;
@@ -267,7 +261,7 @@ s32 CReliveStage::getDancerQuantity() {
     return n;
 }
 
-void CReliveStage::exchangeDancer(Pokemon& p, long slot) {
+void CReliveStage::exchangeDancer(Pokemon& p, s32 slot) {
     Pokemon* dst = stageDancer(this, slot);
     PokemonRaw tmp = *(PokemonRaw*)dst;
     memcpy(dst, &p, 0xC4);
@@ -283,18 +277,18 @@ void CReliveStage::exchangeVisitor(Pokemon& p) {
     pokemonSetupAfterInsert(0, this, dst);
 }
 
-void CReliveStage::pickupDancer(Pokemon& out, long slot) {
+void CReliveStage::pickupDancer(Pokemon& out, s32 slot) {
     Pokemon* src = stageDancer(this, slot);
     memcpy(&out, src, 0xC4);
-    long next = slot + 1;
-    long cnt = 4 - next;
+    s32 next = slot + 1;
+    s32 cnt = 4 - next;
     if (cnt != 0) memmove(src, dancer[next], cnt * 0xC4);
     pokemonInit((u32)(Pokemon*)dancer[3]);
 }
 
-void CReliveStage::insertDancer(Pokemon& in, long slot) {
-    long next = slot + 1;
-    long cnt = 4 - next;
+void CReliveStage::insertDancer(Pokemon& in, s32 slot) {
+    s32 next = slot + 1;
+    s32 cnt = 4 - next;
     if (cnt != 0) memmove(dancer[next], dancer[slot], cnt * 0xC4);
     Pokemon* dst = stageDancer(this, slot);
     memcpy(dst, &in, 0xC4);
@@ -348,10 +342,8 @@ s32 CReliveStage::getTempo() {
     base = _tempoBase[n];
     sum = 0;
     for (i = 0; i < n; i++) {
-        Pokemon* a = validOrNull(stageDancer(this, i));
-        Pokemon* b = validOrNull(stageDancer(this, (i + 1) % n));
         s32 add;
-        s32 rel = pairAisyou(a, b);
+        s32 rel = pairAisyou(validOrNull(stageDancer(this, i)), validOrNull(stageDancer(this, (i + 1) % n)));
         switch (rel) {
         case -1:
             add = 0;
@@ -397,7 +389,7 @@ bool CReliveStage::isPokemonZokuseiAllUnique(bool withVisitor) {
     return true;
 }
 
-Pokemon* CReliveStage::heroWalkReliveCallBack(long steps, bool pay) {
+Pokemon* CReliveStage::heroWalkReliveCallBack(s32 steps, bool pay) {
     u32 cur;
     if ((s16)getPassion() == 0) return 0;
     Pokemon* v = VISITOR_OR_NULL(this);
@@ -448,7 +440,7 @@ s32 CReliveStage::getState() {
     return r;
 }
 
-CReliveStage* CReliveHall::getStage(long i) {
+CReliveStage* CReliveHall::getStage(s32 i) {
     return &stage[i];
 }
 
@@ -475,7 +467,7 @@ s32 CReliveHall::getReliveGiveStageQuantity() {
     return count;
 }
 
-Pokemon* CReliveHall::heroWalkReliveCallBack(long steps) {
+Pokemon* CReliveHall::heroWalkReliveCallBack(s32 steps) {
     Pokemon* found = 0;
     for (u32 i = 0; i < 9; i++) {
         if (found == 0) found = stage[i].heroWalkReliveCallBack(steps, true);
@@ -522,7 +514,7 @@ CReliveHall* CReliveHall::getPointer() {
 }
 
 void CReliveHall::allocMakeBackup() {
-    _pRelivehallCopy = (CReliveHall*)GSmemAllocClr(0x2298);
+    _pRelivehallCopy = (CReliveHall*)GSmemAllocClr(sizeof(CReliveHall));
     memcpy(_pRelivehallCopy, this, 0x2298);
 }
 
@@ -566,7 +558,7 @@ bool CReliveHall::isOpen() {
     return flag_etc->reliveOpenFlag <= GSflagGet(0x3C4);
 }
 
-void CReliveHall::debugPokemonSetup(long mode) {
+void CReliveHall::debugPokemonSetup(s32 mode) {
     static f32 darkRateTbl[20] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0 };
     if (mode == 0 || mode == 1) {
         u8 tmp[0xC4];
@@ -660,7 +652,7 @@ s32 reliveHallPokemonToAisyou(Pokemon* a, Pokemon* b) {
 }
 
 namespace {
-void _heroCallBackFunc(long, FootStepCounter, long steps) {
+void _heroCallBackFunc(s32, FootStepCounter, s32 steps) {
     if (GSflagGet(0x3C4) >= flag_etc->reliveOpenFlag) {
         Pokemon* p = hallPtr()->heroWalkReliveCallBack(steps);
         if (p != 0) {
@@ -698,7 +690,7 @@ extern "C" void reliveHallCallBackInit(void) {
     _heroCallBackHandle = heroMoveAddStepCallback(_heroCallBackFunc, 0);
 }
 
-extern "C" void reliveHallDebugPokemonSetup(long mode) {
+extern "C" void reliveHallDebugPokemonSetup(s32 mode) {
     hallPtr()->debugPokemonSetup(mode);
 }
 

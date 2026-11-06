@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma optimize_for_size on
 
@@ -20,11 +21,11 @@ u16 fightWaza_GetIryoku(void*);
 u8 figthOutPokemonGetLevel(void*);
 
 u32 fightFloor_GetFightType(u32);
-FightOutPokemon* fightTargetGetPtr(u32, FightOutPokemon*, u8);
+FightOutPokemon* fightTargetGetPtr(u32, FightOutPokemon*, PCARG(u8, u16));
 void fightOutPokemonLoadWazaEffect(FightOutPokemon*, u16, u32, bool);
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon*, u32);
-void fightOutPokemonWazaEffect(FightOutPokemon*, u16, u32, bool, void*);
+void fightOutPokemonWazaEffect(FightOutPokemon*, PCARG(u16, s32), u32, bool, void*);
 void* fightTargetDataBiosGetPtr(u32);
 void* fightTargetDataBiosGetBuff(void*);
 u16 wazaDB_GetWazawzxdataId(u16);
@@ -39,7 +40,7 @@ void* fightOutPokemon_GetMotoFightPokemonPtr(FightOutPokemon*);
 void* fightPokemonGetPokemonPtr(void*);
 s32 pokemonCheckRare(void*);
 void* fightWaza_GetTargetDataId(void*);
-void* fightTargetGetRelativeHostSideFightTargetIdToTragetPtr(void*, u8);
+void* fightTargetGetRelativeHostSideFightTargetIdToTragetPtr(void*, PCARG(u8, u16));
 s32 fightWaza_GetDamage(void*);
 void fightSeqFightOutPokemonEffect(u32, FightOutPokemon*, u32, u32);
 

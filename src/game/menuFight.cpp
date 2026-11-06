@@ -1,6 +1,14 @@
 #pragma defer_codegen on
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/statusval.h>
 #include "game/shared/menu_work.h"
+#include <game/menuwazastatus.h>
+#include <game/gcptr.h>
+#ifndef __MWERKS__
+#include <stddef.h>
+#endif
 
 #pragma peephole off
 
@@ -96,13 +104,13 @@ static inline s32 targetCursor1pB(s32 menuID)
 }
 
 enum GSinputDevice { GSINPUT_DUMMY = 0, GSINPUT_1 = 1 };
-class DarkPokemon {
+struct DarkPokemon {
 public:
     bool isWazaNew(u8 index) const;
     void setWazaNew(u8 index, bool isNew);
 };
 
-class Pokemon {
+struct Pokemon {
 public:
     bool isDarkPokemon() const;
     DarkPokemon* getDarkPokemon();
@@ -110,21 +118,25 @@ public:
 };
 struct FIGHT_TRAINER;
 struct MENU_WAZA_STATUS {
+#ifdef __MWERKS__
     u8 unk0[0x40];
+#else
+    u8 unk0[offsetof(MenuWazaStatus, fightOutPokemon)];
+#endif
     void* fightOut;
     u8 tuusin;
 };
 
-static Pokemon* _menuFightGetPokemonPtr(FIGHT_TRAINER* trainer, unsigned long index);
+static Pokemon* _menuFightGetPokemonPtr(FIGHT_TRAINER* trainer, u32 index);
 static u32 _menuFightIsUse(MENU_WAZA_STATUS* status, u16 idx);
 
 static bool _menuFightCheckTimeOut(void);
 static void _menuFightKeyWait(GSinputDevice dev);
 static bool isImasugu(void);
 static s32 getKane(void);
-static u16 _menuFightGetRightStickInfo(long port, bool update);
-static u16 _menuFightGetLeftKeyInfo(long port);
-static void menuFightDrawIwaitStatusWaza(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, Pokemon* pokemon, u8 index, unsigned long color);
+static u16 _menuFightGetRightStickInfo(s32 port, bool update);
+static u16 _menuFightGetLeftKeyInfo(s32 port);
+static void menuFightDrawIwaitStatusWaza(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, Pokemon* pokemon, u8 index, u32 color);
 void menuFightSetSeqOut(void);
 
 struct Cursor {
@@ -139,24 +151,29 @@ struct MenuItemPos {
 };
 
 struct WazaRow {
-    u32 name;
-    u32 unk4;
+    GCuptr name;
+    GCuptr unk4;
     u16 type;
     u8 ppMax;
     u8 pp;
 };
 
 struct WazaAlloc {
-    u32 unk0;
+    GCuptr unk0;
     WazaRow rows[4];
     u8 unk34[0xC];
     void* fightOut;
 };
+#ifndef __MWERKS__
+static_assert(sizeof(WazaRow) == sizeof(MenuWazaStatusEntry), "WazaRow");
+static_assert(offsetof(WazaAlloc, fightOut) == offsetof(MenuWazaStatus, fightOutPokemon), "WazaAlloc");
+static_assert(offsetof(MENU_WAZA_STATUS, tuusin) == offsetof(MenuWazaStatus, tuusin), "MENU_WAZA_STATUS");
+#endif
 
 struct WazaRow2 {
-    u32 unk0;
-    u32 name;
-    u32 unk8;
+    GCuptr unk0;
+    GCuptr name;
+    GCuptr unk8;
     u16 type;
     u8 ppMax;
     u8 pp;
@@ -184,7 +201,7 @@ u8 fightTrainerCheckCanIrekaeFightPokemon(void*, void*);
 s32 winMsgOpen(s8, u32, bool, bool);
 void winMsgClose(bool);
 void GSlogWrite(const char*, ...);
-s32 gbaCommandRequestAction(u32, FIGHT_TRAINER*, u16, s32);
+s32 gbaCommandRequestAction(u32, FIGHT_TRAINER*, PCARG(u16, s32), s32);
 s8 GSinputGetRightStickXData(s32, s32);
 s8 GSinputGetRightStickYData(s32, s32);
 double atan2(double, double);
@@ -199,22 +216,22 @@ u8 fightFloor_GetStockPokemonNum(void*);
 s32 GSmsgPrintRight(s32 layer, s32 x, s32 y, s16 w, s16 h, u32 color, u32 msg);
 s32 menuGetCursor(s32);
 s32 menuGetSelectItemNum(s32);
-s32 fightFloorGetStatus(void*, u16, u16, u16);
+StatusS32 fightFloorGetStatus(void*, u16, u16, u16);
 void windowCreateCursorSprite(tagWINDOW_WORK*);
-void pokemonWazaReplace(void*, s8, u16);
+void pokemonWazaReplace(void*, PCARG(s8, u16), u16);
 void pokemonToMenuWazaStatus(void*, void*);
 }
 
 extern "C" {
 u16 fightFloor_GetTurnCount(void*);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 s32 GSmsgPrint2(s32 layer, s32 x, s32 y, u32 color, u32 msg);
 s32 GSmsgPrintRect(s32 layer, s32 x, s32 y, s16 w, s16 h, u32 color, u32 msg);
 u32 GSmsgGetRect(u32);
 void menuSubDrawCursorBack(s32, s32, s32, s32, s32, u8, u8);
 void winSpriteSetDisp(tagSPRITE_WORK*, bool);
-u32 heroGetStatus(void*, u32, u16);
+StatusU32 heroGetStatus(void*, u32, u16);
 u8 fightFloor_GetFightTypeFightoutPokemonNum(void*);
 u8 fightFloor_GetFightKindGetOkaneFlag(void*);
 u8 fightFloor_GetFightKindOkanePoolFlag(void*);
@@ -231,7 +248,7 @@ bool fightPokemonCheckValid(void*);
 u8 figthPokemonGetLevel(void*);
 u8 fightPokemon_GetCatchEntryFlag(void*);
 f32 menuGetTotalTime(void);
-u32 windowGetParam(tagWINDOW_WORK*, u32);
+StatusU32 windowGetParam(tagWINDOW_WORK*, u32);
 void windowSetParam(tagWINDOW_WORK*, u32, u32);
 tagWINDOW_WORK* windowSearchID(s32);
 u32 menuSubCalcColor(tagWINDOW_WORK*, tagSPRITE_WORK*);
@@ -251,7 +268,7 @@ u32 GSinputButtonsChanged(s32);
 u32 GSinputButtonsPressed(s32);
 f32 timeGetLastFrameSec(void);
 void GSthreadSwitch(void);
-u32 fightMenuGetFightTrainerPtrToStatusMenuId();
+u32 fightMenuGetFightTrainerPtrToStatusMenuId(void* p, u16 id);
 void winSeqSetMenu(s32, u32);
 bool winSeqCheckMove(s32);
 void menuFightSetStatus(s32);
@@ -272,7 +289,7 @@ struct WindowKeyInfo {
 extern "C" {
 void* fightFloorGetGcHeroFightTrainerPtr(void*);
 void* fightTrainerGetValidFightPokemonPtr(FIGHT_TRAINER*, u16);
-s32 pokemonGetStatus(void*, u16, u16, u16);
+StatusS32 pokemonGetStatus(void*, u16, u16, u16);
 bool pokemonCheckValid(void*);
 bool pokemonWazaCheckValid(void*, u16);
 void* windowAllocMemory(tagWINDOW_WORK*, s32);
@@ -281,7 +298,7 @@ void* windowGetFreeWork(tagWINDOW_WORK*);
 void* memcpy(void*, const void*, u32);
 void* fightOutPokemonGetPokemonPtr(void*);
 u8 fightOutPokemonCheckCanOutOkWazaBanme(void*, u16, u8, u16*);
-u32 wazaGetStatus(void*, u16, u16, u32);
+StatusU32 wazaGetStatus(void*, u16, u16, u32);
 u32 GSmsgGetGSchar(u32);
 u16 fightOutPokemonGetSoubiItemDataId(void*);
 u32 fightFloorSetStatus(void*, u16, u16, u16, u32);
@@ -369,13 +386,13 @@ s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c);
 s32 menuFightOpenPokemon(FIGHT_TRAINER* trainer, void* fop, u16 type, u8 cancel, u8 tuusin);
 s32 menuFightCloseWaza(s32 arg);
 s32 menuFightOpenWaza(FIGHT_TRAINER* trainer, MENU_WAZA_STATUS* status, s32 b, s32 c);
-u8 menuFightGetKeyWaitMenuId(void);
+PCRET(u8) menuFightGetKeyWaitMenuId(void* p, u16 id);
 void menuFightCloseAll(void);
 void menuFightSetSeq(void);
-bool menuFightChkSeq(void);
+PCRET(bool) menuFightChkSeq(void);
 void menuFightSetStatus(s32 v);
 s32 menuFightGetStatus(void);
-bool menuFightChkOpenBall(s32 id);
+PCRET(bool) menuFightChkOpenBall(s32 id);
 }
 
 class bingo_bios {
@@ -444,13 +461,13 @@ s32 menuFightCloseWaza(s32 arg);
 s32 menuFightOpenWaza(FIGHT_TRAINER* trainer, MENU_WAZA_STATUS* status, s32 b, s32 c);
 s32 menuFightCloseTop(s32 arg);
 s32 menuFightOpenTop(FIGHT_TRAINER* trainer, u8* work, s32* cursor, s32 d);
-u8 menuFightGetKeyWaitMenuId(void);
+PCRET(u8) menuFightGetKeyWaitMenuId(void* p, u16 id);
 void menuFightCloseAll(void);
 void menuFightSetSeq(void);
-bool menuFightChkSeq(void);
+PCRET(bool) menuFightChkSeq(void);
 void menuFightSetStatus(s32 v);
 s32 menuFightGetStatus(void);
-bool menuFightChkOpenBall(s32 id);
+PCRET(bool) menuFightChkOpenBall(s32 id);
 }
 
 extern "C" {
@@ -497,13 +514,13 @@ s32 menuFightCloseWaza(s32 arg);
 s32 menuFightOpenWaza(FIGHT_TRAINER* trainer, MENU_WAZA_STATUS* status, s32 b, s32 c);
 s32 menuFightCloseTop(s32 arg);
 s32 menuFightOpenTop(FIGHT_TRAINER* trainer, u8* work, s32* cursor, s32 d);
-u8 menuFightGetKeyWaitMenuId(void);
+PCRET(u8) menuFightGetKeyWaitMenuId(void* p, u16 id);
 void menuFightCloseAll(void);
 void menuFightSetSeq(void);
-bool menuFightChkSeq(void);
+PCRET(bool) menuFightChkSeq(void);
 void menuFightSetStatus(s32 v);
 s32 menuFightGetStatus(void);
-bool menuFightChkOpenBall(s32 id);
+PCRET(bool) menuFightChkOpenBall(s32 id);
 }
 
 struct CURSOR {
@@ -512,7 +529,13 @@ struct CURSOR {
 };
 
 extern "C" {
+#ifdef __MWERKS__
 u8 menuCursorCmp(CURSOR, CURSOR);
+#else
+u8 menuCursorCmp(CURSOR*, CURSOR*);
+static inline u8 menuCursorCmpByValue(CURSOR a, CURSOR b) { return menuCursorCmp(&a, &b); }
+#define menuCursorCmp(a, b) menuCursorCmpByValue((a), (b))
+#endif
 void menuPlaySe(s32, s32);
 WindowKeyInfo* windowGetPortKeyInfo(u8);
 }
@@ -563,13 +586,13 @@ s32 menuFightCloseWaza(s32 arg);
 s32 menuFightOpenWaza(FIGHT_TRAINER* trainer, MENU_WAZA_STATUS* status, s32 b, s32 c);
 s32 menuFightCloseTop(s32 arg);
 s32 menuFightOpenTop(FIGHT_TRAINER* trainer, u8* work, s32* cursor, s32 d);
-u8 menuFightGetKeyWaitMenuId(void);
+PCRET(u8) menuFightGetKeyWaitMenuId(void* p, u16 id);
 void menuFightCloseAll(void);
 void menuFightSetSeq(void);
-bool menuFightChkSeq(void);
+PCRET(bool) menuFightChkSeq(void);
 void menuFightSetStatus(s32 v);
 s32 menuFightGetStatus(void);
-bool menuFightChkOpenBall(s32 id);
+PCRET(bool) menuFightChkOpenBall(s32 id);
 }
 
 extern "C" {
@@ -627,13 +650,13 @@ s32 menuFightCloseWaza(s32 arg);
 s32 menuFightOpenWaza(FIGHT_TRAINER* trainer, MENU_WAZA_STATUS* status, s32 b, s32 c);
 s32 menuFightCloseTop(s32 arg);
 s32 menuFightOpenTop(FIGHT_TRAINER* trainer, u8* work, s32* cursor, s32 d);
-u8 menuFightGetKeyWaitMenuId(void);
+PCRET(u8) menuFightGetKeyWaitMenuId(void* p, u16 id);
 void menuFightCloseAll(void);
 void menuFightSetSeq(void);
-bool menuFightChkSeq(void);
+PCRET(bool) menuFightChkSeq(void);
 void menuFightSetStatus(s32 v);
 s32 menuFightGetStatus(void);
-bool menuFightChkOpenBall(s32 id);
+PCRET(bool) menuFightChkOpenBall(s32 id);
 }
 
 static inline u8 zokuseiOf(void* data);
@@ -696,7 +719,7 @@ extern "C" void menuFightDrawSecretWazaDoc(tagWINDOW_WORK* window, tagSPRITE_WOR
 
 extern "C" void menuFightButtonIwaza1p(tagWINDOW_WORK* window);
 
-bool menuFightChkOpenBall(s32 id)
+PCRET(bool) menuFightChkOpenBall(s32 id)
 {
     if (id == 0x44 || id == 0x45) {
         if (fightKind_CheckFightKind(0xc)) {
@@ -710,7 +733,7 @@ s32 menuFightGetStatus(void) { return menuFightStatus; }
 
 void menuFightSetStatus(s32 v) { menuFightStatus = v; }
 
-bool menuFightChkSeq(void)
+PCRET(bool) menuFightChkSeq(void)
 {
     if (winSeqCheckMove(0x37)) {
         return true;
@@ -755,10 +778,10 @@ void menuFightCloseAll(void)
     }
 }
 
-u8 menuFightGetKeyWaitMenuId(void)
+PCRET(u8) menuFightGetKeyWaitMenuId(void* p, u16 statusId)
 {
     u8 id = 0x98;
-    switch (fightMenuGetFightTrainerPtrToStatusMenuId()) {
+    switch (fightMenuGetFightTrainerPtrToStatusMenuId(p, statusId)) {
     case 0x42:
         id = 0x98;
         break;
@@ -1215,15 +1238,15 @@ s32 menuPokemonCheckPokemonChange(void* fop, FIGHT_TRAINER* trainer, u32 index)
     void* out;
     u8 r = fightFloorCheckFightActionFightOutPokemonIrekaeSelect(0, fop, &out);
     if (r == 1) {
-        msgctrlSetValue(0xd, (u32)fightOutPokemonGetNicknamePtr(fop));
+        msgctrlSetValue(0xd, (GCuptr)fightOutPokemonGetNicknamePtr(fop));
         winMsgOpen(1, 0x4fc8, 1, 0);
         _menuFightKeyWait((GSinputDevice)1);
         winMsgClose(1);
         return 0;
     } else if (r == 2) {
         fightFloorSetStatus(0, 0, 0x57, 0, fightOutPokemonGetTokuseiDataId(out));
-        msgctrlSetValue(0xd, (u32)fightOutPokemonGetNicknamePtr(out));
-        msgctrlSetValue(0xe, (u32)fightOutPokemonGetNicknamePtr(fop));
+        msgctrlSetValue(0xd, (GCuptr)fightOutPokemonGetNicknamePtr(out));
+        msgctrlSetValue(0xe, (GCuptr)fightOutPokemonGetNicknamePtr(fop));
         winMsgOpen(1, 0x4f08, 1, 0);
         _menuFightKeyWait((GSinputDevice)1);
         winMsgClose(1);
@@ -1241,19 +1264,19 @@ s32 menuPokemonCheckPokemonChange(void* fop, FIGHT_TRAINER* trainer, u32 index)
     }
     r = fightTrainerCheckCanIrekaeFightPokemon(trainer, fp);
     if (r == 1) {
-        msgctrlSetValue(0xd, (u32)fightPokemonGetNicknamePtr(fp));
+        msgctrlSetValue(0xd, (GCuptr)fightPokemonGetNicknamePtr(fp));
         winMsgOpen(1, 0x4fcb, 1, 0);
         _menuFightKeyWait((GSinputDevice)1);
         winMsgClose(1);
         return 0;
     } else if (r == 2) {
-        msgctrlSetValue(0xd, (u32)fightPokemonGetNicknamePtr(fp));
+        msgctrlSetValue(0xd, (GCuptr)fightPokemonGetNicknamePtr(fp));
         winMsgOpen(1, 0x4fc9, 1, 0);
         _menuFightKeyWait((GSinputDevice)1);
         winMsgClose(1);
         return 0;
     } else if (r == 3) {
-        msgctrlSetValue(0xd, (u32)fightPokemonGetNicknamePtr(fp));
+        msgctrlSetValue(0xd, (GCuptr)fightPokemonGetNicknamePtr(fp));
         winMsgOpen(1, 0x4fca, 1, 0);
         _menuFightKeyWait((GSinputDevice)1);
         winMsgClose(1);
@@ -1265,7 +1288,7 @@ s32 menuPokemonCheckPokemonChange(void* fop, FIGHT_TRAINER* trainer, u32 index)
     return 0;
 }
 
-static u16 _menuFightGetLeftKeyInfo(long port)
+static u16 _menuFightGetLeftKeyInfo(s32 port)
 {
     u16 ret = 0;
     int idx;
@@ -1300,7 +1323,7 @@ static u16 _menuFightGetLeftKeyInfo(long port)
     return ret;
 }
 
-static u16 _menuFightGetRightStickInfo(long port, bool update)
+static u16 _menuFightGetRightStickInfo(s32 port, bool update)
 {
     u16 ret = 0;
     int idx;
@@ -1424,9 +1447,9 @@ s32 menuFightWazaCtrl(tagWINDOW_WORK* window)
     s8 state = window->state;
     void* d;
     if (state == 0) {
-        d = windowAllocMemory(window, 0x48);
+        d = windowAllocMemory(window, MENU_WAZA_STATUS_SIZE);
         if (d != 0) {
-            memcpy(d, (void*)windowGetParam(window, 0), 0x48);
+            memcpy(d, (void*)windowGetParam(window, 0), MENU_WAZA_STATUS_SIZE);
         }
         WazaWork* work = (WazaWork*)windowGetFreeWork(window);
         work->state = 0;
@@ -1435,7 +1458,7 @@ s32 menuFightWazaCtrl(tagWINDOW_WORK* window)
     } else if (state == 3) {
         d = windowGetAllocPtr(window);
         if (d != 0) {
-            memcpy((void*)windowGetParam(window, 0), d, 0x48);
+            memcpy((void*)windowGetParam(window, 0), d, MENU_WAZA_STATUS_SIZE);
         }
     }
     WazaAlloc* alloc = (WazaAlloc*)windowGetAllocPtr(window);
@@ -1532,7 +1555,7 @@ void menuFightDrawCmdMsg(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     switch (sprite->id) {
     case 0x137: {
         void* a = windowGetAllocPtr(window);
-        msgctrlSetValue(0x36, (u32)a);
+        msgctrlSetValue(0x36, (GCuptr)a);
         msg = 0x42c3;
         break;
     }
@@ -1723,7 +1746,7 @@ static u32 _menuFightIsUse(MENU_WAZA_STATUS* status, u16 idx)
     u16 wazaId = pokemonGetStatus(pk, 0, 0x7f, idx);
     u32 msg;
     if (ret) {
-        msgctrlSetValue(0x11, (u32)fop);
+        msgctrlSetValue(0x11, (GCuptr)fop);
         msg = wazaGetStatus(0, wazaId, 1, 0);
         msgctrlSetValue(0x28, GSmsgGetGSchar(msg));
         u16 item = fightOutPokemonGetSoubiItemDataId(fop);
@@ -1877,9 +1900,9 @@ void menuFightButtonSecretMain(tagWINDOW_WORK* window)
 s32 menuFightCtrlSecretWazaTop(tagWINDOW_WORK* window)
 {
     if (window->state == 0) {
-        void* d = windowAllocMemory(window, 0x48);
+        void* d = windowAllocMemory(window, MENU_WAZA_STATUS_SIZE);
         if (d != 0) {
-            memcpy(d, (void*)window->params[0], 0x48);
+            memcpy(d, (void*)window->params[0], MENU_WAZA_STATUS_SIZE);
         }
     }
     windowGetAllocPtr(window);
@@ -2339,7 +2362,11 @@ void menuFightDrawSecretWazaSelect(tagWINDOW_WORK* window, tagSPRITE_WORK* sprit
             }
             if (idx >= 0) {
                 off = idx * 12;
+#ifdef __MWERKS__
                 row = (WazaRow2*)(alloc + off);
+#else
+                row = (WazaRow2*)((u8*)&((WazaAlloc*)alloc)->rows[idx] - offsetof(WazaRow2, name));
+#endif
                 if (row->name != 0) {
                     winSpriteSetDisp(sprite, 1);
                 } else {
@@ -2544,7 +2571,7 @@ void menuFightDrawSecretWazaDoc(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     }
 }
 
-static Pokemon* _menuFightGetPokemonPtr(FIGHT_TRAINER* trainer, unsigned long index)
+static Pokemon* _menuFightGetPokemonPtr(FIGHT_TRAINER* trainer, u32 index)
 {
     if (index >= 6) {
         return 0;
@@ -3151,7 +3178,7 @@ void menuFightDrawTargetI(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     winSpriteSetDisp(sprite, 0);
 }
 
-static void menuFightDrawIwaitStatusWaza(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, Pokemon* pokemon, u8 index, unsigned long color)
+static void menuFightDrawIwaitStatusWaza(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, Pokemon* pokemon, u8 index, u32 color)
 {
     if (pokemon != 0 && pokemonWazaCheckValid(pokemon, index)) {
         u16 waza = pokemonGetStatus(pokemon, 0, 0x7f, index);
@@ -3184,9 +3211,9 @@ void menuFightDrawIwaitStatus(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     switch (sprite->id) {
     case 0x1d3:
         if (fightKind_CheckFightKind(0x11)) {
-            windowDrawSprite2(0, 0, sprite->w, sprite->h, *(u32*)window->color, window, 0x3f7, 0, winSpriteGetLayerID(window, sprite));
+            windowDrawSprite2(0, 0, sprite->w, sprite->h, GC_BYTES32(window->color), window, 0x3f7, 0, winSpriteGetLayerID(window, sprite));
         } else {
-            windowDrawSprite2(0, 0, sprite->w, sprite->h, *(u32*)window->color, window, 0x1ea, 0, winSpriteGetLayerID(window, sprite));
+            windowDrawSprite2(0, 0, sprite->w, sprite->h, GC_BYTES32(window->color), window, 0x1ea, 0, winSpriteGetLayerID(window, sprite));
         }
         break;
     case 0x1bf:
@@ -3194,7 +3221,7 @@ void menuFightDrawIwaitStatus(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
         if (pk0 != 0) {
             u16 spr = zokuseiGetPokemonSpriteID(pk0->getPokemonDataPtr(), 0);
             if (spr != 0) {
-                windowDrawSprite2(0, 0, sprite->w, sprite->h, *(u32*)window->color, window, spr, 0, winSpriteGetLayerID(window, sprite));
+                windowDrawSprite2(0, 0, sprite->w, sprite->h, GC_BYTES32(window->color), window, spr, 0, winSpriteGetLayerID(window, sprite));
             }
         }
         break;
@@ -3204,7 +3231,7 @@ void menuFightDrawIwaitStatus(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
             u8 z0 = (u8)pokemonDataBiosGetZokuseiDataId(pk0->getPokemonDataPtr(), 0);
             if (z0 != (u8)pokemonDataBiosGetZokuseiDataId(pk0->getPokemonDataPtr(), 1)) {
                 u16 spr = zokuseiGetPokemonSpriteID(pk0->getPokemonDataPtr(), 1);
-                windowDrawSprite2(0, 0, sprite->w, sprite->h, *(u32*)window->color, window, spr, 0, winSpriteGetLayerID(window, sprite));
+                windowDrawSprite2(0, 0, sprite->w, sprite->h, GC_BYTES32(window->color), window, spr, 0, winSpriteGetLayerID(window, sprite));
             }
         }
         break;
@@ -3656,7 +3683,7 @@ void menuFightDrawTimer(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
         buff[0] = half_digit_code[min / 10];
         buff[2] = 0;
         buff[1] = half_digit_code[min % 10];
-        msgctrlSetValue(0x37, (u32)buff);
+        msgctrlSetValue(0x37, (GCuptr)buff);
         GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0, 0, menuSubCalcColor(window, sprite), 0x4276);
         break;
     }
@@ -3666,7 +3693,7 @@ void menuFightDrawTimer(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
         buff[0] = half_digit_code[s / 10];
         buff[2] = 0;
         buff[1] = half_digit_code[s % 10];
-        msgctrlSetValue(0x37, (u32)buff);
+        msgctrlSetValue(0x37, (GCuptr)buff);
         GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0, 0, menuSubCalcColor(window, sprite), 0x4276);
         break;
     }

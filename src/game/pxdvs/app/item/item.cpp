@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 
 struct ITEM {
     u16 id;
@@ -128,7 +130,7 @@ static inline ITEM* itemFindNotFull(ITEM* ary, u16 n, u16 id, u16 max) {
     if (!itemIdOk(id)) return 0;
     for (u16 i = 0; i < n; i++) {
         ITEM* p = itemAt(ary, i);
-        if (itemIs(p, id) && item_GetNum(p) < max) return p;
+        if (itemIs(p, id) && item_GetNum(p) < max) return ary + i;
     }
     return 0;
 }
@@ -162,14 +164,7 @@ static inline s32 itemAddOne(ITEM* p, u16 id, u16 cnt, u16 max) {
     return over;
 }
 
-static inline s32 itemAddNew(ITEM* p, u16 id, u16 cnt, u16 max) {
-    if (p == 0) return -1;
-    if (!itemIdOk(id)) return -1;
-    if (p != 0) {
-        item_SetItemDataId(p, 0);
-        item_SetNum(p, 0);
-    }
-    item_SetItemDataId(p, id);
+static inline s32 itemAddCount(ITEM* p, u16 cnt, u16 max) {
     if (p == 0) return -1;
     if (!itemCV(p)) return -1;
     s32 total = item_GetNum(p);
@@ -183,6 +178,19 @@ static inline s32 itemAddNew(ITEM* p, u16 id, u16 cnt, u16 max) {
     }
     item_SetNum(p, (u16)total);
     return over;
+}
+
+static inline s32 itemAddNew(ITEM* p, u16 id, u16 cnt, u16 max) {
+    if (p == 0) return -1;
+    if (!itemIdOk(id)) return -1;
+    if (p != 0) {
+        item_SetItemDataId(p, 0);
+        item_SetNum(p, 0);
+    }
+    item_SetItemDataId(p, id);
+    s32 r = itemAddCount(p, cnt, max);
+    if (r < 0) return r;
+    return r;
 }
 
 static inline s32 itemDecOne(ITEM* p, u16 id, u16 cnt) {
@@ -309,13 +317,14 @@ s32 itemDecItemDataIdAry(ITEM* ary, u16 n, u16 id, u32 cnt_in, s16 slot, u16 unu
 }
 
 s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, u8 mode, u8 flag) {
+    u8 sort;
     ITEM* p;
     ITEM* ary = (ITEM*)aryv;
     if (ary == 0) return -1;
     if (!itemIdOk(id)) return -1;
     u16 c16 = cnt;
     int rem = c16;
-    u8 sort = 0;
+    sort = 0;
     if (flag == 0) {
         ITEM* p = itemFindAny(ary, n, id);
         if (p != 0) {
@@ -335,7 +344,7 @@ s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, 
         }
     } else if (slot < 0) {
         for (;;) {
-            ITEM* p = itemFindNotFull(ary, n, (u16)id, max);
+            ITEM* p = itemFindNotFull(ary, n, id, max);
             if (p != 0) {
                 s32 r = itemAddOne(p, id, rem, max);
                 if (r < 0) return r;
@@ -343,7 +352,7 @@ s32 itemAddItemDataIdAry(void* aryv, u16 n, u16 id, u32 cnt, s16 slot, u16 max, 
             } else {
                 ITEM* e = itemFindEmpty(ary, n, id);
                 if (e == 0) break;
-                s32 r = itemAddNew(e, id, rem, max);
+                s32 r = itemAddNew(e, id, rem, (u16)max);
                 if (r < 0) return r;
                 sort = 1;
                 rem = r;
@@ -377,14 +386,14 @@ s32 itemSearchItemDataIdAry(void* aryv, u16 n, u16 id, u8 mode, u16 max) {
     for (i = 0; i < n; i++) {
         if (mode == 2) {
             ITEM* p = itemAt(ary, i);
-            if (!itemCV(p)) return (s32)(ary + i);
+            if (!itemCV(p)) return (GCsptr)(ary + i);
         } else {
             ITEM* p = itemAt(ary, i);
             if (itemIs(p, id)) {
                 if (mode == 1) {
-                    if (item_GetNum(p) < max) return (s32)(ary + i);
+                    if (item_GetNum(p) < max) return (GCsptr)(ary + i);
                 } else {
-                    return (s32)(ary + i);
+                    return (GCsptr)(ary + i);
                 }
             }
         }
@@ -493,7 +502,7 @@ void itemSetStatus(u8* p, u16 id, u16 kind, u16 idx, s32 value) {
     }
 }
 
-u32 itemGetStatus(void* entry, u16 id, u16 kind, u16 idx) {
+StatusU32 itemGetStatus(void* entry, u16 id, u16 kind, u16 idx) {
     u8* p = (u8*)entry;
     if (kind == 0 || kind >= 0x23) return 0;
     if (kind < 0xB) {

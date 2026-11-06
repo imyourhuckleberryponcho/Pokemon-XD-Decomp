@@ -1,54 +1,20 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/pxdvs/GSAPI/GSflag/flagData.h>
+#include <game/pxdvs/app/esaba/esabaData.h>
+#ifndef __MWERKS__
+struct Hero { public: static Hero* getHeroPtr(); u16 itemQuantity(u16); u8 getHeroStyle() const; void setBattleResumeFloorID(uint); void setBattleResumeFloorIndex(u8); u8 getFollowerID(); u32 getFollowerGrpID(); u32 getFollowerResID(); void setFollowerGrpID(u32); void setFollowerResID(u32); void setFollowerID(u8); };
+#define getHeroPtr__4HeroFv(...) ((Hero*)Hero::getHeroPtr(__VA_ARGS__))
+#define itemQuantity__4HeroFUs(o, ...) ((u32)((Hero*)(o))->itemQuantity(__VA_ARGS__))
+#endif
 
 enum FootStepCounter { FOOT_STEP_COUNTER_0 };
 
-class Hero;
+struct Hero;
 struct Pokemon {
     u8 raw[0xC4];
-};
-
-struct EsaEntry {
-    u16 pad;
-    u16 id;
-    u32 prob;
-    u32 rate;
-};
-
-struct EsaHead {
-    u32 count;
-};
-
-struct EsaTable {
-    EsaHead* head;
-    EsaEntry* entries;
-};
-
-struct EsaData {
-    u32 flagNum;
-    u32 flag4;
-    u32 flag8;
-    u32 flagID;
-    u32 flagRnd;
-    u32 flag14;
-    EsaTable** table;
-};
-
-struct EsaAppData {
-    u16 limitA;
-    u16 limitB;
-    u16 stepMax;
-    u16 randMod;
-    u16 unk8;
-    u16 pad;
-    u32 unkC;
-    u32 flagKind;
-    u32 flagCheck;
-};
-
-struct FlagEtcEntry {
-    u8 unk0[8];
-    u32 limit;
-    u8 unkC[0x20 - 0xC];
 };
 
 extern "C" {
@@ -56,13 +22,13 @@ extern u32* esabadata_number;
 extern EsaData* esabadata;
 extern EsaEntry* esabapokemondata_EX;
 extern EsaAppData* esabaappdata;
-extern FlagEtcEntry* flag_etc;
+extern FlagEtc* flag_etc;
 
 u32 GSflagGet(u32 id);
 void GSflagSet(u32 id, u32 value);
 bool GSflagTest(u32 id);
-u32 heroGetStatus(Hero* hero, u32 selector, u16 index);
-u32 gamedataGetStatus(u32 ptr, u32 kind);
+StatusU32 heroGetStatus(Hero* hero, u32 selector, u16 index);
+StatusU32 gamedataGetStatus(u32 ptr, u32 kind);
 void pokemonCreate(Pokemon* pokemon, u16 id, u8 level, u32 trainer);
 void pokemonBiosSetCatchTrainerRnd(Pokemon* pokemon, u32 data);
 u32 pokemonCreateRndFit(Pokemon* pokemon, s8 sex, s8 seikaku, s8 rare, u32 trainerRnd);
@@ -72,24 +38,28 @@ void heroMoveSetColision(bool);
 void GSthreadSwitch(void);
 void menuScriptInfoEsa(void);
 void heroMoveTermEvent(void);
+#ifdef __MWERKS__
 Hero* getHeroPtr__4HeroFv(void);
+#endif
+#ifdef __MWERKS__
 u32 itemQuantity__4HeroFUs(Hero* hero, u16 id);
+#endif
 bool menuPanelInputNumber(s32 a, s32* value, s32 b, s32 max, s32 c);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 s32 winMsgOpen(s8 type, void* msg, bool a, bool b);
 void winMsgClose(bool flag);
 s32 heroItemDecItemDataId(Hero* hero, u32 itemID, u32 amount, u32 index);
 s32 heroItemAddItemDataId(Hero* hero, u32 itemID, u32 amount, u32 index);
-u16 pcboxAddItem(s32 box, u32 itemID, u32 amount);
-s32 heroMoveAddStepCallback(void (*callback)(long, FootStepCounter, long), s32);
-void underTakerCallBackFunc(long, FootStepCounter, long);
+u16 pcboxAddItem(s32 box, u16 itemID, u16 amount);
+s32 heroMoveAddStepCallback(void (*callback)(s32, FootStepCounter, s32), s32);
+void underTakerCallBackFunc(s32, FootStepCounter, s32);
 u32 underTakerGetMiraboPlace(void);
 u32 HSD_Rand(void);
 }
 
-static void _esabaCallBackFunc(long, FootStepCounter, long);
-static void _esabaCallBackAppFunc(u16, FootStepCounter, long);
-static void _esabaCallBackEsaFunc(u16, FootStepCounter, long);
+static void _esabaCallBackFunc(s32, FootStepCounter, s32);
+static void _esabaCallBackAppFunc(u16, FootStepCounter, s32);
+static void _esabaCallBackEsaFunc(u16, FootStepCounter, s32);
 static void _esabaAppearPokemon(u16);
 static void _esabaAppearPokemonSub2(u16);
 static void _esabaAppearPokemonSub(u16);
@@ -162,7 +132,7 @@ static inline void setNum(s32 place, s32 n) {
     }
 }
 
-static inline void setPokemon(u16 place, s32 id) {
+static inline void setPokemon(u16 place, u16 id) {
     Pokemon pokemon;
     u32 hero;
     u32 rnd;
@@ -225,7 +195,7 @@ void esabaSetPokemon(u16 place, u16 id) {
     }
 }
 
-u16 esabaGetPokemonMax(u16 place) {
+PCRET(u16) esabaGetPokemonMax(u16 place) {
     return getMax(place);
 }
 
@@ -272,11 +242,10 @@ s32 esabaSet(s32 place) {
     s32 fromBox;
     s32 n;
     s32 max;
-    s32 msg;
+    GCsptr msg;
 
     GSthreadSwitch();
-    msg = 0xC92E;
-    msg += -(num != 0);
+    msg = num != 0 ? 0xC92D : 0xC92E;
     msgctrlSetValue(0x2F, num);
     winMsgOpen(2, (void*)msg, 0, 1);
     max = num + bag;
@@ -302,9 +271,9 @@ s32 esabaSet(s32 place) {
                 if (rest == 0) {
                     fromBag = need;
                 } else if (rest > 0) {
-                    s32 left = rest;
+                    u32 left = rest;
                     fromBag = -(diff + rest);
-                    n = (u16)pcboxAddItem(0, 0x1FF, left);
+                    n = (u16)pcboxAddItem(0, 0x1FF, rest);
                     if (n != 0) {
                         fromBox = left - n;
                     } else {
@@ -401,7 +370,7 @@ u32 esabaGetEsaNum(s32 place) {
 
 }
 
-static void _esabaCallBackFunc(long arg, FootStepCounter counter, long amount) {
+static void _esabaCallBackFunc(s32 arg, FootStepCounter counter, s32 amount) {
     u16 i;
 
     underTakerCallBackFunc(arg, counter, amount);
@@ -416,7 +385,7 @@ static void _esabaCallBackFunc(long arg, FootStepCounter counter, long amount) {
     }
 }
 
-static void _esabaCallBackAppFunc(u16 place, FootStepCounter, long amount) {
+static void _esabaCallBackAppFunc(u16 place, FootStepCounter, s32 amount) {
     u32 mirabo = underTakerGetMiraboPlace();
     u32 table[3] = {0x5A, 0x5B, 0x5C};
     u32 total;
@@ -454,7 +423,7 @@ static void _esabaCallBackAppFunc(u16 place, FootStepCounter, long amount) {
     GSflagSet(esabadata[place].flag4, total);
 }
 
-static void _esabaCallBackEsaFunc(u16 place, FootStepCounter, long amount) {
+static void _esabaCallBackEsaFunc(u16 place, FootStepCounter, s32 amount) {
     u32 steps;
     u32 rate;
     u32 left;
@@ -481,7 +450,7 @@ static void _esabaAppearPokemon(u16 place) {
     u32 kind = esabaappdata->flagKind;
     u16 want;
 
-    if (GSflagGet(0x3C4) >= flag_etc[kind].limit) {
+    if (GSflagGet(0x3C4) >= flag_etc[kind].flagValue) {
         want = esabaappdata->unk8;
         u32 flag = GSflagGet(esabaappdata->flagCheck);
         if (flag == want) {
@@ -506,7 +475,8 @@ static inline u8 isExPokemonPlaced(s32 n) {
 }
 
 static void _esabaAppearPokemonSub2(u16 place) {
-    u16 count = getMax((u16)place);
+    s32 id = place;
+    u16 count = getMax(id);
     u16 roll;
     u16 total = 0;
     s32 k;
@@ -514,28 +484,30 @@ static void _esabaAppearPokemonSub2(u16 place) {
     if (!isExPokemonPlaced(1)) {
         roll = (u16)HSD_Rand() % 100;
         if (roll < (u16)esabapokemondata_EX[1].prob) {
-            setPokemon(place, esabapokemondata_EX[1].id);
+            setPokemon(id, esabapokemondata_EX[1].id);
             return;
         }
     }
     roll = (u16)HSD_Rand() % 100;
     for (k = 0; k < count; k++) {
-        EsaTable* t = getTable(place);
+        EsaTable* t = getTable(id);
         total += t ? t->entries[k].prob : 0;
         if (total >= roll) {
-            setPokemon(place, getEntryID(place, k));
+            u16 tmp1 = getEntryID(id, k);
+            setPokemon(id, tmp1);
             return;
         }
     }
 }
 
 static void _esabaAppearPokemonSub(u16 place) {
-    u16 place_c = (u16)place;
-    u16 count = getMax(place_c);
+    s32 id = place;
+    u16 count = getMax(id);
     u16 roll = (u16)HSD_Rand() % 100;
     u16 total = 0;
-    u16 probA = esabapokemondata_EX[0].prob;
-    u16 probB = esabapokemondata_EX[1].prob;
+    u8 rf_t = esabapokemondata_EX[0].prob;
+    u16 probA = rf_t;
+    int probB = esabapokemondata_EX[1].prob;
     s32 k;
 
     if (isExPokemonPlaced(0)) {
@@ -545,19 +517,18 @@ static void _esabaAppearPokemonSub(u16 place) {
         probB = 0;
     }
     roll = (u16)HSD_Rand() % 100;
-    if ((u32)roll < probA) {
-        s32 rf_t = esabapokemondata_EX[0].id;
-        setPokemon(place_c, rf_t);
-    } else if (roll < (u16)(probA ? probA + probB : probB)) {
-        s32 rf_t = esabapokemondata_EX[1].id;
-        setPokemon(place_c, rf_t);
+    if (roll < probA) {
+        setPokemon(id, esabapokemondata_EX[0].id);
+    } else if (roll < (u16)(probA == 0 ? probB : probA + probB)) {
+        setPokemon(id, esabapokemondata_EX[1].id);
     } else {
         roll = (u16)HSD_Rand() % 100;
         for (k = 0; k < count; k++) {
-            EsaTable* t = getTable(place);
+            EsaTable* t = getTable(id);
             total += t ? t->entries[k].prob : 0;
             if (total >= roll) {
-                setPokemon(place, getEntryID(place, k));
+                u16 tmp1 = getEntryID(id, k);
+                setPokemon(id, tmp1);
                 return;
             }
         }

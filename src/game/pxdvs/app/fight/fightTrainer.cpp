@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
+#include <game/bingoData.h>
+#include <game/pxdvs/app/esaba/esabaData.h>
 
 #pragma auto_inline off
 
@@ -35,12 +39,13 @@ public:
     u8 getSwapMode() const;
     u16 getSwapDeckNO() const;
 };
-class DarkPokemon {
+enum darkPokemonSnatchWho { darkPokemonSnatchWho0, darkPokemonSnatchWho1, darkPokemonSnatchWho2, darkPokemonSnatchWho3 };
+struct DarkPokemon {
 public:
     s32 getStatus() const;
     u16 getDarkPokemonID() const;
     u32 getEscapeTime() const;
-    s32 getSnatchFromWho() const;
+    darkPokemonSnatchWho getSnatchFromWho() const;
     u16 getCatchFloorId() const;
     void setRnd(u32 rnd);
 };
@@ -50,21 +55,6 @@ public:
     u16 getDeckPokemonID() const;
     u8 getWorth() const;
 };
-struct EsabaPokemonData {
-    u8 minLevel;
-    u8 maxLevel;
-    u16 pokemonId;
-    u8 unk4[8];
-};
-struct EsabaPokemonTable {
-    u32* num;
-    EsabaPokemonData* data;
-};
-struct EsabaData {
-    u8 unk0[0x18];
-    EsabaPokemonTable** pokemon;
-};
-
 u16 deckDataVirtualDB_GetItemID(u16 disk, u8 index);
 u8 deckDataVirtualDB_GetItemNum(u16 disk, u8 index);
 
@@ -81,25 +71,6 @@ static void _fightTrainer_GetUnderTakerDarkPoke(u8* list, u8 count, u8 start, He
 static void _fightTrainer_SortUnderTakerDarkPoke(u8* list, u8 count);
 static u8 _fightTrainer_GetListUnderTakerDarkPoke(u8* list);
 
-struct BINGO_PANEL_dd_ {
-    u8 type;
-    u8 tokusei;
-    u8 seikaku;
-    u8 sex;
-    u16 no;
-    u16 waza;
-    u16 hosei;
-};
-struct BINGO_DATA_dd_ {
-    u8 no;
-    u8 unk1[2];
-    u8 level;
-    u8 unk4;
-    u8 ball;
-    u8 unk6[0x10 - 6];
-    u16 score[10];
-    BINGO_PANEL_dd_ panel[14];
-};
 class bingo_bios {
 public:
     static u8 getPanelHoseiVal(BINGO_DATA_dd_* data, u32 index);
@@ -117,8 +88,8 @@ public:
     u8 getRandomSetting() const;
     u8 getLevel() const;
     u8 getFriendLevel() const;
-    s8 getSex() const;
-    s8 getSeikakuID() const;
+    u8 getSex() const;
+    u8 getSeikakuID() const;
     u8 getTokuseiFlag() const;
     u16 getHoldItem() const;
     u8 getComboPartnerAll() const;
@@ -194,12 +165,12 @@ void fightOutPokemonInit(FightOutPokemon* fo);
 u8 fightActionCheckValid(FightAction* action);
 void fightActionInit(FightAction* action);
 
-u32 heroGetStatus(Hero* hero, u32 kind, u16 index);
+StatusU32 heroGetStatus(Hero* hero, u32 kind, u16 index);
 u8 heroCheckValid(Hero* hero);
 u8 heroIsMinePokemon(Hero* hero, Pokemon* pokemon);
 void heroInit(Hero* hero);
 void heroBiosCopy(Hero* dst, Hero* src);
-Item* heroItemGetItemKindToItemAryPtr(Hero* hero, u32 kind, u16* count, u32 a, u32 b, u32 c);
+Item* heroItemGetItemKindToItemAryPtr(Hero* hero, u32 kind, u16* count, u16* max, u8* f1, u8* f2);
 u8 itemCheckValid(Item* item);
 u16 item_GetItemDataId(Item* item);
 u16 item_GetNum(Item* item);
@@ -249,23 +220,23 @@ FightTrainerEnemyPokemon* fightTrainerEnemyPokemonSearchAry(FightTrainerEnemyPok
 void fightTrainerAllInitFightActionBuff(FightTrainer* trainer);
 void fightEncountDataBiosSetFightTrainerDataId(void* encount, u32 side, u16 id);
 void fightEncountDataBiosSetPokemon(void* encount, u8 num);
-void pokemonSetTokuseiFlag(Pokemon* pokemon, u8 flag);
+void pokemonSetTokuseiFlag(Pokemon* pokemon, PCARG(u8, u32) flag);
 u32 pokemonCreateRndFit(Pokemon* pokemon, s8 sex, s8 seikaku, u32 a, u32 rnd);
 void pokemon_SetRnd(Pokemon* pokemon, u32 rnd);
 void pokemonWazaInit(Pokemon* pokemon, u32 index);
-void pokemonWazaCreate(Pokemon* pokemon, u8 index, u16 waza);
-void pokemonSetStatus(Pokemon* pokemon, u32 a, u16 kind, u32 b, u16 value);
+void pokemonWazaCreate(Pokemon* pokemon, PCARG(u8, u16) index, u16 waza);
+void pokemonSetStatus(Pokemon* pokemon, u32 a, u16 kind, u32 b, PCARG(u16, u32) value);
 u16 pokemonGetStatus(Pokemon* pokemon, u32 a, u16 kind, u32 b);
 s32 GSflagGet(u32 id);
 void fightFreeResourceID(u32 a, u32 id);
 void fightReadResourceID(u32 a, u32 id);
 u8 darkPokemonBiosGetFightFlag(u16 id);
 s8 darkPokemonBiosGetStatusRnd(u16 id, s32 index);
-void darkPokemonBiosSetStatusRnd(u16 id, s32 index, s8 value);
+void darkPokemonBiosSetStatusRnd(u16 id, s32 index, PCARG(s8, s32) value);
 u32 darkPokemonBiosGetRnd(u16 id);
 void darkPokemonBiosSetRnd(u16 id, u32 rnd);
 u32 heroBiosGetRnd(Hero* hero);
-void pokemon_SetFriend(Pokemon* pokemon, u8 level);
+void pokemon_SetFriend(Pokemon* pokemon, PCARG(u8, u16) level);
 void pokemon_SetComboPartnerAll(Pokemon* pokemon, u8 combo);
 void pokemonDoItemSoubi(Pokemon* pokemon, u16 item, u32 mode);
 u8 wazaCheckDarkWaza(u16 waza);
@@ -283,13 +254,13 @@ Pokemon* heroBiosGetPokemonPtr(Hero* hero, u16 index);
 u8 pokemon_GetLevel(Pokemon* pokemon);
 u16* heroBiosGetNamePtr(Hero* hero);
 void heroCreate(Hero* hero, u16* name, u32 sex);
-s32 heroItemAddItemDataId(Hero* hero, u16 item, u8 num, s32 slot);
+s32 heroItemAddItemDataId(Hero* hero, PCARG(u16, u32) item, PCARG(u8, u32) num, s32 slot);
 u32 fightTrainerDB_GetSexDataId(u16 id);
 void pokemon_SetLevel(Pokemon* pokemon, u8 level);
 u32 pokemonGetLevelToExp(Pokemon* pokemon, u8 level);
 void pokemon_SetExp(Pokemon* pokemon, u32 exp);
 void pokemonResetBasisStatus(Pokemon* pokemon);
-void heroSetStatus(Hero* hero, u32 kind, u32 value);
+void heroSetStatus(Hero* hero, u32 kind, StatusU32 value);
 u16 pokemon_GetPokemonDataId(Pokemon* pokemon);
 u32 pokemon_GetRnd(Pokemon* pokemon);
 u8 pokemonCheckRareRnd(u32 heroRnd, u32 pokemonRnd);
@@ -299,16 +270,16 @@ DarkPokemon* darkPokemonGetDarkPokemon(u32 id);
 u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon, u32 rnd, u16 darkId, u16 level);
 void deckCreate(u16 id, u16 pokemonId, Pokemon* pokemon);
 void pokemon_SetFightTrainerPokemonDataId(Pokemon* pokemon, u16 id);
-s16 heroCatchPokemon(Hero* hero, Pokemon* pokemon, u32 a, u16 ballId, u32 b);
+s16 heroCatchPokemon(Hero* hero, Pokemon* pokemon, u32 a, PCARG(u16, u32) ballId, u32 b);
 u16 HSD_Rand(void);
 u16 fightFloor_GetFightFloorDataId(u32 side);
 void heroBiosSetRnd(Hero* hero, u32 rnd);
 u16 esabaGetPokemonID(s32 index);
 u32 esabaGetPokemonRnd(s32 index);
-u32 gamedataGetStatus(u32 a, u32 kind);
+StatusU32 gamedataGetStatus(u32 a, u32 kind);
 void pokemonCreate(Pokemon* pokemon, u16 id, u8 level, u32 trainer);
 u16 pokemonDB_GetItemDataId(u16 id, u32 index);
-extern EsabaData* esabadata;
+extern EsaData* esabadata;
 extern u32* esabadata_number;
 void fightTrainerDB_SetAiDataId(u16 id, u16 value);
 void fightTrainerDB_SetName(u16 id, u16 value);
@@ -324,13 +295,13 @@ void fightTrainerPokemonDB_SetNickname(u16 id, u32 value);
 void fightTrainerPokemonDB_SetStatusRnd(u16 id, u8 index, u8 value);
 void fightTrainerPokemonDB_SetStatusEffort(u16 id, u8 index, u8 value);
 void fightTrainerPokemonDB_SetLevel(u16 id, u8 value);
-void fightTrainerPokemonDB_SetItemBallId(u16 id, u16 value);
-void fightTrainerPokemonDB_SetDarkPokemonFlag(u16 id, u8 value);
+void fightTrainerPokemonDB_SetItemBallId(u16 id, PCARG(u16, u32) value);
+void fightTrainerPokemonDB_SetDarkPokemonFlag(u16 id, PCARG(u8, u32) value);
 void fightTrainerPokemonDB_SetTokuseiFlag(u16 id, u8 value);
 void fightTrainerPokemonDB_SetPokemonDataId(u16 id, u16 value);
 void fightTrainerPokemonDB_SetItemDataId(u16 id, u16 value);
 void fightTrainerPokemonDB_SetWazaDataId(u16 id, u8 index, u16 value);
-void fightTrainerPokemonDB_SetPpCnt(u16 id, u8 index, u8 value);
+void fightTrainerPokemonDB_SetPpCnt(u16 id, PCARG(u8, u32) index, u8 value);
 void fightTrainerPokemonDB_SetFriend(u16 id, u8 value);
 void fightTrainerPokemonDB_SetSexDataId(u16 id, u8 value);
 void fightTrainerPokemonDB_SetSeikakuDataId(u16 id, u8 value);
@@ -475,26 +446,26 @@ int fightTrainerGetDoFightOutFightPokemonCount(FightTrainer* trainer);
 
 }
 
-static inline EsabaPokemonTable* _esabaGetPokemonTable(u32 index) {
+static inline EsaTable* _esabaGetPokemonTable(u32 index) {
     if (index >= *esabadata_number) {
         return 0;
     }
-    return *esabadata[index].pokemon;
+    return *esabadata[index].table;
 }
 
 static inline u16 _esabaGetPokemonId(u32 index, u8 k) {
-    EsabaPokemonTable* table = _esabaGetPokemonTable(index);
-    return table != 0 ? table->data[k].pokemonId : 0;
+    EsaTable* table = _esabaGetPokemonTable(index);
+    return table != 0 ? table->entries[k].id : 0;
 }
 
 static inline u8 _esabaGetMaxLevel(u32 index, u8 k) {
-    EsabaPokemonTable* table = _esabaGetPokemonTable(index);
-    return table != 0 ? table->data[k].maxLevel : 0;
+    EsaTable* table = _esabaGetPokemonTable(index);
+    return table != 0 ? table->entries[k].maxLevel : 0;
 }
 
 static inline u8 _esabaGetMinLevel(u32 index, u8 k) {
-    EsabaPokemonTable* table = _esabaGetPokemonTable(index);
-    return table != 0 ? table->data[k].minLevel : 0;
+    EsaTable* table = _esabaGetPokemonTable(index);
+    return table != 0 ? table->entries[k].minLevel : 0;
 }
 
 extern "C" {
@@ -637,7 +608,7 @@ u8 fightTrainerIsGcHero(FightTrainer* trainer) {
     return _fightTrainerGetHeroKind(fightTrainer_GetFightTrainerDataId(trainer)) == 0;
 }
 
-u32 fightTrainerGetStatus(FightTrainer* trainer, u16 id, u16 kind, u16 arg) {
+StatusU32 fightTrainerGetStatus(FightTrainer* trainer, u16 id, u16 kind, u16 arg) {
     void* data = trainer;
 
     if (kind == 0 || kind >= 0x5b) {
@@ -794,15 +765,15 @@ u32 fightTrainerGetStatus(FightTrainer* trainer, u16 id, u16 kind, u16 arg) {
     case 0x41:
         return fightTrainerAiValueAddsubDB_GetPrefixName(id);
     case 0x44:
-        return (u32)fightTrainer_GetHeroPtr((FightTrainer*)data);
+        return (StatusU32)fightTrainer_GetHeroPtr((FightTrainer*)data);
     case 0x43:
         return fightTrainer_GetFightTrainerDataId((FightTrainer*)data);
     case 0x45:
-        return (u32)fightTrainer_GetFightPokemonPtr((FightTrainer*)data, arg);
+        return (StatusU32)fightTrainer_GetFightPokemonPtr((FightTrainer*)data, arg);
     case 0x46:
-        return (u32)fightTrainer_GetFightoutPokemonPtr((FightTrainer*)data, arg);
+        return (StatusU32)fightTrainer_GetFightoutPokemonPtr((FightTrainer*)data, arg);
     case 0x47:
-        return (u32)fightTrainer_GetFightoutPokemonBuffPtr((FightTrainer*)data);
+        return (StatusU32)fightTrainer_GetFightoutPokemonBuffPtr((FightTrainer*)data);
     case 0x48:
         return fightTrainer_GetOkaneBai((FightTrainer*)data);
     case 0x49:
@@ -812,11 +783,11 @@ u32 fightTrainerGetStatus(FightTrainer* trainer, u16 id, u16 kind, u16 arg) {
     case 0x4b:
         return fightTrainer_GetControllerId((FightTrainer*)data);
     case 0x4d:
-        return (u32)fightTrainer_GetFightActionBuffPtr((FightTrainer*)data);
+        return (StatusU32)fightTrainer_GetFightActionBuffPtr((FightTrainer*)data);
     case 0x4c:
-        return (u32)fightTrainer_GetSequencePtr((FightTrainer*)data);
+        return (StatusU32)fightTrainer_GetSequencePtr((FightTrainer*)data);
     case 0x4e:
-        return (u32)fightTrainer_GetFightTrainerEnemyPokemonAryPtr((FightTrainer*)data, arg);
+        return (StatusU32)fightTrainer_GetFightTrainerEnemyPokemonAryPtr((FightTrainer*)data, arg);
     case 0x52:
         return fightTrainer_GetEnemyNowhp1banhikuiFlag((FightTrainer*)data, id);
     case 0x53:
@@ -1210,8 +1181,8 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     DarkPokemon* dark;
     u16 rndKinds[6] = {0x93, 0x94, 0x95, 0x96, 0x97, 0x98};
     u8 fightKind;
-    u16 pokemonId;
     u32 heroRnd;
+    u16 pokemonId;
     u8 level;
     u32 friendLevel;
     u16 effortKinds[6] = {0x8D, 0x8E, 0x8F, 0x90, 0x91, 0x92};
@@ -1224,11 +1195,11 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     u32 floorId;
     u8 sex;
     u16 total;
-    u16 tries;
     u8 j;
     u8 done;
     u16 w;
-    u32 rnd;
+    u16 rnd;
+    u16 tries;
 
     deck = DeckPokemon::getDeckPokemonObj(id);
     darkFlag = 0;
@@ -1925,9 +1896,8 @@ static void _fightTrainerCreateRndCheckRare(Hero* hero, bool rare) {
 
 extern "C" {
 
-void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* hero, u16 encountId_in) {
+void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* hero, u16 encountId) {
     u8 maxLevel;
-    u16 encountId = encountId_in;
     u8 i;
     Hero* player;
     u16 item;
@@ -1940,7 +1910,7 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* her
     if (encountId == 0) {
         encountId = fightGetFightEncountDataId();
     }
-    fightKind = fightEncountDataBiosGetFightKind(fightEncountDataBiosGetPtr((s32)encountId));
+    fightKind = fightEncountDataBiosGetFightKind(fightEncountDataBiosGetPtr(encountId));
     if (hero == 0) {
         return;
     }
@@ -2528,7 +2498,7 @@ u8 fightTrainerIsAllyFightTargetPtr(FightTrainer* trainer, FightTrainer* other, 
     return target == fightTargetGetPtr(2, other, id);
 }
 
-u16 fightTrainerGetHikaeFightPokemonNum(FightTrainer* trainer, u16 num, u16 reserve) {
+PCRET(u16) fightTrainerGetHikaeFightPokemonNum(FightTrainer* trainer, u16 num, u16 reserve) {
     u16 i;
     u16 hikae;
     u16 out;

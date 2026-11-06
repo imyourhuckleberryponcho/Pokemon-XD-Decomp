@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 struct Vec3 {
     f32 x, y, z;
@@ -20,28 +21,28 @@ extern struct {
 #define EventTri __typeof__(eventTriDummy)
 
 struct ThruTri {
-    Vec3 v[3];
-    Vec3 normal;
-    u16 flags;
-    u16 id;
+    gc_vec(Vec3) v[3];
+    gc_vec(Vec3) normal;
+    gc_be16 flags;
+    gc_be16 id;
 };
 
 struct GridCell {
-    u32 first;
-    u32 count;
+    gc_be32 first;
+    gc_be32 count;
 };
 
 struct CCD_THRUMDL_HEAD {
-    ThruTri* tris;
-    u32 numTris;
-    GridCell* cells;
-    u32* indices;
-    u16 cellsX;
-    u16 cellsZ;
-    f32 cellWidth;
-    f32 cellDepth;
-    f32 minX;
-    f32 minZ;
+    gc_ptr32(ThruTri) tris;
+    gc_be32 numTris;
+    gc_ptr32(GridCell) cells;
+    gc_ptr32(gc_be32) indices;
+    gc_be16 cellsX;
+    gc_be16 cellsZ;
+    gc_bef32 cellWidth;
+    gc_bef32 cellDepth;
+    gc_bef32 minX;
+    gc_bef32 minZ;
 };
 
 struct ThruObj {
@@ -175,12 +176,12 @@ static int getMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL_HEAD* head,
         if (j < count) {
             continue;
         }
-        PSMTXMultVec(rot, &tri->normal, &normal);
+        PSMTXMultVec(rot, GC_VEC3P(Vec3, &tri->normal), &normal);
         if (PSVECDotProduct(&normal, &dir) >= 0.0f) {
             continue;
         }
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->v[j], &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(Vec3, &tri->v[j]), &verts[j]);
         }
         bool hit;
         if (!GScolsys2UtilGetCpPlaneLine(&cp, &t, &normal, verts, start, end)) {
@@ -215,30 +216,34 @@ static inline int getFixedMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL
     int n;
     ThruTri* tri;
     Vec3* normal;
+    EventTri* cur;
+    EventTri* top;
 
-    PSVECSubtract(end, start, &dir);
     n = 0;
+    PSVECSubtract(end, start, &dir);
     tri = mdl->tris;
+    top = temp;
+    cur = top;
     m = 0;
     for (; m < mdl->numTris && n < 4; m++, tri++) {
         for (j = 0; j < n; j++) {
-            if (tri->id == temp[j].id) {
+            if (tri->id == top[j].id) {
                 break;
             }
         }
         if (j < n) {
             continue;
         }
-        if (PSVECDotProduct(&tri->normal, &dir) >= 0.0f) {
+        if (PSVECDotProduct(GC_VEC3P(Vec3, &tri->normal), &dir) >= 0.0f) {
             continue;
         }
-        normal = &tri->normal;
+        normal = GC_VEC3P(Vec3, &tri->normal);
         bool hit;
-        if (!GScolsys2UtilGetCpPlaneLine(&cp, &t, normal, tri->v, start, end)) {
+        if (!GScolsys2UtilGetCpPlaneLine(&cp, &t, normal, GC_VEC3AP(Vec3, tri->v, 3), start, end)) {
             hit = false;
         } else if (t < 0.0f || t > 1.0f) {
             hit = false;
-        } else if (!GScolsy2UtilChkInTri(&cp, tri->v, normal)) {
+        } else if (!GScolsy2UtilChkInTri(&cp, GC_VEC3AP(Vec3, tri->v, 3), normal)) {
             hit = false;
         } else {
             hit = true;
@@ -246,12 +251,12 @@ static inline int getFixedMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL
         if (hit) {
             u16 id = tri->id;
             n++;
-            (temp)->v[0].x = tri->v[0].x; (temp)->v[0].y = tri->v[0].y; (temp)->v[0].z = tri->v[0].z;
-            (temp)->v[1].x = tri->v[1].x; (temp)->v[1].y = tri->v[1].y; (temp)->v[1].z = tri->v[1].z;
-            (temp)->v[2].x = tri->v[2].x; (temp)->v[2].y = tri->v[2].y; (temp)->v[2].z = tri->v[2].z;
-            (temp)->normal = tri->normal;
-            (temp)->id = id;
-            (temp)++;
+            cur->v[0].x = tri->v[0].x; cur->v[0].y = tri->v[0].y; cur->v[0].z = tri->v[0].z;
+            cur->v[1].x = tri->v[1].x; cur->v[1].y = tri->v[1].y; cur->v[1].z = tri->v[1].z;
+            cur->v[2].x = tri->v[2].x; cur->v[2].y = tri->v[2].y; cur->v[2].z = tri->v[2].z;
+            GC_VEC3(cur->normal, tri->normal);
+            cur->id = id;
+            cur++;
         }
     }
     return n;
@@ -259,12 +264,12 @@ static inline int getFixedMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL
 
 extern "C" {
 int GScolsys2ThruPassEventID(GSvec* start, GSvec* end, EventTri* out) {
-    u32 i;
+    ThruObj* obj;
+    CCD_THRUMDL_HEAD* mdl;
     int count = 0;
     CCDFileHead* head;
-    ThruObj* obj;
+    u32 i;
     EventTri temp[4];
-    Vec3 dir;
     bool enable;
     GSmtx mtx;
     GSmtx rot;
@@ -278,7 +283,6 @@ int GScolsys2ThruPassEventID(GSvec* start, GSvec* end, EventTri* out) {
         EventTri* src;
         int n;
         int k;
-        CCD_THRUMDL_HEAD* mdl;
 
         GScolsys2GetObjEnable(i, &enable);
         if (!enable) {
@@ -322,7 +326,7 @@ static int getFixedMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_
     int j;
     f32 radiusSq;
     GridCell* cell;
-    u32* index;
+    gc_be32* index;
     ThruTri* tri;
     u32 t;
 
@@ -364,17 +368,17 @@ static int getFixedMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_
                 if (j < count) {
                     continue;
                 }
-                if (PSVECDotProduct(&tri->normal, dir) >= 0.0f) {
+                if (PSVECDotProduct(GC_VEC3P(Vec3, &tri->normal), dir) >= 0.0f) {
                     continue;
                 }
-                if (chkFace(tri->v, &tri->normal, pos, radiusSq)) {
+                if (chkFace(GC_VEC3AP(Vec3, tri->v, 3), GC_VEC3P(Vec3, &tri->normal), pos, radiusSq)) {
                     u16 id = tri->id;
                     cur = &out[count];
                     count++;
                     cur->v[0].x = tri->v[0].x; cur->v[0].y = tri->v[0].y; cur->v[0].z = tri->v[0].z;
                     cur->v[1].x = tri->v[1].x; cur->v[1].y = tri->v[1].y; cur->v[1].z = tri->v[1].z;
                     cur->v[2].x = tri->v[2].x; cur->v[2].y = tri->v[2].y; cur->v[2].z = tri->v[2].z;
-                    cur->normal = tri->normal;
+                    GC_VEC3(cur->normal, tri->normal);
                     cur->id = id;
                 }
             }
@@ -399,17 +403,17 @@ static int getFixedMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_
                 if (j < count) {
                     continue;
                 }
-                if (PSVECDotProduct(&tri->normal, dir) >= 0.0f) {
+                if (PSVECDotProduct(GC_VEC3P(Vec3, &tri->normal), dir) >= 0.0f) {
                     continue;
                 }
-                if (chkEdges(tri, tri->v, &tri->normal, pos, radiusSq)) {
+                if (chkEdges(tri, GC_VEC3AP(Vec3, tri->v, 3), GC_VEC3P(Vec3, &tri->normal), pos, radiusSq)) {
                     u16 id = tri->id;
                     cur = &out[count];
                     count++;
                     cur->v[0].x = tri->v[0].x; cur->v[0].y = tri->v[0].y; cur->v[0].z = tri->v[0].z;
                     cur->v[1].x = tri->v[1].x; cur->v[1].y = tri->v[1].y; cur->v[1].z = tri->v[1].z;
                     cur->v[2].x = tri->v[2].x; cur->v[2].y = tri->v[2].y; cur->v[2].z = tri->v[2].z;
-                    cur->normal = tri->normal;
+                    GC_VEC3(cur->normal, tri->normal);
                     cur->id = id;
                 }
             }
@@ -434,17 +438,17 @@ static int getFixedMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_
                 if (j < count) {
                     continue;
                 }
-                if (PSVECDotProduct(&tri->normal, dir) >= 0.0f) {
+                if (PSVECDotProduct(GC_VEC3P(Vec3, &tri->normal), dir) >= 0.0f) {
                     continue;
                 }
-                if (chkVerts(tri, tri->v, &tri->normal, pos, radiusSq)) {
+                if (chkVerts(tri, GC_VEC3AP(Vec3, tri->v, 3), GC_VEC3P(Vec3, &tri->normal), pos, radiusSq)) {
                     u16 id = tri->id;
                     cur = &out[count];
                     count++;
                     cur->v[0].x = tri->v[0].x; cur->v[0].y = tri->v[0].y; cur->v[0].z = tri->v[0].z;
                     cur->v[1].x = tri->v[1].x; cur->v[1].y = tri->v[1].y; cur->v[1].z = tri->v[1].z;
                     cur->v[2].x = tri->v[2].x; cur->v[2].y = tri->v[2].y; cur->v[2].z = tri->v[2].z;
-                    cur->normal = tri->normal;
+                    GC_VEC3(cur->normal, tri->normal);
                     cur->id = id;
                 }
             }
@@ -476,12 +480,12 @@ static int getMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_HEAD*
         if (j < count) {
             continue;
         }
-        PSMTXMultVec(rot, &tri->normal, &normal);
+        PSMTXMultVec(rot, GC_VEC3P(Vec3, &tri->normal), &normal);
         if (PSVECDotProduct(&normal, dir) >= 0.0f) {
             continue;
         }
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->v[j], &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(Vec3, &tri->v[j]), &verts[j]);
         }
         if (chkFace(verts, &normal, pos, radiusSq)) {
             u16 id = tri->id;
@@ -509,12 +513,12 @@ static int getMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_HEAD*
         if (j < count) {
             continue;
         }
-        PSMTXMultVec(rot, &tri->normal, &normal);
+        PSMTXMultVec(rot, GC_VEC3P(Vec3, &tri->normal), &normal);
         if (PSVECDotProduct(&normal, dir) >= 0.0f) {
             continue;
         }
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->v[j], &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(Vec3, &tri->v[j]), &verts[j]);
         }
         if (chkEdges(tri, verts, &normal, pos, radiusSq)) {
             u16 id = tri->id;
@@ -542,12 +546,12 @@ static int getMdlEventList(GSvec* pos, GSvec* dir, f32 radius, CCD_THRUMDL_HEAD*
         if (j < count) {
             continue;
         }
-        PSMTXMultVec(rot, &tri->normal, &normal);
+        PSMTXMultVec(rot, GC_VEC3P(Vec3, &tri->normal), &normal);
         if (PSVECDotProduct(&normal, dir) >= 0.0f) {
             continue;
         }
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->v[j], &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(Vec3, &tri->v[j]), &verts[j]);
         }
         if (chkVerts(tri, verts, &normal, pos, radiusSq)) {
             u16 id = tri->id;

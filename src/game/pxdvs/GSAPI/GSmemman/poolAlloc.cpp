@@ -12,7 +12,7 @@ public:
     u32 getFreeCell() const;
     void freeCell(void* cell);
     void* allocCell();
-    void init(unsigned long num, unsigned long size);
+    void init(u32 num, u32 size);
 
     u32 m_used;
     u32 m_peak;
@@ -27,8 +27,8 @@ public:
 
 static GSmemPoolAllocator _poolArea[POOL_MAX];
 
-static void _setDabr(unsigned long addr);
-static unsigned long _getDabr();
+static void _setDabr(u32 addr);
+static u32 _getDabr();
 
 extern "C" {
 
@@ -67,7 +67,7 @@ void* GSmemAllocPool(GSmemPoolAllocator* pool) {
     return p->allocCell();
 }
 
-GSmemPoolAllocator* GSmemCreatePool(unsigned long num, unsigned long size) {
+GSmemPoolAllocator* GSmemCreatePool(u32 num, u32 size) {
     int i;
     for (i = 0; i < POOL_MAX; i++) {
         if (_poolArea[i].m_num == 0) {
@@ -105,7 +105,7 @@ u32 GSmemPoolAllocator::getFreeCell() const {
 
 void GSmemPoolAllocator::freeCell(void* cell) {
     if (cell != NULL) {
-        unsigned long dabr;
+        u32 dabr;
         cell = (void**)cell - 1;
         void** link = (void**)cell;
         *link = m_free;
@@ -119,7 +119,7 @@ void GSmemPoolAllocator::freeCell(void* cell) {
 
 void* GSmemPoolAllocator::allocCell() {
     void** cell = m_free;
-    unsigned long dabr = _getDabr();
+    u32 dabr = _getDabr();
     _setDabr(0);
     if (cell != NULL) {
         m_free = (void**)*cell;
@@ -136,12 +136,16 @@ void* GSmemPoolAllocator::allocCell() {
     return cell + 1;
 }
 
-void GSmemPoolAllocator::init(unsigned long num, unsigned long size) {
+void GSmemPoolAllocator::init(u32 num, u32 size) {
     u8* cell;
     u8* prev;
     u32 i;
 
+#ifdef __MWERKS__
     size = (size + 7) & ~3;
+#else
+    size = (size + sizeof(void*) + 7) & ~7;
+#endif
     m_num = num;
     m_cellSize = size;
     m_start = (u8*)GSmemAllocClr((num + 1) * size);
@@ -158,8 +162,8 @@ void GSmemPoolAllocator::init(unsigned long num, unsigned long size) {
     *(u8**)prev = NULL;
 }
 
-static void _setDabr(unsigned long addr) {}
+static void _setDabr(u32 addr) {}
 
-static unsigned long _getDabr() {
+static u32 _getDabr() {
     return 0;
 }

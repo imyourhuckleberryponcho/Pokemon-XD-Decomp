@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
 
 #pragma pool_strings off
 
@@ -32,63 +34,33 @@ struct GSgfxMtxEntry {
 };
 
 struct GSgfxMtxStack {
-    u32 unk0;
+    void* base;
     GSgfxMtxEntry* top;
 };
 
-class GSgfxLayer {
+enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
+enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderStateAndSelect(GSgfxVF* vf);
     void endSurface();
     void beginSurface(unsigned short num);
 
-    u8 unk0[0xD54];
-    u32 projType;
-    f32 proj[6];
-    u8 unkD70[0x1C];
-    u32 cullMode;
-    u32 unkD90;
-    u8 unkD94[0x1644 - 0xD94];
-    u32 blendType;
-    u32 blendSrc;
-    u32 blendDst;
-    u32 blendLogicOp;
-    u8 unk1654[2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 dither;
-    u8 unk1659[3];
-    u8 zEnable;
-    u8 unk165D[3];
-    u32 zFunc;
-    u32 alphaComp0;
-    u32 alphaOp;
-    u32 alphaComp1;
-    u8 alphaRef0;
-    u8 alphaRef1;
-    u8 alphaCompareOff;
-    u8 unk1673[0x11];
-    f32 clipNear;
-    f32 clipFar;
-    u8 unk168C[0x1A];
-    u8 unk16A6;
-    u8 unk16A7;
-    GSgfxDirty dirty[2];
-    GSgfxBlendSet blendSets[2];
-    GSgfxBlendSet* blendSet;
-    s32 blendIndex;
-    u32 primType;
-    u8 unk199C[4];
-    GSgfxMtxStack* mtxStack;
 };
 
 #define GFX_DIRTY(l, word, bits, group) \
-    (l)->dirty[0].words[word] |= (bits); \
+    (&(l)->dirty[0].geom)[word] |= (bits); \
     (l)->dirty[0].groups |= (group);     \
-    (l)->dirty[1].words[word] |= (bits); \
+    (&(l)->dirty[1].geom)[word] |= (bits); \
     (l)->dirty[1].groups |= (group);
 
+#ifdef __MWERKS__
 #define GX_WGPIPE (*(volatile union { u8 u8; s16 s16; f32 f32; }*)0xCC008000)
+#else
+#define GX_WGPIPE GXWGFifo
+#endif
 
 static inline void GSgfxVertex3f(f32 x, f32 y, f32 z) {
     GX_WGPIPE.f32 = x;
@@ -105,7 +77,7 @@ static inline void GSgfxColor4u8(u8 r, u8 g, u8 b, u8 a) {
 
 extern "C" {
 extern f32 mtxIdent[3][4];
-int GSgfxLayerFindByID(int id);
+struct GSgfxLayer* GSgfxLayerFindByID(GCsint id);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 f32 GSgfxVideoGetLastRealRenderTime(void);
 u8 GSgfxVideoGetVsyncRate(void);
@@ -197,7 +169,7 @@ extern "C" u8 GSgfxResetDisable() {
     return old;
 }
 
-extern "C" u8 GSgfxResetEnable() {
+extern "C" PCRET(u8) GSgfxResetEnable() {
     u8 old = _resetEnable;
     _resetEnable = 1;
     return old;
@@ -224,60 +196,60 @@ static u8 _resetDoFade(void* arg) {
         return 1;
     }
 
-    layer->colorUpdate = 1;
-    layer->alphaUpdate = 0;
-    layer->dither = 0;
+    layer->hw.colorUpdate = 1;
+    layer->hw.alphaUpdate = 0;
+    layer->hw.zUpdate = 0;
     GFX_DIRTY(layer, 24, 4, 0x40)
 
     Mtx44 ortho;
     GSmtx44Ortho(ortho, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-    layer->projType = 1;
-    layer->proj[0] = ortho[0][0];
-    layer->proj[1] = ortho[0][3];
-    layer->proj[2] = ortho[1][1];
-    layer->proj[3] = ortho[1][3];
-    layer->proj[4] = ortho[2][2];
-    layer->proj[5] = ortho[2][3];
-    GSgfxMtxStack* stack = layer->mtxStack;
+    layer->hw.projType = 1;
+    layer->hw.proj[0] = ortho[0][0];
+    layer->hw.proj[1] = ortho[0][3];
+    layer->hw.proj[2] = ortho[1][1];
+    layer->hw.proj[3] = ortho[1][3];
+    layer->hw.proj[4] = ortho[2][2];
+    layer->hw.proj[5] = ortho[2][3];
+    GSgfxMtxStack* stack = ((GSgfxMtxStack*)layer->matrixStack);
     memcpy(stack->top->mtx, mtxIdent, 0x30);
     stack->top->flags |= 1;
-    layer->clipNear = 0.0f;
-    layer->clipFar = 30000.0f;
-    if (layer->unk16A7) {
-        if (layer->unk16A6) {
-            layer->dirty[0].words[24] |= 0x100;
-            layer->dirty[1].words[24] |= 0x100;
+    layer->hw.fogNear = 0.0f;
+    layer->hw.fogFar = 30000.0f;
+    if (layer->hw.fogEnable) {
+        if (layer->hw.fogRangeEnable) {
+            (&layer->dirty[0].geom)[24] |= 0x100;
+            (&layer->dirty[1].geom)[24] |= 0x100;
         }
         GFX_DIRTY(layer, 24, 0x40, 0x40)
     }
     GFX_DIRTY(layer, 0, 0x20, 1)
 
-    if (layer->blendIndex != 1) {
-        layer->blendIndex = 1;
-        layer->blendSet = &layer->blendSets[layer->blendIndex];
+    if (layer->curPass != 1) {
+        layer->curPass = 1;
+        layer->curFifo = &layer->passes[layer->curPass];
     }
-    layer->blendType = 1;
-    layer->blendSrc = 4;
-    layer->blendDst = 5;
-    layer->blendLogicOp = 5;
+    layer->hw.blend[0] = 1;
+    layer->hw.blend[1] = 4;
+    layer->hw.blend[2] = 5;
+    layer->hw.blend[3] = 5;
     GFX_DIRTY(layer, 24, 1, 0x40)
-    layer->zEnable = 0;
-    layer->zFunc = 3;
+    layer->hw.zEnable = 0;
+    layer->hw.zFunc = 3;
     GFX_DIRTY(layer, 24, 8, 0x40)
-    layer->alphaComp0 = 7;
-    layer->alphaRef0 = 0;
-    layer->alphaOp = 0;
-    layer->alphaComp1 = 7;
-    layer->alphaRef1 = 0;
-    layer->alphaCompareOff = 1;
+    layer->hw.alphaComp0 = 7;
+    layer->hw.alphaRef0 = 0;
+    layer->hw.alphaCmpOp = 0;
+    layer->hw.alphaComp1 = 7;
+    layer->hw.alphaRef1 = 0;
+    layer->hw.zCompLoc = 1;
     GFX_DIRTY(layer, 24, 0x10, 0x40)
-    layer->cullMode = 0;
+    layer->hw.cullMode = 0;
     GFX_DIRTY(layer, 3, 2, 2)
-    layer->unkD90 = 1;
+    layer->hw.clipMode = 1;
     GFX_DIRTY(layer, 3, 4, 2)
 
     layer->setRenderStateAndSelect(GSgfxVFGetPredef(0));
-    layer->primType = 0x98;
+    layer->unk1998 = 0x98;
     layer->beginSurface(4);
 
     f32 zero = 0.0f;

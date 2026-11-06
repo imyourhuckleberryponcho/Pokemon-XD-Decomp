@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/app/people/peopleInfo.h>
 
 struct _GSmodel;
 struct GSpart;
@@ -7,18 +8,14 @@ enum GSmodelAnimType {
     GS_MODEL_ANIM_TYPE_0
 };
 
-struct PeopleInfo {
-    u8 unk0[0x28];
-    char speakParts[7];
-    char blinkParts[4];
-};
-
 struct tagPeopleWork {
     u8 unk0[8];
     _GSmodel* model;
     u8 unkC[0x10];
     u32 infoID;
-    u8 unk20[0x128];
+    u8 unk20[0x58];
+    void* points;
+    u8 pad7C[0xCC];
     f32 blinkTimer;
     u8 blinking;
     u8 speaking;

@@ -1,0 +1,9 @@
+#ifndef GAME_FIGHTFLOOR_H
+#define GAME_FIGHTFLOOR_H
+#ifdef __MWERKS__
+#define FIGHT_FLOOR_SIZE 0xE318
+#else
+#define FIGHT_FLOOR_SIZE 0xE378
+#endif
+#define FIGHT_FLOOR_SIDES_END 0xDDF4
+#endif

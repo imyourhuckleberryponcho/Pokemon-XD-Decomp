@@ -19,7 +19,11 @@ public:
         }
     }
     void releaseOffscreenData();
+#ifdef __MWERKS__
     void SetModel(u32 groupID, u32 modelID, bool);
+#else
+    void* SetModel(u32 groupID, u32 modelID, bool attachLights);
+#endif
     void SetMotion(u32 modelID, s16 motion, f32 frame, bool);
     f32 GetAnimeFrameCount(u32 modelID, u32 motion);
     f32 GetAnimeFrame(u32 modelID);

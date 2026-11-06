@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
 
 class FIGHT_SIDE {
 public:
@@ -86,7 +88,7 @@ void fightSideRegistFightSideEnemyPokemonFightAll(FIGHT_SIDE* side, FIGHT_TRAINE
     }
 }
 
-u8 fightSideGetJoutaiUserFightTargetId(FIGHT_SIDE* side, u16 id) {
+PCRET(u8) fightSideGetJoutaiUserFightTargetId(FIGHT_SIDE* side, u16 id) {
     if (joutaiDataBiosGetStatus(id) != 6) {
         return 0;
     }
@@ -126,7 +128,7 @@ void fightSideWriteJoutaiDataId(FIGHT_SIDE* side, u16 id, u16 value) {
     }
 }
 
-u8 fightSideCheckWriteJoutaiDataId(FIGHT_SIDE* side, u16 id) {
+PCRET(u8) fightSideCheckWriteJoutaiDataId(FIGHT_SIDE* side, u16 id) {
     if (joutaiDataBiosGetStatus(id) != 6) {
         return 0;
     }
@@ -317,12 +319,12 @@ void fightSideInit(FIGHT_SIDE* side) {
     }
 }
 
-void fightSideSetStatus(FIGHT_SIDE* side, FIGHT_SIDE* dataIdx, u16 kind, u32 param, u32 value) {
+void fightSideSetStatus(FIGHT_SIDE* side, u32 dataIdx, u16 kind, u32 param, u32 value) {
     if (kind == 0 || kind >= 10) {
         return;
     }
     if (kind < 4) {
-        side = fightSideDataBiosGetPtr((u32)dataIdx);
+        side = fightSideDataBiosGetPtr(dataIdx);
     }
     if (!side) {
         return;
@@ -346,12 +348,12 @@ void fightSideSetStatus(FIGHT_SIDE* side, FIGHT_SIDE* dataIdx, u16 kind, u32 par
     }
 }
 
-s32 fightSideGetStatus(FIGHT_SIDE* side, FIGHT_SIDE* dataIdx, u16 kind, u32 param) {
+s32 fightSideGetStatus(FIGHT_SIDE* side, u32 dataIdx, u16 kind, u32 param) {
     if (kind == 0 || kind >= 10) {
         return 0;
     }
     if (kind < 4) {
-        side = fightSideDataBiosGetPtr((u32)dataIdx);
+        side = fightSideDataBiosGetPtr(dataIdx);
     }
     if (!side) {
         return 0;
@@ -366,9 +368,9 @@ s32 fightSideGetStatus(FIGHT_SIDE* side, FIGHT_SIDE* dataIdx, u16 kind, u32 para
     case 5:
         return fightSideBiosGetFightSideDataId(side);
     case 6:
-        return (s32)fightSideBiosGetJoutaiPtr(side, param);
+        return (GCsptr)fightSideBiosGetJoutaiPtr(side, param);
     case 7:
-        return (s32)fightSideBiosGetFightTrainerPtr(side, param);
+        return (GCsptr)fightSideBiosGetFightTrainerPtr(side, param);
     case 8:
         return fightSideBiosGetMakibisiCheckFlag(side);
     default:

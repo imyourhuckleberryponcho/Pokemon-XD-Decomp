@@ -101,9 +101,14 @@ void _HSD_StateInvalidateTexCoordGen(void);
 
 inline static bool CompareRGB(GXColor* c0, GXColor* c1)
 {
+#ifdef __MWERKS__
     u32* d0 = (u32*) c0;
     u32* d1 = (u32*) c1;
     return ((*d0 ^ *d1) & 0xFFFFFF00) != 0;
+#else
+
+    return c0->r != c1->r || c0->g != c1->g || c0->b != c1->b;
+#endif
 }
 
 inline static bool CompareRGBA(GXColor* c0, GXColor* c1)
@@ -115,9 +120,15 @@ inline static bool CompareRGBA(GXColor* c0, GXColor* c1)
 
 inline static void CopyRGB(GXColor* dst, GXColor* src)
 {
+#ifdef __MWERKS__
     u32* d = (u32*) dst;
     u32* s = (u32*) src;
     *d = (*d & 0xff) | (*s & 0xffffff00);
+#else
+    dst->r = src->r;
+    dst->g = src->g;
+    dst->b = src->b;
+#endif
 }
 
 static inline int setupTevStages(HSD_TevDesc* desc)

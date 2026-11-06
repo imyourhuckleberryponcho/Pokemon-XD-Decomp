@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma peephole off
 
@@ -97,7 +98,7 @@ static const u16 staColosseum_imasugu[6] = {0x24, 0x26, 0x25, 0x3C, 0x3D, 0x3E};
 
 extern "C" {
 
-u16 menuCB_Battle(BattleWork* work) {
+PCRET(u16) menuCB_Battle(BattleWork* work) {
     s32 id;
     u16 result;
     if (_CB.mode == 1) {

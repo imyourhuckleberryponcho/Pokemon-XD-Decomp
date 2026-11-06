@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/app/fight/fightData.h>
 
 struct FightJoutai {
     u8 unk0[0x10];
@@ -6,17 +7,6 @@ struct FightJoutai {
 
 struct FightSide {
     u8 unk0[0x6EF0];
-};
-
-struct FightFloorData {
-    u8 tikeiDataId;
-    u8 unk1[0x1];
-    u16 floorDataId;
-    u32 name;
-    u32 syoukaiWzxDataId;
-    u32 bgmSndId;
-    u32 envSndId;
-    u16 fightSideDataIds[2];
 };
 
 struct FightFloor {
@@ -226,7 +216,7 @@ void fightFloorDataBiosSetFightSideDataId(FightFloorData* p, u8 index, u16 id) {
     if (index >= 2) {
         return;
     }
-    p->fightSideDataIds[index] = id;
+    p->fightSideDataId[index] = id;
 }
 
 void fightFloorDataBiosSetFloorDataId(FightFloorData* p, u16 value) {
@@ -270,7 +260,7 @@ u16 fightFloorDataBiosGetFightSideDataId(FightFloorData* p, u8 index) {
     if (index >= 2) {
         return 0;
     }
-    return p->fightSideDataIds[index];
+    return p->fightSideDataId[index];
 }
 
 u16 fightFloorDataBiosGetFloorDataId(FightFloorData* p) {

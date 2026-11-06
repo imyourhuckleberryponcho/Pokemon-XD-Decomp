@@ -3,9 +3,7 @@
 struct FightOutPokemon;
 struct Pokemon;
 
-struct FightOutPokemonEnemy {
-    u8 unk0[0xC];
-};
+#include <game/fightrecords.h>
 
 extern "C" {
 

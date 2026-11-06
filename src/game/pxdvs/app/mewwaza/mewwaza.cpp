@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 struct MEWPOINTS {
     s16 a;
@@ -25,15 +26,15 @@ struct WazaTmplTblEntry {
 
 #define RAND16() ((u32)(u16)HSD_Rand())
 
-extern MWAZA mWazaTbl[];
-extern WazaTmplTblEntry wazaTmplTbl[];
+extern "C" MWAZA mWazaTbl[];
+extern "C" WazaTmplTblEntry wazaTmplTbl[];
 
 extern "C" {
 u32 HSD_Rand();
 s32 GSfloorGetCurrent(void);
 s32 GSfsysReadWait(u32 id);
 void GSresFreeGroup(u32 grp);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 s32 winMsgOpenFieldWithSE(s32 msg, bool a, bool b, u8 se);
 void winMsgClose(bool flag);
 s32 menuSubOpenSelect3(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags, s32 a6, u8 a7, u8 a8);
@@ -94,9 +95,9 @@ static void _question_3(MEWPOINTS* mp);
 static void _question_4(MEWPOINTS* mp);
 static void _question_5(MEWPOINTS* mp);
 static s32 _tmplSelect(MEWPOINTS* mp);
-static TemplateData* _getWazaFromTmpl(long idx, MEWPOINTS* mp);
+static TemplateData* _getWazaFromTmpl(s32 idx, MEWPOINTS* mp);
 static s32 _fillTmplate(u16* tmpl, MEWPOINTS* mp);
-static s32 _searchwaza(MWAZA* tbl, long mode, u16* used, long usedCount, long nth);
+static s32 _searchwaza(MWAZA* tbl, s32 mode, u16* used, s32 usedCount, s32 nth);
 
 static s32 _mewSequence(MEWPOINTS* mp) {
     s32 q1[2];
@@ -148,7 +149,7 @@ static s32 _mewSequence(MEWPOINTS* mp) {
     x = HSD_Rand() & 3;
     y = x;
     while (x == y) {
-        x = HSD_Rand() & 3;
+        y = HSD_Rand() & 3;
     }
     q2[1] = mewans2[y];
     q2[0] = mewans2[x];
@@ -401,7 +402,7 @@ static s32 _tmplSelect(MEWPOINTS* mp) {
     return 5;
 }
 
-static TemplateData* _getWazaFromTmpl(long idx, MEWPOINTS* mp) {
+static TemplateData* _getWazaFromTmpl(s32 idx, MEWPOINTS* mp) {
     TemplateData* tbl = wazaTmplTbl[idx].ptr;
     u16 kind;
     s32 chance;
@@ -502,8 +503,8 @@ static s32 _fillTmplate(u16* tmpl, MEWPOINTS* mp) {
     s32 skip;
     MWAZA* base;
     MWAZA* cur;
-    s32 i;
     s32 tries;
+    s32 i;
     s32 n;
     s32 v;
 
@@ -529,12 +530,12 @@ static s32 _fillTmplate(u16* tmpl, MEWPOINTS* mp) {
                         v = 0;
                     }
                     if (skip != 0) {
-                        if (skip > v) {
-                            skip -= v;
-                            v = 0;
-                        } else {
+                        if (skip <= v) {
                             v -= skip;
                             skip = 0;
+                        } else {
+                            skip -= v;
+                            v = 0;
                         }
                     }
                     tmpl[i] = _searchwaza(cur, tmpl[i], tmpl, i, v + 1);
@@ -557,7 +558,7 @@ static s32 _fillTmplate(u16* tmpl, MEWPOINTS* mp) {
     return 0;
 }
 
-static s32 _searchwaza(MWAZA* tbl, long mode, u16* used, long usedCount, long nth) {
+static s32 _searchwaza(MWAZA* tbl, s32 mode, u16* used, s32 usedCount, s32 nth) {
     u16 w;
     u16 ok = 0;
     s32 count = 0;
@@ -635,7 +636,7 @@ s32 mewWazaSequence() {
     return r;
 }
 
-u16 mewWazaGet(long index) {
+u16 mewWazaGet(s32 index) {
     return _wrktmplt.waza.w[index];
 }
 }

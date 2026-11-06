@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #pragma peephole off
 
@@ -14,12 +15,27 @@ struct tagWINDOW_WORK {
     s8 state;
     s8 seqSet;
     u8 unk3;
-    void* seq;
-    u8 unk8[0x14];
+    s32 seq;
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
-    u8 unk20[0x48];
+    u8 unk20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
     struct MEMO_CONTENTS* contents;
-    u8 unk6C[0x27];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 alpha;
     u8 unk94[0x10];
     u8 unkA4;
@@ -27,11 +43,17 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 unk8[0x14];
+    u8 unk8[0x4];
+    void* slotC;
+    u8 pad10[0xC];
     s32 layer;
-    u8 unk20[0x44];
+    u8 unk20[0x28];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x14];
     u8 colorR;
     u8 colorG;
     u8 colorB;
@@ -79,10 +101,10 @@ public:
     void Release();
     void LoadPokemon(CURSOR* cursor);
     void Init(CURSOR* cursor);
-    long TaskOpen();
+    s32 TaskOpen();
     void TaskClose(tagWINDOW_WORK* window, bool sync);
     bool TaskCloseCheck();
-    void _menuClose(long menuID, bool sync);
+    void _menuClose(s32 menuID, bool sync);
 
     CURSOR* cursor;
     u8 unk4[4];
@@ -97,16 +119,22 @@ public:
 };
 
 extern "C" {
-void* __nw__FUl(unsigned long);
+#ifdef __MWERKS__
+void* __nw__FUl(u32);
 void __dl__FPv(void*);
-void* __nwa__FUl(unsigned long);
+void* __nwa__FUl(u32);
+#else
+#define __nw__FUl(n) (operator new(n))
+#define __dl__FPv(p) (operator delete(p))
+#define __nwa__FUl(n) (operator new[](n))
+#endif
 void __dla__FPv(void*);
 double atan2(double, double);
 void PSVECAdd(f32*, f32*, f32*);
 u32 GSinputButtonsPressed(s32);
 s8 GSinputGetRightStickXData(s32, s32);
 s8 GSinputGetRightStickYData(s32, s32);
-void GSmodelDestroyLinkedParticles(void);
+void GSmodelDestroyLinkedParticles(void* model);
 u32 GSmsgGetCharLength(u16*);
 u16* GSmsgGetGSchar(u32);
 u32 GSmsgGetRect(u32);
@@ -129,20 +157,26 @@ void* menuPdaGetSubres(void);
 void menuPdaMemoListDispPokemonModel(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 f32 menuPdaMemoListGetDefaultAngle(s16);
 MENU_MODEL* menuPdaMemoListGetMenuModelWork(void);
-void* menuPdaMemoListGetPokemonDataPointer(long);
-u16 menuPdaMemoListGetPokemonID(long);
-s32 menuPdaMemoListGetPokemonName(long);
+void* menuPdaMemoListGetPokemonDataPointer(s32);
+u16 menuPdaMemoListGetPokemonID(s32);
+s32 menuPdaMemoListGetPokemonName(s32);
 u8 menuPdaMemoListIsLoadHero(void);
 u8 menuPdaMemoListIsTermModel(void);
 void menuPdaMemoListLoadHero(bool);
-void menuPdaMemoListLoadPokemon(long);
+void menuPdaMemoListLoadPokemon(s32);
 void menuPdaMemoListSetHeroMotion(void);
-void menuPdaMemoWave(long);
+void menuPdaMemoWave(s32);
+#ifdef __MWERKS__
 void menuPdaMemoWaveHook(void);
+#define MEMO_WAVE_HOOK() menuPdaMemoWaveHook()
+#else
+void menuPdaMemoWaveHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
+#define MEMO_WAVE_HOOK() menuPdaMemoWaveHook(window, sprite)
+#endif
 void menuPdaMemoWaveInit(void);
 void menuPdaSetSubres(s32, s32);
-void menuPlaySe(void*, s32);
-void msgctrlSetValue(s32, u32);
+void menuPlaySe(s32 menuID, s32);
+void msgctrlSetValue(s32, GCuptr);
 s32 pokecoloGetLanguage(void);
 u16 pokemonDataBiosGetHeight(void*);
 void* pokemonDataBiosGetPtr(u16);
@@ -154,7 +188,7 @@ u32 pokemonTokuseiDataBiosGetDoc(void*);
 u32 pokemonTokuseiDataBiosGetName(void*);
 void* pokemonTokuseiDataBiosGetPtr(u16);
 u8 winSeqCheckMove(s32);
-void winSeqSetMenu(void*, s32);
+void winSeqSetMenu(s32 menuID, s32);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
 void windowDrawSprite(s32, s32, tagWINDOW_WORK*, u16, s32, s32);
@@ -189,7 +223,7 @@ extern "C" s32 menuPdaMemoXDCursor(tagWINDOW_WORK* window);
 extern "C" s32 menuPdaMemoXDCtrl(tagWINDOW_WORK* window);
 
 extern "C++" {
-void menuPdaMemoXD::_menuClose(long menuID, bool sync) {
+void menuPdaMemoXD::_menuClose(s32 menuID, bool sync) {
     menuClose(menuID);
     menuCloseSync(menuID, sync);
 }
@@ -225,8 +259,9 @@ void menuPdaMemoXD::TaskClose(tagWINDOW_WORK* window, bool sync) {
     if (window != 0) {
         window->unkA4 = 1;
     }
-    if (menuModelGetModelPtr(menuPdaMemoListGetMenuModelWork()) != 0) {
-        GSmodelDestroyLinkedParticles();
+    void* model = menuModelGetModelPtr(menuPdaMemoListGetMenuModelWork());
+    if (model != 0) {
+        GSmodelDestroyLinkedParticles(model);
     }
     switch (cur) {
     case 0:
@@ -255,8 +290,8 @@ void menuPdaMemoXD::TaskClose(tagWINDOW_WORK* window, bool sync) {
 }
 
 extern "C++" {
-long menuPdaMemoXD::TaskOpen() {
-    long result = -1;
+s32 menuPdaMemoXD::TaskOpen() {
+    s32 result = -1;
     switch (item) {
     case 0:
         menuCloseSync(0x7C, 1);
@@ -684,12 +719,13 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
                 k++;
             }
             buf1[k++] = 0;
-            msgctrlSetValue(0x37, (u32)name);
+            msgctrlSetValue(0x37, (GCuptr)name);
             u32 width = GSmsgGetRect(0x4276) >> 16;
             if (width <= item->width) {
                 best = n;
             }
-            if (!(item->width >= width)) {
+            u16 rf_t = item->width;
+            if (!(rf_t >= width)) {
                 wrap = 1;
             }
         } while (k < len);
@@ -729,12 +765,12 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
             }
             buf1[n1] = 0;
             buf2[n2] = 0;
-            msgctrlSetValue(0x37, (u32)buf1);
+            msgctrlSetValue(0x37, (GCuptr)buf1);
             GSmsgPrint2(window->layer, 0, 0, window->alpha | 0xFFFFFF00, 0x4276);
-            msgctrlSetValue(0x37, (u32)buf2);
+            msgctrlSetValue(0x37, (GCuptr)buf2);
             GSmsgPrint2(window->layer, 0, 0x12, window->alpha | 0xFFFFFF00, 0x4276);
         } else {
-            msgctrlSetValue(0x37, (u32)text);
+            msgctrlSetValue(0x37, (GCuptr)text);
             GSmsgPrint2(window->layer, 0, 0, window->alpha | 0xFFFFFF00, 0x4276);
         }
         delete[] buf1;
@@ -862,7 +898,7 @@ void menuPdaMemoXD::PokemonHeight(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
                 heightBuf[--pos] = 0x27;
             }
         }
-        msgctrlSetValue(0x37, (u32)&heightBuf[pos]);
+        msgctrlSetValue(0x37, (GCuptr)&heightBuf[pos]);
         GSmsgPrintRight(layer, 0, 0, item->width, item->height, window->alpha | ~0xFF, 0x4276);
         return;
     }
@@ -938,8 +974,8 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     case 0x100:
         sprite->colorR = 0xD5;
         sprite->colorG = 0xAA;
-        sprite->colorB = 0x33;
         pMemo->PokemonWeight(window, sprite, contents);
+        sprite->colorB = 0x33;
         break;
     case 0x101:
         sprite->colorR = 0xD5;
@@ -953,7 +989,7 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         sprite->colorB = 0x33;
         break;
     case 0x10B:
-        menuPdaMemoWaveHook();
+        MEMO_WAVE_HOOK();
         break;
     case 0x144:
     case 0x145:
@@ -998,13 +1034,14 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     case 0x156:
         pMemo->PokemonType(window, sprite, contents, 1);
         break;
-    case 0x15C:
+    case 0x15C: {
         s32 name = (u32)GSmsgGetGSchar(0x3B68);
         msgctrlSetValue(0x4D, name);
         s32 text = (u32)GSmsgGetGSchar(0x3B69);
         msgctrlSetValue(0x37, text);
         GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
         break;
+    }
     case 0x159: {
         void* mon = pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(contents->cursor->pos + contents->cursor->top));
         u16 first = pokemonDataBiosGetTokuseiDataId(mon, 0);

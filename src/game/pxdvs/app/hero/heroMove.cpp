@@ -1,16 +1,38 @@
 #pragma optimization_level 3
 #include <dolphin/types.h>
-class Hero {
+#include <game/gcptr.h>
+#include <game/statusval.h>
+struct Hero {
 public:
     static Hero* getHeroPtr();
     u8 getFollowerID();
+#ifdef __MWERKS__
     s32 getFollowerModelLevel();
-    void addFootStep(unsigned long);
+#else
+    u8 getFollowerModelLevel();
+#endif
+    void addFootStep(u32);
+#ifndef __MWERKS__
+    u32 getFollowerGrpID();
+    u32 getFollowerResID();
+    void setFollowerGrpID(u32);
+    void setFollowerResID(u32);
+    void setFollowerID(u8);
+#endif
 };
 #pragma pool_strings off
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 #include <game/shared/floor_module.h>
+#ifndef __MWERKS__
+struct tagPeopleWork { u8 getMoveType(); };
+#define setFollowerGrpID__4HeroFUl(o, ...) (((Hero*)(o))->setFollowerGrpID(__VA_ARGS__))
+#define setFollowerResID__4HeroFUl(o, ...) (((Hero*)(o))->setFollowerResID(__VA_ARGS__))
+#define setFollowerID__4HeroFUc(o, ...) (((Hero*)(o))->setFollowerID(__VA_ARGS__))
+#define getFollowerResID__4HeroFv(o, ...) ((u32)((Hero*)(o))->getFollowerResID(__VA_ARGS__))
+#define getFollowerGrpID__4HeroFv(o, ...) ((u32)((Hero*)(o))->getFollowerGrpID(__VA_ARGS__))
+#define getMoveType__13tagPeopleWorkFv(o, ...) ((u8)((tagPeopleWork*)(o))->getMoveType(__VA_ARGS__))
+#endif
 
 struct GSvec {
     f32 x, y, z;
@@ -66,7 +88,11 @@ inline void AnalogStickEmu::approach(s8& cur, s8& target) {
     }
 }
 
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 struct Vec3 {
     f32 x, y, z;
 };
@@ -80,7 +106,9 @@ struct FOOTSTEP {
 
 struct PeopleWork {
     u8 active;
-    u8 pad1[0xc];
+    u8 pad1[0x7];
+    void* model;
+    u8 padC[0x1];
     u8 unkD;
     u8 pad0E[6];
     u32 group;
@@ -94,7 +122,9 @@ struct PeopleWork {
     s32 unk50;
     u8 pad54[0x14];
     GSvec target;
-    u8 pad74[0xb0];
+    u8 pad74[0x4];
+    void* points;
+    u8 pad7C[0xA8];
     s32 unk124;
     u8 pad128[0x18];
     s32 unk140;
@@ -120,7 +150,7 @@ struct HeroMoveMember {
 };
 
 struct StepCallback {
-    void (*func)(long, FootStepCounter, long);
+    void (*func)(s32, FootStepCounter, s32);
     s32 arg;
 };
 
@@ -171,14 +201,14 @@ void peopleSetFlagOn(s32, s32, s32);
 void peopleSetFlagOff(s32, s32, s32);
 void peopleRemoveNeckTarget(s32, s32, f32);
 void* memcpy(void*, const void*, u32);
-u32 heroGetStatus(Hero*, u32, u16);
+StatusU32 heroGetStatus(Hero*, u32, u16);
 u8 pokemonCheckValid(Pokemon*);
 void fadeEffectDokuStart(void);
 void heroMoveInitEvent();
 
 void heroMoveTermEvent();
 char* pokemonBiosGetNicknamePtr(Pokemon*);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 s32 winMsgOpenField(u32, bool, bool);
 void winMsgCloseField(bool);
 u8 GSinputGetLeftStickXData(s32, s32);
@@ -287,7 +317,7 @@ extern "C" f32* peopleBiosGetPrevPosPtr(PeopleWork*);
 extern "C" u8 heroMoveChkHinderClear(s32);
 extern "C" void* peopleInfoBiosGetPtr(s32);
 extern "C" f32 peopleInfoBiosGetColBallSize(void*);
-extern "C" bool GScolsys2HitCollision(Vec3*, Vec3*, void*);
+extern "C" bool GScolsys2HitCollision(Vec3*, Vec3*, f32, Vec3*);
 extern "C" s32 GScolsys2HumanCollision(s32, Vec3*, Vec3*, void*);
 extern "C" s32 heroGetFollower(void);
 extern "C" void heroMoveGetResID(u32*, u32*, HEROMOVE_MEMBER);
@@ -300,11 +330,21 @@ extern "C" f32* peopleBiosGetRotPtr(PeopleWork*);
 extern "C" s32 GScolsys2CheckGetEventID(Vec3*, Vec3*, EventTri*);
 extern "C" void PSVECAdd(const Vec3*, const Vec3*, Vec3*);
 extern "C" void peopleSetNeckTargetHero(u32, u32);
+#ifdef __MWERKS__
 extern "C" void setFollowerGrpID__4HeroFUl(Hero*, u32);
+#endif
+#ifdef __MWERKS__
 extern "C" void setFollowerResID__4HeroFUl(Hero*, u32);
+#endif
+#ifdef __MWERKS__
 extern "C" void setFollowerID__4HeroFUc(Hero*, u8);
+#endif
+#ifdef __MWERKS__
 extern "C" u32 getFollowerResID__4HeroFv(Hero*);
+#endif
+#ifdef __MWERKS__
 extern "C" u32 getFollowerGrpID__4HeroFv(Hero*);
+#endif
 extern "C" PeopleWork* peopleTalkCheck(u32, u32, f32, f32);
 extern "C" void GSinputResetLeftSmoothing(s32, s32, s32);
 extern "C" void GSinputResetRightSmoothing(s32, s32, s32);
@@ -321,7 +361,9 @@ extern "C" s32 peopleGetTalkSctID(u32, u32);
 extern "C" void floorExecScriptRes(s32, u32, u32);
 extern "C" void peopleTalkMsgEnd(u32, u32);
 extern "C" u8 peopleBiosCheckFlag(PeopleWork*, u32);
+#ifdef __MWERKS__
 extern "C" u8 getMoveType__13tagPeopleWorkFv(PeopleWork*);
+#endif
 extern "C" double sin(double);
 extern "C" double cos(double);
 
@@ -370,7 +412,7 @@ static void getStep(FOOTSTEP* step, _GSmodel* model, int* parts, FOOTWORK* work)
 static void procStep(HEROMOVE_MEMBER member);
 static void proc1Step(f32 distance);
 extern "C" void heroMoveCallStepCallback(FootStepCounter kind, s32 amount);
-extern "C" s32 heroMoveAddStepCallback(void (*callback)(long, FootStepCounter, long), s32 arg);
+extern "C" s32 heroMoveAddStepCallback(void (*callback)(s32, FootStepCounter, s32), s32 arg);
 extern "C" void heroMovePoolCounter(s32 kind, s32 amount);
 extern "C" u8 heroMoveCallStepCallbackAll();
 extern "C" void heroMoveInitEvent();
@@ -382,8 +424,8 @@ extern "C" u8 heroMoveChkHinderClear(s32 memberArg);
 extern "C" void heroMoveSetLockFrame(s32 frames);
 extern "C" void heroMoveSlowStop();
 static void _heroMoveSlowStopFactor(f32 factor, bool moveParty_);
-static void cbPoison(long, FootStepCounter counter, long);
-static void cbTsureFriend(long, FootStepCounter counter, long amount);
+static void cbPoison(s32, FootStepCounter counter, s32);
+static void cbTsureFriend(s32, FootStepCounter counter, s32 amount);
 static void actionFriendSet(Pokemon* pokemon, u16 value);
 static u16 getEquipItemEffect(u16 itemID);
 static s32 abs(s8 v);
@@ -635,6 +677,12 @@ static inline void tsLoopHelper2226() {
     }
 }
 
+static inline void heroInitAllFootWork() {
+    for (int i = 0; i < 4; i++) {
+        initFootWork((FOOTWORK*)((u8*)&HeroMove.members[i] + 0x14));
+    }
+}
+
 static void initFloor() {
     f32 h;
     f32 bestAny;
@@ -643,17 +691,17 @@ static void initFloor() {
     if (!GSfloorIsPop()) {
         getPos((GSvec*)&pos, heroMoveGetLeader());
         getRot((GSvec*)&rot, heroMoveGetLeader());
-        f32 sinY = -(f32)sin(rot.y);
-        f32 cosY = -(f32)cos(rot.y);
+        f32 sinY = sin(rot.y);
+        f32 cosY = cos(rot.y);
         f32 offset = 10.0f;
         Vec3 target;
         target.y = pos.y;
         for (int i = 0; i < 4; i++) {
             if (heroMoveIsMember((HEROMOVE_MEMBER)i) && i != heroMoveGetLeader()) {
                 GSwalkHit hits[8];
-                target.x = sinY * offset + pos.x;
+                target.x = -sinY * offset + pos.x;
                 target.y = pos.y;
-                target.z = cosY * offset + pos.z;
+                target.z = -cosY * offset + pos.z;
                 s32 count = GScolsys2WalkGetHeight((GSvec*)&target, hits);
                 if (count > 0) {
                     if (count >= 2) {
@@ -691,11 +739,7 @@ static void initFloor() {
             setDisp((HEROMOVE_MEMBER)i, heroMoveIsMember((HEROMOVE_MEMBER)i));
         }
     }
-    HeroMoveMember* m = HeroMove.members;
-    for (int i = 0; i < 4; i++) {
-        initFootWork((FOOTWORK*)((u8*)m + 0x14));
-        m++;
-    }
+    heroInitAllFootWork();
     tsLoopHelper2226();
     HeroMove.members[0].unk10 = 300;
     HeroMove.members[1].unk10 = 300;
@@ -828,9 +872,9 @@ s32 heroGetFollower() {
     case 0x65:
         return HeroMove.members[1].flags & 1;
     case 0x68:
-        return 2 & -(HeroMove.members[2].flags & 1);
+        return (HeroMove.members[2].flags & 1) ? 2 : 0;
     case 0x69:
-        return 3 & -(HeroMove.members[3].flags & 1);
+        return (HeroMove.members[3].flags & 1) ? 3 : 0;
     default:
         return 0;
     }
@@ -999,6 +1043,7 @@ static f32 moveLeader(HEROMOVE_MEMBER member) {
 }
 
 static f32 moveLeaderPosition(HEROMOVE_MEMBER member) {
+    f32 dist;
     f32 dt = (30.0f * (f32)timeGetLastFrameTime()) / (f32)GSgfxVideoGetVsyncRate();
     Vec3 before;
     Vec3 after;
@@ -1011,7 +1056,7 @@ static f32 moveLeaderPosition(HEROMOVE_MEMBER member) {
     getPos((GSvec*)&after, member);
     PSVECSubtract(&after, &before, &diff);
     getResID(&group, &id, member);
-    f32 dist = PSVECMag(&diff);
+    dist = PSVECMag(&diff);
     if (dt == 0.0f) {
         updateMotion(member, 0.0f);
     } else {
@@ -1438,7 +1483,7 @@ void heroMoveCallStepCallback(FootStepCounter kind, s32 amount) {
 }
 
 extern "C" {
-s32 heroMoveAddStepCallback(void (*callback)(long, FootStepCounter, long), s32 arg) {
+s32 heroMoveAddStepCallback(void (*callback)(s32, FootStepCounter, s32), s32 arg) {
     int i;
     for (i = 0; i < 8; i++) {
         if (HeroMove.callbacks[i].func == 0) {
@@ -1612,7 +1657,7 @@ u8 heroMoveChkHinderClear(s32 memberArg) {
         return 0;
     }
     f32 size1 = peopleInfoBiosGetColBallSize(info);
-    if (GScolsys2HitCollision(&memberPos, &leaderPos, 0)) {
+    if (GScolsys2HitCollision(&memberPos, &leaderPos, size1, 0)) {
         return 0;
     }
     obj = getObjID(leader);
@@ -1701,7 +1746,7 @@ static void _heroMoveSlowStopFactor(f32 factor, bool moveParty_) {
     HeroMove.stickOverride = 0;
 }
 
-static void cbPoison(long, FootStepCounter counter, long) {
+static void cbPoison(s32, FootStepCounter counter, s32) {
     int faintedCount = 0;
     u8 poisoned = 0;
     int alive;
@@ -1748,7 +1793,7 @@ static void cbPoison(long, FootStepCounter counter, long) {
                 heroMoveInitEvent();
                 for (int j = 0; j < faintedCount; j++) {
                     Pokemon* pokemon = (Pokemon*)heroGetStatus(0, 3, (u16)faintedIdx[j]);
-                    msgctrlSetValue(0x32, (u32)pokemonBiosGetNicknamePtr(pokemon));
+                    msgctrlSetValue(0x32, (GCuptr)pokemonBiosGetNicknamePtr(pokemon));
                     winMsgOpenField(0xC37E, 1, 0);
                     winMsgCloseField(1);
                     actionFriendSet(pokemon, 7);
@@ -1759,7 +1804,7 @@ static void cbPoison(long, FootStepCounter counter, long) {
     }
 }
 
-static void cbTsureFriend(long, FootStepCounter counter, long amount) {
+static void cbTsureFriend(s32, FootStepCounter counter, s32 amount) {
     if (counter != 1) {
         HeroMove.friendCounter += amount;
         while (HeroMove.friendCounter > 0x100) {

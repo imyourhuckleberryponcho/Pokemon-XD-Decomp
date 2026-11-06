@@ -201,10 +201,12 @@ s32 GSscratchInit(u8 stackSize)
     u8 remaining;
     s32 i;
 
+#ifdef __MWERKS__
     asm {
         mflr r3
         stw r3, _scratchInitLR
     }
+#endif
     _blockMap = 0;
     for (i = 0; i < 32; i++) {
         _blockTable[i].index = 0xFF;
@@ -230,6 +232,7 @@ s32 GSscratchInit(u8 stackSize)
     if (stackSize == 0) {
         return 1;
     }
+#ifdef __MWERKS__
     asm {
         lwz r3, _scratchPadBase
         lwz r5, _stackSize
@@ -241,6 +244,8 @@ s32 GSscratchInit(u8 stackSize)
         mtlr r3
         blr
     }
+#else
+#endif
     return 1;
 }
 }

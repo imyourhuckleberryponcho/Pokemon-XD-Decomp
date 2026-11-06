@@ -1,0 +1,85 @@
+#ifndef GAME_GSMODELLAYOUT_H
+#define GAME_GSMODELLAYOUT_H
+#include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gsmodelview.h>
+#ifndef PWVEC_DEFINED
+#define PWVEC_DEFINED
+typedef struct PWvec { f32 x, y, z; } PWvec;
+#endif
+struct GSmodelLayout {
+    u32 flags;
+    void* next;
+    void* set;
+    void* jobj;
+    void* jobj10;
+    void* jobj14;
+    PWvec position;
+    PWvec rotation;
+    PWvec scale;
+    GSmodelBoundView bound;
+    void* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
+    s32 animType;
+    s32 animIndex;
+    f32 animRate;
+    f32 animFrame;
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
+    s32 texAnimType;
+    s32 texAnimIndex;
+    f32 texAnimRate;
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
+    GSmodelPartMixView mixA[12];
+    f32 blendFactor;
+    u8 unk21C;
+    u8 unk21D;
+    u8 unk21E[2];
+    void* unk220;
+    void* animEndedCallbackArg;
+    GSmodelPartAnimView mixB[16];
+    s32 attachMode;
+    void* attachModel;
+    u32 attachIndex;
+    PWvec attachPosition;
+    PWvec attachRotation;
+    PWvec attachScale;
+    void* particleBank;
+    u32 particleAttachMode;
+    void* materials;
+    u32 materialCount;
+    u32 unk5E8;
+    void* unk5EC;
+    void* unk5F0;
+    f32 unk5F4;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
+};
+#endif

@@ -394,20 +394,20 @@ HSD_AObj* HSD_AObjLoadDesc(HSD_AObjDesc* aobjdesc)
 
     if (aobjdesc != NULL) {
         aobj = HSD_AObjAlloc();
-        HSD_AObjSetFlags(aobj, aobjdesc->flags);
+        HSD_AObjSetFlags(aobj, GC_BE32(aobjdesc->flags));
         HSD_AObjSetRewindFrame(aobj, 0.0F);
-        HSD_AObjSetEndFrame(aobj, aobjdesc->end_frame);
-        fobjdesc = aobjdesc->fobjdesc;
+        HSD_AObjSetEndFrame(aobj, GC_BEF32(aobjdesc->end_frame));
+        fobjdesc = GC_PTR(HSD_FObjDesc*, aobjdesc->fobjdesc);
         fobj = HSD_FObjLoadDesc(fobjdesc);
         HSD_AObjSetFObj(aobj, fobj);
-        id = (HSD_IDKey) aobjdesc->obj_id;
+        id = (HSD_IDKey) GC_PTR(void*, aobjdesc->obj_id);
         if (id != 0U) {
             phi_r30 = HSD_IDGetDataFromTable(0, id, 0);
             if (phi_r30 != NULL) {
                 ref_INC(phi_r30);
             } else {
                 phi_r30 = (HSD_Obj*) HSD_JObjLoadJoint(
-                    (HSD_Joint*) aobjdesc->obj_id);
+                    GC_PTR(HSD_Joint*, aobjdesc->obj_id));
             }
             if (aobj != NULL) {
                 if (aobj->hsd_obj != NULL) {

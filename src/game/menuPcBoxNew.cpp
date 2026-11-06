@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #pragma peephole off
 #pragma force_active on
@@ -13,8 +14,12 @@ struct Pokemon {
 };
 
 struct tagSPRITE_WORK {
-    u8 pad0[0x4C];
-    s32 value;
+    void* slot0;
+    u8 pad4[0x8];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    GCsptr value;
 };
 
 struct tagWINDOW_WORK {
@@ -37,7 +42,11 @@ struct CMenuGlobalState {
     s32 from;
     s32 mode;
     s32 next;
+#ifdef __MWERKS__
     u8 pad0C[0x150];
+#else
+    alignas(8) u8 pad0C[0x170];
+#endif
     u8 tutorial;
     u8 cancel;
     u8 cancelExit;
@@ -45,20 +54,24 @@ struct CMenuGlobalState {
     void init();
 };
 
-class CReliveHall {
+struct CReliveHall {
 public:
-    static void* getPointer();
+    static CReliveHall* getPointer();
     static bool isOpen();
     void init();
     void allocMakeBackup();
     void checkWithBackupSet();
 };
 
-class PCBOX {
+struct PCBOX {
 public:
     static PCBOX* getPointer();
     void init();
+#ifdef __MWERKS__
     void setPokemon(Pokemon*, s8, s8);
+#else
+    bool setPokemon(Pokemon* src, s8 b, s8 i);
+#endif
 };
 
 class CAnt {
@@ -117,8 +130,8 @@ public:
     u32 seId;
     u8 pad10[0xC];
     s32 windowIds[64];
-    void (*windowFuncs[64])(CMetaMenu*, long);
-    long* windowTable;
+    void (*windowFuncs[64])(CMetaMenu*, s32);
+    s32* windowTable;
     CKeyInfo keyInfo;
     s32 repeat;
     u16 lastOn;
@@ -139,16 +152,20 @@ public:
 
     void localWindowCreateAll();
     void localWindowDeleteAll();
-    void localWindowSetTable(long*);
+    void localWindowSetTable(s32*);
+#ifdef __MWERKS__
     static void systemFadeInKick();
+#else
+    static void systemFadeInKick();
+#endif
     void systemFadeOutSetAndWait(f32);
     void systemFadeWaitToEnd();
-    static long defautlLocalWindowOpenTable[];
+    static s32 defautlLocalWindowOpenTable[];
 };
 
 extern "C" {
-void* savedataGetStatus(long, long);
-void* gamedataGetStatus(long, long);
+void* savedataGetStatus(s32, s32);
+void* gamedataGetStatus(s32, s32);
 void* memcardMemAllocForSavedata();
 void* memcardMemFreeForSavedata(void*);
 void pokemonCreate(Pokemon*, u16, u8, void*);
@@ -156,7 +173,7 @@ void winSeqSetMenu(s32, u32);
 void winSpriteSetDisp(void*, bool);
 s32 windowGetValue(s32);
 s32 windowGetActiveID();
-void* windowSearchID(long);
+void* windowSearchID(s32);
 s32 menuOpen(s32, s32);
 void menuOpenCustom(s32, ...);
 void menuClose(s32);
@@ -179,10 +196,10 @@ void menuReliveHallExecFromPcBox(CMenuGlobalState&);
 void menuHologramExecFromPcBox(CMenuGlobalState&);
 enum MENU_PCBOX_DOUGU_HIKIDASHI_MODE { HIKIDASHI_0, HIKIDASHI_1 };
 void menuPcBoxDouguHikidashi(MENU_PCBOX_DOUGU_HIKIDASHI_MODE);
-long relivehallGetLastViewStage();
-void relivehallSetLastViewStage(long);
-long menuPcBoxGetLastViewBox();
-void menuPcBoxSetLastViewBox(long);
+s32 relivehallGetLastViewStage();
+void relivehallSetLastViewStage(s32);
+s32 menuPcBoxGetLastViewBox();
+void menuPcBoxSetLastViewBox(s32);
 
 extern u32 pcBoxSoundTbl[5];
 
@@ -217,17 +234,17 @@ public:
     void tutorialPokemonRecover();
     void tutorialPokemonSetup();
     void ctrl(tagWINDOW_WORK*);
-    void drawItemText(tagWINDOW_WORK*, tagSPRITE_WORK*, long);
+    void drawItemText(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
     void drawInfo(tagWINDOW_WORK*, tagSPRITE_WORK*);
     void drawTitle(tagWINDOW_WORK*, tagSPRITE_WORK*);
-    void drawRedBar(tagWINDOW_WORK*, tagSPRITE_WORK*, long);
+    void drawRedBar(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
     void loop();
     void main(CMenuGlobalState::enumCallFrom);
 };
 
 CMenuGlobalState _menuGlobalState;
 CmenuPcBox _menuPcBox;
-long localWindowTable[1] = { 0 };
+s32 localWindowTable[1] = { 0 };
 
 }
 
@@ -366,7 +383,7 @@ void CmenuPcBox::ctrl(tagWINDOW_WORK* w)
     }
 }
 
-void CmenuPcBox::drawItemText(tagWINDOW_WORK* w, tagSPRITE_WORK* s, long idx)
+void CmenuPcBox::drawItemText(tagWINDOW_WORK* w, tagSPRITE_WORK* s, s32 idx)
 {
     s->value = menu->items[idx];
 }
@@ -381,9 +398,9 @@ void CmenuPcBox::drawTitle(tagWINDOW_WORK* w, tagSPRITE_WORK* s)
     menuPtSpriteWorkSetMenuItem(w, s, menu->title);
 }
 
-void CmenuPcBox::drawRedBar(tagWINDOW_WORK* w, tagSPRITE_WORK* s, long idx)
+void CmenuPcBox::drawRedBar(tagWINDOW_WORK* w, tagSPRITE_WORK* s, s32 idx)
 {
-    long v = windowGetValue(w->id);
+    s32 v = windowGetValue(w->id);
     winSpriteSetDisp(s, idx == v);
 }
 
@@ -593,7 +610,7 @@ void CmenuPcBox::main(CMenuGlobalState::enumCallFrom from)
     fadeTime = 0;
     fadeState = 0;
     memset(windowIds, 0, 0x100);
-    memset(windowFuncs, 0, 0x100);
+    memset(windowFuncs, 0, sizeof(windowFuncs));
     windowTable = CMetaMenu::defautlLocalWindowOpenTable;
     if (pcBoxSoundTbl != 0) {
         memcpy(&pad8, pcBoxSoundTbl, 0x14);
@@ -641,8 +658,8 @@ void CmenuPcBox::main(CMenuGlobalState::enumCallFrom from)
         menuPtRestoreSound(&sound);
         break;
     case 3: {
-        long stage = relivehallGetLastViewStage();
-        long box = menuPcBoxGetLastViewBox();
+        s32 stage = relivehallGetLastViewStage();
+        s32 box = menuPcBoxGetLastViewBox();
         menuPcBoxSetLastViewBox(0);
         relivehallSetLastViewStage(0);
         tutorialPokemonSetup();

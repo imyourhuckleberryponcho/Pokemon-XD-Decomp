@@ -1,4 +1,9 @@
+#include <game/gcdata.h>
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/miscTables.h>
 #include <dolphin/gx/GXVert.h>
 
 #pragma peephole off
@@ -83,7 +88,10 @@ struct GSmtx44 {
 #define U8_AT(o) (*(u8*)((u8*)this + (o)))
 #define U32_AT(o) (*(u32*)((u8*)this + (o)))
 
-class GSgfxLayer {
+#include <game/gsgfxlayer.h>
+#include <game/gsmaterialview.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void cunitChannelGen(u8 chan, GSgfxCunitAlpha alpha, GSgfxCunitSrc src0, GSgfxCunitSrc src1, u32 lights,
                          GSgfxLight** light, GSgfxLightType lightType, GSgfxDiffuseFunc diffuse);
@@ -95,64 +103,19 @@ public:
 
     inline void mark(u32 sum, u32 off, u32 bit)
     {
+#ifdef __MWERKS__
         U32_AT(off) |= bit;
         U32_AT(0x16a8) |= sum;
         U32_AT(off + 0xb8) |= bit;
         U32_AT(0x1760) |= sum;
+#else
+        GSL_IN(this, u32, dirty[0], 0x16a8, off) |= bit;
+        dirty[0].groups |= sum;
+        GSL_IN(this, u32, dirty[1], 0x1760, off + 0xb8) |= bit;
+        dirty[1].groups |= sum;
+#endif
     }
 
-    u8 pad0[0x28];
-    GSgfxLayerID id;
-    u8 pad2c[0xd54 - 0x2c];
-    s32 projType;
-    f32 proj[6];
-    u8 pad_d70[0xd8c - 0xd70];
-    s32 d8c;
-    u8 pad_d90[0x1644 - 0xd90];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 pad_1654[2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad_1659[3];
-    u8 zEnable;
-    u8 pad_165d[3];
-    s32 zFunc;
-    u8 pad_1664[0x1684 - 0x1664];
-    f32 nearZ;
-    f32 farZ;
-    u8 pad_168c[0x16a6 - 0x168c];
-    u8 f16a6;
-    u8 f16a7;
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad_16b0[8];
-    u32 dirty16b8;
-    u8 pad_16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad_1710[0x173c - 0x1710];
-    u32 dirty173c;
-    GStexture* tex1740;
-    u8 pad_1744[0x1760 - 0x1744];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad_1768[8];
-    u32 dirty1770;
-    u8 pad_1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
-    u8 pad_17c8[0x17f4 - 0x17c8];
-    u32 dirty17f4;
-    GStexture* tex17f8;
-    u8 pad_17fc[0x1818 - 0x17fc];
-    BlendState blendTable[2];
-    BlendState* curBlend;
-    s32 curBlendIdx;
-    u32 primType;
-    GSgfxVF* curVF;
-    GSlayerCam* cam;
 };
 
 class GSgfxLayerConfig {
@@ -165,13 +128,7 @@ public:
 
 struct SceneData {
     u32 pad0[2];
-    void** lights;
-};
-
-struct ReliveHallData {
-    u8 alpha;
-    u8 pad1[3];
-    u16 scale;
+    gc_ptr32(gc_ptr32(void)) lights;
 };
 
 class CMetaMenu;
@@ -198,7 +155,7 @@ struct CInfoWindow {
     void close();
     void draw();
     void exec(CMetaMenu&, u32, bool);
-    void init(long, u32);
+    void init(s32, u32);
     void open(u32, bool);
     void setMsgCtrlValue(u32, u32);
 };
@@ -236,8 +193,8 @@ public:
     u32 seId;
     u8 pad10[0xC];
     s32 windowIds[64];
-    void (*windowFuncs[64])(CMetaMenu*, long);
-    long* windowTable;
+    void (*windowFuncs[64])(CMetaMenu*, s32);
+    s32* windowTable;
     CKeyInfo keyInfo;
     s32 repeat;
     u16 lastOn;
@@ -256,46 +213,54 @@ public:
     virtual void updateAll();
     virtual void tutorialExitKick() {}
 
-    long actionMenu(u32*, int, long, long, long);
+    s32 actionMenu(u32*, int, s32, s32, s32);
     void aButtonWait();
     f32 calcAnimationTimeRate0to1(f32);
     CKeyInfo* getKeyInfo();
     void localWindowCreateAll();
     void localWindowDeleteAll();
     void localWindowDrawAll();
-    void localWindowSetTable(long*);
+    void localWindowSetTable(s32*);
+#ifdef __MWERKS__
     static void systemFadeInKick();
+#else
+    static void systemFadeInKick();
+#endif
     void systemFadeOutKeepAfterFloorPush();
     void systemFadeOutSetAndWait(f32);
     void systemFadeWaitToEnd();
     void waitAtTime(f32);
-    static long defautlLocalWindowOpenTable[];
+    static s32 defautlLocalWindowOpenTable[];
 };
 
-class CReliveStage {
+struct CReliveStage {
 public:
     u8 pad[0x3D4];
     s8 hit;
     s32 getState();
     s32 getTempo();
     s32 getDancerQuantity();
-    Pokemon* getDancerPointer(long);
+    Pokemon* getDancerPointer(s32);
     Pokemon* getVisitorPointer();
     bool isReliveReady();
     void pickupVisitor(Pokemon&);
 };
 
-class CReliveHall {
+struct CReliveHall {
 public:
     static CReliveHall* getPointer();
-    CReliveStage* getStage(long);
+    CReliveStage* getStage(s32);
     bool isReliveReadyPokemonExist();
 };
 
 struct PCBOX {
     static PCBOX* getPointer();
     bool isPokemonFull();
+#ifdef __MWERKS__
     void addPokemonLastWatchBox(Pokemon*);
+#else
+    bool addPokemonLastWatchBox(Pokemon* p);
+#endif
 };
 
 struct ModelSlot {
@@ -355,7 +320,7 @@ void Sequence_SetVisibility(void*, u8);
 void Sequence_SetPosition(void*, GSvec*);
 void Sequence_SetRotation(void*, GSvec*);
 void Sequence_SetScale(void*, GSvec*);
-void Sequence_DoAnimation(void*, u8);
+void Sequence_DoAnimation(void*, PCARG(u8, int));
 void Sequence_Free(void*);
 void WazaSequence_Start(void*, s32);
 void WazaSequence_Free(void*);
@@ -370,7 +335,7 @@ void GSmemFree(void*);
 void GScharCpy(char*, char*);
 GStexture* GStextureCreate(u16, u16, s32, s32, u8);
 void GStextureFree(GStexture*);
-GSgfxLayer* GSgfxLayerFindByID(s32);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 void GSmtx44Ortho(f32*, f32, f32, f32, f32, f32, f32);
 void* HSD_ArchiveGetPublicAddress(void*, const char*);
@@ -379,32 +344,32 @@ void spriteClearScissor(s32);
 void spriteSetEnv(s32);
 void menuDrawReliveUpdate();
 u32 menuModelGetPokemonAnimationIndexByPointer(Pokemon*);
-u32 pokemonGetStatus(Pokemon*, u32, u16, u32);
+StatusU32 pokemonGetStatus(Pokemon*, u32, u16, u32);
 }
-extern GSmtx44 mtxIdent;
+extern "C" GSmtx44 mtxIdent;
 
-extern ReliveHallData* relivehall_data;
+extern "C" ReliveHallData* relivehall_data;
 extern "C" s32 pcReliveHallSoundTbl[5];
 extern GSgfxColAu8 relivehallAisyou2ColorTbl[3];
 extern const GSgfxColAu8 GSgfxColAu8_Black;
 
 void menuPtPlaySe(u32);
 void menuPtPlayBgm(u32);
-void relivehallSetLastViewStage(long);
-long relivehallGetLastViewStage();
+void relivehallSetLastViewStage(s32);
+s32 relivehallGetLastViewStage();
 void relivehallDraw9StageNumber(int);
 void relivehallDraw9StageInfo(int);
-void relivehallDrawStageInfoCursor(long, int, int, Pokemon*, bool);
+void relivehallDrawStageInfoCursor(s32, int, int, Pokemon*, bool);
 int reliveHallPokemonToAisyou(Pokemon*, Pokemon*);
 void* reliveCeremonyFromHologram(Pokemon*, u32);
-f32 menuGetPokemonScale(u32, int);
+f32 menuGetPokemonScale(GCuptr, int);
 void menuModelGetPkxRndFromPokemonForSeqenceLoad(u32&, u16&, Pokemon*);
 
-inline void* operator new(unsigned long, void* p) { return p; }
+inline void* operator new(size_t, void* p) { return p; }
 
 namespace {
 
-long localWindowTable[6] = { 0x71, 0x72, 0x88, 0xD0, 0x87, 0 };
+s32 localWindowTable[6] = { 0x71, 0x72, 0x88, 0xD0, 0x87, 0 };
 
 class CMenuHologram;
 CMenuHologram* pMenuHologram;
@@ -478,10 +443,10 @@ public:
     void renderOffscreenData();
     void initializeOffscreenData();
     void stageAllModelUnLoad();
-    ModelSlot* modelPokemonSetScale(long);
-    void modelVisitorSetYPosition(long);
-    ModelSlot* modelPokemonLoad(long);
-    long actionYesNo(u32, bool);
+    ModelSlot* modelPokemonSetScale(s32);
+    void modelVisitorSetYPosition(s32);
+    ModelSlot* modelPokemonLoad(s32);
+    s32 actionYesNo(u32, bool);
     void loop();
     void init(CMenuGlobalState&);
     void main(CMenuGlobalState&);
@@ -508,7 +473,7 @@ void CMenuHologram::init(CMenuGlobalState& st)
     fadeTime = 0;
     fadeState = 0;
     memset(windowIds, 0, 0x100);
-    memset(windowFuncs, 0, 0x100);
+    memset(windowFuncs, 0, sizeof(windowFuncs));
     windowTable = CMetaMenu::defautlLocalWindowOpenTable;
     if (pcReliveHallSoundTbl != 0) {
         memcpy(&pad8, pcReliveHallSoundTbl, 0x14);
@@ -524,7 +489,7 @@ void CMenuHologram::init(CMenuGlobalState& st)
     stageCur = 0;
     stage = 0;
     flag344 = 0;
-    memset(lights, 0, 0x20);
+    memset(lights, 0, sizeof(lights));
     lightCount = 0;
     tex = 0;
     loaded = 0;
@@ -604,7 +569,7 @@ void CMenuHologram::loop()
     }
 }
 
-long CMenuHologram::actionYesNo(u32 msg, bool exec)
+s32 CMenuHologram::actionYesNo(u32 msg, bool exec)
 {
     if (exec) {
         info2.exec(*this, msg, false);
@@ -612,17 +577,17 @@ long CMenuHologram::actionYesNo(u32 msg, bool exec)
         info2.open(msg, false);
     }
     static u32 msgTbl[2] = { 0x426A, 0x426B };
-    long sel = actionMenu(msgTbl, 2, 0x1FE, 0x7F, 0);
+    s32 sel = actionMenu(msgTbl, 2, 0x1FE, 0x7F, 0);
     info2.close();
     return sel;
 }
 
 s32 CMenuHologram::model_z_layer = -1;
 
-ModelSlot* CMenuHologram::modelPokemonLoad(long n)
+ModelSlot* CMenuHologram::modelPokemonLoad(s32 n)
 {
     ModelSlot* slot = &models[n];
-    memset(slot, 0, 0xC);
+    memset(slot, 0, sizeof(*slot));
     Pokemon* p;
     if (n == 2) {
         p = stage->getVisitorPointer();
@@ -658,7 +623,7 @@ ModelSlot* CMenuHologram::modelPokemonLoad(long n)
     return slot;
 }
 
-void CMenuHologram::modelVisitorSetYPosition(long n)
+void CMenuHologram::modelVisitorSetYPosition(s32 n)
 {
     ModelSlot* slot = &models[n];
     u16 id = stage->getVisitorPointer()->getPokemonDataId();
@@ -717,7 +682,7 @@ void CMenuHologram::modelVisitorSetYPosition(long n)
     Sequence_SetPosition(slot->seq, &v);
 }
 
-ModelSlot* CMenuHologram::modelPokemonSetScale(long n)
+ModelSlot* CMenuHologram::modelPokemonSetScale(s32 n)
 {
     ModelSlot* slot = &models[n];
     Pokemon* p;
@@ -730,7 +695,7 @@ ModelSlot* CMenuHologram::modelPokemonSetScale(long n)
         return 0;
     }
     u16 id = p->getPokemonDataId();
-    f32 base = menuGetPokemonScale((u32)slot->seq, id);
+    f32 base = menuGetPokemonScale((GCuptr)slot->seq, id);
     f32 s = base * (f32)relivehall_data->scale / 100.0f;
     GSvec v(s, s, s);
     Sequence_SetScale(slot->seq, &v);
@@ -764,11 +729,11 @@ void CMenuHologram::stageAllModelUnLoad()
                 }
             }
         }
-        memset(models, 0, 0x54);
+        memset(models, 0, sizeof(models));
         for (s32 i = 0; i < lightCount; i++) {
             GSlightFree(lights[i]);
         }
-        memset(lights, 0, 0x20);
+        memset(lights, 0, sizeof(lights));
         lightCount = 0;
         if (group != 0) {
             GSfsysFree(group);
@@ -821,40 +786,40 @@ void CMenuHologram::renderOffscreenData()
             spriteSetEnv(6);
             f32 mtx[16];
             GSmtx44Ortho(mtx, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-            layer->projType = 1;
-            layer->proj[0] = mtx[0];
-            layer->proj[1] = mtx[3];
-            layer->proj[2] = mtx[5];
-            layer->proj[3] = mtx[7];
-            layer->proj[4] = mtx[10];
-            layer->proj[5] = mtx[11];
-            GSlayerCam* cam = layer->cam;
+            (*(s32*)&layer->hw.projType) = 1;
+            ((f32*)layer->hw.proj)[0] = mtx[0];
+            ((f32*)layer->hw.proj)[1] = mtx[3];
+            ((f32*)layer->hw.proj)[2] = mtx[5];
+            ((f32*)layer->hw.proj)[3] = mtx[7];
+            ((f32*)layer->hw.proj)[4] = mtx[10];
+            ((f32*)layer->hw.proj)[5] = mtx[11];
+            GSlayerCam* cam = (*(GSlayerCam**)&layer->matrixStack);
             memcpy(cam->data + 1, &mtxIdent, 0x30);
             cam->data[0] |= 1;
-            layer->nearZ = 0.0f;
-            layer->farZ = 30000.0f;
-            if (layer->f16a7) {
-                if (layer->f16a6) {
-                    layer->dirty170c |= 0x100;
-                    layer->dirty17c4 |= 0x100;
+            (*(f32*)&layer->hw.fogNear) = 0.0f;
+            (*(f32*)&layer->hw.fogFar) = 30000.0f;
+            if ((*(u8*)&layer->hw.fogEnable)) {
+                if ((*(u8*)&layer->hw.fogRangeEnable)) {
+                    (*(u32*)&layer->dirty[0].pe) |= 0x100;
+                    (*(u32*)&layer->dirty[1].pe) |= 0x100;
                 }
-                layer->dirty170c |= 0x40;
-                layer->dirty16a8 |= 0x40;
-                layer->dirty17c4 |= 0x40;
-                layer->dirty1760 |= 0x40;
+                (*(u32*)&layer->dirty[0].pe) |= 0x40;
+                (*(u32*)&layer->dirty[0].groups) |= 0x40;
+                (*(u32*)&layer->dirty[1].pe) |= 0x40;
+                (*(u32*)&layer->dirty[1].groups) |= 0x40;
             }
             layer->mark(1, 0x16ac, 0x20);
-            layer->colorUpdate = 1;
-            layer->alphaUpdate = 0;
-            layer->zUpdate = 0;
+            (*(u8*)&layer->hw.colorUpdate) = 1;
+            (*(u8*)&layer->hw.alphaUpdate) = 0;
+            (*(u8*)&layer->hw.zUpdate) = 0;
             layer->mark(0x40, 0x170c, 4);
-            layer->zEnable = 0;
-            layer->zFunc = 7;
+            (*(u8*)&layer->hw.zEnable) = 0;
+            (*(s32*)&layer->hw.zFunc) = 7;
             layer->mark(0x40, 0x170c, 8);
-            layer->d8c = 2;
+            (*(s32*)&layer->hw.cullMode) = 2;
             layer->mark(2, 0x16b8, 2);
-            layer->primType = 0x80;
-            layer->curVF = vf;
+            (*(u32*)&layer->unk1998) = 0x80;
+            (*(GSgfxVF**)&layer->curVF) = vf;
             LU8(0xc70) = 1;
             layer->mark(1, 0x16ac, 1);
             layer->tgenFunc(0, (GSgfxTgenFunc)1, (GSgfxTgenSrc)4, 0, false, 0);
@@ -890,25 +855,29 @@ void CMenuHologram::renderOffscreenData()
             LU32(0x1078) = 4;
             LU32(0x107c) = 7;
             layer->mark(8, 0x16d8, 1);
-            if (layer->curBlendIdx != 1) {
-                layer->curBlendIdx = 1;
-                layer->curBlend = &layer->blendTable[layer->curBlendIdx];
+            if ((*(s32*)&layer->curPass) != 1) {
+                (*(s32*)&layer->curPass) = 1;
+                layer->curFifo = &layer->passes[layer->curPass];
             }
-            layer->blendOp = 1;
-            layer->blendSrc = 4;
-            layer->blendDst = 1;
-            layer->blendLogic = 5;
+            (*(s32*)&layer->hw.blend[0]) = 1;
+            (*(s32*)&layer->hw.blend[1]) = 4;
+            (*(s32*)&layer->hw.blend[2]) = 1;
+            (*(s32*)&layer->hw.blend[3]) = 5;
             layer->mark(0x40, 0x170c, 1);
             GStexture* t = tex;
-            if (layer->tex1740 != t || layer->tex17f8 != t || ((u8*)t)[7] != 0) {
-                layer->tex1740 = t;
-                layer->dirty173c |= 1;
-                layer->tex17f8 = t;
-                layer->dirty17f4 |= 1;
+            if ((*(GStexture**)&layer->dirty[0].tex[0]) != t || (*(GStexture**)&layer->dirty[1].tex[0]) != t || ((u8*)t)[7] != 0) {
+                (*(GStexture**)&layer->dirty[0].tex[0]) = t;
+                (*(u32*)&layer->dirty[0].texMask) |= 1;
+                (*(GStexture**)&layer->dirty[1].tex[0]) = t;
+                (*(u32*)&layer->dirty[1].texMask) |= 1;
             }
             layer->beginSurface(4);
+#ifdef __MWERKS__
+            GXWGFifo.s16 = GXWGFifo.s16 = 0;
+#else
             GXWGFifo.s16 = 0;
             GXWGFifo.s16 = 0;
+#endif
             fifoColor(0xFF, 0xFF, 0xFF, relivehall_data->alpha);
             GXWGFifo.u8 = 0;
             GXWGFifo.u8 = 0;
@@ -1024,7 +993,7 @@ void CMenuHologram::stageAllModelLoad()
     initializeOffscreenData();
     GSColor4 col;
     u16 wazaId;
-    int dancers;
+    s16 dancers;
     u32 camId;
     u32 sceneId;
     int st;
@@ -1039,7 +1008,7 @@ void CMenuHologram::stageAllModelLoad()
         }
         group = 0x8E4;
         GSfsysReadWait(group);
-        memset(&models[0], 0, 0xC);
+        memset(&models[0], 0, sizeof(models[0]));
         s32 la[1] = { 0 };
         models[0].id = scriptModelOpen(0x18D91000);
         models[0].model = (GSmodel*)GSresGetResourceAllGroup(models[0].id);
@@ -1049,7 +1018,7 @@ void CMenuHologram::stageAllModelLoad()
             GSmodelSetAnimType(models[0].model, 0);
             GSmodelStartAnimation(models[0].model);
         }
-        memset(&models[1], 0, 0xC);
+        memset(&models[1], 0, sizeof(models[1]));
         s32 lb[1] = { 0 };
         models[1].id = scriptModelOpen(0x18D91001);
         models[1].model = (GSmodel*)GSresGetResourceAllGroup(models[1].id);
@@ -1067,7 +1036,7 @@ void CMenuHologram::stageAllModelLoad()
         group = 0x8E5;
         wazaId = 0xF3;
         GSfsysReadWait(group);
-        memset(&models[0], 0, 0xC);
+        memset(&models[0], 0, sizeof(models[0]));
         s32 la[1] = { 0 };
         models[0].id = scriptModelOpen(0x18DC1000);
         models[0].model = (GSmodel*)GSresGetResourceAllGroup(models[0].id);
@@ -1077,7 +1046,7 @@ void CMenuHologram::stageAllModelLoad()
             GSmodelSetAnimType(models[0].model, 0);
             GSmodelStartAnimation(models[0].model);
         }
-        memset(&models[1], 0, 0xC);
+        memset(&models[1], 0, sizeof(models[1]));
         s32 lb[1] = { 0 };
         models[1].id = scriptModelOpen(0x18DC1000 + dancers);
         models[1].model = (GSmodel*)GSresGetResourceAllGroup(models[1].id);
@@ -1095,7 +1064,7 @@ void CMenuHologram::stageAllModelLoad()
         group = 0x8E6;
         wazaId = 0xEF;
         GSfsysReadWait(group);
-        memset(&models[0], 0, 0xC);
+        memset(&models[0], 0, sizeof(models[0]));
         s32 la[1] = { 0 };
         models[0].id = scriptModelOpen(0x18DF1000);
         models[0].model = (GSmodel*)GSresGetResourceAllGroup(models[0].id);
@@ -1105,7 +1074,7 @@ void CMenuHologram::stageAllModelLoad()
             GSmodelSetAnimType(models[0].model, 0);
             GSmodelStartAnimation(models[0].model);
         }
-        memset(&models[1], 0, 0xC);
+        memset(&models[1], 0, sizeof(models[1]));
         s32 lb[1] = { 0 };
         models[1].id = scriptModelOpen(0x18DF1001);
         models[1].model = (GSmodel*)GSresGetResourceAllGroup(models[1].id);
@@ -1123,7 +1092,7 @@ void CMenuHologram::stageAllModelLoad()
         group = 0x8E7;
         wazaId = 0xEF;
         GSfsysReadWait(group);
-        memset(&models[0], 0, 0xC);
+        memset(&models[0], 0, sizeof(models[0]));
         s32 la[1] = { 0 };
         models[0].id = scriptModelOpen(0x18E41000);
         models[0].model = (GSmodel*)GSresGetResourceAllGroup(models[0].id);
@@ -1133,7 +1102,7 @@ void CMenuHologram::stageAllModelLoad()
             GSmodelSetAnimType(models[0].model, 0);
             GSmodelStartAnimation(models[0].model);
         }
-        memset(&models[1], 0, 0xC);
+        memset(&models[1], 0, sizeof(models[1]));
         s32 lb[1] = { 0 };
         models[1].id = scriptModelOpen(0x18E41000 + dancers);
         models[1].model = (GSmodel*)GSresGetResourceAllGroup(models[1].id);
@@ -1160,8 +1129,7 @@ void CMenuHologram::stageAllModelLoad()
     for (int i = 0; i < dancers; i++) {
         ModelSlot* slot = modelPokemonLoad(i + 3);
         int k = (dancers + (i - stage->hit)) % dancers + 1;
-        int idx = plateIndexTbl[st][dancers][k];
-        GSpart* part = GSmodelGetPart(models[1].model, ((u8*)relivehall_data)[idx + 6]);
+        GSpart* part = GSmodelGetPart(models[1].model, ((u8*)relivehall_data)[(int)(plateIndexTbl[st][dancers][k]) + 6]);
         GSmodelAttachToGSpart(slot->model, part, 7, 0, 1);
         GSpartFree(part);
         modelPokemonSetScale(i + 3);
@@ -1183,7 +1151,7 @@ void CMenuHologram::stageAllModelLoad()
             col.a = c.v[3];
         }
         u8 pl = ((u8*)relivehall_data)[colorLineIndexTbl[st][dancers][0] + 6];
-        GSmaterial* mat = (GSmaterial*)((u8*)mats + (pl - 1) * 0x34);
+        GSmaterial* mat = (GSmaterial*)((u8*)mats + (pl - 1) * GSMATERIAL_SIZE);
         GSmaterialSetModulate(mat, &col);
         GSmaterialEnableExtension(mat, 1);
     }
@@ -1191,7 +1159,7 @@ void CMenuHologram::stageAllModelLoad()
         GSgfxColAu8 c = pokemonToAisyouColor(stage->getDancerPointer(i), (Pokemon*)(stage->getDancerPointer((i + 1) % dancers)));
         int k = (dancers + (i - stage->hit)) % dancers + 1;
         u8 pl = ((u8*)relivehall_data)[colorLineIndexTbl[st][dancers][k] + 6];
-        GSmaterial* mat = (GSmaterial*)((u8*)mats + (pl - 1) * 0x34);
+        GSmaterial* mat = (GSmaterial*)((u8*)mats + (pl - 1) * GSMATERIAL_SIZE);
         GSmaterialSetModulate(mat, &c);
         GSmaterialEnableExtension(mat, 1);
     }
@@ -1477,7 +1445,7 @@ void CMenuHologram::drawAll()
 
 void thisNew()
 {
-    void* mem = GSmemAllocClr(0x418);
+    void* mem = GSmemAllocClr(sizeof(CMenuHologram));
     pMenuHologram = new (mem) CMenuHologram;
 }
 

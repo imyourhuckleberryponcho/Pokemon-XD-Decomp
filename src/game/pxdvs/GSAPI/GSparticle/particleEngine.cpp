@@ -1,4 +1,7 @@
+#include <game/declspec.h>
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -69,107 +72,78 @@ struct BlendState {
     u8 pad[0xbc];
 };
 
-class GSgfxLayer {
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0xd88];
-    u8 fd88;
-    s32 fd8c;
-    s32 fd90;
-    u8 pad_d94[0x1644 - 0xd94];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 f1654;
-    u8 f1655;
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad_1659[3];
-    u8 zEnable;
-    u8 pad_165d[3];
-    s32 zFunc;
-    s32 f1664;
-    s32 f1668;
-    s32 f166c;
-    u8 f1670;
-    u8 f1671;
-    u8 f1672;
-    u8 pad_1673;
-    u8 f1674;
-    u8 pad_1675[0x16a8 - 0x1675];
-    u32 dirty16a8;
-    u8 pad_16ac[0x16b8 - 0x16ac];
-    u32 dirty16b8;
-    u8 pad_16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad_1710[0x1760 - 0x1710];
-    u32 dirty1760;
-    u8 pad_1764[0x1770 - 0x1764];
-    u32 dirty1770;
-    u8 pad_1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
 
     inline void dirtyPE(u32 bit) {
-        dirty170c |= bit;
-        dirty16a8 |= 0x40;
-        dirty17c4 |= bit;
-        dirty1760 |= 0x40;
+        (*(u32*)&this->dirty[0].pe) |= bit;
+        (*(u32*)&this->dirty[0].groups) |= 0x40;
+        (*(u32*)&this->dirty[1].pe) |= bit;
+        (*(u32*)&this->dirty[1].groups) |= 0x40;
     }
     inline void dirtyRaster(u32 bit) {
-        dirty16b8 |= bit;
-        dirty16a8 |= 2;
-        dirty1770 |= bit;
-        dirty1760 |= 2;
+        (*(u32*)&this->dirty[0].raster) |= bit;
+        (*(u32*)&this->dirty[0].groups) |= 2;
+        (*(u32*)&this->dirty[1].raster) |= bit;
+        (*(u32*)&this->dirty[1].groups) |= 2;
     }
     inline void setColorUpdate(u8 color, u8 alpha, u8 z) {
-        colorUpdate = color;
-        alphaUpdate = alpha;
-        zUpdate = z;
+        (*(u8*)&this->hw.colorUpdate) = color;
+        (*(u8*)&this->hw.alphaUpdate) = alpha;
+        (*(u8*)&this->hw.zUpdate) = z;
         dirtyPE(4);
     }
     inline void setZMode(u8 enable, s32 func) {
-        zEnable = enable;
-        zFunc = func;
+        (*(u8*)&this->hw.zEnable) = enable;
+        (*(s32*)&this->hw.zFunc) = func;
         dirtyPE(8);
     }
     inline void setAlphaCompare(s32 comp0, u8 ref0, s32 op, s32 comp1, u8 ref1, u8 flag) {
-        f1664 = comp0;
-        f1670 = ref0;
-        f1668 = op;
-        f166c = comp1;
-        f1671 = ref1;
-        f1672 = flag;
+        (*(s32*)&this->hw.alphaComp0) = comp0;
+        (*(u8*)&this->hw.alphaRef0) = ref0;
+        (*(s32*)&this->hw.alphaCmpOp) = op;
+        (*(s32*)&this->hw.alphaComp1) = comp1;
+        (*(u8*)&this->hw.alphaRef1) = ref1;
+        (*(u8*)&this->hw.zCompLoc) = flag;
         dirtyPE(0x10);
     }
     inline void setDstAlpha(u8 enable, u8 alpha) {
-        f1654 = enable;
-        f1655 = alpha;
+        (*(u8*)&this->hw.dstAlphaEnable) = enable;
+        (*(u8*)&this->hw.dstAlpha) = alpha;
         dirtyPE(2);
     }
     inline void setDither(u8 dither) {
-        f1674 = dither;
+        (*(u8*)&this->hw.dither) = dither;
         dirtyPE(0x20);
     }
     inline void setCullMode(s32 mode) {
-        fd8c = mode;
+        (*(s32*)&this->hw.cullMode) = mode;
         dirtyRaster(2);
     }
     inline void setFd90(s32 v) {
-        fd90 = v;
+        (*(s32*)&this->hw.clipMode) = v;
         dirtyRaster(4);
     }
     inline void setFd88(u8 v) {
-        fd88 = v;
+        (*(u8*)&this->hw.coPlanar) = v;
         dirtyRaster(8);
     }
-    u8 pad_17c8[0x1818 - 0x17c8];
-    BlendState blendTable[2];
-    BlendState* curBlend;
-    s32 curBlendIdx;
 public:
-    s32 cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, unsigned long, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
+#ifdef __MWERKS__
+    s32 cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, u32, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
+#else
+    void cunitChannelGen(unsigned char chan, GSgfxCunitAlpha alpha, GSgfxCunitSrc amb, GSgfxCunitSrc mat,
+                                 u32 numLights, GSgfxLight** lights, GSgfxLightType type,
+                                 GSgfxDiffuseFunc diffuse);
+#endif
+#ifdef __MWERKS__
     s32 tgenFunc(unsigned char, GSgfxTgenFunc, GSgfxTgenSrc, GSmtx*, bool, GSmtx*);
+#else
+    void tgenFunc(unsigned char id, GSgfxTgenFunc func, GSgfxTgenSrc src, GSmtx* mtx, bool normalize, GSmtx* postMtx);
+#endif
 };
 
 extern "C" {
@@ -227,7 +201,7 @@ extern s32 init;
 }
 void* g_particleBanks;
 GScamera* g_Camera;
-s32 g_CameraMatrix;
+GCsptr g_CameraMatrix;
 GSgfxLayer* g_current_layer;
 s32 g_render_pass;
 struct ParticleDebugStats {
@@ -297,131 +271,131 @@ void particleEngineSetupBlendMode(u32 mode) {
     switch (mode) {
     case 1: {
         GSgfxLayer* l = g_current_layer;
-        if (l->curBlendIdx != 1) {
-            l->curBlendIdx = 1;
-            l->curBlend = &l->blendTable[l->curBlendIdx];
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->blendOp = 3;
-        l->blendSrc = 4;
-        l->blendDst = 1;
-        l->blendLogic = 5;
-        l->dirty170c |= 1;
-        l->dirty16a8 |= 0x40;
-        l->dirty17c4 |= 1;
-        l->dirty1760 |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 3;
+        (*(s32*)&l->hw.blend[1]) = 4;
+        (*(s32*)&l->hw.blend[2]) = 1;
+        (*(s32*)&l->hw.blend[3]) = 5;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
     case 2: {
         GSgfxLayer* l = g_current_layer;
-        if (l->curBlendIdx != 1) {
-            l->curBlendIdx = 1;
-            l->curBlend = &l->blendTable[l->curBlendIdx];
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->blendOp = 1;
-        l->blendSrc = 4;
-        l->blendDst = 5;
-        l->blendLogic = 5;
-        l->dirty170c |= 1;
-        l->dirty16a8 |= 0x40;
-        l->dirty17c4 |= 1;
-        l->dirty1760 |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 1;
+        (*(s32*)&l->hw.blend[1]) = 4;
+        (*(s32*)&l->hw.blend[2]) = 5;
+        (*(s32*)&l->hw.blend[3]) = 5;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
     case 3: {
         GSgfxLayer* l = g_current_layer;
-        if (l->curBlendIdx != 1) {
-            l->curBlendIdx = 1;
-            l->curBlend = &l->blendTable[l->curBlendIdx];
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->blendOp = 1;
-        l->blendSrc = 1;
-        l->blendDst = 0;
-        l->blendLogic = 5;
-        l->dirty170c |= 1;
-        l->dirty16a8 |= 0x40;
-        l->dirty17c4 |= 1;
-        l->dirty1760 |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 1;
+        (*(s32*)&l->hw.blend[1]) = 1;
+        (*(s32*)&l->hw.blend[2]) = 0;
+        (*(s32*)&l->hw.blend[3]) = 5;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
     case 4: {
         GSgfxLayer* l = g_current_layer;
-        if (l->curBlendIdx != 1) {
-            l->curBlendIdx = 1;
-            l->curBlend = &l->blendTable[l->curBlendIdx];
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->blendOp = 2;
-        l->blendSrc = 1;
-        l->blendDst = 1;
-        l->blendLogic = 4;
-        l->dirty170c |= 1;
-        l->dirty16a8 |= 0x40;
-        l->dirty17c4 |= 1;
-        l->dirty1760 |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 2;
+        (*(s32*)&l->hw.blend[1]) = 1;
+        (*(s32*)&l->hw.blend[2]) = 1;
+        (*(s32*)&l->hw.blend[3]) = 4;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
     case 5: {
         GSgfxLayer* l = g_current_layer;
-        if (l->curBlendIdx != 1) {
-            l->curBlendIdx = 1;
-            l->curBlend = &l->blendTable[l->curBlendIdx];
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->blendOp = 2;
-        l->blendSrc = 1;
-        l->blendDst = 1;
-        l->blendLogic = 7;
-        l->dirty170c |= 1;
-        l->dirty16a8 |= 0x40;
-        l->dirty17c4 |= 1;
-        l->dirty1760 |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 2;
+        (*(s32*)&l->hw.blend[1]) = 1;
+        (*(s32*)&l->hw.blend[2]) = 1;
+        (*(s32*)&l->hw.blend[3]) = 7;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
     case 6: {
         GSgfxLayer* l = g_current_layer;
-        if (l->curBlendIdx != 1) {
-            l->curBlendIdx = 1;
-            l->curBlend = &l->blendTable[l->curBlendIdx];
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->blendOp = 2;
-        l->blendSrc = 1;
-        l->blendDst = 1;
-        l->blendLogic = 1;
-        l->dirty170c |= 1;
-        l->dirty16a8 |= 0x40;
-        l->dirty17c4 |= 1;
-        l->dirty1760 |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 2;
+        (*(s32*)&l->hw.blend[1]) = 1;
+        (*(s32*)&l->hw.blend[2]) = 1;
+        (*(s32*)&l->hw.blend[3]) = 1;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
     case 7: {
         GSgfxLayer* l = g_current_layer;
-        if (l->curBlendIdx != 1) {
-            l->curBlendIdx = 1;
-            l->curBlend = &l->blendTable[l->curBlendIdx];
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->blendOp = 2;
-        l->blendSrc = 1;
-        l->blendDst = 1;
-        l->blendLogic = 6;
-        l->dirty170c |= 1;
-        l->dirty16a8 |= 0x40;
-        l->dirty17c4 |= 1;
-        l->dirty1760 |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 2;
+        (*(s32*)&l->hw.blend[1]) = 1;
+        (*(s32*)&l->hw.blend[2]) = 1;
+        (*(s32*)&l->hw.blend[3]) = 6;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
     case 0:
     default: {
         GSgfxLayer* l = g_current_layer;
-        if (l->curBlendIdx != 1) {
-            l->curBlendIdx = 1;
-            l->curBlend = &l->blendTable[l->curBlendIdx];
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->blendOp = 1;
-        l->blendSrc = 4;
-        l->blendDst = 1;
-        l->blendLogic = 5;
-        l->dirty170c |= 1;
-        l->dirty16a8 |= 0x40;
-        l->dirty17c4 |= 1;
-        l->dirty1760 |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 1;
+        (*(s32*)&l->hw.blend[1]) = 4;
+        (*(s32*)&l->hw.blend[2]) = 1;
+        (*(s32*)&l->hw.blend[3]) = 5;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
     }
@@ -829,6 +803,15 @@ void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2) {
 }
 
 extern "C" {
+#ifdef __MWERKS__
+#define PE_BANK_NEXT(b) M2C_FIELD(b, u8 **, 0x164)
+#define PE_BANK_RENDERMASK(b) M2C_FIELD(b, s32 *, 0x138)
+#else
+extern "C" u8** peBankPCNext(void* b);
+extern "C" u32* peBankPCRenderMask(void* b);
+#define PE_BANK_NEXT(b) (*peBankPCNext(b))
+#define PE_BANK_RENDERMASK(b) (*(s32*)peBankPCRenderMask(b))
+#endif
 extern "C" {
 void particleEngineRender(void *p0) {
     u8 *var_r31;
@@ -837,14 +820,14 @@ void particleEngineRender(void *p0) {
     if ((u8 *) g_particleBanks != NULL) {
         g_current_layer = (GSgfxLayer *) p0;
         g_Camera = NULL;
-        g_render_pass = M2C_FIELD(p0, s32 *, 0x1994);
+        g_render_pass = M2C_NAMED((GSgfxLayer*)p0, s32 *, 0x1994, curPass);
         particleEngineSetDefaultRenderState(1);
         while (var_r31 != NULL) {
             peBankRender(var_r31);
-            var_r31 = M2C_FIELD(var_r31, u8 **, 0x164);
+            var_r31 = PE_BANK_NEXT(var_r31);
         }
         if (((GScamera *) g_Camera != NULL) && ((GScamera *) g_Camera != GScameraGetActiveCamera())) {
-            GScameraLoadActiveCameraMatrix((GSgfxLayerID)(M2C_FIELD(p0, s32 *, 0x28)));
+            GScameraLoadActiveCameraMatrix((GSgfxLayerID)(M2C_NAMED((GSgfxLayer*)p0, s32 *, 0x28, id)));
         }
     }
 }
@@ -854,7 +837,7 @@ s32 particleEnginePrepareRender(u32 p0) {
 
     var_r31 = p0;
     if (GScameraIsValid((GScamera*)((GScamera *) p0)) == 0) {
-        var_r31 = (unsigned long)(GScameraGetActiveCamera());
+        var_r31 = (u32)(GScameraGetActiveCamera());
         if (var_r31 == 0) {
             g_CameraMatrix = 0;
             return 0;
@@ -864,9 +847,9 @@ s32 particleEnginePrepareRender(u32 p0) {
         return 1;
     }
     g_Camera = (GScamera *) var_r31;
-    g_CameraMatrix = (s32)GScameraGetMatrixPtr((GScamera*)((GScamera *) var_r31));
+    g_CameraMatrix = (GCsptr)GScameraGetMatrixPtr((GScamera*)((GScamera *) var_r31));
     if ((GSgfxLayer *) g_current_layer != NULL) {
-        GScameraLoadCameraMatrix((GScamera*)((GScamera *) var_r31), (GSgfxLayerID)(M2C_FIELD(g_current_layer, s32 *, 0x28)));
+        GScameraLoadCameraMatrix((GScamera*)((GScamera *) var_r31), (GSgfxLayerID)(M2C_NAMED(g_current_layer, s32 *, 0x28, id)));
     } else {
         GScameraLoadCameraMatrix((GScamera*)((GScamera *) var_r31), (GSgfxLayerID)(-1));
     }
@@ -884,9 +867,9 @@ void particleEnginePostUpdate() {
     var_r3 = (unsigned char *)(g_particleBanks);
     while (var_r3 != NULL) {
         if (var_r3 != NULL) {
-            M2C_FIELD(var_r3, s32 *, 0x138) = 0;
+            PE_BANK_RENDERMASK(var_r3) = 0;
         }
-        var_r3 = M2C_FIELD(var_r3, u8 **, 0x164);
+        var_r3 = PE_BANK_NEXT(var_r3);
     }
     g_Camera = NULL;
 }
@@ -900,7 +883,7 @@ void particleEngineUpdate(f32 p0) {
     var_r31 = (unsigned char *)(g_particleBanks);
     while (var_r31 != NULL) {
         peBankUpdate(var_r31, p0);
-        var_r31 = M2C_FIELD(var_r31, u8 **, 0x164);
+        var_r31 = PE_BANK_NEXT(var_r31);
     }
 }
 extern "C" {
@@ -925,7 +908,7 @@ s32 particleEnginePrepareUpdate(u32 p0) {
         return 1;
     }
     g_Camera = cam;
-    g_CameraMatrix = (s32)GScameraGetMatrixPtr(cam);
+    g_CameraMatrix = (GCsptr)GScameraGetMatrixPtr(cam);
     GScameraLoadCameraMatrix(cam, (GSgfxLayerID)-1);
     GSgfxProjectSetupCameraParameters(cam);
     GScameraGetPosition(cam, (f32*)&g_CameraPosition);
@@ -979,7 +962,7 @@ void particleEngineInit() {
 extern "C" {
 static void __sinit_particleEngine_cpp() {
 }
-__declspec(section ".ctors") extern void* const __sinit_particleEngine_cpp_reference = (void*)__sinit_particleEngine_cpp;
+DECL_SECTION(".ctors") extern void* const __sinit_particleEngine_cpp_reference = (void*)__sinit_particleEngine_cpp;
 }
 }
 }

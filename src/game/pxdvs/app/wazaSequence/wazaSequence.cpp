@@ -1,4 +1,10 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/hsdarchive.h>
+#include <game/wazaentry.h>
 
 #pragma pool_strings off
 
@@ -10,10 +16,6 @@ struct _GScamera;
 struct _GSmodel;
 class WazaSequence;
 
-struct HSD_Archive {
-    u8 pad[0x44];
-};
-
 enum GSmodelAnimType {
     GS_ANIM_TYPE_0,
     GS_ANIM_TYPE_1
@@ -21,17 +23,22 @@ enum GSmodelAnimType {
 
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void SetDistortionParams(float (*mtx)[3], s8 flag);
 
-    GSgfxLayer* m_next;
-    u8 unk4[0x2c - 4];
-    s32 m_kind;
 };
 
 class NullSequence {
@@ -62,14 +69,21 @@ public:
     void DoDefaultAnimation(GSmodelAnimType type, bool restart);
     void DestroyParticles(bool children, bool restart);
 
-    u8 unkC[0x51 - 0xC];
+    u8 unkC[0x30 - 0xC];
+    void* m_list;
+    void* m_camera;
+    void* m_next;
+    u8 unk3C[0x51 - 0x3C];
     u8 m_maxSection;
     u8 m_section;
     u8 unk53;
     u8 m_flags;
     u8 unk55;
     u8 m_busy;
-    u8 unk57[0x94 - 0x57];
+    u8 unk57[0x64 - 0x57];
+    void* m_unk64;
+    u8 unk68[0x78 - 0x68];
+    void* unk78[7];
     _GSmodel* m_model;
     void* m_particle;
 };
@@ -85,18 +99,22 @@ public:
     virtual void SetRenderCamera(_GScamera* camera);
     void Link();
 
-    u8 unk4[0x18 - 4];
-    s32 m_state;
-    f32 m_start;
-    f32 m_nextTime;
-    SequenceEntry* m_next;
+    SEQUENCE_ENTRY_MEMBERS
 };
 
 class MainSequenceEntry {
 public:
     MainSequenceEntry(WazaSequence* seq, u8** data);
+#ifdef __MWERKS__
     ~MainSequenceEntry();
+#else
+    virtual ~MainSequenceEntry();
+#endif
+#ifdef __MWERKS__
     u8 unk[0x34];
+#else
+    alignas(8) u8 unk[sizeof(SequenceEntry) + 4];
+#endif
 };
 
 class CameraEntry : public SequenceEntry {
@@ -104,7 +122,7 @@ public:
     CameraEntry(WazaSequence* seq, u8** data);
     static bool Load(u8** data);
     static void Unload(u8** data);
-    u8 pad[0x38 - 0x28];
+    CAMERA_ENTRY_MEMBERS
 };
 
 class ModelEntry : public SequenceEntry {
@@ -112,7 +130,7 @@ public:
     ModelEntry(WazaSequence* seq, u8** data);
     static bool Load(u8** data);
     static void Unload(u8** data);
-    u8 pad[0x50 - 0x28];
+    MODEL_ENTRY_MEMBERS
 };
 
 class ParticleEntry : public SequenceEntry {
@@ -120,7 +138,7 @@ public:
     ParticleEntry(WazaSequence* seq, u8** data);
     static bool Load(u8** data);
     static void Unload(u8** data);
-    u8 pad[0x44 - 0x28];
+    PARTICLE_ENTRY_MEMBERS
 };
 
 class EffectEntry : public SequenceEntry {
@@ -128,7 +146,7 @@ public:
     EffectEntry(WazaSequence* seq, u8** data);
     static bool Load(u8** data);
     static void Unload(u8** data);
-    u8 pad[0x44 - 0x28];
+    EFFECT_ENTRY_MEMBERS(EffectKey* m_keys)
 };
 
 class SoundEntry : public SequenceEntry {
@@ -136,7 +154,7 @@ public:
     SoundEntry(WazaSequence* seq, u8** data);
     static bool Load(u8** data);
     static void Unload(u8** data);
-    u8 pad[0x40 - 0x28];
+    SOUND_ENTRY_MEMBERS
 };
 
 class EventEntry : public SequenceEntry {
@@ -144,7 +162,7 @@ public:
     EventEntry(WazaSequence* seq, u8** data);
     static bool Load(u8** data);
     static void Unload(u8** data);
-    u8 pad[0x34 - 0x28];
+    EVENT_ENTRY_MEMBERS
 };
 
 class LensFlareEntry : public SequenceEntry {
@@ -152,19 +170,19 @@ public:
     LensFlareEntry(WazaSequence* seq, u8** data);
     static bool Load(u8** data);
     static void Unload(u8** data);
-    u8 pad[0x3c - 0x28];
+    LENSFLARE_ENTRY_MEMBERS
 };
 
 struct WazaHeader {
-    u16 distortion;
-    u16 section;
-    s32 count;
-    u32 flags;
-    u32 partKind;
-    s32 version;
-    s32 cameraSize;
-    u32 unk18;
-    HSD_Archive* camera;
+    gc_be16 distortion;
+    gc_be16 section;
+    gc_bes32 count;
+    gc_be32 flags;
+    gc_be32 partKind;
+    gc_bes32 version;
+    gc_bes32 cameraSize;
+    gc_be32 unk18;
+    gc_ptr32(HSD_Archive) camera;
 };
 
 struct WazaResourceEntry {
@@ -213,39 +231,21 @@ public:
         return wazaSequenceSysNullGetWazaTime(this, mode);
     }
 
-    f32 m_time;
-    f32 m_duration;
-    u32 m_flags;
-    u16 m_wazaID;
-    u8 m_kind;
-    u8 m_error;
-    u16 m_resID;
-    u8 m_numEntries;
-    u8 m_section;
-    u8 m_active;
-    u8 m_started;
-    u8 m_partKind;
-    u8 m_finished;
-    f32 m_distortion;
-    u32 m_camera;
-    SequenceEntry* m_entries;
-    NullSequence* m_owner;
-    WazaSequence* m_next;
-    WazaSequence* m_prev;
+    WAZA_SEQUENCE_MEMBERS(NullSequence)
 };
 
-void* operator new(unsigned long size);
+void* operator new(size_t size);
 void operator delete(void* p);
 
 extern WazaSequence* g_LastStartedWaza;
 extern u8 g_EnableModelLayerChange;
-extern WazaResourceEntry waza_resource_data[];
-extern WazaWzxEntry waza_wzx_data[];
-extern WazaExtWzxEntry waza_ext_wzx_data[];
-extern u16 waza_generic_wzx_data[];
-extern u32 waza_wzx_data_number;
-extern u32 waza_ext_wzx_data_number;
-extern u32 waza_generic_wzx_data_number;
+extern "C" WazaResourceEntry waza_resource_data[];
+extern "C" WazaWzxEntry waza_wzx_data[];
+extern "C" WazaExtWzxEntry waza_ext_wzx_data[];
+extern "C" u16 waza_generic_wzx_data[];
+extern "C" u32 waza_wzx_data_number;
+extern "C" u32 waza_ext_wzx_data_number;
+extern "C" u32 waza_generic_wzx_data_number;
 
 extern "C" {
 void GSmodelLinkToGSparticleBank(_GSmodel* model, void* bank);
@@ -300,7 +300,7 @@ bool WazaSequence::Load(u8* data, u32 a, u32 b) {
     p = Align32(p);
     hdr->camera = 0;
     if (hdr->cameraSize != 0) {
-        HSD_Archive* archive = (HSD_Archive*)operator new(0x44);
+        HSD_Archive* archive = (HSD_Archive*)operator new(HSD_ARCHIVE_SIZE);
         if (archive != 0) {
             hdr->camera = archive;
             HSD_ArchiveParse(archive, p, hdr->cameraSize);
@@ -309,7 +309,7 @@ bool WazaSequence::Load(u8* data, u32 a, u32 b) {
     }
     if (count != 0) {
         for (i = 0; i < count; i++) {
-            switch (*(u32*)(p + 4)) {
+            switch (GC_AT(u32, p, 4)) {
             case 1:
                 if (!CameraEntry::Load(&p)) {
                     return false;
@@ -372,7 +372,7 @@ void WazaSequence::Unload(u8* data) {
     }
     if (count != 0) {
         for (i = 0; i < count; i++) {
-            switch (*(u32*)(p + 4)) {
+            switch (GC_AT(u32, p, 4)) {
             case 1:
                 CameraEntry::Unload(&p);
                 break;
@@ -560,8 +560,8 @@ void WazaSequence::Start(bool camera) {
         e->m_state = 0;
     }
     distmtx[0][1] = distmtx[1][1] = 0.5f * m_distortion;
-    for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = layer->m_next) {
-        if (layer->m_kind == 1) {
+    for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = (*(GSgfxLayer**)&layer->next)) {
+        if ((*(s32*)&layer->type) == 1) {
             layer->SetDistortionParams(distmtx, 0);
         }
     }
@@ -602,8 +602,8 @@ inline void WazaSequence::ApplyStopInline() {
             e->Stop(true);
         }
         distmtx[0][1] = distmtx[1][1] = 0.5f;
-        for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = layer->m_next) {
-            if (layer->m_kind == 1) {
+        for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = (*(GSgfxLayer**)&layer->next)) {
+            if ((*(s32*)&layer->type) == 1) {
                 layer->SetDistortionParams(distmtx, 0);
             }
         }
@@ -639,8 +639,8 @@ void WazaSequence::ApplyStop() {
             e->Stop(true);
         }
         distmtx[0][1] = distmtx[1][1] = 0.5f;
-        for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = layer->m_next) {
-            if (layer->m_kind == 1) {
+        for (layer = GSgfxLayerGetLayerList(); layer != 0; layer = (*(GSgfxLayer**)&layer->next)) {
+            if ((*(s32*)&layer->type) == 1) {
                 layer->SetDistortionParams(distmtx, 0);
             }
         }
@@ -783,7 +783,7 @@ bool WazaSequence::LoadData(u8* data) {
     }
     if (m_numEntries != 0) {
         for (i = 0; i < m_numEntries; i++) {
-            switch (*(u32*)(p + 4)) {
+            switch (GC_AT(u32, p, 4)) {
             case 1:
                 e = new CameraEntry(this, &p);
                 break;
@@ -830,7 +830,8 @@ bool WazaSequence::LoadData(u8* data) {
 
 extern "C" {
 
-void WazaSequence_Start(WazaSequence* seq, bool camera) {
+void WazaSequence_Start(void* p, bool camera) {
+    WazaSequence* seq = (WazaSequence*)p;
     if (seq != 0 && wazaSequenceSysIsValidWaza(seq)) {
         seq->Start(camera);
     }

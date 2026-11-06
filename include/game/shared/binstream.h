@@ -11,7 +11,7 @@ public:
     u8 writing;
     GSBinWriteStream();
     GSBinWriteStream(void* data, u32 length);
-    GSBinWriteStream(unsigned long size);
+    GSBinWriteStream(u32 size);
     ~GSBinWriteStream();
     void writeU8(u8 n);
     void writeS8(s8 n);

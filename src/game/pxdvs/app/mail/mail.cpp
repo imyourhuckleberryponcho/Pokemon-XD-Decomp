@@ -1,14 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/pxdvs/app/mail/mailData.h>
 
 #pragma peephole off
-
-struct MailData {
-    u32 senderName;
-    u32 subject;
-    u32 contents;
-    u32 attachFileGroup;
-    u32 openFlag;
-};
 
 struct Mailbox {
     u16 ids[32];
@@ -126,7 +120,7 @@ u32 mailGetSubject(int id) {
     return mail->subject;
 }
 
-bool mailChkReceiveMail(int id) {
+PCRET(bool) mailChkReceiveMail(int id) {
     Mailbox* box = MAILBOX();
     int i;
     if (id <= 0 || id > *mailData_number) {
@@ -143,7 +137,7 @@ bool mailChkReceiveMail(int id) {
     return true;
 }
 
-bool mailAddMailbox(int id) {
+PCRET(bool) mailAddMailbox(int id) {
     Mailbox* box = MAILBOX();
     int byte;
     u8 mask;
@@ -181,7 +175,7 @@ s32 mailGetMailIDInMailbox(int index) {
     return mailGetIDInMailbox(index);
 }
 
-u16 mailGetNbMailInMailbox(void) {
+PCRET(u16) mailGetNbMailInMailbox(void) {
     return MAILBOX()->count;
 }
 

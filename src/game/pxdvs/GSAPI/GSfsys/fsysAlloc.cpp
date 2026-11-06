@@ -1,35 +1,9 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/GSAPI/GSfsys/fsys.h>
 
 #pragma pool_strings off
 
 #define ALIGN32(x) (((x) + 0x1F) & ~0x1F)
-
-struct FsysCacheManage {
-    u8 unk0[0xC];
-    void* addr;
-    u32 size;
-    u32 group;
-};
-
-struct FsysHeader {
-    u8 unk0[0x10];
-    u32 flags;
-};
-
-struct FsysFileInfo {
-    u8 unk0[8];
-    u32 headerSize;
-};
-
-struct Fsys {
-    u32 group;
-    u8 unk4[0x18];
-    FsysFileInfo* info;
-    void* header;
-    u8 unk24[9];
-    u8 cacheType;
-    u8 headerValid;
-};
 
 extern "C" {
 
@@ -43,7 +17,7 @@ void* GSmemAllocHeap(s32 heap, u32 size);
 void* memset(void* dst, int c, unsigned long n);
 void* memcpy(void* dst, const void* src, unsigned long n);
 void DCFlushRange(void* addr, u32 size);
-void* GSresAllocResourceAlign(u32 group, u32 align, u32 id, u32 size, s32);
+void* GSresAllocResourceAlign(u32 group, u32 align, u32 id, u32 size, void*);
 FsysCacheManage* _fsysGetCacheManageGroup(u32 group);
 FsysCacheManage* _fsysGetCacheManageAddr(void* addr);
 FsysCacheManage* _fsysGetCacheManage(u32 group, u32 id);
@@ -84,13 +58,13 @@ bool _fsysMemFreeCache(void* addr) {
 void* _fsysMemAllocCache(Fsys* fsys, u32 id, u32 size, u32 arg) {
     u32 alignedSize = ALIGN32(size);
     void* addr;
-    _fsysFreeFreshCache(fsys->group, alignedSize);
+    _fsysFreeFreshCache(fsys->id, alignedSize);
     for (;;) {
         addr = _fsysAllocCache(fsys, id, alignedSize, arg);
         if (addr != NULL) {
             break;
         }
-        if (!_fsysFreeFreshCacheGroup(fsys->group)) {
+        if (!_fsysFreeFreshCacheGroup(fsys->id)) {
             addr = NULL;
             break;
         }
@@ -108,10 +82,10 @@ static bool _fsysFreeFreshCacheGroup(u32 group) {
         if (manage == NULL) {
             return freed;
         }
-        if (freed == true && lastGroup != manage->group) {
+        if (freed == true && lastGroup != manage->prio) {
             break;
         }
-        lastGroup = manage->group;
+        lastGroup = manage->prio;
         freed = true;
         if (!_fsysFreeCache(manage)) {
             return false;
@@ -154,14 +128,14 @@ static bool _fsysFreeCache(FsysCacheManage* manage) {
 }
 
 static void* _fsysAllocCache(Fsys* fsys, u32 id, u32 size, u32 arg) {
-    FsysCacheManage* manage = _fsysGetCacheManage(fsys->group, id);
+    FsysCacheManage* manage = _fsysGetCacheManage(fsys->id, id);
     if (manage == NULL) {
         u8 type = fsys->cacheType;
         FsysHeader* header = _fsysGetHeader(fsys);
         if (header != NULL && (header->flags & 0x40000000)) {
             type = 1;
         }
-        manage = _fsysGetNewCacheManage(fsys->group, id, type, 1, arg);
+        manage = _fsysGetNewCacheManage(fsys->id, id, type, 1, arg);
         if (manage == NULL) {
             return NULL;
         }
@@ -190,7 +164,7 @@ bool _fsysMemAllocHeader(Fsys* fsys) {
         return false;
     }
     fsys->headerValid = 0;
-    fsys->header = _fsysAlloc(ALIGN32(fsys->info->headerSize));
+    fsys->header = (FsysHeader*)_fsysAlloc(ALIGN32(fsys->group->headerSize));
     if (fsys->header == NULL) {
         return false;
     }

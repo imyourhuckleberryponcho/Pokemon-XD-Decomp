@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
 
 #pragma peephole off
 
@@ -20,10 +22,27 @@ struct tagWINDOW_WORK {
     s8 state;
     s8 seqSet;
     u8 unk3;
-    void* seq;
-    u8 unk8[0x14];
+    s32 seq;
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
-    u8 unk20[0x73];
+    u8 unk20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 alpha;
     u8 unk94[8];
     s16 top;
@@ -34,11 +53,17 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 unk8[0x14];
+    u8 unk8[0x4];
+    void* slotC;
+    u8 pad10[0xC];
     s32 layer;
-    u8 unk20[0x34];
+    u8 unk20[0x28];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x4];
     s16 x;
     u8 unk56[0xE];
     u8 color[3];
@@ -70,7 +95,7 @@ s32 mailGetMailIDInMailbox(s32);
 void mailGetSortMode(void);
 u32 mailGetSenderName(s32);
 u32 mailGetSubject(s32);
-s32 GSmsgGetGSchar(u32);
+u16 * GSmsgGetGSchar(u32);
 u32 GSmsgGetRect(u32);
 void GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSsndPlayNow(u32);
@@ -86,11 +111,11 @@ void menuPdaSubCalcPositon(f32*, f32, f32);
 void menuPdaSubCheckUpDownCursor(tagWINDOW_WORK*, tagSPRITE_WORK*, s16*, s32, s32, s32);
 void menuPdaSubInitAlpha(f32*, s32, s32);
 void menuPdaSubScrollBar(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s32, u32, s32, s32, s16*);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 void spriteClearScissor(s32);
 void spriteSetScissor(s32, s32, s32, s32, s32);
-u8 winSeqCheckMove(void*);
-void winSeqSetMenu(void*, s32);
+u8 winSeqCheckMove(s32 menuID);
+void winSeqSetMenu(s32 menuID, s32);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
 WindowKeyInfo* windowGetKeyInfo(void);
 u16 windowGetKeyRepeat(void);
@@ -110,14 +135,14 @@ static s32 _pdaMailListDraw(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
 static s32 _pdaMailListPageBunbo(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
 static s32 _pdaMailListPageBunshi(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
 static void _pdaMailListPage(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
-static void _menuClose(long menuID);
+static void _menuClose(s32 menuID);
 static void _sortReceive(u16* dst);
 static void _pdaMailSort();
 static void _setCursor(CURSOR cursor);
 static CURSOR _getCursor();
-static u32 _getSenderName(long index);
-static u32 _getSubject(long index);
-static s32 _getMailID(long index);
+static u32 _getSenderName(s32 index);
+static u32 _getSubject(s32 index);
+static s32 _getMailID(s32 index);
 
 MailListWork _maillistwork;
 static f32 _menuPdaMailAlpha[5];
@@ -335,7 +360,7 @@ s32 menuPdaMailListCtrlXD(tagWINDOW_WORK* window) {
     return 0;
 }
 
-s32 menuPdaMailListSubXD(long unused, CURSOR* cursor) {
+s32 menuPdaMailListSubXD(s32 unused, CURSOR* cursor) {
     CURSOR c;
     c.top = cursor->top;
     c.pos = cursor->pos;
@@ -448,7 +473,7 @@ static s32 _pdaMailListDraw(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         if (i >= cursor.top - 1 && i < cursor.top + 6) {
             u32 subject = _getSubject(i);
             if (subject != 0) {
-                u32 str = GSmsgGetGSchar(subject);
+                u32 str = GC_ADDR32(GSmsgGetGSchar(subject));
                 msgctrlSetValue(0x37, str);
                 GSmsgPrint2(window->layer, xA, (s32)y, colorA | window->alpha, 0x4276);
             } else {
@@ -456,7 +481,7 @@ static s32 _pdaMailListDraw(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             }
             u32 sender = _getSenderName(i);
             if (sender != 0) {
-                msgctrlSetValue(0x37, GSmsgGetGSchar(sender));
+                msgctrlSetValue(0x37, GC_ADDR32(GSmsgGetGSchar(sender)));
                 GSmsgPrint2(window->layer, xB, (s32)(21.0f + y), colorB | window->alpha, 0x4276);
             } else {
                 GSmsgPrint2(window->layer, xB, (s32)(21.0f + y), colorB | window->alpha, 0);
@@ -495,7 +520,7 @@ static void _pdaMailListPage(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     }
 }
 
-static void _menuClose(long menuID) {
+static void _menuClose(s32 menuID) {
     menuClose(menuID);
     menuCloseSync(menuID, 1);
 }
@@ -521,15 +546,15 @@ static CURSOR _getCursor() {
     return cursorBiosGetPos(0xA);
 }
 
-static u32 _getSenderName(long index) {
+static u32 _getSenderName(s32 index) {
     return mailGetSenderName(_getMailID(index));
 }
 
-static u32 _getSubject(long index) {
+static u32 _getSubject(s32 index) {
     return mailGetSubject(_getMailID(index));
 }
 
-static s32 _getMailID(long index) {
+static s32 _getMailID(s32 index) {
     return pdaMailGetMailID(index);
 }
 

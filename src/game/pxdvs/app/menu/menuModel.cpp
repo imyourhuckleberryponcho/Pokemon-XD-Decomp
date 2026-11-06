@@ -1,11 +1,15 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/statusval.h>
+#include <game/miscTables.h>
 #pragma pool_strings off
 #pragma peephole off
 
 #define pokemonGetStatus pokemonGetStatus_hdr
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #undef pokemonGetStatus
-extern "C" s32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
+extern "C" StatusS32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
 struct GSbound;
 struct GSlight;
 struct GSpart;
@@ -86,12 +90,6 @@ struct MENU_MODEL {
     f32 max[3];
 };
 
-struct PokemonMenuAnim {
-    u8 id;
-    u8 pad;
-    u16 index;
-};
-
 extern "C" {
 void C_MTXLookAt(void* m, f32* pos, void* target, void* up);
 void GSboundGetMinMax(GSbound* bound, void* min, void* max, s32, s32, s32, s32);
@@ -144,7 +142,7 @@ void PSMTXRotRad(void* m, s32 axis, f32 rad);
 void PSVECAdd(f32* a, f32* b, f32* c);
 f32 PSVECDistance(f32* a, f32* b);
 void PSVECSubtract(f32* a, f32* b, f32* c);
-void Sequence_DoAnimation(u32 s, u8 anim);
+void Sequence_DoAnimation(u32 s, PCARG(u8, int) anim);
 void Sequence_Free(u32 s);
 u32 Sequence_GetGSmodel(u32 s);
 s32 Sequence_GetModelSize(u32 s);
@@ -209,15 +207,15 @@ extern "C" u8 menuModelComparePokemon(MENU_MODEL* m, Pokemon* p);
 extern "C" s32 menuModelFree(MENU_MODEL* m);
 extern "C" s32 menuModelFreeNext(MENU_MODEL* m);
 extern "C" void menuModelWazaFree(MENU_MODEL* m);
-extern "C" u8 menuModelGetPokemonAnimationIndexByPointer(Pokemon* p);
+extern "C" PCRET(u8) menuModelGetPokemonAnimationIndexByPointer(Pokemon* p);
 extern "C" u8 menuModelGetPokemonAnimationIndexByID(u16 id);
 
 extern "C" {
 void menuModelReSetScale(void);
 void menuModelSetScale(f32 s);
-f32 menuModelGetScale(f32 s);
+f32 menuModelGetScale(s32 hasParent, s32 id, f32 s);
 u8 menuModelGetPokemonAnimationIndexByID(u16 id);
-u8 menuModelGetPokemonAnimationIndexByPointer(Pokemon* p);
+PCRET(u8) menuModelGetPokemonAnimationIndexByPointer(Pokemon* p);
 void menuModelSetCameraRotation(MENU_MODEL* m, GSvec* v);
 f32* menuModelGetCameraRotation(MENU_MODEL* m);
 u32 menuModelGetModelPtr(MENU_MODEL* m);
@@ -411,7 +409,7 @@ static s32 _menuModelAdjustCamera(MENU_MODEL* m, bool first) {
     PSMTXInverse(m->mtx, mtxInv);
     PSVECSubtract((f32*)&spos, (f32*)&partPos, (f32*)&sub);
     PSVECDistance((f32*)&ltgt, (f32*)&partPos);
-    memcpy(&col, &_lightColor, 4);
+    memcpy(&col, &_lightColor, 4); GC_FIX32(*(u32*)&col);
     memcpy(&ltgt, &camPos, 0xC);
     ltgt = vecAdd(&ltgt, (Vec3*)&_lightOffset);
     partPos = vecAdd(&partPos, (Vec3*)&_lightOffset);
@@ -529,9 +527,7 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
     }
     width = a->size[0] + b->size[0];
     depth = (a->size[1] >= b->size[1]) ? a->size[1] : b->size[1];
-    f32 negB = -b->size[0];
-    f32 kc1917 = 0.5f;
-    mid = (depth * kc1917) + negB;
+    mid = -b->size[0] + width / 2.0f;
     GSmodelGetPosition(modelA, &spos);
     spos.y = 0.0f;
     spos.x = -(a->size[0] / 2.0f) + mid;
@@ -578,7 +574,7 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
     GScameraSetPerspective(a->camera, fov, aspect, nearP, farP);
     GScameraLookAt(a->camera, &upVec2, &target2);
     C_MTXLookAt(a->mtx, (f32*)&camPos, &upVec2, &target2);
-    memcpy(&col, &_lightColor, 4);
+    memcpy(&col, &_lightColor, 4); GC_FIX32(*(u32*)&col);
     memcpy(&lpos, &camPos, 0xC);
     lpos.x = lpos.x + _lightOffset.x;
     lpos.y = lpos.y + _lightOffset.y;
@@ -676,7 +672,7 @@ s32 menuModelInit(MENU_MODEL* m, s32 w, s32 h) {
     Col white = { 0xFF, 0xFF, 0xFF, 0xFF };
     Col amb = { 0x80, 0x80, 0x80, 0xFF };
     if (m == 0) return 0;
-    memset(m, 0, 0xEC);
+    memset(m, 0, sizeof(*m));
     m->inited = 1;
     m->visible = 1;
     m->progress = 0.0f;
@@ -1062,7 +1058,7 @@ void menuModelSetCameraRotation(MENU_MODEL* m, GSvec* v) {
     m->camRot[2] = v->z;
 }
 
-u8 menuModelGetPokemonAnimationIndexByPointer(Pokemon* p) {
+PCRET(u8) menuModelGetPokemonAnimationIndexByPointer(Pokemon* p) {
     return menuModelGetPokemonAnimationIndexByID(p->getPokemonDataId());
 }
 
@@ -1075,7 +1071,7 @@ u8 menuModelGetPokemonAnimationIndexByID(u16 id) {
     return 0;
 }
 
-f32 menuModelGetScale(f32 s) {
+f32 menuModelGetScale(s32 hasParent, s32 id, f32 s) {
     return s * _menuModelScaleMultiValue;
 }
 

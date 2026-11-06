@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/pxdvs/app/fight/fightData.h>
+#include <game/pxdvs/app/deck/deckDataVirtual.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -27,22 +31,37 @@ extern "C" {
 extern "C" {
 struct FIGHT_ENCOUNT {
     u8 _draft[1];
+#ifdef __MWERKS__
     s16 getMsg(unsigned char) const;
+#else
+    u16 getMsg(u8 i) const;
+#endif
     u32 getRoundNo() const;
+#ifdef __MWERKS__
     s32 getFightMode() const;
+#else
+    u8 getFightMode() const;
+#endif
+#ifdef __MWERKS__
     s32 getDestroyFlag() const;
+#else
+    u8 getDestroyFlag() const;
+#endif
     u8 getTrainerKind() const;
     u16 getField() const;
 };
 struct FIGHT_FLOOR {
     u8 _draft[1];
 };
-struct FightEncountData {
-    u8 _draft[1];
-};
+#ifdef __MWERKS__
 struct FloorModuleInterface {
     u8 _draft[1];
 };
+#else
+struct FloorModuleInterface {
+    void* slot[11];
+};
+#endif
 struct GSthread {
     u8 _draft[1];
 };
@@ -61,7 +80,7 @@ void GSresFreeResource(u32 grp, u32 id);
 void* GSresGetResource(u32 grp, u32 id);
 void* GSthreadCreate(s32, s32, s32, s32, s32, void (*)(void));
 void GSthreadSetName(GSthread*, const char*);
-s32 GSthreadTerminateGroup();
+s32 GSthreadTerminateGroup(u32 group);
 u32 HSD_Rand(void);
 static void __sinit_fight_cpp();
 s32 battleCameraStartRandom(s32);
@@ -86,14 +105,14 @@ void fightEncountDataBiosSetFightKind(FightEncountData* data, u8 value);
 void fightEncountDataBiosSetFightTrainerDataId(FightEncountData* data, u8 index, u16 id);
 void fightEncountDataBiosSetSyoukaiWzxDataId(FightEncountData* data, u32 value);
 void fightEncountDataBiosSetZenmetuFlag(FightEncountData* data, u8 value);
-s32 fightEncountGetStrObj();
+FIGHT_ENCOUNT * fightEncountGetStrObj();
 FIGHT_FLOOR* fightFloorGetNowPtr(void);
 u8 fightFloorIsNowEncountHostEnemyPokemonKime(FIGHT_FLOOR* floor);
 u8 fightFloorIsNowEncountHostPokemonKime(FIGHT_FLOOR* floor);
 u8 fightFloorIsNowEncountSnatchOnly(FIGHT_FLOOR* floor);
 u32 fightFloor_GetEnvSndId(FIGHT_FLOOR* floor);
 s32 fightFloor_GetFightType(FIGHT_FLOOR* floor);
-s8 fightFloor_GetStatusMenuCnt(u8 status);
+s8 fightFloor_GetStatusMenuCnt(PCARG(u8, s32) status);
 void fightFloor_SetStatusMenuCnt(s32 status, s8 cnt);
 void fightFreeDeck(u16 id);
 void fightFreeResourceDeclArchive();
@@ -121,7 +140,7 @@ void* memcpy(void* dst, const void* src, size_t n);
 void menuCloseCustom(s32 menuID, s32, s32);
 s32 menuFightCloseAll();
 bool menuIsCheck(s32 menuID);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 s32 pokecoloGetCountryCode(void);
 void soundOpenPlay(s32, s32, s32);
 s32 soundStop(s32, u32 a1 = 0);
@@ -140,14 +159,20 @@ static s32* _fightGetModuleName();
 static s32 _fightGetStateSize(FloorStateMode p0);
 static s32 _fightGetUID();
 static void _fightInitialize(unsigned int p0, FloorEnterMode p1);
-static void _fightMakeStateData(FloorStateMode p0, void* p1, unsigned long p2);
-static void _fightRestoreStateData(FloorStateMode p0, void* p1, unsigned long p2);
+static void _fightMakeStateData(FloorStateMode p0, void* p1, u32 p2);
+static void _fightRestoreStateData(FloorStateMode p0, void* p1, u32 p2);
 static void _fightUpdate(unsigned int p0, FloorEnterMode p1);
-static void _fsysLoadCallbak(long p0, void* p1, long p2);
-void* deckDataVirtual_GetPtr(unsigned short);
+static void _fsysLoadCallbak(s32 p0, void* p1, s32 p2);
+struct DeckDataVirtual* deckDataVirtual_GetPtr(unsigned short);
 }
 static s32 fight_action[0xC];
+#ifdef __MWERKS__
 static u8 _floorModuleFight[0x2C];
+#define FIGHT_FM_SLOT(T, off) M2C_FIELD(&_floorModuleFight, T, off)
+#else
+static FloorModuleInterface _floorModuleFight;
+#define FIGHT_FM_SLOT(T, off) (*(T)&_floorModuleFight.slot[(off) / 4])
+#endif
 static u8 _menuCtrlHero[0x978];
 static u32 _gsthread_ptr_fight_main;
 static u8 _is_fight_flag;
@@ -177,7 +202,7 @@ void fightSetFightFlag(u8 value) {
 }
 
 extern "C" {
-u16 fightGetFightResultId(void) {
+PCRET(u16) fightGetFightResultId(void) {
     return _fight_result_id;
 }
 }
@@ -213,15 +238,15 @@ void fightInit() {
     fightSetFightEncountDataId(0);
     fightSetGsthreadPtrFightMain(0);
     FloorModuleInterface_clear((FloorModuleInterface*)(&_floorModuleFight));
-    M2C_FIELD(&_floorModuleFight, void (**)(u32, s32), 4) = (void (*)(unsigned long, long))(_fightInitialize);
-    M2C_FIELD(&_floorModuleFight, void (**)(u32, s32), 8) = (void (*)(unsigned long, long))(_fightUpdate);
-    M2C_FIELD(&_floorModuleFight, void (**)(u32, s32), 0x10) = (void (*)(unsigned long, long))(_fightFinalize);
-    M2C_FIELD(&_floorModuleFight, void (**)(u32, s32), 0x14) = (void (*)(unsigned long, long))(_fightFree);
-    M2C_FIELD(&_floorModuleFight, void (**)(s32, void *, u32), 0x1C) = (void (*)(long, void *, unsigned long))(_fightMakeStateData);
-    M2C_FIELD(&_floorModuleFight, void (**)(s32, void *, u32), 0x20) = (void (*)(long, void *, unsigned long))(_fightRestoreStateData);
-    M2C_FIELD(&_floorModuleFight, s32 (**)(s32), 0x24) = (long (*)(long))(_fightGetStateSize);
-    M2C_FIELD(&_floorModuleFight, s32 (**)(), 0x28) = _fightGetUID;
-    M2C_FIELD(&_floorModuleFight, s32 *(**)(), 0x18) = _fightGetModuleName;
+    FIGHT_FM_SLOT(void (**)(u32, s32), 4) = (void (*)(u32, s32))(_fightInitialize);
+    FIGHT_FM_SLOT(void (**)(u32, s32), 8) = (void (*)(u32, s32))(_fightUpdate);
+    FIGHT_FM_SLOT(void (**)(u32, s32), 0x10) = (void (*)(u32, s32))(_fightFinalize);
+    FIGHT_FM_SLOT(void (**)(u32, s32), 0x14) = (void (*)(u32, s32))(_fightFree);
+    FIGHT_FM_SLOT(void (**)(s32, void *, u32), 0x1C) = (void (*)(s32, void *, u32))(_fightMakeStateData);
+    FIGHT_FM_SLOT(void (**)(s32, void *, u32), 0x20) = (void (*)(s32, void *, u32))(_fightRestoreStateData);
+    FIGHT_FM_SLOT(s32 (**)(s32), 0x24) = (s32 (*)(s32))(_fightGetStateSize);
+    FIGHT_FM_SLOT(s32 (**)(), 0x28) = _fightGetUID;
+    FIGHT_FM_SLOT(s32 *(**)(), 0x18) = _fightGetModuleName;
 }
 }
 
@@ -265,7 +290,7 @@ static void _fightInitialize(unsigned int p0, FloorEnterMode p1) {
     }
     fightActionDispFifoAll();
     thread = (GSthread*)GSthreadCreate(0x14, GSfloorGetCurrentFloorGroupID(), 0x4000, 1, 0, (void (*)(void))fightMain);
-    _gsthread_ptr_fight_main = (unsigned long)thread;
+    _gsthread_ptr_fight_main = (u32)thread;
     GSthreadSetName(thread, "fightMain");
 }
 #pragma optimize_for_size reset
@@ -311,10 +336,8 @@ static void _fightFinalize(unsigned int p0, FloorEnterMode p1) {
     u32 temp_r3;
 
     if (p1 != 1) {
-        GSfloorGetCurrentFloorGroupID();
-        GSthreadTerminateGroup();
-        GSfloorGetCurrentFloorGroupID();
-        GSthreadTerminateGroup();
+        GSthreadTerminateGroup(GSfloorGetCurrentFloorGroupID());
+        GSthreadTerminateGroup(GSfloorGetCurrentFloorGroupID());
         fightCloseAllMenu();
         cameraSetType(gOldCameraType);
         temp_r3 = fightFloor_GetEnvSndId((FIGHT_FLOOR*)(NULL));
@@ -351,17 +374,17 @@ void fightCloseAllMenu() {
 }
 
 extern "C++" {
-static void _fightMakeStateData(FloorStateMode p0, void* p1, unsigned long p2) {
+static void _fightMakeStateData(FloorStateMode p0, void* p1, u32 p2) {
     if (p0 == 2) {
-        fightGSfloorPushData((s32) p1, (s32) p2);
+        fightGSfloorPushData((GCsptr) p1, (GCsptr) p2);
     }
 }
 }
 
 extern "C++" {
-static void _fightRestoreStateData(FloorStateMode p0, void* p1, unsigned long p2) {
+static void _fightRestoreStateData(FloorStateMode p0, void* p1, u32 p2) {
     if (p0 == 2) {
-        fightGSfloorPopData((s32) p1, (s32) p2);
+        fightGSfloorPopData((GCsptr) p1, (GCsptr) p2);
     }
 }
 }
@@ -383,18 +406,22 @@ static s32 _fightGetUID() {
 
 extern "C" {
 void* fightGetFloorModule(void) {
+#ifdef __MWERKS__
     return _floorModuleFight;
+#else
+    return &_floorModuleFight;
+#endif
 }
 }
 
 extern "C++" {
 static s32* _fightGetModuleName() {
-    return (long *)("fight");
+    return (s32 *)("fight");
 }
 }
 
 extern "C++" {
-static void _fsysLoadCallbak(long p0, void* p1, long p2) {
+static void _fsysLoadCallbak(s32 p0, void* p1, s32 p2) {
 }
 }
 
@@ -532,7 +559,7 @@ bool fightReadResourceID(s32 fsys, s32 id) {
     if (GSresGetResource(fsys, id) != NULL) {
         return 0;
     }
-    GSfsysReadIDEXWait(fsys, id, (s32)_fsysLoadCallbak, 0, id);
+    GSfsysReadIDEXWait(fsys, id, (GCsptr)_fsysLoadCallbak, 0, id);
     GSfsysFree(fsys);
     return GSresGetResource(fsys, id) != NULL;
 }
@@ -624,7 +651,7 @@ void fightDataRewrite() {
         msgs[i] = enc->getMsg(i);
     }
     if ((kind == 0xF || kind == 0xE) && deck != NULL) {
-        u16 floor = *(u16*)(deck + 4);
+        u16 floor = ((DeckDataVirtual*)deck)->fightFloorDataId;
         if (floor != 0) {
             fightEncountDataBiosSetFightFloorDataId(data, floor);
         }

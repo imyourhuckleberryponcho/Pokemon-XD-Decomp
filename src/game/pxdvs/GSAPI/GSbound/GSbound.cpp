@@ -8,63 +8,20 @@ public:
     void pop();
 };
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderState(bool, u8, bool);
     void beginSurface(u16 count);
     void endSurface();
 
-    u8 pad0[0x28];
-    s32 cameraId;
-    u8 pad2c[0xd34 - 0x2c];
-    u8 d34;
-    u8 padd35[3];
-    s32 d38;
-    u8 padd3c[0xd8c - 0xd3c];
-    s32 d8c;
-    s32 d90;
-    u8 padd94[0x1644 - 0xd94];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 pad1654[2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad1659[3];
-    u8 zEnable;
-    u8 pad165d[3];
-    s32 zFunc;
-    s32 f1664;
-    s32 f1668;
-    s32 f166c;
-    u8 f1670;
-    u8 f1671;
-    u8 f1672;
-    u8 pad1673[0x16a8 - 0x1673];
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad16b0[8];
-    u32 dirty16b8;
-    u8 pad16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad1710[0x1760 - 0x1710];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad1768[8];
-    u32 dirty1770;
-    u8 pad1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
-    u8 pad17c8[0x1818 - 0x17c8];
-    u8 blendTable[2][0xbc];
-    u8* curBlend;
-    s32 curBlendIdx;
-    u32 primType;
-    s32 vf;
-    GSgfxMatrixStack* matrixStack;
 };
 
+struct BoundAnim;
+#ifdef __MWERKS__
 struct GSbound {
  u16 flags;
  u16 type;
@@ -76,6 +33,34 @@ struct GSbound {
  f32 maxY;
  f32 maxZ;
 };
+#define BOUND_ANIM_INDEX(b) (*(s32*) &(b)->minX)
+#define BOUND_ANIM_FRAME(b) ((b)->minY)
+#define BOUND_ANIM(b) (*(BoundAnim**) &(b)->minZ)
+#define BOUND_ANIM_TABLE(b) (*(u16***) &(b)->maxX)
+#define BOUND_ANIM_TABLE_PTR(b) (*(void**) &(b)->maxX)
+#else
+struct GSbound {
+    u16 flags;
+    u16 type;
+    void* data;
+    union {
+        struct {
+            f32 minX, minY, minZ, maxX, maxY, maxZ;
+        };
+        struct {
+            s32 animIndex;
+            f32 animFrame;
+            BoundAnim* anim;
+            u16** animTable;
+        };
+    };
+};
+#define BOUND_ANIM_INDEX(b) ((b)->animIndex)
+#define BOUND_ANIM_FRAME(b) ((b)->animFrame)
+#define BOUND_ANIM(b) ((b)->anim)
+#define BOUND_ANIM_TABLE(b) ((b)->animTable)
+#define BOUND_ANIM_TABLE_PTR(b) (*(void**) &(b)->animTable)
+#endif
 
 struct BoundAnim {
     u16 count;
@@ -93,7 +78,7 @@ void* memset(void* dst, int c, unsigned long n);
 void* GSmemAlloc(u32 size);
 void GSmemFree(void* ptr);
 void GScameraLoadActiveCameraMatrix(s32 id);
-s32 GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
+void* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 s32 GSgfxProjectFastList(const Vec* points, Vec* screen, u32 count);
 void GSmodelGetPosition(void* model, Vec* v);
 void GSmodelGetRotation(void* model, Vec* v);
@@ -143,19 +128,19 @@ extern "C" {
 
 void GSboundCreate(GSbound* b, BoundAnim* anim)
 {
-    memset(b, 0, 0x20);
+    memset(b, 0, sizeof(GSbound));
     if (anim == 0) {
         b->flags |= 1;
     } else {
         s32 i;
         u16* p;
-        *(BoundAnim**) &b->minZ = anim;
-        *(s32*) &b->minX = 0;
-        b->minY = 0.0f;
-        *(void**) &b->maxX = GSmemAlloc((*(BoundAnim**) &b->minZ)->count * 4);
-        p = (u16*) (*(BoundAnim**) &b->minZ + 1);
-        for (i = 0; i < (*(BoundAnim**) &b->minZ)->count; i++) {
-            (*(u16***) &b->maxX)[i] = p;
+        BOUND_ANIM(b) = anim;
+        BOUND_ANIM_INDEX(b) = 0;
+        BOUND_ANIM_FRAME(b) = 0.0f;
+        BOUND_ANIM_TABLE_PTR(b) = GSmemAlloc((BOUND_ANIM(b))->count * sizeof(u16*));
+        p = (u16*) (BOUND_ANIM(b) + 1);
+        for (i = 0; i < (BOUND_ANIM(b))->count; i++) {
+            BOUND_ANIM_TABLE(b)[i] = p;
             p = (u16*) ((u8*) (p + 2) + p[1] * 0x18);
         }
         b->flags |= 8;
@@ -166,8 +151,8 @@ void GSboundFree(GSbound* b)
 {
     b->type = 0;
     if (b->flags & 8) {
-        GSmemFree(*(void**) &b->maxX);
-        *(void**) &b->maxX = 0;
+        GSmemFree(BOUND_ANIM_TABLE_PTR(b));
+        BOUND_ANIM_TABLE_PTR(b) = 0;
     }
 }
 
@@ -317,63 +302,63 @@ void GSboundDraw(GSbound* b, GSgfxLayer* layer)
     f32 lo = -0.5f;
     f32 hi = 0.5f;
 
-    if (layer->curBlendIdx == 1 && !(b->flags & 1)) {
+    if ((*(s32*)&layer->curPass) == 1 && !(b->flags & 1)) {
         GSboundGetSize(b, &size, true, false);
         if (!(PSVECSquareMag(&size) < 0.00001f)) {
-            GScameraLoadActiveCameraMatrix(layer->cameraId);
-            layer->colorUpdate = 1;
-            layer->alphaUpdate = 1;
-            layer->zUpdate = 0;
-            layer->dirty170c |= 4;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 4;
-            layer->dirty1760 |= 0x40;
-            layer->zEnable = 0;
-            layer->zFunc = 3;
-            layer->dirty170c |= 8;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 8;
-            layer->dirty1760 |= 0x40;
-            layer->f1664 = 7;
-            layer->f1670 = 0;
-            layer->f1668 = 0;
-            layer->f166c = 7;
-            layer->f1671 = 0;
-            layer->f1672 = 1;
-            layer->dirty170c |= 0x10;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 0x10;
-            layer->dirty1760 |= 0x40;
-            layer->d8c = 0;
-            layer->dirty16b8 |= 2;
-            layer->dirty16a8 |= 2;
-            layer->dirty1770 |= 2;
-            layer->dirty1760 |= 2;
-            if (layer->curBlendIdx != 1) {
-                layer->curBlendIdx = 1;
-                layer->curBlend = layer->blendTable[layer->curBlendIdx];
+            GScameraLoadActiveCameraMatrix((*(s32*)&layer->id));
+            (*(u8*)&layer->hw.colorUpdate) = 1;
+            (*(u8*)&layer->hw.alphaUpdate) = 1;
+            (*(u8*)&layer->hw.zUpdate) = 0;
+            (*(u32*)&layer->dirty[0].pe) |= 4;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 4;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            (*(u8*)&layer->hw.zEnable) = 0;
+            (*(s32*)&layer->hw.zFunc) = 3;
+            (*(u32*)&layer->dirty[0].pe) |= 8;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 8;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            (*(s32*)&layer->hw.alphaComp0) = 7;
+            (*(u8*)&layer->hw.alphaRef0) = 0;
+            (*(s32*)&layer->hw.alphaCmpOp) = 0;
+            (*(s32*)&layer->hw.alphaComp1) = 7;
+            (*(u8*)&layer->hw.alphaRef1) = 0;
+            (*(u8*)&layer->hw.zCompLoc) = 1;
+            (*(u32*)&layer->dirty[0].pe) |= 0x10;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 0x10;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            (*(s32*)&layer->hw.cullMode) = 0;
+            (*(u32*)&layer->dirty[0].raster) |= 2;
+            (*(u32*)&layer->dirty[0].groups) |= 2;
+            (*(u32*)&layer->dirty[1].raster) |= 2;
+            (*(u32*)&layer->dirty[1].groups) |= 2;
+            if ((*(s32*)&layer->curPass) != 1) {
+                (*(s32*)&layer->curPass) = 1;
+                layer->curFifo = &layer->passes[layer->curPass];
             }
-            layer->blendOp = 1;
-            layer->blendSrc = 4;
-            layer->blendDst = 1;
-            layer->blendLogic = 5;
-            layer->dirty170c |= 1;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 1;
-            layer->dirty1760 |= 0x40;
-            layer->d90 = 0;
-            layer->dirty16b8 |= 4;
-            layer->dirty16a8 |= 2;
-            layer->dirty1770 |= 4;
-            layer->dirty1760 |= 2;
-            layer->d34 = 6;
-            layer->d38 = 0;
-            layer->dirty16ac |= 4;
-            layer->dirty16a8 |= 1;
-            layer->dirty1764 |= 4;
-            layer->dirty1760 |= 1;
+            (*(s32*)&layer->hw.blend[0]) = 1;
+            (*(s32*)&layer->hw.blend[1]) = 4;
+            (*(s32*)&layer->hw.blend[2]) = 1;
+            (*(s32*)&layer->hw.blend[3]) = 5;
+            (*(u32*)&layer->dirty[0].pe) |= 1;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 1;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            (*(s32*)&layer->hw.clipMode) = 0;
+            (*(u32*)&layer->dirty[0].raster) |= 4;
+            (*(u32*)&layer->dirty[0].groups) |= 2;
+            (*(u32*)&layer->dirty[1].raster) |= 4;
+            (*(u32*)&layer->dirty[1].groups) |= 2;
+            (*(u8*)&layer->hw.lineWidth) = 6;
+            (*(s32*)&layer->hw.lineOffset) = 0;
+            (*(u32*)&layer->dirty[0].geom) |= 4;
+            (*(u32*)&layer->dirty[0].groups) |= 1;
+            (*(u32*)&layer->dirty[1].geom) |= 4;
+            (*(u32*)&layer->dirty[1].groups) |= 1;
             layer->setRenderState(true, 0, false);
-            layer->vf = GSgfxVFBuildTemp(1, 4, 0, 0, 1, 5, 0, 0, 0);
+            layer->curVF = (GSgfxVF*)GSgfxVFBuildTemp(1, 4, 0, 0, 1, 5, 0, 0, 0);
             PSMTXScale(m, size.x, size.y, size.z);
             switch (b->type) {
             case 1:
@@ -405,8 +390,8 @@ void GSboundDraw(GSbound* b, GSgfxLayer* layer)
             PSVECAdd(&mn, &mx, &center);
             PSVECScale(&center, &center, 0.5f);
             PSMTXTransApply(m, m, center.x, center.y, center.z);
-            layer->matrixStack->pushMult((GSmtx*) m);
-            layer->primType = 0x80;
+            (*(GSgfxMatrixStack**)&layer->matrixStack)->pushMult((GSmtx*) m);
+            (*(u32*)&layer->unk1998) = 0x80;
             layer->beginSurface(0x18);
             for (cx = lo; cx < 1.0f; cx += 1.0f) {
                 GXWGFifo.f32 = cx;
@@ -459,25 +444,25 @@ void GSboundDraw(GSbound* b, GSgfxLayer* layer)
                 GXWGFifo.u32 = 0x80808040;
             }
             layer->endSurface();
-            layer->zEnable = 1;
-            layer->zFunc = 3;
-            layer->dirty170c |= 8;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 8;
-            layer->dirty1760 |= 0x40;
-            if (layer->curBlendIdx != 1) {
-                layer->curBlendIdx = 1;
-                layer->curBlend = layer->blendTable[layer->curBlendIdx];
+            (*(u8*)&layer->hw.zEnable) = 1;
+            (*(s32*)&layer->hw.zFunc) = 3;
+            (*(u32*)&layer->dirty[0].pe) |= 8;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 8;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            if ((*(s32*)&layer->curPass) != 1) {
+                (*(s32*)&layer->curPass) = 1;
+                layer->curFifo = &layer->passes[layer->curPass];
             }
-            layer->blendOp = 1;
-            layer->blendSrc = 4;
-            layer->blendDst = 5;
-            layer->blendLogic = 5;
-            layer->dirty170c |= 1;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 1;
-            layer->dirty1760 |= 0x40;
-            layer->primType = 0xb0;
+            (*(s32*)&layer->hw.blend[0]) = 1;
+            (*(s32*)&layer->hw.blend[1]) = 4;
+            (*(s32*)&layer->hw.blend[2]) = 5;
+            (*(s32*)&layer->hw.blend[3]) = 5;
+            (*(u32*)&layer->dirty[0].pe) |= 1;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 1;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            (*(u32*)&layer->unk1998) = 0xb0;
             layer->beginSurface(5);
             GXWGFifo.f32 = lo;
             GXWGFifo.f32 = lo;
@@ -522,7 +507,7 @@ void GSboundDraw(GSbound* b, GSgfxLayer* layer)
             GXWGFifo.f32 = lo;
             GXWGFifo.u32 = 0x80808080;
             layer->endSurface();
-            layer->primType = 0xa8;
+            (*(u32*)&layer->unk1998) = 0xa8;
             layer->beginSurface(8);
             GXWGFifo.f32 = lo;
             GXWGFifo.f32 = lo;
@@ -557,7 +542,7 @@ void GSboundDraw(GSbound* b, GSgfxLayer* layer)
             GXWGFifo.f32 = hi;
             GXWGFifo.u32 = 0x80808080;
             layer->endSurface();
-            layer->matrixStack->pop();
+            (*(GSgfxMatrixStack**)&layer->matrixStack)->pop();
         }
     }
 }
@@ -574,19 +559,19 @@ void GSboundSetAnimIndex(GSbound* b, s32 index)
     if (!(b->flags & 8)) {
         return;
     }
-    *(s32*) &b->minX = index;
-    b->minY = 0.0f;
+    BOUND_ANIM_INDEX(b) = index;
+    BOUND_ANIM_FRAME(b) = 0.0f;
 }
 
 void GSboundSetAnimFrame(GSbound* b, f32 frame)
 {
     if (b->flags & 8) {
-        u16** table = *(u16***) &b->maxX;
-        u16 count = table[*(s32*) &b->minX][1];
+        u16** table = BOUND_ANIM_TABLE(b);
+        u16 count = table[BOUND_ANIM_INDEX(b)][1];
         if (frame >= (f32) count) {
             frame = (f32) (count - 1);
         }
-        b->minY = frame;
+        BOUND_ANIM_FRAME(b) = frame;
     }
 }
 
@@ -602,8 +587,8 @@ void GSboundGetMinMax(GSbound* b, Vec* min, Vec* max, bool scale, bool rot, bool
     Quaternion q2;
 
     if (b->flags & 8) {
-        u16** table = *(u16***) &b->maxX;
-        f32* entry = (f32*) ((u8*) table[*(s32*) &b->minX] + (s32) b->minY * 0x18);
+        u16** table = BOUND_ANIM_TABLE(b);
+        f32* entry = (f32*) ((u8*) table[BOUND_ANIM_INDEX(b)] + (s32) BOUND_ANIM_FRAME(b) * 0x18);
         min->x = entry[1];
         min->y = entry[2];
         min->z = entry[3];
@@ -719,7 +704,12 @@ void GSboundGetSize(GSbound* b, Vec* size, bool scale, bool rot)
 
     GSboundGetMinMax(b, &mn, &mx, scale, false, false, false);
     PSVECSubtract(&mx, &mn, &diff);
-    *size = diff;
+    f32 dx = diff.x;
+    f32 dy = diff.y;
+    f32 dz = diff.z;
+    size->x = dx;
+    size->y = dy;
+    size->z = dz;
     if (size->x < 0.0f) {
         size->x = -size->x;
     }
@@ -829,7 +819,7 @@ void GSboundGetShadowVolume(GSbound* out, GSbound* b, Vec* plane, f32 height)
     Vec* p;
     s32 i;
 
-    memset(out, 0, 0x20);
+    memset(out, 0, sizeof(GSbound));
     out->flags |= 1;
     GSboundGetMinMax(b, &mm[0], &mm[1], false, false, false, false);
     _boundGenPointList(corners, mm);
@@ -912,7 +902,6 @@ void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
     f32 maxB;
     f32 bb;
     Vec* cp;
-    s32 i;
 
     PSVECNormalize(dir, &n);
     up = n;
@@ -962,11 +951,12 @@ void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
     if (fwd.z < 0.0f) {
         fwd.z = -fwd.z;
     }
-    for (i = 0; i < 4; i++) {
-        c[i] = fwd;
-    }
+    c[0] = fwd;
+    c[1] = fwd;
     c[1].y *= -1.0f;
+    c[2] = fwd;
     c[2].x *= -1.0f;
+    c[3] = fwd;
     c[3].x *= -1.0f;
     c[3].y *= -1.0f;
     maxA = 0.0f;
@@ -977,7 +967,8 @@ void GSboundGetShadowSize(Vec* out, GSbound* b, Vec* p1, Vec* p2, Vec* dir)
         if (PSVECDotProduct(cp, &right) > 0.0f) {
             a = PSVECDotProduct(cp, &right);
         } else {
-            a = -PSVECDotProduct(cp, &right);
+            f32 t = PSVECDotProduct(cp, &right);
+            a = -t;
         }
         if (PSVECDotProduct(cp, &up) > 0.0f) {
             bb = PSVECDotProduct(cp, &up);

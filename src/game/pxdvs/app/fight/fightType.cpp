@@ -1,14 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/app/fight/fightData.h>
 
 #pragma optimize_for_size on
-
-struct FightTypeData {
-    u8 type;
-    u8 entryPokemonNum;
-    u8 fightoutPokemonNum;
-    u8 unk3;
-    u32 name;
-};
 
 extern "C" {
 

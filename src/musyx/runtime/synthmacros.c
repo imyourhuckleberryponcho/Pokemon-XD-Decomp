@@ -668,15 +668,15 @@ static void mcmdSetADSR(SYNTH_VOICE* svoice, MSTEP* cstep) {
 
   if ((adsr_ptr = dataGetCurve(cstep->para[0] >> 8)) != NULL) {
     if (!(u8)(cstep->para[0] >> 24)) {
-      adsr.data.linear.atime = adsr_ptr->data.linear.atime >> 8 | adsr_ptr->data.linear.atime << 8;
-      adsr.data.linear.dtime = adsr_ptr->data.linear.dtime >> 8 | adsr_ptr->data.linear.dtime << 8;
-      adsr.data.linear.slevel = adsr_ptr->data.linear.slevel >> 8 | adsr_ptr->data.linear.slevel
-                                                                        << 8;
-      adsr.data.linear.rtime = adsr_ptr->data.linear.rtime >> 8 | adsr_ptr->data.linear.rtime << 8;
+      adsr.data.linear.atime = MLE16(adsr_ptr->data.linear.atime);
+      adsr.data.linear.dtime = MLE16(adsr_ptr->data.linear.dtime);
+      adsr.data.linear.slevel = MLE16(adsr_ptr->data.linear.slevel
+                                                                        );
+      adsr.data.linear.rtime = MLE16(adsr_ptr->data.linear.rtime);
       hwSetADSR(svoice->id & 0xFF, &adsr, FALSE);
     } else {
       sScale =
-          dspDLSVolTab[(u16)(adsr_ptr->data.dls.slevel >> 8 | adsr_ptr->data.dls.slevel << 8) >> 5];
+          dspDLSVolTab[(u16)MLE16(adsr_ptr->data.dls.slevel) >> 5];
       adsr.data.dls.atime =
           ((u8*)&adsr_ptr->data.dls.atime)[0] << 0 | ((u8*)&adsr_ptr->data.dls.atime)[1] << 8 |
           ((u8*)&adsr_ptr->data.dls.atime)[2] << 16 | ((u8*)&adsr_ptr->data.dls.atime)[3] << 24;
@@ -684,7 +684,7 @@ static void mcmdSetADSR(SYNTH_VOICE* svoice, MSTEP* cstep) {
           ((u8*)&adsr_ptr->data.dls.dtime)[0] << 0 | ((u8*)&adsr_ptr->data.dls.dtime)[1] << 8 |
           ((u8*)&adsr_ptr->data.dls.dtime)[2] << 16 | ((u8*)&adsr_ptr->data.dls.dtime)[3] << 24;
       adsr.data.dls.slevel = 4096.f * sScale;
-      adsr.data.dls.rtime = adsr_ptr->data.dls.rtime >> 8 | adsr_ptr->data.dls.rtime << 8;
+      adsr.data.dls.rtime = MLE16(adsr_ptr->data.dls.rtime);
       ascale =
           ((u8*)&adsr_ptr->data.dls.ascale)[0] << 0 | ((u8*)&adsr_ptr->data.dls.ascale)[1] << 8 |
           ((u8*)&adsr_ptr->data.dls.ascale)[2] << 16 | ((u8*)&adsr_ptr->data.dls.ascale)[3] << 24;
@@ -766,8 +766,8 @@ static void mcmdSetPitchADSR(SYNTH_VOICE* svoice, MSTEP* cstep) {
       (((u8*)&adsr_ptr->data.dls.dtime)[0] << 0) | (((u8*)&adsr_ptr->data.dls.dtime)[1] << 8) |
       (((u8*)&adsr_ptr->data.dls.dtime)[2] << 16) | (((u8*)&adsr_ptr->data.dls.dtime)[3] << 24);
 
-  adsr.data.dls.slevel = (adsr_ptr->data.dls.slevel >> 8) | (adsr_ptr->data.dls.slevel << 8);
-  adsr.data.dls.rtime = (adsr_ptr->data.dls.rtime >> 8) | (adsr_ptr->data.dls.rtime << 8);
+  adsr.data.dls.slevel = MLE16(adsr_ptr->data.dls.slevel);
+  adsr.data.dls.rtime = MLE16(adsr_ptr->data.dls.rtime);
   ascale =
       (((u8*)&adsr_ptr->data.dls.ascale)[0] << 0) | (((u8*)&adsr_ptr->data.dls.ascale)[1] << 8) |
       (((u8*)&adsr_ptr->data.dls.ascale)[2] << 16) | (((u8*)&adsr_ptr->data.dls.ascale)[3] << 24);
@@ -1409,8 +1409,8 @@ static void macHandleActive(SYNTH_VOICE* svoice) {
       break;
     }
 
-    cstep.para[0] = svoice->curAddr->para[0];
-    cstep.para[1] = svoice->curAddr->para[1];
+    cstep.para[0] = MD32(svoice->curAddr->para[0]);
+    cstep.para[1] = MD32(svoice->curAddr->para[1]);
     ++svoice->curAddr;
     ex = 0;
     switch (cstep.para[0] & 0x7f) {

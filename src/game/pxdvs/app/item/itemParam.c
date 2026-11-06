@@ -1,29 +1,35 @@
 #include <dolphin/types.h>
+#include <game/bitfield.h>
 
 typedef struct ItemParam {
-    u8 meromeroFlag : 1;
-    u8 unkFlag6 : 1;
-    u8 criticalFlag : 1;
-    u8 attackUp : 4;
-    u8 unkFlag0 : 1;
-    u8 defenceUp : 4;
-    u8 quickUp : 4;
-    u8 hitUp : 4;
-    u8 spAttackUp : 4;
-    u8 guardFlag : 1;
-    u8 levelUpFlag : 1;
-    u8 sleepFlag : 1;
-    u8 poisonFlag : 1;
-    u8 burnFlag : 1;
-    u8 freezeFlag : 1;
-    u8 paralyzeFlag : 1;
-    u8 confuseFlag : 1;
-    u8 ppMaxUpFlag : 1;
-    u8 reviveFlag : 1;
-    u8 ppSelectFlag : 1;
-    u8 evolutionFlag : 1;
-    u8 ppMaxFullFlag : 1;
-    u8 unkBits : 3;
+    GC_BITS5(
+    u8 meromeroFlag : 1,
+    u8 unkFlag6 : 1,
+    u8 criticalFlag : 1,
+    u8 attackUp : 4,
+    u8 unkFlag0 : 1)
+    GC_BITS2(
+    u8 defenceUp : 4,
+    u8 quickUp : 4)
+    GC_BITS2(
+    u8 hitUp : 4,
+    u8 spAttackUp : 4)
+    GC_BITS8(
+    u8 guardFlag : 1,
+    u8 levelUpFlag : 1,
+    u8 sleepFlag : 1,
+    u8 poisonFlag : 1,
+    u8 burnFlag : 1,
+    u8 freezeFlag : 1,
+    u8 paralyzeFlag : 1,
+    u8 confuseFlag : 1)
+    GC_BITS6(
+    u8 ppMaxUpFlag : 1,
+    u8 reviveFlag : 1,
+    u8 ppSelectFlag : 1,
+    u8 evolutionFlag : 1,
+    u8 ppMaxFullFlag : 1,
+    u8 unkBits : 3)
     s8 friend1Up;
     s8 friend2Up;
     s8 friend3Up;

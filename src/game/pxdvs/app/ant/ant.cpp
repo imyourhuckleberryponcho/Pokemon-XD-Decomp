@@ -1,4 +1,5 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
+#include <game/gcdata.h>
 
 extern "C" {
 void* memset(void*, int, u32);
@@ -29,6 +30,9 @@ extern u16 menuRelivehallPcBoxDefaultPokemonSprite;
 }
 
 struct GStexture;
+#ifndef __MWERKS__
+extern "C" GStexture* GStextureResolve(void* tex);
+#endif
 struct GSgfxVF;
 extern "C" void GSgfxSelectTexture(u8 map, GStexture* texture);
 extern "C" void GSgfxSetupRenderAndSelect(GSgfxVF* vf);
@@ -83,7 +87,7 @@ struct CAnt {
     void drawAndUpdate(PocketVec<short> p);
     void drawAndUpdate();
     void draw(PocketVec<short> off);
-    void setAnimation(long a);
+    void setAnimation(s32 a);
     void use();
     void initByPokemonAndSetColorAnimationInReliveHallVisitor(Pokemon*);
     void initByPokemonAndSetColorAnimationInAny(Pokemon*);
@@ -108,8 +112,9 @@ f32 CAnt::colorAnimationTimeReliveReady;
 
 static inline int antFind(u32 key) {
     for (int i = 0; i < 240; i++) {
-        if (_pokeDance.e[i].key == 0) break;
-        if (_pokeDance.e[i].key == key) return i;
+        u32 k = _pokeDance.e[i].key;
+        if (k == 0) break;
+        if (k == key) return i;
     }
     return -1;
 }
@@ -130,38 +135,32 @@ static inline int antFindOrAlloc(u32 key) {
 static inline void antMarkUsed(u32 key) {
     if (key != 0) {
         int idx = antFindOrAlloc(key);
-        _pokeDance.e[idx].use = 1;
+        PokeDanceEntry* e = &_pokeDance.e[idx];
+        e->use = 1;
     }
 }
 
 static inline void* antLookup(u32 key) {
+    if (key == 0) return 0;
     int idx = antFindOrAlloc(key);
-    _pokeDance.e[idx].use = 1;
-    return _pokeDance.e[idx].data;
+    PokeDanceEntry* e = &_pokeDance.e[idx];
+    e->use = 1;
+    return e->data;
 }
 
 inline void* CAnt::getRes() {
     if (key == 0) return 0;
-    if (res == 0) res = antLookup(key);
+    if (res != 0) return res;
+    res = antLookup(key);
     return res;
 }
 
 inline void CAnt::step() {
     wait = 0.0f;
     timer = 0.0f;
-    u32 k = key;
-    void* r;
-    if (k == 0) {
-        r = 0;
-    } else {
-        r = res;
-        if (r == 0) {
-            res = antLookup(k);
-            r = res;
-        }
-    }
+    void* r = getRes();
     if (r != 0) {
-        u8* s = (u8*)r + *(u16*)((u8*)r + anim * 2 + 0x10);
+        u8* s = (u8*)r + GC_AT(u16, (u8*)r + 0x10, anim * 2);
         u8 f = s[scriptIdx++];
         if (f & 2) {
             wait = (f32)(s[scriptIdx++] * 18 / 10) / 60.0f;
@@ -180,9 +179,11 @@ inline void CAnt::step() {
 }
 
 inline void CAnt::update() {
-    if (wait == 0.0f || (timer = timer + timeGetLastFrameSec(), !(timer < -((0.5f * (1.0f / (f32)GSgfxVideoGetVsyncRate())) - wait)))) {
-        if (isValid()) step();
+    if (wait) {
+        timer += timeGetLastFrameSec();
+        if (timer < wait - 0.5f * (1.0f / (f32)GSgfxVideoGetVsyncRate())) return;
     }
+    if (isValid()) step();
 }
 
 static inline void antCompact() {
@@ -225,10 +226,19 @@ static inline void antPoll() {
     }
 }
 
-void antReadPostFunc(void*, unsigned long) {
+void antReadPostFunc(void*, u32) {
 }
 
 namespace {
+struct AntSpritePart {
+    gc_be16 u;
+    gc_be16 v;
+    gc_be16 w;
+    gc_be16 h;
+    gc_bes16 x;
+    gc_bes16 y;
+};
+
 void dispTexture(GStexture* tex, f32 x, f32 y, int sx, int sy, int w, int h, GSgfxColAu8 col, f32 scale, u8 alpha) {
     u16 tw = GStextureGetXsize(tex);
     u16 th = GStextureGetYsize(tex);
@@ -284,11 +294,15 @@ void dispTexture(GStexture* tex, f32 x, f32 y, int sx, int sy, int w, int h, GSg
 }
 
 GStexture* antGetGStexture(void* r) {
+#ifdef __MWERKS__
     return (GStexture*)((u8*)r + *(u32*)((u8*)r + 0xC));
+#else
+    return GStextureResolve((u8*)r + GC_AT(u32, r, 0xC));
+#endif
 }
 
 void CAnt::systemInit() {
-    memset(&_pokeDance, 0, 0xB44);
+    memset(&_pokeDance, 0, sizeof(_pokeDance));
     _pokeDance.loading = -1;
 }
 
@@ -300,7 +314,7 @@ void CAnt::systemFree() {
     }
     GSfsysFree(0x825);
     GSresFreeGroup(0x825);
-    memset(&_pokeDance, 0, 0xB44);
+    memset(&_pokeDance, 0, sizeof(_pokeDance));
 }
 
 void CAnt::allRequestCancel() {
@@ -347,13 +361,13 @@ void CAnt::systemUnUseResourceRelease() {
 }
 
 void CAnt::init() {
-    memset(this, 0, 0x34);
+    memset(this, 0, sizeof(*this));
     scale = 1.0f;
     alpha = 0xFF;
 }
 
 void CAnt::initByPokemon(Pokemon* p) {
-    memset(this, 0, 0x34);
+    memset(this, 0, sizeof(*this));
     scale = 1.0f;
     alpha = 0xFF;
     if (p->checkValid()) {
@@ -377,7 +391,7 @@ void CAnt::initByPokemon(Pokemon* p) {
             key = pokemonDB_GetPokebodyId(id, rare);
         }
         if (key != 0 && res == 0) {
-            res = (key == 0) ? 0 : antLookup(key);
+            res = antLookup(key);
         }
     }
 }
@@ -410,7 +424,7 @@ void CAnt::use() {
     }
 }
 
-void CAnt::setAnimation(long a) {
+void CAnt::setAnimation(s32 a) {
     anim = a;
     scriptIdx = 0;
     timer = 0.0f;
@@ -422,60 +436,59 @@ void CAnt::setAnimation(long a) {
 }
 
 void CAnt::draw(PocketVec<short> off) {
-    if (key != 0) {
-        if (hidden == 1) return;
-        PocketVec<short> p = pos;
-        p.x += off.x;
-        p.y += off.y;
-        if ((u16)getRes() == 0) {
-            windowDrawSprite(p.x - 0x18, p.y - 0x18, 0, menuRelivehallPcBoxDefaultPokemonSprite, 0, 7);
-            return;
+    if (key == 0 || hidden == 1) {
+        return;
+    }
+    PocketVec<short> p = pos;
+    p.x += off.x;
+    p.y += off.y;
+    if (!getRes()) {
+        windowDrawSprite(p.x - 0x18, p.y - 0x18, 0, menuRelivehallPcBoxDefaultPokemonSprite, 0, 7);
+        return;
+    }
+    GSgfxColAu8 col;
+    switch (colorMode) {
+    case 1: {
+        f32 f = colorAnimationTimeDark - 0.5f;
+        col = colorPurple;
+        if (f < 0.0f) f = -f;
+        col.a = (u8)(255.0f * ((0.76f * -((2.0f * f) - 1.0f)) + 0.16f));
+        break;
+    }
+    case 0:
+        col = colorNone;
+        break;
+    case 2: {
+        f32 f = colorAnimationTimeReliveReady - 0.5f;
+        if (f < 0.0f) f = -f;
+        f32 kc776 = 2.0f;
+        f32 t = -((kc776 * f) - 1.0f);
+        f32 u = 1.0f - t;
+        if (t > 0.5) {
+            col.a = (u8)(255.0f * t);
+        } else {
+            col.a = 0x80;
         }
-        GSgfxColAu8 col;
-        switch (colorMode) {
-        case 1: {
-            f32 f = colorAnimationTimeDark - 0.5f;
-            col = colorPurple;
-            if (f < 0.0f) f = -f;
-            col.a = (s8)(255.0f * ((0.76f * -((2.0f * f) - 1.0f)) + 0.16f));
-            break;
-        }
-        case 0:
-            col = colorNone;
-            break;
-        case 2: {
-            f32 f = colorAnimationTimeReliveReady - 0.5f;
-            if (f < 0.0f) f = -f;
-            f32 kc776;
-            f32 t = -((kc776 * f) - 1.0f);
-            f32 u = 1.0f - t;
-            kc776 = 2.0f;
-            if (t > 0.5) {
-                col.a = (s8)(255.0f * t);
-            } else {
-                col.a = 0x80;
-            }
-            col.b = (s8)((f32)colorWhite.b * t + (f32)colorPurple.b * u);
-            col.g = (s8)((f32)colorWhite.g * t + (f32)colorPurple.g * u);
-            col.r = (s8)((f32)colorWhite.r * t + (f32)colorPurple.r * u);
-            break;
-        }
-        }
-        u8* r = (u8*)getRes();
-        GStexture* tex = r ? antGetGStexture(r) : 0;
-        GStextureGetXsize(tex);
-        GStextureGetYsize(tex);
-        r = (u8*)getRes();
-        u8* tbl = r + *(u32*)(r + 4);
-        u8* sp;
-        u8* ent;
-        ent = tbl + frame * 4;
-        sp = tbl + *(u16*)(ent + 2);
-        for (int i = 0; i < *(u16*)ent; i++) {
-            u16* s = (u16*)sp;
-            dispTexture(tex, (f32)(p.x + (s[4] + offX)), (f32)(p.y + (offY + s[5] + 0x20)), s[0], s[1], s[2], s[3], col, scale, alpha);
-            sp += 0x1C;
-        }
+        col.g = (u8)((f32)colorWhite.g * t + (f32)colorPurple.g * u);
+        col.r = (u8)((f32)colorWhite.r * t + (f32)colorPurple.r * u);
+        col.b = (u8)((f32)colorWhite.b * t + (f32)colorPurple.b * u);
+        break;
+    }
+    }
+    u8* r = (u8*)getRes();
+    GStexture* tex = r ? antGetGStexture(r) : 0;
+    GStextureGetXsize(tex);
+    GStextureGetYsize(tex);
+    r = (u8*)getRes();
+    u8* tbl = r + GC_AT(u32, r, 4);
+    u8* sp;
+    u8* ent;
+    ent = tbl + frame * 4;
+    sp = tbl + GC_AT(u16, ent, 2);
+    for (int i = 0; i < GC_AT(u16, ent, 0); i++) {
+        AntSpritePart* s = (AntSpritePart*)sp;
+        dispTexture(tex, (f32)(p.x + (s->x + offX)), (f32)(p.y + (offY + s->y + 0x20)), s->u, s->v, s->w, s->h, col, scale, alpha);
+        sp += 0x1C;
     }
 }
 
@@ -489,7 +502,8 @@ void CAnt::drawAndUpdate() {
 
 void CAnt::drawAndUpdate(PocketVec<short> p) {
     if (isValid()) {
-        pos = p;
+        PocketVec<short> q = p;
+        pos = q;
         PocketVec<short> z = PocketVec<short>::zero;
         draw(z);
         update();

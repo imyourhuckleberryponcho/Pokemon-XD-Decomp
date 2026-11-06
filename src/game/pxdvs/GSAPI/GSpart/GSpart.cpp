@@ -1,5 +1,8 @@
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/gsmodelview.h>
 
 #pragma pool_strings off
 
@@ -22,34 +25,34 @@ struct _HSD_AObj {
 typedef _HSD_AObj HSD_AObj;
 
 struct _HSD_AObjDesc {
-    u32 flags;
-    f32 end_frame;
+    gc_be32 flags;
+    gc_bef32 end_frame;
 };
 
 struct _HSD_AnimJoint {
-    _HSD_AnimJoint* child;
-    _HSD_AnimJoint* next;
-    _HSD_AObjDesc* aobjdesc;
+    gc_ptr32(_HSD_AnimJoint) child;
+    gc_ptr32(_HSD_AnimJoint) next;
+    gc_ptr32(_HSD_AObjDesc) aobjdesc;
 };
 
 struct _HSD_MatAnimJoint {
-    _HSD_MatAnimJoint* child;
-    _HSD_MatAnimJoint* next;
-    void* matanim;
+    gc_ptr32(_HSD_MatAnimJoint) child;
+    gc_ptr32(_HSD_MatAnimJoint) next;
+    gc_ptr32(void) matanim;
 };
 
 struct _HSD_ShapeAnimJoint {
-    _HSD_ShapeAnimJoint* child;
-    _HSD_ShapeAnimJoint* next;
+    gc_ptr32(_HSD_ShapeAnimJoint) child;
+    gc_ptr32(_HSD_ShapeAnimJoint) next;
 };
 
 struct _HSD_MObj;
 struct _HSD_TObj;
 
 struct _HSD_MatAnim {
-    _HSD_MatAnim* next;
-    void* aobjdesc;
-    void* texanim;
+    gc_ptr32(_HSD_MatAnim) next;
+    gc_ptr32(void) aobjdesc;
+    gc_ptr32(void) texanim;
 };
 
 struct _HSD_DObj {
@@ -58,16 +61,31 @@ struct _HSD_DObj {
     _HSD_MObj* mobj;
 };
 
+#ifdef __MWERKS__
 struct _HSD_MObj {
     u8 unk0[8];
     _HSD_TObj* tobj;
 };
+#else
+struct _HSD_MObj {
+    u8 pc0[0x10];
+    _HSD_TObj* tobj;
+};
+#endif
 
+#ifdef __MWERKS__
 struct _HSD_TObj {
     u8 unk0[0x64];
     HSD_AObj* aobj;
 };
+#else
+struct _HSD_TObj {
+    u8 pc0[0x80];
+    HSD_AObj* aobj;
+};
+#endif
 
+#ifdef __MWERKS__
 struct _HSD_JObj {
     u8 unk0[8];
     _HSD_JObj* next;
@@ -83,6 +101,26 @@ struct _HSD_JObj {
     u8 unk74[8];
     HSD_AObj* aobj;
 };
+#else
+struct _HSD_JObj {
+    void* pcObject[2];
+    _HSD_JObj* next;
+    _HSD_JObj* parent;
+    _HSD_JObj* child;
+    u32 flags;
+    _HSD_DObj* dobj;
+    GSvec rotate;
+    f32 rotateW;
+    GSvec scale;
+    GSvec translate;
+    Mtx mtx;
+    void* scl;
+    void* envelopemtx;
+    HSD_AObj* aobj;
+    void* robj;
+    u32 id;
+};
+#endif
 typedef _HSD_JObj HSD_JObj;
 typedef _HSD_DObj HSD_DObj;
 typedef _HSD_MObj HSD_MObj;
@@ -96,16 +134,27 @@ typedef _HSD_ShapeAnimJoint HSD_ShapeAnimJoint;
 #define JOBJ_USER_DEF_MTX (1 << 23)
 
 struct _HSD_SceneModelSet {
-    void* joint;
-    HSD_AnimJoint** animjoint;
-    HSD_MatAnimJoint** matanim_joint;
-    HSD_ShapeAnimJoint** shapeanim_joint;
+    gc_ptr32(void) joint;
+    gc_ptr32(gc_ptr32(HSD_AnimJoint)) animjoint;
+    gc_ptr32(gc_ptr32(HSD_MatAnimJoint)) matanim_joint;
+    gc_ptr32(gc_ptr32(HSD_ShapeAnimJoint)) shapeanim_joint;
 };
 
 struct GSmaterial {
-    u8 unk0[8];
+    u16 savedAlpha;
+    u16 extensions;
+    u32 savedFlags;
     HSD_MObj* mobj;
-    u8 unkC[0x28];
+    u8 modulate[4];
+    u8 channels[4];
+    _HSD_TObj* envTObj;
+    struct HSD_ImageDesc* envImage;
+    struct GStexture* envTexture;
+    s32 envType;
+    s32 envMode;
+    f32 envBlend;
+    struct HSD_ImageDesc* savedImage;
+    struct HSD_PEDesc* savedPE;
 };
 
 struct GSmodelPartMix {
@@ -131,23 +180,79 @@ struct GSmodelPartAnim {
 
 struct _GSmodel {
     u32 flags;
-    u8 unk4[4];
+    _GSmodel* next;
     _HSD_SceneModelSet* set;
-    u8 unkC[0x70];
+    void* jobj;
+    void* blendJObj;
+    void* blendDest;
+    f32 position[3];
+    f32 rotation[3];
+    f32 scale[3];
+    GSmodelBoundView bound;
+    void* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
+    s32 animType;
+    u32 animIndex;
     f32 animRate;
-    u8 unk80[0x34];
+    f32 animFrame;
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
+    s32 texAnimType;
+    u32 texAnimIndex;
     f32 texAnimRate;
-    u8 unkB8[0x10];
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
     GSmodelPartMix partMix[8];
     GSmodelPartMix texPartMix[4];
-    u8 unk218[4];
+    f32 blendFactor;
     u8 animDirty;
     u8 texAnimDirty;
-    u8 unk21E[10];
+    u8 unk21E[2];
+    void* animEndedCallback;
+    void* animEndedCallbackArg;
     GSmodelPartAnim partAnim[16];
-    u8 unk5A8[0x38];
+    s32 attachMode;
+    _GSmodel* attachModel;
+    u32 attachIndex;
+    f32 attachPosition[3];
+    f32 attachRotation[3];
+    f32 attachScale[3];
+    void* particleBank;
+    u32 particleAttachMode;
     GSmaterial* materials;
     u32 materialCount;
+    u32 shadowSurfaceCount;
+    void* shadowSurfaces;
+    void* shadowLight;
+    f32 groundPlane;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
 struct GSpart {

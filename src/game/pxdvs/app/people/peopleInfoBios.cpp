@@ -1,24 +1,5 @@
 #include <dolphin/types.h>
-
-struct PeopleInfo {
-    u8 talkSe : 3;
-    u8 boundCheck : 1;
-    u8 colType : 2;
-    u8 unk0 : 2;
-    u8 neckIndex;
-    u8 chestIndex;
-    u8 unk3;
-    u32 modelResID;
-    f32 walkLength;
-    f32 runLength;
-    f32 colBallSize;
-    f32 neckLeftLimit;
-    f32 neckRightLimit;
-    f32 neckUpLimit;
-    f32 neckDownLimit;
-    f32 talkDistance;
-    u8 unk28[0xC];
-};
+#include <game/pxdvs/app/people/peopleInfo.h>
 
 extern "C" {
 

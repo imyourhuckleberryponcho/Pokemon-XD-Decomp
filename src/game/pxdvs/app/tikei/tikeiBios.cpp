@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct TikeiData {
     u8 zokuseiDataId;
@@ -20,7 +21,7 @@ static inline TikeiData* tikeiDataBiosGetPtr(u16 id) {
     return &tikei_data[id];
 }
 
-u16 tikeiDataBiosGetWazaId(u16 id) {
+PCRET(u16) tikeiDataBiosGetWazaId(u16 id) {
     TikeiData* data = tikeiDataBiosGetPtr(id);
     if (data == NULL) {
         return 0;
@@ -28,7 +29,7 @@ u16 tikeiDataBiosGetWazaId(u16 id) {
     return data->wazaId;
 }
 
-u8 tikeiDataBiosGetZokuseiDataId(u16 id) {
+PCRET(u8) tikeiDataBiosGetZokuseiDataId(u16 id) {
     TikeiData* data = tikeiDataBiosGetPtr(id);
     if (data == NULL) {
         return 0;

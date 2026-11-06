@@ -1,6 +1,8 @@
 
 
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
 #include <dolphin/gx/GXStruct.h>
 
 #pragma pool_strings off
@@ -30,25 +32,25 @@ struct GSgfxRenderModule {
 void GSgfxRenderModuleRegister(u8 priority, GSgfxRenderModule* module, void* user);
 
 struct GSlightWObjDesc {
-    char* class_name;
-    f32 x, y, z;
-    void* robjdesc;
+    gc_ptr32(char) class_name;
+    gc_bef32 x, y, z;
+    gc_ptr32(void) robjdesc;
 };
 
 struct GSlightLightDesc {
-    char* class_name;
-    GSlightLightDesc* next;
-    u16 flags;
-    u16 attnflags;
+    gc_ptr32(char) class_name;
+    gc_ptr32(GSlightLightDesc) next;
+    gc_be16 flags;
+    gc_be16 attnflags;
     GXColor color;
-    GSlightWObjDesc* position;
-    GSlightWObjDesc* interest;
-    void* u;
+    gc_ptr32(GSlightWObjDesc) position;
+    gc_ptr32(GSlightWObjDesc) interest;
+    gc_ptr32(void) u;
 };
 
 struct GSlightDesc {
-    GSlightLightDesc* lightDesc;
-    void** anims;
+    gc_ptr32(GSlightLightDesc) lightDesc;
+    gc_ptr32(gc_ptr32(void)) anims;
 };
 
 struct GSlight {
@@ -352,7 +354,7 @@ u8 GSlightGetActive(GSlight* light)
     return light->active;
 }
 
-u8 GSlightCanAnimate(GSlight* light)
+PCRET(u8) GSlightCanAnimate(GSlight* light)
 {
     return light->canAnimate;
 }
@@ -533,6 +535,13 @@ extern "C" {
 
 void GSlightDeleteCurrentAll(void);
 
+
+#ifdef __MWERKS__
+#define GSLIGHT_LOBJ_NEXT(l) (*(HSD_LObj**)((u8*)(l) + 0xC))
+#else
+#define GSLIGHT_LOBJ_NEXT(l) (*(HSD_LObj**)((u8*)(l) + 0x18))
+#endif
+
 void GSlightSetupLights(HSD_CObj* cobj)
 {
     GSlight* prev;
@@ -547,11 +556,11 @@ void GSlightSetupLights(HSD_CObj* cobj)
         for (i = first + 1; i < _lightStructCount; i++) {
             light = &_lightStructList[i];
             if (light->used == 1 && light->active != 0) {
-                *(HSD_LObj**)((u8*)prev->lobj + 0xC) = light->lobj;
+                GSLIGHT_LOBJ_NEXT(prev->lobj) = light->lobj;
                 prev = light;
             }
         }
-        *(HSD_LObj**)((u8*)prev->lobj + 0xC) = 0;
+        GSLIGHT_LOBJ_NEXT(prev->lobj) = 0;
         HSD_LObjAddCurrentAll(_lightStructList[first].lobj);
     }
     HSD_LObjSetupInit(cobj);

@@ -1,5 +1,8 @@
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/gsmodelview.h>
 
 #pragma pool_strings off
 
@@ -22,31 +25,32 @@ struct _HSD_AObj {
 typedef _HSD_AObj HSD_AObj;
 
 struct HSD_AObjDesc {
-    u32 flags;
-    f32 end_frame;
+    gc_be32 flags;
+    gc_bef32 end_frame;
 };
 
 struct _HSD_AnimJoint {
-    _HSD_AnimJoint* child;
-    _HSD_AnimJoint* next;
-    HSD_AObjDesc* aobjdesc;
-    void* robj;
-    u32 flags;
+    gc_ptr32(_HSD_AnimJoint) child;
+    gc_ptr32(_HSD_AnimJoint) next;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
+    gc_ptr32(void) robj;
+    gc_be32 flags;
 };
 typedef _HSD_AnimJoint HSD_AnimJoint;
 
 struct _HSD_MatAnimJoint {
-    _HSD_MatAnimJoint* child;
-    _HSD_MatAnimJoint* next;
+    gc_ptr32(_HSD_MatAnimJoint) child;
+    gc_ptr32(_HSD_MatAnimJoint) next;
 };
 
 struct _HSD_ShapeAnimJoint {
-    _HSD_ShapeAnimJoint* child;
-    _HSD_ShapeAnimJoint* next;
+    gc_ptr32(_HSD_ShapeAnimJoint) child;
+    gc_ptr32(_HSD_ShapeAnimJoint) next;
 };
 
 typedef struct _HSD_JObj HSD_JObj;
 
+#ifdef __MWERKS__
 struct _HSD_JObj {
     u8 unk0[0x8];
     HSD_JObj* next;
@@ -62,6 +66,26 @@ struct _HSD_JObj {
     u8 unk74[0x8];
     HSD_AObj* aobj;
 };
+#else
+struct _HSD_JObj {
+    void* pcObject[2];
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
+    void* dobj;
+    GSvec rotate;
+    f32 rotateW;
+    GSvec scale;
+    GSvec translate;
+    Mtx mtx;
+    void* scl;
+    void* envelopemtx;
+    HSD_AObj* aobj;
+    void* robj;
+    u32 id;
+};
+#endif
 
 #define JOBJ_MTX_DIRTY (1 << 6)
 #define JOBJ_INSTANCE (1 << 12)
@@ -72,14 +96,17 @@ struct _HSD_JObj {
 struct _HSD_Joint;
 
 struct _HSD_SceneModelSet {
-    _HSD_Joint* joint;
-    HSD_AnimJoint** animjoint;
-    _HSD_MatAnimJoint** matanim_joint;
-    _HSD_ShapeAnimJoint** shapeanim_joint;
+    gc_ptr32(_HSD_Joint) joint;
+    gc_ptr32(gc_ptr32(HSD_AnimJoint)) animjoint;
+    gc_ptr32(gc_ptr32(_HSD_MatAnimJoint)) matanim_joint;
+    gc_ptr32(gc_ptr32(_HSD_ShapeAnimJoint)) shapeanim_joint;
 };
 
 struct GSpart {
-    u8 unk0[0x8];
+    u8 inUse;
+    u8 pad;
+    u16 index;
+    struct _GSmodel* model;
     HSD_JObj* jobj;
 };
 
@@ -113,7 +140,14 @@ struct _GSmodel {
     GSvec position;
     GSvec rotation;
     GSvec scale;
+#ifdef __MWERKS__
     u8 bound[0x20];
+#else
+    union {
+        u8 bound[sizeof(GSmodelBoundView)];
+        GSmodelBoundView boundView;
+    };
+#endif
     void* camera;
     u16 flags2;
     u16 token;
@@ -155,6 +189,28 @@ struct _GSmodel {
     GSvec attachPosition;
     GSvec attachRotation;
     GSvec attachScale;
+    void* particleBank;
+    u32 particleAttachMode;
+    void* materials;
+    u32 materialCount;
+    u32 shadowSurfaceCount;
+    void* shadowSurfaces;
+    void* shadowLight;
+    f32 groundPlane;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
 #define MODEL_ROOT_NULL 0x20000
@@ -215,7 +271,11 @@ void modelIntpJObjScale(HSD_JObj* a, HSD_JObj* b, HSD_JObj* dst, f32 t, GSvec* m
 void modelIntpJObjTrans(HSD_JObj* a, HSD_JObj* b, HSD_JObj* dst, f32 t, GSvec* mix, u32 mixFlags);
 static void _modelResetPartAnimMixes(_GSmodel* model);
 void modelUpdateCenterNull(_GSmodel* model);
+#ifdef __MWERKS__
 HSD_JObj* modelGetRenderJObj(_GSmodel* model);
+#else
+HSD_JObj* modelGetRenderJObj(_GSmodel* model);
+#endif
 void modelSetPos(_GSmodel* model, GSvec* v);
 void modelSetRot(_GSmodel* model, GSvec* v);
 void modelSetScl(_GSmodel* model, GSvec* v);
@@ -1527,10 +1587,10 @@ static void _jobjAddAnimAll(HSD_JObj* jobj, HSD_AnimJoint* animjoint, _HSD_MatAn
     }
     if (!(jobj->flags & JOBJ_INSTANCE)) {
         HSD_JObj* child = jobj->child;
-        HSD_AnimJoint* a = animjoint != 0 ? animjoint->child : 0;
-        _HSD_MatAnimJoint* m = matanim != 0 ? matanim->child : 0;
-        _HSD_ShapeAnimJoint* sh = shapeanim != 0 ? shapeanim->child : 0;
-        for (; child != 0; child = child->next, a = a != 0 ? a->next : 0, m = m != 0 ? m->next : 0, sh = sh != 0 ? sh->next : 0) {
+        HSD_AnimJoint* a = animjoint != 0 ? GC_PTR(HSD_AnimJoint*, animjoint->child) : 0;
+        _HSD_MatAnimJoint* m = matanim != 0 ? GC_PTR(_HSD_MatAnimJoint*, matanim->child) : 0;
+        _HSD_ShapeAnimJoint* sh = shapeanim != 0 ? GC_PTR(_HSD_ShapeAnimJoint*, shapeanim->child) : 0;
+        for (; child != 0; child = child->next, a = a != 0 ? GC_PTR(HSD_AnimJoint*, a->next) : 0, m = m != 0 ? GC_PTR(_HSD_MatAnimJoint*, m->next) : 0, sh = sh != 0 ? GC_PTR(_HSD_ShapeAnimJoint*, sh->next) : 0) {
             _jobjAddAnimAll(child, a, m, sh);
         }
     }    }

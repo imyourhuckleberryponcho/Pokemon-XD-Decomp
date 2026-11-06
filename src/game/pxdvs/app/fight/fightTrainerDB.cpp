@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/bitfield.h>
 
 #pragma optimize_for_size on
 
@@ -40,19 +43,20 @@ struct FightTrainerPokemonPartData {
 
 class DeckPokemon {
 public:
-    u16 pokemonId;
+    gc_be16 pokemonId;
     u8 level;
     u8 friendLevel;
-    u16 holdItem;
+    gc_be16 holdItem;
     u8 role;
     u8 keyPlayer;
     u8 statusRnd[6];
     u8 statusEffort[6];
-    u16 waza[4];
-    u16 unk1C;
-    u8 seikaku : 5;
-    u8 sex : 2;
-    u8 tokusei : 1;
+    gc_be16 waza[4];
+    gc_be16 unk1C;
+    GC_BITS3(
+    u8 seikaku : 5,
+    u8 sex : 2,
+    u8 tokusei : 1)
     u8 unk1F;
 
     static DeckPokemon* getDeckPokemonObj(u32 id);
@@ -112,35 +116,95 @@ public:
     void setStatusDetermValTotalMin(u8 v);
     u8 getStatusDetermValTotalMax() const;
     void setStatusDetermValTotalMax(u8 v);
+#ifdef __MWERKS__
     u8 getRespectPokemonCondJuge() const;
+#else
+    bool getRespectPokemonCondJuge() const;
+#endif
     void setRespectPokemonCondJuge(bool v);
+#ifdef __MWERKS__
     u8 getRespectWazaRiskJudge() const;
+#else
+    bool getRespectWazaRiskJudge() const;
+#endif
     void setRespectWazaRiskJudge(bool v);
+#ifdef __MWERKS__
     u8 getRespectWazaHit() const;
+#else
+    bool getRespectWazaHit() const;
+#endif
     void setRespectWazaHit(bool v);
+#ifdef __MWERKS__
     u8 getRespectRole() const;
+#else
+    bool getRespectRole() const;
+#endif
     void setRespectRole(bool v);
+#ifdef __MWERKS__
     u8 getRespectWazaAssmntVal() const;
+#else
+    bool getRespectWazaAssmntVal() const;
+#endif
     void setRespectWazaAssmntVal(bool v);
+#ifdef __MWERKS__
     u8 getSelectRandomWaza() const;
+#else
+    bool getSelectRandomWaza() const;
+#endif
     void setSelectRandomWaza(bool v);
+#ifdef __MWERKS__
     u8 getSelectRandomDefence() const;
+#else
+    bool getSelectRandomDefence() const;
+#endif
     void setSelectRandomDefence(bool v);
+#ifdef __MWERKS__
     u8 getCalcWazaDamage() const;
+#else
+    bool getCalcWazaDamage() const;
+#endif
     void setCalcWazaDamage(bool v);
+#ifdef __MWERKS__
     u8 getAbilityDetermination() const;
+#else
+    bool getAbilityDetermination() const;
+#endif
     void setAbilityDetermination(bool v);
+#ifdef __MWERKS__
     u8 getAttrDetermination() const;
+#else
+    bool getAttrDetermination() const;
+#endif
     void setAttrDetermination(bool v);
+#ifdef __MWERKS__
     u8 getRespectKeyPlayer() const;
+#else
+    bool getRespectKeyPlayer() const;
+#endif
     void setRespectKeyPlayer(bool v);
+#ifdef __MWERKS__
     u8 getSelectAceBoss() const;
+#else
+    bool getSelectAceBoss() const;
+#endif
     void setSelectAceBoss(bool v);
+#ifdef __MWERKS__
     u8 getOrder() const;
+#else
+    bool getOrder() const;
+#endif
     void setOrder(bool v);
+#ifdef __MWERKS__
     u8 getNotSameWeekPoint() const;
+#else
+    bool getNotSameWeekPoint() const;
+#endif
     void setNotSameWeekPoint(bool v);
+#ifdef __MWERKS__
     u8 getSelectRandomPokemon() const;
+#else
+    bool getSelectRandomPokemon() const;
+#endif
     void setSelectRandomPokemon(bool v);
     u8 getWazaKindParam(u8 i) const;
     void setWazaKindParam(u8 i, u8 v);
@@ -584,7 +648,7 @@ void fightTrainerAiDB_SetWazaTypeReviseValue(u16 id, u8 index, u8 v) {
     }
 }
 
-u8 fightTrainerAiDB_GetWazaTypeReviseValue(u16 id, u8 index) {
+PCRET(u8) fightTrainerAiDB_GetWazaTypeReviseValue(u16 id, u8 index) {
     DeckTrainerAI* ai = DeckTrainerAI::getDeckTrainerAIObj(id);
     if (ai == 0) {
         return 0;
@@ -620,7 +684,7 @@ void fightTrainerAiDB_SetZokuseiReviseValue(u16 id, u8 index, u8 v) {
     }
 }
 
-u8 fightTrainerAiDB_GetZokuseiReviseValue(u16 id, u8 index) {
+PCRET(u8) fightTrainerAiDB_GetZokuseiReviseValue(u16 id, u8 index) {
     DeckTrainerAI* ai = DeckTrainerAI::getDeckTrainerAIObj(id);
     if (ai == 0) {
         return 0;
@@ -1050,7 +1114,7 @@ void fightTrainerPokemonPartDB_SetWazaTypeRevise(u16 id, u8 index, u8 v) {
     }
 }
 
-u8 fightTrainerPokemonPartDB_GetWazaTypeRevise(u16 id, u8 index) {
+PCRET(u8) fightTrainerPokemonPartDB_GetWazaTypeRevise(u16 id, u8 index) {
     FightTrainerPokemonPartData* d = fightTrainerPokemonPartDataBiosGetPtr(id);
     if (d == 0) {
         return 0;
@@ -1466,7 +1530,7 @@ void fightTrainerDB_SetName(u16 id, u16 v) {
     }
 }
 
-u16 fightTrainerDB_GetName(u16 id) {
+PCRET(u16) fightTrainerDB_GetName(u16 id) {
     DeckTrainer* t = DeckTrainer::getDeckTrainerObj(id);
     if (id >= 5000) {
         return 0;

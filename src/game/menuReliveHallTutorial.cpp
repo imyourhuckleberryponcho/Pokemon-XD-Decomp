@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 
 #pragma peephole off
 
@@ -25,9 +28,13 @@ struct CInfoWindow {
     void exec(CMetaMenu&, u32, bool);
 };
 class CMetaMenu {
-    u8 reserved[0x244];
+    u8 reserved[0x11C];
+    void (*windowFuncs[64])(CMetaMenu*, s32);
+    s32* windowTable;
+    u8 reserved220[0x24];
     CInfoWindow info;
-    u8 reserved278[0xB0];
+    u8 reserved278[0xA8];
+    u64 time;
     ReliveTutorial* tutorial;
     u8 updated, reserved32D;
     u16 cachedInput;

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#ifdef __MWERKS__
 typedef union {
     u8 u8;
     u16 u16;
@@ -7,6 +8,7 @@ typedef union {
     f32 f32;
 } PPCWGPipe;
 volatile PPCWGPipe GXWGFifo : 0xCC008000;
+#endif
 static inline void GXPosition3f32(f32 x, f32 y, f32 z) {
     GXWGFifo.f32 = x;
     GXWGFifo.f32 = y;
@@ -63,21 +65,75 @@ struct GSmtx;
 struct GStexture;
 typedef f32 Mtx44[4][4];
 
+enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
+enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
+#include <game/gsgfxlayer.h>
+#ifndef __MWERKS__
+#include <stdint.h>
+struct GSgfxLayerEffectTexView {
+    u16 width, height;
+    u8 bitsPerPixel, mipLevels, inUse, dirty;
+    s32 format;
+    u32 tlutFormat, wrapS, wrapT;
+    s32 minFilter, magFilter;
+    u32 mipFilter;
+    void* memHandle;
+    void* mipData[8];
+};
+struct GSgfxLayerEffectMstackView {
+    u8* base;
+    u8* top;
+};
+#define TEX_F(t, T, off, member) (*(T)&((GSgfxLayerEffectTexView*)(t))->member)
+#define TEX_MIP0(t) ((s32)(uintptr_t)((GSgfxLayerEffectTexView*)(t))->mipData[0])
+#define MSTACK_TOP(m) (((GSgfxLayerEffectMstackView*)(m))->top)
+#define LAYER_TEXCOPY(l) ((l)->texCopy)
+#define LAYER_TEXCOPY_VAL(t) ((GStexture*)(t))
+#else
+#define TEX_F(t, T, off, member) M2C_FIELD(t, T, off)
+#define TEX_MIP0(t) M2C_FIELD(t, s32 *, 0x28)
+#define MSTACK_TOP(m) M2C_FIELD(m, u8 **, 4)
+#define LAYER_TEXCOPY(l) ((u32) LAYER_F(l, u32 *, 0x19A4, texCopy))
+#define LAYER_TEXCOPY_VAL(t) ((u32)(t))
+#endif
+
 extern "C++" {
+#ifdef __MWERKS__
 struct GSgfxLayer {
     u8 _draft[1];
+#else
+struct GSgfxLayer : public GSgfxLayerData {
+#endif
     void FlushState();
-    s32 tunitIndTexMtx(GSgfxIndTexMtxID, float(*)[3], signed char);
+    void tunitIndTexMtx(GSgfxIndTexMtxID, float(*)[3], signed char);
     void EffectScreenClear(bool, bool, bool);
     void PrepareFBCopy();
     void PrepareDistortion();
     void EffectTextureCopy(GStexture*, bool, unsigned char*, bool, bool, bool);
+#ifdef __MWERKS__
     s32 beginSurface(unsigned short);
+#else
+    void beginSurface(unsigned short p0);
+#endif
+#ifdef __MWERKS__
     s32 tgenFunc(unsigned char, GSgfxTgenFunc, GSgfxTgenSrc, GSmtx*, bool, GSmtx*);
+#else
+    void tgenFunc(unsigned char id, GSgfxTgenFunc func, GSgfxTgenSrc src, GSmtx* mtx, bool normalize, GSmtx* postMtx);
+#endif
     void EffectDistortion();
+#ifdef __MWERKS__
     s32 endSurface();
+#else
+    void endSurface();
+#endif
     void setRenderStateAndSelect(GSgfxVF*);
     void textureCopy(GSgfxLayerPass, GStexture*, bool, unsigned char*, bool, bool, bool);
+#ifndef __MWERKS__
+    static GStexture* fbTexPtr;
+    static u16 fbTexRefCount;
+    static GStexture* distTexPtr;
+    static u16 distTexRefCount;
+#endif
 };
 struct GSgfxVF {
     u8 _draft[1];
@@ -101,22 +157,45 @@ s32 GStextureGetGXformat(GStexture* tex, u8 alpha);
 void* memcpy(void* dst, const void* src, size_t n);
 struct XdBlob30 { u8 data[0x30]; };
 extern XdBlob30 mtxIdent;
+#ifdef __MWERKS__
 extern s32 jtbl_1978;
+#else
+static const s32 jtbl_1978 = 0;
+#endif
 }
 extern "C++" {
-void* GSgfxVideoGetRenderMode();
+struct GSgfxVideoState* GSgfxVideoGetRenderMode();
+#ifdef __MWERKS__
 s32 GSgfxVideoResetViewport(bool);
+#else
+void GSgfxVideoResetViewport(bool b);
+#endif
 }
 static s32 _layerTexCopyDefaultFilter = 0x08080A0C;
+#ifdef __MWERKS__
+extern "C" {
 GStexture* fbTexPtr__10GSgfxLayer;
+}
 GStexture* distTexPtr__10GSgfxLayer;
+extern "C" {
 u16 fbTexRefCount__10GSgfxLayer;
+}
 u16 distTexRefCount__10GSgfxLayer;
+#else
+GStexture* GSgfxLayer::fbTexPtr;
+GStexture* GSgfxLayer::distTexPtr;
+u16 GSgfxLayer::fbTexRefCount;
+u16 GSgfxLayer::distTexRefCount;
+#define fbTexPtr__10GSgfxLayer GSgfxLayer::fbTexPtr
+#define distTexPtr__10GSgfxLayer GSgfxLayer::distTexPtr
+#define fbTexRefCount__10GSgfxLayer GSgfxLayer::fbTexRefCount
+#define distTexRefCount__10GSgfxLayer GSgfxLayer::distTexRefCount
+#endif
 
 void GSgfxLayer::textureCopy(GSgfxLayerPass p0, GStexture* p1, bool p2, unsigned char* p3, bool p4, bool p5, bool p6) {
-    if ((s32) M2C_FIELD(this, s32 *, 0x1994) != p0) {
-        M2C_FIELD(this, s32 *, 0x1994) = p0;
-        M2C_FIELD(this, u8 **, 0x1990) = (u8 *)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC;
+    if ((s32) LAYER_F(this, s32 *, 0x1994, curPass) != p0) {
+        LAYER_F(this, s32 *, 0x1994, curPass) = p0;
+        LAYER_F(this, u8 **, 0x1990, curFifo) = LAYER_CUR_PASS(this);
     }
     ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(p1), p2, (unsigned char*)(p3), p4, p5, p6);
 }
@@ -136,53 +215,53 @@ struct GSgfxCopyTexDesc {
 
 static inline void layerSetColorMask(GSgfxLayer* layer, bool r, bool g, bool b) {
     if (r == 1) {
-        M2C_FIELD(layer, u8 *, 0x1656) = 1;
+        LAYER_F(layer, u8 *, 0x1656, hw.colorUpdate) = 1;
     } else {
-        M2C_FIELD(layer, u8 *, 0x1656) = 0;
+        LAYER_F(layer, u8 *, 0x1656, hw.colorUpdate) = 0;
     }
     if (g == 1) {
-        M2C_FIELD(layer, u8 *, 0x1657) = 1;
+        LAYER_F(layer, u8 *, 0x1657, hw.alphaUpdate) = 1;
     } else {
-        M2C_FIELD(layer, u8 *, 0x1657) = 0;
+        LAYER_F(layer, u8 *, 0x1657, hw.alphaUpdate) = 0;
     }
     if (b == 1) {
-        M2C_FIELD(layer, u8 *, 0x1658) = 1;
+        LAYER_F(layer, u8 *, 0x1658, hw.zUpdate) = 1;
     } else {
-        M2C_FIELD(layer, u8 *, 0x1658) = 0;
+        LAYER_F(layer, u8 *, 0x1658, hw.zUpdate) = 0;
     }
-    M2C_FIELD(layer, u32 *, 0x170C) |= 4;
-    M2C_FIELD(layer, u32 *, 0x16A8) |= 0x40;
-    M2C_FIELD(layer, u32 *, 0x17C4) |= 4;
-    M2C_FIELD(layer, u32 *, 0x1760) |= 0x40;
+    LAYER_F(layer, u32 *, 0x170C, dirty[0].pe) |= 4;
+    LAYER_F(layer, u32 *, 0x16A8, dirty[0].groups) |= 0x40;
+    LAYER_F(layer, u32 *, 0x17C4, dirty[1].pe) |= 4;
+    LAYER_F(layer, u32 *, 0x1760, dirty[1].groups) |= 0x40;
 }
 
 static inline void layerLoadIdentity(GSgfxLayer* layer) {
-    u8* mtx = M2C_FIELD(layer, u8 **, 0x19A0);
-    memcpy(M2C_FIELD(mtx, u8 **, 4) + 4, &mtxIdent, 0x30U);
-    *M2C_FIELD(mtx, u32 **, 4) |= 1;
+    u8* mtx = LAYER_F(layer, u8 **, 0x19A0, matrixStack);
+    memcpy(MSTACK_TOP(mtx) + 4, &mtxIdent, 0x30U);
+    *(u32*)MSTACK_TOP(mtx) |= 1;
 }
 
 static inline void layerSetTexture(GSgfxLayer* layer, s32 slot, GStexture* tex) {
-    if (M2C_FIELD(layer, GStexture **, 0x1740 + slot * 4) != tex || M2C_FIELD(layer, GStexture **, 0x17F8 + slot * 4) != tex ||
-        M2C_FIELD(tex, u8 *, 7) != 0) {
-        M2C_FIELD(layer, GStexture **, 0x1740 + slot * 4) = tex;
-        M2C_FIELD(layer, u32 *, 0x173C) |= 1 << slot;
-        M2C_FIELD(layer, GStexture **, 0x17F8 + slot * 4) = tex;
-        M2C_FIELD(layer, u32 *, 0x17F4) |= 1 << slot;
+    if (LAYER_FI(layer, GStexture **, 0x1740, slot * 4, dirty[0].tex[slot]) != tex || LAYER_FI(layer, GStexture **, 0x17F8, slot * 4, dirty[1].tex[slot]) != tex ||
+        TEX_F(tex, u8 *, 7, dirty) != 0) {
+        LAYER_FI(layer, GStexture **, 0x1740, slot * 4, dirty[0].tex[slot]) = tex;
+        LAYER_F(layer, u32 *, 0x173C, dirty[0].texMask) |= 1 << slot;
+        LAYER_FI(layer, GStexture **, 0x17F8, slot * 4, dirty[1].tex[slot]) = tex;
+        LAYER_F(layer, u32 *, 0x17F4, dirty[1].texMask) |= 1 << slot;
     }
 }
 
 static inline void layerSetZMode(GSgfxLayer* layer, bool enable, s32 func) {
     if (enable == 1) {
-        M2C_FIELD(layer, u8 *, 0x165C) = 1;
+        LAYER_F(layer, u8 *, 0x165C, hw.zEnable) = 1;
     } else {
-        M2C_FIELD(layer, u8 *, 0x165C) = 0;
+        LAYER_F(layer, u8 *, 0x165C, hw.zEnable) = 0;
     }
-    M2C_FIELD(layer, s32 *, 0x1660) = func;
-    M2C_FIELD(layer, u32 *, 0x170C) |= 8;
-    M2C_FIELD(layer, u32 *, 0x16A8) |= 0x40;
-    M2C_FIELD(layer, u32 *, 0x17C4) |= 8;
-    M2C_FIELD(layer, u32 *, 0x1760) |= 0x40;
+    LAYER_F(layer, s32 *, 0x1660, hw.zFunc) = func;
+    LAYER_F(layer, u32 *, 0x170C, dirty[0].pe) |= 8;
+    LAYER_F(layer, u32 *, 0x16A8, dirty[0].groups) |= 0x40;
+    LAYER_F(layer, u32 *, 0x17C4, dirty[1].pe) |= 8;
+    LAYER_F(layer, u32 *, 0x1760, dirty[1].groups) |= 0x40;
 }
 
 extern "C++" {
@@ -198,7 +277,7 @@ void GSgfxLayer::EffectTextureCopy(GStexture* tex, bool filter, unsigned char* c
     bool oldZ;
     s32 oldFunc;
 
-    switch (M2C_FIELD(tex, s32 *, 8)) {
+    switch (TEX_F(tex, s32 *, 8, format)) {
     case 0x40:
     case 0x41:
     case 0x42:
@@ -216,18 +295,18 @@ void GSgfxLayer::EffectTextureCopy(GStexture* tex, bool filter, unsigned char* c
     }
     rm = (u8*)GSgfxVideoGetRenderMode();
     GSgfxVideoGetEFBSize(&w, &h);
-    w = M2C_FIELD(tex, u16 *, 0) < w ? M2C_FIELD(tex, u16 *, 0) : w;
-    h = M2C_FIELD(tex, u16 *, 2) < h ? M2C_FIELD(tex, u16 *, 2) : h;
+    w = TEX_F(tex, u16 *, 0, width) < w ? TEX_F(tex, u16 *, 0, width) : w;
+    h = TEX_F(tex, u16 *, 2, height) < h ? TEX_F(tex, u16 *, 2, height) : h;
     mask = false;
     if (r || g || b) {
         mask = true;
     }
     if (mask == true) {
-        oldR = M2C_FIELD(this, u8 *, 0x1656);
-        oldG = M2C_FIELD(this, u8 *, 0x1657);
-        oldB = M2C_FIELD(this, u8 *, 0x1658);
-        oldZ = M2C_FIELD(this, u8 *, 0x165C);
-        oldFunc = M2C_FIELD(this, s32 *, 0x1660);
+        oldR = LAYER_F(this, u8 *, 0x1656, hw.colorUpdate);
+        oldG = LAYER_F(this, u8 *, 0x1657, hw.alphaUpdate);
+        oldB = LAYER_F(this, u8 *, 0x1658, hw.zUpdate);
+        oldZ = LAYER_F(this, u8 *, 0x165C, hw.zEnable);
+        oldFunc = LAYER_F(this, s32 *, 0x1660, hw.zFunc);
         layerSetColorMask(this, r, g, b);
         layerSetZMode(this, true, 7);
     }
@@ -250,12 +329,12 @@ void GSgfxLayer::EffectTextureCopy(GStexture* tex, bool filter, unsigned char* c
     desc.mode = 3;
     desc.mipmap = 0;
     desc.clear = mask;
-    GSgfx_GCWriteCopyTex((s16*)&desc, M2C_FIELD(tex, s32 *, 0x28));
+    GSgfx_GCWriteCopyTex((s16*)&desc, TEX_MIP0(tex));
     if (mask == true) {
         layerSetColorMask(this, oldR, oldG, oldB);
         layerSetZMode(this, oldZ, oldFunc);
     }
-    M2C_FIELD(this, u32 *, 4) |= 0x30000000;
+    LAYER_F(this, u32 *, 0x4, flags) |= 0x30000000;
 }
 }
 
@@ -270,85 +349,85 @@ void GSgfxLayer::EffectScreenClear(bool p0, bool p1, bool p2) {
 
     if ((p0 != 0) || (p1 != 0) || (p2 != 0)) {
         if (p0 == 1) {
-            M2C_FIELD(this, s8 *, 0x1656) = 1;
+            LAYER_F(this, s8 *, 0x1656, hw.colorUpdate) = 1;
         } else {
-            M2C_FIELD(this, s8 *, 0x1656) = 0;
+            LAYER_F(this, s8 *, 0x1656, hw.colorUpdate) = 0;
         }
         if (p1 == 1) {
-            M2C_FIELD(this, s8 *, 0x1657) = 1;
+            LAYER_F(this, s8 *, 0x1657, hw.alphaUpdate) = 1;
         } else {
-            M2C_FIELD(this, s8 *, 0x1657) = 0;
+            LAYER_F(this, s8 *, 0x1657, hw.alphaUpdate) = 0;
         }
         if (p2 == 1) {
-            M2C_FIELD(this, s8 *, 0x1658) = 1;
+            LAYER_F(this, s8 *, 0x1658, hw.zUpdate) = 1;
         } else {
-            M2C_FIELD(this, s8 *, 0x1658) = 0;
+            LAYER_F(this, s8 *, 0x1658, hw.zUpdate) = 0;
         }
-        M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 4);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 4);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
+        LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 4);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+        LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 4);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
         GSmtx44Ortho(m, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-        M2C_FIELD(this, s32 *, 0xD54) = 1;
-        M2C_FIELD(this, f32 *, 0xD58) = m[0][0];
-        M2C_FIELD(this, f32 *, 0xD5C) = m[0][3];
-        M2C_FIELD(this, f32 *, 0xD60) = m[1][1];
-        M2C_FIELD(this, f32 *, 0xD64) = m[1][3];
-        M2C_FIELD(this, f32 *, 0xD68) = m[2][2];
-        M2C_FIELD(this, f32 *, 0xD6C) = m[2][3];
+        LAYER_F(this, s32 *, 0xD54, hw.projType) = 1;
+        LAYER_F(this, f32 *, 0xD58, hw.proj[0]) = m[0][0];
+        LAYER_F(this, f32 *, 0xD5C, hw.proj[1]) = m[0][3];
+        LAYER_F(this, f32 *, 0xD60, hw.proj[2]) = m[1][1];
+        LAYER_F(this, f32 *, 0xD64, hw.proj[3]) = m[1][3];
+        LAYER_F(this, f32 *, 0xD68, hw.proj[4]) = m[2][2];
+        LAYER_F(this, f32 *, 0xD6C, hw.proj[5]) = m[2][3];
         layerLoadIdentity(this);
-        M2C_FIELD(this, f32 *, 0x1684) = 0.0f;
-        M2C_FIELD(this, f32 *, 0x1688) = 30000.0f;
-        if ((u8) M2C_FIELD(this, u8 *, 0x16A7) != 0) {
-            if ((u8) M2C_FIELD(this, u8 *, 0x16A6) != 0) {
-                M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x100);
-                M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x100);
+        LAYER_F(this, f32 *, 0x1684, hw.fogNear) = 0.0f;
+        LAYER_F(this, f32 *, 0x1688, hw.fogFar) = 30000.0f;
+        if ((u8) LAYER_F(this, u8 *, 0x16A7, hw.fogEnable) != 0) {
+            if ((u8) LAYER_F(this, u8 *, 0x16A6, hw.fogRangeEnable) != 0) {
+                LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 0x100);
+                LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 0x100);
             }
-            M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x40);
-            M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-            M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x40);
-            M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
+            LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 0x40);
+            LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+            LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 0x40);
+            LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
         }
-        M2C_FIELD(this, s32 *, 0x16AC) = (s32) (M2C_FIELD(this, s32 *, 0x16AC) | 0x20);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 1);
-        M2C_FIELD(this, s32 *, 0x1764) = (s32) (M2C_FIELD(this, s32 *, 0x1764) | 0x20);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 1);
-        M2C_FIELD(this, s32 *, 0x1644) = 0;
-        M2C_FIELD(this, s32 *, 0x1648) = 1;
-        M2C_FIELD(this, s32 *, 0x164C) = 1;
-        M2C_FIELD(this, s32 *, 0x1650) = 5;
-        M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 1);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 1);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(this, s8 *, 0x165C) = 0;
-        M2C_FIELD(this, s32 *, 0x1660) = 3;
-        M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 8);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 8);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(this, s32 *, 0x1664) = 7;
-        M2C_FIELD(this, s8 *, 0x1670) = 0;
-        M2C_FIELD(this, s32 *, 0x1668) = 0;
-        M2C_FIELD(this, s32 *, 0x166C) = 7;
-        M2C_FIELD(this, s8 *, 0x1671) = 0;
-        M2C_FIELD(this, s8 *, 0x1672) = 1;
-        M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x10);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x10);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(this, s32 *, 0xD8C) = 0;
-        M2C_FIELD(this, s32 *, 0x16B8) = (s32) (M2C_FIELD(this, s32 *, 0x16B8) | 2);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 2);
-        M2C_FIELD(this, s32 *, 0x1770) = (s32) (M2C_FIELD(this, s32 *, 0x1770) | 2);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 2);
-        M2C_FIELD(this, s32 *, 0xD90) = 1;
-        M2C_FIELD(this, s32 *, 0x16B8) = (s32) (M2C_FIELD(this, s32 *, 0x16B8) | 4);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 2);
-        M2C_FIELD(this, s32 *, 0x1770) = (s32) (M2C_FIELD(this, s32 *, 0x1770) | 4);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 2);
+        LAYER_F(this, s32 *, 0x16AC, dirty[0].geom) = (s32) (LAYER_F(this, s32 *, 0x16AC, dirty[0].geom) | 0x20);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 1);
+        LAYER_F(this, s32 *, 0x1764, dirty[1].geom) = (s32) (LAYER_F(this, s32 *, 0x1764, dirty[1].geom) | 0x20);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 1);
+        LAYER_F(this, s32 *, 0x1644, hw.blend[0]) = 0;
+        LAYER_F(this, s32 *, 0x1648, hw.blend[1]) = 1;
+        LAYER_F(this, s32 *, 0x164C, hw.blend[2]) = 1;
+        LAYER_F(this, s32 *, 0x1650, hw.blend[3]) = 5;
+        LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 1);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+        LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 1);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
+        LAYER_F(this, s8 *, 0x165C, hw.zEnable) = 0;
+        LAYER_F(this, s32 *, 0x1660, hw.zFunc) = 3;
+        LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 8);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+        LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 8);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
+        LAYER_F(this, s32 *, 0x1664, hw.alphaComp0) = 7;
+        LAYER_F(this, s8 *, 0x1670, hw.alphaRef0) = 0;
+        LAYER_F(this, s32 *, 0x1668, hw.alphaCmpOp) = 0;
+        LAYER_F(this, s32 *, 0x166C, hw.alphaComp1) = 7;
+        LAYER_F(this, s8 *, 0x1671, hw.alphaRef1) = 0;
+        LAYER_F(this, s8 *, 0x1672, hw.zCompLoc) = 1;
+        LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 0x10);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+        LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 0x10);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
+        LAYER_F(this, s32 *, 0xD8C, hw.cullMode) = 0;
+        LAYER_F(this, s32 *, 0x16B8, dirty[0].raster) = (s32) (LAYER_F(this, s32 *, 0x16B8, dirty[0].raster) | 2);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 2);
+        LAYER_F(this, s32 *, 0x1770, dirty[1].raster) = (s32) (LAYER_F(this, s32 *, 0x1770, dirty[1].raster) | 2);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 2);
+        LAYER_F(this, s32 *, 0xD90, hw.clipMode) = 1;
+        LAYER_F(this, s32 *, 0x16B8, dirty[0].raster) = (s32) (LAYER_F(this, s32 *, 0x16B8, dirty[0].raster) | 4);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 2);
+        LAYER_F(this, s32 *, 0x1770, dirty[1].raster) = (s32) (LAYER_F(this, s32 *, 0x1770, dirty[1].raster) | 4);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 2);
         ((GSgfxLayer*)(this))->setRenderStateAndSelect((GSgfxVF*)(GSgfxVFGetPredef(0)));
-        M2C_FIELD(this, s32 *, 0x1998) = 0x98;
+        LAYER_F(this, s32 *, 0x1998, unk1998) = 0x98;
         left = 0.0f;
         top = 0.0f;
         right = 640.0f;
@@ -373,181 +452,181 @@ void GSgfxLayer::EffectDistortion() {
     s32 sp8;
     Mtx44 m;
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x16A7) != 0) {
-        M2C_FIELD(this, u8 *, 0x16A7) = 0U;
-        M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x40);
-        M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x40);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
+    if ((u8) LAYER_F(this, u8 *, 0x16A7, hw.fogEnable) != 0) {
+        LAYER_F(this, u8 *, 0x16A7, hw.fogEnable) = 0U;
+        LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 0x40);
+        LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 0x40);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
     }
-    if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
-        M2C_FIELD(this, s32 *, 0x1994) = 1;
-        M2C_FIELD(this, u8 **, 0x1990) = (u8 *)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC;
+    if ((s32) LAYER_F(this, s32 *, 0x1994, curPass) != 1) {
+        LAYER_F(this, s32 *, 0x1994, curPass) = 1;
+        LAYER_F(this, u8 **, 0x1990, curFifo) = LAYER_CUR_PASS(this);
     }
     ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(distTexPtr__10GSgfxLayer), 1U, (unsigned char*)(NULL), 0U, 0U, 0U);
     GSgfxVideoResetViewport(1U);
-    M2C_FIELD(this, s32 *, 0x1604) = 0;
-    M2C_FIELD(this, s32 *, 0x1608) = 1;
-    M2C_FIELD(this, s32 *, 0x160C) = 2;
-    M2C_FIELD(this, s32 *, 0x1610) = 3;
-    M2C_FIELD(this, s32 *, 0x1708) = (s32) (M2C_FIELD(this, s32 *, 0x1708) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x20);
-    M2C_FIELD(this, s32 *, 0x17C0) = (s32) (M2C_FIELD(this, s32 *, 0x17C0) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x20);
-    M2C_FIELD(this, s32 *, 0xD8C) = 2;
-    M2C_FIELD(this, s32 *, 0x16B8) = (s32) (M2C_FIELD(this, s32 *, 0x16B8) | 2);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 2);
-    M2C_FIELD(this, s32 *, 0x1770) = (s32) (M2C_FIELD(this, s32 *, 0x1770) | 2);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 2);
-    M2C_FIELD(this, s32 *, 0x1644) = 0;
-    M2C_FIELD(this, s32 *, 0x1648) = 1;
-    M2C_FIELD(this, s32 *, 0x164C) = 1;
-    M2C_FIELD(this, s32 *, 0x1650) = 5;
-    M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(this, s8 *, 0x1656) = 1;
-    M2C_FIELD(this, s8 *, 0x1657) = 0;
-    M2C_FIELD(this, s8 *, 0x1658) = 0;
-    M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 4);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 4);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(this, s8 *, 0x165C) = 0;
-    M2C_FIELD(this, s32 *, 0x1660) = 3;
-    M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 8);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 8);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(this, s32 *, 0x1664) = 7;
-    M2C_FIELD(this, s8 *, 0x1670) = 0;
-    M2C_FIELD(this, s32 *, 0x166C) = 7;
-    M2C_FIELD(this, s8 *, 0x1671) = 0;
-    M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x10);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(this, s8 *, 0x1672) = 1;
-    M2C_FIELD(this, s32 *, 0x1668) = 0;
-    M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x10);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
-    M2C_FIELD(this, s32 *, 0xD90) = 0;
-    M2C_FIELD(this, s32 *, 0x16B8) = (s32) (M2C_FIELD(this, s32 *, 0x16B8) | 4);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 2);
-    M2C_FIELD(this, s32 *, 0x1770) = (s32) (M2C_FIELD(this, s32 *, 0x1770) | 4);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 2);
-    M2C_FIELD(this, s8 *, 0xC70) = 1;
-    M2C_FIELD(this, s32 *, 0x16AC) = (s32) (M2C_FIELD(this, s32 *, 0x16AC) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 1);
-    M2C_FIELD(this, s32 *, 0x1764) = (s32) (M2C_FIELD(this, s32 *, 0x1764) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 1);
+    LAYER_F(this, s32 *, 0x1604, hw.swapTab[0][0]) = 0;
+    LAYER_F(this, s32 *, 0x1608, hw.swapTab[0][1]) = 1;
+    LAYER_F(this, s32 *, 0x160C, hw.swapTab[0][2]) = 2;
+    LAYER_F(this, s32 *, 0x1610, hw.swapTab[0][3]) = 3;
+    LAYER_F(this, s32 *, 0x1708, dirty[0].swapTab) = (s32) (LAYER_F(this, s32 *, 0x1708, dirty[0].swapTab) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x20);
+    LAYER_F(this, s32 *, 0x17C0, dirty[1].swapTab) = (s32) (LAYER_F(this, s32 *, 0x17C0, dirty[1].swapTab) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x20);
+    LAYER_F(this, s32 *, 0xD8C, hw.cullMode) = 2;
+    LAYER_F(this, s32 *, 0x16B8, dirty[0].raster) = (s32) (LAYER_F(this, s32 *, 0x16B8, dirty[0].raster) | 2);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 2);
+    LAYER_F(this, s32 *, 0x1770, dirty[1].raster) = (s32) (LAYER_F(this, s32 *, 0x1770, dirty[1].raster) | 2);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 2);
+    LAYER_F(this, s32 *, 0x1644, hw.blend[0]) = 0;
+    LAYER_F(this, s32 *, 0x1648, hw.blend[1]) = 1;
+    LAYER_F(this, s32 *, 0x164C, hw.blend[2]) = 1;
+    LAYER_F(this, s32 *, 0x1650, hw.blend[3]) = 5;
+    LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+    LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
+    LAYER_F(this, s8 *, 0x1656, hw.colorUpdate) = 1;
+    LAYER_F(this, s8 *, 0x1657, hw.alphaUpdate) = 0;
+    LAYER_F(this, s8 *, 0x1658, hw.zUpdate) = 0;
+    LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 4);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+    LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 4);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
+    LAYER_F(this, s8 *, 0x165C, hw.zEnable) = 0;
+    LAYER_F(this, s32 *, 0x1660, hw.zFunc) = 3;
+    LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 8);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+    LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 8);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
+    LAYER_F(this, s32 *, 0x1664, hw.alphaComp0) = 7;
+    LAYER_F(this, s8 *, 0x1670, hw.alphaRef0) = 0;
+    LAYER_F(this, s32 *, 0x166C, hw.alphaComp1) = 7;
+    LAYER_F(this, s8 *, 0x1671, hw.alphaRef1) = 0;
+    LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 0x10);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+    LAYER_F(this, s8 *, 0x1672, hw.zCompLoc) = 1;
+    LAYER_F(this, s32 *, 0x1668, hw.alphaCmpOp) = 0;
+    LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 0x10);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
+    LAYER_F(this, s32 *, 0xD90, hw.clipMode) = 0;
+    LAYER_F(this, s32 *, 0x16B8, dirty[0].raster) = (s32) (LAYER_F(this, s32 *, 0x16B8, dirty[0].raster) | 4);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 2);
+    LAYER_F(this, s32 *, 0x1770, dirty[1].raster) = (s32) (LAYER_F(this, s32 *, 0x1770, dirty[1].raster) | 4);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 2);
+    LAYER_F(this, s8 *, 0xC70, hw.nTexGens) = 1;
+    LAYER_F(this, s32 *, 0x16AC, dirty[0].geom) = (s32) (LAYER_F(this, s32 *, 0x16AC, dirty[0].geom) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 1);
+    LAYER_F(this, s32 *, 0x1764, dirty[1].geom) = (s32) (LAYER_F(this, s32 *, 0x1764, dirty[1].geom) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 1);
     ((GSgfxLayer*)(this))->tgenFunc(0U, (GSgfxTgenFunc)(1), (GSgfxTgenSrc)(4), (GSmtx*)(NULL), 0U, (GSmtx*)(NULL));
-    M2C_FIELD(this, s8 *, 0xEAC) = 1;
-    M2C_FIELD(this, s32 *, 0x16CC) = (s32) (M2C_FIELD(this, s32 *, 0x16CC) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-    M2C_FIELD(this, s32 *, 0x1784) = (s32) (M2C_FIELD(this, s32 *, 0x1784) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-    M2C_FIELD(this, s8 *, 0x14B0) = 1;
-    M2C_FIELD(this, s32 *, 0x16EC) = (s32) (M2C_FIELD(this, s32 *, 0x16EC) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x80);
-    M2C_FIELD(this, s32 *, 0x17A4) = (s32) (M2C_FIELD(this, s32 *, 0x17A4) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x80);
-    M2C_FIELD(this, s8 *, 0xDB8) = 0;
-    M2C_FIELD(this, s32 *, 0x16BC) = (s32) (M2C_FIELD(this, s32 *, 0x16BC) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 4);
-    M2C_FIELD(this, s32 *, 0x1774) = (s32) (M2C_FIELD(this, s32 *, 0x1774) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 4);
-    M2C_FIELD(this, s32 *, 0x14B4) = 0;
-    M2C_FIELD(this, s32 *, 0x14B8) = 1;
-    M2C_FIELD(this, s32 *, 0x16F0) = (s32) (M2C_FIELD(this, s32 *, 0x16F0) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x80);
-    M2C_FIELD(this, s32 *, 0x17A8) = (s32) (M2C_FIELD(this, s32 *, 0x17A8) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x80);
-    M2C_FIELD(this, s32 *, 0x14D4) = 0;
-    M2C_FIELD(this, s32 *, 0x14D8) = 0;
-    M2C_FIELD(this, s32 *, 0x16F4) = (s32) (M2C_FIELD(this, s32 *, 0x16F4) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x80);
-    M2C_FIELD(this, s32 *, 0x17AC) = (s32) (M2C_FIELD(this, s32 *, 0x17AC) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x80);
-    ((GSgfxLayer*)(this))->tunitIndTexMtx((GSgfxIndTexMtxID)(1), (float(*)[3])(this + 0x19BC), M2C_FIELD(this, s8 *, 0x19B8));
-    M2C_FIELD(this, s32 *, 0x1420) = 2;
-    M2C_FIELD(this, s8 *, 0x1424) = 0;
-    M2C_FIELD(this, s8 *, 0x1425) = 0;
-    M2C_FIELD(this, s8 *, 0x1426) = 0;
-    M2C_FIELD(this, s32 *, 0x1428) = 1;
-    M2C_FIELD(this, s32 *, 0x16E8) = (s32) (M2C_FIELD(this, s32 *, 0x16E8) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-    M2C_FIELD(this, s32 *, 0x17A0) = (s32) (M2C_FIELD(this, s32 *, 0x17A0) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-    M2C_FIELD(this, s32 *, 0xEB0) = 0;
-    M2C_FIELD(this, s32 *, 0xEB4) = 0;
-    M2C_FIELD(this, s32 *, 0xEB8) = 0xFF;
-    M2C_FIELD(this, s32 *, 0x16D0) = (s32) (M2C_FIELD(this, s32 *, 0x16D0) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-    M2C_FIELD(this, s32 *, 0x1788) = (s32) (M2C_FIELD(this, s32 *, 0x1788) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-    M2C_FIELD(this, s32 *, 0x1170) = 0;
-    M2C_FIELD(this, s32 *, 0x1174) = 0;
-    M2C_FIELD(this, s32 *, 0x1178) = 0;
-    M2C_FIELD(this, s8 *, 0x117C) = 0;
-    M2C_FIELD(this, s32 *, 0x1180) = 0;
-    M2C_FIELD(this, s32 *, 0x16DC) = (s32) (M2C_FIELD(this, s32 *, 0x16DC) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-    M2C_FIELD(this, s32 *, 0x1794) = (s32) (M2C_FIELD(this, s32 *, 0x1794) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-    M2C_FIELD(this, s32 *, 0x12B0) = 0;
-    M2C_FIELD(this, s32 *, 0x12B4) = 0;
-    M2C_FIELD(this, s32 *, 0x12B8) = 0;
-    M2C_FIELD(this, s8 *, 0x12BC) = 0;
-    M2C_FIELD(this, s32 *, 0x12C0) = 0;
-    M2C_FIELD(this, s32 *, 0x16E0) = (s32) (M2C_FIELD(this, s32 *, 0x16E0) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-    M2C_FIELD(this, s32 *, 0x1798) = (s32) (M2C_FIELD(this, s32 *, 0x1798) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-    M2C_FIELD(this, s32 *, 0xF70) = 0xF;
-    M2C_FIELD(this, s32 *, 0xF74) = 0xF;
-    M2C_FIELD(this, s32 *, 0xF78) = 0xF;
-    M2C_FIELD(this, s32 *, 0xF7C) = 8;
-    M2C_FIELD(this, s32 *, 0x16D4) = (s32) (M2C_FIELD(this, s32 *, 0x16D4) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-    M2C_FIELD(this, s32 *, 0x178C) = (s32) (M2C_FIELD(this, s32 *, 0x178C) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
-    M2C_FIELD(this, s32 *, 0x1070) = 7;
-    M2C_FIELD(this, s32 *, 0x1074) = 7;
-    M2C_FIELD(this, s32 *, 0x1078) = 7;
-    M2C_FIELD(this, s32 *, 0x107C) = 7;
-    M2C_FIELD(this, s32 *, 0x16D8) = (s32) (M2C_FIELD(this, s32 *, 0x16D8) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-    M2C_FIELD(this, s32 *, 0x1790) = (s32) (M2C_FIELD(this, s32 *, 0x1790) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
+    LAYER_F(this, s8 *, 0xEAC, hw.nTevStages) = 1;
+    LAYER_F(this, s32 *, 0x16CC, dirty[0].tev) = (s32) (LAYER_F(this, s32 *, 0x16CC, dirty[0].tev) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 8);
+    LAYER_F(this, s32 *, 0x1784, dirty[1].tev) = (s32) (LAYER_F(this, s32 *, 0x1784, dirty[1].tev) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 8);
+    LAYER_F(this, s8 *, 0x14B0, hw.nIndStages) = 1;
+    LAYER_F(this, s32 *, 0x16EC, dirty[0].indStage) = (s32) (LAYER_F(this, s32 *, 0x16EC, dirty[0].indStage) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x80);
+    LAYER_F(this, s32 *, 0x17A4, dirty[1].indStage) = (s32) (LAYER_F(this, s32 *, 0x17A4, dirty[1].indStage) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x80);
+    LAYER_F(this, s8 *, 0xDB8, hw.nChans) = 0;
+    LAYER_F(this, s32 *, 0x16BC, dirty[0].lightDirty) = (s32) (LAYER_F(this, s32 *, 0x16BC, dirty[0].lightDirty) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 4);
+    LAYER_F(this, s32 *, 0x1774, dirty[1].lightDirty) = (s32) (LAYER_F(this, s32 *, 0x1774, dirty[1].lightDirty) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 4);
+    LAYER_F(this, s32 *, 0x14B4, hw.indOrder[0][0]) = 0;
+    LAYER_F(this, s32 *, 0x14B8, hw.indOrder[0][1]) = 1;
+    LAYER_F(this, s32 *, 0x16F0, dirty[0].indOrder) = (s32) (LAYER_F(this, s32 *, 0x16F0, dirty[0].indOrder) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x80);
+    LAYER_F(this, s32 *, 0x17A8, dirty[1].indOrder) = (s32) (LAYER_F(this, s32 *, 0x17A8, dirty[1].indOrder) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x80);
+    LAYER_F(this, s32 *, 0x14D4, hw.indScale[0][0]) = 0;
+    LAYER_F(this, s32 *, 0x14D8, hw.indScale[0][1]) = 0;
+    LAYER_F(this, s32 *, 0x16F4, dirty[0].indScale) = (s32) (LAYER_F(this, s32 *, 0x16F4, dirty[0].indScale) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x80);
+    LAYER_F(this, s32 *, 0x17AC, dirty[1].indScale) = (s32) (LAYER_F(this, s32 *, 0x17AC, dirty[1].indScale) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x80);
+    ((GSgfxLayer*)(this))->tunitIndTexMtx((GSgfxIndTexMtxID)(1), (float(*)[3])&LAYER_F(this, f32 *, 0x19BC, distParams[0]), LAYER_F(this, s8 *, 0x19B8, distFlag));
+    LAYER_F(this, s32 *, 0x1420, hw.ind[0].type) = 2;
+    LAYER_F(this, s8 *, 0x1424, hw.ind[0].v.warp.indId) = 0;
+    LAYER_F(this, s8 *, 0x1425, hw.ind[0].v.warp.signMod) = 0;
+    LAYER_F(this, s8 *, 0x1426, hw.ind[0].v.warp.wrap) = 0;
+    LAYER_F(this, s32 *, 0x1428, hw.ind[0].v.warp.mtx) = 1;
+    LAYER_F(this, s32 *, 0x16E8, dirty[0].ind) = (s32) (LAYER_F(this, s32 *, 0x16E8, dirty[0].ind) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 8);
+    LAYER_F(this, s32 *, 0x17A0, dirty[1].ind) = (s32) (LAYER_F(this, s32 *, 0x17A0, dirty[1].ind) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 8);
+    LAYER_F(this, s32 *, 0xEB0, hw.tevOrder[0][0]) = 0;
+    LAYER_F(this, s32 *, 0xEB4, hw.tevOrder[0][1]) = 0;
+    LAYER_F(this, s32 *, 0xEB8, hw.tevOrder[0][2]) = 0xFF;
+    LAYER_F(this, s32 *, 0x16D0, dirty[0].tevOrder) = (s32) (LAYER_F(this, s32 *, 0x16D0, dirty[0].tevOrder) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 8);
+    LAYER_F(this, s32 *, 0x1788, dirty[1].tevOrder) = (s32) (LAYER_F(this, s32 *, 0x1788, dirty[1].tevOrder) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 8);
+    LAYER_F(this, s32 *, 0x1170, hw.colorOp[0].op) = 0;
+    LAYER_F(this, s32 *, 0x1174, hw.colorOp[0].bias) = 0;
+    LAYER_F(this, s32 *, 0x1178, hw.colorOp[0].scale) = 0;
+    LAYER_F(this, s8 *, 0x117C, hw.colorOp[0].clamp) = 0;
+    LAYER_F(this, s32 *, 0x1180, hw.colorOp[0].reg) = 0;
+    LAYER_F(this, s32 *, 0x16DC, dirty[0].colorOp) = (s32) (LAYER_F(this, s32 *, 0x16DC, dirty[0].colorOp) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 8);
+    LAYER_F(this, s32 *, 0x1794, dirty[1].colorOp) = (s32) (LAYER_F(this, s32 *, 0x1794, dirty[1].colorOp) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 8);
+    LAYER_F(this, s32 *, 0x12B0, hw.alphaOp[0].op) = 0;
+    LAYER_F(this, s32 *, 0x12B4, hw.alphaOp[0].bias) = 0;
+    LAYER_F(this, s32 *, 0x12B8, hw.alphaOp[0].scale) = 0;
+    LAYER_F(this, s8 *, 0x12BC, hw.alphaOp[0].clamp) = 0;
+    LAYER_F(this, s32 *, 0x12C0, hw.alphaOp[0].reg) = 0;
+    LAYER_F(this, s32 *, 0x16E0, dirty[0].alphaOp) = (s32) (LAYER_F(this, s32 *, 0x16E0, dirty[0].alphaOp) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 8);
+    LAYER_F(this, s32 *, 0x1798, dirty[1].alphaOp) = (s32) (LAYER_F(this, s32 *, 0x1798, dirty[1].alphaOp) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 8);
+    LAYER_F(this, s32 *, 0xF70, hw.colorIn[0][0]) = 0xF;
+    LAYER_F(this, s32 *, 0xF74, hw.colorIn[0][1]) = 0xF;
+    LAYER_F(this, s32 *, 0xF78, hw.colorIn[0][2]) = 0xF;
+    LAYER_F(this, s32 *, 0xF7C, hw.colorIn[0][3]) = 8;
+    LAYER_F(this, s32 *, 0x16D4, dirty[0].colorIn) = (s32) (LAYER_F(this, s32 *, 0x16D4, dirty[0].colorIn) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 8);
+    LAYER_F(this, s32 *, 0x178C, dirty[1].colorIn) = (s32) (LAYER_F(this, s32 *, 0x178C, dirty[1].colorIn) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 8);
+    LAYER_F(this, s32 *, 0x1070, hw.alphaIn[0][0]) = 7;
+    LAYER_F(this, s32 *, 0x1074, hw.alphaIn[0][1]) = 7;
+    LAYER_F(this, s32 *, 0x1078, hw.alphaIn[0][2]) = 7;
+    LAYER_F(this, s32 *, 0x107C, hw.alphaIn[0][3]) = 7;
+    LAYER_F(this, s32 *, 0x16D8, dirty[0].alphaIn) = (s32) (LAYER_F(this, s32 *, 0x16D8, dirty[0].alphaIn) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 8);
+    LAYER_F(this, s32 *, 0x1790, dirty[1].alphaIn) = (s32) (LAYER_F(this, s32 *, 0x1790, dirty[1].alphaIn) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 8);
     layerSetTexture(this, 0, fbTexPtr__10GSgfxLayer);
     layerSetTexture(this, 1, distTexPtr__10GSgfxLayer);
-    M2C_FIELD(this, GSgfxVF **, 0x199C) = GSgfxVFGetPredef(8);
+    LAYER_F(this, GSgfxVF **, 0x199C, curVF) = GSgfxVFGetPredef(8);
     GSmtx44Ortho(m, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-    M2C_FIELD(this, s32 *, 0xD54) = 1;
-    M2C_FIELD(this, f32 *, 0xD58) = m[0][0];
-    M2C_FIELD(this, f32 *, 0xD5C) = m[0][3];
-    M2C_FIELD(this, f32 *, 0xD60) = m[1][1];
-    M2C_FIELD(this, f32 *, 0xD64) = m[1][3];
-    M2C_FIELD(this, f32 *, 0xD68) = m[2][2];
-    M2C_FIELD(this, f32 *, 0xD6C) = m[2][3];
+    LAYER_F(this, s32 *, 0xD54, hw.projType) = 1;
+    LAYER_F(this, f32 *, 0xD58, hw.proj[0]) = m[0][0];
+    LAYER_F(this, f32 *, 0xD5C, hw.proj[1]) = m[0][3];
+    LAYER_F(this, f32 *, 0xD60, hw.proj[2]) = m[1][1];
+    LAYER_F(this, f32 *, 0xD64, hw.proj[3]) = m[1][3];
+    LAYER_F(this, f32 *, 0xD68, hw.proj[4]) = m[2][2];
+    LAYER_F(this, f32 *, 0xD6C, hw.proj[5]) = m[2][3];
     layerLoadIdentity(this);
-    M2C_FIELD(this, f32 *, 0x1684) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x1688) = 30000.0f;
-    if ((u8) M2C_FIELD(this, u8 *, 0x16A7) != 0) {
-        if ((u8) M2C_FIELD(this, u8 *, 0x16A6) != 0) {
-            M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x100);
-            M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x100);
+    LAYER_F(this, f32 *, 0x1684, hw.fogNear) = 0.0f;
+    LAYER_F(this, f32 *, 0x1688, hw.fogFar) = 30000.0f;
+    if ((u8) LAYER_F(this, u8 *, 0x16A7, hw.fogEnable) != 0) {
+        if ((u8) LAYER_F(this, u8 *, 0x16A6, hw.fogRangeEnable) != 0) {
+            LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 0x100);
+            LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 0x100);
         }
-        M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x40);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x40);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
+        LAYER_F(this, s32 *, 0x170C, dirty[0].pe) = (s32) (LAYER_F(this, s32 *, 0x170C, dirty[0].pe) | 0x40);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x40);
+        LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) = (s32) (LAYER_F(this, s32 *, 0x17C4, dirty[1].pe) | 0x40);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x40);
     }
-    M2C_FIELD(this, s32 *, 0x16AC) = (s32) (M2C_FIELD(this, s32 *, 0x16AC) | 0x20);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 1);
-    M2C_FIELD(this, s32 *, 0x1764) = (s32) (M2C_FIELD(this, s32 *, 0x1764) | 0x20);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 1);
-    M2C_FIELD(this, s32 *, 0x1998) = 0x98;
+    LAYER_F(this, s32 *, 0x16AC, dirty[0].geom) = (s32) (LAYER_F(this, s32 *, 0x16AC, dirty[0].geom) | 0x20);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 1);
+    LAYER_F(this, s32 *, 0x1764, dirty[1].geom) = (s32) (LAYER_F(this, s32 *, 0x1764, dirty[1].geom) | 0x20);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 1);
+    LAYER_F(this, s32 *, 0x1998, unk1998) = 0x98;
     ((GSgfxLayer*)(this))->beginSurface(4U);
     GXWGFifo.s16 = 0;
     GXWGFifo.s16 = 0;
@@ -566,18 +645,18 @@ void GSgfxLayer::EffectDistortion() {
     GXWGFifo.u8 = 1;
     GXWGFifo.u8 = 1;
     ((GSgfxLayer*)(this))->endSurface();
-    M2C_FIELD(this, s8 *, 0x14B0) = 0;
-    M2C_FIELD(this, s32 *, 0x16EC) = (s32) (M2C_FIELD(this, s32 *, 0x16EC) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x80);
-    M2C_FIELD(this, s32 *, 0x17A4) = (s32) (M2C_FIELD(this, s32 *, 0x17A4) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x80);
-    M2C_FIELD(this, s32 *, 0x1420) = 0;
-    M2C_FIELD(this, s32 *, 0x16E8) = (s32) (M2C_FIELD(this, s32 *, 0x16E8) | 1);
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 8);
-    M2C_FIELD(this, s32 *, 0x17A0) = (s32) (M2C_FIELD(this, s32 *, 0x17A0) | 1);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 8);
+    LAYER_F(this, s8 *, 0x14B0, hw.nIndStages) = 0;
+    LAYER_F(this, s32 *, 0x16EC, dirty[0].indStage) = (s32) (LAYER_F(this, s32 *, 0x16EC, dirty[0].indStage) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x80);
+    LAYER_F(this, s32 *, 0x17A4, dirty[1].indStage) = (s32) (LAYER_F(this, s32 *, 0x17A4, dirty[1].indStage) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x80);
+    LAYER_F(this, s32 *, 0x1420, hw.ind[0].type) = 0;
+    LAYER_F(this, s32 *, 0x16E8, dirty[0].ind) = (s32) (LAYER_F(this, s32 *, 0x16E8, dirty[0].ind) | 1);
+    LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 8);
+    LAYER_F(this, s32 *, 0x17A0, dirty[1].ind) = (s32) (LAYER_F(this, s32 *, 0x17A0, dirty[1].ind) | 1);
+    LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 8);
     ((GSgfxLayer*)(this))->FlushState();
-    sp8 = M2C_FIELD(this, s32 *, 0x19B4);
+    sp8 = LAYER_F(this, s32 *, 0x19B4, pad19b4);
     GSgfxVideoSetClearColor(&sp8);
     GSgfxVideoResetViewport(0U);
 }
@@ -589,20 +668,20 @@ void GSgfxLayer::PrepareDistortion() {
     s32 sp8;
 
     sp10 = jtbl_1978;
-    if (!(M2C_FIELD(this, s32 *, 4) & 0x200) || ((u32) M2C_FIELD(this, u32 *, 0x19A4) != (u32)fbTexPtr__10GSgfxLayer)) {
-        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
-            M2C_FIELD(this, s32 *, 0x1994) = 1;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC;
+    if (!(LAYER_F(this, s32 *, 0x4, flags) & 0x200) || (LAYER_TEXCOPY(this) != LAYER_TEXCOPY_VAL(fbTexPtr__10GSgfxLayer))) {
+        if ((s32) LAYER_F(this, s32 *, 0x1994, curPass) != 1) {
+            LAYER_F(this, s32 *, 0x1994, curPass) = 1;
+            LAYER_F(this, u8 **, 0x1990, curFifo) = LAYER_CUR_PASS(this);
         }
-        M2C_FIELD(this, s32 *, 0x1604) = 2;
-        M2C_FIELD(this, s32 *, 0x1608) = 2;
-        M2C_FIELD(this, s32 *, 0x160C) = 2;
-        M2C_FIELD(this, s32 *, 0x1610) = 3;
-        M2C_FIELD(this, s32 *, 0x1708) = (s32) (M2C_FIELD(this, s32 *, 0x1708) | 1);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x20);
-        M2C_FIELD(this, s32 *, 0x17C0) = (s32) (M2C_FIELD(this, s32 *, 0x17C0) | 1);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x20);
-        spC = M2C_FIELD(this, s32 *, 0x19B4);
+        LAYER_F(this, s32 *, 0x1604, hw.swapTab[0][0]) = 2;
+        LAYER_F(this, s32 *, 0x1608, hw.swapTab[0][1]) = 2;
+        LAYER_F(this, s32 *, 0x160C, hw.swapTab[0][2]) = 2;
+        LAYER_F(this, s32 *, 0x1610, hw.swapTab[0][3]) = 3;
+        LAYER_F(this, s32 *, 0x1708, dirty[0].swapTab) = (s32) (LAYER_F(this, s32 *, 0x1708, dirty[0].swapTab) | 1);
+        LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) = (s32) (LAYER_F(this, s32 *, 0x16A8, dirty[0].groups) | 0x20);
+        LAYER_F(this, s32 *, 0x17C0, dirty[1].swapTab) = (s32) (LAYER_F(this, s32 *, 0x17C0, dirty[1].swapTab) | 1);
+        LAYER_F(this, s32 *, 0x1760, dirty[1].groups) = (s32) (LAYER_F(this, s32 *, 0x1760, dirty[1].groups) | 0x20);
+        spC = LAYER_F(this, s32 *, 0x19B4, pad19b4);
         GSgfxVideoGetClearColor(&spC);
         sp8 = sp10;
         GSgfxVideoSetClearColor(&sp8);
@@ -613,10 +692,10 @@ void GSgfxLayer::PrepareDistortion() {
 
 extern "C++" {
 void GSgfxLayer::PrepareFBCopy() {
-    if (!(M2C_FIELD(this, s32 *, 4) & 0x200) || ((u32) M2C_FIELD(this, u32 *, 0x19A4) != (u32)fbTexPtr__10GSgfxLayer)) {
-        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
-            M2C_FIELD(this, s32 *, 0x1994) = 1;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC;
+    if (!(LAYER_F(this, s32 *, 0x4, flags) & 0x200) || (LAYER_TEXCOPY(this) != LAYER_TEXCOPY_VAL(fbTexPtr__10GSgfxLayer))) {
+        if ((s32) LAYER_F(this, s32 *, 0x1994, curPass) != 1) {
+            LAYER_F(this, s32 *, 0x1994, curPass) = 1;
+            LAYER_F(this, u8 **, 0x1990, curFifo) = LAYER_CUR_PASS(this);
         }
         ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(fbTexPtr__10GSgfxLayer), 0U, (unsigned char*)(NULL), 0U, 0U, 0U);
     }

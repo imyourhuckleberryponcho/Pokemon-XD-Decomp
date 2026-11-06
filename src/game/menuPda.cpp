@@ -1,4 +1,9 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/bitfield.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/stdio.h>
 
@@ -11,9 +16,26 @@ struct tagWINDOW_WORK {
     s8 seqSet;
     u8 unk3;
     s32 seq;
-    u8 unk8[0x14];
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
-    u8 unk20[0x73];
+    u8 unk20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 alpha;
     u8 unk94[0xA];
     s16 cursor;
@@ -22,12 +44,15 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[4];
+    void* unk0;
     s8 flags;
     u8 unk5;
     s16 id;
-    u8 unk8[0x44];
-    s32 msgID;
+    u8 unk8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    GCsptr msgID;
     u8 unk50[4];
     s16 x;
     u8 unk56[0x11];
@@ -40,13 +65,15 @@ struct MenuData {
 };
 
 struct MenuItem {
-    u8 flagA : 1;
-    u8 flagB : 1;
-    u8 unk0b : 6;
+    GC_BITS3(
+    u8 flagA : 1,
+    u8 flagB : 1,
+    u8 unk0b : 6)
     u8 unk1[5];
     s16 x;
     s16 y;
-    u8 unkA[0xE];
+    u8 unkA[0xA];
+    void* slot14;
     s16 next;
 };
 
@@ -106,33 +133,19 @@ struct TitleParam {
 
 struct GSgfxVF;
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderStateAndSelect(GSgfxVF* vf);
     void beginSurface(u16 count);
     void endSurface();
 
-    u8 unk0[0x1644];
-    s32 unk1644;
-    s32 unk1648;
-    s32 unk164C;
-    s32 unk1650;
-    u8 unk1654[0x16A8 - 0x1654];
-    u32 unk16A8;
-    u8 unk16AC[0x170C - 0x16AC];
-    u32 unk170C;
-    u8 unk1710[0x1760 - 0x1710];
-    u32 unk1760;
-    u8 unk1764[0x17C4 - 0x1764];
-    u32 unk17C4;
-    u8 unk17C8[0x1818 - 0x17C8];
-    u8 surfaces[2][0xBC];
-    void* curSurface;
-    s32 curSurfaceIdx;
-    u32 unk1998;
 };
 
-class Hero {
+struct Hero {
 public:
     u8 getHeroStyle() const;
 };
@@ -175,12 +188,12 @@ void GSmodelStopAnimation(void* model);
 void GSmodelStartAnimation(void* model);
 u8 GSmodelIsAnimating(void* model);
 void GSmodelGetAnimIndex(void* model, s32* index, s32* other);
-void GSmodelSetAnimIndex(void* model, s16 index);
+void GSmodelSetAnimIndex(void* model, PCARG(s16, u32) index);
 void GSmodelSetAnimFrame(void* model, f32 frame);
 void GSmodelSetAnimRate(void* model, f32 rate);
 void GSmodelSetAnimType(void* model, s32 type);
-void cameraPlayAnime(s32 id, u32 res, f32 frame, s32);
-void scriptLightSetDisp(s32 id, bool disp);
+void cameraPlayAnime(u32 group, u32 id, u8 loop, f32 frame);
+void scriptLightSetDisp(s32 id, PCARG(bool, s32) disp);
 s32 pokecoloGetRomVersion(void);
 u32 pokecoloGetPlayTimeValue(void);
 void GSflagOn(s32 flag);
@@ -198,8 +211,8 @@ MenuItem* menuItemBiosGetPtr(s32 menu, s32 item);
 u32 windowGetCursorToItem(tagWINDOW_WORK* window);
 u32 windowGetKeyRepeat(void);
 
-void msgctrlSetValue(s32 id, u32 value);
-s32 heroGetStatus(void* hero, s32 kind, s32 arg);
+void msgctrlSetValue(s32 id, GCuptr value);
+StatusS32 heroGetStatus(void* hero, s32 kind, s32 arg);
 void GSmsgPrint2(s32 layer, s32 x, s32 y, u32 color, u32 msg);
 u32 GSmsgGetRect(u32 msg);
 void winSeqSetMenu(s32 seq, s32 menu);
@@ -208,7 +221,7 @@ s8 fadeCheck(s32 mode);
 u32 menuGetCursorItemID(s32 menu);
 void* savedataGetStatus(s32, s32);
 void windowDrawSprite(s32, s32, tagWINDOW_WORK*, s32, s32, s32);
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 void GSmemFree(void* p);
 s32 menuPdaGetRes(void);
@@ -243,7 +256,7 @@ static void _menuPdaSetMotion(u32 id, s16 index, f32 frame, bool loop);
 static void _menuPdaExit(void);
 static void _menuPdaInit(void);
 static void _menuPdaFree(void* p);
-static void _menuPdaSelectAnimeSet(long idx);
+static void _menuPdaSelectAnimeSet(s32 idx);
 static void _menuPdaStartEvent(void);
 static void _menuPdaTopClose(void);
 static PDATOP_MENU_RES topMenu(PDATOP_MENU_RES res);
@@ -742,20 +755,20 @@ static void _SelectCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s8 idx
                 buf[i].x -= item->x;
                 buf[i].y -= item->y;
             }
-            if (layer->curSurfaceIdx != 1) {
-                layer->curSurfaceIdx = 1;
-                layer->curSurface = layer->surfaces[layer->curSurfaceIdx];
+            if ((*(s32*)&layer->curPass) != 1) {
+                (*(s32*)&layer->curPass) = 1;
+                layer->curFifo = &layer->passes[layer->curPass];
             }
-            layer->unk1644 = 1;
-            layer->unk1648 = 4;
-            layer->unk164C = 1;
-            layer->unk1650 = 5;
-            layer->unk170C |= 1;
-            layer->unk16A8 |= 0x40;
-            layer->unk17C4 |= 1;
-            layer->unk1760 |= 0x40;
+            (*(s32*)&layer->hw.blend[0]) = 1;
+            (*(s32*)&layer->hw.blend[1]) = 4;
+            (*(s32*)&layer->hw.blend[2]) = 1;
+            (*(s32*)&layer->hw.blend[3]) = 5;
+            (*(u32*)&layer->dirty[0].pe) |= 1;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 1;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
             vf = GSgfxVFGetPredef(3);
-            layer->unk1998 = 0xA0;
+            (*(u32*)&layer->unk1998) = 0xA0;
             layer->setRenderStateAndSelect(vf);
             layer->beginSurface(n);
             for (i = 0; i < n; i++) {
@@ -764,18 +777,18 @@ static void _SelectCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s8 idx
                 GXWGFifo.u32 = 0x405A2600 | (u8)alpha;
             }
             layer->endSurface();
-            if (layer->curSurfaceIdx != 1) {
-                layer->curSurfaceIdx = 1;
-                layer->curSurface = layer->surfaces[layer->curSurfaceIdx];
+            if ((*(s32*)&layer->curPass) != 1) {
+                (*(s32*)&layer->curPass) = 1;
+                layer->curFifo = &layer->passes[layer->curPass];
             }
-            layer->unk1644 = 1;
-            layer->unk1648 = 4;
-            layer->unk164C = 5;
-            layer->unk1650 = 5;
-            layer->unk170C |= 1;
-            layer->unk16A8 |= 0x40;
-            layer->unk17C4 |= 1;
-            layer->unk1760 |= 0x40;
+            (*(s32*)&layer->hw.blend[0]) = 1;
+            (*(s32*)&layer->hw.blend[1]) = 4;
+            (*(s32*)&layer->hw.blend[2]) = 5;
+            (*(s32*)&layer->hw.blend[3]) = 5;
+            (*(u32*)&layer->dirty[0].pe) |= 1;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 1;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
         }
     }
 }
@@ -907,7 +920,7 @@ static void _menuPdaStartEvent(void) {
     void* model;
     model = GSresGetResourceAllGroup(PDA_MODEL);
     GSmodelSetRenderLayer(model, 1, layers);
-    cameraPlayAnime(0x17, 0x17CF1800, 0.0f, 0);
+    cameraPlayAnime(0x17, 0x17CF1800, 0, 0.0f);
     GSmodelSetRenderCamera(model, GSresGetResource(0x17, 0x17CF1800));
     GSmodelSetVisibility(model, true);
     GSmodelSetBoundCheck(model, false);
@@ -945,7 +958,7 @@ void menuPdaMain(void) {
 
 }
 
-static void _menuPdaSelectAnimeSet(long idx) {
+static void _menuPdaSelectAnimeSet(s32 idx) {
     char start[0x40];
     char end[0x40];
     if (idx >= 4) {

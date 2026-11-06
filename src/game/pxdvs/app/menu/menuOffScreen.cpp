@@ -1,6 +1,11 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
+#ifdef __MWERKS__
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
+#else
+#define GXFifoNV GXWGFifo
+#endif
 
 #pragma peephole off
 
@@ -21,64 +26,16 @@ struct GSgfxLayerView {
     GSgfxLayerViewState* state;
 };
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderStateAndSelect(GSgfxVF* vf);
     void beginSurface(u16 count);
     void endSurface();
 
-    u8 unk0[0x28];
-    s32 renderMode;
-    u8 unk2C[0xD54 - 0x2C];
-    s32 projType;
-    f32 proj[6];
-    u8 unkD70[0xD8C - 0xD70];
-    s32 fogType;
-    u8 unkD90[0x1644 - 0xD90];
-    s32 blendType;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendOp;
-    u8 unk1654[2];
-    u8 zCompare;
-    u8 zWrite;
-    u8 zFunc;
-    u8 unk1659[3];
-    u8 alphaCompare;
-    u8 unk165D[3];
-    s32 cullMode;
-    u8 unk1664[0x1684 - 0x1664];
-    f32 zNear;
-    f32 zFar;
-    u8 unk168C[0x16A6 - 0x168C];
-    u8 zUpdate;
-    u8 zEnable;
-    u32 dirty16A8;
-    u32 dirty16AC;
-    u8 unk16B0[0x16B8 - 0x16B0];
-    u32 dirty16B8;
-    u8 unk16BC[0x170C - 0x16BC];
-    u32 dirty170C;
-    u8 unk1710[0x173C - 0x1710];
-    u32 texDirty;
-    GStexture* texture;
-    u8 unk1744[0x1760 - 0x1744];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 unk1768[0x1770 - 0x1768];
-    u32 dirty1770;
-    u8 unk1774[0x17C4 - 0x1774];
-    u32 dirty17C4;
-    u8 unk17C8[0x17F4 - 0x17C8];
-    u32 texDirty2;
-    GStexture* texture2;
-    u8 unk17FC[0x1818 - 0x17FC];
-    u8 surfaces[2][0xBC];
-    void* curSurface;
-    s32 curSurfaceIdx;
-    u32 vtxFlags;
-    u8 unk199C[4];
-    GSgfxLayerView* view;
 };
 
 typedef bool (*GSgfxBackFBCallback)(GStexture* texture, u32 frame, void* user);
@@ -88,7 +45,7 @@ bool GSgfxBeginBackFBCapture(GStexture* texture, GSgfxBackFBCallback callback, v
 GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u8 mipLevels);
 void GStextureFree(GStexture* tex);
 void GSthreadSwitch(void);
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 f32 GSgfxVideoGetLastRenderTime(void);
 u8 GSgfxVideoGetVsyncRate(void);
@@ -136,90 +93,90 @@ void menuOffScreenDraw(void) {
 
             layer = GSgfxLayerFindByID(_menuOffScreenPrio ? 7 : 0);
             if (layer != 0) {
-                if (layer->renderMode == 0) {
-                    if (layer->curSurfaceIdx != 0) {
-                        layer->curSurfaceIdx = 0;
-                        layer->curSurface = layer->surfaces[layer->curSurfaceIdx];
+                if ((*(s32*)&layer->id) == 0) {
+                    if ((*(s32*)&layer->curPass) != 0) {
+                        (*(s32*)&layer->curPass) = 0;
+                        layer->curFifo = &layer->passes[layer->curPass];
                     }
-                    layer->blendType = 0;
-                    layer->blendSrc = 1;
-                    layer->blendDst = 1;
-                    layer->blendOp = 5;
-                    layer->dirty170C |= 1;
-                    layer->dirty16A8 |= 0x40;
-                    layer->dirty17C4 |= 1;
-                    layer->dirty1760 |= 0x40;
+                    (*(s32*)&layer->hw.blend[0]) = 0;
+                    (*(s32*)&layer->hw.blend[1]) = 1;
+                    (*(s32*)&layer->hw.blend[2]) = 1;
+                    (*(s32*)&layer->hw.blend[3]) = 5;
+                    (*(u32*)&layer->dirty[0].pe) |= 1;
+                    (*(u32*)&layer->dirty[0].groups) |= 0x40;
+                    (*(u32*)&layer->dirty[1].pe) |= 1;
+                    (*(u32*)&layer->dirty[1].groups) |= 0x40;
                 } else {
-                    if (layer->curSurfaceIdx != 1) {
-                        layer->curSurfaceIdx = 1;
-                        layer->curSurface = layer->surfaces[layer->curSurfaceIdx];
+                    if ((*(s32*)&layer->curPass) != 1) {
+                        (*(s32*)&layer->curPass) = 1;
+                        layer->curFifo = &layer->passes[layer->curPass];
                     }
-                    layer->blendType = 1;
-                    layer->blendSrc = 1;
-                    layer->blendDst = 0;
-                    layer->blendOp = 5;
-                    layer->dirty170C |= 1;
-                    layer->dirty16A8 |= 0x40;
-                    layer->dirty17C4 |= 1;
-                    layer->dirty1760 |= 0x40;
+                    (*(s32*)&layer->hw.blend[0]) = 1;
+                    (*(s32*)&layer->hw.blend[1]) = 1;
+                    (*(s32*)&layer->hw.blend[2]) = 0;
+                    (*(s32*)&layer->hw.blend[3]) = 5;
+                    (*(u32*)&layer->dirty[0].pe) |= 1;
+                    (*(u32*)&layer->dirty[0].groups) |= 0x40;
+                    (*(u32*)&layer->dirty[1].pe) |= 1;
+                    (*(u32*)&layer->dirty[1].groups) |= 0x40;
                 }
 
                 GSmtx44Ortho(ortho[0], 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-                layer->projType = 1;
-                layer->proj[0] = ortho[0][0];
-                layer->proj[1] = ortho[0][3];
-                layer->proj[2] = ortho[1][1];
-                layer->proj[3] = ortho[1][3];
-                layer->proj[4] = ortho[2][2];
-                layer->proj[5] = ortho[2][3];
+                (*(s32*)&layer->hw.projType) = 1;
+                ((f32*)layer->hw.proj)[0] = ortho[0][0];
+                ((f32*)layer->hw.proj)[1] = ortho[0][3];
+                ((f32*)layer->hw.proj)[2] = ortho[1][1];
+                ((f32*)layer->hw.proj)[3] = ortho[1][3];
+                ((f32*)layer->hw.proj)[4] = ortho[2][2];
+                ((f32*)layer->hw.proj)[5] = ortho[2][3];
                 {
-                    GSgfxLayerView* view = layer->view;
+                    GSgfxLayerView* view = (*(GSgfxLayerView**)&layer->matrixStack);
                     memcpy(view->state->mtx, mtxIdent, sizeof(view->state->mtx));
                     view->state->flags |= 1;
                 }
-                layer->zNear = 0.0f;
-                layer->zFar = 30000.0f;
-                if (layer->zEnable != 0) {
-                    if (layer->zUpdate != 0) {
-                        layer->dirty170C |= 0x100;
-                        layer->dirty17C4 |= 0x100;
+                (*(f32*)&layer->hw.fogNear) = 0.0f;
+                (*(f32*)&layer->hw.fogFar) = 30000.0f;
+                if ((*(u8*)&layer->hw.fogEnable) != 0) {
+                    if ((*(u8*)&layer->hw.fogRangeEnable) != 0) {
+                        (*(u32*)&layer->dirty[0].pe) |= 0x100;
+                        (*(u32*)&layer->dirty[1].pe) |= 0x100;
                     }
-                    layer->dirty170C |= 0x40;
-                    layer->dirty16A8 |= 0x40;
-                    layer->dirty17C4 |= 0x40;
-                    layer->dirty1760 |= 0x40;
+                    (*(u32*)&layer->dirty[0].pe) |= 0x40;
+                    (*(u32*)&layer->dirty[0].groups) |= 0x40;
+                    (*(u32*)&layer->dirty[1].pe) |= 0x40;
+                    (*(u32*)&layer->dirty[1].groups) |= 0x40;
                 }
-                layer->dirty16AC |= 0x20;
-                layer->dirty16A8 |= 1;
-                layer->dirty1764 |= 0x20;
-                layer->dirty1760 |= 1;
-                layer->zCompare = 1;
-                layer->zWrite = 1;
-                layer->zFunc = 0;
-                layer->dirty170C |= 4;
-                layer->dirty16A8 |= 0x40;
-                layer->dirty17C4 |= 4;
-                layer->dirty1760 |= 0x40;
-                layer->alphaCompare = 0;
-                layer->cullMode = 3;
-                layer->dirty170C |= 8;
-                layer->dirty16A8 |= 0x40;
-                layer->dirty17C4 |= 8;
-                layer->dirty1760 |= 0x40;
-                layer->fogType = 0;
-                layer->dirty16B8 |= 2;
-                layer->dirty16A8 |= 2;
-                layer->dirty1770 |= 2;
-                layer->dirty1760 |= 2;
-                layer->vtxFlags = 0x98;
+                (*(u32*)&layer->dirty[0].geom) |= 0x20;
+                (*(u32*)&layer->dirty[0].groups) |= 1;
+                (*(u32*)&layer->dirty[1].geom) |= 0x20;
+                (*(u32*)&layer->dirty[1].groups) |= 1;
+                (*(u8*)&layer->hw.colorUpdate) = 1;
+                (*(u8*)&layer->hw.alphaUpdate) = 1;
+                (*(u8*)&layer->hw.zUpdate) = 0;
+                (*(u32*)&layer->dirty[0].pe) |= 4;
+                (*(u32*)&layer->dirty[0].groups) |= 0x40;
+                (*(u32*)&layer->dirty[1].pe) |= 4;
+                (*(u32*)&layer->dirty[1].groups) |= 0x40;
+                (*(u8*)&layer->hw.zEnable) = 0;
+                (*(s32*)&layer->hw.zFunc) = 3;
+                (*(u32*)&layer->dirty[0].pe) |= 8;
+                (*(u32*)&layer->dirty[0].groups) |= 0x40;
+                (*(u32*)&layer->dirty[1].pe) |= 8;
+                (*(u32*)&layer->dirty[1].groups) |= 0x40;
+                (*(s32*)&layer->hw.cullMode) = 0;
+                (*(u32*)&layer->dirty[0].raster) |= 2;
+                (*(u32*)&layer->dirty[0].groups) |= 2;
+                (*(u32*)&layer->dirty[1].raster) |= 2;
+                (*(u32*)&layer->dirty[1].groups) |= 2;
+                (*(u32*)&layer->unk1998) = 0x98;
                 layer->setRenderStateAndSelect(GSgfxVFGetPredef(7));
                 {
                     GStexture* tex = _menuOffScreenTex;
-                    if (layer->texture != tex || layer->texture2 != tex || tex->dirty != 0) {
-                        layer->texture = tex;
-                        layer->texDirty |= 1;
-                        layer->texture2 = tex;
-                        layer->texDirty2 |= 1;
+                    if ((*(GStexture**)&layer->dirty[0].tex[0]) != tex || (*(GStexture**)&layer->dirty[1].tex[0]) != tex || tex->dirty != 0) {
+                        (*(GStexture**)&layer->dirty[0].tex[0]) = tex;
+                        (*(u32*)&layer->dirty[0].texMask) |= 1;
+                        (*(GStexture**)&layer->dirty[1].tex[0]) = tex;
+                        (*(u32*)&layer->dirty[1].texMask) |= 1;
                     }
                 }
                 layer->beginSurface(4);

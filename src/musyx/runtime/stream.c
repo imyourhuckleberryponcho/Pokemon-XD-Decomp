@@ -257,16 +257,16 @@ void streamHandle() {
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 0)
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
           hwSetStreamLoopPS(si->voice,
-                            (si->lastPSFromBuffer = *(u32*)OSCachedToUncached(si->buffer) >> 24));
+                            (si->lastPSFromBuffer = MD32(*(u32*)OSCachedToUncached(si->buffer)) >> 24));
 #elif MUSY_TARGET == MUSY_TARGET_PC
-          hwSetStreamLoopPS(si->voice, (si->lastPSFromBuffer = *(u32*)si->buffer >> 24));
+          hwSetStreamLoopPS(si->voice, (si->lastPSFromBuffer = MD32(*(u32*)si->buffer) >> 24));
 #endif
 #else
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
 
-          hwSetStreamLoopPS(si->voice, *(u32*)OSCachedToUncached(si->buffer) >> 24);
+          hwSetStreamLoopPS(si->voice, MD32(*(u32*)OSCachedToUncached(si->buffer)) >> 24);
 #elif MUSY_TARGET == MUSY_TARGET_PC
-          hwSetStreamLoopPS(si->voice, *(u32*)si->buffer >> 24);
+          hwSetStreamLoopPS(si->voice, MD32(*(u32*)si->buffer) >> 24);
 #endif
 #endif
         }
@@ -435,7 +435,7 @@ void sndStreamARAMUpdate(u32 stid, u32 off1, u32 len1, u32 off2, u32 len2) {
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 0)
     if (streamInfo[i].type == 1) {
       streamInfo[i].lastPSFromBuffer =
-          (*(u32*)MUSY_CACHED_TO_UNCACHED_ADDR(streamInfo[i].buffer)) >> 24;
+          MD32((*(u32*)MUSY_CACHED_TO_UNCACHED_ADDR(streamInfo[i].buffer))) >> 24;
       if (streamInfo[i].voice != -1) {
         hwSetStreamLoopPS(streamInfo[i].voice, streamInfo[i].lastPSFromBuffer);
       }
@@ -448,7 +448,7 @@ void sndStreamARAMUpdate(u32 stid, u32 off1, u32 len1, u32 off2, u32 len2) {
 #else
     if (streamInfo[i].type == 1) {
       hwSetStreamLoopPS(streamInfo[i].voice,
-                        *(u32*)MUSY_CACHED_TO_UNCACHED_ADDR(streamInfo[i].buffer) >> 24);
+                        MD32(*(u32*)MUSY_CACHED_TO_UNCACHED_ADDR(streamInfo[i].buffer)) >> 24);
     }
 #endif
   } else {
@@ -546,10 +546,10 @@ SND_STREAMID sndStreamAllocEx(u8 prio, void* buffer, u32 samples, u32 frq, u8 vo
     if (flags & 1) {
       if (adpcmInfo != NULL) {
         for (j = 0; j < 8; j++) {
-          streamInfo[i].adpcmInfo.coefTab[j][0] = adpcmInfo->coefTab[j][0];
-          streamInfo[i].adpcmInfo.coefTab[j][1] = adpcmInfo->coefTab[j][1];
+          streamInfo[i].adpcmInfo.coefTab[j][0] = MD16S(adpcmInfo->coefTab[j][0]);
+          streamInfo[i].adpcmInfo.coefTab[j][1] = MD16S(adpcmInfo->coefTab[j][1]);
         }
-        streamInfo[i].adpcmInfo.numCoef = 8;
+        streamInfo[i].adpcmInfo.numCoef = MD16(8);
       }
       streamInfo[i].type = 1;
     } else {
@@ -648,10 +648,10 @@ void sndStreamADPCMParameter(u32 stid, SND_ADPCMSTREAM_INFO* adpcmInfo) {
   i = GetPrivateIndex(stid);
   if (i != -1) {
     for (j = 0; j < 8; ++j) {
-      streamInfo[i].adpcmInfo.coefTab[j][0] = adpcmInfo->coefTab[j][0];
-      streamInfo[i].adpcmInfo.coefTab[j][1] = adpcmInfo->coefTab[j][1];
+      streamInfo[i].adpcmInfo.coefTab[j][0] = MD16S(adpcmInfo->coefTab[j][0]);
+      streamInfo[i].adpcmInfo.coefTab[j][1] = MD16S(adpcmInfo->coefTab[j][1]);
     }
-    streamInfo[i].adpcmInfo.numCoef = 8;
+    streamInfo[i].adpcmInfo.numCoef = MD16(8);
     if (streamInfo[i].nextStreamHandle != 0xffffffff) {
       sndStreamADPCMParameter(streamInfo[i].nextStreamHandle, adpcmInfo);
     }

@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -7,7 +9,7 @@ struct Pokemon {
     u8 unk0[0xC4];
 };
 
-class Hero {
+struct Hero {
 public:
     static Hero* getHeroPtr();
     void setHeroStyle(u8 style, bool flag);
@@ -24,12 +26,12 @@ bool floorSound_getDispSoundVolume(void);
 void floorSound_setDispSoundVolume(bool);
 void GSresDumpAll(void);
 void* savedataGetStatus(s32, s32);
-s32 gamedataGetStatus(s32, s32);
+StatusS32 gamedataGetStatus(s32, s32);
 void pokemonCreate(Pokemon*, u16, u8, s32);
 void heroCatchPokemon(void* hero, Pokemon*, s32, s32, s32);
 void memoDataSet(s32, Pokemon*);
 void pokemonSetDarkPokemonStatus(Pokemon*, u16);
-s32 heroItemAddItemDataId(void* hero, u16 item, u16 num, s32 slot);
+s32 heroItemAddItemDataId(void* hero, PCARG(u16, u32) item, PCARG(u16, u32) num, s32 slot);
 void GSflagOff(u32 id);
 extern u32* flag_data_number;
 void heroSetFollowerWithID(u8, u8);

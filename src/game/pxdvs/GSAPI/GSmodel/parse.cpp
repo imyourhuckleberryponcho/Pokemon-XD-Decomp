@@ -28,6 +28,7 @@ struct HSD_SList {
     void* data;
 };
 
+#ifdef __MWERKS__
 struct _HSD_PObj {
     u8 unk0[0x4];
     HSD_PObj* next;
@@ -39,7 +40,22 @@ struct _HSD_PObj {
         HSD_SList* envelope_list;
     } u;
 };
+#else
+struct _HSD_PObj {
+    void* pcClass;
+    HSD_PObj* next;
+    void* verts;
+    u16 flags;
+    u16 n_display;
+    void* display;
+    union {
+        HSD_JObj* jobj;
+        HSD_SList* envelope_list;
+    } u;
+};
+#endif
 
+#ifdef __MWERKS__
 struct _HSD_DObj {
     u8 unk0[0x4];
     HSD_DObj* next;
@@ -48,7 +64,18 @@ struct _HSD_DObj {
     u8 unk10[0x4];
     u32 flags;
 };
+#else
+struct _HSD_DObj {
+    void* pcClass;
+    HSD_DObj* next;
+    void* mobj;
+    HSD_PObj* pobj;
+    void* aobj;
+    u32 flags;
+};
+#endif
 
+#ifdef __MWERKS__
 struct _HSD_JObj {
     u8 unk0[0x8];
     HSD_JObj* next;
@@ -61,6 +88,26 @@ struct _HSD_JObj {
     u8 unk74[0x4];
     GSmtx* envelopemtx;
 };
+#else
+struct _HSD_JObj {
+    void* pcObject[2];
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
+    HSD_DObj* dobj;
+    f32 rotate[3];
+    f32 rotateW;
+    f32 scale[3];
+    f32 translate[3];
+    GSmtx mtx;
+    void* scl;
+    GSmtx* envelopemtx;
+    void* aobj;
+    void* robj;
+    u32 id;
+};
+#endif
 
 #define JOBJ_HIDDEN (1 << 4)
 #define JOBJ_PTCL (1 << 5)
@@ -82,7 +129,11 @@ struct _GSmodel;
 
 typedef void (*GSmodelParseFunc)(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pmtx, GSmtx* mtxStack, void* arg);
 
+#ifdef __MWERKS__
 HSD_JObj* modelGetRenderJObj(_GSmodel* model);
+#else
+HSD_JObj* modelGetRenderJObj(_GSmodel* model);
+#endif
 
 extern "C" {
 void __assert(const char* file, s32 line, const char* expr);

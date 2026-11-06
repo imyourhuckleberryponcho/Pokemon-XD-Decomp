@@ -1,16 +1,36 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/bitfield.h>
 
 struct tagWINDOW_WORK {
     u8 unk0[4];
     s32 menuID;
-    u8 unk8[0x94];
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x14];
     s16 top;
     s16 cursor;
 };
 
 struct DbgMenuData {
-    u8 end : 1;
-    u8 flags : 7;
+    GC_BITS2(
+    u8 end : 1,
+    u8 flags : 7)
     u8 unk1;
     s16 link;
     u32 msgID;
@@ -19,7 +39,7 @@ struct DbgMenuData {
 
 extern "C" {
 
-void* GSgfxLayerFindByID(s32);
+void* GSgfxLayerFindByID(GCsptr);
 u32 GSmsgGetRect(u32);
 s32 dbgMenuGetRootMenu(void);
 void menuClose(s32);
@@ -36,6 +56,9 @@ tagWINDOW_WORK* windowSearchID(s32);
 
 extern s32 _menu_data_number;
 extern s32* _pCursor;
+#ifndef __MWERKS__
+s32* _pCursor;
+#endif
 extern u32 (*debugMenuDataGetNum)(void);
 extern DbgMenuData* (*debugMenuDataGetPtr)(s32);
 

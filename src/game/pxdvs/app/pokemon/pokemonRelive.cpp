@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -33,7 +36,7 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
-struct DeckDarkPokemon;
+class DeckDarkPokemon;
 struct GSparticleBank;
 struct GSparticleGenerator;
 struct GSthread;
@@ -43,7 +46,7 @@ struct Pokemon;
 struct Sequence;
 struct SequenceWaza;
 struct Vec;
-struct WazaSequence;
+class WazaSequence;
 
 struct PreReliveParameter {
     u32 unk0;
@@ -55,10 +58,11 @@ static PreReliveParameter pParameter;
 extern "C" {
 
 extern "C++" {
-struct DeckDarkPokemon {
+class DeckDarkPokemon {
+public:
     u8 _draft[1];
     u16 getBonusExp() const;
-    static DeckDarkPokemon* getDeckDarkPokemonObj(unsigned long);
+    static DeckDarkPokemon* getDeckDarkPokemonObj(u32);
 };
 struct GSparticleBank {
     u8 _draft[1];
@@ -89,7 +93,7 @@ struct SequenceWaza {
 struct Vec {
     f32 x, y, z;
 };
-struct WazaSequence {
+class WazaSequence { public:
     u8 _draft[1];
 };
 
@@ -105,7 +109,7 @@ void GSthreadClose(GSthread*);
 void* GSthreadCreate(s32, s32, s32, s32, s32, void (*)(void));
 u8 GSthreadIsRunning(GSthread*);
 void GSthreadSwitch(void);
-s32 Sequence_DoAnimation(Sequence*, u8);
+s32 Sequence_DoAnimation(Sequence*, PCARG(u8, int));
 void Sequence_Free(Sequence*);
 s32 Sequence_GetPosition(Sequence*, Vec*);
 s32 Sequence_GetRotation(Sequence*, Vec*);
@@ -122,7 +126,7 @@ bool WazaSequence_IsActive(WazaSequence* sequence);
 void WazaSequence_Start(WazaSequence* sequence, s32);
 static void __sinit_pokemonRelive_cpp();
 void darkPokemonBiosSetReliveFlag(u16 id, s32 flag);
-s32 evolutionWazaLearn(s32, u16, u8*, s32, void*, s32);
+s32 evolutionWazaLearn(GCsptr, PCARG(u16, u32), u8*, s32, void*, u32*);
 BOOL exribbonSetNarionalRibbon(Pokemon* pokemon);
 void fadeCheck(s32);
 void fadeSet(s32 type, f32 time);
@@ -131,24 +135,24 @@ s32 fadeSetToBlackOutIfNotBlack(f32);
 u32 floorGetCurrentGroupID();
 void floorSetFadeScript(u32 out, u32 in);
 void floorWaitForChange(void);
-u32 heroGetStatus(Hero* hero, u32 selector, u16 index);
+StatusU32 heroGetStatus(Hero* hero, u32 selector, u16 index);
 BOOL loadSequence(Sequence** out, Pokemon* pokemon, SequenceWaza* wazas, s32 num);
 s32 menuHologramReloadDatas();
 s32 menuHologramUnloadDatas();
 s8 menuModelGetPokemonAnimationIndexByPointer(Pokemon*);
 s32 menuModelReSetScale();
 s32 menuModelSetScale(f32);
-s32 menuNameEntryOpenNoFade(s32 mode, s32 param);
+s32 menuNameEntryOpenNoFade(s32 mode, GCsptr param);
 s32 menuPokemonOpen(s32, s32, s32);
 s32 menuPokemonStatusOpenWazaLearn(Pokemon* pokemon, u16 sel);
 s8 menuSubOpenYesNoField(void);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 void pokemonAllKaihuku(Pokemon* pokemon);
 u16 pokemonBiosGetDarkpokemonDataId(Pokemon* poke);
 u16 pokemonBiosGetFriend(Pokemon* poke);
 u8 pokemonBiosGetLevel(Pokemon* poke);
 char* pokemonBiosGetNicknamePtr(Pokemon* poke);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u16 wazaNum);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, PCARG(u16, u32) wazaNum);
 u32 pokemonBiosGetPoolExp(Pokemon* poke);
 u32 pokemonBiosGetPoolFriend(Pokemon* poke);
 u32 pokemonBiosGetRnd(Pokemon* poke);
@@ -156,13 +160,13 @@ void pokemonBiosSetExp(Pokemon* poke, u32 data);
 void pokemonBiosSetFriend(Pokemon* poke, u16 data);
 void pokemonBiosSetPoolFriend(Pokemon* poke, u16 data);
 bool pokemonCheckValid(Pokemon* pokemon);
-s32 pokemonEvolutionAll(Pokemon*, u16, u16, s32*, s32, s32, s32, s32);
+s32 pokemonEvolutionAll(Pokemon*, u16, u16, s32*, void*, s32, s32, s32);
 u16 pokemonEvolutionCheck(Pokemon*, s32, s32, u16*, s32*);
 void pokemonGetFriendFormPokemonFriendFilterId(Pokemon* pokemon, u16 itemDataId, u16 filterId);
 u32 pokemonGetLevelToExp(Pokemon* pokemon, u8 level);
 u16 pokemonGetOboeWazaDataId(Pokemon* pokemon, u8 level, u8* cursor);
 u16 pokemonGetSoubiItemSoubiDataId(Pokemon* pokemon);
-u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
+StatusU32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
 void pokemonInitJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId);
 bool pokemonIsJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId);
 void pokemonResetBasisStatus(Pokemon* pokemon);
@@ -175,7 +179,7 @@ void preReliveSetParameter(s32, s32, u8);
 void reliveMain();
 s32 scriptGetDarkPointZeroPokemonNum();
 void soundOpenPlay(s32, s32, s32);
-void soundOpenPlayME(u32 id, u32, u8 volume);
+void soundOpenPlayME(u32 id, u32, PCARG(u8, s32) volume);
 f32 timeGetLastFrameSec(void);
 void waitTime(f32 time);
 void winMsgCloseField(bool flag);
@@ -184,18 +188,18 @@ s32 winMsgOpenField(void* msg, bool a, bool b);
 s32 winMsgOpenLevelUpStatus(void* msg, bool a);
 }
 extern "C++" {
-static s8 _cbWazaForget(Pokemon* p0, unsigned short p1, long p2);
-static u8 _expRecover(Pokemon* p0, unsigned long p1);
+static s8 _cbWazaForget(Pokemon* p0, unsigned short p1, s32 p2);
+static u8 _expRecover(Pokemon* p0, u32 p1);
 static void _preReliveDisplayHokoraParticleThreadFunc();
 void menuPtRestoreSound(MenuPtWorkSound* s);
 void menuPtStopSound(MenuPtWorkSound* s);
-static s32 reliveCeremonyAll(long p0, Pokemon* p1, unsigned long p2);
-void reliveCeremonyFromHologram(Pokemon* p0, unsigned long p1);
+static Sequence* reliveCeremonyAll(s32 p0, Pokemon* p1, u32 p2);
+void* reliveCeremonyFromHologram(Pokemon* p0, u32 p1);
 }
 static Pokemon* mParameter;
-static s32 lbl_804EB994;
+static GCsptr lbl_804EB994;
 static s32 keepRelivePatternIsHologram;
-static s32 hokoraParticleGen;
+static GCsptr hokoraParticleGen;
 static u8 isHokoraParticleLoaded;
 static SequenceWaza normalReliveWazaSeqTbl[2] = {{0x4D, 4}, {0x7A, 4}};
 static SequenceWaza hologramReliveWazaSeqTbl[1] = {{0x4D, 4}};
@@ -206,7 +210,7 @@ extern "C" {
 void fn_80233AB4();
 }
 
-static s8 _cbWazaForget(Pokemon* p0, unsigned short p1, long p2) {
+static s8 _cbWazaForget(Pokemon* p0, unsigned short p1, s32 p2) {
     Sequence *sp8;
     WazaSequence *temp_r3;
     f32 var_f30;
@@ -274,7 +278,7 @@ static void _preReliveDisplayHokoraParticleThreadFunc() {
     if (isHokoraParticleLoaded == 1) {
         _preReliveDestroyHokoraParticle();
     }
-    hokoraParticleGen = (s32)GSparticleCreateGenerator((GSparticleBank*)GSresGetResource(floorGetCurrentGroupID(), 0x0FAE1400), 0, 0);
+    hokoraParticleGen = (GCsptr)GSparticleCreateGenerator((GSparticleBank*)GSresGetResource(floorGetCurrentGroupID(), 0x0FAE1400), 0, 0);
     GSparticleSetGeneratorPosition((GSparticleGenerator*)hokoraParticleGen, &pos);
     isHokoraParticleLoaded = 1;
     soundOpenPlay(0x597, 0, 0x7F);
@@ -287,7 +291,7 @@ static void _preReliveDisplayHokoraParticleThreadFunc() {
 extern "C" {
 void preReliveDisplayHokoraParticle() {
     if (((u16)scriptGetDarkPointZeroPokemonNum() != 0) && ((u8) isHokoraParticleLoaded == 0)) {
-        lbl_804EB994 = (long)(GSthreadCreate(1, GSfloorGetCurrentFloorGroupID(), 0x4000, 1, 1, (void (*)(void))(_preReliveDisplayHokoraParticleThreadFunc)));
+        lbl_804EB994 = (GCsptr)(GSthreadCreate(1, GSfloorGetCurrentFloorGroupID(), 0x4000, 1, 1, (void (*)(void))(_preReliveDisplayHokoraParticleThreadFunc)));
     }
 }
 }
@@ -304,7 +308,7 @@ struct ReliveLevelUpStatus {
     s16 spDefense;
 };
 
-static u8 _expRecover(Pokemon* pokemon, unsigned long gainExp) {
+static u8 _expRecover(Pokemon* pokemon, u32 gainExp) {
     u8 slot;
     u32 next;
     ReliveLevelUpStatus gain;
@@ -375,7 +379,7 @@ static u8 _expRecover(Pokemon* pokemon, unsigned long gainExp) {
             wazaIndex = 0;
             while ((waza = pokemonGetOboeWazaDataId(pokemon, newLevel, &wazaIndex)) != 0) {
                 if (pokemonSearchWazaDataId(pokemon, waza) == -1 &&
-                    evolutionWazaLearn((s32)pokemon, waza, &slot, 0, (void*)_cbWazaForget, 0) != 0) {
+                    evolutionWazaLearn((GCsptr)pokemon, waza, &slot, 0, (void*)_cbWazaForget, 0) != 0) {
                     pokemonWazaCreate(pokemon, slot, waza);
                 }
                 wazaIndex++;
@@ -454,9 +458,9 @@ static inline bool reliveStartNormal(Pokemon* pokemon) {
     return false;
 }
 
-static s32 reliveCeremonyAll(long mode, Pokemon* pokemon, unsigned long p2) {
+static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
     WazaSequence* waza;
-    s32 pokemon_c = (s32)pokemon;
+    GCsptr pokemon_c = (GCsptr)pokemon;
     Sequence* result;
     u16 evoLevel;
     s32 evoParam;
@@ -581,7 +585,7 @@ static s32 reliveCeremonyAll(long mode, Pokemon* pokemon, unsigned long p2) {
     }
     if (newCount != 0) {
         char* nick = pokemonBiosGetNicknamePtr(pokemon);
-        msgctrlSetValue(0x32, (u32)nick);
+        msgctrlSetValue(0x32, (GCuptr)nick);
         winMsgOpenField((void*)0xC547, 1, 0);
         for (s32 i = 0; i < newCount; i++) {
             soundOpenPlayME(0x3C7, 0, 0xFF);
@@ -617,9 +621,9 @@ static s32 reliveCeremonyAll(long mode, Pokemon* pokemon, unsigned long p2) {
                 } else {
                     reliveShowPokemon(pokemon);
                 }
-                msgctrlSetValue(0x32, (u32)pokemonBiosGetNicknamePtr(pokemon));
+                msgctrlSetValue(0x32, (GCuptr)pokemonBiosGetNicknamePtr(pokemon));
             } else {
-                msgctrlSetValue(0x32, (u32)pokemonBiosGetNicknamePtr(pokemon));
+                msgctrlSetValue(0x32, (GCuptr)pokemonBiosGetNicknamePtr(pokemon));
                 if (keepRelivePatternIsHologram != 0) {
                     menuHologramReloadDatas();
                     fadeSetToBlackInIfBlack(0.5f);
@@ -652,16 +656,16 @@ static s32 reliveCeremonyAll(long mode, Pokemon* pokemon, unsigned long p2) {
             reliveShowPokemon(pokemon);
         }
     }
-    return (s32)result;
+    return result;
 }
 #pragma pop
 }
 
 extern "C++" {
-void reliveCeremonyFromHologram(Pokemon* p0, unsigned long p1) {
+void* reliveCeremonyFromHologram(Pokemon* p0, u32 p1) {
     s32 unksp8;
     menuPtStopSound((MenuPtWorkSound*)(&unksp8));
-    reliveCeremonyAll(1, (Pokemon*)(p0), p1);
+    return reliveCeremonyAll(1, (Pokemon*)(p0), p1);
 }
 }
 

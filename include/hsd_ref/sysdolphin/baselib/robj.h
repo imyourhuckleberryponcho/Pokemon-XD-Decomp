@@ -24,8 +24,8 @@ struct HSD_Rvalue {
 };
 
 struct HSD_RvalueList {
-    u32 flags;
-    HSD_Joint* joint;
+    gc_be32 flags;
+    gc_ptr32(HSD_Joint) joint;
 };
 
 struct HSD_IKHint {
@@ -34,8 +34,8 @@ struct HSD_IKHint {
 };
 
 struct HSD_IKHintDesc {
-    f32 bone_length;
-    f32 rotate_x;
+    gc_bef32 bone_length;
+    gc_bef32 rotate_x;
 };
 
 struct HSD_Exp {
@@ -54,8 +54,8 @@ struct HSD_ExpDesc {
 };
 
 struct HSD_ByteCodeExpDesc {
-    u8* bytecode;
-    HSD_RvalueList* rvalue;
+    gc_ptr32(u8) bytecode;
+    gc_ptr32(HSD_RvalueList) rvalue;
 };
 
 struct HSD_RObj {
@@ -71,23 +71,23 @@ struct HSD_RObj {
 };
 
 struct HSD_RObjDesc {
-    HSD_RObjDesc* next;
-    u32 flags; // 0x04
+    gc_ptr32(HSD_RObjDesc) next;
+    gc_be32 flags; // 0x04
     union HSD_RObjDesc_u {
-        u32 i DAT_IF(false);
-        HSD_ExpDesc* exp DAT_IF((flags & ROBJ_TYPE_MASK) == REFTYPE_EXP);
-        HSD_ByteCodeExpDesc* bcexp DAT_IF((flags & ROBJ_TYPE_MASK) ==
+        gc_be32 i DAT_IF(false);
+        gc_ptr32(HSD_ExpDesc) exp DAT_IF((flags & ROBJ_TYPE_MASK) == REFTYPE_EXP);
+        gc_ptr32(HSD_ByteCodeExpDesc) bcexp DAT_IF((flags & ROBJ_TYPE_MASK) ==
                                           REFTYPE_BYTECODE);
-        HSD_IKHintDesc* ik_hint DAT_IF((flags & ROBJ_TYPE_MASK) ==
+        gc_ptr32(HSD_IKHintDesc) ik_hint DAT_IF((flags & ROBJ_TYPE_MASK) ==
                                        REFTYPE_IKHINT);
-        HSD_Joint* joint DAT_IF((flags & ROBJ_TYPE_MASK) == REFTYPE_JOBJ);
-        f32 limit DAT_IF((flags & ROBJ_TYPE_MASK) == REFTYPE_LIMIT);
+        gc_ptr32(HSD_Joint) joint DAT_IF((flags & ROBJ_TYPE_MASK) == REFTYPE_JOBJ);
+        gc_bef32 limit DAT_IF((flags & ROBJ_TYPE_MASK) == REFTYPE_LIMIT);
     } u;
 };
 
 struct HSD_RObjAnimJoint {
-    HSD_RObjAnimJoint* next;
-    HSD_AObjDesc* aobjdesc;
+    gc_ptr32(HSD_RObjAnimJoint) next;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
 };
 
 void _HSD_RObjForgetMemory(void* low, void* high);

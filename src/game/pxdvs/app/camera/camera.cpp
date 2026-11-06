@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/app/floor/floorData.h>
 
 #pragma pool_strings off
 
@@ -53,18 +54,12 @@ enum FloorStateMode {
 };
 
 struct FloorModuleInterface {
-    u8 unk0[0x18];
+    void* unk0[6];
     const char* (*getModuleName)(void);
-    void (*makeStateData)(FloorStateMode mode, void* data, unsigned long size);
-    void (*restoreStateData)(FloorStateMode mode, void* data, unsigned long size);
+    void (*makeStateData)(FloorStateMode mode, void* data, u32 size);
+    void (*restoreStateData)(FloorStateMode mode, void* data, u32 size);
     u32 (*getStateSize)(FloorStateMode mode);
     u32 (*getUID)(void);
-};
-
-struct FloorData {
-    u8 unk0[2];
-    u16 floorID;
-    u8 unk4[0x3C];
 };
 
 extern "C" {
@@ -360,8 +355,8 @@ static inline bool _cameraIsMoving() {
 static const char* _cameraGetModuleName();
 static u32 _cameraGetUID();
 static u32 _cameraGetStateSize(FloorStateMode mode);
-static void _cameraRestoreStateData(FloorStateMode mode, void* data, unsigned long size);
-static void _cameraMakeStateData(FloorStateMode mode, void* data, unsigned long size);
+static void _cameraRestoreStateData(FloorStateMode mode, void* data, u32 size);
+static void _cameraMakeStateData(FloorStateMode mode, void* data, u32 size);
 static void _cameraOffsetAnimeUpdate(_GScamera* cam);
 static void _cameraPadRotateUpdate(_GScamera* cam);
 static void _cameraPadMoveUpdate(_GScamera* cam);
@@ -1341,7 +1336,7 @@ static u32 _cameraGetStateSize(FloorStateMode mode) {
     return 0;
 }
 
-static void _cameraRestoreStateData(FloorStateMode mode, void* data, unsigned long size) {
+static void _cameraRestoreStateData(FloorStateMode mode, void* data, u32 size) {
     if (mode == 1 || mode == 2) {
         memcpy(pCamWork, data, sizeof(CameraWork));
         _GScamera* cam = _cameraGetCurrentCamera();
@@ -1357,7 +1352,7 @@ static inline u8* _cameraToBytes(void* data) {
     return (u8*)data;
 }
 
-static void _cameraMakeStateData(FloorStateMode mode, void* data, unsigned long size) {
+static void _cameraMakeStateData(FloorStateMode mode, void* data, u32 size) {
     if (mode == 1 || mode == 2) {
         u8* buf = _cameraToBytes(data);
         _GScamera* cam = _cameraGetCurrentCamera();

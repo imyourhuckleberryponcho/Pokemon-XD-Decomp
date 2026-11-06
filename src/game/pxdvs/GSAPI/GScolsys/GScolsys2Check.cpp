@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 struct Vec3 {
     f32 x, y, z;
@@ -22,14 +23,14 @@ extern struct {
 #define EventTri __typeof__(eventTriDummy)
 
 struct CheckTri {
-    Vec3 v[3];
-    Vec3 normal;
-    u16 id;
+    gc_vec(Vec3) v[3];
+    gc_vec(Vec3) normal;
+    gc_be16 id;
 };
 
 struct CCD_CHECKMDL_HEAD {
-    CheckTri* tris;
-    u32 numTris;
+    gc_ptr32(CheckTri) tris;
+    gc_be32 numTris;
 };
 
 struct CheckObj {
@@ -81,12 +82,12 @@ static bool getMdlEventList(GSvec* start, GSvec* end, GSvec* dir, CCD_CHECKMDL_H
         if (j < count) {
             continue;
         }
-        PSMTXMultVec(rot, &tri->normal, &normal);
+        PSMTXMultVec(rot, GC_VEC3P(Vec3, &tri->normal), &normal);
         if (PSVECDotProduct(&normal, dir) >= 0.0f) {
             continue;
         }
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->v[j], &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(Vec3, &tri->v[j]), &verts[j]);
         }
         bool hit;
         if (!GScolsys2UtilGetCpPlaneLine(&cp, &t, &normal, verts, start, end)) {

@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/bitfield.h>
+#include <game/gcdata.h>
 #pragma pool_strings off
 
 class CChank {
@@ -15,14 +18,18 @@ public:
 class CChankBlock : public CChank {
 public:
     virtual ~CChankBlock() {}
+#ifdef __MWERKS__
     bool loadFromMemory(char* data, char* id);
+#else
+    BOOL loadFromMemory(char* data, char* id);
+#endif
 };
 
 struct PokemonWaza {
     u16 id;
 };
 
-class Pokemon {
+struct Pokemon {
 public:
     u8 getSex() const;
     u8 getSeikaku() const;
@@ -32,7 +39,7 @@ public:
     PokemonWaza* getPokemonWaza(u16 index);
 };
 
-class DarkPokemon {
+struct DarkPokemon {
 public:
     void init();
     void setDarkPoint(f32 point);
@@ -43,8 +50,9 @@ public:
 };
 
 struct DeckStatusDetermVal {
-    u8 max : 4;
-    u8 min : 4;
+    GC_BITS2(
+    u8 max : 4,
+    u8 min : 4)
 };
 
 class DeckTrainerAI {
@@ -109,22 +117,24 @@ public:
     void setSelectRandomPokemon(bool value);
     bool getSelectRandomPokemon() const;
 
-    u8 selectRandomPokemon : 1;
-    u8 notSameWeekPoint : 1;
-    u8 order : 1;
-    u8 selectAceBoss : 1;
-    u8 respectKeyPlayer : 1;
-    u8 attrDetermination : 1;
-    u8 abilityDetermination : 1;
-    u8 calcWazaDamage : 1;
-    u8 selectRandomDefence : 1;
-    u8 selectRandomWaza : 1;
-    u8 respectWazaAssmntVal : 1;
-    u8 respectRole : 1;
-    u8 respectWazaHit : 1;
-    u8 respectWazaRiskJudge : 1;
-    u8 respectPokemonCondJuge : 1;
-    u8 unk1_0 : 1;
+    GC_BITS8(
+    u8 selectRandomPokemon : 1,
+    u8 notSameWeekPoint : 1,
+    u8 order : 1,
+    u8 selectAceBoss : 1,
+    u8 respectKeyPlayer : 1,
+    u8 attrDetermination : 1,
+    u8 abilityDetermination : 1,
+    u8 calcWazaDamage : 1)
+    GC_BITS8(
+    u8 selectRandomDefence : 1,
+    u8 selectRandomWaza : 1,
+    u8 respectWazaAssmntVal : 1,
+    u8 respectRole : 1,
+    u8 respectWazaHit : 1,
+    u8 respectWazaRiskJudge : 1,
+    u8 respectPokemonCondJuge : 1,
+    u8 unk1_0 : 1)
     u8 unk2[2];
     DeckStatusDetermVal statusDetermVal[8];
     u8 statusDetermValTotalMax;
@@ -137,7 +147,7 @@ public:
     u8 lastPPDetermRate;
     u8 attrTypeID[2];
     u8 attrTypeParam[2];
-    u16 wazaKindID[2];
+    gc_be16 wazaKindID[2];
     u8 wazaKindParam[2];
     u8 totalCorrection;
     u8 unk1F;
@@ -161,12 +171,13 @@ public:
     u8 worth;
     u8 snatchRatio;
     u8 playerLevel;
-    u8 scenarioPokemon : 1;
-    u8 unk3 : 7;
-    u32 deckPokemonID;
-    u16 initDarkPoint;
-    u16 bonusExp;
-    u16 darkWaza[4];
+    GC_BITS2(
+    u8 scenarioPokemon : 1,
+    u8 unk3 : 7)
+    gc_be32 deckPokemonID;
+    gc_be16 initDarkPoint;
+    gc_be16 bonusExp;
+    gc_be16 darkWaza[4];
     u8 revers;
     u8 underTakerFlag;
     u8 unk16[2];
@@ -239,22 +250,24 @@ public:
         }
     }
 
-    u16 pokemonID;
+    gc_be16 pokemonID;
     u8 level;
     u8 friendLevel;
-    u16 holdItem;
+    gc_be16 holdItem;
     u8 role;
     u8 keyPlayer;
     u8 statusRnd[6];
     u8 statusEffort[6];
-    u16 wazaID[4];
+    gc_be16 wazaID[4];
     u8 unk1C;
     u8 comboPartnerAll;
-    u8 seikakuID : 5;
-    u8 sex : 2;
-    u8 tokuseiFlag : 1;
-    u8 randomSetting : 1;
-    u8 unk1F : 7;
+    GC_BITS3(
+    u8 seikakuID : 5,
+    u8 sex : 2,
+    u8 tokuseiFlag : 1)
+    GC_BITS2(
+    u8 randomSetting : 1,
+    u8 unk1F : 7)
 };
 
 class DeckTrainer {
@@ -298,19 +311,19 @@ public:
         return (darkPokemonFlags & (1 << index)) != 0;
     }
 
-    u16 msgOffset;
+    gc_be16 msgOffset;
     u8 unk2[2];
     u8 darkPokemonFlags;
     u8 trainerKind;
-    u16 trainerName;
-    u16 trainerItem[4];
-    u16 trainerPKX;
-    u16 introWZX;
-    u16 trainerMsg[4];
-    u16 pokemonDataID[6];
-    u16 aiID;
-    u16 fixedActionID;
-    u16 comboID[4];
+    gc_be16 trainerName;
+    gc_be16 trainerItem[4];
+    gc_be16 trainerPKX;
+    gc_be16 introWZX;
+    gc_be16 trainerMsg[4];
+    gc_be16 pokemonDataID[6];
+    gc_be16 aiID;
+    gc_be16 fixedActionID;
+    gc_be16 comboID[4];
     u8 comboActive[4];
 };
 
@@ -321,7 +334,7 @@ extern "C" {
 FightEncountData* fightEncountDataBiosGetPtr(u16 id);
 u16 fightEncountDataBiosGetFightTrainerDataId(FightEncountData* data, u8 index);
 void* GSresGetResource(u32, u32);
-void* savedataGetStatus(void* save, u16 kind);
+void* savedataGetStatus(void* save, PCARG(u16, s32) kind);
 u16 darkPokemonListBiosGetPokemonID(u16 index);
 u16 pokemonGetStatus(Pokemon* pokemon, u32 kind, u16 id, u32 arg);
 
@@ -1078,19 +1091,19 @@ void deckRegister(u32 kind, u32 id) {
         return;
     }
     if ((sub = chank.searchSubChankID("DDPK")) != 0) {
-        _deckDarkPokemonSize = *(u32*)(sub + 8);
+        _deckDarkPokemonSize = GC_AT(u32, sub, 8);
         _deckDarkPokemon = (DeckDarkPokemon*)(sub + 0x10);
     }
     if ((sub = chank.searchSubChankID("DTNR")) != 0) {
-        _deckTrainerSize = *(u32*)(sub + 8);
+        _deckTrainerSize = GC_AT(u32, sub, 8);
         _deckTrainer = (DeckTrainer*)(sub + 0x10);
     }
     if ((sub = chank.searchSubChankID("DPKM")) != 0) {
-        _deckPokemonSize = *(u32*)(sub + 8);
+        _deckPokemonSize = GC_AT(u32, sub, 8);
         _deckPokemon = (DeckPokemon*)(sub + 0x10);
     }
     if ((sub = chank.searchSubChankID("DTAI")) != 0) {
-        _deckTrainerAISize = *(u32*)(sub + 8);
+        _deckTrainerAISize = GC_AT(u32, sub, 8);
         _deckTrainerAI = (DeckTrainerAI*)(sub + 0x10);
     }
     if ((sub = chank.searchSubChankID("DSTR")) != 0) {
@@ -1207,6 +1220,9 @@ u32 getDeckResourceID(u8 kind) {
     case 7:
         return 0x195F3400;
     }
+#ifndef __MWERKS__
+    return kind;
+#endif
 }
 
 void deckCreate(u16 deckID, u16 pokemonID, Pokemon* pokemon) {

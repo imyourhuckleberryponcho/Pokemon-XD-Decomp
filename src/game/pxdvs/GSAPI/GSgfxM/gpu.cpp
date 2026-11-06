@@ -3,8 +3,9 @@
 #include <dolphin/os.h>
 #include <dolphin/vi.h>
 
-struct GSgfx_GCFifoObj { void* base; void* end; u32 size; u32 hi; u32 lo; void* read; void* write; u32 status; u8 bound; u8 enable; u8 pad[0x2A]; u32 breakpointReached; u8 pad50[0x30]; };
-struct GPUState { u8 pad[0xC50]; GSgfx_GCFifoObj* fifo; GSgfx_GCFifoObj* spare; void* buffer; void* write; u8 breakpt; u8 drawdone; };
+#include <game/gsgfxfifo.h>
+#include <game/gsgfxstate.h>
+typedef GSgfxState GPUState;
 extern "C" { s32 gsgfx_gpu_mode; }
 static GSgfx_GCFifoObj _gpuFifo[2];
 static s32 _gpuMode; static void* _gpuImmedBuf; static GSgfx_GCFifoObj* _gpuImmedFifo; static GSgfx_GCFifoObj* _gpuBufferFifo; static volatile u32 _gpuNextFifo;

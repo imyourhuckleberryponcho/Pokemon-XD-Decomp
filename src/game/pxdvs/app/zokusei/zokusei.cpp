@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -46,7 +47,7 @@ u8 pokemonDataBiosGetZokuseiDataId(PokemonData* pdata, u16 index);
 u16 zokuseiBiosGetSpriteID(u16 id);
 u16 zokuseiBiosGetWazaJoutai(u32 id, u32 target);
 s32 zokuseiGetAisyouValue(u16 p0, u8 p1, u8 p2);
-u16 zokuseiGetPokemonSpriteID(PokemonData* pdata, u16 index);
+PCRET(u16) zokuseiGetPokemonSpriteID(PokemonData* pdata, u16 index);
 u16 zokuseiGetWazaJoutai(u16 id, u16 target);
 s32 zokuseiGetWazaJoutai_PokemonId(u16 p0, u16 p1);
 extern u32* pokemon_data_number;
@@ -61,7 +62,7 @@ static inline u16 _getWazaJoutai(u16 id, u16 target) {
     return zokuseiBiosGetWazaJoutai(id, target);
 }
 
-u16 zokuseiGetPokemonSpriteID(PokemonData* pdata, u16 index) {
+PCRET(u16) zokuseiGetPokemonSpriteID(PokemonData* pdata, u16 index) {
     if (index >= 2) {
         return 0;
     }

@@ -1,15 +1,17 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
 #pragma peephole off
 
-class Hero {
+struct Hero {
 public:
     static Hero* getHeroPtr();
-    bool setPokemon(const Pokemon*, long);
+    bool setPokemon(const Pokemon*, s32);
     u32 addPokemon(const Pokemon*);
-    Pokemon* getPokemon(long);
+    Pokemon* getPokemon(s32);
 };
 
 struct PCBOX {
@@ -17,9 +19,13 @@ struct PCBOX {
     static PCBOX* getPointer();
     s8 getPokemonBoxNbUsedSlot(s8);
     s8 getPokemonBoxNbEmptySlot(s8);
-    void setPokemon(Pokemon*, s8, s8);
-    void addPokemon(Pokemon*, s8);
+    bool setPokemon(Pokemon*, s8, s8);
+    bool addPokemon(Pokemon*, s8);
+#ifdef __MWERKS__
     void delPokemon(s8, s8);
+#else
+    bool delPokemon(s8 b, s8 i);
+#endif
     Pokemon* getPokemon(s8, s8);
     void* getPokemonBoxName(s8);
 };
@@ -30,8 +36,8 @@ struct PocketVec {
 };
 
 struct CAnt {
-    u32 a0;
-    s32 a4;
+    GCuptr a0;
+    GCsptr a4;
     PocketVec<short> pos;
     f32 aC;
     u8 a10;
@@ -50,7 +56,7 @@ struct CAnt {
     void use();
     inline void setA14(s32 v) { a14 = v; }
     void initByPokemonAndSetColorAnimationInAny(Pokemon*);
-    void setAnimation(long);
+    void setAnimation(s32);
     void drawAndUpdateWithOffset(PocketVec<short>);
 };
 
@@ -63,7 +69,9 @@ public:
     s32 mode;
     f32 t;
     s32 index;
-    u8 pad10[0x10];
+    u8 pad10[0x8];
+    void* slot18;
+    u8 pad1C[0x4];
     Pokemon pokemon;
     CAnt ant;
     CAnt before;
@@ -74,8 +82,8 @@ public:
     void setAnimationOff();
     void setBeforAnt(CAnt&);
     void setPokemon(Pokemon*);
-    void setPositionIndex(long);
-    void setPositionTable(PocketVec<short>*, long);
+    void setPositionIndex(s32);
+    void setPositionTable(PocketVec<short>*, s32);
     void setPositionTableDummy();
     inline void setT(f32 a)
     {
@@ -94,24 +102,40 @@ struct tagSPRITE_WORK {
     u8 unk4;
     u8 unk5;
     s16 itemId;
-    u8 pad8[0x40];
-    u32 hook;
-    s32 msgId;
+    u8 pad8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    GCuptr hook;
+    GCsptr msgId;
     s16 x, y, w, h;
     s32 unk58;
     s16 sx, sy, sw, sh;
-    u32 color;
+    gc_be32 color;
 };
 
 struct tagWINDOW_WORK {
     s8 flags;
     u8 pad1[3];
     s32 menuId;
-    u8 pad8[0x14];
+    u8 pad8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
     u8 pad20[4];
     tagSPRITE_WORK* sprites;
-    u8 pad28[0x60];
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
     s32 cursor;
     s16 x, y;
     u8 pad90[0xE];
@@ -125,7 +149,9 @@ struct MENU_ITEM_dd_ {
     u8 pad0[4];
     s16 spriteId;
     s16 x, y, w, h;
-    u8 padE[10];
+    s16 cursorSprite;
+    void* msg;
+    void* callback;
     s16 next;
 };
 
@@ -136,7 +162,7 @@ struct MENU_SPRITE_dd_ {
 
 struct SaveStatus {
     u8 pad[0xBC0C];
-    long lastViewBox;
+    s32 lastViewBox;
 };
 
 struct tagWINDOW_KEY {
@@ -171,7 +197,7 @@ struct CInfoWindow {
     void close();
     void draw();
     void exec(CMetaMenu&, u32, bool);
-    void init(long, u32);
+    void init(s32, u32);
     void initTutorialTalk();
     void open(u32, bool);
     void setMsgCtrlValue(u32, u32);
@@ -210,8 +236,8 @@ public:
     u32 seId;
     u8 pad10[0xC];
     s32 windowIds[64];
-    void (*windowFuncs[64])(CMetaMenu*, long);
-    long* windowTable;
+    void (*windowFuncs[64])(CMetaMenu*, s32);
+    s32* windowTable;
     CKeyInfo keyInfo;
     s32 repeat;
     u16 lastOn;
@@ -230,7 +256,7 @@ public:
     virtual void updateAll();
     virtual void tutorialExitKick() {}
 
-    long actionMenu(u32*, int, long, long, long);
+    s32 actionMenu(u32*, int, s32, s32, s32);
     void alphaFadeDraw();
     void alphaFadeInKick();
     void alphaFadeOutAndWait();
@@ -238,13 +264,17 @@ public:
     void localWindowCreateAll();
     void localWindowDeleteAll();
     void localWindowDrawAll();
-    void localWindowEntry(long, long, void (*)(CMetaMenu*, long));
-    void localWindowRemove(long);
-    void localWindowSetTable(long*);
+    void localWindowEntry(s32, s32, void (*)(CMetaMenu*, s32));
+    void localWindowRemove(s32);
+    void localWindowSetTable(s32*);
+#ifdef __MWERKS__
     static void systemFadeInKick();
+#else
+    static void systemFadeInKick();
+#endif
     void systemFadeOutSetAndWait(f32);
     void waitAtTime(f32);
-    static long defautlLocalWindowOpenTable[];
+    static s32 defautlLocalWindowOpenTable[];
 };
 
 extern "C" {
@@ -252,9 +282,9 @@ void* GSmemAllocClr(u32);
 void GSmemFree(void*);
 void* memcpy(void*, const void*, u32);
 u8 pokemonCheckValid(Pokemon*);
-void* windowSearchID(long);
+void* windowSearchID(s32);
 MENU_SPRITE_dd_* menuSpriteBiosGetPtr(u32);
-u8 menuModelCheck(void*, long);
+u8 menuModelCheck(void*, s32);
 u8 menuModelComparePokemon(void*, Pokemon*);
 void menuModelLoadPokemon(void*, Pokemon*);
 void menuModelAdjustCamera(void*);
@@ -262,7 +292,7 @@ void menuModelSetAngle(void*, f32*);
 void menuModelRender(void*);
 void menuModelRenderOffAll(void*);
 u8 menuSubGetPokemonSexForDisp(Pokemon*);
-void msgctrlSetValue(u32, u32);
+void msgctrlSetValue(u32, GCuptr);
 u32 GSmsgGetRect(u32);
 void GSmsgPrint2(s32, s32, s32, s32, u32);
 void* GSmsgGetGSchar(void*);
@@ -285,7 +315,7 @@ void GSfsysReadWait(u32);
 void GSresFreeGroup(u32);
 void GSthreadSwitch();
 void menuNameEntryCall(s32, s32);
-void menuPokemonStatusOpenFromPcBox(Pokemon*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, long), long);
+void menuPokemonStatusOpenFromPcBox(Pokemon*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr), GCsptr);
 void menuOpenCustom(s32, ...);
 void menuClose(s32);
 void menuCloseSync(s32, s32);
@@ -297,10 +327,10 @@ void menuModelTerm(void*);
 void menuModelSetSize(void*, s32, s32, s32, s32);
 void GScharCpy(char*, char*);
 MENU_ITEM_dd_* menuItemBiosGetPtr(s32, s32);
-SaveStatus* savedataGetStatus(long, long);
+SaveStatus* savedataGetStatus(s32, s32);
 }
 
-inline void* operator new(unsigned long, void* p) { return p; }
+inline void* operator new(size_t, void* p) { return p; }
 
 u32 pcBoxSoundTbl[5] = { 0x441, 0x442, 0x443, 0x14, 0x15 };
 
@@ -308,7 +338,7 @@ namespace {
 
 PocketVec<short> _cursorPositionTblDefault[4] = { { 0x164, 0x3A }, { 0x10F, 0x1AC }, { 0x1FE, 0x1AC }, { 0x162, 0x1AD } };
 s32 _cursorPositionToStateTbl[4] = { 5, 3, 0x10, 4 };
-long localWindowTable[10] = { 0x8A, 0x82, 0x80, 0x84, 0x85, 0x87, 0x88, 0x89, 0xE3, 0 };
+s32 localWindowTable[10] = { 0x8A, 0x82, 0x80, 0x84, 0x85, 0x87, 0x88, 0x89, 0xE3, 0 };
 
 class CMenuPokemonLeave;
 CMenuPokemonLeave* pMenuPokemonLeave;
@@ -382,17 +412,17 @@ public:
     void drawTemochiArea();
     void drawBoxArea(int, float);
     void drawStatusArea();
-    void boxNameDraw(int, long, unsigned long);
+    void boxNameDraw(int, s32, u32);
     void stateMainProc();
     void stateBoxNameChangeExecProc();
     void stateStatusProc();
     Pokemon* pokemonStatusMenuCallback(Pokemon*, MENU_POKEMON_CB_TYPE);
     void stateMarkingProc();
-    void depositMenuDraw(long);
+    void depositMenuDraw(s32);
     void stateDepositToPcBoxProc();
-    void infoMessageDisplay(unsigned long);
-    void actionExecByMsgID(unsigned long);
-    bool confirmWindow(unsigned long, long);
+    void infoMessageDisplay(u32);
+    void actionExecByMsgID(u32);
+    bool confirmWindow(u32, s32);
     void stateActionMenuMainProc();
     void directActionExec();
     void loop();
@@ -403,40 +433,40 @@ public:
     bool animationProcessButtonInterrupt(const tagWINDOW_KEY*);
     void waitAnimationStateEnd();
     void boxScroll(bool);
-    bool cursorMoveWhenInPcBoxR(long&);
-    bool cursorMoveWhenInPcBoxL(long&);
-    void cursorMoveLeft(long&);
-    void cursorMoveRight(long&);
-    bool cursorMoveDown(long&);
-    bool cursorMoveUp(long&);
+    bool cursorMoveWhenInPcBoxR(s32&);
+    bool cursorMoveWhenInPcBoxL(s32&);
+    void cursorMoveLeft(s32&);
+    void cursorMoveRight(s32&);
+    bool cursorMoveDown(s32&);
+    bool cursorMoveUp(s32&);
     void markingMenuItemCallBack(tagWINDOW_WORK*, tagSPRITE_WORK*);
     void main(CMenuGlobalState&);
 };
 
 }
 
-void menuPcBoxSetLastViewBox(long);
-long menuPcBoxGetLastViewBox();
+void menuPcBoxSetLastViewBox(s32);
+s32 menuPcBoxGetLastViewBox();
 
 namespace {
-Pokemon* _cbMenuPokemonStatus(Pokemon*, MENU_POKEMON_CB_TYPE, long);
-void _depositMenuDrawHook(CMetaMenu*, long);
+Pokemon* _cbMenuPokemonStatus(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr);
+void _depositMenuDrawHook(CMetaMenu*, s32);
 void thisExec(CMenuGlobalState&);
 void thisFree();
 void thisNew();
 }
 
-void menuPtWindowWorkDraw(long);
+void menuPtWindowWorkDraw(s32);
 void menuPtWindowWorkDraw(tagWINDOW_WORK*);
-tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(tagWINDOW_WORK*, u32, long);
-tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(long, u32, long);
+tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(tagWINDOW_WORK*, u32, s32);
+tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(s32, u32, s32);
 MENU_ITEM_dd_* menuPtItemGetBySpriteWork(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void menuPtSpriteWorkSetMenuSprite(tagSPRITE_WORK*, MENU_SPRITE_dd_*);
-MENU_ITEM_dd_* menuPtItemGetByMenuIdAndItemId(long, u32, long);
-void menuPtSpriteWorkSetMsgId(long, u32, long, u32);
-void menuPtSpriteWorkSetSw(tagWINDOW_WORK*, u32, long, bool);
-long relivehallGetLastViewStage();
-void menuPtSpriteDraw(u16, long, long);
+MENU_ITEM_dd_* menuPtItemGetByMenuIdAndItemId(s32, u32, s32);
+void menuPtSpriteWorkSetMsgId(s32, u32, s32, u32);
+void menuPtSpriteWorkSetSw(tagWINDOW_WORK*, u32, s32, bool);
+s32 relivehallGetLastViewStage();
+void menuPtSpriteDraw(u16, s32, s32);
 void menuPtPlaySe(u32);
 
 static inline PocketVec<short> lerpPos(PocketVec<short>& from, PocketVec<short>& to, f32 t)
@@ -459,12 +489,12 @@ static inline void copyTable(void* dst, const void* src, u32 n)
     }
 }
 
-long menuPcBoxGetLastViewBox()
+s32 menuPcBoxGetLastViewBox()
 {
     return savedataGetStatus(0, 3)->lastViewBox;
 }
 
-void menuPcBoxSetLastViewBox(long box)
+void menuPcBoxSetLastViewBox(s32 box)
 {
     savedataGetStatus(0, 3)->lastViewBox = box;
 }
@@ -497,7 +527,7 @@ void CMenuPokemonLeave::init(CMenuGlobalState& st)
     fadeTime = 0;
     fadeState = 0;
     memset(windowIds, 0, 0x100);
-    memset(windowFuncs, 0, 0x100);
+    memset(windowFuncs, 0, sizeof(windowFuncs));
     windowTable = CMetaMenu::defautlLocalWindowOpenTable;
     copyTable(&pad8, pcBoxSoundTbl, 0x14);
     tutorialMode = 0;
@@ -592,7 +622,7 @@ void CMenuPokemonLeave::main(CMenuGlobalState& st)
 void CMenuPokemonLeave::loop()
 {
     state.change(1);
-    long saved;
+    s32 saved;
     char buf[0x18];
     while (true) {
         state.update();
@@ -610,7 +640,7 @@ void CMenuPokemonLeave::loop()
             temochiFlag = 1;
             animState.change(3);
             int free = temochiPokemonGetFreePosition();
-            long target;
+            s32 target;
             if (cursor->isCatchPokemon()) {
                 if (free == 6) {
                     target = 9;
@@ -641,7 +671,7 @@ void CMenuPokemonLeave::loop()
             list[1] = 0x3C14;
             info2.open(0x3BDA, false);
             info2.setMsgCtrlValue(0x4D, (u32)PCBOX::getPointer()->getPokemonBoxName(boxIndex));
-            long sel = actionMenu(list, 2, 0x1EC, 0x106, 0);
+            s32 sel = actionMenu(list, 2, 0x1EC, 0x106, 0);
             info2.close();
             if (sel == 0) {
                 state.change(6);
@@ -828,23 +858,23 @@ void CMenuPokemonLeave::stateActionMenuMainProc()
     list[5] = 0x3BCC;
     info2.open(0x3BC7, false);
     info2.setMsgCtrlValue(0x32, (u32)currentPokemonGetPointer()->getNicknamePtr());
-    long sel = actionMenu(list, 6, 0x1C6, 0x8A, 0);
+    s32 sel = actionMenu(list, 6, 0x1C6, 0x8A, 0);
     actionExecByMsgID(list[sel]);
     info2.close();
 }
 
-bool CMenuPokemonLeave::confirmWindow(unsigned long msg, long defaultSel)
+bool CMenuPokemonLeave::confirmWindow(u32 msg, s32 defaultSel)
 {
     u32 list[2];
     list[0] = 0x3BDF;
     list[1] = 0x3BE0;
     info2.open(msg, false);
-    long sel = actionMenu(list, 2, 0x1FD, 0x106, defaultSel);
+    s32 sel = actionMenu(list, 2, 0x1FD, 0x106, defaultSel);
     info2.close();
     return sel == 0;
 }
 
-void CMenuPokemonLeave::actionExecByMsgID(unsigned long msg)
+void CMenuPokemonLeave::actionExecByMsgID(u32 msg)
 {
     switch (msg) {
     case 0x3BCF: {
@@ -921,12 +951,12 @@ void CMenuPokemonLeave::actionExecByMsgID(unsigned long msg)
     }
 }
 
-void CMenuPokemonLeave::infoMessageDisplay(unsigned long msg)
+void CMenuPokemonLeave::infoMessageDisplay(u32 msg)
 {
     info2.exec(*this, msg, true);
 }
 
-void _depositMenuDrawHook(CMetaMenu* menu, long windowId)
+void _depositMenuDrawHook(CMetaMenu* menu, s32 windowId)
 {
     ((CMenuPokemonLeave*)menu)->depositMenuDraw(windowId);
 }
@@ -980,7 +1010,7 @@ void CMenuPokemonLeave::stateDepositToPcBoxProc()
     state.change(2);
 }
 
-void CMenuPokemonLeave::depositMenuDraw(long windowId)
+void CMenuPokemonLeave::depositMenuDraw(s32 windowId)
 {
     menuPtWindowWorkDraw(windowId);
     boxNameDraw(depositBox, windowId, 0x487);
@@ -991,12 +1021,12 @@ void CMenuPokemonLeave::depositMenuDraw(long windowId)
     GSmsgPrint2(w->layer, w->x + sp->x, w->y + sp->y, -1, 0x3BD2);
 }
 
-void CMenuPokemonLeave::boxNameDraw(int box, long windowId, unsigned long itemId)
+void CMenuPokemonLeave::boxNameDraw(int box, s32 windowId, u32 itemId)
 {
     tagWINDOW_WORK* w = (tagWINDOW_WORK*)windowSearchID(windowId);
     tagSPRITE_WORK* sp = menuPtSpriteWorkGetByItemID(w, itemId, 0);
     void* name = PCBOX::getPointer()->getPokemonBoxName(box);
-    msgctrlSetValue(0x37, (u32)name);
+    msgctrlSetValue(0x37, (GCuptr)name);
     s16 tw = GSmsgGetRect(0x4276) >> 16;
     s16 off = sp->w / 2 - tw / 2;
     GSmsgPrint2(w->layer, w->x + sp->x + off, sp->y + w->y, -1, 0x4276);
@@ -1029,7 +1059,7 @@ void CMenuPokemonLeave::markingMenuItemCallBack(tagWINDOW_WORK* w, tagSPRITE_WOR
         break;
     }
     if (slot != -1) {
-        long cur = windowGetValue(0x86);
+        s32 cur = windowGetValue(0x86);
         winSpriteSetDisp(s, cur == slot);
     } else {
         int bit;
@@ -1059,7 +1089,7 @@ void CMenuPokemonLeave::markingMenuItemCallBack(tagWINDOW_WORK* w, tagSPRITE_WOR
 void CMenuPokemonLeave::stateMarkingProc()
 {
     markMask = currentPokemonPcBoxMarkGet();
-    long v = 0;
+    s32 v = 0;
     info2.open(0x3BDB, false);
     localWindowEntry(0x86, 0, 0);
     menuOpenCustom(0x86, windowGetActiveID(), &v, 0, 1, 0);
@@ -1097,7 +1127,7 @@ Pokemon* CMenuPokemonLeave::pokemonStatusMenuCallback(Pokemon* cur, MENU_POKEMON
         }
         return 0;
     }
-    long idx = f37EC;
+    s32 idx = f37EC;
     Pokemon* r = 0;
     if (idx >= 4 && idx <= 9) {
         if (type == 1) {
@@ -1149,7 +1179,7 @@ Pokemon* CMenuPokemonLeave::pokemonStatusMenuCallback(Pokemon* cur, MENU_POKEMON
     return cur;
 }
 
-Pokemon* _cbMenuPokemonStatus(Pokemon* p, MENU_POKEMON_CB_TYPE type, long)
+Pokemon* _cbMenuPokemonStatus(Pokemon* p, MENU_POKEMON_CB_TYPE type, GCsptr)
 {
     return pMenuPokemonLeave->pokemonStatusMenuCallback(p, type);
 }
@@ -1197,7 +1227,7 @@ void CMenuPokemonLeave::stateMainProc()
             any = false;
         }
         if (any) {
-            long pos = cursor->index;
+            s32 pos = cursor->index;
             switch (rep) {
             case 1:
                 cursorMoveUp(pos);
@@ -1291,9 +1321,9 @@ void CMenuPokemonLeave::stateMainProc()
     } while (state.next == -1);
 }
 
-bool CMenuPokemonLeave::cursorMoveUp(long& idx)
+bool CMenuPokemonLeave::cursorMoveUp(s32& idx)
 {
-    long a = idx;
+    s32 a = idx;
     if (a == 0) {
         idx = 1;
     } else if (a >= 10 && a <= 15) {
@@ -1310,7 +1340,7 @@ bool CMenuPokemonLeave::cursorMoveUp(long& idx)
     return true;
 }
 
-bool CMenuPokemonLeave::cursorMoveDown(long& idx)
+bool CMenuPokemonLeave::cursorMoveDown(s32& idx)
 {
     int a = idx;
     if (a >= 1 && a <= 2) {
@@ -1335,10 +1365,10 @@ bool CMenuPokemonLeave::cursorMoveDown(long& idx)
     return true;
 }
 
-void CMenuPokemonLeave::cursorMoveRight(long& idx)
+void CMenuPokemonLeave::cursorMoveRight(s32& idx)
 {
     if (!cursorMoveWhenInPcBoxR(idx)) {
-        long a = idx;
+        s32 a = idx;
         if (a >= 1 && a <= 2) {
             int n = a - 1;
             if (n < 1) {
@@ -1354,10 +1384,10 @@ void CMenuPokemonLeave::cursorMoveRight(long& idx)
     }
 }
 
-void CMenuPokemonLeave::cursorMoveLeft(long& idx)
+void CMenuPokemonLeave::cursorMoveLeft(s32& idx)
 {
     if (!cursorMoveWhenInPcBoxL(idx)) {
-        long a = idx;
+        s32 a = idx;
         if (a >= 1 && a <= 2) {
             int n = a - 1;
             if (n > 0) {
@@ -1373,7 +1403,7 @@ void CMenuPokemonLeave::cursorMoveLeft(long& idx)
     }
 }
 
-bool CMenuPokemonLeave::cursorMoveWhenInPcBoxL(long& idx)
+bool CMenuPokemonLeave::cursorMoveWhenInPcBoxL(s32& idx)
 {
     int i = idx;
     if (i >= 10) {
@@ -1387,7 +1417,7 @@ bool CMenuPokemonLeave::cursorMoveWhenInPcBoxL(long& idx)
     return false;
 }
 
-bool CMenuPokemonLeave::cursorMoveWhenInPcBoxR(long& idx)
+bool CMenuPokemonLeave::cursorMoveWhenInPcBoxR(s32& idx)
 {
     int i = idx;
     if (i >= 10) {
@@ -1549,7 +1579,8 @@ void CMenuPokemonLeave::animationStateUpdate()
         int dst = temochiPokemonGetFreePosition() - 1;
         PocketVec<short> a = getTemochiSlotPosition(idx - 4);
         PocketVec<short> b = getTemochiSlotPosition(dst);
-        temochiAnt[dst].pos = lerpPos(a, b, t);
+        CAnt* ant = &temochiAnt[dst];
+        ant->pos = lerpPos(a, b, t);
         if (t >= 1.0f) {
             animState.change(0);
         }
@@ -1680,21 +1711,20 @@ void CMenuPokemonLeave::drawStatusArea()
         if (item != 0) {
             void* d = itemDataBiosGetPtr(item);
             if (d != 0) {
-                msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(itemDataBiosGetName(d)));
+                msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(itemDataBiosGetName(d)));
                 sp = menuPtSpriteWorkGetByItemID(w, 0x3D8, 0);
                 GSmsgPrint2(w->layer, w->x + sp->x, w->y + sp->y, -1, nameId);
             }
         }
-        msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(pokemonDataBiosGetName(p->getPokemonDataPtr())));
+        msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(pokemonDataBiosGetName(p->getPokemonDataPtr())));
         sp = menuPtSpriteWorkGetByItemID(w, 0x3DC, 0);
         GSmsgPrint2(w->layer, w->x + sp->x, w->y + sp->y, -1, nameId);
-        msgctrlSetValue(0x37, (u32)p->getNicknamePtr());
+        msgctrlSetValue(0x37, (GCuptr)p->getNicknamePtr());
         sp = menuPtSpriteWorkGetByItemID(w, 0x3DA, 0);
         GSmsgPrint2(w->layer, w->x + sp->x, w->y + sp->y, -1, nameId);
         sp = menuPtSpriteWorkGetByItemID(w, 0x3DB, 0);
         msgctrlSetValue(0x34, p->getLevel());
-        u16 rf_t = sp->x;
-        GSmsgPrint2(w->layer, rf_t + 0x24 + w->x, w->y + sp->y, -1, lvId);
+        GSmsgPrint2(w->layer, w->x + sp->x + 0x24, w->y + sp->y, -1, lvId);
         if (p->isDarkPokemon()) {
             sp = menuPtSpriteWorkGetByItemID(w, 0x4CE, 0);
             menuDrawReliveMeter3(p, w->x + sp->x, w->y + sp->y, sp->w, sp->h, 0xFF, w->layer);
@@ -2131,7 +2161,7 @@ bool CMenuPokemonLeave::pokemonPcBoxMarkGetIndex(Pokemon* p, int index)
 
 void thisNew()
 {
-    void* mem = GSmemAllocClr(0x38A0);
+    void* mem = GSmemAllocClr(sizeof(CMenuPokemonLeave));
     pMenuPokemonLeave = new (mem) CMenuPokemonLeave;
 }
 

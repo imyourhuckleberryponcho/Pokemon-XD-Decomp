@@ -1,4 +1,11 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/gsvfarray.h>
+#include <game/pecontainer.h>
+#include <game/gcfield.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -59,9 +66,15 @@ struct GSbound {
 struct GSgfxDL {
     u8 _draft[1];
 };
-struct GSgfxLayer {
-    u8 _draft[1];
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
+#ifdef __MWERKS__
     s32 dlDraw(GSgfxDL*);
+#else
+    void dlDraw(GSgfxDL* p0);
+#endif
 };
 struct GSgfxVF {
     u8 data[0x440];
@@ -80,17 +93,9 @@ struct _peDistortion {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;
-    u32 unk4;
-    void* buffer;
-    peNode* freeList;
-    peNode* activeList;
-    u16 count;
-    u16 maxCount;
-    u8 dirty;
-    u8 started;
+    PE_CONTAINER_MEMBERS
 
-    peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
+    peContainer(peEmitterNode* e, u32 nodeSize, unsigned short max);
     virtual ~peContainer();
     virtual void Start();
     virtual void PreUpdate();
@@ -100,35 +105,52 @@ public:
     virtual void Stop() = 0;
 
     static void SetLayerVisibility(GSgfxLayerID, bool);
+#ifdef __MWERKS__
     s32 RemoveNode(peNode*);
+#else
+    void RemoveNode(peNode* node);
+#endif
     u16 CreateNodes(unsigned short);
+#ifdef __MWERKS__
     s32 RemoveAll();
+#else
+    void RemoveAll();
+#endif
     s32 MoveNode(peNode*, peNode*);
 };
 class peRenderContainer : public peContainer {
 public:
-    u8 swapPending;
-    u8 cur;
-    u32 bufSize;
-    u8 dl[2][0x10];
-    u8* bufA;
-    u8* bufB;
-    u16 tokens[2];
+    PE_RENDER_MEMBERS
 
-    peRenderContainer(peEmitterNode*, unsigned long, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
+    peRenderContainer(peEmitterNode*, u32, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
     virtual ~peRenderContainer();
     virtual void PreUpdate();
+#ifdef __MWERKS__
     s32 InitSwap();
+#else
+    void InitSwap();
+#endif
+#ifdef __MWERKS__
     s32 ResetSwap();
+#else
+    void ResetSwap();
+#endif
+#ifdef __MWERKS__
     s32 MarkForSwap();
+#else
+    void MarkForSwap();
+#endif
+#ifdef __MWERKS__
     s32 ResolveMultipleSwap();
+#else
+    void ResolveMultipleSwap();
+#endif
 };
 class peDistortionContainer : public peRenderContainer {
 public:
+    PE_DISTORTION_CONTAINER_MEMBERS
     void hideNode(struct peNodeView* n);
     bool updateNode(struct peNodeView* n, f32 dt);
-    _peDistortion* data;
-    f32 uv[8];
 
     peDistortionContainer(peEmitterNode*, _peDistortion*, unsigned short);
     virtual ~peDistortionContainer();
@@ -176,7 +198,7 @@ s32 particleEngineSetupTevStages(s32, s32, s32);
 enum GStexFilter { GS_TEXFILTER_NEAR = 0, GS_TEXFILTER_LINEAR = 2 };
 void particleEngineSetupTexture(u8, s32, s32, s32, s32, s32);
 f32 peSplineGetValue(peSpline* s, f32 t);
-extern f32 __float_nan;
+extern f32 __float_nan[];
 
 inline int __fpclassifyf(float x) {
     switch ((*(s32*)&x) & 0x7F800000) {
@@ -196,6 +218,9 @@ inline int __fpclassifyf(float x) {
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
@@ -204,9 +229,9 @@ inline float sqrtf(float x) {
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         return (float)(x * guess);
     } else if (x < 0.0) {
-        return __float_nan;
+        return __float_nan[0];
     } else if (__fpclassifyf(x) == 1) {
-        return __float_nan;
+        return __float_nan[0];
     }
     return x;
 }
@@ -243,24 +268,24 @@ struct peXformP {
 };
 struct peSplineHdr {
     u8 flags;
-    f32 value;
-    f32 time;
+    gc_bef32 value;
+    gc_bef32 time;
 };
 struct GSColor {
     u8 r, g, b, a;
 };
 
 struct peDistortionDef {
-    u32 flags;
+    gc_be32 flags;
     u8 pad4[0x10];
-    peSpline* scaleX;
-    peSpline* scaleY;
-    f32 offsetX;
-    f32 offsetY;
-    f32 spinScale;
+    gc_ptr32(peSpline) scaleX;
+    gc_ptr32(peSpline) scaleY;
+    gc_bef32 offsetX;
+    gc_bef32 offsetY;
+    gc_bef32 spinScale;
     u8 pad28[8];
-    peSpline* spin;
-    peSpline* alpha;
+    gc_ptr32(peSpline) spin;
+    gc_ptr32(peSpline) alpha;
 };
 
 struct peDistortionNodeData {
@@ -269,7 +294,9 @@ struct peDistortionNodeData {
     Vec pos;
     Vec vel;
     peXformP* xform;
-    u8 pad24[0xc];
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
     u16 index;
     u16 spin;
     f32 sizeX;
@@ -280,7 +307,12 @@ struct peDistortionNodeData {
 };
 
 struct peEmitterNodeData {
-    u8 pad0[0x38];
+    u8 pad0[0x20];
+    void* slot20;
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x8];
     f32 color[4];
     u8 pad48[0xb4];
     u32* params;
@@ -374,7 +406,11 @@ static inline u8 OSf32tou8(register f32 inF) {
     u8 out;
     u8* outP = &out;
     register u8* ptr = outP;
+#ifdef __MWERKS__
     asm { psq_st inF, 0(ptr), 1, 2 }
+#else
+    PSQ_STORE(ptr, 0, inF, 2);
+#endif
     return *ptr;
 }
 
@@ -382,13 +418,16 @@ struct peDLView {
     u16 flags;
     u16 stride;
     u8* buf;
-    u8 pad8[8];
+    u32 size;
+    GSgfxVF* vf;
 };
 
 struct peNodeView {
-    u8 pad0[0x28];
+    u8 pad0[0x20];
+    void* slot20;
+    u8 pad24[0x4];
     peNodeView* next;
-    u8 pad2c[4];
+    void* slot2C;
     u16 vtx;
 };
 
@@ -415,7 +454,7 @@ void peDistortionContainer::Stop() {
         PreUpdate();
         started = 0;
         peNodeView* n = (peNodeView*)activeList;
-        u32 flags = **(u32**)((u8*)emitter + 0xfc);
+        u32 flags = *PE_EMITTER_DEF_RAW(emitter, u32**);
         if (flags & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
@@ -442,18 +481,20 @@ static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
     LAYER_FIELD(l, u32, 0x1760) |= sum;
 }
 
+#define PE_DLV(p) ((peDLView*)(p))
+
 static inline bool canRender(peDistortionContainer* c) {
-    if (!M2C_FIELD(c, u8 *, 0x19)) {
+    if (!c->started) {
         return false;
     }
-    u32 flags = M2C_FIELD(M2C_FIELD(c, u8 **, 0x54), u32 *, 0);
-    if (M2C_FIELD(c, u16 *, 0x14) == 0) {
+    u32 flags = GC_AT(u32, c->data, 0);
+    if (c->count == 0) {
         return false;
     }
     if (g_render_pass != 1) {
         return false;
     }
-    switch (M2C_FIELD(g_current_layer, s32 *, 0x28)) {
+    switch (M2C_NAMED(g_current_layer, s32 *, 0x28, id)) {
     case 1:
         if (!(flags & 0x2000)) {
             return false;
@@ -480,10 +521,10 @@ void peDistortionContainer::Render() {
     u32 temp_r31;
     GSgfxVF *var_r31;
 
-    if (M2C_FIELD(this, u8 *, 0x19)) {
+    if (THIS_F(u8 *, 0x19, started)) {
         if (canRender(this)) {
             ((peRenderContainer*)((peRenderContainer *) this))->ResolveMultipleSwap();
-            temp_r31 = M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), u32 *, 0);
+            temp_r31 = GC_AT(u32, THIS_F(u8 **, 0x54, data), 0);
             if (temp_r31 & 0x100) {
                 {
                     GSgfxLayer* l = g_current_layer;
@@ -522,17 +563,17 @@ void peDistortionContainer::Render() {
             }
             particleEngineSetupBlendMode(0);
             particleEngineSetupTevStages(0, 0, 0);
-            particleEngineSetupTexture(0, M2C_FIELD(M2C_FIELD(this, u8 **, 0x54), s32 *, 0x60), temp_r31 & 3, (temp_r31 >> 2U) & 3, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, (temp_r31 & 0x40) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
+            particleEngineSetupTexture(0, GC_AT(s32, THIS_F(u8 **, 0x54, data), 0x60), temp_r31 & 3, (temp_r31 >> 2U) & 3, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, (temp_r31 & 0x40) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
             u8* verts = (&bufA)[cur];
             u8* dlp = dl[cur];
-            if (M2C_FIELD(dlp, u16 *, 0) & 1) {
-                var_r31 = M2C_FIELD(dlp, GSgfxVF **, 0xC);
+            if (PE_DLV(dlp)->flags & 1) {
+                var_r31 = PE_DLV(dlp)->vf;
             } else {
                 var_r31 = NULL;
             }
-            GSgfxVFSetArray((GSgfxVF*)(var_r31), 9, 3, (void*)(verts), 4, bufSize);
-            GSgfxVFSetArray((GSgfxVF*)(var_r31), 0xB, 3, (void*)(verts + 0x30), 4, bufSize);
-            GSgfxVFSetArray((GSgfxVF*)(var_r31), 0xD, 3, (void*)((u8*)this + 0x58), 4, 0x20);
+            GSGFX_VF_SET_ARRAY_NATIVE((GSgfxVF*)(var_r31), 9, 3, (void*)(verts), 4, bufSize);
+            GSGFX_VF_SET_ARRAY_NATIVE((GSgfxVF*)(var_r31), 0xB, 3, (void*)(verts + 0x30), 4, bufSize);
+            GSGFX_VF_SET_ARRAY_NATIVE((GSgfxVF*)(var_r31), 0xD, 3, (void*)&THIS_F(u8 *, 0x58, uv), 4, 0x20);
             ((GSgfxLayer*)(g_current_layer))->dlDraw((GSgfxDL*)dl[cur]);
             ((peRenderContainer*)((peRenderContainer *) this))->MarkForSwap();
         }
@@ -586,15 +627,15 @@ void peDistortionContainer::Update(float dt) {
 
 extern "C++" {
 struct peDistortionDefE {
-    u32 flags;
-    f32 sizeXBase;
-    f32 sizeYBase;
-    f32 sizeXRange;
-    f32 sizeYRange;
+    gc_be32 flags;
+    gc_bef32 sizeXBase;
+    gc_bef32 sizeYBase;
+    gc_bef32 sizeXRange;
+    gc_bef32 sizeYRange;
     u8 pad14[0x10];
-    f32 rotBase;
-    f32 spinBase;
-    f32 spinRange;
+    gc_bef32 rotBase;
+    gc_bef32 spinBase;
+    gc_bef32 spinRange;
 };
 
 struct _EmitParamsD {
@@ -670,9 +711,9 @@ extern "C++" {
 void peDistortionContainer::Start() {
     s32 temp_r31;
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
-        M2C_FIELD(this, u8 *, 0x19) = 1U;
-        temp_r31 = *M2C_FIELD(M2C_FIELD(this, u8 **, 0), s32 **, 0xFC);
+    if ((u8) THIS_F(u8 *, 0x19, started) == 0) {
+        THIS_F(u8 *, 0x19, started) = 1U;
+        temp_r31 = GC_AT(s32, PE_EMITTER_DEF_M2C(THIS_F(u8 **, 0, emitter), s32 **), 0);
         ((peRenderContainer*)((peRenderContainer *) this))->InitSwap();
         if (temp_r31 & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
@@ -698,25 +739,25 @@ extern "C++" {
 #pragma push
 #pragma dont_inline off
 peDistortionContainer::peDistortionContainer(peEmitterNode* p0, _peDistortion* p1, unsigned short p2)
-    : peRenderContainer(p0, 0x48, p2, &g_vertex_format, (GSgfxPrimType)0x80, 4, 0x34, (*(u32*)p1 >> 14) & 1) {
+    : peRenderContainer(p0, PE_NODE_SIZE(0x48, peDistortionNodeData), p2, &g_vertex_format, (GSgfxPrimType)0x80, 4, 0x34, (GC_AT(u32, p1, 0) >> 14) & 1) {
     peNode* node;
     u16 i;
     _peDistortion* d;
 
     data = p1;
     d = data;
-    uv[0] = M2C_FIELD(d, f32 *, 0x58);
-    uv[1] = M2C_FIELD(d, f32 *, 0x5C);
-    uv[2] = M2C_FIELD(d, f32 *, 0x50);
-    uv[3] = M2C_FIELD(d, f32 *, 0x5C);
-    uv[4] = M2C_FIELD(d, f32 *, 0x50);
-    uv[5] = M2C_FIELD(d, f32 *, 0x54);
-    uv[6] = M2C_FIELD(d, f32 *, 0x58);
-    uv[7] = M2C_FIELD(d, f32 *, 0x54);
+    uv[0] = GC_AT(f32, d, 0x58);
+    uv[1] = GC_AT(f32, d, 0x5C);
+    uv[2] = GC_AT(f32, d, 0x50);
+    uv[3] = GC_AT(f32, d, 0x5C);
+    uv[4] = GC_AT(f32, d, 0x50);
+    uv[5] = GC_AT(f32, d, 0x54);
+    uv[6] = GC_AT(f32, d, 0x58);
+    uv[7] = GC_AT(f32, d, 0x54);
     DCFlushRange(uv, 0x20);
     i = 0;
-    for (node = freeList; node != 0; node = M2C_FIELD(node, peNode **, 0x28)) {
-        M2C_FIELD(node, u16 *, 0x30) = i;
+    for (node = freeList; node != 0; node = PE_NODE_LINK28(node)) {
+        PE_NODE_F(node, u16, 0x30) = i;
         i++;
     }
     g_particle_debug_stats.unk4 += 0x78;
@@ -729,13 +770,15 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* emitter, _peDistortion* d
     peEmitterNodeData* e = (peEmitterNodeData*)emitter;
     peDistortionDef* p = (peDistortionDef*)dist;
     u32 flags = p->flags;
-    Vec right;
+    Quaternion pos;
     Vec up;
     Vec v;
     Vec off;
     Vec fwd;
     f32 angle;
-    Quaternion pos;
+    Vec right;
+    Quaternion q;
+    Vec euler;
 
     {
         f32 py = n->pos.y * n->xform->scale.y;
@@ -764,8 +807,6 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* emitter, _peDistortion* d
         right = xAxisVector;
         up = yAxisVector;
         if (*e->params & 0x400) {
-            Vec euler;
-            Quaternion q;
             f32 vx;
             f32 vz;
             vz = n->vel.z;
@@ -809,9 +850,9 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* emitter, _peDistortion* d
         off.z *= offY.z;
     }
     out += n->index * 0x34;
-    v.z = -right.z;
     v.x = -right.x;
     v.y = -right.y;
+    v.z = -right.z;
     PSVECSubtract(&v, &up, &v);
     emitCorner(out, &v, &off, hasOff, (Vec*)&pos);
     vecSub(&v, &right, &up);
@@ -826,7 +867,7 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* emitter, _peDistortion* d
         c.g = 0xff;
         c.r = 0xff;
         c.a = OSf32tou8(255.0f * e->color[3] * evalSpline(p->alpha, t));
-        *(GSColor*)(out + 0x30) = c;
+        *(u32*)(out + 0x30) = *(u32*)&c;
     }
 }
 }

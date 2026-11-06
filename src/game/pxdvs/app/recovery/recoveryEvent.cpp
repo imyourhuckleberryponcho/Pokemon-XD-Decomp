@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct Vec {
     f32 x, y, z;
@@ -22,14 +23,14 @@ extern "C" {
 void recoveryPokemon(void);
 void fadeSet(s32 type, f32 time);
 void fadeCheck(s32);
-void soundOpenPlayME(u32 id, u32, u8 volume);
+void soundOpenPlayME(u32 id, u32, PCARG(u8, s32) volume);
 void heroMovePoolCounter(s32, u32);
 FloorBgmMask* floorSound_getBgmMaskObj(void);
 u32 floorGetCurrentGroupID(void);
 GSmodel* GSresGetResource(u32 group, u32 id);
 People* peopleGet(s32 group, s32 id);
 void* savedataGetStatus(s32, s32);
-u32 heroGetPokeomCount(void);
+u32 heroGetPokeomCount(void* hero);
 u8 revoceryCatchPokemonBall(u16 index);
 GSmodel* floorOpenObject(u32 id);
 void GSmodelSetVisibility(GSmodel* model, s32 visible);
@@ -53,10 +54,10 @@ u32 soundPauseBGMEX(u32 time, s32);
 void GSsndPlay(u32 id, s32, s32);
 }
 
-void _recoveryEventSetME(unsigned long id, unsigned long arg1, unsigned char volume);
+void _recoveryEventSetME(u32 id, u32 arg1, unsigned char volume);
 
-static u32 _recoveryPauseBGM(unsigned long time);
-static void _recoveryEventSetSE(unsigned long id);
+static u32 _recoveryPauseBGM(u32 time);
+static void _recoveryEventSetSE(u32 id);
 
 static u32 _recoveryTestBallTable[13] = {
     0x02E50400, 0x02E60400, 0x02E50400, 0x02EC0400, 0x02B70400, 0x18740400, 0x02E70400,
@@ -96,7 +97,7 @@ void recoveryEventPC(s32 group, s32 id, u32 machineID, u32* ballParts, u32* moti
     machine = GSresGetResource(floorGetCurrentGroupID(), machineID);
     people = peopleGet(group, id);
     party = savedataGetStatus(0, 2);
-    count = heroGetPokeomCount();
+    count = heroGetPokeomCount(party);
     hasPeople = people != NULL;
 
     for (i = 0; i < count; i++) {
@@ -146,14 +147,14 @@ void recoveryEventPC(s32 group, s32 id, u32 machineID, u32* ballParts, u32* moti
 
 }
 
-static u32 _recoveryPauseBGM(unsigned long time) {
+static u32 _recoveryPauseBGM(u32 time) {
     return soundPauseBGMEX(time, 0);
 }
 
-static void _recoveryEventSetSE(unsigned long id) {
+static void _recoveryEventSetSE(u32 id) {
     GSsndPlay(id, 0, 0);
 }
 
-void _recoveryEventSetME(unsigned long id, unsigned long arg1, unsigned char volume) {
+void _recoveryEventSetME(u32 id, u32 arg1, unsigned char volume) {
     soundOpenPlayME(id, arg1, volume);
 }

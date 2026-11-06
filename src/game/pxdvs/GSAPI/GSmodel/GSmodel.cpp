@@ -1,5 +1,11 @@
 
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/gsmodelview.h>
 
 #pragma pool_strings off
 
@@ -13,7 +19,9 @@ struct Quaternion {
 
 typedef f32 Mtx[3][4];
 
-struct HSD_JObj {
+typedef struct _HSD_JObj HSD_JObj;
+#ifdef __MWERKS__
+struct _HSD_JObj {
     u8 unk0[0x14];
     u32 flags;
     u8 unk18[0x4];
@@ -23,46 +31,97 @@ struct HSD_JObj {
     GSvec translate;
     Mtx mtx;
 };
+#else
+struct _HSD_JObj {
+    void* pcObject[2];
+    _HSD_JObj* next;
+    _HSD_JObj* parent;
+    _HSD_JObj* child;
+    u32 flags;
+    void* dobj;
+    GSvec rotate;
+    f32 rotateW;
+    GSvec scale;
+    GSvec translate;
+    Mtx mtx;
+    void* scl;
+    void* envelopemtx;
+    void* aobj;
+    void* robj;
+    u32 id;
+};
+#endif
 
 struct _HSD_Joint {
-    char* class_name;
-    u32 flags;
-    _HSD_Joint* child;
-    _HSD_Joint* next;
-    void* dobj;
-    GSvec rotation;
-    GSvec scale;
-    GSvec position;
-    void* envelopemtx;
-    void* robj;
+    gc_ptr32(char) class_name;
+    gc_be32 flags;
+    gc_ptr32(_HSD_Joint) child;
+    gc_ptr32(_HSD_Joint) next;
+    gc_ptr32(void) dobj;
+    gc_vec(GSvec) rotation;
+    gc_vec(GSvec) scale;
+    gc_vec(GSvec) position;
+    gc_ptr32(void) envelopemtx;
+    gc_ptr32(void) robj;
 };
 
 struct _HSD_SceneModelSet {
-    _HSD_Joint* joint;
-    void** animjoint;
-    void** matanim_joint;
-    void** shapeanim_joint;
+    gc_ptr32(_HSD_Joint) joint;
+    gc_ptr32(gc_ptr32(void)) animjoint;
+    gc_ptr32(gc_ptr32(void)) matanim_joint;
+    gc_ptr32(gc_ptr32(void)) shapeanim_joint;
 };
 
 struct GSboundAnimHeader;
 
 struct GSbound {
-    u8 unk0[0x10];
+    u16 flags;
+    u16 type;
+    void* data;
+#ifdef __MWERKS__
+    s32 animIndex;
+    f32 animFrame;
     GSboundAnimHeader* animHeader;
-    u8 unk14[0xC];
+    void* animTable;
+    f32 unk18[2];
+#else
+    union {
+        f32 box[6];
+        struct {
+            s32 animIndex;
+            f32 animFrame;
+            GSboundAnimHeader* animHeader;
+            void* animTable;
+        };
+    };
+#endif
 };
 
 struct HSD_CObj;
 
 struct GScamera {
-    u8 unk0[0x8];
+    u8 unk0[0x4];
+    void* desc;
     HSD_CObj* cobj;
     u8 unkC[0x60];
     GSvec position;
 };
 
 struct GSmaterial {
-    u8 unk0[0x34];
+    u16 savedAlpha;
+    u16 extensions;
+    u32 savedFlags;
+    struct HSD_MObj* mobj;
+    u8 modulate[4];
+    u8 channels[4];
+    struct HSD_TObj* envTObj;
+    struct HSD_ImageDesc* envImage;
+    struct GStexture* envTexture;
+    s32 envType;
+    s32 envMode;
+    f32 envBlend;
+    struct HSD_ImageDesc* savedImage;
+    struct HSD_PEDesc* savedPE;
 };
 
 struct GSpart {
@@ -90,24 +149,41 @@ struct _GSmodel {
     u32 texAnimCount;
     s32 animType;
     s32 animIndex;
-    u8 unk7C[4];
+    f32 animRate;
     f32 animFrame;
-    u8 unk84[0x2C];
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
+    s32 texAnimType;
     s32 texAnimIndex;
-    u8 unkB4[0x14];
+    f32 texAnimRate;
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
     struct {
         u8 unk0[0x18];
-        u32 unk18;
+        void* unk18;
     } mixA[12];
-    u8 unk218[4];
+    f32 blendFactor;
     u8 unk21C;
     u8 unk21D;
     u8 unk21E[2];
-    u32 unk220;
-    u8 unk224[4];
+    void* unk220;
+    void* animEndedCallbackArg;
     struct {
         u32 unk0;
-        u8 unk4[0x34];
+        s32 unk4;
+        void* unk8;
+        void* unkC;
+        u8 unk10[0x28];
     } mixB[16];
     s32 attachMode;
     _GSmodel* attachModel;
@@ -120,10 +196,10 @@ struct _GSmodel {
     GSmaterial* materials;
     u32 materialCount;
     u32 unk5E8;
-    u32 unk5EC;
-    u32 unk5F0;
+    void* unk5EC;
+    void* unk5F0;
     f32 unk5F4;
-    u32 unk5F8;
+    GCuptr unk5F8;
     f32 unk5FC;
     u8 unk600[4];
     f32 unk604;
@@ -132,12 +208,22 @@ struct _GSmodel {
     u16 unk610;
     u8 unk612;
     u8 unk613;
-    u32 unk614;
-    u32 unk618;
-    u32 unk61C;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
     s32 vertexCount;
     s32 polygonCount;
 };
+#ifndef __MWERKS__
+#include <stddef.h>
+#include <game/gsmodellayout.h>
+static_assert(sizeof(_GSmodel) == sizeof(GSmodelLayout), "gsmodellayout.h size");
+static_assert(offsetof(_GSmodel, camera) == offsetof(GSmodelLayout, camera), "gsmodellayout.h camera");
+static_assert(offsetof(_GSmodel, attachModel) == offsetof(GSmodelLayout, attachModel), "gsmodellayout.h attachModel");
+static_assert(offsetof(_GSmodel, unk5F8) == offsetof(GSmodelLayout, unk5F8), "gsmodellayout.h unk5F8");
+static_assert(offsetof(_GSmodel, unk610) == offsetof(GSmodelLayout, unk610), "gsmodellayout.h unk610");
+static_assert(offsetof(_GSmodel, unk61C) == offsetof(GSmodelLayout, unk61C), "gsmodellayout.h unk61C");
+#endif
 
 static inline bool MODEL_FLAG(struct _GSmodel* model, u32 flag);
 
@@ -146,68 +232,44 @@ enum GSgfxLayerPass {
     GS_GFX_LAYER_PASS_XLU
 };
 
-struct GSgfxLayerState {
-    u32 dirty;
-    u8 unk4[0xC];
-    u32 dirty10;
-    u8 unk14[0x50];
-    u32 dirty64;
-    u8 unk68[0x50];
-};
 
-class GSgfxLayer {
+enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
+enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void FlushState();
     void InvalidateState();
     u16 tokenMark();
 
     inline void SetViewport(f32 x, f32 y, f32 w, f32 h) {
-        m_viewportX = x;
-        m_viewportY = y;
-        m_viewportW = w;
-        m_viewportH = h;
-        m_state[0].dirty10 |= 0x10;
-        m_state[0].dirty |= 0x2;
-        m_state[1].dirty10 |= 0x10;
-        m_state[1].dirty |= 0x2;
+        hw.viewport[0] = x;
+        hw.viewport[1] = y;
+        hw.viewport[2] = w;
+        hw.viewport[3] = h;
+        dirty[0].raster |= 0x10;
+        dirty[0].groups |= 0x2;
+        dirty[1].raster |= 0x10;
+        dirty[1].groups |= 0x2;
     }
 
     inline void SetZCompare(u8 enable) {
-        m_zCompare = enable;
-        m_state[0].dirty64 |= 0x40;
-        m_state[1].dirty64 |= 0x40;
+        hw.fogEnable = enable;
+        dirty[0].pe |= 0x40;
+        dirty[1].pe |= 0x40;
         if (enable) {
-            m_state[0].dirty64 |= 0x200;
-            m_state[1].dirty64 |= 0x200;
-            if (m_zUpdate) {
-                m_state[0].dirty64 |= 0x100;
-                m_state[1].dirty64 |= 0x100;
+            dirty[0].pe |= 0x200;
+            dirty[1].pe |= 0x200;
+            if (hw.fogRangeEnable) {
+                dirty[0].pe |= 0x100;
+                dirty[1].pe |= 0x100;
             }
         }
-        m_state[0].dirty |= 0x40;
-        m_state[1].dirty |= 0x40;
+        dirty[0].groups |= 0x40;
+        dirty[1].groups |= 0x40;
     }
 
-    u8 unk0[0x4];
-    u32 m_flags;
-    u8 unk8[0x20];
-    s32 m_id;
-    s32 m_mode;
-    u8 unk30[0xD40];
-    u16 m_scissorX;
-    u16 m_scissorY;
-    u16 m_scissorW;
-    u16 m_scissorH;
-    f32 m_viewportX;
-    f32 m_viewportY;
-    f32 m_viewportW;
-    f32 m_viewportH;
-    u8 unkD88[0x8];
-    u32 m_unkD90;
-    u8 unkD94[0x912];
-    u8 m_zUpdate;
-    u8 m_zCompare;
-    GSgfxLayerState m_state[2];
 };
 
 struct GSgfxRenderModule {
@@ -435,7 +497,11 @@ static inline void _destroyLinkedParticles(_GSmodel* model) {
 
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 
@@ -444,7 +510,7 @@ static inline void OSu16tof32(const u16* in, f32* out) {
 }
 
 static inline void _initColorSwapTables(GSgfxLayer* layer) {
-    if (layer->m_mode == 1) {
+    if (layer->type == 1) {
         HSD_InitColorSwapTable(0, 2, 2, 2, 3);
     } else {
         HSD_InitColorSwapTable(0, 0, 1, 2, 3);
@@ -470,10 +536,10 @@ static void _modelRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
     _GSmodel* model;
     u8 drawn;
 
-    layerID = layer->m_id;
+    layerID = layer->id;
     if (_invalidateVtxTex == 1) {
-        layer->m_flags |= 0x8000000;
-        layer->m_flags |= 0x10000000;
+        layer->flags |= 0x8000000;
+        layer->flags |= 0x10000000;
         _invalidateVtxTex = 0;
     }
     if (layerID == modelShadowLayerID) {
@@ -499,19 +565,19 @@ static void _modelRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
             OSu16tof32(&halfH, &h);
         }
         layer->SetViewport(x, x, w, h);
-        layer->m_scissorX = 0;
-        layer->m_scissorY = 0;
-        GSgfxVideoGetEFBSize(&layer->m_scissorW, &layer->m_scissorH);
-        layer->m_state[0].dirty10 |= 0x1;
-        layer->m_state[0].dirty |= 0x2;
-        layer->m_state[1].dirty10 |= 0x1;
-        layer->m_state[1].dirty |= 0x2;
+        layer->hw.scissor[0] = 0;
+        layer->hw.scissor[1] = 0;
+        GSgfxVideoGetEFBSize(&layer->hw.scissor[2], &layer->hw.scissor[3]);
+        layer->dirty[0].raster |= 0x1;
+        layer->dirty[0].groups |= 0x2;
+        layer->dirty[1].raster |= 0x1;
+        layer->dirty[1].groups |= 0x2;
         layer->FlushState();
     } else {
         drawn = 0;
         perf = GSgfxPerfbarCPUEntry(0xFF);
         _initColorSwapTables(layer);
-        zCompare = layer->m_zCompare != 0;
+        zCompare = layer->hw.fogEnable != 0;
         for (model = _modelTopPtr; model != 0; model = model->next) {
             GSgfxTokenIfClearedReset(&model->token);
             if (model->flags & 0x4000000) {
@@ -526,7 +592,7 @@ static void _modelRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
         }
         if (drawn) {
             HSD_ResetColorSwapTables();
-            GScameraLoadActiveCameraMatrix(layer->m_id);
+            GScameraLoadActiveCameraMatrix(layer->id);
         }
         layer->SetZCompare(zCompare);
     }
@@ -539,7 +605,7 @@ void GSmodelDrawModel(_GSmodel* model, GSgfxLayer* layer, GSgfxLayerPass pass) {
     u8 zCompare;
 
     if (model != 0 && (model->flags & 1)) {
-        zCompare = layer->m_zCompare != 0;
+        zCompare = layer->hw.fogEnable != 0;
         _initColorSwapTables(layer);
         _modelRenderModelSub(layer, pass, model);
         HSD_ResetColorSwapTables();
@@ -554,8 +620,8 @@ static void _modelRenderModelSub(GSgfxLayer* layer, GSgfxLayerPass pass, _GSmode
     u8 zCompare;
 
     modelUpdateTransform(model);
-    zCompare = layer->m_zCompare != 0;
-    if (layer->m_mode != 0) {
+    zCompare = layer->hw.fogEnable != 0;
+    if (layer->type != 0) {
         return;
     }
     switch (pass) {
@@ -578,11 +644,11 @@ static void _modelRenderModelSub(GSgfxLayer* layer, GSgfxLayerPass pass, _GSmode
         HSD_JObj* jobj;
 
         GScameraLoadProjection(camera, layer);
-        layer->m_unkD90 = 0;
-        layer->m_state[0].dirty10 |= 0x4;
-        layer->m_state[0].dirty |= 0x2;
-        layer->m_state[1].dirty10 |= 0x4;
-        layer->m_state[1].dirty |= 0x2;
+        layer->hw.clipMode = 0;
+        layer->dirty[0].raster |= 0x4;
+        layer->dirty[0].groups |= 0x2;
+        layer->dirty[1].raster |= 0x4;
+        layer->dirty[1].groups |= 0x2;
         layer->FlushState();
         HSD_StateInvalidate(-1);
         GSlightSetupLights(camera->cobj);
@@ -596,10 +662,18 @@ static void _modelRenderModelSub(GSgfxLayer* layer, GSgfxLayerPass pass, _GSmode
             HSD_JObjDispAll(jobj, 0, 6, 0);
             break;
         }
+#ifdef __MWERKS__
         *(volatile u8*)0xCC008000 = 0x10;
         *(volatile u16*)0xCC008000 = 0;
         *(volatile u16*)0xCC008000 = 0x1005;
         *(volatile u32*)0xCC008000 = 0;
+#else
+
+        GXWGFifo.u8 = 0x10;
+        GXWGFifo.u16 = 0;
+        GXWGFifo.u16 = 0x1005;
+        GXWGFifo.u32 = 0;
+#endif
         modelShadowPrepare(model, false);
         layer->InvalidateState();
         model->token = layer->tokenMark();
@@ -1158,3 +1232,9 @@ static _GSmodel* _modelLoad(_HSD_SceneModelSet* set, _HSD_Joint* joint, GSboundA
     }
     return model;
 }
+
+#ifndef __MWERKS__
+
+extern "C" void* GSmodelPCAttachPositionPtr(void* model) { return &((_GSmodel*)model)->attachPosition; }
+extern "C" void* GSmodelPCAttachRotationPtr(void* model) { return &((_GSmodel*)model)->attachRotation; }
+#endif

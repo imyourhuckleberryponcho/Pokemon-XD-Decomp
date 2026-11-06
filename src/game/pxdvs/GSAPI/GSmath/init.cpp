@@ -6,6 +6,7 @@ extern "C" {
 extern u32* __hsd_rand_seed_hold;
 void GSmathInitCosTable(void);
 
+#ifdef __MWERKS__
 static inline void OSInitFastCast(void) {
     asm {
         li r3, 4
@@ -28,6 +29,9 @@ static inline void OSSetGQR6(register u32 value) {
         mtspr GQR6, value
     }
 }
+#else
+static inline void OSSetGQR6(u32 value) { (void)value; }
+#endif
 
 void GSmathInit(void) {
     OSInitFastCast();

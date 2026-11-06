@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #pragma peephole off
 #pragma pool_strings off
 
@@ -17,7 +20,12 @@ struct GSivec2 {
 };
 
 struct SpriteBody {
+#ifdef __MWERKS__
     u8 b[0x3C];
+#else
+    void* cmds;
+    u8 b[0x38];
+#endif
 };
 
 struct tagSPRITE_WORK {
@@ -27,8 +35,8 @@ struct tagSPRITE_WORK {
     s16 id;
     s32 unk8;
     SpriteBody body;
-    s32 unk48;
-    s32 unk4C;
+    GCsptr unk48;
+    GCsptr unk4C;
     s16 x;
     s16 y;
     s16 w;
@@ -114,7 +122,7 @@ struct FaceTex {
 };
 
 extern "C" {
-u32 pokemonGetStatus(void* ptr, u16 id, u16 kind, u16 index);
+StatusU32 pokemonGetStatus(void* ptr, u16 id, u16 kind, u16 index);
 u8 pokemonGetFightPokemonDeoxysSel(FightPokemon*);
 u32 pokemonBiosGetRnd(Pokemon*);
 u8 pokemonBiosGetTamagoFlag(Pokemon*);
@@ -161,7 +169,7 @@ static s32 _menuFaceDispFromID(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id, GS
 static s32 _menuFaceDispFromID3(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id, GSivec2* a, GSivec2* b);
 
 extern "C" {
-u16 menuFaceGetID(Pokemon* p);
+PCRET(u16) menuFaceGetID(Pokemon* p);
 u16 menuFaceGetID2(Pokemon* p, u8 a);
 u16 menuFaceGetID3(Pokemon* p, u8 a, s8 b);
 u32 menuFaceGetTexID(u16 id);
@@ -262,7 +270,7 @@ s32 menuFaceLoadFromID_Tool(u16 id, FaceFn fn, void* arg) {
             pMenuFaceList[idx].state = 1;
         }
         _menuFaceLoadCallBackFlag = 0;
-        GSfsysReadIDEX(0x5C0, tex, (s32)_menuFaceLoadCallBack, 0, id);
+        GSfsysReadIDEX(0x5C0, tex, (GCsptr)_menuFaceLoadCallBack, 0, id);
         return 1;
     }
 }
@@ -317,7 +325,7 @@ s32 menuFaceLoadFromID(u16 id, FaceFn fn, void* arg) {
             pMenuFaceList[idx].state = 1;
         }
         _menuFaceLoadCallBackFlag = 1;
-        GSfsysReadIDEX(0x5C0, tex, (s32)_menuFaceLoadCallBack, 0, id);
+        GSfsysReadIDEX(0x5C0, tex, (GCsptr)_menuFaceLoadCallBack, 0, id);
         return 1;
     }
 }
@@ -347,9 +355,9 @@ static void _menuFaceLoadCallBack(s32, void*, s32 arg) {
         e = &pMenuFaceList[idx];
         FaceRes* res = (FaceRes*)GSresGetResource(0x5C0, texID);
         res->flag = 0;
-        res->off28 -= (s32)res;
+        res->off28 -= (GCsptr)res;
         if (res->cnt <= 1) {
-            res->off48 -= (s32)res;
+            res->off48 -= (GCsptr)res;
         }
         memcpy(pMenuFaceTexList[e->texIdx].data, res, 0x1F60);
         GSresFreeResource(0x5C0, texID);
@@ -478,7 +486,7 @@ u16 menuFaceGetID2(Pokemon* p, u8 a) {
     return _menuFaceGetIDSub(p, a, -1);
 }
 
-u16 menuFaceGetID(Pokemon* p) {
+PCRET(u16) menuFaceGetID(Pokemon* p) {
     return _menuFaceGetIDSub(p, _testType, -1);
 }
 }

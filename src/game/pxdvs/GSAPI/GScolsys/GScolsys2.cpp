@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 #include "game/shared/floor_module.h"
 
 struct GSvec {
@@ -12,28 +13,28 @@ struct GSgfxVF {
 };
 
 struct CCD_BLOCK {
-    void* field00;
-    u32 field04;
-    void* field08;
-    void* field0C;
+    gc_ptr32(void) field00;
+    gc_be32 field04;
+    gc_ptr32(void) field08;
+    gc_ptr32(void) field0C;
 };
 
 struct CCD_RECORD {
-    f32 pos[3];
-    f32 rot[3];
-    f32 scale[3];
-    CCD_BLOCK* block24;
-    CCD_BLOCK* block28;
-    CCD_BLOCK* block2C;
-    CCD_BLOCK* block30;
-    CCD_BLOCK* block34;
-    CCD_BLOCK* block38;
-    u32 unk3C;
+    gc_bef32 pos[3];
+    gc_bef32 rot[3];
+    gc_bef32 scale[3];
+    gc_ptr32(CCD_BLOCK) block24;
+    gc_ptr32(CCD_BLOCK) block28;
+    gc_ptr32(CCD_BLOCK) block2C;
+    gc_ptr32(CCD_BLOCK) block30;
+    gc_ptr32(CCD_BLOCK) block34;
+    gc_ptr32(CCD_BLOCK) block38;
+    gc_be32 unk3C;
 };
 
 struct CCD_FILEHEAD {
-    CCD_RECORD* records;
-    u32 count;
+    gc_ptr32(CCD_RECORD) records;
+    gc_be32 count;
 };
 
 struct GSCOLSYS2_OBJ {
@@ -87,13 +88,15 @@ s32 floorRegisterModule(u8 kind, u32 id, FloorModuleInterface* module);
 GScolsys2Data GScolsys2;
 FloorModuleInterface _floorModuleColsys;
 static GSgfxVF _colsysVF;
+extern "C" {
 s32 _hModuleField;
+}
 
 static const char* _gscolsysGetModuleName();
 static u32 _gscolsysGetUID();
 static u32 _gscolsysGetStateSize(FloorStateMode mode);
-static void _gscolsysRestoreStateData(FloorStateMode mode, void* data, unsigned long size);
-static void _gscolsysMakeStateData(FloorStateMode mode, void* data, unsigned long size);
+static void _gscolsysRestoreStateData(FloorStateMode mode, void* data, u32 size);
+static void _gscolsysMakeStateData(FloorStateMode mode, void* data, u32 size);
 
 static inline s32 getObj(s32 index, GSCOLSYS2_OBJ*& out) {
     if (GScolsys2.head == 0) {
@@ -227,74 +230,74 @@ static void _offsetCCD(CCD_FILEHEAD* head) {
     if (head == 0) {
         return;
     }
-    head->records = (CCD_RECORD*)((u32)head->records + (u32)head);
+    head->records = (CCD_RECORD*)((u32)head->records + GC_ADDR32(head));
     record = head->records;
 
     for (i = 0; i < head->count; i++, record++) {
         if (record->block24 != 0) {
-            record->block24 = (CCD_BLOCK*)((u32)record->block24 + (u32)head);
+            record->block24 = (CCD_BLOCK*)((u32)record->block24 + GC_ADDR32(head));
             block = record->block24;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + (u32)head);
+                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
             }
             if (block->field08 != 0) {
-                block->field08 = (void*)((u32)block->field08 + (u32)head);
+                block->field08 = (void*)((u32)block->field08 + GC_ADDR32(head));
             }
             if (block->field0C != 0) {
-                block->field0C = (void*)((u32)block->field0C + (u32)head);
+                block->field0C = (void*)((u32)block->field0C + GC_ADDR32(head));
             }
         }
         if (record->block28 != 0) {
-            record->block28 = (CCD_BLOCK*)((u32)record->block28 + (u32)head);
+            record->block28 = (CCD_BLOCK*)((u32)record->block28 + GC_ADDR32(head));
             block = record->block28;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + (u32)head);
+                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
             }
             if (block->field08 != 0) {
-                block->field08 = (void*)((u32)block->field08 + (u32)head);
+                block->field08 = (void*)((u32)block->field08 + GC_ADDR32(head));
             }
             if (block->field0C != 0) {
-                block->field0C = (void*)((u32)block->field0C + (u32)head);
+                block->field0C = (void*)((u32)block->field0C + GC_ADDR32(head));
             }
         }
         if (record->block2C != 0) {
-            record->block2C = (CCD_BLOCK*)((u32)record->block2C + (u32)head);
+            record->block2C = (CCD_BLOCK*)((u32)record->block2C + GC_ADDR32(head));
             block = record->block2C;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + (u32)head);
+                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
             }
             if (block->field08 != 0) {
-                block->field08 = (void*)((u32)block->field08 + (u32)head);
+                block->field08 = (void*)((u32)block->field08 + GC_ADDR32(head));
             }
             if (block->field0C != 0) {
-                block->field0C = (void*)((u32)block->field0C + (u32)head);
+                block->field0C = (void*)((u32)block->field0C + GC_ADDR32(head));
             }
         }
         if (record->block30 != 0) {
-            record->block30 = (CCD_BLOCK*)((u32)record->block30 + (u32)head);
+            record->block30 = (CCD_BLOCK*)((u32)record->block30 + GC_ADDR32(head));
             block = record->block30;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + (u32)head);
+                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
             }
         }
         if (record->block34 != 0) {
-            record->block34 = (CCD_BLOCK*)((u32)record->block34 + (u32)head);
+            record->block34 = (CCD_BLOCK*)((u32)record->block34 + GC_ADDR32(head));
             block = record->block34;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + (u32)head);
+                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
             }
             if (block->field08 != 0) {
-                block->field08 = (void*)((u32)block->field08 + (u32)head);
+                block->field08 = (void*)((u32)block->field08 + GC_ADDR32(head));
             }
             if (block->field0C != 0) {
-                block->field0C = (void*)((u32)block->field0C + (u32)head);
+                block->field0C = (void*)((u32)block->field0C + GC_ADDR32(head));
             }
         }
         if (record->block38 != 0) {
-            record->block38 = (CCD_BLOCK*)((u32)record->block38 + (u32)head);
+            record->block38 = (CCD_BLOCK*)((u32)record->block38 + GC_ADDR32(head));
             block = record->block38;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + (u32)head);
+                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
             }
         }
     }
@@ -356,7 +359,7 @@ static u32 _gscolsysGetStateSize(FloorStateMode mode) {
     return 0;
 }
 
-static void _gscolsysRestoreStateData(FloorStateMode mode, void* data, unsigned long size) {
+static void _gscolsysRestoreStateData(FloorStateMode mode, void* data, u32 size) {
     s32 i;
 
     if (mode == FLOOR_STATE_MODE_1 || mode == FLOOR_STATE_MODE_2) {
@@ -372,7 +375,7 @@ static void _gscolsysRestoreStateData(FloorStateMode mode, void* data, unsigned 
     }
 }
 
-static void _gscolsysMakeStateData(FloorStateMode mode, void* data, unsigned long size) {
+static void _gscolsysMakeStateData(FloorStateMode mode, void* data, u32 size) {
     s32 i;
 
     if (mode == FLOOR_STATE_MODE_1 || mode == FLOOR_STATE_MODE_2) {

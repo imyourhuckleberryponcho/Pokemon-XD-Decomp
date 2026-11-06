@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct MemoEntry {
     u16 id;
@@ -14,7 +15,7 @@ struct Memo {
 };
 
 extern "C" {
-void* savedataGetStatus(void*, u16);
+void* savedataGetStatus(void*, PCARG(u16, s32));
 u32 HSD_Rand(void);
 u32 pokemonBiosGetPokemonDataId(void*);
 u32 pokemonBiosGetRnd(void*);

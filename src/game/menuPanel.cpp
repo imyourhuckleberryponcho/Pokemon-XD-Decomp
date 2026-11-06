@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #include <game/shared/menu_work.h>
 
 #pragma peephole off
@@ -33,7 +35,13 @@ s32 esabaGetEsaItemNum(void);
 void* memcpy(void*, const void*, u32);
 void menuClose(s32);
 void menuCloseSync(s32, s32);
+#ifdef __MWERKS__
 u8 menuCursorCmp(CURSOR, CURSOR);
+#else
+u8 menuCursorCmp(CURSOR*, CURSOR*);
+static inline u8 menuCursorCmpByValue(CURSOR a, CURSOR b) { return menuCursorCmp(&a, &b); }
+#define menuCursorCmp(a, b) menuCursorCmpByValue((a), (b))
+#endif
 u8 menuDataBiosGetDispMax(s32);
 s32 menuOpenCustom(s32, ...);
 void menuSetStatus(s32, s32);
@@ -46,7 +54,7 @@ void menuSubDrawCursorBack(s32, s32, s32, s32, s32, u8, u8);
 void menuSubDrawMsgWindow2(s32, s32, s32, s32, s32, u8, u8);
 void menuSubDrawNormalWindow2(s32, s32, s32, s32, s32, u8);
 void menuSubDrawSimpleWindow(s32, s32, s32, s32, s32);
-void msgctrlSetValue(s32, s32);
+void msgctrlSetValue(s32, GCuptr);
 u8 winSeqIsCheck(s32, u16);
 void winSeqSetMenu(s32, u32);
 void* windowAllocMemory(tagWINDOW_WORK*, s32);
@@ -58,7 +66,7 @@ s32* windowGetFreeWork(tagWINDOW_WORK*);
 struct KeyInfo { u8 pad[6]; u16 trg; };
 KeyInfo* windowGetKeyInfo(void);
 u16 windowGetKeyRepeat(void);
-u32 windowGetParam(tagWINDOW_WORK*, u32);
+StatusU32 windowGetParam(tagWINDOW_WORK*, u32);
 void windowSetParam(tagWINDOW_WORK*, u32, u32);
 }
 
@@ -158,7 +166,6 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
     int maxCount;
     u32* p;
     s32 i;
-    u8 type;
     s32 vis;
     s32 width;
     s32 maxH;
@@ -168,6 +175,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
     s32 count;
     s32 off;
     s32 total;
+    u8 type;
     SpriteVal* sv;
     int top;
     f32 pos[2];
@@ -194,11 +202,12 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
             maxW = rect & 0xFFFF;
         }
         if (i < vis) {
-            total += off + (rect & 0xFFFF);
+            total += (rect & 0xFFFF) + off;
         }
     }
     total -= off;
-    width = maxH + 0x1A + _addwidth;
+    width = maxH + 0x1A;
+    width += _addwidth;
     switch (type) {
     case 0:
         menuSubDrawNormalWindow2(w->layer, 0, 0, width + 2, total, w->alpha);
@@ -219,7 +228,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
     }
     top = cur.top;
     p = items;
-    for (i = 0, y = 1; i < vis; p++, i++) {
+    for (y = 1, i = 0; i < vis; p++, i++) {
         if (*p != 0) {
             h = off + (GSmsgGetRect(items[top + i]) & 0xFFFF);
         } else {
@@ -227,7 +236,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
         }
         if (w->cursor == i) {
             if (maxW >= 0x14) {
-                menuSubDrawCursorBack(w->layer, _cursorOffset - 5, y + _lsizecursorYoffset - 7, width + _backWidth, h, w->alpha, 0);
+                menuSubDrawCursorBack(w->layer, _cursorOffset - 5, y - 7 + _lsizecursorYoffset, width + _backWidth, h, w->alpha, 0);
             } else {
                 menuSubDrawCursorBack(w->layer, _cursorOffset - 6, y - 6, width + _backWidth, h, w->alpha, 1);
             }
@@ -235,7 +244,7 @@ s32 menuPanelDrawSelect2(tagWINDOW_WORK* w) {
         y += h;
     }
     p = items;
-    for (i = 0, y = 1; i < vis; p++, i++) {
+    for (y = 1, i = 0; i < vis; p++, i++) {
         if (*p != 0) {
             h = off + (GSmsgGetRect(items[top + i]) & 0xFFFF);
             GSmsgPrint2(w->layer, 0x1A, y, w->alpha | ~0xFF, items[top + i]);
@@ -348,16 +357,20 @@ s32 menuPanelDrawSelect(tagWINDOW_WORK* w) {
     u8 type;
     u32* items;
     s32 count;
-    s32 maxW = 0;
-    s32 maxH = 0;
+    s32 maxW;
+    s32 maxH;
     u8 disp;
-    s32 total = 0;
+    s32 total;
     s32 y;
     s32 h;
     s32 width;
-    s32 off = _DrawSelectOffset;
+    s32 off;
     f32 pos[2];
     s32 color;
+    total = 0;
+    maxH = 0;
+    off = _DrawSelectOffset;
+    maxW = 0;
     type = windowGetParam(w, 0);
     items = windowGetAllocPtr(w);
     count = (s8)windowGetParam(w, 2);
@@ -365,7 +378,7 @@ s32 menuPanelDrawSelect(tagWINDOW_WORK* w) {
     if (count > disp) {
         count = disp;
     }
-    for (i = 0, p = items; i < count; p++, i++) {
+    for (p = items, i = 0; i < count; p++, i++) {
         u32 rect = GSmsgGetRect(*p);
         if (maxH < (s32)(rect >> 16)) {
             maxH = rect >> 16;
@@ -373,10 +386,11 @@ s32 menuPanelDrawSelect(tagWINDOW_WORK* w) {
         if (maxW < (s32)(rect & 0xFFFF)) {
             maxW = rect & 0xFFFF;
         }
-        total += off + (rect & 0xFFFF);
+        total += (rect & 0xFFFF) + off;
     }
     total -= off;
-    width = maxH + 0x1A + _addwidth;
+    width = maxH + 0x1A;
+    width += _addwidth;
     switch (type) {
     case 0:
         menuSubDrawNormalWindow2(w->layer, 0, 0, width, total, w->alpha);
@@ -389,7 +403,7 @@ s32 menuPanelDrawSelect(tagWINDOW_WORK* w) {
         break;
     }
     p = items;
-    for (i = 0, y = 1; i < count; i++, p++) {
+    for (i = 0, y = 1; i < count; p++, i++) {
         if (*p != 0) {
             h = off + (GSmsgGetRect(*p) & 0xFFFF);
         } else {
@@ -397,7 +411,7 @@ s32 menuPanelDrawSelect(tagWINDOW_WORK* w) {
         }
         if (w->cursor == i) {
             if (maxW >= 0x14) {
-                menuSubDrawCursorBack(w->layer, _cursorOffset - 5, y + _lsizecursorYoffset - 7, width + _backWidth, h, w->alpha, 0);
+                menuSubDrawCursorBack(w->layer, _cursorOffset - 5, y - 7 + _lsizecursorYoffset, width + _backWidth, h, w->alpha, 0);
             } else {
                 menuSubDrawCursorBack(w->layer, _cursorOffset - 6, y - 6, width + _backWidth, h, w->alpha, 1);
             }
@@ -405,7 +419,7 @@ s32 menuPanelDrawSelect(tagWINDOW_WORK* w) {
         y += h;
     }
     p = items;
-    for (i = 0, y = 1; i < count; i++, p++) {
+    for (i = 0, y = 1; i < count; p++, i++) {
         if (*p != 0) {
             h = off + (GSmsgGetRect(*p) & 0xFFFF);
             GSmsgPrint2(w->layer, 0x1A, y, w->alpha | ~0xFF, *p);

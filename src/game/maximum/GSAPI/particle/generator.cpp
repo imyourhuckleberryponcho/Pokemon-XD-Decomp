@@ -5,10 +5,16 @@
 #define HSD_FILE_NAME "generator.c"
 
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 
+#ifdef __MWERKS__
 #define _MATH_H_
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 extern f32 __float_min[];
 #define NAN (__float_nan[0])
 double sin(double x);
@@ -16,11 +22,26 @@ double cos(double x);
 double tan(double x);
 double atan2(double y, double x);
 
+#ifndef __MWERKS__
+static
+#endif
 inline f32 sinf(f32 x) { return (f32) sin(x); }
+#ifndef __MWERKS__
+static
+#endif
 inline f32 cosf(f32 x) { return (f32) cos(x); }
+#ifndef __MWERKS__
+static
+#endif
 inline f32 tanf(f32 x) { return (f32) tan(x); }
+#ifndef __MWERKS__
+static
+#endif
 inline f32 atan2f(f32 y, f32 x) { return (f32) atan2(y, x); }
 double __fabs(double x);
+#ifndef __MWERKS__
+static
+#endif
 inline double fabs(double x)
 {
     return __fabs(x);
@@ -45,6 +66,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -60,6 +84,12 @@ inline float sqrtf(float x)
     }
     return x;
 }
+#else
+#include <math.h>
+#include <float.h>
+static const f32 generator_float_min[1] = { FLT_MIN };
+#define __float_min generator_float_min
+#endif
 
 inline float atan2fInline(float y, float x)
 {
@@ -89,8 +119,8 @@ extern int __float_epsilon[];
 #define FLT_MIN (__float_min[0])
 
 extern s32 psNumCmdList[64];
-extern HSD_PSCmdList** psCmdListArray[64];
-extern HSD_PSTexGroup** psTexGroupArray[64];
+extern gc_ptr32(HSD_PSCmdList)* psCmdListArray[64];
+extern gc_ptr32(HSD_PSTexGroup)* psTexGroupArray[64];
 void psKillAllGenerator(void);
 void psKillGenerator(HSD_Generator* gp);
 
@@ -930,35 +960,35 @@ HSD_Generator* psCreateGeneratorID(int linkNo, int bank, int id)
     if (id >= psNumCmdList[bank]) {
         return NULL;
     }
-    if (psCmdListArray[bank][id] == NULL) {
+    if (GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id]) == NULL) {
         return NULL;
     }
 
     gp = allocGenerator();
 
     if (gp != NULL) {
-        gp->type = psCmdListArray[bank][id]->type;
+        gp->type = GC_BE16(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->type);
         gp->bank = bank;
         gp->linkNo = linkNo;
         gp->index = id;
         gp->camera = NULL;
-        gp->kind = psCmdListArray[bank][id]->kind;
-        gp->texGroup = psCmdListArray[bank][id]->texGroup;
-        gp->life = psCmdListArray[bank][id]->life;
-        gp->genLife = psCmdListArray[bank][id]->genLife;
+        gp->kind = GC_BE32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->kind);
+        gp->texGroup = GC_BE16(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->texGroup);
+        gp->life = GC_BE16(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->life);
+        gp->genLife = GC_BE16(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->genLife);
         gp->pos.z = 0.0F;
         gp->pos.y = 0.0F;
         gp->pos.x = 0.0F;
-        gp->vel.x = psCmdListArray[bank][id]->vx;
-        gp->vel.y = psCmdListArray[bank][id]->vy;
-        gp->vel.z = psCmdListArray[bank][id]->vz;
-        gp->grav = psCmdListArray[bank][id]->grav;
-        gp->fric = psCmdListArray[bank][id]->fric;
-        gp->size = psCmdListArray[bank][id]->size;
-        gp->cmdList = psCmdListArray[bank][id]->cmdList;
-        gp->radius = psCmdListArray[bank][id]->radius;
-        gp->angle = psCmdListArray[bank][id]->angle;
-        gp->random = psCmdListArray[bank][id]->random;
+        gp->vel.x = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->vx);
+        gp->vel.y = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->vy);
+        gp->vel.z = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->vz);
+        gp->grav = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->grav);
+        gp->fric = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->fric);
+        gp->size = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->size);
+        gp->cmdList = GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->cmdList;
+        gp->radius = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->radius);
+        gp->angle = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->angle);
+        gp->random = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->random);
 
         if (gp->kind & 0x100) {
             if (gp->random < 0.0F) {
@@ -973,8 +1003,8 @@ HSD_Generator* psCreateGeneratorID(int linkNo, int bank, int id)
         }
 
         {
-            HSD_PSTexGroup* tg = psTexGroupArray[bank][gp->texGroup];
-            if (tg != NULL && tg->palflag != 0) {
+            HSD_PSTexGroup* tg = GC_PTR(HSD_PSTexGroup*, psTexGroupArray[bank][gp->texGroup]);
+            if (tg != NULL && GC_BE16(tg->palflag) != 0) {
                 gp->kind |= 0x10;
             }
         }
@@ -985,42 +1015,42 @@ HSD_Generator* psCreateGeneratorID(int linkNo, int bank, int id)
         case 0:
         case 3:
         case 4: {
-            HSD_PSCmdList* c = psCmdListArray[bank][id];
-            f32 p1 = c->param1;
-            if (p1 == 0.0F && c->param2 == 0.0F) {
+            HSD_PSCmdList* c = GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id]);
+            f32 p1 = GC_BEF32(c->param1);
+            if (p1 == 0.0F && GC_BEF32(c->param2) == 0.0F) {
                 gp->aux.disc.minAngle = 0.0F;
                 gp->aux.disc.maxAngle = 6.2831855F;
             } else {
                 gp->aux.disc.minAngle = p1;
-                gp->aux.disc.maxAngle = psCmdListArray[bank][id]->param2;
+                gp->aux.disc.maxAngle = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param2);
             }
             break;
         }
         case 1:
-            gp->aux.line.x2 = psCmdListArray[bank][id]->param1;
-            gp->aux.line.y2 = psCmdListArray[bank][id]->param2;
-            gp->aux.line.z2 = psCmdListArray[bank][id]->param3;
+            gp->aux.line.x2 = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param1);
+            gp->aux.line.y2 = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param2);
+            gp->aux.line.z2 = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param3);
             break;
         case 2:
             break;
         case 6:
         case 7: {
-            HSD_PSCmdList* c = psCmdListArray[bank][id];
-            f32 p1 = c->param1;
-            if (p1 == 0.0F && c->param2 == 0.0F) {
+            HSD_PSCmdList* c = GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id]);
+            f32 p1 = GC_BEF32(c->param1);
+            if (p1 == 0.0F && GC_BEF32(c->param2) == 0.0F) {
                 gp->aux.cone.minAngle = 0.0F;
                 gp->aux.cone.maxAngle = 6.2831855F;
             } else {
                 gp->aux.cone.minAngle = p1;
-                gp->aux.cone.maxAngle = psCmdListArray[bank][id]->param2;
+                gp->aux.cone.maxAngle = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param2);
             }
-            gp->aux.cone.height = psCmdListArray[bank][id]->param3;
+            gp->aux.cone.height = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param3);
             break;
         }
         case 5: {
-            gp->aux.rect.xx = gp->aux.rect.x = psCmdListArray[bank][id]->param1;
-            gp->aux.rect.yy = gp->aux.rect.y = psCmdListArray[bank][id]->param2;
-            gp->aux.rect.zz = gp->aux.rect.z = psCmdListArray[bank][id]->param3;
+            gp->aux.rect.xx = gp->aux.rect.x = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param1);
+            gp->aux.rect.yy = gp->aux.rect.y = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param2);
+            gp->aux.rect.zz = gp->aux.rect.z = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param3);
             gp->aux.rect.zy = 0.0F;
             gp->aux.rect.zx = 0.0F;
             gp->aux.rect.yz = 0.0F;
@@ -1028,13 +1058,13 @@ HSD_Generator* psCreateGeneratorID(int linkNo, int bank, int id)
             gp->aux.rect.xz = 0.0F;
             gp->aux.rect.xy = 0.0F;
             gp->aux.rect.flag = 0;
-            if (psCmdListArray[bank][id]->param1 < 0.0F) {
+            if (GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param1) < 0.0F) {
                 gp->aux.rect.flag |= 1;
             }
-            if (psCmdListArray[bank][id]->param2 < 0.0F) {
+            if (GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param2) < 0.0F) {
                 gp->aux.rect.flag |= 2;
             }
-            if (psCmdListArray[bank][id]->param3 < 0.0F) {
+            if (GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param3) < 0.0F) {
                 gp->aux.rect.flag |= 4;
             }
             break;
@@ -1061,12 +1091,12 @@ HSD_Generator* psCreateGeneratorID(int linkNo, int bank, int id)
             } else {
                 gp->aux.sphere.lonMid = atan2f(gp->vel.z, gp->vel.x);
             }
-            gp->aux.sphere.latRange = psCmdListArray[bank][id]->param1;
+            gp->aux.sphere.latRange = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param1);
             if (gp->aux.sphere.latRange < 0.0F) {
                 gp->aux.sphere.latRange = -gp->aux.sphere.latRange;
                 gp->aux.sphere.speed = -gp->aux.sphere.speed;
             }
-            gp->aux.sphere.lonRange = psCmdListArray[bank][id]->param2;
+            gp->aux.sphere.lonRange = GC_BEF32(GC_PTR(HSD_PSCmdList*, psCmdListArray[bank][id])->param2);
             break;
         }
         default:

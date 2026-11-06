@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
+#include <game/faceData.h>
 
 #pragma dont_inline on
 
@@ -39,13 +42,6 @@ struct ToolentryWork {
     s32 versus;
 };
 
-struct ToolentryFaceData {
-    u16 id;
-    u8 unk2[2];
-    u32 bigFace[2];
-    u32 smallFace[2];
-};
-
 extern "C" {
 void* GSmemAllocAlign(u32, u32);
 void GSmemFree(void*);
@@ -59,7 +55,7 @@ void heroInit(Hero*);
 void pokemonInit(Pokemon*);
 u8 pokemonCheckValid(Pokemon*);
 void* savedataGetStatus(s32, s32);
-s32 gamedataGetStatus(s32, s32);
+StatusS32 gamedataGetStatus(s32, s32);
 void pokemonCreate(Pokemon*, u16, s32, s32);
 void* GSmsgGetGSchar(u32);
 void pokemonSetCatchStatus(Pokemon*, s32, s32, s32, s32, s32, void*);
@@ -67,8 +63,8 @@ void pokemonAllKaihuku(Pokemon*);
 u16 fightTrainerDB_GetPkxDataId(u16);
 }
 
-extern ToolentryFaceData* trainer_face_data;
-extern u32* trainer_face_data_number;
+extern "C" ToolentryFaceData* trainer_face_data;
+extern "C" u32* trainer_face_data_number;
 
 static void* _toolentryTaisen;
 static Pokemon* _toolentryDebugPokemon;
@@ -174,7 +170,7 @@ s32 toolentryTaisenGetBattlePlayerID(s32 player) {
     return menuCBTrainerBios_GetPlayerID(menuCBBios_GetTrainerImmediately(player));
 }
 
-u16 toolentryTaisenGetHomePlace(s32 player) {
+PCRET(u16) toolentryTaisenGetHomePlace(s32 player) {
     return menuCBTrainerBios_GetHomePlace(menuCBBios_GetTrainerImmediately(player));
 }
 

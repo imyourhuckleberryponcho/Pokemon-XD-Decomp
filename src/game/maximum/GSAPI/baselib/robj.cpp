@@ -4,13 +4,21 @@
 
 
 #include <dolphin/types.h>
+#ifdef __MWERKS__
 #define _MATH_H_
 
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 #define NAN (__float_nan[0])
 double acos(double x);
 double __fabs(double x);
 
+#ifndef __MWERKS__
+static
+#endif
 inline float acosf(float x)
 {
     return (float) acos(x);
@@ -35,6 +43,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -50,6 +61,9 @@ inline float sqrtf(float x)
     }
     return x;
 }
+#else
+#include <math.h>
+#endif
 
 #include <sysdolphin/baselib/debug.h>
 
@@ -245,7 +259,7 @@ void HSD_RObjAddAnim(HSD_RObj* robj, HSD_RObjAnimJoint* anim)
     if (robj->aobj != NULL) {
         HSD_AObjRemove(robj->aobj);
     }
-    robj->aobj = HSD_AObjLoadDesc(anim->aobjdesc);
+    robj->aobj = HSD_AObjLoadDesc(GC_PTR(HSD_AObjDesc*, anim->aobjdesc));
 }
 
 void HSD_RObjAddAnimAll(HSD_RObj* robj, HSD_RObjAnimJoint* anim)
@@ -257,7 +271,7 @@ void HSD_RObjAddAnimAll(HSD_RObj* robj, HSD_RObjAnimJoint* anim)
         return;
     }
 
-    for (i = robj, j = anim; i != NULL && j != NULL; i = i->next, j = j->next)
+    for (i = robj, j = anim; i != NULL && j != NULL; i = i->next, j = GC_PTR(HSD_RObjAnimJoint*, j->next))
     {
         HSD_RObjAddAnim(i, j);
     }
@@ -572,12 +586,12 @@ void HSD_RObjResolveRefs(HSD_RObj* robj, HSD_RObjDesc* desc)
         switch (robj->flags & ROBJ_TYPE_MASK) {
         case REFTYPE_JOBJ:
             HSD_JObjUnrefThis(robj->u.jobj);
-            robj->u.jobj = HSD_IDGetData((HSD_IDKey) desc->u.joint, NULL);
+            robj->u.jobj = HSD_IDGetData((HSD_IDKey) GC_PTR(HSD_Joint*, desc->u.joint), NULL);
             HSD_ASSERT(816, robj->u.jobj);
             HSD_JObjRefThis(robj->u.jobj);
             break;
         case 0x0:
-            HSD_RvalueResolveRefsAll(robj->u.exp.rvalue, desc->u.exp->rvalue);
+            HSD_RvalueResolveRefsAll(robj->u.exp.rvalue, GC_PTR(HSD_ExpDesc*, desc->u.exp)->rvalue);
             break;
         }
     }
@@ -585,7 +599,7 @@ void HSD_RObjResolveRefs(HSD_RObj* robj, HSD_RObjDesc* desc)
 
 void HSD_RObjResolveRefsAll(HSD_RObj* robj, HSD_RObjDesc* desc)
 {
-    for (; robj != NULL && desc != NULL; robj = robj->next, desc = desc->next)
+    for (; robj != NULL && desc != NULL; robj = robj->next, desc = GC_PTR(HSD_RObjDesc*, desc->next))
     {
         HSD_RObjResolveRefs(robj, desc);
     }
@@ -602,8 +616,8 @@ HSD_RObj* HSD_RObjLoadDesc(HSD_RObjDesc* robjdesc)
 
     if (robjdesc != NULL) {
         robj = HSD_RObjAlloc();
-        robj->next = HSD_RObjLoadDesc(robjdesc->next);
-        robj->flags = robjdesc->flags;
+        robj->next = HSD_RObjLoadDesc(GC_PTR(HSD_RObjDesc*, robjdesc->next));
+        robj->flags = GC_BE32(robjdesc->flags);
         switch (robj->flags & ROBJ_TYPE_MASK) {
         case REFTYPE_JOBJ:
             break;
@@ -615,23 +629,23 @@ HSD_RObj* HSD_RObjLoadDesc(HSD_RObjDesc* robjdesc)
             case 4:
             case 5:
             case 6:
-                robj->u.limit = 0.017453292f * robjdesc->u.limit;
+                robj->u.limit = 0.017453292f * GC_BEF32(robjdesc->u.limit);
                 break;
             default:
-                robj->u.limit = robjdesc->u.limit;
+                robj->u.limit = GC_BEF32(robjdesc->u.limit);
                 break;
             }
         } break;
         case REFTYPE_EXP:
-            expLoadDesc(&robj->u.exp, robjdesc->u.exp);
+            expLoadDesc(&robj->u.exp, GC_PTR(HSD_ExpDesc*, robjdesc->u.exp));
             break;
         case REFTYPE_BYTECODE:
-            bcexpLoadDesc(&robj->u.exp, robjdesc->u.bcexp);
+            bcexpLoadDesc(&robj->u.exp, GC_PTR(HSD_ByteCodeExpDesc*, robjdesc->u.bcexp));
             robj->flags &= ~ROBJ_TYPE_MASK;
             break;
         case REFTYPE_IKHINT:
-            robj->u.ik_hint.bone_length = robjdesc->u.ik_hint->bone_length;
-            robj->u.ik_hint.rotate_x = robjdesc->u.ik_hint->rotate_x;
+            robj->u.ik_hint.bone_length = GC_BEF32(GC_PTR(HSD_IKHintDesc*, robjdesc->u.ik_hint)->bone_length);
+            robj->u.ik_hint.rotate_x = GC_BEF32(GC_PTR(HSD_IKHintDesc*, robjdesc->u.ik_hint)->rotate_x);
             break;
         default:
             HSD_Panic(HSD_FILE_NAME, 893, "unexpected type of robj.\n");
@@ -856,9 +870,9 @@ static HSD_Rvalue* loadRvalue(HSD_RvalueList* list)
     if (list == NULL) {
         return NULL;
     } else {
-        for (; list->joint != NULL; list++) {
+        for (; GC_PTR(HSD_Joint*, list->joint) != NULL; list++) {
             rp->next = HSD_RvalueAlloc();
-            rp->next->flags = list->flags;
+            rp->next->flags = GC_BE32(list->flags);
             rp = rp->next;
         }
     }
@@ -883,12 +897,12 @@ static void bcexpLoadDesc(HSD_Exp* exp, HSD_ByteCodeExpDesc* desc)
 {
     memset(exp, 0, sizeof(HSD_Exp));
     if (desc != NULL) {
-        if (desc->bytecode != NULL) {
-            exp->expr.bytecode = desc->bytecode;
+        if (GC_PTR(u8*, desc->bytecode) != NULL) {
+            exp->expr.bytecode = GC_PTR(u8*, desc->bytecode);
         } else {
             exp->expr.bytecode = NULL;
         }
-        exp->rvalue = loadRvalue(desc->rvalue);
+        exp->rvalue = loadRvalue(GC_PTR(HSD_RvalueList*, desc->rvalue));
         exp->nb_args = -1;
         exp->is_bytecode = 1;
     }
@@ -898,7 +912,7 @@ void HSD_RvalueResolveRefs(HSD_Rvalue* rvalue, HSD_RvalueList* list)
 {
     if (rvalue != NULL && list != NULL) {
         HSD_JObjUnrefThis(rvalue->jobj);
-        rvalue->jobj = HSD_IDGetData((HSD_IDKey) list->joint, NULL);
+        rvalue->jobj = HSD_IDGetData((HSD_IDKey) GC_PTR(HSD_Joint*, list->joint), NULL);
         HSD_ASSERT(1266, rvalue->jobj);
         HSD_JObjRefThis(rvalue->jobj);
     }
@@ -909,13 +923,17 @@ void HSD_RvalueResolveRefsAll(HSD_Rvalue* rvalue, HSD_RvalueList* list)
     if (list == NULL) {
         return;
     }
-    for (; rvalue != NULL && list->joint != NULL;
+    for (; rvalue != NULL && GC_PTR(HSD_Joint*, list->joint) != NULL;
          rvalue = rvalue->next, list++)
     {
         HSD_RvalueResolveRefs(rvalue, list);
     }
 }
 
+#ifndef __MWERKS__
+
+#define hsdObjIsDescendantOf(o, p) hsdIsDescendantOf(((HSD_Class*) (o))->class_info, (p))
+#endif
 void HSD_RObjSetConstraintObj(HSD_RObj* robj, void* o)
 {
     bool isDesc;

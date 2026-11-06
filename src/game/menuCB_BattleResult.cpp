@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #pragma peephole off
 
@@ -27,7 +28,7 @@ s32 toolentryTaisenGetEntryPlayerNum(void);
 void toolentryCopyHero(void);
 s32 fightGetFightResultId(void);
 void menuSetEnablePort(s32);
-void msgctrlSetValue(s32, s32);
+void msgctrlSetValue(s32, GCuptr);
 void winMsgOpen(s32, s32, s32, s32);
 void winMsgClose(s32);
 s32 pokecoloGetCountryCode(void);

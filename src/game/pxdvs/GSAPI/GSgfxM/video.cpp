@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include <dolphin/os.h>
 
 #pragma pool_strings off
@@ -142,7 +143,7 @@ f32 GXGetYScaleFactor(u16 efbHeight, u16 xfbHeight);
 bool GSgfxRenderIsPaused(void);
 u8* GSgfx_GCWriteCopyFilterDirect(u8* p, u8 aa, u8* pat, u8 vf, u8* vfilt);
 u8* GSgfx_GCWriteCopyDispDirect(u8* p, CopyReq* req, u32 dest, u8 colorUpd, u8 alphaUpd, u8 clear);
-void GSgfx_GCWriteCopyDisp(CopyReq* req, u32 dest, u8 colorUpd, u8 alphaUpd, u8 clear);
+void GSgfx_GCWriteCopyDisp(CopyReq* req, u32 dest, PCARG(u8, int) colorUpd, PCARG(u8, int) alphaUpd, u8 clear);
 void GSgfx_GCWriteCopyFilter(u8 aa, u8* pat, u8 vf, u8* vfilt);
 void GSgfx_GCFlushState(void);
 
@@ -168,7 +169,11 @@ static bool _videoSetupRenderMode(GSgfxVideoMode mode, GSgfxVideoFrame frame, bo
 static void _videoPostRetraceFunc(u32 count);
 static void _videoPreRetraceFunc(u32 count);
 
+#ifdef __MWERKS__
 #define GX_WGPIPE (*(volatile union { u8 u8; u16 u16; f32 f32; }*)0xCC008000)
+#else
+#define GX_WGPIPE GXWGFifo
+#endif
 
 extern "C" {
 inline void GSgfx_GCWritePixelFmt(int fmt) {
@@ -363,10 +368,11 @@ void* GSgfxVideoCopyEFBToXFB() {
     }
     e = findFreeEntry(1);
     e->state = 4;
+    void* buf = e->buf;
     CopyReq req;
     initCopyReq(&req);
     GSgfx_GCWriteCopyFilter(_videoState.aa, _videoState.samplePattern, 1, _videoState.vfilter);
-    GSgfx_GCWriteCopyDisp(&req, (u32)e->buf, 1, 1, 1);
+    GSgfx_GCWriteCopyDisp(&req, (u32)buf, 1, 1, 1);
     return e->buf;
 }
 
@@ -528,7 +534,7 @@ void GSgfxVideoSetOneShotPostCallback(void (*cb)(void*)) {
 }
 
 extern "C" {
-bool GSgfxVideoSetMode(GSgfxVideoMode mode, GSgfxVideoFrame frame, bool b1, GSgfxVideoFilter filter, bool b2) {
+PCRET(bool) GSgfxVideoSetMode(GSgfxVideoMode mode, GSgfxVideoFrame frame, bool b1, GSgfxVideoFilter filter, bool b2) {
     if (b2 == 1) {
         if (mode != 0) {
             return 0;

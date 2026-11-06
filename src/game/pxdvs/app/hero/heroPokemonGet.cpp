@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/statusval.h>
 
 struct Hero;
 struct Pokemon { u8 data[0xC8]; };
@@ -6,18 +8,18 @@ struct SmallPokemon { u8 data[0xC0]; };
 struct GamedataAttest { u32 value; };
 
 extern "C" {
-s32 gamedataGetStatus(s32, s32);
+StatusS32 gamedataGetStatus(s32, s32);
 void gamedataAttestCreate(GamedataAttest*, s32, s32, s32, s32);
 void pokemonCreate(void*, s32, s32, GamedataAttest*);
 void pokemonSetStatus(void*, s32, s32, s32, s32);
-s32 GSmsgGetGSchar(s32);
-void pokemonSetCatchStatus(void*, s32, s32, s32, s32, s32, s32);
+u16 * GSmsgGetGSchar(s32);
+void pokemonSetCatchStatus(void*, s32, s32, s32, s32, s32, StatusU32);
 s32 pokemonCreateRndFit(void*, s32, s32, s32, s32);
 void pokemonDoItemSoubi(void*, s32, s32);
 void pokemonResetBasisStatus(void*);
 void memoDataSet(s32, void*);
 void heroGetPokemon(Hero*, void*, s32);
-s32 heroGetStatus(Hero*, s32, s32);
+StatusS32 heroGetStatus(Hero*, s32, s32);
 void pokemonWazaCreate(void*, s32, s32);
 void heroCatchPokemon(Hero*, void*, s32, s32, s32);
 }
@@ -32,7 +34,7 @@ void heroPokemonGetCelebi(Hero* hero)
     gamedataAttestCreate(&attest, 9, 3, status2, status1);
     pokemonCreate(&pokemon, 0xFB, 10, &attest);
     pokemonSetStatus(&pokemon, 0, 0x99, 0, 0x46);
-    pokemonSetCatchStatus(&pokemon, 0xFF, 10, 4, 1, 0x7991, GSmsgGetGSchar(1));
+    pokemonSetCatchStatus(&pokemon, 0xFF, 10, 4, 1, 0x7991, (StatusU32)GSmsgGetGSchar(1));
     s32 fit = pokemonCreateRndFit(&pokemon, -1, -1, 0, 0x7991);
     pokemonSetStatus(&pokemon, 0, 0x6F, 0, fit);
     pokemonResetBasisStatus(&pokemon);
@@ -49,7 +51,7 @@ void heroPokemonGetPikachu(Hero* hero)
     gamedataAttestCreate(&attest, 9, 3, status2, status1);
     pokemonCreate(&pokemon, 0x19, 10, &attest);
     pokemonSetStatus(&pokemon, 0, 0x99, 0, 0x46);
-    pokemonSetCatchStatus(&pokemon, 0xFF, 10, 4, 0, 0x7991, GSmsgGetGSchar(1));
+    pokemonSetCatchStatus(&pokemon, 0xFF, 10, 4, 0, 0x7991, (StatusU32)GSmsgGetGSchar(1));
     s32 fit = pokemonCreateRndFit(&pokemon, -1, -1, 0, 0x7991);
     pokemonSetStatus(&pokemon, 0, 0x6F, 0, fit);
     pokemonDoItemSoubi(&pokemon, 0xCA, 1);
@@ -67,7 +69,7 @@ void heroPokemonGetHouou(Hero* hero)
     gamedataAttestCreate(&attest, 8, 3, status2, status1);
     pokemonCreate(&pokemon, 0xFA, 0x46, &attest);
     pokemonSetStatus(&pokemon, 0, 0x99, 0, 0x46);
-    pokemonSetCatchStatus(&pokemon, 0xFF, 0x46, 4, 0, 0x2740, GSmsgGetGSchar(1));
+    pokemonSetCatchStatus(&pokemon, 0xFF, 0x46, 4, 0, 0x2740, (StatusU32)GSmsgGetGSchar(1));
     s32 fit = pokemonCreateRndFit(&pokemon, -1, -1, 0, 0x2740);
     pokemonSetStatus(&pokemon, 0, 0x6F, 0, fit);
     pokemonResetBasisStatus(&pokemon);
@@ -80,7 +82,7 @@ void heroPokemonGetPrasle(Hero* hero)
     Pokemon pokemon;
     pokemonCreate(&pokemon, 0x161, 0xD, (GamedataAttest*)gamedataGetStatus(0, 1));
     pokemonSetStatus(&pokemon, 0, 0x99, 0, 0x46);
-    pokemonSetCatchStatus(&pokemon, 0x259, 0xD, 4, 0, 0x911D, GSmsgGetGSchar(1));
+    pokemonSetCatchStatus(&pokemon, 0x259, 0xD, 4, 0, 0x911D, (StatusU32)GSmsgGetGSchar(1));
     s32 fit = pokemonCreateRndFit(&pokemon, -1, -1, 0, 0x911D);
     pokemonSetStatus(&pokemon, 0, 0x6F, 0, fit);
     pokemonResetBasisStatus(&pokemon);

@@ -1,9 +1,7 @@
 #include <dolphin/types.h>
+#include <game/effects.h>
 
 struct GSgfxLayer;
-enum GSgfxLayerPass {
-    GS_GFX_LAYER_PASS_0
-};
 
 struct Vec {
     f32 x, y, z;
@@ -13,10 +11,6 @@ struct _GSparticleBank;
 struct GSparticleGenerator;
 struct GSmodel;
 struct GSpart;
-
-enum enumNullJointName {
-    NULL_JOINT_0
-};
 
 struct NullJointTable {
     u8 unk0[0x4C];
@@ -51,41 +45,6 @@ GSpart* GSmodelGetPart(GSmodel* model, s32 id);
 void GSpartGetTransform(GSpart* part, Vec* pos, Vec* rot, Vec* scale);
 void GSpartFree(GSpart* part);
 }
-
-class GSeffect {
-public:
-    bool m_active;
-    bool m_visible;
-    GSeffect* m_next;
-
-    GSeffect();
-    bool Start();
-    void Stop();
-
-    virtual bool _start();
-    virtual void _stop();
-    virtual bool _update(f32 dt);
-    virtual void _render(GSgfxLayer* layer, GSgfxLayerPass pass);
-    virtual void _fastRender();
-    virtual ~GSeffect();
-};
-
-class boneFillEffect : public GSeffect {
-public:
-    boneFillEffect(_GSparticleBank* bank, enumNullJointName from, enumNullJointName to, f32 length);
-    virtual ~boneFillEffect();
-    virtual bool _start();
-    virtual void _stop();
-    virtual bool _update(f32 dt);
-
-    _GSparticleBank* m_bank;
-    GSparticleGenerator* m_generator;
-    BoneFillOwner* m_owner;
-    enumNullJointName m_from;
-    enumNullJointName m_to;
-    s32 m_parts[2];
-    f32 m_length;
-};
 
 boneFillEffect::~boneFillEffect() {
     Stop();

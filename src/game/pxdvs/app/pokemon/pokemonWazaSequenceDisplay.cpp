@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/statusval.h>
 
 struct Pokemon;
 struct Sequence;
@@ -12,7 +13,7 @@ extern "C" {
 
 void GSthreadSwitch(void);
 f32 pokecoloGetFrameTime(void);
-u32 pokemonGetStatus(Pokemon* pokemon, u32 species, s32 kind, s32);
+StatusU32 pokemonGetStatus(Pokemon* pokemon, u32 species, s32 kind, s32);
 u32 pokemonBiosGetRnd(Pokemon* pokemon);
 Sequence* Sequence_LoadPokemon(u16 id, u32 rnd, bool shiny);
 void* Sequence_LoadWaza(Sequence* sequence, u16 wazaID, u8 kind, s32);

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct FIGHT_TRAINER;
 struct FightOutPokemon;
@@ -22,7 +23,7 @@ u32 fightTrainerAiGetWazaZokuseiDataId(FIGHT_TRAINER*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*, u8);
 u16 fightFloorGetFightTrainerFightPokemonPtrAry(u32, FIGHT_TRAINER*, FightPokemon**, u8, u8);
 u16 fightFloor_GetTikeiDataId(u32);
-u16 tikeiDataBiosGetWazaId(u8);
+u16 tikeiDataBiosGetWazaId(PCARG(u8, u16));
 u32 wazaDB_GetSeqId(u16);
 s16 fightOutPokemonGetCountAsJoutaiDataId(FightOutPokemon*, u16);
 u8 joutaiDataBiosGetMaxCount(u32);
@@ -37,10 +38,10 @@ u16 fightSeqGetKetaguriIryoku(u32);
 u16 fightSeqGetYatuatariIryoku(u32);
 u16 fightSeqGetOngaesiIryoku(u32);
 u8 fightSeqGetJitabataIryoku(u32, u32);
-s32 fightSeqGetHukuroDatakiDamage(u16, u32, u8, u32, u8);
+s32 fightSeqGetHukuroDatakiDamage(u16, u32, PCARG(u8, u16), u32, PCARG(u8, u16));
 FightOutPokemon* fightTargetGetPtrAsNowFightType(u32, FightOutPokemon*);
-s32 fightSeqWazaDamageCalc(FightOutPokemon*, FightOutPokemon*, FightOutPokemon*, u16, u16, u16);
-s32 fightSeqGetNromalWazaDamage(FIGHT_TRAINER*, u16, FightOutPokemon*, FightOutPokemon*, u32, u32, FightWazaSubPre, u32);
+s32 fightSeqWazaDamageCalc(FightOutPokemon*, FightOutPokemon*, FightOutPokemon*, u16, u16, PCARG(u16, s32));
+s32 fightSeqGetNromalWazaDamage(FIGHT_TRAINER*, u16, FightOutPokemon*, FightOutPokemon*, u32, u32, FightWazaSubPre, FightWazaSubPre);
 s32 fightTrainerAiWazaDamage000(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaDamage002(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaDamage004(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);

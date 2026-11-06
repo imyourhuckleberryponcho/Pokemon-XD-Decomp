@@ -57,14 +57,14 @@ struct HSD_FObj {
 };
 
 typedef struct _HSD_FObjDesc {
-    struct _HSD_FObjDesc* next;
-    u32 length;
-    f32 startframe;
+    gc_ptr32(struct _HSD_FObjDesc) next;
+    gc_be32 length;
+    gc_bef32 startframe;
     u8 type;
     u8 frac_value;
     u8 frac_slope;
     u8 dummy0;
-    HSD_FObjData* ad DAT_COUNT(length);
+    gc_ptr32(HSD_FObjData) ad DAT_COUNT(length);
 } HSD_FObjDesc;
 
 union HSD_ObjData {

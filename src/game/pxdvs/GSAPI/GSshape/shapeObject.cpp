@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <dolphin/gx/GXVert.h>
+#include <game/gsvfarray.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -23,7 +24,11 @@ enum Mtx { Mtx_draft_dummy };
 struct Vec;
 #define fabs(x) __fabs(x)
 #define fabsf(x) __fabsf(x)
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 #define NAN (__float_nan[0])
 
 struct GStexture {
@@ -75,10 +80,14 @@ struct GSgfxBlendSet {
     u8 unk0[0xBC];
 };
 
-#define GFX_DIRTY(word, bits, group)  \
-    dirty[0].words[word] |= (bits);   \
-    dirty[0].groups |= (group);       \
-    dirty[1].words[word] |= (bits);   \
+enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
+enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
+#include <game/gsgfxlayer.h>
+
+#define GFX_DIRTY(word, bits, group)          \
+    (&dirty[0].geom)[word] |= (bits);         \
+    dirty[0].groups |= (group);               \
+    (&dirty[1].geom)[word] |= (bits);         \
     dirty[1].groups |= (group);
 
 struct GSgfxTunitMap {
@@ -95,7 +104,7 @@ struct GSgfxTevOp {
     u32 reg;
 };
 
-class GSgfxLayer {
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void beginSurface(u16 n);
     void endSurface();
@@ -103,144 +112,113 @@ public:
 
     void tunitAlphaOp(u8 unit, GSgfxTunitOp op, GSgfxTunitBias bias, GSgfxTunitScale scale, bool clamp,
                       GSgfxTunitReg reg) {
-        alphaOps[unit].op = op;
-        alphaOps[unit].bias = bias;
-        alphaOps[unit].scale = scale;
-        alphaOps[unit].clamp = clamp;
-        alphaOps[unit].reg = reg;
+        hw.alphaOp[unit].op = op;
+        hw.alphaOp[unit].bias = bias;
+        hw.alphaOp[unit].scale = scale;
+        hw.alphaOp[unit].clamp = clamp;
+        hw.alphaOp[unit].reg = reg;
         GFX_DIRTY(13, 1 << unit, 8)
     }
     void tunitAlphaArg(u8 unit, GSgfxTunitAArg a, GSgfxTunitAArg b, GSgfxTunitAArg c, GSgfxTunitAArg d) {
-        alphaArgs[unit][0] = a;
-        alphaArgs[unit][1] = b;
-        alphaArgs[unit][2] = c;
-        alphaArgs[unit][3] = d;
+        hw.alphaIn[unit][0] = a;
+        hw.alphaIn[unit][1] = b;
+        hw.alphaIn[unit][2] = c;
+        hw.alphaIn[unit][3] = d;
         GFX_DIRTY(11, 1 << unit, 8)
     }
     void tunitColorOp(u8 unit, GSgfxTunitOp op, GSgfxTunitBias bias, GSgfxTunitScale scale, bool clamp,
                       GSgfxTunitReg reg) {
-        colorOps[unit].op = op;
-        colorOps[unit].bias = bias;
-        colorOps[unit].scale = scale;
-        colorOps[unit].clamp = clamp;
-        colorOps[unit].reg = reg;
+        hw.colorOp[unit].op = op;
+        hw.colorOp[unit].bias = bias;
+        hw.colorOp[unit].scale = scale;
+        hw.colorOp[unit].clamp = clamp;
+        hw.colorOp[unit].reg = reg;
         GFX_DIRTY(12, 1 << unit, 8)
     }
     void tunitColorArg(u8 unit, GSgfxTunitCArg a, GSgfxTunitCArg b, GSgfxTunitCArg c, GSgfxTunitCArg d) {
-        colorArgs[unit][0] = a;
-        colorArgs[unit][1] = b;
-        colorArgs[unit][2] = c;
-        colorArgs[unit][3] = d;
+        hw.colorIn[unit][0] = a;
+        hw.colorIn[unit][1] = b;
+        hw.colorIn[unit][2] = c;
+        hw.colorIn[unit][3] = d;
         GFX_DIRTY(10, 1 << unit, 8)
     }
     void tunitMapping(u8 stage, u8 a, u8 b, u8 c) {
-        tunitMaps[stage].texCoord = a;
-        tunitMaps[stage].texMap = b;
+        hw.tevOrder[stage][0] = a;
+        hw.tevOrder[stage][1] = b;
         if (c != 0xFF) {
-            tunitMaps[stage].color = c + 4;
+            hw.tevOrder[stage][2] = c + 4;
         } else {
-            tunitMaps[stage].color = 0xFF;
+            hw.tevOrder[stage][2] = 0xFF;
         }
-        *(u32*)((u8*)this + 0x16D0) |= 1 << stage;
-        *(u32*)((u8*)this + 0x16A8) |= 8;
-        *(u32*)((u8*)this + 0x1788) |= 1 << stage;
-        *(u32*)((u8*)this + 0x1760) |= 8;
+        dirty[0].tevOrder |= 1 << stage;
+        dirty[0].groups |= 8;
+        dirty[1].tevOrder |= 1 << stage;
+        dirty[1].groups |= 8;
     }
     void texSelect(u8 map, GStexture* texture) {
-        if (dirty[0].textures[map] == texture && dirty[1].textures[map] == texture && !texture->reload) {
+        if ((GStexture*)dirty[0].tex[map] == texture && (GStexture*)dirty[1].tex[map] == texture && !texture->reload) {
             return;
         }
-        dirty[0].textures[map] = texture;
-        dirty[0].textureMask |= 1 << map;
-        dirty[1].textures[map] = texture;
-        dirty[1].textureMask |= 1 << map;
+        dirty[0].tex[map] = (GSgfxTex*)texture;
+        dirty[0].texMask |= 1 << map;
+        dirty[1].tex[map] = (GSgfxTex*)texture;
+        dirty[1].texMask |= 1 << map;
     }
 
     void zCompare(u8 enable, u32 func) {
         if (enable == 1) {
-            zEnable = 1;
+            hw.zEnable = 1;
         } else {
-            zEnable = 0;
+            hw.zEnable = 0;
         }
-        zFunc = func;
+        hw.zFunc = func;
         GFX_DIRTY(24, 8, 0x40)
     }
     void pixelMode(u8 cu, u8 au, u8 di) {
         if (cu == 1) {
-            colorUpdate = 1;
+            hw.colorUpdate = 1;
         } else {
-            colorUpdate = 0;
+            hw.colorUpdate = 0;
         }
         if (au == 1) {
-            alphaUpdate = 1;
+            hw.alphaUpdate = 1;
         } else {
-            alphaUpdate = 0;
+            hw.alphaUpdate = 0;
         }
         if (di == 1) {
-            dither = 1;
+            hw.zUpdate = 1;
         } else {
-            dither = 0;
+            hw.zUpdate = 0;
         }
         GFX_DIRTY(24, 4, 0x40)
     }
     void setCullMode(u32 mode) {
-        cullMode = mode;
+        hw.cullMode = mode;
         GFX_DIRTY(3, 2, 2)
     }
     void blendMode(int type, u32 src, u32 dst) {
         if (type == 0) {
-            if (blendIndex != 0) {
-                blendIndex = 0;
-                blendSet = &blendSets[blendIndex];
+            if (curPass != 0) {
+                curPass = 0;
+                curFifo = &passes[curPass];
             }
-            blendType = 0;
-            blendSrc = 1;
-            blendDst = 1;
-            blendLogicOp = 5;
+            hw.blend[0] = 0;
+            hw.blend[1] = 1;
+            hw.blend[2] = 1;
+            hw.blend[3] = 5;
         } else {
-            if (blendIndex != 1) {
-                blendIndex = 1;
-                blendSet = &blendSets[blendIndex];
+            if (curPass != 1) {
+                curPass = 1;
+                curFifo = &passes[curPass];
             }
-            blendType = type;
-            blendSrc = src;
-            blendDst = dst;
-            blendLogicOp = 5;
+            hw.blend[0] = type;
+            hw.blend[1] = src;
+            hw.blend[2] = dst;
+            hw.blend[3] = 5;
         }
         GFX_DIRTY(24, 1, 0x40)
     }
 
-    u8 unk0[0xD8C];
-    u32 cullMode;
-    u8 unkD90[0x120];
-    GSgfxTunitMap tunitMaps[16];
-    u32 colorArgs[16][4];
-    u32 alphaArgs[16][4];
-    GSgfxTevOp colorOps[16];
-    GSgfxTevOp alphaOps[16];
-    u8 unk13F0[0x114];
-    u32 kcolorSel[16];
-    u32 kalphaSel[16];
-    u8 unk1584[0xC0];
-    u32 blendType;
-    u32 blendSrc;
-    u32 blendDst;
-    u32 blendLogicOp;
-    u8 unk1654[0x2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 dither;
-    u8 unk1659[0x3];
-    u8 zEnable;
-    u8 unk165D[0x3];
-    u32 zFunc;
-    u8 unk1664[0x44];
-    GSgfxDirty dirty[2];
-    GSgfxBlendSet blendSets[2];
-    GSgfxBlendSet* blendSet;
-    s32 blendIndex;
-    u32 primType;
-    GSgfxVF* curVF;
 };
 
 struct GsShapeTexture {
@@ -369,7 +347,10 @@ public:
     u8 vf[0x440];
     void* posArray;
     void* colArray;
-    void* texArray[9];
+    void* texArray[4];
+    u8 numTev;
+    u8 tevColor[0x10];
+    u8 pad46D[3];
     GSmtx mtx;
     void* dl;
     void* drawBuf[256];
@@ -410,6 +391,9 @@ inline int __fpclassifyf(float x) {
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
@@ -492,19 +476,19 @@ inline bool GsShapeObject::SetupVF(u16 n) {
         return false;
     }
     if (posArray != 0) {
-        GSgfxVFSetArray((GSgfxVF*)vf, 9, 3, posArray, 12, n * 12);
+        GSGFX_VF_SET_ARRAY_NATIVE((GSgfxVF*)vf, 9, 3, posArray, 12, n * 12);
     } else {
         return false;
     }
     if (colArray != 0) {
-        GSgfxVFSetArray((GSgfxVF*)vf, 11, 3, colArray, 4, n * 4);
+        GSGFX_VF_SET_ARRAY_NATIVE((GSgfxVF*)vf, 11, 3, colArray, 4, n * 4);
     } else {
         return false;
     }
     int i;
     for (i = 0; i < data->texCount; i++) {
         if (texArray[i] != 0) {
-            GSgfxVFSetArray((GSgfxVF*)vf, attrs[i], 3, texArray[i], 8, n * 8);
+            GSGFX_VF_SET_ARRAY_NATIVE((GSgfxVF*)vf, attrs[i], 3, texArray[i], 8, n * 8);
         } else {
             return false;
         }
@@ -512,13 +496,15 @@ inline bool GsShapeObject::SetupVF(u16 n) {
     return true;
 }
 
+#ifdef __MWERKS__
 void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStexture* override);
+#endif
 
 #pragma push
 #pragma dont_inline on
-#define LAYER_DIRTY(word, bits, group)     l->dirty[0].words[word] |= (bits);     l->dirty[0].groups |= (group);         l->dirty[1].words[word] |= (bits);     l->dirty[1].groups |= (group);
-#define KCOLOR(s, v) l->kcolorSel[(u8)(s)] = (v); LAYER_DIRTY(20, 1 << (u8)(s), 0x10)
-#define KALPHA(s, v) l->kalphaSel[(u8)(s)] = (v); LAYER_DIRTY(21, 1 << (u8)(s), 0x10)
+#define LAYER_DIRTY(word, bits, group)     (&l->dirty[0].geom)[word] |= (bits);     l->dirty[0].groups |= (group);         (&l->dirty[1].geom)[word] |= (bits);     l->dirty[1].groups |= (group);
+#define KCOLOR(s, v) l->hw.kcsel[(u8)(s)] = (v); LAYER_DIRTY(20, 1 << (u8)(s), 0x10)
+#define KALPHA(s, v) l->hw.kasel[(u8)(s)] = (v); LAYER_DIRTY(21, 1 << (u8)(s), 0x10)
 #define CARG(s, a, b, c, d) l->tunitColorArg(s, (GSgfxTunitCArg)(a), (GSgfxTunitCArg)(b), (GSgfxTunitCArg)(c), (GSgfxTunitCArg)(d))
 #define AARG(s, a, b, c, d) l->tunitAlphaArg(s, (GSgfxTunitAArg)(a), (GSgfxTunitAArg)(b), (GSgfxTunitAArg)(c), (GSgfxTunitAArg)(d))
 #define COP(s, op, reg) l->tunitColorOp(s, (GSgfxTunitOp)(op), (GSgfxTunitBias)0, (GSgfxTunitScale)0, true, (GSgfxTunitReg)(reg))
@@ -857,7 +843,7 @@ void GsShapeObject::DrawShapeGfx(GSgfxLayer* layer, s16 s, u8 c) {
     u16 base1;
     if (ok) {
         layer->curVF = (GSgfxVF*)vf;
-        layer->primType = 0x98;
+        layer->unk1998 = 0x98;
         for (i = 0; i < data->rows; i++) {
             base0 = i * n;
             layer->beginSurface(n * 2);
@@ -910,7 +896,9 @@ void GsShapeObject::MakeDisplayListShape() {
     }
 }
 
+#ifdef __MWERKS__
 bool GsShapeObject::RefractTextureCoord(f32 u, f32 v, GSmtx* m1, GSmtx* m2, GSmtx* m3, f32 f);
+#endif
 
 inline f32 GsShapeObject::RimFromDot(f32 dot) {
     f32 d = (f32)fabs(dot);
@@ -1429,13 +1417,19 @@ bool GsShapeObject::DeformTextureCoord(u32 idx, bool a, const f32* A, const f32*
     return true;
 }
 
+#ifdef __MWERKS__
 bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                            bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C);
+#endif
 
+#ifdef __MWERKS__
 bool GsShapeObject::DeformVertexCoordSphere(bool useUV, const f32* A, const f32* B, bool own, f32 f1, f32 f2,
                                             bool angOwn, f32 f3, f32 f4, bool scaled, const f32* C);
+#endif
 
+#ifdef __MWERKS__
 void GsShapeObject::SetVertexColorAlpha(int mode, int type, f32 f, bool b);
+#endif
 
 extern "C++" {
 bool GsShapeObject::DeformVertexCoordTorus(bool useUV, const f32* A, const f32* B, bool own, f32 f1_in, f32 f2,
@@ -1654,7 +1648,7 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
     f32 pitchB = data->pitchB;
     f32 len = sqrtf(hh + dd);
     bool even = data->unkCC % 2 == 0;
-    bool two = data->unkCC == 2;
+    bool two = data->unkCC >= 2;
     f32 qh = 0.25f * hh;
     f32 shrink = 1.0f;
     shrink -= 2.0f / (f32)data->cols;
@@ -1685,8 +1679,8 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
             f32 sn;
             f32 cs;
             f32 r;
-            if (even || len < 0.00001f) {
-                if (two) {
+            if (even == 1 || len < 0.00001f) {
+                if (two == 1) {
                     w = (u - 0.5f) * shrink + 0.5f;
                     r = f1 * (1.0f - w) + f2 * w;
                     f32 h = height * (f32)fabs(w - 0.5f);
@@ -1709,7 +1703,7 @@ bool GsShapeObject::DeformVertexCoordSpiral(bool useUV, const f32* A, const f32*
                 f32 v2 = (u - 0.5f) * (1.0f - w2) + 0.5f;
                 f32 m = -(0.5f * w2 - v2);
                 m += w2 * t;
-                if (two) {
+                if (two == 1) {
                     m = ((m - 0.5f) * shrink) + 0.5f;
                     r = f1 * (1.0f - m) + f2 * m;
                     f32 h = height * (f32)fabs(m - 0.5f);

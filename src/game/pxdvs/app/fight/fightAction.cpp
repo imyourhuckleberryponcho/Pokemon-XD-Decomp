@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct FIGHT_ACTION_DATA_dd_ {
     u16 kind;
@@ -100,7 +101,7 @@ void fightActionDispFifoAll(void) {
     } while (r != 3 && r == 1);
 }
 
-u8 fightActionCreateAndFlowFifo(FIGHT_ACTION* action, FIGHT_ACTION_DATA_dd_* moto, void* actor, u16 kind, u32 buff, FIGHT_ACTION_DATA_dd_* data) {
+PCRET(u8) fightActionCreateAndFlowFifo(FIGHT_ACTION* action, FIGHT_ACTION_DATA_dd_* moto, void* actor, u16 kind, u32 buff, FIGHT_ACTION_DATA_dd_* data) {
     u8 r = fightActionCreate(action, moto, actor, kind, buff, data);
     if (r != 1) {
         return r;
@@ -156,10 +157,12 @@ u8 fightActionFifoOut(FIGHT_ACTION* out) {
 }
 
 FIGHT_ACTION* fightActionFifoIn(FIGHT_ACTION* in) {
+    unsigned int wrapped;
     unsigned int tail = _fight_action_fifo_tail;
     FIGHT_ACTION* slot;
     unsigned int next = tail + 1;
-    if ((next & 0x1F) != _fight_action_fifo_head) {
+    wrapped = next & 0x1F;
+    if (wrapped != _fight_action_fifo_head) {
         slot = &_fight_action_fifo[tail];
         _fight_action_fifo[tail] = *in;
         _fight_action_fifo_tail = next;

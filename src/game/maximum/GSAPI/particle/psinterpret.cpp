@@ -3,10 +3,16 @@
 #define HSD_FILE_NAME "psinterpret.c"
 
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 
+#ifdef __MWERKS__
 #define _MATH_H_
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 extern f32 __float_min[];
 #define NAN (__float_nan[0])
 double sin(double x);
@@ -14,9 +20,21 @@ double cos(double x);
 double tan(double x);
 double atan2(double y, double x);
 
+#ifndef __MWERKS__
+static
+#endif
 inline f32 sinf(f32 x) { return (f32) sin(x); }
+#ifndef __MWERKS__
+static
+#endif
 inline f32 cosf(f32 x) { return (f32) cos(x); }
+#ifndef __MWERKS__
+static
+#endif
 inline f32 tanf(f32 x) { return (f32) tan(x); }
+#ifndef __MWERKS__
+static
+#endif
 inline f32 atan2f(f32 y, f32 x) { return (f32) atan2(y, x); }
 double __fabs(double x);
 #define fabs(x) __fabs(x)
@@ -40,6 +58,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -55,6 +76,12 @@ inline float sqrtf(float x)
     }
     return x;
 }
+#else
+#include <math.h>
+#include <float.h>
+static const f32 psinterpret_float_min[1] = { FLT_MIN };
+#define __float_min psinterpret_float_min
+#endif
 
 inline float atan2fInline(float y, float x)
 {
@@ -73,41 +100,41 @@ inline float atan2fInline(float y, float x)
 
 
 typedef struct _HSD_PSTexGroup {
-    u32 num;
-    u32 fmt;
-    u32 tlutfmt;
-    u32 width;
-    u32 height;
-    u16 palnum;
-    u16 palflag;
-    u8* texTable[1];
+    gc_be32 num;
+    gc_be32 fmt;
+    gc_be32 tlutfmt;
+    gc_be32 width;
+    gc_be32 height;
+    gc_be16 palnum;
+    gc_be16 palflag;
+    gc_ptr32(u8) texTable[1];
 } HSD_PSTexGroup;
 
 
 typedef struct _HSD_PSFormGroup {
-    u32 num;
-    u8* formTable[1];
+    gc_be32 num;
+    gc_ptr32(u8) formTable[1];
 } HSD_PSFormGroup;
 
 
 typedef struct _HSD_PSCmdList {
-    u16 type;
-    u16 texGroup;
-    u16 genLife;
-    u16 life;
-    u32 kind;
-    f32 grav;
-    f32 fric;
-    f32 vx;
-    f32 vy;
-    f32 vz;
-    f32 radius;
-    f32 angle;
-    f32 random;
-    f32 size;
-    f32 param1;
-    f32 param2;
-    f32 param3;
+    gc_be16 type;
+    gc_be16 texGroup;
+    gc_be16 genLife;
+    gc_be16 life;
+    gc_be32 kind;
+    gc_bef32 grav;
+    gc_bef32 fric;
+    gc_bef32 vx;
+    gc_bef32 vy;
+    gc_bef32 vz;
+    gc_bef32 radius;
+    gc_bef32 angle;
+    gc_bef32 random;
+    gc_bef32 size;
+    gc_bef32 param1;
+    gc_bef32 param2;
+    gc_bef32 param3;
     u8 cmdList[1];
 } HSD_PSCmdList;
 
@@ -293,7 +320,7 @@ extern s32 psAttachGeneratorAppSRT(HSD_Generator* gp, HSD_psAppSRT* appsrt);
 extern s32 psChangeGeneratorAppSRT(HSD_Generator* gp, HSD_psAppSRT* appsrt);
 
 extern u32* ptclref[PS_NUM_BANK];
-extern HSD_PSTexGroup** psTexGroupArray[PS_NUM_BANK];
+extern gc_ptr32(HSD_PSTexGroup)* psTexGroupArray[PS_NUM_BANK];
 extern HSD_JObj* psPointJObj[8];
 
 #define psBankRef ptclref
@@ -341,10 +368,10 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev);
 
 u8* getFloat(u8* cmdList, f32* val)
 {
-    BYTEF32.c[0] = *cmdList++;
-    BYTEF32.c[1] = *cmdList++;
-    BYTEF32.c[2] = *cmdList++;
-    BYTEF32.c[3] = *cmdList++;
+    BYTEF32.c[GC_BYTE4(0)] = *cmdList++;
+    BYTEF32.c[GC_BYTE4(1)] = *cmdList++;
+    BYTEF32.c[GC_BYTE4(2)] = *cmdList++;
+    BYTEF32.c[GC_BYTE4(3)] = *cmdList++;
     *val = BYTEF32.f;
     return cmdList;
 }
@@ -716,9 +743,9 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
                     break;
                 case 0x40:
                     pp->poseNum = *cmdList++;
-                    tg = psTexGroupArray[pp->bank][pp->texGroup];
+                    tg = GC_PTR(HSD_PSTexGroup*, psTexGroupArray[pp->bank][pp->texGroup]);
                     if (tg != NULL && tg->texTable != NULL &&
-                        tg->texTable[pp->poseNum] != NULL)
+                        GC_PTR(u8*, tg->texTable[pp->poseNum]) != NULL)
                     {
                         pp->kind |= 0x400;
                     }
@@ -925,7 +952,7 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
                     id = *cmdList++ << 8;
                     id += *cmdList++;
                     if (psBankRef[pp->bank] != NULL) {
-                        id = psBankRef[pp->bank][id];
+                        id = GC_BE32(psBankRef[pp->bank][id]);
                     }
                     child = psGenerateParticleID0(pp, pp->linkNo, pp->bank,
                                                   id, 0);
@@ -1092,7 +1119,7 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
 
                     op = *cmdList++;
                     if (psBankRef[pp->bank] != NULL) {
-                        id = psBankRef[pp->bank][id];
+                        id = GC_BE32(psBankRef[pp->bank][id]);
                     }
                     gp = psCreateGeneratorID(pp->linkNo, pp->bank, id);
                     if (gp != NULL) {
@@ -1243,7 +1270,7 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
                     range += *cmdList++;
                     id += (s32) (range * HSD_Randf());
                     if (psBankRef[pp->bank] != NULL) {
-                        id = psBankRef[pp->bank][id];
+                        id = GC_BE32(psBankRef[pp->bank][id]);
                     }
                     child = psGenerateParticleID0(pp, pp->linkNo, pp->bank,
                                                   id, 0);
@@ -1433,7 +1460,7 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
                     id = *cmdList++ << 8;
                     id += *cmdList++;
                     if (psBankRef[pp->bank] != NULL) {
-                        id = psBankRef[pp->bank][id];
+                        id = GC_BE32(psBankRef[pp->bank][id]);
                     }
                     child = psGenerateParticleID0(pp, pp->linkNo, pp->bank,
                                                   id, 0);
@@ -1503,9 +1530,9 @@ HSD_Particle* psInterpretParticle0(HSD_Particle* pp, HSD_Particle* prev)
                     val = cmdList[1];
                     cmdList += 2;
                     pp->poseNum += val * HSD_Randf();
-                    tg = psTexGroupArray[pp->bank][pp->texGroup];
+                    tg = GC_PTR(HSD_PSTexGroup*, psTexGroupArray[pp->bank][pp->texGroup]);
                     if (tg != NULL && tg->texTable != NULL &&
-                        tg->texTable[pp->poseNum] != NULL)
+                        GC_PTR(u8*, tg->texTable[pp->poseNum]) != NULL)
                     {
                         pp->kind |= 0x400;
                     }

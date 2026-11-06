@@ -1,11 +1,5 @@
 #include <dolphin/types.h>
-
-struct FsysBlock {
-    FsysBlock* prev;
-    FsysBlock* next;
-    u8* data;
-    u32 unkC;
-};
+#include <game/pxdvs/GSAPI/GSfsys/fsys.h>
 
 extern "C" {
 
@@ -21,9 +15,9 @@ static u32 _fsysBlockSize;
 static u32 _fsysBlockBufferSize;
 u32 _fsysBlockByteSize;
 
-BOOL _fsysFreeBlock(FsysBlock** list, u8 all);
+BOOL _fsysFreeBlock(FsysBlockSlot* list, u8 all);
 
-void _fsysMoveBlock(FsysBlock** from, FsysBlock** to) {
+void _fsysMoveBlock(FsysBlockSlot* from, FsysBlockSlot* to) {
     FsysBlock* block;
     FsysBlock* last;
     BOOL intr = OSDisableInterrupts();
@@ -55,7 +49,7 @@ void _fsysMoveBlock(FsysBlock** from, FsysBlock** to) {
     OSRestoreInterrupts(intr);
 }
 
-void _fsysAddBlock(FsysBlock** list, FsysBlock* block) {
+void _fsysAddBlock(FsysBlockSlot* list, FsysBlock* block) {
     FsysBlock* head;
     FsysBlock* last;
     BOOL intr = OSDisableInterrupts();
@@ -76,7 +70,7 @@ void _fsysAddBlock(FsysBlock** list, FsysBlock* block) {
     OSRestoreInterrupts(intr);
 }
 
-void _fsysFreeBlockAll(FsysBlock** list) {
+void _fsysFreeBlockAll(FsysBlockSlot* list) {
     for (;;) {
         if (*list == NULL) {
             break;
@@ -85,7 +79,7 @@ void _fsysFreeBlockAll(FsysBlock** list) {
     }
 }
 
-BOOL _fsysFreeBlock(FsysBlock** list, u8 first) {
+BOOL _fsysFreeBlock(FsysBlockSlot* list, u8 first) {
     FsysBlock* block;
     BOOL intr = OSDisableInterrupts();
 

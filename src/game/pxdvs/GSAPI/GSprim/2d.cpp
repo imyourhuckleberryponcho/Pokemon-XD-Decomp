@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -14,6 +15,7 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 #include <dolphin/gx/GXVert.h>
+#include <dolphin/gx/GXStruct.h>
 extern s32 sp;
 struct GSgfxVF;
 
@@ -22,29 +24,12 @@ struct GStexture {
     u8 dirty;
 };
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0xd34];
-    u8 lineWidth;
-    u8 pad_d35[3];
-    s32 lineTexOffset;
-    u8 pointSize;
-    u8 pad_d3d[3];
-    s32 pointTexOffset;
-    u8 pad_d44[0x16a8 - 0xd44];
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad_16b0[0x173c - 0x16b0];
-    u32 dirty173c;
-    GStexture* tex1740;
-    u8 pad_1744[0x1760 - 0x1744];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad_1768[0x17f4 - 0x1768];
-    u32 dirty17f4;
-    GStexture* tex17f8;
-    u8 pad_17fc[0x1998 - 0x17fc];
-    s32 primitive;
     void setRenderStateAndSelect(GSgfxVF*);
     void beginSurface(u16);
     void endSurface();
@@ -79,18 +64,18 @@ static inline void primPos2(f32 x, f32 y) {
 }
 
 static inline void primColor(GXColor c) {
-    GXWGFifo.u32 = *(u32*)&c;
+    GXWGFifo.u32 = GC_BYTES32(&c);
 }
 
 static inline void primVtx2DC(f32 x, f32 y, GXColor c) {
     GXWGFifo.f32 = x;
     GXWGFifo.f32 = y;
-    GXWGFifo.u32 = *(u32*)&c;
+    GXWGFifo.u32 = GC_BYTES32(&c);
 }
 
 static inline void primQuad2D(GXColor color, f32 x0, f32 y0, f32 x1, f32 y1) {
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(2));
-    primData.layer->primitive = primData.quadVtx;
+    (*(s32*)&primData.layer->unk1998) = primData.quadVtx;
     primData.layer->beginSurface(4);
     primVtx2DC(x0, y0, color);
     primVtx2DC(x1, y0, color);
@@ -102,12 +87,12 @@ static inline void primQuad2D(GXColor color, f32 x0, f32 y0, f32 x1, f32 y1) {
 static inline void primUpdateLineWidth() {
     if (primData.f4 != 1) {
         GSgfxLayer* l = primData.layer;
-        l->lineWidth = 6.0f * primData.lineWidth;
-        l->lineTexOffset = 0;
-        l->dirty16ac |= 4;
-        l->dirty16a8 |= 1;
-        l->dirty1764 |= 4;
-        l->dirty1760 |= 1;
+        (*(u8*)&l->hw.lineWidth) = 6.0f * primData.lineWidth;
+        (*(s32*)&l->hw.lineOffset) = 0;
+        (*(u32*)&l->dirty[0].geom) |= 4;
+        (*(u32*)&l->dirty[0].groups) |= 1;
+        (*(u32*)&l->dirty[1].geom) |= 4;
+        (*(u32*)&l->dirty[1].groups) |= 1;
         primData.f4 = 1;
     }
 }
@@ -115,7 +100,7 @@ static inline void primUpdateLineWidth() {
 static inline void primLine2D(GXColor c0, GXColor c1, f32 x0, f32 y0, f32 x1, f32 y1) {
     primUpdateLineWidth();
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(2));
-    primData.layer->primitive = 0xA8;
+    (*(s32*)&primData.layer->unk1998) = 0xA8;
     primData.layer->beginSurface(2);
     primPos2(x0, y0);
     primColor(c0);
@@ -127,13 +112,13 @@ static inline void primLine2D(GXColor c0, GXColor c1, f32 x0, f32 y0, f32 x1, f3
 static inline void primVtxV2C(GSvec2 p, GXColor c) {
     GXWGFifo.f32 = p.x;
     GXWGFifo.f32 = p.y;
-    GXWGFifo.u32 = *(u32*)&c;
+    GXWGFifo.u32 = GC_BYTES32(&c);
 }
 
 static inline void primVtx2DCT(f32 x, f32 y, GXColor c, f32 s, f32 t) {
     GXWGFifo.f32 = x;
     GXWGFifo.f32 = y;
-    GXWGFifo.u32 = *(u32*)&c;
+    GXWGFifo.u32 = GC_BYTES32(&c);
     GXWGFifo.f32 = s;
     GXWGFifo.f32 = t;
 }
@@ -141,18 +126,18 @@ static inline void primVtx2DCT(f32 x, f32 y, GXColor c, f32 s, f32 t) {
 static inline void primVtxV2CT(GSvec2 p, GXColor c, f32 s, f32 t) {
     GXWGFifo.f32 = p.x;
     GXWGFifo.f32 = p.y;
-    GXWGFifo.u32 = *(u32*)&c;
+    GXWGFifo.u32 = GC_BYTES32(&c);
     GXWGFifo.f32 = s;
     GXWGFifo.f32 = t;
 }
 
 static inline void primSetTexture(GStexture* tex) {
     GSgfxLayer* l = primData.layer;
-    if (l->tex1740 != tex || l->tex17f8 != tex || tex->dirty != 0) {
-        l->tex1740 = tex;
-        l->dirty173c |= 1;
-        l->tex17f8 = tex;
-        l->dirty17f4 |= 1;
+    if ((*(GStexture**)&l->dirty[0].tex[0]) != tex || (*(GStexture**)&l->dirty[1].tex[0]) != tex || tex->dirty != 0) {
+        (*(GStexture**)&l->dirty[0].tex[0]) = tex;
+        (*(u32*)&l->dirty[0].texMask) |= 1;
+        (*(GStexture**)&l->dirty[1].tex[0]) = tex;
+        (*(u32*)&l->dirty[1].texMask) |= 1;
     }
 }
 
@@ -165,9 +150,9 @@ static inline void primSetTexture(GStexture* tex) {
 
 static inline void primMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
     PRIM_U32(l, off) |= bit;
-    l->dirty16a8 |= sum;
+    (*(u32*)&l->dirty[0].groups) |= sum;
     PRIM_U32(l, off + 0xB8) |= bit;
-    l->dirty1760 |= sum;
+    (*(u32*)&l->dirty[1].groups) |= sum;
 }
 
 static inline void primSetTevColorS10(GXColorS10 c) {
@@ -228,7 +213,7 @@ void GSprimDraw2DTexQuad4VCA(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor colo
     primSetTevColorIn(0xF, 0xA, 8, 2);
     primSetTevAlphaOp(0, 0, 0, 1, 0);
     primSetTevAlphaIn(7, 5, 4, 1);
-    primData.layer->primitive = primData.quadVtx;
+    (*(s32*)&primData.layer->unk1998) = primData.quadVtx;
     primData.layer->beginSurface(4);
     primPosV2(v[0]);
     primColor(color);
@@ -248,7 +233,7 @@ void GSprimDraw2DTexQuad4VCA(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor colo
 void GSprimDraw2DTexQuad4V(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor color) {
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(6));
     primSetTexture(tex);
-    primData.layer->primitive = primData.quadVtx;
+    (*(s32*)&primData.layer->unk1998) = primData.quadVtx;
     primData.layer->beginSurface(4);
     primPosV2(v[0]);
     primColor(color);
@@ -268,7 +253,7 @@ void GSprimDraw2DTexQuad4V(GSvec2* v, GSvec2* uv, GStexture* tex, GXColor color)
 void GSprimDraw2DTexQuad(GStexture* tex, GXColor color, f32 x0, f32 y0, f32 x1, f32 y1) {
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(6));
     primSetTexture(tex);
-    primData.layer->primitive = primData.quadVtx;
+    (*(s32*)&primData.layer->unk1998) = primData.quadVtx;
     primData.layer->beginSurface(4);
     f32 zero = 0.0f;
     f32 one = 1.0f;
@@ -281,7 +266,7 @@ void GSprimDraw2DTexQuad(GStexture* tex, GXColor color, f32 x0, f32 y0, f32 x1, 
 
 void GSprimDraw2DQuad4V(GSvec2* v, GXColor color) {
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(2));
-    primData.layer->primitive = primData.quadVtx;
+    (*(s32*)&primData.layer->unk1998) = primData.quadVtx;
     primData.layer->beginSurface(4);
     primPosV2(v[0]);
     primColor(color);
@@ -300,7 +285,7 @@ void GSprimDraw2DQuadWH(GXColor color, f32 x, f32 y, f32 w, f32 h) {
 
 void GSprimDraw2DQuad(GXColor color, f32 x0, f32 y0, f32 x1, f32 y1) {
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(2));
-    primData.layer->primitive = primData.quadVtx;
+    (*(s32*)&primData.layer->unk1998) = primData.quadVtx;
     primData.layer->beginSurface(4);
     primVtx2DC(x0, y0, color);
     primVtx2DC(x1, y0, color);
@@ -314,14 +299,14 @@ void GSprimDraw2DPixelListC(s16* pts, u32 n, u32* colors) {
         return;
     }
     GSgfxLayer* l = primData.layer;
-    l->pointSize = 6;
-    l->pointTexOffset = 0;
-    l->dirty16ac |= 8;
-    l->dirty16a8 |= 1;
-    l->dirty1764 |= 8;
-    l->dirty1760 |= 1;
+    (*(u8*)&l->hw.pointSize) = 6;
+    (*(s32*)&l->hw.pointOffset) = 0;
+    (*(u32*)&l->dirty[0].geom) |= 8;
+    (*(u32*)&l->dirty[0].groups) |= 1;
+    (*(u32*)&l->dirty[1].geom) |= 8;
+    (*(u32*)&l->dirty[1].groups) |= 1;
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(3));
-    primData.layer->primitive = 0xB8;
+    (*(s32*)&primData.layer->unk1998) = 0xB8;
     primData.layer->beginSurface(n);
     while (n--) {
         GXPosition2s16(pts[0], pts[1]);
@@ -338,7 +323,7 @@ void GSprimDraw2DLineListC(GSvec2* pts, u32 n, GXColor* colors) {
     }
     primUpdateLineWidth();
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(2));
-    primData.layer->primitive = 0xA8;
+    (*(s32*)&primData.layer->unk1998) = 0xA8;
     primData.layer->beginSurface(n * 2);
     while (n--) {
         primPosV2(pts[0]);
@@ -362,7 +347,7 @@ void GSprimDraw2DHLine(GXColor color, f32 x0, f32 x1, f32 y) {
 void GSprimDraw2DLine(GXColor c0, GXColor c1, f32 x0, f32 y0, f32 x1, f32 y1) {
     primUpdateLineWidth();
     primData.layer->setRenderStateAndSelect(GSgfxVFGetPredef(2));
-    primData.layer->primitive = 0xA8;
+    (*(s32*)&primData.layer->unk1998) = 0xA8;
     primData.layer->beginSurface(2);
     primPos2(x0, y0);
     primColor(c0);

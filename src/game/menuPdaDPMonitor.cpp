@@ -1,12 +1,20 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/statusval.h>
 #include <dolphin/gx/GXVert.h>
+#ifdef __MWERKS__
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
+#else
+#define GXFifoNV GXWGFifo
+#endif
 
 #pragma peephole off
 
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };
 
-class DarkPokemon {
+struct DarkPokemon {
 public:
     u8 unk0x0[60];
     u16 getPokemonID() const;
@@ -17,7 +25,11 @@ public:
     bool isUpdate() const;
     bool isSnach() const;
     bool isRelive() const;
+#ifdef __MWERKS__
     u16 getCatchBallID() const;
+#else
+    u8 getCatchBallID() const;
+#endif
     u16 getCatchFloorId() const;
     u16 getOrgTrainer() const;
     const u16* getTrainerName() const;
@@ -34,7 +46,14 @@ struct DPM_CONTENTS {
 };
 
 struct MENU_MODEL {
-    u8 unk0[0xEC];
+    u8 unk0[0x58];
+    void* slot58;
+    u8 pad5C[0x10];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    u8 pad7C[0x70];
 };
 
 struct MenuItem {
@@ -50,12 +69,27 @@ struct tagWINDOW_WORK {
     s8 state;
     s8 seqSet;
     u8 unk3;
-    void* seq;
-    u8 unk8[0x14];
+    s32 seq;
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
-    u8 unk20[0x48];
+    u8 unk20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
     DPM_CONTENTS* contents;
-    u8 unk6C[0x27];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 alpha;
     u8 unk94[0x10];
     u8 unkA4;
@@ -63,13 +97,18 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[4];
+    void* unk0;
     s8 flags;
     u8 unk5;
     s16 id;
-    u8 unk8[0x14];
+    u8 unk8[0x4];
+    void* slotC;
+    u8 pad10[0xC];
     s32 layer;
-    u8 unk20[0x34];
+    u8 unk20[0x28];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x4];
     s16 width;
     s16 height;
 };
@@ -86,16 +125,12 @@ struct GStexture {
 };
 
 struct GSgfxVF;
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0x173C];
-    u32 f173C;
-    GStexture* tex1740;
-    u8 pad1744[0x17F4 - 0x1744];
-    u32 f17F4;
-    GStexture* tex17F8;
-    u8 pad17FC[0x1998 - 0x17FC];
-    u32 primitive;
     void setRenderStateAndSelect(GSgfxVF*);
     void beginSurface(u16);
     void endSurface();
@@ -129,8 +164,8 @@ public:
     void PokemonName(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, DPM_CONTENTS* contents);
     void PokemonSex(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, DPM_CONTENTS* contents);
     void PokemonBall(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, DPM_CONTENTS* contents);
-    void _menuClose(long menuID);
-    void* GetPokemonPointer(long index);
+    void _menuClose(s32 menuID);
+    void* GetPokemonPointer(s32 index);
 
     s32 rnd;
     u8 pokemon[0xC4];
@@ -138,16 +173,21 @@ public:
 };
 
 extern "C" {
-void* __nw__FUl(unsigned long);
+#ifdef __MWERKS__
+void* __nw__FUl(u32);
 void __dl__FPv(void*);
-GSgfxLayer* GSgfxLayerFindByID(s32);
+#else
+#define __nw__FUl(n) (operator new(n))
+#define __dl__FPv(p) (operator delete(p))
+#endif
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 GSgfxVF* GSgfxVFGetPredef(s32);
-s32 GSmsgGetGSchar(u32);
+u16 * GSmsgGetGSchar(u32);
 void GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSsndPlayNow(u32);
 DarkPokemon* darkPokemonGetDarkPokemon(u32);
-u32 floorGetPlaceName(u16);
-s32 gamedataGetStatus(s32, s32);
+u32 floorGetPlaceName(PCARG(u16, u32));
+StatusS32 gamedataGetStatus(s32, s32);
 u16 mballBiosGetSpriteID(u16);
 void menuClose(s32);
 void menuCloseSync(s32, s32);
@@ -172,15 +212,15 @@ s32 menuPdaDPMListGetDarkpokemonID(s32);
 s32 menuPdaDPMListGetPokemonID(s32);
 u32 menuPdaDPMListGetPokemonName(s32);
 void menuPdaSetSubres(s32, s32);
-void menuPlaySe(void*, s32);
-void msgctrlSetValue(s32, u32);
+void menuPlaySe(s32 menuID, s32);
+void msgctrlSetValue(s32, GCuptr);
 void pokemonBiosSetDarkpokemonDataId(void*, s32);
 void pokemonBiosSetRnd(void*, s32);
 void pokemonCreate(void*, s32, s32, s32);
 s32 pokemonCreateRndFit(void*, s32, s32, s32, s32);
 u8 pokemonGetSex(void*);
-u8 winSeqCheckMove(void*);
-void winSeqSetMenu(void*, s32);
+u8 winSeqCheckMove(s32 menuID);
+void winSeqSetMenu(s32 menuID, s32);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void windowDrawSprite(s32, s32, tagWINDOW_WORK*, u16, s32, s32);
 s32 windowGetActiveID(void);
@@ -394,13 +434,13 @@ void menuPdaDPM::DispPokemonModel(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
         if (tex != 0) {
             GSgfxLayer* layer = GSgfxLayerFindByID(window->layer);
             if (layer != 0) {
-                layer->primitive = 0x98;
+                (*(u32*)&layer->unk1998) = 0x98;
                 layer->setRenderStateAndSelect(GSgfxVFGetPredef(7));
-                if (layer->tex1740 != tex || layer->tex17F8 != tex || tex->flag != 0) {
-                    layer->tex1740 = tex;
-                    layer->f173C |= 1;
-                    layer->tex17F8 = tex;
-                    layer->f17F4 |= 1;
+                if ((*(GStexture**)&layer->dirty[0].tex[0]) != tex || (*(GStexture**)&layer->dirty[1].tex[0]) != tex || tex->flag != 0) {
+                    (*(GStexture**)&layer->dirty[0].tex[0]) = tex;
+                    (*(u32*)&layer->dirty[0].texMask) |= 1;
+                    (*(GStexture**)&layer->dirty[1].tex[0]) = tex;
+                    (*(u32*)&layer->dirty[1].texMask) |= 1;
                 }
                 layer->beginSurface(4);
                 f32 zero = 0.0f;
@@ -453,9 +493,9 @@ void menuPdaDPM::DarkPokemonInfo(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite,
         if (place == 0) {
             place = 0x3BA8;
         }
-        u32 placeName = GSmsgGetGSchar(place);
+        u32 placeName = GC_ADDR32(GSmsgGetGSchar(place));
         msgctrlSetValue(0x4D, placeName);
-        msgctrlSetValue(0x57, (u32)dark->getTrainerName());
+        msgctrlSetValue(0x57, (GCuptr)dark->getTrainerName());
         GSmsgPrint2(layer, 0, 0, window->alpha | ~0xFF, msg);
     }
 }
@@ -466,7 +506,7 @@ void menuPdaDPM::DarkPokemonPlace(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
     u32 msg = menuPdaDPMListGetDarkPokemonPlaceMsgID(c->pos + c->top, &floor);
     if (msg != 0) {
         msgctrlSetValue(0x2F, floor + 1);
-        u32 name = GSmsgGetGSchar(msg);
+        u32 name = GC_ADDR32(GSmsgGetGSchar(msg));
         msgctrlSetValue(0x37, name);
         GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4275);
     }
@@ -476,7 +516,7 @@ void menuPdaDPM::PokemonName(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, DPM
     CURSOR* c = contents->cursor;
     u32 name = menuPdaDPMListGetPokemonName(c->pos + c->top);
     if (name == 0) {
-        name = GSmsgGetGSchar(1);
+        name = GC_ADDR32(GSmsgGetGSchar(1));
     }
     msgctrlSetValue(0x37, name);
     GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4275);
@@ -494,25 +534,25 @@ void menuPdaDPM::PokemonSex(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, DPM_
     pokemonBiosSetRnd(mon, rnd);
     u32 name;
     if (sex == 0x80) {
-        name = GSmsgGetGSchar(1);
+        name = GC_ADDR32(GSmsgGetGSchar(1));
     } else {
         switch (sex) {
         case 0:
-            name = GSmsgGetGSchar(0x9C5);
+            name = GC_ADDR32(GSmsgGetGSchar(0x9C5));
             break;
         case 1:
-            name = GSmsgGetGSchar(0x9C6);
+            name = GC_ADDR32(GSmsgGetGSchar(0x9C6));
             break;
         case 2:
-            name = GSmsgGetGSchar(1);
+            name = GC_ADDR32(GSmsgGetGSchar(1));
             break;
         default:
-            name = GSmsgGetGSchar(0x9C6);
+            name = GC_ADDR32(GSmsgGetGSchar(0x9C6));
             break;
         }
     }
     if (dark->getCatchFloorId() == 0xB5 && sex != 2) {
-        name = GSmsgGetGSchar(0x9C7);
+        name = GC_ADDR32(GSmsgGetGSchar(0x9C7));
     }
     msgctrlSetValue(0x37, name);
     GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4275);
@@ -529,12 +569,12 @@ void menuPdaDPM::PokemonBall(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, DPM
     }
 }
 
-void menuPdaDPM::_menuClose(long menuID) {
+void menuPdaDPM::_menuClose(s32 menuID) {
     menuClose(menuID);
     menuCloseSync(menuID, 1);
 }
 
-void* menuPdaDPM::GetPokemonPointer(long index) {
+void* menuPdaDPM::GetPokemonPointer(s32 index) {
     s32 id = menuPdaDPMListGetPokemonID(index);
     pokemonCreate(pokemon, id, 0xA, gamedataGetStatus(0, 1));
     DarkPokemon* dark = menuPdaDPMListGetDPointer(index);

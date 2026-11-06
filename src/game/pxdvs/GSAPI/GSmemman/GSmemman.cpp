@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -24,7 +25,7 @@ static u32 _currentHeap = -1;
 void* OSAllocFromHeap(s32 heap, u32 size);
 void OSFreeToHeap(s32 heap, void* ptr);
 s32 OSSetAllocMethodHeap(s32 heap, s32 method);
-u32 OSGetHeapFreeSize(s32 heap, s32 a, u32* out);
+u32 OSGetHeapFreeSize(s32 heap, s32* total, u32* out);
 void OSShrinkHeap(s32 heap, void* ptr, u32 size);
 s32 OSGetHeapType(s32 heap);
 u32 OSReferentSize(void* ptr);
@@ -41,7 +42,7 @@ extern "C" {
 
 extern "C" {
 s32 GSmemCheckHeap(s32 p0);
-s32 GSmemCreateExternalHeap(s32 p0, s32 p1, s32 p2, s32 p3);
+s32 GSmemCreateExternalHeap(s32 p0, s32 p1, GCsptr p2, s32 p3);
 s32 GSmemCreateHeap(void* lo, void* hi);
 void GSmemDumpHeap(s32 p0);
 void* GSmemInit(void* lo, void* hi, s32);
@@ -49,13 +50,13 @@ void GSmemInitPool(void);
 u8 GSmemIsInitialized(void);
 s32 GSmemVisitHeapAllocated(s32, void*, s32, s32*);
 s32 OSCheckHeap(OSHeapHandle heap);
-s32 OSCreateExternalHeap(s32, s32, s32, s32);
+s32 OSCreateExternalHeap(s32, s32, GCsptr, s32);
 OSHeapHandle OSCreateHeap(void* start, void* end);
 s32 OSGetHeapSize(s32);
 void* OSInitAlloc(void* arenaStart, void* arenaEnd, int maxHeaps);
 }
 extern "C++" {
-static void _dumpHeapVisitor(void* p0, unsigned long p1, void* p2, void* p3);
+static void _dumpHeapVisitor(void* p0, u32 p1, void* p2, void* p3);
 }
 
 s32 GSmemCheckHeap(s32 heap) {
@@ -109,7 +110,7 @@ void* GSmemAlloc(u32 size) {
     return GSmemAllocHeap(GSmemGetCurrentHeap(), size);
 }
 extern "C++" {
-static void _dumpHeapVisitor(void* p0, unsigned long p1, void* p2, void* p3) {
+static void _dumpHeapVisitor(void* p0, u32 p1, void* p2, void* p3) {
 }
 }
 
@@ -123,13 +124,13 @@ void GSmemDumpHeap(s32 heap) {
 
     count = 0;
     GSmemVisitHeapAllocated(heap, (void*)_dumpHeapVisitor, 0, &count);
-    OSGetHeapFreeSize(heap, (s32)&free, (u32*)&largest);
+    OSGetHeapFreeSize(heap, &free, (u32*)&largest);
     size = OSGetHeapSize(heap);
     used = size - free;
 }
 }
 
-u32 GSmemGetHeapFreeSize(s32 heap, s32 a, u32* out) {
+u32 GSmemGetHeapFreeSize(s32 heap, s32* a, u32* out) {
     return OSGetHeapFreeSize(heap, a, out);
 }
 
@@ -186,7 +187,7 @@ u32 GSmemGetCurrentHeap(void) {
     return _currentHeap;
 }
 extern "C" {
-s32 GSmemCreateExternalHeap(s32 p0, s32 p1, s32 p2, s32 p3) {
+s32 GSmemCreateExternalHeap(s32 p0, s32 p1, GCsptr p2, s32 p3) {
     if (!GSmemIsInitialized()) {
         return -1;
     }

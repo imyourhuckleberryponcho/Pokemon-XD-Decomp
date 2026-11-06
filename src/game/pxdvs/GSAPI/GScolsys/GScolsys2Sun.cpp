@@ -41,7 +41,7 @@ bool GScolsys2UtilGetCpPlaneLine(GSvec* cp, f32* t, GSvec* normal, GSvec* tri, G
 bool GScolsy2UtilChkInTri(GSvec* p, GSvec* tri, GSvec* normal);
 }
 
-static int getCpSegPolyArray(bool* hits, GSvec* start, GSvec* ends, unsigned long num, GSvec* tri, GSvec* normal) {
+static int getCpSegPolyArray(bool* hits, GSvec* start, GSvec* ends, u32 num, GSvec* tri, GSvec* normal) {
     u32 i;
     bool hit = false;
     bool valid = true;
@@ -86,6 +86,29 @@ static inline bool checkSegTri(GSvec* start, GSvec* end, GSvec* tri, GSvec* norm
     return true;
 }
 
+static inline int checkMeshArray(bool* hits, GSvec* start, GSvec* ends, u32 num, ColMesh* mesh, GSmtx mtx, GSmtx rot,
+                                  GSvec* normal, GSvec* verts) {
+    u32 j;
+    ColTri* tri = mesh->tris;
+    int result = 0;
+    for (j = 0; j < mesh->numTris; j++, tri++) {
+        int k;
+        int res;
+        PSMTXMultVec(rot, &tri->normal, normal);
+        for (k = 0; k < 3; k++) {
+            PSMTXMultVec(mtx, &tri->v[k], &verts[k]);
+        }
+        res = getCpSegPolyArray(hits, start, ends, num, verts, normal);
+        if (res < 0) {
+            return -1;
+        }
+        if (res > 0) {
+            result = 1;
+        }
+    }
+    return result;
+}
+
 extern "C" {
 
 bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
@@ -104,12 +127,10 @@ bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
     obj = head->objs;
     for (i = 0; i < head->numObjs; i++, obj++) {
         GSmtx rot;
-        u32 j;
         GSmtx mtx;
         bool enable;
         GSvec normal;
         GSvec verts[3];
-        ColTri* tri;
         ColMesh* mesh;
 
         GScolsys2GetObjEnable(i, &enable);
@@ -120,26 +141,9 @@ bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
         if (mesh == NULL) {
             continue;
         }
-        tri = mesh->tris;
         GScolsys2GetObjMatrix(mtx, i);
         GScolsys2GetObjRotMatrix(rot, i);
-        result = 0;
-        for (j = 0; j < mesh->numTris; j++, tri++) {
-            int k;
-            int res;
-            PSMTXMultVec(rot, &tri->normal, &normal);
-            for (k = 0; k < 3; k++) {
-                PSMTXMultVec(mtx, &tri->v[k], &verts[k]);
-            }
-            res = getCpSegPolyArray(hits, start, ends, num, verts, &normal);
-            if (res < 0) {
-                result = -1;
-                break;
-            }
-            if (res > 0) {
-                result = 1;
-            }
-        }
+        result = checkMeshArray(hits, start, ends, num, mesh, mtx, rot, &normal, verts);
         if (result < 0) {
             found = true;
             break;

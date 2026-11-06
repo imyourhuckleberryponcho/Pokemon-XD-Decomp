@@ -1,19 +1,40 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/fightrecords.h>
+#ifndef __MWERKS__
+class DeckTrainer { public: static DeckTrainer* getDeckTrainerObj(u32); u16 getFixedActionID() const; u16 getComboID(u8) const; u8 getComboActive(u8) const; };
+#define getDeckTrainerObj__11DeckTrainerFUl(...) ((DeckTrainer*)DeckTrainer::getDeckTrainerObj(__VA_ARGS__))
+#define getComboID__11DeckTrainerCFUc(o, ...) ((u16)((const DeckTrainer*)(o))->getComboID(__VA_ARGS__))
+#endif
 
 struct FIGHT_TRAINER;
 struct FightPokemon;
 struct Pokemon;
 struct FightActionData;
 struct DeckTrainer;
-struct FightOutPokemon { u32 data[0x894 / 4]; };
-struct ComboData { u8 type; u8 order; u8 data[10]; };
+#ifdef __MWERKS__
+struct FightOutPokemon { u32 data[FIGHT_OUT_POKEMON_SIZE / 4]; };
+#else
+struct alignas(8) FightOutPokemon { u32 data[FIGHT_OUT_POKEMON_SIZE / 4]; };
+#endif
+struct ComboData {
+    u8 type;
+    u8 order;
+    u8 pad2[2];
+    void* func;
+    void* continueFunc;
+};
 
 extern "C" {
 u16 HSD_Rand();
 u16 fightTrainer_GetFightTrainerDataId(FIGHT_TRAINER*);
 u16 fightTrainerDB_GetAiDataId(u16);
+#ifdef __MWERKS__
 DeckTrainer* getDeckTrainerObj__11DeckTrainerFUl(u32);
+#endif
+#ifdef __MWERKS__
 u16 getComboID__11DeckTrainerCFUc(DeckTrainer*, u8);
+#endif
 Pokemon* fightPokemonGetPokemonPtr(FightPokemon*);
 Pokemon* fightPokemon_GetPokemonBuffPtr(FightPokemon*);
 Pokemon* fightOutPokemonGetPokemonPtr(FightOutPokemon*);
@@ -27,15 +48,15 @@ u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(void*, FIGHT_TRAINER*, FightO
 u16 fightFloorGetFightTrainerFightPokemonPtrAry(void*, FIGHT_TRAINER*, FightPokemon**, u8, u8);
 u16 fightTrainerGetIrekaeFightPokemonAry(FIGHT_TRAINER*, FightPokemon**);
 void fightOutPokemonBiosCopy(FightOutPokemon*, FightOutPokemon*);
-void fightOutPokemonCreate(FightOutPokemon*, FightPokemon*, u8);
-void fightOutPokemonCreateFightAction(FightOutPokemon*, u8, u8, u8, FightActionData*, s32);
+void fightOutPokemonCreate(FightOutPokemon* fop, FightPokemon* fp, void* seq);
+void fightOutPokemonCreateFightAction(FightOutPokemon*, PCARG(u8, s32), PCARG(u8, s32), PCARG(u8, s32), FightActionData*, s32);
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
-u8 fightOutPokemonIsFightActionAttackWazaOut(FightOutPokemon*, u16, u8);
+u8 fightOutPokemonIsFightActionAttackWazaOut(FightOutPokemon* fop, u16 waza, FightOutPokemon* targetFop);
 u16 fightOutPokemon_GetMotoWazaDataId(FightOutPokemon*);
 u16 fightOutPokemonNowHpWaruValue(FightOutPokemon*, u16);
 s8 fightOutPokemonGetKaisuuJoutaiDataId(FightOutPokemon*, u16);
 s8 fightOutPokemonGetNowKaisuuJoutaiDataId(FightOutPokemon*, u16);
-u8 fightTrainerAiDB_GetLastValueRevise();
+u8 fightTrainerAiDB_GetLastValueRevise(u16 id);
 u8 fightTrainerAiDB_GetPokemonSelectRandomFlag(u16);
 u8 fightTrainerAiDB_GetPokemonDataOrderOutFlag(u16);
 u8 fightTrainerAiDB_GetPokemonSelectWeakPointFlag(u16);
@@ -48,8 +69,8 @@ u16 fightTrainerAiGetFightOutPokemonBasisSubayasa(FIGHT_TRAINER*, FightOutPokemo
 u16 fightTrainerAiGetFightOutPokemonBasisPhyAtk(FIGHT_TRAINER*, FightOutPokemon*);
 u16 fightTrainerAiGetFightOutPokemonBasisSpeAtk(FIGHT_TRAINER*, FightOutPokemon*);
 u16 fightTrainerAiGetFightOutPokemonNowHp(FIGHT_TRAINER*, FightOutPokemon*);
-u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(FIGHT_TRAINER*, FightOutPokemon*, u16*, u8, u8);
-u16 fightTrainerAiGetFightPokemonWazaDataIdAry(FIGHT_TRAINER*, FightPokemon*, u16*, u8, u8);
+u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(FIGHT_TRAINER* t, FightOutPokemon* a, u16* ids, s16* indices, u8 check);
+u16 fightTrainerAiGetFightPokemonWazaDataIdAry(FIGHT_TRAINER* t, FightPokemon* p, u16* ids, s16* indices, u8 check);
 u8 fightTrainerAiIsFightPokemonZokuseiDataId(FIGHT_TRAINER*, FightPokemon*, u16);
 u8 fightTrainerAiIsFightPokemonTokuseiDataId(FIGHT_TRAINER*, FightPokemon*, u16);
 u8 fightTrainerAiIsFightPokemonNokoriHpHikui(FIGHT_TRAINER*, FightPokemon*);
@@ -69,7 +90,7 @@ u16 fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(FIGHT_TRAINER*
 u16 fightTrainerAiGetFightPokemonZokuseiDataIdWazaJoutaiDataId(FIGHT_TRAINER*, FightPokemon*, u16, s32);
 s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*, u8);
 s32 fightTrainerAiWazaDoWazaDamageFightPokemonFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightPokemon*, u8);
-u8 fightTrainerCheckCanIrekaeFightPokemon(FightPokemon*);
+u8 fightTrainerCheckCanIrekaeFightPokemon(FIGHT_TRAINER*, FightPokemon*);
 u8 dbgMenuFightGetFightTrainerAiLastValueReviseFlag();
 s32 fightTrainerAiAddValue(s32, s32);
 s32 fightTrainerAiAddValueByAddsubDataId(s32, FIGHT_TRAINER*, u16);
@@ -139,7 +160,7 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
     u16 ai = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer));
     u16 type;
     u16 move;
-    u8 revise = fightTrainerAiDB_GetLastValueRevise();
+    u8 revise = fightTrainerAiDB_GetLastValueRevise(ai);
     u8 weather = fightTrainerAiGetFightFloorNowTenkouDataId(trainer, 0, 1);
     for (u8 i = 0; i < 6; i++) values[i] = 0;
     fightOutPokemonBiosCopy(&saved, pokemon);
@@ -252,8 +273,9 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
                 if (type != 9 && fightTrainerAiGetFightPokemonZokuseiDataIdWazaJoutaiDataId(trainer, candidate, type, 1) == 0x41) {
                     for (u8 j = 0; j < partyCountLong; j++) {
                         FightPokemon* other = party[j];
-                        if (other != 0 && fightFloorGetFightPokemonPtrToFightTrainerPtr(0, other) != 0) {
-                            u8 state = fightTrainerCheckCanIrekaeFightPokemon(other);
+                        FIGHT_TRAINER* otherTrainer;
+                        if (other != 0 && (otherTrainer = fightFloorGetFightPokemonPtrToFightTrainerPtr(0, other)) != 0) {
+                            u8 state = fightTrainerCheckCanIrekaeFightPokemon(otherTrainer, other);
                             if (state == 1) continue;
                             if ((state == 2 || state == 3) && fightTrainerAiGetFightPokemonZokuseiDataIdWazaJoutaiDataId(trainer, other, type, 1) == 0x41)
                                 values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x27);

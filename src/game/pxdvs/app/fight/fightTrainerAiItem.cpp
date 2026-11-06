@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct FIGHT_TRAINER;
 struct FightOutPokemon;
@@ -27,7 +28,7 @@ FightPokemon* fightOutPokemon_GetMotoFightPokemonPtr(FightOutPokemon*);
 u8 fightPokemonCheckFightOut(FightPokemon*);
 s32 fightTrainerAiGetValueAryMaxBanme(s32*, u16, u8);
 s32 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon*, void*);
-void fightOutPokemonCreateFightActionUseItem(FightOutPokemon*, u8, u16, u16, FightActionData*, u16, s32, s32, u8);
+void fightOutPokemonCreateFightActionUseItem(FightOutPokemon*, PCARG(u8, s32), PCARG(u16, s32), PCARG(u16, s32), FightActionData*, PCARG(u16, s32), s32, s32, u8);
 s16 itemUse2PokemonSimulation(void*, Pokemon*, FightPokemon*, u16, u8);
 extern FightActionData fight_action_data_item;
 }

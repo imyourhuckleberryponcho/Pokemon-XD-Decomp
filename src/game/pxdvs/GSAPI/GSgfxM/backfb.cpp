@@ -6,9 +6,9 @@ enum GSgfxLayerPass {
     GS_GFX_LAYER_PASS_0
 };
 
-class GSgfxLayer {
+struct GSgfxLayer {
 public:
-    void GetFifoSize(unsigned long* size, unsigned long* used);
+    void GetFifoSize(u32* size, u32* used);
     void textureCopy(GSgfxLayerPass pass, GStexture* texture, bool clear, u8* clearColor, bool, bool, bool);
 };
 
@@ -115,8 +115,8 @@ bool GSgfxBeginBackFBCapture(GStexture* texture, GSgfxBackFBCallback callback, v
 
 void GSgfxBackFBDoFrame(GSgfxLayer* layer) {
     GSgfxBackFB* fb;
-    unsigned long size;
-    unsigned long used;
+    u32 size;
+    u32 used;
     u32 i;
     GSgfxLayerPass pass;
     GSgfxLayerPass selectedPass;

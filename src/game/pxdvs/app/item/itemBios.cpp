@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/bitfield.h>
 
 extern "C" {
 extern u32 item_param_number;
@@ -20,29 +22,34 @@ typedef struct {
 } WazaMachineData;
 extern WazaMachineData item_waza_machine_no[];
 typedef struct ItemParamDataRef {
-    u8 meromeroFlag : 1;
-    u8 field_00_bit6 : 1;
-    u8 criticalFlag : 1;
-    u8 attackUp : 4;
-    u8 field_00_bit0 : 1;
-    u8 defenceUp : 4;
-    u8 quickUp : 4;
-    u8 hitUp : 4;
-    u8 spAttackUp : 4;
-    u8 guardFlag : 1;
-    u8 levelUpFlag : 1;
-    u8 sleepFlag : 1;
-    u8 poisonFlag : 1;
-    u8 burnFlag : 1;
-    u8 freezeFlag : 1;
-    u8 paralyzeFlag : 1;
-    u8 confuseFlag : 1;
-    u8 ppMaxUpFlag : 1;
-    u8 reviveFlag : 1;
-    u8 ppSelectFlag : 1;
-    u8 evolutionFlag : 1;
-    u8 ppMaxFullFlag : 1;
-    u8 field_04_bits0_2 : 3;
+    GC_BITS5(
+    u8 meromeroFlag : 1,
+    u8 field_00_bit6 : 1,
+    u8 criticalFlag : 1,
+    u8 attackUp : 4,
+    u8 field_00_bit0 : 1)
+    GC_BITS2(
+    u8 defenceUp : 4,
+    u8 quickUp : 4)
+    GC_BITS2(
+    u8 hitUp : 4,
+    u8 spAttackUp : 4)
+    GC_BITS8(
+    u8 guardFlag : 1,
+    u8 levelUpFlag : 1,
+    u8 sleepFlag : 1,
+    u8 poisonFlag : 1,
+    u8 burnFlag : 1,
+    u8 freezeFlag : 1,
+    u8 paralyzeFlag : 1,
+    u8 confuseFlag : 1)
+    GC_BITS6(
+    u8 ppMaxUpFlag : 1,
+    u8 reviveFlag : 1,
+    u8 ppSelectFlag : 1,
+    u8 evolutionFlag : 1,
+    u8 ppMaxFullFlag : 1,
+    u8 field_04_bits0_2 : 3)
     s8 friend1Up;
     s8 friend2Up;
     s8 friend3Up;
@@ -82,26 +89,7 @@ typedef struct ItemBallDataBiosRef {
     u32 snatchShakeWzxDataId;
     u32 snatchSnatchWzxDataId;
 } ItemBallDataBiosRef;
-typedef struct ItemDataBiosRef {
-    u8 kind;
-    u8 important;
-    u8 useful;
-    u8 field_03;
-    u8 itemEffectParam;
-    u8 padding_05;
-    u16 price;
-    u16 coupon;
-    u16 itemSoubiDataId;
-    u16 fightUseKoukaDataId;
-    u16 padding_0E;
-    u32 name;
-    u32 doc;
-    u32 buff;
-    u32 fieldUseFunc;
-    u32 battleUseFunc;
-    s8 useFriend[3];
-    u8 padding_27;
-} ItemDataBiosRef;
+#include <game/pxdvs/app/item/itemData.h>
 
 extern u32 item_waza_machine_no_number;
 extern u32 item_ball_data_number;
@@ -766,7 +754,7 @@ u8* itemParamGetPtr(u8 idx) {
     return NULL;
 }
 
-s8 tasteDataGetAisyou(u8* p, u16 idx) {
+PCRET(s8) tasteDataGetAisyou(u8* p, u16 idx) {
     if (p == NULL) return 0;
     if (idx >= 0x19) return 0;
     return (s8)p[idx + 4];

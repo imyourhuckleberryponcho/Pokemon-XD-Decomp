@@ -1,11 +1,5 @@
 #include <dolphin/types.h>
-
-struct FightTrainerKindData {
-    u16 syoukinBairitu;
-    u8 unk2[2];
-    u32 prefixName;
-    u32 bgmSndId;
-};
+#include <game/pxdvs/app/fight/fightData.h>
 
 struct FightTrainerAiValueAddsubData {
     u8 unk0[0x14];
@@ -32,7 +26,8 @@ struct FightTrainerEnemyPokemon {
 };
 
 struct FightPokemon {
-    u8 unk0[0x300];
+    void* slot0;
+    u8 pad4[0x2FC];
 };
 
 struct FightTrainer {

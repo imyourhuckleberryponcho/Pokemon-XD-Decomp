@@ -1,4 +1,16 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#ifndef __MWERKS__
+class DeckTrainer { public: static DeckTrainer* getDeckTrainerObj(u32); u16 getFixedActionID() const; u16 getComboID(u8) const; u8 getComboActive(u8) const; };
+u32 deckDataVirtualDB_GetEnemyDeck(u16);
+#define deckDataVirtualDB_GetEnemyDeck__FUs(...) ((u32)deckDataVirtualDB_GetEnemyDeck(__VA_ARGS__))
+#define getDeckTrainerObj__11DeckTrainerFUl(...) ((DeckTrainer*)DeckTrainer::getDeckTrainerObj(__VA_ARGS__))
+#define getFixedActionID__11DeckTrainerCFv(o, ...) ((u16)((const DeckTrainer*)(o))->getFixedActionID(__VA_ARGS__))
+#define getComboID__11DeckTrainerCFUc(o, ...) ((u16)((const DeckTrainer*)(o))->getComboID(__VA_ARGS__))
+#define getComboActive__11DeckTrainerCFUc(o, ...) ((u8)((const DeckTrainer*)(o))->getComboActive(__VA_ARGS__))
+#define getComboFuncId__15FightOutPokemonFv(o, ...) ((u8)((FightOutPokemon*)(o))->getComboFuncId(__VA_ARGS__))
+#define setComboFuncId__15FightOutPokemonFUc(o, ...) (((FightOutPokemon*)(o))->setComboFuncId(__VA_ARGS__))
+#endif
 
 struct FIGHT_TRAINER;
 struct FIGHT_FLOOR;
@@ -9,6 +21,10 @@ struct FightEncountData;
 
 struct FightOutPokemon {
     u32 data[548];
+#ifndef __MWERKS__
+    u8 getComboFuncId();
+    void setComboFuncId(u8);
+#endif
 };
 
 struct AI_ALLWAZA_VALID_TBL {
@@ -41,14 +57,14 @@ struct FixAiShell {
     u8* act[2];
 };
 
-extern StatusWazaEntry statusUpWazaTbl[];
-extern StatusWazaEntry statusDownWazaTbl[];
-extern u16 NemuraseWazaTbl[];
-extern u16 KonranWazaTbl[];
-extern u16 DokuWazaTbl[];
-extern u16 MahiWazaTbl[];
-extern u16 YakedoWazaTbl[];
-extern ComboData comboid[];
+extern "C" StatusWazaEntry statusUpWazaTbl[];
+extern "C" StatusWazaEntry statusDownWazaTbl[];
+extern "C" u16 NemuraseWazaTbl[];
+extern "C" u16 KonranWazaTbl[];
+extern "C" u16 DokuWazaTbl[];
+extern "C" u16 MahiWazaTbl[];
+extern "C" u16 YakedoWazaTbl[];
+extern "C" ComboData comboid[];
 
 extern "C" {
 u16 HSD_Rand();
@@ -59,32 +75,46 @@ u8 fightFloorIsNowEncountVirtualBattle(u32);
 FightEncountData* fightEncountDataBiosGetPtr(u16 id);
 u16 fightEncountDataBiosGetDiskId(FightEncountData*);
 u16 fightEncountDataBiosGetFightTrainerDataId(FightEncountData*, u8);
+#ifdef __MWERKS__
 u32 deckDataVirtualDB_GetEnemyDeck__FUs(u16);
+#endif
+#ifdef __MWERKS__
 DeckTrainer* getDeckTrainerObj__11DeckTrainerFUl(u32);
+#endif
+#ifdef __MWERKS__
 u16 getFixedActionID__11DeckTrainerCFv(DeckTrainer*);
+#endif
+#ifdef __MWERKS__
 u16 getComboID__11DeckTrainerCFUc(DeckTrainer*, u8);
+#endif
+#ifdef __MWERKS__
 u8 getComboActive__11DeckTrainerCFUc(DeckTrainer*, u8);
+#endif
+#ifdef __MWERKS__
 u8 getComboFuncId__15FightOutPokemonFv(FightOutPokemon*);
+#endif
+#ifdef __MWERKS__
 void setComboFuncId__15FightOutPokemonFUc(FightOutPokemon*, u8);
+#endif
 u16 fightTrainer_GetFightTrainerDataId(FIGHT_TRAINER*);
-FightOutPokemon* fightTrainer_GetFightoutPokemonPtr(FIGHT_TRAINER*, u8);
+FightOutPokemon* fightTrainer_GetFightoutPokemonPtr(FIGHT_TRAINER*, PCARG(u8, u16));
 u8 fightOutPokemon_GetFixAiWaza(FightOutPokemon*);
 void fightOutPokemon_SetFixAiWaza(FightOutPokemon*, u8);
 void fightOutPokemon_SetFixAiDef(FightOutPokemon*, u8);
 u8 (*wazaDB_GetFightTrainerAiWazaHitFuncPtr(u16))(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 u8 fightOutPokemonIsHinsi(FightOutPokemon*);
 u8 fightAi_CanMoveAppointWaza(FIGHT_TRAINER*, FightOutPokemon*, u16);
-void* fightTargetGetPtr(u8, void*, u8);
+void* fightTargetGetPtr(PCARG(u8, u16), void*, PCARG(u8, u16));
 Pokemon* fightOutPokemonGetPokemonPtr(FightOutPokemon*);
-u16 pokemon_GetPokemonWazaDataId(Pokemon*, u16);
+u16 pokemon_GetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
 u16 pokemon_GetHp(Pokemon*);
 s8 fightAi_getAnotherPokeNo(u8);
 u8 fightFloorCmpfightOutPokemonNimbleness(FIGHT_FLOOR*, FightOutPokemon*, FightOutPokemon*, u8);
 FIGHT_TRAINER* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(FIGHT_FLOOR*, FightOutPokemon*);
 u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(FIGHT_FLOOR*, FIGHT_TRAINER*, FightOutPokemon**, u8, u8);
-s16 fightTrainerAiAddValueByAddsubDataId(s16, FIGHT_TRAINER*, u16);
+s16 fightTrainerAiAddValueByAddsubDataId(PCARG(s16, s32), FIGHT_TRAINER*, u16);
 u8 wazaIsWazaTypeId(u16, u8);
-s32 fightAi_ThreatEnemyValue(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon*, s8, u8, s32, s32);
+s32 fightAi_ThreatEnemyValue(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon*, PCARG(s8, s16), PCARG(u8, u32), s32, s32);
 u8 fightAi_HitCheckWazaAboutJoutaiAndType(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon*, u16);
 u8 fightAi_GetTokuseiHaveFlag(FIGHT_TRAINER*, FightOutPokemon*, u16);
 u32 fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(FIGHT_TRAINER*, FightOutPokemon*);
@@ -532,7 +562,7 @@ static void _GetAllWazaTableValue_StatusDownWaza(FIGHT_TRAINER* t, FightOutPokem
                                 num = 2;
                                 break;
                             }
-                            if ((u8)cur - (e->limit - 1) > 0) {
+                            if ((u8)cur - (e->limit - 1) <= 0) {
                                 val = 0;
                             }
                             for (m = 0; m < num; m++) {
@@ -577,11 +607,11 @@ static void _GetAllWazaTableValue_StatusDownWaza(FIGHT_TRAINER* t, FightOutPokem
                                     num = 2;
                                     break;
                                 }
-                                if ((u8)cur - (statusDownWazaTbl[j].limit - 1) > 0) {
+                                if ((u8)cur - (statusDownWazaTbl[j].limit - 1) <= 0) {
                                     val = 0;
                                 }
-                                for (m = 0; m < num; m++) {
-                                    if (fightAi_GetTokuseiHaveFlag(t, tbl->target[i], tokusei[m]) >= 1) {
+                                for (u8 m_loop = 0; m_loop < num; m_loop++) {
+                                    if (fightAi_GetTokuseiHaveFlag(t, tbl->target[i], tokusei[m_loop]) >= 1) {
                                         val = 0;
                                     }
                                 }

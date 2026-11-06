@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 
@@ -7,11 +9,12 @@ struct tagWINDOW_WORK {
     s8 state;
     s8 seqSet;
     u8 unk3;
-    void* seq;
+    s32 seq;
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
 };
 
@@ -29,7 +32,7 @@ public:
     void SaveParameterSet();
     bool IsReport();
     void Ctrl(tagWINDOW_WORK* window);
-    void _menuClose(long menuID);
+    void _menuClose(s32 menuID);
 
     u32 m_playTime;
 };
@@ -48,18 +51,18 @@ void winMsgClose(s32);
 s8 menuSubOpenYesNo(s32, s32, s32, s32);
 u32 floorGetNextFloorID(void);
 void gamedatasaveSetStatus(void* save, s32 kind, u32 value);
-u32 gamedatasaveGetStatus(void* save, s32 kind);
+StatusU32 gamedatasaveGetStatus(void* save, s32 kind);
 s32 memcardTaskCall(s32, s32, s32);
 void* memcardMemAllocForSavedata(void);
 void* memcardMemFreeForSavedata(void* ptr);
 void* savedataGetStatus(void* save, s32 kind);
-u32 heroGetStatus(void* hero, s32, s32);
+StatusU32 heroGetStatus(void* hero, s32, s32);
 void* memcpy(void* dst, const void* src, unsigned long n);
 u32 pokecoloGetPlayTimeValue(void);
 void pokecoloSetPlayTime(f64 time);
 s32 pokecoloGetRomVersion(void);
-void msgctrlSetValue(s32 id, u32 value);
-void winSeqSetMenu(void* seq, s32 menu);
+void msgctrlSetValue(s32 id, GCuptr value);
+void winSeqSetMenu(s32 menuID, s32 menu);
 void menuClose(s32 menuID);
 void menuCloseSync(s32 menuID, s32);
 }
@@ -237,7 +240,7 @@ void menuSaveload::Ctrl(tagWINDOW_WORK* window) {
     }
 }
 
-void menuSaveload::_menuClose(long menuID) {
+void menuSaveload::_menuClose(s32 menuID) {
     menuClose(menuID);
     menuCloseSync(menuID, 1);
 }

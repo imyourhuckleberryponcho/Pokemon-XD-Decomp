@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 struct FIGHT_TRAINER;
 struct FightPokemon;
@@ -7,9 +9,9 @@ struct FightSide;
 
 extern "C" {
 u16 HSD_Rand();
-s32 fightTrainerGetStatus(u32, u32, u32, u32);
+StatusS32 fightTrainerGetStatus(u32, u32, u32, u32);
 u16 fightFloor_GetTikeiDataId(u32);
-u16 tikeiDataBiosGetWazaId(u8);
+u16 tikeiDataBiosGetWazaId(PCARG(u8, u16));
 FightSide* fightTargetGetPtrAsNowFightType(u32, FightOutPokemon*);
 u8 fightSideIsJoutaiDataId(FightSide*, u16);
 u8 fightFloorGetFightTrainerFightOutPokemonIsFightActionAttackWazaOut(u32, FIGHT_TRAINER*, u8, u8, u16, FightOutPokemon*);
@@ -35,7 +37,7 @@ u8 fightTrainerAiGetFightOutPokemonAbiCntSpeAtk(FIGHT_TRAINER*, FightOutPokemon*
 u8 fightTrainerAiGetFightOutPokemonAbiCntSubayasa(FIGHT_TRAINER*, FightOutPokemon*);
 u8 fightTrainerAiGetFightOutPokemonAbiCntAvg(FIGHT_TRAINER*, FightOutPokemon*);
 u16 fightTrainerAiGetFightOutPokemonLastUseWazaDataId(FIGHT_TRAINER*, FightOutPokemon*);
-u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(FIGHT_TRAINER*, FightOutPokemon*, u16*, u8, u8);
+u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(FIGHT_TRAINER* t, FightOutPokemon* a, u16* ids, s16* indices, u8 check);
 u8 fightTrainerAiGetFightFloorNowTenkouDataId(FIGHT_TRAINER*, u32, u8);
 u16 fightTrainerAiGetFightOutPokemonSpeAtk(FIGHT_TRAINER*, FightOutPokemon*);
 u16 fightTrainerAiGetFightOutPokemonPhyAtk(FIGHT_TRAINER*, FightOutPokemon*);
@@ -108,7 +110,7 @@ u16 fightActionGetKindDataId(void*);
 u16 fightOutPokemonGetUseWazaDataId(FightOutPokemon*);
 u8 fightOutPokemon_GetNamakeFlag(FightOutPokemon*);
 s32 fightTrainerAiGetFightOutPokemonNowHpPercentage(FIGHT_TRAINER*, FightOutPokemon*);
-u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon*, u8);
+u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon*, PCARG(u8, u16));
 u32 fightFloor_GetFightType(u32);
 u16 fightOutPokemonGetUserFightTargetIdJoutaiDataId(FightOutPokemon*, u16);
 u8 zokuseiBiosGetWazaKind(u16);
@@ -117,7 +119,7 @@ u8 fightTrainerAiIsFightPokemonZokuseiDataId(FIGHT_TRAINER*, FightPokemon*, u16)
 u8 fightTrainerAiIsFightPokemonTokuseiDataId(FIGHT_TRAINER*, FightPokemon*, u16);
 FIGHT_TRAINER* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(u32, FightOutPokemon*);
 u32 fightTrainerSearchIrekaeFightPokemon(FIGHT_TRAINER*, s16*);
-u8 tikeiDataBiosGetFightKoukaId(u8);
+u8 tikeiDataBiosGetFightKoukaId(PCARG(u8, u16));
 s32 fightTrainerAiWazaValueTuikaDoku(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaValueTuikaNemuri(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaValueTuikouMeityuuDaun(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
@@ -129,7 +131,7 @@ s32 fightTrainerAiWazaValueTuikaHirumi(FIGHT_TRAINER*, FightOutPokemon*, u16, Fi
 s32 fightTrainerAiWazaValueTuikaMahi(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 u8 fightSeqIsDoItemGetWaza(FightOutPokemon*);
 u8 itemDataCheckValid(u16);
-u8 fightTrainerAiCheckJoutaiKieWazaHitWazaDataId(FIGHT_TRAINER*, u8, u16);
+u8 fightTrainerAiCheckJoutaiKieWazaHitWazaDataId(FIGHT_TRAINER*, PCARG(u8, u16), u16);
 }
 
 typedef bool (*AbiTakaiFunc)(FIGHT_TRAINER*, FightOutPokemon*);

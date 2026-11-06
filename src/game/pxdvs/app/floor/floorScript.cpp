@@ -1,31 +1,40 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/tigadata.h>
 
 #pragma peephole off
 
 struct GSresID;
 
+struct ScriptPeople;
 namespace GSscript {
 
-class tigaVariant {
+struct tigaVariant {
 public:
-    void setInteger(long value);
+    void setInteger(s32 value);
     void setPeople(GSresID* res);
 
-    s16 type;
-    void* value;
+    gc_bes16 type;
+    gc_ptr32(void) value;
 };
 
 class Tiga {
 public:
+    GSSCRIPT_TIGA_VIEW_DATA
+    virtual ~Tiga();
     bool isMapping();
     int getNameToFuncId(const char* name);
-    GSresID* searchResID(unsigned long group, unsigned long id);
+    ::ScriptPeople* searchResID(u32 group, u32 id);
     int runParamsWait(int func, tigaVariant* args, int numArgs, tigaVariant* result);
+#ifdef __MWERKS__
     u8 runParams(int func, tigaVariant* args, int numArgs, bool thread);
-    s32 getResultValue(long handle);
-    bool isRunningThread(long handle);
-    void blockThread(long handle);
-    void unblockThread(long handle);
+#else
+    s32 runParams(int funcId, tigaVariant* args, int count, bool useThread);
+#endif
+    s32 getResultValue(s32 handle);
+    bool isRunningThread(s32 handle);
+    void blockThread(s32 handle);
+    void unblockThread(s32 handle);
 };
 
 }
@@ -88,7 +97,7 @@ u8 floorExecScriptRes(int func, u32 group, u32 id) {
         return 0;
     }
     mode = floorGetScriptMode(func);
-    res = floorGetCurentScript()->searchResID(group, id);
+    res = (GSresID*)floorGetCurentScript()->searchResID(group, id);
     if (res == NULL) {
         return 0;
     }
@@ -103,7 +112,7 @@ u8 floorExecScriptRes(int func, u32 group, u32 id) {
     return handle;
 }
 
-u8 floorExecScriptResThread(int func, u32 group, u32 id) {
+PCRET(u8) floorExecScriptResThread(int func, u32 group, u32 id) {
     int mode;
     GSresID* res;
     tigaVariant arg;
@@ -112,7 +121,7 @@ u8 floorExecScriptResThread(int func, u32 group, u32 id) {
         return 0;
     }
     mode = floorGetScriptMode(func);
-    res = floorGetCurentScript()->searchResID(group, id);
+    res = (GSresID*)floorGetCurentScript()->searchResID(group, id);
     if (res == NULL) {
         return 0;
     }
@@ -167,7 +176,7 @@ u8 floorExecScriptIntegerThread(int func, s32 a, s32 b, s32 c, s32 d) {
     return floorGetCurentScript()->runParams(func, args, 4, true);
 }
 
-bool floorIsRunningThread(long handle) {
+bool floorIsRunningThread(s32 handle) {
     Tiga* script = floorGetCurentScript();
     if (script == NULL) {
         return false;
@@ -175,13 +184,13 @@ bool floorIsRunningThread(long handle) {
     return script->isRunningThread(handle);
 }
 
-void floorBlockScriptThread(long handle) {
+void floorBlockScriptThread(s32 handle) {
     if (floorGetCurentScript() != NULL) {
         floorGetCurentScript()->blockThread(handle);
     }
 }
 
-void floorUnblockScriptThread(long handle) {
+void floorUnblockScriptThread(s32 handle) {
     if (floorGetCurentScript() != NULL) {
         floorGetCurentScript()->unblockThread(handle);
     }

@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/pxdvs/app/fight/fightData.h>
+#include <game/fightfloor.h>
 
 struct FightOutPokemon;
 struct FightJoutai {
@@ -65,16 +68,9 @@ public:
     u8 padDE67;
     FightFloorStock stock[6];
 };
-
-struct FightFloorData {
-    u8 tikeiDataId;
-    u16 floorDataId;
-    u8 unk4[4];
-    u32 syoukaiWzxDataId;
-    u32 bgmSndId;
-    u32 envSndId;
-    u16 fightSideDataId[2];
-};
+#ifndef __MWERKS__
+static_assert(sizeof(FIGHT_FLOOR) == FIGHT_FLOOR_SIZE, "FIGHT_FLOOR_SIZE (game/fightfloor.h)");
+#endif
 
 extern "C" {
 
@@ -117,9 +113,9 @@ u16 fightOutPokemonGetTokuseiDataId(FightOutPokemon*);
 u16 fightOutPokemonGetSoubiItemDataId(FightOutPokemon*);
 void fightOutPokemon_SetWazaTargetId(FightOutPokemon*, u16);
 void fightOutPokemon_SetWazaJoutaiDataId(FightOutPokemon*, u16);
-u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon*, u8);
+u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon*, PCARG(u8, u16));
 
-void* fightKindDataBiosGetPtr(u8 id);
+void* fightKindDataBiosGetPtr(PCARG(u8, u16) id);
 u8 fightKindDataBiosGetRegulationFlag(void*);
 u8 fightKindDataBiosGetHostEnemyMsgFlag(void*);
 u8 fightKindDataBiosGetPokemonStatusMenuSubbarFlag(void*);
@@ -144,8 +140,8 @@ u8 fightKindDataBiosGetDoZukanTukamaetaFlag(void*);
 u8 fightKindDataBiosGetDoZukanMitaFlag(void*);
 u8 fightKindDataBiosGetDoBadgeCheckFlag(void*);
 u8 fightKindDataBiosGetBackSaveDataFlag(void*);
-u16 fightTypeGetFightSideFightOutPokemonMax(u8);
-void* fightTypeDataBiosGetPtr(u8 id);
+u16 fightTypeGetFightSideFightOutPokemonMax(PCARG(u8, u16));
+void* fightTypeDataBiosGetPtr(PCARG(u8, u16) id);
 u8 fightTypeDataBiosGetFightoutPokemonNum(void*);
 u8 fightTypeDataBiosGetEntryPokemonNum(void*);
 u8 fightTypeDataBiosGetTrainerNum(void*);
@@ -164,7 +160,7 @@ void fightFloor_SetDefensePokemonPtr(FIGHT_FLOOR* floor, FightOutPokemon* pokemo
 void fightFloor_SetAttackPokemonFightWazaTargetId(FIGHT_FLOOR* floor, u16 id);
 s32 fightFloor_GetFightType(FIGHT_FLOOR* floor);
 s32 fightFloor_GetFightKind(FIGHT_FLOOR* floor);
-u16 fightFloor_GetEncountDataId(FIGHT_FLOOR* floor);
+PCRET(u16) fightFloor_GetEncountDataId(FIGHT_FLOOR* floor);
 u16 fightFloor_GetFightFloorDataId(FIGHT_FLOOR* floor);
 u32 fightFloorDB_GetSyoukaiWzxDataId(u16 id);
 u8 fightFloorDB_GetTikeiDataId(u16 id);
@@ -232,7 +228,7 @@ void fightFloor_SetStockPokemonNum(FIGHT_FLOOR* floor, u8 num) {
     floor->stockPokemonNum = num;
 }
 
-u8 fightFloor_GetStockPokemonNum(FIGHT_FLOOR* floor) {
+PCRET(u8) fightFloor_GetStockPokemonNum(FIGHT_FLOOR* floor) {
     if (floor == 0) {
         floor = fightFloorBiosGetFightFloorPtr();
         if (floor == 0) {
@@ -597,7 +593,7 @@ u8 fightFloor_GetFightKindKeikentihueruFlag(FIGHT_FLOOR* floor) {
     return fightKindDataBiosGetKeikentihueruFlag(fightKindDataBiosGetPtr((u8)fightFloor_GetFightKind(floor)));
 }
 
-u8 fightFloor_GetFightKindDoItemSoubiTokukoutokubouupFlag(FIGHT_FLOOR* floor) {
+PCRET(u8) fightFloor_GetFightKindDoItemSoubiTokukoutokubouupFlag(FIGHT_FLOOR* floor) {
     if (floor == 0) {
         floor = fightFloorBiosGetFightFloorPtr();
         if (floor == 0) {
@@ -767,7 +763,7 @@ u16 fightFloor_GetFightSideFightOutPokemonSideMax(FIGHT_FLOOR* floor) {
     return fightTypeGetFightSideFightOutPokemonMax(fightFloor_GetFightType(floor));
 }
 
-u8 fightFloor_GetFightTypeFightoutPokemonNum(FIGHT_FLOOR* floor) {
+PCRET(u8) fightFloor_GetFightTypeFightoutPokemonNum(FIGHT_FLOOR* floor) {
     if (floor == 0) {
         floor = fightFloorBiosGetFightFloorPtr();
         if (floor == 0) {
@@ -777,7 +773,7 @@ u8 fightFloor_GetFightTypeFightoutPokemonNum(FIGHT_FLOOR* floor) {
     return fightTypeDataBiosGetFightoutPokemonNum(fightTypeDataBiosGetPtr((u8)fightFloor_GetFightType(floor)));
 }
 
-u8 fightFloor_GetFightTypeEntryPokemonNum(FIGHT_FLOOR* floor) {
+PCRET(u8) fightFloor_GetFightTypeEntryPokemonNum(FIGHT_FLOOR* floor) {
     if (floor == 0) {
         floor = fightFloorBiosGetFightFloorPtr();
         if (floor == 0) {
@@ -787,7 +783,7 @@ u8 fightFloor_GetFightTypeEntryPokemonNum(FIGHT_FLOOR* floor) {
     return fightTypeDataBiosGetEntryPokemonNum(fightTypeDataBiosGetPtr((u8)fightFloor_GetFightType(floor)));
 }
 
-u8 fightFloor_GetFightTypeTrainerNum(FIGHT_FLOOR* floor) {
+PCRET(u8) fightFloor_GetFightTypeTrainerNum(FIGHT_FLOOR* floor) {
     if (floor == 0) {
         floor = fightFloorBiosGetFightFloorPtr();
         if (floor == 0) {
@@ -827,7 +823,7 @@ u32 fightFloor_GetSyoukaiWzxDataId(FIGHT_FLOOR* floor) {
     return fightFloorDB_GetSyoukaiWzxDataId(fightFloor_GetFightFloorDataId(floor));
 }
 
-u8 fightFloor_GetTikeiDataId(FIGHT_FLOOR* floor) {
+PCRET(u8) fightFloor_GetTikeiDataId(FIGHT_FLOOR* floor) {
     if (floor == 0) {
         floor = fightFloorBiosGetFightFloorPtr();
         if (floor == 0) {
@@ -1060,7 +1056,7 @@ FightOutPokemon* fightFloor_GetAttackPokemonPtr(FIGHT_FLOOR* floor) {
     return floor->attackPokemon;
 }
 
-u16 fightFloor_GetEncountDataId(FIGHT_FLOOR* floor) {
+PCRET(u16) fightFloor_GetEncountDataId(FIGHT_FLOOR* floor) {
     if (floor == 0) {
         floor = fightFloorBiosGetFightFloorPtr();
         if (floor == 0) {
@@ -1070,7 +1066,7 @@ u16 fightFloor_GetEncountDataId(FIGHT_FLOOR* floor) {
     return floor->encountDataId;
 }
 
-u16 fightFloor_GetTurnCount(FIGHT_FLOOR* floor) {
+PCRET(u16) fightFloor_GetTurnCount(FIGHT_FLOOR* floor) {
     if (floor == 0) {
         floor = fightFloorBiosGetFightFloorPtr();
         if (floor == 0) {

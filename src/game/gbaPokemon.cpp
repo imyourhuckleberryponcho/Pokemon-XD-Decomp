@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/bitfield.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -48,10 +50,11 @@ struct GBAPokemon {
     u32 trainerRnd;
     u8 nickname[10];
     u8 language;
-    u8 flagAmari : 5;
-    u8 isEgg : 1;
-    u8 hasSpecies : 1;
-    u8 badEgg : 1;
+    GC_BITS4(
+    u8 flagAmari : 5,
+    u8 isEgg : 1,
+    u8 hasSpecies : 1,
+    u8 badEgg : 1)
     u8 trainerName[7];
     u8 mark;
     u16 checksum;
@@ -90,49 +93,52 @@ struct GBAPokemon {
 
 union GBAMisc {
     struct {
-        u32 trainerSex : 1;
-        u32 ball : 4;
-        u32 version : 4;
-        u32 level : 7;
-        u32 floor : 8;
-        u32 pokerus : 8;
+        GC_BITS6(
+        u32 trainerSex : 1,
+        u32 ball : 4,
+        u32 version : 4,
+        u32 level : 7,
+        u32 floor : 8,
+        u32 pokerus : 8)
     } b;
     u32 raw;
 };
 union GBARnd {
     struct {
-        u32 tokusei : 1;
-        u32 tamago : 1;
-        u32 speDef : 5;
-        u32 speAtk : 5;
-        u32 nimbleness : 5;
-        u32 phyDef : 5;
-        u32 phyAtk : 5;
-        u32 maxHp : 5;
+        GC_BITS8(
+        u32 tokusei : 1,
+        u32 tamago : 1,
+        u32 speDef : 5,
+        u32 speAtk : 5,
+        u32 nimbleness : 5,
+        u32 phyDef : 5,
+        u32 phyAtk : 5,
+        u32 maxHp : 5)
     } b;
     u32 raw;
 };
 union GBARibbon {
     struct {
-        u32 eventGet : 1;
-        u32 amari : 4;
-        u32 world : 1;
-        u32 earth : 1;
-        u32 national : 1;
-        u32 country : 1;
-        u32 sky : 1;
-        u32 land : 1;
-        u32 marine : 1;
-        u32 ganba : 1;
-        u32 bromide : 1;
-        u32 victory : 1;
-        u32 winning : 1;
-        u32 champ : 1;
-        u32 strongMedal : 3;
-        u32 cleverMedal : 3;
-        u32 cuteMedal : 3;
-        u32 beautifulMedal : 3;
-        u32 styleMedal : 3;
+        GC_BITS19(
+        u32 eventGet : 1,
+        u32 amari : 4,
+        u32 world : 1,
+        u32 earth : 1,
+        u32 national : 1,
+        u32 country : 1,
+        u32 sky : 1,
+        u32 land : 1,
+        u32 marine : 1,
+        u32 ganba : 1,
+        u32 bromide : 1,
+        u32 victory : 1,
+        u32 winning : 1,
+        u32 champ : 1,
+        u32 strongMedal : 3,
+        u32 cleverMedal : 3,
+        u32 cuteMedal : 3,
+        u32 beautifulMedal : 3,
+        u32 styleMedal : 3)
     } b;
     u32 raw;
 };
@@ -205,9 +211,9 @@ u16 pokemonBiosGetPhyDef(Pokemon* poke);
 u16 pokemonBiosGetPhyDefEffort(Pokemon* poke);
 u16 pokemonBiosGetPhyDefRnd(Pokemon* poke);
 u16 pokemonBiosGetPokemonDataId(Pokemon* poke);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u16 wazaNum);
-u8 pokemonBiosGetPokemonWazaPp(Pokemon* poke, u16 wazaNum);
-u8 pokemonBiosGetPokemonWazaPpCount(Pokemon* poke, u16 wazaNum);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, PCARG(u16, u32) wazaNum);
+u8 pokemonBiosGetPokemonWazaPp(Pokemon* poke, PCARG(u16, u32) wazaNum);
+u8 pokemonBiosGetPokemonWazaPpCount(Pokemon* poke, PCARG(u16, u32) wazaNum);
 u8 pokemonBiosGetPokerus(Pokemon* poke);
 u32 pokemonBiosGetRnd(Pokemon* poke);
 u8 pokemonBiosGetSkyRibbon(Pokemon* poke);
@@ -244,7 +250,7 @@ void pokemonBiosSetCountryRibbon(Pokemon* poke, bool data);
 void pokemonBiosSetCute(Pokemon* poke, u8 data);
 void pokemonBiosSetCuteMedal(Pokemon* poke, u8 data);
 void pokemonBiosSetEarthRibbon(Pokemon* poke, bool data);
-void pokemonBiosSetEventGetFlag(Pokemon* poke, bool data);
+void pokemonBiosSetEventGetFlag(Pokemon* poke, PCARG(bool, u32) data);
 void pokemonBiosSetExp(Pokemon* poke, u32 data);
 void pokemonBiosSetFlagAmari(Pokemon* poke, u8 data);
 void pokemonBiosSetFriend(Pokemon* poke, u16 data);
@@ -274,9 +280,9 @@ void pokemonBiosSetPhyDef(Pokemon* poke, u16 data);
 void pokemonBiosSetPhyDefEffort(Pokemon* poke, u16 data);
 void pokemonBiosSetPhyDefRnd(Pokemon* poke, u16 data);
 void pokemonBiosSetPokemonDataId(Pokemon* poke, u16 data);
-void pokemonBiosSetPokemonWazaDataId(Pokemon* poke, u16 wazaNum, u16 data);
-void pokemonBiosSetPokemonWazaPp(Pokemon* poke, u16 wazaNum, u8 data);
-void pokemonBiosSetPokemonWazaPpCount(Pokemon* poke, u16 wazaNum, u8 count);
+void pokemonBiosSetPokemonWazaDataId(Pokemon* poke, PCARG(u16, u32) wazaNum, PCARG(u16, u32) data);
+void pokemonBiosSetPokemonWazaPp(Pokemon* poke, PCARG(u16, u32) wazaNum, u8 data);
+void pokemonBiosSetPokemonWazaPpCount(Pokemon* poke, PCARG(u16, u32) wazaNum, u8 count);
 void pokemonBiosSetPokerus(Pokemon* poke, u8 data);
 void pokemonBiosSetRnd(Pokemon* poke, u32 data);
 void pokemonBiosSetSkyRibbon(Pokemon* poke, bool data);
@@ -300,13 +306,13 @@ s16 pokemonGetCountAsJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId);
 s8 pokemonGetKaisuuJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId);
 void pokemonInit(Pokemon* pokemon);
 bool pokemonIsJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId);
-void pokemonSetCountAsJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId, s16 value);
-void pokemonSetKaisuuJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId, s8 value);
+void pokemonSetCountAsJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId, PCARG(s16, u32) value);
+void pokemonSetKaisuuJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId, PCARG(s8, u32) value);
 void pokemonWriteJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId, u32 value);
 }
 extern "C++" {
-static void _revrotatepp(unsigned char* p0, unsigned long p1);
-static void _rotatepp(unsigned char* p0, unsigned long p1);
+static void _revrotatepp(unsigned char* p0, u32 p1);
+static void _rotatepp(unsigned char* p0, u32 p1);
 static u16 _swap16(unsigned short p0);
 static u32 _swap32(u32 value);
 }
@@ -317,12 +323,13 @@ extern "C" {
 extern "C" {
 
 extern "C" {
-void gbaPokemonFromGC(Pokemon* pokemon, GBAPokemon* gba);
+void gbaPokemonFromGC(Pokemon* pokemon, void* dst);
 void gbaPokemonToGC(Pokemon* pokemon, GBAPokemon* gbaPokemon);
 }
 
-void gbaPokemonFromGC(Pokemon* pokemon, GBAPokemon* gba) {
+void gbaPokemonFromGC(Pokemon* pokemon, void* dst) {
     GamedataAttest* attest;
+    GBAPokemon* gba = (GBAPokemon*)dst;
     u32* data;
     GBAMisc misc;
     GBARnd rnd;
@@ -330,7 +337,7 @@ void gbaPokemonFromGC(Pokemon* pokemon, GBAPokemon* gba) {
     u16 sum = 0;
     int i;
 
-    memset(gba, 0, sizeof(GBAPokemon));
+    memset(dst, 0, sizeof(GBAPokemon));
     if (pokemonCheckValid(pokemon) == 0) {
         return;
     }
@@ -474,10 +481,8 @@ void gbaPokemonFromGC(Pokemon* pokemon, GBAPokemon* gba) {
     gba->data.s.rndValue = _swap32(rnd.raw);
     gba->data.s.ribbon = _swap32(ribbon.raw);
     data = gba->data.word;
-    u16* p = (u16*)data;
     for (i = 0; i < 24; i++) {
-        sum += _swap16(*p);
-        p++;
+        sum += _swap16(((u16*)data)[i]);
     }
     gba->checksum = _swap16(sum);
     for (i = 0; i < 12; i++) {
@@ -702,7 +707,7 @@ void gbaPokemonConditonToGC(void* pokemon, u16 cond) {
 }
 
 extern "C++" {
-static void _rotatepp(unsigned char* data, unsigned long order) {
+static void _rotatepp(unsigned char* data, u32 order) {
     u8 tmp[12];
     u32 n;
 
@@ -731,7 +736,7 @@ static void _rotatepp(unsigned char* data, unsigned long order) {
 }
 
 extern "C++" {
-static void _revrotatepp(unsigned char* data, unsigned long order) {
+static void _revrotatepp(unsigned char* data, u32 order) {
     u8 tmp[12];
     u32 n;
 
@@ -758,7 +763,7 @@ static void _revrotatepp(unsigned char* data, unsigned long order) {
 }
 
 extern "C++" {
-static u32 _swap32(unsigned long p0) {
+static u32 _swap32(u32 p0) {
     return (p0 >> 0x18U) | (((u32) (p0 & 0xFF0000) >> 8U) | ((p0 << 0x18) | ((p0 & 0xFF00) << 8)));
 }
 }

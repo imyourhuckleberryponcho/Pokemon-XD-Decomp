@@ -1,5 +1,15 @@
 #include <dolphin/types.h>
 #include <libc/stdarg.h>
+#ifndef __MWERKS__
+#include <stdint.h>
+extern "C" {
+void PortGSthread_Create(void* thread, void* entry, void (*exitFunc)(u32), u32 stackSize);
+void PortGSthread_SetArg(void* thread, int index, uintptr_t value);
+void PortGSthread_Run(void* thread);
+void PortGSthread_SwitchToScheduler(void);
+void PortGSthread_Destroy(void* thread);
+}
+#endif
 #pragma pool_strings off
 
 struct GSthread {
@@ -75,6 +85,7 @@ static u8* threadDMAStackToScratch(u32* stack, u32 size, u8 flag);
 static GSthread* threadFindNext(GSthread* from, u32 group, u8 groupOnly);
 static GSthread* threadFindUnused(void);
 
+#ifdef __MWERKS__
 asm void threadLoadGPRRegisters(void) {
     nofralloc
     stwu r1, -0x8(r1)
@@ -114,7 +125,11 @@ asm void threadLoadGPRRegisters(void) {
     addi r1, r1, 0x8
     blr
 }
+#else
+void threadLoadGPRRegisters(void) { }
+#endif
 
+#ifdef __MWERKS__
 asm void threadLoadFPRRegisters(void) {
     nofralloc
     stwu r1, -0x8(r1)
@@ -157,7 +172,11 @@ asm void threadLoadFPRRegisters(void) {
     addi r1, r1, 0x8
     blr
 }
+#else
+void threadLoadFPRRegisters(void) { }
+#endif
 
+#ifdef __MWERKS__
 asm void threadSaveGPRRegisters(void) {
     nofralloc
     stwu r1, -0x8(r1)
@@ -198,7 +217,11 @@ asm void threadSaveGPRRegisters(void) {
     addi r1, r1, 0x8
     blr
 }
+#else
+void threadSaveGPRRegisters(void) { }
+#endif
 
+#ifdef __MWERKS__
 asm void threadSaveFPRRegisters(void) {
     nofralloc
     stwu r1, -0x8(r1)
@@ -241,7 +264,11 @@ asm void threadSaveFPRRegisters(void) {
     addi r1, r1, 0x8
     blr
 }
+#else
+void threadSaveFPRRegisters(void) { }
+#endif
 
+#ifdef __MWERKS__
 asm void threadExecute(void) {
     nofralloc
     stwu r1, -0xc(r1)
@@ -272,7 +299,11 @@ L_skipFPR:
     lwz r3, 0xc(r3)
     bctr
 }
+#else
+void threadExecute(void) { PortGSthread_Run(_activeThread); }
+#endif
 
+#ifdef __MWERKS__
 asm void fn_80103420(void) {
     nofralloc
     lwz r3, 0x8(r1)
@@ -281,7 +312,11 @@ asm void fn_80103420(void) {
     addi r1, r1, 0xc
     blr
 }
+#else
+void fn_80103420(void) { }
+#endif
 
+#ifdef __MWERKS__
 static asm void _threadSwitch(void) {
     nofralloc
     stw r3, _tempGPR1
@@ -311,6 +346,9 @@ L_skipFPR2:
     lwz r3, 0xc(r3)
     blr
 }
+#else
+static void _threadSwitch(void) { PortGSthread_SwitchToScheduler(); }
+#endif
 
 void GSthreadSetName(GSthread* thread, const char* name) {
     if (thread) {
@@ -328,11 +366,14 @@ void GSthreadSetGroupID(GSthread* thread, u32 group) {
 void GSthreadSwitch(void) {
     register GSthread* t = _activeThread;
     if (t) {
+#ifdef __MWERKS__
         asm {
             mflr r5
             stw r5, _saveLRReg
             stw r5, 0x2c(t)
         }
+#else
+#endif
         _threadSwitch();
     }
 }
@@ -436,6 +477,9 @@ void GSthreadTerminate(GSthread* thread) {
         thread->active = 0;
         threadRemoveFromList(thread);
         if (thread->stack) {
+#ifndef __MWERKS__
+            PortGSthread_Destroy(thread);
+#endif
             GSmemFreeHeap(thread->heap, thread->stack);
             thread->stack = 0;
         }
@@ -470,13 +514,23 @@ void GSthreadSetArgs(GSthread* thread, s32 count, ...) {
         direct = count;
     }
     for (i = 0; i < direct; i++) {
+#ifdef __MWERKS__
         ctx[reg++] = *(u32*)__va_arg(args, 1);
+#else
+        PortGSthread_SetArg(thread, i, va_arg(args, uintptr_t));
+        reg++;
+#endif
     }
     if (count > 8) {
         ctx[1] -= (count - i) * 4;
         idx = (ctx[1] >> 2) + 2;
         for (i = 8; i < count; i++) {
+#ifdef __MWERKS__
             stack[idx++] = *(u32*)__va_arg(args, 1);
+#else
+            PortGSthread_SetArg(thread, i, va_arg(args, uintptr_t));
+            idx++;
+#endif
         }
     }
 }
@@ -697,9 +751,15 @@ static void threadInitialize(GSthread* thread) {
     ctx[0x80 / 4] = (u32)thread->entry;
     ctx[0x84 / 4] = (u32)threadExitFunc;
     *stack = -1;
+#ifndef __MWERKS__
+    PortGSthread_Create(thread, thread->entry, threadExitFunc, thread->stackSize);
+#endif
 }
 
 static u8* threadDMAStackToScratch(u32* stack, u32 size, u8 flag) {
+#ifndef __MWERKS__
+    return 0;
+#endif
 }
 
 static GSthread* threadFindNext(GSthread* from, u32 group, u8 groupOnly) {

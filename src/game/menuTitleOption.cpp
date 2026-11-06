@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 
@@ -8,9 +9,15 @@ struct CursorPos {
 };
 
 struct tagSPRITE_WORK {
-    u8 pad0[0x6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 pad8[0x5F];
+    u8 pad8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x17];
     u8 alpha;
 };
 
@@ -20,9 +27,26 @@ struct tagWINDOW_WORK {
     s8 seqSet;
     u8 pad3;
     s32 menuID;
-    u8 pad8[0x14];
+    u8 pad8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
-    u8 pad20[0x73];
+    u8 pad20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 alpha;
     u8 pad94[8];
     CursorPos pos;
@@ -60,7 +84,7 @@ s32 GSmsgPrint2(s32 layer, s32 x, s32 y, u32 color, u32 msg);
 void fadeCheck(s32 type);
 void fadeSet(s32 type, f32 time);
 void fn_800A3A1C();
-s32 gamedatasaveGetStatus(void* ptr, s32 kind);
+StatusS32 gamedatasaveGetStatus(void* ptr, s32 kind);
 void gamedatasaveSetStatus(void* ptr, s32 kind, s32 value);
 u8 memcardIsMemCardValid();
 s32 memcardTaskCall(s32 a, s32 b, s32 c);
@@ -87,7 +111,7 @@ tagWINDOW_WORK* windowSearchID(s32 id);
 
 static void _menuTitleOptionSetFrameSec();
 static void _menuTitleOptionCalcRot();
-static void _menuTitleOptionClose(long id);
+static void _menuTitleOptionClose(s32 id);
 static void _menuTitleOptionExit();
 static void _menuTitleOptionInit();
 
@@ -338,7 +362,7 @@ void menuTitleOptionButton(tagWINDOW_WORK* w) {
 
 }
 
-static void _menuTitleOptionClose(long id) {
+static void _menuTitleOptionClose(s32 id) {
     menuCloseCustom(id, 0, 1);
 }
 

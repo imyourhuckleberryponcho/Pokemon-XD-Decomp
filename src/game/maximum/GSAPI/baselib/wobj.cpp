@@ -1,6 +1,7 @@
 
 
 #include <game/maximum/GSAPI/baselib/class.h>
+#include <game/gcdata.h>
 
 #pragma pool_strings off
 
@@ -67,9 +68,9 @@ typedef struct HSD_WObj {
 } HSD_WObj;
 
 typedef struct HSD_WObjDesc {
-    char* class_name;
-    Vec3 pos;
-    HSD_RObjDesc* robjdesc;
+    gc_ptr32(char) class_name;
+    gc_vec(Vec3) pos;
+    gc_ptr32(HSD_RObjDesc) robjdesc;
 } HSD_WObjDesc;
 
 typedef struct HSD_WObjInfo {
@@ -79,8 +80,8 @@ typedef struct HSD_WObjInfo {
 } HSD_WObjInfo;
 
 typedef struct HSD_WObjAnim {
-    HSD_AObjDesc* aobjdesc;
-    HSD_RObjAnimJoint* robjanim;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
+    gc_ptr32(HSD_RObjAnimJoint) robjanim;
 } HSD_WObjAnim;
 
 #define HSD_WOBJ_INFO(i) ((HSD_WObjInfo*)(i))
@@ -153,8 +154,8 @@ void HSD_WObjAddAnim(HSD_WObj* wobj, HSD_WObjAnim* anim) {
         if (wobj->aobj != NULL) {
             HSD_AObjRemove(wobj->aobj);
         }
-        wobj->aobj = HSD_AObjLoadDesc(anim->aobjdesc);
-        HSD_RObjAddAnimAll(wobj->robj, anim->robjanim);
+        wobj->aobj = HSD_AObjLoadDesc(GC_PTR(HSD_AObjDesc*, anim->aobjdesc));
+        HSD_RObjAddAnimAll(wobj->robj, GC_PTR(HSD_RObjAnimJoint*, anim->robjanim));
     }
 }
 
@@ -211,12 +212,12 @@ void HSD_WObjInterpretAnim(HSD_WObj* wobj) {
 }
 
 static s32 WObjLoad(HSD_WObj* wobj, HSD_WObjDesc* desc) {
-    HSD_WObjSetPosition(wobj, &desc->pos);
+    HSD_WObjSetPosition(wobj, GC_VEC3P(Vec3, &desc->pos));
     if (wobj->robj != NULL) {
         HSD_RObjRemoveAll(wobj->robj);
     }
-    wobj->robj = HSD_RObjLoadDesc(desc->robjdesc);
-    HSD_RObjResolveRefsAll(wobj->robj, desc->robjdesc);
+    wobj->robj = HSD_RObjLoadDesc(GC_PTR(HSD_RObjDesc*, desc->robjdesc));
+    HSD_RObjResolveRefsAll(wobj->robj, GC_PTR(HSD_RObjDesc*, desc->robjdesc));
     return 0;
 }
 
@@ -224,19 +225,19 @@ void HSD_WObjInit(HSD_WObj* wobj, HSD_WObjDesc* desc) {
     if (wobj == NULL || desc == NULL) {
         return;
     }
-    HSD_WObjSetPosition(wobj, &desc->pos);
+    HSD_WObjSetPosition(wobj, GC_VEC3P(Vec3, &desc->pos));
     if (wobj->robj != NULL) {
         HSD_RObjRemoveAll(wobj->robj);
     }
-    wobj->robj = HSD_RObjLoadDesc(desc->robjdesc);
-    HSD_RObjResolveRefsAll(wobj->robj, desc->robjdesc);
+    wobj->robj = HSD_RObjLoadDesc(GC_PTR(HSD_RObjDesc*, desc->robjdesc));
+    HSD_RObjResolveRefsAll(wobj->robj, GC_PTR(HSD_RObjDesc*, desc->robjdesc));
 }
 
 HSD_WObj* HSD_WObjLoadDesc(HSD_WObjDesc* desc) {
     if (desc != NULL) {
         HSD_WObj* wobj;
         HSD_ClassInfo* info;
-        if (desc->class_name == NULL || !(info = hsdSearchClassInfo(desc->class_name))) {
+        if (GC_PTR(char*, desc->class_name) == NULL || !(info = hsdSearchClassInfo(GC_PTR(char*, desc->class_name)))) {
             wobj = HSD_WObjAlloc();
         } else {
             wobj = hsdNew(info);

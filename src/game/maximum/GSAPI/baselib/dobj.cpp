@@ -2,6 +2,7 @@
 
 
 #include <game/maximum/GSAPI/baselib/class.h>
+#include <game/gcdata.h>
 
 #pragma pool_strings off
 
@@ -36,12 +37,12 @@ typedef struct HSD_PObjDesc HSD_PObjDesc;
 typedef struct HSD_ShapeAnim HSD_ShapeAnim;
 
 typedef struct HSD_MatAnim {
-    struct HSD_MatAnim* next;
+    gc_ptr32(struct HSD_MatAnim) next;
 } HSD_MatAnim;
 
 typedef struct HSD_ShapeAnimDObj {
-    struct HSD_ShapeAnimDObj* next;
-    HSD_ShapeAnim* shapeanim;
+    gc_ptr32(struct HSD_ShapeAnimDObj) next;
+    gc_ptr32(HSD_ShapeAnim) shapeanim;
 } HSD_ShapeAnimDObj;
 
 typedef struct HSD_DObj {
@@ -54,10 +55,10 @@ typedef struct HSD_DObj {
 } HSD_DObj;
 
 typedef struct HSD_DObjDesc {
-    char* class_name;
-    struct HSD_DObjDesc* next;
-    HSD_MObjDesc* mobjdesc;
-    HSD_PObjDesc* pobjdesc;
+    gc_ptr32(char) class_name;
+    gc_ptr32(struct HSD_DObjDesc) next;
+    gc_ptr32(HSD_MObjDesc) mobjdesc;
+    gc_ptr32(HSD_PObjDesc) pobjdesc;
 } HSD_DObjDesc;
 
 typedef struct HSD_DObjInfo {
@@ -158,7 +159,7 @@ void HSD_DObjAddAnim(HSD_DObj* dobj, HSD_MatAnim* mat_anim, HSD_ShapeAnimDObj* s
     if (dobj == NULL) {
         return;
     }
-    HSD_PObjAddAnimAll(dobj->pobj, sh_anim != NULL ? sh_anim->shapeanim : NULL);
+    HSD_PObjAddAnimAll(dobj->pobj, sh_anim != NULL ? GC_PTR(HSD_ShapeAnim*, sh_anim->shapeanim) : NULL);
     HSD_MObjAddAnim(dobj->mobj, mat_anim);
 }
 
@@ -171,7 +172,7 @@ void HSD_DObjAddAnimAll(HSD_DObj* dobj, HSD_MatAnim* matanim, HSD_ShapeAnimDObj*
     if (dobj == NULL) {
         return;
     }
-    for (dp = dobj, ma = matanim, sd = shapeanimdobj; dp != NULL; dp = dp->next, ma = next_p(ma), sd = next_p(sd)) {
+    for (dp = dobj, ma = matanim, sd = shapeanimdobj; dp != NULL; dp = dp->next, ma = ((ma) != NULL ? GC_PTR(HSD_MatAnim*, (ma)->next) : NULL), sd = ((sd) != NULL ? GC_PTR(HSD_ShapeAnimDObj*, (sd)->next) : NULL)) {
         HSD_DObjAddAnim(dp, ma, sd);
     }
 }
@@ -224,9 +225,9 @@ void HSD_DObjAnimAll(HSD_DObj* dobj) {
 }
 
 static s32 DObjLoad(HSD_DObj* dobj, HSD_DObjDesc* desc) {
-    dobj->next = HSD_DObjLoadDesc(desc->next);
-    dobj->mobj = HSD_MObjLoadDesc(desc->mobjdesc);
-    dobj->pobj = HSD_PObjLoadDesc(desc->pobjdesc);
+    dobj->next = HSD_DObjLoadDesc(GC_PTR(HSD_DObjDesc*, desc->next));
+    dobj->mobj = HSD_MObjLoadDesc(GC_PTR(HSD_MObjDesc*, desc->mobjdesc));
+    dobj->pobj = HSD_PObjLoadDesc(GC_PTR(HSD_PObjDesc*, desc->pobjdesc));
 
     if (dobj->mobj != NULL) {
         switch (dobj->mobj->rendermode & 0x60000000) {
@@ -254,7 +255,7 @@ HSD_DObj* HSD_DObjLoadDesc(HSD_DObjDesc* desc) {
     if (desc == NULL) {
         return NULL;
     }
-    if (desc->class_name == NULL || (info = hsdSearchClassInfo(desc->class_name)) == NULL) {
+    if (GC_PTR(char*, desc->class_name) == NULL || (info = hsdSearchClassInfo(GC_PTR(char*, desc->class_name))) == NULL) {
         dobj = HSD_DObjAlloc();
     } else {
         dobj = HSD_DOBJ(hsdNew(info));
@@ -290,11 +291,11 @@ void HSD_DObjResolveRefs(HSD_DObj* dobj, HSD_DObjDesc* desc) {
     if (dobj == NULL || desc == NULL) {
         return;
     }
-    HSD_PObjResolveRefsAll(dobj->pobj, desc->pobjdesc);
+    HSD_PObjResolveRefsAll(dobj->pobj, GC_PTR(HSD_PObjDesc*, desc->pobjdesc));
 }
 
 void HSD_DObjResolveRefsAll(HSD_DObj* dobj, HSD_DObjDesc* desc) {
-    for (; dobj != NULL && desc != NULL; dobj = dobj->next, desc = desc->next) {
+    for (; dobj != NULL && desc != NULL; dobj = dobj->next, desc = GC_PTR(HSD_DObjDesc*, desc->next)) {
         HSD_DObjResolveRefs(dobj, desc);
     }
 }

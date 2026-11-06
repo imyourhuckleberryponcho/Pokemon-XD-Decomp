@@ -1,8 +1,10 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 extern "C" void* memcpy(void* dst, const void* src, u32 n);
 
-class Pokemon {
+struct Pokemon {
 public:
     u8 data[0xC4];
 
@@ -33,7 +35,7 @@ struct FightPokemonBuff {
 };
 
 struct FightPokemon {
-    u32 unk0;
+    Pokemon* unk0;
     Pokemon pokemon;
     FightPokemonStatus10 unkC8;
     s16 unkD8;
@@ -93,10 +95,7 @@ struct MenuPokemonStatus {
     u8 unk2D;
 };
 
-struct MenuWazaStatus {
-    u8 unk0[0x40];
-    FightOutPokemon* fightOutPokemon;
-};
+#include <game/menuwazastatus.h>
 
 struct MenuLvupStatus {
     u8 unk0;
@@ -124,7 +123,7 @@ FightPokemon* fightOutPokemon_GetFightPokemonPtr(FightOutPokemon* fop);
 FightPokemon* fightOutPokemon_GetMotoFightPokemonPtr(FightOutPokemon* fop);
 FightPokemon* fightOutPokemon_GetFightPokemonHensinBuffPtr(FightOutPokemon* fop);
 void fightOutPokemon_SetFightPokemonPtr(FightOutPokemon* fop, FightPokemon* fp);
-FightOutPokemonEnemy* fightOutPokemon_GetFightOutPokemonEnemyPtr(FightOutPokemon* fop, u8 idx);
+FightOutPokemonEnemy* fightOutPokemon_GetFightOutPokemonEnemyPtr(FightOutPokemon* fop, PCARG(u8, u16) idx);
 u16 fightOutPokemon_GetLastSelectWazaDataId(FightOutPokemon* fop);
 void fightOutPokemon_SetOumuWazaAllyDataId(FightOutPokemon* fop, u16 id);
 void fightOutPokemon_SetOumuWazaDataId(FightOutPokemon* fop, u16 id);
@@ -137,7 +136,7 @@ void fightOutPokemonEnemyBiosSetDamage(FightOutPokemonEnemy* enemy, s32 damage);
 u16 fightOutPokemonEnemyBiosGetOumuWazaDataId(FightOutPokemonEnemy* enemy);
 void fightOutPokemonEnemyBiosSetOumuWazaDataId(FightOutPokemonEnemy* enemy, u16 id);
 
-s32 pokemonGetStatus(void* p, s32 a, u16 id, s32 b);
+StatusS32 pokemonGetStatus(void* p, s32 a, u16 id, s32 b);
 void pokemonSetStatus(void* p, s32 a, u16 id, s32 b, s32 value);
 void pokemonBiosCopy(Pokemon* dst, Pokemon* src);
 u32 pokemon_GetRnd(Pokemon* p);
@@ -155,10 +154,10 @@ u16 pokemon_GetPhyDef(Pokemon* p);
 u16 pokemon_GetSpeAtk(Pokemon* p);
 u16 pokemon_GetSpeDef(Pokemon* p);
 u16 pokemon_GetNimbleness(Pokemon* p);
-u16 pokemon_GetPokemonWazaDataId(Pokemon* p, u16 banme);
-void pokemon_SetPokemonWazaDataId(Pokemon* p, u16 banme, u16 id);
-u8 pokemon_GetPokemonWazaPp(Pokemon* p, u16 banme);
-void pokemon_SetPokemonWazaPp(Pokemon* p, u16 banme, u8 pp);
+u16 pokemon_GetPokemonWazaDataId(Pokemon* p, PCARG(u16, u32) banme);
+void pokemon_SetPokemonWazaDataId(Pokemon* p, PCARG(u16, u32) banme, u16 id);
+u8 pokemon_GetPokemonWazaPp(Pokemon* p, PCARG(u16, u32) banme);
+void pokemon_SetPokemonWazaPp(Pokemon* p, PCARG(u16, u32) banme, u8 pp);
 u8 pokemonWazaCheckValid(Pokemon* p, u16 banme);
 s32 pokemonGetTasteLike(Pokemon* p, s32 taste);
 u16 pokemonDoItemSoubi(Pokemon* p, u16 item, u8 mode);
@@ -173,8 +172,8 @@ s32 fightFloor_GetFightType(s32 a);
 u8 fightFloor_GetFightKindPokemonStatusMenuSubbarFlag(s32 a);
 u8 fightFloorCheckHuuinWazaFightOutPokemon(s32 a, FightOutPokemon* fop, u16 waza);
 typedef FightOutPokemon* (*FightSelectDefenseFunc)(FightOutPokemon* fop, u16 waza, u16 type);
-FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon* fop, u16 waza, u8 type, FightSelectDefenseFunc func, s32 b, s32 c, s32 d);
-u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon* target, u8 type);
+FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon* fop, u16 waza, PCARG(u8, u32) type, FightSelectDefenseFunc func, s32 b, s32 c, s32 d);
+u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon* target, PCARG(u8, u16) type);
 
 u16 joutaiDataBiosGetStatus(u16 id);
 void joutaiSetBuff(void* obj, u16 id, s32 value);
@@ -194,8 +193,8 @@ u8 joutaiCheckWriteJoutaiDataId(void* obj, u16 id);
 u8 joutaiIsJoutaiDataId(void* obj, u16 id);
 void joutaiInitJoutaiDataId(void* obj, u16 id);
 void pokemonCopyJoutaiDataId(Pokemon* dst, Pokemon* src, u16 id);
-void pokemonSetKaisuuJoutaiDataId(Pokemon* p, u16 id, u8 value);
-void pokemonSetNowKaisuuJoutaiDataId(Pokemon* p, u16 id, u8 value);
+void pokemonSetKaisuuJoutaiDataId(Pokemon* p, u16 id, PCARG(u8, u32) value);
+void pokemonSetNowKaisuuJoutaiDataId(Pokemon* p, u16 id, PCARG(u8, u32) value);
 s32 pokemonGetNowKaisuuJoutaiDataId(Pokemon* p, u16 id);
 s32 pokemonGetKaisuuJoutaiDataId(Pokemon* p, u16 id);
 void pokemonSetCountAsJoutaiDataId(Pokemon* p, u16 id, s32 value);
@@ -209,7 +208,7 @@ void Sequence_ResetStatus(Sequence* seq, s32 flag);
 
 struct FightSide;
 typedef u16 GSchar;
-void* fightTargetGetPtr(s32 kind, FightOutPokemon* fop, u8 type);
+void* fightTargetGetPtr(s32 kind, FightOutPokemon* fop, PCARG(u8, u16) type);
 u8 fightFloor_GetFightTypeTrainerNum(s32 a);
 u8 fightFloor_GetFightTypeFightoutPokemonNum(s32 a);
 FightTrainer* fightSide_GetFightTrainerPtr(FightSide* side, u16 idx);
@@ -221,11 +220,11 @@ void fightOutPokemonEnemyCreate(FightOutPokemonEnemy* enemy, FightOutPokemon* ta
 u16 fightOutPokemon_GetOumuWazaDataId(FightOutPokemon* fop);
 u16 fightPokemonGetSoubiItemSoubiDataId(FightPokemon* fp);
 void pokemonGetFriendFormPokemonFriendFilterId(Pokemon* p, u16 item, void* out);
-void pokemonGetEffortFromPokemon(Pokemon* p, u16 item, Pokemon* from, u8 mode);
+void pokemonGetEffortFromPokemon(Pokemon* p, u16 item, Pokemon* from, PCARG(u8, u16) mode);
 u32 pokemonGetLevelToExp(Pokemon* p, u8 level);
 void pokemon_SetExp(Pokemon* p, u32 exp);
 u32 pokemon_GetExp(Pokemon* p);
-void pokemonGrowBasisStatus(Pokemon* p, u8 level);
+void pokemonGrowBasisStatus(Pokemon* p, PCARG(u8, u32) level);
 u16 pokemon_GetPokemonDataId(Pokemon* p);
 u32 pokemonDB_GetVoice(u16 id);
 u32 pokemonDB_GetName(u16 id);
@@ -235,9 +234,9 @@ GSchar* pokemon_GetNicknamePtr(Pokemon* p);
 u8 pokemon_GetHinsi(Pokemon* p);
 u8 pokemonGetNowHpPercentage(Pokemon* p);
 u16 fightOutPokemon_GetUseWazaDataId(FightOutPokemon* fop);
-u16 pokemonGetNowHpWaruValue(Pokemon* p, u8 waru, u16 waza);
-u16 pokemonGetMaxHpWaruValue(Pokemon* p, u8 waru);
-u8 pokemonIsNokoriHpFollowing(Pokemon* p, u8 waru);
+u16 pokemonGetNowHpWaruValue(Pokemon* p, PCARG(u8, u16) waru, u16 waza);
+u16 pokemonGetMaxHpWaruValue(Pokemon* p, PCARG(u8, u16) waru);
+u8 pokemonIsNokoriHpFollowing(Pokemon* p, PCARG(u8, u16) waru);
 u8 pokemonIsJoutaiKaragenki(Pokemon* p);
 u8 pokemonIsJoutaiNormal(Pokemon* p);
 u8 pokemon_GetLevel(Pokemon* p);
@@ -245,7 +244,7 @@ u16 pokemonGetSoubiItemBuff(Pokemon* p);
 u16 pokemonGetSoubiItemSoubiDataId(Pokemon* p);
 u16 pokemonGetSoubiItemDataId(Pokemon* p);
 u8 fightOutPokemon_GetAbicntNimbleness(FightOutPokemon* fop);
-s32 heroGetStatus(void* hero, s32 id, s32 a);
+StatusS32 heroGetStatus(void* hero, s32 id, s32 a);
 u32 fightAbicntDoKakeWaru(u16 id, u32 value);
 s16 fightPokemon_GetEntryId(FightPokemon* fp);
 s16 fightOutPokemon_GetIrekaeTargetEntryId(FightOutPokemon* fop);
@@ -268,14 +267,14 @@ u16 fightActionGetKindDataId(FightAction* action);
 FightItem* fightOutPokemon_GetFightItemPtr(FightOutPokemon* fop);
 u16 fightItem_GetItemDataId(FightItem* fi);
 u16 fightItem_GetTargetDataId(FightItem* fi);
-void fightItemCreate(FightItem* fi, u16 item, u16 target, u8 banme);
-void fightItem_SetBuff(FightItem* fi, u8 buff);
+void fightItemCreate(FightItem* fi, u16 item, u16 target, PCARG(u8, u32) banme);
+void fightItem_SetBuff(FightItem* fi, PCARG(u8, u32) buff);
 FightWaza* fightOutPokemon_GetFightWazaPtr(FightOutPokemon* fop);
 u16 fightWaza_GetMotoWazaDataId(FightWaza* fw);
 u16 wazaDB_GetSeqId(u16 waza);
 u16 fightWaza_GetTargetDataId(FightWaza* fw);
 FightOutPokemon* fightTargetGetPtrAsNowFightType(s32 kind, FightOutPokemon* fop);
-void fightWazaCreate(FightWaza* fw, s8 banme, u16 moto, u16 target, u8 autoMake);
+void fightWazaCreate(FightWaza* fw, PCARG(s8, s32) banme, u16 moto, u16 target, u8 autoMake);
 u8 fightActionCreate(FightAction* action, s32 a, FightOutPokemon* fop, s32 kind, s32 c, void* data);
 void fightActionBiosSetBuffDataId(FightAction* action, s32 id);
 s8 fightActionGetPri(FightAction* action);
@@ -376,7 +375,7 @@ void fightOutPokemon_SetTokuseiDataId(FightOutPokemon* fop, u16 tokusei);
 u16 fightOutPokemon_GetTokuseiDataId(FightOutPokemon* fop);
 void Sequence_SetDownFlag(Sequence* seq, u8 flag);
 
-struct WazaSequence;
+class WazaSequence;
 extern WazaResourceData waza_resource_data[];
 extern u32 dbgEffLoadFsysGroupID;
 s32 pokemonDB_GetPkxDataId(u16 id);
@@ -385,7 +384,7 @@ u8 pokemonGetFightPokemonDeoxysSel(FightPokemon* fp);
 u8 pokemonIsDarkPokemon(Pokemon* p);
 Sequence* Sequence_LoadPokemon(u16 pkx, u32 form, u8 rare);
 void pokemonSetSequenceStatus(Pokemon* p, Sequence* seq);
-u32 itemBallDB_GetDowninWzxDataId(u8 ball);
+u32 itemBallDB_GetDowninWzxDataId(PCARG(u8, u16) ball);
 s32 pokemon_GetCatchBallId(Pokemon* p);
 typedef u8 (*FightOutPokemonLoopFunc)(void* fop, u16 idx, void* data);
 void fightFloorLoopValidFightOutPokemon(s32 a, FightOutPokemonLoopFunc func, void* data, s32 b);
@@ -396,12 +395,12 @@ u8 WazaSequence_IsActive(WazaSequence* waza);
 void WazaSequence_Free(WazaSequence* waza);
 void WazaSequence_Stop(WazaSequence* waza);
 void GSthreadSwitch(void);
-void GSsndPlayVolume(u16 snd, s32 a, s32 vol, s32 b);
-void fightMenuOpenMsg(void* msg);
-void fightMenuFightOutPokemonRenewStatusMenu(FightOutPokemon* fop, u8 type, s32 flag);
-void fightMenuFightOutPokemonOpenStatusMenu(FightOutPokemon* fop, u8 type, s32 flag);
-void fightMenuFightOutPokemonCloseStatusMenuAnotherMine(s32 menuId, FightOutPokemon* fop, u8 type, s32 a, s32 b);
-s32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* fop, u8 type, s32 flag);
+void GSsndPlayVolume(PCARG(u16, u32) snd, s32 a, s32 vol, s32 b);
+void fightMenuOpenMsg(u32 msg);
+void fightMenuFightOutPokemonRenewStatusMenu(FightOutPokemon* fop, PCARG(u8, u16) type, s32 flag);
+void fightMenuFightOutPokemonOpenStatusMenu(FightOutPokemon* fop, PCARG(u8, u16) type, s32 flag);
+void fightMenuFightOutPokemonCloseStatusMenuAnotherMine(s32 menuId, FightOutPokemon* fop, PCARG(u8, u16) type, s32 a, s32 b);
+s32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* fop, PCARG(u8, u16) type, s32 flag);
 u8 dbgMenuFightGetFightPokeStMenuOpenFlag(void);
 void menuOpenCustom(s32 menuId, ...);
 void fightFloor_SetStatusMenuCnt(s32 menuId, s32 cnt);
@@ -410,18 +409,18 @@ void fightMenuCloseCustom(s32 menuId, s32 a, s32 b);
 void Sequence_FreeAllWaza(Sequence* seq);
 s32 wazaDB_GetWazawzxdataId(u16 waza);
 
-u32 itemBallDB_GetSnatchSnatchWzxDataId(u8 ball);
-u32 itemBallDB_GetSnatchBalllandWzxDataId(u8 ball);
-u32 itemBallDB_GetSnatchShakeWzxDataId(u8 ball);
-u32 itemBallDB_GetSnatchMissWzxDataId(u8 ball);
-u32 itemBallDB_GetSnatchPokeoutWzxDataId(u8 ball);
-u32 itemBallDB_GetYaseiGetWzxDataId(u8 ball);
-u32 itemBallDB_GetYaseiPokeoutWzxDataId(u8 ball);
-u32 itemBallDB_GetYaseiBallLandWzxDataId(u8 ball);
-u32 itemBallDB_GetYaseiShakeWzxDataId(u8 ball);
-u32 itemBallDB_GetInWzxDataId(u8 ball);
-u32 itemBallDB_GetOpenWzxDataId(u8 ball);
-u32 itemBallDB_GetOutWzxDataId(u8 ball);
+u32 itemBallDB_GetSnatchSnatchWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetSnatchBalllandWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetSnatchShakeWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetSnatchMissWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetSnatchPokeoutWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetYaseiGetWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetYaseiPokeoutWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetYaseiBallLandWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetYaseiShakeWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetInWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetOpenWzxDataId(PCARG(u8, u16) ball);
+u32 itemBallDB_GetOutWzxDataId(PCARG(u8, u16) ball);
 u8 fightFloor_GetTrainer(s32 a);
 u8 fightFloor_GetFightKind(s32 a);
 u16 fightFloor_GetEncountDataId(s32 a);
@@ -432,7 +431,7 @@ void Sequence_SetFlags(Sequence* seq, u8 flags);
 void Sequence_SetLookTarget(Sequence* seq, Sequence* target);
 void Sequence_SetVisibility(Sequence* seq, u8 visible);
 void battleGridRestoreModelVisibilityFlags(void);
-void fightMenuFightOutPokemonCloseStatusMenu(FightOutPokemon* fop, u8 type, s32 flag);
+void fightMenuFightOutPokemonCloseStatusMenu(FightOutPokemon* fop, PCARG(u8, u16) type, s32 flag);
 u8 wazaSequenceSysLastWazaIsImpactPoint(s32 kind);
 void wazaSequenceSysFreeAllWazaExcept(Sequence* seq, WazaSequence* waza);
 u16 fightOutPokemon_GetKanseiSndId(FightOutPokemon* fop);
@@ -453,7 +452,7 @@ void fightOutPokemonSetVisibility(FightOutPokemon* fop, u8 visible);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon* fop, u16 id);
 s32 fightOutPokemonGetBuffJoutaiDataId(FightOutPokemon* fop, u16 id);
 void fightOutPokemonSetBuffJoutaiDataId(FightOutPokemon* fop, u16 id, s32 buff);
-u16 fightOutPokemonGetIdBuffJoutaiDataId(FightOutPokemon* fop, u16 id);
+PCRET(u16) fightOutPokemonGetIdBuffJoutaiDataId(FightOutPokemon* fop, u16 id);
 s32 fightOutPokemonGetKaisuuJoutaiDataId(FightOutPokemon* fop, u16 id);
 s32 fightOutPokemonGetNowKaisuuJoutaiDataId(FightOutPokemon* fop, u16 id);
 void fightOutPokemonInitJoutaiDataId(FightOutPokemon* fop, u16 id);
@@ -461,9 +460,9 @@ Pokemon* fightOutPokemonGetPokemonPtr(FightOutPokemon* fop);
 Pokemon* fightPokemonGetPokemonPtr(FightPokemon* fp);
 u8 fightOutPokemonIsGcHeroFightOutPokemon(FightOutPokemon* fop);
 bool fightOutPokemonCheckFightOut(FightOutPokemon* fop);
-u16 fightOutPokemonGetTokuseiDataId(FightOutPokemon* fop);
+PCRET(u16) fightOutPokemonGetTokuseiDataId(FightOutPokemon* fop);
 void fightOutPokemonSetTokuseiDataId(FightOutPokemon* fop, u16 id);
-u16 fightOutPokemonGetSoubiItemSoubiDataId(FightOutPokemon* fop);
+PCRET(u16) fightOutPokemonGetSoubiItemSoubiDataId(FightOutPokemon* fop);
 u8 fightOutPokemonIsAlly(FightOutPokemon* fop, FightOutPokemon* other);
 
 }
@@ -496,7 +495,7 @@ u8 fightOutPokemonCheckNoAttackFlag(FightOutPokemon* fop);
 void fightOutPokemonInitJoutaiKeep(FightOutPokemon* fop);
 void fightOutPokemonInitJoutaiKie(FightOutPokemon* fop);
 u16 fightOutPokemonIsJoutaiKie(FightOutPokemon* fop);
-u8 fightOutPokemonGetFightOutPokemonEnemyOumuWazaDataIdAry(FightOutPokemon* fop, u16* ary);
+PCRET(u8) fightOutPokemonGetFightOutPokemonEnemyOumuWazaDataIdAry(FightOutPokemon* fop, u16* ary);
 void fightOutPokemonSetOumuWazaDataId(FightOutPokemon* fop, FightOutPokemon* target, u16 waza);
 s32 fightOutPokemonGetTasteLike(FightOutPokemon* fop, s32 taste);
 s32 fightPokemonGetTasteLike(FightPokemon* fp, s32 taste);
@@ -513,8 +512,8 @@ void fightOutPokemonSetBuffJoutaiDataId(FightOutPokemon* fop, u16 id, s32 value)
 s32 fightOutPokemonGetBuffJoutaiDataId(FightOutPokemon* fop, u16 id);
 void fightOutPokemonCopyJoutaiDataId(FightOutPokemon* dst, FightOutPokemon* src, u16 id);
 void fightOutPokemonSetIdBuffJoutaiDataId(FightOutPokemon* fop, u16 id, u16 value);
-u16 fightOutPokemonGetIdBuffJoutaiDataId(FightOutPokemon* fop, u16 id);
-u8 fightOutPokemonGetUserFightTargetIdJoutaiDataId(FightOutPokemon* fop, u16 id);
+PCRET(u16) fightOutPokemonGetIdBuffJoutaiDataId(FightOutPokemon* fop, u16 id);
+PCRET(u8) fightOutPokemonGetUserFightTargetIdJoutaiDataId(FightOutPokemon* fop, u16 id);
 void fightOutPokemonSetKaisuuJoutaiDataId(FightOutPokemon* fop, u16 id, u8 value);
 void fightOutPokemonSetNowKaisuuJoutaiDataId(FightOutPokemon* fop, u16 id, u8 value);
 s32 fightOutPokemonGetNowKaisuuJoutaiDataId(FightOutPokemon* fop, u16 id);
@@ -557,19 +556,19 @@ GSchar* fightPokemonGetNamePtr(FightPokemon* fp);
 GSchar* fightOutPokemonGetNicknamePtr(FightOutPokemon* fop);
 GSchar* fightPokemonGetNicknamePtr(FightPokemon* fp);
 u8 fightOutPokemonIsHinsi(FightOutPokemon* fop);
-u8 fightOutPokemonGetNowHpPercentage(FightOutPokemon* fop);
-u16 fightOutPokemonNowHpWaruValue(FightOutPokemon* fop, u8 waru);
-u16 fightOutPokemonMaxHpWaruValue(FightOutPokemon* fop, u8 waru);
+PCRET(u8) fightOutPokemonGetNowHpPercentage(FightOutPokemon* fop);
+PCRET(u16) fightOutPokemonNowHpWaruValue(FightOutPokemon* fop, u8 waru);
+PCRET(u16) fightOutPokemonMaxHpWaruValue(FightOutPokemon* fop, u8 waru);
 u8 fightOutPokemonIsNokoriHpFollowing(FightOutPokemon* fop, u8 waru);
 u8 fightOutPokemonIsJoutaiKaragenki(FightOutPokemon* fop);
 u8 fightOutPokemonIsJoutaiNormal(FightOutPokemon* fop);
-u16 figthOutPokemonGetPokemonDataId(FightOutPokemon* fop);
+PCRET(u16) figthOutPokemonGetPokemonDataId(FightOutPokemon* fop);
 u16 figthPokemonGetPokemonDataId(FightPokemon* fp);
-u8 figthOutPokemonGetLevel(FightOutPokemon* fop);
+PCRET(u8) figthOutPokemonGetLevel(FightOutPokemon* fop);
 u8 figthPokemonGetLevel(FightPokemon* fp);
 s32 figthOutPokemonGetSoubiItemBuff(FightOutPokemon* fop);
-u16 fightOutPokemonGetSoubiItemSoubiDataId(FightOutPokemon* fop);
-u16 fightOutPokemonGetSoubiItemDataId(FightOutPokemon* fop);
+PCRET(u16) fightOutPokemonGetSoubiItemSoubiDataId(FightOutPokemon* fop);
+PCRET(u16) fightOutPokemonGetSoubiItemDataId(FightOutPokemon* fop);
 s32 fightPokemonGetSoubiItemBuff(FightPokemon* fp);
 u16 fightPokemonGetSoubiItemSoubiDataId(FightPokemon* fp);
 u16 fightPokemonGetSoubiItemDataId(FightPokemon* fp);
@@ -588,7 +587,7 @@ u8 fightOutPokemonIsFightActionAttackWazaOut(FightOutPokemon* fop, u16 waza, Fig
 FightAction* fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon* fop, s32 a, s32 kind, s32 c, void* data, s32 waza, u16 target, s8 banme, u8 autoMake);
 FightAction* fightOutPokemonCreateFightAction(FightOutPokemon* fop, s32 a, s32 kind, s32 c, void* data, s32 buffId);
 s8 fightOutPokemonGetFightActionPri(FightOutPokemon* fop);
-u8 fightOutPokemonGetWazaZokuseiDataId(FightOutPokemon* fop);
+PCRET(u8) fightOutPokemonGetWazaZokuseiDataId(FightOutPokemon* fop);
 u16 fightOutPokemonGetUseWazaDataId(FightOutPokemon* fop);
 u16 fightOutPokemonGetCmpNimblenessWazaDataId(FightOutPokemon* fop);
 u16 fightOutPokemonGetMotoWazaDataId(FightOutPokemon* fop);
@@ -620,12 +619,12 @@ u8 fightOutPokemonIsZokuseiDataId(FightOutPokemon* fop, u16 zokusei);
 void fightOutPokemonSetZokuseiDataId(FightOutPokemon* fop, u8 idx, u16 zokusei);
 u16 fightOutPokemonGetZokuseiDataId(FightOutPokemon* fop, u8 idx);
 void fightOutPokemonSetTokuseiDataId(FightOutPokemon* fop, u16 tokusei);
-u16 fightOutPokemonGetTokuseiDataId(FightOutPokemon* fop);
+PCRET(u16) fightOutPokemonGetTokuseiDataId(FightOutPokemon* fop);
 void fightOutPokemonSetWazaEffectDownFlag(FightOutPokemon* fop, u8 flag);
 Sequence* fightOutPokemonCreateSequence(FightOutPokemon* fop, u16 tenki, s8 rare);
 void fightOutPokemonRegWzxFree(FightOutPokemon* fop);
 void fightOutPokemonRegWzxLoad(FightOutPokemon* fop);
-void fightOutPokemonDarkPokemonKaijoEffect(FightOutPokemon* fop, u8 hp, u8 joutai, u8 kioku, void* msg, u8 mode);
+void fightOutPokemonDarkPokemonKaijoEffect(FightOutPokemon* fop, u8 hp, u8 joutai, u8 kioku, u32 msg, u8 mode);
 void fightOutPokemonDarkPokemonEffect(FightOutPokemon* fop, u8 openMenu, u8 kind, u8 mode);
 void fightOutPokemonWazaEffect(FightOutPokemon* fop, s32 a, s32 b, u8 close, s32 menuId);
 void fightOutPokemonFreeAllSequenceWaza(FightOutPokemon* fop);
@@ -1145,7 +1144,7 @@ void fightOutPokemonDarkPokemonEffect(FightOutPokemon* fop, u8 openMenu, u8 kind
     }
 }
 
-void fightOutPokemonDarkPokemonKaijoEffect(FightOutPokemon* fop, u8 hp, u8 joutai, u8 kioku, void* msg, u8 mode) {
+void fightOutPokemonDarkPokemonKaijoEffect(FightOutPokemon* fop, u8 hp, u8 joutai, u8 kioku, u32 msg, u8 mode) {
     Sequence* seq;
     WazaSequence* waza;
     u16 id;
@@ -1343,7 +1342,7 @@ void fightOutPokemonSetWazaEffectDownFlag(FightOutPokemon* fop, u8 flag) {
     }
 }
 
-u16 fightOutPokemonGetTokuseiDataId(FightOutPokemon* fop) {
+PCRET(u16) fightOutPokemonGetTokuseiDataId(FightOutPokemon* fop) {
     return fightOutPokemon_GetTokuseiDataId(fop);
 }
 
@@ -1771,7 +1770,7 @@ u16 fightOutPokemonGetUseWazaDataId(FightOutPokemon* fop) {
     return fightWaza_GetUseWazaDataId(fightWaza);
 }
 
-u8 fightOutPokemonGetWazaZokuseiDataId(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemonGetWazaZokuseiDataId(FightOutPokemon* fop) {
     FightWaza* fightWaza = fightOutPokemon_GetFightWazaPtr(fop);
     if (fightWaza == 0) {
         return 9;
@@ -2008,20 +2007,20 @@ u8 fightOutPokemonCheckIrekaeReserveFightPokemon(FightOutPokemon* fop, FightPoke
 }
 
 u32 fightOutPokemonGetNowNimbleness(FightOutPokemon* fop, u8 useBadge, u8 tenki, u16 hp, void* hero) {
+    u32 speed;
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);
     if (p == 0) {
         return 0;
     }
-    u32 speed;
     u16 tokusei = fightOutPokemonGetTokuseiDataId(fop);
     u16 item = fightOutPokemonGetSoubiItemSoubiDataId(fop);
     s32 itemBuff = figthOutPokemonGetSoubiItemBuff(fop);
     u8 abicnt = fightOutPokemon_GetAbicntNimbleness(fop);
-    u8 badge;
+    bool badge;
     if (hero != 0) {
-        badge = heroGetStatus(hero, 0x11, 0) != 0;
+        badge = heroGetStatus(hero, 0x11, 0);
     } else {
-        badge = 0;
+        badge = false;
     }
     u32 nimble = pokemon_GetNimbleness(p);
     if (tokusei == 0x21 && tenki == 2) {
@@ -2078,11 +2077,11 @@ s32 fightPokemonGetSoubiItemBuff(FightPokemon* fp) {
     return pokemonGetSoubiItemBuff(p);
 }
 
-u16 fightOutPokemonGetSoubiItemDataId(FightOutPokemon* fop) {
+PCRET(u16) fightOutPokemonGetSoubiItemDataId(FightOutPokemon* fop) {
     return fightPokemonGetSoubiItemDataId(fightOutPokemon_GetFightPokemonPtr(fop));
 }
 
-u16 fightOutPokemonGetSoubiItemSoubiDataId(FightOutPokemon* fop) {
+PCRET(u16) fightOutPokemonGetSoubiItemSoubiDataId(FightOutPokemon* fop) {
     return fightPokemonGetSoubiItemSoubiDataId(fightOutPokemon_GetFightPokemonPtr(fop));
 }
 
@@ -2098,7 +2097,7 @@ u8 figthPokemonGetLevel(FightPokemon* fp) {
     return pokemon_GetLevel(p);
 }
 
-u8 figthOutPokemonGetLevel(FightOutPokemon* fop) {
+PCRET(u8) figthOutPokemonGetLevel(FightOutPokemon* fop) {
     return figthPokemonGetLevel(fightOutPokemon_GetFightPokemonPtr(fop));
 }
 
@@ -2110,7 +2109,7 @@ u16 figthPokemonGetPokemonDataId(FightPokemon* fp) {
     return pokemon_GetPokemonDataId(p);
 }
 
-u16 figthOutPokemonGetPokemonDataId(FightOutPokemon* fop) {
+PCRET(u16) figthOutPokemonGetPokemonDataId(FightOutPokemon* fop) {
     return figthPokemonGetPokemonDataId(fightOutPokemon_GetFightPokemonPtr(fop));
 }
 
@@ -2138,7 +2137,7 @@ u8 fightOutPokemonIsNokoriHpFollowing(FightOutPokemon* fop, u8 waru) {
     return pokemonIsNokoriHpFollowing(p, waru);
 }
 
-u16 fightOutPokemonMaxHpWaruValue(FightOutPokemon* fop, u8 waru) {
+PCRET(u16) fightOutPokemonMaxHpWaruValue(FightOutPokemon* fop, u8 waru) {
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);
     if (p == 0) {
         return 0;
@@ -2146,7 +2145,7 @@ u16 fightOutPokemonMaxHpWaruValue(FightOutPokemon* fop, u8 waru) {
     return pokemonGetMaxHpWaruValue(p, waru);
 }
 
-u16 fightOutPokemonNowHpWaruValue(FightOutPokemon* fop, u8 waru) {
+PCRET(u16) fightOutPokemonNowHpWaruValue(FightOutPokemon* fop, u8 waru) {
     u16 waza = fightOutPokemon_GetUseWazaDataId(fop);
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);
     if (p == 0) {
@@ -2155,7 +2154,7 @@ u16 fightOutPokemonNowHpWaruValue(FightOutPokemon* fop, u8 waru) {
     return pokemonGetNowHpWaruValue(p, waru, waza);
 }
 
-u8 fightOutPokemonGetNowHpPercentage(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemonGetNowHpPercentage(FightOutPokemon* fop) {
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);
     if (p == 0) {
         return 0;
@@ -2582,7 +2581,7 @@ void fightOutPokemonSetKaisuuJoutaiDataId(FightOutPokemon* fop, u16 id, u8 value
     }
 }
 
-u8 fightOutPokemonGetUserFightTargetIdJoutaiDataId(FightOutPokemon* fop, u16 id) {
+PCRET(u8) fightOutPokemonGetUserFightTargetIdJoutaiDataId(FightOutPokemon* fop, u16 id) {
     if (joutaiDataBiosGetStatus(id) == 0x7C || joutaiDataBiosGetStatus(id) == 0xC8 ||
         joutaiDataBiosGetStatus(id) == 0xCD) {
         return fightPokemonGetUserFightTargetIdJoutaiDataId(fightOutPokemon_GetFightPokemonPtr(fop), id);
@@ -2593,7 +2592,7 @@ u8 fightOutPokemonGetUserFightTargetIdJoutaiDataId(FightOutPokemon* fop, u16 id)
     return joutaiGetUserFightTargetId(fop, id);
 }
 
-u16 fightOutPokemonGetIdBuffJoutaiDataId(FightOutPokemon* fop, u16 id) {
+PCRET(u16) fightOutPokemonGetIdBuffJoutaiDataId(FightOutPokemon* fop, u16 id) {
     if (joutaiDataBiosGetStatus(id) == 0x7C || joutaiDataBiosGetStatus(id) == 0xC8 ||
         joutaiDataBiosGetStatus(id) == 0xCD) {
         return fightPokemonGetIdBuffJoutaiDataId(fightOutPokemon_GetFightPokemonPtr(fop), id);
@@ -2757,7 +2756,7 @@ void fightOutPokemonSetOumuWazaDataId(FightOutPokemon* fop, FightOutPokemon* tar
     }
 }
 
-u8 fightOutPokemonGetFightOutPokemonEnemyOumuWazaDataIdAry(FightOutPokemon* fop, u16* ary) {
+PCRET(u8) fightOutPokemonGetFightOutPokemonEnemyOumuWazaDataIdAry(FightOutPokemon* fop, u16* ary) {
     FightOutPokemonEnemy* enemy;
     u8 i;
     u8 count;

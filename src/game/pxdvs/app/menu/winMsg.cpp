@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/gcdata.h>
 
 #pragma peephole off
 
@@ -12,7 +16,23 @@ struct tagWINDOW_WORK {
     s8 priority;
     u8 closeFlag;
     u8 enablePort;
-    u8 pad_c[0x80];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x4];
     s16 offX;
     s16 offY;
     u8 pad_90[3];
@@ -23,7 +43,12 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 pad0[0x50];
+    void* slot0;
+    u8 pad4[0x8];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    void* slot4C;
     s16 x;
     s16 y;
     s16 w;
@@ -38,7 +63,7 @@ struct KeyInfo {
 };
 
 struct WinMsgWork {
-    void* msg;
+    gc_ptr32(void) msg;
     u8 b4;
     u8 b5;
     u8 pad6[2];
@@ -46,20 +71,23 @@ struct WinMsgWork {
     s16 w;
     s16 h;
 };
+#ifndef __MWERKS__
+static_assert(sizeof(WinMsgWork) <= 0x10, "WinMsgWork must fit tagWINDOW_WORK::freeWork");
+#endif
 
 extern "C" {
 WinMsgWork* windowGetFreeWork(tagWINDOW_WORK*);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
-void* GSgfxLayerFindByID(s32);
+void* GSgfxLayerFindByID(GCsptr);
 void spriteSetOffset(s32, s16, s16);
 void spriteSetEnv(s32);
-void menuSubDrawMsgWindow2(s32, s32, s16, s16, s16, u8, u8);
+void menuSubDrawMsgWindow2(s32, s32, PCARG(s16, s32), PCARG(s16, s32), PCARG(s16, s32), u8, u8);
 void GSmsgMain(s32, void*, u32, bool);
 void GSmsgKill(void*);
 u32 GSmsgGetRect(void*);
 void GSmsgExec(void*, u8, u8);
 s32 GSmsgIsCheck(void*);
-u32 windowGetParam(tagWINDOW_WORK*, u32);
+StatusU32 windowGetParam(tagWINDOW_WORK*, u32);
 bool winSeqIsCheck(s32, u16);
 void winSeqSetMenu(s32, s32);
 KeyInfo* windowGetKeyInfo(void);
@@ -279,7 +307,7 @@ s32 winMsgOpenFight(void* msg, bool a, bool b)
     return winMsgOpen(4, msg, a, b);
 }
 
-s8 winMsgCheckField(void)
+PCRET(s8) winMsgCheckField(void)
 {
     return winMsgCheck();
 }

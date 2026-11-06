@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/winwork.h>
+#include <game/gcptr.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -93,9 +96,26 @@ struct tagWINDOW_WORK {
     s8 seqSet;
     u8 pad3;
     s32 seq;
-    u8 pad8[0x14];
-    void* sprites;
-    u8 pad20[0x6C];
+    u8 pad8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
+    s32 sprites;
+    u8 pad20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x4];
     s16 value;
     u8 pad8E[5];
     u8 alpha;
@@ -107,10 +127,14 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 pad0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 pad8[0x44];
-    u32 msg;
+    u8 pad8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    GCuptr msg;
     s16 unk50;
     s16 unk52;
     s16 x;
@@ -314,7 +338,7 @@ void menuCB_AlphaGet(tagWINDOW_WORK*);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
 void menuCB_SpriteDispCheckONorOFF(tagSPRITE_WORK*, bool);
 void menuCB_Cursol_Disp_AlphaSet(tagWINDOW_WORK*, tagSPRITE_WORK*, bool);
-void GSmsgPrint2(void*, s32, s32, u32, s32);
+void GSmsgPrint2(s32, s32, s32, u32, s32);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void menuSubDrawCursorBackAnimeOnOffAuto(tagWINDOW_WORK*, s32, s32, s32, s32, s32, u8, s32);
 void menuCBPokemonEntryPokemonFaceFree(void);
@@ -330,8 +354,8 @@ void menuCB_PrintXP(tagSPRITE_WORK*, s32);
 void menuCB_Trainer_Error_Disp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s32);
 void menuCB_RuleMessageTblDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void toobattle_drawHeroName(tagWINDOW_WORK*, s32);
-void menuCB_RuleItemFlagDisp(tagWINDOW_WORK*);
-void menuCB_RuleItemNameEntry(tagWINDOW_WORK*);
+void menuCB_RuleItemFlagDisp(tagWINDOW_WORK*, tagSPRITE_WORK*);
+void menuCB_RuleItemNameEntry(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void menuCBMessageCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void menuCBMessageYCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void menuCB_RuleDispColorChenge(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
@@ -370,7 +394,7 @@ s32 pokecoloGetCountryCode(void);
 u32 GSmsgGetRect(s32);
 void menuCBGCEntryTypeIndex(void);
 bool menuCBPokemonCheck(u32, s32);
-void msgctrlSetValue(s32, s32);
+void msgctrlSetValue(s32, GCuptr);
 KeyInfo* windowGetPortKeyInfo(s32);
 s32 toolentryTaisenGetControlerType(s32);
 void menuItemBiosSetSelectFlag(s32, s32, s32);
@@ -379,7 +403,7 @@ u32 toolbattle_trainerFace(s32);
 bool toolBattle_tunaideMenu02menuTempBuffGet(s32);
 void toolBattle_tunaideMenu02menuTempBuffSet(s32);
 void winSeqSetMenu(s32, s32);
-void spriteClearScissor(void*);
+void spriteClearScissor(s32 layer);
 void fn_80080390(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
 void menuCB_MenuDispCheckONorOFF(tagWINDOW_WORK*, bool);
 void menuCB_MenuDispCheckONorOFF_RULE(tagWINDOW_WORK*, s32);
@@ -454,7 +478,7 @@ struct CReliveStage;
 struct CReliveHall {
     u8 _draft[1];
     static CReliveHall* getPointer();
-    CReliveStage* getStage(long);
+    CReliveStage* getStage(s32);
 };
 struct CReliveStage {
     u8 _draft[1];
@@ -486,12 +510,12 @@ s32 menuCBRule_Copy(s32*, void*);
 void menuCB_GCEntryCursolDisp(CBWin* win, void* unused, bool flag);
 s32 menuCB_GCEntry_OkPushErrorCheck();
 void menuCB_Rule00_Disp(void *p0, void *p1);
-void menuCB_Rule01_Disp(s32 p0, void *p1);
-void menuCB_Rule02_Disp(s32 p0, void *p1);
+void menuCB_Rule01_Disp(GCsptr p0, void *p1);
+void menuCB_Rule02_Disp(GCsptr p0, void *p1);
 void menuCB_Tunaide01_3_Disp(void *p0, void *p1);
-void menuCB_Tunaide02_Disp(s32 p0, void *p1);
+void menuCB_Tunaide02_Disp(GCsptr p0, void *p1);
 void menuCB_error00_Disp(void *p0, void *p1);
-void menuCB_tunaideGCEntry00_Disp(s32 p0, void *p1);
+void menuCB_tunaideGCEntry00_Disp(GCsptr p0, void *p1);
 void menuCB_tunaideGCEntry02_Disp(void *p0, void *p1);
 void menuCB_tunaideGCEntry02_Disp_1(void *p0, void *p1);
 void menuCB_tunaideGCEntry03_Disp(void *p0, void *p1);
@@ -1827,7 +1851,7 @@ void menuTool_tunaide03_Ctrl(tagWINDOW_WORK* window) {
     menuCB_AlphaGet(window);
 }
 extern "C" {
-void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
+void menuCB_Tunaide02_Disp(GCsptr p0, void *p1) {
     s32 temp_r0;
     bool var_r30;
     bool var_r30_2;
@@ -1960,7 +1984,7 @@ void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
         break;
     case 0xC1:
         if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(0));
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(0));
         }
         break;
     case 0xC8:
@@ -2028,10 +2052,10 @@ void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
         break;
     case 0xC0:
         if ((toolbattle_trainerFace(0) == 0) || ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2)) {
-            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(1));
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(1));
             return;
         }
-        toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(0));
+        toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(0));
         break;
     case 0xC9:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(&_CB, s32 *, 0xB0D4) & 4) != 0));
@@ -2120,11 +2144,11 @@ void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
         break;
     case 0xBF:
         if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(2));
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(2));
             return;
         }
         if (toolbattle_trainerFace(0) != 0) {
-            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(1));
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(1));
         }
         break;
     case 0xCA:
@@ -2193,7 +2217,7 @@ void menuCB_Tunaide02_Disp(s32 p0, void *p1) {
         break;
     case 0xBE:
         if ((s32) M2C_FIELD(&_CB, s32 *, 8) == 2) {
-            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(3));
+            toobattle_drawHeroName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(3));
         }
         break;
     }
@@ -2435,7 +2459,7 @@ void menuCB_error00_Disp(void *p0, void *p1) {
         menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 0, 1);
         return;
     case 0x2B:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(0U), (long)(1U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (s32)(0U), (s32)(1U));
         break;
     case 0x38:
         menuCBPokemonMaruWaku_ErrorSet(p1, 0);
@@ -2470,7 +2494,7 @@ void menuCB_error00_Disp(void *p0, void *p1) {
         menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 1, 1);
         return;
     case 0x2D:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(1U), (long)(1U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (s32)(1U), (s32)(1U));
         return;
     case 0xCB:
         menuCBPokemonMaruWaku_ErrorSet(p1, 1);
@@ -2507,7 +2531,7 @@ void menuCB_error00_Disp(void *p0, void *p1) {
         menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 2, 1);
         return;
     case 0x2F:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(2U), (long)(1U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (s32)(2U), (s32)(1U));
         return;
     case 0xCC:
         menuCBPokemonMaruWaku_ErrorSet(p1, 2);
@@ -2546,7 +2570,7 @@ void menuCB_error00_Disp(void *p0, void *p1) {
         menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 3, 1);
         return;
     case 0x31:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(3U), (long)(1U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (s32)(3U), (s32)(1U));
         return;
     case 0xCD:
         menuCBPokemonMaruWaku_ErrorSet(p1, 3);
@@ -2587,7 +2611,7 @@ void menuCB_error00_Disp(void *p0, void *p1) {
         menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 4, 1);
         return;
     case 0x34:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(4U), (long)(1U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (s32)(4U), (s32)(1U));
         return;
     case 0xCE:
         menuCBPokemonMaruWaku_ErrorSet(p1, 4);
@@ -2630,7 +2654,7 @@ void menuCB_error00_Disp(void *p0, void *p1) {
         menuCBPokemonLevel((tagWINDOW_WORK *)p0, M2C_FIELD(&_CB, s32 *, 0xB0D8), 5, 1);
         return;
     case 0x36:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (long)(5U), (long)(1U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)((u32) M2C_FIELD(&_CB, s32 *, 0xB0D8)), (s32)(5U), (s32)(1U));
         return;
     case 0xCF:
         menuCBPokemonMaruWaku_ErrorSet(p1, 5);
@@ -2651,7 +2675,7 @@ void menuCB_error00_Disp(void *p0, void *p1) {
             M2C_FIELD(p1, s32 *, 0x4C) = 0;
             return;
         }
-        fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43C2));
+        fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43C2));
         return;
     case 0x10:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(windowSearchID(0xA7) == NULL));
@@ -2760,7 +2784,7 @@ void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
     s32 var_r4_8;
     s32 var_r4_9;
 
-    temp_r3 = M2C_FIELD(p1, s16 *, 6);
+    temp_r3 = M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x6, id);
     switch (temp_r3) {
     case 0xF1:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 0xA) || ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 5));
@@ -2799,20 +2823,20 @@ void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
         }
         winSpriteSetDisp((tagSPRITE_WORK*)(p1), 1U);
         if ((u8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x48) != 0) {
-            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34) = (s16) M2C_FIELD(p1, s16 *, 0x50);
-            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C) = (s16) M2C_FIELD(p1, s16 *, 0x52);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34) = (s16) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C) = (s16) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y);
             M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x48) = 0U;
         }
         if ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0) == 2) {
             if (pauseIsPause() == 0) {
                 M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x44)++;
             }
-            M2C_FIELD(p1, s16 *, 0x50) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x44) & 3]);
-            M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x44) & 3]);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C);
             return;
         }
-        M2C_FIELD(p1, s16 *, 0x50) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34);
-        M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C);
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x34);
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3C);
         return;
     case 0xEA:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (s8)M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x30) != 1);
@@ -2828,20 +2852,20 @@ void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
         return;
     case 0xE7:
         if ((u8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x49) != 0) {
-            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36) = (s16) M2C_FIELD(p1, s16 *, 0x50);
-            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E) = (s16) M2C_FIELD(p1, s16 *, 0x52);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36) = (s16) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E) = (s16) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y);
             M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x49) = 0U;
         }
         if ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 4) == 2) {
             if (pauseIsPause() == 0) {
                 M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x45)++;
             }
-            M2C_FIELD(p1, s16 *, 0x50) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x45) & 3]);
-            M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x45) & 3]);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E);
             return;
         }
-        M2C_FIELD(p1, s16 *, 0x50) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36);
-        M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E);
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x36);
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3E);
         return;
     case 0xE0:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x32) != 0));
@@ -2855,20 +2879,20 @@ void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
             return;
         }
         if ((u8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x4A) != 0) {
-            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38) = (s16) M2C_FIELD(p1, s16 *, 0x50);
-            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40) = (s16) M2C_FIELD(p1, s16 *, 0x52);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38) = (s16) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40) = (s16) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y);
             M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x4A) = 0U;
         }
         if ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 8) == 2) {
             if (pauseIsPause() == 0) {
                 M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x46)++;
             }
-            M2C_FIELD(p1, s16 *, 0x50) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x46) & 3]);
-            M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x46) & 3]);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40);
             return;
         }
-        M2C_FIELD(p1, s16 *, 0x50) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38);
-        M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40);
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x38);
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x40);
         return;
     case 0xEC:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x32) != 0));
@@ -2885,32 +2909,32 @@ void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
             return;
         }
         if ((u8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x4B) != 0) {
-            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A) = (s16) M2C_FIELD(p1, s16 *, 0x50);
-            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42) = (s16) M2C_FIELD(p1, s16 *, 0x52);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A) = (s16) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x);
+            M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42) = (s16) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y);
             M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x4B) = 0U;
         }
         if ((s32) M2C_FIELD(&gbaConectGBA_Connect_WORK, s32 *, 0xC) == 2) {
             if (pauseIsPause() == 0) {
                 M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x47)++;
             }
-            M2C_FIELD(p1, s16 *, 0x50) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x47) & 3]);
-            M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x) = (s16) (M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A) + tool_gba_x_anime[(s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x47) & 3]);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42);
             return;
         }
-        M2C_FIELD(p1, s16 *, 0x50) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A);
-        M2C_FIELD(p1, s16 *, 0x52) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42);
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x50, x) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x3A);
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) M2C_FIELD(&gbaConectGBA_Connect_WORK, s16 *, 0x42);
         return;
     case 0xED:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((s8) M2C_FIELD(&gbaConectGBA_Connect_WORK, u8 *, 0x33) != 0));
         return;
     case 0xFB:
-        M2C_FIELD(p1, s32 *, 0x4C) = 0x441C;
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s32 *, 0x4C, msg) = 0x441C;
         return;
     case 0xFC:
-        M2C_FIELD(p1, s32 *, 0x4C) = 0x441D;
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s32 *, 0x4C, msg) = 0x441D;
         return;
     case 0xFD:
-        M2C_FIELD(p1, s32 *, 0x4C) = 0x435E;
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s32 *, 0x4C, msg) = 0x435E;
     default:
         return;
     }
@@ -5450,7 +5474,7 @@ void menuTool_tunaideGCEntry01_Ctrl(tagWINDOW_WORK* window) {
     menuSetStatus(window->seq, 0x10);
 }
 extern "C" {
-void menuCB_tunaideGCEntry00_Disp(s32 p0, void *p1) {
+void menuCB_tunaideGCEntry00_Disp(GCsptr p0, void *p1) {
     s16 temp_r5;
 
     temp_r5 = M2C_FIELD(p1, s16 *, 6);
@@ -5474,100 +5498,100 @@ void menuCB_tunaideGCEntry00_Disp(s32 p0, void *p1) {
         menuCB2DPokemonDisp((u8 *) p0, p1, 7, 5);
         return;
     case 0x554:
-        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(0U));
+        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (u32)(7U), (s32)(0U));
         return;
     case 0x555:
-        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(1U));
+        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (u32)(7U), (s32)(1U));
         return;
     case 0x556:
-        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(2U));
+        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (u32)(7U), (s32)(2U));
         return;
     case 0x557:
-        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(3U));
+        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (u32)(7U), (s32)(3U));
         return;
     case 0x558:
-        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(4U));
+        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (u32)(7U), (s32)(4U));
         return;
     case 0x559:
-        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (unsigned long)(7U), (long)(5U));
+        menuCB2DPokemonItemDisp((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (u32)(7U), (s32)(5U));
         return;
     case 0x55A:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(0U), (long)(0U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(7U), (s32)(0U), (s32)(0U));
         return;
     case 0x55E:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(1U), (long)(0U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(7U), (s32)(1U), (s32)(0U));
         return;
     case 0x562:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(2U), (long)(0U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(7U), (s32)(2U), (s32)(0U));
         return;
     case 0x566:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(3U), (long)(0U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(7U), (s32)(3U), (s32)(0U));
         return;
     case 0x56A:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(4U), (long)(0U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(7U), (s32)(4U), (s32)(0U));
         return;
     case 0x56E:
-        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (long)(7U), (long)(5U), (long)(0U));
+        menuCBPokemonName((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (s32)(7U), (s32)(5U), (s32)(0U));
         return;
     case 0x55B:
-        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(0), (long)(0));
+        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(0), (s32)(0));
         return;
     case 0x55F:
-        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(1), (long)(0));
+        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(1), (s32)(0));
         return;
     case 0x563:
-        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(2), (long)(0));
+        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(2), (s32)(0));
         return;
     case 0x567:
-        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(3), (long)(0));
+        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(3), (s32)(0));
         return;
     case 0x56B:
-        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(4), (long)(0));
+        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(4), (s32)(0));
         return;
     case 0x56F:
-        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(5), (long)(0));
+        menuCBPokemonLevel((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(5), (s32)(0));
         return;
     case 0x55C:
-        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(0), (long)(0));
+        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(0), (s32)(0));
         return;
     case 0x560:
-        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(1), (long)(0));
+        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(1), (s32)(0));
         return;
     case 0x564:
-        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(2), (long)(0));
+        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(2), (s32)(0));
         return;
     case 0x568:
-        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(3), (long)(0));
+        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(3), (s32)(0));
         return;
     case 0x56C:
-        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(4), (long)(0));
+        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(4), (s32)(0));
         return;
     case 0x570:
-        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(5), (long)(0));
+        menuCBPokemonHP((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(5), (s32)(0));
         return;
     case 0x55D:
-        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(0), (long)(0));
+        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(0), (s32)(0));
         return;
     case 0x561:
-        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(1), (long)(0));
+        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(1), (s32)(0));
         return;
     case 0x565:
-        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(2), (long)(0));
+        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(2), (s32)(0));
         return;
     case 0x569:
-        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(3), (long)(0));
+        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(3), (s32)(0));
         return;
     case 0x56D:
-        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(4), (long)(0));
+        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(4), (s32)(0));
         return;
     case 0x571:
-        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (unsigned long)(7), (long)(5), (long)(0));
+        menuCBPokemonItemName((tagWINDOW_WORK *)(p0), (u32)(7), (s32)(5), (s32)(0));
         return;
     case 0x572:
-        fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x435E));
+        fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x435E));
         return;
     case 0x573:
-        fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x435F));
+        fn_80080390((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x435F));
         return;
     case 0x574:
         switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0)) {
@@ -6796,7 +6820,7 @@ block_17:
                             return;
                         }
                         menuCB_SE_Play(0x11);
-                        var_r7 = (u8*)(M2C_FIELD(&_CB, s32 *, 0xB02C) + (s32)M2C_FIELD(&_CB, u8 **, 0x9C78)) + 0x52;
+                        var_r7 = (u8*)(M2C_FIELD(&_CB, s32 *, 0xB02C) + (GCsptr)M2C_FIELD(&_CB, u8 **, 0x9C78)) + 0x52;
                         var_r7[M2C_FIELD(&_CB, s32 *, 0xB028)] ^= 1;
                         goto block_27;
                     }
@@ -7662,10 +7686,10 @@ void menuCB_Rule00_Disp(void *p0, void *p1) {
     bool var_r5;
 
     temp_r31 = (tagSPRITE_WORK *) p1;
-    temp_r0 = M2C_FIELD(temp_r31, s16 *, 6);
+    temp_r0 = M2C_NAMED(((SpriteWorkLayout*)(temp_r31)), s16 *, 0x6, id);
     switch (temp_r0) {
     case 0x3AA:
-        M2C_FIELD(temp_r31, s32 *, 0x4C) = 0;
+        M2C_NAMED(((SpriteWorkLayout*)(temp_r31)), s32 *, 0x4C, msg) = 0;
         menuCBRULE_EditNameDispLarge((CBWin*)((CBWin *) p0), M2C_FIELD(&_CB, s32 *, 0xB004));
         return;
     case 0x3B6:
@@ -7763,7 +7787,7 @@ void menuTool_Rule02_Ctrl(tagWINDOW_WORK* window) {
     menuCB_MenuDispCheckONorOFF_RULE(window, 1);
 }
 extern "C" {
-void menuCB_Rule01_Disp(s32 p0, void *p1) {
+void menuCB_Rule01_Disp(GCsptr p0, void *p1) {
     s32 temp_r0;
     bool var_r4;
     bool var_r4_10;
@@ -7806,31 +7830,31 @@ void menuCB_Rule01_Disp(s32 p0, void *p1) {
         M2C_FIELD(p1, s32 *, 0x4C) = 0x43DF;
         return;
     case 0x314:
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DD));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43DD));
         return;
     case 0x317:
         M2C_FIELD(p1, s32 *, 0x4C) = 0x43E0;
         return;
     case 0x3B7:
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DD));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43DD));
         break;
     case 0x318:
-        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CB));
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43CB));
         return;
     case 0x319:
-        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CC));
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43CC));
         return;
     case 0x31A:
-        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CD));
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43CD));
         return;
     case 0x31C:
-        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CE));
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43CE));
         return;
     case 0x31B:
-        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43CF));
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43CF));
         return;
     case 0x3BC:
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x441B));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x441B));
         return;
     case 0x3BE:
         M2C_FIELD(p1, s32 *, 0x4C) = 0x441A;
@@ -7969,129 +7993,129 @@ void menuCB_Rule01_Disp(s32 p0, void *p1) {
         break;
     case 0x2ED:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2EE:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2EF:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F0:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F1:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 0x64));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F2:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F3:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 3) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F4:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 3) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F5:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 4) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F6:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 4) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F7:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 5) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 0x64));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F8:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x10) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0) == 5) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2F9:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6)));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2FA:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2FB:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6)));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2FC:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2FD:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 2) * 6)));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2FE:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x11) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 4) == 2) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 4) != (s32) (M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0) * 6)));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2FF:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 0x63));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x300:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x301:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 0x63));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x302:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x12) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 8) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2EB:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x12U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x12U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x14) & 0x8000) != 0));
         return;
     case 0x303:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0x63));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x304:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0xA));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x305:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0x63));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x306:
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x13) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0xC) == 1) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) != 0xA));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x2EC:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x13U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x13U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)((M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x16) & 0x8000) != 0));
         return;
     case 0x3B9:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x14U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) == 1));
         return;
     case 0x3BA:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x14U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x14) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 1) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) != 6));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x3BB:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x14U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x14U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C) == 0x14) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1C) != 1) && ((s32) M2C_FIELD(&_ruleCursol, s32 *, 0x10) == 0) && ((s16) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s16 *, 0x1A) != 1));
-        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(1U));
+        menuCB_RuleDispColorChenge_flag((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(1U));
         return;
     case 0x67A:
     case 0x67B:
@@ -8141,26 +8165,26 @@ void menuTool_Rule03_Ctrl(tagWINDOW_WORK* window) {
     menuCB_MenuDispCheckONorOFF_RULE(window, 2);
 }
 extern "C" {
-void menuCB_Rule02_Disp(s32 p0, void *p1) {
+void menuCB_Rule02_Disp(GCsptr p0, void *p1) {
     s16 temp_r0;
     u8 temp_r5;
     u8 temp_r5_2;
     temp_r0 = M2C_FIELD(p1, s16 *, 6);
     switch (temp_r0) {
     case 0x330:
-        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43D0));
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43D0));
         break;
     case 0x331:
-        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43D1));
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43D1));
         break;
     case 0x332:
-        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43D2));
+        menuCBMessageYCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43D2));
         return;
     case 0x333:
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E1));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43E1));
         return;
     case 0x334:
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E2));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43E2));
         return;
     case 0x335:
         if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
@@ -8168,7 +8192,7 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
             return;
         }
         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E3));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43E3));
         return;
     case 0x336:
         if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
@@ -8176,7 +8200,7 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
             return;
         }
         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E4));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43E4));
         return;
     case 0x337:
         if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
@@ -8184,12 +8208,12 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
             return;
         }
         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DE));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43DE));
         return;
     case 0x689:
         if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
             winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-            menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43DE));
+            menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43DE));
             return;
         }
         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
@@ -8197,16 +8221,16 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
     case 0x68A:
         if (((s32) M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB014) == -1)) {
             winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 1U);
-            menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x4458));
+            menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x4458));
             return;
         }
         winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
         return;
     case 0x338:
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E3));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43E3));
         return;
     case 0x339:
-        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x43E4));
+        menuCBMessageCenterDisp((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x43E4));
         return;
     case 0x320:
     case 0x321:
@@ -8227,11 +8251,11 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(&_CB, s32 *, 0xB018) == 2));
         return;
     case 0x329:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x20U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x20U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC) == 1));
         return;
     case 0x32A:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x20U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x20U));
         temp_r5 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xC);
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), temp_r5 != 1);
         return;
@@ -8240,7 +8264,7 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
             winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
             return;
         }
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x21U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 0));
         break;
     case 0x32C:
@@ -8248,7 +8272,7 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
             winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
             return;
         }
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x21U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 1));
         return;
     case 0x32D:
@@ -8256,15 +8280,15 @@ void menuCB_Rule02_Disp(s32 p0, void *p1) {
             winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
             return;
         }
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x21U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x21U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), s32 *, 8) == 2));
         return;
     case 0x32E:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x22U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x22U));
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), (bool)(M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD) == 1));
         break;
     case 0x32F:
-        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (long)(0x22U));
+        menuCB_RuleDispColorChenge((tagWINDOW_WORK *)((CBWin*)((CBWin *) p0)), (tagSPRITE_WORK *)((CBItem*)((CBItem *) p1)), (s32)(0x22U));
         temp_r5_2 = M2C_FIELD(M2C_FIELD(&_CB, u8 **, 0x9C78), u8 *, 0xD);
         menuCB_SpriteDispCheckONorOFF((tagSPRITE_WORK *)((CBSprite*)((CBSprite *) p1)), temp_r5_2 != 1);
         break;
@@ -8622,10 +8646,10 @@ void menuCB_Rule06_Disp(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         menuCB_SpriteDispCheckONorOFF(sprite, (_CB.unkB02C == 10));
         break;
     case 0x3AD:
-        menuCB_RuleItemFlagDisp(window);
+        menuCB_RuleItemFlagDisp(window, sprite);
         break;
     case 0x3AF:
-        menuCB_RuleItemNameEntry(window);
+        menuCB_RuleItemNameEntry(window, sprite);
         break;
     case 0x3AE:
         menuCBMessageCenterDisp(window, sprite, 0x4415);

@@ -17,6 +17,10 @@ extern void LCLoadData(void *destAddr, void *srcAddr, u32 nBlocks);
 #ifndef ATTRIBUTE_ALIGN
 #define ATTRIBUTE_ALIGN(num) __attribute__((aligned(num)))
 #endif
+#ifndef __MWERKS__
+#undef ATTRIBUTE_ALIGN
+#define ATTRIBUTE_ALIGN(num)
+#endif
 
 typedef u8 THPSample;
 typedef s16 THPCoeff;
@@ -569,6 +573,7 @@ void __THPRestartDefinition(void)
 #endif
 
 #if defined(THP_DECODER_BUILD_MIDDLE)
+#ifdef __MWERKS__
 static inline void __THPGQRSetup(void)
 {
     register u32 tmp1, tmp2;
@@ -602,6 +607,10 @@ static inline void __THPGQRRestore(void)
         mtspr   GQR6, tmp2;
     }
 }
+#else
+static inline void __THPGQRSetup(void) {}
+static inline void __THPGQRRestore(void) {}
+#endif
 #endif
 
 #if defined(THP_DECODER_BUILD_CORE)

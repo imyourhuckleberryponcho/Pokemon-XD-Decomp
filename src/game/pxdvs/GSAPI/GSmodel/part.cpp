@@ -1,11 +1,83 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gsmodelview.h>
 
 struct _HSD_JObj;
 
 struct _GSmodel {
     u32 flags;
-    u8 unk4[8];
+    _GSmodel* next;
+    void* set;
     _HSD_JObj* jobj;
+    void* blendJObj;
+    void* blendDest;
+    f32 position[3];
+    f32 rotation[3];
+    f32 scale[3];
+    GSmodelBoundView bound;
+    void* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
+    s32 animType;
+    u32 animIndex;
+    f32 animRate;
+    f32 animFrame;
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
+    s32 texAnimType;
+    u32 texAnimIndex;
+    f32 texAnimRate;
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
+    GSmodelPartMixView partMix[12];
+    f32 blendFactor;
+    u8 animDirty;
+    u8 texAnimDirty;
+    u8 unk21E[2];
+    void* animEndedCallback;
+    void* animEndedCallbackArg;
+    GSmodelPartAnimView partAnim[16];
+    s32 attachMode;
+    _GSmodel* attachModel;
+    u32 attachIndex;
+    f32 attachPosition[3];
+    f32 attachRotation[3];
+    f32 attachScale[3];
+    void* particleBank;
+    u32 particleAttachMode;
+    void* materials;
+    u32 materialCount;
+    u32 shadowSurfaceCount;
+    void* shadowSurfaces;
+    void* shadowLight;
+    f32 groundPlane;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
 struct GSpart {

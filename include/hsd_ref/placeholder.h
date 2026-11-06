@@ -15,6 +15,15 @@ typedef jmp_t jtbl_t[];
 #define sqrtf__Ff(x) sqrtf(x)
 #define sqrtf_accurate(x) sqrtf(x)
 #define __fabs(f) fabsf(f)
+#ifdef __cplusplus
+extern "C" {
+#endif
+float fabsf(float);
+float sqrtf(float);
+double sqrt(double);
+#ifdef __cplusplus
+}
+#endif
 #endif
 
 #ifndef UNK_T

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma peephole off
 
@@ -69,7 +70,7 @@ void heroBiosSetHizukiFlag(void* hero, u8 v);
 void* memcpy(void* dst, const void* src, u32 n);
 void* memset(void* dst, int v, u32 n);
 CBRule* menuCBRule_ConstantRule(s32 i);
-CBRule* menuCBRule_ConstantRule2();
+CBRule* menuCBRule_ConstantRule2(s32 type);
 u8 menuCBRule_IsBlankPokemon(Pokemon* p);
 s32 menuCBRule_ParticipationPokemonMax();
 u16 menuCBRule_RegulationItemID(u32 i);
@@ -119,7 +120,7 @@ void* menuCB_RuleTitleNameGet(s32 i) {
     return _CB.rule[i].name;
 }
 
-u16 menuCBTrainerBios_GetPlayerID(CBTrainer* t) {
+PCRET(u16) menuCBTrainerBios_GetPlayerID(CBTrainer* t) {
     return t->playerId;
 }
 
@@ -321,8 +322,7 @@ s32 menuCBBios_CurrentRuleType(void) {
 CBRule* menuCBBios_CurrentRule(void) {
     CBRule* ore = menuCB_OreRule();
     if (ore != 0) return ore;
-    menuCBBios_CurrentRuleType();
-    CBRule* constant = menuCBRule_ConstantRule2();
+    CBRule* constant = menuCBRule_ConstantRule2(menuCBBios_CurrentRuleType());
     switch (menuCBBios_CurrentRuleType()) {
     case 0:
     case 1:

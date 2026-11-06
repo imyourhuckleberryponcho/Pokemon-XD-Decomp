@@ -1,4 +1,11 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/tigadata.h>
+#ifndef __MWERKS__
+namespace GSscript { struct TigaThread { void setSaveFlag(bool); }; }
+#define setSaveFlag__Q28GSscript10TigaThreadFb(o, ...) (((GSscript::TigaThread*)(o))->setSaveFlag(__VA_ARGS__))
+#endif
 
 #pragma pool_strings off
 #pragma peephole off
@@ -12,13 +19,13 @@ void tigaErrMessage(const char*);
 struct tigaVariant;
 struct tigaArrayFixed { tigaVariant* get(int); };
 struct tigaVariant {
-    s16 type;
-    u16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_be16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
     s32 getCnvInteger();
     GSvec* getCnvVector();
     char* getCnvString(char*);
-    inline char* getString(char* buffer) {
+    inline char* getString8(char* buffer) {
         if (type == 8) return (char*)value.pointer;
         return getCnvString(buffer);
     }
@@ -48,28 +55,23 @@ struct tigaVariant {
 };
 }
 struct HeroScriptContext {
-    u8 reserved[0x10];
-    GSscript::tigaVariant result;
-    u8 reserved18[0x20];
-    char text[0x100];
-    GSvec vector;
+    GSSCRIPT_TIGACONTEXT_DATA(GSscript::tigaVariant, GSvec)
 };
-class AppScript {
-    u8 reserved[0x914];
-    HeroScriptContext* context;
-    u8 reserved918[0x3C];
-    char* conversionBuffer;
-    u8 reserved958[0x28];
-    void* thread;
+struct AppScript {
+    GSSCRIPT_TIGA_DATA(GSscript::TigaChankView, GSscript::TigaObjManagerView, HeroScriptContext)
+    virtual ~AppScript();
+    GSscript::tigaWaza waza[7];
 public:
     s32 cmpMenu(int, GSscript::tigaVariant*, GSscript::tigaVariant*);
 };
 
 extern "C" {
 void GSthreadSwitch();
+#ifdef __MWERKS__
 void setSaveFlag__Q28GSscript10TigaThreadFb(void*, bool);
+#endif
 void* GSmsgGetGSchar(s32);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 void peopleBlock();
 void peopleUnblock();
 void scriptOpenItemMenu();
@@ -106,10 +108,10 @@ void menuScriptUsohachi2();
 s32 menuScriptWazaMeijin(s32);
 s32 menuScriptWazaBasan(u8*);
 void menuScriptSetWazaOboetaFlag(u16);
-void menuScriptMoneyOpen(s16, s16);
+void menuScriptMoneyOpen(PCARG(s16, s32), PCARG(s16, s32));
 void menuScriptMoneyClose();
 u8 menuScriptWazaBasanCheck();
-void menuScriptCouponOpen(s8, s8);
+void menuScriptCouponOpen(PCARG(s8, s32), PCARG(s8, s32));
 void menuScriptCouponClose();
 void menuOrreColosseum(u16);
 u16 menuOrreColosseumGetResult();
@@ -174,20 +176,20 @@ s32 AppScript::cmpMenu(int command, GSscript::tigaVariant* args, GSscript::tigaV
     }
     case 0x1C:
         if (args[1].getInteger() == 0x4D) {
-            msgctrlSetValue(0x4D, (u32)GSmsgGetGSchar(args[2].getInteger()));
+            msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(args[2].getInteger()));
         } else {
             if (args[2].type == 0x25) {
                 s32 a = args[1].getInteger();
-                msgctrlSetValue(a, (u32)args[2].getObject(0x25, "pokemon not access"));
+                msgctrlSetValue(a, (GCuptr)args[2].getObject(0x25, "pokemon not access"));
             } else if (args[2].type == 1) {
                 s32 a = args[1].getInteger();
                 msgctrlSetValue(a, args[2].getInteger());
             } else if (args[2].type == 8) {
                 s32 a = args[1].getInteger();
-                msgctrlSetValue(a, (u32)args[2].getString(conversionBuffer));
+                msgctrlSetValue(a, (GCuptr)args[2].getString8(stringBuffer));
             } else if (args[2].type == 2) {
                 s32 a = args[1].getInteger();
-                msgctrlSetValue(a, (u32)args[2].getSingle());
+                msgctrlSetValue(a, (GCuptr)args[2].getSingle());
             }
         }
         break;

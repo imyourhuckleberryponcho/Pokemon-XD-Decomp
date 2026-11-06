@@ -370,9 +370,9 @@ inline void HSD_LObjAddAnim(HSD_LObj* lobj, HSD_LightAnim* lanim)
         if (lobj->aobj) {
             HSD_AObjRemove(lobj->aobj);
         }
-        lobj->aobj = HSD_AObjLoadDesc(lanim->aobjdesc);
-        HSD_WObjAddAnim(HSD_LObjGetPositionWObj(lobj), lanim->position_anim);
-        HSD_WObjAddAnim(HSD_LObjGetInterestWObj(lobj), lanim->interest_anim);
+        lobj->aobj = HSD_AObjLoadDesc(GC_PTR(HSD_AObjDesc*, lanim->aobjdesc));
+        HSD_WObjAddAnim(HSD_LObjGetPositionWObj(lobj), GC_PTR(HSD_WObjAnim*, lanim->position_anim));
+        HSD_WObjAddAnim(HSD_LObjGetInterestWObj(lobj), GC_PTR(HSD_WObjAnim*, lanim->interest_anim));
     }
 }
 
@@ -1118,43 +1118,43 @@ bool HSD_LObjGetInterest(HSD_LObj* lobj, Vec3* interest)
 static int LObjLoad(HSD_LObj* lobj, HSD_LightDesc* ldesc)
 {
     HSD_LObjSetColor(lobj, ldesc->color);
-    HSD_LObjSetFlags(lobj, ldesc->flags);
-    switch (ldesc->flags & LOBJ_TYPE_MASK) {
+    HSD_LObjSetFlags(lobj, GC_BE16(ldesc->flags));
+    switch (GC_BE16(ldesc->flags) & LOBJ_TYPE_MASK) {
     case LOBJ_AMBIENT:
         break;
     case LOBJ_INFINITE:
-        HSD_LObjSetPositionWObj(lobj, HSD_WObjLoadDesc(ldesc->position));
+        HSD_LObjSetPositionWObj(lobj, HSD_WObjLoadDesc(GC_PTR(HSD_WObjDesc*, ldesc->position)));
         break;
     case LOBJ_POINT:
-        HSD_LObjSetPositionWObj(lobj, HSD_WObjLoadDesc(ldesc->position));
-        if (ldesc->attnflags & LOBJ_LIGHT_ATTN) {
+        HSD_LObjSetPositionWObj(lobj, HSD_WObjLoadDesc(GC_PTR(HSD_WObjDesc*, ldesc->position)));
+        if (GC_BE16(ldesc->attnflags) & LOBJ_LIGHT_ATTN) {
             HSD_LObjSetFlags(lobj, LOBJ_RAW_PARAM);
-            HSD_LObjSetAttnK(lobj, ldesc->u.attn->k0, ldesc->u.attn->k1,
-                             ldesc->u.attn->k2);
+            HSD_LObjSetAttnK(lobj, GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->k0), GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->k1),
+                             GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->k2));
         } else {
-            HSD_LObjSetDistAttn(lobj, ldesc->u.point->ref_dist,
-                                ldesc->u.point->ref_br,
-                                ldesc->u.point->dist_func);
+            HSD_LObjSetDistAttn(lobj, GC_BEF32(GC_PTR(HSD_LightPointDesc*, ldesc->u.point)->ref_dist),
+                                GC_BEF32(GC_PTR(HSD_LightPointDesc*, ldesc->u.point)->ref_br),
+                                GC_BE32(GC_PTR(HSD_LightPointDesc*, ldesc->u.point)->dist_func));
         }
         break;
     case LOBJ_SPOT:
-        HSD_LObjSetPositionWObj(lobj, HSD_WObjLoadDesc(ldesc->position));
-        HSD_LObjSetInterestWObj(lobj, HSD_WObjLoadDesc(ldesc->interest));
-        if (ldesc->attnflags & LOBJ_LIGHT_ATTN) {
+        HSD_LObjSetPositionWObj(lobj, HSD_WObjLoadDesc(GC_PTR(HSD_WObjDesc*, ldesc->position)));
+        HSD_LObjSetInterestWObj(lobj, HSD_WObjLoadDesc(GC_PTR(HSD_WObjDesc*, ldesc->interest)));
+        if (GC_BE16(ldesc->attnflags) & LOBJ_LIGHT_ATTN) {
             HSD_LObjSetFlags(lobj, LOBJ_RAW_PARAM);
-            HSD_LObjSetAttn(lobj, ldesc->u.attn->a0, ldesc->u.attn->a1,
-                            ldesc->u.attn->a2, ldesc->u.attn->k0,
-                            ldesc->u.attn->k1, ldesc->u.attn->k2);
+            HSD_LObjSetAttn(lobj, GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->a0), GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->a1),
+                            GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->a2), GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->k0),
+                            GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->k1), GC_BEF32(GC_PTR(HSD_LightAttn*, ldesc->u.attn)->k2));
         } else {
-            HSD_LObjSetDistAttn(lobj, ldesc->u.spot->ref_dist,
-                                ldesc->u.spot->ref_br,
-                                ldesc->u.spot->dist_func);
-            HSD_LObjSetSpot(lobj, ldesc->u.spot->cutoff,
-                            ldesc->u.spot->spot_func);
+            HSD_LObjSetDistAttn(lobj, GC_BEF32(GC_PTR(HSD_LightSpotDesc*, ldesc->u.spot)->ref_dist),
+                                GC_BEF32(GC_PTR(HSD_LightSpotDesc*, ldesc->u.spot)->ref_br),
+                                GC_BE32(GC_PTR(HSD_LightSpotDesc*, ldesc->u.spot)->dist_func));
+            HSD_LObjSetSpot(lobj, GC_BEF32(GC_PTR(HSD_LightSpotDesc*, ldesc->u.spot)->cutoff),
+                            GC_BE32(GC_PTR(HSD_LightSpotDesc*, ldesc->u.spot)->spot_func));
         }
         break;
     default:
-        OSReport("unexpected lightdesc flags (%x)\n", ldesc->flags);
+        OSReport("unexpected lightdesc flags (%x)\n", GC_BE16(ldesc->flags));
         HSD_Panic(HSD_FILE_NAME, 1632, "");
         break;
     }
@@ -1165,11 +1165,11 @@ HSD_LObj* HSD_LObjLoadDesc(HSD_LightDesc* ldesc)
 {
     HSD_LObj *top, **p = &top;
 
-    for (; ldesc; ldesc = ldesc->next) {
+    for (; ldesc; ldesc = GC_PTR(HSD_LightDesc*, ldesc->next)) {
         HSD_ClassInfo* info;
 
-        if (!ldesc->class_name ||
-            !(info = hsdSearchClassInfo(ldesc->class_name)))
+        if (!GC_PTR(char*, ldesc->class_name) ||
+            !(info = hsdSearchClassInfo(GC_PTR(char*, ldesc->class_name))))
         {
             *p = HSD_LObjAlloc();
         } else {
@@ -1193,7 +1193,7 @@ void HSD_LObjAddAnimAll(HSD_LObj* lobj, HSD_LightAnim* lanim)
         return;
     }
 
-    for (lp = lobj, la = lanim; lp; lp = next_p(lp), la = next_p(la)) {
+    for (lp = lobj, la = lanim; lp; lp = next_p(lp), la = (la != NULL ? GC_PTR(HSD_LightAnim*, la->next) : NULL)) {
         HSD_LObjAddAnim(lp, la);
     }
 }

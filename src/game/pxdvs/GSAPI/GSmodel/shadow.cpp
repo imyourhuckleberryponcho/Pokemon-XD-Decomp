@@ -1,5 +1,9 @@
 
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/gsmodelview.h>
 #include <dolphin/mtx.h>
 #include <dolphin/gx/GXVert.h>
 
@@ -33,10 +37,24 @@ struct HSD_ViewingRect {
     f32 b;
     f32 c;
     f32 d;
+    s8 flags;
 };
 struct GSlightData {
-    u8 pad0[8];
+    struct {
+        void* classInfo;
+        u16 refCount;
+        u16 refCountIndividual;
+    } parent;
     u16 flags;
+};
+struct GSlightHead {
+    u8 used;
+    u8 active;
+    u8 canAnimate;
+    u8 animating;
+    s32 type;
+    void* desc;
+    GSlightData* lobj;
 };
 
 enum GSgfxLayerID { GS_GFX_LAYER_NONE = -1 };
@@ -80,45 +98,140 @@ struct GScameraShadow {
 };
 
 struct ShadowVolume {
+#ifdef __MWERKS__
     u8 data[0x20];
+#else
+    union {
+        u8 data[sizeof(GSmodelBoundView)];
+        GSmodelBoundView view;
+    };
+#endif
 };
 
 struct _GSmodel {
     u32 flags;
     _GSmodel* next;
-    u8 pad8[0x1c - 8];
+    void* set;
+    void* jobj;
+    void* blendJObj;
+    void* blendDest;
+    f32 unk18;
     f32 groundY;
-    u8 pad20[0x28 - 0x20];
+    f32 unk20;
+    f32 unk24;
     f32 rotY;
-    u8 pad2c[0x30 - 0x2c];
+    f32 unk2C;
     GSvec scale;
+#ifdef __MWERKS__
     u8 bound[0x20];
+#else
+    union {
+        u8 bound[sizeof(GSmodelBoundView)];
+        GSmodelBoundView boundView;
+    };
+#endif
     GScameraShadow* camera;
     u16 flags2;
     u16 token;
-    u8 pad64[0x5e8 - 0x64];
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
+    s32 animType;
+    u32 animIndex;
+    f32 animRate;
+    f32 animFrame;
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
+    s32 texAnimType;
+    u32 texAnimIndex;
+    f32 texAnimRate;
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
+    GSmodelPartMixView partMix[12];
+    f32 blendFactor;
+    u8 animDirty;
+    u8 texAnimDirty;
+    u8 unk21E[2];
+    void* animEndedCallback;
+    void* animEndedCallbackArg;
+    GSmodelPartAnimView partAnim[16];
+    s32 attachMode;
+    _GSmodel* attachModel;
+    u32 attachIndex;
+    f32 attachPosition[3];
+    f32 attachRotation[3];
+    f32 attachScale[3];
+    void* particleBank;
+    u32 particleAttachMode;
+    void* materials;
+    u32 materialCount;
     u32 shadowSurfaceCount;
     void* shadowSurfaces;
     GSlight* shadowLight;
     f32 groundPlane;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
 struct HSD_MObj {
-    u8 pad0[4];
+    void* class_info;
     u32 flags;
 };
 
 struct HSD_DObj {
-    u8 pad0[4];
+    void* class_info;
     HSD_DObj* next;
     HSD_MObj* mobj;
 };
 
+#ifdef __MWERKS__
 struct _HSD_JObj {
     u8 pad0[0x14];
     u32 flags;
     HSD_DObj* dobj;
 };
+#else
+struct _HSD_JObj {
+    void* pcObject[2];
+    _HSD_JObj* next;
+    _HSD_JObj* parent;
+    _HSD_JObj* child;
+    u32 flags;
+    HSD_DObj* dobj;
+    Vec rotate;
+    f32 rotateW;
+    Vec scale;
+    Vec translate;
+    Mtx mtx;
+    void* scl;
+    void* envelopemtx;
+    void* aobj;
+    void* robj;
+    u32 id;
+};
+#endif
 typedef _HSD_JObj HSD_JObj;
 
 extern "C" {
@@ -129,12 +242,16 @@ void* GSmemAlloc(u32 size);
 void GSmemFree(void*);
 void GStextureSetFilter(GStexture*, s32, s32, u32);
 void HSD_ShadowSetDebug(u8);
-void HSD_ShadowSetActive(HSD_Shadow*, u8);
+void HSD_ShadowSetActive(HSD_Shadow*, PCARG(u8, int));
 void HSD_ShadowFreeTexture(HSD_Shadow*);
 HSD_Shadow* HSD_ShadowAlloc(void);
 }
 void GSgfxRenderWaitForDrawComplete();
+#ifdef __MWERKS__
 HSD_JObj* modelGetRenderJObj(_GSmodel*);
+#else
+HSD_JObj* modelGetRenderJObj(_GSmodel* model);
+#endif
 extern "C" void HSD_JObjWalkTree(HSD_JObj*, void* func, void* data);
 
 struct GSgfxVF;
@@ -142,7 +259,9 @@ struct BlendState {
     u8 pad[0xbc];
 };
 
-class GSgfxLayer {
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderStateAndSelect(GSgfxVF* vf);
     void beginSurface(u16 count);
@@ -151,62 +270,10 @@ public:
     void InvalidateState();
     u16 tokenMark();
 
-    u8 pad0[4];
-    u32 flags4;
-    u8 pad8[0xd34 - 8];
-    u8 lineWidth;
-    u8 padd35[3];
-    s32 lineOffsets;
-    u8 padd3c[0xd90 - 0xd3c];
-    s32 d90;
-    u8 padd94[0x1644 - 0xd94];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 pad1654[2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad1659[3];
-    u8 zEnable;
-    u8 pad165d[3];
-    s32 zFunc;
-    s32 f1664;
-    s32 f1668;
-    s32 f166c;
-    u8 f1670;
-    u8 f1671;
-    u8 f1672;
-    u8 pad1673[0x16a8 - 0x1673];
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad16b0[0x16b8 - 0x16b0];
-    u32 dirty16b8;
-    u8 pad16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad1710[0x173c - 0x1710];
-    u32 dirty173c;
-    GStexture* tex1740;
-    u8 pad1744[0x1760 - 0x1744];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad1768[0x1770 - 0x1768];
-    u32 dirty1770;
-    u8 pad1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
-    u8 pad17c8[0x17f4 - 0x17c8];
-    u32 dirty17f4;
-    GStexture* tex17f8;
-    u8 pad17fc[0x1818 - 0x17fc];
-    BlendState blendTable[2];
-    BlendState* curBlend;
-    s32 curBlendIdx;
-    u32 primType;
 };
 
 extern "C" {
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 bool GSlightGetPosition(GSlight*, Vec*);
 void GSboundGetWorldPosition(void* bound, Vec* pos);
@@ -216,63 +283,63 @@ void GSprimSetup3DRender(GSgfxLayer* layer);
 
 static inline void _layerBlendNormal(GSgfxLayer* l)
 {
-    if (l->curBlendIdx != 0) {
-        l->curBlendIdx = 0;
-        l->curBlend = &l->blendTable[l->curBlendIdx];
+    if ((*(s32*)&l->curPass) != 0) {
+        (*(s32*)&l->curPass) = 0;
+        l->curFifo = &l->passes[l->curPass];
     }
-    l->blendOp = 0;
-    l->blendSrc = 1;
-    l->blendDst = 1;
-    l->blendLogic = 5;
-    l->dirty170c |= 1;
-    l->dirty16a8 |= 0x40;
-    l->dirty17c4 |= 1;
-    l->dirty1760 |= 0x40;
+    (*(s32*)&l->hw.blend[0]) = 0;
+    (*(s32*)&l->hw.blend[1]) = 1;
+    (*(s32*)&l->hw.blend[2]) = 1;
+    (*(s32*)&l->hw.blend[3]) = 5;
+    (*(u32*)&l->dirty[0].pe) |= 1;
+    (*(u32*)&l->dirty[0].groups) |= 0x40;
+    (*(u32*)&l->dirty[1].pe) |= 1;
+    (*(u32*)&l->dirty[1].groups) |= 0x40;
 }
 
 static inline void _layerSetZ(GSgfxLayer* l, u8 enable, s32 func)
 {
-    l->zEnable = enable;
-    l->zFunc = func;
-    l->dirty170c |= 8;
-    l->dirty16a8 |= 0x40;
-    l->dirty17c4 |= 8;
-    l->dirty1760 |= 0x40;
+    (*(u8*)&l->hw.zEnable) = enable;
+    (*(s32*)&l->hw.zFunc) = func;
+    (*(u32*)&l->dirty[0].pe) |= 8;
+    (*(u32*)&l->dirty[0].groups) |= 0x40;
+    (*(u32*)&l->dirty[1].pe) |= 8;
+    (*(u32*)&l->dirty[1].groups) |= 0x40;
 }
 
 static inline void _layerSetAlphaCompare(GSgfxLayer* l, s32 a, u8 b, s32 c, s32 d, u8 e, u8 f)
 {
-    l->f1664 = a;
-    l->f1670 = b;
-    l->f1668 = c;
-    l->f166c = d;
-    l->f1671 = e;
-    l->f1672 = f;
-    l->dirty170c |= 0x10;
-    l->dirty16a8 |= 0x40;
-    l->dirty17c4 |= 0x10;
-    l->dirty1760 |= 0x40;
+    (*(s32*)&l->hw.alphaComp0) = a;
+    (*(u8*)&l->hw.alphaRef0) = b;
+    (*(s32*)&l->hw.alphaCmpOp) = c;
+    (*(s32*)&l->hw.alphaComp1) = d;
+    (*(u8*)&l->hw.alphaRef1) = e;
+    (*(u8*)&l->hw.zCompLoc) = f;
+    (*(u32*)&l->dirty[0].pe) |= 0x10;
+    (*(u32*)&l->dirty[0].groups) |= 0x40;
+    (*(u32*)&l->dirty[1].pe) |= 0x10;
+    (*(u32*)&l->dirty[1].groups) |= 0x40;
 }
 
 static inline void _layerSetDepthTest(GSgfxLayer* l, u8 a, u8 b, u8 c)
 {
-    l->colorUpdate = a;
-    l->alphaUpdate = b;
-    l->zUpdate = c;
-    l->dirty170c |= 4;
-    l->dirty16a8 |= 0x40;
-    l->dirty17c4 |= 4;
-    l->dirty1760 |= 0x40;
+    (*(u8*)&l->hw.colorUpdate) = a;
+    (*(u8*)&l->hw.alphaUpdate) = b;
+    (*(u8*)&l->hw.zUpdate) = c;
+    (*(u32*)&l->dirty[0].pe) |= 4;
+    (*(u32*)&l->dirty[0].groups) |= 0x40;
+    (*(u32*)&l->dirty[1].pe) |= 4;
+    (*(u32*)&l->dirty[1].groups) |= 0x40;
 }
 
 static inline void _layerSetLineWidth(GSgfxLayer* l, u8 w)
 {
-    l->lineWidth = w;
-    l->lineOffsets = 0;
-    l->dirty16ac |= 4;
-    l->dirty16a8 |= 1;
-    l->dirty1764 |= 4;
-    l->dirty1760 |= 1;
+    (*(u8*)&l->hw.lineWidth) = w;
+    (*(s32*)&l->hw.lineOffset) = 0;
+    (*(u32*)&l->dirty[0].geom) |= 4;
+    (*(u32*)&l->dirty[0].groups) |= 1;
+    (*(u32*)&l->dirty[1].geom) |= 4;
+    (*(u32*)&l->dirty[1].groups) |= 1;
 }
 
 static inline void _shadowDbgVertex(Vec* p, u8 r, u8 g, u8 b, u8 a)
@@ -293,27 +360,27 @@ struct ShadowColor {
 
 static inline void _layerBlendShadow(GSgfxLayer* l)
 {
-    if (l->curBlendIdx != 1) {
-        l->curBlendIdx = 1;
-        l->curBlend = &l->blendTable[l->curBlendIdx];
+    if ((*(s32*)&l->curPass) != 1) {
+        (*(s32*)&l->curPass) = 1;
+        l->curFifo = &l->passes[l->curPass];
     }
-    l->blendOp = 3;
-    l->blendSrc = 4;
-    l->blendDst = 5;
-    l->blendLogic = 5;
-    l->dirty170c |= 1;
-    l->dirty16a8 |= 0x40;
-    l->dirty17c4 |= 1;
-    l->dirty1760 |= 0x40;
+    (*(s32*)&l->hw.blend[0]) = 3;
+    (*(s32*)&l->hw.blend[1]) = 4;
+    (*(s32*)&l->hw.blend[2]) = 5;
+    (*(s32*)&l->hw.blend[3]) = 5;
+    (*(u32*)&l->dirty[0].pe) |= 1;
+    (*(u32*)&l->dirty[0].groups) |= 0x40;
+    (*(u32*)&l->dirty[1].pe) |= 1;
+    (*(u32*)&l->dirty[1].groups) |= 0x40;
 }
 
 static inline void _layerSetTexture(GSgfxLayer* l, GStexture* tex)
 {
-    if (l->tex1740 != tex || l->tex17f8 != tex || tex->f7 != 0) {
-        l->tex1740 = tex;
-        l->dirty173c |= 1;
-        l->tex17f8 = tex;
-        l->dirty17f4 |= 1;
+    if ((*(GStexture**)&l->dirty[0].tex[0]) != tex || (*(GStexture**)&l->dirty[1].tex[0]) != tex || tex->f7 != 0) {
+        (*(GStexture**)&l->dirty[0].tex[0]) = tex;
+        (*(u32*)&l->dirty[0].texMask) |= 1;
+        (*(GStexture**)&l->dirty[1].tex[0]) = tex;
+        (*(u32*)&l->dirty[1].texMask) |= 1;
     }
 }
 
@@ -322,7 +389,7 @@ static inline void _shadowTexVertex(f32 x, f32 y, f32 z, ShadowColor c, f32 u, f
     GXWGFifo.f32 = x;
     GXWGFifo.f32 = y;
     GXWGFifo.f32 = z;
-    GXWGFifo.u32 = *(u32*)&c;
+    GXWGFifo.u32 = GC_BYTES32(&c);
     GXWGFifo.f32 = u;
     GXWGFifo.f32 = v;
 }
@@ -332,7 +399,7 @@ static inline void _shadowTexVertexV(Vec p, ShadowColor c, f32 u, f32 v)
     GXWGFifo.f32 = p.x;
     GXWGFifo.f32 = p.y;
     GXWGFifo.f32 = p.z;
-    GXWGFifo.u32 = *(u32*)&c;
+    GXWGFifo.u32 = GC_BYTES32(&c);
     GXWGFifo.f32 = u;
     GXWGFifo.f32 = v;
 }
@@ -371,7 +438,7 @@ void HSD_ShadowCopyTex(HSD_Shadow* shadow);
 void HSD_ShadowRender(HSD_Shadow* shadow);
 void HSD_ShadowSetSize(HSD_Shadow* shadow, u16 w, u16 h);
 void HSD_ShadowSetViewingRect(HSD_Shadow* shadow, f32 a, f32 b, f32 c, f32 d);
-void HSD_ViewingRectInit(HSD_ViewingRect* rect, Vec* eye, Vec* interest, Vec* up, u8 persp);
+void HSD_ViewingRectInit(HSD_ViewingRect* rect, Vec* eye, Vec* interest, Vec* up, PCARG(u8, int) persp);
 void HSD_ViewingRectAddRect(HSD_ViewingRect* rect, Vec* pos, f32 a, f32 b, f32 c, f32 d);
 s32 HSD_ViewingRectCheck(HSD_ViewingRect* rect);
 void HSD_CObjSetProjectionType(HSD_CObj* cobj, s32 type);
@@ -423,7 +490,7 @@ void modelShadowRenderDebug(void)
     _layerSetZ(layer, 1, 3);
     _layerSetAlphaCompare(layer, 7, 0, 0, 7, 0, 1);
     _layerSetDepthTest(layer, 1, 0, 0);
-    layer->primType = 0xA8;
+    (*(u32*)&layer->unk1998) = 0xA8;
     _layerSetLineWidth(layer, 9);
     for (i = 0; i < 5; i++) {
         r = &_modelShadowReceiveList[i];
@@ -504,7 +571,7 @@ void modelShadowRenderMarukage(_GSmodel* model, GSgfxLayer* layer)
     _layerSetZ(layer, 1, 3);
     _layerSetAlphaCompare(layer, 7, 0, 0, 7, 0, 1);
     _layerSetDepthTest(layer, 1, 0, 0);
-    layer->primType = 0x98;
+    (*(u32*)&layer->unk1998) = 0x98;
     layer->beginSurface(4);
     _shadowTexVertexV(pos, color, zero, zero);
     _shadowTexVertex(pos.x, pos.y, corner.z, color, zero, one);
@@ -513,8 +580,16 @@ void modelShadowRenderMarukage(_GSmodel* model, GSgfxLayer* layer)
     layer->endSurface();
 }
 
+#ifndef __MWERKS__
+extern "C" int HSD_ShadowPCHasTexture(HSD_Shadow* shadow);
+extern "C" void HSD_ShadowPCSetIntensity(HSD_Shadow* shadow, u8 intensity);
+#endif
+
 static inline bool _shadowHasTexture(HSD_Shadow* shadow)
 {
+#ifndef __MWERKS__
+    return HSD_ShadowPCHasTexture(shadow) != 0;
+#endif
     ShadowObj* obj = (ShadowObj*)shadow;
 
     if (obj == 0) {
@@ -551,16 +626,16 @@ static inline int _shadowClassify(f32 x)
 
 static inline void _layerResetD90(GSgfxLayer* l)
 {
-    l->d90 = 0;
-    l->dirty16b8 |= 4;
-    l->dirty16a8 |= 2;
-    l->dirty1770 |= 4;
-    l->dirty1760 |= 2;
+    (*(s32*)&l->hw.clipMode) = 0;
+    (*(u32*)&l->dirty[0].raster) |= 4;
+    (*(u32*)&l->dirty[0].groups) |= 2;
+    (*(u32*)&l->dirty[1].raster) |= 4;
+    (*(u32*)&l->dirty[1].groups) |= 2;
 }
 
 static inline u32 _shadowLightType(GSlight* light)
 {
-    return (*(GSlightData**)((u8*)light + 0xC))->flags & 3;
+    return ((GSlightHead*)light)->lobj->flags & 3;
 }
 
 void modelShadowRender(GSgfxLayer* layer)
@@ -633,7 +708,7 @@ void modelShadowRender(GSgfxLayer* layer)
                     PSVECScale(&avg, &avg, 1.0f / (f32)j);
                 }
                 HSD_CObjSetInterest(r->shadow->cobj, &avg);
-                HSD_ShadowCopyLightPos(r->shadow, *(void**)((u8*)r->light + 0xC), 30.0f);
+                HSD_ShadowCopyLightPos(r->shadow, ((GSlightHead*)r->light)->lobj, 30.0f);
                 HSD_CObjSetNear(r->shadow->cobj, 0.1f);
                 HSD_CObjSetFar(r->shadow->cobj, 3000.0f);
                 dist = HSD_CObjGetEyeDistance(r->shadow->cobj);
@@ -701,7 +776,11 @@ void modelShadowRender(GSgfxLayer* layer)
                     if (shadow == 0) {
                         __assert("shadow.h", 0x6c, "shadow");
                     }
+#ifdef __MWERKS__
                     shadow->intensity = shade;
+#else
+                    HSD_ShadowPCSetIntensity(shadow, shade);
+#endif
                 }
                 HSD_ShadowSetSize(r->shadow, _modelShadowXsize, _modelShadowYsize);
                 r->active = 1;
@@ -718,8 +797,8 @@ void modelShadowRender(GSgfxLayer* layer)
                 HSD_ShadowDeleteObject(r->shadow, 0);
             }
         }
-        layer->flags4 |= 0x10000000;
-        layer->flags4 |= 0x20000000;
+        (*(u32*)&layer->flags) |= 0x10000000;
+        (*(u32*)&layer->flags) |= 0x20000000;
     }
 }
 
@@ -978,7 +1057,7 @@ void GSmodelSetShadowTextureSize(s32 width, s32 height)
 void GSmodelSetShadowLight(_GSmodel* model, GSlight* light)
 {
     if (light != 0) {
-        if ((*(u16*)((u8*)*(void**)((u8*)light + 0xC) + 8) & 3) == 0) {
+        if ((((GSlightHead*)light)->lobj->flags & 3) == 0) {
             light = 0;
         }
     }
@@ -995,7 +1074,7 @@ void GSmodelSetShadowSurface(_GSmodel* model, s32 count, void* surfaces)
         return;
     }
     if (model->shadowSurfaces == 0) {
-        model->shadowSurfaces = GSmemAlloc(0x20);
+        model->shadowSurfaces = GSmemAlloc(8 * sizeof(_GSmodel*));
         model->shadowSurfaceCount = 0;
         if (_modelShadowLayerUseCount == 0) {
             modelShadowLayerID = GSgfxLayerConfig::Add("model shadow", 0, 0x40000, 4, (GSgfxLayerType)0, false, false,
@@ -1004,7 +1083,7 @@ void GSmodelSetShadowSurface(_GSmodel* model, s32 count, void* surfaces)
         _modelShadowLayerUseCount++;
     }
     model->shadowSurfaceCount = count;
-    memcpy(model->shadowSurfaces, surfaces, model->shadowSurfaceCount << 2);
+    memcpy(model->shadowSurfaces, surfaces, model->shadowSurfaceCount * sizeof(_GSmodel*));
 }
 
 void GSmodelClearShadowFlags(_GSmodel* model, u32 flags)

@@ -4,6 +4,7 @@
 
 struct GSthread;
 struct FloorData;
+struct GSfloor_dd_;
 struct AppScript;
 
 enum FloorState {
@@ -12,7 +13,7 @@ enum FloorState {
 
 class GSresID {
 public:
-    void set(unsigned long group, unsigned long id);
+    void set(u32 group, u32 id);
     void clear();
 
     u32 m_group;
@@ -22,15 +23,15 @@ public:
 class FloorStack {
 public:
     FloorStack();
-    void addResource(unsigned long group, unsigned long id);
+    void addResource(u32 group, u32 id);
     void freeAllResource();
-    void freeResource(unsigned long group, unsigned long id);
+    void freeResource(u32 group, u32 id);
     void unblock();
     void block();
     void reallocPushData();
-    void setPushState(void* data, unsigned long size);
-    void setGroupID(unsigned long groupID);
-    void setFloorID(unsigned long floorID);
+    void setPushState(void* data, u32 size);
+    void setGroupID(u32 groupID);
+    void setFloorID(u32 floorID);
     u32 getFloorID() const;
     int getObjective();
     void clearFlag();
@@ -56,15 +57,15 @@ public:
 
 class FloorStackList {
 public:
-    FloorStackList(unsigned long num);
+    FloorStackList(u32 num);
     ~FloorStackList();
     void unblock();
     void block();
-    void setGroupID(unsigned long groupID);
-    void setPushState(void* data, unsigned long size);
+    void setGroupID(u32 groupID);
+    void setPushState(void* data, u32 size);
     void setUpdateState(FloorState state);
     int getObjective();
-    FloorData* getGSfloor();
+    GSfloor_dd_* getGSfloor();
     int getStateMode();
     FloorStack* pop();
     FloorStack* push(unsigned int floorID);
@@ -103,13 +104,13 @@ void FloorStackList::block() {
     getCurrentStack()->block();
 }
 
-void FloorStackList::setGroupID(unsigned long groupID) {
+void FloorStackList::setGroupID(u32 groupID) {
     FloorStack* stack = getCurrentStack();
     stack->setGroupID(groupID);
     stack->unblock();
 }
 
-void FloorStackList::setPushState(void* data, unsigned long size) {
+void FloorStackList::setPushState(void* data, u32 size) {
     getCurrentStack()->setPushState(data, size);
 }
 
@@ -121,8 +122,8 @@ int FloorStackList::getObjective() {
     return getCurrentStack()->getObjective();
 }
 
-FloorData* FloorStackList::getGSfloor() {
-    return floorDataBiosGetPtr(getCurrentStack()->getFloorID());
+GSfloor_dd_* FloorStackList::getGSfloor() {
+    return (GSfloor_dd_*)floorDataBiosGetPtr(getCurrentStack()->getFloorID());
 }
 
 int FloorStackList::getStateMode() {
@@ -161,7 +162,7 @@ FloorStackList::~FloorStackList() {
     }
 }
 
-FloorStackList::FloorStackList(unsigned long num) {
+FloorStackList::FloorStackList(u32 num) {
     u32 i;
     m_stacks = new FloorStack[num];
     m_depth = 0;
@@ -171,7 +172,7 @@ FloorStackList::FloorStackList(unsigned long num) {
     }
 }
 
-void FloorStack::addResource(unsigned long group, unsigned long id) {
+void FloorStack::addResource(u32 group, u32 id) {
     GSresID* res;
     for (res = m_resources; res != &m_resources[64]; res++) {
         if (res->m_group == group && res->m_id == id) {
@@ -197,7 +198,7 @@ void FloorStack::freeAllResource() {
     memset(m_resources, 0, sizeof(m_resources));
 }
 
-void FloorStack::freeResource(unsigned long group, unsigned long id) {
+void FloorStack::freeResource(u32 group, u32 id) {
     GSresID* res;
     for (res = m_resources; res != &m_resources[64]; res++) {
         if (res->m_group == group && res->m_id == id) {
@@ -229,19 +230,19 @@ void FloorStack::reallocPushData() {
     }
 }
 
-void FloorStack::setPushState(void* data, unsigned long size) {
+void FloorStack::setPushState(void* data, u32 size) {
     m_pushData = data;
     m_pushSize = size;
 }
 
-void FloorStack::setGroupID(unsigned long groupID) {
+void FloorStack::setGroupID(u32 groupID) {
     m_groupID = groupID;
     if (m_thread != NULL) {
         GSthreadSetGroupID(m_thread, groupID + 0x2000);
     }
 }
 
-void FloorStack::setFloorID(unsigned long floorID) {
+void FloorStack::setFloorID(u32 floorID) {
     m_floorID = floorID;
     m_groupID = floorID + 0x5001;
 }
@@ -300,7 +301,7 @@ FloorStack::FloorStack() {
 }
 #pragma dont_inline reset
 
-inline void GSresID::set(unsigned long group, unsigned long id) {
+inline void GSresID::set(u32 group, u32 id) {
     m_group = group;
     m_id = id;
 }

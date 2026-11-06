@@ -3,15 +3,22 @@
 
 class ModelSequence {
 public:
-    u8 unk0[4];
+    void* vtbl;
     u16 id;
-    u8 unk6[0x50 - 6];
+    u8 unk6[0x30 - 6];
+    void* m_list;
+    void* m_camera;
+    void* m_next;
+    u8 unk3C[0x50 - 0x3C];
     s8 size;
     u8 unk51;
     u8 sequenceId;
-    u8 unk53[0x94 - 0x53];
+    u8 unk53[0x64 - 0x53];
+    void* m_unk64;
+    u8 unk68[0x78 - 0x68];
+    void* unk78[7];
     void* model;
-    u8 unk98[4];
+    void* unk98;
     u8* timings;
 };
 
@@ -64,10 +71,16 @@ struct FOVKey {
     f32 endTime;
 };
 
+extern "C" {
 FOVKey gFOVlist[2];
+}
+extern "C" {
 f32 gCurrentFOV = 30.0f;
+}
 s32 gLastMotionType = 5;
+extern "C" {
 f32 gCurrentFOVTime;
+}
 
 extern "C" double atan2(double y, double x);
 
@@ -201,7 +214,12 @@ static inline void FovMix(u8 choice, f32* mixStart, f32* mixEnd) {
     }
 }
 
+#ifdef __MWERKS__
 extern "C" void cameraMoveRotationXYZ(int, f32 x, f32 y, f32 z, f32 time);
+#else
+extern "C" void cameraMoveRotationXYZ(f32 x, f32 y, f32 z, f32 time);
+#define cameraMoveRotationXYZ(mode, ...) ((void)(mode), cameraMoveRotationXYZ(__VA_ARGS__))
+#endif
 
 void _wazaSequenceCameraDoDollyPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
                                         f32 scale, bool reverse);

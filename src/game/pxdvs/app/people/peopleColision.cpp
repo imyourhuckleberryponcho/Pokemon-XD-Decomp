@@ -5,7 +5,9 @@ struct GSvec {
 };
 
 struct PeopleWork {
-    u8 unk0[0x1C];
+    u8 unk0[0x8];
+    void* model;
+    u8 padC[0x10];
     u32 modelResID;
 };
 

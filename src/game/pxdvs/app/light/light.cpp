@@ -7,14 +7,14 @@ enum FloorEnterMode {
 };
 
 struct FloorModuleInterface {
-    u32 unk0;
+    void* unk0;
     void (*initialize)(unsigned int groupID, FloorEnterMode mode);
     void (*update)(unsigned int groupID, FloorEnterMode mode);
-    u32 unkC;
+    void* unkC;
     void (*finalize)(unsigned int groupID, FloorEnterMode mode);
-    u32 unk14;
+    void* unk14;
     const char* (*getModuleName)(void);
-    u8 unk1C[0x10];
+    void* unk1C[4];
 };
 
 class LightEditor {

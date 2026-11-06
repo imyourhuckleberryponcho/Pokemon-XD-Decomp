@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/pxdvs/GSAPI/GSflag/flagData.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -21,9 +23,25 @@ union FlagCursorU {
 struct FlagWindow {
     u8 unk0[4];
     s32 menu;
-    u8 unk8[0x14];
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
-    u8 unk20[0x68];
+    u8 unk20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
     s32 selection;
     u8 unk8C[0x10];
     FlagCursor cursor;
@@ -32,25 +50,6 @@ struct FlagWindow {
 struct FlagDataInfo {
     u32 num;
     s16 first;
-};
-
-struct FlagData {
-    u8 unk0[4];
-    s16 next;
-};
-
-struct FlagEtc {
-    u8 type;
-    u8 unk1;
-    u16 floor;
-    u16 pokedoru;
-    u8 unk6[2];
-    u32 flagValue;
-    void* script;
-    f32 x;
-    f32 y;
-    f32 z;
-    void* msg;
 };
 
 extern "C" {
@@ -67,10 +66,10 @@ u32 GSmsgGetRect(void*);
 void GSprint(s32 layer, s32 x, s32 y, u32 color, const char* fmt, ...);
 void GSsndPlayNow(s32);
 void GSthreadSwitch(void);
-void appScriptCommonCall(void*);
+void appScriptCommonCall(int function);
 s32 dbgMenuGetLayerID(void);
 void floorChangePos(s32 floor, s32, f32, f32, f32);
-void heroBiosSetPokedoru(void*, u16);
+void heroBiosSetPokedoru(void*, PCARG(u16, s32));
 void heroSetFollowerWithID(s32, s32);
 void menuClose(s32);
 u8 menuDataBiosGetDispMax(s32);
@@ -247,7 +246,7 @@ void dbgMenuFlagCursor(FlagWindow* window) {
     }
     s16 rf_t = u.raw;
     *(u32*)&window->cursor = rf_t;
-    window->selection = u.c.top + (u.c.pos + 1);
+    window->selection = (u.c.pos + 1) + u.c.top;
 }
 
 void dbgMenuFlagSetEtc(s32 index);

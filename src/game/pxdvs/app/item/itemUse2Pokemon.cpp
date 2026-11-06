@@ -1,7 +1,9 @@
 #include <dolphin/types.h>
+#include <game/statusval.h>
+#include <game/fightfloor.h>
 
-class Pokemon;
-class FightPokemon;
+struct Pokemon;
+struct FightPokemon;
 class FightOutPokemon;
 class FightTrainer;
 class FIGHT_FLOOR;
@@ -92,7 +94,7 @@ void pokemonBiosSetPokemonWazaPpCount(Pokemon* poke, u32 wazaNum, u8 count);
 u8 pokemonDataBiosGetGrowDataId(PokemonData* pdata);
 PokemonData* pokemonDataBiosGetPtr(u16 pokeNum);
 u8 pokemonGetDarkPokemonLevel(Pokemon* pokemon);
-u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
+StatusU32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
 int pokemonGrowDataBiosGetExp(PokemonGrowDataBios* data, u8 level);
 PokemonGrowDataBios* pokemonGrowDataBiosGetPtr(u8 index);
 void pokemonInitJoutaiDataId(Pokemon* pokemon, u16 joutaiDataId);
@@ -126,10 +128,10 @@ s32 itemUse2PokemonSimulation(ITEMUSE2POKEMON_LOG1* a, Pokemon* b, FightPokemon*
     if (floor == 0) {
         return 0;
     }
-    saved = GSmemAlloc(0xE318);
-    memcpy(saved, floor, 0xE318);
+    saved = GSmemAlloc(FIGHT_FLOOR_SIZE);
+    memcpy(saved, floor, FIGHT_FLOOR_SIZE);
     result = itemUse2Pokemon(a, b, c, d, e);
-    memcpy(floor, saved, 0xE318);
+    memcpy(floor, saved, FIGHT_FLOOR_SIZE);
     GSmemFree(saved);
     return result;
 }

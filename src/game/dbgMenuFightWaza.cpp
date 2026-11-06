@@ -1,10 +1,16 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 
+#ifdef __MWERKS__
 struct WazaData {
     u8 unk0[0x38];
 };
+#else
+#include <game/pxdvs/app/waza/wazaData.h>
+#endif
 
 extern "C" {
 
@@ -13,10 +19,10 @@ s32 menuOpenCustom(s32 menuID, ...);
 void menuCloseCustom(s32 menuID, s32, s32);
 s32 menuOpen(s32 menuID, s32);
 s32 menuGetCursorItemID(s32 menuID);
-s32 wazaGetStatus(void* p, u16 id, u16 kind, u16 index);
-s32 wazaSetStatus(void* p, u16 id, u16 kind, u16 index, s32 value);
+StatusS32 wazaGetStatus(void* p, u16 id, u16 kind, PCARG(u16, u32) index);
+s32 wazaSetStatus(void* p, u16 id, u16 kind, PCARG(u16, u32) index, s32 value);
 s32 dbgMenuFightGetWazaTypeId(u8 type);
-s8 menuSubOpenYesNo(s32, s32, s32, bool);
+s8 menuSubOpenYesNo(s32, s32, s32, PCARG(bool, s32));
 
 s32 dbgMenuFightWazaEditSub(u16 id) {
     WazaData* waza;

@@ -1,4 +1,11 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
+#include <game/pxdvs/app/floor/floorData.h>
+#ifndef __MWERKS__
+#define getHeroPtr__4HeroFv(...) ((Hero*)Hero::getHeroPtr(__VA_ARGS__))
+#define getFollowerID__4HeroFv(o, ...) ((s32)((Hero*)(o))->getFollowerID(__VA_ARGS__))
+#endif
 
 #pragma peephole off
 #pragma pool_strings off
@@ -22,7 +29,7 @@ struct HeroPokemonGetParam {
     u32 catchFloorID;
     u32 exp;
 };
-class DarkPokemon {
+struct DarkPokemon {
 public:
     void setCatchBallID(u16);
     void setCatchFloorId(u16);
@@ -35,10 +42,17 @@ struct Pokemon {
     u32 getRnd() const;
 };
 struct Hero {
+public:
+#ifdef __MWERKS__
     s32 getFollowerResID();
+#else
+    u32 getFollowerResID();
+    static Hero* getHeroPtr();
+    u8 getFollowerID();
+#endif
     u32 getHeroRnd() const;
     s16 pokemonGet(HeroPokemonGetParam*, bool);
-    Pokemon* getPokemon(long, bool&);
+    Pokemon* getPokemon(s32, bool&);
     u8 getMeetDarkPokemonCount() const;
     void setMeetDarkPokemonCount(u8);
 };
@@ -52,13 +66,17 @@ struct CursorPos { s16 x; s16 y; };
 enum GSmodelAnimType {};
 class tagPeopleWork {
 public:
-    u8 reserved0[0x10];
+    u8 reserved0[0x8];
+    void* model;
+    u8 reserved0C[0x4];
     u32 flags;
     u8 reserved14[0x8];
     s32 info;
     u8 reserved20[0x28];
     s32 anim;
-    u8 reserved4C[0xE0];
+    u8 reserved4C[0x2C];
+    void* points;
+    u8 reserved7C[0xB0];
     f32 frame;
     void setAnimType(GSmodelAnimType);
     void setAnimIndex(int);
@@ -89,7 +107,7 @@ public:
     glowEffect();
     virtual ~glowEffect();
 };
-class PCBOX {
+struct PCBOX {
 public:
     static PCBOX* getPointer();
     Pokemon* getPokemon(s8, s8);
@@ -114,7 +132,7 @@ Pokemon* heroBiosGetPokemonPtr(Hero*, u16);
 u8 pokemonCheckValid(Pokemon*);
 u8 pokemonBiosGetDarkFlag(Pokemon*);
 f32 pokemonGetDp(Pokemon*);
-s32 pokemonGetStatus(Pokemon*, s32, s32, s32);
+StatusS32 pokemonGetStatus(Pokemon*, s32, s32, s32);
 void etctoolSetPokemonNakigoe(u16);
 s16 heroPokemonGetBlacky(Hero*, s32);
 s16 heroPokemonGetEifie(Hero*, s32);
@@ -133,14 +151,14 @@ void GScharMakeFromSJIS(char16*, const char*);
 u16 pokemonDB_GetGrowDataId(u16);
 void* pokemonGrowDataBiosGetPtr(u16);
 u32 pokemonGrowDataBiosGetExp(void*, u8);
-void darkPokemonBiosSetStatusRnd(u16, u8, s8);
+void darkPokemonBiosSetStatusRnd(u16, PCARG(u8, s32), PCARG(s8, s32));
 void exribbonSetEarthRibbon(Pokemon*);
-s32 heroGetStatus(Hero*, s32, u16);
-void heroSetStatus(Hero*, s32, s32);
+StatusS32 heroGetStatus(Hero*, s32, u16);
+void heroSetStatus(Hero*, s32, StatusS32);
 s32 floorEventGetTresure(s32, s32, s32);
-s32 heroItemAddItemDataId(Hero*, u16, u16, s32);
-s32 heroItemDecItemDataId(Hero*, u16, u16, s32);
-s32 heroItemCheckHaveItemDataId(Hero*, u16);
+s32 heroItemAddItemDataId(Hero*, PCARG(u16, u32), PCARG(u16, u32), s32);
+s32 heroItemDecItemDataId(Hero*, PCARG(u16, u32), PCARG(u16, u32), s32);
+s32 heroItemCheckHaveItemDataId(Hero*, PCARG(u16, u32));
 void GScolsys2SetObjEnable(s32, u8);
 void heroAddPokedoru(Hero*, s32);
 void heroDecPokedoru(Hero*, s32);
@@ -159,8 +177,12 @@ u8 fightFloorIsGcHeroWin(s32, u16);
 void GSthreadSwitch();
 void fadeSet(u16, f32);
 struct GSlight;
+#ifdef __MWERKS__
 Hero* getHeroPtr__4HeroFv();
+#endif
+#ifdef __MWERKS__
 s32 getFollowerID__4HeroFv(Hero*);
+#endif
 f32 GSgfxVideoGetLastRenderTime();
 u8 GSgfxVideoGetVsyncRate();
 u32 HSD_Rand();
@@ -184,21 +206,10 @@ void GSlightStartAnimation(GSlight*);
 void GSlightStopAnimation(GSlight*);
 u8 GSlightHasAnimationEnded(GSlight*);
 u8 heroMoveGetResID(s32*, s32*, u8);
-void heroMoveChkHinderClear(u8);
+void heroMoveChkHinderClear(PCARG(u8, s32));
 
 struct _GSmodel;
 struct GSpart;
-struct FloorDoor {
-    s8 motionOpen;
-    s8 motionClose;
-    u8 reserved2[3];
-    s8 animOn;
-    s8 animOff;
-    u8 reserved7;
-    u8 part;
-    u8 reserved9[0xB];
-    u32 resID;
-};
 extern FloorDoor* floor_door_list;
 extern u32* floor_door_list_number;
 _GSmodel* floorGetResource(s32, s32);
@@ -242,7 +253,7 @@ f32 peopleViewerGetPlaySpeedRate(tagPeopleWork*);
 void GSmodelSetTexAnimIndex(_GSmodel*, s32);
 void GSmodelSetTexAnimFrame(_GSmodel*, f32);
 void GSmodelSetTexAnimRate(_GSmodel*, f32);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, u16);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
 u16 pokemonBiosGetPokemonDataId(Pokemon*);
 _GSmodel* GSresGetResource(s32, s32);
 s32 floorGetCurrentGroupID();
@@ -251,11 +262,11 @@ void GSlensFlareSetSunPosition(_GSmodel*, GSvec*);
 FloorBgmMask* floorSound_getBgmMaskObj();
 u32 soundGetBGMID();
 s32 soundGetEnvID();
-s32 soundGetVolume();
+s32 soundGetVolume(u32 id);
 void GSsndPause(s32, u32, s32);
 void GSsndContinue(s32, u32, s32);
 void soundSetVolumeID(s32, u32, s32);
-u8 soundPlayME(u32, u32, u8);
+u8 soundPlayME(u32, u32, PCARG(u8, s32));
 
 double cos(double);
 double sin(double);
@@ -265,7 +276,7 @@ void PSVECScale(const GSvec*, GSvec*, f32);
 void PSVECNormalize(const GSvec*, GSvec*);
 void PSVECCrossProduct(const GSvec*, const GSvec*, GSvec*);
 f32 PSVECDistance(const GSvec*, const GSvec*);
-u8 GScolsys2HitCollision(GSvec*, GSvec*, f32, u8);
+bool GScolsys2HitCollision(GSvec* start, GSvec* end, f32 radius, GSvec* hitOut);
 s32 GScolsys2UtilGetCpPlaneLine(GSvec*, f32*, GSvec*, GSvec*, GSvec*, GSvec*);
 u8 peopleInsideCheck(GSvec*, GSvec*, GSvec*, f32);
 void peopleGetPos(s32, s32, GSvec*);
@@ -347,7 +358,7 @@ s32 scriptGetPokemonNum()
     return count;
 }
 
-u16 scriptGetDarkPokemonNum()
+PCRET(u16) scriptGetDarkPokemonNum()
 {
     Hero* hero;
     Pokemon* pokemon;
@@ -363,7 +374,7 @@ u16 scriptGetDarkPokemonNum()
     return count;
 }
 
-u16 scriptGetDarkPointZeroPokemonNum()
+PCRET(u16) scriptGetDarkPointZeroPokemonNum()
 {
     Hero* hero;
     Pokemon* pokemon;
@@ -542,7 +553,7 @@ s16 scriptCatchPokemon(u8 kind)
     return -2;
 }
 
-u16 scriptGetEarthRibbon()
+PCRET(u16) scriptGetEarthRibbon()
 {
     Hero* hero;
     Pokemon* pokemon;
@@ -656,7 +667,7 @@ s32 scriptAddItem(s32 item, s32 count)
     return ret;
 }
 
-u8 scriptHaveItem(s32 item)
+PCRET(u8) scriptHaveItem(s32 item)
 {
     return heroItemCheckHaveItemDataId(0, item);
 }
@@ -739,7 +750,7 @@ s32 scriptAddPoint(s32 n)
     return scriptGetPoint();
 }
 
-u16 scriptEncount(u16 id, u8 fade, s32 noFade)
+PCRET(u16) scriptEncount(u16 id, u8 fade, s32 noFade)
 {
     s32 result;
     u8 lost = 0;
@@ -959,17 +970,17 @@ s32 floorEventCtrlElevatorHero(s32 floorID, u32 doorIndex, u16 mode, u32 type)
         return -1;
     }
     door = &floor_door_list[doorIndex];
-    if (door->resID == 0) {
+    if (door->resourceId == 0) {
         return -1;
     }
-    model = floorGetResource(floorID, door->resID);
+    model = floorGetResource(floorID, door->resourceId);
     if (model == 0) {
         return -1;
     }
     GSmodelUseRootJointAnimation(model, 1);
     group = floorDataBiosGetGroupID(floorDataBiosGetPtr(floorID));
     if (type >= 2 && type <= 5) {
-        peopleAttach(0, 100, group, door->resID, door->part);
+        peopleAttach(0, 100, group, door->resourceId, door->partIndex);
         peopleSetPosXYZ(0, 100, 0.0f, 0.0f, 0.0f);
         _scriptEventSetMotion(model, mode, 0.0f);
         return 0;
@@ -981,13 +992,13 @@ s32 floorEventCtrlElevatorHero(s32 floorID, u32 doorIndex, u16 mode, u32 type)
     case 0x82: {
         GSvec pos;
         GSvec target;
-        _scriptEventSetMotion(model, door->motionOpen, frame);
+        _scriptEventSetMotion(model, door->openAnim, frame);
         sound = mode & 0x80;
         if (sound) {
             GSsndPlayNow(0x27);
         }
         _scriptEventWaitMotion(model);
-        part = GSmodelGetPart(model, door->part);
+        part = GSmodelGetPart(model, door->partIndex);
         GSpartGetTransform(part, &pos, 0, 0);
         GSpartFree(part);
         if (mode & 1) {
@@ -997,7 +1008,7 @@ s32 floorEventCtrlElevatorHero(s32 floorID, u32 doorIndex, u16 mode, u32 type)
             peopleRotateToAngle(0, 100, 0.0f, 2.0f);
         } else {
             peopleDetach(0, 100, 0);
-            part2 = GSmodelGetPart(model, door->part);
+            part2 = GSmodelGetPart(model, door->partIndex);
             GSpartGetTransform(part2, &pos, 0, 0);
             GSpartFree(part2);
             target = pos;
@@ -1007,7 +1018,7 @@ s32 floorEventCtrlElevatorHero(s32 floorID, u32 doorIndex, u16 mode, u32 type)
             peopleWalkTo(0, 100, 1, &target);
             scriptWaitTime(0.5f);
         }
-        _scriptEventSetMotion(model, door->motionClose, frame);
+        _scriptEventSetMotion(model, door->closeAnim, frame);
         if (sound) {
             GSsndPlayNow(0x27);
         }
@@ -1027,9 +1038,9 @@ s32 floorEventCtrlElevatorHero(s32 floorID, u32 doorIndex, u16 mode, u32 type)
         break;
     default:
         if (mode & 4) {
-            anim = door->animOn;
+            anim = door->altAnimA;
         } else if (mode & 8) {
-            anim = door->animOff;
+            anim = door->altAnimB;
         }
         if (anim < 0) {
             return -1;
@@ -1038,7 +1049,7 @@ s32 floorEventCtrlElevatorHero(s32 floorID, u32 doorIndex, u16 mode, u32 type)
             return -1;
         }
         if (mode & 0x20) {
-            peopleAttach(0, 100, group, door->resID, door->part);
+            peopleAttach(0, 100, group, door->resourceId, door->partIndex);
             if (type) {
                 peopleSetPosXYZ(0, 100, 0.0f, 0.0f, 0.0f);
                 peopleSetRotXYZ(0, 100, 0.0f, 0.0f, 0.0f);
@@ -1082,18 +1093,18 @@ s32 floorEventCtrlElevatorFollower(s32 floorID, u32 doorIndex, u16 mode, u32 typ
         return -1;
     }
     door = &floor_door_list[doorIndex];
-    if (door->resID == 0) {
+    if (door->resourceId == 0) {
         return -1;
     }
-    model = floorGetResource(floorID, door->resID);
+    model = floorGetResource(floorID, door->resourceId);
     if (model == 0) {
         return -1;
     }
     GSmodelUseRootJointAnimation(model, 1);
     group = floorDataBiosGetGroupID(floorDataBiosGetPtr(floorID));
     if (type >= 2 && type <= 5) {
-        peopleAttach(0, 100, group, door->resID, door->part);
-        peopleAttach(0, hero->getFollowerResID(), group, door->resID, door->part);
+        peopleAttach(0, 100, group, door->resourceId, door->partIndex);
+        peopleAttach(0, hero->getFollowerResID(), group, door->resourceId, door->partIndex);
         switch (type) {
         case 2:
             peopleSetPosXYZ(0, 100, 0.0f, 0.0f, 5.0f);
@@ -1124,13 +1135,13 @@ s32 floorEventCtrlElevatorFollower(s32 floorID, u32 doorIndex, u16 mode, u32 typ
         GSvec pos;
         GSvec heroPos;
         GSvec followerPos;
-        _scriptEventSetMotion(model, door->motionOpen, frame);
+        _scriptEventSetMotion(model, door->openAnim, frame);
         sound = mode & 0x80;
         if (sound) {
             GSsndPlayNow(0x27);
         }
         _scriptEventWaitMotion(model);
-        part = GSmodelGetPart(model, door->part);
+        part = GSmodelGetPart(model, door->partIndex);
         GSpartGetTransform(part, &pos, 0, 0);
         GSpartFree(part);
         if (mode & 1) {
@@ -1167,7 +1178,7 @@ s32 floorEventCtrlElevatorFollower(s32 floorID, u32 doorIndex, u16 mode, u32 typ
             peopleDetach(0, 100, 0);
             peopleDetach(0, hero->getFollowerResID(), 0);
             peopleSetNeckTargetHero(0, hero->getFollowerResID());
-            part = GSmodelGetPart(model, door->part);
+            part = GSmodelGetPart(model, door->partIndex);
             GSpartGetTransform(part, &pos, 0, 0);
             GSpartFree(part);
             heroPos.x = pos.x;
@@ -1189,7 +1200,7 @@ s32 floorEventCtrlElevatorFollower(s32 floorID, u32 doorIndex, u16 mode, u32 typ
             peopleWalkTo(0, hero->getFollowerResID(), 1, &followerPos);
             scriptWaitTime(0.5f);
         }
-        _scriptEventSetMotion(model, door->motionClose, frame);
+        _scriptEventSetMotion(model, door->closeAnim, frame);
         if (sound) {
             GSsndPlayNow(0x27);
         }
@@ -1211,9 +1222,9 @@ s32 floorEventCtrlElevatorFollower(s32 floorID, u32 doorIndex, u16 mode, u32 typ
         break;
     default:
         if (mode & 4) {
-            anim = door->animOn;
+            anim = door->altAnimA;
         } else if (mode & 8) {
-            anim = door->animOff;
+            anim = door->altAnimB;
         }
         if (anim < 0) {
             return -1;
@@ -1224,8 +1235,8 @@ s32 floorEventCtrlElevatorFollower(s32 floorID, u32 doorIndex, u16 mode, u32 typ
         peopleSetFlagOn(0, 100, 0x2000);
         peopleSetFlagOn(0, hero->getFollowerResID(), 0x2000);
         if (mode & 0x20) {
-            peopleAttach(0, 100, group, door->resID, door->part);
-            peopleAttach(0, hero->getFollowerResID(), group, door->resID, door->part);
+            peopleAttach(0, 100, group, door->resourceId, door->partIndex);
+            peopleAttach(0, hero->getFollowerResID(), group, door->resourceId, door->partIndex);
             if (type) {
                 peopleSetPosXYZ(0, 100, 0.0f, 0.0f, 5.0f);
                 peopleSetRotXYZ(0, 100, 0.0f, 0.0f, 0.0f);
@@ -1611,7 +1622,7 @@ u8 scriptSoundOpenPlayME(u32 id, u32 time, u8 flag)
     wait = (f32)time / 1000.0f;
     bgm = soundGetBGMID();
     env = soundGetEnvID();
-    volume = soundGetVolume();
+    volume = soundGetVolume(env);
     GSflagSet(0x8FA, 1);
     if (mask) {
         mask->startMECallback();

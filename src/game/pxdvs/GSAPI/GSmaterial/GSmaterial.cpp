@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
 #include <dolphin/gx/GXStruct.h>
 
 #pragma pool_strings off
@@ -11,15 +13,16 @@ struct HSD_TExp {
 struct HSD_PEDesc;
 
 struct HSD_ImageDesc {
-    void* image_ptr;
-    u16 width;
-    u16 height;
-    u32 format;
-    u32 mipmap;
-    f32 minLOD;
-    f32 maxLOD;
+    gc_ptr32(void) image_ptr;
+    gc_be16 width;
+    gc_be16 height;
+    gc_be32 format;
+    gc_be32 mipmap;
+    gc_bef32 minLOD;
+    gc_bef32 maxLOD;
 };
 
+#ifdef __MWERKS__
 struct HSD_TObj {
     u8 pad0[0x8];
     HSD_TObj* next;
@@ -28,6 +31,16 @@ struct HSD_TObj {
     u8 pad2[0x58 - 0x54];
     HSD_ImageDesc* imagedesc;
 };
+#else
+struct HSD_TObj {
+    u8 pc0[0x10];
+    HSD_TObj* next;
+    u8 pc18[0x5C - 0x18];
+    f32 blending;
+    u8 pc60[0x68 - 0x60];
+    HSD_ImageDesc* imagedesc;
+};
+#endif
 
 struct HSD_Material {
     u8 pad[0xC];
@@ -37,29 +50,46 @@ struct HSD_Material {
 struct GSmaterial;
 
 struct HSD_MObj {
-    u8 pad0[0x8];
+    void* class_info;
+    u32 rendermode;
     HSD_TObj* tobj;
     HSD_Material* mat;
     HSD_PEDesc* pe;
-    u8 pad1[0x20 - 0x14];
+    void* aobj;
+    void* tevdesc;
+    HSD_TExp* texp;
     GSmaterial* user;
 };
 
 struct HSD_TObjDesc {
-    u32 head[7];
-    f32 scale[3];
-    u32 mid[5];
+    gc_be32 head[7];
+    gc_bef32 scale[3];
+    gc_be32 mid[5];
     u8 wrap[4];
-    u32 flags;
-    f32 blending;
-    u32 magFilt;
-    HSD_ImageDesc* imagedesc;
-    u32 tail[3];
+    gc_be32 flags;
+    gc_bef32 blending;
+    gc_be32 magFilt;
+    gc_ptr32(HSD_ImageDesc) imagedesc;
+    gc_be32 tail[3];
 };
 
 struct HSD_MObjInfo {
     void (*init)(void);
-    u32 classInfo[14];
+    u32 flags;
+    char* library_name;
+    char* class_name;
+    s16 obj_size;
+    s16 info_size;
+    void* parent;
+    void* next;
+    void* child;
+    u32 nb_exist;
+    u32 nb_peak;
+    void* alloc;
+    void* obj_init;
+    void* release;
+    void* destroy;
+    void* amnesia;
     void* setup;
     int (*load)(HSD_MObj*, void*);
     HSD_TExp* (*make_texp)(HSD_MObj*, HSD_TObj*, HSD_TExp**);
@@ -105,7 +135,7 @@ void HSD_MObjAddTObj(HSD_MObj*, HSD_TObj*);
 void HSD_MObjAddTObjNext(HSD_MObj*, HSD_TObj*, HSD_TObj*);
 void hsdInitClassInfo(void*, void*, const char*, const char*, u32, u32);
 s32 HSD_TExpGetType(HSD_TExp*);
-void HSD_TExpColorSwap(HSD_TExp*, u8, u8, u8, u8);
+void HSD_TExpColorSwap(HSD_TExp*, PCARG(u8, s32), PCARG(u8, s32), PCARG(u8, s32), PCARG(u8, s32));
 HSD_TExp* HSD_TExpCnst(void*, u32, u32, HSD_TExp**);
 HSD_TExp* HSD_TExpTev(HSD_TExp**);
 void HSD_TExpColorOp(HSD_TExp*, u32, u32, u32, u32);
@@ -119,7 +149,7 @@ u16 GStextureGetYsize(GStexture*);
 u32 GStextureGetGXformat(GStexture*, s32);
 u8 GStextureGetMiplevels(GStexture*);
 s32 GXFmtToGStextureFmt(u32);
-void GStextureCreateFromMemory(GStexture*, u16, u16, void*, s32, void*, u8);
+void GStextureCreateFromMemory(GStexture*, u16, PCARG(u16, u32), void*, s32, void*, PCARG(u8, u32));
 
 extern HSD_MObjInfo hsdMObj;
 }
@@ -234,7 +264,7 @@ void GSmaterialSetAlpha(GSmaterial* material, f32 alpha)
     HSD_MObjSetAlpha(material->mobj, alpha);
 }
 
-u16 GSmaterialGetEnabledExtensions(GSmaterial* material)
+PCRET(u16) GSmaterialGetEnabledExtensions(GSmaterial* material)
 {
     return material->extensions;
 }
@@ -410,7 +440,7 @@ void GSmaterialInit(void)
 
 static void _GSmaterialObjInit(void)
 {
-    hsdInitClassInfo(&_matGSmatObj, &hsdMObj, "GSmaterial MObj", "GSmaterial MObj", sizeof(HSD_MObjInfo), 0x24);
+    hsdInitClassInfo(&_matGSmatObj, &hsdMObj, "GSmaterial MObj", "GSmaterial MObj", sizeof(HSD_MObjInfo), sizeof(HSD_MObj));
     _matGSmatObj.load = _matGSmatObjLoad;
     _matGSmatObj.make_texp = _matGSmatObjMakeTExp;
 }

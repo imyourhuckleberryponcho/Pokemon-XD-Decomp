@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma peephole off
 
@@ -58,7 +59,7 @@ void ARQSetChunkSize(u32 size);
 void GSlogInit(u32 size, s32);
 void GSscratchInit(s32);
 void GSdvdSetDVDServer(void* server, u16 port);
-void GSdvdSetReportServer(void* server, u16 port, s32);
+void GSdvdSetReportServer(void* server, PCARG(u16, u32) port, s32);
 void GSdvdSetGCClient(void*, void*, void*, s32);
 void pokecoloMain(int argc, char** argv);
 

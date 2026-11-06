@@ -1,5 +1,9 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#ifndef __MWERKS__
+#include <string.h>
+void GXInitFogAdjTable(GXFogAdjTable* table, u16 width, const f32 projmtx[4][4]);
+#endif
 
 #pragma pool_strings off
 
@@ -17,6 +21,9 @@ typedef struct HSD_FogAdj {
 typedef struct HSD_Fog {
     void* class_info;
     u32 ref_count;
+#ifndef __MWERKS__
+    u32 pcPad;
+#endif
     GXFogType type;
     HSD_FogAdj* fog_adj;
     f32 start;

@@ -29,7 +29,9 @@ struct GSgfxLayerVec {
     u8* last;
 };
 
-class GSgfxLayer {
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     GSgfxLayer(GSgfxLayerID id, char* name, u32 width, u32 height, u32 count, GSgfxLayerType type);
     ~GSgfxLayer();
@@ -40,18 +42,6 @@ public:
     void SetPassVisibility(bool a, bool b);
     void SetLayerVisibility(bool visible);
 
-    GSgfxLayer* next;
-    u8 unk4[0x24];
-    GSgfxLayerID id;
-    u8 unk2C[0x181C - 0x2C];
-    u32 width;
-    u8 unk1820[0x18D8 - 0x1820];
-    u32 height;
-    u8 unk18DC[0x19A0 - 0x18DC];
-    GSgfxLayerVec* items;
-    u8 unk19A4[0x19B3 - 0x19A4];
-    u8 unk19B3;
-    u8 unk19B4[0x1A14 - 0x19B4];
 };
 
 class GSgfxLayerConfig {
@@ -130,8 +120,8 @@ GSgfxLayerID GSgfxLayerConfig::Add(char* name, u32 width, u32 height, u32 count,
     GSgfxLayer* rel;
 
     if (layer != NULL) {
-        if (ROUND_UP_32(width) != layer->width || ROUND_UP_32(height) != layer->height ||
-            ROUND_UP_32(count) != ((u32)layer->items->last - (u32)layer->items->first) / 0x30 + 1) {
+        if (ROUND_UP_32(width) != layer->passes[0].size || ROUND_UP_32(height) != layer->passes[1].size ||
+            ROUND_UP_32(count) != ((u32)((GSgfxLayerVec*)layer->matrixStack)->last - (u32)((GSgfxLayerVec*)layer->matrixStack)->first) / 0x30 + 1) {
             delete layer;
             layer = NULL;
         }
@@ -178,7 +168,7 @@ GSgfxLayerID GSgfxLayerConfig::Add(char* name, u32 width, u32 height, u32 count,
         }
     }
     layer->SetPassVisibility(true, true);
-    layer->unk19B3 = false;
+    layer->visCount = false;
     layer->SetLayerVisibility(data.visible);
     return layer->id;
 }
@@ -221,7 +211,7 @@ void GSgfxLayerConfig::Setup(_GSgfxLayerData* data) {
             layer->SetPriority(LAYER_OFFSET_BOTTOM, NULL);
         }
         layer->SetPassVisibility(true, true);
-        layer->unk19B3 = false;
+        layer->visCount = false;
         layer->SetLayerVisibility(cur->visible);
         prev = layer;
         cur++;

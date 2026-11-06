@@ -1,4 +1,9 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/bitfield.h>
+#include <game/gcdata.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -43,107 +48,120 @@ struct CopyReq {
 };
 
 struct RegPeCtrl {
-    u32 id : 8;
-    u32 pad : 17;
-    u32 zcomploc : 1;
-    u32 b5 : 1;
-    u32 zfmt : 2;
-    u32 pixfmt : 3;
+    GC_BITS6(
+    u32 id : 8,
+    u32 pad : 17,
+    u32 zcomploc : 1,
+    u32 b5 : 1,
+    u32 zfmt : 2,
+    u32 pixfmt : 3)
 };
 struct RegZMode {
-    u32 id : 8;
-    u32 pad : 19;
-    u32 update : 1;
-    u32 func : 3;
-    u32 enable : 1;
+    GC_BITS5(
+    u32 id : 8,
+    u32 pad : 19,
+    u32 update : 1,
+    u32 func : 3,
+    u32 enable : 1)
 };
 struct RegCMode0 {
-    u32 id : 8;
-    u32 pad : 8;
-    u32 pad2 : 3;
-    u32 lop : 1;
-    u32 sub : 1;
-    u32 src : 3;
-    u32 dst : 3;
-    u32 alphaUpd : 1;
-    u32 colorUpd : 1;
-    u32 dither : 1;
-    u32 logic : 1;
-    u32 blend : 1;
+    GC_BITS12(
+    u32 id : 8,
+    u32 pad : 8,
+    u32 pad2 : 3,
+    u32 lop : 1,
+    u32 sub : 1,
+    u32 src : 3,
+    u32 dst : 3,
+    u32 alphaUpd : 1,
+    u32 colorUpd : 1,
+    u32 dither : 1,
+    u32 logic : 1,
+    u32 blend : 1)
 };
 struct RegClearAR {
-    u32 id : 8;
-    u32 pad : 8;
-    u32 a : 8;
-    u32 r : 8;
+    GC_BITS4(
+    u32 id : 8,
+    u32 pad : 8,
+    u32 a : 8,
+    u32 r : 8)
 };
 struct RegClearZ {
-    u32 id : 8;
-    u32 z : 24;
+    GC_BITS2(
+    u32 id : 8,
+    u32 z : 24)
 };
 struct RegSrc {
-    u32 id : 8;
-    u32 pad : 4;
-    u32 y : 10;
-    u32 x : 10;
+    GC_BITS4(
+    u32 id : 8,
+    u32 pad : 4,
+    u32 y : 10,
+    u32 x : 10)
 };
 struct RegYScale {
-    u32 id : 8;
-    u32 pad : 15;
-    u32 scale : 9;
+    GC_BITS3(
+    u32 id : 8,
+    u32 pad : 15,
+    u32 scale : 9)
 };
 struct RegStride {
-    u32 id : 8;
-    u32 pad : 14;
-    u32 stride : 10;
+    GC_BITS3(
+    u32 id : 8,
+    u32 pad : 14,
+    u32 stride : 10)
 };
 struct RegDest {
-    u32 id : 8;
-    u32 pad : 3;
-    u32 addr : 21;
+    GC_BITS3(
+    u32 id : 8,
+    u32 pad : 3,
+    u32 addr : 21)
 };
 struct RegCopyCmd {
-    u32 id : 8;
-    u32 pad : 9;
-    u32 f14 : 1;
-    u32 f12_13 : 2;
-    u32 f11 : 1;
-    u32 f10 : 1;
-    u32 pad9 : 1;
-    u32 f7_8 : 2;
-    u32 pad2 : 5;
-    u32 clamp : 2;
+    GC_BITS10(
+    u32 id : 8,
+    u32 pad : 9,
+    u32 f14 : 1,
+    u32 f12_13 : 2,
+    u32 f11 : 1,
+    u32 f10 : 1,
+    u32 pad9 : 1,
+    u32 f7_8 : 2,
+    u32 pad2 : 5,
+    u32 clamp : 2)
 };
 struct RegMsLoc {
-    u32 id : 8;
-    u32 y2 : 4;
-    u32 x2 : 4;
-    u32 y1 : 4;
-    u32 x1 : 4;
-    u32 y0 : 4;
-    u32 x0 : 4;
+    GC_BITS7(
+    u32 id : 8,
+    u32 y2 : 4,
+    u32 x2 : 4,
+    u32 y1 : 4,
+    u32 x1 : 4,
+    u32 y0 : 4,
+    u32 x0 : 4)
 };
 struct RegCoeff {
-    u32 id : 8;
-    u32 c3 : 6;
-    u32 c2 : 6;
-    u32 c1 : 6;
-    u32 c0 : 6;
+    GC_BITS5(
+    u32 id : 8,
+    u32 c3 : 6,
+    u32 c2 : 6,
+    u32 c1 : 6,
+    u32 c0 : 6)
 };
 struct RegCopyTexCmd {
-    u32 id : 8;
-    u32 pad23 : 7;
-    u32 b16 : 1;
-    u32 b15 : 1;
-    u32 pad12 : 3;
-    u32 clear : 1;
-    u32 pad10 : 1;
-    u32 mip : 1;
-    u32 pad7 : 2;
-    u32 fmt : 3;
-    u32 fmt3 : 1;
-    u32 pad2 : 1;
-    u32 clamp : 2;
+    GC_BITS13(
+    u32 id : 8,
+    u32 pad23 : 7,
+    u32 b16 : 1,
+    u32 b15 : 1,
+    u32 pad12 : 3,
+    u32 clear : 1,
+    u32 pad10 : 1,
+    u32 mip : 1,
+    u32 pad7 : 2,
+    u32 fmt : 3,
+    u32 fmt3 : 1,
+    u32 pad2 : 1,
+    u32 clamp : 2)
 };
 struct CopyTexReq {
     u16 left, top, width, height, dstWidth;
@@ -153,66 +171,68 @@ struct CopyTexReq {
     u8 mip;
     u8 clear;
 };
-struct RegFog0 { u32 id : 8; u32 pad : 4; u32 a : 20; };
-struct RegFog1 { u32 id : 8; u32 bm : 24; };
-struct RegFog2 { u32 id : 8; u32 bs : 24; };
-struct RegFog3 { u32 id : 8; u32 fsel : 3; u32 proj : 1; u32 c : 20; };
+struct RegFog0 { GC_BITS3(u32 id : 8, u32 pad : 4, u32 a : 20) };
+struct RegFog1 { GC_BITS2(u32 id : 8, u32 bm : 24) };
+struct RegFog2 { GC_BITS2(u32 id : 8, u32 bs : 24) };
+struct RegFog3 { GC_BITS4(u32 id : 8, u32 fsel : 3, u32 proj : 1, u32 c : 20) };
 struct RegIndCmd {
-    u32 id : 8;
-    u32 pad : 3;
-    u32 addPrev : 1;
-    u32 utcLod : 1;
-    u32 wrapT : 3;
-    u32 wrapS : 3;
-    u32 matrix : 4;
-    u32 alpha : 2;
-    u32 bias : 3;
-    u32 fmt : 2;
-    u32 indId : 2;
+    GC_BITS11(
+    u32 id : 8,
+    u32 pad : 3,
+    u32 addPrev : 1,
+    u32 utcLod : 1,
+    u32 wrapT : 3,
+    u32 wrapS : 3,
+    u32 matrix : 4,
+    u32 alpha : 2,
+    u32 bias : 3,
+    u32 fmt : 2,
+    u32 indId : 2)
 };
 struct RegIndMtx {
-    u32 id : 8;
-    u32 scale : 2;
-    u32 hi : 11;
-    u32 lo : 11;
+    GC_BITS4(
+    u32 id : 8,
+    u32 scale : 2,
+    u32 hi : 11,
+    u32 lo : 11)
 };
-struct RegMatIdxA { u32 pad : 2; u32 t3 : 6; u32 t2 : 6; u32 t1 : 6; u32 t0 : 6; u32 pn : 6; };
-struct RegMatIdxB { u32 pad : 8; u32 t7 : 6; u32 t6 : 6; u32 t5 : 6; u32 t4 : 6; };
+struct RegMatIdxA { GC_BITS6(u32 pad : 2, u32 t3 : 6, u32 t2 : 6, u32 t1 : 6, u32 t0 : 6, u32 pn : 6) };
+struct RegMatIdxB { GC_BITS5(u32 pad : 8, u32 t7 : 6, u32 t6 : 6, u32 t5 : 6, u32 t4 : 6) };
 struct TexGenCache { s32 func; s32 src; u32 mtx; u8 norm; s32 post; };
-struct RegId24 { u32 id : 8; u32 v : 24; };
-struct RegTexImg { u32 id : 8; u32 pad : 2; u32 b21 : 1; u32 ch : 3; u32 cw : 3; u32 addr : 15; };
-union RegTlutW { RegId24 a; struct { u32 id : 8; u32 pad : 14; u32 tmem : 10; } b; };
+struct RegId24 { GC_BITS2(u32 id : 8, u32 v : 24) };
+struct RegTexImg { GC_BITS6(u32 id : 8, u32 pad : 2, u32 b21 : 1, u32 ch : 3, u32 cw : 3, u32 addr : 15) };
+union RegTlutW { RegId24 a; struct { GC_BITS3(u32 id : 8, u32 pad : 14, u32 tmem : 10) } b; };
 struct TlutCache { u32 a; u16 b; u16 c; };
 struct TexObj { u32 w0, w1, w2, w3; };
 struct TlutObj { u32 w0, w1; u16 h8; };
-struct RegIref { u32 id : 8; u32 c3 : 3; u32 m3 : 3; u32 c2 : 3; u32 m2 : 3; u32 c1 : 3; u32 m1 : 3; u32 c0 : 3; u32 m0 : 3; };
-struct RegTref { u32 id : 8; u32 pad2 : 2; u32 col1 : 3; u32 en1 : 1; u32 c1 : 3; u32 m1 : 3; u32 pad1 : 2; u32 col0 : 3; u32 en0 : 1; u32 c0 : 3; u32 m0 : 3; };
-struct RegGenMode { u32 id : 8; u32 pad23 : 4; u32 b19 : 1; u32 nInd : 3; u32 cull : 2; u32 nTev : 4; u32 pad6 : 4; u32 nChan : 2; u32 nTex : 4; };
-union RegTexImg0 { RegId24 a; struct { u32 id : 8; u32 fmt : 4; u32 rest : 20; } b; struct { u32 id : 8; u32 fmt : 4; u32 h : 10; u32 w : 10; } c; };
+struct RegIref { GC_BITS9(u32 id : 8, u32 c3 : 3, u32 m3 : 3, u32 c2 : 3, u32 m2 : 3, u32 c1 : 3, u32 m1 : 3, u32 c0 : 3, u32 m0 : 3) };
+struct RegTref { GC_BITS11(u32 id : 8, u32 pad2 : 2, u32 col1 : 3, u32 en1 : 1, u32 c1 : 3, u32 m1 : 3, u32 pad1 : 2, u32 col0 : 3, u32 en0 : 1, u32 c0 : 3, u32 m0 : 3) };
+struct RegGenMode { GC_BITS9(u32 id : 8, u32 pad23 : 4, u32 b19 : 1, u32 nInd : 3, u32 cull : 2, u32 nTev : 4, u32 pad6 : 4, u32 nChan : 2, u32 nTex : 4) };
+union RegTexImg0 { RegId24 a; struct { GC_BITS3(u32 id : 8, u32 fmt : 4, u32 rest : 20) } b; struct { GC_BITS4(u32 id : 8, u32 fmt : 4, u32 h : 10, u32 w : 10) } c; };
 struct GSState;
-extern GSState* gsgfxState;
+extern "C" GSState* gsgfxState;
 
-struct RegX22 { u32 id : 8; u32 pad23 : 1; u32 b22 : 1; u32 f19 : 3; u32 f16 : 3; u32 pw : 8; u32 lw : 8; };
-struct RegX68 { u32 id : 8; u32 pad : 23; u32 b0 : 1; };
-struct RegCMode1 { u32 id : 8; u32 pad : 13; u32 f9 : 2; u32 en : 1; u32 alpha : 8; };
-struct Reg { u32 id : 8; u32 v : 24; };
-struct RegKcol { u32 id : 8; u32 f : 1; u32 hi : 11; u32 pad2 : 1; u32 lo : 11; };
-struct RegKsel { u32 id : 8; u32 kasel1 : 5; u32 kcsel1 : 5; u32 kasel0 : 5; u32 kcsel0 : 5; u32 hi : 2; u32 lo : 2; };
-struct RegTevC { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 4; u32 b : 4; u32 c : 4; u32 d : 4; };
-struct RegTevA { u32 id : 8; u32 reg : 2; u32 scale : 2; u32 clamp : 1; u32 op : 1; u32 bias : 2; u32 a : 3; u32 b : 3; u32 c : 3; u32 d : 3; u32 tswap : 2; u32 rswap : 2; };
-struct RegSS { u32 id : 8; u32 pad : 8; u32 t1 : 4; u32 s1 : 4; u32 t0 : 4; u32 s0 : 4; };
-struct RegAlphaCmp { u32 id : 8; u32 op : 2; u32 comp1 : 3; u32 comp0 : 3; u32 ref1 : 8; u32 ref0 : 8; };
-struct RegZTex { u32 id : 8; u32 pad : 20; u32 op : 2; u32 fmt : 2; };
-struct RegFogCol { u32 id : 8; u32 r : 8; u32 g : 8; u32 b : 8; };
-struct RegFogRange { u32 id : 8; u32 pad : 13; u32 en : 1; u32 center : 10; };
-struct RegTlutLoad0 { u32 id : 8; u32 pad : 3; u32 a : 21; };
-struct RegTlutLoad1 { u32 id : 8; u32 pad : 3; u32 b : 11; u32 c : 10; };
-struct RegSu { u32 id : 8; u32 pad : 4; u32 pf : 1; u32 lf : 1; u32 pad2 : 2; u32 half : 16; };
-struct RegScis { u32 id : 8; u32 x : 12; u32 y : 12; };
+struct RegX22 { GC_BITS7(u32 id : 8, u32 pad23 : 1, u32 b22 : 1, u32 f19 : 3, u32 f16 : 3, u32 pw : 8, u32 lw : 8) };
+struct RegX68 { GC_BITS3(u32 id : 8, u32 pad : 23, u32 b0 : 1) };
+struct RegCMode1 { GC_BITS5(u32 id : 8, u32 pad : 13, u32 f9 : 2, u32 en : 1, u32 alpha : 8) };
+struct Reg { GC_BITS2(u32 id : 8, u32 v : 24) };
+struct RegKcol { GC_BITS5(u32 id : 8, u32 f : 1, u32 hi : 11, u32 pad2 : 1, u32 lo : 11) };
+struct RegKsel { GC_BITS7(u32 id : 8, u32 kasel1 : 5, u32 kcsel1 : 5, u32 kasel0 : 5, u32 kcsel0 : 5, u32 hi : 2, u32 lo : 2) };
+struct RegTevC { GC_BITS10(u32 id : 8, u32 reg : 2, u32 scale : 2, u32 clamp : 1, u32 op : 1, u32 bias : 2, u32 a : 4, u32 b : 4, u32 c : 4, u32 d : 4) };
+struct RegTevA { GC_BITS12(u32 id : 8, u32 reg : 2, u32 scale : 2, u32 clamp : 1, u32 op : 1, u32 bias : 2, u32 a : 3, u32 b : 3, u32 c : 3, u32 d : 3, u32 tswap : 2, u32 rswap : 2) };
+struct RegSS { GC_BITS6(u32 id : 8, u32 pad : 8, u32 t1 : 4, u32 s1 : 4, u32 t0 : 4, u32 s0 : 4) };
+struct RegAlphaCmp { GC_BITS6(u32 id : 8, u32 op : 2, u32 comp1 : 3, u32 comp0 : 3, u32 ref1 : 8, u32 ref0 : 8) };
+struct RegZTex { GC_BITS4(u32 id : 8, u32 pad : 20, u32 op : 2, u32 fmt : 2) };
+struct RegFogCol { GC_BITS4(u32 id : 8, u32 r : 8, u32 g : 8, u32 b : 8) };
+struct RegFogRange { GC_BITS4(u32 id : 8, u32 pad : 13, u32 en : 1, u32 center : 10) };
+struct RegTlutLoad0 { GC_BITS3(u32 id : 8, u32 pad : 3, u32 a : 21) };
+struct RegTlutLoad1 { GC_BITS4(u32 id : 8, u32 pad : 3, u32 b : 11, u32 c : 10) };
+struct RegSu { GC_BITS6(u32 id : 8, u32 pad : 4, u32 pf : 1, u32 lf : 1, u32 pad2 : 2, u32 half : 16) };
+struct RegScis { GC_BITS3(u32 id : 8, u32 x : 12, u32 y : 12) };
 struct GSColor { u8 r, g, b, a; };
 struct ColCache { u8 flag; GSColor c; };
 struct IndOrderCache { s32 coord; s32 map; };
-struct RegSuBits { u32 id : 8; u32 pad : 8; u32 hi : 4; u32 f11 : 1; u32 f10 : 1; u32 sz : 10; };
+struct RegSuBits { GC_BITS6(u32 id : 8, u32 pad : 8, u32 hi : 4, u32 f11 : 1, u32 f10 : 1, u32 sz : 10) };
 struct ChanCache { u8 a; s32 w[5]; };
 struct TevOrderCache { s32 a, b, c; };
 struct TevInCache { s32 a, b, c, d; };
@@ -400,7 +420,11 @@ extern s32 jtbl_1415;
 
 static inline void WrBP(u8*& p, u32 v) {
     *p = 0x61;
+#ifdef __MWERKS__
     *(u32*)(p + 1) = v;
+#else
+    gc_wr32(p + 1, v);
+#endif
     p += 5;
 }
 
@@ -470,6 +494,7 @@ u8* GSgfx_GCWriteCopyDispDirect(u8* p, CopyReq* req, u32 dest, u8 colorUpd, u8 a
     return p;
 }
 
+#ifdef __MWERKS__
 union GSWGPipe {
     u8 u8;
     u16 u16;
@@ -477,6 +502,10 @@ union GSWGPipe {
     f32 f32;
 };
 volatile GSWGPipe GSWGFifo : 0xCC008000;
+#else
+#include <dolphin/gx/GXVert.h>
+#define GSWGFifo GXWGFifo
+#endif
 #define FIFO8 GSWGFifo.u8
 #define FIFO16 GSWGFifo.u16
 #define FIFO32 GSWGFifo.u32
@@ -654,7 +683,7 @@ void GSgfx_GCWriteCopyTex(CopyTexReq* req, u32 dest) {
     cmd.b16 = 1;
     cmd.mip = req->mip;
     cmd.clear = req->clear;
-    if (req->fmt < 4 && req->fmt >= 0) cmd.b15 = 1; else cmd.b15 = 0;
+    if (req->fmt >= 4 || req->fmt < 0) cmd.b15 = 0; else cmd.b15 = 1;
     WrFifo(RAW(src));
     WrFifo(RAW(size));
     WrFifo(RAW(st2));
@@ -1111,6 +1140,15 @@ void GSgfx_GCWriteArray(s32 attr, u32 base, u8 stride) {
     FIFO8 = 0xb0 + idx;
     FIFO32 = stride;
 }
+
+#ifndef __MWERKS__
+extern "C" void PortGX_SetArrayLE(u32 attr, const void* data, u32 size, u8 stride, u8 le);
+void GSgfx_GCWriteArrayPC(s32 attr, void* base, u8 stride, u32 size, u8 native) {
+    s32 idx = 1;
+    if (attr != 0x19) idx = attr - 9;
+    PortGX_SetArrayLE(9 + idx, base, size == 0xFFFFFFFF ? 0 : size, stride, native);
+}
+#endif
 
 void GSgfx_GCWriteVtxDesc(VtxDescEntry* list) {
     s32 nrm = 0, col = 0, tex = 0;
@@ -1581,7 +1619,11 @@ static inline void GSgfx_GCWriteScissor(u16 x, u16 y, u16 w, u16 h, s32 xo, s32 
 
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 

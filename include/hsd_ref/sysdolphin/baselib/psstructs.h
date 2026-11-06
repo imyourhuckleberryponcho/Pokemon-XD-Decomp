@@ -34,51 +34,51 @@ enum HSD_ParticleKind {
 
 /* size: 0x1C */
 typedef struct _HSD_PSTexGroup {
-    u32 num; /* 0x0 */
+    gc_be32 num; /* 0x0 */
 
-    u32 fmt;     /* 0x4 */
-    u32 tlutfmt; /* 0x8 */
+    gc_be32 fmt;     /* 0x4 */
+    gc_be32 tlutfmt; /* 0x8 */
 
-    u32 width;  /* 0xC */
-    u32 height; /* 0x10 */
+    gc_be32 width;  /* 0xC */
+    gc_be32 height; /* 0x10 */
 
-    u16 palnum;  /* 0x14 */
-    u16 palflag; /* 0x16 */
+    gc_be16 palnum;  /* 0x14 */
+    gc_be16 palflag; /* 0x16 */
 
-    u8* texTable[1]; /* 0x18 */
+    gc_ptr32(u8) texTable[1]; /* 0x18 */
 } HSD_PSTexGroup;
 
 /* size: 0x8 */
 typedef struct _HSD_PSFormGroup {
-    u32 num;          /* 0x0 */
-    u8* formTable[1]; /* 0x4 */
+    gc_be32 num;          /* 0x0 */
+    gc_ptr32(u8) formTable[1]; /* 0x4 */
 } HSD_PSFormGroup;
 
 /* size: 0x40 */
 typedef struct _HSD_PSCmdList {
-    u16 type;     /* 0x0 */
-    u16 texGroup; /* 0x2 */
+    gc_be16 type;     /* 0x0 */
+    gc_be16 texGroup; /* 0x2 */
 
-    u16 genLife; /* 0x4 */
-    u16 life;    /* 0x6 */
+    gc_be16 genLife; /* 0x4 */
+    gc_be16 life;    /* 0x6 */
 
-    u32 kind; /* 0x8 */
+    gc_be32 kind; /* 0x8 */
 
-    float grav; /* 0xC */
-    float fric; /* 0x10 */
+    gc_bef32 grav; /* 0xC */
+    gc_bef32 fric; /* 0x10 */
 
-    float vx; /* 0x14 */
-    float vy; /* 0x18 */
-    float vz; /* 0x1C */
+    gc_bef32 vx; /* 0x14 */
+    gc_bef32 vy; /* 0x18 */
+    gc_bef32 vz; /* 0x1C */
 
-    float radius; /* 0x20 */
-    float angle;  /* 0x24 */
-    float random; /* 0x28 */
-    float size;   /* 0x2C */
+    gc_bef32 radius; /* 0x20 */
+    gc_bef32 angle;  /* 0x24 */
+    gc_bef32 random; /* 0x28 */
+    gc_bef32 size;   /* 0x2C */
 
-    float param1; /* 0x30 */
-    float param2; /* 0x34 */
-    float param3; /* 0x38 */
+    gc_bef32 param1; /* 0x30 */
+    gc_bef32 param2; /* 0x34 */
+    gc_bef32 param3; /* 0x38 */
 
     u8 cmdList[1]; /* 0x3C */
 } HSD_PSCmdList;
@@ -148,9 +148,9 @@ struct HSD_Particle {
     u16 matColCount;                     // 0x5A
     u16 ambColCount;                     // 0x5C
     u16 rotateCount;                     // 0x5E
-    u32 xd_unk60;
     float sizeTarget;                    // 0x60
     float rotateTarget;                  // 0x64
+    u32 xd_unk68;
     u16 primColRemain;                   // 0x68
     u16 envColRemain;                    // 0x6A
     GXColor primColTarget;               // 0x6C

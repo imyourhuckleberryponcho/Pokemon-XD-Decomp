@@ -1,11 +1,5 @@
 #include <dolphin/types.h>
-
-struct FightSideData {
-    u16 yrot;
-    u8 unk2[2];
-    u32 fightTrainerStatusMenuDataId[2];
-    u32 fightoutPokemonStatusMenuDataId[2];
-};
+#include <game/pxdvs/app/fight/fightData.h>
 
 struct Joutai {
     u8 unk0[0x10];

@@ -1,4 +1,8 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 struct peColorSpline {
     u8 count;
@@ -6,7 +10,7 @@ struct peColorSpline {
     u8 pad2[2];
     u8 cur[3];
     u8 pad7;
-    f32 lastT;
+    gc_bef32 lastT;
     u8 keys[1][4];
 };
 
@@ -14,14 +18,18 @@ struct peSpline {
     u8 flags;
     u8 count;
     u8 pad2[2];
-    f32 cur;
-    f32 lastT;
-    f32 data[1];
+    gc_bef32 cur;
+    gc_bef32 lastT;
+    gc_bef32 data[1];
 };
 
 static inline f32 __OSu8tof32(register const u8* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 2 }
+#else
+    ret = PSQ_LOAD(arg, 0, 2);
+#endif
     return ret;
 }
 
@@ -31,7 +39,11 @@ static inline f32 OSu8tof32(u8 in) {
 }
 
 static inline void __OSf32tou8(register f32 arg, volatile register u8* out) {
+#ifdef __MWERKS__
     asm { psq_st arg, 0(out), 1, 2 }
+#else
+    PSQ_STORE(out, 0, arg, 2);
+#endif
 }
 
 static inline u8 OSf32tou8(f32 in) {
@@ -67,7 +79,7 @@ void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t) {
     u8 (*keys)[4];
     if (count >= 2) {
         keys = s->keys;
-        f32* times;
+        gc_bef32* times;
         if (t <= 0.0f) {
             out[0] = keys[0][0];
             out[1] = keys[0][1];
@@ -95,10 +107,10 @@ void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t) {
         if (count == 2)
             lerpColor(out, s, keys[0], t);
         else {
-            f32* inv;
+            gc_bef32* inv;
             idx = s->index;
             f32 u;
-            times = (f32*)(keys + count);
+            times = (gc_bef32*)(keys + count);
             inv = times + count;
             if (t < times[idx]) {
                 idx = 0;
@@ -125,15 +137,15 @@ f32 peSplineGetValue(peSpline* s, f32 t) {
     f32 h01;
     f32 b;
     u8 i;
-    f32* r;
-    f32* data;
+    gc_bef32* r;
+    gc_bef32* data;
     f32 a;
     f32 h10;
-    f32* q;
+    gc_bef32* q;
     f32 h00;
     f32 lo;
-    f32* d;
-    f32* p;
+    gc_bef32* d;
+    gc_bef32* p;
     f32 v;
     u8 n;
     u8 type = s->flags & 3;

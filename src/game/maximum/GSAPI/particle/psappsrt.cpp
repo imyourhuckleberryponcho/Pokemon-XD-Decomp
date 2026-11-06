@@ -28,14 +28,21 @@ typedef struct HSD_psAppSRT {
 } HSD_psAppSRT;
 
 typedef struct HSD_Generator {
-    u8 unk0[0x18];
+    struct HSD_Generator* next;
+    u8 unk4[0x14];
     u16 idnum;
-    u8 unk1A[0x36];
+    u8 unk1A[2];
+    u8* cmdList;
+    u8 unk20[0x30];
     HSD_psAppSRT* appsrt;
 } HSD_Generator;
 
 typedef struct HSD_Particle {
+#ifdef __MWERKS__
     u8 unk0[0x90];
+#else
+    u8 unk0[0xA0];
+#endif
     HSD_psAppSRT* appsrt;
 } HSD_Particle;
 

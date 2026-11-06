@@ -1,5 +1,18 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
 #include <game/shared/menu_work.h>
+#ifndef __MWERKS__
+struct tagWINDOW_WORK;
+struct tagSPRITE_WORK;
+struct MENU_ITEM_dd_;
+void menuPtPlaySe(u32);
+tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(tagWINDOW_WORK*, u32, s32);
+MENU_ITEM_dd_* menuPtItemGetBySpriteWork(tagWINDOW_WORK*, tagSPRITE_WORK*);
+#define menuPtPlaySe__FUl(...) (menuPtPlaySe(__VA_ARGS__))
+#define menuPtSpriteWorkGetByItemID__FP14tagWINDOW_WORKUll(...) ((tagSPRITE_WORK*)menuPtSpriteWorkGetByItemID(__VA_ARGS__))
+#define menuPtItemGetBySpriteWork__FP14tagWINDOW_WORKP14tagSPRITE_WORK(...) ((HIKI_ITEM_POS*)menuPtItemGetBySpriteWork(__VA_ARGS__))
+#endif
 
 #pragma peephole off
 #pragma pool_strings off
@@ -17,12 +30,12 @@ struct HIKI_ITEM_POS {
 
 extern "C" {
 u32 GSmsgGetRect(u32);
-s32 GSmsgPrint2(s32, s32, s32, s32, u32);
+s32 GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSmsgPrintRight(s32, s32, s32, s16, s16, s32, u32);
 void fadeCheck(s32);
 void fadeSet(s32, f32);
-s32 heroItemAddItemDataId(Hero*, u16, u16, s32);
-s32 heroItemCheckAddItemDataId(Hero*, u16);
+s32 heroItemAddItemDataId(Hero*, PCARG(u16, u32), PCARG(u16, u32), s32);
+s32 heroItemCheckAddItemDataId(Hero*, PCARG(u16, u32));
 u16 itemBiosGetItemDataId(u8*);
 u16 itemBiosGetNum(u8*);
 u8 itemCheckValid(u8*);
@@ -36,12 +49,14 @@ void menuCloseSync(s32, s32);
 s32 menuOpen(s32, s32);
 s32 menuOpenCustom(s32, ...);
 s32 menuPocketInputNumber(tagWINDOW_WORK*, s32, s32, u16, s32, s32, s32);
+#ifdef __MWERKS__
 void menuPtPlaySe__FUl(u32);
+#endif
 void menuSubCursorAnimeInit(void);
 void menuSubCursorAnimeMain(void);
 void menuSubCursorAnimeStart(void);
 void menuSubCursorAnimeValGet(f32*, s32*);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 void pcboxDelItem(void*, u16, u16);
 u8* pcboxGetItem(void*, s16);
 u16 pcboxGetNbItemSlot(void*);
@@ -58,8 +73,12 @@ void windowDrawSpriteCursor(s32, s16, s32, tagWINDOW_WORK*, s32, s32, s32, f32*,
 s32 windowGetActiveID(void);
 u16 windowGetKeyRepeat(void);
 u16 windowGetKeyTrg(void);
+#ifdef __MWERKS__
 tagSPRITE_WORK* menuPtSpriteWorkGetByItemID__FP14tagWINDOW_WORKUll(tagWINDOW_WORK*, u32, s32);
+#endif
+#ifdef __MWERKS__
 HIKI_ITEM_POS* menuPtItemGetBySpriteWork__FP14tagWINDOW_WORKP14tagSPRITE_WORK(tagWINDOW_WORK*, tagSPRITE_WORK*);
+#endif
 }
 
 static s32 beforCursorPosition;
@@ -446,9 +465,10 @@ static s32 printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color) 
     s32 numW;
     u16 id;
     s32 row;
-    s32 nameW;
+    s16 nameW;
     s32 first;
-    s32 xAdj;
+    int xAdj;
+    u32 name;
     first = 0;
     last = 8;
     scroll = 0;
@@ -470,7 +490,6 @@ static s32 printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color) 
     for (row = first; row < last && idx < count; row++, idx++) {
         if (idx >= 0) {
             s32 y = row * _getItemListLineHeight() - scroll;
-            u32 name;
             id = getItemIDFromMenuPos(idx);
             name = getItemNameMsg(id);
             if (name != 0) {

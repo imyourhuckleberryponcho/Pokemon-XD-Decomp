@@ -1,4 +1,9 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/miscTables.h>
+#include <game/pxdvs/app/floor/floorData.h>
+#include <game/bitfield.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -12,47 +17,6 @@ struct _GSmodel;
 struct GSpart;
 struct GSthread;
 
-struct FloorEventTresure {
-    u8 kind : 3;
-    u8 type : 3;
-    u8 pad0 : 2;
-    u8 count;
-    u8 pad1[2];
-    u16 floorID;
-    u16 eventFlag;
-    u8 pad2[4];
-    u32 item;
-    u8 pad3[0xC];
-};
-
-struct FloorEventDoor {
-    s8 openAnim;
-    s8 closeAnim;
-    s8 openEndAnim;
-    s8 closeEndAnim;
-    u8 pad4;
-    s8 altAnimA;
-    s8 altAnimB;
-    u8 doorType;
-    u8 partIndex;
-    u8 pad9;
-    s16 collisionId;
-    u8 padC[2];
-    u16 openFlag;
-    u16 closeFlag;
-    u8 pad12[2];
-    u32 resourceId;
-};
-
-struct FloorEventEntry {
-    u8 type;
-    u8 pad1;
-    u16 floorID;
-    u32 arg;
-    u32 script;
-    u32 args[4];
-};
-
 struct PlayMEParam {
     u32 id;
     u8 busy;
@@ -60,9 +24,9 @@ struct PlayMEParam {
 
 extern "C" {
 extern u32* floor_tresure_list_number;
-extern FloorEventTresure* floor_tresure_list;
+extern FloorTresure* floor_tresure_list;
 extern u32* floor_door_list_number;
-extern FloorEventDoor* floor_door_list;
+extern FloorDoor* floor_door_list;
 extern u32* floor_event_list_number;
 extern FloorEventEntry* floor_event_list;
 
@@ -73,11 +37,11 @@ s32 GSsndGetStatus(u32 id);
 void GSthreadSwitch(void);
 void soundPlayWait(u32 id);
 void* floorCreateThread(s32 a, u32 stackSize, s32 c, void* func);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 s32 winMsgOpen(s32, s32 msgID, s32, s32);
 void winMsgClose(s32 flag);
 void heroAddPokedoru(void* hero, u32 offset);
-s32 heroItemAddItemDataId(void* hero, u16 itemID, u16 amount, s32 index);
+s32 heroItemAddItemDataId(void* hero, PCARG(u16, u32) itemID, PCARG(u16, u32) amount, s32 index);
 u16 pcboxAddItem(void* box, u16 item, u16 count);
 void peopleSetMotion(u32, u32, u32, u32, u32);
 void peopleSetFlagOn(s32, s32, s32);
@@ -132,7 +96,7 @@ extern "C" {
 
 void* floorEventGetTresureList(u32 param) {
     u32 off;
-    FloorEventTresure* entry;
+    FloorTresure* entry;
     u32 index;
     u32 found;
     u32 target;
@@ -144,8 +108,8 @@ void* floorEventGetTresureList(u32 param) {
     }
 
     target = param & 0x1FF;
-    for (index = 0, off = 0; index < *floor_tresure_list_number; off += sizeof(FloorEventTresure), index++) {
-        entry = (FloorEventTresure*)((u8*)floor_tresure_list + off);
+    for (index = 0, off = 0; index < *floor_tresure_list_number; off += sizeof(FloorTresure), index++) {
+        entry = (FloorTresure*)((u8*)floor_tresure_list + off);
         if (entry->floorID == GSfloorGetCurrent()) {
             if (target == found++) {
                 break;
@@ -161,13 +125,13 @@ void* floorEventGetTresureList(u32 param) {
 
 void floorEventSetTresureDisp(u32 rawIndex, u32 display) {
     u32 off;
-    FloorEventTresure* entry;
+    FloorTresure* entry;
     u32 index;
     u32 found = 0;
     u32 encoded;
 
-    for (index = 0, off = 0; index < *floor_tresure_list_number; off += sizeof(FloorEventTresure), index++) {
-        entry = (FloorEventTresure*)((u8*)floor_tresure_list + off);
+    for (index = 0, off = 0; index < *floor_tresure_list_number; off += sizeof(FloorTresure), index++) {
+        entry = (FloorTresure*)((u8*)floor_tresure_list + off);
         if (entry->floorID == GSfloorGetCurrent()) {
             if (index == rawIndex) {
                 encoded = found | 0x7FFF0000;
@@ -183,7 +147,7 @@ void floorEventSetTresureDisp(u32 rawIndex, u32 display) {
 }
 
 s32 floorEventChangeTresure(u32 index, u16 val, u8 byte) {
-    FloorEventTresure* entry;
+    FloorTresure* entry;
     if (index >= *floor_tresure_list_number) {
         GSlogWrite("[%s] Range Over!!\n", __FUNCTION__);
         return -1;
@@ -367,9 +331,9 @@ s32 floorEventGetTresure(u8 type, u32 item, s32 count) {
 }
 
 s32 floorEventCtrlTresure(s32 character, u32 index, u8 mode) {
-    FloorEventTresure* entry;
+    FloorTresure* entry;
 
-    entry = (FloorEventTresure*)floorEventGetTresureList(index);
+    entry = (FloorTresure*)floorEventGetTresureList(index);
     if (entry == 0) {
         return -1;
     }
@@ -425,7 +389,7 @@ s32 floorEventCtrlTresure(s32 character, u32 index, u8 mode) {
 }
 
 s32 floorEventCtrlElevator(s32 floor, u32 index, u16 command, s32 group, s32 person) {
-    FloorEventDoor* elevator;
+    FloorDoor* elevator;
     _GSmodel* model;
     s16 animation = -1;
     f32 frame = 0.0f;
@@ -534,7 +498,7 @@ static inline u32 _getF(u32 id) { return peopleGetFlags(0, id); }
 
 s32 floorEventCtrlDoor(s32 floor, u32 index, u8 mode) {
     u32 savedB;
-    FloorEventDoor* door;
+    FloorDoor* door;
     _GSmodel* model;
     s16 animation = -1;
     u32 sound = 0;

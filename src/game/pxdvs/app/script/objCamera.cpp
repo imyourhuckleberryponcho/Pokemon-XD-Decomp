@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/tigadata.h>
 
 #pragma pool_strings off
 #pragma peephole off
@@ -8,9 +10,9 @@ struct ScriptPeople { s32 group; s32 object; };
 namespace GSscript {
 void tigaErrMessage(const char*);
 struct tigaVariant {
-    s16 type;
-    u16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_be16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
     s32 getCnvInteger();
     GSvec* getCnvVector();
     f32 getCnvSingle();
@@ -38,14 +40,12 @@ struct tigaVariant {
 };
 }
 struct CameraScriptContext {
-    u8 reserved[0x10];
-    GSscript::tigaVariant result;
-    u8 reserved18[0x120];
-    GSvec vector;
+    GSSCRIPT_TIGACONTEXT_DATA(GSscript::tigaVariant, GSvec)
 };
-class AppScript {
-    u8 reserved[0x914];
-    CameraScriptContext* context;
+struct AppScript {
+    GSSCRIPT_TIGA_DATA(GSscript::TigaChankView, GSscript::TigaObjManagerView, CameraScriptContext)
+    virtual ~AppScript();
+    GSscript::tigaWaza waza[7];
 public:
     s32 cmpCamera(int, GSscript::tigaVariant*, GSscript::tigaVariant*);
 };
@@ -75,14 +75,34 @@ void cameraResumeAnime();
 u8 cameraWaitSyncAnime(u8);
 void cameraSetAnimeRate(f32);
 void cameraMoveTarget(u8, s32, s32, f32);
+#ifdef __MWERKS__
 void cameraMoveTargetXYZ(u8, f32, f32, f32, f32);
+#else
+void cameraMoveTargetXYZ(f32 x, f32 y, f32 z, f32 time);
+#define cameraMoveTargetXYZ(mode, ...) ((void)(mode), cameraMoveTargetXYZ(__VA_ARGS__))
+#endif
 void cameraMoveTargetPosAcc(f32);
+#ifdef __MWERKS__
 void cameraMovePositionXYZ(u8, f32, f32, f32, f32);
+#else
+void cameraMovePositionXYZ(f32 x, f32 y, f32 z, f32 time);
+#define cameraMovePositionXYZ(mode, ...) ((void)(mode), cameraMovePositionXYZ(__VA_ARGS__))
+#endif
 void cameraMovePositionAcc(f32);
+#ifdef __MWERKS__
 void cameraMoveRotationXYZ(u8, f32, f32, f32, f32);
+#else
+void cameraMoveRotationXYZ(f32 x, f32 y, f32 z, f32 time);
+#define cameraMoveRotationXYZ(mode, ...) ((void)(mode), cameraMoveRotationXYZ(__VA_ARGS__))
+#endif
 void cameraMoveRotationAcc(f32);
 u8 cameraMoveEndCheck(u8);
+#ifdef __MWERKS__
 void cameraMoveFov(u8, f32, f32);
+#else
+void cameraMoveFov(f32 fov, f32 time);
+#define cameraMoveFov(mode, ...) ((void)(mode), cameraMoveFov(__VA_ARGS__))
+#endif
 void cameraMoveFovAcc(f32);
 void cameraSetHeight(f32);
 void cameraSetDistance(f32);
@@ -92,7 +112,7 @@ f32 cameraGetFov();
 void cameraGetPosition(GSvec*);
 void cameraGetRotation(GSvec*);
 void cameraUpdate();
-void cameraReturn(f32, u8);
+void cameraReturn(f32, PCARG(u8, s32));
 }
 
 s32 AppScript::cmpCamera(int command, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
@@ -247,15 +267,15 @@ s32 AppScript::cmpCamera(int command, GSscript::tigaVariant* args, GSscript::tig
     case 0x33: {
         cameraGetPosition(&vec);
         context->vector = vec;
-        context->result.value.pointer = &context->vector;
-        context->result.type = 4;
+        context->regs[0].value.pointer = &context->vector;
+        context->regs[0].type = 4;
         break;
     }
     case 0x34: {
         cameraGetRotation(&vec);
         context->vector = vec;
-        context->result.value.pointer = &context->vector;
-        context->result.type = 4;
+        context->regs[0].value.pointer = &context->vector;
+        context->regs[0].type = 4;
         break;
     }
     case 0x3A:

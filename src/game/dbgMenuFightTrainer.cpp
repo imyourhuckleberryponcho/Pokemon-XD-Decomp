@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 
@@ -23,11 +25,11 @@ s32 menuOpenCustom(s32 menuID, ...);
 void menuCloseCustom(s32 menuID, s32, s32);
 s32 menuOpen(s32 menuID, s32);
 s32 menuGetCursorItemID(s32 menuID);
-u32 fightTrainerGetStatus(void* trainer, u16 id, u32 kind, u32 arg);
+StatusU32 fightTrainerGetStatus(void* trainer, u16 id, u32 kind, u32 arg);
 void fightTrainerSetStatus(void* trainer, u16 id, u32 kind, u32 arg, u32 value);
 u8 menuSubOpenNumberInput(u32 value, s32* out, u8 digits, s16 x, s16 y, bool close);
 void menuSubCloseNumberInput(void);
-s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, bool initial);
+s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, PCARG(bool, s32) initial);
 s32 dbgMenuFightGetZokuseiDataId(u32 id);
 s32 dbgMenuFightGetWazaTypeId(u8 type);
 

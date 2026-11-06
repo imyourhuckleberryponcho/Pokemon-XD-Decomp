@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/statusval.h>
 #include <dolphin/gx/GXStruct.h>
 
 #pragma peephole off
@@ -10,14 +11,18 @@ struct WindowKeyInfo {
 };
 
 struct Window {
-    u8 unk0[0x1C];
+    u8 unk0[0xC];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
 };
 
 extern "C" {
 
 WindowKeyInfo* windowGetKeyInfo(void);
-s32 windowGetParam(Window* window, s32 index);
+StatusS32 windowGetParam(Window* window, s32 index);
 void windowSetParam(Window* window, s32 index, s32 value);
 void GSgfxZCompare(s32, s32);
 void menuSubDrawTile(s32 layer, s32 x, s32 y, s32 w, s32 h, GXColor color);

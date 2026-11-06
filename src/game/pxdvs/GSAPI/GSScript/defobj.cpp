@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/tigadata.h>
 
 #pragma pool_strings off
 
@@ -22,13 +23,14 @@ f32 PSVECSquareMag(const GSvec*);
 
 namespace GSscript {
 struct tigaVariant;
-struct tigaCellMemory {
+class tigaCellMemory {
+public:
     void freeVariant(tigaVariant*);
     void dupVariant(tigaVariant*);
 };
 struct tigaArrayFixed {
-    s32 size;
-    s32 iter;
+    gc_bes32 size;
+    gc_bes32 iter;
     tigaVariant* get(int);
     void set(int, const tigaVariant*);
     void resize(int);
@@ -36,9 +38,9 @@ struct tigaArrayFixed {
     tigaVariant* fe_get();
 };
 struct tigaVariant {
-    s16 type;
-    s16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_bes16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
     s32 getCnvInteger();
     GSvec* getCnvVector();
     f32 getCnvSingle();
@@ -62,48 +64,34 @@ struct tigaVariant {
     inline void setVector(GSvec* v);
 };
 struct TigaContext {
-    u8 reserved[0x10];
-    tigaVariant result;
-    u8 reserved18[0x20];
-    char text[0x100];
-    GSvec vector;
+    GSSCRIPT_TIGACONTEXT_DATA(tigaVariant, GSvec)
 };
 struct TigaThread {
-    u8 reserved[0x168];
-    u8 waitType;
-    u8 waitIndex;
-    s32 waitValue;
+    GSSCRIPT_TIGATHREAD_DATA(TigaContext, tigaVariant)
 };
 class Tiga {
 public:
-    u8 reserved[0x8DC];
-    s32 threadCount;
-    u8 reserved8E0[0x30];
-    tigaCellMemory* cellMemory;
-    TigaContext* context;
-    u8 userFlags[0x10];
-    u8 reserved928[0x1C];
-    TPCCode* codes;
-    u8 reserved948[0x38];
-    TigaThread* thread;
+    GSSCRIPT_TIGA_VIEW_DATA
 
     static Tiga* m_cpCurrentObject;
 
-    bool makeThread(TPCCode*, int&, long&);
-    void deleteThread(long);
+    virtual ~Tiga();
+
+    bool makeThread(TPCCode*, int&, s32&);
+    void deleteThread(s32);
     s32 cmpArray(int, tigaVariant*, tigaVariant*);
     s32 cmpVector(int, tigaVariant*, tigaVariant*);
     s32 cmpThread(int, tigaVariant*, tigaVariant*);
 
     inline void setRpString(const char* s) {
         strncpy(context->text, s, 0xFF);
-        context->result.value.pointer = context->text;
-        context->result.type = 3;
+        context->regs[0].value.pointer = context->text;
+        context->regs[0].type = 3;
     }
     inline void setRpVec(const GSvec* v) {
         context->vector = *v;
-        context->result.value.pointer = &context->vector;
-        context->result.type = 4;
+        context->regs[0].value.pointer = &context->vector;
+        context->regs[0].type = 4;
     }
     inline void setRpVariant(tigaVariant* v, tigaVariant* result) {
         if (v->type == 3) {
@@ -310,7 +298,7 @@ s32 Tiga::cmpVector(int command, tigaVariant* args, tigaVariant* result)
 s32 Tiga::cmpThread(int command, tigaVariant* args, tigaVariant* result)
 {
     int threadID = 0;
-    long handle;
+    s32 handle;
     s32 ret = 0;
 
     switch (command) {

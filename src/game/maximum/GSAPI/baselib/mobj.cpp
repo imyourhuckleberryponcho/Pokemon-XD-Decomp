@@ -39,6 +39,10 @@
 
 
 #include <string.h>
+#ifndef __MWERKS__
+void HSD_StateInitTev(void);
+void HSD_TObjAddNext(HSD_TObj* tobj, HSD_TObj* next);
+#endif
 
 
 
@@ -127,8 +131,8 @@ void HSD_MObjAddAnim(HSD_MObj* mobj, HSD_MatAnim* matanim)
     if (mobj->aobj != NULL) {
         HSD_AObjRemove(mobj->aobj);
     }
-    mobj->aobj = HSD_AObjLoadDesc(matanim->aobjdesc);
-    HSD_TObjAddAnimAll(mobj->tobj, matanim->texanim);
+    mobj->aobj = HSD_AObjLoadDesc(GC_PTR(HSD_AObjDesc*, matanim->aobjdesc));
+    HSD_TObjAddAnimAll(mobj->tobj, GC_PTR(HSD_TexAnim*, matanim->texanim));
 }
 
 void HSD_MObjReqAnimByFlags(HSD_MObj* mobj, f32 startframe, u32 flags)
@@ -229,14 +233,16 @@ void HSD_MObjAnim(HSD_MObj* mobj)
 
 int MObjLoad(HSD_MObj* mobj, HSD_MObjDesc* desc)
 {
-    mobj->rendermode = desc->rendermode;
-    mobj->tobj = HSD_TObjLoadDesc(desc->texdesc);
+    mobj->rendermode = GC_BE32(desc->rendermode);
+    mobj->tobj = HSD_TObjLoadDesc(GC_PTR(HSD_TObjDesc*, desc->texdesc));
     mobj->mat = HSD_MaterialAlloc();
-    memcpy(mobj->mat, desc->mat, sizeof(HSD_Material));
+    memcpy(mobj->mat, GC_PTR(HSD_Material*, desc->mat), sizeof(HSD_Material));
+    GC_FIXF32(mobj->mat->alpha);
+    GC_FIXF32(mobj->mat->shininess);
     mobj->rendermode |= RENDER_TOON;
-    if (desc->pedesc != NULL) {
+    if (GC_PTR(HSD_PEDesc*, desc->pedesc) != NULL) {
         mobj->pe = hsdAllocMemPiece(sizeof(HSD_PEDesc));
-        memcpy(mobj->pe, desc->pedesc, sizeof(HSD_PEDesc));
+        memcpy(mobj->pe, GC_PTR(HSD_PEDesc*, desc->pedesc), sizeof(HSD_PEDesc));
     }
     mobj->aobj = NULL;
     return 0;
@@ -256,8 +262,8 @@ HSD_MObj* HSD_MObjLoadDesc(HSD_MObjDesc* mobjdesc)
         HSD_MObj* mobj;
         HSD_ClassInfo* info;
 
-        if (mobjdesc->class_name == NULL ||
-            (info = hsdSearchClassInfo(mobjdesc->class_name)) == NULL)
+        if (GC_PTR(char*, mobjdesc->class_name) == NULL ||
+            (info = hsdSearchClassInfo(GC_PTR(char*, mobjdesc->class_name))) == NULL)
         {
             mobj = HSD_MObjAlloc();
         } else {

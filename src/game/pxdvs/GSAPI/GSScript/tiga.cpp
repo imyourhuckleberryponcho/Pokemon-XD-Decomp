@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/tigadata.h>
 
 #pragma pool_strings off
 
@@ -10,14 +13,14 @@ struct TPCCode {
     u8 op;
     u8 a;
     union {
-        s16 b;
-        u16 ub;
+        gc_bes16 b;
+        gc_be16 ub;
     };
 };
 struct ScriptPeople { u32 group; u32 object; };
 struct ScriptObject { u8 reserved[0xA]; u16 id; };
 struct GSresID { s32 group; s32 id; };
-struct FuncEntry { TPCCode* code; const char* name; };
+struct FuncEntry { gc_ptr32(TPCCode) code; gc_ptr32(const char) name; };
 
 extern "C" {
 void OSReport(const char*, ...);
@@ -47,14 +50,18 @@ void GSthreadTerminate(s32 thread);
 void GSthreadSetName(s32 thread, const char* name);
 void GSthreadSetArgs(s32 thread, s32 count, ...);
 f32 timeGetLastFrameSec(void);
-s32 floorCreateThreadLocal(s32, s32, s32, void (*)(void*, s32));
+void * floorCreateThreadLocal(s32, s32, s32, void (*)(void*, s32));
 s32 floorGetCurrentFloorGroupID(void);
 void PSVECAdd(const GSvec*, const GSvec*, GSvec*);
 void PSVECSubtract(const GSvec*, const GSvec*, GSvec*);
 void PSVECScale(const GSvec*, GSvec*, f32);
 }
 
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 #define NAN (__float_nan[0])
 inline int __fpclassifyf(float x)
 {
@@ -75,6 +82,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -132,7 +142,7 @@ public:
     CChank();
     virtual ~CChank() {}
     char* searchSubChankID(const char* id);
-    char* searchChankID(const char* id, long no);
+    char* searchChankID(const char* id, s32 no);
 };
 
 class CChankBlock : public CChank {
@@ -141,15 +151,15 @@ public:
     BOOL loadFromMemory(char* data, char* id);
 };
 
-void* operator new(u32);
-void* operator new[](u32);
+void* operator new(size_t);
+void* operator new[](size_t);
 void operator delete(void*);
 void operator delete[](void*);
 
 namespace GSscript {
 void tigaErrMessage(const char*);
 
-struct Tiga;
+class Tiga;
 struct tigaVariant;
 
 class tigaCellMemory {
@@ -163,19 +173,19 @@ public:
 };
 
 struct tigaArrayFixed {
-    s32 size;
-    u32 iter;
+    gc_bes32 size;
+    gc_be32 iter;
     u8 flag;
     u8 reserved9;
-    u16 index;
+    gc_be16 index;
     u8 reservedC[4];
     tigaVariant* get(int);
 };
 
 struct tigaVariant {
-    s16 type;
-    s16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_bes16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
 
     void restoreStateData(GSBinReadStream*);
     void makeStateData(GSBinWriteStream*);
@@ -241,16 +251,9 @@ struct tigaVariant {
     }
 };
 
+typedef f32 TigaVec3[3];
 struct TigaContext {
-    TPCCode* pc;
-    tigaVariant* bp;
-    tigaVariant* sp;
-    TPCCode** cp;
-    tigaVariant regs[4];
-    tigaVariant* stackBase;
-    TPCCode** callBase;
-    char text[0x100];
-    f32 vector[3];
+    GSSCRIPT_TIGACONTEXT_DATA(tigaVariant, TigaVec3)
 };
 
 struct TigaObjManager {
@@ -262,33 +265,17 @@ struct TigaObjManager {
     TigaObjManager();
     ~TigaObjManager();
     void clear();
-    void* newVector();
+    GSvec* newVector();
     void deleteVector(GSvec*);
     void addVectorIdx(GSvec*);
     s32 getVectorIdx(GSvec*);
-    void* newResource();
+    GSresID* newResource();
     s32 getResourceIdx(GSresID*);
-    void* getResource(int);
+    GSresID* getResource(int);
 };
 
 struct TigaThread {
-    u32 state;
-    f32 sleep;
-    TigaContext ctx;
-    s32 line;
-    tigaVariant* stack;
-    s32 stackCount;
-    TPCCode** callStack;
-    s32 callCount;
-    u8 timerIndex;
-    f32 waitTime;
-    u8 waitType;
-    u8 waitIndex;
-    s32 waitValue;
-    Tiga* owner;
-    s32 handle;
-    s32 group;
-    u32 gsThread;
+    GSSCRIPT_TIGATHREAD_DATA(TigaContext, tigaVariant)
 
     TigaThread();
     ~TigaThread();
@@ -302,42 +289,10 @@ struct TigaThread {
     void free();
 };
 
-struct Tiga {
+class Tiga {
 public:
-    CChankBlock chank;
-    s32 chankSize;
-    u32 ftblId;
-    TigaObjManager objManager;
-    s32 stateId;
-    s32 threadCount;
-    f32 timers[4];
-    TigaThread* threads[8];
-    tigaCellMemory* cellMemory;
-    TigaContext* context;
-    u8 userFlags[0x10];
-    s32 nextHandle;
-    u8 saveFlag;
-    s32 unk930;
-    s32 wazaCount;
-    tigaVariant* result;
-    s32 codeCount;
-    void* head;
-    TPCCode* codes;
-    s32 gvarCount;
-    tigaVariant* gvars;
-    s32 stringCount;
-    char* stringBuffer;
-    s32 vectorCount;
-    GSvec* vectors;
-    s32 peopleCount;
-    ScriptPeople* people;
-    s32 arrayCount;
-    tigaArrayFixed** arrays;
-    s32 funcCount;
-    FuncEntry* funcs;
-    s32 unk978;
-    u8 unk97C;
-    TigaThread* thread;
+public:
+    GSSCRIPT_TIGA_DATA(CChankBlock, TigaObjManager, TigaContext)
 
     static Tiga* m_cpCurrentObject;
 
@@ -361,9 +316,21 @@ public:
         t->waitTime = time;
         t->state |= 4;
     }
+#ifdef __MWERKS__
     bool cmpArray(int, tigaVariant*, tigaVariant*);
+#else
+    s32 cmpArray(int command, tigaVariant* args, tigaVariant* result);
+#endif
+#ifdef __MWERKS__
     bool cmpVector(int, tigaVariant*, tigaVariant*);
+#else
+    s32 cmpVector(int command, tigaVariant* args, tigaVariant* result);
+#endif
+#ifdef __MWERKS__
     bool cmpThread(int, tigaVariant*, tigaVariant*);
+#else
+    s32 cmpThread(int command, tigaVariant* args, tigaVariant* result);
+#endif
 
     Tiga();
     virtual bool execExtendMethod(int, int, tigaVariant*, tigaVariant*);
@@ -379,7 +346,7 @@ public:
     s32 restoreStateData(void*, u32);
     void makeStateData(GSBinWriteStream*);
     s32 getNameToFuncId(const char*);
-    s32 getResultValue(long);
+    s32 getResultValue(s32);
     TPCCode* getIdToCodeAdress(int);
     ScriptPeople* searchResID(u32, u32);
     void setPresetVar(tigaVariant*, int, int);
@@ -388,17 +355,17 @@ public:
     s32 execute(TigaThread*);
     void calcExpr2(int, tigaVariant*, tigaVariant*, tigaVariant*);
     void calcExpr1(int, tigaVariant*, tigaVariant*);
-    s32 executeOneThread(f32, long);
+    s32 executeOneThread(f32, s32);
     s32 executeThread(f32);
-    void unblockThread(long);
-    void blockThread(long);
+    void unblockThread(s32);
+    void blockThread(s32);
     void unblockThreadGroup(u32);
     void blockThreadGroup(u32);
     void deleteThreadGroup(u32);
-    bool isRunningThread(long);
-    void deleteThread(long);
-    TigaThread* getHandleToThread(long);
-    bool makeThread(TPCCode*, int&, long&);
+    bool isRunningThread(s32);
+    void deleteThread(s32);
+    TigaThread* getHandleToThread(s32);
+    bool makeThread(TPCCode*, int&, s32&);
     s32 runParamsWait(int, tigaVariant*, int, tigaVariant*);
     s32 runParamsPC(TPCCode*, tigaVariant*, int, bool);
     s32 runParams(int, tigaVariant*, int, bool);
@@ -433,13 +400,13 @@ struct CurrentGuard {
 
 struct ChankRec {
     char tag[4];
-    s32 size;
-    s32 no;
-    u32 unkC;
-    s32 count;
-    s32 unk14;
-    s32 id;
-    s32 unk1C;
+    gc_bes32 size;
+    gc_bes32 no;
+    gc_be32 unkC;
+    gc_bes32 count;
+    gc_bes32 unk14;
+    gc_bes32 id;
+    gc_bes32 unk1C;
     u8 data[1];
 };
 
@@ -453,7 +420,7 @@ void tigaErrMessage(const char* msg)
 }
 #pragma pop
 
-static void _executeScriptThread(Tiga* t, long id)
+static void _executeScriptThread(Tiga* t, s32 id)
 {
     t->executeOneThread(timeGetLastFrameSec(), id);
     while (t->isRunningThread(id)) {
@@ -476,7 +443,7 @@ void TigaObjManager::clear()
     memset(resUsed, 0, 0x40);
 }
 
-void* TigaObjManager::newVector()
+GSvec* TigaObjManager::newVector()
 {
     s8* p = (s8*)vecUsed;
     s32 i = 0;
@@ -515,7 +482,7 @@ void TigaObjManager::addVectorIdx(GSvec* v)
     if (i >= 0) vecUsed[i]++;
 }
 
-void* TigaObjManager::newResource()
+GSresID* TigaObjManager::newResource()
 {
     s32 i = 0;
     for (s8* p = (s8*)resUsed; p <= (s8*)&resUsed[0x40]; p++, i++) {
@@ -537,7 +504,7 @@ s32 TigaObjManager::getResourceIdx(GSresID* p)
     return i;
 }
 
-void* TigaObjManager::getResource(int i)
+GSresID* TigaObjManager::getResource(int i)
 {
     if (i < 0 || i >= 0x40) return 0;
     return &res[i];
@@ -548,7 +515,7 @@ TigaThread::TigaThread()
     state = 0;
     stack = 0;
     callStack = 0;
-    memset(&ctx, 0, 0x144);
+    memset(&ctx, 0, sizeof(ctx));
     gsThread = 0;
     setStackArea(0x100, 0x80);
 }
@@ -583,7 +550,7 @@ void TigaThread::setStackArea(int a, int b)
 
 void TigaThread::initTiga()
 {
-    memset(&ctx, 0, 0x144);
+    memset(&ctx, 0, sizeof(ctx));
     ctx.sp = stack + stackCount;
     ctx.cp = callStack + callCount;
     ctx.stackBase = stack;
@@ -782,6 +749,9 @@ s32 Tiga::setTpcChank(CChank* c)
     ChankRec* h = (ChankRec*)c->searchChankID("HEAD", 0);
     if (h == 0) return 0;
     codeCount = h->count;
+#ifndef __MWERKS__
+    const bool pcFirst = h->id != 1;
+#endif
     h->id = 1;
     head = h->data;
     ChankRec* r = (ChankRec*)c->searchChankID("CODE", 0);
@@ -799,10 +769,16 @@ s32 Tiga::setTpcChank(CChank* c)
     if (r == 0) return 0;
     vectorCount = r->count;
     vectors = (GSvec*)r->data;
+#ifndef __MWERKS__
+    if (pcFirst) { gc_fixf32n((f32*)vectors, vectorCount * 3); }
+#endif
     r = (ChankRec*)c->searchChankID("GIRI", 0);
     if (r != 0) {
         peopleCount = r->count;
         people = (ScriptPeople*)r->data;
+#ifndef __MWERKS__
+        if (pcFirst) { for (s32 i = 0; i < peopleCount * 2; i++) GC_FIX32(((u32*)people)[i]); }
+#endif
     }
     r = (ChankRec*)c->searchChankID("FTBL", 0);
     if (r != 0) {
@@ -820,8 +796,8 @@ s32 Tiga::setTpcChank(CChank* c)
     if (r != 0) {
         u8 * base = setTpcChankInline(r);
         int i = 0;
-        arrayCount = *(s32*)base;
-        arrays = (tigaArrayFixed**)(base + 0x10);
+        arrayCount = *(gc_bes32*)base;
+        arrays = (gc_ptr32(tigaArrayFixed)*)(base + 0x10);
         for (; i < arrayCount; i++) {
             arrays[i] = (tigaArrayFixed*)(base + (u32)arrays[i]);
             arrays[i]->index = i;
@@ -847,7 +823,7 @@ s32 Tiga::runParams(int funcId, tigaVariant* args, int count, bool useThread)
 s32 Tiga::runParamsPC(TPCCode* code, tigaVariant* args, int count, bool useThread)
 {
     int index;
-    long handle;
+    s32 handle;
     TigaThread* prev = thread;
     if (makeThread(code, index, handle)) {
         thread = threads[index];
@@ -867,7 +843,7 @@ s32 Tiga::runParamsPC(TPCCode* code, tigaVariant* args, int count, bool useThrea
         *t->ctx.cp = (TPCCode*)t->ctx.bp;
         t->ctx.bp = sp;
         if (useThread) {
-            s32 g = floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread);
+            s32 g = GC_ADDR32(floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread));
             GSthreadSetName(g, "GSscript thread");
             GSthreadSetArgs(g, 2, this, handle);
             t->gsThread = g;
@@ -899,7 +875,7 @@ s32 Tiga::runParamsWait(int id, tigaVariant* args, int count, tigaVariant* out)
     return 1;
 }
 
-bool Tiga::makeThread(TPCCode* code, int& index, long& handle)
+bool Tiga::makeThread(TPCCode* code, int& index, s32& handle)
 {
     s32 i = 0;
     TigaThread** p = threads;
@@ -923,7 +899,7 @@ bool Tiga::makeThread(TPCCode* code, int& index, long& handle)
     return false;
 }
 
-TigaThread* Tiga::getHandleToThread(long id)
+TigaThread* Tiga::getHandleToThread(s32 id)
 {
     for (TigaThread** p = threads; p < &threads[8]; p++) {
         TigaThread* t = *p;
@@ -932,7 +908,7 @@ TigaThread* Tiga::getHandleToThread(long id)
     return 0;
 }
 
-void Tiga::deleteThread(long id)
+void Tiga::deleteThread(s32 id)
 {
     TigaThread* t = getHandleToThread(id);
     if (t) {
@@ -941,7 +917,7 @@ void Tiga::deleteThread(long id)
     }
 }
 
-bool Tiga::isRunningThread(long id)
+bool Tiga::isRunningThread(s32 id)
 {
     TigaThread* t = getHandleToThread(id);
     if (t) return t->state != 0;
@@ -972,7 +948,7 @@ void Tiga::unblockThreadGroup(u32 group)
     }
 }
 
-void Tiga::blockThread(long id)
+void Tiga::blockThread(s32 id)
 {
     TigaThread* t = getHandleToThread(id);
     if (t) {
@@ -980,7 +956,7 @@ void Tiga::blockThread(long id)
     }
 }
 
-void Tiga::unblockThread(long id)
+void Tiga::unblockThread(s32 id)
 {
     TigaThread* t = getHandleToThread(id);
     if (t) t->state &= ~2;
@@ -996,7 +972,7 @@ s32 Tiga::executeThread(f32 dt)
     return 0;
 }
 
-s32 Tiga::executeOneThread(f32 dt, long id)
+s32 Tiga::executeOneThread(f32 dt, s32 id)
 {
     TigaThread* prevThread;
     TigaThread* t = getHandleToThread(id);
@@ -1192,11 +1168,11 @@ s32 Tiga::execute(TigaThread* t)
             t->ctx.sp->flags = 0;
             if (vtype <= 2) {
                 c->pc++;
-                t->ctx.sp->value.integer = *(s32*)c->pc;
+                t->ctx.sp->value.integer = *(gc_bes32*)c->pc;
             } else if (vtype == 0x35) {
                 t->ctx.sp->type = 1;
                 c->pc++;
-                t->ctx.sp->value.integer = *(s32*)c->pc;
+                t->ctx.sp->value.integer = *(gc_bes32*)c->pc;
             } else if (vtype == 3) {
                 t->ctx.sp->value.pointer = stringBuffer + index;
             } else if (vtype == 4) {
@@ -1289,7 +1265,7 @@ s32 Tiga::execute(TigaThread* t)
                 tigaVariant* var = &t->ctx.regs[index];
                 var->clear();
                 tigaVariant* src = t->ctx.sp;
-                t->ctx.regs[index].type = src->type;
+                var->type = src->type;
                 t->ctx.regs[index].flags = src->flags;
                 t->ctx.regs[index].value = src->value;
             } else if (scope == 3) {
@@ -1335,7 +1311,7 @@ s32 Tiga::execute(TigaThread* t)
         case 7:
             t->ctx.sp = t->ctx.sp - 1;
             t->ctx.sp->type = 0x35;
-            t->ctx.sp->value.integer = (s32)(c->pc + 1);
+            t->ctx.sp->value.integer = (GCsptr)(c->pc + 1);
             c->pc = &codes[(c->pc->a << 16) + c->pc->ub];
             t->ctx.cp--;
             *t->ctx.cp = (TPCCode*)t->ctx.bp;
@@ -1617,7 +1593,7 @@ TPCCode* Tiga::getIdToCodeAdress(int id)
     return funcs[n].code;
 }
 
-s32 Tiga::getResultValue(long)
+s32 Tiga::getResultValue(s32)
 {
     tigaVariant* v = result;
     if (v && (v->type == 1 || v->type == 2)) return v->getInteger();
@@ -1707,7 +1683,7 @@ s32 Tiga::restoreStateData(void* data, u32 length)
     for (s32 i = 0; i < count; i++) {
         if (threads[i]->state != 0) {
             handle = threads[i]->handle;
-            t = floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread);
+            t = GC_ADDR32(floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread));
             GSthreadSetName(t, "GSscript thread");
             GSthreadSetArgs(t, 2, this, handle);
             threads[i]->gsThread = t;

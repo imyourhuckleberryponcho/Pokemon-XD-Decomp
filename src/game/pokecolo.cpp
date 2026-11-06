@@ -77,7 +77,7 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 enum ASM { ASM_draft_dummy };
-enum GSgappFunc { GSgappFunc_draft_dummy };
+typedef void (*GSgappFunc)(int id, void* arg);
 struct GStexture;
 struct Gamedata;
 struct GamedataSave;
@@ -145,9 +145,9 @@ void GSmodelInit(void);
 void GSmodelSetMarukageTexture(GStexture* tex);
 s32 GSmovieInit();
 s32 GSmsgDaemon();
-s32 GSmsgFontOpen(void*);
+void* GSmsgFontOpen(void*);
 s32 GSmsgInit(s32, s32);
-s32 GSmsgOpen(void*);
+void* GSmsgOpen(void*);
 s32 GSmsgSetCtrlFunc(s32*);
 s32 GSnetworkInit();
 s32 GSpartInit(s32);
@@ -224,7 +224,7 @@ void pokecoloStartCountPlayTime(u8 value);
 s32 reliveHallCallBackInit();
 void* savedataBiosGetGamedataPtr(Savedata* savedata);
 u32 savedataBiosGetNowSavedataPtr();
-s32 savedataBiosGetSavedataBufferPtr();
+Savedata * savedataBiosGetSavedataBufferPtr();
 void savedataBiosSetNowSavedataPtr(Savedata* savedata);
 s32 savedataCreate(s32, s32);
 void* savedataGetStatus(void* save, s32 kind);
@@ -247,11 +247,11 @@ extern s32 init;
 extern "C++" {
 static void _countPlayTime();
 static u32 _getSaveSystemDataPtr();
-static void _mainDaemon(unsigned long p0, unsigned long p1);
-static void _mainGBARead(unsigned long p0, unsigned long p1);
-static void _mainPadRead(unsigned long p0, unsigned long p1);
-static void _mainRender(unsigned long p0, unsigned long p1);
-static void _mainThreadExec(unsigned long p0, unsigned long p1);
+static void _mainDaemon(u32 p0, u32 p1);
+static void _mainGBARead(u32 p0, u32 p1);
+static void _mainPadRead(u32 p0, u32 p1);
+static void _mainRender(u32 p0, u32 p1);
+static void _mainThreadExec(u32 p0, u32 p1);
 s32 _pokecoloCheckExDisc();
 static void _pokecoloInit();
 static void _pokecoloShutdown();
@@ -271,8 +271,13 @@ s32 pokecoloGappGBAReadHandle;
 s32 pokecoloGappMainDeamonHandle;
 s32 pokecoloGappRenderHandle;
 s32 pokecoloGappAntiActionReplayHandle;
+#ifdef __MWERKS__
 extern s32 _AntiActionReplayTimer;
 extern u32 _pokecoloCurrentLanguage;
+#else
+static s32 _AntiActionReplayTimer;
+static u32 _pokecoloCurrentLanguage;
+#endif
 
 extern "C" {
 void mainAntiActionReplay();
@@ -413,9 +418,13 @@ void pokecoloCheckDiskTray() {
     }
 }
 #pragma pop
+#ifndef __MWERKS__
+extern "C" u8* PortXD_GetDolTable(const char* name);
+#endif
 extern "C" {
 #pragma push
 void pokecoloMain(int argc, char** argv) {
+#ifdef __MWERKS__
     static u8 resident_fnt[] ATTRIBUTE_ALIGN(4) = {
 #include "pokecolo/resident_fnt.inc"
     };
@@ -437,6 +446,15 @@ void pokecoloMain(int argc, char** argv) {
     static u8 debug_menu_fnt[] ATTRIBUTE_ALIGN(4) = {
 #include "pokecolo/debug_menu_fnt.inc"
     };
+#else
+    u8* resident_fnt = PortXD_GetDolTable("resident_fnt");
+    u8* common_fnt = PortXD_GetDolTable("common_fnt");
+    u8* common_tbl = PortXD_GetDolTable("common_tbl");
+    u8* system_error_fnt = PortXD_GetDolTable("system_error_fnt");
+    u8* system_error_tbl = PortXD_GetDolTable("system_error_tbl");
+    u8* debug_menu_tbl = PortXD_GetDolTable("debug_menu_tbl");
+    u8* debug_menu_fnt = PortXD_GetDolTable("debug_menu_fnt");
+#endif
     u64 start;
     u8 progressive;
     s32 i;
@@ -625,14 +643,16 @@ void mainAntiActionReplay() {
 }
 
 extern "C++" {
-static void _mainRender(unsigned long p0, unsigned long p1) {
+static void _mainRender(u32 p0, u32 p1) {
     static s32 frame = 0;
     GSgfxRender();
 }
+#ifdef __MWERKS__
 static s32 _AntiActionReplayTimer;
 static u32 _pokecoloCurrentLanguage;
+#endif
 extern "C++" {
-static void _mainDaemon(unsigned long p0, unsigned long p1) {
+static void _mainDaemon(u32 p0, u32 p1) {
 
     dbgMenuGSvtrCaptureUpdate();
     if ((GSvtrIsActive() != 0) && (dbgMenuIsOpen() == 0)) {
@@ -666,7 +686,7 @@ extern "C" {
 extern "C++" {
 
 extern "C++" {
-static void _mainThreadExec(unsigned long p0, unsigned long p1) {
+static void _mainThreadExec(u32 p0, u32 p1) {
     f32 temp_f1;
     u8 temp_r31;
 
@@ -690,7 +710,7 @@ static void _mainThreadExec(unsigned long p0, unsigned long p1) {
 }
 
 extern "C++" {
-static void _mainGBARead(unsigned long p0, unsigned long p1) {
+static void _mainGBARead(u32 p0, u32 p1) {
     s32 i;
 
     for (i = 1; i <= 4; i++) {
@@ -702,7 +722,7 @@ static void _mainGBARead(unsigned long p0, unsigned long p1) {
 }
 
 extern "C++" {
-static void _mainPadRead(unsigned long p0, unsigned long p1) {
+static void _mainPadRead(u32 p0, u32 p1) {
     s32 i;
 
     GSinputReadStart();

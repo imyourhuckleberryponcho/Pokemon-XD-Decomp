@@ -1,4 +1,17 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#ifndef __MWERKS__
+struct Pokemon;
+struct CReliveStage { public: Pokemon* getDancerPointer(s32); };
+struct CAnt { static void systemInit(); static void systemFree(); };
+struct CReliveHall { public: static CReliveHall* getPointer(); CReliveStage* getStage(s32); bool isReliveReadyDarkLugiaExist(); s32 getReliveReadyVisitorQuantity(); };
+#define getDancerPointer__12CReliveStageFl(o, ...) ((void*)((CReliveStage*)(o))->getDancerPointer(__VA_ARGS__))
+#define getPointer__11CReliveHallFv(...) ((void*)CReliveHall::getPointer(__VA_ARGS__))
+#define getStage__11CReliveHallFl(o, ...) ((void*)((CReliveHall*)(o))->getStage(__VA_ARGS__))
+#define systemFree__4CAntFv(...) (CAnt::systemFree(__VA_ARGS__))
+#define systemInit__4CAntFv(...) (CAnt::systemInit(__VA_ARGS__))
+#endif
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -68,11 +81,17 @@ u8 fightReadResourceID(u32 a, u32 b);
 void floorSetFadeScript(s32 a, s32 b);
 void floorWaitForChange();
 void fn_80151F6C();
-u32 gamedatasaveGetStatus(s32 a, s32 b);
+StatusU32 gamedatasaveGetStatus(s32 a, s32 b);
 u8 gbaCommandIsConnected(s32 p);
+#ifdef __MWERKS__
 void* getDancerPointer__12CReliveStageFl(void* stage, s32 i);
+#endif
+#ifdef __MWERKS__
 void* getPointer__11CReliveHallFv();
+#endif
+#ifdef __MWERKS__
 void* getStage__11CReliveHallFl(void* hall, s32 i);
+#endif
 void heroBiosCopy(void* dst, void* src);
 void* heroBiosGetPokemonPtr(void* hero, u16 i);
 void heroBiosSetHomePlace(void* hero, s32 p);
@@ -99,7 +118,7 @@ void menuCBReliveHallCursolInit();
 void* menuCBRule_ConstantRule2(s32 i);
 void menuCBRule_Copy(void* dst, void* src);
 u8 menuCBRule_IsEquals(void* a, void* b);
-void menuCBTrainerBios_SetControlerID(void* t, s8 id);
+void menuCBTrainerBios_SetControlerID(void* t, s32 id);
 void menuCBTrainerBios_SetHomePlace(void* t, s32 p);
 s32 menuCB_CurrentMenuID();
 void menuCB_GBADisconnectedErrorJob();
@@ -135,8 +154,12 @@ void pokemonInit(void* p);
 void* savedataGetStatus(void* save, s32 kind);
 void soundOpenPlay(s32 id, s32 a, s32 b);
 void soundStop(s32 id, s32 t);
+#ifdef __MWERKS__
 void systemFree__4CAntFv();
+#endif
+#ifdef __MWERKS__
 void systemInit__4CAntFv();
+#endif
 void toolentryDebugPokemonCreate();
 void toolentryDebugPokemonDelete();
 void toolentryTaisenEntryPokemon(s32 i);
@@ -159,7 +182,9 @@ extern "C" {
 void* pGCB;
 }
 void* toolBattleTempSaveData;
+extern "C" {
 _MENUCBWORK _CB;
+}
 
 #define CB(T, off) (*(T*)((u8*)&_CB + (off)))
 
@@ -173,15 +198,15 @@ static const TunaideSelect tunaide_select[4] = {
 };
 static const s32 tunaide_select_field[6] = { 0, 1, 2, 3, 4, 5 };
 
-static s32 _YesNo(long a);
-static void _menuCB_RuleData_SaveJob(long a);
+static s32 _YesNo(s32 a);
+static void _menuCB_RuleData_SaveJob(s32 a);
 static s32 _menuCB_SaveRule();
 extern "C" void menuColosseumBattleExit(void);
 extern "C" void fn_8004429C(void);
 extern "C" void fn_80044314(void);
 static void _menuCB_RuleData_CBtoSAVEDATA();
 static void _menuCB_Rule_Page_Chenge_Init2();
-static void _menuCB_RuleEdit_Cursol_Init(long a);
+static void _menuCB_RuleEdit_Cursol_Init(s32 a);
 static void menuCB_SAVEDATA_recover();
 static void menuCB_GCEntry_Job();
 static u8 menuCB_SubWinDisp_GCENTRY();
@@ -225,7 +250,7 @@ static void _menuCB_Rule_Page_Chenge_Init2() {
     CB(s32, 0xB12C) = 0xF;
 }
 
-static void _menuCB_RuleEdit_Cursol_Init(long v) {
+static void _menuCB_RuleEdit_Cursol_Init(s32 v) {
     CB(s32, 0xB0AC) = v;
     CB(s32, 0xB0A8) = v;
     CB(s32, 0xB0A4) = v;
@@ -242,7 +267,7 @@ static void _menuCB_RuleEdit_Cursol_Init(long v) {
     CB(s32, 0xB014) = v;
 }
 
-static void menuCB_RuleCustomJobDisp(long mode) {
+static void menuCB_RuleCustomJobDisp(s32 mode) {
     s32 cursor;
     if (mode == 0) cursor = 0;
     if (mode == 1) cursor = -1;
@@ -337,7 +362,7 @@ static void menuCB_RuleCustomJobDisp(long mode) {
     }
 }
 
-static void _menuCB_RuleData_SaveJob(long v) {
+static void _menuCB_RuleData_SaveJob(s32 v) {
     _menuCB_RuleData_SaveJob_flag = v;
     while (1) {
         if (memcardIsMemCardValid() != 0) {
@@ -576,7 +601,7 @@ static void _imasuguBattleMenuMain() {
     }
 }
 
-static s32 _YesNo(long a) {
+static s32 _YesNo(s32 a) {
     switch (pokecoloGetCountryCode()) {
     case 0:
         return menuSubOpenYesNo(0, 0x3C, 0xD2, a);
@@ -607,7 +632,7 @@ static s32 _menuCB_SaveRule() {
     return -1;
 }
 
-static s32 _colosseumbattlemenu_teamselect(long) {
+static s32 _colosseumbattlemenu_teamselect(s32) {
     static const s8 sta[3][4] = { { 0, 1, 2, 3 }, { 0, 2, 1, 3 }, { 0, 3, 1, 2 } };
     CB(s32, 0xB198) = 0;
     CB(s32, 0xB06C) = 0;
@@ -642,7 +667,7 @@ static s32 _colosseumbattlemenu_teamselect(long) {
     return next;
 }
 
-static s32 _colosseumbattlemenu_playerdecide(long) {
+static s32 _colosseumbattlemenu_playerdecide(s32) {
     CB(s32, 0xB068) = 0;
     CB(s32, 0xB0D4) = 0;
     CB(s32, 0xB194) = 0;
@@ -661,7 +686,7 @@ static s32 _colosseumbattlemenu_playerdecide(long) {
     return 0xAC;
 }
 
-static s32 _gbac_connect_job(long) {
+static s32 _gbac_connect_job(s32) {
     s32 list[4];
     s32 type;
     _tempHeroInitAll();
@@ -673,16 +698,16 @@ static s32 _gbac_connect_job(long) {
     case 0:
     case 1:
         if (CB(s32, 0x4C9C) == 0) {
-            list[0] = (s32)(_menuCB_Temp + 0x1320);
-            list[1] = (s32)(_menuCB_Temp + 0x1C98);
+            list[0] = (GCsptr)(_menuCB_Temp + 0x1320);
+            list[1] = (GCsptr)(_menuCB_Temp + 0x1C98);
             list[2] = 0;
             type = 0;
             list[3] = 0;
         } else {
             list[0] = 0;
             type = 1;
-            list[1] = (s32)(_menuCB_Temp + 0x1320);
-            list[2] = (s32)(_menuCB_Temp + 0x1C98);
+            list[1] = (GCsptr)(_menuCB_Temp + 0x1320);
+            list[2] = (GCsptr)(_menuCB_Temp + 0x1C98);
             list[3] = 0;
         }
         break;
@@ -690,10 +715,10 @@ static s32 _gbac_connect_job(long) {
     default:
         if (CB(s32, 0x4C9C) == 0) type = 2;
         else type = 3;
-        list[0] = (s32)(_menuCB_Temp + 0x1320);
-        list[1] = (s32)(_menuCB_Temp + 0x1C98);
-        list[2] = (s32)(_menuCB_Temp + 0x2610);
-        list[3] = (s32)(_menuCB_Temp + 0x2F88);
+        list[0] = (GCsptr)(_menuCB_Temp + 0x1320);
+        list[1] = (GCsptr)(_menuCB_Temp + 0x1C98);
+        list[2] = (GCsptr)(_menuCB_Temp + 0x2610);
+        list[3] = (GCsptr)(_menuCB_Temp + 0x2F88);
         break;
     }
     if (CB(s32, 0x4C9C) == 0) {
@@ -746,7 +771,9 @@ static s32 _gbac_connect_job(long) {
     return 0xAB;
 }
 
-static s32 _colosseumbattlemenu_duel(long) {
+static s32 _colosseumbattlemenu_duel(s32) {
+    u8* t;
+    u32 i;
     s32 next;
     memcpy(&CB(u8, 0x9918), savedataGetStatus(0, 0xE), 0x360);
     systemInit__4CAntFv();
@@ -843,8 +870,8 @@ loop:
         else CB(s32, 0x10) = tunaide_select_field[CB(s32, 0xAFFC)];
         menuCBTrainerBios_SetHomePlace(&CB(u8, 0x4C98), tunaide_select[CB(s32, 0xAFF4)].homePlace);
         menuCBTrainerBios_SetControlerID(&CB(u8, 0x4C98), tunaide_select[CB(s32, 0xAFF4)].ctl[0]);
-        u8* t = (u8*)&_CB + 0x1320;
-        for (u32 i = 1; i < 4; t += 0x1320, i++) {
+        t = (u8*)&_CB + 0x1320;
+        for (i = 1; i < 4; t += 0x1320, i++) {
             menuCBTrainerBios_SetHomePlace(t + 0x4C98, 1);
             menuCBTrainerBios_SetControlerID(t + 0x4C98, tunaide_select[CB(s32, 0xAFF4)].ctl[i]);
         }

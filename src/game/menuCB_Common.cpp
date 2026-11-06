@@ -22,7 +22,15 @@ struct MenuSpriteVal {
 };
 
 struct MenuWindow {
-    u8 unk0[0x54];
+    u8 unk0[0xC];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x24];
     s16 unk54;
     s16 unk56;
     s32 unk58;

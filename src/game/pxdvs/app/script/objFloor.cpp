@@ -1,4 +1,19 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/tigadata.h>
+#ifndef __MWERKS__
+struct CReliveStage;
+struct CReliveHall { public: static CReliveHall* getPointer(); CReliveStage* getStage(s32); bool isReliveReadyDarkLugiaExist(); s32 getReliveReadyVisitorQuantity(); };
+struct Hero { public: static Hero* getHeroPtr(); u16 itemQuantity(u16); u8 getHeroStyle() const; void setBattleResumeFloorID(uint); void setBattleResumeFloorIndex(u8); u8 getFollowerID(); u32 getFollowerGrpID(); u32 getFollowerResID(); void setFollowerGrpID(u32); void setFollowerResID(u32); void setFollowerID(u8); };
+u8 menuReliveHallTutorialGetIsCancelExit();
+#define getHeroPtr__4HeroFv(...) ((Hero*)Hero::getHeroPtr(__VA_ARGS__))
+#define setBattleResumeFloorID__4HeroFUi(o, ...) (((Hero*)(o))->setBattleResumeFloorID(__VA_ARGS__))
+#define setBattleResumeFloorIndex__4HeroFUc(o, ...) (((Hero*)(o))->setBattleResumeFloorIndex(__VA_ARGS__))
+#define getPointer__11CReliveHallFv(...) ((void*)CReliveHall::getPointer(__VA_ARGS__))
+#define isReliveReadyDarkLugiaExist__11CReliveHallFv(o, ...) ((u8)((CReliveHall*)(o))->isReliveReadyDarkLugiaExist(__VA_ARGS__))
+#define getReliveReadyVisitorQuantity__11CReliveHallFv(o, ...) ((s32)((CReliveHall*)(o))->getReliveReadyVisitorQuantity(__VA_ARGS__))
+#define menuReliveHallTutorialGetIsCancelExit__Fv(...) ((u8)menuReliveHallTutorialGetIsCancelExit(__VA_ARGS__))
+#endif
 
 #pragma pool_strings off
 #pragma peephole off
@@ -12,9 +27,9 @@ void tigaErrMessage(const char*);
 struct tigaVariant;
 struct tigaArrayFixed { tigaVariant* get(int); };
 struct tigaVariant {
-    s16 type;
-    u16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_be16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
     s32 getCnvInteger();
     GSvec* getCnvVector();
     f32 getCnvSingle();
@@ -43,27 +58,38 @@ struct tigaVariant {
 };
 }
 struct HeroScriptContext {
-    u8 reserved[0x10];
-    GSscript::tigaVariant result;
-    u8 reserved18[0x20];
-    char text[0x100];
-    GSvec vector;
+    GSSCRIPT_TIGACONTEXT_DATA(GSscript::tigaVariant, GSvec)
 };
-class AppScript {
-    u8 reserved[0x914];
-    HeroScriptContext* context;
+struct AppScript {
+    GSSCRIPT_TIGA_DATA(GSscript::TigaChankView, GSscript::TigaObjManagerView, HeroScriptContext)
+    virtual ~AppScript();
+    GSscript::tigaWaza waza[7];
 public:
     s32 cmpFloor(int, GSscript::tigaVariant*, GSscript::tigaVariant*);
 };
 
 extern "C" {
+#ifdef __MWERKS__
 Hero* getHeroPtr__4HeroFv();
+#endif
+#ifdef __MWERKS__
 void setBattleResumeFloorID__4HeroFUi(Hero*, u32);
+#endif
+#ifdef __MWERKS__
 void setBattleResumeFloorIndex__4HeroFUc(Hero*, u8);
+#endif
+#ifdef __MWERKS__
 void* getPointer__11CReliveHallFv();
+#endif
+#ifdef __MWERKS__
 u8 isReliveReadyDarkLugiaExist__11CReliveHallFv(void*);
+#endif
+#ifdef __MWERKS__
 s32 getReliveReadyVisitorQuantity__11CReliveHallFv(void*);
+#endif
+#ifdef __MWERKS__
 u8 menuReliveHallTutorialGetIsCancelExit__Fv();
+#endif
 s32 GSfloorGetCurrent();
 s32 floorGetCurrentGroupID();
 s32 floorGetNextFloorID();
@@ -77,10 +103,10 @@ u8 floorDataBiosGetPosListData(s32, GSvec*, f32*);
 s32 floorEventChangeTresure(s32, u16, u8);
 s32 floorEventCtrlDoor(s32, s32, u8);
 s32 floorEventCtrlElevator(s32, s32, u16, s32, s32);
-void floorEventSetTresureDisp(s32, u8);
+void floorEventSetTresureDisp(s32, PCARG(u8, u32));
 void floorLink(s32, s32);
 void floorLinkWithSE(s32, s32, s32);
-void floorMoviePlay(s32, u8, u8, s32, u16, u16);
+void floorMoviePlay(s32, PCARG(u8, s32), PCARG(u8, int), s32, u16, u16);
 void floorOffscreenPlayWait();
 void floorRegisterCamera(s32, s32);
 void floorRegisterLight(s32, s32);
@@ -215,8 +241,8 @@ s32 AppScript::cmpFloor(int command, GSscript::tigaVariant* args, GSscript::tiga
             return 1;
         }
         context->vector = p;
-        context->result.value.pointer = &context->vector;
-        context->result.type = 4;
+        context->regs[0].value.pointer = &context->vector;
+        context->regs[0].type = 4;
         break;
     }
     case 0x30: {

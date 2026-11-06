@@ -1,8 +1,10 @@
+#include <game/pcret.h>
 #include <global.h>
+#include <game/statusval.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
 struct PokemonData;
-struct ItemData;
+#include <game/pxdvs/app/item/itemData.h>
 struct FightPokemon;
 struct FightOutPokemon;
 struct FightWaza;
@@ -25,8 +27,16 @@ struct Pokemon {
     u16 getPokemonDataId() const;
     u8 getCondition() const;
     u8 getConditionCount() const;
+#ifdef __MWERKS__
     s8 getConditionTurn() const;
+#else
+    u8 getConditionTurn() const;
+#endif
+#ifdef __MWERKS__
     s8 getConditionTurnNow() const;
+#else
+    u8 getConditionTurnNow() const;
+#endif
     void initCondition();
     void setCondition(u8);
     void setConditionCount(u8);
@@ -76,19 +86,7 @@ struct EffortEntry {
     u16 value;
 };
 
-struct MenuWazaStatusEntry {
-    char16* name;
-    char16* zokuseiName;
-    u16 zokusei;
-    u8 maxPp;
-    u8 pp;
-};
-
-struct MenuWazaStatus {
-    char16* nickname;
-    MenuWazaStatusEntry waza[4];
-    u8 pad[0x48 - 0x34];
-};
+#include <game/menuwazastatus.h>
 
 extern "C" {
 u16 figthOutPokemonGetPokemonDataId(FightOutPokemon*);
@@ -102,9 +100,9 @@ u32 pokemon_GetExp(Pokemon*);
 u8 pokemon_GetLevel(Pokemon*);
 char16* pokemon_GetNicknamePtr(Pokemon*);
 u8 pokemon_GetHinsi(Pokemon*);
-u16 pokemon_GetPokemonWazaDataId(Pokemon*, u16);
-u8 pokemon_GetPokemonWazaPp(Pokemon*, u16);
-u8 pokemon_GetPokemonWazaPpCount(Pokemon*, u16);
+u16 pokemon_GetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
+u8 pokemon_GetPokemonWazaPp(Pokemon*, PCARG(u16, u32));
+u8 pokemon_GetPokemonWazaPpCount(Pokemon*, PCARG(u16, u32));
 u16 pokemon_GetItemDataId(Pokemon*);
 u16 pokemon_GetHp(Pokemon*);
 u16 pokemon_GetMaxHp(Pokemon*);
@@ -137,9 +135,9 @@ void pokemon_SetNicknamePtr(Pokemon*, char16*);
 void pokemon_SetExp(Pokemon*, u32);
 void pokemon_SetLevel(Pokemon*, u8);
 void pokemon_SetConditionAmari(Pokemon*, u32);
-void pokemon_SetPokemonWazaDataId(Pokemon*, u16, u16);
-void pokemon_SetPokemonWazaPp(Pokemon*, u16, u8);
-void pokemon_SetPokemonWazaPpCount(Pokemon*, u16, u8);
+void pokemon_SetPokemonWazaDataId(Pokemon*, PCARG(u16, u32), u16);
+void pokemon_SetPokemonWazaPp(Pokemon*, PCARG(u16, u32), u8);
+void pokemon_SetPokemonWazaPpCount(Pokemon*, PCARG(u16, u32), u8);
 void pokemon_SetItemDataId(Pokemon*, u16);
 void pokemon_SetHp(Pokemon*, u16);
 void pokemon_SetMaxHp(Pokemon*, u16);
@@ -213,7 +211,7 @@ u32 HSD_Rand(void);
 void* memset(void*, int, u32);
 void GScharCpy(char16*, const char16*);
 char16* GSmsgGetGSchar(u32);
-void GSsndPlay(u16, u32, u32);
+void GSsndPlay(PCARG(u16, u32), u32, u32);
 u16 menuFaceGetID(Pokemon*);
 u16 menuFaceGetID3(Pokemon*, u8, u8);
 u8 menuSubGetPokemonSexForFightDisp(Pokemon*);
@@ -226,16 +224,16 @@ Pokemon* fightPokemonGetPokemonPtr(FightPokemon*);
 u8 dbgMenuFightGetSoubikoukaFlag(void);
 u16 itemDB_GetItemSoubiDataId(u16);
 u32 itemDB_GetBuff(u16);
-ItemData* itemDataBiosGetPtr(u16);
-u8 itemDataBiosGetKind(ItemData*);
-u32 itemDataBiosGetBuff(ItemData*);
+ItemDataBiosRef* itemDataBiosGetPtr(u16);
+u8 itemDataBiosGetKind(ItemDataBiosRef*);
+u32 itemDataBiosGetBuff(ItemDataBiosRef*);
 u16 joutaiDataBiosGetStatus(u16);
 u32 joutaiDataBiosGetName(u32);
 u8 joutaiDataBiosGetKaisuuDataId(u16);
 u8 joutaiDataBiosGetMaxCount(u16);
 s32 kaisuuGetKaisuu(u32);
 u16 darkPokemonBiosGetDarkPoint(u16);
-u16 darkPokemonBiosGetTemotiDarkWaza(u16, u16);
+u16 darkPokemonBiosGetTemotiDarkWaza(u16, PCARG(u16, s32));
 PokemonSeikakuDataBios* pokemonSeikakuDataBiosGetPtr(u32);
 s8 pokemonSeikakuDataBiosGetReliveFightout(PokemonSeikakuDataBios*);
 s8 pokemonSeikakuDataBiosGetReliveWalk(PokemonSeikakuDataBios*);
@@ -261,7 +259,7 @@ s32 tasteDataGetAisyou(TasteData*, u8);
 u32 wazaDB_GetName(u16);
 u32 wazaDB_GetZokuseiDataId(u16);
 u8 wazaGetMaxPP(u16, u8);
-u32 zokuseiBiosGetName(u8);
+u32 zokuseiBiosGetName(PCARG(u8, u16));
 u8 sexGetPokemonSexRaitoKotei(u32);
 void memoDataSet(u32, Pokemon*);
 u32 Sequence_LoadPokemon(u16, u32, u32);
@@ -270,7 +268,7 @@ void Sequence_ResetStatus(u32, u32);
 void gamedataAttestInit(Attest*);
 bool gamedataAttestCheckValid(Attest*);
 void gamedataAttestBiosCopy(Attest*, Attest*);
-PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon*, u16, u8);
+PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon*, PCARG(u16, u32), u8);
 void pokemonWazaBiosCopy(PokemonWaza*, const PokemonWaza*);
 void pokemonBiosCopy(Pokemon*, const Pokemon*);
 PokemonData* pokemonDataBiosGetPtr(u16);
@@ -349,7 +347,7 @@ u16 pokemonBiosGetPhyDef(Pokemon*);
 u16 pokemonBiosGetPhyDefEffort(Pokemon*);
 u16 pokemonBiosGetPhyDefRnd(Pokemon*);
 u16 pokemonBiosGetPokemonDataId(Pokemon*);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, u16);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
 u16 pokemonBiosGetPoolFriend(Pokemon*);
 u16 pokemonBiosGetSpeAtk(Pokemon*);
 u16 pokemonBiosGetSpeAtkEffort(Pokemon*);
@@ -456,8 +454,8 @@ u8 pokemonBiosGetMailId(Pokemon*);
 u8 pokemonBiosGetMarineRibbon(Pokemon*);
 u8 pokemonBiosGetNationalRibbon(Pokemon*);
 u8 pokemonBiosGetPcboxMark(Pokemon*);
-u8 pokemonBiosGetPokemonWazaPp(Pokemon*, u16);
-u8 pokemonBiosGetPokemonWazaPpCount(Pokemon*, u16);
+u8 pokemonBiosGetPokemonWazaPp(Pokemon*, PCARG(u16, u32));
+u8 pokemonBiosGetPokemonWazaPpCount(Pokemon*, PCARG(u16, u32));
 u8 pokemonBiosGetPokerus(Pokemon*);
 u8 pokemonBiosGetSkyRibbon(Pokemon*);
 u8 pokemonBiosGetStrong(Pokemon*);
@@ -595,9 +593,9 @@ void pokemonBiosSetPhyDef(Pokemon*, u16);
 void pokemonBiosSetPhyDefEffort(Pokemon*, u16);
 void pokemonBiosSetPhyDefRnd(Pokemon*, u16);
 void pokemonBiosSetPokemonDataId(Pokemon*, u16);
-void pokemonBiosSetPokemonWazaDataId(Pokemon*, u16, u16);
-void pokemonBiosSetPokemonWazaPp(Pokemon*, u16, u8);
-void pokemonBiosSetPokemonWazaPpCount(Pokemon*, u16, u8);
+void pokemonBiosSetPokemonWazaDataId(Pokemon*, PCARG(u16, u32), PCARG(u16, u32));
+void pokemonBiosSetPokemonWazaPp(Pokemon*, PCARG(u16, u32), u8);
+void pokemonBiosSetPokemonWazaPpCount(Pokemon*, PCARG(u16, u32), u8);
 void pokemonBiosSetPokerus(Pokemon*, u8);
 void pokemonBiosSetPoolExp(Pokemon*, u32);
 void pokemonBiosSetPoolFriend(Pokemon*, u16);
@@ -738,7 +736,7 @@ u16 pokemonGetSoubiItemBuff(Pokemon*);
 u16 pokemonGetSoubiItemSoubiDataId(Pokemon*);
 u16 pokemonGetSoubiItemDataId(Pokemon*);
 u16 pokemonDoItemSoubi(Pokemon*, u16, u8);
-u8 pokemonGetSex(Pokemon*);
+PCRET(u8) pokemonGetSex(Pokemon*);
 s8 pokemonCheckSexKotei(Pokemon*);
 void pokemonSetOnDarkPokemonFlag(Pokemon*, u8);
 void pokemonSetOnZukanFlag(Pokemon*, u8);
@@ -758,7 +756,7 @@ bool pokemonCheckValid(Pokemon*);
 void pokemonCreate(Pokemon*, u16, u8, Attest*);
 u32 pokemonCreateRndFit(Pokemon*, s8, s8, s8, u32);
 u32 pokemonCreateRnd(void);
-u16 pokemonGetTokuseiDataId(Pokemon*);
+PCRET(u16) pokemonGetTokuseiDataId(Pokemon*);
 void pokemonSetTokuseiFlag(Pokemon*, u32);
 void pokemonInitAry(Pokemon*, u16);
 void pokemonInit(Pokemon*);
@@ -770,7 +768,7 @@ u32 pokemonCheckRare(Pokemon*);
 void pokemonGrowBasisStatus(Pokemon*, u32);
 void pokemonResetBasisStatus(Pokemon*);
 void pokemonSetStatus(void*, u16, u16, u16, u32);
-u32 pokemonGetStatus(void*, u16, u16, u16);
+StatusU32 pokemonGetStatus(void*, u16, u16, u16);
 u32 pokemonAdjustValueBySeikaku(u32, u16, u32);
 u8 pokemonGetSeikakuAsRnd(u32);
 u16 pokemonCreateBasisStatus(u16, u8, u16, u8, s32);
@@ -783,7 +781,7 @@ static void _pokemonWazaCopy(Pokemon*, u16, u16);
 static u8 _pokemonGetSeikaku(Pokemon*);
 static u8 _pokemonGetHinsi(Pokemon*);
 static void _pokemonSetLevelBasisStatus(Pokemon*, u8);
-static u16 _pokemonGetLevelOneStatus(Pokemon*, u8, u16, u16, u16, u16, long);
+static u16 _pokemonGetLevelOneStatus(Pokemon*, u8, u16, u16, u16, u16, s32);
 static u8 _pokemonGetNowExpToLevel(Pokemon*);
 static u32 _pokemonGetLevelToExp(u8, u8);
 static int _pokemonCheckRare(u32, u32);
@@ -851,7 +849,7 @@ u16 pokemonCreateBasisStatus(u16 a, u8 b, u16 c, u8 d, s32 e)
 
 }
 
-static u16 _pokemonGetLevelOneStatus(Pokemon* pokemon, u8 level, u16 kind, u16 basisKind, u16 rndKind, u16 effortKind, long add)
+static u16 _pokemonGetLevelOneStatus(Pokemon* pokemon, u8 level, u16 kind, u16 basisKind, u16 rndKind, u16 effortKind, s32 add)
 {
     u16 basis;
     u16 rnd;
@@ -973,7 +971,7 @@ u32 pokemonAdjustValueBySeikaku(u32 seikaku, u16 kind, u32 value)
     return result;
 }
 
-u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
+StatusU32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 {
     if (kind == 0 || kind >= 0x124) {
         return 0;
@@ -988,7 +986,7 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
     }
     switch (kind) {
 	case 0x1:
-		return (u32)pokemonDataBiosGetName((PokemonData*)ptr);
+		return (StatusU32)pokemonDataBiosGetName((PokemonData*)ptr);
 	case 0x3:
 		return pokemonDataBiosGetBasisMaxHp((PokemonData*)ptr);
 	case 0x4:
@@ -1192,7 +1190,7 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0x6f:
 		return pokemonBiosGetRnd((Pokemon*)ptr);
 	case 0x70:
-		return (u32)pokemonBiosGetAttest((Pokemon*)ptr);
+		return (StatusU32)pokemonBiosGetAttest((Pokemon*)ptr);
 	case 0x71:
 		return pokemonBiosGetCatchFloorId((Pokemon*)ptr);
 	case 0x72:
@@ -1204,11 +1202,11 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0x75:
 		return pokemonBiosGetCatchTrainerRnd((Pokemon*)ptr);
 	case 0x76:
-		return (u32)pokemonBiosGetCatchTrainerNamePtr((Pokemon*)ptr);
+		return (StatusU32)pokemonBiosGetCatchTrainerNamePtr((Pokemon*)ptr);
 	case 0x77:
-		return (u32)pokemonBiosGetNicknamePtr((Pokemon*)ptr);
+		return (StatusU32)pokemonBiosGetNicknamePtr((Pokemon*)ptr);
 	case 0x78:
-		return (u32)pokemonBiosGetNicknameOrgPtr((Pokemon*)ptr);
+		return (StatusU32)pokemonBiosGetNicknameOrgPtr((Pokemon*)ptr);
 	case 0x79:
 		return pokemonBiosGetExp((Pokemon*)ptr);
 	case 0x7a:
@@ -1358,11 +1356,11 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0xc8:
 		return 0;
 	case 0xcb:
-		return (u32)fightPokemonBiosGetMotoPokemonPtr((FightPokemon*)ptr);
+		return (StatusU32)fightPokemonBiosGetMotoPokemonPtr((FightPokemon*)ptr);
 	case 0xcc:
-		return (u32)fightPokemonBiosGetPokemonBuffPtr((FightPokemon*)ptr);
+		return (StatusU32)fightPokemonBiosGetPokemonBuffPtr((FightPokemon*)ptr);
 	case 0xcd:
-		return (u32)fightPokemonBiosGetFightJoutaiPtr((FightPokemon*)ptr, index);
+		return (StatusU32)fightPokemonBiosGetFightJoutaiPtr((FightPokemon*)ptr, index);
 	case 0xce:
 		return fightPokemonBiosGetEntryId((FightPokemon*)ptr);
 	case 0xcf:
@@ -1374,15 +1372,15 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0xd2:
 		return fightPokemonBiosGetHokakuFlag((FightPokemon*)ptr);
 	case 0xd5:
-		return (u32)fightOutPokemonBiosGetMotoFightPokemonPtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetMotoFightPokemonPtr((FightOutPokemon*)ptr);
 	case 0xd6:
-		return (u32)fightOutPokemonBiosGetFightPokemonPtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetFightPokemonPtr((FightOutPokemon*)ptr);
 	case 0xd7:
-		return (u32)fightOutPokemonBiosGetFightPokemonHensinBuffPtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetFightPokemonHensinBuffPtr((FightOutPokemon*)ptr);
 	case 0xd8:
-		return (u32)fightOutPokemonBiosGetFightoutJoutaiPtr((FightOutPokemon*)ptr, index);
+		return (StatusU32)fightOutPokemonBiosGetFightoutJoutaiPtr((FightOutPokemon*)ptr, index);
 	case 0xd9:
-		return (u32)fightOutPokemonBiosGetFightWazaPtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetFightWazaPtr((FightOutPokemon*)ptr);
 	case 0xda:
 		return fightOutPokemonGetUseWazaDataId((FightOutPokemon*)ptr);
 	case 0xdb:
@@ -1404,7 +1402,7 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0xe4:
 		return fightWaza_GetHitDamage(fightOutPokemon_GetFightWazaPtr((FightOutPokemon*)ptr));
 	case 0xe5:
-		return (u32)fightOutPokemonBiosGetFightItemPtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetFightItemPtr((FightOutPokemon*)ptr);
 	case 0xe6:
 		return fightOutPokemonBiosGetAbicntPhyAtk((FightOutPokemon*)ptr);
 	case 0xe7:
@@ -1422,7 +1420,7 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0xed:
 		return fightOutPokemonBiosGetFightoutTurnCount((FightOutPokemon*)ptr);
 	case 0xee:
-		return (u32)fightOutPokemonBiosGetSequencePtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetSequencePtr((FightOutPokemon*)ptr);
 	case 0xef:
 		return fightOutPokemonBiosGetSketchWazaDataId((FightOutPokemon*)ptr);
 	case 0xf0:
@@ -1442,7 +1440,7 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0xf7:
 		return fightOutPokemonBiosGetOumuWazaDataId((FightOutPokemon*)ptr);
 	case 0xf8:
-		return (u32)fightOutPokemonBiosGetKeepFightWazaPtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetKeepFightWazaPtr((FightOutPokemon*)ptr);
 	case 0xf9:
 		return fightOutPokemonBiosGetNamakeFlag((FightOutPokemon*)ptr);
 	case 0xfa:
@@ -1454,13 +1452,13 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0xfd:
 		return fightOutPokemonBiosGetMeetEnemyFightPokemonEntryId((FightOutPokemon*)ptr, index);
 	case 0xfe:
-		return (u32)fightOutPokemonBiosGetFightActionBuffPtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetFightActionBuffPtr((FightOutPokemon*)ptr);
 	case 0xff:
 		return fightOutPokemonBiosGetZokuseiDataId((FightOutPokemon*)ptr, index);
 	case 0x100:
 		return fightOutPokemonBiosGetTokuseiDataId((FightOutPokemon*)ptr);
 	case 0x101:
-		return (u32)fightOutPokemonBiosGetWazaMenuCurPtr((FightOutPokemon*)ptr);
+		return (StatusU32)fightOutPokemonBiosGetWazaMenuCurPtr((FightOutPokemon*)ptr);
 	case 0x102:
 		return fightOutPokemonBiosGetDamageAtkValue((FightOutPokemon*)ptr);
 	case 0x103:
@@ -1526,7 +1524,7 @@ u32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index)
 	case 0x121:
 		return fightOutPokemonBiosGetIrekaeTargetEntryId((FightOutPokemon*)ptr);
 	case 0x122:
-		return (u32)fightOutPokemonBiosGetFightOutPokemonEnemyPtr((FightOutPokemon*)ptr, index);
+		return (StatusU32)fightOutPokemonBiosGetFightOutPokemonEnemyPtr((FightOutPokemon*)ptr, index);
 	case 0x123:
 		return fightOutPokemonCheckFightOut((FightOutPokemon*)ptr);
     }
@@ -2483,7 +2481,7 @@ void pokemonSetTokuseiFlag(Pokemon* pokemon, u32 flag)
     }
 }
 
-u16 pokemonGetTokuseiDataId(Pokemon* pokemon)
+PCRET(u16) pokemonGetTokuseiDataId(Pokemon* pokemon)
 {
     u16 pokemonDataId;
     u8 flag;
@@ -2856,7 +2854,7 @@ static u8 _pokemonGetSexSub(Pokemon* pokemon, u32 rnd)
 
 extern "C" {
 
-u8 pokemonGetSex(Pokemon* pokemon)
+PCRET(u8) pokemonGetSex(Pokemon* pokemon)
 {
     u32 rnd;
 
@@ -3699,7 +3697,7 @@ void pokemonAddDpFormPokemonDpFilterId(Pokemon* pokemon, u16 itemDataId, u16 fil
     PokemonSeikakuDataBios* seikaku;
     s8 rateId = 0;
     PokemonSeikakuRateBios* rate;
-    ItemData* item;
+    ItemDataBiosRef* item;
     u8 kake;
     u8 waru;
     f32 dp;

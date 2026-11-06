@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };
 struct DarkPokemon {
@@ -25,27 +28,27 @@ struct PCBoxBox {
 };
 
 extern "C" {
-void* savedataGetStatus(long, long);
-void msgctrlSetValue(long, unsigned long);
-u16* GSmsgMakeGScharStr(u16*, long, unsigned long);
+void* savedataGetStatus(s32, s32);
+void msgctrlSetValue(s32, GCuptr);
+u16* GSmsgMakeGScharStr(u16*, s32, u32);
 void itemInitAry(void*, u16);
 void* memcpy(void*, const void*, unsigned long);
 void GScharCpy(u16*, u16*);
 void itemReplace(void*, void*);
 u8* itemDataBiosGetPtr(u16);
 u8 itemCheckValid(void*);
-s32 itemGetStatus(void*, u32, u32, u32);
-s32 itemDecItemDataIdAry(void*, u16, u16, u16, s16, u16, u32);
-s32 itemAddItemDataIdAry(void*, u16, u16, u16, s16, u16, u32, u32);
+StatusS32 itemGetStatus(void*, u32, u32, u32);
+s32 itemDecItemDataIdAry(void*, u16, u16, PCARG(u16, u32), s16, u16, u32);
+s32 itemAddItemDataIdAry(void*, u16, u16, PCARG(u16, u32), s16, u16, u32, u32);
 }
-long menuPcBoxGetLastViewBox();
+s32 menuPcBoxGetLastViewBox();
 void menuPocketDebugMakePokemonBySN(Pokemon&, u16, bool, f32);
 
-class PCBOX {
+struct PCBOX {
 public:
     PCBoxBox box[8];
     PCBoxItem item[235];
-    long lastViewBox;
+    s32 lastViewBox;
     static s8 lastWatchBoxID;
 
     static PCBOX* getPointer();
@@ -100,7 +103,7 @@ inline s32 PCBOX::setPokemonImpl(Pokemon* src, s8 b, s8 i) {
 extern "C" {
 
 static inline void fillBox(s8 b, int& sn) {
-    s8 box = b;
+    u8 box = b;
     for (int j = 0; j < 30; j++) {
         Pokemon pk;
         menuPocketDebugMakePokemonBySN(pk, sn++, j == 1, 0.5f);

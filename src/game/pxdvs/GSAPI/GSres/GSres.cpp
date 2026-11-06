@@ -19,12 +19,21 @@ struct _resEntry {
     resFreeFunc freeFunc;
     _resEntry* next;
     _resEntry* prev;
+#ifndef __MWERKS__
+    void* view;
+    void* viewOf;
+#endif
 };
+#ifdef __MWERKS__
+#define RES_MEM(e) ((e)->mem)
+#else
+#define RES_MEM(e) ((e)->view != 0 && (e)->viewOf == (e)->mem ? (e)->view : (e)->mem)
+#endif
 
 extern "C" {
 void GSlogWrite(const char* fmt, ...);
 void GSmemDumpPool(GSmemPoolAllocator* pool);
-GSmemPoolAllocator* GSmemCreatePool(unsigned long num, unsigned long size);
+GSmemPoolAllocator* GSmemCreatePool(u32 num, u32 size);
 void* GSmemAlloc(u32 size);
 void* GSmemAllocAlign(u32 size, u32 align);
 void GSmemFree(void* mem);
@@ -33,7 +42,7 @@ void GSmemFree(void* mem);
 static _resEntry* _resStructList;
 static GSmemPoolAllocator* _resEntryAllocator;
 
-_resEntry* resFindResource(unsigned long grp, unsigned long id);
+_resEntry* resFindResource(u32 grp, u32 id);
 _resEntry* resFreeResource(_resEntry* entry, bool unlink);
 
 extern "C" {
@@ -113,7 +122,7 @@ void* GSresGetResourceAllGroup(u32 id) {
     _resEntry* e = _resStructList;
     while (e != 0) {
         if (e->registered != 0 && e->id == id && e->locked == 0) {
-            return e->mem;
+            return RES_MEM(e);
         }
         e = e->next;
     }
@@ -125,8 +134,18 @@ void* GSresGetResource(u32 grp, u32 id) {
     if (e == 0 || e->locked != 0) {
         return 0;
     }
-    return e->mem;
+    return RES_MEM(e);
 }
+
+#ifndef __MWERKS__
+void GSresSetResourceView(u32 grp, u32 id, void* view) {
+    _resEntry* e = resFindResource(grp, id);
+    if (e != 0) {
+        e->view = view;
+        e->viewOf = e->mem;
+    }
+}
+#endif
 
 void GSresRegisterResource(void* mem, u32 grp, u32 id, resFreeFunc freeFunc);
 
@@ -174,6 +193,9 @@ void GSresRegisterResource(void* mem, u32 grp, u32 id, resFreeFunc freeFunc) {
         GSlogWrite("GSres: error -- no free pool\n");
         return;
     }
+#ifndef __MWERKS__
+    e->view = 0;
+#endif
     if (_resStructList != 0) {
         _resStructList->prev = e;
     }
@@ -199,6 +221,9 @@ void* GSresAllocResourceAlign(u32 size, u32 align, u32 grp, u32 id, resFreeFunc 
         GSlogWrite("GSres: error -- no free pool\n");
         return 0;
     }
+#ifndef __MWERKS__
+    e->view = 0;
+#endif
     e->mem = GSmemAllocAlign(size, align);
     if (e->mem == 0) {
         _resEntryAllocator->freeCell(e);
@@ -229,6 +254,9 @@ void* GSresAllocResource(u32 size, u32 grp, u32 id, resFreeFunc freeFunc) {
         GSlogWrite("GSres: error -- no free pool\n");
         return 0;
     }
+#ifndef __MWERKS__
+    e->view = 0;
+#endif
     e->mem = GSmemAlloc(size);
     if (e->mem == 0) {
         _resEntryAllocator->freeCell(e);
@@ -285,7 +313,7 @@ _resEntry* resFreeResource(_resEntry* entry, bool unlink) {
     return next;
 }
 
-_resEntry* resFindResource(unsigned long grp, unsigned long id) {
+_resEntry* resFindResource(u32 grp, u32 id) {
     _resEntry* e = _resStructList;
     while (e != 0) {
         if (e->grp == grp && e->id == id) {

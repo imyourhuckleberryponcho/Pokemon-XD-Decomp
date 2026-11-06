@@ -5,12 +5,20 @@
 
 
 #include <dolphin/types.h>
+#ifdef __MWERKS__
 #define _MATH_H_
 
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 #define NAN (__float_nan[0])
 double acos(double x);
 
+#ifndef __MWERKS__
+static
+#endif
 inline float acosf(float x)
 {
     return (float) acos(x);
@@ -35,6 +43,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -50,6 +61,9 @@ inline float sqrtf(float x)
     }
     return x;
 }
+#else
+#include <math.h>
+#endif
 
 #include <sysdolphin/baselib/displayfunc.h>
 

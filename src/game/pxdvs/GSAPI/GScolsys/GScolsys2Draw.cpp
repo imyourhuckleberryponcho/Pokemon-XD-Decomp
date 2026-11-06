@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/bitfield.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/string.h>
 #pragma inline_depth(8)
@@ -17,21 +19,22 @@ struct Color4 {
 };
 
 struct CCD_NIBBLES {
-    u8 hi : 4;
-    u8 lo : 4;
+    GC_BITS2(
+    u8 hi : 4,
+    u8 lo : 4)
 };
 
 struct CCD_WALKTRI {
-    Vec3 v[3];
-    Vec3 normal;
+    gc_vec(Vec3) v[3];
+    gc_vec(Vec3) normal;
     CCD_NIBBLES attr;
     CCD_NIBBLES layer;
     u8 pad32[2];
 };
 
 struct CCD_TRI_GROUP {
-    u8* data;
-    u32 count;
+    gc_ptr32(u8) data;
+    gc_be32 count;
 };
 
 struct CCD_HITMDL_HEAD : CCD_TRI_GROUP {};
@@ -39,19 +42,19 @@ struct CCD_WALKMDL_HEAD : CCD_TRI_GROUP {};
 
 struct CCD_DRAW_OBJ {
     u8 unk0[0x24];
-    CCD_WALKMDL_HEAD* walk;
-    CCD_HITMDL_HEAD* hit;
-    CCD_TRI_GROUP* group2C;
-    CCD_TRI_GROUP* group30;
-    CCD_HITMDL_HEAD* hit34;
-    CCD_TRI_GROUP* group38;
-    u16 flags;
+    gc_ptr32(CCD_WALKMDL_HEAD) walk;
+    gc_ptr32(CCD_HITMDL_HEAD) hit;
+    gc_ptr32(CCD_TRI_GROUP) group2C;
+    gc_ptr32(CCD_TRI_GROUP) group30;
+    gc_ptr32(CCD_HITMDL_HEAD) hit34;
+    gc_ptr32(CCD_TRI_GROUP) group38;
+    gc_be16 flags;
     u8 pad3E[2];
 };
 
 struct CCD_DRAW_FILEHEAD {
-    CCD_DRAW_OBJ* objs;
-    u32 numObjs;
+    gc_ptr32(CCD_DRAW_OBJ) objs;
+    gc_be32 numObjs;
 };
 
 struct GScolsysLayerEnt {
@@ -65,7 +68,7 @@ struct GScolsysLayer {
 };
 
 struct GScolsys2Data {
-    u32 unk0;
+    void* head;
     GScolsysLayer layers[1];
     u32 cur;
     void* buf;
@@ -258,11 +261,15 @@ static void* makeDisplayListFixedObj() {
     return &_colsysDL;
 }
 
+static inline f32 _walkLevelColor(int level) {
+    return 127.0f * ((f32)level / 15.0f) + 128.0f;
+}
+
 static void drawWalkMdl(CCD_WALKMDL_HEAD* head, GSmtx* mtx, GSmtx* rot) {
-    Color4 color;
+    u32 i;
     Vec3 v;
     CCD_WALKTRI* tri;
-    u32 i;
+    Color4 color;
 
     GSgfxDLPrimitiveType(0x90);
     tri = (CCD_WALKTRI*)head->data;
@@ -271,9 +278,9 @@ static void drawWalkMdl(CCD_WALKMDL_HEAD* head, GSmtx* mtx, GSmtx* rot) {
         int level;
         memset(&color, 0, sizeof(color));
         color.a = 0xC0;
-        level = tri->attr.hi;
-        color.g = (u8)(127.0f * ((f32)level / 15.0f) + 128.0f);
-        if ((level = tri->attr.lo + 1) >= 16) {
+        level = tri->attr.lo + 1;
+        color.g = (u8)_walkLevelColor(tri->attr.hi);
+        if (level >= 16) {
             level = 0;
         }
         color.b = (u8)(255.0f * ((f32)level / 15.0f));
@@ -283,7 +290,7 @@ static void drawWalkMdl(CCD_WALKMDL_HEAD* head, GSmtx* mtx, GSmtx* rot) {
         }
         GSgfxDLBeginSurface(3);
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, &tri->v[j], &v);
+            PSMTXMultVec(mtx, GC_VEC3P(Vec3, &tri->v[j]), &v);
             GXWGFifo.f32 = v.x;
             GXWGFifo.f32 = 0.1f + v.y;
             GXWGFifo.f32 = v.z;

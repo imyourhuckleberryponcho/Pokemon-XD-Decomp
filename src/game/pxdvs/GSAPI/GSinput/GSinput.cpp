@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include <dolphin/pad.h>
 #include <dolphin/si.h>
 #include <dolphin/os.h>
@@ -8,7 +9,11 @@ void* memset(void* dst, int c, unsigned long n);
 }
 
 #define _MATH_H_
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 #define NAN (__float_nan[0])
 
 inline int __fpclassifyf(float x)
@@ -30,6 +35,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -130,7 +138,7 @@ void GSinputMotorStart(s32 pad, u8 mode, u8 strength, u32 frames, u8 step)
     }
 }
 
-u8 GSinputGetRightStickYData(s32 pad, s32 mode)
+PCRET(u8) GSinputGetRightStickYData(s32 pad, s32 mode)
 {
     InputDevice* d = _inputFindDevice(pad);
     if (!d) {
@@ -142,7 +150,7 @@ u8 GSinputGetRightStickYData(s32 pad, s32 mode)
     return d->cur.substickY;
 }
 
-u8 GSinputGetRightStickXData(s32 pad, s32 mode)
+PCRET(u8) GSinputGetRightStickXData(s32 pad, s32 mode)
 {
     InputDevice* d = _inputFindDevice(pad);
     if (!d) {
@@ -154,7 +162,7 @@ u8 GSinputGetRightStickXData(s32 pad, s32 mode)
     return d->cur.substickX;
 }
 
-u8 GSinputGetLeftStickYData(s32 pad, s32 mode)
+PCRET(u8) GSinputGetLeftStickYData(s32 pad, s32 mode)
 {
     InputDevice* d = _inputFindDevice(pad);
     if (!d) {
@@ -166,7 +174,7 @@ u8 GSinputGetLeftStickYData(s32 pad, s32 mode)
     return d->cur.stickY;
 }
 
-u8 GSinputGetLeftStickXData(s32 pad, s32 mode)
+PCRET(u8) GSinputGetLeftStickXData(s32 pad, s32 mode)
 {
     InputDevice* d = _inputFindDevice(pad);
     if (!d) {

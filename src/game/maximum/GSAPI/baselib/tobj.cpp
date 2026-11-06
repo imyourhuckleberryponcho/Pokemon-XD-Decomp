@@ -19,6 +19,9 @@
 #include <sysdolphin/baselib/tev.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#ifndef __MWERKS__
+void HSD_MkRotationMtx(Mtx arg0, Vec3* arg1);
+#endif
 
 #pragma pool_strings off
 
@@ -103,8 +106,8 @@ static inline u8 tobj_color8(f32 x)
 inline static HSD_TexAnim* lookupTextureAnim(s32 id, HSD_TexAnim* texanim)
 {
     HSD_TexAnim* ta;
-    for (ta = texanim; ta; ta = ta->next) {
-        if (ta->id == (GXTexMapID) id) {
+    for (ta = texanim; ta; ta = GC_PTR(HSD_TexAnim*, ta->next)) {
+        if (GC_BES32(ta->id) == (GXTexMapID) id) {
             return ta;
         }
     }
@@ -133,7 +136,7 @@ inline HSD_Tlut* HSD_TlutLoadDesc(HSD_TlutDesc* tlutdesc)
 {
     if (tlutdesc != NULL) {
         HSD_Tlut* tlut = HSD_TlutAlloc();
-        memcpy(tlut, tlutdesc, sizeof(HSD_Tlut));
+        HSD_TLUT_FROM_DESC(tlut, tlutdesc);
         return tlut;
     }
     return NULL;
@@ -143,7 +146,7 @@ inline HSD_TObjTev* HSD_TObjTevLoadDesc(HSD_TObjTevDesc* tevdesc)
 {
     if (tevdesc != NULL) {
         HSD_TObjTev* new = HSD_TObjTevAlloc();
-        memcpy(new, tevdesc, sizeof(HSD_TObjTev));
+        memcpy(new, tevdesc, sizeof(HSD_TObjTev)); GC_FIX32(new->active);
         return new;
     }
     return NULL;
@@ -322,8 +325,8 @@ void HSD_TObjAddAnim(HSD_TObj* tobj, HSD_TexAnim* texanim)
             if (tobj->aobj != NULL) {
                 HSD_AObjRemove(tobj->aobj);
             }
-            tobj->aobj = HSD_AObjLoadDesc(ta->aobjdesc);
-            tobj->imagetbl = ta->imagetbl;
+            tobj->aobj = HSD_AObjLoadDesc(GC_PTR(HSD_AObjDesc*, ta->aobjdesc));
+            tobj->imagetbl = GC_PTR(gc_ptr32(HSD_ImageDesc)*, ta->imagetbl);
 
             if (tobj->tluttbl != NULL) {
                 for (i = 0; tobj->tluttbl[i]; i++) {
@@ -332,11 +335,11 @@ void HSD_TObjAddAnim(HSD_TObj* tobj, HSD_TexAnim* texanim)
                 HSD_Free(tobj->tluttbl);
             }
 
-            if (ta->n_tluttbl) {
+            if (GC_BE16(ta->n_tluttbl)) {
                 tobj->tluttbl = HSD_Alloc((s32) sizeof(HSD_Tlut*) *
-                                             (ta->n_tluttbl + 1));
-                for (i = 0; i < ta->n_tluttbl; i++) {
-                    tobj->tluttbl[i] = HSD_TlutLoadDesc(ta->tluttbl[i]);
+                                             (GC_BE16(ta->n_tluttbl) + 1));
+                for (i = 0; i < GC_BE16(ta->n_tluttbl); i++) {
+                    tobj->tluttbl[i] = HSD_TlutLoadDesc(GC_PTR(HSD_TlutDesc*, GC_PTR(gc_ptr32(HSD_TlutDesc)*, ta->tluttbl)[i]));
                 }
                 tobj->tluttbl[i] = NULL;
             } else {
@@ -389,8 +392,8 @@ static void TObjUpdateFunc(void* obj, enum_t type, HSD_ObjData* val)
             __assert("tobj.c", 0x116, "tobj->imagetbl");
         }
         n = (int) val->fv;
-        if (tobj->imagetbl[n] != NULL) {
-            tobj->imagedesc = tobj->imagetbl[n];
+        if (GC_PTR(HSD_ImageDesc*, tobj->imagetbl[n]) != NULL) {
+            tobj->imagedesc = GC_PTR(HSD_ImageDesc*, tobj->imagetbl[n]);
         }
     } break;
     case HSD_A_T_TCLT:
@@ -427,7 +430,7 @@ static void TObjUpdateFunc(void* obj, enum_t type, HSD_ObjData* val)
         break;
     case HSD_A_T_LOD_BIAS:
         if (tobj->lod != NULL) {
-            tobj->lod->LODBias = val->fv;
+            GC_SETBEF32(tobj->lod->LODBias, val->fv);
         }
         break;
     case HSD_A_T_KONST_R:
@@ -508,29 +511,29 @@ void HSD_TObjAnimAll(HSD_TObj* tobj)
 
 static int TObjLoad(HSD_TObj* tobj, HSD_TObjDesc* td)
 {
-    tobj->next = HSD_TObjLoadDesc(td->next);
-    tobj->x4A = td->id;
-    tobj->src = td->src;
+    tobj->next = HSD_TObjLoadDesc(GC_PTR(HSD_TObjDesc*, td->next));
+    tobj->x4A = GC_BES32(td->id);
+    tobj->src = GC_BES32(td->src);
     tobj->mtxid = GX_IDENTITY;
-    tobj->rotate.x = td->rotate.x;
-    tobj->rotate.y = td->rotate.y;
-    tobj->rotate.z = td->rotate.z;
-    tobj->scale = td->scale;
-    tobj->translate = td->translate;
-    tobj->wrap_s = td->wrap_s;
-    tobj->wrap_t = td->wrap_t;
+    tobj->rotate.x = GC_BEF32(td->rotate.x);
+    tobj->rotate.y = GC_BEF32(td->rotate.y);
+    tobj->rotate.z = GC_BEF32(td->rotate.z);
+    GC_VEC3(tobj->scale, td->scale);
+    GC_VEC3(tobj->translate, td->translate);
+    tobj->wrap_s = GC_BES32(td->wrap_s);
+    tobj->wrap_t = GC_BES32(td->wrap_t);
     tobj->repeat_s = td->repeat_s;
     tobj->repeat_t = td->repeat_t;
-    tobj->flags = td->blend_flags;
-    tobj->blending = td->blending;
-    tobj->magFilt = td->magFilt;
-    tobj->imagedesc = td->imagedesc;
-    tobj->tlut = HSD_TlutLoadDesc(td->tlutdesc);
-    tobj->lod = td->lod;
+    tobj->flags = GC_BE32(td->blend_flags);
+    tobj->blending = GC_BEF32(td->blending);
+    tobj->magFilt = GC_BES32(td->magFilt);
+    tobj->imagedesc = GC_PTR(HSD_ImageDesc*, td->imagedesc);
+    tobj->tlut = HSD_TlutLoadDesc(GC_PTR(HSD_TlutDesc*, td->tlutdesc));
+    tobj->lod = GC_PTR(HSD_TexLODDesc*, td->lod);
     tobj->aobj = NULL;
     tobj->flags |= TEX_MTX_DIRTY;
     tobj->tlut_no = (u8) -1;
-    tobj->tev = HSD_TObjTevLoadDesc(td->tev);
+    tobj->tev = HSD_TObjTevLoadDesc(GC_PTR(HSD_TObjTevDesc*, td->tev));
 
     return 0;
 }
@@ -541,7 +544,7 @@ HSD_TObj* HSD_TObjLoadDesc(HSD_TObjDesc* desc)
     HSD_TObj* tobj;
 
     if (desc != NULL) {
-        if (desc->class_name == NULL || (info = hsdSearchClassInfo(desc->class_name)) == NULL) {
+        if (GC_PTR(char*, desc->class_name) == NULL || (info = hsdSearchClassInfo(GC_PTR(char*, desc->class_name))) == NULL) {
             tobj = HSD_TObjAlloc();
         } else {
             tobj = hsdNew(info);
@@ -1391,7 +1394,7 @@ void HSD_TObjSetup(HSD_TObj* tobj)
 
     for (; tobj; tobj = tobj->next) {
         static HSD_TexLODDesc default_lod = {
-            GX_LIN_MIP_LIN, 0.0F, GX_FALSE, GX_FALSE, GX_ANISO_1,
+            GC_BEC32(GX_LIN_MIP_LIN), GC_BECF32_ZERO, GX_FALSE, GX_FALSE, GC_BEC32(GX_ANISO_1),
         };
         HSD_TexLODDesc* lod;
         HSD_ImageDesc* imagedesc = tobj->imagedesc;
@@ -1403,12 +1406,12 @@ void HSD_TObjSetup(HSD_TObj* tobj)
 
         TObjSetupMtx(tobj);
         HSD_ASSERT(1713, imagedesc);
-        HSD_ASSERT(1714, imagedesc->image_ptr);
+        HSD_ASSERTMSG(1714, GC_PTR(void*, imagedesc->image_ptr), "imagedesc->image_ptr");
 
         lod = tobj->lod != NULL ? tobj->lod : &default_lod;
-        min_filter = lod->minFilt;
+        min_filter = GC_BES32(lod->minFilt);
 
-        switch (imagedesc->format) {
+        switch (GC_BES32(imagedesc->format)) {
         case GX_TF_C4:
         case GX_TF_C8:
         case GX_TF_C14X2: {
@@ -1442,10 +1445,10 @@ void HSD_TObjSetup(HSD_TObj* tobj)
                 tlut->tlut_name = GX_TLUT0;
             }
 
-            GXInitTexObjCI(&texobj, imagedesc->image_ptr, imagedesc->width,
-                           imagedesc->height, imagedesc->format, tobj->wrap_s,
+            GXInitTexObjCI(&texobj, GC_PTR(void*, imagedesc->image_ptr), GC_BE16(imagedesc->width),
+                           GC_BE16(imagedesc->height), GC_BES32(imagedesc->format), tobj->wrap_s,
                            tobj->wrap_t,
-                           imagedesc->mipmap ? GX_TRUE : GX_FALSE,
+                           GC_BE32(imagedesc->mipmap) ? GX_TRUE : GX_FALSE,
                            tlut->tlut_name);
             if (min_filter == GX_LIN_MIP_LIN) {
                 min_filter = GX_LIN_MIP_NEAR;
@@ -1460,21 +1463,21 @@ void HSD_TObjSetup(HSD_TObj* tobj)
         case GX_TF_RGB5A3:
         case GX_TF_RGBA8:
         case GX_TF_CMPR:
-            GXInitTexObj(&texobj, imagedesc->image_ptr, imagedesc->width,
-                         imagedesc->height, imagedesc->format, tobj->wrap_s,
-                         tobj->wrap_t, imagedesc->mipmap ? GX_TRUE : GX_FALSE);
+            GXInitTexObj(&texobj, GC_PTR(void*, imagedesc->image_ptr), GC_BE16(imagedesc->width),
+                         GC_BE16(imagedesc->height), GC_BES32(imagedesc->format), tobj->wrap_s,
+                         tobj->wrap_t, GC_BE32(imagedesc->mipmap) ? GX_TRUE : GX_FALSE);
             break;
 
         default:
             HSD_ASSERT(1790, 0);
         }
 
-        if (!imagedesc->mipmap) {
+        if (!GC_BE32(imagedesc->mipmap)) {
             min_filter &= 0x01;
         }
-        GXInitTexObjLOD(&texobj, min_filter, tobj->magFilt, imagedesc->minLOD,
-                        imagedesc->maxLOD, lod->LODBias, lod->bias_clamp,
-                        lod->edgeLODEnable, lod->max_anisotropy);
+        GXInitTexObjLOD(&texobj, min_filter, tobj->magFilt, GC_BEF32(imagedesc->minLOD),
+                        GC_BEF32(imagedesc->maxLOD), GC_BEF32(lod->LODBias), lod->bias_clamp,
+                        lod->edgeLODEnable, GC_BES32(lod->max_anisotropy));
 
         GXLoadTexObj(&texobj, tobj->id);
     }

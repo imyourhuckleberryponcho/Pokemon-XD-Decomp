@@ -25,8 +25,16 @@ struct DarkPokemon {
     void setPlace(darkPokemonWhere, unsigned char);
     void setDarkPoint(float);
     s32 getStatus() const;
+#ifdef __MWERKS__
     u8 isSnach() const;
+#else
+    bool isSnach() const;
+#endif
+#ifdef __MWERKS__
     u8 isRelive() const;
+#else
+    bool isRelive() const;
+#endif
     u16 getCatchFloorId() const;
 };
 struct DeckDarkPokemon {

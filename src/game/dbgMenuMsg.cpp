@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #pragma peephole off
 
@@ -13,7 +14,7 @@ void winMsgCloseError(s32);
 void winMsgOpenField(s32 msgID, s32, s32);
 void winMsgCloseField(s32);
 void GSthreadSwitch(void);
-void msgctrlSetValue(s32, s32);
+void msgctrlSetValue(s32, GCuptr);
 u32 GSinputButtonsPressed(s32 pad);
 bool menuSubOpenNumberInputDigit(s32, s32* value);
 void menuSubKeyWait(void);

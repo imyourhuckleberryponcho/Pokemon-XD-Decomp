@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/app/fight/fightData.h>
 
 struct Joutai {
     u8 unk0[0x10];
@@ -14,10 +15,6 @@ struct FightSide {
     Joutai joutai[6];
     FightTrainer fightTrainer[2];
     u8 makibisiCheckFlag;
-};
-
-struct FightSideData {
-    u16 yrot;
 };
 
 extern "C" {

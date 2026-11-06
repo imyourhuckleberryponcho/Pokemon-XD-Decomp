@@ -5,15 +5,24 @@
 
 
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 
 #pragma inline_max_size(600)
+#ifdef __MWERKS__
 #define _MATH_H_
 
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 #define NAN (__float_nan[0])
 double acos(double x);
 
+#ifndef __MWERKS__
+static
+#endif
 inline float acosf(float x)
 {
     return (float) acos(x);
@@ -38,6 +47,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -53,6 +65,9 @@ inline float sqrtf(float x)
     }
     return x;
 }
+#else
+#include <math.h>
+#endif
 
 
 
@@ -307,21 +322,22 @@ typedef struct HSD_JObj {
 } HSD_JObj;
 ASSERT_SIZE(struct HSD_JObj, 0x88);
 
+
 typedef struct HSD_Joint {
- char* class_name;
- u32 flags;
- HSD_Joint* child;
- HSD_Joint* next;
+ gc_ptr32(char) class_name;
+ gc_be32 flags;
+ gc_ptr32(HSD_Joint) child;
+ gc_ptr32(HSD_Joint) next;
  union HSD_Joint_u {
-        HSD_DObjDesc* dobjdesc DAT_IF(!(flags & (JOBJ_PTCL | JOBJ_SPLINE)));
-        HSD_Spline* spline DAT_IF((flags & JOBJ_SPLINE) != 0);
-        HSD_SList* ptcl DAT_IF((flags & JOBJ_PTCL) != 0);
+        gc_ptr32(HSD_DObjDesc) dobjdesc DAT_IF(!(flags & (JOBJ_PTCL | JOBJ_SPLINE)));
+        gc_ptr32(HSD_Spline) spline DAT_IF((flags & JOBJ_SPLINE) != 0);
+        gc_ptr32(HSD_SList) ptcl DAT_IF((flags & JOBJ_PTCL) != 0);
     } u;
- Vec3 rotation;
- Vec3 scale;
- Vec3 position;
- MtxPtr mtx;
- HSD_RObjDesc* robjdesc;
+ gc_vec(Vec3) rotation;
+ gc_vec(Vec3) scale;
+ gc_vec(Vec3) position;
+ gc_mtxptr32 mtx;
+ gc_ptr32(HSD_RObjDesc) robjdesc;
 } HSD_Joint;
 
 typedef struct HSD_JObjInfo {
@@ -1069,8 +1085,8 @@ static inline HSD_JObj* JObjLoadJointSub(HSD_Joint* joint, HSD_JObj* parent)
     if (joint == NULL) {
         return NULL;
     }
-    if (joint->class_name == NULL ||
-        !(info = hsdSearchClassInfo(joint->class_name)))
+    if (GC_PTR(char*, joint->class_name) == NULL ||
+        !(info = hsdSearchClassInfo(GC_PTR(char*, joint->class_name))))
     {
         jobj = HSD_JObjAlloc();
     } else {
@@ -1412,10 +1428,10 @@ void HSD_JObjAddAnim(HSD_JObj* jobj, HSD_AnimJoint* an_joint,
             if (jobj->aobj != NULL) {
                 HSD_AObjRemove(jobj->aobj);
             }
-            jobj->aobj = HSD_AObjLoadDesc(an_joint->aobjdesc);
+            jobj->aobj = HSD_AObjLoadDesc(GC_PTR(HSD_AObjDesc*, an_joint->aobjdesc));
             JObjSortAnim(jobj->aobj);
-            HSD_RObjAddAnimAll(jobj->robj, an_joint->robj_anim);
-            if (an_joint->flags & 1) {
+            HSD_RObjAddAnimAll(jobj->robj, GC_PTR(HSD_RObjAnimJoint*, an_joint->robj_anim));
+            if (GC_BE32(an_joint->flags) & 1) {
                 HSD_JObjSetFlags(jobj, JOBJ_CLASSICAL_SCALE);
             } else {
                 HSD_JObjClearFlags(jobj, JOBJ_CLASSICAL_SCALE);
@@ -1423,8 +1439,8 @@ void HSD_JObjAddAnim(HSD_JObj* jobj, HSD_AnimJoint* an_joint,
         }
         if (union_type_dobj(jobj)) {
             HSD_DObjAddAnimAll(
-                jobj->u.dobj, mat_joint != NULL ? mat_joint->matanim : NULL,
-                sh_joint != NULL ? sh_joint->shapeanimdobj : NULL);
+                jobj->u.dobj, mat_joint != NULL ? GC_PTR(HSD_MatAnim*, mat_joint->matanim) : NULL,
+                sh_joint != NULL ? GC_PTR(HSD_ShapeAnimDObj*, sh_joint->shapeanimdobj) : NULL);
         }
     }
 }
@@ -1441,15 +1457,15 @@ void HSD_JObjAddAnimAll(HSD_JObj* jobj, HSD_AnimJoint* ajoint,
         HSD_JObjAddAnim(jobj, ajoint, mjoint, sjoint);
         if (!(jobj->flags & JOBJ_INSTANCE)) {
             jp = jobj->child;
-            aj = ajoint != NULL ? ajoint->child : NULL;
-            mj = mjoint != NULL ? mjoint->child : NULL;
-            sj = sjoint != NULL ? sjoint->child : NULL;
+            aj = ajoint != NULL ? GC_PTR(HSD_AnimJoint*, ajoint->child) : NULL;
+            mj = mjoint != NULL ? GC_PTR(HSD_MatAnimJoint*, mjoint->child) : NULL;
+            sj = sjoint != NULL ? GC_PTR(HSD_ShapeAnimJoint*, sjoint->child) : NULL;
             while (jp != NULL) {
                 HSD_JObjAddAnimAll(jp, aj, mj, sj);
                 jp = jp->next;
-                aj = aj != NULL ? aj->next : NULL;
-                mj = mj != NULL ? mj->next : NULL;
-                sj = sj != NULL ? sj->next : NULL;
+                aj = aj != NULL ? GC_PTR(HSD_AnimJoint*, aj->next) : NULL;
+                mj = mj != NULL ? GC_PTR(HSD_MatAnimJoint*, mj->next) : NULL;
+                sj = sj != NULL ? GC_PTR(HSD_ShapeAnimJoint*, sj->next) : NULL;
             }
         }
     }
@@ -1727,6 +1743,85 @@ void HSD_JObjUnusedRootCheck(HSD_JObj* jobj_root, HSD_JObj* jp)
     HSD_ASSERT(0, jobj_root == NULL);
 }
 
+#ifndef __MWERKS__
+#include <stdlib.h>
+
+
+
+
+static void jobjSplineF32s(f32* dst, const u8* src, int n)
+{
+    int i;
+    for (i = 0; i < n; i++) {
+        dst[i] = gc_rdf32(src + i * 4);
+    }
+}
+
+static f32* jobjSplineArray(const u8* base, int nf)
+{
+    f32* a;
+    if (base == NULL || nf <= 0) {
+        return NULL;
+    }
+    a = (f32*)malloc(nf * sizeof(f32));
+    jobjSplineF32s(a, base, nf);
+    return a;
+}
+
+typedef struct JObjSplineCopy {
+    const u8* disc;
+    u8 head[0x18];
+    HSD_Spline* sp;
+} JObjSplineCopy;
+
+static HSD_Spline* jobjNativeSpline(const u8* d)
+{
+    static JObjSplineCopy* s_spl;
+    static int s_splCount, s_splMax;
+    HSD_Spline* sp;
+    int i, numcv, ncv;
+    if (d == NULL) {
+        return NULL;
+    }
+    for (i = 0; i < s_splCount; i++) {
+        if (s_spl[i].disc == d && memcmp(s_spl[i].head, d, 0x18) == 0) {
+            return s_spl[i].sp;
+        }
+    }
+    sp = (HSD_Spline*)calloc(1, sizeof(HSD_Spline));
+    sp->type = d[0];
+    sp->numcv = (s16)gc_rd16(d + 2);
+    sp->tension = gc_rdf32(d + 4);
+    sp->totalLength = gc_rdf32(d + 0xC);
+    numcv = sp->numcv;
+
+
+    ncv = numcv + 2 * (sp->type != 0);
+    if (sp->type == 1 && 3 * numcv - 2 > ncv) {
+        ncv = 3 * numcv - 2;
+    }
+    sp->cv = (Vec3*)jobjSplineArray((const u8*)(uintptr_t)gc_rd32(d + 8), ncv * 3);
+    sp->segLength = jobjSplineArray((const u8*)(uintptr_t)gc_rd32(d + 0x10), numcv);
+    sp->segPoly = (f32(*)[5])jobjSplineArray((const u8*)(uintptr_t)gc_rd32(d + 0x14), (numcv - 1) * 5);
+    for (i = 0; i < s_splCount; i++) {
+        if (s_spl[i].disc == d) {
+            break;
+        }
+    }
+    if (i == s_splCount) {
+        if (s_splCount == s_splMax) {
+            s_splMax = s_splMax ? s_splMax * 2 : 64;
+            s_spl = (JObjSplineCopy*)realloc(s_spl, s_splMax * sizeof(JObjSplineCopy));
+        }
+        s_splCount++;
+    }
+    s_spl[i].disc = d;
+    memcpy(s_spl[i].head, d, 0x18);
+    s_spl[i].sp = sp;
+    return sp;
+}
+#endif
+
 static s32 JObjLoad(HSD_JObj* jobj, HSD_Joint* joint, HSD_JObj* parent)
 {
     HSD_Joint* child_joint;
@@ -1735,37 +1830,49 @@ static s32 JObjLoad(HSD_JObj* jobj, HSD_Joint* joint, HSD_JObj* parent)
     jobj->child = NULL;
     jobj->next = NULL;
     jobj->parent = NULL;
-    jobj->flags |= joint->flags;
+    jobj->flags |= GC_BE32(joint->flags);
     if (union_type_spline(jobj)) {
+#ifdef __MWERKS__
         jobj->u.spline = joint->u.spline;
+#else
+        jobj->u.spline = jobjNativeSpline(GC_PTR(const u8*, joint->u.spline));
+#endif
     } else if (union_type_ptcl(jobj)) {
         HSD_SList* slist;
-        jobj->u.ptcl = joint->u.ptcl;
-        slist = joint->u.ptcl;
+        jobj->u.ptcl = GC_PTR(HSD_SList*, joint->u.ptcl);
+        slist = GC_PTR(HSD_SList*, joint->u.ptcl);
+#ifdef __MWERKS__
         while (slist != NULL) {
             *(u32*) &slist->data |= 0x80000000;
             slist = slist->next;
         }
+#else
+
+        while (slist != NULL) {
+            ((u8*)slist)[4] |= 0x80;
+            slist = (HSD_SList*)(uintptr_t)gc_rd32((const u8*)slist);
+        }
+#endif
     } else {
-        jobj->u.dobj = HSD_DObjLoadDesc(joint->u.dobjdesc);
+        jobj->u.dobj = HSD_DObjLoadDesc(GC_PTR(HSD_DObjDesc*, joint->u.dobjdesc));
     }
-    jobj->robj = HSD_RObjLoadDesc(joint->robjdesc);
-    jobj->rotate.x = joint->rotation.x;
-    jobj->rotate.y = joint->rotation.y;
-    jobj->rotate.z = joint->rotation.z;
-    jobj->scale = joint->scale;
-    jobj->translate = joint->position;
+    jobj->robj = HSD_RObjLoadDesc(GC_PTR(HSD_RObjDesc*, joint->robjdesc));
+    jobj->rotate.x = GC_BEF32(joint->rotation.x);
+    jobj->rotate.y = GC_BEF32(joint->rotation.y);
+    jobj->rotate.z = GC_BEF32(joint->rotation.z);
+    GC_VEC3(jobj->scale, joint->scale);
+    GC_VEC3(jobj->translate, joint->position);
     PSMTXIdentity(jobj->mtx);
     jobj->scl = NULL;
-    if (joint->mtx != NULL) {
+    if (GC_PTR(MtxPtr, joint->mtx) != NULL) {
         jobj->envelopemtx = HSD_MtxAlloc();
-        memcpy(jobj->envelopemtx, joint->mtx, sizeof(Mtx));
+        GC_MTXCOPY(jobj->envelopemtx, GC_PTR(MtxPtr, joint->mtx));
     }
     HSD_IDInsertToTable(NULL, (HSD_IDKey) joint, jobj);
     jobj->id = (HSD_IDKey) joint;
-    if (!(joint->flags & JOBJ_INSTANCE)) {
-        for (child_joint = joint->child; child_joint != NULL;
-             child_joint = child_joint->next)
+    if (!(GC_BE32(joint->flags) & JOBJ_INSTANCE)) {
+        for (child_joint = GC_PTR(HSD_Joint*, joint->child); child_joint != NULL;
+             child_joint = GC_PTR(HSD_Joint*, child_joint->next))
         {
             child = JObjLoadJointSub(child_joint, jobj);
             if (child == NULL) {
@@ -1792,15 +1899,15 @@ void HSD_JObjResolveRefs(HSD_JObj* jobj, HSD_Joint* joint)
         return;
     }
 
-    HSD_RObjResolveRefsAll(jobj->robj, joint->robjdesc);
+    HSD_RObjResolveRefsAll(jobj->robj, GC_PTR(HSD_RObjDesc*, joint->robjdesc));
     if (!!(jobj->flags & JOBJ_INSTANCE)) {
         HSD_JObjUnref(jobj->child);
-        jobj->child = HSD_IDGetData((HSD_IDKey) joint->child, NULL);
+        jobj->child = HSD_IDGetData((HSD_IDKey) GC_PTR(HSD_Joint*, joint->child), NULL);
         HSD_ASSERT(1122, jobj->child);
         HSD_JObjRef(jobj->child);
     }
     if (union_type_dobj(jobj)) {
-        HSD_DObjResolveRefsAll(jobj->u.dobj, joint->u.dobjdesc);
+        HSD_DObjResolveRefsAll(jobj->u.dobj, GC_PTR(HSD_DObjDesc*, joint->u.dobjdesc));
     }
 }
 
@@ -1811,10 +1918,10 @@ void HSD_JObjResolveRefsAll(HSD_JObj* jobj, HSD_Joint* joint)
     while (jobj != NULL && joint != NULL) {
         HSD_JObjResolveRefs(jobj, joint);
         if (!(jobj->flags & JOBJ_INSTANCE)) {
-            HSD_JObjResolveRefsAll(jobj->child, joint->child);
+            HSD_JObjResolveRefsAll(jobj->child, GC_PTR(HSD_Joint*, joint->child));
         }
         jobj = jobj->next;
-        joint = joint->next;
+        joint = GC_PTR(HSD_Joint*, joint->next);
     }
 }
 

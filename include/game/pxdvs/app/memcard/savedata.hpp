@@ -1,3 +1,4 @@
+#include <game/pcret.h>
 #ifndef SAVEDATA_H
 #define SAVEDATA_H
 
@@ -5,6 +6,6 @@
 
 struct savedata {};
 
-extern "C" void *savedataGetStatus(savedata *, u16);
+extern "C" void *savedataGetStatus(savedata *, PCARG(u16, s32));
 
 #endif

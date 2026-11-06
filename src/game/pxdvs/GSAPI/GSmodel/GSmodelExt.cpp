@@ -1,5 +1,7 @@
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gsmodelview.h>
 
 #pragma pool_strings off
 
@@ -7,6 +9,7 @@ struct Vec {
     f32 x, y, z;
 };
 
+#ifdef __MWERKS__
 struct HSD_JObj {
     u8 unk0[0x8];
     HSD_JObj* next;
@@ -19,6 +22,26 @@ struct HSD_JObj {
     Vec scale;
     Vec translate;
 };
+#else
+struct HSD_JObj {
+    void* pcObject[2];
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
+    void* dobj;
+    Vec rotate;
+    f32 rotateW;
+    Vec scale;
+    Vec translate;
+    f32 mtx[3][4];
+    void* scl;
+    void* envelopemtx;
+    void* aobj;
+    void* robj;
+    u32 id;
+};
+#endif
 
 #define JOBJ_MTX_DIRTY (1 << 6)
 #define JOBJ_USE_QUATERNION (1 << 17)
@@ -30,12 +53,16 @@ struct GStexture;
 struct GSmaterial {
     u16 alpha;
     u16 unk2;
-    u8 unk4[0xC];
+    u32 savedFlags;
+    struct HSD_MObj* mobj;
+    u8 modulate[4];
     u8 channel[4];
-    u32 unk14;
-    u32 unk18;
-    u32 unk1C;
-    u8 unk20[0xC];
+    struct HSD_TObj* unk14;
+    struct HSD_ImageDesc* unk18;
+    GStexture* unk1C;
+    s32 envType;
+    s32 envMode;
+    f32 envBlend;
     GStexture* tex2C;
     GStexture* tex30;
 };
@@ -44,16 +71,85 @@ struct GSbound;
 
 struct _GSmodel {
     u32 flags;
-    u8 unk4[0x8];
+    _GSmodel* next;
+    void* set;
     HSD_JObj* root;
-    u8 unk10[0x2C];
+    void* blendJObj;
+    void* blendDest;
+    f32 position[3];
+    f32 rotation[3];
+    f32 scale[3];
+#ifdef __MWERKS__
     u8 bound[0x20];
-    u8 unk5C[0x18];
+#else
+    union {
+        u8 bound[sizeof(GSmodelBoundView)];
+        GSmodelBoundView boundView;
+    };
+#endif
+    void* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
     s32 animType;
     s32 animIndex;
-    u8 unk7C[0x564];
+    f32 animRate;
+    f32 animFrame;
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
+    s32 texAnimType;
+    u32 texAnimIndex;
+    f32 texAnimRate;
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
+    GSmodelPartMixView partMix[12];
+    f32 blendFactor;
+    u8 animDirty;
+    u8 texAnimDirty;
+    u8 unk21E[2];
+    void* animEndedCallback;
+    void* animEndedCallbackArg;
+    GSmodelPartAnimView partAnim[16];
+    s32 attachMode;
+    _GSmodel* attachModel;
+    u32 attachIndex;
+    f32 attachPosition[3];
+    f32 attachRotation[3];
+    f32 attachScale[3];
+    void* particleBank;
+    u32 particleAttachMode;
     GSmaterial* materials;
     u32 materialCount;
+    u32 shadowSurfaceCount;
+    void* shadowSurfaces;
+    void* shadowLight;
+    f32 groundPlane;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
 #define MODEL_CENTER_NULL 0x10000
@@ -62,13 +158,13 @@ struct _GSmodel {
 
 #define GS_TEXTURE_AUTO ((GStexture*)0xFEFEFEFE)
 
-class GSgfxLayer {
+struct GSgfxLayer {
 public:
     void SetTextureCopy(GStexture* texture, bool, u8*);
     GStexture* GetTextureCopy();
 };
 
-extern Vec unitScaleVector;
+extern "C" Vec unitScaleVector;
 
 extern "C" {
 void __assert(const char* file, s32 line, const char* expr);
@@ -81,7 +177,7 @@ void HSD_JObjSetFlags(HSD_JObj* jobj, u32 flags);
 void HSD_JObjSetMtxDirtySub(HSD_JObj* jobj);
 void HSD_JObjSetupMatrixSub(HSD_JObj* jobj);
 
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 void GSboundGetMinMax(void* bound, Vec* min, Vec* max, s32, s32, s32, s32);
 void GSlerpGetLinearInterpolationVector(Vec* out, Vec* a, Vec* b, f32 t);
 u16 GSmodelGetPartCount(_GSmodel* model);
@@ -98,7 +194,12 @@ void GSmaterialGetModulate(GSmaterial* mat, void* color);
 void GSmaterialSetModulate(GSmaterial* mat, void* color);
 void GSmaterialSetColorChannels(GSmaterial* mat, void* channels);
 void GSmaterialSetEnvMapBlendValue(GSmaterial* mat, f32 value);
+#ifdef __MWERKS__
 void GSmaterialSetEnvMapParams(GSmaterial* mat, u32 a, u32 b, GStexture* tex, f32 blend);
+#else
+void GSmaterialSetEnvMapParams(GSmaterial* mat, u32 a, u32 b, f32 blend, GStexture* tex);
+#define GSmaterialSetEnvMapParams(m, a, b, t, f) GSmaterialSetEnvMapParams((m), (a), (b), (f), (t))
+#endif
 void GSmaterialResetPEdescr(GSmaterial* mat);
 void GSmaterialSetPEdescr(GSmaterial* mat, void* pe);
 void GSmaterialResetAlpha(GSmaterial* mat);

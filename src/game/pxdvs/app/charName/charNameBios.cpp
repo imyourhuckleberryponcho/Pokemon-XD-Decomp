@@ -1,13 +1,8 @@
 #include <dolphin/types.h>
+#include <game/miscTables.h>
 
 #pragma pool_strings off
 #pragma peephole off
-
-struct CharName {
-    u16 hearFlag;
-    u8 unk2[2];
-    u32 nameID;
-};
 
 extern "C" {
 

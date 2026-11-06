@@ -1,4 +1,11 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#include <game/gsmodelview.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/hsdarchive.h>
+#include <game/gcdata.h>
 
 #pragma pool_strings off
 
@@ -17,15 +24,11 @@ public:
     void pop();
 };
 
-struct GSgfxLayer {
-    u8 pad0[0x28];
-    s32 id;
-    u8 pad2C[0x19A0 - 0x2C];
-    GSgfxMatrixStack* matrixStack;
-};
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
 
-struct HSD_Archive {
-    u8 pad[0x48];
+struct GSgfxLayer : public GSgfxLayerData {
 };
 
 class GSgfxLight {
@@ -70,11 +73,16 @@ u8 particleEnginePrepareRender(void* h);
 u8 particleEnginePrepareUpdate(void* h);
 u32 shapeGetUsedMemorySize(u16 id);
 void shapeRelease(u16 id);
+#ifdef __MWERKS__
 void* __nw__FUl(u32);
 void __dl__FPv(void*);
+#else
+#define __nw__FUl(n) (operator new(n))
+#define __dl__FPv(p) (operator delete(p))
+#endif
 }
 void GSboundDraw(GSbound* b, GSgfxLayer* layer);
-void* operator new[](u32);
+void* operator new[](size_t);
 void operator delete[](void*);
 
 struct Vec3 {
@@ -100,37 +108,37 @@ struct _EmitParams {
 
 struct _particleData;
 struct _peEmitter {
-    u32 flags;
+    gc_be32 flags;
     u8 pad4[8];
-    f32 base;
-    f32 range;
+    gc_bef32 base;
+    gc_bef32 range;
     u8 pad14[8];
-    f32 mode;
+    gc_bef32 mode;
     u8 pad20[0x138 - 0x20];
-    _particleData* children;
+    gc_ptr32(_particleData) children;
 };
 
 struct _peModelData {
-    u32 flags;
+    gc_be32 flags;
     u8 pad4[0x48];
-    HSD_JObj* jobj;
+    gc_ptr32(HSD_JObj) jobj;
 };
 
 struct _peDataBlock {
     u8 pad0[0x78];
-    void* buf78;
-    void* buf7c;
+    gc_ptr32(void) buf78;
+    gc_ptr32(void) buf7c;
 };
 
 struct peEmitterNode {
     u8 pad0[0x20];
     void* f20;
     u8 pad24[4];
-    u32 f28;
-    u32 f2c;
+    void* f28;
+    void* f2c;
     u8 pad30[0xCC];
     u32* flagsPtr;
-    u32 f100;
+    void* f100;
 
     peEmitterNode() {
         f20 = 0;
@@ -157,16 +165,16 @@ struct peBankParams {
 struct _gpdResourceItem {
     u8 id;
     u8 flags;
-    u16 size;
-    s32 type;
-    void* data;
+    gc_be16 size;
+    gc_bes32 type;
+    gc_ptr32(void) data;
 };
 
 struct _gpdHeader {
-    u32 magic;
-    u32 version;
-    u16 dataCount;
-    u16 count;
+    gc_be32 magic;
+    gc_be32 version;
+    gc_be16 dataCount;
+    gc_be16 count;
     u8 refCount;
     u8 pad0d[3];
     _gpdResourceItem items[1];
@@ -181,32 +189,57 @@ struct peBank {
     u32 renderMask;
     u16 token;
     u16 maxParticles;
+#ifdef __MWERKS__
     GSbound* boundPtr() { return (GSbound*)((u8*)this + 0x140); }
+#else
+    GSbound* boundPtr() { return (GSbound*)bound; }
+#endif
+#ifdef __MWERKS__
     u8 bound[0x20];
+#else
+    union {
+        u8 bound[sizeof(GSmodelBoundView)];
+        GSmodelBoundView boundView;
+    };
+#endif
     void* engine;
     peBank* next;
 };
 
+#ifndef __MWERKS__
+extern "C" f32* peBankPCParams(void* b) { return ((peBank*)b)->params; }
+extern "C" u32* peBankPCFlags(void* b) { return &((peBank*)b)->flags; }
+extern "C" void** peBankPCEngine(void* b) { return &((peBank*)b)->engine; }
+extern "C" u8** peBankPCNext(void* b) { return (u8**)&((peBank*)b)->next; }
+extern "C" u32* peBankPCRenderMask(void* b) { return &((peBank*)b)->renderMask; }
+#endif
+
 struct _particleData {
-    u32 pad0;
-    s32 type;
+    gc_be32 pad0;
+    gc_bes32 type;
     union {
-        _peEmitter* emitter;
-        _peModelData* model;
-        _peDataBlock* block;
+        gc_ptr32(_peEmitter) emitter;
+        gc_ptr32(_peModelData) model;
+        gc_ptr32(_peDataBlock) block;
     };
-    _particleData* next;
+    gc_ptr32(_particleData) next;
 };
 
 peBank* g_currentBank;
+extern "C" {
 GSbound* g_currentBound;
+}
 u16 g_bank_token;
-extern GSgfxLayer* g_current_layer;
-extern s32 g_render_pass;
-extern GSmtx* g_CameraMatrix;
-extern peBank* g_particleBanks;
+extern "C" GSgfxLayer* g_current_layer;
+extern "C" s32 g_render_pass;
+extern "C" GSmtx* g_CameraMatrix;
+extern "C" peBank* g_particleBanks;
+extern "C" {
 _EmitParams* g_emitParams;
+}
+extern "C" {
 u16 g_maxEmitParams;
+}
 peBank* g_emitParamsBank;
 
 struct ParticleDebugStats {
@@ -218,13 +251,17 @@ struct ParticleDebugStats {
     u32 total;
     u32 pad18[3];
 };
-extern ParticleDebugStats g_particle_debug_stats;
+extern "C" ParticleDebugStats g_particle_debug_stats;
 
 extern "C" {
 static inline u16 __OSf32tou16(register f32 inF) {
     f32 tmp;
     register f32* tmpPtr = &tmp;
+#ifdef __MWERKS__
     asm { psq_st inF, 0(tmpPtr), 1, 3 }
+#else
+    PSQ_STORE(tmpPtr, 0, inF, 3);
+#endif
     return *(u16*)tmpPtr;
 }
 
@@ -294,7 +331,7 @@ void peBankStop(peBank* bank) {
 
 void peBankRender(peBank* bank) {
     if (bank != 0 && (bank->flags & 1) && (bank->flags & 4) && (bank->flags & 8)) {
-        s32 mask = 1 << g_current_layer->id;
+        s32 mask = 1 << (*(s32*)&g_current_layer->id);
         if (g_render_pass == 1) {
             mask <<= 16;
         }
@@ -303,16 +340,16 @@ void peBankRender(peBank* bank) {
             g_currentBound = (bank->flags & 0x10) ? (GSbound*)bank->bound : 0;
             if (particleEnginePrepareRender(bank->engine)) {
                 bank->renderMask |= mask;
-                g_current_layer->matrixStack->push(g_CameraMatrix);
+                (*(GSgfxMatrixStack**)&g_current_layer->matrixStack)->push(g_CameraMatrix);
                 g_bank_token = 0;
                 bank->node.Render(bank->data->emitter);
                 if (g_bank_token != 0) {
                     bank->token = g_bank_token;
                 }
-                if ((bank->flags & 0x10) && (bank->flags & 0x20) && g_current_layer->id == 4 && g_render_pass == 1) {
+                if ((bank->flags & 0x10) && (bank->flags & 0x20) && (*(s32*)&g_current_layer->id) == 4 && g_render_pass == 1) {
                     GSboundDraw((GSbound*)bank->bound, g_current_layer);
                 }
-                g_current_layer->matrixStack->pop();
+                (*(GSgfxMatrixStack**)&g_current_layer->matrixStack)->pop();
             }
         }
     }
@@ -383,7 +420,11 @@ void peBankFree(peBank* bank) {
             g_particle_debug_stats.total -= g_particle_debug_stats.emitMem;
             g_particle_debug_stats.emitMem = 0;
             if (ep != 0) {
+#ifdef __MWERKS__
                 operator delete[]((u8*)ep - 0x10);
+#else
+                delete[] ep;
+#endif
             }
             g_emitParams = 0;
             g_emitParamsBank = 0;
@@ -444,7 +485,7 @@ peBank* peBankCreate(_gpdHeader* file) {
     _particleData* data = (_particleData*)(items + file->count);
     bank->file = file;
     file->refCount++;
-    memset(&bank->node, 0, 0x104);
+    memset(&bank->node, 0, sizeof(bank->node));
     bank->data = data;
     bank->params[0] = 0.0f;
     bank->params[1] = 0.0f;
@@ -480,7 +521,11 @@ peBank* peBankCreate(_gpdHeader* file) {
             g_particle_debug_stats.total -= old;
             g_particle_debug_stats.emitMem = 0;
             if (g_emitParams != 0) {
+#ifdef __MWERKS__
                 operator delete[]((u8*)g_emitParams - 0x10);
+#else
+                delete[] g_emitParams;
+#endif
             }
         }
         u16 m = ((bank->maxParticles + 9) / 10);
@@ -510,7 +555,7 @@ void peBankFreeFile(_gpdHeader* file) {
                     GStextureFree((GStexture*)it->data);
                     break;
                 case 3: {
-                    u16 id = (u16)((s32)it->data - 1);
+                    u16 id = (u16)((s32)(u32)it->data - 1);
                     u32 m = shapeGetUsedMemorySize(id);
                     g_particle_debug_stats.shapeMem -= m;
                     g_particle_debug_stats.total -= m;
@@ -518,8 +563,8 @@ void peBankFreeFile(_gpdHeader* file) {
                     break;
                 }
                 case 2: {
-                    u32* arr = (u32*)it->data;
-                    GStexture** t = (GStexture**)(arr + 1);
+                    gc_be32* arr = (gc_be32*)it->data;
+                    gc_ptr32(GStexture)* t = (gc_ptr32(GStexture)*)(arr + 1);
                     u32 i = 0;
                     u32 cnt = arr[0];
                     for (; i < cnt; i++, t++) {
@@ -619,9 +664,9 @@ static inline bool isOffset(u32 v) {
     return v != 0 && v < 0x80000000;
 }
 
-#define PF(p, off) (*(u32*)((u8*)(p) + (off)))
+#define PF(p, off) (*(gc_be32*)((u8*)(p) + (off)))
 
-static inline void fix(u32* slot, u32 base) {
+static inline void fix(gc_be32* slot, u32 base) {
     u32 v = *slot;
     if (isOffset(v)) {
         v += base;
@@ -630,44 +675,44 @@ static inline void fix(u32* slot, u32 base) {
 }
 
 struct _peT1 {
-    u32 flags;
+    gc_be32 flags;
     u8 p4[0x40];
     union {
         struct {
-            f32 a, b, c, d;
+            gc_bef32 a, b, c, d;
         } f;
-        s16 s[4];
+        gc_bes16 s[4];
     } q;
-    s32 res;
+    gc_bes32 res;
 };
 
 struct _peT6 {
-    u32 flags;
+    gc_be32 flags;
     u8 p4[0x18];
-    s32 res;
+    gc_bes32 res;
 };
 
 struct _peT3 {
     u8 p0[0x60];
-    s32 res;
+    gc_bes32 res;
 };
 
 struct _peT2 {
-    u32 flags;
+    gc_be32 flags;
     u8 p4[0x48];
-    s32 res;
-    f32 endFrame;
-    f32 frame;
+    gc_bes32 res;
+    gc_bef32 endFrame;
+    gc_bef32 frame;
 };
 
 struct _peT4 {
-    u32 flags;
+    gc_be32 flags;
     u8 p4[0x68];
     u8 color[4];
-    f32 shine;
-    s32 res;
-    GSgfxLight* diff;
-    GSgfxLight* spec;
+    gc_bef32 shine;
+    gc_bes32 res;
+    gc_ptr32(GSgfxLight) diff;
+    gc_ptr32(GSgfxLight) spec;
 };
 
 static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particleData* data, const char* name) {
@@ -682,7 +727,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
     _gpdResourceItem* it = items;
     HSD_JObj* jobj;
     u32 id;
-    u32* e;
+    gc_be32* e;
     for (; n != 0; it++, n--) {
         u32 v = (u32)it->data;
         if (isOffset(v)) {
@@ -714,7 +759,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             if (it->data == 0) {
                 break;
             }
-            u32* arr = (u32*)it->data;
+            gc_be32* arr = (gc_be32*)it->data;
             u32 cnt = arr[0];
             e = arr + 1;
             u32 i = 0;
@@ -724,7 +769,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
                     ev += (u32)it->data;
                 }
                 *e = ev;
-                *e = (u32)GStextureLoad((GStexture*)*e);
+                *e = (u32)GStextureLoad((GStexture*)(u32)*e);
             }
             it->flags |= 0x40;
             break;
@@ -748,8 +793,8 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
         }
     }
     while (m != 0) {
-        fix((u32*)&data->emitter, (u32)name);
-        fix((u32*)&data->next, (u32)name);
+        fix((gc_be32*)&data->emitter, (u32)name);
+        fix((gc_be32*)&data->next, (u32)name);
         void* p = data->emitter;
         if (p == 0) {
             data++;
@@ -786,10 +831,10 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
                 if (t->res == r->id) {
                     if (r->type == 2) {
                         t->flags |= 0x100000;
-                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
+                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)(u32)r->data : 0;
                     } else {
                         t->flags &= ~0x100000;
-                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
+                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)(u32)r->data : 0;
                     }
                     break;
                 }
@@ -833,10 +878,10 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
                         if (t->flags & 0x2000) {
                             t->flags &= ~0x40000;
                         }
-                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
+                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)(u32)r->data : 0;
                     } else {
                         t->flags &= ~0x400;
-                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
+                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)(u32)r->data : 0;
                     }
                     break;
                 }
@@ -858,7 +903,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             _gpdResourceItem* r = items;
             for (; k != 0; r++, k--) {
                 if (t->res == r->id) {
-                    t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
+                    t->res = ((r->flags & 0x40) == 0x40) ? (s32)(u32)r->data : 0;
                     break;
                 }
             }
@@ -878,18 +923,18 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             for (; k != 0; r++, k--) {
                 if (t->res == r->id) {
                     if ((t->flags & 0x40) && r->type == 3) {
-                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
+                        t->res = ((r->flags & 0x40) == 0x40) ? (s32)(u32)r->data : 0;
                         break;
                     }
                     if (r->type == 1) {
-                        void* d = ((r->flags & 0x40) == 0x40) ? r->data : 0;
+                        void* d = ((r->flags & 0x40) == 0x40) ? (void*)r->data : 0;
                         if (d == 0) {
                             break;
                         }
                         u32** scene = (u32**)**(u32**)d;
                         jobj = HSD_JObjLoadJoint((HSD_Joint*)scene[0]);
                         if (jobj != 0) {
-                            t->res = (s32)jobj;
+                            t->res = (GCsptr)jobj;
                             t->frame = 0.0f;
                             t->endFrame = 0.0f;
                             void* a = 0;
@@ -941,7 +986,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
             _gpdResourceItem* r = items;
             for (; k != 0; r++, k--) {
                 if (t->res == r->id) {
-                    t->res = ((r->flags & 0x40) == 0x40) ? (s32)r->data : 0;
+                    t->res = ((r->flags & 0x40) == 0x40) ? (s32)(u32)r->data : 0;
                     break;
                 }
             }

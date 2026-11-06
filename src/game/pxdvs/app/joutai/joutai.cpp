@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 class _JOUTAI {
 public:
@@ -211,7 +212,7 @@ void joutaiSetNowKaisuuJoutaiDataId(void* base, u16 id, u8 value) {
     }
 }
 
-s8 joutaiGetNowKaisuuJoutaiDataId(void* base, u16 id) {
+PCRET(s8) joutaiGetNowKaisuuJoutaiDataId(void* base, u16 id) {
     if (id == 0) {
         return -1;
     }
@@ -225,7 +226,7 @@ s8 joutaiGetNowKaisuuJoutaiDataId(void* base, u16 id) {
     return joutaiBiosGetNowKaisuu(j);
 }
 
-s8 joutaiGetKaisuuJoutaiDataId(void* base, u16 id) {
+PCRET(s8) joutaiGetKaisuuJoutaiDataId(void* base, u16 id) {
     if (id == 0) {
         return -1;
     }

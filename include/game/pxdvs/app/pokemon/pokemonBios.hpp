@@ -1,3 +1,4 @@
+#include <game/pcret.h>
 #ifndef POKEMON_BIOS_H
 #define POKEMON_BIOS_H
 
@@ -14,6 +15,7 @@ struct PokemonDataCgData;
 struct PokemonDataWaza;
 struct PokemonWaza;
 typedef struct PokemonGrowDataBios PokemonGrowDataBios;
+#include <game/pxdvs/app/pokemon/pokemonSeikaku.h>
 typedef struct PokemonSeikakuDataBios PokemonSeikakuDataBios;
 typedef struct PokemonSeikakuRateBios PokemonSeikakuRateBios;
 
@@ -71,7 +73,11 @@ void pokemonDataBiosSetBasisSpeAtk(PokemonData*, u16);
 void pokemonDataBiosSetBasisPhyDef(PokemonData*, u16);
 void pokemonDataBiosSetBasisPhyAtk(PokemonData*, u16);
 void pokemonDataBiosSetBasisMaxHp(PokemonData*, u16);
+#ifdef __MWERKS__
 void pokemonDataBiosSetName(PokemonData*, const char*);
+#else
+void pokemonDataBiosSetName(PokemonData*, u32);
+#endif
 void pokemonBiosSetEventGetFlag(Pokemon*, u32);
 void pokemonBiosSetFightTrainerPokemonDataId(Pokemon*, u16);
 void pokemonBiosSetPara1Amari(Pokemon*, u16);
@@ -152,15 +158,15 @@ u16 pokemonDataBiosGetKowaza(PokemonData*, u16);
 u32 pokemonDataBiosGetPkxDataId(PokemonData*);
 u16 pokemonDataBiosGetNumPokemon(PokemonData*);
 u16 pokemonDataBiosGetNumZukan(PokemonData*);
-bool pokemonDataBiosGetTukamaetaFlag(PokemonData*);
-bool pokemonDataBiosGetMitaFlag(PokemonData*);
-u16 pokemonDataBiosGetVoice(PokemonData*);
+PCRET(bool) pokemonDataBiosGetTukamaetaFlag(PokemonData*);
+PCRET(bool) pokemonDataBiosGetMitaFlag(PokemonData*);
+PCRET(u16) pokemonDataBiosGetVoice(PokemonData*);
 u32 pokemonDataBiosGetDoc(PokemonData*);
 u16 pokemonDataBiosGetWeight(PokemonData*);
 u16 pokemonDataBiosGetHeight(PokemonData*);
 u32 pokemonDataBiosGetTypeName(PokemonData*);
 u8 pokemonDataBiosGetColor(PokemonData*, u16);
-u16 pokemonDataBiosGetStatusFaceMenuSpriteId(PokemonData*, u16);
+PCRET(u16) pokemonDataBiosGetStatusFaceMenuSpriteId(PokemonData*, u16);
 u32 pokemonDataBiosGetPokebodyId(PokemonData*, u16);
 PokemonDataCgData* pokemonDataBiosGetCgDataPtr(PokemonData*, u16);
 bool pokemonDataBiosGetWazaMcn(PokemonData*, u16);
@@ -172,7 +178,7 @@ u16 pokemonDataBiosGetSinkaBuff(PokemonData*, u16);
 u8 pokemonDataBiosGetSinkaKind(PokemonData*, u16);
 Sinka* pokemonDataBiosGetSinkaPtr(PokemonData*, u16);
 u8 pokemonDataBiosGetTokuseiDataId(PokemonData*, u16);
-u8 pokemonDataBiosGetZokuseiDataId(PokemonData*, u16);
+PCRET(u8) pokemonDataBiosGetZokuseiDataId(PokemonData*, u16);
 u16 pokemonDataBiosGetItemDataId(PokemonData*, u16);
 u16 pokemonDataBiosGetInitFriend(PokemonData*);
 u8 pokemonDataBiosGetSexRatio(PokemonData*);
@@ -192,9 +198,13 @@ u16 pokemonDataBiosGetBasisPhyDef(PokemonData*);
 u16 pokemonDataBiosGetBasisPhyAtk(PokemonData*);
 u16 pokemonDataBiosGetBasisMaxHp(PokemonData*);
 BasisStatus* pokemonDataBiosGetBasisStatusPtr(PokemonData*, u16);
+#ifdef __MWERKS__
 const char* pokemonDataBiosGetName(PokemonData*);
+#else
+u32 pokemonDataBiosGetName(PokemonData*);
+#endif
 PokemonData* pokemonDataBiosGetPtr(u16);
-u8 pokemonBiosGetEventGetFlag(Pokemon*);
+PCRET(u8) pokemonBiosGetEventGetFlag(Pokemon*);
 u16 pokemonBiosGetFightTrainerPokemonDataId(Pokemon*);
 u16 pokemonBiosGetPara1Amari(Pokemon*);
 u16 pokemonBiosGetAmari(Pokemon*);
@@ -238,29 +248,29 @@ u32 pokemonBiosGetPoolExp(Pokemon*);
 s32 pokemonBiosGetDp(Pokemon*);
 u16 pokemonBiosGetDarkpokemonDataId(Pokemon*);
 u16 pokemonBiosGetFriend(Pokemon*);
-u8 pokemonBiosGetNimblenessRnd(Pokemon*);
-u8 pokemonBiosGetSpeDefRnd(Pokemon*);
-u8 pokemonBiosGetSpeAtkRnd(Pokemon*);
-u8 pokemonBiosGetPhyDefRnd(Pokemon*);
-u8 pokemonBiosGetPhyAtkRnd(Pokemon*);
-u8 pokemonBiosGetMaxHpRnd(Pokemon*);
+PCRET(u8) pokemonBiosGetNimblenessRnd(Pokemon*);
+PCRET(u8) pokemonBiosGetSpeDefRnd(Pokemon*);
+PCRET(u8) pokemonBiosGetSpeAtkRnd(Pokemon*);
+PCRET(u8) pokemonBiosGetPhyDefRnd(Pokemon*);
+PCRET(u8) pokemonBiosGetPhyAtkRnd(Pokemon*);
+PCRET(u8) pokemonBiosGetMaxHpRnd(Pokemon*);
 u16 pokemonBiosGetNimblenessEffort(Pokemon*);
 u16 pokemonBiosGetSpeDefEffort(Pokemon*);
 u16 pokemonBiosGetSpeAtkEffort(Pokemon*);
 u16 pokemonBiosGetPhyDefEffort(Pokemon*);
 u16 pokemonBiosGetPhyAtkEffort(Pokemon*);
 u16 pokemonBiosGetMaxHpEffort(Pokemon*);
-u16 pokemonBiosGetNimbleness(Pokemon*);
-u16 pokemonBiosGetSpeDef(Pokemon*);
-u16 pokemonBiosGetSpeAtk(Pokemon*);
-u16 pokemonBiosGetPhyDef(Pokemon*);
-u16 pokemonBiosGetPhyAtk(Pokemon*);
-u16 pokemonBiosGetMaxHp(Pokemon*);
+PCRET(u16) pokemonBiosGetNimbleness(Pokemon*);
+PCRET(u16) pokemonBiosGetSpeDef(Pokemon*);
+PCRET(u16) pokemonBiosGetSpeAtk(Pokemon*);
+PCRET(u16) pokemonBiosGetPhyDef(Pokemon*);
+PCRET(u16) pokemonBiosGetPhyAtk(Pokemon*);
+PCRET(u16) pokemonBiosGetMaxHp(Pokemon*);
 u16 pokemonBiosGetHp(Pokemon*);
 u16 pokemonBiosGetItemDataId(Pokemon*);
 u8 pokemonBiosGetPokemonWazaPpCount(Pokemon*, u32);
 u8 pokemonBiosGetPokemonWazaPp(Pokemon*, u32);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon*, u32);
+PCRET(u16) pokemonBiosGetPokemonWazaDataId(Pokemon*, u32);
 PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon*, u32, u8);
 u32 pokemonBiosGetConditionAmari(Pokemon*);
 u8 pokemonBiosGetLevel(Pokemon*);
@@ -275,7 +285,7 @@ u8 pokemonBiosGetCatchLevel(Pokemon*);
 u16 pokemonBiosGetCatchFloorId(Pokemon*);
 Attest* pokemonBiosGetAttest(Pokemon*);
 u32 pokemonBiosGetRnd(Pokemon*);
-u16 pokemonBiosGetPokemonDataId(Pokemon*);
+PCRET(u16) pokemonBiosGetPokemonDataId(Pokemon*);
 void pokemonWazaBiosCopy(PokemonWaza*, const PokemonWaza*);
 void pokemonBiosCopy(Pokemon*, const Pokemon*);
 }

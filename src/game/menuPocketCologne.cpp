@@ -1,4 +1,9 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/winwork.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -72,7 +77,7 @@ u8 itemCheckValid(u32);
 u8 itemDataBiosGetKind(u8* p);
 u32 itemDataBiosGetName(u8* p);
 u8* itemDataBiosGetPtr(u16 index);
-u32 itemGetStatus(u32, u32, u32, u32);
+StatusU32 itemGetStatus(u32, u32, u32, u32);
 void menuClose(s32 menuID);
 void menuCloseSync(s32 menuID, s32);
 MenuItem* menuItemBiosGetPtr(s32 menuID, u32 index);
@@ -82,12 +87,12 @@ s32 menuPocketColognCursor(void *p0);
 s32 menuPocketColognDrawCursor(void *p0, void *p1);
 s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp);
 s32 menuPocketColognDrawLineCursor(void *p0, void *p1);
-u16 menuPocketCologne(s32 p0);
+PCRET(u16) menuPocketCologne(s32 p0);
 void menuSubCursorAnimeInit(void);
 void menuSubCursorAnimeMain(void);
 void menuSubCursorAnimeStart(void);
 void menuSubCursorAnimeValGet(f32* pos, s32* color);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 void winSeqSetMenu(s32 menuID, u32 id);
 s32 winSpriteGetLayerID(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
 void winSpriteSetDisp(tagSPRITE_WORK* sp, bool on);
@@ -100,11 +105,11 @@ extern s32 init;
 extern s32 jtbl_2066;
 }
 extern "C++" {
-static u32 getItemName(unsigned long p0);
+static u32 getItemName(u32 p0);
 static s32 getItemNum(unsigned short p0);
 static s32 getLineHeight(tagWINDOW_WORK* p0);
 static u32 getStockMax(unsigned short p0);
-static void makePocketCologneArg(POCKET_COLOGNE_ARG* p0, unsigned long p1);
+static void makePocketCologneArg(POCKET_COLOGNE_ARG* p0, u32 p1);
 }
 static f32 ActMenuCursorBlinkTime;
 
@@ -123,7 +128,7 @@ struct ColognList {
 }
 
 extern "C" {
-u16 menuPocketCologne(s32 param) {
+PCRET(u16) menuPocketCologne(s32 param) {
     POCKET_COLOGNE_ARG arg;
     s32 sel;
     u16 item;
@@ -151,7 +156,7 @@ u16 menuPocketCologne(s32 param) {
 }
 
 extern "C++" {
-static void makePocketCologneArg(POCKET_COLOGNE_ARG* arg, unsigned long param) {
+static void makePocketCologneArg(POCKET_COLOGNE_ARG* arg, u32 param) {
     arg->param = param;
     arg->items[0].id = 0x201;
     arg->items[1].id = 0x202;
@@ -166,13 +171,13 @@ s32 menuPocketColognCtrl(void *p0) {
     f32 temp_f1;
     u8 temp_r0;
 
-    temp_r0 = M2C_FIELD(p0, u8 *, 1);
+    temp_r0 = M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x1, state);
     switch ((s8) temp_r0) {
     case 0:
-        if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
+        if ((s8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x2, seqSet) == 0) {
             winSeqSetMenu(0x32, 0x60U);
             ActMenuCursorBlinkTime = 0.0f;
-            M2C_FIELD(p0, u8 *, 2) = 1U;
+            M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x2, seqSet) = 1U;
             menuSubCursorAnimeInit();
         }
         break;
@@ -185,9 +190,9 @@ s32 menuPocketColognCtrl(void *p0) {
         menuSubCursorAnimeMain();
         break;
     case 3:
-        if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
+        if ((s8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x2, seqSet) == 0) {
             winSeqSetMenu(0x32, 0x64U);
-            M2C_FIELD(p0, u8 *, 2) = 1U;
+            M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x2, seqSet) = 1U;
         }
         break;
     }
@@ -204,25 +209,25 @@ s32 menuPocketColognCursor(void *p0) {
     s32 temp_r5;
     u8 *temp_r31;
 
-    temp_r31 = M2C_FIELD(p0, u8 **, 0x68);
+    temp_r31 = M2C_NAMED(((WinWorkLayout*)(p0)), u8 **, 0x68, params[0]);
     temp_r3 = windowGetKeyRepeat();
     temp_r5 = M2C_FIELD(temp_r31, s32 *, 0x14);
-    temp_r4 = M2C_FIELD(p0, s16 *, 0x9E);
+    temp_r4 = M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor);
     if ((s32) (temp_r3 & 2) != 0) {
         var_r0 = temp_r4 + 1;
         if (var_r0 >= temp_r5) {
             var_r0 = temp_r5 - 1;
         }
-        M2C_FIELD(p0, s16 *, 0x9E) = (s8) var_r0;
+        M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor) = (s8) var_r0;
     }
     if ((s32) (temp_r3 & 1) != 0) {
-        var_r0_2 = M2C_FIELD(p0, s16 *, 0x9E) - 1;
+        var_r0_2 = M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor) - 1;
         if (var_r0_2 < 0) {
             var_r0_2 = 0;
         }
-        M2C_FIELD(p0, s16 *, 0x9E) = (s8) var_r0_2;
+        M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor) = (s8) var_r0_2;
     }
-    if (temp_r4 != (s16) M2C_FIELD(p0, s16 *, 0x9E)) {
+    if (temp_r4 != (s16) M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor)) {
         menuSubCursorAnimeStart();
     }
     return 0;
@@ -232,8 +237,8 @@ s32 menuPocketColognCursor(void *p0) {
 extern "C" {
 s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp) {
     u16* item;
-    s16 id = *(s16*)((u8*)sp + 6);
-    ColognList* list = *(ColognList**)((u8*)win + 0x68);
+    s16 id = M2C_NAMED(((SpriteWorkLayout*)(sp)), s16 *, 6, id);
+    ColognList* list = (ColognList*)M2C_NAMED(((WinWorkLayout*)(win)), u8 **, 0x68, params[0]);
     s32 ids[4] = {0x130, 0x12F, 0x12E, 0x12D};
     s32 i;
     u32 name;
@@ -284,7 +289,7 @@ s32 menuPocketColognDrawItemText(tagWINDOW_WORK* win, tagSPRITE_WORK* sp) {
 extern "C" {
 s32 menuPocketColognDrawCursor(void* win, void* sp) {
     s32 ids[4] = {0x12C, 0x12B, 0x12A, 0x129};
-    if (*(s16*)((u8*)sp + 6) == ids[*(s16*)((u8*)win + 0x9E)]) {
+    if (M2C_NAMED(((SpriteWorkLayout*)(sp)), s16 *, 6, id) == ids[M2C_NAMED(((WinWorkLayout*)(win)), s16 *, 0x9E, cursor)]) {
         f32 anim[2] = {0.0f, 0.0f};
         s32 color = -1;
         if (*(s32*)((u8*)win + 4) == windowGetActiveID()) {
@@ -302,8 +307,8 @@ static s32 getLineHeight(tagWINDOW_WORK* p0) {
     MenuItem *temp_r31;
     s32 var_r3;
 
-    temp_r31 = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x12BU);
-    var_r3 = M2C_FIELD(temp_r31, s16 *, 8) - M2C_FIELD(menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), 0x12CU), s16 *, 8);
+    temp_r31 = menuItemBiosGetPtr(M2C_NAMED(((WinWorkLayout*)(p0)), s32 *, 0x4, menuID), 0x12BU);
+    var_r3 = M2C_FIELD(temp_r31, s16 *, 8) - M2C_FIELD(menuItemBiosGetPtr(M2C_NAMED(((WinWorkLayout*)(p0)), s32 *, 0x4, menuID), 0x12CU), s16 *, 8);
     if (var_r3 < 0) {
         var_r3 = -var_r3;
     }
@@ -315,14 +320,14 @@ extern "C" {
 s32 menuPocketColognDrawLineCursor(void *p0, void *p1) {
     MenuItem *temp_r31;
 
-    temp_r31 = menuItemBiosGetPtr(M2C_FIELD(p0, s32 *, 4), (u32) M2C_FIELD(p1, s16 *, 6));
-    M2C_FIELD(p1, s16 *, 0x52) = (s16) (M2C_FIELD(temp_r31, s16 *, 8) + (M2C_FIELD(p0, s16 *, 0x9E) * getLineHeight((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0))));
+    temp_r31 = menuItemBiosGetPtr(M2C_NAMED(((WinWorkLayout*)(p0)), s32 *, 0x4, menuID), (u32) M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x6, id));
+    M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x52, y) = (s16) (M2C_FIELD(temp_r31, s16 *, 8) + (M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor) * getLineHeight((tagWINDOW_WORK*)((tagWINDOW_WORK *) p0))));
     return 0;
 }
 }
 
 extern "C++" {
-static u32 getItemName(unsigned long item) {
+static u32 getItemName(u32 item) {
     return itemDataBiosGetName((u8*)itemDataBiosGetPtr((u16)item));
 }
 }

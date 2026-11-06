@@ -2,7 +2,11 @@
 #include <dolphin/gx.h>
 
 typedef struct HSD_Particle {
+#ifdef __MWERKS__
     u8 unk0[4];
+#else
+    void* unk0;
+#endif
     volatile u32 kind;
 } HSD_Particle;
 

@@ -1,4 +1,10 @@
+#include <game/pcret.h>
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
+#include <game/pxdvs/app/floor/floorData.h>
+#include <game/bitfield.h>
+#include <game/pxdvs/app/people/peopleInfo.h>
 #pragma peephole off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -23,34 +29,30 @@ extern "C" {
 struct FloorCharInfo {
     u8 _draft[1];
 };
-struct FloorData {
-    u8 _draft[1];
-};
-struct PeopleInfo {
-    u8 _draft[1];
-};
 struct GSvec {
     f32 x, y, z;
 };
 struct floorCharacter_dd_ {
-    u8 visible : 1;
-    u8 flag6 : 1;
-    u8 flag5 : 1;
-    u8 flag4 : 1;
-    u8 flag3 : 1;
-    u8 flag2 : 1;
-    u8 kind : 3;
-    u8 mode : 2;
-    u8 mode2 : 2;
+    GC_BITS7(
+    u8 visible : 1,
+    u8 flag6 : 1,
+    u8 flag5 : 1,
+    u8 flag4 : 1,
+    u8 flag3 : 1,
+    u8 flag2 : 1, u8 : 2)
+    GC_BITS4(
+    u8 kind : 3,
+    u8 mode : 2,
+    u8 mode2 : 2, u8 : 1)
     u8 unk2;
     u8 unk3;
-    s16 unk4;
-    u16 angle;
-    u16 resID;
-    u32 unkC;
-    u32 unk10;
-    u32 unk14;
-    f32 x, y, z;
+    gc_bes16 unk4;
+    gc_be16 angle;
+    gc_be16 resID;
+    gc_be32 unkC;
+    gc_be32 unk10;
+    gc_be32 unk14;
+    gc_bef32 x, y, z;
 
 };
 
@@ -62,7 +64,7 @@ s32 floorCharacterBiosGetIsHit(u8 *p0);
 s32 floorCharacterBiosGetLoadInit(u8 *p0);
 s32 floorCharacterBiosGetMoveSctID(void *p0);
 s32 floorCharacterBiosGetMoveType(void *p0);
-u16 floorCharacterBiosGetNameID(void *p0);
+PCRET(u16) floorCharacterBiosGetNameID(void *p0);
 s32 floorCharacterBiosGetPeopleInfoPtr(void *p0);
 s32 floorCharacterBiosGetPos(void *p0, void *p1);
 FloorCharInfo* floorCharacterBiosGetPtr(u32 key, u32 idx);
@@ -84,7 +86,8 @@ PeopleInfo* peopleInfoBiosGetPtrFromIndex(u32 index);
 static floorCharacter_dd_ _globalCharacter[3];
 void GSvecSet(GSvec* v, f32 x, f32 y, f32 z);
 struct FloorCharFlags {
-    u8 visible : 1;
+    GC_BITS2(
+    u8 visible : 1, u8 : 7)
 };
 
 void floorCharacterBiosSetVisibility(u8* p0, bool visible) {
@@ -98,9 +101,9 @@ void floorCharacterBiosSetVisibility(u8* p0, bool visible) {
 extern "C" {
 void floorCharacterBiosSetPos(void *p0, void *p1) {
     if ((p0 != NULL) && (p1 != NULL)) {
-        M2C_FIELD(p0, f32 *, 0x18) = (f32) M2C_FIELD(p1, f32 *, 0);
-        M2C_FIELD(p0, f32 *, 0x1C) = (f32) M2C_FIELD(p1, f32 *, 4);
-        M2C_FIELD(p0, f32 *, 0x20) = (f32) M2C_FIELD(p1, f32 *, 8);
+        GC_AT(f32, p0, 0x18) = (f32) M2C_FIELD(p1, f32 *, 0);
+        GC_AT(f32, p0, 0x1C) = (f32) M2C_FIELD(p1, f32 *, 4);
+        GC_AT(f32, p0, 0x20) = (f32) M2C_FIELD(p1, f32 *, 8);
     }
 }
 }
@@ -108,7 +111,7 @@ void floorCharacterBiosSetPos(void *p0, void *p1) {
 extern "C" {
 s32 floorCharacterBiosGetTalkSctID(void *p0) {
     if (p0 != NULL) {
-        return M2C_FIELD(p0, s32 *, 0x14);
+        return GC_AT(s32, p0, 0x14);
     }
     return 0;
 }
@@ -117,16 +120,16 @@ s32 floorCharacterBiosGetTalkSctID(void *p0) {
 extern "C" {
 s32 floorCharacterBiosGetMoveSctID(void *p0) {
     if (p0 != NULL) {
-        return M2C_FIELD(p0, s32 *, 0x10);
+        return GC_AT(s32, p0, 0x10);
     }
     return 0;
 }
 }
 
 extern "C" {
-u16 floorCharacterBiosGetNameID(void *p0) {
+PCRET(u16) floorCharacterBiosGetNameID(void *p0) {
     if (p0 != NULL) {
-        return M2C_FIELD(p0, u16 *, 8);
+        return GC_AT(u16, p0, 8);
     }
     return 0U;
 }
@@ -144,7 +147,7 @@ s32 floorCharacterBiosGetTalkWallThrough(u8 *p0) {
 extern "C" {
 s32 floorCharacterBiosGetTalkEndType(void *p0) {
     if (p0 != NULL) {
-        return ((u8) M2C_FIELD(p0, u8 *, 1) >> 1U) & 3;
+        return ((u8) GC_AT(u8, p0, 1) >> 1U) & 3;
     }
     return 0;
 }
@@ -153,7 +156,7 @@ s32 floorCharacterBiosGetTalkEndType(void *p0) {
 extern "C" {
 s32 floorCharacterBiosGetTalkStartType(void *p0) {
     if (p0 != NULL) {
-        return ((u8) M2C_FIELD(p0, u8 *, 1) >> 3U) & 3;
+        return ((u8) GC_AT(u8, p0, 1) >> 3U) & 3;
     }
     return 0;
 }
@@ -162,7 +165,7 @@ s32 floorCharacterBiosGetTalkStartType(void *p0) {
 extern "C" {
 s32 floorCharacterBiosGetMoveType(void *p0) {
     if (p0 != NULL) {
-        return ((u8) M2C_FIELD(p0, u8 *, 1) >> 5U) & 7;
+        return ((u8) GC_AT(u8, p0, 1) >> 5U) & 7;
     }
     return 0;
 }
@@ -176,7 +179,7 @@ s32 floorCharacterBiosGetRot(void* p0, void* p1) {
     if (p1 == NULL) {
         return 0;
     }
-    GSvecSet((GSvec*)p1, 0.0f, 0.017453292f * *(s16*)((u8*)p0 + 4), 0.0f);
+    GSvecSet((GSvec*)p1, 0.0f, 0.017453292f * GC_AT(s16, p0, 4), 0.0f);
     return 1;
 }
 }
@@ -189,7 +192,7 @@ s32 floorCharacterBiosGetPos(void* p0, void* p1) {
     if (p1 == NULL) {
         return 0;
     }
-    GSvecSet((GSvec*)p1, *(f32*)((u8*)p0 + 0x18), *(f32*)((u8*)p0 + 0x1C), *(f32*)((u8*)p0 + 0x20));
+    GSvecSet((GSvec*)p1, GC_AT(f32, p0, 0x18), GC_AT(f32, p0, 0x1C), GC_AT(f32, p0, 0x20));
     return 1;
 }
 }
@@ -224,7 +227,7 @@ s32 floorCharacterBiosGetVisibility(u8 *p0) {
 extern "C" {
 s32 floorCharacterBiosGetPeopleInfoPtr(void *p0) {
     if (p0 != NULL) {
-        return (long)(peopleInfoBiosGetPtrFromIndex((u32) M2C_FIELD(p0, u16 *, 6)));
+        return (GCsptr)(peopleInfoBiosGetPtrFromIndex((u32) GC_AT(u16, p0, 6)));
     }
     return 0;
 }

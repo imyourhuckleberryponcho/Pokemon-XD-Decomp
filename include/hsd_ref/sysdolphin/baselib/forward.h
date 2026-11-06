@@ -3,6 +3,7 @@
 
 #include <hsd_compat.h>
 #include <Runtime/platform.h>
+#include <game/gcdata.h>
 
 typedef struct GObjFuncs GObjFuncs;
 typedef struct HSD_AnimJoint HSD_AnimJoint;

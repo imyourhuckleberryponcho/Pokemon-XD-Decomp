@@ -16,7 +16,11 @@ typedef struct HSD_Spline {
     f32 (*segPoly)[5];
 } HSD_Spline;
 
+#ifdef __cplusplus
+extern "C" int __float_nan[];
+#else
 extern int __float_nan[];
+#endif
 #define NAN (*(float*)__float_nan)
 
 #define FP_NAN 1

@@ -1,4 +1,10 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/gsmodellayout.h>
+#include <game/gcptr.h>
+#include <game/hsdarchive.h>
+#include <game/gcfield.h>
+#include <game/gsmaterialview.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -53,9 +59,6 @@ public:
 struct GSmaterial {
     u8 _draft[1];
 };
-struct HSD_Archive {
-    u8 _draft[1];
-};
 struct ModelBank {
     u8 _draft[1];
 };
@@ -81,7 +84,7 @@ struct leafData {
 };
 class leafEffect : public GSeffect {
 public:
-    s32 unkC;
+    leafData* data;
     _GSmodel* model;
     f32 unk14;
     f32 params[10];
@@ -102,6 +105,15 @@ public:
     s32 GenerateLeafData(leafData*);
     void UpdateLeafData(leafData*);
 };
+
+#ifndef __MWERKS__
+void leafEffectSetOrigin(leafEffect* e, f32 x, f32 y, f32 z, f32 scale) {
+    e->unk54 = x;
+    e->unk58 = y;
+    e->unk5C = z;
+    e->unk14 = scale;
+}
+#endif
 
 extern "C" {
 void C_QUATRotAxisRad(Quaternion* r, const Vec* axis, f32 rad);
@@ -151,28 +163,28 @@ void leafEffect::_stop() {
     u8 *temp_r0;
     u8 *temp_r3_2;
 
-    temp_r0 = M2C_FIELD(this, u8 **, 0xC);
+    temp_r0 = (u8*)data;
     if (temp_r0 != NULL) {
         var_r30 = temp_r0;
         var_r29 = 0U;
-        while (var_r29 < (u32) M2C_FIELD(this, u32 *, 0x4C)) {
-            temp_r3 = M2C_FIELD(var_r30, _GSmodel **, 0x58);
+        while (var_r29 < (u32) THIS_F(u32 *, 0x4C, unk4C)) {
+            temp_r3 = ((leafData*)var_r30)->model;
             if (temp_r3 != NULL) {
                 GSmodelSetVisibility((_GSmodel*)(temp_r3), 0U);
-                GSmodelFree((_GSmodel*)(M2C_FIELD(var_r30, _GSmodel **, 0x58)));
-                M2C_FIELD(var_r30, _GSmodel **, 0x58) = NULL;
+                GSmodelFree((_GSmodel*)(((leafData*)var_r30)->model));
+                ((leafData*)var_r30)->model = NULL;
             }
             var_r29 += 1;
-            var_r30 += 0x5C;
+            var_r30 += sizeof(leafData);
         }
-        temp_r3_2 = M2C_FIELD(this, u8 **, 0x10);
+        temp_r3_2 = THIS_F(u8 * *, 0x10, model);
         if (temp_r3_2 != NULL) {
-            var_r29_2 = M2C_FIELD(temp_r3_2, u32 *, 0x5E4);
+            var_r29_2 = ((GSmodelLayout*)temp_r3_2)->materialCount;
         } else {
             var_r29_2 = 0U;
         }
         if (temp_r3_2 != NULL) {
-            var_r30_2 = M2C_FIELD(temp_r3_2, GSmaterial **, 0x5E0);
+            var_r30_2 = (GSmaterial*)((GSmodelLayout*)temp_r3_2)->materials;
         } else {
             var_r30_2 = NULL;
         }
@@ -180,9 +192,9 @@ void leafEffect::_stop() {
         while (var_r31 < var_r29_2) {
             GSmaterialSetAlpha((GSmaterial*)(var_r30_2), 1.0f);
             var_r31 += 1;
-            var_r30_2 += 0x34;
+            var_r30_2 = (GSmaterial*)((u8*)var_r30_2 + GSMATERIAL_SIZE);
         }
-        GSmemFree((void*)(M2C_FIELD(this, u8 **, 0xC)));
+        GSmemFree((void*)data);
     }
 }
 }
@@ -207,21 +219,21 @@ bool leafEffect::_update(float dt) {
         GSmaterial* mat;
         u32 n;
         if (model != NULL) {
-            n = M2C_FIELD(model, u32*, 0x5E4);
+            n = M2C_NAMED(((GSmodelLayout*)(model)), u32*, 0x5E4, materialCount);
         } else {
             n = 0U;
         }
         if (model != NULL) {
-            mat = M2C_FIELD(model, GSmaterial**, 0x5E0);
+            mat = M2C_NAMED(((GSmodelLayout*)(model)), GSmaterial**, 0x5E0, materials);
         } else {
             mat = NULL;
         }
-        for (i = 0; i < n; i++, mat = (GSmaterial*)((u8*)mat + 0x34)) {
+        for (i = 0; i < n; i++, mat = (GSmaterial*)((u8*)mat + GSMATERIAL_SIZE)) {
             GSmaterialSetAlpha(mat, alpha);
         }
     }
     u32 j;
-    leafData* d = (leafData*)unkC;
+    leafData* d = data;
     for (j = 0; j < (u32)unk4C; j++, d++) {
         if (d->model != NULL) {
             d->t = d->t + step;
@@ -257,24 +269,24 @@ bool leafEffect::_start() {
     ModelBank *var_r31;
     u32 var_r30;
 
-    if ((u32) M2C_FIELD(this, u32 *, 0x4C) > 0x20U) {
-        M2C_FIELD(this, u32 *, 0x4C) = 0x20U;
+    if ((u32) THIS_F(u32 *, 0x4C, unk4C) > 0x20U) {
+        THIS_F(u32 *, 0x4C, unk4C) = 0x20U;
     }
-    if ((u32) M2C_FIELD(this, u32 *, 0x10) == 0U) {
+    if (model == NULL) {
         return 0;
     }
-    M2C_FIELD(this, ModelBank **, 0xC) = GSmemAllocClr(M2C_FIELD(this, u32 *, 0x4C) * 0x5C);
-    temp_r0 = M2C_FIELD(this, ModelBank **, 0xC);
+    data = (leafData*)GSmemAllocClr(THIS_F(u32 *, 0x4C, unk4C) * sizeof(leafData));
+    temp_r0 = (ModelBank*)data;
     if (temp_r0 == NULL) {
         return 0;
     }
     var_r31 = temp_r0;
     var_r30 = 0U;
-    M2C_FIELD(this, f32 *, 0x44) = 0.0f;
-    while (var_r30 < (u32) M2C_FIELD(this, u32 *, 0x4C)) {
+    THIS_F(f32 *, 0x44, unk44) = 0.0f;
+    while (var_r30 < (u32) THIS_F(u32 *, 0x4C, unk4C)) {
         ((leafEffect*)(this))->GenerateLeafData((leafData*)((leafData *) var_r31));
         var_r30 += 1;
-        var_r31 += 0x5C;
+        var_r31 = (ModelBank*)((u8*)var_r31 + sizeof(leafData));
     }
     return 1;
 }
@@ -286,41 +298,41 @@ leafEffect::leafEffect(unsigned char** p0, float p1) {
     _GSmodel *temp_r3;
     HSD_Archive *temp_r29;
 
-    M2C_FIELD(this, f32 *, 0x14) = 1.0f;
-    M2C_FIELD(this, f32 *, 0x44) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x48) = p1;
-    M2C_FIELD(this, f32 *, 0x54) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x58) = 0.0f;
-    M2C_FIELD(this, f32 *, 0x5C) = 0.0f;
+    THIS_F(f32 *, 0x14, unk14) = 1.0f;
+    THIS_F(f32 *, 0x44, unk44) = 0.0f;
+    THIS_F(f32 *, 0x48, unk48) = p1;
+    THIS_F(f32 *, 0x54, unk54) = 0.0f;
+    THIS_F(f32 *, 0x58, unk58) = 0.0f;
+    THIS_F(f32 *, 0x5C, unk5C) = 0.0f;
     temp_r30 = *p0;
-    M2C_FIELD(this, s32 *, 0xC) = 0;
-    M2C_FIELD(this, f32 *, 0x18) = (f32) M2C_FIELD(temp_r30, f32 *, 0);
-    M2C_FIELD(this, f32 *, 0x1C) = (f32) M2C_FIELD(temp_r30, f32 *, 4);
-    M2C_FIELD(this, f32 *, 0x20) = (f32) M2C_FIELD(temp_r30, f32 *, 8);
-    M2C_FIELD(this, f32 *, 0x24) = (f32) M2C_FIELD(temp_r30, f32 *, 0xC);
-    M2C_FIELD(this, f32 *, 0x28) = (f32) M2C_FIELD(temp_r30, f32 *, 0x10);
-    M2C_FIELD(this, f32 *, 0x2C) = (f32) M2C_FIELD(temp_r30, f32 *, 0x14);
-    M2C_FIELD(this, f32 *, 0x30) = (f32) M2C_FIELD(temp_r30, f32 *, 0x18);
-    M2C_FIELD(this, f32 *, 0x34) = (f32) M2C_FIELD(temp_r30, f32 *, 0x1C);
-    M2C_FIELD(this, f32 *, 0x38) = (f32) M2C_FIELD(temp_r30, f32 *, 0x20);
-    M2C_FIELD(this, f32 *, 0x3C) = (f32) M2C_FIELD(temp_r30, f32 *, 0x24);
-    M2C_FIELD(this, s32 *, 0x4C) = (s32) (u16) M2C_FIELD(temp_r30, s32 *, 0x28);
-    M2C_FIELD(this, f32 *, 0x40) = (f32) M2C_FIELD(temp_r30, f32 *, 0x2C);
+    data = 0;
+    params[0] = (f32) GC_AT(f32, temp_r30, 0);
+    params[1] = (f32) GC_AT(f32, temp_r30, 4);
+    params[2] = (f32) GC_AT(f32, temp_r30, 8);
+    params[3] = (f32) GC_AT(f32, temp_r30, 0xC);
+    params[4] = (f32) GC_AT(f32, temp_r30, 0x10);
+    params[5] = (f32) GC_AT(f32, temp_r30, 0x14);
+    params[6] = (f32) GC_AT(f32, temp_r30, 0x18);
+    params[7] = (f32) GC_AT(f32, temp_r30, 0x1C);
+    params[8] = (f32) GC_AT(f32, temp_r30, 0x20);
+    params[9] = (f32) GC_AT(f32, temp_r30, 0x24);
+    THIS_F(s32 *, 0x4C, unk4C) = (s32) (u16) GC_AT(s32, temp_r30, 0x28);
+    THIS_F(f32 *, 0x40, unk40) = (f32) GC_AT(f32, temp_r30, 0x2C);
     *p0 += 0x40;
-    *p0 = (u8 *) ((s32) (*p0 + 0x1F) & 0xFFFFFFE0);
-    M2C_FIELD(this, s32 *, 0x50) = 0;
-    temp_r29 = M2C_FIELD(temp_r30, HSD_Archive **, 0x38);
+    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+    THIS_F(s32 *, 0x50, resID) = 0;
+    temp_r29 = GC_AT(HSD_Archive *, temp_r30, 0x38);
     if (temp_r29 != NULL) {
-        M2C_FIELD(this, s32 *, 0x50) = wazaSequenceSysGetResID();
-        loadModel((HSD_Archive*)(temp_r29), 0x4E20U, 0U, (u32) M2C_FIELD(this, s32 *, 0x50));
-        GSresIsUniqueID(0x4E20U, (u32) M2C_FIELD(this, s32 *, 0x50), 0U);
-        M2C_FIELD(this, _GSmodel **, 0x10) = (_GSmodel *)(GSresGetResource(0x4E20U, (u32) M2C_FIELD(this, s32 *, 0x50)));
-        temp_r3 = M2C_FIELD(this, _GSmodel **, 0x10);
+        THIS_F(s32 *, 0x50, resID) = wazaSequenceSysGetResID();
+        loadModel((HSD_Archive*)(temp_r29), 0x4E20U, 0U, (u32) THIS_F(s32 *, 0x50, resID));
+        GSresIsUniqueID(0x4E20U, (u32) THIS_F(s32 *, 0x50, resID), 0U);
+        THIS_F(_GSmodel * *, 0x10, model) = (_GSmodel *)(GSresGetResource(0x4E20U, (u32) THIS_F(s32 *, 0x50, resID)));
+        temp_r3 = THIS_F(_GSmodel * *, 0x10, model);
         if (temp_r3 != NULL) {
             GSmodelSetVisibility((_GSmodel*)(temp_r3), 0U);
         }
     }
-    *p0 = &(*p0)[(M2C_FIELD(temp_r30, s32 *, 0x34) + 0x1F) & 0xFFFFFFE0];
+    *p0 = &(*p0)[(GC_AT(s32, temp_r30, 0x34) + 0x1F) & 0xFFFFFFE0];
     return;
 }
 }
@@ -494,3 +506,7 @@ s32 leafEffect::GenerateLeafData(leafData* leaf) {
     return 1;
 }
 }
+
+#ifndef __MWERKS__
+static_assert(sizeof(leafEffect) == 0x78, "leafEffect PC size changed: update wazaSequenceEntry.cpp's placeholder");
+#endif

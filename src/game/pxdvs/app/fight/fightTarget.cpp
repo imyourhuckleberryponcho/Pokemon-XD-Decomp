@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 struct FIGHT_FLOOR;
 struct FIGHT_SIDE;
@@ -17,7 +19,7 @@ extern FightTargetData fight_target_data[];
 extern u32 fight_target_data_number;
 
 FIGHT_FLOOR* fightFloorGetNowPtr(void);
-u32 fightFloorGetStatus(FIGHT_FLOOR*, u16, u16, u16);
+StatusU32 fightFloorGetStatus(FIGHT_FLOOR*, u16, u16, u16);
 FIGHT_SIDE* fightFloor_GetFightSidePtr(FIGHT_FLOOR*, u16);
 void* fightFloor_GetAttackPokemonPtr(FIGHT_FLOOR*);
 void* fightFloor_GetDefensePokemonPtr(FIGHT_FLOOR*);
@@ -77,7 +79,7 @@ void* fightTargetGetRelativeHostSideFightTargetIdToTragetPtr(u16 slotType, u16 t
     return result;
 }
 
-u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void* target, u16 type) {
+PCRET(u16) fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void* target, u16 type) {
     void* host = fightTargetGetPtr(4, 0, type);
     if (host == 0) {
         return 0;

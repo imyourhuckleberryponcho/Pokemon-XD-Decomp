@@ -1,3 +1,4 @@
+#include <game/pcret.h>
 #ifndef POKEMONDB_H
 #define POKEMONDB_H
 
@@ -45,7 +46,7 @@ struct PokemonData {
     u16 numPokemon;
     u16 numZukan;
     u8 unk2[2];
-    const char* name;
+    u32 name;
     u32 typeName;
     u32 doc;
     u32 mitaFlag;
@@ -75,13 +76,13 @@ extern "C" void pokemon_SetPokemonWazaDataId(Pokemon*, u32, u16);
 extern "C" void pokemon_SetLevel(Pokemon*, u8);
 extern "C" void pokemon_SetExp(Pokemon*, u32);
 extern "C" u8 pokemon_GetNowExpToLevel(Pokemon*);
-extern "C" u8 pokemon_GetSeikaku(Pokemon*);
+extern "C" PCRET(u8) pokemon_GetSeikaku(Pokemon*);
 extern "C" u16 pokemon_GetMaxHp(Pokemon*);
-extern "C" u16 pokemon_GetHp(Pokemon*);
+extern "C" PCRET(u16) pokemon_GetHp(Pokemon*);
 extern "C" u32 pokemon_GetExp(Pokemon*);
 extern "C" u32 pokemon_GetCatchTrainerRnd(Pokemon*);
 extern "C" u32 pokemon_GetRnd(Pokemon*);
 extern "C" u16 pokemon_GetPokemonDataId(Pokemon*);
 extern "C" u8 pokemonDB_GetTokuseiDataId(u16, u16);
-extern "C" u8 pokemonDB_GetGrowDataId(u16);
+extern "C" PCRET(u8) pokemonDB_GetGrowDataId(u16);
 #endif

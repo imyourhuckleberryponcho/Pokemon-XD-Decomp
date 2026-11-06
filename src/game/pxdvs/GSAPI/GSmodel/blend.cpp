@@ -1,5 +1,8 @@
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/gsmodelview.h>
 
 #pragma pool_strings off
 
@@ -16,6 +19,7 @@ typedef _HSD_AObj HSD_AObj;
 
 typedef struct _HSD_JObj HSD_JObj;
 
+#ifdef __MWERKS__
 struct _HSD_JObj {
     u8 unk0[0x8];
     HSD_JObj* next;
@@ -29,6 +33,25 @@ struct _HSD_JObj {
     u8 unk44[0x38];
     HSD_AObj* aobj;
 };
+#else
+struct _HSD_JObj {
+    void* pcObject[2];
+    HSD_JObj* next;
+    HSD_JObj* parent;
+    HSD_JObj* child;
+    u32 flags;
+    void* dobj;
+    Quaternion rotate;
+    GSvec scale;
+    GSvec translate;
+    f32 mtx[3][4];
+    void* scl;
+    void* envelopemtx;
+    HSD_AObj* aobj;
+    void* robj;
+    u32 id;
+};
+#endif
 
 #define JOBJ_MTX_DIRTY (1 << 6)
 #define JOBJ_INSTANCE (1 << 12)
@@ -39,7 +62,7 @@ struct _HSD_JObj {
 struct _HSD_Joint;
 
 struct _HSD_SceneModelSet {
-    _HSD_Joint* joint;
+    gc_ptr32(_HSD_Joint) joint;
 };
 
 struct _GSmodel {
@@ -49,12 +72,76 @@ struct _GSmodel {
     HSD_JObj* jobj;
     HSD_JObj* blendJObj;
     HSD_JObj* blendDest;
-    u8 unk18[0xB0];
+    f32 position[3];
+    f32 rotation[3];
+    f32 scale[3];
+    GSmodelBoundView bound;
+    void* camera;
+    u16 flags2;
+    u16 token;
+    u8 layers[8];
+    u32 animCount;
+    u32 texAnimCount;
+    s32 animType;
+    u32 animIndex;
+    f32 animRate;
+    f32 animFrame;
+    f32 animReqFrame;
+    f32 animEndFrame;
+    void* animAObj;
+    s32 blendAnimType;
+    u32 blendAnimIndex;
+    f32 blendAnimRate;
+    f32 blendAnimFrame;
+    f32 blendAnimReqFrame;
+    f32 blendAnimEndFrame;
+    void* blendAnimAObj;
+    s32 texAnimType;
+    u32 texAnimIndex;
+    f32 texAnimRate;
+    f32 texAnimFrame;
+    f32 texAnimReqFrame;
+    f32 texAnimEndFrame;
+    void* texAnimAObj;
     struct {
         u8 unk0[0x18];
         HSD_AObj* aobj;
     } partMix[12];
     f32 blendFactor;
+    u8 animDirty;
+    u8 texAnimDirty;
+    u8 unk21E[2];
+    void* animEndedCallback;
+    void* animEndedCallbackArg;
+    GSmodelPartAnimView partAnim[16];
+    s32 attachMode;
+    _GSmodel* attachModel;
+    u32 attachIndex;
+    f32 attachPosition[3];
+    f32 attachRotation[3];
+    f32 attachScale[3];
+    void* particleBank;
+    u32 particleAttachMode;
+    void* materials;
+    u32 materialCount;
+    u32 shadowSurfaceCount;
+    void* shadowSurfaces;
+    void* shadowLight;
+    f32 groundPlane;
+    GCuptr unk5F8;
+    f32 unk5FC;
+    u8 unk600[4];
+    f32 unk604;
+    u8 unk608[4];
+    f32 unk60C;
+    u16 unk610;
+    u8 unk612;
+    u8 unk613;
+    GCuptr unk614;
+    GCuptr unk618;
+    GCuptr unk61C;
+    s32 vertexCount;
+    s32 polygonCount;
 };
 
 extern "C" {

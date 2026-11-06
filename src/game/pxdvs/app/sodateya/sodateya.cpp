@@ -1,15 +1,16 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 extern "C" void* memcpy(void*, const void*, unsigned long);
 
 enum FootStepCounter { FOOT_STEP_COUNTER_0, FOOT_STEP_COUNTER_1 };
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };
 
-class DarkPokemon {
+struct DarkPokemon {
 public:
     void setPlace(darkPokemonWhere, u8);
 };
 
-class Pokemon {
+struct Pokemon {
 public:
     DarkPokemon* getDarkPokemon();
 };
@@ -23,7 +24,7 @@ struct Sodateya {
 };
 
 extern "C" {
-void* savedataGetStatus(void*, u16);
+void* savedataGetStatus(void*, PCARG(u16, s32));
 Pokemon* heroBiosGetPokemonPtr(void* hero, u16 index);
 u32 heroGetPokeomCount(void* hero);
 u8 pokemonCheckValid(Pokemon*);
@@ -52,10 +53,10 @@ void heroMoveInitEvent(void);
 void heroMoveSetColision(bool);
 void heroMoveTermEvent(void);
 void menuScriptInfoRelive(Pokemon*, s32);
-s32 heroMoveAddStepCallback(void (*callback)(long, FootStepCounter, long), s32);
+s32 heroMoveAddStepCallback(void (*callback)(s32, FootStepCounter, s32), s32);
 }
 
-static void _sodateyaCallBackFunc(long, FootStepCounter, long);
+static void _sodateyaCallBackFunc(s32, FootStepCounter, s32);
 
 static s32 _sodateyaHandle;
 
@@ -274,7 +275,7 @@ static inline void reliveEvent(Pokemon* p) {
     heroMoveTermEvent();
 }
 
-static void _sodateyaCallBackFunc(long, FootStepCounter mode, long steps) {
+static void _sodateyaCallBackFunc(s32, FootStepCounter mode, s32 steps) {
     void* hero = savedataGetStatus(0, 2);
     Pokemon* p;
     u16 progress;

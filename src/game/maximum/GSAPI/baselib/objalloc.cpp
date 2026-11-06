@@ -1,6 +1,10 @@
 
 
 #include <dolphin/types.h>
+#include <game/bitfield.h>
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 
 #pragma pool_strings off
 
@@ -10,9 +14,15 @@ void HSD_Free(void* ptr);
 s32 HSD_GetNbBits(u32 mask);
 
 typedef struct HSD_ObjAllocData {
-    u8 limit_enabled : 1;
-    u8 flags : 7;
+    GC_BITS2(
+    u8 limit_enabled : 1,
+    u8 flags : 7)
+#ifdef __MWERKS__
     u8 unk1[7];
+#else
+    u8 unk1[3];
+    void* freehead;
+#endif
     u32 used;
     u32 free;
     u32 peak;

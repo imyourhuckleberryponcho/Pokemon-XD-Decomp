@@ -1,8 +1,9 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct FightWaza;
 struct Sequence;
-struct WazaSequence;
+class WazaSequence;
 struct Joutai;
 
 typedef u32 (*FightWazaWzxFunc)(u32, u32, u32, u32, u32);
@@ -32,7 +33,7 @@ void fightWaza_SetMotoWazaDataId(FightWaza* waza, u16 id);
 void fightWaza_SetUseWazaDataId(FightWaza* waza, u16 id);
 void fightWaza_SetAutoMakeFlag(FightWaza* waza, u8 flag);
 void fightWaza_SetIryoku(FightWaza* waza, u16 iryoku);
-void fightWaza_SetZokusei(FightWaza* waza, u8 zokusei);
+void fightWaza_SetZokusei(FightWaza* waza, PCARG(u8, u16) zokusei);
 void fightWaza_SetDamage(FightWaza* waza, s32 damage);
 void fightWaza_SetHitDamage(FightWaza* waza, s32 damage);
 void fightWaza_SetKaisuu(FightWaza* waza, s32 kaisuu);

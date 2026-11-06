@@ -1,11 +1,12 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 extern "C" int memcmp(const void* a, const void* b, unsigned long n);
 
 struct ChankHeader {
     char id[4];
-    s32 size;
-    s32 no;
+    gc_bes32 size;
+    gc_bes32 no;
     u8 unkC[4];
 };
 
@@ -18,7 +19,7 @@ public:
     CChank();
     virtual ~CChank() {}
     char* searchSubChankID(const char* id);
-    char* searchChankID(const char* id, long no);
+    char* searchChankID(const char* id, s32 no);
 };
 
 class CChankBlock : public CChank {
@@ -69,7 +70,7 @@ char* CChank::searchSubChankID(const char* id) {
     return NULL;
 }
 
-char* CChank::searchChankID(const char* id, long no) {
+char* CChank::searchChankID(const char* id, s32 no) {
     char* p;
     s32 i;
 

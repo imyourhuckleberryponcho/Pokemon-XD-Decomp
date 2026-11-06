@@ -31,12 +31,18 @@ public:
 
 class ModelSequence : public NullSequence {
 public:
-    u8 unkC[0x50 - 0xC];
+    u8 unkC[0x30 - 0xC];
+    void* m_list;
+    void* m_camera;
+    void* m_next;
+    u8 unk3C[0x50 - 0x3C];
     s8 modelSize;
     u8 unk51[4];
     u8 facing;
     u8 hasParent;
-    u8 unk57[0x78 - 0x57];
+    u8 unk57[0x64 - 0x57];
+    void* m_unk64;
+    u8 unk68[0x78 - 0x68];
     ModelSequence* child;
     ModelSequence* parent;
 
@@ -99,7 +105,9 @@ void Sequence_CopyState(NullSequence*, NullSequence*);
 void wazaSequenceSysGetActiveWazaNum(void);
 }
 
+extern "C" {
 BattleGrid gBattleGrid;
+}
 static bool gSavedVisibilityCodes[12];
 static bool gBackupVisibilityCodes[12];
 static s32 g_max_model_size;
@@ -240,7 +248,7 @@ void battleGridHideModelsExcept(NullSequence* seq) {
 }
 
 void battleGridReset(void) {
-    memset(&gBattleGrid, 0, 0x44);
+    memset(&gBattleGrid, 0, sizeof(gBattleGrid));
     g_max_model_size = 0;
     gVisibilityChanged = 0;
 }
@@ -513,7 +521,7 @@ void battleGridAddTrainer(NullSequence* seq, u8 arg1, u8 arg2) {
                     }
                 }
             }
-            memset(e, 0, 0x10);
+            memset(e, 0, sizeof(*e));
             e->slot = trainer;
             e->arg1 = arg1;
             e->arg2 = arg2;

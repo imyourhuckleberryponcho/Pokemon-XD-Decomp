@@ -15,18 +15,33 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define MULT_HI(a, b) ((s32)(((s64)(s32)(a) * (s64)(s32)(b)) >> 32))
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
+#ifndef __MWERKS__
+#include <dolphin/os.h>
+#endif
+#ifdef __MWERKS__
 enum OSError { OSError_draft_dummy };
 enum OSErrorHandler { OSErrorHandler_draft_dummy };
+#endif
 
 
 extern "C" {
+#ifdef __MWERKS__
 asm void DCFlushRange(register void* addr, register u32 nBytes);
+#endif
+#ifdef __MWERKS__
 asm BOOL OSDisableInterrupts(void);
+#endif
+#ifdef __MWERKS__
 asm BOOL OSRestoreInterrupts(register BOOL level);
+#endif
+#ifdef __MWERKS__
 OSErrorHandler OSSetErrorHandler(OSError error, OSErrorHandler handler);
+#endif
 void* memcpy(void* dst, const void* src, size_t n);
 void* memset(void* dst, int val, size_t n);
+#ifdef __MWERKS__
 extern s32 __OSFpscrEnableBits;
+#endif
 void GSgfxHalt(s32 type, s32* context, ...);
 void OSPanic(const char* file, s32 line, const char* msg, ...);
 }
@@ -47,6 +62,7 @@ static u8 _haltCallStack[0x3C];
 static s8 _haltHandlerInstalled;
 static s32 _haltExceptionType;
 
+#ifdef __MWERKS__
 static asm void _haltDSIHandler() {
     nofralloc
     mtsprg 1, r3
@@ -80,7 +96,11 @@ L_notDSI:
     li r3, 2
     rfi
 }
+#else
+static void _haltDSIHandler() { }
+#endif
 
+#ifdef __MWERKS__
 static asm void _haltISIHandler() {
     nofralloc
     mtsprg 1, r3
@@ -97,7 +117,11 @@ static asm void _haltISIHandler() {
     li r3, 3
     rfi
 }
+#else
+static void _haltISIHandler() { }
+#endif
 
+#ifdef __MWERKS__
 static asm void _haltAlignmentHandler() {
     nofralloc
     mtsprg 1, r3
@@ -114,7 +138,11 @@ static asm void _haltAlignmentHandler() {
     li r3, 5
     rfi
 }
+#else
+static void _haltAlignmentHandler() { }
+#endif
 
+#ifdef __MWERKS__
 static asm void _haltProcessException() {
     nofralloc
     stw r3, _haltExceptionType
@@ -230,6 +258,9 @@ static asm void _haltProcessException() {
     ori r4, r4, _haltContext@l
     b GSgfxHalt
 }
+#else
+static void _haltProcessException() { }
+#endif
 
 void OSPanic(const char* file, s32 line, const char* msg, ...) {
 }

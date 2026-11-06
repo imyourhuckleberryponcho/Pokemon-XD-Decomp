@@ -1,4 +1,9 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/winwork.h>
+#include <game/statusval.h>
+#include <game/pxdvs/app/floor/floorData.h>
+#include <game/pxdvs/app/fight/fightData.h>
 #pragma pool_strings off
 #pragma peephole off
 #ifndef M2C_MACROS_H
@@ -29,12 +34,6 @@ struct tagWINDOW_WORK;
 extern "C" {
 
 extern "C" {
-struct FightEncountData {
-    u8 _draft[1];
-};
-struct FloorData {
-    u8 _draft[1];
-};
 struct GSthread {
     u8 _draft[1];
 };
@@ -55,9 +54,21 @@ struct WorldMapModel {
             releaseOffscreenData();
         }
     }
+#ifdef __MWERKS__
     s32 releaseOffscreenData();
-    s32 SetModel(unsigned long, unsigned long, bool);
-    s32 UnloadModel(unsigned long, unsigned long);
+#else
+    void releaseOffscreenData();
+#endif
+#ifdef __MWERKS__
+    s32 SetModel(u32, u32, bool);
+#else
+    void* SetModel(u32 groupID, u32 modelID, bool attachLights);
+#endif
+#ifdef __MWERKS__
+    s32 UnloadModel(u32, u32);
+#else
+    void UnloadModel(u32 groupID, u32 modelID);
+#endif
 };
 struct _GSmodel {
     u8 _draft[1];
@@ -118,7 +129,7 @@ void fn_800A3A1C();
 void fn_800A3A48(u32 id, s16 anim, u8 loop, f32 frame);
 void fn_800A3B34(s32 p0, s32 p1, bool p2);
 void fn_800A3BD4(s32 p0, s32 p1);
-u32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind);
+StatusU32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind);
 s32 memcardTaskCall(s32, s32, s32);
 void menuCloseCustom(s32 menuID, s32, s32);
 MenuData* menuDataBiosGetPtr(s32 menuID);
@@ -167,10 +178,10 @@ extern s32 jtbl_2298;
 extern "C++" {
 static void _CreateThread();
 static void _cursorSpriteOnOff(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1);
-static void _menuTitleClose2(long p0, unsigned long p1);
+static void _menuTitleClose2(s32 p0, u32 p1);
 static void _menuTitleNormalButton(tagWINDOW_WORK* p0);
 static void _menuTitlePreReadFightRegWzxData();
-static void _menuTitleSetSE(unsigned long p0);
+static void _menuTitleSetSE(u32 p0);
 static s32 _selectMenu();
 }
 static u32 _menuTitleStartStatus;
@@ -257,12 +268,12 @@ void menuTitleButton(void *p0) {
 extern "C++" {
 static void _menuTitleNormalButton(tagWINDOW_WORK* p0) {
     if (((s32) _menuTitleStatus < 0x29) && (p0 != NULL)) {
-        menuDataBiosGetPtr(M2C_FIELD(p0, s32 *, 4));
+        menuDataBiosGetPtr(M2C_NAMED(((WinWorkLayout*)(p0)), s32 *, 0x4, menuID));
         if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x810) != 0) {
-            if ((u8) M2C_FIELD(p0, u8 *, 0xA4) == 0) {
+            if ((u8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0xA4, pad_a4) == 0) {
                 _menuTitleSetSE(0x11U);
             }
-            M2C_FIELD(p0, u8 *, 0xA4) = 1U;
+            M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0xA4, pad_a4) = 1U;
         }
     }
 }
@@ -274,13 +285,13 @@ void menuTitleCursorAnime(void *p0, void *p1) {
 
     if (p0 == windowSearchID(windowGetActiveID())) {
         temp_r0 = _titleCursorTimer % 60;
-        M2C_FIELD(p1, s32 *, 0x64) = -1;
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), s32 *, 0x64, color[0]) = -1;
         if (temp_r0 < 0x1E) {
             f32 s = sin(3.14f * (temp_r0 / 30.0f));
-            M2C_FIELD(p1, u8 *, 0x67) -= (u8)(128.0f * s);
+            M2C_NAMED(((SpriteWorkLayout*)(p1)), u8 *, 0x67, color[3]) -= (u8)(128.0f * s);
         }
     } else {
-        M2C_FIELD(p1, u8 *, 0x67) = 0xFFU;
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), u8 *, 0x67, color[3]) = 0xFFU;
     }
 }
 }
@@ -295,7 +306,7 @@ extern "C" {
 void menuTitleHook(void *p0, void *p1) {
     s16 temp_r0;
 
-    temp_r0 = M2C_FIELD(p1, s16 *, 6);
+    temp_r0 = M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x6, id);
     if (temp_r0 < 0x42) {
         if (temp_r0 < 0x40) {
             if (temp_r0 < 0x3D) {
@@ -313,12 +324,12 @@ block_5:
 
 extern "C++" {
 static void _cursorSpriteOnOff(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
-    s16 cursor = M2C_FIELD(win, s16 *, 0x9E);
+    s16 cursor = M2C_NAMED(((WinWorkLayout*)(win)), s16 *, 0x9E, cursor);
     s32 ids[5] = { 0x3D, 0x3E, 0x3F, 0x42, 0x43 };
     s32 i;
 
     for (i = 0; i < 5; i++) {
-        if (M2C_FIELD(sprite, s16 *, 6) == ids[i]) {
+        if (M2C_NAMED(((SpriteWorkLayout*)(sprite)), s16 *, 0x6, id) == ids[i]) {
             break;
         }
     }
@@ -413,7 +424,7 @@ void menuTitle() {
                 _menuTitleStatus = 0x29;
             }
             break;
-        case 0x29:
+        case 0x29: {
             s32 sel = _selectMenu();
             if (sel < 0 || sel == 4) {
                 menuTitleCloseSelectAnime();
@@ -421,6 +432,7 @@ void menuTitle() {
                 _menuTitleAutoDemoCount = 0.0f;
             }
             break;
+        }
         case 0x3E8:
             var_r31 = 0;
             break;
@@ -568,7 +580,7 @@ void menuTitleOpenSelectAnime() {
 }
 
 extern "C++" {
-static void _menuTitleSetSE(unsigned long p0) {
+static void _menuTitleSetSE(u32 p0) {
     GSsndPlay(p0, 0, 0U);
 }
 }
@@ -699,7 +711,7 @@ void menuTitleSetStartStatus(u32 value) {
     _menuTitleStartStatus = value;
 }
 extern "C++" {
-static void _menuTitleClose2(long p0, unsigned long p1) {
+static void _menuTitleClose2(s32 p0, u32 p1) {
     if (menuIsCheck(p0) == 1) {
         menuCloseCustom(p0, (s32) p1, 1);
     }

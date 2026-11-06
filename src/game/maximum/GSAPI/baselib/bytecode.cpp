@@ -1,3 +1,5 @@
+#include <dolphin/types.h>
+#include <game/gcptr.h>
 
 
 
@@ -19,7 +21,11 @@ double exp(double);
 double fmod(double, double);
 double pow(double, double);
 double atan2(double, double);
-extern unsigned long __float_nan[];
+#ifdef __cplusplus
+extern "C" u32 __float_nan[];
+#else
+extern u32 __float_nan[];
+#endif
 
 static inline int byteCodeFPClassify(f32 x)
 {
@@ -141,7 +147,7 @@ float HSD_ByteCodeEval(u8* bytecode, const f32* args, s32 nb_args)
             }
             case 3:
                 HSD_ASSERT(307, stack);
-                if ((int) stack->data != 0) {
+                if ((GCsint) stack->data != 0) {
                     bytecode += operand;
                 }
                 stack = HSD_SListRemove(stack);
@@ -288,7 +294,7 @@ float HSD_ByteCodeEval(u8* bytecode, const f32* args, s32 nb_args)
             break;
         case 0x31:
             HSD_ASSERT(480, stack);
-            stack->data = (void*) !(s32) stack->data;
+            stack->data = (void*) !(GCsptr) stack->data;
             break;
         case 0x17:
             HSD_ASSERT(501, stack);

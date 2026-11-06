@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct JoutaiData {
     u8 statusKind;
@@ -39,7 +40,7 @@ u8 joutaiDataBiosGetKaisuuDataId(u16 id) {
     return data->kaisuuDataId;
 }
 
-u8 joutaiDataBiosGetMaxCount(u16 id) {
+PCRET(u8) joutaiDataBiosGetMaxCount(u16 id) {
     JoutaiData* data = joutaiDataBiosGetDataPtr(id);
     if (data == NULL) {
         return 0;
@@ -134,7 +135,7 @@ u32 joutaiBiosGetBuff(Joutai* joutai) {
     return joutai->buff;
 }
 
-u8 joutaiBiosGetCount(Joutai* joutai) {
+PCRET(u8) joutaiBiosGetCount(Joutai* joutai) {
     if (joutai == NULL) {
         return 0;
     }

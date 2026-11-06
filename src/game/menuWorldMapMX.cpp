@@ -1,26 +1,59 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/worldMapData.h>
 #pragma peephole off
 
 struct GSvec { f32 x, y, z; };
+#ifdef __MWERKS__
 struct GSgfxLayerID { u8 a, b; s16 c; };
+#define LAYER_ID(a, b, c) {a, b, c}
+#else
+enum GSgfxLayerID {};
+#define LAYER_ID(a, b, c) (GSgfxLayerID)(((a) << 24) | ((b) << 16) | (u16)(c))
+#endif
 struct _GSparticleGen;
 struct tagWINDOW_WORK {
     u8 pad0;
     s8 state;
-    u8 pad2[0x1C - 2];
+    u8 pad2[0xA];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
-    u8 pad20[0x9E - 0x20];
+    u8 pad20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x16];
     s16 cursor;
 };
 struct tagSPRITE_WORK {
-    u8 pad0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 pad8[0x64 - 8];
+    u8 pad8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x14];
     u8 r, g, b, a;
 };
 enum GSattachMode { Attach0 };
 
-class Hero {
+struct Hero {
 public:
     u8 getFollowerID();
     u8 getHeroStyle() const;
@@ -33,12 +66,24 @@ public:
     void releaseOffscreenData();
     void initializeOffscreenData();
     void renderOffscreenData(f32);
+#ifdef __MWERKS__
     void SetModel(u32, u32, bool);
+#else
+    void* SetModel(u32 groupID, u32 modelID, bool attachLights);
+#endif
     void SetMotion(u32, s16, f32, bool);
     f32 GetAnimeFrameCount(u32, u32);
     f32 GetAnimeFrame(u32);
+#ifdef __MWERKS__
     void ModelAttach(u32, u32, s32, GSattachMode);
+#else
+    bool ModelAttach(u32 a, u32 b, s32 part, GSattachMode mode);
+#endif
+#ifdef __MWERKS__
     void ModelDetach(u32);
+#else
+    bool ModelDetach(u32 id);
+#endif
     _GSparticleGen* SetModelPartPaticle(u32, u32, s32, GSattachMode, bool, bool, bool);
     void DetachModelPartPaticle(_GSparticleGen*, bool);
     bool CheckMotion(u32);
@@ -47,7 +92,11 @@ public:
     void Visibility(u32, bool);
     void* GetModelPtr(u32);
     void UnloadModel(u32, u32);
+#ifdef __MWERKS__
     void SetLayerID(u32, s32, GSgfxLayerID*);
+#else
+    void SetLayerID(u32 id, s32 count, GSgfxLayerID* layers);
+#endif
     void* mOffscreenData;
 };
 
@@ -72,26 +121,6 @@ public:
     u8 width, blend, normalize, method, samples;
 };
 
-struct WorldMapData {
-    s16 camera;
-    u16 npc;
-    u32 flag;
-    u32 selectIndex;
-    u32 model;
-    u32 snap;
-    u32 motion;
-    u32 pad18;
-    u32 floorID;
-    u32 msgID;
-};
-struct WorldMapMsgData {
-    s32 etc;
-    s32 msg[18];
-};
-struct WorldMapCameraData {
-    GSvec pos;
-    f32 a, b, c, fov;
-};
 struct FlagEtc {
     u8 type, unk1;
     u16 floor, pokedoru;
@@ -198,13 +227,13 @@ void* memset(void*, int, u32);
 void* memcpy(void*, const void*, u32);
 u16 HSD_Rand(void);
 void soundStopEnv(s32);
-s32 GScameraGetActiveCamera(void);
+void* GScameraGetActiveCamera(void);
 s32 menuOpenCustom(s32, ...);
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 s32 windowGetActiveID(void);
 void GSfloorPop(void);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 u8 menuScriptGetOpenWorldMapFlag(void);
 void menuScriptSetOpenWorldMapFlag(s32);
 u16 menuScriptOpenWorldMapGetMapNumber(void);
@@ -231,7 +260,7 @@ s32 floorGetPrevFloorID(void);
 void GSsndPlayNow(s32);
 void GSsndStopNow(s32);
 void GSgfxVideoSetLockFrameRate(s32);
-void* GSgfxLayerFindByID(s32);
+void* GSgfxLayerFindByID(GCsptr);
 bool GScameraIsAnimating(s32);
 f32 GScameraGetAnimFrame(s32);
 void GSmodelSetRenderCamera(void*, s32);
@@ -251,11 +280,11 @@ void GScameraSetAnimType(void*, s32);
 void GScameraSetAnimRate(void*, f32);
 void GScameraSetAnimFrame(void*, f32);
 void GScameraStartAnimation(void*);
-void GScameraGetPerspective(s32, f32*, f32*, f32*, f32*);
-void GScameraSetPerspective(s32, f32, f32, f32, f32);
-void GScameraLookAt(s32, void*, void*);
-void* GScameraGetMatrixPtr(void);
-void* GScameraGetProjMatrixPtr(s32);
+void GScameraGetPerspective(void*, f32*, f32*, f32*, f32*);
+void GScameraSetPerspective(void*, f32, f32, f32, f32);
+void GScameraLookAt(void*, void*, void*);
+void* GScameraGetMatrixPtr(void* camera);
+void* GScameraGetProjMatrixPtr(void*);
 void cameraSetType(s32);
 void cameraUpdate(void);
 void cameraSetPosition(void*);
@@ -274,7 +303,7 @@ double sin(double);
 double tan(double);
 void* savedataGetStatus(s32, s32);
 u32 charNameBiosGetNameID(u16);
-void GSmsgPrint2(s32, s16, s32, u32, u32);
+void GSmsgPrint2(s32, PCARG(s16, s32), s32, u32, u32);
 void winSpriteSetDisp(tagSPRITE_WORK*, bool);
 void windowDrawSprite(s32, s32, s32, u16, s32, s32);
 void* windowGetKeyInfo(void);
@@ -649,7 +678,7 @@ void WorldMap::SetSnap(s32 now, tagWINDOW_WORK* window, tagSPRITE_WORK*) {
 u32 WorldMap::GetModelID(s32 i) { return SearchData(i)->model; }
 
 void WorldMap::InitCursor(s32 sel, s16 anim) {
-    GSgfxLayerID id = {0, 0, 2};
+    GSgfxLayerID id = LAYER_ID(0, 0, 2);
     time = 0.0f;
     bob = 0.0f;
     cursorModel = 0x18531013;
@@ -685,7 +714,7 @@ void WorldMap::SetCursorPosition(s32 sel, bool snap) {
 }
 
 void WorldMap::InitModel(s32 sel) {
-    GSgfxLayerID id = {0, 0, 2};
+    GSgfxLayerID id = LAYER_ID(0, 0, 2);
     void* model = GSresGetResourceAllGroup(0x18531000);
     void* ptr;
     s32 i;
@@ -844,7 +873,7 @@ void WorldMap::SelectIcon(s32 sel) {
 }
 
 void WorldMap::SetCamera() {
-    s32 camera;
+    void* camera;
     GSvec rot;
     GSvec off;
     GSvec eye;
@@ -855,8 +884,8 @@ void WorldMap::SetCamera() {
     rot.z = 0.0f;
     timeGetLastFrameSec();
     WorldMapCamWork* w = &cam->now;
-    camera = (s32)GSresGetResource(0, 0);
-    GScameraGetMatrixPtr();
+    camera = GSresGetResource(0, 0);
+    GScameraGetMatrixPtr(camera);
     GScameraGetPerspective(camera, &p8, &p14, &p10, &pC);
     GScameraSetPerspective(camera, w->fov, p14, p10, pC);
     f32 a = w->a;
@@ -881,9 +910,9 @@ void WorldMap::Init() {
     s16 j;
     s16 i;
     soundStopEnv(1000);
-    st = (WorldMapState*)GSmemAlloc(0x94);
-    memset(st, 0, 0x94);
-    st->camera = GScameraGetActiveCamera();
+    st = (WorldMapState*)GSmemAlloc(sizeof(WorldMapState));
+    memset(st, 0, sizeof(*st));
+    st->camera = GC_ADDR32(GScameraGetActiveCamera());
     s32 n = *worldmapXD_data_number;
     icons = new WorldMapIconWork[n];
     cam = new WorldMapCamera;
@@ -948,8 +977,8 @@ void WorldMap::InitCamera(s32 sel) {
     SetCamera();
     cameraUpdate();
     f32 saved = fov;
-    s32 camera = (s32)GSresGetResource(0, 0);
-    GScameraGetMatrixPtr();
+    void* camera = GSresGetResource(0, 0);
+    GScameraGetMatrixPtr(camera);
     GScameraGetPerspective(camera, &fov, &p1, &p2, &p3);
     GScameraSetPerspective(camera, saved, p1, p2, p3);
     InitModel2D(fov);
@@ -975,6 +1004,14 @@ void WorldMap::InitModel2D(f32 fov) {
     s32 i;
     for (i = 0; i < GetDataNum(); i++) {
     }
+}
+
+static s8 _unusedGetPadIndex(f32 ang) {
+    return (s8)(ang / 0.3926991f);
+}
+
+static s8 _unusedGetPadIndex2(f32 ang, f32 tol) {
+    return (s8)((ang + tol) * 1.2732395f);
 }
 
 s8 WorldMap::GetPadIndex3(f32 ang, s32 k, f32 tol) {
@@ -1009,11 +1046,11 @@ void WorldMap::CalcModel2D(f32 fov, bool init) {
     f32 dist;
     f32 k;
     s32 b;
-    view = GScameraGetMatrixPtr();
+    view = GScameraGetMatrixPtr(camera);
     s32 i;
     Mtx34 proj;
     {
-        f32* src = (f32*)GScameraGetProjMatrixPtr((s32)camera);
+        f32* src = (f32*)GScameraGetProjMatrixPtr(camera);
         proj.m[0] = src[0]; proj.m[1] = src[1]; proj.m[2] = src[2]; proj.m[3] = src[3];
         proj.m[4] = src[4]; proj.m[5] = src[5]; proj.m[6] = src[6]; proj.m[7] = src[7];
         proj.m[8] = src[8]; proj.m[9] = src[9]; proj.m[10] = src[10]; proj.m[11] = src[11];
@@ -1231,7 +1268,7 @@ void WorldMap::setNullModel() {
     st->nullRes = res;
     st->nullModel = model;
     SetModel(group, res, false);
-    GSgfxLayerID id = {0, 0, 0};
+    GSgfxLayerID id = LAYER_ID(0, 0, 0);
     SetLayerID(st->nullModel, 1, &id);
     GSmodelSetBoundCheck(GSresGetResourceAllGroup(st->nullModel), false);
 }
@@ -1301,7 +1338,7 @@ u32 WorldMap::readScooter() {
     if (st->nullModel != 0 && st->scooterModel != 0) {
         ModelAttach(st->scooterModel, st->nullModel, st->anime->bone, (GSattachMode)7);
     }
-    GSgfxLayerID id = {0, 0, 0};
+    GSgfxLayerID id = LAYER_ID(0, 0, 0);
     SetLayerID(st->scooterModel, 1, &id);
     if (st->scooterType >= 4) {
         st->partRes[0] = 0x213E1400;
@@ -1380,7 +1417,7 @@ void WorldMap::moveDemo(s32 from, s32 to) {
     GSmodelSetShadowSurface(shadowModel, 1, &surfaces);
     SetMotion(st->nullModel, 0, 0.0f, _AnimeLoop);
     f32 total = GetAnimeFrameCount(st->nullModel, 0);
-    st->moveCamera = (s32)_cameraPlayAnime(st->anime->camera, 0, _AnimeLoop);
+    st->moveCamera = (GCsptr)_cameraPlayAnime(st->anime->camera, 0, _AnimeLoop);
     if (st->scooterType >= 4) {
         GSsndPlayNow(0x5DC);
     } else {

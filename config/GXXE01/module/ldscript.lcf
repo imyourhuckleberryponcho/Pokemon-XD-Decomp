@@ -23,6 +23,10 @@ FORCEACTIVE
 {
     $FORCEACTIVE
     // Referenced only from REL modules (not split yet), so keep them in main.dol.
+    menuColosseumBattleExit
+    menuColosseumBattleMain
+    menuColosseumBattleInit
+    toolBattleTempSaveData
     menuWorldMapMoveDemoExit
     menuWorldMapMoveDemoMain
     menuWorldMapMoveDemoInit

@@ -1,6 +1,9 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/worldMapData.h>
 #include <dolphin/gx/GXVert.h>
 #include <game/shared/menu_work.h>
 
@@ -27,18 +30,16 @@ struct MenuSpriteVal2 {
     s32 res;
 };
 
-struct WorldMapFlagData {
-    u8 pad0[4];
-    u32 flag;
-    u8 pad8[0x1c];
-};
-
 #define U8_AT(o) (*(u8*)((u8*)this + (o)))
 #define U32_AT(o) (*(u32*)((u8*)this + (o)))
 #define U8_AT_L(l, o) (*(u8*)((u8*)(l) + (o)))
 #define U32_AT_L(l, o) (*(u32*)((u8*)(l) + (o)))
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void cunitChannelGen(u8 chan, GSgfxCunitAlpha alpha, GSgfxCunitSrc src0, GSgfxCunitSrc src1, u32 lights,
                          GSgfxLight** light, GSgfxLightType lightType, GSgfxDiffuseFunc diffuse);
@@ -49,40 +50,19 @@ public:
 
     inline void mark(u32 sum, u32 off, u32 bit)
     {
+#ifdef __MWERKS__
         U32_AT(off) |= bit;
         U32_AT(0x16a8) |= sum;
         U32_AT(off + 0xb8) |= bit;
         U32_AT(0x1760) |= sum;
+#else
+        GSL_IN(this, u32, dirty[0], 0x16a8, off) |= bit;
+        dirty[0].groups |= sum;
+        GSL_IN(this, u32, dirty[1], 0x1760, off + 0xb8) |= bit;
+        dirty[1].groups |= sum;
+#endif
     }
 
-    u8 pad0[0xdb8];
-    u8 padDb8;
-    u8 pad1[0x1644 - 0xdb9];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 pad_1654[2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad_1659[3];
-    u8 zEnable;
-    u8 pad_165d[3];
-    s32 zFunc;
-    u8 pad_1664[0x16a8 - 0x1664];
-    u32 dirty16a8;
-    u8 pad_16ac[0x173c - 0x16ac];
-    u32 dirty173c;
-    GStexture* tex1740;
-    u8 pad_1744[0x17f4 - 0x1744];
-    u32 dirty17f4;
-    GStexture* tex17f8;
-    u8 pad_17fc[0x1818 - 0x17fc];
-    BlendState blendTable[2];
-    BlendState* curBlend;
-    s32 curBlendIdx;
-    u32 primType;
 };
 
 extern "C" {
@@ -90,7 +70,7 @@ double sin(double);
 double cos(double);
 f32 timeGetLastFrameSec(void);
 s32 winSpriteGetLayerID(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 void* menuSpriteBiosGetPtr(u32 id);
 MenuSpriteVal2* menuSpriteBiosGetValPtr(void* sprite);
 void* menuItemBiosGetPtr(s32 menuID, s32 index);
@@ -105,7 +85,7 @@ u32 GSmsgGetRect(s32 msg);
 void GSmsgPrintRect(s32, s32, s32, s32, s32, u32, u32);
 u16 esabaGetPokemonID(s32 index);
 s32 esabaGetEsaNum(s32 index);
-s32 esabaGetDigestRate(void);
+s32 esabaGetDigestRate(PCARG(u16, u32) place);
 u32 GSflagGet(u32 id);
 s32 menuOpen(s32 menuID, s32);
 void menuClose(s32 menuID);
@@ -115,7 +95,7 @@ struct SearcherKeyInfo {
     u16 buttons;
 };
 SearcherKeyInfo* windowGetKeyInfo(void);
-extern WorldMapFlagData* worldmapXD_data;
+extern WorldMapData* worldmapXD_data;
 extern u32* esabadata_number;
 }
 
@@ -242,7 +222,7 @@ static void _esaPrintMsg(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 msg)
 
 static void _updateTimer(u16 id)
 {
-    f32 rate = (f32)esabaGetDigestRate();
+    f32 rate = (f32)esabaGetDigestRate(id);
     f32 dt = _gettLastTime();
     f32 two = 2.0f * dt;
     _esaTimer[id] += 3.1415927f * two / (rate / 100.0f);
@@ -307,26 +287,27 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
     tc[3][1] = v1;
     tc[2][1] = v1;
 
-    layer->colorUpdate = 1;
-    layer->alphaUpdate = 0;
-    layer->zUpdate = 0;
+    (*(u8*)&layer->hw.colorUpdate) = 1;
+    (*(u8*)&layer->hw.alphaUpdate) = 0;
+    (*(u8*)&layer->hw.zUpdate) = 0;
     layer->mark(0x40, 0x170c, 4);
-    layer->zEnable = 0;
-    layer->zFunc = 7;
+    (*(u8*)&layer->hw.zEnable) = 0;
+    (*(s32*)&layer->hw.zFunc) = 7;
     layer->mark(0x40, 0x170c, 8);
-    if (layer->curBlendIdx != 1) {
-        layer->curBlendIdx = 1;
-        layer->curBlend = &layer->blendTable[layer->curBlendIdx];
+    if ((*(s32*)&layer->curPass) != 1) {
+        (*(s32*)&layer->curPass) = 1;
+        layer->curFifo = &layer->passes[layer->curPass];
     }
-    layer->blendOp = 1;
-    layer->blendSrc = 4;
-    layer->blendDst = 5;
-    layer->blendLogic = 5;
+    (*(s32*)&layer->hw.blend[0]) = 1;
+    (*(s32*)&layer->hw.blend[1]) = 4;
+    (*(s32*)&layer->hw.blend[2]) = 5;
+    (*(s32*)&layer->hw.blend[3]) = 5;
     layer->mark(0x40, 0x170c, 1);
+#ifdef __MWERKS__
     U8_AT_L(layer, 0xc70) = 1;
     layer->mark(1, 0x16ac, 1);
     layer->tgenFunc(0, (GSgfxTgenFunc)1, (GSgfxTgenSrc)4, 0, false, 0);
-    layer->padDb8 = 1;
+    (*(u8*)&layer->hw.nChans) = 1;
     layer->mark(4, 0x16bc, 1);
     layer->cunitChannelGen(0, (GSgfxCunitAlpha)2, (GSgfxCunitSrc)1, (GSgfxCunitSrc)1, 0, 0, (GSgfxLightType)2,
                            (GSgfxDiffuseFunc)0);
@@ -357,16 +338,52 @@ static void _animCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u16 id)
     U32_AT_L(layer, 0x1074) = 5;
     U32_AT_L(layer, 0x1078) = 4;
     U32_AT_L(layer, 0x107c) = 7;
+#else
+    (*(u8*)&layer->hw.nTexGens) = 1;
+    layer->mark(1, 0x16ac, 1);
+    layer->tgenFunc(0, (GSgfxTgenFunc)1, (GSgfxTgenSrc)4, 0, false, 0);
+    (*(u8*)&layer->hw.nChans) = 1;
+    layer->mark(4, 0x16bc, 1);
+    layer->cunitChannelGen(0, (GSgfxCunitAlpha)2, (GSgfxCunitSrc)1, (GSgfxCunitSrc)1, 0, 0, (GSgfxLightType)2,
+                           (GSgfxDiffuseFunc)0);
+    (*(u8*)&layer->hw.nTevStages) = 1;
+    layer->mark(8, 0x16cc, 1);
+    (*(u32*)&layer->hw.tevOrder[0][0]) = 0;
+    (*(u32*)&layer->hw.tevOrder[0][1]) = 0;
+    (*(u32*)&layer->hw.tevOrder[0][2]) = 4;
+    layer->mark(8, 0x16d0, 1);
+    (*(u32*)&layer->hw.colorOp[0].op) = 0;
+    (*(u32*)&layer->hw.colorOp[0].bias) = 0;
+    (*(u32*)&layer->hw.colorOp[0].scale) = 0;
+    (*(u8*)&layer->hw.colorOp[0].clamp) = 1;
+    (*(u32*)&layer->hw.colorOp[0].reg) = 0;
+    layer->mark(8, 0x16dc, 1);
+    (*(u32*)&layer->hw.colorIn[0][0]) = 0xF;
+    (*(u32*)&layer->hw.colorIn[0][1]) = 0xF;
+    (*(u32*)&layer->hw.colorIn[0][2]) = 0xF;
+    (*(u32*)&layer->hw.colorIn[0][3]) = 8;
+    layer->mark(8, 0x16d4, 1);
+    (*(u32*)&layer->hw.alphaOp[0].op) = 0;
+    (*(u32*)&layer->hw.alphaOp[0].bias) = 0;
+    (*(u32*)&layer->hw.alphaOp[0].scale) = 0;
+    (*(u8*)&layer->hw.alphaOp[0].clamp) = 1;
+    (*(u32*)&layer->hw.alphaOp[0].reg) = 0;
+    layer->mark(8, 0x16e0, 1);
+    (*(u32*)&layer->hw.alphaIn[0][0]) = 7;
+    (*(u32*)&layer->hw.alphaIn[0][1]) = 5;
+    (*(u32*)&layer->hw.alphaIn[0][2]) = 4;
+    (*(u32*)&layer->hw.alphaIn[0][3]) = 7;
+#endif
     layer->mark(8, 0x16d8, 1);
-    layer->primType = 0x80;
+    (*(u32*)&layer->unk1998) = 0x80;
     vf = GSgfxVFGetPredef(7);
-    layer->primType = 0xa0;
+    (*(u32*)&layer->unk1998) = 0xa0;
     layer->setRenderStateAndSelect(vf);
-    if (layer->tex1740 != (GStexture*)tex || layer->tex17f8 != (GStexture*)tex || ((u8*)tex)[7] != 0) {
-        layer->tex1740 = (GStexture*)tex;
-        layer->dirty173c |= 1;
-        layer->tex17f8 = (GStexture*)tex;
-        layer->dirty17f4 |= 1;
+    if ((*(GStexture**)&layer->dirty[0].tex[0]) != (GStexture*)tex || (*(GStexture**)&layer->dirty[1].tex[0]) != (GStexture*)tex || ((u8*)tex)[7] != 0) {
+        (*(GStexture**)&layer->dirty[0].tex[0]) = (GStexture*)tex;
+        (*(u32*)&layer->dirty[0].texMask) |= 1;
+        (*(GStexture**)&layer->dirty[1].tex[0]) = (GStexture*)tex;
+        (*(u32*)&layer->dirty[1].texMask) |= 1;
     }
     layer->beginSurface(4);
     for (s32 i = 0; i < 4; i++) {

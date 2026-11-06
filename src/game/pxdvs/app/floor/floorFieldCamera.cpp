@@ -1,4 +1,6 @@
+#include <game/declspec.h>
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -20,11 +22,11 @@ enum FloorStateMode { FSM_0, FSM_1, FSM_2, FSM_3 };
 enum FloorEnterMode { FEM_0, FEM_1, FEM_2 };
 
 struct FloorModuleInterface {
-    u8 unk0[4];
+    void* unk0;
     void (*enterFloor)(unsigned int, FloorEnterMode);
-    u8 unk8[8];
+    void* unk8[2];
     void (*exitFloor)(unsigned int, FloorEnterMode);
-    u8 unk14[4];
+    void* unk14;
     const char* (*getModuleName)();
     void (*makeStateData)(FloorStateMode, void*, u32);
     void (*restoreStateData)(FloorStateMode, void*, u32);
@@ -35,22 +37,22 @@ struct FloorModuleInterface {
 struct FieldCamera {
     u8 kind;
     u8 pad1[3];
-    f32 posX;
-    f32 posY;
-    f32 posZ;
-    f32 distance;
-    f32 height;
-    f32 rotY;
-    f32 radius;
-    f32 ratio;
-    f32 angle;
-    f32 powValue;
-    f32 blendTime;
-    f32 fov;
+    gc_bef32 posX;
+    gc_bef32 posY;
+    gc_bef32 posZ;
+    gc_bef32 distance;
+    gc_bef32 height;
+    gc_bef32 rotY;
+    gc_bef32 radius;
+    gc_bef32 ratio;
+    gc_bef32 angle;
+    gc_bef32 powValue;
+    gc_bef32 blendTime;
+    gc_bef32 fov;
 };
 struct FieldCameraHeader {
-    u32* count;
-    FieldCamera* list;
+    gc_ptr32(gc_be32) count;
+    gc_ptr32(FieldCamera) list;
 };
 
 class GSBinWriteStream {
@@ -90,11 +92,14 @@ public:
 };
 
 namespace std {
-__declspec(weak) float pow(float, float);
-__declspec(weak) float powf(float, float);
-__declspec(weak) float cosf(float);
-__declspec(weak) float atan2f(float, float);
-__declspec(weak) float sinf(float);
+DECL_WEAK float pow(float, float);
+DECL_WEAK float powf(float, float);
+DECL_WEAK float cosf(float);
+DECL_WEAK float atan2f(float, float);
+DECL_WEAK float sinf(float);
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float);
 }
 #pragma dont_inline reset
@@ -104,7 +109,7 @@ int __fpclassifyf(float);
 extern float __float_nan[];
 void FloorModuleInterface_clear(FloorModuleInterface*);
 s32 floorRegisterModule(s32, s32, FloorModuleInterface*);
-void* floorDataBiosGetPtr();
+void* floorDataBiosGetPtr(u32 key);
 void* floorDataBiosGetCurrentPtr();
 FieldCameraHeader* floorDataBiosGetFieldCameraListPtr(void*);
 double pow(double, double);
@@ -114,7 +119,11 @@ double atan2(double, double);
 double __frsqrte(double);
 void GSlogWrite(const char*, ...);
 void GSmemFree(void*);
+#ifdef __MWERKS__
 void __dl__FPv(void*);
+#else
+#define __dl__FPv(p) (operator delete(p))
+#endif
 void* GSresGetResource(u32, u32);
 void GSmodelGetPosition(void*, GSvec*);
 void GSvecSet(GSvec*, f32, f32, f32);
@@ -213,8 +222,8 @@ static void _fieldCameraExitFloor(unsigned int, FloorEnterMode mode) {
     }
 }
 
-static void _fieldCameraEnterFloor(unsigned int, FloorEnterMode mode) {
-    GSfloor_dd_* floor = (GSfloor_dd_*)floorDataBiosGetPtr();
+static void _fieldCameraEnterFloor(unsigned int floorID, FloorEnterMode mode) {
+    GSfloor_dd_* floor = (GSfloor_dd_*)floorDataBiosGetPtr(floorID);
     if (floor == 0 || (mode != FEM_0 && mode != FEM_1)) {
         return;
     }
@@ -769,11 +778,11 @@ inline GSBinWriteStream::GSBinWriteStream(void* data, u32 length) {
 
 #pragma dont_inline on
 namespace std {
-__declspec(weak) float pow(float x, float y) { return powf(x, y); }
-__declspec(weak) float powf(float x, float y) { return (float)::pow((double)x, (double)y); }
-__declspec(weak) float cosf(float x) { return (float)::cos((double)x); }
-__declspec(weak) float atan2f(float y, float x) { return (float)::atan2((double)y, (double)x); }
-__declspec(weak) float sinf(float x) { return (float)::sin((double)x); }
+DECL_WEAK float pow(float x, float y) { return powf(x, y); }
+DECL_WEAK float powf(float x, float y) { return (float)::pow((double)x, (double)y); }
+DECL_WEAK float cosf(float x) { return (float)::cos((double)x); }
+DECL_WEAK float atan2f(float y, float x) { return (float)::atan2((double)y, (double)x); }
+DECL_WEAK float sinf(float x) { return (float)::sin((double)x); }
 }
 #pragma dont_inline reset
 
@@ -804,6 +813,9 @@ inline void GSmtxMakeYRotation(GSmtx* m, f32 angle) { PSMTXRotRad(m, 'Y', angle)
 }
 
 namespace std {
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);

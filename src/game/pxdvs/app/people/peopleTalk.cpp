@@ -1,6 +1,10 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #pragma pool_strings off
 extern "C" double __fabs(double x);
+#ifndef __MWERKS__
+static
+#endif
 inline double fabs(double x) { return __fabs(x); }
 
 struct GSvec {
@@ -9,7 +13,9 @@ struct GSvec {
 
 struct PeopleWork {
     u8 active;
-    u8 pad1[0xC];
+    u8 pad1[0x7];
+    void* model;
+    u8 padC[0x1];
     u8 flagD;
     u8 pad2[6];
     u32 group;
@@ -17,7 +23,9 @@ struct PeopleWork {
     u32 modelResID;
     u8 pad3[0x20];
     f32 angleY;
-    u8 pad4[0x5C];
+    u8 pad4[0x34];
+    void* points;
+    u8 pad7C[0x24];
     u8 rotating;
     u8 neckHold;
     u8 padA2[2];
@@ -61,7 +69,7 @@ u8 peopleCheckNeckRotate(s32 group, s32 id, u8 flag);
 void fn_8029CD20(s32 group, s32 id, s32 a, s32 b, f32 speed);
 void peopleSpeakStart(s32 group, s32 id);
 f32 peopleVecCalcRotY(GSvec* a, GSvec* b, f32 base);
-u8 peopleInsideCheck(GSvec* a, GSvec* b, GSvec* c);
+u8 peopleInsideCheck(GSvec* a, GSvec* b, GSvec* c, f32 margin);
 f32 PSVECDistance(const GSvec* a, const GSvec* b);
 f32 peopleInfoBiosGetColBallSize(PeopleInfo* info);
 PeopleInfo* peopleInfoBiosGetPtr(u32 modelResID);
@@ -72,7 +80,7 @@ GSvec* peopleBiosGetPosPtr(PeopleWork* work);
 void peopleBiosGetRot(PeopleWork* work, GSvec* out);
 bool peopleBiosCheckFlag(PeopleWork* work, u32 flags);
 void* floorDataBiosGetCurrentPtr();
-u32 floorDataBiosGetFloorKind();
+u8 floorDataBiosGetFloorKind(void* floor);
 void* floorCharacterBiosFindByResID(u32 group, u32 id);
 u32 floorCharacterBiosGetNameID(void* ch);
 u8 floorCharacterBiosGetTalkStartType(void* ch);
@@ -85,7 +93,7 @@ void GSflagOn(u32 id);
 bool GSflagTest(u32 id);
 void GSthreadSwitch();
 f32 timeGetLastFrameSec();
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 void winMsgClose(bool flag);
 s32 winMsgCheckField();
 s32 winMsgOpenFieldWithSE(s32 msg, bool a, bool b, u8 se);
@@ -123,8 +131,7 @@ void peopleTalkEnterFloor() {
 }
 
 void peopleTalkMessageDaemon() {
-    floorDataBiosGetCurrentPtr();
-    if ((u8)floorDataBiosGetFloorKind() == 1 && _talkWindowCloseDelay > 0.0f) {
+    if (floorDataBiosGetFloorKind(floorDataBiosGetCurrentPtr()) == 1 && _talkWindowCloseDelay > 0.0f) {
         _talkWindowCloseDelay -= timeGetLastFrameSec();
     }
 }
@@ -364,8 +371,7 @@ PeopleWork* peopleTalkCheck(u32 group, u32 id, f32 unused, f32 range) {
             if (GScolsys2HitCollision(&hero, &target, myRadius, 0)) continue;
         }
         if (member) {
-            peopleInfoBiosGetColBallSize(info);
-            if (peopleInsideCheck(&hero, &target, &heroMember)) continue;
+            if (peopleInsideCheck(&hero, &target, &heroMember, peopleInfoBiosGetColBallSize(info))) continue;
         }
         f32 area = dist * dist * (f32)fabs(ang) / 2.0f;
         GSlogWritef("talk ->  people(%d,%d)  len =%.2f  ang =%.2f  area =%.2f\n", other->group, other->id, dist, ang, area);

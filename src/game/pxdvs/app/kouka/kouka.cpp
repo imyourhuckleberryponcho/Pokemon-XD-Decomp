@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 extern "C" {
 u8 koukaDataBiosGetStatusKind(u32 id);
@@ -8,9 +10,9 @@ u8 koukaDataBiosGetVar(u32 id);
 u16 koukaDataBiosGetLink(u32 id);
 u16 koukaLinkDataBiosGetKouka(u32 id, u32 index);
 s32 statusGetStatus(u8 statusKind, void* fightPokemon, u16, u16, u16);
-s32 statusSetStatus(u8 statusKind, void* fightPokemon, u16, u16, void* target, s32 value);
-u32 fightFloorGetStatus(s32, s32, s32, s32);
-void* fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void* target, u16 id);
+s32 statusSetStatus(u8 statusKind, void* fightPokemon, u16, u16, PCARG(void*, u32) target, s32 value);
+StatusU32 fightFloorGetStatus(s32, s32, s32, s32);
+PCARG(void*, u32) fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void* target, u16 id);
 }
 
 static inline s16 koukaGetBaseValue(u32 id) {

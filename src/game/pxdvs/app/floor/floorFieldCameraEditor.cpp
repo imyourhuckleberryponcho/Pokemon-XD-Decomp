@@ -1,4 +1,7 @@
+#include <game/declspec.h>
+#include <game/pxdvs/app/floor/floorData.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #pragma peephole off
 
 struct GSvec {
@@ -7,10 +10,6 @@ struct GSvec {
     void clear();
 };
 struct GSfloor_dd_;
-struct FloorData {
-    u8 unk0[0x14];
-    u32 unk14;
-};
 enum GSgfxPrimType {};
 enum GSgfxBlendType {};
 enum GSgfxBlendFactor {};
@@ -33,18 +32,26 @@ struct GSgfxBlendSet {
 };
 
 #define GFX_DIRTY(word, bits, group)  \
-    dirty[0].words[word] |= (bits);   \
+    (&dirty[0].geom)[word] |= (bits);   \
     dirty[0].groups |= (group);       \
-    dirty[1].words[word] |= (bits);   \
+    (&dirty[1].geom)[word] |= (bits);   \
     dirty[1].groups |= (group);
 
 extern "C" {
+#ifdef __MWERKS__
 #define GX_WGPIPE (*(volatile union { u8 u8; s16 s16; f32 f32; }*)0xCC008000)
+#else
+#define GX_WGPIPE GXWGFifo
+#endif
 static void GXParam1u8(u8 v);
 static void GXParam1f32(f32 v);
 }
 
-class GSgfxLayer {
+enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
+enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void beginSurface(u16 n);
     void endSurface();
@@ -60,38 +67,11 @@ public:
     void zCompare(bool enable, GSgfxZCmpFunc func);
     void pixelMode(bool cu, bool au, bool di);
 
-    u8 unk0[0xD8C];
-    u32 cullType;
-    u8 unkD90[0x8B4];
-    u32 blendType;
-    u32 blendSrc;
-    u32 blendDst;
-    u32 blendLogicOp;
-    u8 unk1654[0x2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 dither;
-    u8 unk1659[0x3];
-    u8 zEnable;
-    u8 unk165D[0x3];
-    u32 zFunc;
-    u32 alphaComp0;
-    u32 alphaOp;
-    u32 alphaComp1;
-    u8 alphaRef0;
-    u8 alphaRef1;
-    u8 alphaCompareOff;
-    u8 unk1673[0x35];
-    GSgfxDirty dirty[2];
-    GSgfxBlendSet blendSets[2];
-    GSgfxBlendSet* blendSet;
-    s32 renderPass;
-    GSgfxPrimType primType;
 };
 
 namespace std {
-__declspec(weak) float cosf(float);
-__declspec(weak) float sinf(float);
+DECL_WEAK float cosf(float);
+DECL_WEAK float sinf(float);
 }
 
 struct FieldCameraState {
@@ -115,7 +95,7 @@ struct FieldCameraEditorData {
     void* mem0;
     void* mem1;
     u32 floorID;
-    u32 savedField;
+    FloorFieldCameraHolder* savedField;
     u32 gapp;
     u8 testing;
     u8 mode;
@@ -145,7 +125,7 @@ u8 dbgMenuIsOpen();
 bool menuIsCheck(s32 id);
 u32 GSinputButtonsChanged(s32 pad);
 u32 GSinputButtonsPressed(s32 pad);
-GSgfxLayer* GSgfxLayerFindByID(int id);
+GSgfxLayer* GSgfxLayerFindByID(GCsint id);
 GSgfxVF* GSgfxVFBuildTemp(int, int, int, int, int, int, int, int, int);
 void GSvecCopy(GSvec* dst, GSvec* src);
 
@@ -165,7 +145,7 @@ void floorReleaseFieldCameraEditor() {
     }
     GSmemFree(gFieldCameraEditorData.mem1);
     GSmemFree(gFieldCameraEditorData.mem0);
-    memset(&gFieldCameraEditorData, 0, 0x24);
+    memset(&gFieldCameraEditorData, 0, sizeof(gFieldCameraEditorData));
 }
 
 void floorInitFieldCameraEditor(u32 floorID) {
@@ -185,7 +165,7 @@ void floorInitFieldCameraEditor(u32 floorID) {
                 gFieldCameraEditorData.mem0 = mem;
                 cams = (u32*)floorDataBiosGetFieldCameraListPtr(floor);
                 gFieldCameraEditorData.floorID = floorID;
-                gFieldCameraEditorData.savedField = floor->unk14;
+                gFieldCameraEditorData.savedField = floor->fieldCamera;
                 gFieldCameraEditorData.mode = floorFieldCameraGetMode();
                 gFieldCameraEditorData.list[0] = &gFieldCameraEditorData.count;
                 if (cams != 0) {
@@ -322,7 +302,7 @@ void floorFieldCameraEditorStopTest() {
     if (gFieldCameraEditorData.floorID != 0) {
         FloorData* f = floorDataBiosGetPtr(gFieldCameraEditorData.floorID);
         if (f != 0) {
-            f->unk14 = gFieldCameraEditorData.savedField;
+            f->fieldCamera = gFieldCameraEditorData.savedField;
             floorInitFieldCamera((GSfloor_dd_*)f);
         }
     }
@@ -345,7 +325,7 @@ void GSgfxLayer::vertex3f(f32 x, f32 y, f32 z) {
 }
 
 void GSgfxLayer::primitiveType(GSgfxPrimType t) {
-    primType = t;
+    unk1998 = t;
 }
 
 void GSgfxLayer::blendMode(GSgfxBlendType type, GSgfxBlendFactor src, GSgfxBlendFactor dst, bool pass) {
@@ -353,79 +333,79 @@ void GSgfxLayer::blendMode(GSgfxBlendType type, GSgfxBlendFactor src, GSgfxBlend
         if (pass == 1) {
             SetRenderPass((GSgfxLayerPass)0);
         }
-        blendType = 0;
-        blendSrc = 1;
-        blendDst = 1;
-        blendLogicOp = 5;
+        hw.blend[0] = 0;
+        hw.blend[1] = 1;
+        hw.blend[2] = 1;
+        hw.blend[3] = 5;
     } else {
         if (pass == 1) {
             SetRenderPass((GSgfxLayerPass)1);
         }
-        blendType = (u32)type;
-        blendSrc = (u32)src;
-        blendDst = (u32)dst;
-        blendLogicOp = 5;
+        hw.blend[0] = (u32)type;
+        hw.blend[1] = (u32)src;
+        hw.blend[2] = (u32)dst;
+        hw.blend[3] = 5;
     }
     GFX_DIRTY(24, 1, 0x40)
 }
 
 void GSgfxLayer::SetRenderPass(GSgfxLayerPass pass) {
-    if (renderPass == (s32)pass) {
+    if (curPass == (s32)pass) {
         return;
     }
-    renderPass = (s32)pass;
-    blendSet = (GSgfxBlendSet*)((u8*)this + 0x1818 + renderPass * 0xBC);
+    curPass = (s32)pass;
+    curFifo = (GSgfxLayerData::PassFifo*)LAYER_CUR_PASS(this);
 }
 
 void GSgfxLayer::cullMode(GSgfxCullType mode) {
-    cullType = (u32)mode;
+    hw.cullMode = (u32)mode;
     GFX_DIRTY(3, 2, 2)
 }
 
 void GSgfxLayer::alphaCompare(bool enable, GSgfxACmpFunc f0, u8 ref0, GSgfxAlphaOp op, GSgfxACmpFunc f1, u8 ref1) {
     if (enable == 1) {
-        alphaComp0 = (u32)f0;
-        alphaRef0 = ref0;
-        alphaOp = (u32)op;
-        alphaComp1 = (u32)f1;
-        alphaRef1 = ref1;
-        alphaCompareOff = 0;
+        hw.alphaComp0 = (u32)f0;
+        hw.alphaRef0 = ref0;
+        hw.alphaCmpOp = (u32)op;
+        hw.alphaComp1 = (u32)f1;
+        hw.alphaRef1 = ref1;
+        hw.zCompLoc = 0;
     } else {
-        alphaComp0 = 7;
-        alphaRef0 = 0;
-        alphaOp = 0;
-        alphaComp1 = 7;
-        alphaRef1 = 0;
-        alphaCompareOff = 1;
+        hw.alphaComp0 = 7;
+        hw.alphaRef0 = 0;
+        hw.alphaCmpOp = 0;
+        hw.alphaComp1 = 7;
+        hw.alphaRef1 = 0;
+        hw.zCompLoc = 1;
     }
     GFX_DIRTY(24, 0x10, 0x40)
 }
 
 void GSgfxLayer::zCompare(bool enable, GSgfxZCmpFunc func) {
     if (enable == 1) {
-        zEnable = 1;
+        hw.zEnable = 1;
     } else {
-        zEnable = 0;
+        hw.zEnable = 0;
     }
-    zFunc = (u32)func;
+    hw.zFunc = (u32)func;
     GFX_DIRTY(24, 8, 0x40)
 }
 
 void GSgfxLayer::pixelMode(bool cu, bool au, bool di) {
     if (cu == 1) {
-        colorUpdate = 1;
+        hw.colorUpdate = 1;
     } else {
-        colorUpdate = 0;
+        hw.colorUpdate = 0;
     }
     if (au == 1) {
-        alphaUpdate = 1;
+        hw.alphaUpdate = 1;
     } else {
-        alphaUpdate = 0;
+        hw.alphaUpdate = 0;
     }
     if (di == 1) {
-        dither = 1;
+        hw.zUpdate = 1;
     } else {
-        dither = 0;
+        hw.zUpdate = 0;
     }
     GFX_DIRTY(24, 4, 0x40)
 }

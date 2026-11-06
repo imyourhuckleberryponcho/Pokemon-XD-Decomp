@@ -33,7 +33,7 @@ struct HSD_PObj {
 };
 
 /// Envelopes of one vertex matrix, up to one with a null joint.
-typedef HSD_EnvelopeDesc* HSD_EnvelopeList DAT_TERMINATED(0);
+typedef gc_ptr32(HSD_EnvelopeDesc) HSD_EnvelopeList DAT_TERMINATED(0);
 
 /// GX commands: primitives indexing a shape's vertex arrays, in 32-byte
 /// blocks.
@@ -44,30 +44,30 @@ typedef u8 HSD_DisplayList DAT_BLOB;
 typedef u8 HSD_VertexArray DAT_BLOB;
 
 struct HSD_PObjDesc {
-    char* class_name;
-    HSD_PObjDesc* next;
-    HSD_VtxDescList* verts DAT_TERMINATED(GX_VA_NULL);
-    u16 flags;
-    u16 n_display;
+    gc_ptr32(char) class_name;
+    gc_ptr32(HSD_PObjDesc) next;
+    gc_ptr32(HSD_VtxDescList) verts DAT_TERMINATED(GX_VA_NULL);
+    gc_be16 flags;
+    gc_be16 n_display;
  /// As #GXCallDisplayList takes it (#PObjDispSimplePrimitive).
-    HSD_DisplayList* display DAT_COUNT(n_display << 5);
+    gc_ptr32(HSD_DisplayList) display DAT_COUNT(n_display << 5);
     union HSD_PObjDesc_u {
-        HSD_Joint* joint DAT_IF((flags & 0x3000) == POBJ_SKIN);
-        HSD_ShapeSetDesc* shape_set DAT_IF((flags & 0x3000) == POBJ_SHAPEANIM);
-        HSD_EnvelopeList* envelope_p DAT_TERMINATED(0)
+        gc_ptr32(HSD_Joint) joint DAT_IF((flags & 0x3000) == POBJ_SKIN);
+        gc_ptr32(HSD_ShapeSetDesc) shape_set DAT_IF((flags & 0x3000) == POBJ_SHAPEANIM);
+        gc_ptr32(HSD_EnvelopeList) envelope_p DAT_TERMINATED(0)
             DAT_IF((flags & 0x3000) == POBJ_ENVELOPE);
     } u;
 };
 
 struct HSD_VtxDescList {
-    GXAttr attr;
-    GXAttrType attr_type;
-    GXCompCnt comp_cnt;
-    GXCompType comp_type;
+    gc_enum32(GXAttr) attr;
+    gc_enum32(GXAttrType) attr_type;
+    gc_enum32(GXCompCnt) comp_cnt;
+    gc_enum32(GXCompType) comp_type;
     u8 frac;
-    u16 stride;
+    gc_be16 stride;
  /// @todo Its length is the largest index the display lists use.
-    HSD_VertexArray* vertex;
+    gc_ptr32(HSD_VertexArray) vertex;
 };
 
 struct HSD_Envelope {
@@ -77,8 +77,8 @@ struct HSD_Envelope {
 };
 
 struct HSD_EnvelopeDesc {
-    HSD_Joint* joint;
-    f32 weight;
+    gc_ptr32(HSD_Joint) joint;
+    gc_bef32 weight;
 };
 
 struct HSD_ShapeSet {
@@ -86,10 +86,10 @@ struct HSD_ShapeSet {
     u16 nb_shape;
     int nb_vertex_index;
     HSD_VtxDescList* vertex_desc;
-    u8** vertex_idx_list DAT_COUNT(nb_shape);
+    gc_ptr32(u8)* vertex_idx_list DAT_COUNT(nb_shape);
     s32 nb_normal_index;
     HSD_VtxDescList* normal_desc;
-    u8** normal_idx_list DAT_COUNT(nb_shape);
+    gc_ptr32(u8)* normal_idx_list DAT_COUNT(nb_shape);
     union HSD_ShapeSet_blend {
         f32* bp;
         f32 bl;
@@ -97,25 +97,25 @@ struct HSD_ShapeSet {
 };
 
 struct HSD_ShapeSetDesc {
-    u16 flags;
-    u16 nb_shape;
-    s32 nb_vertex_index;
-    HSD_VtxDescList* vertex_desc;
-    u8** vertex_idx_list DAT_COUNT(nb_shape);
-    s32 nb_normal_index;
-    HSD_VtxDescList* normal_desc;
-    u8** normal_idx_list DAT_COUNT(nb_shape);
+    gc_be16 flags;
+    gc_be16 nb_shape;
+    gc_bes32 nb_vertex_index;
+    gc_ptr32(HSD_VtxDescList) vertex_desc;
+    gc_ptr32(gc_ptr32(u8)) vertex_idx_list DAT_COUNT(nb_shape);
+    gc_bes32 nb_normal_index;
+    gc_ptr32(HSD_VtxDescList) normal_desc;
+    gc_ptr32(gc_ptr32(u8)) normal_idx_list DAT_COUNT(nb_shape);
 };
 
 struct HSD_ShapeAnim {
-    HSD_ShapeAnim* next;
-    HSD_AObjDesc* aobjdesc;
+    gc_ptr32(HSD_ShapeAnim) next;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
 };
 
 struct HSD_ShapeAnimJoint {
-    HSD_ShapeAnimJoint* child;
-    HSD_ShapeAnimJoint* next;
-    HSD_ShapeAnimDObj* shapeanimdobj;
+    gc_ptr32(HSD_ShapeAnimJoint) child;
+    gc_ptr32(HSD_ShapeAnimJoint) next;
+    gc_ptr32(HSD_ShapeAnimDObj) shapeanimdobj;
 };
 
 struct HSD_PObjInfo {

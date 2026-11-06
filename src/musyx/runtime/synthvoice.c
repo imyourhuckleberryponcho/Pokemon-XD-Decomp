@@ -432,10 +432,11 @@ static u32 voiceAllocateDo(s32 voice, u8 fxFlag) {
     }
     if (fxFlag != 0) {
       voiceFxRunning++;
-      return;
+      return voice;
     }
     voiceMusicRunning++;
   }
+  return voice;
 }
 #endif
 
@@ -447,7 +448,7 @@ u32 voiceAllocate(u8 priority, u8 maxVoices,
 #endif
                   u8 fxFlag) {
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
-  voiceAllocateDo(voiceAllocateFind(priority, maxVoices, allocId, fxFlag), fxFlag);
+  return voiceAllocateDo(voiceAllocateFind(priority, maxVoices, allocId, fxFlag), fxFlag);
 #else
   s32 i;
   s32 num;

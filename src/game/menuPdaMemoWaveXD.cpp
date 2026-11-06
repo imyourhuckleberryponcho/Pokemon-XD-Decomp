@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
 
 #pragma peephole off
@@ -6,20 +7,11 @@
 struct GSgfxVF;
 enum GSgfxLayerID { GSgfxLayerID0 };
 
-class GSgfxLayer {
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0xD34];
-    u8 colorCount;
-    u8 padD35[3];
-    u32 colorMode;
-    u8 padD3C[0x16A8 - 0xD3C];
-    u32 flagsA;
-    u32 flagsB;
-    u8 pad16B0[0x1760 - 0x16B0];
-    u32 flagsC;
-    u32 flagsD;
-    u8 pad1768[0x1998 - 0x1768];
-    u32 primitive;
     void setRenderStateAndSelect(GSgfxVF*);
     void beginSurface(u16);
     void endSurface();
@@ -48,12 +40,19 @@ struct GSspline {
 };
 
 struct tagWINDOW_WORK {
-    u8 unk0[0x1C];
+    u8 unk0[0xC];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[0x1C];
+    void* slot0;
+    u8 pad4[0x8];
+    void* slotC;
+    u8 pad10[0xC];
     s32 layer;
 };
 
@@ -71,15 +70,15 @@ struct NakigoeDispWork {
 
 class pdaMemoNakigoe {
 public:
-    void SetNakigoe(long index);
-    void SetSE(unsigned long id);
-    long GetVocie(long index);
+    void SetNakigoe(s32 index);
+    void SetSE(u32 id);
+    s32 GetVocie(s32 index);
     void DispInit();
-    void DispRequest(signed char* data, unsigned long voice);
+    void DispRequest(signed char* data, u32 voice);
     void NakigoeDispFunc(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
     void DispFuncSub(NakigoeDispWork* work, GSgfxLayerID layer);
     u8 NakigoeCheck();
-    signed char* GetWaveDispDataAddress(long index);
+    signed char* GetWaveDispDataAddress(s32 index);
 
     inline void Init() {
         for (int i = 0; i < 8; i++) {
@@ -94,8 +93,12 @@ public:
 };
 
 extern "C" {
-void* __nw__FUl(unsigned long);
-GSgfxLayer* GSgfxLayerFindByID(s32);
+#ifdef __MWERKS__
+void* __nw__FUl(u32);
+#else
+#define __nw__FUl(n) (operator new(n))
+#endif
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 u32 GSinputButtonsChanged(s32);
 u32 GSinputButtonsPressed(s32);
@@ -106,7 +109,7 @@ GSspline* GSsplineCreate(s32, s32, u8);
 void GSsplineAddControlVectorValue(GSspline*, GSvec*, f32);
 void GSsplineFree(GSspline*);
 u16 memoDataGetCount(s32);
-void* menuPdaMemoListGetPokemonDataPointer(long);
+void* menuPdaMemoListGetPokemonDataPointer(s32);
 s32 pokemonDataBiosGetVoice(void*);
 signed char* pokemonNakigoeDataBiosGetDataAddress(void*);
 }
@@ -129,7 +132,7 @@ void menuPdaMemoWaveInit(void) {
     }
 }
 
-void menuPdaMemoWave(long index) {
+void menuPdaMemoWave(s32 index) {
     if (_nakigoe == 0) {
         pdaMemoNakigoe* work = (pdaMemoNakigoe*)__nw__FUl(sizeof(pdaMemoNakigoe));
         if (work != 0) {
@@ -155,18 +158,18 @@ void menuPdaMemoWave(long index) {
 
 }
 
-void pdaMemoNakigoe::SetNakigoe(long index) {
+void pdaMemoNakigoe::SetNakigoe(s32 index) {
     u32 raw = GetVocie(index);
     u16 voice = raw;
     SetSE(voice);
     DispRequest(GetWaveDispDataAddress(index), voice);
 }
 
-void pdaMemoNakigoe::SetSE(unsigned long id) {
+void pdaMemoNakigoe::SetSE(u32 id) {
     GSsndPlay(id, 0, 0);
 }
 
-long pdaMemoNakigoe::GetVocie(long index) {
+s32 pdaMemoNakigoe::GetVocie(s32 index) {
     if (memoDataGetCount(0) != 0) {
         void* pokemon = menuPdaMemoListGetPokemonDataPointer(index);
         if (pokemon != 0) {
@@ -183,7 +186,7 @@ void pdaMemoNakigoe::DispInit() {
     }
 }
 
-void pdaMemoNakigoe::DispRequest(signed char* data, unsigned long voice) {
+void pdaMemoNakigoe::DispRequest(signed char* data, u32 voice) {
     index++;
     if (index >= 8) {
         index = 0;
@@ -312,33 +315,37 @@ u8 pdaMemoNakigoe::NakigoeCheck() {
     return playing;
 }
 
+#ifdef __MWERKS__
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
+#else
+#define GXFifoNV GXWGFifo
+#endif
 static inline void dlPos(s16 x, s16 y) { GXFifoNV.s16 = x; GXFifoNV.s16 = y; }
 static void _drawLine(GSgfxLayerID layerID, GSvec* a, GSvec* b, float width) {
     GSgfxLayer* layer = GSgfxLayerFindByID(layerID);
     layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
-    layer->primitive = 0xA8;
-    layer->colorCount = 0x18;
-    layer->colorMode = 0;
-    layer->flagsB |= 4;
-    layer->flagsA |= 1;
-    layer->flagsD |= 4;
-    layer->flagsC |= 1;
+    (*(u32*)&layer->unk1998) = 0xA8;
+    (*(u8*)&layer->hw.lineWidth) = 0x18;
+    (*(u32*)&layer->hw.lineOffset) = 0;
+    (*(u32*)&layer->dirty[0].geom) |= 4;
+    (*(u32*)&layer->dirty[0].groups) |= 1;
+    (*(u32*)&layer->dirty[1].geom) |= 4;
+    (*(u32*)&layer->dirty[1].groups) |= 1;
     layer->beginSurface(2);
     dlPos(a->x, 0.5f * a->y + 105.0f);
     GXColor1u32((u8)(s32)a->z | 0x96E6F000);
     dlPos(b->x, 0.5f * b->y + 105.0f);
     GXColor1u32((u8)(s32)b->z | 0x96E6F000);
     layer->endSurface();
-    layer->colorCount = 6;
-    layer->colorMode = 0;
-    layer->flagsB |= 4;
-    layer->flagsA |= 1;
-    layer->flagsD |= 4;
-    layer->flagsC |= 1;
+    (*(u8*)&layer->hw.lineWidth) = 6;
+    (*(u32*)&layer->hw.lineOffset) = 0;
+    (*(u32*)&layer->dirty[0].geom) |= 4;
+    (*(u32*)&layer->dirty[0].groups) |= 1;
+    (*(u32*)&layer->dirty[1].geom) |= 4;
+    (*(u32*)&layer->dirty[1].groups) |= 1;
 }
 
-signed char* pdaMemoNakigoe::GetWaveDispDataAddress(long index) {
+signed char* pdaMemoNakigoe::GetWaveDispDataAddress(s32 index) {
     s32 count = memoDataGetCount(0);
     if (count != 0) {
         void* pokemon = menuPdaMemoListGetPokemonDataPointer(index);

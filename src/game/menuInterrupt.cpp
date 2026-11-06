@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/miscTables.h>
 
 #pragma peephole off
 
@@ -7,8 +10,16 @@ struct MenuWindow {
     s8 state;
     s8 seqSet;
     u8 unk3;
-    void* seq;
-    u8 unk8[0x60];
+    s32 seq;
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
     s32* data;
 };
 
@@ -19,21 +30,16 @@ struct MenuItem {
     u8 alpha;
 };
 
-struct UndertakerData {
-    u8 unk0[0x24];
-    u32 flag;
-};
-
 extern "C" {
 
-extern UndertakerData* undertakerdata;
+extern UnderTakerData* undertakerdata;
 
 bool menuIsCheck(s32 menuID);
 void menuClose(s32 menuID);
 void menuCloseSync(s32 menuID, s32);
 void menuOpenCustom(s32 menuID, ...);
 s32 winSpriteGetLayerID(MenuWindow* window, MenuItem* item);
-void* GSgfxLayerFindByID(s32 layer);
+void* GSgfxLayerFindByID(GCsptr layer);
 u32 GSfloorGetCurrent(void);
 void* floorDataBiosGetPtr(u32 id);
 u8 floorDataBiosGetFloorKind(void* data);
@@ -42,10 +48,10 @@ void winSpriteSetDisp(MenuItem* item, s32 disp);
 double cos(double x);
 f32 timeGetLastFrameSec(void);
 void GSsndPlayNow(u32 id);
-void winSeqSetMenu(void* seq, s32 menu);
-bool winSeqCheckMove(void* seq);
+void winSeqSetMenu(s32 seq, s32 menu);
+bool winSeqCheckMove(s32 seq);
 void menuButtonNormal(MenuWindow* window);
-s32 gamedatasaveGetStatus(s32, s32);
+StatusS32 gamedatasaveGetStatus(s32, s32);
 void GSinputMotorStart(s32 pad, s32, s32 strength, s32 frames, s32);
 
 }
@@ -99,7 +105,7 @@ void menuIntUnderTakerHook(MenuWindow* window, MenuItem* item) {
     u8 kind;
     GSgfxLayerFindByID(winSpriteGetLayerID(window, item));
     kind = floorDataBiosGetFloorKind(floorDataBiosGetPtr(GSfloorGetCurrent()));
-    if (_underTakerIconFlag && GSflagTest(undertakerdata->flag) && kind == 1) {
+    if (_underTakerIconFlag && GSflagTest(undertakerdata->unk24) && kind == 1) {
         winSpriteSetDisp(item, 1);
         switch (item->id) {
         case 0x65C:

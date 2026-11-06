@@ -1,8 +1,11 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
 
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };
 
-class DarkPokemon {
+struct DarkPokemon {
 public:
     u8 unk0x0[60];
     u16 getPokemonID() const;
@@ -16,7 +19,11 @@ public:
     bool isRelive() const;
     void getPlace(darkPokemonWhere& where, u8& floor) const;
     f32 getDarkPoint() const;
+#ifdef __MWERKS__
     u16 getCatchBallID() const;
+#else
+    u8 getCatchBallID() const;
+#endif
 };
 extern "C" DarkPokemon* darkPokemonGetDarkPokemon(u32 index);
 
@@ -40,10 +47,27 @@ struct tagWINDOW_WORK {
     s8 state;
     s8 seqSet;
     u8 unk3;
-    void* seq;
-    u8 unk8[0x14];
+    s32 seq;
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layer;
-    u8 unk20[0x73];
+    u8 unk20[0x4];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 alpha;
     u8 unk94[8];
     s16 top;
@@ -54,12 +78,18 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 unk8[0x14];
+    u8 unk8[0x4];
+    void* slotC;
+    u8 pad10[0xC];
     s32 layer;
-    u8 unk20[0x44];
-    u32 color;
+    u8 unk20[0x28];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x14];
+    gc_be32 color;
 };
 
 struct WindowKeyInfo {
@@ -89,7 +119,7 @@ class menuPdaDPMList {
 public:
     menuPdaDPMList();
     ~menuPdaDPMList();
-    u16 GetDarkPokemonID(long index);
+    u16 GetDarkPokemonID(s32 index);
     void ScrollBar(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
     void DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
     void DownCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
@@ -104,18 +134,18 @@ public:
     void Button(tagWINDOW_WORK* window);
     void Cursor(tagWINDOW_WORK* window);
     s32 Sort(DPMSelSort sort);
-    void SortSetTemp(SnatchSortBuff* dst, SnatchSortBuff* src, long count);
-    void SortSub2(SnatchSortBuff* buf, long count, bool ascending);
-    void SortSub(SnatchSortBuff* buf, long count, bool ascending);
+    void SortSetTemp(SnatchSortBuff* dst, SnatchSortBuff* src, s32 count);
+    void SortSub2(SnatchSortBuff* buf, s32 count, bool ascending);
+    void SortSub(SnatchSortBuff* buf, s32 count, bool ascending);
     void Ctrl(tagWINDOW_WORK* window);
     void ListMain(tagWINDOW_WORK* window);
     void CalcPosition(CURSOR* cursor);
     void ListPosition();
-    s32 Main(long unused, CURSOR* cursor);
+    s32 Main(s32 unused, CURSOR* cursor);
     void InitWork();
     void _setCursor(CURSOR cursor);
     CURSOR _getCursor();
-    void _menuClose(long menuID);
+    void _menuClose(s32 menuID);
 
     s32 count;
     f32 alpha[10];
@@ -136,19 +166,25 @@ public:
 };
 
 extern "C" {
-void* __nw__FUl(unsigned long);
-void* __nwa__FUl(unsigned long);
+#ifdef __MWERKS__
+void* __nw__FUl(u32);
+void* __nwa__FUl(u32);
 void __dl__FPv(void*);
+#else
+#define __nw__FUl(n) (operator new(n))
+#define __nwa__FUl(n) (operator new[](n))
+#define __dl__FPv(p) (operator delete(p))
+#endif
 void __dla__FPv(void*);
 void* memcpy(void* dst, const void* src, unsigned long n);
 u16 mballBiosGetSpriteID(u16);
-s32 GSmsgGetGSchar(u32);
+u16 * GSmsgGetGSchar(u32);
 void GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSsndPlayNow(u32);
 CURSOR cursorBiosGetPos(s32);
 CURSOR cursorBiosSetPos(s32, CURSOR);
 s32 darkPokemonGetMeetNum(void);
-s32 heroBiosGetPokemonPtr(s32, s32);
+void* heroBiosGetPokemonPtr(s32, s32);
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 void menuDrawReliveMeterByDarkPokemon(DarkPokemon*, s32, s32, s32, s32, u8, s32);
@@ -162,17 +198,17 @@ void menuPdaSubCalcPositon(f32*, f32, f32);
 void menuPdaSubCheckUpDownCursor(tagWINDOW_WORK*, tagSPRITE_WORK*, s16*, s32, s32, s32);
 void menuPdaSubInitAlpha(f32*, s32, s32);
 void menuPdaSubScrollBar(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s32, u32, s32, s32, s16*);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 u16 pokemonBiosGetDarkpokemonDataId(s32);
 u16 pokemonBiosGetPokemonDataId(s32);
 u8 pokemonCheckValid(s32);
 u32 pokemonDataBiosGetName(void*);
 void* pokemonDataBiosGetPtr(u16);
-s32 savedataGetStatus(s32, s32);
+void * savedataGetStatus(s32, s32);
 void spriteClearScissor(s32);
 void spriteSetScissor(s32, s32, s32, s32, s32);
-u8 winSeqCheckMove(void*);
-void winSeqSetMenu(void*, s32);
+u8 winSeqCheckMove(s32 menuID);
+void winSeqSetMenu(s32 menuID, s32);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
 void windowDrawSprite2(s16, s32, s32, s32, u32, tagWINDOW_WORK*, u16, s32, s32);
 WindowKeyInfo* windowGetKeyInfo(void);
@@ -203,7 +239,7 @@ s32 menuPdaDPMListDispRelive(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32
         break;
     }
     case 4:
-        u32 name = GSmsgGetGSchar(0x3C0B);
+        u32 name = GC_ADDR32(GSmsgGetGSchar(0x3C0B));
         msgctrlSetValue(0x37, name);
         if (flag != 0) {
             GSmsgPrint2(window->layer, x, y, alpha | 0xEE444400, 0x4276);
@@ -275,7 +311,7 @@ u16 menuPdaDPMListGetDarkPokemonID(s32 index) {
     return pDPMList->GetDarkPokemonID(index);
 }
 
-u16 menuPdaDPMListGetPokemonID(s32 index) {
+PCRET(u16) menuPdaDPMListGetPokemonID(s32 index) {
     if (pDPMList == 0) {
         return 0;
     }
@@ -289,12 +325,12 @@ u32 menuPdaDPMListGetPokemonName(s32 index) {
     u16 id = darkPokemonGetDarkPokemon(pDPMList->GetDarkPokemonID(index))->getPokemonID();
     void* data = pokemonDataBiosGetPtr(id);
     if (data != 0) {
-        return GSmsgGetGSchar(pokemonDataBiosGetName(data));
+        return GC_ADDR32(GSmsgGetGSchar(pokemonDataBiosGetName(data)));
     }
     return 0;
 }
 
-u16 menuPdaDPMListGetDarkpokemonID(s32 index) {
+PCRET(u16) menuPdaDPMListGetDarkpokemonID(s32 index) {
     if (pDPMList != 0) {
         return pDPMList->GetDarkPokemonID(index);
     }
@@ -302,7 +338,7 @@ u16 menuPdaDPMListGetDarkpokemonID(s32 index) {
 }
 
 s32 menuPdaDPMListGetDPointer(s32 index) {
-    return (s32)darkPokemonGetDarkPokemon(pDPMList->GetDarkPokemonID(index));
+    return (GCsptr)darkPokemonGetDarkPokemon(pDPMList->GetDarkPokemonID(index));
 }
 
 s32 menuPdaDPMListCallBack(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
@@ -436,7 +472,7 @@ menuPdaDPMList::menuPdaDPMList() {
     tempCount = 0;
 }
 
-u16 menuPdaDPMList::GetDarkPokemonID(long index) {
+u16 menuPdaDPMList::GetDarkPokemonID(s32 index) {
     return sorted[index].darkID;
 }
 
@@ -472,7 +508,7 @@ void menuPdaDPMList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             }
             u32 name = menuPdaDPMListGetPokemonName(i);
             if (name == 0) {
-                name = GSmsgGetGSchar(1);
+                name = GC_ADDR32(GSmsgGetGSchar(1));
             }
             u8 floor;
             u32 placeMsg = menuPdaDPMListGetDarkPokemonPlaceMsgID(i, &floor);
@@ -616,7 +652,7 @@ s32 menuPdaDPMList::SortPlace() {
         SortSetTemp(temp2, temp, n);
     }
     for (int fl = 0; fl < 9; fl++) {
-        for (i = 0, n = 0; i < total; i++) {
+        for (n = 0, i = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
             dark->getPlace(place, floor);
@@ -633,7 +669,7 @@ s32 menuPdaDPMList::SortPlace() {
         }
     }
     for (int fl = 0; fl < 8; fl++) {
-        for (i = 0, n = 0; i < total; i++) {
+        for (n = 0, i = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
             dark->getPlace(place, floor);
@@ -711,10 +747,10 @@ s32 menuPdaDPMList::SortPlace() {
 
 u8 menuPdaDPMList::getTemochiIndex(u16 pokemonID, u16 darkID) {
     s32 mon;
-    s32 party = savedataGetStatus(0, 2);
+    s32 party = GC_ADDR32(savedataGetStatus(0, 2));
     u8 i;
     for (i = 0; i < 6; i++) {
-        mon = heroBiosGetPokemonPtr(party, i);
+        mon = GC_ADDR32(heroBiosGetPokemonPtr(party, i));
         if (pokemonCheckValid(mon) != 0) {
             u16 dark = pokemonBiosGetDarkpokemonDataId(mon);
             pokemonBiosGetPokemonDataId(mon);
@@ -909,19 +945,19 @@ s32 menuPdaDPMList::Sort(DPMSelSort sort) {
     return count;
 }
 
-void menuPdaDPMList::SortSetTemp(SnatchSortBuff* dst, SnatchSortBuff* src, long n) {
+void menuPdaDPMList::SortSetTemp(SnatchSortBuff* dst, SnatchSortBuff* src, s32 n) {
     SnatchSortBuff* p = src;
-    for (long i = 0; i < n; i++) {
+    for (s32 i = 0; i < n; i++) {
         memcpy(&dst[tempCount], p, sizeof(SnatchSortBuff));
         p++;
         tempCount++;
     }
 }
 
-void menuPdaDPMList::SortSub2(SnatchSortBuff* buf, long n, bool ascending) {
+void menuPdaDPMList::SortSub2(SnatchSortBuff* buf, s32 n, bool ascending) {
     SnatchSortBuff tmp;
-    long i;
-    long j;
+    s32 i;
+    s32 j;
     if (ascending) {
         for (i = 1; i < n; i++) {
             memcpy(&tmp, &buf[i], sizeof(SnatchSortBuff));
@@ -943,11 +979,11 @@ void menuPdaDPMList::SortSub2(SnatchSortBuff* buf, long n, bool ascending) {
     }
 }
 
-void menuPdaDPMList::SortSub(SnatchSortBuff* buf, long n, bool ascending) {
+void menuPdaDPMList::SortSub(SnatchSortBuff* buf, s32 n, bool ascending) {
     SnatchSortBuff tmp;
-    long gap;
-    long i;
-    long j;
+    s32 gap;
+    s32 i;
+    s32 j;
     if (ascending) {
         for (gap = n / 2; gap > 0; gap /= 2) {
             for (i = gap; i < n; i++) {
@@ -1016,7 +1052,7 @@ void menuPdaDPMList::ListPosition() {
     }
 }
 
-s32 menuPdaDPMList::Main(long unused, CURSOR* cursor) {
+s32 menuPdaDPMList::Main(s32 unused, CURSOR* cursor) {
     CURSOR c;
     c.top = cursor->top;
     c.pos = cursor->pos;
@@ -1067,7 +1103,7 @@ CURSOR menuPdaDPMList::_getCursor() {
     return cursorBiosGetPos(0xC);
 }
 
-void menuPdaDPMList::_menuClose(long menuID) {
+void menuPdaDPMList::_menuClose(s32 menuID) {
     menuClose(menuID);
     menuCloseSync(menuID, 1);
 }

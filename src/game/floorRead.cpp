@@ -1,17 +1,34 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/pxdvs/app/floor/floorData.h>
+#ifndef __MWERKS__
+struct GStexture;
+class ModelSequence { public: static void Unload(u8*); };
+class WazaSequence { public: static bool Load(u8*, u32, u32); static void Unload(u8*); };
+GStexture* antGetGStexture(void*);
+void antReadPostFunc(void*, u32);
+#define Load__12WazaSequenceFPUcUlUl(p, a, b) ((u8)WazaSequence::Load((u8*)(p), (a), (b)))
+#define antGetGStexture__FPv(...) ((void*)antGetGStexture(__VA_ARGS__))
+#define antReadPostFunc__FPvUl(...) (antReadPostFunc(__VA_ARGS__))
+#endif
 
 #pragma peephole off
 #pragma pool_strings off
 
 struct _HSD_SceneDesc {
-    void** models;
-    void* cameras;
-    void** lights;
-    void** fog;
+    gc_ptr32(gc_ptr32(void)) models;
+    gc_ptr32(void) cameras;
+    gc_ptr32(gc_ptr32(void)) lights;
+    gc_ptr32(gc_ptr32(void)) fog;
 };
 
+#ifdef __MWERKS__
+#define ARCHIVE_BUF_HEADER 0x60
+#else
+#define ARCHIVE_BUF_HEADER 0x80
+#endif
 struct ArchiveBuf {
-    u8 header[0x60];
+    u8 header[ARCHIVE_BUF_HEADER];
     u8 payload[1];
 };
 
@@ -22,23 +39,23 @@ extern "C" {
 void* memset(void*, int, u32);
 void FlashSystemInit(u32, void*);
 void FlashSystemRelease(u32);
-void GScameraFree();
+void GScameraFree(void* camera);
 void* GScameraLoad(void*);
 void GScolsys2LoadCCD(void*);
 void GScolsys2UnloadCCD();
 void GSfsysFree(u32);
 void GSfsysOSLinkPostFunc(u32, u32, u32);
 u8 GSfsysReadIDEXWait(u32, u32, void (*)(s32, void*, s32), u32, u32);
-void GSlensFlareFree();
+void GSlensFlareFree(u32 id);
 void* GSlensFlareLoad(void*);
-void GSlightFree();
+void GSlightFree(void* light);
 void* GSlightLoad(void*);
 void GSmodelLinkToGSparticleBank(void*, void*);
 void GSmsgClose(u32);
 void GSmsgFontClose(u32);
 void GSmsgFontOpen(void*);
 void GSmsgOpen(void*);
-void GSparticleFree();
+void GSparticleFree(void* bank);
 void* GSparticleLoad(void*);
 void* GSresAllocResourceAlign(u32, u32, u32, u32, FloorUnloadFunc);
 void GSresFreeResource(u32, u32);
@@ -48,16 +65,31 @@ void GSresLockResource(u32, u32);
 void GSresRegisterResource(void*, u32, u32, FloorUnloadFunc);
 void GSresUnlockResource(u32, u32);
 void GStextureFree(void*);
+#ifdef __MWERKS__
 void GStextureLoad(void*);
+#else
+void* GStextureLoad(void*);
+void GSresSetResourceView(u32 grp, u32 id, void* view);
+#endif
 void GSthreadSwitch();
 void* HSD_ArchiveGetPublicAddress(void*, const char*);
 void HSD_ArchiveParse(void*, void*, u32);
+#ifdef __MWERKS__
 u8 Load__12WazaSequenceFPUcUlUl(void*, u32, u32);
+#endif
 u8 ModelSequence_Load(void*, u32, u32);
+#ifdef __MWERKS__
 void Unload__12WazaSequenceFPUc();
+#endif
+#ifdef __MWERKS__
 void Unload__13ModelSequenceFPUc();
+#endif
+#ifdef __MWERKS__
 void* antGetGStexture__FPv(void*);
+#endif
+#ifdef __MWERKS__
 void antReadPostFunc__FPvUl(void*, u32);
+#endif
 void deckRegister(u32, u32);
 void deckUnRegister(u32, u32);
 void floorAddResource(u32, u32);
@@ -183,8 +215,8 @@ _HSD_SceneDesc* floorRegisterLight(u32 group, u32 id) {
     if (desc->lights != 0) {
         u32 base = floorReadMakeLightResID(id);
         s32 off = 0;
-        while (*(void**)((u8*)desc->lights + off) != 0) {
-            void* l = GSlightLoad(*(void**)((u8*)desc->lights + off));
+        while (GC_AT(void*, desc->lights, off) != 0) {
+            void* l = GSlightLoad(GC_AT(void*, desc->lights, off));
             if (l != 0) {
                 GSresRegisterResource(l, group, base | i, _unloadLight);
             }
@@ -308,11 +340,6 @@ void* floorReadNotLinkedParticlePreFunc(u32 group, u32 id, u32 size) {
     return res;
 }
 
-struct FloorData {
-    u32 pad;
-    u32 mapResID;
-};
-
 void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
     s32 off;
     s32 i = 0;
@@ -341,7 +368,7 @@ void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
         if (desc->models != 0) {
             u32 base = floorReadMakeModelResID(fd->mapResID);
             off = 0;
-            while (*(void**)((u8*)desc->models + off) != 0) {
+            while (GC_AT(void*, desc->models, off) != 0) {
                 void* m = GSresGetResource(floorGetCurrentGroupID(), base | i);
                 if (m != 0) {
                     GSmodelLinkToGSparticleBank(m, p);
@@ -403,7 +430,11 @@ void* floorReadPKXPreFunc(u32 group, u32 id, u32 size) {
 void* floorReadTexPostFunc(u32 group, u32 id) {
     GSresUnlockResource(group, id);
     void* res = GSresGetResource(group, id);
+#ifdef __MWERKS__
     GStextureLoad(res);
+#else
+    GSresSetResourceView(group, id, GStextureLoad(res));
+#endif
     return res;
 }
 
@@ -433,12 +464,12 @@ _HSD_SceneDesc* floorReadCameraPostFunc(u32 group, u32 id, u32 size) {
 }
 
 void* floorReadCameraPreFunc(u32 group, u32 id, u32 size) {
-    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + 0x60, 0x20, group, floorReadMakeObjResID(id), 0);
+    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, 0x20, group, floorReadMakeObjResID(id), 0);
     if (res == 0) {
         return 0;
     }
     GSresLockResource(group, id);
-    return (u8*)res + 0x60;
+    return (u8*)res + ARCHIVE_BUF_HEADER;
 }
 
 _HSD_SceneDesc* floorReadObjPostFunc(u32 group, u32 id, u32 size) {
@@ -452,8 +483,8 @@ _HSD_SceneDesc* floorReadObjPostFunc(u32 group, u32 id, u32 size) {
     u32 base = floorReadMakeModelResID(id);
     if (desc->models != 0) {
         off = 0;
-        while (*(void**)((u8*)desc->models + off) != 0) {
-            GSresRegisterResource(*(void**)((u8*)desc->models + off), group, base | i, 0);
+        while (GC_AT(void*, desc->models, off) != 0) {
+            GSresRegisterResource(GC_AT(void*, desc->models, off), group, base | i, 0);
             off += 4;
             i++;
         }
@@ -462,12 +493,12 @@ _HSD_SceneDesc* floorReadObjPostFunc(u32 group, u32 id, u32 size) {
 }
 
 void* floorReadObjPreFunc(u32 group, u32 id, u32 size) {
-    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + 0x60, 0x20, group, id, _unloadObject);
+    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, 0x20, group, id, _unloadObject);
     if (res == 0) {
         return 0;
     }
     GSresLockResource(group, id);
-    return (u8*)res + 0x60;
+    return (u8*)res + ARCHIVE_BUF_HEADER;
 }
 
 _HSD_SceneDesc* floorReadMapPostFunc(u32 group, u32 id, u32 size) {
@@ -481,8 +512,8 @@ _HSD_SceneDesc* floorReadMapPostFunc(u32 group, u32 id, u32 size) {
     if (desc->models != 0) {
         u32 base = floorReadMakeModelResID(id);
         off = 0;
-        while (*(void**)((u8*)desc->models + off) != 0) {
-            GSresRegisterResource(*(void**)((u8*)desc->models + off), group, base | i, 0);
+        while (GC_AT(void*, desc->models, off) != 0) {
+            GSresRegisterResource(GC_AT(void*, desc->models, off), group, base | i, 0);
             off += 4;
             i++;
         }
@@ -490,8 +521,8 @@ _HSD_SceneDesc* floorReadMapPostFunc(u32 group, u32 id, u32 size) {
     if (desc->lights != 0) {
         u32 base = floorReadMakeLightResID(id);
         s32 off = 0;
-        while (*(void**)((u8*)desc->lights + off) != 0) {
-            void* l = GSlightLoad(*(void**)((u8*)desc->lights + off));
+        while (GC_AT(void*, desc->lights, off) != 0) {
+            void* l = GSlightLoad(GC_AT(void*, desc->lights, off));
             if (l != 0) {
                 GSresRegisterResource(l, group, base | j, _unloadLight);
             }
@@ -511,13 +542,13 @@ _HSD_SceneDesc* floorReadMapPostFunc(u32 group, u32 id, u32 size) {
 }
 
 void* floorReadMapPreFunc(u32 group, u32 id, u32 size) {
-    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + 0x60, 0x20, group, id, 0);
+    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, 0x20, group, id, 0);
     if (res == 0) {
         return 0;
     }
     floorDataBiosSetMapResID(floorDataBiosGetCurrentPtr(), id);
     GSresLockResource(group, id);
-    return (u8*)res + 0x60;
+    return (u8*)res + ARCHIVE_BUF_HEADER;
 }
 
 void* floorReadScriptPostFunc(u32 group, u32 id) {
@@ -621,7 +652,7 @@ static s32 _unloadObject(void*, u32 group, u32 id) {
     u32 base = floorReadMakeModelResID(id);
     if (desc->models != 0) {
         off = 0;
-        while (*(void**)((u8*)desc->models + off) != 0) {
+        while (GC_AT(void*, desc->models, off) != 0) {
             GSresFreeResource(group, base | i);
             off += 4;
             i++;
@@ -630,14 +661,22 @@ static s32 _unloadObject(void*, u32 group, u32 id) {
     return desc != 0;
 }
 
-static s32 _unloadWZX(void*, u32, u32) {
+static s32 _unloadWZX(void* p, u32, u32) {
+#ifdef __MWERKS__
     Unload__12WazaSequenceFPUc();
+#else
+    WazaSequence::Unload((u8*)p);
+#endif
     return 1;
 }
 
 static s32 _unloadPKX(void* p, u32, u32) {
     if (p != 0) {
+#ifdef __MWERKS__
         Unload__13ModelSequenceFPUc();
+#else
+        ModelSequence::Unload((u8*)p);
+#endif
     }
     return 1;
 }
@@ -647,23 +686,23 @@ static s32 _unloadGSW(void*, u32, u32 id) {
     return 1;
 }
 
-static s32 _unloadFlare(void*, u32, u32) {
-    GSlensFlareFree();
+static s32 _unloadFlare(void* res, u32, u32) {
+    GSlensFlareFree(GC_ADDR32(res));
     return 1;
 }
 
-static s32 _unloadParticles(void*, u32, u32) {
-    GSparticleFree();
+static s32 _unloadParticles(void* res, u32, u32) {
+    GSparticleFree(res);
     return 1;
 }
 
-static s32 _unloadCamera(void*, u32, u32) {
-    GScameraFree();
+static s32 _unloadCamera(void* res, u32, u32) {
+    GScameraFree(res);
     return 1;
 }
 
-static s32 _unloadLight(void*, u32, u32) {
-    GSlightFree();
+static s32 _unloadLight(void* res, u32, u32) {
+    GSlightFree(res);
     return 1;
 }
 

@@ -1,6 +1,12 @@
+#include <game/gcdata.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
+#ifdef __MWERKS__
 #define GXFifoNV (*(PPCWGPipe*)GXFIFO_ADDR)
+#else
+#define GXFifoNV GXWGFifo
+#endif
 
 #pragma peephole off
 #pragma pool_strings off
@@ -49,7 +55,9 @@ struct GSmtx44 {
 #define U8_AT(o) (*(u8*)((u8*)this + (o)))
 #define U32_AT(o) (*(u32*)((u8*)this + (o)))
 
-class GSgfxLayer {
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void cunitChannelGen(u8 chan, GSgfxCunitAlpha alpha, GSgfxCunitSrc src0, GSgfxCunitSrc src1, u32 lights,
                          GSgfxLight** light, GSgfxLightType lightType, GSgfxDiffuseFunc diffuse);
@@ -61,64 +69,19 @@ public:
 
     inline void mark(u32 sum, u32 off, u32 bit)
     {
+#ifdef __MWERKS__
         U32_AT(off) |= bit;
         U32_AT(0x16a8) |= sum;
         U32_AT(off + 0xb8) |= bit;
         U32_AT(0x1760) |= sum;
+#else
+        GSL_IN(this, u32, dirty[0], 0x16a8, off) |= bit;
+        dirty[0].groups |= sum;
+        GSL_IN(this, u32, dirty[1], 0x1760, off + 0xb8) |= bit;
+        dirty[1].groups |= sum;
+#endif
     }
 
-    u8 pad0[0x28];
-    GSgfxLayerID id;
-    u8 pad2c[0xd54 - 0x2c];
-    s32 projType;
-    f32 proj[6];
-    u8 pad_d70[0xd8c - 0xd70];
-    s32 d8c;
-    u8 pad_d90[0x1644 - 0xd90];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 pad_1654[2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad_1659[3];
-    u8 zEnable;
-    u8 pad_165d[3];
-    s32 zFunc;
-    u8 pad_1664[0x1684 - 0x1664];
-    f32 nearZ;
-    f32 farZ;
-    u8 pad_168c[0x16a6 - 0x168c];
-    u8 f16a6;
-    u8 f16a7;
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad_16b0[8];
-    u32 dirty16b8;
-    u8 pad_16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad_1710[0x173c - 0x1710];
-    u32 dirty173c;
-    GStexture* tex1740;
-    u8 pad_1744[0x1760 - 0x1744];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad_1768[8];
-    u32 dirty1770;
-    u8 pad_1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
-    u8 pad_17c8[0x17f4 - 0x17c8];
-    u32 dirty17f4;
-    GStexture* tex17f8;
-    u8 pad_17fc[0x1818 - 0x17fc];
-    BlendState blendTable[2];
-    BlendState* curBlend;
-    s32 curBlendIdx;
-    u32 primType;
-    GSgfxVF* curVF;
-    GSlayerCam* cam;
 };
 
 class GSgfxLayerConfig {
@@ -135,7 +98,7 @@ struct _GSparticleGen;
 enum GSattachMode {};
 struct GSlightT;
 extern "C" {
-GSgfxLayer* GSgfxLayerFindByID(s32);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 void GSmtx44Ortho(f32*, f32, f32, f32, f32, f32, f32);
 void* HSD_ArchiveGetPublicAddress(void*, const char*);
@@ -185,7 +148,7 @@ u8 GSmodelIsAnimating(void*);
 void GSmodelSetAnimFrame(void*, f32);
 void GSmodelSetAnimType(void*, s32);
 }
-extern GSmtx44 mtxIdent;
+extern "C" GSmtx44 mtxIdent;
 
 static inline void fifoColor(u8 r, u8 g, u8 b, s32 a)
 {
@@ -206,7 +169,7 @@ public:
     void Visibility(u32 id, bool);
     bool ModelDetach(u32 id);
     bool ModelAttach(u32 a, u32 b, s32 part, GSattachMode mode);
-    void* SetModelPartPaticle(u32 a, u32 b, s32 part, GSattachMode mode, bool, bool, bool);
+    _GSparticleGen* SetModelPartPaticle(u32 a, u32 b, s32 part, GSattachMode mode, bool, bool, bool);
     void DetachModelPartPaticle(_GSparticleGen* gen, bool);
     void* makeArchiveHeader(u32 id);
     f32 GetAnimeFrameCount(u32 id, u32 motion);
@@ -221,9 +184,9 @@ public:
 };
 
 struct ArchiveHeader {
-    void** models;
-    void* pad;
-    void** lights;
+    gc_ptr32(gc_ptr32(void)) models;
+    gc_ptr32(void) pad;
+    gc_ptr32(gc_ptr32(void)) lights;
 };
 
 static bool _unloadModel(void*, u32, u32);
@@ -255,40 +218,40 @@ void WorldMapModel::renderOffscreenData(f32 alphaF)
             spriteSetEnv(4);
             f32 mtx[16];
             GSmtx44Ortho(mtx, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-            layer->projType = 1;
-            layer->proj[0] = mtx[0];
-            layer->proj[1] = mtx[3];
-            layer->proj[2] = mtx[5];
-            layer->proj[3] = mtx[7];
-            layer->proj[4] = mtx[10];
-            layer->proj[5] = mtx[11];
-            GSlayerCam* cam = layer->cam;
+            (*(s32*)&layer->hw.projType) = 1;
+            ((f32*)layer->hw.proj)[0] = mtx[0];
+            ((f32*)layer->hw.proj)[1] = mtx[3];
+            ((f32*)layer->hw.proj)[2] = mtx[5];
+            ((f32*)layer->hw.proj)[3] = mtx[7];
+            ((f32*)layer->hw.proj)[4] = mtx[10];
+            ((f32*)layer->hw.proj)[5] = mtx[11];
+            GSlayerCam* cam = (*(GSlayerCam**)&layer->matrixStack);
             memcpy(cam->data + 1, &mtxIdent, 0x30);
             cam->data[0] |= 1;
-            layer->nearZ = 0.0f;
-            layer->farZ = 30000.0f;
-            if (layer->f16a7) {
-                if (layer->f16a6) {
-                    layer->dirty170c |= 0x100;
-                    layer->dirty17c4 |= 0x100;
+            (*(f32*)&layer->hw.fogNear) = 0.0f;
+            (*(f32*)&layer->hw.fogFar) = 30000.0f;
+            if ((*(u8*)&layer->hw.fogEnable)) {
+                if ((*(u8*)&layer->hw.fogRangeEnable)) {
+                    (*(u32*)&layer->dirty[0].pe) |= 0x100;
+                    (*(u32*)&layer->dirty[1].pe) |= 0x100;
                 }
-                layer->dirty170c |= 0x40;
-                layer->dirty16a8 |= 0x40;
-                layer->dirty17c4 |= 0x40;
-                layer->dirty1760 |= 0x40;
+                (*(u32*)&layer->dirty[0].pe) |= 0x40;
+                (*(u32*)&layer->dirty[0].groups) |= 0x40;
+                (*(u32*)&layer->dirty[1].pe) |= 0x40;
+                (*(u32*)&layer->dirty[1].groups) |= 0x40;
             }
             layer->mark(1, 0x16ac, 0x20);
-            layer->colorUpdate = 1;
-            layer->alphaUpdate = 0;
-            layer->zUpdate = 0;
+            (*(u8*)&layer->hw.colorUpdate) = 1;
+            (*(u8*)&layer->hw.alphaUpdate) = 0;
+            (*(u8*)&layer->hw.zUpdate) = 0;
             layer->mark(0x40, 0x170c, 4);
-            layer->zEnable = 0;
-            layer->zFunc = 7;
+            (*(u8*)&layer->hw.zEnable) = 0;
+            (*(s32*)&layer->hw.zFunc) = 7;
             layer->mark(0x40, 0x170c, 8);
-            layer->d8c = 2;
+            (*(s32*)&layer->hw.cullMode) = 2;
             layer->mark(2, 0x16b8, 2);
-            layer->primType = 0x80;
-            layer->curVF = vf;
+            (*(u32*)&layer->unk1998) = 0x80;
+            (*(GSgfxVF**)&layer->curVF) = vf;
             LU8(0xc70) = 1;
             layer->mark(1, 0x16ac, 1);
             layer->tgenFunc(0, (GSgfxTgenFunc)1, (GSgfxTgenSrc)4, 0, false, 0);
@@ -324,21 +287,21 @@ void WorldMapModel::renderOffscreenData(f32 alphaF)
             LU32(0x1078) = 4;
             LU32(0x107c) = 7;
             layer->mark(8, 0x16d8, 1);
-            if (layer->curBlendIdx != 1) {
-                layer->curBlendIdx = 1;
-                layer->curBlend = &layer->blendTable[layer->curBlendIdx];
+            if ((*(s32*)&layer->curPass) != 1) {
+                (*(s32*)&layer->curPass) = 1;
+                layer->curFifo = &layer->passes[layer->curPass];
             }
-            layer->blendOp = 1;
-            layer->blendSrc = 4;
-            layer->blendDst = 5;
-            layer->blendLogic = 5;
+            (*(s32*)&layer->hw.blend[0]) = 1;
+            (*(s32*)&layer->hw.blend[1]) = 4;
+            (*(s32*)&layer->hw.blend[2]) = 5;
+            (*(s32*)&layer->hw.blend[3]) = 5;
             layer->mark(0x40, 0x170c, 1);
             GStexture* t = mOffscreenData;
-            if (layer->tex1740 != t || layer->tex17f8 != t || ((u8*)t)[7] != 0) {
-                layer->tex1740 = t;
-                layer->dirty173c |= 1;
-                layer->tex17f8 = t;
-                layer->dirty17f4 |= 1;
+            if ((*(GStexture**)&layer->dirty[0].tex[0]) != t || (*(GStexture**)&layer->dirty[1].tex[0]) != t || ((u8*)t)[7] != 0) {
+                (*(GStexture**)&layer->dirty[0].tex[0]) = t;
+                (*(u32*)&layer->dirty[0].texMask) |= 1;
+                (*(GStexture**)&layer->dirty[1].tex[0]) = t;
+                (*(u32*)&layer->dirty[1].texMask) |= 1;
             }
             layer->beginSurface(4);
             GXFifoNV.s16 = 0;
@@ -396,8 +359,8 @@ void* WorldMapModel::SetModel(u32 groupID, u32 modelID, bool attachLights)
     if (hdr->models != 0) {
         base = floorReadMakeModelResID(modelID);
         k = 0;
-        while (*(void**)((u8*)hdr->models + k) != 0) {
-            void* m = GSmodelLoad(*(void**)((u8*)hdr->models + k), 0);
+        while (GC_AT(void*, hdr->models, k) != 0) {
+            void* m = GSmodelLoad(GC_AT(void*, hdr->models, k), 0);
             id = base | i;
             GSresFreeResource(groupID, id);
             GSresRegisterResource(m, groupID, id, _unloadModel);
@@ -425,8 +388,8 @@ void* WorldMapModel::SetModel(u32 groupID, u32 modelID, bool attachLights)
     if (hdr->lights != 0) {
         base = floorReadMakeLightResID(modelID);
         k = 0;
-        while (*(void**)((u8*)hdr->lights + k) != 0) {
-            l = GSlightLoad(*(void**)((u8*)hdr->lights + k));
+        while (GC_AT(void*, hdr->lights, k) != 0) {
+            l = GSlightLoad(GC_AT(void*, hdr->lights, k));
             if (l == 0) {
                 GSlogWrite("Error! floorReadMapPostFunc: couldn't load light %d\n", j);
                 GSlogWrite("\x83\x89\x83\x43\x83\x67\x82\xCC\x8F\x89\x8A\xFA\x89\xBB\x82\xC9\x8E\xB8\x94\x73\n");
@@ -465,7 +428,7 @@ void WorldMapModel::UnloadModel(u32 groupID, u32 modelID)
         if (hdr->models != 0) {
             base = floorReadMakeModelResID(modelID);
             k = 0;
-            while (*(u32*)((u8*)hdr->models + k) != 0) {
+            while (GC_AT(u32, hdr->models, k) != 0) {
                 GSresFreeResource(groupID, base | i);
                 k += 4;
                 i++;
@@ -474,7 +437,7 @@ void WorldMapModel::UnloadModel(u32 groupID, u32 modelID)
         if (hdr->lights != 0) {
             base = floorReadMakeLightResID(modelID);
             k = 0;
-            while (*(u32*)((u8*)hdr->lights + k) != 0) {
+            while (GC_AT(u32, hdr->lights, k) != 0) {
                 GSresFreeResource(groupID, base | j);
                 k += 4;
                 j++;
@@ -493,7 +456,7 @@ void WorldMapModel::ObjectVisibility(u32 id, bool visible)
     u32 res = floorReadMakeModelResID(id);
     if (hdr->models != 0) {
         k = 0;
-        while (*(u32*)((u8*)hdr->models + k) != 0) {
+        while (GC_AT(u32, hdr->models, k) != 0) {
             Visibility(res, visible);
             res++;
             k += 4;
@@ -535,14 +498,14 @@ bool WorldMapModel::ModelAttach(u32 a, u32 b, s32 part, GSattachMode mode)
     return true;
 }
 
-void* WorldMapModel::SetModelPartPaticle(u32 a, u32 b, s32 part, GSattachMode mode, bool x, bool y, bool z)
+_GSparticleGen* WorldMapModel::SetModelPartPaticle(u32 a, u32 b, s32 part, GSattachMode mode, bool x, bool y, bool z)
 {
     void* gen;
     void* p = GSmodelGetPart(GSresGetResourceAllGroup(a), part);
     gen = GSparticleCreateGenerator(GSresGetResourceAllGroup(b), 0, 0);
     GSparticleAttachGeneratorToGSpart(gen, p, mode, x, y, z);
     GSpartFree(p);
-    return gen;
+    return (_GSparticleGen*)gen;
 }
 
 void WorldMapModel::DetachModelPartPaticle(_GSparticleGen* gen, bool b)

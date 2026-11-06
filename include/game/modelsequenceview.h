@@ -1,0 +1,67 @@
+#ifndef GAME_MODELSEQUENCEVIEW_H
+#define GAME_MODELSEQUENCEVIEW_H
+#include <dolphin/types.h>
+#ifndef PWVEC_DEFINED
+#define PWVEC_DEFINED
+typedef struct PWvec { f32 x, y, z; } PWvec;
+#endif
+typedef struct ModelSequenceLayout {
+    void* vtbl;
+    u16 m_unk4;
+    u8 m_visible;
+    u8 m_unk7;
+    s32 m_kind;
+    PWvec m_position;
+    PWvec m_rotation;
+    PWvec m_scale;
+    void* m_list;
+    void* m_camera;
+    void* m_next;
+    u32 m_unk3C;
+    u32 m_seed;
+    s16 m_resID;
+    u16 m_unk46;
+    u16 m_timer;
+    u16 m_unk4A;
+    u16 m_distortionID;
+    u8 m_mouthState;
+    u8 m_distortionParam;
+    s8 m_modelSize;
+    u8 m_modelID;
+    u8 m_section;
+    u8 m_step;
+    u8 m_flags;
+    u8 m_unk55;
+    u8 m_hasParent;
+    u8 m_rare;
+    u8 m_unk58;
+    u8 unk59[3];
+    u8 m_unk5C;
+    u8 m_stepRestart;
+    u8 m_colorSwap;
+    u8 m_modulation;
+    u8 m_unk60;
+    u8 m_unk61;
+    u16 m_unk62;
+    void* m_unk64;
+    f32 m_unk68;
+    PWvec m_look;
+    void* m_unk78;
+    void* m_parent;
+    void* m_colors;
+    void* m_sleepAnim;
+    void* m_wakeAnim;
+    void* m_unk8C;
+    void* m_talkAnim;
+    void* m_model;
+    void* m_unk98;
+    void* m_sections;
+    u32 m_pachiruA;
+    u32 m_pachiruB;
+    void* m_unkA8;
+    void* m_unkAC;
+    void* m_unkB0;
+    void* m_iceGen;
+    void* m_sleepGen;
+} ModelSequenceLayout;
+#endif

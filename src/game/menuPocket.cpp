@@ -1,6 +1,9 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #include <game/shared/menu_work.h>
 
 enum GSgfxLayerID { GSgfxLayerID0 };
@@ -13,7 +16,7 @@ struct MenuItem {
     s16 h;
 };
 
-class Hero {
+struct Hero {
 public:
     bool itemSort(u8 kind);
 };
@@ -125,6 +128,13 @@ struct PocketData {
     u8 pad4d[3];
 };
 
+#ifdef __MWERKS__
+#define POCKET_DATA_CLEAR 0x4C
+#else
+#include <stddef.h>
+#define POCKET_DATA_CLEAR offsetof(PocketData, resizeInit)
+#endif
+
 struct ScriptEntry {
     u16 id;
     u16 pad;
@@ -144,7 +154,7 @@ CursorPos cursorBiosSetPos(u16 index, CursorPos newPos);
 s32 winMsgOpen(s8 type, u32 msg, bool a, bool b);
 s32 winMsgOpenWithSE(s8 type, u32 msg, bool a, bool b, u8 se);
 void winMsgClose(bool flag);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 u8* itemDataBiosGetPtr(u16 index);
 u32 itemDataBiosGetBattleUseFunc(u8* p);
 u32 itemDataBiosGetFieldUseFunc(u8* p);
@@ -157,14 +167,14 @@ u8 itemDataBiosGetImportant(u8* p);
 u8 itemDataBiosGetHidenMachineNo(u8* p);
 u32 itemDataBiosGetWazaMachineNo(u8* p);
 u8 itemDataBiosGetKinomiNo(u16 itemId);
-u32 itemDataBiosGetWazaIDByWazaMachineNo(u8 machineNo);
+u32 itemDataBiosGetWazaIDByWazaMachineNo(PCARG(u8, u32) machineNo);
 MenuItem* menuItemBiosGetPtr(s32 menuID, u32 index);
 s32 menuShopGetMsgID(u8* out, s32 shop, ...);
-s8 menuSubOpenYesNo(s32, s32, s32, bool);
+s8 menuSubOpenYesNo(s32, s32, s32, PCARG(bool, s32));
 u8 GSsndPlay(u32 id, s32 time, u32 flag);
 void heroAddPokedoru(Hero* hero, u32 offset);
-u32 heroGetStatus(Hero* hero, u32 selector, u16 index);
-s32 heroItemDecItemDataId(Hero* hero, u16 itemID, u16 amount, s16 index);
+StatusU32 heroGetStatus(Hero* hero, u32 selector, u16 index);
+s32 heroItemDecItemDataId(Hero* hero, PCARG(u16, u32) itemID, PCARG(u16, u32) amount, PCARG(s16, u32) index);
 void* heroItemGetItemKindToItemAryPtr(Hero* hero, u8 kind, u16* outCount, u16* outMax, u8* f1, u8* f2);
 void* heroHizukiItemGetItemAryPtr(Hero* hero, u16* outCount, u16* outMax, u8* f1, u8* f2);
 u8 itemCheckValid(void* item);
@@ -259,7 +269,7 @@ void _printItemList(GSgfxLayerID layer, int x, int tab, CURSOR& cursor);
 void _setExplanationMsgID(u32 msg);
 u32 _getItemInstMsg(u32 item);
 u16 _getItemIDFromMenuPos(int tab, int pos);
-u16 _selectItem(int& pos, long* param);
+u16 _selectItem(int& pos, s32* param);
 u16 _menuPocketLoop(void);
 u8 _IsSortAble(tagWINDOW_WORK* w);
 u8 _IsIrekaeAble(tagWINDOW_WORK* w);
@@ -341,10 +351,13 @@ ResizeEntry ActMenuResizeWork[7] = {
     { 0xD9, 0, 0, 0 },
 };
 }
+extern "C" {
 u16 item_ball_sort[12] = {
     0x4, 0x3, 0x2, 0xA, 0x9, 0x8, 0x7, 0x6,
     0xC, 0xB, 0x1, 0x5,
 };
+}
+extern "C" {
 u16 item_dougu_sort[128] = {
     0xD, 0x16, 0x15, 0x14, 0x13, 0x1A, 0x1B, 0x1C,
     0x1D, 0xE, 0x12, 0x11, 0xF, 0x10, 0x17, 0x26,
@@ -363,8 +376,11 @@ u16 item_dougu_sort[128] = {
     0x102, 0x6E, 0x6D, 0x6C, 0x6B, 0x6A, 0x68, 0x67,
     0x6F, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x1FF,
 };
+}
 
+extern "C" {
 PocketScript menuPocketWork;
+}
 PocketData Data;
 
 extern "C" {
@@ -418,7 +434,7 @@ u8 menuPocket2GetLastSlotID(void)
 extern "C" {
 u16 menuPocket2Open(int mode, int* slot, void* arg)
 {
-    memset(&Data, 0, 0x4C);
+    memset(&Data, 0, POCKET_DATA_CLEAR);
     Data.mode = mode;
     if (mode == 1 || mode == 6) {
         Data.trainer = arg;
@@ -450,7 +466,7 @@ u16 menuPocket2Open(int mode, int* slot, void* arg)
 extern "C" {
 void menuPocket2Call(int mode, int shop, Hero* hero)
 {
-    memset(&Data, 0, 0x4C);
+    memset(&Data, 0, POCKET_DATA_CLEAR);
     Data.mode = mode;
     Data.hero = hero;
     Data.shop = shop;
@@ -692,17 +708,13 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
     }
     if (Data.exchangeFrom < 0 && !moved) {
         if ((rep & 8) && Data.mode != 6) {
-            int t = w->cursor + 1;
-            w->cursor = t;
-            if ((u32)t >= 5) {
+            if ((u32)++w->cursor >= 5) {
                 w->cursor = 0;
             }
             Data.tabScroll = (f32)menuItemBiosGetPtr(0x2C, 0xB6)->w;
             se = 0x44D;
         } else if ((rep & 4) && Data.mode != 6) {
-            int t = w->cursor - 1;
-            w->cursor = t;
-            if (t < 0) {
+            if (--w->cursor < 0) {
                 w->cursor = 4;
             }
             Data.tabScroll = (f32)-menuItemBiosGetPtr(0x2C, 0xB6)->w;
@@ -726,8 +738,7 @@ int menuPocket2Cursor(tagWINDOW_WORK* w)
         c3 = cursorBiosGetPos(TabTbl[w->cursor].cursorIdx);
         pos.x = c3.x;
         pos.y = c3.y;
-        u16 rf_t = w->cursor;
-        u16 id = _getItemIDFromMenuPos(rf_t, c3.x + c3.y);
+        u16 id = _getItemIDFromMenuPos(w->cursor, pos.x + pos.y);
         if (id != 0) {
             msg = _getItemInstMsg(id);
         } else {
@@ -1374,8 +1385,8 @@ u16 _menuPocketLoop(void)
     static CursorPos czero = { 0, 0 };
     CursorPos c;
     CursorPos cp;
-    long param;
-    long* pp;
+    s32 param;
+    s32* pp;
     u16 out;
     u16 item;
     int i;
@@ -1437,7 +1448,7 @@ u16 _menuPocketLoop(void)
 }
 
 namespace {
-u16 _selectItem(int& pos, long* param)
+u16 _selectItem(int& pos, s32* param)
 {
     Data.exchangeFrom = -1;
     int tab = menuOpenCustom(0x2C, windowGetActiveID(), param, 0, 1, 0);
@@ -2067,7 +2078,14 @@ int _execSell(int tab, u16 item, int pos)
     int price = _getItemPrice(item);
     if (price <= 0) {
         menuPtPlaySe(0x13);
+#ifdef __MWERKS__
         winMsgOpenWithSE(2, menuShopGetMsgID(&se, shop, 0xB, 0x2D, item, -1), 1, 0, se);
+#else
+        {
+            u32 msgId_ = menuShopGetMsgID(&se, shop, 0xB, 0x2D, item, -1);
+            winMsgOpenWithSE(2, msgId_, 1, 0, se);
+        }
+#endif
         winMsgClose(1);
         return 0;
     }
@@ -2084,7 +2102,14 @@ int _execSell(int tab, u16 item, int pos)
         return 0;
     }
     total *= n;
+#ifdef __MWERKS__
     winMsgOpenWithSE(2, menuShopGetMsgID(&se, shop, 9, 0x4B, total, -1), 1, 0, se);
+#else
+    {
+        u32 msgId_ = menuShopGetMsgID(&se, shop, 9, 0x4B, total, -1);
+        winMsgOpenWithSE(2, msgId_, 1, 0, se);
+    }
+#endif
     s8 r = menuSubOpenYesNo(0, -1, -1, 0);
     if (r == 1 || r == -1) {
         winMsgClose(1);
@@ -2229,5 +2254,9 @@ u8 fn_8002208C(tagWINDOW_WORK* w)
 }
 }
 
+extern "C" {
 s32 item_ball_sort_number = 12;
+}
+extern "C" {
 s32 item_dougu_sort_number = 128;
+}

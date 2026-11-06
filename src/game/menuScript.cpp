@@ -1,6 +1,12 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/pxdvs/GSAPI/GSflag/flagData.h>
+#include <game/menuTables.h>
 #include <game/shared/menu_work.h>
 
 struct CURSOR {
@@ -40,19 +46,6 @@ struct WAZAOSHIEDEF {
     u8 pad15[3];
 };
 
-struct WAZAOSHIE_DATA {
-    u16 id;
-    u16 pad2;
-    u32 mission;
-    u32 flag;
-};
-
-struct FlagEtcEntry {
-    u8 pad0[8];
-    u32 value;
-    u8 pad[0x14];
-};
-
 u32 deckDataVirtualDB_GetTitle(u16 id);
 u32 deckDataVirtualDB_GetFlag(u16 id);
 u32 deckDataVirtualDB_GetExplanetion2(u16 id);
@@ -64,7 +57,7 @@ extern u32* tutorialdata_number;
 extern u16* tutorialdata;
 extern WAZAOSHIE_DATA* wazaoshie_data;
 extern s32* wazaoshie_data_number;
-extern FlagEtcEntry* flag_etc;
+extern FlagEtc* flag_etc;
 
 KeyInfo* windowGetKeyInfo(void);
 u32 windowGetKeyRepeat(void);
@@ -75,20 +68,20 @@ void winSpriteSetDisp(tagSPRITE_WORK* sp, bool on);
 MenuItem* menuItemBiosGetPtr(s32 menuID, u32 index);
 void spriteSetScissor(s32 layer, s32 x, s32 y, s32 w, s32 h);
 void spriteClearScissor(s32 layer);
-void GSmsgPrint2(s32 layer, s16 x, s16 y, u32 color, u32 msg);
+void GSmsgPrint2(s32 layer, PCARG(s16, s32) x, PCARG(s16, s32) y, u32 color, u32 msg);
 void GSmsgPrintRect(s32, s32, s32, s32, s32, u32, u32);
 void GSmsgPrintRight(s32 layer, s32 x, s32 y, s32 w, s32 h, u32 color, u32 msg);
 u32 GSmsgGetRect(u32 msg);
 u32 GSmsgGetCharLength(u16*);
 char* GSmsgGetGSchar(u32 msg);
-void msgctrlSetValue(s32 id, u32 value);
+void msgctrlSetValue(s32 id, GCuptr value);
 void* menuSpriteBiosGetPtr(u32 id);
 MenuSpriteVal* menuSpriteBiosGetValPtr(void* sprite);
 void windowDrawSprite(s16 x, s16 y, void* ctx, u16 key, u32 flags, s32 layer);
 void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx, u16 key, u32 flags, s32 layer);
 void* savedataGetStatus(void* save, s32 kind);
 s32 heroBiosGetPokecoupon(void* hero);
-u32 heroGetStatus(void* hero, u32 selector, u16 index);
+StatusU32 heroGetStatus(void* hero, u32 selector, u16 index);
 u16 zokuseiBiosGetSpriteID(u16 id);
 u16 zokuseiGetPokemonSpriteID(void*, u16);
 POKEMON_DATA_dd_* pokemonDataBiosGetPtr(u16 pokeNum);
@@ -183,18 +176,18 @@ static u8 _wazaFlag;
 static void _wazaOshieCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite);
 static u16 _wazaOshieWazaNum(tagWINDOW_WORK* w);
 static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite, CURSOR* c, POKEMON_DATA_dd_* pd);
-static WAZAOSHIEDEF* _getWaza2Pointer(long n);
+static WAZAOSHIEDEF* _getWaza2Pointer(s32 n);
 static void _checkWaza2Release(void);
 static u16 _checkWaza2(void);
 static void _checkWazaRelease(void);
-static u16 _checkWaza(long poke);
+static u16 _checkWaza(s32 poke);
 static u16 _checkWazaSub(Pokemon* p);
 static u8 _checkWazaOverlap(u16* arr, u16 id, u16 n);
 static bool _checkRelive(Pokemon* p);
-static Pokemon* _getPokemonPtr(long n);
+static Pokemon* _getPokemonPtr(s32 n);
 static void _getWazaData(u16 id, WAZAOSHIEDEF* out);
 static void _menuScriptPdaAddFunc(pdaAddFuncDef f);
-static void _menuScriptReadMail(long id);
+static void _menuScriptReadMail(s32 id);
 
 extern "C" {
 void menuScriptSetMailOpen(u8 flag);
@@ -237,7 +230,7 @@ void menuScriptInfoRelive(Pokemon* p, u8 flag)
     menuCloseCustom(0x97, 0, 1);
     if (p) {
         char* nick = pokemonBiosGetNicknamePtr(p);
-        msgctrlSetValue(0x32, (u32)nick);
+        msgctrlSetValue(0x32, (GCuptr)nick);
         if (flag) {
             winMsgOpen(3, 0x3E81, 1, 1);
         } else {
@@ -250,7 +243,7 @@ void menuScriptInfoRelive(Pokemon* p, u8 flag)
 
 }
 
-static void _menuScriptReadMail(long id)
+static void _menuScriptReadMail(s32 id)
 {
     GSmodelAllPauseAnimation();
     menuCreateOffScreen(20.0f / GSgfxVideoGetVsyncRate(), 50.0f);
@@ -617,7 +610,7 @@ s32 menuScriptMoneyDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
             break;
         }
         case 0x65A:
-            windowDrawSprite2(0, 0, sprite->w, sprite->h, *(u32*)&w->color[0], w, 0x2D3, 0, winSpriteGetLayerID(w, sprite));
+            windowDrawSprite2(0, 0, sprite->w, sprite->h, GC_BYTES32(&w->color[0]), w, 0x2D3, 0, winSpriteGetLayerID(w, sprite));
             break;
         }
     } else {
@@ -629,7 +622,7 @@ s32 menuScriptMoneyDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
             break;
         }
         case 0x65A:
-            windowDrawSprite2(0, 0, sprite->w, sprite->h, *(u32*)&w->color[0], w, 0x2F9, 0, winSpriteGetLayerID(w, sprite));
+            windowDrawSprite2(0, 0, sprite->w, sprite->h, GC_BYTES32(&w->color[0]), w, 0x2F9, 0, winSpriteGetLayerID(w, sprite));
             break;
         }
     }
@@ -657,7 +650,7 @@ static void _getWazaData(u16 id, WAZAOSHIEDEF* out)
     o->flag = 0;
 }
 
-static Pokemon* _getPokemonPtr(long n)
+static Pokemon* _getPokemonPtr(s32 n)
 {
     Pokemon* p = heroBiosGetPokemonPtr(savedataGetStatus(0, 2), n);
     if (pokemonCheckValid(p)) {
@@ -711,7 +704,7 @@ static u16 _checkWazaSub(Pokemon* p)
     return n;
 }
 
-static u16 _checkWaza(long poke)
+static u16 _checkWaza(s32 poke)
 {
     u16 count = 0;
     Pokemon* p = _getPokemonPtr(poke);
@@ -747,8 +740,8 @@ static u16 _checkWaza2(void)
     bool* flags = new bool[*wazaoshie_data_number];
     for (i = 0; i < *wazaoshie_data_number; i++) {
         u32 mission = wazaoshie_data[i].mission;
-        if (GSflagGet(0x3C4) >= flag_etc[mission].value) {
-            u16 idx = count;
+        if (GSflagGet(0x3C4) >= flag_etc[mission].flagValue) {
+            u8 idx = count;
             ids[idx] = wazaoshie_data[i].id;
             flags[idx] = GSflagTest(wazaoshie_data[i].flag);
             if (flags[idx]) {
@@ -785,7 +778,7 @@ static void _checkWaza2Release(void)
     }
 }
 
-static WAZAOSHIEDEF* _getWaza2Pointer(long n)
+static WAZAOSHIEDEF* _getWaza2Pointer(s32 n)
 {
     if (_wazalist == 0) {
         return 0;
@@ -866,7 +859,7 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
                 k++;
             }
             buf1[k++] = 0;
-            msgctrlSetValue(0x37, (u32)name);
+            msgctrlSetValue(0x37, (GCuptr)name);
             u32 width = GSmsgGetRect(0x4276) >> 16;
             if (width <= item->w) {
                 best = n;
@@ -912,12 +905,12 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
             }
             buf1[n1] = 0;
             buf2[n2] = 0;
-            msgctrlSetValue(0x37, (u32)buf1);
+            msgctrlSetValue(0x37, (GCuptr)buf1);
             GSmsgPrint2(w->layer, 0, 0, w->alpha | 0xFFFFFF00, 0x4276);
-            msgctrlSetValue(0x37, (u32)buf2);
+            msgctrlSetValue(0x37, (GCuptr)buf2);
             GSmsgPrint2(w->layer, 0, 0x12, w->alpha | 0xFFFFFF00, 0x4276);
         } else {
-            msgctrlSetValue(0x37, (u32)text);
+            msgctrlSetValue(0x37, (GCuptr)text);
             GSmsgPrint2(w->layer, 0, 0, w->alpha | 0xFFFFFF00, 0x4276);
         }
         delete[] buf1;
@@ -952,7 +945,7 @@ void fn_8005DE84(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
     for (i = 0; i < 5; i++) {
         if ((u16)sprite->id == ids[i]) {
             char* str = GSmsgGetGSchar(msgs[i]);
-            msgctrlSetValue(0x37, (u32)str);
+            msgctrlSetValue(0x37, (GCuptr)str);
             GSmsgPrint2(winSpriteGetLayerID(w, sprite), 0, 0, w->alpha | 0xFFFFFF00, 0x4277);
             break;
         }
@@ -1000,7 +993,7 @@ void menuScriptEeveeHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
         u8 tid = pokemonDataBiosGetTokuseiDataId(pd, 0);
         if (tid != 0) {
             char* str = GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(tid)));
-            msgctrlSetValue(0x37, (u32)str);
+            msgctrlSetValue(0x37, (GCuptr)str);
             GSmsgPrint2(w->layer, 0, 0, w->alpha | 0xFFFFFF00, 0x4276);
         }
         break;
@@ -1010,11 +1003,12 @@ void menuScriptEeveeHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
         sprite->g = 0xAA;
         sprite->b = 0x33;
         break;
-    case 0x4F1:
+    case 0x4F1: {
         char* str = GSmsgGetGSchar((u32)pokemonDataBiosGetName(pd));
-        msgctrlSetValue(0x37, (u32)str);
+        msgctrlSetValue(0x37, (GCuptr)str);
         GSmsgPrint2(w->layer, 0, 0, w->alpha | 0xFFFFFF00, 0x4276);
         break;
+    }
     case 0x4EC: case 0x4FA: case 0x4FB: case 0x4FC: case 0x4FD: {
         const s32 ids[5] = { 0x4EC, 0x4FA, 0x4FB, 0x4FC, 0x4FD };
         s16 i;
@@ -1175,6 +1169,7 @@ extern "C" {
 
 void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
 {
+    extern void windowDrawSprite(s16 x, s16 y, void* ctx, u16 key, u32 flags, int layer);
     CURSOR c = *(CURSOR*)&w->top;
     u16 n = _wazaOshieWazaNum(w);
     volatile WAZAOSHIEDEF* waza = _getWaza2Pointer(c.pos + c.top);

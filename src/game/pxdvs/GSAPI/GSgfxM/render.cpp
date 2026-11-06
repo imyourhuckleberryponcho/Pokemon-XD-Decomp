@@ -1,6 +1,6 @@
 #include <dolphin/types.h>
 
-class GSgfxLayer;
+struct GSgfxLayer;
 struct GSgfx_GCFifoObj;
 struct GXFifoObj;
 
@@ -13,13 +13,13 @@ struct GSgfxRenderFifoItem {
     void* callbackArg;
 };
 
-struct GSgfxRenderState {
-    u8 unk0[0xC40];
-    GSgfxLayer* layer;
-    void* xfb;
-    s32 phase;
-    GSgfxRenderFifoItem* fifoList;
-};
+#include <game/gsgfxstate.h>
+#ifndef __MWERKS__
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+#endif
+typedef GSgfxState GSgfxRenderState;
 
 struct GSgfxRenderWaitData {
     s32 lastVsync;
@@ -117,18 +117,34 @@ void GSgfxPerfbarCPUEnd();
 void GSgfxPerfbarGPUEnd();
 void GSgfxPerfbarCPUStart();
 void GSgfxPerfbarGPUStart();
+#ifdef __MWERKS__
 void GSgfxPerfbarGPUEntry(u32 color);
+#else
+u32 GSgfxPerfbarGPUEntry(u32 color);
+#endif
 void GSgfxPerfbarRender(GSgfxLayer* layer);
+#ifdef __MWERKS__
 bool GSgfxGPUIsIdle();
+#else
+u32 GSgfxGPUIsIdle(void);
+#endif
 GSgfx_GCFifoObj* GSgfxGPUGetImmediateFifo();
 void GSgfxGPUProcessBlock(GSgfx_GCFifoObj* fifo, void* start, void* end);
 void GSgfxGPUInitFifoBase(GSgfx_GCFifoObj* fifo, void* base, u32 size);
 void GSgfxGPUSetDrawDoneCallback(void (*cb)());
 void GSgfxGPUSetBreakpointCallback(void (*cb)());
 void GSgfxVideoSetOneShotPostCallback(void (*cb)(void*));
+#ifdef __MWERKS__
 void GSgfxVideoSetXFBReady(void* xfb);
+#else
+bool GSgfxVideoSetXFBReady(void* xfb);
+#endif
 void* GSgfxVideoFindFreeXFB(bool);
+#ifdef __MWERKS__
 void GSgfxVideoBuildEFB2XFBCopy(void* buf, void* xfb);
+#else
+u32 GSgfxVideoBuildEFB2XFBCopy(void* cmd, void* xfb);
+#endif
 void* GSgfxVideoCopyEFBToXFB();
 void GSgfxVideoSetupNextFrame();
 void GSgfxResetUpdate();
@@ -218,7 +234,11 @@ static inline void setupFirstFrameImpl() {
     if (gsgfx_gpu_mode == 2) {
         GXSaveCPUFifo(fifo);
         GXGetFifoPtrs(fifo, &tmp, (void**)&_renderPrepareFrameEnd);
+#ifdef __MWERKS__
         GXSetCPUFifo((GXFifoObj*)(gsgfx_layer_activeFifo + 8));
+#else
+        GXSetCPUFifo((GXFifoObj*)((GSgfxLayerData::PassFifo*)gsgfx_layer_activeFifo)->gxFifo);
+#endif
     }
     GSgfxTokenMarkFrame();
 }

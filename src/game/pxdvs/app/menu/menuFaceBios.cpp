@@ -1,15 +1,10 @@
 #include <dolphin/types.h>
+#include <game/faceData.h>
+#include <game/bitfield.h>
 
 #pragma peephole off
 
 #pragma pool_strings off
-
-struct MenuFaceData {
-    u8 rareFlag : 1;
-    u8 unk0 : 7;
-    u8 unk1[3];
-    u32 texID;
-};
 
 extern "C" {
 void GSlogWrite(const char* fmt, ...);

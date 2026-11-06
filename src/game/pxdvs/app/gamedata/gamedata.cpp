@@ -1,11 +1,13 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 struct Gamedata;
 struct GamedataSave;
 struct GamedataAttest;
 
 extern "C" {
-void* savedataGetStatus(void*, u16);
+void* savedataGetStatus(void*, PCARG(u16, s32));
 void* gamedatasaveBiosGetplaydata(Gamedata*);
 bool gamedataBiosGetZukanFlag(void*, u16);
 void gamedataBiosSetZukanFLag(void*, u16, u16);
@@ -129,7 +131,7 @@ static inline u32 gamedataGetStatusInline(Gamedata* ptr, u32 kind) {
 
 extern "C" {
 
-bool gamedataBiosGetFlag(Gamedata* ptr, u16 kind, u16 bit) {
+PCRET(bool) gamedataBiosGetFlag(Gamedata* ptr, u16 kind, u16 bit) {
     if (kind == 0 || kind >= 0x10) {
         return false;
     }
@@ -219,7 +221,7 @@ void gamedatasaveSetStatus(Gamedata* ptr, u32 kind, u32 value) {
     }
 }
 
-u32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind) {
+StatusU32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind) {
     Gamedata* base = 0;
     GamedataSave* save;
 
@@ -242,7 +244,7 @@ u32 gamedatasaveGetStatus(Gamedata* ptr, u32 kind) {
     }
     switch ((u16)kind) {
     case 1:
-        return (u32)base;
+        return (StatusU32)base;
     case 2:
         return gamedatasaveBiosGetSavernd(save);
     case 3:
@@ -394,7 +396,7 @@ void gamedataSetStatus(Gamedata* ptr, u32 kind, u32 value) {
     }
 }
 
-u32 gamedataGetStatus(Gamedata* ptr, u32 kind) {
+StatusU32 gamedataGetStatus(Gamedata* ptr, u32 kind) {
     GamedataAttest* base;
 
     if ((u16)kind == 0 || (u16)kind >= 7) {
@@ -416,7 +418,7 @@ u32 gamedataGetStatus(Gamedata* ptr, u32 kind) {
     }
     switch ((u16)kind) {
     case 1:
-        return (u32)base;
+        return (StatusU32)base;
     case 2:
         return gamedataAttestBiosGetVerId(base);
     case 3:

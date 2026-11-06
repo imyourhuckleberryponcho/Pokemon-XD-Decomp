@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/pxdvs/app/floor/floorData.h>
 
 #pragma peephole off
 
@@ -8,15 +11,15 @@ struct GSvec {
 };
 
 struct FloorGfxInfo {
-    u32 sunResID;
-    u32 shadowLightID;
-    u32 shadowRecive[8];
-    u32 secondaryRender[3];
-    u32 fogModel[3];
+    gc_be32 sunResID;
+    gc_be32 shadowLightID;
+    gc_be32 shadowRecive[8];
+    gc_be32 secondaryRender[3];
+    gc_be32 fogModel[3];
 };
 
 struct FloorGfxHolder {
-    FloorGfxInfo* info;
+    gc_ptr32(FloorGfxInfo) info;
 };
 
 struct FloorCharInfo {
@@ -24,64 +27,41 @@ struct FloorCharInfo {
 };
 
 struct FloorCharCount {
-    u32 count;
+    gc_be32 count;
 };
 
 struct FloorCharList {
-    FloorCharCount* count;
-    FloorCharInfo* info;
+    gc_ptr32(FloorCharCount) count;
+    gc_ptr32(FloorCharInfo) info;
 };
 
 struct FloorCharHolder {
-    FloorCharList* list;
+    gc_ptr32(FloorCharList) list;
 };
 
 struct FloorPosEntry {
-    s16 angle;
-    s16 pad;
-    f32 x;
-    f32 y;
-    f32 z;
+    gc_bes16 angle;
+    gc_bes16 pad;
+    gc_bef32 x;
+    gc_bef32 y;
+    gc_bef32 z;
 };
 
 struct FloorPosCount {
-    u32 count;
+    gc_be32 count;
 };
 
 struct FloorPosList {
-    FloorPosCount* count;
-    FloorPosEntry* entries;
+    gc_ptr32(FloorPosCount) count;
+    gc_ptr32(FloorPosEntry) entries;
 };
 
 struct FloorPosHolder {
-    FloorPosList* list;
+    gc_ptr32(FloorPosList) list;
 };
 
 struct FloorFieldCameraHolder {
-    void* list;
-};
-
-struct FloorData {
-    u8 area;
-    u8 kind;
-    u16 floorID;
-    u32 mapResID;
-    FloorGfxHolder* gfx;
-    FloorCharHolder* chars;
-    FloorPosHolder* positions;
-    FloorFieldCameraHolder* fieldCamera;
-    u32 placeName;
-    u32 preFunc;
-    u32 mainFunc;
-    u32 postFunc;
-    u32 unk28;
-    u32 groupID[5];
-};
-
-struct FloorTresure {
-    u8 unk0[4];
-    u16 floorID;
-    u8 unk6[0x16];
+    gc_ptr32(void) list;
 };
 
 extern "C" {
@@ -384,7 +364,7 @@ u32 floorDataBiosGetPlaceName(FloorData* floor) {
     return floor->placeName;
 }
 
-u16 floorDataBiosGetFloorID(FloorData* floor) {
+PCRET(u16) floorDataBiosGetFloorID(FloorData* floor) {
     if (floor == 0) {
         return 0;
     }

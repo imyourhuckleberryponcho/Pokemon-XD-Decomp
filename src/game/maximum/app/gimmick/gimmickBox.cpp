@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #pragma fp_contract off
 #pragma use_lmw_stmw off
 
@@ -28,7 +29,9 @@ struct tagPeopleWork {
     s32 motion;
     u8 pad4C[0xC];
     f32 f58;
-    u8 pad5C[0xD0];
+    u8 pad5C[0x1C];
+    void* points;
+    u8 pad7C[0xB0];
     f32 f12C;
 };
 
@@ -88,7 +91,7 @@ void peopleGetRot(s32, s32, GSvec*);
 f32 peopleInfoBiosGetColBallSize(void* info);
 void* peopleInfoBiosGetPtr(u32 id);
 void peopleRotateToAngle(s32, s32, f32, f32);
-tagPeopleWork* peopleSearchID();
+tagPeopleWork* peopleSearchID(u32 searchID);
 void peopleSetFlagOff(s32, s32, s32);
 void peopleSetFlagOn(s32, s32, s32);
 void peopleSetMotion(s32, s32, s32, s32, s32);
@@ -100,13 +103,20 @@ f32 peopleVecCalcRotY(GSvec* a, GSvec* b, f32 c);
 void soundOpenPlay(s32, s32, s32);
 u32 timeGetLastFrameTime();
 double fabs(double);
-f64 fmod(f32, f32);
+f64 fmod(f64, f64);
 }
 
+#ifndef __MWERKS__
+extern "C" double sqrt(double);
+#endif
 namespace std {
 f32 cosf(f32);
 f32 sinf(f32);
+#ifdef __MWERKS__
 f32 sqrtf(f32);
+#else
+static inline f32 sqrtf(f32 x) { return (f32)sqrt((double)x); }
+#endif
 f32 fabsf(f32 x);
 f32 fmodf(f32 a, f32 b);
 }
@@ -185,7 +195,7 @@ static void _gimmickBoxSetBoxDirection(f32 a, f32 b);
 static s32 _gimmickBoxWalkMotion();
 static f32 adjust2PI(f32 x);
 static f32 adjustNear8(f32 x);
-static s32 _gimmickBoxAllowAcrossPrevention(long n);
+static s32 _gimmickBoxAllowAcrossPrevention(s32 n);
 static u8 _gimmickBoxCanBoxMove(GSvec* a, GSvec* b);
 static s32 _gimmickBoxBoxMoveStart(tagPeopleWork* w, f32 a, f32 b);
 extern "C" f32 GSvecDistance(GSvec* a, GSvec* b);
@@ -293,6 +303,9 @@ extern "C" s32 gimmickBoxFixDistanceForPushBox(f32 fx, f32 fz, f32* dist, tagPeo
 }
 
 namespace std {
+#ifndef __MWERKS__
+static
+#endif
 inline f32 fabsf(f32 x) {
     return (f32)fabs(x);
 }
@@ -532,6 +545,9 @@ static f32 gimmickBoxUnusedFmod(f32 a) {
 }
 
 namespace std {
+#ifndef __MWERKS__
+static
+#endif
 inline f32 fmodf(f32 a, f32 b) {
     return (f32)fmod(a, b);
 }
@@ -600,8 +616,7 @@ extern "C" f32 gimmickBoxGetFrameCount(tagPeopleWork* w, s32 anim) {
 }
 
 static u8 _gimmickBoxInit() {
-    peopleGetHumanID(0, 0x64);
-    pd.ken = peopleSearchID();
+    pd.ken = peopleSearchID(peopleGetHumanID(0, 0x64));
     if (pd.ken == 0) return 0;
     pd.kenInfo = peopleInfoBiosGetPtr(pd.ken->id);
     pd.box = 0;
@@ -948,7 +963,7 @@ static u8 _gimmickBoxIsOnBoxPos(GSvec* p) {
     return 0;
 }
 
-static s32 _gimmickBoxAllowAcrossPrevention(long n) {
+static s32 _gimmickBoxAllowAcrossPrevention(s32 n) {
     peopleBiosGetPos(pd.ken, &pd.kenPos);
     GSvec a(pd.kenPos);
     GSvec b(pd.kenPos);
@@ -1140,7 +1155,7 @@ extern "C" s32 gimmickBoxSetKenShadowOnBoxIfOnBoxFloor(tagPeopleWork* ken, s32* 
                     } else {
                         GSlogWrite("gimmickBox.cpp : receiveList over flow.\n");
                     }
-                    list[*count - 1] = (s32)m;
+                    list[*count - 1] = (GCsptr)m;
                     found = 1;
                 }
             }
@@ -1288,8 +1303,7 @@ extern "C" void gimmickBoxFloorInit() {
 
 extern "C" void gimmickSetMotion(s32 a, s32 b, s32 motion, s32 frame, u8 loop) {
     if (frame == 0 && motion != 5 && motion >= 0) {
-        peopleGetHumanID(a, b);
-        tagPeopleWork* p = peopleSearchID();
+        tagPeopleWork* p = peopleSearchID(peopleGetHumanID(a, b));
         if (p != 0) {
             GSmodel* m = peopleBiosGetModelPtr(p);
             if (m != 0) {

@@ -1,21 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/pxdvs/GSAPI/GSsnd/sndData.h>
 
 #pragma pool_strings off
-
-struct SndData {
-    u8 unk0[2];
-    u8 flags;
-    u8 unk3[9];
-};
-
-struct SndWaveData {
-    u32 unk0;
-    u32 unk4;
-    u32 unk8;
-    u32 unkC;
-    u32 unk10;
-    u32 unk14;
-};
 
 struct SndPos {
     f32 x;
@@ -25,7 +12,7 @@ struct SndPos {
 
 extern "C" {
 
-extern u32 snd_data;
+extern SndData* snd_data;
 extern u32* snd_data_number;
 extern SndWaveData* snd_wave_data;
 extern u32* snd_wave_data_number;
@@ -119,7 +106,7 @@ u32 soundPauseBGMEX(u32 ms, u8 wait) {
 void soundOpenWave(u32 index) {
     if (*snd_wave_data_number > index) {
         SndWaveData* w = &snd_wave_data[index];
-        GSsndOpenWaveDVD(index, w->unk14, 0, w->unk4, w->unk8, w->unkC, w->unk10);
+        GSsndOpenWaveDVD(index, w->pad[4], 0, w->pad[0], w->pad[1], w->pad[2], w->pad[3]);
     }
 }
 
@@ -130,7 +117,7 @@ s32 soundOpenPlayME(u32 id, s32 time, s32 vol) {
     return result;
 }
 
-u8 soundGetVolume(u32 id) {
+PCRET(u8) soundGetVolume(u32 id) {
     return GSsndGetVolume(id);
 }
 
@@ -233,7 +220,7 @@ static s32 _soundOpenPlay(u32 id, s32 time, s32 vol, s32 bgm) {
             _soundCloseFastFadeout(soundPlayEnvID);
         }
         soundPlayEnvID = id;
-    } else if ((((u32) * (u8*)(snd_data + id * 0xC + 2) >> 5) & 1) != 1) {
+    } else if (snd_data[id].se != 1) {
         if (soundPlayID != id && soundPlayID != -1U) {
             _soundCloseFastFadeout(soundPlayID);
         }

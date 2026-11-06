@@ -1,26 +1,24 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/pxdvs/app/floor/floorData.h>
 
 #pragma peephole off
 
 struct OffscreenData {
     u8 isMovie;
     u8 anim;
-    u16 index;
-    u16 width;
-    u16 height;
-    u32 targetResID;
-    u32 sourceID;
-    u32 cameraResID;
+    gc_be16 index;
+    gc_be16 width;
+    gc_be16 height;
+    gc_be32 targetResID;
+    gc_be32 sourceID;
+    gc_be32 cameraResID;
 };
 
 struct OffscreenHeader {
-    u32* count;
-    OffscreenData* data;
-};
-
-struct FloorData {
-    u8 unk0[0x28];
-    OffscreenHeader** offscreen;
+    gc_ptr32(gc_be32) count;
+    gc_ptr32(OffscreenData) data;
 };
 
 struct GStexture;
@@ -40,7 +38,7 @@ void GSmodelResetTextureChange(void* model);
 GSmodel* floorOpenModel(u32 group, u32 id);
 void GSmodelSetVisibility(GSmodel* model, s32 visible);
 void GSmodelLinkTexAnimToAnim(GSmodel* model, s32);
-void GSmodelSetAnimIndex(GSmodel* model, u8 index);
+void GSmodelSetAnimIndex(GSmodel* model, PCARG(u8, u32) index);
 void GSmodelStartAnimation(GSmodel* model);
 void GSmodelForceAnimTransformUpdate(GSmodel* model);
 void GSmodelFree(GSmodel* model);
@@ -153,9 +151,16 @@ void floorUpdateOffscreen(void) {
 
 void floorInitOffscreen(FloorData* floor) {
     if (floor->offscreen != NULL) {
+#ifdef __MWERKS__
         _offRootDataPtr = (*floor->offscreen)->data;
         if (_offRootDataPtr != NULL) {
             _offRootDataCnt = *(*floor->offscreen)->count;
+#else
+        OffscreenHeader* hdr = *(gc_ptr32(OffscreenHeader)*)floor->offscreen;
+        _offRootDataPtr = hdr->data;
+        if (_offRootDataPtr != NULL) {
+            _offRootDataCnt = *hdr->count;
+#endif
             if (_offRootDataCnt != 0) {
                 memset(&_userOffData, 0, sizeof(OffscreenData));
             }

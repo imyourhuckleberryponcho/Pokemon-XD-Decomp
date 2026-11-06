@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/pxdvs/app/fight/fightData.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -64,9 +68,6 @@ struct FightPokemon {
 struct FightTrainer {
     u8 _draft[1];
 };
-struct FightTypeData {
-    u8 _draft[1];
-};
 struct GamedataAttest {
     u8 _draft[1];
 };
@@ -78,22 +79,22 @@ extern "C" {
 s32 GBAMakeFromGSchar(u8* dst, const u16* src, void* gamedata);
 void GSthreadSwitch(void);
 s32 GetWazaDocGBA(u8* out, u16 wazaID);
-long PKJB_BattleGetStatus(long ch, u32* out);
-long PKJB_BattleRequest(long ch, const u8* data, int size);
-long PKJB_EntryGetStatus(long ch, u32* out);
-long PKJB_EntryRequest(long ch, u32 value);
-long PKJB_ExchangeEnd(long ch);
-long PKJB_ExchangeIsPrepared(long ch);
-long PKJB_ExchangeStart(long ch, u8* data);
-long PKJB_GetKey(long ch, u16* out);
-long PKJB_IdleSend(long ch);
-long PKJB_ReturnTitle(long ch);
-long PKJB_SendWazaText(long ch, u8* data);
+s32 PKJB_BattleGetStatus(s32 ch, u32* out);
+s32 PKJB_BattleRequest(s32 ch, const u8* data, int size);
+s32 PKJB_EntryGetStatus(s32 ch, u32* out);
+s32 PKJB_EntryRequest(s32 ch, u32 value);
+s32 PKJB_ExchangeEnd(s32 ch);
+s32 PKJB_ExchangeIsPrepared(s32 ch);
+s32 PKJB_ExchangeStart(s32 ch, u8* data);
+s32 PKJB_GetKey(s32 ch, u16* out);
+s32 PKJB_IdleSend(s32 ch);
+s32 PKJB_ReturnTitle(s32 ch);
+s32 PKJB_SendWazaText(s32 ch, u8* data);
 u32 SIProbe(s32 chan);
 u8 exribbonGetNo(u32 index);
 FightFloor* fightFloorBiosGetFightFloorPtr(void);
 u8 fightFloorCheckFightActionFightOutPokemonIrekaeSelect(FIGHT_FLOOR* floor, FightOutPokemon* pokemon, FightOutPokemon** out);
-u32 fightFloorGetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg);
+StatusU32 fightFloorGetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg);
 u8 fightFloorIsUseFightTimerCommand(FIGHT_FLOOR* floor);
 u16 fightGetFightResultId(void);
 u16 fightOutPokemonBiosGetZokuseiDataId(u8* p, u8 i);
@@ -105,7 +106,7 @@ u16 fightOutPokemonGetTokuseiDataId(FightOutPokemon* fop);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon* fop, u16 id);
 Pokemon* fightPokemonGetPokemonPtr(FightPokemon* fp);
 u16 fightPokemonGetSoubiItemDataId(FightPokemon* fp);
-s32 fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, u16, void*, s32, s32, s32);
+FightOutPokemon * fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, PCARG(u16, u32), void*, s32, s32, s32);
 void* fightTargetGetPtr(u16 slotType, void* ptr, u16 type);
 bool fightTimerCommandIsOver(void);
 u8 fightTrainerBiosGetControllerId(FightTrainer* trainer);
@@ -117,7 +118,7 @@ u8 fightTypeDataBiosGetFightoutPokemonNum(FightTypeData* data);
 FightTypeData* fightTypeDataBiosGetPtr(u16 id);
 u8 fightTypeDataBiosGetTrainerNum(FightTypeData* data);
 u8 gamedataAttestBiosGetLangareaId(GamedataAttest* attest);
-s32 gbaCommandChangePokemon(s32 p0, s32 p1, u32 p2, s32 p3);
+s32 gbaCommandChangePokemon(s32 p0, GCsptr p1, u32 p2, s32 p3);
 void gbaCommandChangePokemonEnd(s32 p0);
 s32 gbaCommandChangePokemonIsPrepared(s32 p0);
 s32 gbaCommandEntryPokemon(u32 p0, void *p1);
@@ -125,8 +126,8 @@ void gbaCommandEntryRequest(s32 p0, s32 p1, s32 p2, s32 p3);
 s32 gbaCommandEntryResult(s32 p0, u32 *p1);
 bool gbaCommandIsConnected(s32 gba);
 u16 gbaCommandKeyPressed(s32 p0);
-u32 gbaCommandRequestAction(s32 p0, s32 p1, s32 p2, s32 p3);
-void gbaCommandSendWazaText(s32 p0, s32 p1);
+u32 gbaCommandRequestAction(s32 p0, GCsptr p1, s32 p2, s32 p3);
+void gbaCommandSendWazaText(s32 p0, GCsptr p1);
 s32 gbaCommandSetKeyState(s32 chan, s32 state);
 u16 gbaPokemonConditonFromGC(s32);
 s32 gbaPokemonFromGC(s32, s32*);
@@ -145,8 +146,8 @@ u8 pokemonBiosGetMailId(Pokemon* poke);
 u16 pokemonBiosGetMaxHp(Pokemon* poke);
 char* pokemonBiosGetNicknamePtr(Pokemon* poke);
 u16 pokemonBiosGetPokemonDataId(Pokemon* poke);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u16 wazaNum);
-u8 pokemonBiosGetPokemonWazaPp(Pokemon* poke, u16 wazaNum);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, PCARG(u16, u32) wazaNum);
+u8 pokemonBiosGetPokemonWazaPp(Pokemon* poke, PCARG(u16, u32) wazaNum);
 u8 pokemonBiosGetPokerus(Pokemon* poke);
 u32 pokemonBiosGetRnd(Pokemon* poke);
 u8 pokemonBiosGetTokuseiFlag(Pokemon* poke);
@@ -227,7 +228,7 @@ struct GbaExchangePacket {
     u8 ribbons[0xC];
 };
 
-s32 gbaCommandChangePokemon(s32 p0, s32 p1, u32 p2, s32 p3) {
+s32 gbaCommandChangePokemon(s32 p0, GCsptr p1, u32 p2, s32 p3) {
     GbaExchangePacket packet;
     u8* ribbon;
     s32 i;
@@ -250,11 +251,11 @@ s32 gbaCommandChangePokemon(s32 p0, s32 p1, u32 p2, s32 p3) {
 }
 #pragma peephole reset
 }
-u16 gbaCommandGetGBAChangePokemon(u32 value) {
+PCRET(u16) gbaCommandGetGBAChangePokemon(u32 value) {
     return value;
 }
 
-u8 gbaCommandGetWazaTarget(u32 value) {
+PCRET(u8) gbaCommandGetWazaTarget(u32 value) {
     return value >> 8;
 }
 
@@ -319,7 +320,7 @@ struct GbaBattleSnapshot {
 #pragma push
 #pragma peephole off
 #pragma dont_inline on
-u32 gbaCommandRequestAction(s32 port, s32 trainer, s32 slot, s32 irekae) {
+u32 gbaCommandRequestAction(s32 port, GCsptr trainer, s32 slot, s32 irekae) {
     GbaBattleSnapshot snap;
     FightOutPokemon* targets[4];
     u8 controllers[4];
@@ -636,7 +637,7 @@ void gbaCommandEntryRequest(s32 p0, s32 p1, s32 p2, s32 p3) {
 }
 
 extern "C" {
-void gbaCommandSendWazaText(s32 p0, s32 p1) {
+void gbaCommandSendWazaText(s32 p0, GCsptr p1) {
     u8 buf[0x780];
 
     wazaconv((void*)p1, buf);
@@ -744,7 +745,7 @@ extern "C" {
 extern "C++" {
 #pragma push
 #pragma peephole off
-static u32 _swap32(unsigned long p0) {
+static u32 _swap32(u32 p0) {
     return (p0 >> 0x18U) | (((u32) (p0 & 0xFF0000) >> 8U) | ((p0 << 0x18) | ((p0 & 0xFF00) << 8)));
 }
 #pragma pop

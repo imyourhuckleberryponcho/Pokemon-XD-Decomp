@@ -1,15 +1,10 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/app/people/peopleInfo.h>
 
 struct GSmodel;
 
 enum GSmodelAnimType {
     GS_MODEL_ANIM_TYPE_0
-};
-
-struct PeopleInfo {
-    u8 unk0_0 : 6;
-    u8 noWalkStart : 1;
-    u8 unk0_7 : 1;
 };
 
 struct tagPeopleWork;
@@ -39,7 +34,7 @@ struct tagPeopleWork {
     void setAnimRate(f32 rate, bool scaleBySpeed);
     bool isAnimLast() const;
     u32 getFlags() const;
-    bool checkFlags(unsigned long flags) const;
+    bool checkFlags(u32 flags) const;
     bool isWalkStartMotion() const;
     bool isAlwayBlendChara() const;
 
@@ -51,7 +46,9 @@ struct tagPeopleWork {
     u32 infoID;
     u8 unk20[0x34];
     u8 moveType;
-    u8 unk55[0x10F];
+    u8 unk55[0x23];
+    void* points;
+    u8 pad7C[0xE8];
     s32 walkStartMotion;
     s32 walkMotion;
     s32 runMotion;
@@ -144,7 +141,7 @@ u32 tagPeopleWork::getFlags() const {
     return flags;
 }
 
-bool tagPeopleWork::checkFlags(unsigned long flags) const {
+bool tagPeopleWork::checkFlags(u32 flags) const {
     return peopleBiosCheckFlag(this, flags);
 }
 

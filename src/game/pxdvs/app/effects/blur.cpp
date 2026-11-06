@@ -1,4 +1,9 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#define BLUR_EFFECT_SOURCE
+#include <game/effects.h>
 #include <dolphin/gx/GXVert.h>
 #include <libc/string.h>
 
@@ -10,10 +15,6 @@ struct GStexture {
 struct GSmodel;
 struct GSparticleBank;
 
-enum GSgfxLayerPass {
-    GS_GFX_LAYER_PASS_0
-};
-
 struct BlendState {
     u8 pad[0xbc];
 };
@@ -22,71 +23,17 @@ struct GSmtx44 {
     f32 m[4][4];
 };
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderStateAndSelect(struct GSgfxVF* vf);
     void beginSurface(u16 count);
     void endSurface();
     u16 tokenMark();
 
-    u8 pad0[0x28];
-    s32 id;
-    u8 pad2c[0xd54 - 0x2c];
-    s32 projType;
-    f32 proj[6];
-    u8 pad_d70[0xd8c - 0xd70];
-    s32 d8c;
-    u8 pad_d90[0x1644 - 0xd90];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 pad_1654[2];
-    u8 colorUpdate;
-    u8 alphaUpdate;
-    u8 zUpdate;
-    u8 pad_1659[3];
-    u8 zEnable;
-    u8 pad_165d[3];
-    s32 zFunc;
-    s32 f1664;
-    s32 f1668;
-    s32 f166c;
-    u8 f1670;
-    u8 f1671;
-    u8 f1672;
-    u8 pad_1673[0x1684 - 0x1673];
-    f32 nearZ;
-    f32 farZ;
-    u8 pad_168c[0x16a6 - 0x168c];
-    u8 f16a6;
-    u8 f16a7;
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad_16b0[8];
-    u32 dirty16b8;
-    u8 pad_16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad_1710[0x173c - 0x1710];
-    u32 dirty173c;
-    void* tex1740;
-    u8 pad_1744[0x1760 - 0x1744];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad_1768[8];
-    u32 dirty1770;
-    u8 pad_1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
-    u8 pad_17c8[0x17f4 - 0x17c8];
-    u32 dirty17f4;
-    void* tex17f8;
-    u8 pad_17fc[0x1818 - 0x17fc];
-    BlendState blendTable[2];
-    BlendState* curBlend;
-    s32 curBlendIdx;
-    u32 primType;
-    u8 pad_199c[0x19a0 - 0x199c];
-    struct GSlayerCam* cam;
 };
 
 struct GSlayerCam {
@@ -123,49 +70,14 @@ void GSparticleDisactivateBank(GSparticleBank* bank);
 void GSparticleActivateBank(GSparticleBank* bank);
 void GSparticleSetBankVisibility(GSparticleBank* bank, bool visible);
 }
-extern GSmtx44 mtxIdent;
-
-class GSeffect {
-public:
-    bool m_active;
-    bool m_visible;
-    GSeffect* m_next;
-
-    GSeffect();
-    bool Start();
-    void Stop();
-
-    virtual bool _start();
-    virtual void _stop();
-    virtual bool _update(f32 dt);
-    virtual void _render(GSgfxLayer* layer, GSgfxLayerPass pass);
-    virtual void _fastRender();
-    virtual ~GSeffect();
-};
-
-class blurEffect : public GSeffect {
-public:
-    blurEffect(bool useFramebuffer);
-    virtual ~blurEffect();
-    virtual bool _start();
-    virtual void _stop();
-    virtual void _render(GSgfxLayer* layer, GSgfxLayerPass pass);
-    void RenderFB(GSgfxLayer* layer);
-
-    union {
-        GStexture* m_tex;
-        GSmodel* m_model;
-    };
-    u16 m_token;
-    bool m_captured;
-    u8 m_pad13;
-    u8 m_useFB;
-    u8 m_pad15[3];
-    f32 m_strength;
-};
+extern "C" GSmtx44 mtxIdent;
 
 static inline void __OSf32tou8(register f32 arg, volatile register u8* out) {
+#ifdef __MWERKS__
     asm { psq_st arg, 0(out), 1, 2 }
+#else
+    PSQ_STORE(out, 0, arg, 2);
+#endif
 }
 
 static inline u8 OSf32tou8(f32 in) {
@@ -198,11 +110,11 @@ bool blurEffectRenderFBCallback(GStexture* texture, u32 frame, void* user);
 
 void blurEffect::_render(GSgfxLayer* layer, GSgfxLayerPass pass) {
     if (m_useFB != 0) {
-        if (layer->id == 6 && pass == 1) {
+        if ((*(s32*)&layer->id) == 6 && pass == 1) {
             RenderFB(layer);
         }
     } else if (m_model != 0) {
-        if (layer->id == 2 && pass == 0) {
+        if ((*(s32*)&layer->id) == 2 && pass == 0) {
             if (GSmodelIsAnimating(m_model)) {
                 s32 count = (s32)(20.0f * m_strength + 0.5f);
                 if (count != 0) {
@@ -289,71 +201,71 @@ void blurEffect::RenderFB(GSgfxLayer* layer) {
         f32 mtx[16];
         u8 alpha = OSf32tou8(255.0f * m_strength);
         GSmtx44Ortho(mtx, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-        layer->projType = 1;
-        layer->proj[0] = mtx[0];
-        layer->proj[1] = mtx[3];
-        layer->proj[2] = mtx[5];
-        layer->proj[3] = mtx[7];
-        layer->proj[4] = mtx[10];
-        layer->proj[5] = mtx[11];
-        GSlayerCam* cam = layer->cam;
+        (*(s32*)&layer->hw.projType) = 1;
+        ((f32*)layer->hw.proj)[0] = mtx[0];
+        ((f32*)layer->hw.proj)[1] = mtx[3];
+        ((f32*)layer->hw.proj)[2] = mtx[5];
+        ((f32*)layer->hw.proj)[3] = mtx[7];
+        ((f32*)layer->hw.proj)[4] = mtx[10];
+        ((f32*)layer->hw.proj)[5] = mtx[11];
+        GSlayerCam* cam = (*(GSlayerCam**)&layer->matrixStack);
         memcpy(cam->data + 1, &mtxIdent, 0x30);
         cam->data[0] |= 1;
-        layer->nearZ = 0.0f;
-        layer->farZ = 30000.0f;
-        if (layer->f16a7) {
-            if (layer->f16a6) {
-                layer->dirty170c |= 0x100;
-                layer->dirty17c4 |= 0x100;
+        (*(f32*)&layer->hw.fogNear) = 0.0f;
+        (*(f32*)&layer->hw.fogFar) = 30000.0f;
+        if ((*(u8*)&layer->hw.fogEnable)) {
+            if ((*(u8*)&layer->hw.fogRangeEnable)) {
+                (*(u32*)&layer->dirty[0].pe) |= 0x100;
+                (*(u32*)&layer->dirty[1].pe) |= 0x100;
             }
-            layer->dirty170c |= 0x40;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 0x40;
-            layer->dirty1760 |= 0x40;
+            (*(u32*)&layer->dirty[0].pe) |= 0x40;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 0x40;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
         }
-        layer->dirty16ac |= 0x20;
-        layer->dirty16a8 |= 1;
-        layer->dirty1764 |= 0x20;
-        layer->dirty1760 |= 1;
-        if (layer->curBlendIdx != 1) {
-            layer->curBlendIdx = 1;
-            layer->curBlend = &layer->blendTable[layer->curBlendIdx];
+        (*(u32*)&layer->dirty[0].geom) |= 0x20;
+        (*(u32*)&layer->dirty[0].groups) |= 1;
+        (*(u32*)&layer->dirty[1].geom) |= 0x20;
+        (*(u32*)&layer->dirty[1].groups) |= 1;
+        if ((*(s32*)&layer->curPass) != 1) {
+            (*(s32*)&layer->curPass) = 1;
+            layer->curFifo = &layer->passes[layer->curPass];
         }
-        layer->blendOp = 1;
-        layer->blendSrc = 4;
-        layer->blendDst = 5;
-        layer->blendLogic = 5;
-        layer->dirty170c |= 1;
-        layer->dirty16a8 |= 0x40;
-        layer->dirty17c4 |= 1;
-        layer->dirty1760 |= 0x40;
-        layer->zEnable = 0;
-        layer->zFunc = 7;
-        layer->dirty170c |= 8;
-        layer->dirty16a8 |= 0x40;
-        layer->dirty17c4 |= 8;
-        layer->dirty1760 |= 0x40;
-        layer->colorUpdate = 1;
-        layer->alphaUpdate = 1;
-        layer->zUpdate = 0;
-        layer->dirty170c |= 4;
-        layer->dirty16a8 |= 0x40;
-        layer->dirty17c4 |= 4;
-        layer->dirty1760 |= 0x40;
-        layer->d8c = 0;
-        layer->dirty16b8 |= 2;
-        layer->dirty16a8 |= 2;
-        layer->dirty1770 |= 2;
-        layer->dirty1760 |= 2;
+        (*(s32*)&layer->hw.blend[0]) = 1;
+        (*(s32*)&layer->hw.blend[1]) = 4;
+        (*(s32*)&layer->hw.blend[2]) = 5;
+        (*(s32*)&layer->hw.blend[3]) = 5;
+        (*(u32*)&layer->dirty[0].pe) |= 1;
+        (*(u32*)&layer->dirty[0].groups) |= 0x40;
+        (*(u32*)&layer->dirty[1].pe) |= 1;
+        (*(u32*)&layer->dirty[1].groups) |= 0x40;
+        (*(u8*)&layer->hw.zEnable) = 0;
+        (*(s32*)&layer->hw.zFunc) = 7;
+        (*(u32*)&layer->dirty[0].pe) |= 8;
+        (*(u32*)&layer->dirty[0].groups) |= 0x40;
+        (*(u32*)&layer->dirty[1].pe) |= 8;
+        (*(u32*)&layer->dirty[1].groups) |= 0x40;
+        (*(u8*)&layer->hw.colorUpdate) = 1;
+        (*(u8*)&layer->hw.alphaUpdate) = 1;
+        (*(u8*)&layer->hw.zUpdate) = 0;
+        (*(u32*)&layer->dirty[0].pe) |= 4;
+        (*(u32*)&layer->dirty[0].groups) |= 0x40;
+        (*(u32*)&layer->dirty[1].pe) |= 4;
+        (*(u32*)&layer->dirty[1].groups) |= 0x40;
+        (*(s32*)&layer->hw.cullMode) = 0;
+        (*(u32*)&layer->dirty[0].raster) |= 2;
+        (*(u32*)&layer->dirty[0].groups) |= 2;
+        (*(u32*)&layer->dirty[1].raster) |= 2;
+        (*(u32*)&layer->dirty[1].groups) |= 2;
         layer->setRenderStateAndSelect(GSgfxVFGetPredef(5));
         GStexture* tex = m_tex;
-        if (layer->tex1740 != tex || layer->tex17f8 != tex || tex->unk7 != 0) {
-            layer->tex1740 = tex;
-            layer->dirty173c |= 1;
-            layer->tex17f8 = tex;
-            layer->dirty17f4 |= 1;
+        if ((*(void**)&layer->dirty[0].tex[0]) != tex || (*(void**)&layer->dirty[1].tex[0]) != tex || tex->unk7 != 0) {
+            (*(void**)&layer->dirty[0].tex[0]) = tex;
+            (*(u32*)&layer->dirty[0].texMask) |= 1;
+            (*(void**)&layer->dirty[1].tex[0]) = tex;
+            (*(u32*)&layer->dirty[1].texMask) |= 1;
         }
-        layer->primType = 0x98;
+        (*(u32*)&layer->unk1998) = 0x98;
         layer->beginSurface(4);
         {
             f32 zero = 0.0f;

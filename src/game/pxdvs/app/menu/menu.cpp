@@ -1,15 +1,21 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/bitfield.h>
+#include <game/gcptr.h>
 #include <libc/stdarg.h>
 
 struct MenuItem {
-    u8 selectable : 1;
-    u8 last : 1;
-    u8 spriteType : 2;
-    u8 low : 4;
-    u8 top2 : 2;
-    u8 rest1 : 6;
+    GC_BITS4(
+    u8 selectable : 1,
+    u8 last : 1,
+    u8 spriteType : 2,
+    u8 low : 4)
+    GC_BITS2(
+    u8 top2 : 2,
+    u8 rest1 : 6)
     u8 alpha;
     u8 pad3;
     s16 spriteID;
@@ -27,16 +33,19 @@ struct MenuWindow;
 typedef void (*MenuWindowCallback)(MenuWindow*);
 
 struct MenuData {
-    u8 f0a : 3;
-    u8 f0b : 2;
-    u8 f0c : 1;
-    u8 f0d : 1;
-    u8 f0e : 1;
-    u8 f1a : 4;
-    u8 f1b : 3;
-    u8 f1c : 1;
-    u8 f2a : 3;
-    u8 f2b : 5;
+    GC_BITS5(
+    u8 f0a : 3,
+    u8 f0b : 2,
+    u8 f0c : 1,
+    u8 f0d : 1,
+    u8 f0e : 1)
+    GC_BITS3(
+    u8 f1a : 4,
+    u8 f1b : 3,
+    u8 f1c : 1)
+    GC_BITS2(
+    u8 f2a : 3,
+    u8 f2b : 5)
     u8 pad3;
     u8 cursorID;
     u8 pad5;
@@ -62,7 +71,8 @@ struct MenuSprite {
     u8 pad4[2];
     s16 id;
     u8 pad8[4];
-    u8 seq[0x3c];
+    void* seq;
+    u8 seqRest[0x38];
 };
 
 struct MenuWindow {
@@ -75,9 +85,10 @@ struct MenuWindow {
     s8 fadePriority;
     u8 transitionDone;
     u8 keyPort;
-    u8 pad_0C[4];
+    MenuWindow* parent;
     MenuWindow* next;
-    u8 pad_14[5];
+    MenuWindow* prevWin;
+    u8 pad_18;
     s8 cursorCount;
     u8 cursorMode;
     u8 cursorFlags;
@@ -85,7 +96,10 @@ struct MenuWindow {
     u8 pad_20[4];
     MenuSprite* sprites;
     MenuSprite* overlaySprites;
-    u8 pad_2c[0x60];
+    void* seqCmd;
+    u8 pad_30[0x38];
+    GCuptr params[8];
+    u8 pad_88[4];
     s16 x;
     s16 y;
     u8 pad_90[0xC];
@@ -130,7 +144,7 @@ extern "C" {
 MenuWindow* windowSearchID(s32 id);
 s32 windowGetActiveID(void);
 MenuData* menuDataBiosGetPtr(s32 id);
-MenuItem* menuItemBiosGetPtr(s32 id, s16 index);
+MenuItem* menuItemBiosGetPtr(s32 id, PCARG(s16, u32) index);
 void* menuSeBiosGetPtr(u32 id);
 u16 menuSeBiosGetSndId(void* se, s32 kind);
 MenuItem* windowGetCursorToItem(MenuWindow* w);
@@ -159,7 +173,12 @@ u8 floorExecScriptIntegerByName(const char* name, s32 a, s32 b, s32 c, s32 d);
 void fadeDaemon(void);
 u8 pauseIsPause(void);
 void cursorBiosInit(void);
+#ifdef __MWERKS__
 void cursorBiosSetPos(u8 slot, MenuCursor* pos);
+#else
+void cursorBiosSetPos(u16 slot, MenuCursor pos);
+#define cursorBiosSetPos(slot, pos) cursorBiosSetPos((slot), *(pos))
+#endif
 s32 menuFaceInit(s32 id);
 void menuOffScreenCreate(u32 param);
 void menuOffScreenInit(void);
@@ -195,11 +214,20 @@ void* memset(void* dst, int val, u32 size);
 
 extern WINDOW_SYS_WORK winSysWork;
 extern WINDOW_SYS_WORK winSysWork2;
+#ifdef __MWERKS__
 extern u8 uv_cmn_win_00[];
 extern u8 tex_warning[];
 extern u8 tex_warning_pstar[];
 extern u8 uv_cmn_csr_00[];
 extern u8 uv_common_icon_00[];
+#else
+extern "C" u8* PortXD_GetDolTable(const char* name);
+#define uv_cmn_win_00 PortXD_GetDolTable("uv_cmn_win_00")
+#define tex_warning PortXD_GetDolTable("tex_warning")
+#define tex_warning_pstar PortXD_GetDolTable("tex_warning_pstar")
+#define uv_cmn_csr_00 PortXD_GetDolTable("uv_cmn_csr_00")
+#define uv_common_icon_00 PortXD_GetDolTable("uv_common_icon_00")
+#endif
 }
 
 GSgfxVF menuHyperModeVf;
@@ -645,7 +673,7 @@ void menuDaemon(void) {
                 menuItemBiosGetPtr(node->id, sprite->id);
                 winSpriteDraw(node, sprite);
                 if (i != 0 && node->phase == 3) {
-                    winSetSequence(sprite->seq, 0);
+                    winSetSequence(&sprite->seq, 0);
                 }
                 i++;
             }

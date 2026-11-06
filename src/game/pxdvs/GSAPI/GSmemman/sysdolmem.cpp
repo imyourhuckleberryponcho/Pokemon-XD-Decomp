@@ -36,6 +36,12 @@ static void _memFreeCallback(void* ptr) {
     if (ptr == NULL) {
         return;
     }
+#ifndef __MWERKS__
+    if (_Sysdol8Allocator->isRegistration(ptr)) {
+        _Sysdol8Allocator->freeCell(ptr);
+        return;
+    }
+#endif
     if (_Sysdol12Allocator->isRegistration(ptr)) {
         _Sysdol12Allocator->freeCell(ptr);
     } else if (_Sysdol20Allocator->isRegistration(ptr)) {
@@ -49,7 +55,7 @@ static void _memFreeCallback(void* ptr) {
     }
 }
 
-static void* _memAllocCallback(unsigned long size, unsigned long, unsigned long) {
+static void* _memAllocCallback(u32 size, u32, u32) {
     void* ptr;
     GSmemPoolAllocator* allocator;
 
@@ -72,6 +78,14 @@ static void* _memAllocCallback(unsigned long size, unsigned long, unsigned long)
 extern "C" {
 
 GSmemPoolAllocator* GSmemGetSysdolAllocator(u32 size) {
+#ifndef __MWERKS__
+    if (size <= 16) return _Sysdol8Allocator;
+    if (size <= 24) return _Sysdol12Allocator;
+    if (size <= 40) return _Sysdol20Allocator;
+    if (size <= 56) return _Sysdol28Allocator;
+    if (size <= 96) return _Sysdol48Allocator;
+    return NULL;
+#endif
     GSmemPoolAllocator* allocator = NULL;
     switch (size) {
     case 8:
@@ -94,11 +108,19 @@ GSmemPoolAllocator* GSmemGetSysdolAllocator(u32 size) {
 }
 
 void GSmemInitSysdolAllocator(void) {
+#ifdef __MWERKS__
     _Sysdol8Allocator = GSmemCreatePool(4000, 8);
     _Sysdol12Allocator = GSmemCreatePool(8000, 12);
     _Sysdol20Allocator = GSmemCreatePool(3000, 20);
     _Sysdol28Allocator = GSmemCreatePool(5000, 28);
     _Sysdol48Allocator = GSmemCreatePool(5000, 48);
+#else
+    _Sysdol8Allocator = GSmemCreatePool(4000, 16);
+    _Sysdol12Allocator = GSmemCreatePool(8000, 24);
+    _Sysdol20Allocator = GSmemCreatePool(3000, 40);
+    _Sysdol28Allocator = GSmemCreatePool(5000, 56);
+    _Sysdol48Allocator = GSmemCreatePool(5000, 96);
+#endif
     HSD_SetInitParameter(2, _memAllocCallback, _memFreeCallback, _memGetRemainCallback, _memClearCallback,
                          _memCheckOwnCallback, 0);
 }

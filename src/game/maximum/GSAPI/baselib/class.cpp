@@ -2,6 +2,9 @@
 
 
 #include <dolphin/types.h>
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 
 #pragma pool_strings off
 

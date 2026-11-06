@@ -318,7 +318,7 @@ static void DoPrgChange(SEQ_INSTANCE* seq, u8 prg, u8 midi) {
       return;
     }
 
-    seq->prgState[midi].macId = seq->normtab[prg].macro;
+    seq->prgState[midi].macId = MD16(seq->normtab[prg].macro);
     seq->prgState[midi].priority = seq->normtab[prg].prio;
     seq->prgState[midi].maxVoices = seq->normtab[prg].maxVoices;
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
@@ -332,7 +332,7 @@ static void DoPrgChange(SEQ_INSTANCE* seq, u8 prg, u8 midi) {
     return;
   }
 
-  seq->prgState[midi].macId = seq->drumtab[prg].macro;
+  seq->prgState[midi].macId = MD16(seq->drumtab[prg].macro);
   seq->prgState[midi].priority = seq->drumtab[prg].prio;
   seq->prgState[midi].maxVoices = seq->drumtab[prg].maxVoices;
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
@@ -442,15 +442,15 @@ u32 seqStartPlay(PAGE* norm, PAGE* drum, MIDISETUP* midiSetup, u32* song, SND_PL
   }
 
   arr = (ARR*)song;
-  if (arr->info & 0x80000000) {
-    nseq->trackSectionTab = ARR_GET(arr, arr->tsTab);
+  if (MD32(arr->info) & 0x80000000) {
+    nseq->trackSectionTab = ARR_GET(arr, MD32(arr->tsTab));
   } else {
     nseq->trackSectionTab = NULL;
   }
 
-  bpm = arr->info & 0x0fffffff;
+  bpm = MD32(arr->info) & 0x0fffffff;
 
-  if (!(arr->info & 0x40000000)) {
+  if (!(MD32(arr->info) & 0x40000000)) {
     bpm <<= 10;
   }
 
@@ -458,8 +458,8 @@ u32 seqStartPlay(PAGE* norm, PAGE* drum, MIDISETUP* midiSetup, u32* song, SND_PL
     nseq->section[i].bpm = bpm;
     synthSetBpm(bpm >> 10, seqId, i);
 
-    if (arr->mTrack != 0) {
-      nseq->section[i].mTrack.base = ARR_GET(arr, arr->mTrack);
+    if (MD32(arr->mTrack) != 0) {
+      nseq->section[i].mTrack.base = ARR_GET(arr, MD32(arr->mTrack));
       nseq->section[i].mTrack.addr = nseq->section[i].mTrack.base;
     } else {
       nseq->section[i].mTrack.base = NULL;
@@ -469,12 +469,12 @@ u32 seqStartPlay(PAGE* norm, PAGE* drum, MIDISETUP* midiSetup, u32* song, SND_PL
     nseq->section[i].loopCnt = 0;
   }
 
-  tracktab = ARR_GET(arr, arr->tTab);
+  tracktab = ARR_GET(arr, MD32(arr->tTab));
   for (i = 0; i < 64; ++i) {
     synthTrackVolume[i] = SND_PAUSEVOL_NORMAL;
     nseq->pattern[i].addr = NULL;
-    if (tracktab[i] != 0) {
-      nseq->track[i].addr = nseq->track[i].base = ARR_GET(arr, tracktab[i]);
+    if (MD32(tracktab[i]) != 0) {
+      nseq->track[i].addr = nseq->track[i].base = ARR_GET(arr, MD32(tracktab[i]));
     } else {
       nseq->track[i].addr = nseq->track[i].base = NULL;
     }
@@ -539,16 +539,16 @@ static void HandleMasterTrack(u8 secIndex) {
 
   section = &cseq->section[secIndex];
   if (section->mTrack.base != NULL) {
-    while (section->mTrack.addr->time != -1) {
-      if (section->mTrack.addr->time > section->time[section->timeIndex].high) {
+    while (MD32(section->mTrack.addr->time) != -1) {
+      if (MD32(section->mTrack.addr->time) > section->time[section->timeIndex].high) {
         break;
       }
 
-      if ((cseq->arrbase->info & 0x40000000) != 0) {
-        synthSetBpm((section->bpm = section->mTrack.addr->bpm) >> 10, curSeqId, secIndex);
+      if ((MD32(cseq->arrbase->info) & 0x40000000) != 0) {
+        synthSetBpm((section->bpm = MD32(section->mTrack.addr->bpm)) >> 10, curSeqId, secIndex);
       } else {
-        synthSetBpm(section->mTrack.addr->bpm, curSeqId, secIndex);
-        section->bpm = section->mTrack.addr->bpm << 10;
+        synthSetBpm(MD32(section->mTrack.addr->bpm), curSeqId, secIndex);
+        section->bpm = MD32(section->mTrack.addr->bpm) << 10;
       }
 
       ++section->mTrack.addr;
@@ -987,12 +987,12 @@ static SEQ_EVENT* GenerateNextTrackEvent(u8 trackId) {
 
     if (pattern->addr == NULL) {
     null_pattern_addr:
-      if (track->addr->pattern == 0xffff) {
+      if (MD16(track->addr->pattern) == 0xffff) {
         track->addr = NULL;
         return NULL;
       }
 
-      if (track->addr->pattern == 0xfffe) {
+      if (MD16(track->addr->pattern) == 0xfffe) {
         if (cseq->trackSectionTab == NULL) {
           if (cseq->section[0].loopDisable) {
             track->addr = NULL;
@@ -1004,13 +1004,13 @@ static SEQ_EVENT* GenerateNextTrackEvent(u8 trackId) {
         }
 
         ev->type = 3;
-        ev->time = track->addr->time;
-        track->addr = &track->base[*((u16*)&track->addr->transpose)];
+        ev->time = MD32(track->addr->time);
+        track->addr = &track->base[MD16(*((u16*)&track->addr->transpose))];
         return ev;
       }
 
       ev->type = 4;
-      ev->time = track->addr->time;
+      ev->time = MD32(track->addr->time);
       ev->info.trackAddr = track->addr;
       ++track->addr;
       return ev;
@@ -1020,7 +1020,7 @@ static SEQ_EVENT* GenerateNextTrackEvent(u8 trackId) {
     modTime = pattern->modulation.nextTime;
 
   loop:
-    patternTime = pattern->addr->time + pattern->lTime;
+    patternTime = MD16(pattern->addr->time) + pattern->lTime;
     if (patternTime >= pitchTime) {
       goto use_pitch_time;
     }
@@ -1127,17 +1127,17 @@ static SEQ_EVENT* HandleEvent(SEQ_EVENT* event, u8 secIndex, bool* loopFlag) {
   case 4:
     tEntry = event->info.trackAddr;
     pattern = &cseq->pattern[event->trackId];
-    pTab = ARR_GET(cseq->arrbase, cseq->arrbase->pTab);
-    pptr = ARR_GET(cseq->arrbase, pTab[tEntry->pattern]);
+    pTab = ARR_GET(cseq->arrbase, MD32(cseq->arrbase->pTab));
+    pptr = ARR_GET(cseq->arrbase, MD32(pTab[MD16(tEntry->pattern)]));
     pattern->addr = (NOTE_DATA*)&pptr->noteData;
     pattern->lTime = 0;
-    pattern->baseTime = tEntry->time;
+    pattern->baseTime = MD32(tEntry->time);
     pattern->patternInfo = tEntry;
-    InitStream(&pattern->pitchBend, pptr->pitchBend);
+    InitStream(&pattern->pitchBend, MD32(pptr->pitchBend));
     pattern->pitchBend.value = 0x2000;
-    InitStream(&pattern->modulation, pptr->modulation);
+    InitStream(&pattern->modulation, MD32(pptr->modulation));
     pattern->modulation.value = 0;
-    pattern->midi = ARR_GET_TYPE(cseq->arrbase, cseq->arrbase->tmTab, u8*)[event->trackId];
+    pattern->midi = ARR_GET_TYPE(cseq->arrbase, MD32(cseq->arrbase->tmTab), u8*)[event->trackId];
     if (tEntry->prgChange != 0xff) {
       DoPrgChange(cseq, tEntry->prgChange, pattern->midi);
     }
@@ -1200,7 +1200,7 @@ static SEQ_EVENT* HandleEvent(SEQ_EVENT* event, u8 secIndex, bool* loopFlag) {
         velocity += pa->patternInfo->velocityAdd;
         velocity = CLAMP(velocity, 0, 0x7f);
 
-        if ((note = AllocateNote(event->time + pe->length, secIndex)) != NULL) {
+        if ((note = AllocateNote(event->time + MD16(pe->length), secIndex)) != NULL) {
           if ((note->id = synthStartSound(
                    macId, cseq->prgState[midi].priority, cseq->prgState[midi].maxVoices,
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
@@ -1289,7 +1289,7 @@ static bool HandleTrackEvents(u8 secIndex, u32 deltaTime) {
 
       loopFlag = FALSE;
       section->timeIndex ^= 1;
-      section->time[section->timeIndex].high = cseq->arrbase->loopPoint[secIndex];
+      section->time[section->timeIndex].high = MD32(cseq->arrbase->loopPoint[secIndex]);
       section->time[section->timeIndex].low = section->time[section->timeIndex ^ 1].low;
       RewindMTrack(secIndex, deltaTime);
       section->loopCnt += 1;

@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/statusval.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -58,7 +62,7 @@ struct tagWINDOW_WORK;
 
 #pragma peephole off
 
-class Pokemon;
+struct Pokemon;
 
 enum GSinputDevice { GSinputDevice_dummy };
 
@@ -104,10 +108,12 @@ struct GCB {
     GCBEntry entries[4];
 };
 
-extern u8 _CB[0xB5F8];
-extern u8 _menuCBBattleStartWork[0x148];
-extern GCB* pGCB;
+extern "C" u8 _CB[0xB5F8];
+extern "C" u8 _menuCBBattleStartWork[0x148];
+extern "C" GCB* pGCB;
+extern "C" {
 u16 uToolPokemon_faceId;
+}
 
 struct CBTrainerRaw {
     u8 pad0[0x3C];
@@ -142,9 +148,9 @@ Pokemon* toolentryTaisenGetPokemonPtr(s32, s32);
 Pokemon* toolentryTaisenGetEntryPokemonPtr(s32, s32);
 void* menuCBBios_GetTrainerFromVersusBattleID(s32);
 void* menuCBBios_GetTrainerImmediately(s32);
-void* menuCBBios_GetTrainer(void);
-s32 menuCBBios_GetHeroImmediately(s32);
-s32 menuCBTrainerBios_GetControlerID(void);
+void* menuCBBios_GetTrainer(s32 controllerId);
+void * menuCBBios_GetHeroImmediately(s32);
+s32 menuCBTrainerBios_GetControlerID(void* trainer);
 s32 menuCBBattleStartGetStatus(void);
 void menuCBBattleStartTrainerFaceFree(void);
 void menuCB_SE_Play(s32);
@@ -152,7 +158,7 @@ void menuCB_GBADisconnectedErrorJob(void);
 void* menuFaceLoad_Tool(s32, Pokemon* (*)(void*), s32);
 u16 menuFaceGetID2(Pokemon*, u8);
 void menuFaceDispFromID(s32, s32, u16);
-s32 pokemonGetStatus(Pokemon*, u16, u16, u16);
+StatusS32 pokemonGetStatus(Pokemon*, u16, u16, u16);
 u32 pokemon_GetSeikaku(Pokemon*);
 u32 pokemonAdjustValueBySeikaku(u32, u16, u32);
 void pokemonBiosSetPhyAtk(Pokemon*, u16);
@@ -171,8 +177,8 @@ s32 menuOpenCustom(s32, ...);
 void menuCloseCustom(s32, s32, s32);
 s32 windowGetActiveID(void);
 void GSthreadSwitch(void);
-void gbaCommandEntryRequest(s32, u16, u16, s32);
-void gbaCommandSendWazaText(s32, s32);
+void gbaCommandEntryRequest(s32, PCARG(u16, s32), PCARG(u16, s32), s32);
+void gbaCommandSendWazaText(s32, GCsptr);
 u8 gbaCommandIsConnected(s32);
 void gbaCommandEntryResult(s32, s32*);
 void gbaCommandEntryPokemon(s32, u8*);
@@ -183,7 +189,7 @@ u32 GSinputButtonsPressed(GSinputDevice);
 u16* windowGetKeyInfo(void);
 void* windowSearchID(s32);
 void menuCBPokemonEntryTexWorkInit(void);
-u16 menuCBPokemonEntryPokemonNumMin(s32);
+PCRET(u16) menuCBPokemonEntryPokemonNumMin(s32);
 void menuCBPokemonEntryPokemonFaceFree(void);
 }
 
@@ -196,19 +202,19 @@ static s32 _GBA_DeokisisuParamTable[4][5] = {
 static PokemonEntryWork _menuCBPokemonWork;
 
 static u8 _menuCB_pokemonGetDeoxysSel(u16 player, bool flag);
-static void _menuCBPokemonEntryEntCheckDebug(long);
-static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice inputDevice, long player);
-static void _menuCBPokemonEntryEntCheck(GSinputDevice dev, long player);
-static s32 _menuCBPokemonEntryButtonCheck(u32 buttons, long player);
+static void _menuCBPokemonEntryEntCheckDebug(s32);
+static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice inputDevice, s32 player);
+static void _menuCBPokemonEntryEntCheck(GSinputDevice dev, s32 player);
+static s32 _menuCBPokemonEntryButtonCheck(u32 buttons, s32 player);
 static void _menuCBPokemonEntryWork(void);
-static u16 _menuCBPokemonEntryPokemonNum(long player);
+static u16 _menuCBPokemonEntryPokemonNum(s32 player);
 static void _menuCBPokemonEntryWorkInit(void);
-static void _menuCBPokemonEntrySetEntryFlag(long player, bool flag);
-static u8 _menuCBPokemonEntryGetEntryFlag(long player);
+static void _menuCBPokemonEntrySetEntryFlag(s32 player, bool flag);
+static u8 _menuCBPokemonEntryGetEntryFlag(s32 player);
 static void _menuCBPokemonEntryDispPosition(void);
 static u8 _menuCBPokemonEntryAllPlayer(void);
 static Pokemon* _menuCBPokemonEntryLoadCallBack(void* flag);
-static PokemonEntryFace* _menuCBPokemonEntryGetFaceBase(long player, long slot);
+static PokemonEntryFace* _menuCBPokemonEntryGetFaceBase(s32 player, s32 slot);
 
 struct KeyInfo {
     u8 _draft[1];
@@ -431,8 +437,7 @@ void menuCBPokemonEntryButtonTask_20041006() {
         if (toolentryTaisenGetBattleVersus() == 4) {
             int player = i;
             if (_menuCBPokemonEntryGetEntryFlag(player) != 0) {
-                toolentryTaisenGetControlerType(player);
-                void* trainer = menuCBBios_GetTrainer();
+                void* trainer = menuCBBios_GetTrainer(toolentryTaisenGetControlerType(player));
                 if (M2C_FIELD(trainer, s32 *, 4) == 1 || M2C_FIELD(trainer, s32 *, 4) == 2 || M2C_FIELD(trainer, s32 *, 4) == 3) {
                     s32 pad = toolentryTaisenGetControlerType(player);
                     if (gbaCommandIsConnected(pad) == 0) {
@@ -446,8 +451,7 @@ void menuCBPokemonEntryButtonTask_20041006() {
         }
         if (_menuCBPokemonEntryGetEntryFlag(i) == 0) {
             if (toolentryTaisenGetBattleVersus() == 4) {
-                toolentryTaisenGetControlerType(i);
-                void* trainer = menuCBBios_GetTrainer();
+                void* trainer = menuCBBios_GetTrainer(toolentryTaisenGetControlerType(i));
                 if (M2C_FIELD(trainer, s32 *, 4) == 1 || M2C_FIELD(trainer, s32 *, 4) == 2 || M2C_FIELD(trainer, s32 *, 4) == 3) {
                     _menuCBPokemonEntryEntCheckGBA((GSinputDevice)(toolentryTaisenGetControlerType(i)), i);
                 } else {
@@ -469,7 +473,7 @@ extern "C" {
 
 }
 
-static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice inputDevice, long player) {
+static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice inputDevice, s32 player) {
     u32 linkStatus;
     u8 gbaOrder[8];
     s32 order[6];
@@ -520,7 +524,7 @@ static void _menuCBPokemonEntryEntCheckGBA(GSinputDevice inputDevice, long playe
     }
 }
 
-static void _menuCBPokemonEntryEntCheckDebug(long) {
+static void _menuCBPokemonEntryEntCheckDebug(s32) {
 }
 
 extern "C++" {
@@ -528,7 +532,7 @@ static inline u32 _btnTrg(GSinputDevice dev) {
     return GSinputButtonsPressed(dev) & GSinputButtonsChanged(dev);
 }
 
-static void _menuCBPokemonEntryEntCheck(GSinputDevice inputDevice, long player) {
+static void _menuCBPokemonEntryEntCheck(GSinputDevice inputDevice, s32 player) {
     f32* track;
     s32 i;
     u32 buttons;
@@ -574,7 +578,7 @@ static void _menuCBPokemonEntryEntCheck(GSinputDevice inputDevice, long player) 
 }
 }
 
-static s32 _menuCBPokemonEntryButtonCheck(u32 buttons, long player) {
+static s32 _menuCBPokemonEntryButtonCheck(u32 buttons, s32 player) {
     s32 r = -1;
     s32 num = toolentryTaisenGetPokemonNum(player);
     if (buttons & 1) {
@@ -615,7 +619,7 @@ static void _menuCBPokemonEntryWork(void) {
 }
 
 extern "C" {
-u16 menuCBPokemonEntryPokemonNumMin(s32 player) {
+PCRET(u16) menuCBPokemonEntryPokemonNumMin(s32 player) {
     u16 n;
     u16 max;
     if (pGCB->entries[pGCB->cur].flag == 0) {
@@ -631,7 +635,7 @@ u16 menuCBPokemonEntryPokemonNumMin(s32 player) {
 }
 }
 
-static u16 _menuCBPokemonEntryPokemonNum(long player) {
+static u16 _menuCBPokemonEntryPokemonNum(s32 player) {
     u16 max = menuCBBios_ParticipationPokemonMax();
     u16 n = toolentryTaisenGetPokemonNum(player);
     if (n < max) {
@@ -657,8 +661,8 @@ static void _menuCBPokemonEntryWorkInit(void) {
     _menuCBPokemonWork.fC = 0;
     for (i = 0; i < count; i++) {
         void* trainer = menuCBBios_GetTrainerImmediately(i);
-        pad = menuCBTrainerBios_GetControlerID();
-        hero = menuCBBios_GetHeroImmediately(i);
+        pad = menuCBTrainerBios_GetControlerID(trainer);
+        hero = GC_ADDR32(menuCBBios_GetHeroImmediately(i));
         _menuCBPokemonEntrySetEntryFlag(i, false);
         if (*(s32*)((u8*)trainer + 4) != 0) {
             s32 mode;
@@ -699,11 +703,11 @@ u8 menuCBPokemonEntryGetReadFlag(void) {
 }
 }
 
-static void _menuCBPokemonEntrySetEntryFlag(long player, bool flag) {
+static void _menuCBPokemonEntrySetEntryFlag(s32 player, bool flag) {
     _menuCBPokemonWork.entryFlag[player] = flag;
 }
 
-static u8 _menuCBPokemonEntryGetEntryFlag(long player) {
+static u8 _menuCBPokemonEntryGetEntryFlag(s32 player) {
     return _menuCBPokemonWork.entryFlag[player];
 }
 
@@ -801,7 +805,7 @@ static Pokemon* _menuCBPokemonEntryLoadCallBack(void* flag) {
     return pokemon;
 }
 
-static PokemonEntryFace* _menuCBPokemonEntryGetFaceBase(long player, long slot) {
+static PokemonEntryFace* _menuCBPokemonEntryGetFaceBase(s32 player, s32 slot) {
     return &_menuCBPokemonWork.faces[player][slot];
 }
 

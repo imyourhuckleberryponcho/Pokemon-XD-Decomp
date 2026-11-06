@@ -1,4 +1,11 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/pecontainer.h>
+#include <game/gcfield.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -80,17 +87,49 @@ struct peSpline;
 struct peXform;
 
 extern "C++" {
-struct GSgfxLayer {
-    u8 _draft[1];
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
+#ifdef __MWERKS__
     s32 drawIcosahedron();
+#else
+    void drawIcosahedron();
+#endif
+#ifdef __MWERKS__
     s32 drawCylinder(unsigned char);
-    s32 drawSphere(unsigned char, unsigned char);
-    s32 cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, unsigned long, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
+#else
+    void drawCylinder(unsigned char p0);
+#endif
+    void drawSphere(unsigned char, unsigned char);
+#ifdef __MWERKS__
+    s32 cunitChannelGen(unsigned char, GSgfxCunitAlpha, GSgfxCunitSrc, GSgfxCunitSrc, u32, GSgfxLight**, GSgfxLightType, GSgfxDiffuseFunc);
+#else
+    void cunitChannelGen(unsigned char chan, GSgfxCunitAlpha alpha, GSgfxCunitSrc amb, GSgfxCunitSrc mat,
+                                 u32 numLights, GSgfxLight** lights, GSgfxLightType type,
+                                 GSgfxDiffuseFunc diffuse);
+#endif
+#ifdef __MWERKS__
     s32 drawOctahedron();
-    s32 drawSphere(unsigned char);
+#else
+    void drawOctahedron();
+#endif
+    void drawSphere(unsigned char);
+#ifdef __MWERKS__
     s32 drawDodecaedron();
+#else
+    void drawDodecaedron();
+#endif
+#ifdef __MWERKS__
     s32 drawCube();
+#else
+    void drawCube();
+#endif
+#ifdef __MWERKS__
     s32 drawTorus(float, unsigned char, unsigned char);
+#else
+    void drawTorus(float p0, unsigned char p1, unsigned char p2);
+#endif
     void tunitKRegSel(unsigned char, GSgfxTunitKReg);
 };
 struct GSgfxLight {
@@ -98,7 +137,11 @@ struct GSgfxLight {
 };
 struct GSgfxMatrixStack {
     u8 _draft[1];
+#ifdef __MWERKS__
     s32 pop();
+#else
+    void pop();
+#endif
     void pushMult(GSmtx*);
 };
 struct GSgfxVF {
@@ -124,17 +167,9 @@ struct peColorSpline {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;
-    u32 unk4;
-    void* buffer;
-    peNode* freeList;
-    peNode* activeList;
-    u16 count;
-    u16 maxCount;
-    u8 dirty;
-    u8 started;
+    PE_CONTAINER_MEMBERS
 
-    peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
+    peContainer(peEmitterNode* e, u32 nodeSize, unsigned short max);
     virtual ~peContainer();
     virtual void Start();
     virtual void PreUpdate();
@@ -143,9 +178,21 @@ public:
     virtual void Render() = 0;
     virtual void Stop() = 0;
 
+#ifdef __MWERKS__
     s32 MoveNode(peNode*, peNode*);
+#else
+    void MoveNode(peNode* node, peNode* after);
+#endif
+#ifdef __MWERKS__
     s32 RemoveAll();
+#else
+    void RemoveAll();
+#endif
+#ifdef __MWERKS__
     s32 RemoveNode(peNode*);
+#else
+    void RemoveNode(peNode* node);
+#endif
     u16 CreateNodes(unsigned short);
     static void SetLayerVisibility(GSgfxLayerID, bool);
 };
@@ -159,7 +206,7 @@ struct peNode {
 };
 class peShapeContainer : public peContainer {
 public:
-    _peShape* shape;
+    PE_SHAPE_CONTAINER_MEMBERS
 
     peShapeContainer(peEmitterNode*, _peShape*, unsigned short);
     virtual ~peShapeContainer();
@@ -210,7 +257,7 @@ void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx);
 f32 peSplineGetValue(peSpline* s, f32 t);
 extern f32 __float_nan[];
 extern Vec g_CameraLookDir;
-extern s32 g_CameraMatrix;
+extern GCsptr g_CameraMatrix;
 extern Vec g_CameraPosition;
 extern u32 g_currentBound;
 extern GSgfxLayer* g_current_layer;
@@ -235,16 +282,16 @@ extern s32 jtbl_1843;
 }
 
 void peShapeContainer::Stop() {
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) != 0) {
+    if ((u8) THIS_F(u8 *, 0x19, started) != 0) {
         ((peContainer*)this)->PreUpdate();
-        M2C_FIELD(this, u8 *, 0x19) = 0U;
-        if (*M2C_FIELD(this, s32 **, 0x20) & 0x800000) {
+        THIS_F(u8 *, 0x19, started) = 0U;
+        if (*THIS_F(s32 **, 0x20, shape) & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
-        if (*M2C_FIELD(this, s32 **, 0x20) & 0x01000000) {
+        if (*THIS_F(s32 **, 0x20, shape) & 0x01000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)3, false);
         }
-        if (*M2C_FIELD(this, s32 **, 0x20) & 0x02000000) {
+        if (*THIS_F(s32 **, 0x20, shape) & 0x02000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)5, false);
         }
         ((peContainer*)((peContainer *) this))->RemoveAll();
@@ -287,10 +334,13 @@ struct peShapeLight {
 
 static inline void lightSetPos(GSgfxLight* light, const Vec& p) {
     peShapeLight* l = (peShapeLight*)light;
+    f32 x = p.x;
+    f32 y = p.y;
+    f32 z = p.z;
     Vec v;
-    v.x = p.x;
-    v.y = p.y;
-    v.z = p.z;
+    v.x = x;
+    v.y = y;
+    v.z = z;
     switch (l->type) {
     case 0:
         return;
@@ -342,17 +392,17 @@ static inline void layerSetLights(GSgfxLayer* l, u8 n, GSgfxLight** lights) {
 }
 
 static inline bool canRender(peShapeContainer* c) {
-    if (!M2C_FIELD(c, u8 *, 0x19)) {
+    if (!c->started) {
         return false;
     }
-    u32 flags = M2C_FIELD(M2C_FIELD(c, _peShape **, 0x20), u32 *, 0);
-    if (M2C_FIELD(c, u16 *, 0x14) == 0) {
+    u32 flags = GC_AT(u32, c->shape, 0);
+    if (c->count == 0) {
         return false;
     }
     if (g_render_pass != 1) {
         return false;
     }
-    switch (M2C_FIELD(g_current_layer, s32 *, 0x28)) {
+    switch (M2C_NAMED(g_current_layer, s32 *, 0x28, id)) {
     case 0:
         if (flags & 0x200000) {
             return true;
@@ -400,9 +450,9 @@ void peShapeContainer::Render() {
     s32 var_r7;
     s32 var_r8;
 
-    if (M2C_FIELD(this, u8 *, 0x19)) {
+    if (THIS_F(u8 *, 0x19, started)) {
         if (canRender(this)) {
-            temp_r31 = M2C_FIELD(M2C_FIELD((s32)this, _peShape **, 0x20), s32 *, 0);
+            temp_r31 = GC_AT(s32, THIS_F(_peShape **, 0x20, shape), 0);
             if (temp_r31 & 0x800) {
                 {
                     GSgfxLayer* l = g_current_layer;
@@ -420,15 +470,15 @@ void peShapeContainer::Render() {
             if (temp_r31 & 0x40) {
                 var_r8 = 2;
             }
-            _peShape* sh = M2C_FIELD(this, _peShape **, 0x20);
-            particleEngineSetupTexture(0, M2C_FIELD(sh, s32 *, 0x74), 0, 0, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, var_r8);
+            _peShape* sh = THIS_F(_peShape **, 0x20, shape);
+            particleEngineSetupTexture(0, GC_AT(s32, sh, 0x74), 0, 0, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, var_r8);
             particleEngineSetupBlendMode(2);
             if (temp_r31 & 0x200) {
                 GSgfxLight* light0;
                 GSgfxLight* light1;
                 GSgfxLight* lights[2] = {NULL, NULL};
                 u8 numLights;
-                light0 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), GSgfxLight **, 0x78);
+                light0 = GC_AT(GSgfxLight*, THIS_F(_peShape **, 0x20, shape), 0x78);
                 numLights = 1;
                 lights[0] = light0;
                 {
@@ -480,12 +530,13 @@ void peShapeContainer::Render() {
                     LAYER_FIELD(l, s32, 0x107C) = 7;
                     layerMark(l, 8, 0x16D8, 1);
                 }
+                Vec dir;
                 Vec pos;
-                PSMTXMultVec((MtxPtr)(g_CameraMatrix), (Vec*)((u8*)M2C_FIELD(this, _peShape **, 0x20) + 0x5C), &pos);
+                PSMTXMultVec((MtxPtr)(g_CameraMatrix), (Vec*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C), &pos);
                 lightSetPos(light0, pos);
                 g_current_layer->cunitChannelGen(0, (GSgfxCunitAlpha)0, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 1, &light0, (GSgfxLightType)2, (GSgfxDiffuseFunc)2);
                 if (temp_r31 & 0x400) {
-                    light1 = M2C_FIELD(M2C_FIELD(this, _peShape **, 0x20), GSgfxLight **, 0x7C);
+                    light1 = GC_AT(GSgfxLight*, THIS_F(_peShape **, 0x20, shape), 0x7C);
                     numLights = 2;
                     lights[1] = light1;
                     {
@@ -540,14 +591,13 @@ void peShapeContainer::Render() {
                         layerMark(l, 4, 0x16BC, 1);
                     }
                     g_current_layer->cunitChannelGen(1, (GSgfxCunitAlpha)0, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 1, &light1, (GSgfxLightType)0, (GSgfxDiffuseFunc)2);
-                    Vec dir;
-                    Vec* src = (Vec*)((u8*)M2C_FIELD(this, _peShape **, 0x20) + 0x5C);
+                    Vec* src = (Vec*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C);
                     if (PSVECSquareMag(src) < 0.00001f) {
                         dir.x = 0.0f;
                         dir.y = -1.0f;
                         dir.z = 0.0f;
                     } else {
-                        Vec* p = (Vec*)((u8*)M2C_FIELD(this, _peShape **, 0x20) + 0x5C);
+                        Vec* p = (Vec*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C);
                         dir = peShapeLightVec(-p->x, -p->y, -p->z);
                         PSVECNormalize(&dir, &dir);
                     }
@@ -609,11 +659,11 @@ void peShapeContainer::Render() {
                     layerMark(l, 8, 0x16D8, 1);
                 }
             }
-            M2C_FIELD(g_current_layer, GSgfxVF **, 0x199C) = GSgfxVFGetPredef(4);
-            var_r30_2 = M2C_FIELD(this, peShapeNode **, 0x10);
+            M2C_NAMED(g_current_layer, GSgfxVF **, 0x199C, curVF) = GSgfxVFGetPredef(4);
+            var_r30_2 = THIS_F(peShapeNode **, 0x10, activeList);
             while (var_r30_2 != NULL) {
-                ((peShapeNode*)(var_r30_2))->Render((_peShape*)(M2C_FIELD(this, _peShape **, 0x20)));
-                var_r30_2 = M2C_FIELD(var_r30_2, peShapeNode **, 0x28);
+                ((peShapeNode*)(var_r30_2))->Render((_peShape*)(THIS_F(_peShape **, 0x20, shape)));
+                var_r30_2 = (peShapeNode*)PE_NODE_LINK28(var_r30_2);
             }
             particleEngineSetDefaultRenderState(1);
         }
@@ -622,80 +672,74 @@ void peShapeContainer::Render() {
 #pragma pop
 }
 void GSgfxLayer::tunitKRegSel(unsigned char p0, GSgfxTunitKReg p1) {
-    u8 *temp_r5_2;
-    s32 temp_r6_2;
-    u8 *temp_r5_4;
-    s32 temp_r6_4;
-    u8 *temp_r5;
-    s32 temp_r6;
-    u8 *temp_r5_3;
-    s32 temp_r6_3;
+    s32 bit;
 
     switch (p1) {
     case 0:
-        temp_r5 = (unsigned char *)(this + ((p0 * 4) & 0x3FC));
-        M2C_FIELD(temp_r5, s32 *, 0x1504) = 0xC;
-        temp_r6 = 1 << p0;
-        M2C_FIELD(this, s32 *, 0x16FC) = (s32) (M2C_FIELD(this, s32 *, 0x16FC) | temp_r6);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x10);
-        M2C_FIELD(this, s32 *, 0x17B4) = (s32) (M2C_FIELD(this, s32 *, 0x17B4) | temp_r6);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x10);
-        M2C_FIELD(temp_r5, s32 *, 0x1544) = 0x1C;
-        M2C_FIELD(this, s32 *, 0x1700) = (s32) (M2C_FIELD(this, s32 *, 0x1700) | temp_r6);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x10);
-        M2C_FIELD(this, s32 *, 0x17B8) = (s32) (M2C_FIELD(this, s32 *, 0x17B8) | temp_r6);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x10);
+        hw.kcsel[p0] = 0xC;
+        bit = 1 << p0;
+        dirty[0].kcsel |= bit;
+        dirty[0].groups |= 0x10;
+        dirty[1].kcsel |= bit;
+        dirty[1].groups |= 0x10;
+        hw.kasel[p0] = 0x1C;
+        dirty[0].kasel |= bit;
+        dirty[0].groups |= 0x10;
+        dirty[1].kasel |= bit;
+        dirty[1].groups |= 0x10;
         return;
     case 1:
-        temp_r5_2 = (unsigned char *)(this + ((p0 * 4) & 0x3FC));
-        M2C_FIELD(temp_r5_2, s32 *, 0x1504) = 0xD;
-        temp_r6_2 = 1 << p0;
-        M2C_FIELD(this, s32 *, 0x16FC) = (s32) (M2C_FIELD(this, s32 *, 0x16FC) | temp_r6_2);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x10);
-        M2C_FIELD(this, s32 *, 0x17B4) = (s32) (M2C_FIELD(this, s32 *, 0x17B4) | temp_r6_2);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x10);
-        M2C_FIELD(temp_r5_2, s32 *, 0x1544) = 0x1D;
-        M2C_FIELD(this, s32 *, 0x1700) = (s32) (M2C_FIELD(this, s32 *, 0x1700) | temp_r6_2);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x10);
-        M2C_FIELD(this, s32 *, 0x17B8) = (s32) (M2C_FIELD(this, s32 *, 0x17B8) | temp_r6_2);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x10);
+        hw.kcsel[p0] = 0xD;
+        bit = 1 << p0;
+        dirty[0].kcsel |= bit;
+        dirty[0].groups |= 0x10;
+        dirty[1].kcsel |= bit;
+        dirty[1].groups |= 0x10;
+        hw.kasel[p0] = 0x1D;
+        dirty[0].kasel |= bit;
+        dirty[0].groups |= 0x10;
+        dirty[1].kasel |= bit;
+        dirty[1].groups |= 0x10;
         return;
     case 2:
-        temp_r5_3 = (unsigned char *)(this + ((p0 * 4) & 0x3FC));
-        M2C_FIELD(temp_r5_3, s32 *, 0x1504) = 0xE;
-        temp_r6_3 = 1 << p0;
-        M2C_FIELD(this, s32 *, 0x16FC) = (s32) (M2C_FIELD(this, s32 *, 0x16FC) | temp_r6_3);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x10);
-        M2C_FIELD(this, s32 *, 0x17B4) = (s32) (M2C_FIELD(this, s32 *, 0x17B4) | temp_r6_3);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x10);
-        M2C_FIELD(temp_r5_3, s32 *, 0x1544) = 0x1E;
-        M2C_FIELD(this, s32 *, 0x1700) = (s32) (M2C_FIELD(this, s32 *, 0x1700) | temp_r6_3);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x10);
-        M2C_FIELD(this, s32 *, 0x17B8) = (s32) (M2C_FIELD(this, s32 *, 0x17B8) | temp_r6_3);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x10);
+        hw.kcsel[p0] = 0xE;
+        bit = 1 << p0;
+        dirty[0].kcsel |= bit;
+        dirty[0].groups |= 0x10;
+        dirty[1].kcsel |= bit;
+        dirty[1].groups |= 0x10;
+        hw.kasel[p0] = 0x1E;
+        dirty[0].kasel |= bit;
+        dirty[0].groups |= 0x10;
+        dirty[1].kasel |= bit;
+        dirty[1].groups |= 0x10;
         return;
     case 3:
-        temp_r5_4 = (unsigned char *)(this + ((p0 * 4) & 0x3FC));
-        M2C_FIELD(temp_r5_4, s32 *, 0x1504) = 0xF;
-        temp_r6_4 = 1 << p0;
-        M2C_FIELD(this, s32 *, 0x16FC) = (s32) (M2C_FIELD(this, s32 *, 0x16FC) | temp_r6_4);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x10);
-        M2C_FIELD(this, s32 *, 0x17B4) = (s32) (M2C_FIELD(this, s32 *, 0x17B4) | temp_r6_4);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x10);
-        M2C_FIELD(temp_r5_4, s32 *, 0x1544) = 0x1F;
-        M2C_FIELD(this, s32 *, 0x1700) = (s32) (M2C_FIELD(this, s32 *, 0x1700) | temp_r6_4);
-        M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x10);
-        M2C_FIELD(this, s32 *, 0x17B8) = (s32) (M2C_FIELD(this, s32 *, 0x17B8) | temp_r6_4);
-        M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x10);
+        hw.kcsel[p0] = 0xF;
+        bit = 1 << p0;
+        dirty[0].kcsel |= bit;
+        dirty[0].groups |= 0x10;
+        dirty[1].kcsel |= bit;
+        dirty[1].groups |= 0x10;
+        hw.kasel[p0] = 0x1F;
+        dirty[0].kasel |= bit;
+        dirty[0].groups |= 0x10;
+        dirty[1].kasel |= bit;
+        dirty[1].groups |= 0x10;
         return;
     }
 }
 extern "C++" {
 #pragma push
 #pragma dont_inline on
-#define PE_NEXT(n) (*(peNode**)((u8*)(n) + 0x28))
-#define PE_PREV(n) (*(peNode**)((u8*)(n) + 0x2C))
-#define PE_DEPTH(n) (*(f32*)((u8*)(n) + 0x84))
+#define PE_NEXT(n) PE_NODE_LINK28(n)
+#define PE_PREV(n) PE_NODE_LINK2C(n)
+#define PE_DEPTH(n) PE_NODE_F(n, f32, 0x84)
+#ifdef __MWERKS__
+#define PSC(T, off, m) (*(T*)((u8*)this + (off)))
+#else
+#define PSC(T, off, m) (*(T*)&this->m)
+#endif
 
 void peShapeContainer::Update(float dt) {
     peNode* node;
@@ -704,20 +748,20 @@ void peShapeContainer::Update(float dt) {
     peNode* prev;
     f32 depth;
 
-    if (*((u8*)this + 0x19) == 0) {
+    if (PSC(u8, 0x19, started) == 0) {
         return;
     }
-    for (node = *(peNode**)((u8*)this + 0x10); node != NULL; node = next) {
+    for (node = PSC(peNode*, 0x10, activeList); node != NULL; node = next) {
         next = PE_NEXT(node);
-        if (!((peShapeNode*)node)->Update(*(peEmitterNode**)this, *(_peShape**)((u8*)this + 0x20), dt)) {
+        if (!((peShapeNode*)node)->Update(PSC(peEmitterNode*, 0x0, emitter), PSC(_peShape*, 0x20, shape), dt)) {
             ((peContainer*)this)->RemoveNode(node);
         }
     }
-    if (g_currentBound != 0 && *(peNode**)((u8*)this + 0x10) != NULL) {
+    if (g_currentBound != 0 && PSC(peNode*, 0x10, activeList) != NULL) {
         GSboundAlwaysInView(g_currentBound, 1);
     }
-    if (*((u8*)this + 0x19) != 0 && (**(u32**)((u8*)this + 0x20) & 0x80) && *(u16*)((u8*)this + 0x14) >= 2) {
-        for (node = PE_NEXT(*(peNode**)((u8*)this + 0x10)); node != NULL; node = next) {
+    if (PSC(u8, 0x19, started) != 0 && (*PSC(u32*, 0x20, shape) & 0x80) && PSC(u16, 0x14, count) >= 2) {
+        for (node = PE_NEXT(PSC(peNode*, 0x10, activeList)); node != NULL; node = next) {
             depth = PE_DEPTH(node);
             pos = node;
             for (prev = PE_PREV(node); prev != NULL && PE_DEPTH(prev) < depth; prev = PE_PREV(prev)) {
@@ -738,16 +782,16 @@ u16 peShapeContainer::Emit(unsigned short count) {
     peShapeNode *temp_r29;
     u16 temp_r28;
 
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
+    if ((u8) THIS_F(u8 *, 0x19, started) == 0) {
         return 0U;
     }
     var_r31 = ((peContainer*)this)->CreateNodes(count);
     var_r30 = g_emitParams;
-    var_r3 = M2C_FIELD(this, peShapeNode **, 0x10);
+    var_r3 = THIS_F(peShapeNode **, 0x10, activeList);
     temp_r28 = var_r31;
     while (var_r31 != 0) {
-        temp_r29 = M2C_FIELD(var_r3, peShapeNode **, 0x28);
-        ((peShapeNode*)(var_r3))->Start((peEmitterNode*)(M2C_FIELD(this, peEmitterNode **, 0)), (_peShape*)(M2C_FIELD(this, _peShape **, 0x20)), (_EmitParams*)(var_r30));
+        temp_r29 = (peShapeNode*)PE_NODE_LINK28(var_r3);
+        ((peShapeNode*)(var_r3))->Start((peEmitterNode*)(THIS_F(peEmitterNode **, 0, emitter)), (_peShape*)(THIS_F(_peShape **, 0x20, shape)), (_EmitParams*)(var_r30));
         var_r3 = temp_r29;
         var_r31 -= 1;
         var_r30 += 0x48;
@@ -1367,15 +1411,15 @@ extern "C++" {
 
 extern "C++" {
 void peShapeContainer::Start() {
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
-        M2C_FIELD(this, u8 *, 0x19) = 1U;
-        if (*M2C_FIELD(this, s32 **, 0x20) & 0x800000) {
+    if ((u8) THIS_F(u8 *, 0x19, started) == 0) {
+        THIS_F(u8 *, 0x19, started) = 1U;
+        if (*THIS_F(s32 **, 0x20, shape) & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
         }
-        if (*M2C_FIELD(this, s32 **, 0x20) & 0x01000000) {
+        if (*THIS_F(s32 **, 0x20, shape) & 0x01000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)3, true);
         }
-        if (*M2C_FIELD(this, s32 **, 0x20) & 0x02000000) {
+        if (*THIS_F(s32 **, 0x20, shape) & 0x02000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)5, true);
         }
     }
@@ -1390,7 +1434,13 @@ peShapeContainer::~peShapeContainer() {
 }
 
 extern "C++" {
-peShapeContainer::peShapeContainer(peEmitterNode* p0, _peShape* p1, unsigned short p2) : peContainer(p0, 0x9C, p2) {
+#ifndef __MWERKS__
+static u32 peShapeNodeSizePC();
+#define PE_SHAPE_NODE_SIZE peShapeNodeSizePC()
+#else
+#define PE_SHAPE_NODE_SIZE 0x9C
+#endif
+peShapeContainer::peShapeContainer(peEmitterNode* p0, _peShape* p1, unsigned short p2) : peContainer(p0, PE_SHAPE_NODE_SIZE, p2) {
     shape = p1;
     g_particle_debug_stats.unk4 += 0x24;
     g_particle_debug_stats.unk14 += 0x24;
@@ -1405,22 +1455,31 @@ struct peShapeColor {
 };
 
 static inline void peShapeSetKColor(GSgfxLayer* layer, peShapeColor c) {
+#ifdef __MWERKS__
     *(peShapeColor*)((u8*)layer + 0x14F4) = c;
-    M2C_FIELD(layer, u32 *, 0x16F8) |= 1;
-    M2C_FIELD(layer, u32 *, 0x16A8) |= 0x10;
-    M2C_FIELD(layer, u32 *, 0x17B0) |= 1;
-    M2C_FIELD(layer, u32 *, 0x1760) |= 0x10;
+#else
+    *(peShapeColor*)&layer->hw.kcolor[0] = c;
+#endif
+    M2C_NAMED(layer, u32 *, 0x16F8, dirty[0].kcolor) |= 1;
+    M2C_NAMED(layer, u32 *, 0x16A8, dirty[0].groups) |= 0x10;
+    M2C_NAMED(layer, u32 *, 0x17B0, dirty[1].kcolor) |= 1;
+    M2C_NAMED(layer, u32 *, 0x1760, dirty[1].groups) |= 0x10;
 }
 
 static inline void peShapeSetChanColor(GSgfxLayer* layer, int ch, peShapeColor amb, peShapeColor mat) {
+#ifdef __MWERKS__
     ((peShapeColor*)((u8*)layer + 0xE9C))[ch] = amb;
     ((peShapeColor*)((u8*)layer + 0xEA4))[ch] = mat;
-    M2C_FIELD(layer, u32 *, 0x16C4) |= 1 << ch;
-    M2C_FIELD(layer, u32 *, 0x16C8) |= 1 << ch;
-    M2C_FIELD(layer, u32 *, 0x16A8) |= 4;
-    M2C_FIELD(layer, u32 *, 0x177C) |= 1 << ch;
-    M2C_FIELD(layer, u32 *, 0x1780) |= 1 << ch;
-    M2C_FIELD(layer, u32 *, 0x1760) |= 4;
+#else
+    *(peShapeColor*)&layer->hw.amb[ch] = amb;
+    *(peShapeColor*)&layer->hw.mat[ch] = mat;
+#endif
+    M2C_NAMED(layer, u32 *, 0x16C4, dirty[0].amb) |= 1 << ch;
+    M2C_NAMED(layer, u32 *, 0x16C8, dirty[0].mat) |= 1 << ch;
+    M2C_NAMED(layer, u32 *, 0x16A8, dirty[0].groups) |= 4;
+    M2C_NAMED(layer, u32 *, 0x177C, dirty[1].amb) |= 1 << ch;
+    M2C_NAMED(layer, u32 *, 0x1780, dirty[1].mat) |= 1 << ch;
+    M2C_NAMED(layer, u32 *, 0x1760, dirty[1].groups) |= 4;
 }
 
 struct peShapeSpline {
@@ -1454,21 +1513,21 @@ struct peShapeEmitter {
     peShapeEmitParams* params;
 };
 struct peShapeDef {
-    u32 flags;
-    f32 rotX;
-    f32 rotY;
-    f32 rotZ;
-    Vec spin;
-    Vec base;
-    Vec jitter;
-    peShapeSpline* rotXSpline;
-    peShapeSpline* rotYSpline;
-    peShapeSpline* rotZSpline;
-    peShapeSpline* sclXSpline;
-    peShapeSpline* sclYSpline;
-    peShapeSpline* sclZSpline;
-    peColorSpline* color;
-    peShapeSpline* alpha;
+    gc_be32 flags;
+    gc_bef32 rotX;
+    gc_bef32 rotY;
+    gc_bef32 rotZ;
+    gc_vec(Vec) spin;
+    gc_vec(Vec) base;
+    gc_vec(Vec) jitter;
+    gc_ptr32(peShapeSpline) rotXSpline;
+    gc_ptr32(peShapeSpline) rotYSpline;
+    gc_ptr32(peShapeSpline) rotZSpline;
+    gc_ptr32(peShapeSpline) sclXSpline;
+    gc_ptr32(peShapeSpline) sclYSpline;
+    gc_ptr32(peShapeSpline) sclZSpline;
+    gc_ptr32(peColorSpline) color;
+    gc_ptr32(peShapeSpline) alpha;
 };
 struct peShapeNodeData {
     f32 life0;
@@ -1488,7 +1547,11 @@ struct peShapeNodeData {
     Vec spinRate;
     u8 color[4];
 };
+#ifndef __MWERKS__
+static u32 peShapeNodeSizePC() { return sizeof(peShapeNodeData); }
+#endif
 
+#ifdef __MWERKS__
 inline int __fpclassifyf(float x) {
     switch ((*(s32*)&x) & 0x7F800000) {
     case 0x7F800000:
@@ -1507,6 +1570,9 @@ inline int __fpclassifyf(float x) {
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
@@ -1521,10 +1587,17 @@ inline float sqrtf(float x) {
     }
     return x;
 }
+#else
+#include <math.h>
+#endif
 
 static inline f32 __OSu8tof32(register const u8* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 2 }
+#else
+    ret = PSQ_LOAD(arg, 0, 2);
+#endif
     return ret;
 }
 
@@ -1536,10 +1609,15 @@ static inline u8 __OSf32tou8(register f32 inF) {
     u32 tmp;
     register u32* tmpPtr = &tmp;
     register u8 ret;
+#ifdef __MWERKS__
     asm {
         psq_st inF, 0(tmpPtr), 1, 2
         lbz ret, 0(tmpPtr)
     }
+#else
+    PSQ_STORE(tmpPtr, 0, inF, 2);
+    ret = *(u8*)tmpPtr;
+#endif
     return ret;
 }
 
@@ -1573,9 +1651,9 @@ void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
     Vec jitter;
     ((peNode*)this)->Start(p0, p2);
     n->flip = 0;
-    PSVECScale(&s->jitter, &jitter, HSD_Randf());
+    PSVECScale(GC_VEC3P(Vec, &s->jitter), &jitter, HSD_Randf());
     n->offset = peShapeVecC(jitter);
-    PSVECAdd(&n->offset, &s->base, &n->offset);
+    PSVECAdd(&n->offset, GC_VEC3P(Vec, &s->base), &n->offset);
     n->spinQuat.x = 0.0f;
     n->spinQuat.y = 0.0f;
     n->spinQuat.z = 0.0f;
@@ -1625,7 +1703,7 @@ void peShapeNode::Start(peEmitterNode* p0, _peShape* p1, _EmitParams* p2) {
             EulerToQuat(&euler, (Quaternion*)&n->spinQuat);
         }
     }
-    n->spinRate = s->spin;
+    GC_VEC3(n->spinRate, s->spin);
     if (flags & 0x8000) {
         n->spinRate.x *= HSD_Randf();
     }
@@ -1727,22 +1805,22 @@ u8 peShapeNode::Update(peEmitterNode* p0, _peShape* p1, float p2) {
 }
 
 void peShapeNode::Render(_peShape* shape) {
-    u32 flags = M2C_FIELD(shape, u32 *, 0);
+    u32 flags = GC_AT(u32, shape, 0);
     peShapeColor black = {0};
     f32 m[3][4];
     f32 rot[3][4];
-    peShapeSetKColor(g_current_layer, M2C_FIELD(this, peShapeColor *, 0x98));
+    peShapeSetKColor(g_current_layer, PE_NODE_F(this, peShapeColor, 0x98));
     if (flags & 0x200) {
-        peShapeSetChanColor(g_current_layer, 0, M2C_FIELD(shape, peShapeColor *, 0x68), M2C_FIELD(this, peShapeColor *, 0x98));
+        peShapeSetChanColor(g_current_layer, 0, M2C_FIELD(shape, peShapeColor *, 0x68), PE_NODE_F(this, peShapeColor, 0x98));
         if (flags & 0x400) {
-            peShapeSetChanColor(g_current_layer, 1, black, M2C_FIELD(this, peShapeColor *, 0x98));
+            peShapeSetChanColor(g_current_layer, 1, black, PE_NODE_F(this, peShapeColor, 0x98));
         }
     }
-    PSMTXQuat(rot, (const Quaternion*)((u8*)this + 0x3C));
-    PSMTXScale(m, M2C_FIELD(this, f32 *, 0x4C), M2C_FIELD(this, f32 *, 0x50), M2C_FIELD(this, f32 *, 0x54));
+    PSMTXQuat(rot, (const Quaternion*)&PE_NODE_F(this, u8, 0x3C));
+    PSMTXScale(m, PE_NODE_F(this, f32, 0x4C), PE_NODE_F(this, f32, 0x50), PE_NODE_F(this, f32, 0x54));
     PSMTXConcat(rot, m, m);
-    PSMTXTransApply(m, m, M2C_FIELD(this, f32 *, 0x30), M2C_FIELD(this, f32 *, 0x34), M2C_FIELD(this, f32 *, 0x38));
-    M2C_FIELD(g_current_layer, GSgfxMatrixStack **, 0x19A0)->pushMult((GSmtx*)m);
+    PSMTXTransApply(m, m, PE_NODE_F(this, f32, 0x30), PE_NODE_F(this, f32, 0x34), PE_NODE_F(this, f32, 0x38));
+    M2C_NAMED(g_current_layer, GSgfxMatrixStack **, 0x19A0, matrixStack)->pushMult((GSmtx*)m);
     switch (flags & 7) {
     case 0:
         g_current_layer->drawCube();
@@ -1760,7 +1838,7 @@ void peShapeNode::Render(_peShape* shape) {
         g_current_layer->drawOctahedron();
         break;
     case 7:
-        g_current_layer->drawTorus(M2C_FIELD(shape, f32 *, 0x54), M2C_FIELD(shape, u8 *, 0x58), M2C_FIELD(shape, u8 *, 0x59));
+        g_current_layer->drawTorus(GC_AT(f32, shape, 0x54), M2C_FIELD(shape, u8 *, 0x58), M2C_FIELD(shape, u8 *, 0x59));
         break;
     case 6:
         g_current_layer->drawSphere(M2C_FIELD(shape, u8 *, 0x59));
@@ -1769,7 +1847,7 @@ void peShapeNode::Render(_peShape* shape) {
         g_current_layer->drawSphere(M2C_FIELD(shape, u8 *, 0x58), M2C_FIELD(shape, u8 *, 0x59));
         break;
     }
-    M2C_FIELD(g_current_layer, GSgfxMatrixStack **, 0x19A0)->pop();
+    M2C_NAMED(g_current_layer, GSgfxMatrixStack **, 0x19A0, matrixStack)->pop();
 }
 }
 #pragma pop

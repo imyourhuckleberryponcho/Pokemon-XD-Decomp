@@ -1,5 +1,7 @@
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gsmemcell.h>
 #pragma pool_strings off
 
 #ifndef M2C_MACROS_H
@@ -43,6 +45,9 @@ struct GSmemCell {
     void init(int);
     void clear();
 };
+#ifndef __MWERKS__
+static_assert(sizeof(GSmemCell) == GSMEM_CELL_SIZE, "GSMEM_CELL_SIZE (game/gsmemcell.h)");
+#endif
 struct GSmemHeapDesc {
     s32 size;
     GSmemCell* free;
@@ -50,7 +55,7 @@ struct GSmemHeapDesc {
     s32 type;
     s32 unk10;
     s32 unk14;
-    s32 unk18;
+    GCsptr unk18;
     s32 unk1C;
     GSmemCell* freeCells;
     u8 unk24[8];
@@ -99,11 +104,11 @@ void GSmemDumpHeapInfo(void) {
 extern "C" {
 s32 OSSetAllocMethodHeap(s32 p0, s32 p1) {
     s32 temp_r3;
-    u8 *temp_r31;
+    GSmemHeapDesc* temp_r31;
 
-    temp_r31 = (u8 *)HeapArray + (p0 * 0x30);
-    temp_r3 = M2C_FIELD(temp_r31, s32 *, 0x10);
-    M2C_FIELD(temp_r31, s32 *, 0x10) = p1;
+    temp_r31 = &((GSmemHeapDesc*)HeapArray)[p0];
+    temp_r3 = temp_r31->unk10;
+    temp_r31->unk10 = p1;
     return temp_r3;
 }
 }
@@ -176,8 +181,8 @@ s32 GSmemVisitHeapAllocated(s32 heap, void (*func)(u32, s32, u64), u64 user) {
 
 extern "C" {
 s32 OSReferentSize(void* ptr) {
-    s32* cell = (s32*)((u8*)ptr - 0x20);
-    return cell[2] - 0x20;
+    GSmemCell* cell = (GSmemCell*)((u8*)ptr - 0x20);
+    return cell->size - 0x20;
 }
 }
 
@@ -271,7 +276,7 @@ s32 OSCreateExternalHeap(s32 start, s32 end, s32* cells, s32 count) {
         if (hd->size < 0) {
             hd->size = end - start;
             hd->unk10 = 0;
-            hd->unk18 = (s32)cells;
+            hd->unk18 = (GCsptr)cells;
             hd->unk1C = count;
             hd->type = 1;
             hd->unk14 = 1;
@@ -578,23 +583,23 @@ static GSmemCell* DLInsert(GSmemCell* list, GSmemCell* cell, GSmemHeapDesc* hd) 
 
 extern "C++" {
 static s32* DLExtract(GSmemCell* p0, GSmemCell* p1) {
-    if ((s32 *) M2C_FIELD(p1, s32 **, 4) != NULL) {
-        *M2C_FIELD(p1, s32 **, 4) = (long)(M2C_FIELD(p1, u8 **, 0));
+    if (p1->next != NULL) {
+        p1->next->prev = p1->prev;
     }
-    if ((u8 *) M2C_FIELD(p1, u8 **, 0) == NULL) {
-        return M2C_FIELD(p1, s32 **, 4);
+    if (p1->prev == NULL) {
+        return (s32*)p1->next;
     }
-    M2C_FIELD(M2C_FIELD(p1, u8 **, 0), s32 **, 4) = (s32 *) M2C_FIELD(p1, s32 **, 4);
+    p1->prev->next = p1->next;
     return (s32 *) p0;
 }
 }
 
 extern "C++" {
 static s32* DLAddFront(GSmemCell* p0, GSmemCell* p1) {
-    M2C_FIELD(p1, GSmemCell **, 4) = p0;
-    M2C_FIELD(p1, s32 *, 0) = 0;
+    p1->next = p0;
+    p1->prev = NULL;
     if (p0 != NULL) {
-        (*(s32*)(p0)) = (long)(p1);
+        p0->prev = p1;
     }
     return (s32 *) p1;
 }
@@ -616,9 +621,9 @@ void GSmemCell::init(int size) {
 
 extern "C++" {
 void GSmemCell::clear() {
-    M2C_FIELD(this, s32 *, 0) = 0;
-    M2C_FIELD(this, s32 *, 4) = 0;
-    M2C_FIELD(this, s32 *, 8) = 0;
+    prev = NULL;
+    next = NULL;
+    size = 0;
 }
 }
 
@@ -673,7 +678,7 @@ GSmemCell* GSmemHeapDesc::createNewCell() {
 
 extern "C++" {
 s32 GSmemHeapDesc::getHeaderSize() {
-    if ((s32) M2C_FIELD(this, s32 *, 0xC) == 0) {
+    if (type == 0) {
         return 0x20;
     }
     return 0;

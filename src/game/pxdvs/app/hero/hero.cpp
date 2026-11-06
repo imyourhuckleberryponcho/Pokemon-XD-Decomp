@@ -1,29 +1,31 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 #pragma pool_strings off
 
-class Pokemon;
+struct Pokemon;
 class Item;
 
 enum FloorStateMode { FLOOR_STATE_MODE_0 };
 enum FloorEnterMode { FLOOR_ENTER_MODE_0 };
 
 struct FloorModuleInterface {
-    u32 unk0;
+    void* unk0;
     void (*enterFloor)(unsigned int, FloorEnterMode);
-    u32 unk8;
-    u32 unkC;
+    void* unk8;
+    void* unkC;
     void (*exitFloor)(unsigned int, FloorEnterMode);
-    u32 unk14;
+    void* unk14;
     const char* (*getModuleName)(void);
-    void (*makeStateData)(FloorStateMode, void*, unsigned long);
-    void (*restoreStateData)(FloorStateMode, void*, unsigned long);
+    void (*makeStateData)(FloorStateMode, void*, u32);
+    void (*restoreStateData)(FloorStateMode, void*, u32);
     u32 (*getStateSize)(FloorStateMode);
     u32 (*getUID)(void);
     u8 unk2C[4];
 };
 
-class Hero {
+struct Hero {
 public:
     static Hero* getHeroPtr();
     void setRestertPos();
@@ -41,19 +43,19 @@ public:
 };
 
 extern "C" {
-u32 heroGetStatus(Hero*, u32, u16);
-void heroSetStatus(Hero*, u32, u32);
-void* savedataGetStatus(void*, u16);
+StatusU32 heroGetStatus(Hero*, u32, u16);
+void heroSetStatus(Hero*, u32, StatusU32);
+void* savedataGetStatus(void*, PCARG(u16, s32));
 u8 pokemonCheckValid(void*);
 u32 pokemonBiosGetDp(void*);
 void pokemonCheckSetMonohiroi(void*);
-u32 pokemonGetStatus(void*, u32, u32, u32);
+StatusU32 pokemonGetStatus(void*, u32, u32, u32);
 void pokemonBiosCopy(void*, void*);
-void pokemonSetCatchStatus(void*, u32, u32, u32, u32, u32, u32);
+void pokemonSetCatchStatus(void*, u32, u32, u32, u32, u32, StatusU32);
 s32 pcboxAddPokemon(u32, void*, s32);
 void pokemonInitAry(void*, u16);
 void itemInitAry(void*, u16);
-u32 itemGetStatus(u32, u32, u32, u32);
+StatusU32 itemGetStatus(u32, u32, u32, u32);
 s32 itemCheckAddItemDataIdAry(void*, u16, u32, u16, u8);
 s32 itemDecItemDataIdAry(void*, u16, u32, u32, u32, u16, u8);
 s32 itemAddItemDataIdAry(void*, u16, u32, u32, u32, u16, u8, u8);
@@ -96,10 +98,10 @@ static u32 _heroGetStateSize(FloorStateMode) {
     return 0;
 }
 
-static void _heroRestoreStateData(FloorStateMode, void*, unsigned long) {
+static void _heroRestoreStateData(FloorStateMode, void*, u32) {
 }
 
-static void _heroMakeStateData(FloorStateMode mode, void*, unsigned long) {
+static void _heroMakeStateData(FloorStateMode mode, void*, u32) {
     if (mode == 3) {
         ((Hero*)savedataGetStatus(0, 2))->setRestertPos();
     }
@@ -370,7 +372,7 @@ s32 heroCatchPokemon(Hero* hero, void* pokemon, u32 arg3, u32 arg4, u8 allowPCBo
     u8 origin;
     u8 sex;
     u32 rnd;
-    u32 name;
+    StatusU32 name;
 
     if (pokemon == 0) {
         return 6;
@@ -442,7 +444,7 @@ void heroInit(Hero* hero) {
     if (hero == 0) {
         hero = Hero::getHeroPtr();
     }
-    heroSetStatus(hero, 1, (u32)&emptyName);
+    heroSetStatus(hero, 1, (StatusU32)&emptyName);
     heroSetStatus(hero, 2, 0);
     pokemonInitAry((void*)heroGetStatus(hero, 3, 0), 6);
     itemInitAry((void*)heroGetStatus(hero, 4, 0), 0x1E);
@@ -464,7 +466,7 @@ void heroInit(Hero* hero) {
     heroSetStatus(hero, 0x14, 1);
     heroSetStatus(hero, 0x15, 1);
     heroSetStatus(hero, 0x16, 1);
-    heroSetStatus(hero, 0x17, (u32)&emptyName);
+    heroSetStatus(hero, 0x17, (StatusU32)&emptyName);
     heroSetStatus(hero, 0x18, 0);
     itemInitAry((void*)heroGetStatus(hero, 10, 0), 10);
     heroSetStatus(hero, 0x19, 0);
@@ -483,8 +485,8 @@ void heroInit(Hero* hero) {
     }
 }
 
-void heroSetStatus(Hero* hero, u32 selector, u32 value) {
-    extern void heroBiosSetNamePtr(Hero*, u32);
+void heroSetStatus(Hero* hero, u32 selector, StatusU32 value) {
+    extern void heroBiosSetNamePtr(Hero*, StatusU32);
     extern void heroBiosSetRnd(Hero*, u32);
     extern void heroBiosSetSexDataId(Hero*, u8);
     extern void heroBiosSetPokedoru(Hero*, u32);
@@ -570,7 +572,7 @@ void heroSetStatus(Hero* hero, u32 selector, u32 value) {
     }
 }
 
-u32 heroGetStatus(Hero* hero, u32 selector, u16 index) {
+StatusU32 heroGetStatus(Hero* hero, u32 selector, u16 index) {
     extern u32 heroBiosGetNamePtr(Hero*);
     extern u32 heroBiosGetRnd(Hero*);
     extern u32 heroBiosGetItemNormalPtr(Hero*, u16);
@@ -608,7 +610,7 @@ u32 heroGetStatus(Hero* hero, u32 selector, u16 index) {
     case 2:
         return heroBiosGetRnd(hero);
     case 3:
-        return (u32)heroBiosGetPokemonPtr(hero, index);
+        return (StatusU32)heroBiosGetPokemonPtr(hero, index);
     case 4:
         return heroBiosGetItemNormalPtr(hero, index);
     case 5:

@@ -1,50 +1,20 @@
 #include <dolphin/types.h>
+#include <game/gsmemcell.h>
+#include <game/pxdvs/GSAPI/GSfsys/fsys.h>
 #include <dolphin/arq.h>
+#ifdef __MWERKS__
+typedef u32 FsysArqAddr;
+#define FSYS_ARQ_ADDR(p) ((u32)(p))
+#else
+#include <stdint.h>
+typedef uintptr_t FsysArqAddr;
+#define FSYS_ARQ_ADDR(p) ((uintptr_t)(p))
+#endif
 
 struct FsysTag {
     FsysTag* prev;
     FsysTag* next;
     u8 used;
-};
-
-struct FsysCacheManage {
-    FsysCacheManage* prev;
-    FsysCacheManage* next;
-    u8 used;
-    u8 type;
-    u8 locked;
-    u8 pad0B;
-    void* addr;
-    u32 size;
-    u32 prio;
-    u32 uniqueID;
-    u32 group;
-    u32 id;
-};
-
-struct Fsys {
-    u32 group;
-    u32 id;
-    u8 unk8[8];
-    u32 flags;
-};
-
-struct FsysResHeader;
-
-struct FsysArqTrans {
-    FsysArqTrans* prev;
-    FsysArqTrans* next;
-    u8 used;
-    u8 pad9[3];
-    ARQRequest request;
-    void (*callback)(u32);
-    Fsys* fsys;
-    FsysResHeader* res;
-    u32 arg0;
-    u32 arg1;
-    u32 arg2;
-    void* dst;
-    u32 size;
 };
 
 extern "C" {
@@ -62,17 +32,20 @@ void _fsysDelTAG(FsysTag* tag, FsysTag** root);
 
 static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, void (*callback)(u32),
                       u32 arg0, u32 arg1, u32 arg2);
-FsysArqTrans* _fsysArq2ArqTrans(u32 request);
+FsysArqTrans* _fsysArq2ArqTrans(FsysArqAddr request);
 FsysCacheManage* _fsysGetCacheManage(u32 group, u32 id);
-static void _fsysARQCallbackWrite(u32 request);
-static void _fsysARQCallbackRead(u32 request);
+static void _fsysARQCallbackWrite(FsysArqAddr request);
+static void _fsysARQCallbackRead(FsysArqAddr request);
 static u8 _fsysInitCacheHeap(u32 size);
 static void _fsysAddCacheManage(FsysCacheManage* manage);
 static void _fsysDelARQTrans(FsysArqTrans* trans);
 static FsysArqTrans* _fsysGetNewArq(void);
 static void _fsysAddArq(FsysArqTrans* trans);
 
-static u8 _fsysAmemCell[0x2800];
+#ifndef __MWERKS__
+alignas(8)
+#endif
+static u8 _fsysAmemCell[0x200 * GSMEM_CELL_SIZE];
 static FsysCacheManage* _fsysCACHEManage;
 static FsysCacheManage* _fsysCACHEManageRoot;
 static FsysArqTrans* _fsysARQTrans;
@@ -101,9 +74,9 @@ void _fsysWriteCache(Fsys* fsys, FsysResHeader* res, void* src, u32 base, u32 si
     trans->fsys = fsys;
     trans->res = res;
     trans->callback = callback;
-    u32 priority = (fsys->flags == 4) ? 1 : 0;
+    u32 priority = (fsys->mode == 4) ? 1 : 0;
     DCFlushRange(src, size);
-    ARQPostRequest(&trans->request, fsys->group, 0, priority, (u32)src, base + offset, size,
+    ARQPostRequest(&trans->request, fsys->id, 0, priority, FSYS_ARQ_ADDR(src), base + offset, size,
                    _fsysARQCallbackWrite);
 }
 
@@ -122,17 +95,25 @@ static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size
     FsysArqTrans* trans;
     u32 priority;
 
-    manage = _fsysGetCacheManage(fsys->group, fsys->id);
+    manage = _fsysGetCacheManage(fsys->id, fsys->unk4);
     if (manage == 0) {
         if (manage == 0) {
+#ifdef __MWERKS__
             return;
+#else
+            return 0;
+#endif
         }
         return 0;
     }
     trans = _fsysGetNewArq();
     if (trans == 0) {
         if (trans == 0) {
+#ifdef __MWERKS__
             return;
+#else
+            return 0;
+#endif
         }
         return 0;
     }
@@ -142,7 +123,7 @@ static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size
     trans->arg0 = arg0;
     trans->arg1 = arg1;
     trans->arg2 = arg2;
-    priority = (fsys->flags == 4) ? 1 : 0;
+    priority = (fsys->mode == 4) ? 1 : 0;
     if (offset + size > manage->size) {
         size = manage->size - offset;
     }
@@ -150,13 +131,16 @@ static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size
         DCInvalidateRange(dst, size);
         trans->dst = dst;
         trans->size = size;
-        ARQPostRequest(&trans->request, fsys->group, 1, priority, (u32)manage->addr + offset, (u32)dst, size,
+        ARQPostRequest(&trans->request, fsys->id, 1, priority, FSYS_ARQ_ADDR(manage->addr) + offset, FSYS_ARQ_ADDR(dst), size,
                        _fsysARQCallbackRead);
         return 1;
     }
+#ifndef __MWERKS__
+    return 0;
+#endif
 }
 
-static void _fsysARQCallbackWrite(u32 request) {
+static void _fsysARQCallbackWrite(FsysArqAddr request) {
     FsysArqTrans* trans;
     trans = _fsysArq2ArqTrans(request);
     if (trans == 0) {
@@ -166,12 +150,12 @@ static void _fsysARQCallbackWrite(u32 request) {
         return;
     }
     if (trans->callback != 0) {
-        trans->callback(request);
+        trans->callback((u32)request);
     }
     _fsysDelARQTrans(trans);
 }
 
-static void _fsysARQCallbackRead(u32 request) {
+static void _fsysARQCallbackRead(FsysArqAddr request) {
     FsysArqTrans* trans;
     trans = _fsysArq2ArqTrans(request);
     if (trans == 0) {
@@ -182,7 +166,7 @@ static void _fsysARQCallbackRead(u32 request) {
     }
     DCInvalidateRange(trans->dst, trans->size);
     if (trans->callback != 0) {
-        trans->callback(request);
+        trans->callback((u32)request);
     }
     _fsysDelARQTrans(trans);
 }
@@ -394,7 +378,11 @@ FsysCacheManage* _fsysGetNewCacheManage(u32 group, u32 id, u8 type, u8 locked, u
         }
         if (i == _fsysCACHEManageIndex) {
             if (i == _fsysCACHEManageIndex) {
+#ifdef __MWERKS__
                 return;
+#else
+                return 0;
+#endif
             }
         }
     }
@@ -408,11 +396,11 @@ static void _fsysAddCacheManage(FsysCacheManage* manage) {
     _fsysAddTAG((FsysTag*)manage, (FsysTag**)&_fsysCACHEManageRoot);
 }
 
-FsysArqTrans* _fsysArq2ArqTrans(u32 request) {
+FsysArqTrans* _fsysArq2ArqTrans(FsysArqAddr request) {
     FsysArqTrans* trans;
 
     for (trans = _fsysARQTransRoot; trans != 0; trans = trans->next) {
-        if ((u32)&trans->request == request) {
+        if ((FsysArqAddr)&trans->request == request) {
             return trans;
         }
     }

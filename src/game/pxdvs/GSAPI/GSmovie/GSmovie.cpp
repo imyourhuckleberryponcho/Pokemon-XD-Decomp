@@ -1,5 +1,7 @@
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
 
 struct THPHeader {
     char magic[4];
@@ -134,14 +136,14 @@ enum GSgfxLayerPass {
     GS_GFX_LAYER_PASS_0
 };
 
-struct GSgfxLayer {
-    u8 pad[0x28];
-    s32 id;
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
     void textureCopy(GSgfxLayerPass pass, struct GStexture* texture, bool clear, u8* clearColor, bool, bool, bool);
 };
 
-enum GSgfxLayerType {};
-enum GSgfxLayerID {};
 enum GSgfxLayerOffset {};
 
 struct GSgfxRenderModule {
@@ -212,7 +214,7 @@ static __GSmovieStreaming* _activeMovieStreaming;
 static u8 _movieValidScratch;
 static void (*OldVIPostCallback)(void);
 static u8 _readWaitFlag;
-static s32 _readAddr;
+static GCsptr _readAddr;
 static u32 _readOffset;
 static u32 _readBytes;
 static s32 _movieLayerUseCount;
@@ -572,10 +574,10 @@ static void _movieRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                 THPPlayer* p = s->player;
                 if (p->visible != 0) {
                     if (s->tex == 0) {
-                        if (layer->id != 2) {
+                        if ((*(s32*)&layer->id) != 2) {
                             continue;
                         }
-                    } else if (_movieLayerID != layer->id) {
+                    } else if (_movieLayerID != (*(s32*)&layer->id)) {
                         continue;
                     }
                     if (p->state != 0 && p->dispTextureSet != 0) {
@@ -657,10 +659,26 @@ extern "C" void* GSmovieStreamPreFunc(u32 id) {
     return s->player;
 }
 
+#ifndef __MWERKS__
+static void _movieHeaderToNative(THPPlayer* p) {
+    u8* h = (u8*)p;
+    u32 o;
+    for (o = 0x04; o < 0x34; o += 4) {
+        GC_FIX32(*(u32*)(h + o));
+    }
+    for (o = 0x44; o < 0x60; o += 4) {
+        GC_FIX32(*(u32*)(h + o));
+    }
+}
+#endif
+
 extern "C" void GSmovieStreamPostFunc(u32 id, u32 fileId) {
     if (_initFlag != 0) {
         __GSmovieStreaming* s = _movieGetStream(id);
         if (s != 0) {
+#ifndef __MWERKS__
+            _movieHeaderToNative(s->player);
+#endif
             s->state = 3;
             GSfsysStreamSetLoopFlag(id, fileId, s->loop);
         }
@@ -789,7 +807,7 @@ static void _movieDaemon() {
                 }
                 if (p->onMemory != 0) {
                     _readWaitFlag = 0;
-                    _readAddr = (s32)p->movieData;
+                    _readAddr = (GCsptr)p->movieData;
                     _readOffset = 0;
                     _readBytes = 0;
                     s->state = 6;

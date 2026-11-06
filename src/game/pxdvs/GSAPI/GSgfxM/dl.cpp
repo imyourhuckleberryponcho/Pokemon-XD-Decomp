@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -38,13 +39,13 @@ struct GSgfxVF {
     u8 _draft[1];
 };
 struct _HSD_VtxDescList {
-    s32 attr;
-    s32 attr_type;
-    s32 comp_cnt;
-    s32 comp_type;
+    gc_bes32 attr;
+    gc_bes32 attr_type;
+    gc_bes32 comp_cnt;
+    gc_bes32 comp_type;
     u8 frac;
-    u16 stride;
-    void* vertex;
+    gc_be16 stride;
+    gc_ptr32(void) vertex;
 };
 
 extern "C" {
@@ -59,7 +60,7 @@ void GSgfxParseDisplayList(_HSD_VtxDescList* desc, u8* ptr, u32 size, GSgfxParse
 void GSlogWrite(const char*, ...);
 void* GSmemAllocAlign(u32 size, u32 align);
 void GSmemFree(void* ptr);
-s32 GSmemShrink(s32, s32);
+s32 GSmemShrink(void*, s32);
 void GXBeginDisplayList(void* list, u32 size);
 u32 GXEndDisplayList(void);
 void GXResetWriteGatherPipe(void);
@@ -92,7 +93,11 @@ union DLWGPipe {
     u16 u16;
     u32 u32;
 };
+#ifdef __MWERKS__
 #define DLFifo (*(volatile DLWGPipe*)0xCC008000)
+#else
+#define DLFifo GXWGFifo
+#endif
 
 }
 
@@ -447,7 +452,11 @@ static u8* _dlParseVertex(_HSD_VtxDescList* desc, u8* ptr, GSgfxParseCallbackLis
                 index = *ptr;
                 ptr++;
             } else {
+#ifdef __MWERKS__
                 index = *(u16*)ptr;
+#else
+                index = gc_rd16(ptr);
+#endif
                 ptr += 2;
             }
             data = (u8*)desc->vertex + index * desc->stride;
@@ -585,17 +594,21 @@ void GSgfxDLCreate(void* p0, s32 prim, void* p2, u16 count) {
         break;
     }
     cmd[0] |= ((GSgfxVFHead*)vf)->vat;
+#ifdef __MWERKS__
     *(u16*)(cmd + 1) = count;
+#else
+    gc_wr16(cmd + 1, count);
+#endif
     dl->flags |= 7;
 }
 }
 
 extern "C" {
 void GSgfxDLFree(void *p0) {
-    if (M2C_FIELD(p0, u16 *, 0) & 1) {
-        GSmemFree((void*)(M2C_FIELD(p0, u8 **, 4)));
-        M2C_FIELD(p0, u8 **, 4) = NULL;
-        M2C_FIELD(p0, u16 *, 0) = (u16) (M2C_FIELD(p0, u16 *, 0) & 0xFFFE);
+    if (((GSgfxDL*)p0)->flags & 1) {
+        GSmemFree(((GSgfxDL*)p0)->data);
+        ((GSgfxDL*)p0)->data = NULL;
+        ((GSgfxDL*)p0)->flags = (u16) (((GSgfxDL*)p0)->flags & 0xFFFE);
     }
 }
 }
@@ -621,8 +634,8 @@ void GSgfxDLEnd() {
     s32 temp_r3;
 
     temp_r3 = GXEndDisplayList();
-    GSmemShrink(M2C_FIELD(_dlCurPtr, s32 *, 4), temp_r3);
-    M2C_FIELD(_dlCurPtr, s32 *, 8) = temp_r3;
+    GSmemShrink(((GSgfxDL*)_dlCurPtr)->data, temp_r3);
+    ((GSgfxDL*)_dlCurPtr)->size = temp_r3;
     gsgfx_dl_buildingDList = 0;
     _dlCurPtr = NULL;
 }
@@ -661,7 +674,11 @@ void GSgfxParseDisplayList(_HSD_VtxDescList* desc, u8* ptr, u32 size, GSgfxParse
         case 0xA8:
         case 0xB0:
         case 0xB8:
+#ifdef __MWERKS__
             count = *(u16*)ptr;
+#else
+            count = gc_rd16(ptr);
+#endif
             ptr = (u8*)((u16*)ptr + 1);
             switch (cmd) {
             case 0xB8:

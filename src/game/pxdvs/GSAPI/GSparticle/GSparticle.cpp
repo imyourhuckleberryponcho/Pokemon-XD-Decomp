@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -55,7 +57,8 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #define MULTU_HI(a, b) ((u32)(((u64)(u32)(a) * (u64)(u32)(b)) >> 32))
 #endif
 enum ASM { ASM_draft_dummy };
-enum DPCtlCallback { DPCtlCallback_draft_dummy };
+struct _HSD_JObj;
+typedef void (*DPCtlCallback)(int, int, int, struct _HSD_JObj*);
 struct GScamera;
 struct GSgfxLayer;
 enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
@@ -89,8 +92,10 @@ extern "C++" {
 struct GScamera {
     u8 _draft[1];
 };
-struct GSgfxLayer {
-    u8 _draft[1];
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
     void InvalidateState();
     void FlushState();
 };
@@ -128,7 +133,30 @@ struct ModelBank {
     u8 _draft[1];
 };
 struct PSGenerator {
-    u8 _draft[1];
+    PSGenerator* next;
+    u32 flags;
+    u8 pad08[0x08];
+    u16 maxLife;
+    u16 angleFlags;
+    u8 bank;
+    u8 linkNo;
+    u8 pad16[2];
+    u16 familyId;
+    u8 pad1A[0x1E];
+    f32 gravity;
+    f32 friction;
+    u8 pad40[4];
+    f32 radius;
+    u8 pad48[4];
+    u32 childCount;
+    void* appSRT;
+    f32 shape[12];
+    u8 pad84[8];
+    u16 generatorFlags;
+    u16 index;
+    u8 pad90[0x18];
+    void* linkedJObj;
+    f32 angleRadiusScale[3];
 };
 struct Quaternion {
     u8 _draft[1];
@@ -140,25 +168,75 @@ struct _GSmodel {
     u8 _draft[1];
 };
 struct _GSparticleGenData {
-    u32 unk0;
+    s8 linked;
+    s8 infinite;
+    s16 id;
     u32 serial;
     HSD_Generator* generator;
-    u8 unkC[0x154];
-    HSD_CObj* camera;
+    f32 pos[3];
+    f32 rot[3];
+    f32 scale[3];
 };
 struct _GSparticleGen {
     u8 native;
-    u8 unk1[0x37];
+    u8 f1;
+    u8 f2;
+    u8 pad3;
+    s32 partIndex;
+    s32 attachMode;
+    _GSmodel* model;
+    f32 pos[3];
+    f32 rot[3];
+    f32 scale[3];
+    void* bank;
     _GSparticleGenData* data;
 };
 struct _GSparticleBank {
     u8 active;
-    u8 unk1[2];
+    u8 id;
+    u8 type;
     u8 genCount;
-    u8 unk4[8];
+    u8 busy;
+    u8 pad5[3];
+    void* data;
     _GSparticleGen* gens;
     HSD_CObj* camera;
 };
+struct GSparticleJObjView {
+    void* classInfo;
+    u16 refCount;
+    u16 refCountIndividual;
+    _HSD_JObj* next;
+    _HSD_JObj* parent;
+    _HSD_JObj* child;
+};
+struct GSparticlePartView {
+    u8 inUse;
+    u8 pad;
+    u16 index;
+    _GSmodel* model;
+    HSD_JObj* jobj;
+};
+struct GSparticleCameraView {
+    u8 used;
+    u8 lookAt;
+    u8 dirty;
+    u8 canAnimate;
+    void* desc;
+    HSD_CObj* cobj;
+};
+#ifdef __MWERKS__
+#define PEBANK_PARAM(b, i) (*(f32*)((s8*)(b) + 0x10C + (i) * 4))
+#define PEBANK_FLAGS_PTR(b) ((s8*)(b) + 0x134)
+#define PEBANK_ENGINE_PTR(b) ((s8*)(b) + 0x160)
+#else
+extern "C" f32* peBankPCParams(void* bank);
+extern "C" u32* peBankPCFlags(void* bank);
+extern "C" void** peBankPCEngine(void* bank);
+#define PEBANK_PARAM(b, i) (peBankPCParams((void*)(b))[i])
+#define PEBANK_FLAGS_PTR(b) peBankPCFlags((void*)(b))
+#define PEBANK_ENGINE_PTR(b) peBankPCEngine((void*)(b))
+#endif
 struct _HSD_JObj {
     u8 _draft[1];
 };
@@ -219,7 +297,12 @@ void* memset(void* dst, int val, size_t n);
 s32 particleEngineInit();
 s32 particleEnginePostUpdate();
 s32 particleEngineRender(void*);
+#ifdef __MWERKS__
 s32 particleEngineUpdate(u8, f32);
+#else
+void particleEngineUpdate(f32 dt);
+#define particleEngineUpdate(rate, dt) ((void)(rate), particleEngineUpdate(dt))
+#endif
 void* peBankCreate(s32);
 s32 peBankFree(void*);
 s32 peBankFreeFile(s32);
@@ -270,7 +353,11 @@ extern s32 func;
 }
 extern "C++" {
 void GSgfxRenderModuleRegister(u8 priority, GSgfxRenderModule* module, void* user);
+#ifdef __MWERKS__
 s32 GSgfxRenderWaitForDrawComplete();
+#else
+void GSgfxRenderWaitForDrawComplete();
+#endif
 static void _particleBankDestroyOldestGenerator(_GSparticleBank* p0);
 static void _particleJObjCallback(int p0, int p1, int p2, _HSD_JObj* p3);
 static void _particlePostUpdate(float p0);
@@ -301,8 +388,12 @@ extern "C++" {
 static inline void _particleRenderCamera(GSgfxLayer* layer, GScamera* cam, u32 link, void* dispCam) {
     GScameraLoadProjection(cam, layer);
     layer->FlushState();
+#ifdef __MWERKS__
     psDispSetProjection((u8*)layer + 0xD54);
-    psSetBillboardCamera(M2C_FIELD(cam, HSD_CObj **, 8));
+#else
+    psDispSetProjection((u8*)&layer->hw.projType);
+#endif
+    psSetBillboardCamera((*(HSD_CObj **)&((GSparticleCameraView*)(cam))->cobj));
     psDispParticles(link, 1, dispCam);
     psDispParticles(link, 2, dispCam);
     layer->InvalidateState();
@@ -311,36 +402,36 @@ static inline void _particleRenderCamera(GSgfxLayer* layer, GScamera* cam, u32 l
 
 extern "C++" {
 static inline u32 _genGetMaxLife(u8* gen) {
-    u8* bank = M2C_FIELD(gen, u8 **, 0x38);
+    u8* bank = (*(u8 **)&((_GSparticleGen*)(gen))->data);
     if (bank == NULL) {
         return 0;
     }
-    if (M2C_FIELD(gen, u8 *, 0) != 0) {
+    if ((*(u8 *)&((_GSparticleGen*)(gen))->native) != 0) {
         if (peBankIsInfinite((u32)bank) != 0) {
             return -1U;
         }
-        return (u32)(peBankGetLife(M2C_FIELD(gen, u8 **, 0x38)) * (f32)GSgfxVideoGetVsyncRate());
+        return (u32)(peBankGetLife((*(u8 **)&((_GSparticleGen*)(gen))->data)) * (f32)GSgfxVideoGetVsyncRate());
     }
-    if (M2C_FIELD(bank, u8 *, 1) == 1) {
+    if ((*(u8 *)&((_GSparticleGenData*)(bank))->infinite) == 1) {
         return -1U;
     }
-    return psGetGeneratorChildMaxLife(M2C_FIELD(bank, PSGenerator **, 8));
+    return psGetGeneratorChildMaxLife((*(PSGenerator **)&((_GSparticleGenData*)(bank))->generator));
 }
 }
 
 extern "C++" {
 static inline u8 _genIsAlive(u8* gen) {
-    u8* bank = M2C_FIELD(gen, u8 **, 0x38);
+    u8* bank = (*(u8 **)&((_GSparticleGen*)(gen))->data);
     if (bank == NULL) {
         return 0;
     }
-    if (M2C_FIELD(gen, u8 *, 0) != 0) {
+    if ((*(u8 *)&((_GSparticleGen*)(gen))->native) != 0) {
         return _genGetMaxLife(gen) != 0;
     }
-    if (M2C_FIELD(bank, u8 *, 1) != 0) {
+    if ((*(u8 *)&((_GSparticleGenData*)(bank))->infinite) != 0) {
         return 1;
     }
-    if (psGetParticleChildCount(M2C_FIELD(bank, PSGenerator **, 8)) != 0) {
+    if (psGetParticleChildCount((*(PSGenerator **)&((_GSparticleGenData*)(bank))->generator)) != 0) {
         return 1;
     }
     return _genGetMaxLife(gen) != 0;
@@ -368,12 +459,12 @@ static inline void _particleClampScale(f32* v) {
 
 extern "C" {
 static inline s32 _particleBankFindFreeGenerator(GSparticleBank* bank, const u8* kind) {
-    u8* gen = M2C_FIELD(bank, u8 **, 0xC);
-    for (s32 i = 0; i < M2C_FIELD(bank, u8 *, 3); i++, gen += 0x3C) {
-        if (*kind != M2C_FIELD(gen, u8 *, 0)) {
+    u8* gen = (*(u8 **)&((_GSparticleBank*)(bank))->gens);
+    for (s32 i = 0; i < (*(u8 *)&((_GSparticleBank*)(bank))->genCount); i++, gen += sizeof(_GSparticleGen)) {
+        if (*kind != (*(u8 *)&((_GSparticleGen*)(gen))->native)) {
             return -1;
         }
-        if (M2C_FIELD(gen, u32 *, 0x38) == 0) {
+        if ((*(u32 *)&((_GSparticleGen*)(gen))->data) == 0) {
             return i;
         }
     }
@@ -382,26 +473,16 @@ static inline s32 _particleBankFindFreeGenerator(GSparticleBank* bank, const u8*
 }
 
 extern "C" {
-struct ParticleBankStruct {
-    u8 used;
-    u8 id;
-    u8 type;
-    u8 max;
-    u8 unk4;
-    u8 pad5[3];
-    void* data;
-    u8* models;
-    s32 unk10;
-};
+typedef _GSparticleBank ParticleBankStruct;
 }
 
 extern "C" {
 struct ParticleFileHeader {
-    s32 magic;
-    u16* cmd;
-    int* tex;
-    s32 texSize;
-    u32* ref;
+    gc_bes32 magic;
+    gc_ptr32(gc_be16) cmd;
+    gc_ptr32(int) tex;
+    gc_bes32 texSize;
+    gc_ptr32(u32) ref;
 };
 }
 
@@ -410,7 +491,7 @@ static inline ParticleBankStruct* _particleFindFreeBank() {
     ParticleBankStruct* p = (ParticleBankStruct*)_particleBankStructList;
     u32 i;
     for (i = 0; i < _particleBankStructCount; i++, p++) {
-        if (p->used == 0) {
+        if (p->active == 0) {
             return p;
         }
     }
@@ -464,7 +545,7 @@ static inline _HSD_JObj* _particleJObjGetParent(_HSD_JObj* jobj) {
     if (jobj == NULL) {
         return NULL;
     }
-    return M2C_FIELD(jobj, _HSD_JObj **, 0xC);
+    return (*(_HSD_JObj **)&((GSparticleJObjView*)(jobj))->parent);
 }
 }
 extern "C++" static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1);
@@ -515,7 +596,7 @@ static void _particleJObjCallback(int p0, int p1, int p2, _HSD_JObj* p3) {
         return;
     }
     if (GSmodelIsRootNullAdded(model)) {
-        root = M2C_FIELD(root, _HSD_JObj **, 0x10);
+        root = (*(_HSD_JObj **)&((GSparticleJObjView*)(root))->child);
     }
     u32 index = GSpartGetJObjIndex(root, p3);
     if (index == 0xFFFFFFFF) {
@@ -527,28 +608,28 @@ static void _particleJObjCallback(int p0, int p1, int p2, _HSD_JObj* p3) {
     }
     GSparticleGenerator* gen = GSparticleCreateGenerator(bank, p2, 0);
     if (gen != NULL) {
-        u8* data = M2C_FIELD(gen, u8 **, 0x38);
-        if (data != NULL && M2C_FIELD(gen, u8 *, 0) == 0) {
-            psSetParticleTexScaling(M2C_FIELD(data, PSGenerator **, 8), 1);
+        u8* data = (*(u8 **)&((_GSparticleGen*)(gen))->data);
+        if (data != NULL && (*(u8 *)&((_GSparticleGen*)(gen))->native) == 0) {
+            psSetParticleTexScaling((*(PSGenerator **)&((_GSparticleGenData*)(data))->generator), 1);
         }
-        data = M2C_FIELD(gen, u8 **, 0x38);
-        if (data != NULL && M2C_FIELD(gen, u8 *, 0) == 0) {
-            psSetRandomVelocityScaling(M2C_FIELD(data, PSGenerator **, 8), 1);
+        data = (*(u8 **)&((_GSparticleGen*)(gen))->data);
+        if (data != NULL && (*(u8 *)&((_GSparticleGen*)(gen))->native) == 0) {
+            psSetRandomVelocityScaling((*(PSGenerator **)&((_GSparticleGenData*)(data))->generator), 1);
         }
         GSparticleAttachGeneratorToGSpart(gen, part, GSmodelGetGSparticleLinkAttachMode(model), 0, 1, 0);
         u32 visible = GSmodelGetVisibility(model);
-        data = M2C_FIELD(gen, u8 **, 0x38);
+        data = (*(u8 **)&((_GSparticleGen*)(gen))->data);
         if (data != NULL) {
-            if (M2C_FIELD(gen, u8 *, 0) != 0) {
+            if ((*(u8 *)&((_GSparticleGen*)(gen))->native) != 0) {
                 if (data != NULL) {
                     if ((u8)visible) {
-                        M2C_FIELD(data, u32 *, 0x134) |= 4;
+                        (*(u32 *)PEBANK_FLAGS_PTR(data)) |= 4;
                     } else {
-                        M2C_FIELD(data, u32 *, 0x134) &= ~4;
+                        (*(u32 *)PEBANK_FLAGS_PTR(data)) &= ~4;
                     }
                 }
             } else {
-                psSetParticleVisibility(M2C_FIELD(data, PSGenerator **, 8), visible);
+                psSetParticleVisibility((*(PSGenerator **)&((_GSparticleGenData*)(data))->generator), visible);
             }
         }
     }
@@ -585,12 +666,12 @@ void GSparticleInit(u32 count) {
     memset(g_particle_cameras, 0, sizeof(g_particle_cameras));
     _particleBankStructCount = count;
     g_particle_cameras_count = 0;
-    _particleBankStructList = (u8*)GSmemAlloc(count * 0x14);
+    _particleBankStructList = (u8*)GSmemAlloc(count * sizeof(_GSparticleBank));
     if (_particleBankStructList == NULL) {
         return;
     }
     for (i = 0; i < _particleBankStructCount; i++) {
-        _particleBankStructList[i * 0x14] = 0;
+        ((_GSparticleBank*)_particleBankStructList)[i].active = 0;
     }
     psSetToken(0);
     psInitParticle(0);
@@ -616,22 +697,22 @@ u8* GSparticleLoad(void* file) {
     if (id == 0xFF) {
         return NULL;
     }
-    bank->unk10 = 0;
-    bank->models = NULL;
-    bank->unk4 = 0;
+    bank->camera = 0;
+    bank->gens = NULL;
+    bank->busy = 0;
     if (hdr->magic == 0x01F056DA) {
         int i;
-        if ((s32)hdr->cmd != 0x30002) {
+        if ((s32)GC_RAW32(hdr->cmd) != 0x30002) {
             return NULL;
         }
         bank->type = 1;
-        bank->max = 0x10;
-        bank->models = (u8*)GSmemAllocClr(0x3C0);
-        if (bank->models == NULL) {
+        bank->genCount = 0x10;
+        bank->gens = (_GSparticleGen*)GSmemAllocClr(0x10 * sizeof(_GSparticleGen));
+        if (bank->gens == NULL) {
             return NULL;
         }
         for (i = 0; i < 0x10; i++) {
-            bank->models[i * 0x3C] = 1;
+            bank->gens[i].native = 1;
         }
         bank->data = peBankLoadFile(hdr);
         if (bank->data == NULL) {
@@ -639,9 +720,9 @@ u8* GSparticleLoad(void* file) {
         }
     } else {
         bank->type = 0;
-        bank->max = 0x40;
-        bank->models = (u8*)GSmemAllocClr(0xF00);
-        if (bank->models == NULL) {
+        bank->genCount = 0x40;
+        bank->gens = (_GSparticleGen*)GSmemAllocClr(0x40 * sizeof(_GSparticleGen));
+        if (bank->gens == NULL) {
             return NULL;
         }
         switch (hdr->magic) {
@@ -654,9 +735,9 @@ u8* GSparticleLoad(void* file) {
             GSlogWrite("GSparticle: unknown version\n");
             goto fail;
         case 0x47505431:
-            hdr->cmd = (u16*)((u8*)hdr->cmd + (u32)hdr);
-            hdr->tex = (int*)((u8*)hdr->tex + (u32)hdr);
-            hdr->ref = (u32*)((u8*)hdr->ref + (u32)hdr);
+            hdr->cmd = (gc_be16*)((u8*)hdr->cmd + GC_ADDR32(hdr));
+            hdr->tex = (int*)((u8*)hdr->tex + GC_ADDR32(hdr));
+            hdr->ref = (u32*)((u8*)hdr->ref + GC_ADDR32(hdr));
             int ver = *hdr->cmd;
             if (ver != 0x43) {
                 GSlogWrite("GSparticle: version mismatch between system(%d) and ptcl-file(%d)", 0x43, ver);
@@ -668,13 +749,13 @@ u8* GSparticleLoad(void* file) {
             break;
         }
     }
-    bank->used = 1;
+    bank->active = 1;
     bank->id = id;
     return (u8*)bank;
 fail:
-    if (bank->models != NULL) {
-        GSmemFree(bank->models);
-        bank->models = NULL;
+    if (bank->gens != NULL) {
+        GSmemFree(bank->gens);
+        bank->gens = NULL;
     }
     return NULL;
 }
@@ -691,17 +772,17 @@ void GSparticleFree(GSparticleBank* p0) {
 
     GSgfxRenderWaitForDrawComplete();
     GSparticleDestroyAllGenerators((GSparticleBank*)(p0), 1);
-    temp_r3 = M2C_FIELD(p0, u8 **, 0xC);
+    temp_r3 = (*(u8 **)&((_GSparticleBank*)(p0))->gens);
     if (temp_r3 != NULL) {
         GSmemFree((void*)(temp_r3));
-        M2C_FIELD(p0, u8 **, 0xC) = NULL;
+        (*(u8 **)&((_GSparticleBank*)(p0))->gens) = NULL;
     }
-    M2C_FIELD(p0, u8 **, 0xC) = NULL;
-    M2C_FIELD(p0, s8 *, 3) = 0;
-    if ((u8) M2C_FIELD(p0, u8 *, 2) != 0) {
-        peBankFreeFile(M2C_FIELD(p0, s32 *, 8));
+    (*(u8 **)&((_GSparticleBank*)(p0))->gens) = NULL;
+    (*(s8 *)&((_GSparticleBank*)(p0))->genCount) = 0;
+    if ((u8) (*(u8 *)&((_GSparticleBank*)(p0))->type) != 0) {
+        peBankFreeFile((*(s32 *)&((_GSparticleBank*)(p0))->data));
     }
-    M2C_FIELD(p0, s8 *, 0) = 0;
+    (*(s8 *)&((_GSparticleBank*)(p0))->active) = 0;
 }
 }
 
@@ -710,43 +791,43 @@ GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* p0, s32 p1, s32 p
     GSparticleGenerator* gen;
     s32 idx;
 
-    if (M2C_FIELD(p0, u8 *, 0) == 0) {
+    if ((*(u8 *)&((_GSparticleBank*)(p0))->active) == 0) {
         return NULL;
     }
-    if (M2C_FIELD(p0, u8 *, 4) != 0) {
+    if ((*(u8 *)&((_GSparticleBank*)(p0))->busy) != 0) {
         return NULL;
     }
-    u8 kind = M2C_FIELD(p0, u8 *, 2);
+    u8 kind = (*(u8 *)&((_GSparticleBank*)(p0))->type);
     if (kind != 0) {
         s32 idx = _particleBankFindFreeGenerator(p0, &kind);
         if (idx < 0) {
             return NULL;
         }
-        u8* data = (u8*)peBankCreate(M2C_FIELD(p0, s32 *, 8));
+        u8* data = (u8*)peBankCreate((*(s32 *)&((_GSparticleBank*)(p0))->data));
         if (data == NULL) {
             return NULL;
         }
-        gen = (GSparticleGenerator*)(M2C_FIELD(p0, u8 **, 0xC) + idx * 0x3C);
-        if (M2C_FIELD(gen, u8 *, 0) == 0) {
+        gen = (GSparticleGenerator*)((*(u8 **)&((_GSparticleBank*)(p0))->gens) + idx * sizeof(_GSparticleGen));
+        if ((*(u8 *)&((_GSparticleGen*)(gen))->native) == 0) {
             return NULL;
         }
-        HSD_CObj* cam = M2C_FIELD(p0, HSD_CObj **, 0x10);
+        HSD_CObj* cam = (*(HSD_CObj **)&((_GSparticleBank*)(p0))->camera);
         if (data != NULL) {
-            M2C_FIELD(data, HSD_CObj **, 0x160) = cam;
+            (*(HSD_CObj **)PEBANK_ENGINE_PTR(data)) = cam;
         }
         peBankStart(data);
-        M2C_FIELD(gen, u8 **, 0x38) = data;
+        (*(u8 **)&((_GSparticleGen*)(gen))->data) = data;
         _invalidateVtx = 1;
     } else {
         idx = _particleBankFindFreeGenerator(p0, &kind);
         if (idx < 0) {
             _particleBankDestroyOldestGenerator((_GSparticleBank*)p0);
-            idx = _particleBankFindFreeGenerator(p0, &M2C_FIELD(p0, u8 *, 2));
+            idx = _particleBankFindFreeGenerator(p0, &(*(u8 *)&((_GSparticleBank*)(p0))->type));
             if (idx < 0) {
                 return NULL;
             }
         }
-        u8* data = (u8*)GSmemAlloc(0x30);
+        u8* data = (u8*)GSmemAlloc(sizeof(_GSparticleGenData));
         if (data == NULL) {
             return NULL;
         }
@@ -754,35 +835,35 @@ GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* p0, s32 p1, s32 p
         if ((u8)p2 == 1) {
             linked = 1;
         }
-        M2C_FIELD(data, HSD_Generator **, 8) = psCreateGeneratorID(linked, M2C_FIELD(p0, u8 *, 1), p1);
-        HSD_Generator* ps = M2C_FIELD(data, HSD_Generator **, 8);
+        (*(HSD_Generator **)&((_GSparticleGenData*)(data))->generator) = psCreateGeneratorID(linked, (*(u8 *)&((_GSparticleBank*)(p0))->id), p1);
+        HSD_Generator* ps = (*(HSD_Generator **)&((_GSparticleGenData*)(data))->generator);
         if (ps == NULL) {
             GSmemFree(data);
             return NULL;
         }
-        M2C_FIELD(ps, s8 *, 0x17) = 1;
-        psGeneratorSetCamera(M2C_FIELD(data, HSD_Generator **, 8), M2C_FIELD(p0, HSD_CObj **, 0x10));
-        M2C_FIELD(data, s16 *, 2) = p1;
-        M2C_FIELD(data, s8 *, 0) = p2;
-        M2C_FIELD(data, s32 *, 4) = GSgfxVideoGetVsyncCount();
-        if (M2C_FIELD(M2C_FIELD(data, HSD_Generator **, 8), u16 *, 0x10) == 0) {
-            M2C_FIELD(data, s8 *, 1) = 1;
+        (*(s8 *)((u8*)&((PSGenerator*)(ps))->pad16 + 0x1)) = 1;
+        psGeneratorSetCamera((*(HSD_Generator **)&((_GSparticleGenData*)(data))->generator), (*(HSD_CObj **)&((_GSparticleBank*)(p0))->camera));
+        (*(s16 *)&((_GSparticleGenData*)(data))->id) = p1;
+        (*(s8 *)&((_GSparticleGenData*)(data))->linked) = p2;
+        (*(s32 *)&((_GSparticleGenData*)(data))->serial) = GSgfxVideoGetVsyncCount();
+        if ((*(u16 *)&((PSGenerator*)((*(HSD_Generator **)&((_GSparticleGenData*)(data))->generator)))->maxLife) == 0) {
+            (*(s8 *)&((_GSparticleGenData*)(data))->infinite) = 1;
         } else {
-            M2C_FIELD(data, s8 *, 1) = 0;
+            (*(s8 *)&((_GSparticleGenData*)(data))->infinite) = 0;
         }
-        gen = (GSparticleGenerator*)(M2C_FIELD(p0, u8 **, 0xC) + idx * 0x3C);
-        if (M2C_FIELD(gen, u8 *, 0) != 0) {
+        gen = (GSparticleGenerator*)((*(u8 **)&((_GSparticleBank*)(p0))->gens) + idx * sizeof(_GSparticleGen));
+        if ((*(u8 *)&((_GSparticleGen*)(gen))->native) != 0) {
             return NULL;
         }
-        M2C_FIELD(gen, u8 **, 0x38) = data;
+        (*(u8 **)&((_GSparticleGen*)(gen))->data) = data;
     }
     _invalidateTex = 1;
-    M2C_FIELD(gen, s32 *, 8) = 0;
-    M2C_FIELD(gen, s32 *, 0xC) = 0;
-    M2C_FIELD(gen, s32 *, 4) = 0;
-    M2C_FIELD(gen, s8 *, 1) = 0;
-    M2C_FIELD(gen, s8 *, 2) = 0;
-    M2C_FIELD(gen, GSparticleBank **, 0x34) = p0;
+    (*(s32 *)&((_GSparticleGen*)(gen))->attachMode) = 0;
+    (*(s32 *)&((_GSparticleGen*)(gen))->model) = 0;
+    (*(s32 *)&((_GSparticleGen*)(gen))->partIndex) = 0;
+    (*(s8 *)&((_GSparticleGen*)(gen))->f1) = 0;
+    (*(s8 *)&((_GSparticleGen*)(gen))->f2) = 0;
+    (*(GSparticleBank **)&((_GSparticleGen*)(gen))->bank) = p0;
     return gen;
 }
 }
@@ -803,107 +884,107 @@ void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4,
     u8 *temp_r4_2;
     u8 *temp_r4_3;
 
-    if (((u8 *) M2C_FIELD(p0, u8 **, 0x38) != NULL) && ((s32) M2C_FIELD(p0, s32 *, 8) == 0) && (p2 != 0)) {
-        M2C_FIELD(p0, s32 *, 0xC) = (s32) M2C_FIELD(p1, s32 *, 4);
-        M2C_FIELD(p0, s32 *, 4) = (s32) M2C_FIELD(p1, u16 *, 2);
+    if (((u8 *) (*(u8 **)&((_GSparticleGen*)(p0))->data) != NULL) && ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) == 0) && (p2 != 0)) {
+        (*(s32 *)&((_GSparticleGen*)(p0))->model) = (s32) (*(s32 *)&((GSparticlePartView*)(p1))->model);
+        (*(s32 *)&((_GSparticleGen*)(p0))->partIndex) = (s32) (*(u16 *)&((GSparticlePartView*)(p1))->index);
         if (p4 == 1) {
-            M2C_FIELD(p0, f32 *, 0x10) = 0.0f;
-            M2C_FIELD(p0, f32 *, 0x14) = 0.0f;
-            M2C_FIELD(p0, f32 *, 0x18) = 0.0f;
-            M2C_FIELD(p0, f32 *, 0x1C) = 0.0f;
-            M2C_FIELD(p0, f32 *, 0x20) = 0.0f;
-            M2C_FIELD(p0, f32 *, 0x24) = 0.0f;
-            M2C_FIELD(p0, f32 *, 0x28) = 1.0f;
-            M2C_FIELD(p0, f32 *, 0x2C) = 1.0f;
-            M2C_FIELD(p0, f32 *, 0x30) = 1.0f;
-        } else if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            temp_r3 = M2C_FIELD(p0, u8 **, 0x38);
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]) = 0.0f;
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]) = 0.0f;
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]) = 0.0f;
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[0]) = 0.0f;
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[1]) = 0.0f;
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[2]) = 0.0f;
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]) = 1.0f;
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]) = 1.0f;
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]) = 1.0f;
+        } else if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+            temp_r3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r3 != NULL) {
-                M2C_FIELD(p0, f32 *, 0x10) = (f32) M2C_FIELD(temp_r3, f32 *, 0x10C);
-                M2C_FIELD(p0, f32 *, 0x14) = (f32) M2C_FIELD(temp_r3, f32 *, 0x110);
-                M2C_FIELD(p0, f32 *, 0x18) = (f32) M2C_FIELD(temp_r3, f32 *, 0x114);
+                (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]) = (f32) PEBANK_PARAM(temp_r3, 0);
+                (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]) = (f32) PEBANK_PARAM(temp_r3, 1);
+                (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]) = (f32) PEBANK_PARAM(temp_r3, 2);
             } else {
-                M2C_FIELD(p0, f32 *, 0x10) = 0.0f;
-                M2C_FIELD(p0, f32 *, 0x14) = 0.0f;
-                M2C_FIELD(p0, f32 *, 0x18) = 0.0f;
+                (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]) = 0.0f;
+                (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]) = 0.0f;
+                (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]) = 0.0f;
             }
-            temp_r3_2 = M2C_FIELD(p0, u8 **, 0x38);
+            temp_r3_2 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r3_2 != NULL) {
-                q.x = M2C_FIELD(temp_r3_2, f32 *, 0x118);
-                q.y = M2C_FIELD(temp_r3_2, f32 *, 0x11C);
-                q.z = M2C_FIELD(temp_r3_2, f32 *, 0x120);
-                q.w = M2C_FIELD(temp_r3_2, f32 *, 0x124);
+                q.x = PEBANK_PARAM(temp_r3_2, 3);
+                q.y = PEBANK_PARAM(temp_r3_2, 4);
+                q.z = PEBANK_PARAM(temp_r3_2, 5);
+                q.w = PEBANK_PARAM(temp_r3_2, 6);
             } else {
                 q.x = 0.0f;
                 q.y = 0.0f;
                 q.z = 0.0f;
                 q.w = 1.0f;
             }
-            GSvecMakeFromQuat((GSvec*)(((u8*)(p0) + 0x1C)), &q);
-            temp_r3_3 = M2C_FIELD(p0, u8 **, 0x38);
+            GSvecMakeFromQuat((GSvec*)((_GSparticleGen*)(p0))->rot, &q);
+            temp_r3_3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r3_3 != NULL) {
-                M2C_FIELD(p0, f32 *, 0x28) = (f32) M2C_FIELD(temp_r3_3, f32 *, 0x128);
-                M2C_FIELD(p0, f32 *, 0x2C) = (f32) M2C_FIELD(temp_r3_3, f32 *, 0x12C);
-                M2C_FIELD(p0, f32 *, 0x30) = (f32) M2C_FIELD(temp_r3_3, f32 *, 0x130);
+                (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]) = (f32) PEBANK_PARAM(temp_r3_3, 7);
+                (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]) = (f32) PEBANK_PARAM(temp_r3_3, 8);
+                (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]) = (f32) PEBANK_PARAM(temp_r3_3, 9);
             } else {
-                M2C_FIELD(p0, f32 *, 0x28) = 1.0f;
-                M2C_FIELD(p0, f32 *, 0x2C) = 1.0f;
-                M2C_FIELD(p0, f32 *, 0x30) = 1.0f;
+                (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]) = 1.0f;
+                (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]) = 1.0f;
+                (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]) = 1.0f;
             }
         } else {
-            temp_r3_4 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(p0, f32 *, 0x10) = (f32) M2C_FIELD(temp_r3_4, f32 *, 0xC);
-            M2C_FIELD(p0, f32 *, 0x14) = (f32) M2C_FIELD(temp_r3_4, f32 *, 0x10);
-            M2C_FIELD(p0, f32 *, 0x18) = (f32) M2C_FIELD(temp_r3_4, f32 *, 0x14);
-            temp_r3_5 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(p0, f32 *, 0x1C) = (f32) M2C_FIELD(temp_r3_5, f32 *, 0x18);
-            M2C_FIELD(p0, f32 *, 0x20) = (f32) M2C_FIELD(temp_r3_5, f32 *, 0x1C);
-            M2C_FIELD(p0, f32 *, 0x24) = (f32) M2C_FIELD(temp_r3_5, f32 *, 0x20);
-            temp_r3_6 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(p0, f32 *, 0x28) = (f32) M2C_FIELD(temp_r3_6, f32 *, 0x24);
-            M2C_FIELD(p0, f32 *, 0x2C) = (f32) M2C_FIELD(temp_r3_6, f32 *, 0x28);
-            M2C_FIELD(p0, f32 *, 0x30) = (f32) M2C_FIELD(temp_r3_6, f32 *, 0x2C);
+            temp_r3_4 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_4))->pos[0]);
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_4))->pos[1]);
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_4))->pos[2]);
+            temp_r3_5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[0]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_5))->rot[0]);
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[1]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_5))->rot[1]);
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[2]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_5))->rot[2]);
+            temp_r3_6 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_6))->scale[0]);
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_6))->scale[1]);
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]) = (f32) (*(f32 *)&((_GSparticleGenData*)(temp_r3_6))->scale[2]);
         }
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            temp_r4 = M2C_FIELD(p0, u8 **, 0x38);
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+            temp_r4 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r4 != NULL) {
-                M2C_FIELD(temp_r4, f32 *, 0x10C) = (f32) M2C_FIELD(&zeroVector, f32 *, 0);
-                M2C_FIELD(temp_r4, f32 *, 0x110) = (f32) M2C_FIELD(&zeroVector, f32 *, 4);
-                M2C_FIELD(temp_r4, f32 *, 0x114) = (f32) M2C_FIELD(&zeroVector, f32 *, 8);
+                PEBANK_PARAM(temp_r4, 0) = (f32) (*(f32 *)((s8 *)(&zeroVector) + (0)));
+                PEBANK_PARAM(temp_r4, 1) = (f32) (*(f32 *)((s8 *)(&zeroVector) + (4)));
+                PEBANK_PARAM(temp_r4, 2) = (f32) (*(f32 *)((s8 *)(&zeroVector) + (8)));
             }
-            temp_r4_2 = M2C_FIELD(p0, u8 **, 0x38);
+            temp_r4_2 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r4_2 != NULL) {
-                M2C_FIELD(temp_r4_2, f32 *, 0x118) = (f32) M2C_FIELD(&zeroQuaternion, f32 *, 0);
-                M2C_FIELD(temp_r4_2, f32 *, 0x11C) = (f32) M2C_FIELD(&zeroQuaternion, f32 *, 4);
-                M2C_FIELD(temp_r4_2, f32 *, 0x120) = (f32) M2C_FIELD(&zeroQuaternion, f32 *, 8);
-                M2C_FIELD(temp_r4_2, f32 *, 0x124) = (f32) M2C_FIELD(&zeroQuaternion, f32 *, 0xC);
+                PEBANK_PARAM(temp_r4_2, 3) = (f32) (*(f32 *)((s8 *)(&zeroQuaternion) + (0)));
+                PEBANK_PARAM(temp_r4_2, 4) = (f32) (*(f32 *)((s8 *)(&zeroQuaternion) + (4)));
+                PEBANK_PARAM(temp_r4_2, 5) = (f32) (*(f32 *)((s8 *)(&zeroQuaternion) + (8)));
+                PEBANK_PARAM(temp_r4_2, 6) = (f32) (*(f32 *)((s8 *)(&zeroQuaternion) + (0xC)));
             }
-            temp_r4_3 = M2C_FIELD(p0, u8 **, 0x38);
+            temp_r4_3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r4_3 != NULL) {
-                M2C_FIELD(temp_r4_3, f32 *, 0x128) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 0);
-                M2C_FIELD(temp_r4_3, f32 *, 0x12C) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 4);
-                M2C_FIELD(temp_r4_3, f32 *, 0x130) = (f32) M2C_FIELD(&unitScaleVector, f32 *, 8);
+                PEBANK_PARAM(temp_r4_3, 7) = (f32) (*(f32 *)((s8 *)(&unitScaleVector) + (0)));
+                PEBANK_PARAM(temp_r4_3, 8) = (f32) (*(f32 *)((s8 *)(&unitScaleVector) + (4)));
+                PEBANK_PARAM(temp_r4_3, 9) = (f32) (*(f32 *)((s8 *)(&unitScaleVector) + (8)));
             }
         } else {
-            temp_r3_7 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(temp_r3_7, f32 *, 0xC) = 0.0f;
-            M2C_FIELD(temp_r3_7, f32 *, 0x10) = 0.0f;
-            M2C_FIELD(temp_r3_7, f32 *, 0x14) = 0.0f;
-            temp_r3_8 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(temp_r3_8, f32 *, 0x18) = 0.0f;
-            M2C_FIELD(temp_r3_8, f32 *, 0x1C) = 0.0f;
-            M2C_FIELD(temp_r3_8, f32 *, 0x20) = 0.0f;
-            temp_r3_9 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(temp_r3_9, f32 *, 0x24) = 1.0f;
-            M2C_FIELD(temp_r3_9, f32 *, 0x28) = 1.0f;
-            M2C_FIELD(temp_r3_9, f32 *, 0x2C) = 1.0f;
+            temp_r3_7 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_7))->pos[0]) = 0.0f;
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_7))->pos[1]) = 0.0f;
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_7))->pos[2]) = 0.0f;
+            temp_r3_8 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_8))->rot[0]) = 0.0f;
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_8))->rot[1]) = 0.0f;
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_8))->rot[2]) = 0.0f;
+            temp_r3_9 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_9))->scale[0]) = 1.0f;
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_9))->scale[1]) = 1.0f;
+            (*(f32 *)&((_GSparticleGenData*)(temp_r3_9))->scale[2]) = 1.0f;
             if (p5 != 0) {
-                psLinkChildGensToJObj((PSGenerator*)(M2C_FIELD(M2C_FIELD(p0, u8 **, 0x38), PSGenerator **, 8)), (void*)(M2C_FIELD(p1, u8 **, 8)));
+                psLinkChildGensToJObj((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)((*(u8 **)&((_GSparticleGen*)(p0))->data)))->generator)), (void*)((*(u8 **)&((GSparticlePartView*)(p1))->jobj)));
             }
         }
-        M2C_FIELD(p0, s32 *, 8) = p2;
-        M2C_FIELD(p0, s8 *, 1) = p3;
-        M2C_FIELD(p0, s8 *, 2) = 1;
+        (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) = p2;
+        (*(s8 *)&((_GSparticleGen*)(p0))->f1) = p3;
+        (*(s8 *)&((_GSparticleGen*)(p0))->f2) = 1;
     }
 }
 }
@@ -926,56 +1007,56 @@ void GSparticleDetachGeneratorFromGSpart(void *p0, u8 p1) {
     u8 *temp_r4_2;
     u8 *temp_r4_3;
 
-    if (((u8 *) M2C_FIELD(p0, u8 **, 0x38) != NULL) && ((s32) M2C_FIELD(p0, s32 *, 8) != 0)) {
-        GSmodelSet60fpsAnimFlag((_GSmodel*)(M2C_FIELD(p0, _GSmodel **, 0xC)), 0U);
-        M2C_FIELD(p0, _GSmodel **, 0xC) = NULL;
-        M2C_FIELD(p0, s32 *, 4) = 0;
-        M2C_FIELD(p0, s8 *, 2) = 0;
-        M2C_FIELD(p0, s8 *, 1) = 0;
-        if ((u8) M2C_FIELD(p0, u8 *, 0) == 0) {
-            psUnlinkChildGensFromJObj((PSGenerator*)(M2C_FIELD(M2C_FIELD(p0, u8 **, 0x38), PSGenerator **, 8)));
+    if (((u8 *) (*(u8 **)&((_GSparticleGen*)(p0))->data) != NULL) && ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) != 0)) {
+        GSmodelSet60fpsAnimFlag((_GSmodel*)((*(_GSmodel **)&((_GSparticleGen*)(p0))->model)), 0U);
+        (*(_GSmodel **)&((_GSparticleGen*)(p0))->model) = NULL;
+        (*(s32 *)&((_GSparticleGen*)(p0))->partIndex) = 0;
+        (*(s8 *)&((_GSparticleGen*)(p0))->f2) = 0;
+        (*(s8 *)&((_GSparticleGen*)(p0))->f1) = 0;
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) == 0) {
+            psUnlinkChildGensFromJObj((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)((*(u8 **)&((_GSparticleGen*)(p0))->data)))->generator)));
         }
-        M2C_FIELD(p0, s32 *, 8) = 0;
+        (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) = 0;
         if (p1 == 0) {
-            temp_r4 = M2C_FIELD(p0, u8 **, 0x38);
-            if ((temp_r4 != NULL) && ((s32) M2C_FIELD(p0, s32 *, 8) == 0)) {
-                if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+            temp_r4 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            if ((temp_r4 != NULL) && ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) == 0)) {
+                if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
                     if (temp_r4 != NULL) {
-                        M2C_FIELD(temp_r4, f32 *, 0x10C) = (f32) M2C_FIELD(p0, f32 *, 0x10);
-                        M2C_FIELD(temp_r4, f32 *, 0x110) = (f32) M2C_FIELD(p0, f32 *, 0x14);
-                        M2C_FIELD(temp_r4, f32 *, 0x114) = (f32) M2C_FIELD(p0, f32 *, 0x18);
+                        PEBANK_PARAM(temp_r4, 0) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]);
+                        PEBANK_PARAM(temp_r4, 1) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]);
+                        PEBANK_PARAM(temp_r4, 2) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]);
                     }
                 } else {
-                    M2C_FIELD(temp_r4, f32 *, 0xC) = (f32) M2C_FIELD(p0, f32 *, 0x10);
-                    M2C_FIELD(temp_r4, f32 *, 0x10) = (f32) M2C_FIELD(p0, f32 *, 0x14);
-                    M2C_FIELD(temp_r4, f32 *, 0x14) = (f32) M2C_FIELD(p0, f32 *, 0x18);
-                    M2C_FIELD(M2C_FIELD(temp_r4, PSGenerator **, 8), f32 *, 0x20) = (f32) M2C_FIELD(p0, f32 *, 0x10);
-                    M2C_FIELD(M2C_FIELD(temp_r4, PSGenerator **, 8), f32 *, 0x24) = (f32) M2C_FIELD(p0, f32 *, 0x14);
-                    M2C_FIELD(M2C_FIELD(temp_r4, PSGenerator **, 8), f32 *, 0x28) = (f32) M2C_FIELD(p0, f32 *, 0x18);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4))->pos[0]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4))->pos[1]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4))->pos[2]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]);
+                    (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4))->generator)))->pad1A + 0x6)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]);
+                    (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4))->generator)))->pad1A + 0xA)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]);
+                    (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4))->generator)))->pad1A + 0xE)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]);
                 }
             }
-            temp_r4_2 = M2C_FIELD(p0, u8 **, 0x38);
-            if ((temp_r4_2 != NULL) && ((s32) M2C_FIELD(p0, s32 *, 8) == 0)) {
-                if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+            temp_r4_2 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            if ((temp_r4_2 != NULL) && ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) == 0)) {
+                if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
                     EulerToQuat((Vec*)(((u8*)(p0) + 0x1C)), (Quaternion*)(v8));
-                    temp_r3 = M2C_FIELD(p0, u8 **, 0x38);
+                    temp_r3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                     if (temp_r3 != NULL) {
-                        M2C_FIELD(temp_r3, f32 *, 0x118) = v8[0];
-                        M2C_FIELD(temp_r3, f32 *, 0x11C) = v8[1];
-                        M2C_FIELD(temp_r3, f32 *, 0x120) = v8[2];
-                        M2C_FIELD(temp_r3, f32 *, 0x124) = v8[3];
+                        PEBANK_PARAM(temp_r3, 3) = v8[0];
+                        PEBANK_PARAM(temp_r3, 4) = v8[1];
+                        PEBANK_PARAM(temp_r3, 5) = v8[2];
+                        PEBANK_PARAM(temp_r3, 6) = v8[3];
                     }
                 } else {
-                    M2C_FIELD(temp_r4_2, f32 *, 0x18) = (f32) M2C_FIELD(p0, f32 *, 0x1C);
-                    M2C_FIELD(temp_r4_2, f32 *, 0x1C) = (f32) M2C_FIELD(p0, f32 *, 0x20);
-                    M2C_FIELD(temp_r4_2, f32 *, 0x20) = (f32) M2C_FIELD(p0, f32 *, 0x24);
-                    M2C_FIELD(M2C_FIELD(temp_r4_2, PSGenerator **, 8), f32 *, 0x90) = (f32) M2C_FIELD(p0, f32 *, 0x1C);
-                    M2C_FIELD(M2C_FIELD(temp_r4_2, PSGenerator **, 8), f32 *, 0x94) = (f32) M2C_FIELD(p0, f32 *, 0x20);
-                    M2C_FIELD(M2C_FIELD(temp_r4_2, PSGenerator **, 8), f32 *, 0x98) = (f32) M2C_FIELD(p0, f32 *, 0x24);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4_2))->rot[0]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[0]);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4_2))->rot[1]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[1]);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4_2))->rot[2]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[2]);
+                    (*(f32 *)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4_2))->generator)))->pad90) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[0]);
+                    (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4_2))->generator)))->pad90 + 0x4)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[1]);
+                    (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4_2))->generator)))->pad90 + 0x8)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[2]);
                 }
             }
-            if (((u8 *) M2C_FIELD(p0, u8 **, 0x38) != NULL) && ((s32) M2C_FIELD(p0, s32 *, 8) == 0)) {
-                temp_f2 = M2C_FIELD(p0, f32 *, 0x28);
+            if (((u8 *) (*(u8 **)&((_GSparticleGen*)(p0))->data) != NULL) && ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) == 0)) {
+                temp_f2 = (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
                 if (temp_f2 > 0.0f) {
                     var_f0 = temp_f2;
                 } else {
@@ -986,9 +1067,9 @@ void GSparticleDetachGeneratorFromGSpart(void *p0, u8 p1) {
                     if (temp_f2 < 0.0f) {
                         var_f1 = -0.00001f;
                     }
-                    M2C_FIELD(p0, f32 *, 0x28) = var_f1;
+                    (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]) = var_f1;
                 }
-                temp_f2_2 = M2C_FIELD(p0, f32 *, 0x2C);
+                temp_f2_2 = (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
                 if (temp_f2_2 > 0.0f) {
                     var_f0_2 = temp_f2_2;
                 } else {
@@ -999,9 +1080,9 @@ void GSparticleDetachGeneratorFromGSpart(void *p0, u8 p1) {
                     if (temp_f2_2 < 0.0f) {
                         var_f1_2 = -0.00001f;
                     }
-                    M2C_FIELD(p0, f32 *, 0x2C) = var_f1_2;
+                    (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]) = var_f1_2;
                 }
-                temp_f2_3 = M2C_FIELD(p0, f32 *, 0x30);
+                temp_f2_3 = (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
                 if (temp_f2_3 > 0.0f) {
                     var_f0_3 = temp_f2_3;
                 } else {
@@ -1012,23 +1093,23 @@ void GSparticleDetachGeneratorFromGSpart(void *p0, u8 p1) {
                     if (temp_f2_3 < 0.0f) {
                         var_f1_3 = -0.00001f;
                     }
-                    M2C_FIELD(p0, f32 *, 0x30) = var_f1_3;
+                    (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]) = var_f1_3;
                 }
-                if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                    temp_r3_2 = M2C_FIELD(p0, u8 **, 0x38);
+                if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                    temp_r3_2 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                     if (temp_r3_2 != NULL) {
-                        M2C_FIELD(temp_r3_2, f32 *, 0x128) = (f32) M2C_FIELD(p0, f32 *, 0x28);
-                        M2C_FIELD(temp_r3_2, f32 *, 0x12C) = (f32) M2C_FIELD(p0, f32 *, 0x2C);
-                        M2C_FIELD(temp_r3_2, f32 *, 0x130) = (f32) M2C_FIELD(p0, f32 *, 0x30);
+                        PEBANK_PARAM(temp_r3_2, 7) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
+                        PEBANK_PARAM(temp_r3_2, 8) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
+                        PEBANK_PARAM(temp_r3_2, 9) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
                     }
                 } else {
-                    temp_r4_3 = M2C_FIELD(p0, u8 **, 0x38);
-                    M2C_FIELD(temp_r4_3, f32 *, 0x24) = (f32) M2C_FIELD(p0, f32 *, 0x28);
-                    M2C_FIELD(temp_r4_3, f32 *, 0x28) = (f32) M2C_FIELD(p0, f32 *, 0x2C);
-                    M2C_FIELD(temp_r4_3, f32 *, 0x2C) = (f32) M2C_FIELD(p0, f32 *, 0x30);
-                    M2C_FIELD(M2C_FIELD(temp_r4_3, PSGenerator **, 8), f32 *, 0x9C) = (f32) M2C_FIELD(p0, f32 *, 0x28);
-                    M2C_FIELD(M2C_FIELD(temp_r4_3, PSGenerator **, 8), f32 *, 0xA0) = (f32) M2C_FIELD(p0, f32 *, 0x2C);
-                    M2C_FIELD(M2C_FIELD(temp_r4_3, PSGenerator **, 8), f32 *, 0xA4) = (f32) M2C_FIELD(p0, f32 *, 0x30);
+                    temp_r4_3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4_3))->scale[0]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4_3))->scale[1]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
+                    (*(f32 *)&((_GSparticleGenData*)(temp_r4_3))->scale[2]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
+                    (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4_3))->generator)))->pad90 + 0xC)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
+                    (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4_3))->generator)))->pad90 + 0x10)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
+                    (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r4_3))->generator)))->pad90 + 0x14)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
                 }
             }
         }
@@ -1040,27 +1121,27 @@ extern "C" {
 void GSparticleSetGeneratorPosition(GSparticleGenerator* p0, Vec* p1) {
     u8 *temp_r5;
 
-    temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r5 != NULL) {
-        if ((s32) M2C_FIELD(p0, s32 *, 8) == 0) {
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) == 0) {
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
                 if (temp_r5 != NULL) {
-                    M2C_FIELD(temp_r5, f32 *, 0x10C) = (f32) M2C_FIELD(p1, f32 *, 0);
-                    M2C_FIELD(temp_r5, f32 *, 0x110) = (f32) M2C_FIELD(p1, f32 *, 4);
-                    M2C_FIELD(temp_r5, f32 *, 0x114) = (f32) M2C_FIELD(p1, f32 *, 8);
+                    PEBANK_PARAM(temp_r5, 0) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+                    PEBANK_PARAM(temp_r5, 1) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+                    PEBANK_PARAM(temp_r5, 2) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
                 }
             } else {
-                M2C_FIELD(temp_r5, f32 *, 0xC) = (f32) M2C_FIELD(p1, f32 *, 0);
-                M2C_FIELD(temp_r5, f32 *, 0x10) = (f32) M2C_FIELD(p1, f32 *, 4);
-                M2C_FIELD(temp_r5, f32 *, 0x14) = (f32) M2C_FIELD(p1, f32 *, 8);
-                M2C_FIELD(M2C_FIELD(temp_r5, u8 **, 8), f32 *, 0x20) = (f32) M2C_FIELD(p1, f32 *, 0);
-                M2C_FIELD(M2C_FIELD(temp_r5, u8 **, 8), f32 *, 0x24) = (f32) M2C_FIELD(p1, f32 *, 4);
-                M2C_FIELD(M2C_FIELD(temp_r5, u8 **, 8), f32 *, 0x28) = (f32) M2C_FIELD(p1, f32 *, 8);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r5))->pos[0]) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+                (*(f32 *)&((_GSparticleGenData*)(temp_r5))->pos[1]) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+                (*(f32 *)&((_GSparticleGenData*)(temp_r5))->pos[2]) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r5))->generator)))->pad1A + 0x6)) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r5))->generator)))->pad1A + 0xA)) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r5))->generator)))->pad1A + 0xE)) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
             }
         } else {
-            M2C_FIELD(p0, f32 *, 0x10) = (f32) M2C_FIELD(p1, f32 *, 0);
-            M2C_FIELD(p0, f32 *, 0x14) = (f32) M2C_FIELD(p1, f32 *, 4);
-            M2C_FIELD(p0, f32 *, 0x18) = (f32) M2C_FIELD(p1, f32 *, 8);
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+            (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
         }
     }
 }
@@ -1072,30 +1153,30 @@ void GSparticleSetGeneratorRotation(void *p0, f32 *p1) {
     u8 *temp_r3;
     u8 *temp_r5;
 
-    temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r5 != NULL) {
-        if ((s32) M2C_FIELD(p0, s32 *, 8) == 0) {
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) == 0) {
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
                 EulerToQuat((Vec*)((Vec *) p1), (Quaternion*)(v8));
-                temp_r3 = M2C_FIELD(p0, u8 **, 0x38);
+                temp_r3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3 != NULL) {
-                    M2C_FIELD(temp_r3, f32 *, 0x118) = v8[0];
-                    M2C_FIELD(temp_r3, f32 *, 0x11C) = v8[1];
-                    M2C_FIELD(temp_r3, f32 *, 0x120) = v8[2];
-                    M2C_FIELD(temp_r3, f32 *, 0x124) = v8[3];
+                    PEBANK_PARAM(temp_r3, 3) = v8[0];
+                    PEBANK_PARAM(temp_r3, 4) = v8[1];
+                    PEBANK_PARAM(temp_r3, 5) = v8[2];
+                    PEBANK_PARAM(temp_r3, 6) = v8[3];
                 }
             } else {
-                M2C_FIELD(temp_r5, f32 *, 0x18) = (f32) M2C_FIELD(p1, f32 *, 0);
-                M2C_FIELD(temp_r5, f32 *, 0x1C) = (f32) M2C_FIELD(p1, f32 *, 4);
-                M2C_FIELD(temp_r5, f32 *, 0x20) = (f32) M2C_FIELD(p1, f32 *, 8);
-                M2C_FIELD(M2C_FIELD(temp_r5, u8 **, 8), f32 *, 0x90) = (f32) M2C_FIELD(p1, f32 *, 0);
-                M2C_FIELD(M2C_FIELD(temp_r5, u8 **, 8), f32 *, 0x94) = (f32) M2C_FIELD(p1, f32 *, 4);
-                M2C_FIELD(M2C_FIELD(temp_r5, u8 **, 8), f32 *, 0x98) = (f32) M2C_FIELD(p1, f32 *, 8);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r5))->rot[0]) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+                (*(f32 *)&((_GSparticleGenData*)(temp_r5))->rot[1]) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+                (*(f32 *)&((_GSparticleGenData*)(temp_r5))->rot[2]) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
+                (*(f32 *)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r5))->generator)))->pad90) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r5))->generator)))->pad90 + 0x4)) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r5))->generator)))->pad90 + 0x8)) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
             }
         } else {
-            M2C_FIELD(p0, f32 *, 0x1C) = (f32) M2C_FIELD(p1, f32 *, 0);
-            M2C_FIELD(p0, f32 *, 0x20) = (f32) M2C_FIELD(p1, f32 *, 4);
-            M2C_FIELD(p0, f32 *, 0x24) = (f32) M2C_FIELD(p1, f32 *, 8);
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[0]) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[1]) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+            (*(f32 *)&((_GSparticleGen*)(p0))->rot[2]) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
         }
     }
 }
@@ -1115,9 +1196,9 @@ void GSparticleSetGeneratorScale(void *p0, void *p1, u8 p2, u8 p3) {
     u8 *temp_r7;
     u8 *temp_r8;
 
-    if ((u8 *) M2C_FIELD(p0, u8 **, 0x38) != NULL) {
-        if ((s32) M2C_FIELD(p0, s32 *, 8) == 0) {
-            temp_f2 = M2C_FIELD(p1, f32 *, 0);
+    if ((u8 *) (*(u8 **)&((_GSparticleGen*)(p0))->data) != NULL) {
+        if ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) == 0) {
+            temp_f2 = (*(f32 *)((s8 *)(p1) + (0)));
             if (temp_f2 > 0.0f) {
                 var_f0 = temp_f2;
             } else {
@@ -1128,9 +1209,9 @@ void GSparticleSetGeneratorScale(void *p0, void *p1, u8 p2, u8 p3) {
                 if (temp_f2 < 0.0f) {
                     var_f1 = -0.00001f;
                 }
-                M2C_FIELD(p1, f32 *, 0) = var_f1;
+                (*(f32 *)((s8 *)(p1) + (0))) = var_f1;
             }
-            temp_f2_2 = M2C_FIELD(p1, f32 *, 4);
+            temp_f2_2 = (*(f32 *)((s8 *)(p1) + (4)));
             if (temp_f2_2 > 0.0f) {
                 var_f0_2 = temp_f2_2;
             } else {
@@ -1141,9 +1222,9 @@ void GSparticleSetGeneratorScale(void *p0, void *p1, u8 p2, u8 p3) {
                 if (temp_f2_2 < 0.0f) {
                     var_f1_2 = -0.00001f;
                 }
-                M2C_FIELD(p1, f32 *, 4) = var_f1_2;
+                (*(f32 *)((s8 *)(p1) + (4))) = var_f1_2;
             }
-            temp_f2_3 = M2C_FIELD(p1, f32 *, 8);
+            temp_f2_3 = (*(f32 *)((s8 *)(p1) + (8)));
             if (temp_f2_3 > 0.0f) {
                 var_f0_3 = temp_f2_3;
             } else {
@@ -1154,31 +1235,31 @@ void GSparticleSetGeneratorScale(void *p0, void *p1, u8 p2, u8 p3) {
                 if (temp_f2_3 < 0.0f) {
                     var_f1_3 = -0.00001f;
                 }
-                M2C_FIELD(p1, f32 *, 8) = var_f1_3;
+                (*(f32 *)((s8 *)(p1) + (8))) = var_f1_3;
             }
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                temp_r7 = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                temp_r7 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r7 != NULL) {
-                    M2C_FIELD(temp_r7, f32 *, 0x128) = (f32) M2C_FIELD(p1, f32 *, 0);
-                    M2C_FIELD(temp_r7, f32 *, 0x12C) = (f32) M2C_FIELD(p1, f32 *, 4);
-                    M2C_FIELD(temp_r7, f32 *, 0x130) = (f32) M2C_FIELD(p1, f32 *, 8);
+                    PEBANK_PARAM(temp_r7, 7) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+                    PEBANK_PARAM(temp_r7, 8) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+                    PEBANK_PARAM(temp_r7, 9) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
                 }
             } else {
-                temp_r8 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r8, f32 *, 0x24) = (f32) M2C_FIELD(p1, f32 *, 0);
-                M2C_FIELD(temp_r8, f32 *, 0x28) = (f32) M2C_FIELD(p1, f32 *, 4);
-                M2C_FIELD(temp_r8, f32 *, 0x2C) = (f32) M2C_FIELD(p1, f32 *, 8);
-                M2C_FIELD(M2C_FIELD(temp_r8, PSGenerator **, 8), f32 *, 0x9C) = (f32) M2C_FIELD(p1, f32 *, 0);
-                M2C_FIELD(M2C_FIELD(temp_r8, PSGenerator **, 8), f32 *, 0xA0) = (f32) M2C_FIELD(p1, f32 *, 4);
-                M2C_FIELD(M2C_FIELD(temp_r8, PSGenerator **, 8), f32 *, 0xA4) = (f32) M2C_FIELD(p1, f32 *, 8);
+                temp_r8 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r8))->scale[0]) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+                (*(f32 *)&((_GSparticleGenData*)(temp_r8))->scale[1]) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+                (*(f32 *)&((_GSparticleGenData*)(temp_r8))->scale[2]) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
+                (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r8))->generator)))->pad90 + 0xC)) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+                (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r8))->generator)))->pad90 + 0x10)) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+                (*(f32 *)((u8*)&((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r8))->generator)))->pad90 + 0x14)) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
             }
         } else {
-            M2C_FIELD(p0, f32 *, 0x28) = (f32) M2C_FIELD(p1, f32 *, 0);
-            M2C_FIELD(p0, f32 *, 0x2C) = (f32) M2C_FIELD(p1, f32 *, 4);
-            M2C_FIELD(p0, f32 *, 0x30) = (f32) M2C_FIELD(p1, f32 *, 8);
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]) = (f32) (*(f32 *)((s8 *)(p1) + (0)));
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]) = (f32) (*(f32 *)((s8 *)(p1) + (4)));
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]) = (f32) (*(f32 *)((s8 *)(p1) + (8)));
         }
-        if (((u8) M2C_FIELD(p0, u8 *, 0) == 0) && (p2 == 1)) {
-            psSetGeneratorAngleRadiusScale((PSGenerator*)(M2C_FIELD(M2C_FIELD(p0, u8 **, 0x38), PSGenerator **, 8)), (f32*)((f32 *) p1), (u16)p3);
+        if (((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) == 0) && (p2 == 1)) {
+            psSetGeneratorAngleRadiusScale((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)((*(u8 **)&((_GSparticleGen*)(p0))->data)))->generator)), (f32*)((f32 *) p1), (u16)p3);
         }
     }
 }
@@ -1188,20 +1269,20 @@ extern "C" {
 u32 GSparticleGetGeneratorLife(GSparticleGenerator* p0) {
     u8 *temp_r3;
 
-    temp_r3 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r3 == NULL) {
         return 0U;
     }
-    if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+    if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
         if (peBankIsInfinite((u32)(temp_r3)) != 0) {
             return -1U;
         }
-        return (u32) (peBankGetLife(M2C_FIELD(p0, u8 **, 0x38)) * ((f32) GSgfxVideoGetVsyncRate()));
+        return (u32) (peBankGetLife((*(u8 **)&((_GSparticleGen*)(p0))->data)) * ((f32) GSgfxVideoGetVsyncRate()));
     }
-    if ((u8) M2C_FIELD(temp_r3, u8 *, 1) == 1) {
+    if ((u8) (*(u8 *)&((_GSparticleGenData*)(temp_r3))->infinite) == 1) {
         return -1U;
     }
-    return psGetGeneratorChildMaxLife((PSGenerator*)(M2C_FIELD(temp_r3, PSGenerator **, 8)));
+    return psGetGeneratorChildMaxLife((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r3))->generator)));
 }
 }
 
@@ -1213,11 +1294,11 @@ s32 GSparticleIsGeneratorAlive(void *p0) {
     u8 *temp_r3;
     u8 *temp_r3_2;
 
-    temp_r3 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r3 == NULL) {
         return 0;
     }
-    temp_r0 = M2C_FIELD(p0, u8 *, 0);
+    temp_r0 = (*(u8 *)&((_GSparticleGen*)(p0))->native);
     if (temp_r0 != 0) {
         if (temp_r3 == NULL) {
             var_r3_2 = 0;
@@ -1225,34 +1306,34 @@ s32 GSparticleIsGeneratorAlive(void *p0) {
             if (peBankIsInfinite((u32)(temp_r3)) != 0) {
                 var_r3_2 = -1U;
             } else {
-                var_r3_2 = (u32) (peBankGetLife(M2C_FIELD(p0, u8 **, 0x38)) * ((f32) GSgfxVideoGetVsyncRate()));
+                var_r3_2 = (u32) (peBankGetLife((*(u8 **)&((_GSparticleGen*)(p0))->data)) * ((f32) GSgfxVideoGetVsyncRate()));
             }
-        } else if ((u8) M2C_FIELD(temp_r3, u8 *, 1) == 1) {
+        } else if ((u8) (*(u8 *)&((_GSparticleGenData*)(temp_r3))->infinite) == 1) {
             var_r3_2 = -1U;
         } else {
-            var_r3_2 = psGetGeneratorChildMaxLife((PSGenerator*)(M2C_FIELD(temp_r3, PSGenerator **, 8)));
+            var_r3_2 = psGetGeneratorChildMaxLife((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r3))->generator)));
         }
         return var_r3_2 != 0;
     }
-    if ((u8) M2C_FIELD(temp_r3, u8 *, 1) != 0) {
+    if ((u8) (*(u8 *)&((_GSparticleGenData*)(temp_r3))->infinite) != 0) {
         return 1;
     }
-    if (psGetParticleChildCount((PSGenerator*)(M2C_FIELD(temp_r3, PSGenerator **, 8))) != 0) {
+    if (psGetParticleChildCount((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r3))->generator))) != 0) {
         return 1;
     }
-    temp_r3_2 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r3_2 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r3_2 == NULL) {
         var_r3 = 0;
-    } else if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+    } else if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
         if (peBankIsInfinite((u32)(temp_r3_2)) != 0) {
             var_r3 = -1U;
         } else {
-            var_r3 = (u32) (peBankGetLife(M2C_FIELD(p0, u8 **, 0x38)) * ((f32) GSgfxVideoGetVsyncRate()));
+            var_r3 = (u32) (peBankGetLife((*(u8 **)&((_GSparticleGen*)(p0))->data)) * ((f32) GSgfxVideoGetVsyncRate()));
         }
-    } else if ((u8) M2C_FIELD(temp_r3_2, u8 *, 1) == 1) {
+    } else if ((u8) (*(u8 *)&((_GSparticleGenData*)(temp_r3_2))->infinite) == 1) {
         var_r3 = -1U;
     } else {
-        var_r3 = psGetGeneratorChildMaxLife((PSGenerator*)(M2C_FIELD(temp_r3_2, PSGenerator **, 8)));
+        var_r3 = psGetGeneratorChildMaxLife((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r3_2))->generator)));
     }
     return var_r3 != 0;
 }
@@ -1274,16 +1355,16 @@ extern "C" {
 void GSparticleSetVelocityRotationInLocal(void *p0, u8 p1) {
     u8 *temp_r5;
 
-    temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r5 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
                 } else {
                 }
             }
         } else {
-            psSetVelocityRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
+            psSetVelocityRotationInLocal((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r5))->generator)), (u16)p1);
         }
     }
 }
@@ -1293,16 +1374,16 @@ extern "C" {
 void GSparticleSetOffsetRotationInLocal(void *p0, u8 p1, u8 p2) {
     u8 *temp_r6;
 
-    temp_r6 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r6 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r6 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             if (temp_r6 != NULL) {
                 if (p1 != 0) {
                 } else {
                 }
             }
         } else {
-            psSetOffsetRotationInLocal((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), (u16)p1, (u16)p2);
+            psSetOffsetRotationInLocal((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r6))->generator)), (u16)p1, (u16)p2);
         }
     }
 }
@@ -1312,16 +1393,16 @@ extern "C" {
 void GSparticleSetParticleTextureScaling(void *p0, u8 p1) {
     u8 *temp_r5;
 
-    temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r5 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
                 } else {
                 }
             }
         } else {
-            psSetParticleTexScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
+            psSetParticleTexScaling((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r5))->generator)), (u16)p1);
         }
     }
 }
@@ -1331,16 +1412,16 @@ extern "C" {
 void GSparticleSetTornadoScaling(void *p0, u8 p1, u8 p2) {
     u8 *temp_r6;
 
-    temp_r6 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r6 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r6 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             if (temp_r6 != NULL) {
                 if (p1 != 0) {
                 } else {
                 }
             }
         } else {
-            psSetTornadoScaling((PSGenerator*)(M2C_FIELD(temp_r6, PSGenerator **, 8)), (u16)p1, (u16)p2);
+            psSetTornadoScaling((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r6))->generator)), (u16)p1, (u16)p2);
         }
     }
 }
@@ -1350,16 +1431,16 @@ extern "C" {
 void GSparticleSetNodeScaling(void *p0, u8 p1) {
     u8 *temp_r5;
 
-    temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r5 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
                 } else {
                 }
             }
         } else {
-            psSetNodeScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
+            psSetNodeScaling((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r5))->generator)), (u16)p1);
         }
     }
 }
@@ -1369,16 +1450,16 @@ extern "C" {
 void GSparticleSetRandomVelocityScaling(void *p0, u8 p1) {
     u8 *temp_r5;
 
-    temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r5 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
                 } else {
                 }
             }
         } else {
-            psSetRandomVelocityScaling((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
+            psSetRandomVelocityScaling((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r5))->generator)), (u16)p1);
         }
     }
 }
@@ -1388,18 +1469,18 @@ extern "C" {
 void GSparticleSetGeneratorVisibility(void *p0, u8 p1) {
     u8 *temp_r5;
 
-    temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r5 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             if (temp_r5 != NULL) {
                 if (p1 != 0) {
-                    M2C_FIELD(temp_r5, s32 *, 0x134) = (s32) (M2C_FIELD(temp_r5, s32 *, 0x134) | 4);
+                    (*(s32 *)PEBANK_FLAGS_PTR(temp_r5)) = (s32) ((*(s32 *)PEBANK_FLAGS_PTR(temp_r5)) | 4);
                     return;
                 }
-                M2C_FIELD(temp_r5, s32 *, 0x134) = (s32) (M2C_FIELD(temp_r5, s32 *, 0x134) & 0xFFFFFFFB);
+                (*(s32 *)PEBANK_FLAGS_PTR(temp_r5)) = (s32) ((*(s32 *)PEBANK_FLAGS_PTR(temp_r5)) & 0xFFFFFFFB);
             }
         } else {
-            psSetParticleVisibility((PSGenerator*)(M2C_FIELD(temp_r5, PSGenerator **, 8)), (u16)p1);
+            psSetParticleVisibility((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r5))->generator)), (u16)p1);
         }
     }
 }
@@ -1412,36 +1493,36 @@ void GSparticleSetBankVisibility(GSparticleBank* p0, bool p1) {
     u32 var_r29;
 
     var_r29 = 0U;
-    var_r30 = M2C_FIELD(p0, u8 **, 0xC);
-    while (var_r29 < (u8) M2C_FIELD(p0, u8 *, 3)) {
-        temp_r3 = M2C_FIELD(var_r30, u8 **, 0x38);
+    var_r30 = (*(u8 **)&((_GSparticleBank*)(p0))->gens);
+    while (var_r29 < (u8) (*(u8 *)&((_GSparticleBank*)(p0))->genCount)) {
+        temp_r3 = (*(u8 **)&((_GSparticleGen*)(var_r30))->data);
         if (temp_r3 != NULL) {
-            if ((u8) M2C_FIELD(var_r30, u8 *, 0) != 0) {
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(var_r30))->native) != 0) {
                 if (temp_r3 != NULL) {
                     if (p1 != 0) {
-                        M2C_FIELD(temp_r3, s32 *, 0x134) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x134) | 4);
+                        (*(s32 *)PEBANK_FLAGS_PTR(temp_r3)) = (s32) ((*(s32 *)PEBANK_FLAGS_PTR(temp_r3)) | 4);
                     } else {
-                        M2C_FIELD(temp_r3, s32 *, 0x134) = (s32) (M2C_FIELD(temp_r3, s32 *, 0x134) & 0xFFFFFFFB);
+                        (*(s32 *)PEBANK_FLAGS_PTR(temp_r3)) = (s32) ((*(s32 *)PEBANK_FLAGS_PTR(temp_r3)) & 0xFFFFFFFB);
                     }
                 }
             } else {
-                psSetParticleVisibility((PSGenerator*)(M2C_FIELD(temp_r3, PSGenerator **, 8)), p1);
+                psSetParticleVisibility((PSGenerator*)((*(PSGenerator **)&((_GSparticleGenData*)(temp_r3))->generator)), p1);
             }
         }
         var_r29 += 1;
-        var_r30 += 0x3C;
+        var_r30 += sizeof(_GSparticleGen);
     }
 }
 }
 
 extern "C" {
 void GSparticleStopGenerator(void *p0) {
-    if (((u32) M2C_FIELD(p0, u32 *, 0x38) != 0) && ((u8) M2C_FIELD(p0, u8 *, 0) != 0)) {
-        if (peBankIsInfinite(M2C_FIELD(p0, u32 *, 0x38)) != 0) {
-            peBankStopLoop(M2C_FIELD(p0, u32 *, 0x38));
+    if (((u32) (*(u32 *)&((_GSparticleGen*)(p0))->data) != 0) && ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0)) {
+        if (peBankIsInfinite((*(u32 *)&((_GSparticleGen*)(p0))->data)) != 0) {
+            peBankStopLoop((*(u32 *)&((_GSparticleGen*)(p0))->data));
             return;
         }
-        peBankStop(M2C_FIELD(p0, u32 *, 0x38));
+        peBankStop((*(u32 *)&((_GSparticleGen*)(p0))->data));
     }
 }
 }
@@ -1451,24 +1532,24 @@ void GSparticleDestroyGenerator(void *p0, bool p1) {
     HSD_Generator *temp_r4;
     u8 *temp_r3;
 
-    if ((u8 *) M2C_FIELD(p0, u8 **, 0x38) != NULL) {
-        if ((s32) M2C_FIELD(p0, s32 *, 8) != 0) {
+    if ((u8 *) (*(u8 **)&((_GSparticleGen*)(p0))->data) != NULL) {
+        if ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) != 0) {
             GSparticleDetachGeneratorFromGSpart(p0, 0U);
         }
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            peBankFree(M2C_FIELD(p0, u8 **, 0x38));
-            M2C_FIELD(p0, u8 **, 0x38) = NULL;
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+            peBankFree((*(u8 **)&((_GSparticleGen*)(p0))->data));
+            (*(u8 **)&((_GSparticleGen*)(p0))->data) = NULL;
             return;
         }
         if (p1 == 1) {
-            temp_r4 = M2C_FIELD(M2C_FIELD(p0, u8 **, 0x38), HSD_Generator **, 8);
-            psKillFamily((s32) M2C_FIELD(temp_r4, u16 *, 0x18), (s32) M2C_FIELD(temp_r4, u8 *, 0x15));
+            temp_r4 = (*(HSD_Generator **)&((_GSparticleGenData*)((*(u8 **)&((_GSparticleGen*)(p0))->data)))->generator);
+            psKillFamily((s32) (*(u16 *)&((PSGenerator*)(temp_r4))->familyId), (s32) (*(u8 *)&((PSGenerator*)(temp_r4))->linkNo));
         }
-        psKillGenerator((HSD_Generator*)(M2C_FIELD(M2C_FIELD(p0, u8 **, 0x38), HSD_Generator **, 8)));
-        temp_r3 = M2C_FIELD(p0, u8 **, 0x38);
+        psKillGenerator((HSD_Generator*)((*(HSD_Generator **)&((_GSparticleGenData*)((*(u8 **)&((_GSparticleGen*)(p0))->data)))->generator)));
+        temp_r3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
         if (temp_r3 != NULL) {
             GSmemFree((void*)(temp_r3));
-            M2C_FIELD(p0, u8 **, 0x38) = NULL;
+            (*(u8 **)&((_GSparticleGen*)(p0))->data) = NULL;
         }
     }
 }
@@ -1480,13 +1561,13 @@ void GSparticleDestroyAllGenerators(GSparticleBank* p0, bool p1) {
     u32 var_r30;
 
     var_r30 = 0U;
-    var_r31 = M2C_FIELD(p0, u8 **, 0xC);
-    while (var_r30 < (u8) M2C_FIELD(p0, u8 *, 3)) {
-        if ((u32) M2C_FIELD(var_r31, u32 *, 0x38) != 0U) {
+    var_r31 = (*(u8 **)&((_GSparticleBank*)(p0))->gens);
+    while (var_r30 < (u8) (*(u8 *)&((_GSparticleBank*)(p0))->genCount)) {
+        if ((u32) (*(u32 *)&((_GSparticleGen*)(var_r31))->data) != 0U) {
             GSparticleDestroyGenerator(var_r31, p1);
         }
         var_r30 += 1;
-        var_r31 += 0x3C;
+        var_r31 += sizeof(_GSparticleGen);
     }
 }
 }
@@ -1506,7 +1587,7 @@ void GSparticleBankSetCamera(_GSparticleBank* bank, HSD_CObj* camera) {
         if (data != NULL && gen->data != NULL) {
             if (gen->native) {
                 if (data != NULL) {
-                    data->camera = camera;
+                    (*(HSD_CObj**)PEBANK_ENGINE_PTR(data)) = camera;
                 }
             } else {
                 psGeneratorSetCamera(data->generator, camera);
@@ -1521,14 +1602,14 @@ extern "C" {
 void GSparticleGeneratorSetCamera(void *p0, s32 p1) {
     u8 *temp_r5;
 
-    temp_r5 = M2C_FIELD(p0, u8 **, 0x38);
+    temp_r5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
     if (temp_r5 != NULL) {
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             if (temp_r5 != NULL) {
-                M2C_FIELD(temp_r5, s32 *, 0x160) = p1;
+                (*(s32 *)PEBANK_ENGINE_PTR(temp_r5)) = p1;
             }
         } else {
-            psGeneratorSetCamera((HSD_Generator*)(M2C_FIELD(temp_r5, HSD_Generator **, 8)), (HSD_CObj*)((HSD_CObj *) p1));
+            psGeneratorSetCamera((HSD_Generator*)((*(HSD_Generator **)&((_GSparticleGenData*)(temp_r5))->generator)), (HSD_CObj*)((HSD_CObj *) p1));
         }
     }
 }
@@ -1608,52 +1689,52 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
     u8 *temp_r4_8;
     u8 *temp_r4_9;
 
-    if (((s32) M2C_FIELD(p0, s32 *, 8) != 0) && ((u8) M2C_FIELD(p0, u8 *, 2) != 0)) {
-        temp_r3 = GSmodelGetPart((_GSmodel*)(M2C_FIELD(p0, _GSmodel **, 0xC)), M2C_FIELD(p0, s32 *, 4));
+    if (((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) != 0) && ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->f2) != 0)) {
+        temp_r3 = GSmodelGetPart((_GSmodel*)((*(_GSmodel **)&((_GSparticleGen*)(p0))->model)), (*(s32 *)&((_GSparticleGen*)(p0))->partIndex));
         GSpartGetTransform((GSpart*)(temp_r3), (GSvec*)(v8C), (GSvec*)(v80), (GSvec*)(v74));
         GSpartFree((GSpart*)(temp_r3));
         EulerToQuat((Vec*)(v80), (Quaternion*)(unksp64));
-        GSvecTransformQuat((GSvec*)(unksp58), (const GSquat*)(unksp64), (const GSvec*)(((u8*)((s32)p0) + 0x10)));
+        GSvecTransformQuat((GSvec*)(unksp58), (const GSquat*)(unksp64), (const GSvec*)(((u8*)((GCsptr)p0) + 0x10)));
         PSVECAdd((const register Vec*)(v8C), (const register Vec*)(unksp58), (register Vec*)(v8C));
-        PSVECAdd((const register Vec*)(v80), (const register Vec*)(((u8*)((s32)p0) + 0x1C)), (register Vec*)(v80));
-        v74[0] *= M2C_FIELD(p0, f32 *, 0x28);
-        v74[1] *= M2C_FIELD(p0, f32 *, 0x2C);
-        v74[2] *= M2C_FIELD(p0, f32 *, 0x30);
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            temp_r3_2 = M2C_FIELD(p0, u8 **, 0x38);
+        PSVECAdd((const register Vec*)(v80), (const register Vec*)(((u8*)((GCsptr)p0) + 0x1C)), (register Vec*)(v80));
+        v74[0] *= (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
+        v74[1] *= (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
+        v74[2] *= (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+            temp_r3_2 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r3_2 != NULL) {
-                M2C_FIELD(temp_r3_2, f32 *, 0x10C) = (f32) M2C_FIELD(p0, f32 *, 0x10);
-                M2C_FIELD(temp_r3_2, f32 *, 0x110) = (f32) M2C_FIELD(p0, f32 *, 0x14);
-                M2C_FIELD(temp_r3_2, f32 *, 0x114) = (f32) M2C_FIELD(p0, f32 *, 0x18);
+                PEBANK_PARAM(temp_r3_2, 0) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]);
+                PEBANK_PARAM(temp_r3_2, 1) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]);
+                PEBANK_PARAM(temp_r3_2, 2) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]);
             }
         } else {
-            temp_r4 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(temp_r4, f32 *, 0xC) = (f32) M2C_FIELD(p0, f32 *, 0x10);
-            M2C_FIELD(temp_r4, f32 *, 0x10) = (f32) M2C_FIELD(p0, f32 *, 0x14);
-            M2C_FIELD(temp_r4, f32 *, 0x14) = (f32) M2C_FIELD(p0, f32 *, 0x18);
-            M2C_FIELD(M2C_FIELD(temp_r4, u8 **, 8), f32 *, 0x20) = (f32) M2C_FIELD(p0, f32 *, 0x10);
-            M2C_FIELD(M2C_FIELD(temp_r4, u8 **, 8), f32 *, 0x24) = (f32) M2C_FIELD(p0, f32 *, 0x14);
-            M2C_FIELD(M2C_FIELD(temp_r4, u8 **, 8), f32 *, 0x28) = (f32) M2C_FIELD(p0, f32 *, 0x18);
+            temp_r4 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4))->pos[0]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4))->pos[1]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4))->pos[2]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]);
+            (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4))->generator)))->pad1A + 0x6)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]);
+            (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4))->generator)))->pad1A + 0xA)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[1]);
+            (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4))->generator)))->pad1A + 0xE)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->pos[2]);
         }
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
             EulerToQuat((Vec*)(((u8*)(p0) + 0x1C)), (Quaternion*)(v48));
-            temp_r3_3 = M2C_FIELD(p0, u8 **, 0x38);
+            temp_r3_3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r3_3 != NULL) {
-                M2C_FIELD(temp_r3_3, f32 *, 0x118) = v48[0];
-                M2C_FIELD(temp_r3_3, f32 *, 0x11C) = v48[1];
-                M2C_FIELD(temp_r3_3, f32 *, 0x120) = v48[2];
-                M2C_FIELD(temp_r3_3, f32 *, 0x124) = v48[3];
+                PEBANK_PARAM(temp_r3_3, 3) = v48[0];
+                PEBANK_PARAM(temp_r3_3, 4) = v48[1];
+                PEBANK_PARAM(temp_r3_3, 5) = v48[2];
+                PEBANK_PARAM(temp_r3_3, 6) = v48[3];
             }
         } else {
-            temp_r4_2 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(temp_r4_2, f32 *, 0x18) = (f32) M2C_FIELD(p0, f32 *, 0x1C);
-            M2C_FIELD(temp_r4_2, f32 *, 0x1C) = (f32) M2C_FIELD(p0, f32 *, 0x20);
-            M2C_FIELD(temp_r4_2, f32 *, 0x20) = (f32) M2C_FIELD(p0, f32 *, 0x24);
-            M2C_FIELD(M2C_FIELD(temp_r4_2, u8 **, 8), f32 *, 0x90) = (f32) M2C_FIELD(p0, f32 *, 0x1C);
-            M2C_FIELD(M2C_FIELD(temp_r4_2, u8 **, 8), f32 *, 0x94) = (f32) M2C_FIELD(p0, f32 *, 0x20);
-            M2C_FIELD(M2C_FIELD(temp_r4_2, u8 **, 8), f32 *, 0x98) = (f32) M2C_FIELD(p0, f32 *, 0x24);
+            temp_r4_2 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4_2))->rot[0]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[0]);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4_2))->rot[1]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[1]);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4_2))->rot[2]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[2]);
+            (*(f32 *)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_2))->generator)))->pad90) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[0]);
+            (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_2))->generator)))->pad90 + 0x4)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[1]);
+            (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_2))->generator)))->pad90 + 0x8)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->rot[2]);
         }
-        temp_f2 = M2C_FIELD(p0, f32 *, 0x28);
+        temp_f2 = (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
         if (temp_f2 > 0.0f) {
             var_f0 = temp_f2;
         } else {
@@ -1664,9 +1745,9 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
             if (temp_f2 < 0.0f) {
                 var_f1 = -0.00001f;
             }
-            M2C_FIELD(p0, f32 *, 0x28) = var_f1;
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]) = var_f1;
         }
-        temp_f2_2 = M2C_FIELD(p0, f32 *, 0x2C);
+        temp_f2_2 = (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
         if (temp_f2_2 > 0.0f) {
             var_f0_2 = temp_f2_2;
         } else {
@@ -1677,9 +1758,9 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
             if (temp_f2_2 < 0.0f) {
                 var_f1_2 = -0.00001f;
             }
-            M2C_FIELD(p0, f32 *, 0x2C) = var_f1_2;
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]) = var_f1_2;
         }
-        temp_f2_3 = M2C_FIELD(p0, f32 *, 0x30);
+        temp_f2_3 = (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
         if (temp_f2_3 > 0.0f) {
             var_f0_3 = temp_f2_3;
         } else {
@@ -1690,253 +1771,253 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
             if (temp_f2_3 < 0.0f) {
                 var_f1_3 = -0.00001f;
             }
-            M2C_FIELD(p0, f32 *, 0x30) = var_f1_3;
+            (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]) = var_f1_3;
         }
-        if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-            temp_r3_4 = M2C_FIELD(p0, u8 **, 0x38);
+        if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+            temp_r3_4 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
             if (temp_r3_4 != NULL) {
-                M2C_FIELD(temp_r3_4, f32 *, 0x128) = (f32) M2C_FIELD(p0, f32 *, 0x28);
-                M2C_FIELD(temp_r3_4, f32 *, 0x12C) = (f32) M2C_FIELD(p0, f32 *, 0x2C);
-                M2C_FIELD(temp_r3_4, f32 *, 0x130) = (f32) M2C_FIELD(p0, f32 *, 0x30);
+                PEBANK_PARAM(temp_r3_4, 7) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
+                PEBANK_PARAM(temp_r3_4, 8) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
+                PEBANK_PARAM(temp_r3_4, 9) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
             }
         } else {
-            temp_r4_3 = M2C_FIELD(p0, u8 **, 0x38);
-            M2C_FIELD(temp_r4_3, f32 *, 0x24) = (f32) M2C_FIELD(p0, f32 *, 0x28);
-            M2C_FIELD(temp_r4_3, f32 *, 0x28) = (f32) M2C_FIELD(p0, f32 *, 0x2C);
-            M2C_FIELD(temp_r4_3, f32 *, 0x2C) = (f32) M2C_FIELD(p0, f32 *, 0x30);
-            M2C_FIELD(M2C_FIELD(temp_r4_3, u8 **, 8), f32 *, 0x9C) = (f32) M2C_FIELD(p0, f32 *, 0x28);
-            M2C_FIELD(M2C_FIELD(temp_r4_3, u8 **, 8), f32 *, 0xA0) = (f32) M2C_FIELD(p0, f32 *, 0x2C);
-            M2C_FIELD(M2C_FIELD(temp_r4_3, u8 **, 8), f32 *, 0xA4) = (f32) M2C_FIELD(p0, f32 *, 0x30);
+            temp_r4_3 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4_3))->scale[0]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4_3))->scale[1]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
+            (*(f32 *)&((_GSparticleGenData*)(temp_r4_3))->scale[2]) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
+            (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_3))->generator)))->pad90 + 0xC)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
+            (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_3))->generator)))->pad90 + 0x10)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
+            (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_3))->generator)))->pad90 + 0x14)) = (f32) (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);
         }
-        switch (M2C_FIELD(p0, s32 *, 8)) {
+        switch ((*(s32 *)&((_GSparticleGen*)(p0))->attachMode)) {
         case 1:
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                u8* g = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                u8* g = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (g != NULL) {
-                    M2C_FIELD(g, f32 *, 0x10C) = v8C[0];
-                    M2C_FIELD(g, f32 *, 0x110) = v8C[1];
-                    M2C_FIELD(g, f32 *, 0x114) = v8C[2];
+                    PEBANK_PARAM(g, 0) = v8C[0];
+                    PEBANK_PARAM(g, 1) = v8C[1];
+                    PEBANK_PARAM(g, 2) = v8C[2];
                 }
             } else {
-                temp_r4_4 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_4, f32 *, 0xC) = v8C[0];
-                M2C_FIELD(temp_r4_4, f32 *, 0x10) = v8C[1];
-                M2C_FIELD(temp_r4_4, f32 *, 0x14) = v8C[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_4, u8 **, 8), f32 *, 0x20) = v8C[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_4, u8 **, 8), f32 *, 0x24) = v8C[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_4, u8 **, 8), f32 *, 0x28) = v8C[2];
+                temp_r4_4 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_4))->pos[0]) = v8C[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_4))->pos[1]) = v8C[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_4))->pos[2]) = v8C[2];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_4))->generator)))->pad1A + 0x6)) = v8C[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_4))->generator)))->pad1A + 0xA)) = v8C[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_4))->generator)))->pad1A + 0xE)) = v8C[2];
             }
             break;
         case 2:
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
                 EulerToQuat((Vec*)(v80), (Quaternion*)(v38));
-                temp_r3_6 = M2C_FIELD(p0, u8 **, 0x38);
+                temp_r3_6 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3_6 != NULL) {
-                    M2C_FIELD(temp_r3_6, f32 *, 0x118) = v38[0];
-                    M2C_FIELD(temp_r3_6, f32 *, 0x11C) = v38[1];
-                    M2C_FIELD(temp_r3_6, f32 *, 0x120) = v38[2];
-                    M2C_FIELD(temp_r3_6, f32 *, 0x124) = v38[3];
+                    PEBANK_PARAM(temp_r3_6, 3) = v38[0];
+                    PEBANK_PARAM(temp_r3_6, 4) = v38[1];
+                    PEBANK_PARAM(temp_r3_6, 5) = v38[2];
+                    PEBANK_PARAM(temp_r3_6, 6) = v38[3];
                 }
             } else {
-                temp_r4_5 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_5, f32 *, 0x18) = v80[0];
-                M2C_FIELD(temp_r4_5, f32 *, 0x1C) = v80[1];
-                M2C_FIELD(temp_r4_5, f32 *, 0x20) = v80[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_5, u8 **, 8), f32 *, 0x90) = v80[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_5, u8 **, 8), f32 *, 0x94) = v80[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_5, u8 **, 8), f32 *, 0x98) = v80[2];
+                temp_r4_5 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_5))->rot[0]) = v80[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_5))->rot[1]) = v80[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_5))->rot[2]) = v80[2];
+                (*(f32 *)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_5))->generator)))->pad90) = v80[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_5))->generator)))->pad90 + 0x4)) = v80[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_5))->generator)))->pad90 + 0x8)) = v80[2];
             }
             break;
         case 3:
             _particleClampScale(&v74[0]);
             _particleClampScale(&v74[1]);
             _particleClampScale(&v74[2]);
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                u8* g = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                u8* g = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (g != NULL) {
-                    M2C_FIELD(g, f32 *, 0x128) = v74[0];
-                    M2C_FIELD(g, f32 *, 0x12C) = v74[1];
-                    M2C_FIELD(g, f32 *, 0x130) = v74[2];
+                    PEBANK_PARAM(g, 7) = v74[0];
+                    PEBANK_PARAM(g, 8) = v74[1];
+                    PEBANK_PARAM(g, 9) = v74[2];
                 }
             } else {
-                temp_r4_6 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_6, f32 *, 0x24) = v74[0];
-                M2C_FIELD(temp_r4_6, f32 *, 0x28) = v74[1];
-                M2C_FIELD(temp_r4_6, f32 *, 0x2C) = v74[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_6, u8 **, 8), f32 *, 0x9C) = v74[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_6, u8 **, 8), f32 *, 0xA0) = v74[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_6, u8 **, 8), f32 *, 0xA4) = v74[2];
+                temp_r4_6 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_6))->scale[0]) = v74[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_6))->scale[1]) = v74[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_6))->scale[2]) = v74[2];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_6))->generator)))->pad90 + 0xC)) = v74[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_6))->generator)))->pad90 + 0x10)) = v74[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_6))->generator)))->pad90 + 0x14)) = v74[2];
             }
             break;
         case 4:
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                temp_r3_8 = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                temp_r3_8 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3_8 != NULL) {
-                    M2C_FIELD(temp_r3_8, f32 *, 0x10C) = v8C[0];
-                    M2C_FIELD(temp_r3_8, f32 *, 0x110) = v8C[1];
-                    M2C_FIELD(temp_r3_8, f32 *, 0x114) = v8C[2];
+                    PEBANK_PARAM(temp_r3_8, 0) = v8C[0];
+                    PEBANK_PARAM(temp_r3_8, 1) = v8C[1];
+                    PEBANK_PARAM(temp_r3_8, 2) = v8C[2];
                 }
             } else {
-                temp_r4_7 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_7, f32 *, 0xC) = v8C[0];
-                M2C_FIELD(temp_r4_7, f32 *, 0x10) = v8C[1];
-                M2C_FIELD(temp_r4_7, f32 *, 0x14) = v8C[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_7, u8 **, 8), f32 *, 0x20) = v8C[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_7, u8 **, 8), f32 *, 0x24) = v8C[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_7, u8 **, 8), f32 *, 0x28) = v8C[2];
+                temp_r4_7 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_7))->pos[0]) = v8C[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_7))->pos[1]) = v8C[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_7))->pos[2]) = v8C[2];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_7))->generator)))->pad1A + 0x6)) = v8C[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_7))->generator)))->pad1A + 0xA)) = v8C[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_7))->generator)))->pad1A + 0xE)) = v8C[2];
             }
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
                 EulerToQuat((Vec*)(v80), (Quaternion*)(q28));
-                u8* g = M2C_FIELD(p0, u8 **, 0x38);
+                u8* g = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (g != NULL) {
-                    M2C_FIELD(g, f32 *, 0x118) = q28[0];
-                    M2C_FIELD(g, f32 *, 0x11C) = q28[1];
-                    M2C_FIELD(g, f32 *, 0x120) = q28[2];
-                    M2C_FIELD(g, f32 *, 0x124) = q28[3];
+                    PEBANK_PARAM(g, 3) = q28[0];
+                    PEBANK_PARAM(g, 4) = q28[1];
+                    PEBANK_PARAM(g, 5) = q28[2];
+                    PEBANK_PARAM(g, 6) = q28[3];
                 }
             } else {
-                temp_r4_8 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_8, f32 *, 0x18) = v80[0];
-                M2C_FIELD(temp_r4_8, f32 *, 0x1C) = v80[1];
-                M2C_FIELD(temp_r4_8, f32 *, 0x20) = v80[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_8, u8 **, 8), f32 *, 0x90) = v80[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_8, u8 **, 8), f32 *, 0x94) = v80[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_8, u8 **, 8), f32 *, 0x98) = v80[2];
+                temp_r4_8 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_8))->rot[0]) = v80[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_8))->rot[1]) = v80[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_8))->rot[2]) = v80[2];
+                (*(f32 *)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_8))->generator)))->pad90) = v80[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_8))->generator)))->pad90 + 0x4)) = v80[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_8))->generator)))->pad90 + 0x8)) = v80[2];
             }
             break;
         case 5:
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
                 EulerToQuat((Vec*)(v80), (Quaternion*)(q18));
-                u8* g = M2C_FIELD(p0, u8 **, 0x38);
+                u8* g = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (g != NULL) {
-                    M2C_FIELD(g, f32 *, 0x118) = q18[0];
-                    M2C_FIELD(g, f32 *, 0x11C) = q18[1];
-                    M2C_FIELD(g, f32 *, 0x120) = q18[2];
-                    M2C_FIELD(g, f32 *, 0x124) = q18[3];
+                    PEBANK_PARAM(g, 3) = q18[0];
+                    PEBANK_PARAM(g, 4) = q18[1];
+                    PEBANK_PARAM(g, 5) = q18[2];
+                    PEBANK_PARAM(g, 6) = q18[3];
                 }
             } else {
-                temp_r4_9 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_9, f32 *, 0x18) = v80[0];
-                M2C_FIELD(temp_r4_9, f32 *, 0x1C) = v80[1];
-                M2C_FIELD(temp_r4_9, f32 *, 0x20) = v80[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_9, u8 **, 8), f32 *, 0x90) = v80[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_9, u8 **, 8), f32 *, 0x94) = v80[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_9, u8 **, 8), f32 *, 0x98) = v80[2];
+                temp_r4_9 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_9))->rot[0]) = v80[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_9))->rot[1]) = v80[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_9))->rot[2]) = v80[2];
+                (*(f32 *)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_9))->generator)))->pad90) = v80[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_9))->generator)))->pad90 + 0x4)) = v80[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_9))->generator)))->pad90 + 0x8)) = v80[2];
             }
             _particleClampScale(&v74[0]);
             _particleClampScale(&v74[1]);
             _particleClampScale(&v74[2]);
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                temp_r3_11 = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                temp_r3_11 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3_11 != NULL) {
-                    M2C_FIELD(temp_r3_11, f32 *, 0x128) = v74[0];
-                    M2C_FIELD(temp_r3_11, f32 *, 0x12C) = v74[1];
-                    M2C_FIELD(temp_r3_11, f32 *, 0x130) = v74[2];
+                    PEBANK_PARAM(temp_r3_11, 7) = v74[0];
+                    PEBANK_PARAM(temp_r3_11, 8) = v74[1];
+                    PEBANK_PARAM(temp_r3_11, 9) = v74[2];
                 }
             } else {
-                temp_r4_10 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_10, f32 *, 0x24) = v74[0];
-                M2C_FIELD(temp_r4_10, f32 *, 0x28) = v74[1];
-                M2C_FIELD(temp_r4_10, f32 *, 0x2C) = v74[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_10, u8 **, 8), f32 *, 0x9C) = v74[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_10, u8 **, 8), f32 *, 0xA0) = v74[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_10, u8 **, 8), f32 *, 0xA4) = v74[2];
+                temp_r4_10 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_10))->scale[0]) = v74[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_10))->scale[1]) = v74[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_10))->scale[2]) = v74[2];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_10))->generator)))->pad90 + 0xC)) = v74[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_10))->generator)))->pad90 + 0x10)) = v74[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_10))->generator)))->pad90 + 0x14)) = v74[2];
             }
             break;
         case 6:
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                temp_r3_12 = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                temp_r3_12 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3_12 != NULL) {
-                    M2C_FIELD(temp_r3_12, f32 *, 0x10C) = v8C[0];
-                    M2C_FIELD(temp_r3_12, f32 *, 0x110) = v8C[1];
-                    M2C_FIELD(temp_r3_12, f32 *, 0x114) = v8C[2];
+                    PEBANK_PARAM(temp_r3_12, 0) = v8C[0];
+                    PEBANK_PARAM(temp_r3_12, 1) = v8C[1];
+                    PEBANK_PARAM(temp_r3_12, 2) = v8C[2];
                 }
             } else {
-                temp_r4_11 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_11, f32 *, 0xC) = v8C[0];
-                M2C_FIELD(temp_r4_11, f32 *, 0x10) = v8C[1];
-                M2C_FIELD(temp_r4_11, f32 *, 0x14) = v8C[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_11, u8 **, 8), f32 *, 0x20) = v8C[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_11, u8 **, 8), f32 *, 0x24) = v8C[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_11, u8 **, 8), f32 *, 0x28) = v8C[2];
+                temp_r4_11 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_11))->pos[0]) = v8C[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_11))->pos[1]) = v8C[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_11))->pos[2]) = v8C[2];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_11))->generator)))->pad1A + 0x6)) = v8C[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_11))->generator)))->pad1A + 0xA)) = v8C[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_11))->generator)))->pad1A + 0xE)) = v8C[2];
             }
             _particleClampScale(&v74[0]);
             _particleClampScale(&v74[1]);
             _particleClampScale(&v74[2]);
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                temp_r3_13 = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                temp_r3_13 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3_13 != NULL) {
-                    M2C_FIELD(temp_r3_13, f32 *, 0x128) = v74[0];
-                    M2C_FIELD(temp_r3_13, f32 *, 0x12C) = v74[1];
-                    M2C_FIELD(temp_r3_13, f32 *, 0x130) = v74[2];
+                    PEBANK_PARAM(temp_r3_13, 7) = v74[0];
+                    PEBANK_PARAM(temp_r3_13, 8) = v74[1];
+                    PEBANK_PARAM(temp_r3_13, 9) = v74[2];
                 }
             } else {
-                temp_r4_12 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_12, f32 *, 0x24) = v74[0];
-                M2C_FIELD(temp_r4_12, f32 *, 0x28) = v74[1];
-                M2C_FIELD(temp_r4_12, f32 *, 0x2C) = v74[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_12, u8 **, 8), f32 *, 0x9C) = v74[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_12, u8 **, 8), f32 *, 0xA0) = v74[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_12, u8 **, 8), f32 *, 0xA4) = v74[2];
+                temp_r4_12 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_12))->scale[0]) = v74[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_12))->scale[1]) = v74[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_12))->scale[2]) = v74[2];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_12))->generator)))->pad90 + 0xC)) = v74[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_12))->generator)))->pad90 + 0x10)) = v74[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_12))->generator)))->pad90 + 0x14)) = v74[2];
             }
             break;
         case 7:
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                temp_r3_14 = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                temp_r3_14 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3_14 != NULL) {
-                    M2C_FIELD(temp_r3_14, f32 *, 0x10C) = v8C[0];
-                    M2C_FIELD(temp_r3_14, f32 *, 0x110) = v8C[1];
-                    M2C_FIELD(temp_r3_14, f32 *, 0x114) = v8C[2];
+                    PEBANK_PARAM(temp_r3_14, 0) = v8C[0];
+                    PEBANK_PARAM(temp_r3_14, 1) = v8C[1];
+                    PEBANK_PARAM(temp_r3_14, 2) = v8C[2];
                 }
             } else {
-                temp_r4_13 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_13, f32 *, 0xC) = v8C[0];
-                M2C_FIELD(temp_r4_13, f32 *, 0x10) = v8C[1];
-                M2C_FIELD(temp_r4_13, f32 *, 0x14) = v8C[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_13, u8 **, 8), f32 *, 0x20) = v8C[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_13, u8 **, 8), f32 *, 0x24) = v8C[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_13, u8 **, 8), f32 *, 0x28) = v8C[2];
+                temp_r4_13 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_13))->pos[0]) = v8C[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_13))->pos[1]) = v8C[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_13))->pos[2]) = v8C[2];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_13))->generator)))->pad1A + 0x6)) = v8C[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_13))->generator)))->pad1A + 0xA)) = v8C[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_13))->generator)))->pad1A + 0xE)) = v8C[2];
             }
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
                 EulerToQuat((Vec*)(v80), (Quaternion*)(v8));
-                temp_r3_15 = M2C_FIELD(p0, u8 **, 0x38);
+                temp_r3_15 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3_15 != NULL) {
-                    M2C_FIELD(temp_r3_15, f32 *, 0x118) = v8[0];
-                    M2C_FIELD(temp_r3_15, f32 *, 0x11C) = v8[1];
-                    M2C_FIELD(temp_r3_15, f32 *, 0x120) = v8[2];
-                    M2C_FIELD(temp_r3_15, f32 *, 0x124) = v8[3];
+                    PEBANK_PARAM(temp_r3_15, 3) = v8[0];
+                    PEBANK_PARAM(temp_r3_15, 4) = v8[1];
+                    PEBANK_PARAM(temp_r3_15, 5) = v8[2];
+                    PEBANK_PARAM(temp_r3_15, 6) = v8[3];
                 }
             } else {
-                temp_r4_14 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_14, f32 *, 0x18) = v80[0];
-                M2C_FIELD(temp_r4_14, f32 *, 0x1C) = v80[1];
-                M2C_FIELD(temp_r4_14, f32 *, 0x20) = v80[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_14, u8 **, 8), f32 *, 0x90) = v80[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_14, u8 **, 8), f32 *, 0x94) = v80[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_14, u8 **, 8), f32 *, 0x98) = v80[2];
+                temp_r4_14 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_14))->rot[0]) = v80[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_14))->rot[1]) = v80[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_14))->rot[2]) = v80[2];
+                (*(f32 *)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_14))->generator)))->pad90) = v80[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_14))->generator)))->pad90 + 0x4)) = v80[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_14))->generator)))->pad90 + 0x8)) = v80[2];
             }
             _particleClampScale(&v74[0]);
             _particleClampScale(&v74[1]);
             _particleClampScale(&v74[2]);
-            if ((u8) M2C_FIELD(p0, u8 *, 0) != 0) {
-                temp_r3_16 = M2C_FIELD(p0, u8 **, 0x38);
+            if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
+                temp_r3_16 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
                 if (temp_r3_16 != NULL) {
-                    M2C_FIELD(temp_r3_16, f32 *, 0x128) = v74[0];
-                    M2C_FIELD(temp_r3_16, f32 *, 0x12C) = v74[1];
-                    M2C_FIELD(temp_r3_16, f32 *, 0x130) = v74[2];
+                    PEBANK_PARAM(temp_r3_16, 7) = v74[0];
+                    PEBANK_PARAM(temp_r3_16, 8) = v74[1];
+                    PEBANK_PARAM(temp_r3_16, 9) = v74[2];
                 }
             } else {
-                temp_r4_15 = M2C_FIELD(p0, u8 **, 0x38);
-                M2C_FIELD(temp_r4_15, f32 *, 0x24) = v74[0];
-                M2C_FIELD(temp_r4_15, f32 *, 0x28) = v74[1];
-                M2C_FIELD(temp_r4_15, f32 *, 0x2C) = v74[2];
-                M2C_FIELD(M2C_FIELD(temp_r4_15, u8 **, 8), f32 *, 0x9C) = v74[0];
-                M2C_FIELD(M2C_FIELD(temp_r4_15, u8 **, 8), f32 *, 0xA0) = v74[1];
-                M2C_FIELD(M2C_FIELD(temp_r4_15, u8 **, 8), f32 *, 0xA4) = v74[2];
+                temp_r4_15 = (*(u8 **)&((_GSparticleGen*)(p0))->data);
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_15))->scale[0]) = v74[0];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_15))->scale[1]) = v74[1];
+                (*(f32 *)&((_GSparticleGenData*)(temp_r4_15))->scale[2]) = v74[2];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_15))->generator)))->pad90 + 0xC)) = v74[0];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_15))->generator)))->pad90 + 0x10)) = v74[1];
+                (*(f32 *)((u8*)&((PSGenerator*)((*(u8 **)&((_GSparticleGenData*)(temp_r4_15))->generator)))->pad90 + 0x14)) = v74[2];
             }
             break;
         }
-        M2C_FIELD(p0, bool *, 2) = !M2C_FIELD(p0, u8 *, 1);
+        (*(bool *)&((_GSparticleGen*)(p0))->f2) = !(*(u8 *)&((_GSparticleGen*)(p0))->f1);
     }
 }
 }
@@ -1965,7 +2046,7 @@ static void _particlePreUpdate(float frames) {
                     if (data != NULL && gen->data != NULL) {
                         if (gen->native) {
                             if (data != NULL) {
-                                data->camera = NULL;
+                                (*(HSD_CObj**)PEBANK_ENGINE_PTR(data)) = NULL;
                             }
                         } else {
                             psGeneratorSetCamera(data->generator, NULL);
@@ -1986,7 +2067,7 @@ static void _particlePreUpdate(float frames) {
                     cam = NULL;
                 } else if (gen->native) {
                     if (data != NULL) {
-                        cam = (GScamera*)data->camera;
+                        cam = (GScamera*)(*(HSD_CObj**)PEBANK_ENGINE_PTR(data));
                     } else {
                         cam = NULL;
                     }
@@ -2011,7 +2092,7 @@ static void _particlePreUpdate(float frames) {
                     if (data != NULL) {
                         if (gen->native) {
                             if (data != NULL) {
-                                data->camera = NULL;
+                                (*(HSD_CObj**)PEBANK_ENGINE_PTR(data)) = NULL;
                             }
                         } else {
                             psGeneratorSetCamera(data->generator, NULL);
@@ -2036,7 +2117,7 @@ static void _particlePreUpdate(float frames) {
     }
     GScamera* active = GScameraGetActiveCamera();
     if (active != NULL && GScameraIsValid(active) != 0) {
-        psSetBillboardCamera(M2C_FIELD(active, HSD_CObj **, 8));
+        psSetBillboardCamera((*(HSD_CObj **)&((GSparticleCameraView*)(active))->cobj));
         for (i = 0; i < steps; i++) {
             psInterpretParticles(0);
             psExecGenerator(0);
@@ -2070,20 +2151,20 @@ static void _particlePostUpdate(float p0) {
     var_r31 = 0;
     while (var_r30 < (u32) _particleBankStructCount) {
         temp_r26 = &_particleBankStructList[var_r31];
-        if ((u8) M2C_FIELD(temp_r26, u8 *, 0) == 1) {
-            var_r27 = M2C_FIELD(temp_r26, u8 **, 0xC);
+        if ((u8) (*(u8 *)&((_GSparticleBank*)(temp_r26))->active) == 1) {
+            var_r27 = (*(u8 **)&((_GSparticleBank*)(temp_r26))->gens);
             var_r29 = 0U;
-            while (var_r29 < (u8) M2C_FIELD(temp_r26, u8 *, 3)) {
-                if (M2C_FIELD(var_r27, u8 **, 0x38) != NULL) {
+            while (var_r29 < (u8) (*(u8 *)&((_GSparticleBank*)(temp_r26))->genCount)) {
+                if ((*(u8 **)&((_GSparticleGen*)(var_r27))->data) != NULL) {
                     if (!_genIsAlive(var_r27)) {
                         GSparticleDestroyGenerator(var_r27, 1U);
                     }
                 }
                 var_r29 += 1;
-                var_r27 += 0x3C;
+                var_r27 += sizeof(_GSparticleGen);
             }
         }
-        var_r31 += 0x14;
+        var_r31 += sizeof(_GSparticleBank);
         var_r30 += 1;
     }
     particleEnginePostUpdate();
@@ -2105,38 +2186,38 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
 
     temp_r3 = GScameraGetActiveCamera();
     var_r29 = 1;
-    temp_r31 = M2C_FIELD(p0, u8 *, 0x16A7) != 0;
+    temp_r31 = (*(u8 *)&((GSgfxLayer*)(p0))->hw.fogEnable) != 0;
     if (temp_r3 == NULL || GScameraIsValid((GScamera*)(temp_r3)) == 0) {
         return;
     } else {
         temp_r28 = GSgfxPerfbarCPUEntry(0xFF00FF);
         if ((u8) _invalidateVtx != 0) {
-            M2C_FIELD(p0, s32 *, 4) = (s32) (M2C_FIELD(p0, s32 *, 4) | 0x08000000);
+            (*(s32 *)&((GSgfxLayer*)(p0))->flags) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->flags) | 0x08000000);
             _invalidateVtx = 0;
         }
         if ((u8) _invalidateTex != 0) {
-            M2C_FIELD(p0, s32 *, 4) = (s32) (M2C_FIELD(p0, s32 *, 4) | 0x10000000);
+            (*(s32 *)&((GSgfxLayer*)(p0))->flags) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->flags) | 0x10000000);
             _invalidateTex = 0;
         }
         if (temp_r31 != 0) {
-            M2C_FIELD(p0, u8 *, 0x16A7) = 0U;
-            M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+            (*(u8 *)&((GSgfxLayer*)(p0))->hw.fogEnable) = 0U;
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].pe) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].pe) | 0x40);
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].pe) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].pe) | 0x40);
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].groups) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].groups) | 0x40);
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].groups) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].groups) | 0x40);
         }
-        temp_r0 = M2C_FIELD(p0, s32 *, 0x28);
+        temp_r0 = (*(s32 *)&((GSgfxLayer*)(p0))->id);
         switch (temp_r0) {
         case 4:
             var_r29 = 2;
         case 2:
             if ((p1 == 1) && (psDispHasRenderData(var_r29) == 1)) {
-                M2C_FIELD(p0, s32 *, 0xD90) = 0;
+                (*(s32 *)&((GSgfxLayer*)(p0))->hw.clipMode) = 0;
                 var_r27 = 0;
-                M2C_FIELD(p0, s32 *, 0x16B8) = (s32) (M2C_FIELD(p0, s32 *, 0x16B8) | 4);
-                M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 2);
-                M2C_FIELD(p0, s32 *, 0x1770) = (s32) (M2C_FIELD(p0, s32 *, 0x1770) | 4);
-                M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 2);
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].raster) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].raster) | 4);
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].groups) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].groups) | 2);
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].raster) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].raster) | 4);
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].groups) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].groups) | 2);
                 _particleRenderCamera(p0, temp_r3, var_r29, NULL);
                 for (var_r24 = 0; var_r24 < g_particle_cameras_count; var_r24++) {
                     temp_r25 = g_particle_cameras[var_r24];
@@ -2145,14 +2226,14 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
                         _particleRenderCamera(p0, temp_r25, var_r29, temp_r25);
                     }
                 }
-                M2C_FIELD(p0, s8 *, 0xD44) = 0;
-                M2C_FIELD(p0, s8 *, 0xD45) = 0;
-                M2C_FIELD(p0, s32 *, 0x16B4) = (s32) (M2C_FIELD(p0, s32 *, 0x16B4) | 1);
-                M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 1);
-                M2C_FIELD(p0, s32 *, 0x176C) = (s32) (M2C_FIELD(p0, s32 *, 0x176C) | 1);
-                M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 1);
+                (*(s8 *)&((GSgfxLayer*)(p0))->hw.texOffsets[0][0]) = 0;
+                (*(s8 *)&((GSgfxLayer*)(p0))->hw.texOffsets[0][1]) = 0;
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].texOffsets) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].texOffsets) | 1);
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].groups) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].groups) | 1);
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].texOffsets) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].texOffsets) | 1);
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].groups) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].groups) | 1);
                 if (var_r27 != 0) {
-                    GScameraLoadActiveCameraMatrix((GSgfxLayerID)(M2C_FIELD(p0, s32 *, 0x28)));
+                    GScameraLoadActiveCameraMatrix((GSgfxLayerID)((*(s32 *)&((GSgfxLayer*)(p0))->id)));
                 }
             }
         case 0:
@@ -2163,17 +2244,17 @@ static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1) {
             break;
         }
         if (temp_r31 != 0) {
-            M2C_FIELD(p0, u8 *, 0x16A7) = 1U;
-            M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x200);
-            M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x200);
-            if ((u8) M2C_FIELD(p0, u8 *, 0x16A6) != 0) {
-                M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x100);
-                M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x100);
+            (*(u8 *)&((GSgfxLayer*)(p0))->hw.fogEnable) = 1U;
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].pe) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].pe) | 0x40);
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].pe) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].pe) | 0x40);
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].pe) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].pe) | 0x200);
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].pe) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].pe) | 0x200);
+            if ((u8) (*(u8 *)&((GSgfxLayer*)(p0))->hw.fogRangeEnable) != 0) {
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].pe) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].pe) | 0x100);
+                (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].pe) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].pe) | 0x100);
             }
-            M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].groups) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[0].groups) | 0x40);
+            (*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].groups) = (s32) ((*(s32 *)&((GSgfxLayer*)(p0))->dirty[1].groups) | 0x40);
         }
         GSgfxPerfbarCPUEntry(temp_r28);
     }

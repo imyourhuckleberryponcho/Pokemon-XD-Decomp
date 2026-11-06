@@ -31,16 +31,13 @@ struct _GSgfxInitParms {
     u32 layerFlags;
 };
 
-struct GSgfxState {
-    u8 unk0[0xC64];
-};
+#include <game/gsgfxstate.h>
 
-class GSgfxLayer {
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     GSgfxLayer(GSgfxLayerID id, char* name, u32 width, u32 height, u32 flags, GSgfxLayerType type);
-
-private:
-    u8 unk0[0x1A14];
 };
 
 void GSgfxVideoShutdown();

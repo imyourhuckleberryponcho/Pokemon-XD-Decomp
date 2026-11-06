@@ -14,7 +14,7 @@ void heroAddPokecoupon(void* hero, s32 amount);
 void heroAddPokedoru(void* hero, s32 amount);
 bool fightIsFight(void);
 void pokemonInit(Pokemon* pokemon);
-s32 dbgMenuPokemonEditSub(Pokemon* pokemon, s32, s32, s32, s32, s32);
+s32 dbgMenuPokemonEditSub(Pokemon* pokemon, u8, u8*, u8*, u8*, u8*);
 void heroCatchPokemon(void* hero, Pokemon* pokemon, s32, s32, s32);
 Pokemon* heroGetStatus(void* hero, s32, s32);
 

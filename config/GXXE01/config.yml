@@ -46,3 +46,12 @@ extract:
   binary: pokecolo/system_error_fnt.bin
   header: pokecolo/system_error_fnt.inc
   header_type: raw
+# Save-file banner + icon pictures (memcard.cpp fn_801CC508).
+- symbol: _memcardBannerImage
+  binary: memcard/banner.bin
+  header: memcard/banner.inc
+  header_type: raw
+- symbol: _memcardIconImage
+  binary: memcard/icon.bin
+  header: memcard/icon.inc
+  header_type: raw

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #pragma peephole off
 
 extern "C" void GSthreadSwitch();
@@ -6,23 +7,32 @@ struct tagWINDOW_WORK;
 struct tagSPRITE_WORK;
 
 struct FlashMenu {
-    u8 pad0[0x24];
+    u8 pad0[0x8];
+    void* slot8;
+    u8 padC[0x18];
     u8 loopFlag;
     u8 pad25[3];
     u32 loopStart;
     u32 loopEnd;
-    u8 pad30[0x110];
+    u8 pad30[0x4];
+    void* slot34;
+    void* slot38;
+    void* slot3C;
+    void* slot40;
+    u8 pad44[0x8];
+    void* tex[0x3C];
+    void* labels;
 
     FlashMenu();
     ~FlashMenu();
-    void* GetGStexture(long id);
+    void* GetGStexture(s32 id);
     void Draw(tagWINDOW_WORK* w, tagSPRITE_WORK* s);
     void Update();
-    s32 Init(void* d, unsigned long arg);
+    s32 Init(void* d, u32 arg);
     void Release();
     u16 GetFrameFromLabel(char* name);
     u32 GetPlayFrame();
-    void SetPlayFrame(unsigned long f);
+    void SetPlayFrame(u32 f);
 };
 
 struct FlashEntry {
@@ -169,9 +179,9 @@ u32 FlashSystemGetNowFrame(u32 id) {
     return 0;
 }
 
-s32 FlashSystemGetGStexture(u32 id, long texId) {
+GCsptr FlashSystemGetGStexture(u32 id, s32 texId) {
     FlashEntry* e = flashFind(id);
-    if (e != 0) return (s32)e->menu->GetGStexture(texId);
+    if (e != 0) return (GCsptr)e->menu->GetGStexture(texId);
     return 0;
 }
 

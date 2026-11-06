@@ -4,13 +4,21 @@
 
 #define HSD_FILE_NAME "psdisp.c"
 
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <sysdolphin/baselib/psdisp.h>
 
 #include <string.h>
 
 
+#ifdef __MWERKS__
 #define _MATH_H_
+#ifdef __cplusplus
+extern "C" f32 __float_nan[];
+#else
 extern f32 __float_nan[];
+#endif
 extern f32 __float_min[];
 #define NAN (__float_nan[0])
 double sin(double x);
@@ -20,16 +28,25 @@ double atan2(double y, double x);
 double __fabs(double x);
 #define fabs(x) __fabs(x)
 
+#ifndef __MWERKS__
+static
+#endif
 inline f32 sinf(f32 x)
 {
     return (f32) sin(x);
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline f32 cosf(f32 x)
 {
     return (f32) cos(x);
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline f32 tanf(f32 x)
 {
     return (f32) tan(x);
@@ -54,6 +71,9 @@ inline int __fpclassifyf(float x)
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x)
 {
     if (x > 0.0f) {
@@ -69,6 +89,12 @@ inline float sqrtf(float x)
     }
     return x;
 }
+#else
+#include <math.h>
+#include <float.h>
+static const f32 psdisp_float_min[1] = { FLT_MIN };
+#define __float_min psdisp_float_min
+#endif
 
 inline float atan2fInline(float y, float x)
 {
@@ -92,6 +118,7 @@ inline float atan2fInline(float y, float x)
 
 #pragma pool_strings off
 
+#ifdef __MWERKS__
 
 static inline void __OSf32tos16(register f32 arg, volatile register s16* out)
 {
@@ -104,6 +131,22 @@ static inline s16 OSf32tos16(f32 in)
     __OSf32tos16(in, (s16*) &out);
     return *(s16*) &out;
 }
+#else
+
+
+static inline s16 psdisp_OSf32tos16(f32 in)
+{
+    s16 out;
+    PSQ_STORE(&out, 0, in, 6);
+    return out;
+}
+#define OSf32tos16 psdisp_OSf32tos16
+#endif
+#ifndef __MWERKS__
+
+#undef ATTRIBUTE_ALIGN
+#define ATTRIBUTE_ALIGN(num)
+#endif
 
 #define psPosition3(x, y, z)     GXPosition3s16(OSf32tos16(x), OSf32tos16(y), OSf32tos16(z))
 
@@ -1126,7 +1169,7 @@ inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f3
                 ux *= ratio;
                 uy *= ratio;
                 uz *= ratio;
-                num = *(u32*) texform;
+                num = GC_BE32(*(u32*) texform);
                 texform += 4;
                 for (; num != 0; num--) {
                     u8 prim = texform[0];
@@ -1148,12 +1191,12 @@ inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f3
                         f32 tx;
                         s32 alpha;
 
-                        s = *(f32*) &texform[0];
+                        s = GC_BEF32(*(f32*) &texform[0]);
                         sx = 2.0f * (s - 0.5f);
                         if (pp->kind & TexFlipS) {
                             s = 1.0f - s;
                         }
-                        t = *(f32*) &texform[4];
+                        t = GC_BEF32(*(f32*) &texform[4]);
                         texform += 8;
                         alpha = 255.0f - t * trail_alpha;
                         if (alpha < 0) {
@@ -1202,7 +1245,7 @@ inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f3
             GXTexCoord1x8(((pp->kind >> 16) & 0xC) + 3);
         }
     } else {
-        u32 num = *(u32*) texform;
+        u32 num = GC_BE32(*(u32*) texform);
 
         texform += 4;
         for (; num != 0; num--) {
@@ -1224,12 +1267,12 @@ inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f3
                 f32 sx;
                 f32 tx;
 
-                s = *(f32*) &texform[0];
+                s = GC_BEF32(*(f32*) &texform[0]);
                 sx = 2.0f * (s - 0.5f);
                 if (pp->kind & TexFlipS) {
                     s = 1.0f - s;
                 }
-                t = *(f32*) &texform[4];
+                t = GC_BEF32(*(f32*) &texform[4]);
                 texform += 8;
                 tx = 2.0f * (t - 0.5f);
                 if (pp->kind & TexFlipT) {
@@ -1406,7 +1449,7 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
     u8* prevTex;
     u32 prevMirror;
     u16* prevLut;
-    HSD_TlutDesc tlutdesc;
+    HSD_Tlut tlutdesc;
     GXTexObj texObj;
     HSD_Particle* sorted_particles;
     HSD_Particle* non_edge_particles;
@@ -1435,7 +1478,7 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
             while (pp != NULL) {
                 HSD_PSTexGroup* tex_group = NULL;
                 HSD_PSFormGroup* form_group = NULL;
-                HSD_PSFormGroup** form_groups;
+                gc_ptr32(HSD_PSFormGroup)* form_groups;
                 u8* form = NULL;
                 GXTexFmt fmt;
                 int blend_mode;
@@ -1448,7 +1491,7 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                 f32 scale_s;
                 f32 scale_t;
                 GXTexWrapMode wrap_t;
-                u8** tex_table;
+                gc_ptr32(u8)* tex_table;
 
                 if ((sw == 1) && !(pp->kind & TexEdge)) {
                     break;
@@ -1589,15 +1632,15 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
 
 
 
-                    form_groups = (HSD_PSFormGroup**) psFormGroupArray[pp->bank];
+                    form_groups = (gc_ptr32(HSD_PSFormGroup)*) psFormGroupArray[pp->bank];
                     if (form_groups != NULL &&
-                        (form_group = form_groups[pp->texGroup]) != NULL
+                        (form_group = GC_PTR(HSD_PSFormGroup*, form_groups[pp->texGroup])) != NULL
 #ifdef MUST_MATCH
                         && form_group->formTable != NULL
 #endif
                     )
                     {
-                        form = form_group->formTable[pp->poseNum];
+                        form = GC_PTR(u8*, form_group->formTable[pp->poseNum]);
                     } else {
                         form = NULL;
                     }
@@ -1631,12 +1674,12 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                                               GX_TG_TEX0, GX_TEXMTX0, GX_FALSE,
                                               GX_PTIDENTITY);
                         }
-                        tex_group = psTexGroupArray[pp->bank][pp->texGroup];
+                        tex_group = GC_PTR(HSD_PSTexGroup*, psTexGroupArray[pp->bank][pp->texGroup]);
                         if (tex_group != NULL) {
-                            fmt = tex_group->fmt;
+                            fmt = GC_BE32(tex_group->fmt);
                             tex_table = tex_group->texTable;
-                            width = tex_group->width;
-                            height = tex_group->height;
+                            width = GC_BE32(tex_group->width);
+                            height = GC_BE32(tex_group->height);
                         } else {
                             fmt = 0;
                             height = 0;
@@ -1644,25 +1687,25 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                             tex_table = NULL;
                         }
                         if (tex_table != NULL) {
-                            image = tex_table[pp->poseNum];
+                            image = GC_PTR(void*, tex_table[pp->poseNum]);
                         } else {
                             image = NULL;
                         }
                         if ((fmt == GX_TF_C4) || (fmt == GX_TF_C8)) {
                             if (tex_table != NULL) {
-                                void** palettes =
-                                    (void**) &tex_table[tex_group->num];
+                                gc_ptr32(void)* palettes =
+                                    (gc_ptr32(void)*) &tex_table[GC_BE32(tex_group->num)];
                                 if (palettes != NULL) {
                                     if (pp->palNum != 0xFF) {
-                                        tlutdesc.lut = palettes[pp->palNum];
+                                        tlutdesc.lut = GC_PTR(void*, palettes[pp->palNum]);
                                     } else if (!(pp->kind & ComTLUT)) {
-                                        tlutdesc.lut = palettes[pp->poseNum];
+                                        tlutdesc.lut = GC_PTR(void*, palettes[pp->poseNum]);
                                     } else {
-                                        tlutdesc.lut = palettes[0];
+                                        tlutdesc.lut = GC_PTR(void*, palettes[0]);
                                     }
                                     if (tlutdesc.lut != prevLut) {
                                         tlutdesc.fmt = (GXTlutFmt)
-                                                           tex_group->tlutfmt;
+                                                           GC_BE32(tex_group->tlutfmt);
                                         tlutdesc.tlut_name = GX_TLUT0;
                                         tlutdesc.n_entries =
                                             (fmt == GX_TF_C4) ? 16 : 256;

@@ -1,4 +1,11 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/gsvfarray.h>
+#include <game/pecontainer.h>
+#include <game/gcfield.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -78,13 +85,31 @@ struct GSbound {
     u8 _draft[1];
 };
 struct GSgfxDL {
-    u8 _draft[1];
+    u16 flags;
+    u16 stride;
+    u8* data;
+    u32 size;
+    GSgfxVF* vf;
 };
-struct GSgfxLayer {
-    u8 _draft[1];
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
+#ifdef __MWERKS__
     s32 dlDraw(GSgfxDL*);
+#else
+    void dlDraw(GSgfxDL* p0);
+#endif
+#ifdef __MWERKS__
     s32 beginSurface(unsigned short);
+#else
+    void beginSurface(unsigned short p0);
+#endif
+#ifdef __MWERKS__
     s32 endSurface();
+#else
+    void endSurface();
+#endif
 };
 struct GSgfxVF {
     u8 data[0x440];
@@ -106,17 +131,9 @@ struct peColorSpline {
 };
 class peContainer {
 public:
-    peEmitterNode* emitter;
-    u32 unk4;
-    void* buffer;
-    peNode* freeList;
-    peNode* activeList;
-    u16 count;
-    u16 maxCount;
-    u8 dirty;
-    u8 started;
+    PE_CONTAINER_MEMBERS
 
-    peContainer(peEmitterNode* e, unsigned long nodeSize, unsigned short max);
+    peContainer(peEmitterNode* e, u32 nodeSize, unsigned short max);
     virtual ~peContainer();
     virtual void Start();
     virtual void PreUpdate();
@@ -126,9 +143,17 @@ public:
     virtual void Stop() = 0;
 
     static void SetLayerVisibility(GSgfxLayerID, bool);
+#ifdef __MWERKS__
     s32 RemoveNode(peNode*);
+#else
+    void RemoveNode(peNode* node);
+#endif
     u16 CreateNodes(unsigned short);
+#ifdef __MWERKS__
     s32 RemoveAll();
+#else
+    void RemoveAll();
+#endif
 };
 struct peEmitterNode {
     u8 _draft[1];
@@ -146,27 +171,35 @@ struct peParticleNode {
 };
 class peRenderContainer : public peContainer {
 public:
-    u8 swapPending;
-    u8 cur;
-    u32 bufSize;
-    u8 dl[2][0x10];
-    u8* bufA;
-    u8* bufB;
-    u16 tokens[2];
+    PE_RENDER_MEMBERS
 
-    peRenderContainer(peEmitterNode*, unsigned long, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
+    peRenderContainer(peEmitterNode*, u32, unsigned short, GSgfxVF*, GSgfxPrimType, unsigned char, unsigned char, bool);
     virtual ~peRenderContainer();
     virtual void PreUpdate();
+#ifdef __MWERKS__
     s32 InitSwap();
+#else
+    void InitSwap();
+#endif
+#ifdef __MWERKS__
     s32 ResetSwap();
+#else
+    void ResetSwap();
+#endif
+#ifdef __MWERKS__
     s32 MarkForSwap();
+#else
+    void MarkForSwap();
+#endif
+#ifdef __MWERKS__
     s32 ResolveMultipleSwap();
+#else
+    void ResolveMultipleSwap();
+#endif
 };
 class peParticleContainer : public peRenderContainer {
 public:
-    peNode** sorted;
-    _peParticle* data;
-    f32 uv[8];
+    PE_PARTICLE_CONTAINER_MEMBERS
 
     peParticleContainer(peEmitterNode*, _peParticle*, unsigned short);
     virtual ~peParticleContainer();
@@ -208,7 +241,7 @@ enum GStexFilter { GS_TEXFILTER_NEAR = 0, GS_TEXFILTER_LINEAR = 2 };
 void particleEngineSetupTexture(u8, s32, s32, s32, s32, s32);
 void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t);
 f32 peSplineGetValue(peSpline* s, f32 t);
-extern f32 __float_nan;
+extern f32 __float_nan[];
 
 inline int __fpclassifyf(float x) {
     switch ((*(s32*)&x) & 0x7F800000) {
@@ -228,6 +261,9 @@ inline int __fpclassifyf(float x) {
     return 4;
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline float sqrtf(float x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
@@ -236,9 +272,9 @@ inline float sqrtf(float x) {
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         return (float)(x * guess);
     } else if (x < 0.0) {
-        return __float_nan;
+        return __float_nan[0];
     } else if (__fpclassifyf(x) == 1) {
-        return __float_nan;
+        return __float_nan[0];
     }
     return x;
 }
@@ -265,7 +301,11 @@ extern ParticleDebugStats g_particle_debug_stats;
 
 static inline f32 __OSs16tof32(register const s16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 5 }
+#else
+    ret = PSQ_LOAD(arg, 0, 5);
+#endif
     return ret;
 }
 
@@ -293,26 +333,26 @@ struct GSColor {
 };
 struct peSplineHdr {
     u8 flags;
-    f32 value;
-    f32 time;
+    gc_bef32 value;
+    gc_bef32 time;
 };
 
 struct peParticleDef {
-    u32 flags;
+    gc_be32 flags;
     u8 pad4[0x10];
-    peSpline* scaleX;
-    peSpline* scaleY;
-    f32 offsetX;
-    f32 offsetY;
-    f32 spinScale;
+    gc_ptr32(peSpline) scaleX;
+    gc_ptr32(peSpline) scaleY;
+    gc_bef32 offsetX;
+    gc_bef32 offsetY;
+    gc_bef32 spinScale;
     u8 pad28[0xc];
-    peSpline* spin;
-    peColorSpline* color;
-    peColorSpline* color2;
-    peSpline* alpha;
+    gc_ptr32(peSpline) spin;
+    gc_ptr32(peColorSpline) color;
+    gc_ptr32(peColorSpline) color2;
+    gc_ptr32(peSpline) alpha;
     u8 pad44[8];
-    f32 yaw;
-    f32 roll;
+    gc_bef32 yaw;
+    gc_bef32 roll;
 };
 
 struct peParticleNodeData {
@@ -321,11 +361,15 @@ struct peParticleNodeData {
     Vec pos;
     Vec vel;
     peXformP* xform;
-    u8 pad24[0xc];
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
     u16 index;
-    u8 pad32[3];
+    u16 sortIndex;
+    u8 flag34;
     u8 spin;
-    u8 pad36[2];
+    u8 active;
+    u8 pad37;
     f32 sizeX;
     f32 sizeY;
     f32 rot;
@@ -335,7 +379,12 @@ struct peParticleNodeData {
 };
 
 struct peEmitterNodeData {
-    u8 pad0[0x38];
+    u8 pad0[0x20];
+    void* slot20;
+    u8 pad24[0x4];
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x8];
     f32 color[4];
     u8 pad48[0xb4];
     u32* params;
@@ -429,7 +478,11 @@ static inline void emitCorner(char* out, Vec* v, Vec* off, bool hasOff, Vec* pos
 
 static inline f32 __OSu8tof32(register const u8* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 2 }
+#else
+    ret = PSQ_LOAD(arg, 0, 2);
+#endif
     return ret;
 }
 
@@ -441,7 +494,11 @@ static inline u8 OSf32tou8(register f32 inF) {
     u8 out;
     u8* outP = &out;
     register u8* ptr = outP;
+#ifdef __MWERKS__
     asm { psq_st inF, 0(ptr), 1, 2 }
+#else
+    PSQ_STORE(ptr, 0, inF, 2);
+#endif
     return *ptr;
 }
 
@@ -457,9 +514,12 @@ struct peDLView {
 };
 
 struct peNodeView {
-    u8 pad0[0x28];
+    u8 pad0[0x20];
+    void* slot20;
+    u8 pad24[0x4];
     peNodeView* next;
-    u8 pad2c[6];
+    void* slot2C;
+    u8 pad30[0x2];
     u16 vtx;
     u8 pad34[2];
     u8 visible;
@@ -468,7 +528,7 @@ struct peNodeView {
 inline void peParticleContainer::hideNode(peNodeView* n) {
     peDLView* d = (peDLView*)dl[cur];
     u16* idx = NULL;
-    u32 hasColor2 = (*(u32*)data >> 25) & 1;
+    u32 hasColor2 = (GC_AT(u32, data, 0) >> 25) & 1;
     n->visible = 0;
     u16 off = n->vtx * 4;
     if (d->flags & 1) {
@@ -487,11 +547,105 @@ inline void peParticleContainer::hideNode(peNodeView* n) {
     d->flags |= 2;
 }
 
+#pragma push
+#pragma optimize_for_size on
+struct peParticleDLView {
+    u16 flags;
+    u16 stride;
+    u8* data;
+};
+
+static inline bool peParticleActive(peParticleNodeData* n) {
+    return n->active != 0;
+}
+
+static inline u8 peParticleBehind(peParticleNodeData* n, peParticleNodeData* p) {
+    f32 nd = n->depth;
+    f32 pd = p->depth;
+    if (pd == nd) {
+        return 0;
+    }
+    if (p->sortIndex < n->sortIndex) {
+        return pd < nd;
+    }
+    return pd > nd;
+}
+
+static inline s32 peParticlePrevActive(peParticleNodeData** list, s32 i) {
+    if (list == 0) {
+        return -1;
+    }
+    peParticleNodeData** p = &list[i];
+    while (i > 0) {
+        p--;
+        i--;
+        if (peParticleActive(*p)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void peParticleContainer::DepthSort() {
+    if (started && (((peParticleDef*)data)->flags & 0x80000) && count >= 2 && sorted != 0) {
+        u8 changed = 0;
+        for (s32 i = 1; i < maxCount; i++) {
+            peParticleNodeData* n = ((peParticleNodeData**)sorted)[i];
+            if (peParticleActive(n)) {
+                s32 slot = i;
+                s32 k;
+                while ((k = peParticlePrevActive((peParticleNodeData**)sorted, slot)) >= 0) {
+                    peParticleNodeData* p = ((peParticleNodeData**)sorted)[k];
+                    if (!peParticleBehind(n, p)) {
+                        break;
+                    }
+                    ((peParticleNodeData**)sorted)[slot] = p;
+                    slot = k;
+                    changed = 1;
+                }
+                ((peParticleNodeData**)sorted)[slot] = n;
+            }
+        }
+        if (changed) {
+            peParticleDLView* dl = (peParticleDLView*)this->dl[cur];
+            u16 perQuad = 13 + ((((peParticleDef*)data)->flags >> 25) & 1 ? 1 : 0);
+            for (s32 i = 0; i < maxCount; i++) {
+                peParticleNodeData* n = ((peParticleNodeData**)sorted)[i];
+                if (!peParticleActive(n) || n->sortIndex == (u16)i) {
+                    continue;
+                }
+                n->sortIndex = i;
+                u16 base = n->index * perQuad;
+                u8* q = (dl->flags & 1) ? dl->data + (u16)(i * 4) * dl->stride + 3 : 0;
+                if ((((peParticleDef*)data)->flags >> 25) & 1) {
+                    for (u16 v = 0; v < 4; v++) {
+                        PE_DL_W16(q, s16, 0, base + v * 3);
+                        PE_DL_W16(q, u16, 1, base);
+                        PE_DL_W16(q, u16, 2, base);
+                        PE_DL_W16(q, s16, 3, v * 2);
+                        q += 8;
+                    }
+                } else {
+                    for (u16 v = 0; v < 4; v++) {
+                        PE_DL_W16(q, s16, 0, base + v * 3);
+                        PE_DL_W16(q, u16, 1, base);
+                        PE_DL_W16(q, s16, 2, v * 2);
+                        q += 6;
+                    }
+                }
+            }
+            dl->flags |= 2;
+            dirty = 1;
+        }
+    }
+}
+#pragma pop
+
 void peParticleContainer::Stop() {
     if (started) {
         PreUpdate();
         started = 0;
-        u32 flags = *(u32*)data;
+        u32 flags = GC_AT(u32, data, 0);
         if (flags & 0x20000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
@@ -508,232 +662,13 @@ void peParticleContainer::Stop() {
         ResetSwap();
     }
 }
-}
 
-extern "C++" {
-extern "C++" {
-extern "C++" {
-#pragma optimize_for_size on
-#pragma optimize_for_size reset
-}
-
-extern "C++" {
-void peParticleContainer::Start() {
-    s32 temp_r31;
-
-    if ((u8) M2C_FIELD(this, u8 *, 0x19) == 0) {
-        M2C_FIELD(this, u8 *, 0x19) = 1U;
-        temp_r31 = *M2C_FIELD(this, s32 **, 0x58);
-        ((peRenderContainer*)((peRenderContainer *) this))->InitSwap();
-        if (temp_r31 & 0x20000000) {
-            peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
-        }
-        if (temp_r31 & 0x40000000) {
-            peContainer::SetLayerVisibility((GSgfxLayerID)3, true);
-        }
-        if (temp_r31 & 0x80000000) {
-            peContainer::SetLayerVisibility((GSgfxLayerID)5, true);
-        }
-    }
-}
-}
-
-extern "C++" {
-peParticleContainer::~peParticleContainer() {
-    if (sorted != 0) {
-        delete[] sorted;
-    }
-    g_particle_debug_stats.unk4 -= 0x7C;
-    g_particle_debug_stats.unk14 -= 0x7C;
-}
-}
-
-extern "C++" {
-extern "C++" {
-
-extern "C++" {
-extern "C++" {
-inline bool peParticleContainer::updateNode(peNodeView* node, f32 dt) {
-    char* buf = (char*)(&bufA)[cur];
-    peParticleNodeData* n = (peParticleNodeData*)node;
-    peParticleDef* p = (peParticleDef*)data;
-    peEmitterNode* e = emitter;
-    if (buf == NULL) {
-        return false;
-    }
-    if (!((peNode*)n)->Update(e, dt)) {
-        return false;
-    }
-    f32 t = 1.0f - n->life / n->life0;
-    if (p->flags & 0x10000) {
-        n->rotOffset = p->spinScale * evalSpline(p->spin, t);
-    }
-    n->rotOffset = n->rotSpeed * dt + n->rotOffset;
-    ((peParticleNode*)n)->UpdateRenderData(e, (_peParticle*)p, buf, t);
-    return true;
-}
-
-void peParticleContainer::Update(float dt) {
-    if (started) {
-        peNodeView* next;
-        for (peNodeView* n = (peNodeView*)activeList; n != NULL; n = next) {
-            next = n->next;
-            if (!updateNode(n, dt)) {
-                hideNode(n);
-                RemoveNode((peNode*)n);
-            }
-        }
-        DepthSort();
-    }
-}
-}
-
-}
-extern "C++" {
-
-extern "C++" {
-#pragma push
-#pragma optimize_for_size on
-void peParticleContainer::DepthSort() {
-    enum TsE { TsE0 };
-    f32 temp_f0;
-    f32 temp_f1;
-    s16 temp_r7;
-    s16 temp_r7_2;
-    s32 temp_r0;
-    s32 temp_r8_2;
-    enum TsE temp_r8_3;
-    u8 *temp_r5;
-    s32 var_r12;
-    s32 var_r4_2;
-    u8 *temp_r5_2;
-    s32 var_r8;
-    u16 var_r9;
-    u32 temp_r0_2;
-    u32 temp_r9;
-    u8 var_r0;
-    u8 *var_r4;
-    u8 *temp_r10;
-    s32 var_r11;
-    u32 var_r6;
-    u8 *temp_r6;
-    u8 *temp_r9_2;
-    u8 *var_r11_2;
-    u8 var_r31;
-    s32 var_r5;
-    u16 temp_r8;
-
-    if (((u8) M2C_FIELD(this, u8 *, 0x19) != 0) && (*M2C_FIELD(this, u32 **, 0x58) & 0x80000) && ((u16) M2C_FIELD(this, u16 *, 0x14) >= 2U) && ((u32) M2C_FIELD(this, u32 *, 0x54) != 0U)) {
-        var_r31 = 0;
-        var_r11 = 1;
-        var_r8 = 4;
-        while (var_r11 < (s32) M2C_FIELD(this, u16 *, 0x16)) {
-            temp_r10 = (unsigned char *)(*(M2C_FIELD(this, u32 **, 0x54) + var_r8));
-            if ((u8) M2C_FIELD(temp_r10, u8 *, 0x36) != 0) {
-                var_r12 = var_r11;
-loop_14:
-                temp_r9 = M2C_FIELD(this, u32 *, 0x54);
-                var_r6 = var_r12;
-                if (temp_r9 == 0U) {
-                    var_r6 = -1;
-                } else {
-                    var_r4 = (unsigned char *)(temp_r9 + (var_r12 * 4));
-loop_19:
-                    if (var_r6 <= 0) {
-                        var_r6 = -1;
-                    } else {
-                        temp_r5 = M2C_FIELD(var_r4, u8 **, -4);
-                        var_r4 -= 4;
-                        var_r6 -= 1;
-                        if ((u8) M2C_FIELD(temp_r5, u8 *, 0x36) != 0) {
-
-                        } else {
-                            goto loop_19;
-                        }
-                    }
-                }
-                if (var_r6 >= 0) {
-                    temp_f0 = M2C_FIELD(temp_r10, f32 *, 0x4C);
-                    temp_f1 = M2C_FIELD(temp_r5_2, f32 *, 0x4C);
-                    temp_r5_2 = (unsigned char *)(*((u8 *)temp_r9 + (var_r6 * 4)));
-                    if (temp_f1 == temp_f0) {
-                        var_r0 = 0;
-                    } else if ((u16) M2C_FIELD(temp_r5_2, u16 *, 0x32) < (u16) M2C_FIELD(temp_r10, u16 *, 0x32)) {
-                        var_r0 = temp_f1 < temp_f0;
-                    } else {
-                        var_r0 = temp_f1 > temp_f0;
-                    }
-                    if (var_r0 != 0) {
-                        temp_r0 = var_r12;
-                        temp_r0 *= 4;
-                        var_r12 = var_r6;
-                        *((u8 *)temp_r9 + temp_r0) = (unsigned char)(temp_r5_2);
-                        var_r31 = 1;
-                        goto loop_14;
-                    }
-                }
-                *((u8 *)temp_r9 + (var_r12 * 4)) = (unsigned char)(temp_r10);
-            }
-            var_r8 += 4;
-            var_r11 += 1;
-        }
-        if (var_r31 != 0) {
-            var_r5 = 0;
-            var_r4_2 = 0;
-            temp_r6 = (unsigned char *)((u8*)this + ((M2C_FIELD(this, u8 *, 0x21) * 0x10) + 0x28));
-            temp_r0_2 = ((u32) *M2C_FIELD(this, u32 **, 0x58) >> 0x19U) & 1;
-            while (var_r5 < (s32) M2C_FIELD(this, u16 *, 0x16)) {
-                temp_r9_2 = (unsigned char *)(*(M2C_FIELD(this, u32 **, 0x54) + var_r4_2));
-                if (((u8) M2C_FIELD(temp_r9_2, u8 *, 0x36) != 0) && ((u16) M2C_FIELD(temp_r9_2, u16 *, 0x32) != (u16) var_r5)) {
-                    M2C_FIELD(temp_r9_2, u16 *, 0x32) = (u16) var_r5;
-                    temp_r8 = M2C_FIELD(temp_r9_2, u16 *, 0x30) * (u16) ((temp_r0_2 != 0) + 0xD);
-                    if (M2C_FIELD(temp_r6, u16 *, 0) & 1) {
-                        var_r11_2 = (unsigned char *)(M2C_FIELD(temp_r6, s32 *, 4) + ((((var_r5 * 4) & 0xFFFC) * M2C_FIELD(temp_r6, u16 *, 2)) + 3));
-                    } else {
-                        var_r11_2 = NULL;
-                    }
-                    var_r9 = 0;
-                    if (temp_r0_2 != 0) {
-                        while (var_r9 < 4U) {
-                            temp_r8_2 = var_r9 * 3;
-                            temp_r7 = (var_r9 * 2) & 0xFFFE;
-                            var_r9 += 1;
-                            M2C_FIELD(var_r11_2, s16 *, 0) = (s16) (temp_r8 + temp_r8_2);
-                            M2C_FIELD(var_r11_2, u16 *, 2) = temp_r8;
-                            M2C_FIELD(var_r11_2, u16 *, 4) = temp_r8;
-                            M2C_FIELD(var_r11_2, s16 *, 6) = temp_r7;
-                            var_r11_2 += 8;
-                        }
-                    } else {
-                        while (var_r9 < 4U) {
-                            temp_r8_3 = (enum TsE)(var_r9 * 3);
-                            temp_r7_2 = (var_r9 * 2) & 0xFFFE;
-                            var_r9 += 1;
-                            M2C_FIELD(var_r11_2, s16 *, 0) = (s16) (temp_r8 + temp_r8_3);
-                            M2C_FIELD(var_r11_2, u16 *, 2) = temp_r8;
-                            M2C_FIELD(var_r11_2, s16 *, 4) = temp_r7_2;
-                            var_r11_2 += 6;
-                        }
-                    }
-                }
-                var_r4_2 += 4;
-                var_r5 += 1;
-            }
-            M2C_FIELD(temp_r6, u16 *, 0) = (u16) (M2C_FIELD(temp_r6, u16 *, 0) | 2);
-            M2C_FIELD(this, s8 *, 0x18) = 1;
-        }
-    }
-}
-#pragma pop
-}
-
-extern "C++" {
 static inline void setCull(GSgfxLayer* layer, s32 mode) {
-    M2C_FIELD(layer, s32 *, 0xD8C) = mode;
-    M2C_FIELD(layer, s32 *, 0x16B8) |= 2;
-    M2C_FIELD(layer, s32 *, 0x16A8) |= 2;
-    M2C_FIELD(layer, s32 *, 0x1770) |= 2;
-    M2C_FIELD(layer, s32 *, 0x1760) |= 2;
+    M2C_NAMED(layer, s32 *, 0xD8C, hw.cullMode) = mode;
+    M2C_NAMED(layer, s32 *, 0x16B8, dirty[0].raster) |= 2;
+    M2C_NAMED(layer, s32 *, 0x16A8, dirty[0].groups) |= 2;
+    M2C_NAMED(layer, s32 *, 0x1770, dirty[1].raster) |= 2;
+    M2C_NAMED(layer, s32 *, 0x1760, dirty[1].groups) |= 2;
 }
 
 static inline bool canRender(peParticleContainer* c) {
@@ -746,8 +681,8 @@ static inline bool canRender(peParticleContainer* c) {
     if (g_render_pass != 1) {
         return false;
     }
-    u32 flags = *(u32*)c->data;
-    switch (M2C_FIELD(g_current_layer, s32 *, 0x28)) {
+    u32 flags = GC_AT(u32, c->data, 0);
+    switch (M2C_NAMED(g_current_layer, s32 *, 0x28, id)) {
     case 0:
         if (flags & 0x08000000) {
             return true;
@@ -791,7 +726,7 @@ void peParticleContainer::Render() {
     if (started) {
         if (canRender(this)) {
             ResolveMultipleSwap();
-            u32 flags = *(u32*)data;
+            u32 flags = GC_AT(u32, data, 0);
             u32 tex = (flags >> 25) & 1;
             if (flags & 0x200) {
                 setCull(g_current_layer, 2);
@@ -803,30 +738,30 @@ void peParticleContainer::Render() {
             u8* dlp = dl[cur];
             u8* buf = (&bufA)[cur];
             if (*(u16*)dlp & 1) {
-                vf = *(GSgfxVF**)(dlp + 0xC);
+                vf = PE_DL_VF(dlp);
             } else {
                 vf = 0;
             }
             if (tex) {
-                GSgfxVFSetArray(vf, 9, 3, buf, 4, bufSize);
-                GSgfxVFSetArray(vf, 0xB, 3, buf + 0x30, 4, bufSize);
-                GSgfxVFSetArray(vf, 0xC, 3, buf + 0x34, 4, bufSize);
-                GSgfxVFSetArray(vf, 0xD, 3, uv, 4, 0x20);
+                GSGFX_VF_SET_ARRAY_NATIVE(vf, 9, 3, buf, 4, bufSize);
+                GSGFX_VF_SET_ARRAY_NATIVE(vf, 0xB, 3, buf + 0x30, 4, bufSize);
+                GSGFX_VF_SET_ARRAY_NATIVE(vf, 0xC, 3, buf + 0x34, 4, bufSize);
+                GSGFX_VF_SET_ARRAY_NATIVE(vf, 0xD, 3, uv, 4, 0x20);
             } else {
-                GSgfxVFSetArray(vf, 9, 3, buf, 4, bufSize);
-                GSgfxVFSetArray(vf, 0xB, 3, buf + 0x30, 4, bufSize);
-                GSgfxVFSetArray(vf, 0xD, 3, uv, 4, 0x20);
+                GSGFX_VF_SET_ARRAY_NATIVE(vf, 9, 3, buf, 4, bufSize);
+                GSGFX_VF_SET_ARRAY_NATIVE(vf, 0xB, 3, buf + 0x30, 4, bufSize);
+                GSGFX_VF_SET_ARRAY_NATIVE(vf, 0xD, 3, uv, 4, 0x20);
             }
             if (flags & 0x100000) {
                 particleEngineSetupTevStages(0, tex, (flags & 0xC00000) == 0xC00000);
-                M2C_FIELD(g_current_layer, s32 *, 0x1998) = 0x80;
-                M2C_FIELD(g_current_layer, GSgfxVF **, 0x199C) = vf;
-                for (peNode* n = activeList; n != 0; n = M2C_FIELD(n, peNode **, 0x28)) {
+                M2C_NAMED(g_current_layer, s32 *, 0x1998, unk1998) = 0x80;
+                M2C_NAMED(g_current_layer, GSgfxVF **, 0x199C, curVF) = vf;
+                for (peNode* n = activeList; n != 0; n = PE_NODE_LINK28(n)) {
                     ((peParticleNode*)n)->Render(data, (GSgfxDL*)dl[cur], (char*)(&bufA)[cur]);
                 }
             } else {
                 particleEngineSetupTevStages(0, tex, 0);
-                particleEngineSetupTexture(0, M2C_FIELD(data, s32 *, 0x54), (flags >> 12) & 3, (flags >> 14) & 3,
+                particleEngineSetupTexture(0, GC_AT(s32, data, 0x54), (flags >> 12) & 3, (flags >> 14) & 3,
                                            (flags & 0x80) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR,
                                            (flags & 0x100) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
                 g_current_layer->dlDraw((GSgfxDL*)dl[cur]);
@@ -835,9 +770,43 @@ void peParticleContainer::Render() {
         }
     }
 }
+
+inline bool peParticleContainer::updateNode(peNodeView* node, f32 dt) {
+    char* buf = (char*)(&bufA)[cur];
+    peParticleNodeData* n = (peParticleNodeData*)node;
+    peParticleDef* p = (peParticleDef*)data;
+    peEmitterNode* e = emitter;
+    if (buf == NULL) {
+        return false;
+    }
+    if (!((peNode*)n)->Update(e, dt)) {
+        return false;
+    }
+    f32 t = 1.0f - n->life / n->life0;
+    if (p->flags & 0x10000) {
+        n->rotOffset = p->spinScale * evalSpline(p->spin, t);
+    }
+    n->rotOffset = n->rotSpeed * dt + n->rotOffset;
+    ((peParticleNode*)n)->UpdateRenderData(e, (_peParticle*)p, buf, t);
+    return true;
+}
+
+void peParticleContainer::Update(float dt) {
+    if (started) {
+        peNodeView* next;
+        for (peNodeView* n = (peNodeView*)activeList; n != NULL; n = next) {
+            next = n->next;
+            if (!updateNode(n, dt)) {
+                hideNode(n);
+                RemoveNode((peNode*)n);
+            }
+        }
+        DepthSort();
+    }
+}
+
 #pragma push
 #pragma dont_inline on
-extern "C++" {
 u16 peParticleContainer::Emit(unsigned short n) {
     if (!started) {
         return 0;
@@ -856,15 +825,47 @@ u16 peParticleContainer::Emit(unsigned short n) {
     }
     return created;
 }
-}
 #pragma pop
+
+void peParticleContainer::Start() {
+    s32 temp_r31;
+
+    if ((u8) THIS_F(u8 *, 0x19, started) == 0) {
+        THIS_F(u8 *, 0x19, started) = 1U;
+        temp_r31 = GC_AT(s32, THIS_F(s32 **, 0x58, data), 0);
+        ((peRenderContainer*)((peRenderContainer *) this))->InitSwap();
+        if (temp_r31 & 0x20000000) {
+            peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
+        }
+        if (temp_r31 & 0x40000000) {
+            peContainer::SetLayerVisibility((GSgfxLayerID)3, true);
+        }
+        if (temp_r31 & 0x80000000) {
+            peContainer::SetLayerVisibility((GSgfxLayerID)5, true);
+        }
+    }
+}
+
+peParticleContainer::~peParticleContainer() {
+    if (sorted != 0) {
+        delete[] sorted;
+    }
+    g_particle_debug_stats.unk4 -= 0x7C;
+    g_particle_debug_stats.unk14 -= 0x7C;
+}
+
+extern "C++" {
+extern "C++" {
+extern "C++" {
+extern "C++" {
+extern "C++" {
 
 extern "C++" {
 #pragma push
 #pragma dont_inline off
 peParticleContainer::peParticleContainer(peEmitterNode* p0, _peParticle* p1, unsigned short p2)
-    : peRenderContainer(p0, 0x50, p2, (*(u32*)p1 & 0x02000000) ? &g_ext_vertex_format : &g_vertex_format, (GSgfxPrimType)0x80, 4,
-                        (*(u32*)p1 & 0x02000000) ? 0x38 : 0x34, (*(u32*)p1 >> 26) & 1) {
+    : peRenderContainer(p0, PE_NODE_SIZE(0x50, peParticleNodeData), p2, (GC_AT(u32, p1, 0) & 0x02000000) ? &g_ext_vertex_format : &g_vertex_format, (GSgfxPrimType)0x80, 4,
+                        (GC_AT(u32, p1, 0) & 0x02000000) ? 0x38 : 0x34, (GC_AT(u32, p1, 0) >> 26) & 1) {
     peNode* node;
     u16 i;
     f32 u0;
@@ -872,32 +873,33 @@ peParticleContainer::peParticleContainer(peEmitterNode* p0, _peParticle* p1, uns
     f32 u1;
     f32 v1;
     f32 scale = 0.0009765625f;
+    f32* t = uv;
 
-    *sorted = 0;
+    sorted = 0;
     data = p1;
-    u0 = OSs16tof32(M2C_FIELD(data, s16 *, 0x44));
+    u0 = OSs16tof32(GC_AT(s16, data, 0x44));
     u0 *= scale;
-    v0 = OSs16tof32(M2C_FIELD(data, s16 *, 0x46));
+    v0 = OSs16tof32(GC_AT(s16, data, 0x46));
     v0 *= scale;
-    u1 = OSs16tof32(M2C_FIELD(data, s16 *, 0x48));
+    u1 = OSs16tof32(GC_AT(s16, data, 0x48));
     u1 *= scale;
+    v1 = OSs16tof32(GC_AT(s16, data, 0x4A));
     v1 *= scale;
-    v1 = OSs16tof32(M2C_FIELD(data, s16 *, 0x4A));
-    uv[0] = u1;
-    uv[1] = v1;
-    uv[2] = u0;
-    uv[3] = v1;
-    uv[4] = u0;
-    uv[5] = v0;
-    uv[6] = u1;
-    uv[7] = v0;
-    DCFlushRange(uv, 0x20);
-    if (*(u32*)data & 0x80000) {
+    t[0] = u1;
+    t[1] = v1;
+    t[2] = u0;
+    t[3] = v1;
+    t[4] = u0;
+    t[5] = v0;
+    t[6] = u1;
+    t[7] = v0;
+    DCFlushRange(t, 0x20);
+    if (GC_AT(u32, data, 0) & 0x80000) {
         sorted = new peNode*[p2];
     }
-    for (node = freeList, i = 0; node != 0; node = M2C_FIELD(node, peNode **, 0x28), i++) {
-        M2C_FIELD(node, u16 *, 0x30) = i;
-        M2C_FIELD(node, u16 *, 0x32) = i;
+    for (node = freeList, i = 0; node != 0; node = PE_NODE_LINK28(node), i++) {
+        PE_NODE_F(node, u16, 0x30) = i;
+        PE_NODE_F(node, u16, 0x32) = i;
         if (sorted != 0) {
             sorted[i] = node;
         }
@@ -914,7 +916,11 @@ extern "C++" {
 #pragma auto_inline on
 static inline f32 __peS16tof32(register const s16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 
@@ -924,7 +930,11 @@ static inline f32 peS16tof32(s16 in) {
 }
 
 static inline void __peF32tou8(register f32 arg, volatile register u8* out) {
+#ifdef __MWERKS__
     asm { psq_st arg, 0(out), 1, 2 }
+#else
+    PSQ_STORE(out, 0, arg, 2);
+#endif
 }
 
 static inline u8 peF32tou8(f32 in) {
@@ -934,95 +944,123 @@ static inline u8 peF32tou8(f32 in) {
 }
 
 static inline void __peF32tou16(register f32 arg, volatile register u16* out) {
+#ifdef __MWERKS__
     asm { psq_st arg, 0(out), 1, 3 }
+#else
+    PSQ_STORE(out, 0, arg, 3);
+#endif
 }
 
 static inline u16 peF32tou16(f32 in) {
-    u16 out;
-    __peF32tou16(in, &out);
-    return out;
+    u32 out;
+    __peF32tou16(in, (u16*)&out);
+    return *(u16*)&out;
 }
 
+#ifdef __MWERKS__
 #define GX_WRITE_U16(v) (*(volatile u16*)0xCC008000 = (v))
+#else
+#define GX_WRITE_U16(v) (GXWGFifo.u16 = (v))
+#endif
+#ifdef __MWERKS__
+#define PE_DL_R16(q, i) ((q)[i])
+#define PE_TEXW(t, i) ((t)[i])
+#else
+#define PE_DL_R16(q, i) gc_rd16((const u8*)((q) + (i)))
+#define PE_TEXW(t, i) ((s32)gc_rd32((const u8*)((t) + (i))))
+#endif
 
-union peColor {
-    struct {
-        u8 r, g, b, a;
-    } c;
-    u32 raw;
+struct peColor {
+    u8 r, g, b, a;
 };
 
 static inline void peSetKColor(GSgfxLayer* layer, int id, peColor c) {
-    ((peColor*)((u8*)layer + 0x14F4))[id] = c;
-    M2C_FIELD(layer, u32 *, 0x16F8) |= 1 << id;
-    M2C_FIELD(layer, u32 *, 0x16A8) |= 0x10;
-    M2C_FIELD(layer, u32 *, 0x17B0) |= 1 << id;
-    M2C_FIELD(layer, u32 *, 0x1760) |= 0x10;
+#ifdef __MWERKS__
+    ((u32*)((u8*)layer + 0x14F4))[id] = *(u32*)&c;
+#else
+    *(u32*)&layer->hw.kcolor[id] = *(u32*)&c;
+#endif
+    M2C_NAMED(layer, u32 *, 0x16F8, dirty[0].kcolor) |= 1 << id;
+    M2C_NAMED(layer, u32 *, 0x16A8, dirty[0].groups) |= 0x10;
+    M2C_NAMED(layer, u32 *, 0x17B0, dirty[1].kcolor) |= 1 << id;
+    M2C_NAMED(layer, u32 *, 0x1760, dirty[1].groups) |= 0x10;
 }
 
+struct peVtxDual {
+    u8 pad0[0x34];
+    peColor color2;
+};
+
 void peParticleNode::Render(_peParticle* part, GSgfxDL* dl, char* colors) {
-    u32 flags = M2C_FIELD(part, u32 *, 0);
-    s32* tex = M2C_FIELD(part, s32 **, 0x54);
+    peVtxDual* colors_c = (peVtxDual*)colors;
+    u32 flags = GC_AT(u32, part, 0);
+    s32* tex = GC_AT(s32*, part, 0x54);
     u32 dual;
     u16 frame;
-    frame = M2C_FIELD(this, u8 *, 0x34);
+    frame = PE_NODE_F(this, u8, 0x34);
     dual = (flags >> 25) & 1;
-    if (colors != NULL && (M2C_FIELD(dl, u16 *, 0) & 1) == 1) {
+    if (colors != NULL && (dl->flags & 1) == 1) {
         if (flags & 0x400000) {
-            f32 range = peS16tof32(*tex);
+            f32 range = peS16tof32(PE_TEXW(tex, 0));
             u32 blend = (flags >> 23) & 1;
             f32 count = range;
             if (blend) {
                 count = range - 1.0f;
             }
+            f32 alpha;
             f32 t;
             if (flags & 0x1000000) {
-                t = (count * (M2C_FIELD(this, f32 *, 0) - M2C_FIELD(this, f32 *, 4))) / M2C_FIELD(part, f32 *, 0x30);
+                t = (count * (M2C_FIELD(this, f32 *, 0) - M2C_FIELD(this, f32 *, 4))) / GC_AT(f32, part, 0x30);
             } else {
-                t = M2C_FIELD(part, f32 *, 0x30) * (count * (1.0f - M2C_FIELD(this, f32 *, 4) / M2C_FIELD(this, f32 *, 0)));
+                t = GC_AT(f32, part, 0x30) * (count * (1.0f - M2C_FIELD(this, f32 *, 4) / M2C_FIELD(this, f32 *, 0)));
             }
             f32 pos = fmod(t + peS16tof32(frame), count);
-            frame = peF32tou16(pos) % (u16)*tex;
+            frame = peF32tou16(pos) % (u16)PE_TEXW(tex, 0);
             if (blend) {
-                u8 a = peF32tou8(255.0f * (pos - peS16tof32(frame)));
+                alpha = pos - peS16tof32(frame);
+                alpha *= 255.0f;
+                u8 a = peF32tou8(alpha);
                 peColor kc;
-                kc.c.r = kc.c.g = kc.c.b = kc.c.a = a;
+                kc.r = kc.g = kc.b = kc.a = a;
                 peSetKColor(g_current_layer, 0, kc);
                 if (dual) {
-                    peColor src = *(peColor*)(colors + M2C_FIELD(this, u16 *, 0x30) * 0x38 + 0x34);
-                    kc.c.r = src.c.r;
-                    kc.c.g = src.c.g;
-                    kc.c.b = src.c.b;
-                    kc.c.a = src.c.a;
+                    peColor src = (colors_c)[PE_NODE_F(this, u16, 0x30)].color2;
+                    kc.r = src.r;
+                    kc.g = src.g;
+                    kc.b = src.b;
+                    kc.a = src.a;
                     peSetKColor(g_current_layer, 1, kc);
                 }
-                particleEngineSetupTexture(1, tex[frame + 2], (flags >> 12) & 3, (flags >> 14) & 3,
+                s32 t2 = PE_TEXW(tex, frame + 2);
+                particleEngineSetupTexture(1, t2, (flags >> 12) & 3, (flags >> 14) & 3,
                                            (flags & 0x80) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, (flags & 0x100) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
             }
         }
-        particleEngineSetupTexture(0, tex[frame + 1], (flags >> 12) & 3, (flags >> 14) & 3, (flags & 0x80) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR,
+        s32 t1 = PE_TEXW(tex, frame + 1);
+        particleEngineSetupTexture(0, t1, (flags >> 12) & 3, (flags >> 14) & 3, (flags & 0x80) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR,
                                    (flags & 0x100) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
         g_current_layer->beginSurface(4);
         u16* src;
-        if (M2C_FIELD(dl, u16 *, 0) & 1) {
-            src = (u16*)(M2C_FIELD(dl, u8 **, 4) + (u16)(M2C_FIELD(this, u16 *, 0x32) * 4) * M2C_FIELD(dl, u16 *, 2) + 3);
+        u16 ofs = PE_NODE_F(this, u16, 0x32) * 4;
+        if (dl->flags & 1) {
+            src = (u16*)(dl->data + ofs * dl->stride + 3);
         } else {
             src = NULL;
         }
         u16 n = 4;
         if (dual) {
             while (n--) {
-                GX_WRITE_U16(src[0]);
-                GX_WRITE_U16(src[1]);
-                GX_WRITE_U16(src[2]);
-                GX_WRITE_U16(src[3]);
+                GX_WRITE_U16(PE_DL_R16(src, 0));
+                GX_WRITE_U16(PE_DL_R16(src, 1));
+                GX_WRITE_U16(PE_DL_R16(src, 2));
+                GX_WRITE_U16(PE_DL_R16(src, 3));
                 src += 4;
             }
         } else {
             while (n--) {
-                GX_WRITE_U16(src[0]);
-                GX_WRITE_U16(src[1]);
-                GX_WRITE_U16(src[2]);
+                GX_WRITE_U16(PE_DL_R16(src, 0));
+                GX_WRITE_U16(PE_DL_R16(src, 1));
+                GX_WRITE_U16(PE_DL_R16(src, 2));
                 src += 3;
             }
         }
@@ -1041,59 +1079,59 @@ void peParticleNode::Start(peEmitterNode* emitter, _peParticle* particle, GSgfxD
     u16* idx;
     u16 i;
 
-    flags = M2C_FIELD(particle, u32*, 0);
+    flags = GC_AT(u32, particle, 0);
     quad = (flags >> 25) & 1;
-    if ((M2C_FIELD(dl, u16*, 0) & 1) == 1) {
+    if ((dl->flags & 1) == 1) {
         ((peNode*)this)->Start(emitter, params);
-        M2C_FIELD(this, u8*, 0x35) = 0;
-        M2C_FIELD(this, u8*, 0x36) = 1;
+        PE_NODE_F(this, u8, 0x35) = 0;
+        PE_NODE_F(this, u8, 0x36) = 1;
         r = HSD_Randf();
-        M2C_FIELD(this, f32*, 0x38) = M2C_FIELD(particle, f32*, 0xC) * r;
-        M2C_FIELD(this, f32*, 0x3C) = M2C_FIELD(particle, f32*, 0x10) * r;
-        M2C_FIELD(this, f32*, 0x38) += M2C_FIELD(particle, f32*, 4);
-        M2C_FIELD(this, f32*, 0x3C) += M2C_FIELD(particle, f32*, 8);
+        PE_NODE_F(this, f32, 0x38) = GC_AT(f32, particle, 0xC) * r;
+        PE_NODE_F(this, f32, 0x3C) = GC_AT(f32, particle, 0x10) * r;
+        PE_NODE_F(this, f32, 0x38) += GC_AT(f32, particle, 4);
+        PE_NODE_F(this, f32, 0x3C) += GC_AT(f32, particle, 8);
         if (flags & 0x40) {
-            M2C_FIELD(this, f32*, 0x40) = 6.2831855f * HSD_Randf();
+            PE_NODE_F(this, f32, 0x40) = 6.2831855f * HSD_Randf();
         } else {
-            M2C_FIELD(this, f32*, 0x40) = 0.0f;
+            PE_NODE_F(this, f32, 0x40) = 0.0f;
         }
         if ((flags & 0x20) && HSD_Randf() < 0.5f) {
-            M2C_FIELD(this, u8*, 0x35) |= 1;
+            PE_NODE_F(this, u8, 0x35) |= 1;
         }
-        M2C_FIELD(this, f32*, 0x44) = M2C_FIELD(particle, f32*, 0x24);
-        M2C_FIELD(this, f32*, 0x48) = M2C_FIELD(particle, f32*, 0x2C) * HSD_Randf() + M2C_FIELD(particle, f32*, 0x28);
+        PE_NODE_F(this, f32, 0x44) = GC_AT(f32, particle, 0x24);
+        PE_NODE_F(this, f32, 0x48) = GC_AT(f32, particle, 0x2C) * HSD_Randf() + GC_AT(f32, particle, 0x28);
         if ((flags & 0x300000) == 0x300000) {
-            f32 count = peS16tof32(*M2C_FIELD(particle, s32**, 0x54));
-            M2C_FIELD(this, u8*, 0x34) = peF32tou8(count * HSD_Randf());
+            f32 count = peS16tof32(PE_TEXW(GC_AT(s32*, particle, 0x54), 0));
+            PE_NODE_F(this, u8, 0x34) = peF32tou8(count * HSD_Randf());
         } else {
-            M2C_FIELD(this, u8*, 0x34) = 0;
+            PE_NODE_F(this, u8, 0x34) = 0;
         }
-        offset = M2C_FIELD(this, u16*, 0x32) * 4;
+        offset = PE_NODE_F(this, u16, 0x32) * 4;
         base = (u8)((quad != 0) + 13);
-        base = base * (M2C_FIELD(this, u16*, 0x30));
-        if (M2C_FIELD(dl, u16*, 0) & 1) {
-            idx = (u16*)(M2C_FIELD(dl, u8**, 4) + offset * M2C_FIELD(dl, u16*, 2) + 3);
+        base = base * (PE_NODE_F(this, u16, 0x30));
+        if (dl->flags & 1) {
+            idx = (u16*)(dl->data + offset * dl->stride + 3);
         } else {
             idx = NULL;
         }
         i = 0;
         if (quad != 0) {
             for (; i < 4; i++) {
-                idx[0] = base + i * 3;
-                idx[1] = base;
-                idx[2] = base;
-                idx[3] = i * 2;
+                PE_DL_W16(idx, u16, 0, base + i * 3);
+                PE_DL_W16(idx, u16, 1, base);
+                PE_DL_W16(idx, u16, 2, base);
+                PE_DL_W16(idx, u16, 3, i * 2);
                 idx = idx + 4;
             }
         } else {
             for (; i < 4; i++) {
-                idx[0] = base + i * 3;
-                idx[1] = base;
-                idx[2] = i * 2;
+                PE_DL_W16(idx, u16, 0, base + i * 3);
+                PE_DL_W16(idx, u16, 1, base);
+                PE_DL_W16(idx, u16, 2, i * 2);
                 idx = idx + 3;
             }
         }
-        M2C_FIELD(dl, u16*, 0) |= 2;
+        dl->flags |= 2;
     }
 }
 }
@@ -1184,7 +1222,7 @@ void peParticleNode::UpdateRenderData(peEmitterNode* emitter, _peParticle* part,
     } else {
         angle += n->rot + n->rotOffset;
     }
-    int spinFirst = flags & 0x10;
+    u32 spinFirst = flags & 0x10;
     if (spinFirst && (angle < 0.0f ? -angle : angle) > 0.00001f) {
         C_QUATRotAxisRad(&q, &fwd, angle);
         rotateBy(&up, &q);
@@ -1235,10 +1273,10 @@ void peParticleNode::UpdateRenderData(peEmitterNode* emitter, _peParticle* part,
         c.g = OSf32tou8(e->color[1] * OSu8tof32(c.g));
         c.b = OSf32tou8(e->color[2] * OSu8tof32(c.b));
         c.a = OSf32tou8(255.0f * e->color[3] * evalSpline(p->alpha, t));
-        *(GSColor*)(out + 0x30) = c;
+        *(u32*)(out + 0x30) = *(u32*)&c;
         if (hasColor2) {
             peColorSplineGetValue((u8*)&c, p->color2, t);
-            *(GSColor*)(out + 0x34) = c;
+            *(u32*)(out + 0x34) = *(u32*)&c;
         }
     }
 }

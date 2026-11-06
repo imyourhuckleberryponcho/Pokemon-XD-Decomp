@@ -1,22 +1,24 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
+#include <dolphin/gx/GXStruct.h>
 #pragma peephole off
 
 struct GSgfxVF;
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0xD34]; u8 colorCount; u8 padD35[3]; u32 colorMode;
-    u8 padD3C[0x16A8-0xD3C]; u32 flagsA; u32 flagsB;
-    u8 pad16B0[0x1760-0x16B0]; u32 flagsC; u32 flagsD;
-    u8 pad1768[0x1998-0x1768]; u32 primitive;
     void setRenderStateAndSelect(GSgfxVF*);
     void beginSurface(u16);
     void endSurface();
 };
-class DarkPokemon { public: s32 getInitDarkPointDirect() const; s32 getDarkPointDirect() const; };
-class Pokemon { public: DarkPokemon* getDarkPokemon(); u8 isDarkPokemon() const; };
+struct DarkPokemon { public: s32 getInitDarkPointDirect() const; s32 getDarkPointDirect() const; };
+struct Pokemon { public: DarkPokemon* getDarkPokemon(); bool isDarkPokemon() const; };
 extern "C" {
-GSgfxLayer* GSgfxLayerFindByID(s32);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 GSgfxVF* GSgfxVFGetPredef(s32);
 f32 timeGetLastFrameSec();
 f64 sin(f64);
@@ -27,11 +29,11 @@ static void _menuDrawReliveMeterSub(DarkPokemon*, s32, s32, s32, s32, u8, GSgfxL
 static void _menuDrawReliveMeterSubDpValue(s32, s32, s32, s32, s32, s32, u8, GSgfxLayer*);
 
 inline void setup(GSgfxLayer* layer, u32 primitive) {
-    layer->primitive  =  primitive;
-    layer->colorCount  =  6;
-    layer->colorMode  =  0;
-    layer->flagsB |=  4; layer->flagsA |=  1;
-    layer->flagsD |=  4; layer->flagsC |=  1;
+    (*(u32*)&layer->unk1998)  =  primitive;
+    (*(u8*)&layer->hw.lineWidth)  =  6;
+    (*(u32*)&layer->hw.lineOffset)  =  0;
+    (*(u32*)&layer->dirty[0].geom) |=  4; (*(u32*)&layer->dirty[0].groups) |=  1;
+    (*(u32*)&layer->dirty[1].geom) |=  4; (*(u32*)&layer->dirty[1].groups) |=  1;
     layer->setRenderStateAndSelect(GSgfxVFGetPredef(3));
 }
 inline void vertex(s32 x, s32 y, const GXColor& c) {

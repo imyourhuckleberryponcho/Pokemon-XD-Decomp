@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -20,8 +21,17 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #endif
 enum ASM { ASM_draft_dummy };
 struct GXFifoObj;
+#ifdef __MWERKS__
 enum Mtx44 { Mtx44_draft_dummy };
 enum PrimColor { PrimColor_draft_dummy };
+#define LAYER_PRIMCOLOR(v) ((PrimColor)((s32) &(v)))
+#define LAYER_MSTACK_TOP(m) M2C_FIELD(m, s32 **, 4)
+#else
+typedef f32 Mtx44[4][4];
+struct PrimColor { u8 r, g, b, a; };
+#define LAYER_PRIMCOLOR(v) (*(PrimColor*)&(v))
+#define LAYER_MSTACK_TOP(m) (((s32**)(m))[1])
+#endif
 #pragma pool_strings off
 
 struct GStexture;
@@ -41,12 +51,16 @@ enum GSgfxLayerPass {};
 class GSgfxMatrixStack {
 public:
     GSgfxMatrixStack(u32 depth);
-    u32 pad[3];
+    void* mBase;
+    void* mTop;
+    void* mLast;
 public:
     ~GSgfxMatrixStack();
 };
 
-class GSgfxLayer {
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     GSgfxLayer(GSgfxLayerID id, char* name, u32 w, u32 h, u32 depth, GSgfxLayerType type);
     void LoadHWState();
@@ -75,74 +89,36 @@ public:
     static GStexture* GetFBTexture();
     static GSgfxLayer* GetLayerList();
 
-    GSgfxLayer* next;
-    u32 flags;
-    char name[0x20];
-    GSgfxLayerID id;
-    GSgfxLayerType type;
-    u8 pad30[0x1818 - 0x30];
-    struct PassFifo {
-        void* data;
-        u32 size;
-        u8 gxFifo[0x80];
-        u32 unk88;
-        u32 unk8c;
-        u32 color;
-        u8 flag;
-        int redirectId;
-        int redirectPass;
-        int redirectOffset;
-        _gsgfxLayerFifo* pre;
-        _gsgfxLayerFifo* post;
-        u16 unkAC;
-        u16 unkAE;
-        u32 unkB0;
-        u32 unkB4;
-        u32 unkB8;
-    } passes[2];
-    PassFifo* curFifo;
-    int curPass;
-    u32 unk1998;
-    GSgfxVF* curVF;
-    GSgfxMatrixStack* matrixStack;
-    GStexture* texCopy;
-    u32 texCopyMode;
-    u8 texCopyData[7];
-    u8 visCount;
-    u8 pad19b4[4];
-    u8 distFlag;
-    u8 pad19b9[3];
-    f32 distParams[6];
-    struct RenderHook {
-        int pass;
-        void* end;
-        void (*callback)(void*);
-        void* arg;
-    } hooks[4];
-
     static GStexture* fbTexPtr;
     static u16 fbTexRefCount;
     static GStexture* distTexPtr;
     static u16 distTexRefCount;
 public:
+#ifdef __MWERKS__
     s32 EffectTextureCopy(GStexture*, bool, unsigned char*, bool, bool, bool);
+#else
+    void EffectTextureCopy(GStexture* tex, bool filter, unsigned char* coeffs, bool r, bool g, bool b);
+#endif
     void SetupFifo();
     ~GSgfxLayer();
+#ifdef __MWERKS__
     s32 EffectScreenClear(bool, bool, bool);
+#else
+    void EffectScreenClear(bool p0, bool p1, bool p2);
+#endif
+#ifdef __MWERKS__
     s32 EffectDistortion();
+#else
+    void EffectDistortion();
+#endif
 };
 
-struct GSgfx_GCFifoObj {
-    u32 base;
-    u32 end;
-    u32 size;
-    u32 hi;
-    u32 lo;
-    u32 read;
-    u32 write;
-    u8 pad[0x4c - 0x1c];
-    u32 breakpointReached;
-};
+#include <game/gsgfxfifo.h>
+#ifdef __MWERKS__
+#define CPU_FIFO_WRITE_REG (*(volatile u32*)0xCC003014)
+#else
+#define CPU_FIFO_WRITE_REG PortGX_ReadCPUFifoWriteReg()
+#endif
 struct GSgfxRenderWaitData {
     u32 unk0;
     u32 unk4;
@@ -172,16 +148,15 @@ void* memcpy(void*, const void*, u32);
 }
 
 void GSgfxRenderModuleDoRenderFast();
-struct GSgfxState {
-    u8 pad[0xc40];
-    GSgfxLayerID activeLayer;
-};
+#include <game/gsgfxstate.h>
 extern "C" GSgfxState* gsgfxState;
 
 static GSgfxLayer* _layerBottom;
 static u8 _layerRenderStats;
 extern "C" u8 gsgfx_layer_inPrimitive;
 extern "C" void* gsgfx_layer_activeFifo;
+void* gsgfx_layer_activeFifo;
+u8 gsgfx_layer_inPrimitive;
 static u32 _layerPerfColor[8] = {0xFF, 0x8000, 0x800000, 0x8080, 0x800080, 0x808000, 0x80FF, 0x808080};
 static u32 _layerPerfUserColor[2] = {0xFF8000, 0};
 static GSgfxLayer* _layerIDTable[16];
@@ -207,25 +182,59 @@ void GSprimWriteChar(char c, f32 x, f32 y);
 void GSprimWriteStr(f32 x, f32 y, char* fmt, ...);
 GXFifoObj* GXGetCPUFifo(void);
 extern u32 _layerStateLastHWState;
+#ifdef __MWERKS__
 extern GStexture* fbTexPtr__10GSgfxLayer;
 extern u16 fbTexRefCount__10GSgfxLayer;
-extern s32 mtxIdent;
+#else
+#define fbTexPtr__10GSgfxLayer GSgfxLayer::fbTexPtr
+#define distTexPtr__10GSgfxLayer GSgfxLayer::distTexPtr
+#define fbTexRefCount__10GSgfxLayer GSgfxLayer::fbTexRefCount
+#define distTexRefCount__10GSgfxLayer GSgfxLayer::distTexRefCount
+#endif
+extern f32 mtxIdent[3][4];
 extern s32 jtbl_1809;
+#ifdef __MWERKS__
 extern s32 jtbl_1810;
 extern s32 jtbl_1811;
 extern s32 jtbl_1812;
 extern s32 jtbl_1813;
 extern s32 jtbl_1814;
 extern s32 jtbl_1815;
+#else
+static const u8 jtbl_1810_rgba[4] = { 0x20, 0x20, 0x20, 0xC0 };
+#define jtbl_1810 (*(const s32*)jtbl_1810_rgba)
+static const u8 jtbl_1811_rgba[4] = { 0x60, 0x60, 0x60, 0xFF };
+#define jtbl_1811 (*(const s32*)jtbl_1811_rgba)
+static const u8 jtbl_1812_rgba[4] = { 0xA0, 0xA0, 0xA0, 0xFF };
+#define jtbl_1812 (*(const s32*)jtbl_1812_rgba)
+static const u8 jtbl_1813_rgba[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
+#define jtbl_1813 (*(const s32*)jtbl_1813_rgba)
+static const u8 jtbl_1814_rgba[4] = { 0xFF, 0xFF, 0x00, 0xFF };
+#define jtbl_1814 (*(const s32*)jtbl_1814_rgba)
+static const u8 jtbl_1815_rgba[4] = { 0xE0, 0x40, 0x40, 0xFF };
+#define jtbl_1815 (*(const s32*)jtbl_1815_rgba)
+#endif
+#ifdef __MWERKS__
 extern s32 c_localstatic3_GSgfxPerfColorToGSgfxCol;
+#else
+static s32 c_localstatic3_GSgfxPerfColorToGSgfxCol;
+#endif
 }
 extern "C++" {
+#ifdef __MWERKS__
 s32 GSgfxGPUSetFifoWritePtr(GSgfx_GCFifoObj*, void*);
+#else
+void GSgfxGPUSetFifoWritePtr(GSgfx_GCFifoObj* f, void* ptr);
+#endif
 void GSgfxLayerBuildRenderList();
 void GSgfxLayerRenderStats(GSgfxLayer* p0);
-s32 GSgfxRenderAddToFifoList(GSgfx_GCFifoObj*, void*, void*, unsigned long, void (*)(void*), void*);
+void GSgfxRenderAddToFifoList(GSgfx_GCFifoObj*, void*, void*, u32, void (*)(void*), void*);
 void GSgfxRenderModuleDoRender(GSgfxLayer* layer, GSgfxLayerPass pass);
+#ifdef __MWERKS__
 s32 GSgfxRenderWaitForDrawComplete();
+#else
+void GSgfxRenderWaitForDrawComplete();
+#endif
 void GSprimSetRenderLayer(GSgfxLayer* layer);
 }
 
@@ -258,11 +267,11 @@ static inline bool fifoBusy(GSgfx_GCFifoObj* o) {
     if (o->breakpointReached == 1) {
         return false;
     }
-    if (o->write >= o->read) {
-        count = o->write - o->read;
+    if ((u32)o->write >= (u32)o->read) {
+        count = (u32)o->write - (u32)o->read;
     } else {
-        count = o->end - o->read;
-        count += o->write - o->base;
+        count = (u32)o->end - (u32)o->read;
+        count += (u32)o->write - (u32)o->base;
     }
     return count >= o->hi;
 }
@@ -276,7 +285,7 @@ static inline void layerCalcFifoUsage(GSgfxLayer::PassFifo* f) {
     if (rd == 0) {
         used = 0;
     } else {
-        wr = FIFO_OBJ(f)->write;
+        wr = (u32)FIFO_OBJ(f)->write;
         if (wr >= rd) {
             used = wr - rd;
             used += f->unkAC * f->size;
@@ -287,7 +296,7 @@ static inline void layerCalcFifoUsage(GSgfxLayer::PassFifo* f) {
                 GSlogWrite("fifo wrap check flag failure!\n");
                 GSlogWrite("ptr  =%08X, size =%08X\n", f->data, f->size);
                 GSlogWrite("start=%08X, write=%08X\n", f->unk88, wr);
-                GSlogWrite("reg  =%08X\n", *(volatile u32*)0xCC003014);
+                GSlogWrite("reg  =%08X\n", CPU_FIFO_WRITE_REG);
                 f->unkAC++;
             }
             used += (f->unkAC - 1) * f->size;
@@ -314,7 +323,7 @@ static inline void layerFlushFifo(GSgfxLayer::PassFifo* f) {
     GSgfxRenderWaitData w;
 
     GXSaveCPUFifo(obj);
-    r.v = *(volatile u32*)0xCC003014;
+    r.v = CPU_FIFO_WRITE_REG;
     bit = (r.v >> 26) & 1;
     if (bit == 1) {
         GXSetCPUFifo(GSgfxGPUGetImmediateFifo());
@@ -327,7 +336,7 @@ static inline void layerFlushFifo(GSgfxLayer::PassFifo* f) {
     if (rd == 0) {
         used = 0;
     } else {
-        wr = FIFO_OBJ(f)->write;
+        wr = (u32)FIFO_OBJ(f)->write;
         if (wr >= rd) {
             used = wr - rd;
             used += f->unkAC * f->size;
@@ -338,7 +347,7 @@ static inline void layerFlushFifo(GSgfxLayer::PassFifo* f) {
                 GSlogWrite("fifo wrap check flag failure!\n");
                 GSlogWrite("ptr  =%08X, size =%08X\n", f->data, f->size);
                 GSlogWrite("start=%08X, write=%08X\n", f->unk88, wr);
-                GSlogWrite("reg  =%08X\n", *(volatile u32*)0xCC003014);
+                GSlogWrite("reg  =%08X\n", CPU_FIFO_WRITE_REG);
                 f->unkAC++;
             }
             used += (f->unkAC - 1) * f->size;
@@ -373,7 +382,7 @@ static inline void layerSetupFifo(GSgfxLayer* layer) {
         layerUpdateActiveFifoStats();
         GXSetCPUFifo(FIFO_OBJ(layer->curFifo));
         gsgfx_layer_activeFifo = layer->curFifo;
-        *(GSgfxLayer**)&gsgfxState->activeLayer = layer;
+        gsgfxState->layer = layer;
     }
 }
 
@@ -385,9 +394,14 @@ struct RedirectLegend {
 };
 
 void GSgfxLayerRenderStats(GSgfxLayer* p0) {
-    s32 sp24;
+    u16 sp38;
+#ifdef __MWERKS__
     s32 saved_reg_r25;
     s32 saved_reg_r26;
+#else
+    s32 saved_reg_r25 = 0;
+    s32 saved_reg_r26 = 0;
+#endif
     f32 spB8;
     f32 spC0;
     f32 spC8;
@@ -425,7 +439,7 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     u32 sp6C;
     u32 sp68;
     s32 sp60;
-    s32 *temp_r24;
+    GSgfxLayer *temp_r24;
     s32 sp5C;
     s32 sp58;
     s32 sp54;
@@ -435,7 +449,7 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     s32 sp44;
     s32 sp40;
     s32 sp3C;
-    u16 sp38;
+    s32 sp24;
     s32 sp34;
     s32 sp30;
     u16 sp2C;
@@ -455,14 +469,18 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     u8 sp9;
     u8 sp8;
     s32 var_r21;
-    s32 *temp_r3_2;
-    s32 *var_r20;
+    GSgfxLayer *temp_r3_2;
+    GSgfxLayer *var_r20;
     s32 *var_r3;
     s32 *var_r4_3;
     s32 *var_r6_2;
     f32 var_f26;
     f32 var_f26_2;
+#ifdef __MWERKS__
     s32 saved_reg_f26;
+#else
+    s32 saved_reg_f26 = 0;
+#endif
     f32 var_f27_2;
     s32 *temp_r3;
     s32 *var_r17;
@@ -472,8 +490,8 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     s32 temp_r22;
     s32 var_r18;
     s32 sp64;
-    s32 var_r25;
-    s32 var_r26;
+    GCsptr var_r25;
+    GCsptr var_r26;
     s32 var_r30;
     s32 var_r31;
     s32 var_r4;
@@ -493,7 +511,7 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     u8 *temp_r4_2;
     u8 *temp_r4_3;
     u32 temp_r7;
-    s32 temp_r16_2;
+    GCsptr temp_r16_2;
 
     RedirectLegend legend[4] = {
         { '#', NULL, 2, 0 },
@@ -518,85 +536,100 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
         GSprimSetLineWidth(1.0f);
         GSprimSetTextSize(10.0f, 10.0f);
         GSprimSetTextWidth(1.0f);
-        M2C_FIELD(p0, s32 *, 0x1644) = 1;
-        M2C_FIELD(p0, s32 *, 0x1648) = 4;
-        M2C_FIELD(p0, s32 *, 0x164C) = 5;
-        M2C_FIELD(p0, s32 *, 0x1650) = 5;
-        M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 1);
-        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 1);
-        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+        p0->hw.blend[0] = 1;
+        p0->hw.blend[1] = 4;
+        p0->hw.blend[2] = 5;
+        p0->hw.blend[3] = 5;
+        p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 1);
+        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
+        p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 1);
+        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
+#ifdef __MWERKS__
         GSmtx44Ortho((Mtx44)((s32) &spAC), 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-        M2C_FIELD(p0, s32 *, 0xD54) = 1;
+        p0->hw.projType = 1;
         M2C_FIELD((u16)p0, f32 *, 0xD58) = spAC;
-        M2C_FIELD(p0, f32 *, 0xD5C) = spB8;
-        M2C_FIELD(p0, f32 *, 0xD60) = spC0;
-        M2C_FIELD(p0, f32 *, 0xD64) = spC8;
-        M2C_FIELD(p0, f32 *, 0xD68) = spD4;
-        M2C_FIELD(p0, f32 *, 0xD6C) = spD8;
-        temp_r16 = M2C_FIELD(p0, u8 **, 0x19A0);
-        memcpy((void*)(M2C_FIELD(temp_r16, s32 **, 4) + 4), (const void*)(&mtxIdent), 0x30U);
-        temp_r3 = M2C_FIELD(temp_r16, s32 **, 4);
-        *temp_r3 |= 1;
-        M2C_FIELD(p0, f32 *, 0x1684) = 0.0f;
-        M2C_FIELD(p0, f32 *, 0x1688) = 30000.0f;
-        if ((u8) M2C_FIELD(p0, u8 *, 0x16A7) != 0) {
-            if ((u8) M2C_FIELD(p0, u8 *, 0x16A6) != 0) {
-                M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x100);
-                M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x100);
-            }
-            M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x40);
-            M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
+#else
+        {
+            f32 ortho[4][4];
+            GSmtx44Ortho(ortho, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
+            spAC = ortho[0][0];
+            spB8 = ortho[0][3];
+            spC0 = ortho[1][1];
+            spC8 = ortho[1][3];
+            spD4 = ortho[2][2];
+            spD8 = ortho[2][3];
         }
-        M2C_FIELD(p0, s32 *, 0x16AC) = (s32) (M2C_FIELD(p0, s32 *, 0x16AC) | 0x20);
+        p0->hw.projType = 1;
+        p0->hw.proj[0] = spAC;
+#endif
+        p0->hw.proj[1] = spB8;
+        p0->hw.proj[2] = spC0;
+        p0->hw.proj[3] = spC8;
+        p0->hw.proj[4] = spD4;
+        p0->hw.proj[5] = spD8;
+        temp_r16 = ((u8*)p0->matrixStack);
+        memcpy((void*)(LAYER_MSTACK_TOP(temp_r16) + 1), (const void*)mtxIdent, 0x30U);
+        temp_r3 = LAYER_MSTACK_TOP(temp_r16);
+        *temp_r3 |= 1;
+        p0->hw.fogNear = 0.0f;
+        p0->hw.fogFar = 30000.0f;
+        if ((u8) p0->hw.fogEnable != 0) {
+            if ((u8) p0->hw.fogRangeEnable != 0) {
+                p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 0x100);
+                p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 0x100);
+            }
+            p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 0x40);
+            p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
+            p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 0x40);
+            p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
+        }
+        p0->dirty[0].geom = (s32) (p0->dirty[0].geom | 0x20);
         var_r4 = 0;
-        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 1);
-        M2C_FIELD(p0, s32 *, 0x1764) = (s32) (M2C_FIELD(p0, s32 *, 0x1764) | 0x20);
-        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 1);
-        M2C_FIELD(p0, s8 *, 0x1656) = 1;
-        M2C_FIELD(p0, s8 *, 0x1657) = 0;
-        M2C_FIELD(p0, s8 *, 0x1658) = 0;
-        M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 4);
-        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 4);
-        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(p0, s8 *, 0x165C) = 0;
-        M2C_FIELD(p0, s32 *, 0x1660) = 3;
-        M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 8);
-        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 8);
-        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(p0, s32 *, 0x1664) = 7;
-        M2C_FIELD(p0, s8 *, 0x1670) = 0;
-        M2C_FIELD(p0, s32 *, 0x1668) = 0;
-        M2C_FIELD(p0, s32 *, 0x166C) = 7;
-        M2C_FIELD(p0, s8 *, 0x1671) = 0;
-        M2C_FIELD(p0, s8 *, 0x1672) = 1;
-        M2C_FIELD(p0, s32 *, 0x170C) = (s32) (M2C_FIELD(p0, s32 *, 0x170C) | 0x10);
-        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 0x40);
-        M2C_FIELD(p0, s32 *, 0x17C4) = (s32) (M2C_FIELD(p0, s32 *, 0x17C4) | 0x10);
-        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 0x40);
-        M2C_FIELD(p0, s32 *, 0xD8C) = 0;
-        M2C_FIELD(p0, s32 *, 0x16B8) = (s32) (M2C_FIELD(p0, s32 *, 0x16B8) | 2);
-        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 2);
-        M2C_FIELD(p0, s32 *, 0x1770) = (s32) (M2C_FIELD(p0, s32 *, 0x1770) | 2);
-        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 2);
-        M2C_FIELD(p0, s32 *, 0xD90) = 1;
-        M2C_FIELD(p0, s32 *, 0x16B8) = (s32) (M2C_FIELD(p0, s32 *, 0x16B8) | 4);
-        M2C_FIELD(p0, s32 *, 0x16A8) = (s32) (M2C_FIELD(p0, s32 *, 0x16A8) | 2);
-        M2C_FIELD(p0, s32 *, 0x1770) = (s32) (M2C_FIELD(p0, s32 *, 0x1770) | 4);
-        M2C_FIELD(p0, s32 *, 0x1760) = (s32) (M2C_FIELD(p0, s32 *, 0x1760) | 2);
-        var_r3 = (long *)(_layerBottom);
+        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 1);
+        p0->dirty[1].geom = (s32) (p0->dirty[1].geom | 0x20);
+        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 1);
+        p0->hw.colorUpdate = 1;
+        p0->hw.alphaUpdate = 0;
+        p0->hw.zUpdate = 0;
+        p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 4);
+        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
+        p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 4);
+        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
+        p0->hw.zEnable = 0;
+        p0->hw.zFunc = 3;
+        p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 8);
+        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
+        p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 8);
+        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
+        p0->hw.alphaComp0 = 7;
+        p0->hw.alphaRef0 = 0;
+        p0->hw.alphaCmpOp = 0;
+        p0->hw.alphaComp1 = 7;
+        p0->hw.alphaRef1 = 0;
+        p0->hw.zCompLoc = 1;
+        p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 0x10);
+        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
+        p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 0x10);
+        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
+        p0->hw.cullMode = 0;
+        p0->dirty[0].raster = (s32) (p0->dirty[0].raster | 2);
+        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 2);
+        p0->dirty[1].raster = (s32) (p0->dirty[1].raster | 2);
+        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 2);
+        p0->hw.clipMode = 1;
+        p0->dirty[0].raster = (s32) (p0->dirty[0].raster | 4);
+        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 2);
+        p0->dirty[1].raster = (s32) (p0->dirty[1].raster | 4);
+        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 2);
+        var_r3 = (s32 *)(_layerBottom);
         while (var_r3 != NULL) {
-            var_r3 = (long *)(*var_r3);
+            var_r3 = (s32 *)(*var_r3);
             var_r4 += 1;
         }
         sp50 = sp80;
         GSprimDraw2DQuadWH(&sp50, sp80, 10.0f, 22.0f, 620.0f, (12.0f * (f32) var_r4) + 28.0f, M2C_ERROR( ));
         sp4C = sp5C;
-        GSprimSetTextColor((PrimColor)((s32) &sp4C));
+        GSprimSetTextColor(LAYER_PRIMCOLOR(sp4C));
         GSprimSetTextSize(10.0f, 10.0f);
         GSprimWriteStr(25.0f, 29.0f, (char*)("#"));
         GSprimWriteStr(50.0f, 29.0f, (char*)("ID"));
@@ -607,18 +640,18 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
         var_r21 = 0;
         sp48 = sp58;
         GSprimDraw2DHLine(&sp48, 20.0f, 620.0f, 42.0f);
-        var_r20 = (long *)(_layerBottom);
+        var_r20 = _layerBottom;
 loop_138:
         if (var_r20 != NULL) {
-            temp_r22 = M2C_FIELD(var_r20, s32 *, 0x28);
-            temp_r24 = M2C_FIELD(var_r20, s32 **, 0);
+            temp_r22 = var_r20->id;
+            temp_r24 = var_r20->next;
             f32 kc8463 = 12.0f;
             f32 kc8495 = 47.0f;
             var_f26 = (kc8463 * (f32) var_r21) + kc8495;
             if (temp_r22 < 8) {
                 var_r5 = _layerPerfColor[temp_r22];
             } else {
-                var_r5 = (unsigned long)(_layerPerfUserColor);
+                var_r5 = (u32)(_layerPerfUserColor);
             }
             temp_r4 = (u8) (var_r5 >> 0x10U);
             M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, u8 *, 1) = (u8) (var_r5 >> 8U);
@@ -628,18 +661,18 @@ loop_138:
             sp44 = (s32) M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, u8 *, 0);
             GSprimDraw2DQuadWH(&sp44, (s32) temp_r4, 20.0f, var_f26 - 1.0f, 50.0f, 12.0f, M2C_ERROR( ));
             sp40 = sp5C;
-            GSprimSetTextColor((PrimColor)((s32) &sp40));
+            GSprimSetTextColor(LAYER_PRIMCOLOR(sp40));
             GSprimWriteStr(25.0f, var_f26, (char*)("%d"), var_r21);
             GSprimWriteStr(55.0f, var_f26, (char*)("%d"), temp_r22);
             if (&spF != NULL) {
-                spF = ((u32) M2C_FIELD(var_r20, u32 *, 4) >> 1U) & 1;
+                spF = ((u32) var_r20->flags >> 1U) & 1;
             }
             if (&spE != NULL) {
-                spE = ((u32) M2C_FIELD(var_r20, u32 *, 4) >> 2U) & 1;
+                spE = ((u32) var_r20->flags >> 2U) & 1;
             }
-            if ((u32) (M2C_FIELD(var_r20, u32 *, 4) & 1) != 1) {
+            if ((u32) (var_r20->flags & 1) != 1) {
                 sp3C = sp64;
-                GSprimSetTextColor((PrimColor)((s32) &sp3C));
+                GSprimSetTextColor(LAYER_PRIMCOLOR(sp3C));
                 spF = 0;
                 spE = 0;
             }
@@ -647,13 +680,13 @@ loop_138:
             if ((s32) (strlen((const char*)((s8 *) (var_r20 + 8))) + 1) <= 0x13) {
                 memcpy((void*)(&sp8C), (const void*)(var_r20 + 8), strlen((const char*)((s8 *) (var_r20 + 8))) + 1);
             } else {
-                memcpy((void*)(&sp8C), (const void*)(var_r20 + 8), 0x12U);
+                memcpy((void*)(&sp8C), (const void*)(var_r20->name), 0x12U);
                 sp9E = 0;
             }
             GSprimWriteStr(85.0f, var_f26, (char*)("%s"), &sp8C);
             GSprimSetTextSize(10.0f, 10.0f);
-            if (M2C_FIELD(var_r20, u32 *, 4) & 0x200) {
-                var_r0 = M2C_FIELD(var_r20, u32 *, 0x19A4);
+            if (var_r20->flags & 0x200) {
+                var_r0 = (u32)var_r20->texCopy;
             } else {
                 var_r0 = 0U;
             }
@@ -662,22 +695,22 @@ loop_138:
                 var_r0_2 = 0x4F;
             }
             sp84 = var_r0_2;
-            temp_r3_2 = M2C_FIELD(var_r20, s32 **, 0);
+            temp_r3_2 = var_r20->next;
             if (temp_r3_2 == NULL) {
                 var_r6 = 0;
                 var_r4_2 = 0;
                 var_r3_2 = 0;
             } else {
                 if (&sp8 != NULL) {
-                    sp8 = ((u32) M2C_FIELD(temp_r3_2, u32 *, 4) >> 6U) & 1;
+                    sp8 = ((u32) temp_r3_2->flags >> 6U) & 1;
                 }
                 if (&sp9 != NULL) {
-                    sp9 = ((u32) M2C_FIELD(temp_r3_2, u32 *, 4) >> 7U) & 1;
+                    sp9 = ((u32) temp_r3_2->flags >> 7U) & 1;
                 }
                 if (&spA != NULL) {
-                    spA = ((u32) M2C_FIELD(temp_r3_2, u32 *, 4) >> 8U) & 1;
+                    spA = ((u32) temp_r3_2->flags >> 8U) & 1;
                 }
-                temp_r7 = M2C_FIELD(var_r20, u32 *, 4);
+                temp_r7 = var_r20->flags;
                 var_r3_3 = 0;
                 if ((temp_r7 & 8) || (sp8 != 0)) {
                     var_r3_3 = 1;
@@ -718,8 +751,8 @@ loop_138:
             } else {
                 sp87 = 0x58;
             }
-            if ((temp_r24 != NULL) && ((u32) (M2C_FIELD(temp_r24, s32 *, 4) & 1) == 1)) {
-                temp_r0 = M2C_FIELD(temp_r24, s32 *, 0x2C);
+            if ((temp_r24 != NULL) && ((u32) (temp_r24->flags & 1) == 1)) {
+                temp_r0 = temp_r24->type;
                 switch (temp_r0) {
                 case 1:
                     sp85 = 0x2B;
@@ -732,66 +765,66 @@ loop_138:
             sp88 = 0;
             GSprimWriteStr(245.0f, var_f26, (char*)(&sp84), var_r4_2);
             if (&sp7C != NULL) {
-                if ((u32) M2C_FIELD(var_r20, u32 *, 0x1818) != 0U) {
-                    sp7C = M2C_FIELD(var_r20, u32 *, 0x18C8);
+                if ((u32) var_r20->passes[0].data != 0U) {
+                    sp7C = var_r20->passes[0].unkB0;
                 } else {
                     sp7C = 0;
                 }
             }
             if (&sp78 != NULL) {
-                if ((u32) M2C_FIELD(var_r20, u32 *, 0x18D4) != 0U) {
-                    sp78 = M2C_FIELD(var_r20, u32 *, 0x1984);
+                if ((u32) var_r20->passes[1].data != 0U) {
+                    sp78 = var_r20->passes[1].unkB0;
                 } else {
                     sp78 = 0;
                 }
             }
             if (&sp74 != NULL) {
-                if ((u32) M2C_FIELD(var_r20, u32 *, 0x1818) != 0U) {
-                    sp74 = M2C_FIELD(var_r20, u32 *, 0x18D0);
+                if ((u32) var_r20->passes[0].data != 0U) {
+                    sp74 = var_r20->passes[0].unkB8;
                 } else {
                     sp74 = 0;
                 }
             }
             if (&sp70 != NULL) {
-                if ((u32) M2C_FIELD(var_r20, u32 *, 0x18D4) != 0U) {
-                    sp70 = M2C_FIELD(var_r20, u32 *, 0x198C);
+                if ((u32) var_r20->passes[1].data != 0U) {
+                    sp70 = var_r20->passes[1].unkB8;
                 } else {
                     sp70 = 0;
                 }
             }
             if (&sp6C != NULL) {
-                sp6C = M2C_FIELD(var_r20, u32 *, 0x181C);
+                sp6C = var_r20->passes[0].size;
             }
             if (&sp68 != NULL) {
-                sp68 = M2C_FIELD(var_r20, u32 *, 0x18D8);
+                sp68 = var_r20->passes[1].size;
             }
             var_f27 = 295.0f;
-            if ((u32) M2C_FIELD(var_r20, u32 *, 0x1818) == 0U) {
+            if ((u32) var_r20->passes[0].data == 0U) {
                 var_r0_3 = 0;
-            } else if ((u8) M2C_FIELD(var_r20, u8 *, 0x18AC) == 0) {
+            } else if ((u8) var_r20->passes[0].flag == 0) {
                 var_r0_3 = 0;
             } else {
                 temp_r4_2 = (unsigned char *)((s32*)legend + var_r30);
                 if ((temp_r4_2 + 4) != NULL) {
-                    temp_r0_2 = M2C_FIELD(var_r20, s32 *, 0x18B0);
+                    temp_r0_2 = var_r20->passes[0].redirectId;
                     if (temp_r0_2 == -1) {
                         var_r26 = 0;
                     } else if (temp_r0_2 < 0x10) {
-                        var_r26 = (long)(_layerIDTable[temp_r0_2]);
+                        var_r26 = (GCsptr)(_layerIDTable[temp_r0_2]);
                     }
                     M2C_FIELD(temp_r4_2, s32 *, 4) = var_r26;
                 }
                 if ((temp_r4_2 + 8) != NULL) {
-                    M2C_FIELD(temp_r4_2, s32 *, 8) = (s32) M2C_FIELD(var_r20, s32 *, 0x18B4);
+                    M2C_FIELD(temp_r4_2, s32 *, 8) = (s32) var_r20->passes[0].redirectPass;
                 }
                 if ((temp_r4_2 + 0xC) != NULL) {
-                    M2C_FIELD(temp_r4_2, s32 *, 0xC) = (s32) M2C_FIELD(var_r20, s32 *, 0x18B8);
+                    M2C_FIELD(temp_r4_2, s32 *, 0xC) = (s32) var_r20->passes[0].redirectOffset;
                 }
                 var_r0_3 = 1;
             }
             if ((s16)var_r0_3 == 1) {
                 sp38 = sp54;
-                GSprimSetTextColor((PrimColor)((s32) &sp38));
+                GSprimSetTextColor(LAYER_PRIMCOLOR(sp38));
                 GSprimWriteChar((s8) *((s32*)legend + var_r30), 295.0f, var_f26);
                 var_r30 += 0x10;
                 var_r31 += 1;
@@ -800,14 +833,14 @@ loop_138:
                 var_f27 = kc15772 + kc15810;
             }
             sp34 = sp5C;
-            GSprimSetTextColor((PrimColor)((s32) &sp34));
+            GSprimSetTextColor(LAYER_PRIMCOLOR(sp34));
             if (sp6C != 0) {
                 if (spF == 0) {
                     sp30 = sp64;
-                    GSprimSetTextColor((PrimColor)((s32) &sp30));
+                    GSprimSetTextColor(LAYER_PRIMCOLOR(sp30));
                 } else if (sp7C == 0) {
                     sp2C = sp60;
-                    GSprimSetTextColor((PrimColor)((s32) &sp2C));
+                    GSprimSetTextColor(LAYER_PRIMCOLOR(sp2C));
                 }
                 if (sp7C != 0) {
                     f32 kc16339 = 0.0009765625f;
@@ -823,32 +856,32 @@ loop_138:
                 }
             }
             var_f27_2 = 470.0f;
-            if ((u32) M2C_FIELD(var_r20, u32 *, 0x18D4) == 0U) {
+            if ((u32) var_r20->passes[1].data == 0U) {
                 var_r0_4 = 0;
-            } else if ((u8) M2C_FIELD(var_r20, u8 *, 0x1968) == 0) {
+            } else if ((u8) var_r20->passes[1].flag == 0) {
                 var_r0_4 = 0;
             } else {
                 temp_r4_3 = (unsigned char *)((s32*)legend + var_r30);
                 if ((temp_r4_3 + 4) != NULL) {
-                    temp_r0_3 = M2C_FIELD(var_r20, s32 *, 0x196C);
+                    temp_r0_3 = var_r20->passes[1].redirectId;
                     if (temp_r0_3 == -1) {
                         var_r25 = 0;
                     } else if (temp_r0_3 < 0x10) {
-                        var_r25 = (long)(_layerIDTable[temp_r0_3]);
+                        var_r25 = (GCsptr)(_layerIDTable[temp_r0_3]);
                     }
                     M2C_FIELD(temp_r4_3, s32 *, 4) = var_r25;
                 }
                 if ((temp_r4_3 + 8) != NULL) {
-                    M2C_FIELD(temp_r4_3, s32 *, 8) = (s32) M2C_FIELD(var_r20, s32 *, 0x1970);
+                    M2C_FIELD(temp_r4_3, s32 *, 8) = (s32) var_r20->passes[1].redirectPass;
                 }
                 if ((temp_r4_3 + 0xC) != NULL) {
-                    M2C_FIELD(temp_r4_3, s32 *, 0xC) = (s32) M2C_FIELD(var_r20, s32 *, 0x1974);
+                    M2C_FIELD(temp_r4_3, s32 *, 0xC) = (s32) var_r20->passes[1].redirectOffset;
                 }
                 var_r0_4 = 1;
             }
             if (var_r0_4 == 1) {
                 sp28 = sp54;
-                GSprimSetTextColor((PrimColor)((s32) &sp28));
+                GSprimSetTextColor(LAYER_PRIMCOLOR(sp28));
                 GSprimWriteChar((s8) *((s32*)legend + var_r30), 470.0f, var_f26);
                 var_r30 += 0x10;
                 var_r31 += 1;
@@ -857,14 +890,14 @@ loop_138:
                 var_f27_2 = kc18405 + kc18443;
             }
             sp24 = sp5C;
-            GSprimSetTextColor((PrimColor)((s32) &sp24));
+            GSprimSetTextColor(LAYER_PRIMCOLOR(sp24));
             if (sp68 != 0) {
                 if (spE == 0) {
                     sp20 = sp64;
-                    GSprimSetTextColor((PrimColor)((s32) &sp20));
+                    GSprimSetTextColor(LAYER_PRIMCOLOR(sp20));
                 } else if (sp78 == 0) {
                     if (sp1C < sp60) sp1C = sp60;
-                    GSprimSetTextColor((PrimColor)((s32) &sp1C));
+                    GSprimSetTextColor(LAYER_PRIMCOLOR(sp1C));
                 }
                 if (sp78 != 0) {
                     f32 kc18974 = 0.0009765625f;
@@ -892,10 +925,10 @@ loop_138:
             var_f26_2 = var_f26 + kc20051;
             while (var_r18 < var_r31) {
                 sp14 = sp54;
-                GSprimSetTextColor((PrimColor)((s32) &sp14));
+                GSprimSetTextColor(LAYER_PRIMCOLOR(sp14));
                 GSprimWriteChar((s8) M2C_FIELD(var_r17, u8 *, 0), 40.0f, var_f26_2);
                 sp10 = sp5C;
-                GSprimSetTextColor((PrimColor)((s32) &sp10));
+                GSprimSetTextColor(LAYER_PRIMCOLOR(sp10));
                 temp_r16_2 = M2C_FIELD(var_r17, s32 *, 4);
                 if ((s32) (strlen((const char*)(temp_r16_2 + 8)) + 1) <= 0x13) {
                     memcpy((void*)(&sp8C), (const void*)(temp_r16_2 + 8), strlen((const char*)(temp_r16_2 + 8)) + 1);
@@ -903,12 +936,12 @@ loop_138:
                     memcpy((void*)(&sp8C), (const void*)(temp_r16_2 + 8), 0x12U);
                     sp9E = 0;
                 }
-                var_r6_2 = (long *)("xluc");
+                var_r6_2 = (s32 *)("xluc");
                 if ((s32) M2C_FIELD(var_r17, s32 *, 8) == 0) {
-                    var_r6_2 = (long *)("opaque");
+                    var_r6_2 = (s32 *)("opaque");
                 }
-                var_r4_3 = (long *)("after");
-                var_r4_3 = !((s32) M2C_FIELD(var_r17, s32 *, 0xC) == 1) ? var_r4_3 : (long *)("before");
+                var_r4_3 = (s32 *)("after");
+                var_r4_3 = !((s32) M2C_FIELD(var_r17, s32 *, 0xC) == 1) ? var_r4_3 : (s32 *)("before");
                 GSprimWriteStr(60.0f, var_f26_2, "redirected %s: %s %s pass", var_r4_3, &sp8C, var_r6_2);
                 var_f26_2 += 12.0f;
                 var_r17 += 4;
@@ -961,7 +994,7 @@ extern "C" {
 
 int GSgfxLayerGetActive() {
     for (int i = 0; i < 16; i++) {
-        if ((GSgfxLayer*)_layerIDTable[i] == (GSgfxLayer*)gsgfxState->activeLayer) {
+        if ((GSgfxLayer*)_layerIDTable[i] == gsgfxState->layer) {
             return i;
         }
     }
@@ -1089,21 +1122,21 @@ GSgfxLayer* GSgfxLayerGetLayerList() {
 
 extern "C" {
 
-int GSgfxLayerFindByID(int id) {
+GSgfxLayer* GSgfxLayerFindByID(GCsint id) {
     if (id == -1) {
         return 0;
     }
     if (id >= 16) {
-        return id;
+        return (GSgfxLayer*)id;
     }
-    return (int)_layerIDTable[id];
+    return (GSgfxLayer*)_layerIDTable[id];
 }
 
 void GSgfxLayerSetActive(int id) {
     if (id >= 16) {
         return;
     }
-    gsgfxState->activeLayer = (GSgfxLayerID)(int)_layerIDTable[id];
+    gsgfxState->layer = _layerIDTable[id];
 }
 
 }
@@ -1151,7 +1184,7 @@ GSgfxLayer::GSgfxLayer(GSgfxLayerID id, char* name, u32 w, u32 h, u32 depth, GSg
     CreateFifo((GSgfxLayerPass)1, h);
     LoadHWState();
     GSgfx_GCInitState();
-    memset((u8*)this + 0x30, 0, 0x1678);
+    memset(hwState, 0, (u32)((u8*)((GSgfxLayerData*)0)->dirty - (u8*)((GSgfxLayerData*)0)->hwState));
     matrixStack = new GSgfxMatrixStack(depth);
     if (_layerBottom == 0) {
         _layerBottom = this;
@@ -1168,7 +1201,7 @@ GSgfxLayer::GSgfxLayer(GSgfxLayerID id, char* name, u32 w, u32 h, u32 depth, GSg
     unk1998 = 0x98;
     texCopy = 0;
     texCopyMode = 0;
-    memset((u8*)this + 0x19b4, 0, 0x20);
+    memset(pad19b4, 0, 0x20);
     PrepareNextFrame();
     if (passes[0].data != 0) {
         if (curPass != 0) {
@@ -1196,10 +1229,10 @@ void GSgfxLayer::PrepareNextFrame() {
         PrepareFBCopy();
         break;
     }
-    *(u32*)((u8*)this + 0x19dc) = 0;
-    *(u32*)((u8*)this + 0x19ec) = 0;
-    *(u32*)((u8*)this + 0x19fc) = 0;
-    *(u32*)((u8*)this + 0x1a0c) = 0;
+    hooks[0].callback = 0;
+    hooks[1].callback = 0;
+    hooks[2].callback = 0;
+    hooks[3].callback = 0;
 }
 
 void GSgfxLayer::BuildRenderList() {
@@ -1219,7 +1252,7 @@ void GSgfxLayer::SendFifoToRenderer(_gsgfxLayerFifo* fifo) {
         if (FIFO_OBJ(f) == (GSgfx_GCFifoObj*)GXGetCPUFifo()) {
             layerFlushFifo(f);
         }
-        f->unk8c = FIFO_OBJ(f)->write;
+        f->unk8c = (u32)FIFO_OBJ(f)->write;
     }
     start = (u32*)f->unk88;
     n = f->unk8c - (u32)start;
@@ -1273,24 +1306,24 @@ void GSgfxLayer::Prerender() {
     u8 var_r3_4;
     bool var_r4;
     u8 sp8;
-    u8 *temp_r3;
+    GSgfxLayer* temp_r3;
 
     ((GSgfxLayer*)(this))->PrerenderPass((GSgfxLayerPass)(0));
     ((GSgfxLayer*)(this))->PrerenderPass((GSgfxLayerPass)(1));
-    temp_r3 = M2C_FIELD(this, u8 **, 0);
+    temp_r3 = next;
     if (temp_r3 == NULL) {
         var_r3 = var_r4 = var_r6 = 0;
     } else {
         if (&sp8 != NULL) {
-            sp8 = ((u32) M2C_FIELD(temp_r3, u32 *, 4) >> 6U) & 1;
+            sp8 = ((u32) temp_r3->flags >> 6U) & 1;
         }
         if (&sp9 != NULL) {
-            sp9 = ((u32) M2C_FIELD(temp_r3, u32 *, 4) >> 7U) & 1;
+            sp9 = ((u32) temp_r3->flags >> 7U) & 1;
         }
         if (&spA != NULL) {
-            spA = ((u32) M2C_FIELD(temp_r3, u32 *, 4) >> 8U) & 1;
+            spA = ((u32) temp_r3->flags >> 8U) & 1;
         }
-        temp_r7 = M2C_FIELD(this, s32 *, 4);
+        temp_r7 = flags;
         var_r3_2 = 0;
         if ((temp_r7 & 8) || (sp8 != 0)) {
             var_r3_2 = 1;
@@ -1312,17 +1345,17 @@ void GSgfxLayer::Prerender() {
     if (&spB != NULL) {
         spB = var_r3;
     }
-    if ((u32) M2C_FIELD(this, u32 *, 0x18D4) != 0U) {
-        if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 1) {
-            M2C_FIELD(this, s32 *, 0x1994) = 1;
-            M2C_FIELD(this, u8 **, 0x1990) = (u8 *) ((u8*)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC);
+    if (passes[1].data != NULL) {
+        if (curPass != 1) {
+            curPass = 1;
+            curFifo = &passes[curPass];
         }
-    } else if ((s32) M2C_FIELD(this, s32 *, 0x1994) != 0) {
-        M2C_FIELD(this, s32 *, 0x1994) = 0;
-        M2C_FIELD(this, u8 **, 0x1990) = (u8 *) ((u8*)this + 0x1818 + M2C_FIELD(this, s32 *, 0x1994) * 0xBC);
+    } else if (curPass != 0) {
+        curPass = 0;
+        curFifo = &passes[curPass];
     }
-    if (M2C_FIELD(this, s32 *, 4) & 1) {
-        temp_r0 = M2C_FIELD(this, s32 *, 0x2C);
+    if (flags & 1) {
+        temp_r0 = type;
         switch (temp_r0) {
         case 1:
             ((GSgfxLayer*)(this))->EffectDistortion();
@@ -1331,17 +1364,17 @@ void GSgfxLayer::Prerender() {
             break;
         }
     }
-    if (M2C_FIELD(this, s32 *, 4) & 0x200) {
-        temp_r0_2 = M2C_FIELD(this, s32 *, 0x19A8);
+    if (flags & 0x200) {
+        temp_r0_2 = texCopyMode;
         switch (temp_r0_2) {
         case 0:
-            ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(M2C_FIELD(this, GStexture **, 0x19A4)), 0U, (unsigned char*)(NULL), spD, spC, spB);
+            ((GSgfxLayer*)(this))->EffectTextureCopy(texCopy, 0U, (unsigned char*)(NULL), spD, spC, spB);
             return;
         case 1:
-            ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(M2C_FIELD(this, GStexture **, 0x19A4)), 1U, (unsigned char*)(NULL), spD, spC, spB);
+            ((GSgfxLayer*)(this))->EffectTextureCopy(texCopy, 1U, (unsigned char*)(NULL), spD, spC, spB);
             return;
         case 2:
-            ((GSgfxLayer*)(this))->EffectTextureCopy((GStexture*)(M2C_FIELD(this, GStexture **, 0x19A4)), 1U, (unsigned char*)((u8*)this + 0x19AC), spD, spC, spB);
+            ((GSgfxLayer*)(this))->EffectTextureCopy(texCopy, 1U, texCopyData, spD, spC, spB);
             return;
         }
     } else {
@@ -1419,7 +1452,7 @@ GSgfxLayer::~GSgfxLayer() {
         GXSetCPUFifo(GSgfxGPUGetImmediateFifo());
         gsgfx_layer_activeFifo = NULL;
     }
-    if ((u32)_layerStateLastHWState == (u32)((u8*)this + 0x30)) {
+    if ((u32)_layerStateLastHWState == (u32)hwState) {
         _layerStateLastHWState = 0;
     }
     delete matrixStack;
@@ -1479,13 +1512,13 @@ void GSgfxLayer::MarkAndInvalidate() {
         if (FIFO_OBJ(&passes[0]) == (GSgfx_GCFifoObj*)GXGetCPUFifo()) {
             layerFlushFifo(&passes[0]);
         }
-        passes[0].unk88 = FIFO_OBJ(&passes[0])->write;
+        passes[0].unk88 = (u32)FIFO_OBJ(&passes[0])->write;
     }
     if (passes[1].data != NULL) {
         if (FIFO_OBJ(&passes[1]) == (GSgfx_GCFifoObj*)GXGetCPUFifo()) {
             layerFlushFifo(&passes[1]);
         }
-        passes[1].unk88 = FIFO_OBJ(&passes[1])->write;
+        passes[1].unk88 = (u32)FIFO_OBJ(&passes[1])->write;
     }
     passes[0].unkB0 = passes[0].unkB4;
     passes[1].unkB0 = passes[1].unkB4;
@@ -1494,24 +1527,24 @@ void GSgfxLayer::MarkAndInvalidate() {
     passes[1].unkAC = 0;
     passes[1].unkAE = 0;
     ((GSgfxLayer*)(this))->InvalidateState();
-    if ((s32) M2C_FIELD(this, s32 *, 0x2C) != 1) {
-        var_r0_3 = M2C_FIELD(this, u8 *, 0x16A7) != 0;
+    if (type != 1) {
+        var_r0_3 = hw.fogEnable != 0;
     } else {
         var_r0_3 = 0;
     }
-    M2C_FIELD(this, u8 *, 0x16A7) = var_r0_3;
-    M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x40);
-    M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x40);
+    hw.fogEnable = var_r0_3;
+    dirty[0].pe = (s32) (dirty[0].pe | 0x40);
+    dirty[1].pe = (s32) (dirty[1].pe | 0x40);
     if (var_r0_3 != 0) {
-        M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x200);
-        M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x200);
-        if ((u8) M2C_FIELD(this, u8 *, 0x16A6) != 0) {
-            M2C_FIELD(this, s32 *, 0x170C) = (s32) (M2C_FIELD(this, s32 *, 0x170C) | 0x100);
-            M2C_FIELD(this, s32 *, 0x17C4) = (s32) (M2C_FIELD(this, s32 *, 0x17C4) | 0x100);
+        dirty[0].pe = (s32) (dirty[0].pe | 0x200);
+        dirty[1].pe = (s32) (dirty[1].pe | 0x200);
+        if ((u8) hw.fogRangeEnable != 0) {
+            dirty[0].pe = (s32) (dirty[0].pe | 0x100);
+            dirty[1].pe = (s32) (dirty[1].pe | 0x100);
         }
     }
-    M2C_FIELD(this, s32 *, 0x16A8) = (s32) (M2C_FIELD(this, s32 *, 0x16A8) | 0x40);
-    M2C_FIELD(this, s32 *, 0x1760) = (s32) (M2C_FIELD(this, s32 *, 0x1760) | 0x40);
+    dirty[0].groups = (s32) (dirty[0].groups | 0x40);
+    dirty[1].groups = (s32) (dirty[1].groups | 0x40);
 }
 }
 

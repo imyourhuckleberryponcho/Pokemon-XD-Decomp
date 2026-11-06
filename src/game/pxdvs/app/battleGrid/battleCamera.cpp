@@ -1,4 +1,8 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma pool_strings off
 
@@ -33,7 +37,10 @@ struct SequenceSection {
 
 class ModelSequence : public NullSequence {
 public:
-    u8 unkC[0x3c - 0xC];
+    u8 unkC[0x30 - 0xC];
+    void* m_list;
+    void* m_camera;
+    void* m_next;
     u32 targetId;
     u8 unk40[0x52 - 0x40];
     u8 section;
@@ -41,9 +48,12 @@ public:
     u8 flags54;
     u8 isEnemy;
     u8 hasParent;
-    u8 unk57[0x94 - 0x57];
+    u8 unk57[0x64 - 0x57];
+    void* m_unk64;
+    u8 unk68[0x78 - 0x68];
+    void* unk78[7];
     void* model;
-    u8 unk98[4];
+    void* unk98;
     u8* sections;
 
     f32 GetModelScale(bool raw) const;
@@ -148,8 +158,18 @@ void cameraSetOffsetScale(GSvec* scale);
 void cameraSetMirrorFlag(u8 flag);
 void cameraSetPosition(GSvec* pos);
 void cameraMovePosition(int mode, GSvec* pos, f32 time);
+#ifdef __MWERKS__
 void cameraMoveRotationXYZ(int mode, f32 x, f32 y, f32 z, f32 time);
+#else
+void cameraMoveRotationXYZ(f32 x, f32 y, f32 z, f32 time);
+#define cameraMoveRotationXYZ(mode, ...) ((void)(mode), cameraMoveRotationXYZ(__VA_ARGS__))
+#endif
+#ifdef __MWERKS__
 void cameraMoveFov(int mode, f32 fov, f32 time);
+#else
+void cameraMoveFov(f32 fov, f32 time);
+#define cameraMoveFov(mode, ...) ((void)(mode), cameraMoveFov(__VA_ARGS__))
+#endif
 void cameraMoveTargetOfs(int mode, GSvec* ofs, f32 time);
 void cameraSetFov(f32 fov);
 void cameraSetTargetPos(GSvec* pos);
@@ -180,7 +200,11 @@ void _wazaSequenceCameraGetFOVRange(wazaSequenceCameraParams* params, f32* lowFo
 static inline u16 __OSf32tou16(register f32 inF) {
     u16 tmp;
     register u16* tmpPtr = &tmp;
+#ifdef __MWERKS__
     asm { psq_st inF, 0(tmpPtr), 1, 3 }
+#else
+    PSQ_STORE(tmpPtr, 0, inF, 3);
+#endif
     return *tmpPtr;
 }
 
@@ -307,7 +331,7 @@ void battleCameraDisable(void) {
     g_enable_battle_camera = 0;
 }
 
-u8 battleCameraIsSimple(void) {
+PCRET(u8) battleCameraIsSimple(void) {
     return gBattleGridSimpleCamera;
 }
 

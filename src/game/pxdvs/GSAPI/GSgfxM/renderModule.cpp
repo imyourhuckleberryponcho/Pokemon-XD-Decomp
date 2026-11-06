@@ -132,7 +132,7 @@ void GSgfxRenderModuleRegister(u8 priority, GSgfxRenderModule* module, void* use
             node->priority = 0;
             node->next = _renderModuleBottom;
             _renderModuleBottom = node;
-            memcpy(&node->module, module, 0x1C);
+            memcpy(&node->module, module, sizeof(node->module));
             if (node->priority != priority) {
                 _renderModuleRemove(node);
                 _renderModuleInsert(node, priority);

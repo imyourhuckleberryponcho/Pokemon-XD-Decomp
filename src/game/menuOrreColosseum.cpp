@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -13,8 +16,25 @@ struct tagWINDOW_WORK {
     s8 state;
     s8 seqSet;
     u8 pad3;
-    void* seq;
-    u8 pad8[0x93 - 8];
+    s32 seq;
+    u8 pad8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 layer;
     u8 pad94[0x9C - 0x94];
     SelInfo info;
@@ -24,14 +44,20 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 pad0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
-    u8 pad8[0x54 - 8];
+    u8 pad8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x4];
     s16 w;
     s16 h;
     u8 pad58[0x64 - 0x58];
     union {
-        s32 color;
+        gc_bes32 color;
         struct {
             u8 r, g, b, a;
         } rgba;
@@ -128,8 +154,13 @@ void GSfloorPush(s32);
 void GSfloorPop(void);
 void floorWaitForChange(void);
 void fadeSet(s32, f32);
+#ifdef __MWERKS__
 void* __nw__FUl(u32);
 void __dl__FPv(void*);
+#else
+#define __nw__FUl(n) (operator new(n))
+#define __dl__FPv(p) (operator delete(p))
+#endif
 void* memcpy(void*, const void*, u32);
 u16 HSD_Rand(void);
 double sin(double);
@@ -148,14 +179,14 @@ void menuOpen(s32, s32);
 s32 menuOpenCustom(s32, ...);
 void menuClose(s32);
 void menuCloseSync(s32, s32);
-MenuItem* menuItemBiosGetPtr(s32, s16);
-s32 menuPokemonStatusOpenFromPokemonChange(void*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, long), u16*);
+MenuItem* menuItemBiosGetPtr(s32, PCARG(s16, u32));
+s32 menuPokemonStatusOpenFromPokemonChange(void*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr), u16*);
 s32 menuSubOpenSelect2(s32, void*, s32, s32, s32, s32, s32, s32);
 s8 menuSubOpenYesNo(s32, s32, s32, s32);
 u8 menuSubGetPokemonSexForFightDisp(void*);
 void winMsgOpen(s32, s32, s32, s32);
 void winMsgClose(s32);
-void winSeqSetMenu(void*, s32);
+void winSeqSetMenu(s32 menuID, s32);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void windowDrawSprite2(s16, s16, s16, s16, s32, tagWINDOW_WORK*, u16, s32, s32);
@@ -165,8 +196,8 @@ WindowKeyInfo* windowGetKeyInfo(void);
 u32 GSmsgGetRect(u32);
 void GSmsgPrint2(s32, s32, s32, s32, u32);
 void GSmsgPrintRect(s32, s32, s32, s32, s32, s32, u32);
-u32 GSmsgGetGSchar(u16);
-void msgctrlSetValue(s32, u32);
+u32 GSmsgGetGSchar(PCARG(u16, u32));
+void msgctrlSetValue(s32, GCuptr);
 void* fightGetMenuCtrlHero(void);
 void fightSetMenuCtrlHero(void*);
 void fightReadResourceID(s32, s32);
@@ -198,7 +229,7 @@ static OrreHero _orreHero;
 
 static void* _loadPokemonCallBack(void* idx);
 static void* _GetTemochiPokemonPtr(u16 idx);
-static Pokemon* _PokemonStatusDisp_CallBack(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, long idx);
+static Pokemon* _PokemonStatusDisp_CallBack(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, GCsptr idx);
 
 static inline void setNowFrameEnd(u32 id, int n) {
     const char* endLabel[5] = {"1_start", "1_end", "2_end", "3_end", "4_end"};
@@ -593,7 +624,7 @@ static void* _GetTemochiPokemonPtr(u16 idx) {
     return 0;
 }
 
-static Pokemon* _PokemonStatusDisp_CallBack(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, long param) {
+static Pokemon* _PokemonStatusDisp_CallBack(Pokemon* pokemon, MENU_POKEMON_CB_TYPE type, GCsptr param) {
     u16* idx = (u16*)param;
     Pokemon* result = 0;
     switch (type) {

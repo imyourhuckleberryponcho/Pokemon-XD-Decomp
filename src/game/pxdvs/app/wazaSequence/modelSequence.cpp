@@ -1,4 +1,10 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/hsdarchive.h>
+#include <game/wazashadow.h>
 
 struct GSvec {
     f32 x, y, z;
@@ -34,10 +40,15 @@ static inline u16 __OSf32tou16(register f32 inF) {
     u32 tmp;
     register u32* tmpPtr = &tmp;
     register u16 ret;
+#ifdef __MWERKS__
     asm {
         psq_st inF, 0(tmpPtr), 1, 3
         lhz ret, 0(tmpPtr)
     }
+#else
+    PSQ_STORE(tmpPtr, 0, inF, 3);
+    ret = *(u16*)tmpPtr;
+#endif
     return ret;
 }
 
@@ -47,7 +58,11 @@ static inline u16 OSf32tou16(f32 in) {
 
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 
@@ -56,21 +71,21 @@ static inline f32 OSu16tof32(u16 in) {
 }
 
 struct MotionEntry {
-    s32 type;
-    s32 index;
+    gc_bes32 type;
+    gc_bes32 index;
 };
 
 struct MotionSection {
     u8 pad0[4];
-    s32 count;
+    gc_bes32 count;
     u8 pad8[0x44];
-    s32 joints[16];
+    gc_bes32 joints[16];
     MotionEntry motions[8];
-    s32 pad;
+    gc_bes32 pad;
 };
 
 struct ColorInfo {
-    s32 swap[4];
+    gc_bes32 swap[4];
     u8 mod[4];
 };
 
@@ -95,21 +110,21 @@ struct PartAnimData {
 };
 
 struct PkxHeader {
-    s32 size;
-    void* model;
-    s32 unk8;
-    GSparticleBank* particle;
-    s32 count;
-    s32 modelSize;
-    u16 id;
-    u16 type;
+    gc_bes32 size;
+    gc_ptr32(void) model;
+    gc_bes32 unk8;
+    gc_ptr32(GSparticleBank) particle;
+    gc_bes32 count;
+    gc_bes32 modelSize;
+    gc_be16 id;
+    gc_be16 type;
     PartAnimData anims[4];
     u8 flags;
     u8 pad69;
-    u16 distortionID;
+    gc_be16 distortionID;
     u8 distortionParam;
     u8 pad6D;
-    u16 headJoint;
+    gc_be16 headJoint;
     ColorInfo colors;
 };
 
@@ -148,7 +163,7 @@ f32 GSmodelGetAnimFrame(_GSmodel* model);
 void GSmodelRemoveNull(_GSmodel* model);
 u16 GSmodelCenterNull(_GSmodel* model);
 GSpart* GSmodelGetPart(_GSmodel* model, s32 joint);
-f32 menuModelGetScale(u8 a);
+f32 menuModelGetScale(s32 hasParent, s32 id, f32 scale);
 u8 GSgfxVideoGetVsyncRate(void);
 void GSmodelSetDontResetPartAnimFlag(_GSmodel* model, s32 flag);
 void GSparticleDestroyGenerator(GSparticleGen* gen, s32 children);
@@ -179,19 +194,24 @@ void GSresFreeResource(u32 group, u32 id);
 void GSresIsUniqueID(u32 group, u32 id, u32 x);
 void* GSresGetResource(u32 group, u32 id);
 s32 wazaSequenceSysGetResID(void);
+#ifdef __MWERKS__
 void GSmodelSetGroundPlane(_GSmodel* model, s32 a, f32 b);
+#else
+void GSmodelSetGroundPlane(_GSmodel* model, f32 plane, bool enable);
+#define GSmodelSetGroundPlane(m, e, p) GSmodelSetGroundPlane((m), (p), (e) != 0)
+#endif
 void GSmodelRemoveRootJointAnimation(_GSmodel* model);
 void GSmodelSetSkipFractionalFramesFlag(_GSmodel* model, s32 flag);
 GSparticleBank* GSparticleLoad(void* data);
 void GSmodelRecalculateBound(_GSmodel* model);
 void GSmodelLinkToGSparticleBank(_GSmodel* model, GSparticleBank* bank);
 void GSmodelSetGSparticleLinkAttachMode(_GSmodel* model, s32 mode);
-void GSmodelCreateDistortion(_GSmodel* model, u16 id, u8 param);
+void GSmodelCreateDistortion(_GSmodel* model, u16 id, u8 param, u8 flags);
 void GSmodelEnableDistortion(_GSmodel* model);
 void GSmodelSetBoundCheck(_GSmodel* model, s32 flag);
 void GSmodelSetShadowFlags(_GSmodel* model, s32 flags);
-void GSmodelSetShadowLight(_GSmodel* model, u32 light);
-void GSmodelSetShadowSurface(_GSmodel* model, u32 count, s32 list);
+void GSmodelSetShadowLight(_GSmodel* model, WazaShadowAddr light);
+void GSmodelSetShadowSurface(_GSmodel* model, u32 count, WazaShadowListAddr list);
 void* GScameraGetActiveCamera(void);
 void GScameraGetRotation(void* camera, GSvec* rot);
 void GSpartGetTransform(GSpart* part, GSvec* pos, s32 a, s32 b);
@@ -219,28 +239,28 @@ void GSmodelGetRotation(_GSmodel* model, GSvec* v);
 void GSmodelGetPosition(_GSmodel* model, GSvec* v);
 }
 
-extern GSvec zeroVector;
-extern GSvec unitScaleVector;
-u32 wazaSequenceSysGetModelShadowLight(void);
+extern "C" GSvec zeroVector;
+extern "C" GSvec unitScaleVector;
+WazaShadowAddr wazaSequenceSysGetModelShadowLight(void);
 u32 wazaSequenceSysGetModelShadowCount(void);
-s32 wazaSequenceSysGetModelShadowList(void);
+WazaShadowListAddr wazaSequenceSysGetModelShadowList(void);
 class ModelSequence;
 void wazaSequenceSysFreeSequenceResource(ModelSequence* seq);
 static f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec* out);
-extern PkxEntry pokemon_pkx_data[];
-extern PkxEntry unknown_pokemon_pkx_data[];
-extern PkxEntry deoxys_pokemon_pkx_data[];
-extern PkxEntry rare_deoxys_pokemon_pkx_data[];
-extern PkxEntry trainer_pkx_data[];
-extern RareEntry rare_pokemon_pkx_data[];
-extern u32 pokemon_pkx_data_number;
-extern u32 unknown_pokemon_pkx_data_number;
-extern u32 deoxys_pokemon_pkx_data_number;
-extern u32 rare_deoxys_pokemon_pkx_data_number;
-extern u32 rare_pokemon_pkx_data_number;
-extern u32 trainer_pkx_data_number;
+extern "C" PkxEntry pokemon_pkx_data[];
+extern "C" PkxEntry unknown_pokemon_pkx_data[];
+extern "C" PkxEntry deoxys_pokemon_pkx_data[];
+extern "C" PkxEntry rare_deoxys_pokemon_pkx_data[];
+extern "C" PkxEntry trainer_pkx_data[];
+extern "C" RareEntry rare_pokemon_pkx_data[];
+extern "C" u32 pokemon_pkx_data_number;
+extern "C" u32 unknown_pokemon_pkx_data_number;
+extern "C" u32 deoxys_pokemon_pkx_data_number;
+extern "C" u32 rare_deoxys_pokemon_pkx_data_number;
+extern "C" u32 rare_pokemon_pkx_data_number;
+extern "C" u32 trainer_pkx_data_number;
 
-void* operator new(unsigned long size);
+void* operator new(size_t size);
 void operator delete(void* p);
 u8* wazaSequenceSysLoadResource(u32 a, u32 b);
 void _sequenceModelAnimEndedCallback(_GSmodel* model, _GSmodelAnimCBData* data);
@@ -546,7 +566,7 @@ void _sequenceModelAnimEndedCallback(_GSmodel* model, _GSmodelAnimCBData* data) 
                         }
                     } else {
                         MotionEntry* motion = &section->motions[step];
-                        seq->DoAnimation(motion->index, (enumSectionMotionType)motion->type, true);
+                        seq->DoAnimation(motion->index, (enumSectionMotionType)GC_BES32(motion->type), true);
                     }
                 }
             }
@@ -610,7 +630,7 @@ int ModelSequence::Load(u8* data, u32 id, u32 variant) {
         if ((id == 0xDD && variant == 0x3001E00) || (id == 0x13F && variant == 0x3641E00) || (id == 0x387 && variant == 0x6691E00)) {
             hdr->model = 0;
         } else {
-            void* archive = operator new(0x44);
+            void* archive = operator new(HSD_ARCHIVE_SIZE);
             if (archive != 0) {
                 hdr->model = archive;
                 HSD_ArchiveParse(archive, data, hdr->size);
@@ -1005,7 +1025,7 @@ u8 ModelSequence::LoadData(u8* data) {
     }
     void* archive;
     if (hdr->model == 0) {
-        archive = operator new(0x44);
+        archive = operator new(HSD_ARCHIVE_SIZE);
         if (archive == 0) {
             return 0;
         }
@@ -1068,7 +1088,7 @@ u8 ModelSequence::LoadData(u8* data) {
             }
         }
         if (mode != 0) {
-            GSmodelCreateDistortion(m_model, m_distortionID, m_distortionParam);
+            GSmodelCreateDistortion(m_model, m_distortionID, m_distortionParam, mode);
             GSmodelEnableDistortion(m_model);
         }
     }
@@ -1251,7 +1271,7 @@ void ModelSequence::DoModelAnimation(int section) {
             DoDefaultAnimation(GS_ANIM_TYPE_1, false);
         } else {
             m_step = index;
-            DoAnimation(motion->index, (enumSectionMotionType)motion->type, false);
+            DoAnimation(motion->index, (enumSectionMotionType)GC_BES32(motion->type), false);
         }
     }
 }
@@ -1299,10 +1319,13 @@ static f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user
 }
 
 void ModelSequence::UpdateLookAt() {
+    GSvec targetPos;
+    GSvec right;
+    GSvec up;
+    GSvec dir;
+    GSvec step;
+    GSvec projCopy;
     if (m_unk61 != 0) {
-        GSvec projCopy;
-        GSvec step;
-        GSvec dir;
         ModelSequence* target = m_unk78;
         if (target == 0) {
             GSvec scaled;
@@ -1319,22 +1342,24 @@ void ModelSequence::UpdateLookAt() {
                 return;
             }
             f32* mtx = GSmodelGetMatrixPtr(m_model);
-            GSvec right;
-            right.y = mtx[4];
-            right.z = mtx[8];
-            right.x = mtx[0];
+            f32 rx = mtx[0];
+            f32 ry = mtx[4];
+            f32 rz = mtx[8];
+            right.x = rx;
+            right.y = ry;
+            right.z = rz;
             PSVECNormalize(&right, &right);
-            GSvec up;
-            up.y = mtx[5];
-            up.x = mtx[1];
-            up.z = mtx[9];
+            f32 ux = mtx[1];
+            f32 uy = mtx[5];
+            f32 uz = mtx[9];
+            up.x = ux;
+            up.y = uy;
+            up.z = uz;
             PSVECNormalize(&up, &up);
-            GSvec myPos;
-            GSpartGetTransform(myPart, &myPos, 0, 0);
-            GSvec targetPos;
+            GSpartGetTransform(myPart, &dir, 0, 0);
             GSpartGetTransform(targetPart, &targetPos, 0, 0);
             GSvec diff;
-            PSVECSubtract(&targetPos, &myPos, &diff);
+            PSVECSubtract(&targetPos, &dir, &diff);
             dir = diff;
             PSVECNormalize(&dir, &dir);
             f32 dotUp = PSVECDotProduct(&up, &dir);
@@ -1344,11 +1369,9 @@ void ModelSequence::UpdateLookAt() {
             projCopy = proj;
             PSVECSubtract(&dir, &projCopy, &dir);
             PSVECNormalize(&dir, &dir);
-            f32 dotRight = PSVECDotProduct(&right, &dir);
-            f32 oldPitch = m_look.x;
-            volatile f32 oldYaw = m_look.y;
-            f32 newPitch = 0.25f * (pitch - oldPitch) + oldPitch;
-            f32 newYaw = 0.25f * ((f32)asin(dotRight) - oldYaw) + oldYaw;
+            f32 yaw = (f32)asin(PSVECDotProduct(&right, &dir));
+            f32 newPitch = 0.25f * (pitch - m_look.x) + m_look.x;
+            f32 newYaw = 0.25f * (yaw - m_look.y) + m_look.y;
             if (newPitch > 3.1415927f) {
                 newPitch = 6.2831855f - newPitch;
             }
@@ -1697,7 +1720,7 @@ bool ModelSequence::ModelMotionStart() {
     if (timer == 0) {
         m_step = 0;
         m_stepRestart = 0;
-        DoAnimation(motion->index, (enumSectionMotionType)motion->type, false);
+        DoAnimation(motion->index, (enumSectionMotionType)GC_BES32(motion->type), false);
     } else {
         m_step = 0;
         int idle = IdleMotion();
@@ -1755,5 +1778,5 @@ f32 ModelSequence::GetModelScale(bool raw) const {
     if (raw) {
         return scale;
     }
-    return menuModelGetScale(m_hasParent);
+    return menuModelGetScale(m_hasParent, m_unk4, scale);
 }

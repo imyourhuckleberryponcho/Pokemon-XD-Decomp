@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/pxdvs/app/deck/deckDataVirtual.h>
+#include <game/pxdvs/app/fight/fightData.h>
 
 struct FightEncountWipeData {
     u8 snapshotUse;
@@ -6,40 +9,6 @@ struct FightEncountWipeData {
     u16 effectSndID;
     f32 effectTime;
     void* function;
-};
-
-struct FightTrainerInfo {
-    u32 ids;
-    u32 gsInputDevice;
-};
-
-struct FightEncountData {
-    u8 fightKind;
-    u8 trainer;
-    u8 pokemon;
-    u8 entry;
-    u8 zenmetuFlag;
-    u8 unk5;
-    u16 fightFloorDataId;
-    u16 diskId;
-    u8 unkA[2];
-    u32 fightName;
-    u32 bgmSndId;
-    u32 wipeId;
-    u32 syoukaiWzxDataId;
-    FightTrainerInfo trainerInfo[4];
-};
-
-struct FightTypeData {
-    u8 type;
-};
-
-struct DeckDataVirtual {
-    u8 unk0[2];
-    u8 pokemon;
-    u8 unk3[5];
-    u32 fightTrainerDataId0;
-    u32 fightTrainerDataId1;
 };
 
 DeckDataVirtual* deckDataVirtual_GetPtr(u16 id);
@@ -241,9 +210,9 @@ u16 fightEncountDataBiosGetFightTrainerDataId(FightEncountData* data, u8 index) 
     }
     switch (index) {
     case 0:
-        return deck->fightTrainerDataId0;
+        return deck->allyDeck;
     case 1:
-        return deck->fightTrainerDataId1;
+        return deck->enemyDeck;
     }
     return 0;
 }
@@ -265,14 +234,14 @@ u16 fightEncountDataBiosGetFightFloorDataId(FightEncountData* data) {
     return data->fightFloorDataId;
 }
 
-u8 fightEncountDataBiosGetEntry(FightEncountData* data) {
+PCRET(u8) fightEncountDataBiosGetEntry(FightEncountData* data) {
     if (data == NULL) {
         return 0;
     }
     return data->entry;
 }
 
-u8 fightEncountDataBiosGetPokemon(FightEncountData* data) {
+PCRET(u8) fightEncountDataBiosGetPokemon(FightEncountData* data) {
     if (data == NULL) {
         return 0;
     }
@@ -283,17 +252,17 @@ u8 fightEncountDataBiosGetPokemon(FightEncountData* data) {
     if (deck == NULL) {
         return 0;
     }
-    return deck->pokemon;
+    return deck->pokemonNum;
 }
 
-u8 fightEncountDataBiosGetTrainer(FightEncountData* data) {
+PCRET(u8) fightEncountDataBiosGetTrainer(FightEncountData* data) {
     if (data == NULL) {
         return 0;
     }
     return data->trainer;
 }
 
-u8 fightEncountDataBiosGetFightType(FightEncountData* data) {
+PCRET(u8) fightEncountDataBiosGetFightType(FightEncountData* data) {
     FightTypeData* type;
     u8 i;
     if (data == NULL) {
@@ -309,7 +278,7 @@ u8 fightEncountDataBiosGetFightType(FightEncountData* data) {
     return 3;
 }
 
-u8 fightEncountDataBiosGetFightKind(FightEncountData* data) {
+PCRET(u8) fightEncountDataBiosGetFightKind(FightEncountData* data) {
     if (data == NULL) {
         return 0;
     }

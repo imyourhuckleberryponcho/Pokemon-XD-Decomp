@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/tigadata.h>
 
 #pragma pool_strings off
 
@@ -59,9 +60,9 @@ void tigaErrMessage(const char*);
 struct varPool_t { void* ptr[0x100]; };
 
 struct tigaVariant {
-    s16 type;
-    s16 flags;
-    union { s32 integer; f32 real; void* pointer; } value;
+    gc_bes16 type;
+    gc_bes16 flags;
+    union { gc_bes32 integer; gc_bef32 real; gc_ptr32(void) pointer; } value;
 
     static const char* getTypeString(int);
     void restoreStateData(GSBinReadStream*);
@@ -148,8 +149,8 @@ struct tigaVariant {
 };
 
 struct tigaArrayFixed {
-    s32 size;
-    u32 iter;
+    gc_bes32 size;
+    gc_be32 iter;
     u8 reserved8[8];
     tigaVariant data[1];
 
@@ -172,34 +173,26 @@ public:
     void dupVariant(tigaVariant*);
 };
 
-struct TigaObjManager {
+struct TigaObjManager : public TigaObjManagerView {
     GSvec* newVector();
     void deleteVector(GSvec*);
 };
 
 class Tiga {
 public:
-    u8 reserved[0x18];
-    TigaObjManager objManager;
-    u8 reserved19[0x8F7];
-    tigaCellMemory* cellMemory;
-    u8 reserved914[0x30];
-    TPCCode* codes;
-    u8 reserved948[0x18];
-    s32 peopleCount;
-    ScriptPeople* people;
-    s32 objectCount;
-    ScriptObject** objects;
+    GSSCRIPT_TIGA_DATA(TigaChankView, TigaObjManager, TigaContext)
 
     static Tiga* m_cpCurrentObject;
+
+    virtual ~Tiga();
 
     inline TPCCode* getCode(u32 n) {
         if (n) return &codes[n];
         return 0;
     }
     inline ScriptObject* getObject(s32 i) {
-        if (i < 0 || i >= objectCount) return 0;
-        return objects[i];
+        if (i < 0 || i >= arrayCount) return 0;
+        return ((ScriptObject**)arrays)[i];
     }
     inline ScriptPeople* searchPeople(u32 group, u32 object) {
         for (int i = 0; i < peopleCount; i++) {
@@ -904,13 +897,14 @@ void tigaVariant::restoreStateData(GSBinReadStream* stream)
     case 2:
         value.real = stream->readFloat();
         break;
-    case 7:
+    case 7: {
         Tiga* tiga = Tiga::m_cpCurrentObject;
         value.pointer = tiga->getObject(stream->read32());
         if (value.pointer == 0) {
             setInteger(0);
         }
         break;
+    }
     case 4: {
         GSvec* v = Tiga::m_cpCurrentObject->objManager.newVector();
         if (v) {

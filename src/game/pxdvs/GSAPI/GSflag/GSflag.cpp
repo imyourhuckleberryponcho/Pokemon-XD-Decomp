@@ -1,19 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pxdvs/GSAPI/GSflag/flagData.h>
 
 #pragma pool_strings off
-
-struct FlagData {
-    u8 level : 2;
-    u8 length : 6;
-    u8 unk1;
-    u16 pos;
-    u16 unk4;
-};
-
-struct FlagLevel {
-    u32 numWords;
-    u32* bits;
-};
 
 extern "C" {
 

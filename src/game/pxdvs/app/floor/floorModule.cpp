@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/tigadata.h>
+#include <game/pxdvs/app/floor/floorData.h>
 #pragma peephole off
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
@@ -65,7 +67,13 @@ struct FloorScriptModule;
 enum FloorState { FloorState_draft_dummy };
 enum FloorStateMode { FloorStateMode_draft_dummy };
 struct FloorModuleInterface {
-    u32 data[7];
+    void (*create)(unsigned int, FloorEnterMode);
+    void (*initialize)(unsigned int, FloorEnterMode);
+    void (*update)(unsigned int, FloorEnterMode);
+    void* thread;
+    void (*finalize)(unsigned int, FloorEnterMode);
+    void (*free)(unsigned int, FloorEnterMode);
+    const char* (*getModuleName)();
     void (*pushState)(FloorStateMode mode, void* buf, u32 size);
     void (*popState)(FloorStateMode mode, void* buf, u32 size);
     u32 (*getPushSize)(FloorStateMode mode);
@@ -77,16 +85,22 @@ struct ScriptTpcNode;
 struct FloorModuleInterface;
 
 namespace GSscript {
-class tigaVariant;
+struct tigaVariant;
 class Tiga {
 public:
-    void blockThread(long thread);
-    void blockThreadGroup(unsigned long group);
-    void unblockThreadGroup(unsigned long group);
-    void deleteThreadGroup(unsigned long group);
-    void unblockThread(long thread);
-    void deleteThread(long thread);
-    u8 isRunningThread(long thread);
+    GSSCRIPT_TIGA_VIEW_DATA
+    virtual ~Tiga();
+    void blockThread(s32 thread);
+    void blockThreadGroup(u32 group);
+    void unblockThreadGroup(u32 group);
+    void deleteThreadGroup(u32 group);
+    void unblockThread(s32 thread);
+    void deleteThread(s32 thread);
+#ifdef __MWERKS__
+    u8 isRunningThread(s32 thread);
+#else
+    bool isRunningThread(s32 id);
+#endif
     s32 runParams(int func, tigaVariant* args, int count, bool now);
 };
 }
@@ -101,7 +115,7 @@ public:
     u32 script;
 public:
     void block();
-    void exec(unsigned char, unsigned long, FloorEnterMode);
+    void exec(unsigned char, u32, FloorEnterMode);
     u8 isRunning();
     void unblock();
     void terminate();
@@ -132,16 +146,23 @@ public:
     bool blocked;
     u8 started;
     u8 unk1B;
+#ifdef __MWERKS__
     u8 module[0x2C];
+#else
+    union {
+        u8 module[sizeof(FloorModuleInterface)];
+        void* moduleAlign;
+    };
+#endif
 public:
     FloorModuleEntry();
     void init();
     u8 isScriptRunning(FloorState);
     bool isTpcScript() const;
-    void setModule(unsigned char, unsigned long, FloorModuleInterface*);
+    void setModule(unsigned char, u32, FloorModuleInterface*);
     void block();
     FloorModuleInterface* getModuleInterface();
-    void setScriptModule(unsigned char, unsigned long, unsigned long, unsigned long, unsigned long);
+    void setScriptModule(unsigned char, u32, u32, u32, u32);
     void exec(FloorState, unsigned int, FloorEnterMode);
     void terminate();
     void kill();
@@ -149,19 +170,16 @@ public:
 };
 
 namespace GSscript {
-class tigaVariant {
+struct tigaVariant {
 public:
-    void setInteger(long value);
+    void setInteger(s32 value);
 
-    u16 type;
-    s32 value;
+    gc_be16 type;
+    gc_bes32 value;
 };
 }
 
 extern "C++" {
-struct FloorData {
-    u8 _draft[1];
-};
 struct FloorModuleList {
     FloorModuleEntry* entries;
     u32 count;
@@ -174,31 +192,31 @@ struct FloorModuleList {
     FloorModuleEntry* findFree();
     void insertFuncIntoList(FloorModuleEntry*);
     FloorModuleEntry* getFMEEnd();
-    void unblockModule(unsigned long);
+    void unblockModule(u32);
     void* makePushState(FloorStateMode);
     u8 executeIsDone(FloorState);
-    void unregisterModuleGroup(unsigned long);
-    void blockModule(unsigned long);
-    void killModule(unsigned long);
-    void killModuleGroup(unsigned long);
-    void blockModuleGroup(unsigned long);
+    void unregisterModuleGroup(u32);
+    void blockModule(u32);
+    void killModule(u32);
+    void killModuleGroup(u32);
+    void blockModuleGroup(u32);
     u32 getNewHandle();
-    FloorModuleEntry* findHandle(unsigned long);
+    FloorModuleEntry* findHandle(u32);
     virtual ~FloorModuleList();
-    FloorModuleList(unsigned long);
-    void executeAll(unsigned int, FloorState, FloorModuleType, FloorEnterMode, unsigned long);
-    u32 registerScriptModule(unsigned char, unsigned long, unsigned long, unsigned long, unsigned long);
-    void unblockModuleGroup(unsigned long);
-    void unregisterModule(unsigned long);
-    u32 registerModule(unsigned char, unsigned long, FloorModuleInterface*);
+    FloorModuleList(u32);
+    void executeAll(unsigned int, FloorState, FloorModuleType, FloorEnterMode, u32);
+    u32 registerScriptModule(unsigned char, u32, u32, u32, u32);
+    void unblockModuleGroup(u32);
+    void unregisterModule(u32);
+    u32 registerModule(unsigned char, u32, FloorModuleInterface*);
     void dumpModule();
 };
 struct FloorScriptModule {
     ScriptTpcNode init;
     ScriptTpcNode enter;
     ScriptTpcNode exit;
-    void setIDs(unsigned long, unsigned long, unsigned long);
-    void exec(FloorState, unsigned char, unsigned long, FloorEnterMode);
+    void setIDs(u32, u32, u32);
+    void exec(FloorState, unsigned char, u32, FloorEnterMode);
     ScriptTpcNode* stateToNode(FloorState);
     u8 isRunning(FloorState);
     void unblock();
@@ -254,9 +272,9 @@ void FloorModuleList::restorePopState(void* state, FloorStateMode mode, bool fre
     }
     while (p < end) {
         u32* hdr = (u32*)p;
-        u32 id = hdr[0];
-        p += 8;
-        u32 size = hdr[1];
+        u32 id = *hdr++;
+        u32 size = *hdr++;
+        p = (u8*)hdr;
         for (FloorModuleEntry* entry = head; entry != 0; entry = entry->getNext()) {
             FloorModuleInterface* iface = entry->getModuleInterface();
             if (iface != 0 && iface->getPushSize != 0 && id == iface->getID()) {
@@ -275,7 +293,7 @@ void FloorModuleList::restorePopState(void* state, FloorStateMode mode, bool fre
 extern "C++" {
 #pragma push
 #pragma dont_inline on
-void FloorModuleList::killModuleGroup(unsigned long group) {
+void FloorModuleList::killModuleGroup(u32 group) {
     FloorModuleEntry* entry;
     for (entry = head; entry != NULL; entry = entry->getNext()) {
         if (group == entry->getGroupID()) {
@@ -288,7 +306,7 @@ void FloorModuleList::killModuleGroup(unsigned long group) {
 extern "C++" {
 #pragma push
 #pragma dont_inline on
-void FloorModuleList::unblockModuleGroup(unsigned long group) {
+void FloorModuleList::unblockModuleGroup(u32 group) {
     FloorModuleEntry* entry;
     for (entry = head; entry != NULL; entry = entry->getNext()) {
         if (group == entry->getGroupID()) {
@@ -301,7 +319,7 @@ void FloorModuleList::unblockModuleGroup(unsigned long group) {
 extern "C++" {
 #pragma push
 #pragma dont_inline on
-void FloorModuleList::blockModuleGroup(unsigned long group) {
+void FloorModuleList::blockModuleGroup(u32 group) {
     FloorModuleEntry* entry;
     for (entry = head; entry != NULL; entry = entry->getNext()) {
         if (group == entry->getGroupID()) {
@@ -311,7 +329,7 @@ void FloorModuleList::blockModuleGroup(unsigned long group) {
     floorGetCommonScript()->blockThreadGroup(group);
     floorGetCurentScript()->blockThreadGroup(group);
 }
-void FloorModuleList::unregisterModuleGroup(unsigned long group) {
+void FloorModuleList::unregisterModuleGroup(u32 group) {
     FloorModuleEntry* entry;
     for (entry = entries; entry != &entries[count]; entry++) {
         if (group == entry->getGroupID()) {
@@ -351,7 +369,7 @@ u8 FloorModuleList::executeIsDone(FloorState state) {
 }
 
 extern "C++" {
-void FloorModuleList::executeAll(unsigned int arg, FloorState state, FloorModuleType type, FloorEnterMode mode, unsigned long group) {
+void FloorModuleList::executeAll(unsigned int arg, FloorState state, FloorModuleType type, FloorEnterMode mode, u32 group) {
     FloorModuleEntry* entry;
     FloorModuleEntry* prev;
     FloorModuleEntry* next;
@@ -445,7 +463,7 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 extern "C++" {
-void FloorModuleList::killModule(unsigned long p0) {
+void FloorModuleList::killModule(u32 p0) {
     FloorModuleEntry *temp_r3;
 
     temp_r3 = (FloorModuleEntry *)(this->findHandle(p0));
@@ -454,10 +472,10 @@ void FloorModuleList::killModule(unsigned long p0) {
     }
 }
 extern "C++" {
-void FloorModuleList::unblockModule(unsigned long p0) {
+void FloorModuleList::unblockModule(u32 p0) {
     u32 temp_r3;
 
-    temp_r3 = (unsigned long)(this->findHandle(p0));
+    temp_r3 = (u32)(this->findHandle(p0));
     if (temp_r3 != 0) {
         ((FloorModuleEntry*)((FloorModuleEntry *) temp_r3))->unblock();
     }
@@ -465,10 +483,10 @@ void FloorModuleList::unblockModule(unsigned long p0) {
 }
 
 extern "C++" {
-void FloorModuleList::blockModule(unsigned long p0) {
+void FloorModuleList::blockModule(u32 p0) {
     u32 temp_r3;
 
-    temp_r3 = (unsigned long)(this->findHandle(p0));
+    temp_r3 = (u32)(this->findHandle(p0));
     if (temp_r3 != 0) {
         ((FloorModuleEntry*)((FloorModuleEntry *) temp_r3))->block();
     }
@@ -476,10 +494,10 @@ void FloorModuleList::blockModule(unsigned long p0) {
 }
 
 extern "C++" {
-void FloorModuleList::unregisterModule(unsigned long p0) {
+void FloorModuleList::unregisterModule(u32 p0) {
     u32 temp_r3;
 
-    temp_r3 = (unsigned long)(this->findHandle(p0));
+    temp_r3 = (u32)(this->findHandle(p0));
     if (temp_r3 != 0) {
         ((FloorModuleEntry*)((FloorModuleEntry *) temp_r3))->terminate();
         this->removeFuncFromList((FloorModuleEntry*)((FloorModuleEntry *) temp_r3));
@@ -494,15 +512,15 @@ void FloorModuleList::removeFuncFromList(FloorModuleEntry* p0) {
     u32 temp_r31_2;
 
     if (((FloorModuleEntry*)(p0))->getPrev() != 0) {
-        temp_r31 = (unsigned long)(((FloorModuleEntry*)(p0))->getPrev());
+        temp_r31 = (u32)(((FloorModuleEntry*)(p0))->getPrev());
         ((FloorModuleEntry*)((FloorModuleEntry *) temp_r31))->setNext((FloorModuleEntry*)(((FloorModuleEntry*)(p0))->getNext()));
     }
     if (((FloorModuleEntry*)(p0))->getNext() != 0) {
-        temp_r31_2 = (unsigned long)(((FloorModuleEntry*)(p0))->getNext());
+        temp_r31_2 = (u32)(((FloorModuleEntry*)(p0))->getNext());
         ((FloorModuleEntry*)((FloorModuleEntry *) temp_r31_2))->setPrev((FloorModuleEntry*)(((FloorModuleEntry*)(p0))->getPrev()));
     }
-    if ((u32) M2C_FIELD(this, u32 *, 0xC) == (u32)(p0)) {
-        M2C_FIELD(this, u32 *, 0xC) = (unsigned long)(((FloorModuleEntry*)(p0))->getNext());
+    if (head == p0) {
+        head = ((FloorModuleEntry*)(p0))->getNext();
     }
     ((FloorModuleEntry*)(p0))->setPrev((FloorModuleEntry*)(NULL));
     ((FloorModuleEntry*)(p0))->setNext((FloorModuleEntry*)(NULL));
@@ -510,7 +528,7 @@ void FloorModuleList::removeFuncFromList(FloorModuleEntry* p0) {
 }
 
 extern "C++" {
-FloorModuleEntry* FloorModuleList::findHandle(unsigned long handle) {
+FloorModuleEntry* FloorModuleList::findHandle(u32 handle) {
     FloorModuleEntry* entry;
     for (entry = entries; entry != &entries[count]; entry++) {
         if (!entry->isEmpty() && handle == entry->getHandle()) {
@@ -1141,7 +1159,7 @@ extern "C++" {
 extern "C++" {
 #pragma push
 #pragma peephole off
-u32 FloorModuleList::registerScriptModule(unsigned char p0, unsigned long p1, unsigned long p2, unsigned long p3, unsigned long p4) {
+u32 FloorModuleList::registerScriptModule(unsigned char p0, u32 p1, u32 p2, u32 p3, u32 p4) {
     FloorModuleEntry *temp_r3;
 
     temp_r3 = (FloorModuleEntry *)(((FloorModuleList*)(this))->findFree());
@@ -1160,7 +1178,7 @@ u32 FloorModuleList::registerScriptModule(unsigned char p0, unsigned long p1, un
 extern "C++" {
 #pragma push
 #pragma peephole off
-u32 FloorModuleList::registerModule(unsigned char p0, unsigned long p1, FloorModuleInterface* p2) {
+u32 FloorModuleList::registerModule(unsigned char p0, u32 p1, FloorModuleInterface* p2) {
     FloorModuleEntry *temp_r3;
 
     if (p2 == NULL) {
@@ -1182,11 +1200,11 @@ u32 FloorModuleList::registerModule(unsigned char p0, unsigned long p1, FloorMod
 extern "C++" {
 extern "C++" {
 void FloorModuleList::insertFuncIntoList(FloorModuleEntry* entry) {
-    if (M2C_FIELD(this, FloorModuleEntry **, 0xC) == NULL) {
-        M2C_FIELD(this, FloorModuleEntry **, 0xC) = entry;
+    if (head == NULL) {
+        head = entry;
         return;
     }
-    FloorModuleEntry* cur = M2C_FIELD(this, FloorModuleEntry **, 0xC);
+    FloorModuleEntry* cur = head;
     while (cur->getNext() != NULL) {
         if (!(cur->getPriority() < entry->getPriority())) {
             break;
@@ -1205,8 +1223,8 @@ void FloorModuleList::insertFuncIntoList(FloorModuleEntry* entry) {
     entry->setPrev(cur->getPrev());
     entry->setNext(cur);
     cur->setPrev(entry);
-    if (M2C_FIELD(this, FloorModuleEntry **, 0xC) == cur) {
-        M2C_FIELD(this, FloorModuleEntry **, 0xC) = entry;
+    if (head == cur) {
+        head = entry;
     }
 }
 }
@@ -1218,7 +1236,7 @@ FloorModuleEntry* FloorModuleList::getFMEEnd() {
     FloorModuleEntry *var_r31;
     FloorModuleEntry *var_r3;
 
-    var_r3 = M2C_FIELD(this, FloorModuleEntry **, 0xC);
+    var_r3 = head;
     var_r31 = NULL;
     while (var_r3 != NULL) {
         var_r31 = var_r3;
@@ -1238,7 +1256,7 @@ FloorModuleList::~FloorModuleList() {
 }
 
 extern "C++" {
-FloorModuleList::FloorModuleList(unsigned long p0) {
+FloorModuleList::FloorModuleList(u32 p0) {
     count = p0;
     head = 0;
     entries = new FloorModuleEntry[p0];
@@ -1291,13 +1309,13 @@ extern "C++" {
 void FloorModuleEntry::terminate() {
     s32 temp_r0;
 
-    temp_r0 = M2C_FIELD(this, s32 *, 0x10);
+    temp_r0 = type;
     switch (temp_r0) {
     case 2:
-        ((FloorScriptModule*)((u8*)this + 0x1C))->terminate();
+        ((FloorScriptModule*)(module))->terminate();
         return;
     case 4:
-        ((ScriptTpcNode*)((u8*)this + 0x1C))->terminate();
+        ((ScriptTpcNode*)(module))->terminate();
     case 3:
         return;
     }
@@ -1307,7 +1325,7 @@ void FloorModuleEntry::terminate() {
 extern "C++" {
 void FloorModuleEntry::kill() {
     if (((FloorModuleEntry*)(this))->isTpcScript() != 0) {
-        ((FloorScriptModule*)((u8*)this + 0x1C))->kill();
+        ((FloorScriptModule*)(module))->kill();
     }
 }
 }
@@ -1316,14 +1334,14 @@ extern "C++" {
 void FloorModuleEntry::unblock() {
     s32 temp_r0;
 
-    M2C_FIELD(this, s8 *, 0x19) = 0;
-    temp_r0 = M2C_FIELD(this, s32 *, 0x10);
+    blocked = 0;
+    temp_r0 = type;
     switch (temp_r0) {
     case 2:
-        ((FloorScriptModule*)((u8*)this + 0x1C))->unblock();
+        ((FloorScriptModule*)(module))->unblock();
         return;
     case 4:
-        ((ScriptTpcNode*)((u8*)this + 0x1C))->unblock();
+        ((ScriptTpcNode*)(module))->unblock();
     case 3:
         return;
     }
@@ -1334,25 +1352,25 @@ extern "C++" {
 void FloorModuleEntry::block() {
     s32 temp_r0;
 
-    M2C_FIELD(this, s8 *, 0x19) = 1;
-    temp_r0 = M2C_FIELD(this, s32 *, 0x10);
+    blocked = 1;
+    temp_r0 = type;
     switch (temp_r0) {
     case 2:
-        ((FloorScriptModule*)((u8*)this + 0x1C))->block();
+        ((FloorScriptModule*)(module))->block();
         return;
     case 4:
-        ((ScriptTpcNode*)((u8*)this + 0x1C))->block();
+        ((ScriptTpcNode*)(module))->block();
     case 3:
         return;
     }
 }
 extern "C++" {
-void FloorModuleEntry::setScriptModule(unsigned char p0, unsigned long p1, unsigned long p2, unsigned long p3, unsigned long p4) {
+void FloorModuleEntry::setScriptModule(unsigned char p0, u32 p1, u32 p2, u32 p3, u32 p4) {
     ((FloorModuleEntry*)(this))->init();
-    M2C_FIELD(this, s32 *, 0x10) = 2;
-    M2C_FIELD(this, u32 *, 0x14) = p1;
-    M2C_FIELD(this, u8 *, 0x18) = p0;
-    ((FloorScriptModule*)((u8*)this + 0x1C))->setIDs(p2, p3, p4);
+    type = (FloorModuleType)2;
+    groupID = p1;
+    priority = p0;
+    ((FloorScriptModule*)(module))->setIDs(p2, p3, p4);
 }
 }
 
@@ -1362,18 +1380,18 @@ extern "C++" {
 extern "C++" {
 extern "C++" {
 void FloorModuleEntry::init() {
-    M2C_FIELD(this, s32 *, 0) = 0;
-    M2C_FIELD(this, s32 *, 4) = 0;
-    M2C_FIELD(this, s8 *, 0x19) = 0;
-    M2C_FIELD(this, s8 *, 0x1A) = 0;
-    M2C_FIELD(this, s32 *, 8) = 0;
-    M2C_FIELD(this, s32 *, 0x14) = 0;
-    M2C_FIELD(this, s8 *, 0x18) = 0;
+    prev = 0;
+    next = 0;
+    blocked = 0;
+    started = 0;
+    handle = 0;
+    groupID = 0;
+    priority = 0;
 }
 }
 
 extern "C++" {
-void FloorModuleEntry::setModule(unsigned char priority, unsigned long group, FloorModuleInterface* iface) {
+void FloorModuleEntry::setModule(unsigned char priority, u32 group, FloorModuleInterface* iface) {
     init();
     type = FloorTypeFunc;
     groupID = group;
@@ -1394,58 +1412,59 @@ GSscript::Tiga* ScriptTpcNode::getScript() {
     return floorGetCurentScript();
 }
 extern "C" {
+#define IFACE(p) ((FloorModuleInterface*)(p))
 u8 FloorModuleInterface_exec(s32 *p0, s32 p1, s32 p2, s32 p3, bool p4) {
     GSthread *temp_r31;
-    s32 (*temp_r12)(s32, s32);
+    void (*temp_r12)(unsigned int, FloorEnterMode);
 
         switch (p1) { case 1: goto sw0_c1; case 2: goto sw0_c2; case 4: goto sw0_c4; case 6: goto sw0_c6; case 8: goto sw0_c8; case 0: goto sw0_c0; case 3: goto sw0_c3; case 5: goto sw0_c5; case 7: goto sw0_c7; default: goto block_16; }
 sw0_c1:;
-    if ((u32) M2C_FIELD(p0, s32 *, 0) == 0U) {
+    if (IFACE(p0)->create == 0) {
         goto block_16;
     }
     _dispModuleName((FloorModuleInterface*)((FloorModuleInterface *) p0), (const char*)(_floorStateToStr((FloorState)(p1))));
-    ((s32 (*)(s32, s32)) M2C_FIELD(p0, s32 *, 0))(p2, p3);
+    IFACE(p0)->create(p2, (FloorEnterMode)p3);
     goto block_16;
 sw0_c2:;
-    if (((s32 (*)(s32, s32)) M2C_FIELD(p0, s32 (**)(s32, s32), 4)) == NULL) {
+    if (IFACE(p0)->initialize == NULL) {
         goto block_16;
     }
     _dispModuleName((FloorModuleInterface*)((FloorModuleInterface *) p0), (const char*)(_floorStateToStr((FloorState)(p1))));
-    M2C_FIELD(p0, s32 (**)(s32, s32), 4)(p2, p3);
+    IFACE(p0)->initialize(p2, (FloorEnterMode)p3);
     goto block_16;
 sw0_c4:;
-    if ((u8 *) M2C_FIELD(p0, u8 **, 0xC) == NULL) {
+    if (IFACE(p0)->thread == NULL) {
         goto block_10;
     }
     if (p4 == 0) {
         goto block_9;
     }
     _dispModuleName((FloorModuleInterface*)((FloorModuleInterface *) p0), (const char*)("NoramlThread"));
-    temp_r31 = (GSthread *)(floorCreateThread(1, 0x4000U, 1, (void*)(M2C_FIELD(p0, u8 **, 0xC))));
-    GSthreadSetName((GSthread*)(temp_r31), (const char*)(M2C_FIELD(p0, s8 *(**)(), 0x18)()));
+    temp_r31 = (GSthread *)(floorCreateThread(1, 0x4000U, 1, IFACE(p0)->thread));
+    GSthreadSetName((GSthread*)(temp_r31), IFACE(p0)->getModuleName());
     return 1U;
 block_9:
     return 0U;
 block_10:
-    temp_r12 = M2C_FIELD(p0, s32 (**)(s32, s32), 8);
+    temp_r12 = IFACE(p0)->update;
     if (temp_r12 == NULL) {
         goto block_16;
     }
-    temp_r12(p2, p3);
+    temp_r12(p2, (FloorEnterMode)p3);
     goto block_16;
 sw0_c6:;
-    if (((s32 (*)(s32, s32)) M2C_FIELD(p0, s32 (**)(s32, s32), 0x10)) == NULL) {
+    if (IFACE(p0)->finalize == NULL) {
         goto block_16;
     }
     _dispModuleName((FloorModuleInterface*)((FloorModuleInterface *) p0), (const char*)(_floorStateToStr((FloorState)(p1))));
-    M2C_FIELD(p0, s32 (**)(s32, s32), 0x10)(p2, p3);
+    IFACE(p0)->finalize(p2, (FloorEnterMode)p3);
     goto block_16;
 sw0_c8:;
-    if (((s32 (*)(s32, s32)) M2C_FIELD(p0, s32 (**)(s32, s32), 0x14)) == NULL) {
+    if (IFACE(p0)->free == NULL) {
         goto block_16;
     }
     _dispModuleName((FloorModuleInterface*)((FloorModuleInterface *) p0), (const char*)(_floorStateToStr((FloorState)(p1))));
-    M2C_FIELD(p0, s32 (**)(s32, s32), 0x14)(p2, p3);
+    IFACE(p0)->free(p2, (FloorEnterMode)p3);
 sw0_c0:;
 sw0_c3:;
 sw0_c5:;
@@ -1470,7 +1489,7 @@ u8 FloorScriptModule::isRunning(FloorState state) {
 
 #pragma push
 #pragma peephole off
-void FloorScriptModule::exec(FloorState state, unsigned char type, unsigned long group, FloorEnterMode mode) {
+void FloorScriptModule::exec(FloorState state, unsigned char type, u32 group, FloorEnterMode mode) {
     ScriptTpcNode* node = stateToNode(state);
     if (node != NULL) {
         node->exec(type, group, mode);
@@ -1540,7 +1559,7 @@ extern "C++" {
 #pragma dont_inline on
 #pragma push
 #pragma peephole off
-void ScriptTpcNode::exec(unsigned char, unsigned long, FloorEnterMode mode) {
+void ScriptTpcNode::exec(unsigned char, u32, FloorEnterMode mode) {
     GSscript::tigaVariant args[4];
     args[0].setInteger(mode);
     args[1].setInteger(0);
@@ -1604,12 +1623,12 @@ static void _dispModuleName(FloorModuleInterface* p0, const char* p1) {
 
 extern "C" {
 void FloorModuleInterface_clear(FloorModuleInterface* p0) {
-    memset((void*)(p0), 0, 0x2CU);
+    memset((void*)(p0), 0, sizeof(FloorModuleInterface));
 }
 extern "C++" {
 #pragma push
 #pragma peephole off
-void FloorScriptModule::setIDs(unsigned long initID, unsigned long enterID, unsigned long exitID) {
+void FloorScriptModule::setIDs(u32 initID, u32 enterID, u32 exitID) {
     init.setID(initID);
     enter.setID(enterID);
     exit.setID(exitID);
@@ -1685,7 +1704,7 @@ FloorModuleEntry* FloorModuleEntry::getPrev() const {
 }
 extern "C++" {
 FloorModuleInterface* FloorModuleEntry::getModuleInterface() {
-    if ((s32) M2C_FIELD(this, s32 *, 0x10) == 0) {
+    if ((s32) type == 0) {
         return (FloorModuleInterface*)module;
     }
     return NULL;
@@ -1703,12 +1722,12 @@ extern "C++" {
 u32 FloorModuleList::getNewHandle() {
     u32 temp_r4;
 
-    M2C_FIELD(this, u32 *, 8) = (u32) (M2C_FIELD(this, u32 *, 8) + 1);
-    temp_r4 = M2C_FIELD(this, u32 *, 8);
+    nextHandle = nextHandle + 1;
+    temp_r4 = nextHandle;
     if (temp_r4 == 0) {
-        M2C_FIELD(this, u32 *, 8) = (u32) (temp_r4 + 1);
+        nextHandle = temp_r4 + 1;
     }
-    return M2C_FIELD(this, u32 *, 8);
+    return nextHandle;
 }
 }
 
@@ -1733,7 +1752,10 @@ bool FloorModuleEntry::isTpcScript() const {
 }
 }
 
-void GSscript::tigaVariant::setInteger(long value) {
+#ifndef __MWERKS__
+inline
+#endif
+void GSscript::tigaVariant::setInteger(s32 value) {
     type = 1;
     this->value = value;
 }

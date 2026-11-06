@@ -2,6 +2,7 @@
 
 
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 #pragma pool_strings off
 
@@ -94,39 +95,39 @@ struct PSParticle {
 #define PS_FLAG_POINT_JOBJ 0x8000
 
 typedef struct PSTexGroup {
-    u32 num;
-    u32 fmt;
-    u32 tlutfmt;
-    u32 width;
-    u32 height;
-    u16 palnum;
-    u16 palflag;
-    u8* texTable[1];
+    gc_be32 num;
+    gc_be32 fmt;
+    gc_be32 tlutfmt;
+    gc_be32 width;
+    gc_be32 height;
+    gc_be16 palnum;
+    gc_be16 palflag;
+    gc_ptr32(u8) texTable[1];
 } PSTexGroup;
 
 typedef struct PSFormGroup {
-    u32 num;
-    u8* formTable[1];
+    gc_be32 num;
+    gc_ptr32(u8) formTable[1];
 } PSFormGroup;
 
 typedef struct PSCmdList {
-    u16 type;
-    u16 texGroup;
-    u16 genLife;
-    u16 life;
-    u32 kind;
-    f32 grav;
-    f32 fric;
-    f32 vx;
-    f32 vy;
-    f32 vz;
-    f32 radius;
-    f32 angle;
-    f32 random;
-    f32 size;
-    f32 param1;
-    f32 param2;
-    f32 param3;
+    gc_be16 type;
+    gc_be16 texGroup;
+    gc_be16 genLife;
+    gc_be16 life;
+    gc_be32 kind;
+    gc_bef32 grav;
+    gc_bef32 fric;
+    gc_bef32 vx;
+    gc_bef32 vy;
+    gc_bef32 vz;
+    gc_bef32 radius;
+    gc_bef32 angle;
+    gc_bef32 random;
+    gc_bef32 size;
+    gc_bef32 param1;
+    gc_bef32 param2;
+    gc_bef32 param3;
     u8 cmdList[1];
 } PSCmdList;
 
@@ -134,9 +135,9 @@ typedef struct PSCmdList {
 void* psPointJObj[8];
 s32 psNumCmdList[64];
 s32 psNumTexGroup[64];
-PSCmdList** psCmdListArray[64];
-PSTexGroup** psTexGroupArray[64];
-PSFormGroup** psFormGroupArray[64];
+gc_ptr32(PSCmdList)* psCmdListArray[64];
+gc_ptr32(PSTexGroup)* psTexGroupArray[64];
+gc_ptr32(PSFormGroup)* psFormGroupArray[64];
 u32* ptclref[64];
 
 extern PSGenerator* activeGenerator;
@@ -205,6 +206,7 @@ static inline PSParticle* psKillParticle(PSParticle* pp)
     return next;
 }
 
+#ifdef __MWERKS__
 void psInitDataBankLocate(int* cmdBank, int* texBank, int* formBank)
 {
     int i;
@@ -311,39 +313,133 @@ void psInitDataBankLocate(int* cmdBank, int* texBank, int* formBank)
         }
     }
 }
+#else
+
+static void psLocateTex(PSTexGroup* tg, u32 from, u32 to, u32 base)
+{
+    u32 ti;
+    for (ti = from; ti < to; ti++) {
+        if (GC_BE32(tg->texTable[ti]) != 0) {
+            GC_ADDBE32(tg->texTable[ti], base);
+        }
+    }
+}
+
+void psInitDataBankLocate(int* cmdBank, int* texBank, int* formBank)
+{
+    gc_be32* cb = (gc_be32*) cmdBank;
+    gc_be32* tb = (gc_be32*) texBank;
+    gc_be32* fb = (gc_be32*) formBank;
+    gc_ptr32(PSCmdList)* base = NULL;
+    int i, j, k, num = 0, num2 = 0, num_groups;
+    u32 fi;
+
+    switch (GC_BE16(*(gc_be16*) cmdBank)) {
+    case 0:
+        num2 = GC_BES32(cb[1]);
+        base = (gc_ptr32(PSCmdList)*) (cb + 2);
+        for (i = 0; i < num2; i++) {
+            GC_ADDBE32(cb[i + 2], GC_ADDR32(cmdBank));
+        }
+        break;
+    case 0x40:
+    case 0x41:
+    case 0x42:
+    case 0x43:
+        num = GC_BES32(cb[1]);
+        num2 = GC_BES32(cb[2]) + num;
+        base = (gc_ptr32(PSCmdList)*) (cb + 3 - num);
+        for (j = 0; j < GC_BES32(cb[2]); j++) {
+            if (GC_BE32(cb[3 + j]) != 0) {
+                GC_ADDBE32(cb[3 + j], GC_ADDR32(cmdBank));
+            }
+        }
+        break;
+    }
+
+    for (i = num; i < num2; i++) {
+        PSCmdList* c = GC_PTR(PSCmdList*, base[i]);
+        if (c != NULL) {
+            GC_SETBE32(c->kind, (GC_BE32(c->kind) & 0xF1FFFFFF) | 0x08000000);
+        }
+    }
+
+    num_groups = GC_BES32(tb[0]);
+    for (k = 1; k <= num_groups; k++) {
+        if (GC_BE32(tb[k]) != 0) {
+            GC_ADDBE32(tb[k], GC_ADDR32(texBank));
+        }
+    }
+    for (k = 0; k < num_groups; k++) {
+        PSTexGroup* tg = GC_PTR(PSTexGroup*, tb[1 + k]);
+        u32 n, fmt;
+        if (tg == NULL) {
+            continue;
+        }
+        n = GC_BE32(tg->num);
+        psLocateTex(tg, 0, n, GC_ADDR32(texBank));
+        fmt = GC_BE32(tg->fmt);
+        if (fmt == 8 || fmt == 9 || fmt == 10) {
+            if (GC_BE16(tg->palflag) & 1) {
+                psLocateTex(tg, n, n + 1, GC_ADDR32(texBank));
+            } else if (GC_BE16(tg->palnum) != 0) {
+                psLocateTex(tg, n, n + GC_BE16(tg->palnum), GC_ADDR32(texBank));
+            } else {
+                psLocateTex(tg, n, n * 2, GC_ADDR32(texBank));
+            }
+        }
+    }
+
+    if (formBank == NULL) {
+        return;
+    }
+    for (i = 1; i <= num_groups; i++) {
+        if (GC_BE32(fb[i]) != 0) {
+            PSFormGroup* fg;
+            GC_ADDBE32(fb[i], GC_ADDR32(formBank));
+            fg = GC_PTR(PSFormGroup*, fb[i]);
+            for (fi = 0; fi < GC_BE32(fg->num); fi++) {
+                if (GC_BE32(fg->formTable[fi]) != 0) {
+                    GC_ADDBE32(fg->formTable[fi], GC_ADDR32(formBank));
+                }
+            }
+        }
+    }
+}
+#endif
 
 static inline void psInitDataBankLoad(int bank, const int* cmdBank, const int* texBank,
                                       u32* ref, const int* formBank)
 {
     u16 version;
 
-    if (formBank != NULL && *formBank != *texBank) {
+    if (formBank != NULL && GC_BES32(*formBank) != GC_BES32(*texBank)) {
         OSPanic("particle.c", 98, "illigal form data (strange number of group)\n");
     }
 
     ptclref[bank] = ref;
-    psNumTexGroup[bank] = *texBank;
-    psTexGroupArray[bank] = (PSTexGroup**) (texBank + 1);
+    psNumTexGroup[bank] = GC_BES32(*texBank);
+    psTexGroupArray[bank] = (gc_ptr32(PSTexGroup)*) (texBank + 1);
 
     if (formBank != NULL) {
-        psFormGroupArray[bank] = (PSFormGroup**) (formBank + 1);
+        psFormGroupArray[bank] = (gc_ptr32(PSFormGroup)*) (formBank + 1);
     } else {
         psFormGroupArray[bank] = NULL;
     }
 
-    version = *(u16*) cmdBank;
+    version = GC_BE16(*(u16*) cmdBank);
     switch (version) {
     case 0:
-        psNumCmdList[bank] = cmdBank[1];
-        psCmdListArray[bank] = (PSCmdList**) (cmdBank + 2);
+        psNumCmdList[bank] = GC_BES32(cmdBank[1]);
+        psCmdListArray[bank] = (gc_ptr32(PSCmdList)*) (cmdBank + 2);
         break;
     case 0x40:
     case 0x41:
     case 0x42:
     case 0x43: {
-        s32 count = cmdBank[1];
-        psNumCmdList[bank] = cmdBank[2] + count;
-        psCmdListArray[bank] = (PSCmdList**) (cmdBank + 3 - count);
+        s32 count = GC_BES32(cmdBank[1]);
+        psNumCmdList[bank] = GC_BES32(cmdBank[2]) + count;
+        psCmdListArray[bank] = (gc_ptr32(PSCmdList)*) (cmdBank + 3 - count);
         break;
     }
     default:
@@ -512,15 +608,15 @@ PSParticle* psGenerateParticleID0(PSParticle** head, s32 linkNo, s32 bank, s32 i
     if (id >= psNumCmdList[bank]) {
         return NULL;
     }
-    cmd = psCmdListArray[bank][id];
+    cmd = GC_PTR(PSCmdList*, psCmdListArray[bank][id]);
     if (cmd == NULL) {
         return NULL;
     }
-    tex = psTexGroupArray[bank][cmd->texGroup];
-    palflag = tex != NULL ? tex->palflag : 0;
-    return psGenerateParticle0(head, linkNo, bank, tex, 0, cmd->kind, cmd->texGroup, cmd->cmdList,
-                               cmd->life, 0.0f, 0.0f, 0.0f, cmd->vx, cmd->vy, cmd->vz, cmd->size,
-                               cmd->grav, cmd->fric, palflag, NULL, flgInterpret);
+    tex = GC_PTR(PSTexGroup*, psTexGroupArray[bank][GC_BE16(cmd->texGroup)]);
+    palflag = tex != NULL ? GC_BE16(tex->palflag) : 0;
+    return psGenerateParticle0(head, linkNo, bank, tex, 0, GC_BE32(cmd->kind), GC_BE16(cmd->texGroup), cmd->cmdList,
+                               GC_BE16(cmd->life), 0.0f, 0.0f, 0.0f, GC_BEF32(cmd->vx), GC_BEF32(cmd->vy), GC_BEF32(cmd->vz), GC_BEF32(cmd->size),
+                               GC_BEF32(cmd->grav), GC_BEF32(cmd->fric), palflag, NULL, flgInterpret);
 }
 
 PSParticle* psGenerateParticle(s32 linkNo, s32 bank, s32 a, u32 kind, u16 texGroup, u8* cmdList,
@@ -844,40 +940,40 @@ void psSetGeneratorAngleRadiusScale(PSGenerator* gen, f32* scale, u8 scaleMotion
     case 0:
     case 3:
     case 4:
-        gen->shape[0] = avg * psCmdListArray[bank][index]->param1;
-        gen->shape[1] = avg * psCmdListArray[bank][index]->param2;
+        gen->shape[0] = avg * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param1);
+        gen->shape[1] = avg * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param2);
         break;
     case 1:
-        gen->shape[0] = scale[0] * psCmdListArray[bank][index]->param1;
-        gen->shape[1] = scale[1] * psCmdListArray[bank][index]->param2;
-        gen->shape[2] = scale[2] * psCmdListArray[bank][index]->param3;
+        gen->shape[0] = scale[0] * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param1);
+        gen->shape[1] = scale[1] * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param2);
+        gen->shape[2] = scale[2] * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param3);
         break;
     case 6:
     case 7:
-        gen->shape[0] = avg * psCmdListArray[bank][index]->param1;
-        gen->shape[1] = avg * psCmdListArray[bank][index]->param2;
-        gen->shape[2] = avg * psCmdListArray[bank][index]->param3;
+        gen->shape[0] = avg * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param1);
+        gen->shape[1] = avg * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param2);
+        gen->shape[2] = avg * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param3);
         break;
     case 5: {
         f32 v;
-        v = scale[0] * psCmdListArray[bank][index]->param1;
+        v = scale[0] * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param1);
         gen->shape[0] = v;
         gen->shape[3] = v;
-        v = scale[1] * psCmdListArray[bank][index]->param2;
+        v = scale[1] * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param2);
         gen->shape[1] = v;
         gen->shape[7] = v;
-        v = scale[2] * psCmdListArray[bank][index]->param3;
+        v = scale[2] * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param3);
         gen->shape[2] = v;
         gen->shape[11] = v;
         break;
     }
     case 8:
-        gen->shape[2] = avg * psCmdListArray[bank][index]->param1;
-        gen->shape[4] = avg * psCmdListArray[bank][index]->param2;
+        gen->shape[2] = avg * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param1);
+        gen->shape[4] = avg * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->param2);
         break;
     }
 
-    gen->radius = avg * psCmdListArray[bank][index]->radius;
+    gen->radius = avg * GC_BEF32(GC_PTR(PSCmdList*, psCmdListArray[bank][index])->radius);
     if (scaleMotion == 1) {
         gen->gravity = gen->gravity * avg;
         gen->friction = gen->friction * avg;

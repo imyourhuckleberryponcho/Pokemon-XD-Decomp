@@ -152,7 +152,7 @@ struct HSD_TObj {
     struct _HSD_Tlut* tlut;
     struct _HSD_TexLODDesc* lod;
     HSD_AObj* aobj;
-    struct HSD_ImageDesc** imagetbl;
+    gc_ptr32(struct HSD_ImageDesc)* imagetbl;
     struct _HSD_Tlut** tluttbl;
     u8 tlut_no;
     Mtx mtx;
@@ -161,24 +161,24 @@ struct HSD_TObj {
 };
 
 typedef struct _HSD_TObjDesc {
-    char* class_name;
-    struct _HSD_TObjDesc* next;
-    GXTexMapID id;
-    GXTexGenSrc src;
-    Vec3 rotate;
-    Vec3 scale;
-    Vec3 translate;
-    GXTexWrapMode wrap_s;
-    GXTexWrapMode wrap_t;
+    gc_ptr32(char) class_name;
+    gc_ptr32(struct _HSD_TObjDesc) next;
+    gc_enum32(GXTexMapID) id;
+    gc_enum32(GXTexGenSrc) src;
+    gc_vec(Vec3) rotate;
+    gc_vec(Vec3) scale;
+    gc_vec(Vec3) translate;
+    gc_enum32(GXTexWrapMode) wrap_s;
+    gc_enum32(GXTexWrapMode) wrap_t;
     u8 repeat_s;
     u8 repeat_t;
-    u32 blend_flags;
-    f32 blending;
-    GXTexFilter magFilt;
-    struct HSD_ImageDesc* imagedesc;
-    struct _HSD_TlutDesc* tlutdesc;
-    struct _HSD_TexLODDesc* lod;
-    struct _HSD_TObjTevDesc* tev;
+    gc_be32 blend_flags;
+    gc_bef32 blending;
+    gc_enum32(GXTexFilter) magFilt;
+    gc_ptr32(struct HSD_ImageDesc) imagedesc;
+    gc_ptr32(struct _HSD_TlutDesc) tlutdesc;
+    gc_ptr32(struct _HSD_TexLODDesc) lod;
+    gc_ptr32(struct _HSD_TObjTevDesc) tev;
 } HSD_TObjDesc;
 
 typedef struct _HSD_Tlut {
@@ -191,18 +191,31 @@ typedef struct _HSD_Tlut {
 typedef struct _HSD_TlutDesc {
  /// GX loads palettes in blocks of 16 entries, so archives store them
  /// rounded up to that.
-    u16* lut DAT_COUNT((n_entries + 15) & ~15);
-    GXTlutFmt fmt;
-    u32 tlut_name;
-    u16 n_entries;
+    gc_ptr32(u16) lut DAT_COUNT((n_entries + 15) & ~15);
+    gc_enum32(GXTlutFmt) fmt;
+    gc_be32 tlut_name;
+    gc_be16 n_entries;
 } HSD_TlutDesc;
 
+#ifdef __MWERKS__
+#define HSD_TLUT_FROM_DESC(tlut, desc) memcpy((tlut), (desc), sizeof(HSD_Tlut))
+#else
+static inline void HSD_TlutFromDesc(HSD_Tlut* t, HSD_TlutDesc* d)
+{
+    t->lut = GC_PTR(void*, d->lut);
+    t->fmt = (GXTlutFmt) GC_BES32(d->fmt);
+    t->tlut_name = GC_BE32(d->tlut_name);
+    t->n_entries = GC_BE16(d->n_entries);
+}
+#define HSD_TLUT_FROM_DESC(tlut, desc) HSD_TlutFromDesc((tlut), (desc))
+#endif
+
 typedef struct _HSD_TexLODDesc {
-    GXTexFilter minFilt;
-    f32 LODBias;
+    gc_enum32(GXTexFilter) minFilt;
+    gc_bef32 LODBias;
     GXBool bias_clamp;
     GXBool edgeLODEnable;
-    GXAnisotropy max_anisotropy;
+    gc_enum32(GXAnisotropy) max_anisotropy;
 } HSD_TexLODDesc;
 
 /// Texels, laid out in the tiles of a #GXTexFmt.
@@ -210,15 +223,15 @@ typedef u8 HSD_ImageData DAT_BLOB;
 
 struct HSD_ImageDesc {
  /// Levels 0 to #maxLOD when mipmapped.
-    HSD_ImageData* image_ptr DAT_COUNT(GXGetTexBufferSize(width, height,
+    gc_ptr32(HSD_ImageData) image_ptr DAT_COUNT(GXGetTexBufferSize(width, height,
                                                           format, mipmap,
                                                           maxLOD + 1));
-    u16 width;
-    u16 height;
-    GXTexFmt format;
-    u32 mipmap;
-    f32 minLOD;
-    f32 maxLOD;
+    gc_be16 width;
+    gc_be16 height;
+    gc_enum32(GXTexFmt) format;
+    gc_be32 mipmap;
+    gc_bef32 minLOD;
+    gc_bef32 maxLOD;
 };
 
 typedef struct _HSD_TObjTev {
@@ -248,7 +261,7 @@ typedef struct _HSD_TObjTevDesc {
     u8 color_a, color_b, color_c, color_d;
     u8 alpha_a, alpha_b, alpha_c, alpha_d;
     GXColor konst, tev0, tev1;
-    u32 active;
+    gc_be32 active;
 } HSD_TObjTevDesc;
 
 typedef struct _HSD_TObjInfo {
@@ -261,13 +274,13 @@ typedef struct _HSD_TObjInfo {
 } HSD_TObjInfo;
 
 typedef struct _HSD_TexAnim {
-    struct _HSD_TexAnim* next;
-    GXTexMapID id;
-    HSD_AObjDesc* aobjdesc;
-    struct HSD_ImageDesc** imagetbl DAT_COUNT(n_imagetbl);
-    struct _HSD_TlutDesc** tluttbl DAT_COUNT(n_tluttbl);
-    u16 n_imagetbl;
-    u16 n_tluttbl;
+    gc_ptr32(struct _HSD_TexAnim) next;
+    gc_enum32(GXTexMapID) id;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
+    gc_ptr32(gc_ptr32(struct HSD_ImageDesc)) imagetbl DAT_COUNT(n_imagetbl);
+    gc_ptr32(gc_ptr32(struct _HSD_TlutDesc)) tluttbl DAT_COUNT(n_tluttbl);
+    gc_be16 n_imagetbl;
+    gc_be16 n_tluttbl;
 } HSD_TexAnim;
 
 extern HSD_TObjInfo hsdTObj;

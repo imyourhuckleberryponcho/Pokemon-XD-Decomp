@@ -1,107 +1,49 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/effects.h>
+#include <game/wazaentry.h>
+
+inline envMapEffect::envMapEffect(u32 texture, u32 texture2) {
+    m_model = 0;
+    m_texture = texture;
+    m_texture2 = texture2;
+    m_blend = 0.0f;
+}
+
+inline filterEffect::filterEffect() {
+    m_target = 0;
+    m_modulate = 0;
+    m_color[3] = 0;
+    m_color[2] = 0;
+    m_color[1] = 0;
+    m_color[0] = 0;
+}
+
+inline filterEffect::filterEffect(bool invert, bool mono) {
+    m_target = 0;
+    m_resetPE = invert;
+    m_useSaved = 0;
+    m_hasSaved = 0;
+    u8 type = 2;
+    if (mono) {
+        type = 1;
+    }
+    m_modulate = type;
+    m_color[2] = 0x7F;
+    m_color[1] = 0x7F;
+    m_color[0] = 0x7F;
+    m_color[3] = invert ? 0 : 0xFF;
+}
 
 #define ALIGN32(x) (((u32)(x) + 0x1F) & ~0x1F)
 
-#define LOAD_KEYS(data, num)          m_hasKeys = 1;                    m_keys = *(data);                 m_keyNum = (num);                 m_time = 0.0f;                    m_keyIndex = 0;                   *(data) += m_keyNum * 16;
+#define LOAD_KEYS(data, num)          m_keyed = 1;                    m_keys = *(data);                 m_keyCount = (num);                 m_time = 0.0f;                    m_curKey = 0;                   *(data) += m_keyCount * 16;
 
 struct _GSparticleBank;
-enum enumNullJointName {
-    NULL_JOINT_0
-};
-
-class GSeffect {
-public:
-    u32 unk0;
-    u32 unk4;
-
-    GSeffect();
-    virtual ~GSeffect();
-    virtual void effectInit();
-    virtual void effectUpdate();
-    virtual void effectRender();
-    virtual void effectEnd();
-    virtual void effectFree();
-};
-
-class boneFillEffect : public GSeffect {
-public:
-    boneFillEffect(_GSparticleBank* bank, enumNullJointName from, enumNullJointName to, f32 time);
-
-    u8 unkC[0x20];
-};
-
-class blurEffect : public GSeffect {
-public:
-    blurEffect(bool on);
-
-    u8 unkC[0x10];
-};
-
-class envMapEffect : public GSeffect {
-public:
-    envMapEffect(u32 texture, u32 model) {
-        unkC = 0;
-        m_texture = texture;
-        m_model = model;
-        m_time = 0.0f;
-    }
-    virtual ~envMapEffect();
-    virtual void effectInit();
-    virtual void effectUpdate();
-    virtual void effectRender();
-    virtual void effectEnd();
-    virtual void effectFree();
-
-    u32 unkC;
-    u32 m_texture;
-    u32 m_model;
-    f32 m_time;
-};
-
-class filterEffect : public GSeffect {
-public:
-    filterEffect() {
-        unkC = 0;
-        m_type = 0;
-        m_alpha = 0;
-        m_color[2] = 0;
-        m_color[1] = 0;
-        m_color[0] = 0;
-    }
-    filterEffect(bool invert, bool mono) {
-        unkC = 0;
-        m_invert = invert;
-        unk15 = 0;
-        unk16 = 0;
-        u8 type = 2;
-        if (mono) {
-            type = 1;
-        }
-        m_type = type;
-        m_color[2] = 0x7F;
-        m_color[1] = 0x7F;
-        m_color[0] = 0x7F;
-        m_alpha = invert ? 0 : 0xFF;
-    }
-    virtual ~filterEffect();
-    virtual void effectInit();
-    virtual void effectUpdate();
-    virtual void effectRender();
-    virtual void effectEnd();
-    virtual void effectFree();
-
-    u32 unkC;
-    u8 unk10[4];
-    u8 m_invert;
-    u8 unk15;
-    u8 unk16;
-    u8 unk17;
-    u8 m_type;
-    u8 m_color[3];
-    u8 m_alpha;
-};
 
 class WazaSequence;
+
+class SequenceEntry;
 
 class EffectEntry {
 public:
@@ -110,51 +52,43 @@ public:
     void envMapEffectLoad(u8** data);
     void filterEffectLoad(u8** data);
 
-    u8 unk0[9];
-    u8 m_parentID;
-    u8 unkA[0x22];
-    WazaSequence* m_sequence;
-    GSeffect* m_effect;
-    u8* m_keys;
-    f32 m_time;
-    u8 m_keyNum;
-    u8 m_keyIndex;
-    u8 unk3E[2];
-    u8 m_hasKeys;
+    void* m_vtbl;
+    SEQUENCE_ENTRY_MEMBERS
+    EFFECT_ENTRY_MEMBERS(u8* m_keys)
 };
 
 class WazaSequence {
 public:
-    EffectEntry* GetEntryFromID(u8 id);
+    SequenceEntry* GetEntryFromID(u8 id);
 };
 
 struct BoneFillEffectData {
-    enumNullJointName from;
-    enumNullJointName to;
-    f32 time;
-    u32 size;
-    _GSparticleBank* bank;
-    u32 unk14;
+    gc_enum32(enumNullJointName) from;
+    gc_enum32(enumNullJointName) to;
+    gc_bef32 time;
+    gc_be32 size;
+    gc_ptr32(_GSparticleBank) bank;
+    gc_be32 unk14;
 };
 
 struct BlurEffectData {
-    u32 keyNum;
-    u32 unk4;
-    u32 on;
+    gc_be32 keyNum;
+    gc_be32 unk4;
+    gc_be32 on;
 };
 
 struct EnvMapEffectData {
-    u32 texture;
-    u32 model;
-    u32 keyNum;
-    u32 unkC;
+    gc_be32 texture;
+    gc_be32 model;
+    gc_be32 keyNum;
+    gc_be32 unkC;
 };
 
 struct FilterEffectData {
-    s32 type;
-    u32 keyNum;
-    u32 unk8;
-    s32 flags;
+    gc_bes32 type;
+    gc_be32 keyNum;
+    gc_be32 unk8;
+    gc_bes32 flags;
 };
 
 void EffectEntry::boneFillEffectLoad(u8** data) {
@@ -164,15 +98,15 @@ void EffectEntry::boneFillEffectLoad(u8** data) {
     *data += sizeof(BoneFillEffectData);
     *data = (u8*)ALIGN32(*data);
     *data += ALIGN32(effect->size);
-    if (m_parentID != 0) {
-        EffectEntry* parent = m_sequence->GetEntryFromID(m_parentID);
+    if (unk09 != 0) {
+        EffectEntry* parent = (EffectEntry*)seq->GetEntryFromID(unk09);
         if (parent->m_effect != NULL) {
             bank = (_GSparticleBank*)((u32*)parent->m_effect)[3];
         }
     } else {
         bank = effect->bank;
     }
-    m_effect = new boneFillEffect(bank, effect->from, effect->to, effect->time);
+    m_effect = new boneFillEffect(bank, (enumNullJointName)GC_BES32(effect->from), (enumNullJointName)GC_BES32(effect->to), effect->time);
 }
 
 void EffectEntry::blurEffectLoad(u8** data) {

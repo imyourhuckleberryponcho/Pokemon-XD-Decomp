@@ -365,7 +365,7 @@ bool dataAddSampleReference(u16 sid
   sdir = NULL;
   for (i = 0; i < dataSmpSDirNum; ++i) {
     for (data = dataSmpSDirs[i].data; data->id != 0xFFFF; ++data) {
-      if (data->id == sid &&
+      if (MD16(data->id) == sid &&
           (MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 1) ? (data->ref_cnt != 0xFFFF) : TRUE)) {
 #if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 1)
         sdir = data;
@@ -391,9 +391,9 @@ done:
 
   if (MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 1) ? (sdir->ref_cnt == 0) : TRUE) {
 #if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 1)
-    sdir->addr = (void*)((size_t)sdir->offset + (s32)dataSmpSDirs[i].base);
+    sdir->addr = (void*)((size_t)MD32(sdir->offset) + (s32)dataSmpSDirs[i].base);
 #else
-    sdir->addr = (void*)((size_t)sdir->offset + (s32)sdirTab->base);
+    sdir->addr = (void*)((size_t)MD32(sdir->offset) + (s32)sdirTab->base);
 #endif
     header = &sdir->header;
     hwSaveSample(&header, &sdir->addr
@@ -423,7 +423,7 @@ bool dataRemoveSampleReference(u16 sid
 
   for (i = 0; i < dataSmpSDirNum; ++i) {
     for (sdir = dataSmpSDirs[i].data; sdir->id != 0xFFFF; ++sdir) {
-      if (sdir->id == sid &&
+      if (MD16(sdir->id) == sid &&
           (sdir->ref_cnt != (MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 1) ? 0xFFFF : 0))) {
         --sdir->ref_cnt;
 
@@ -612,7 +612,7 @@ MSTEP* dataGetMacro(u16 mid) {
     base = dataMacMainTab[main].subTabIndex;
     key.id = mid;
     if ((result = (MAC_SUBTAB*)sndBSearch(&key, &dataMacSubTabmem[base], dataMacMainTab[main].num,
-                                          8, maccmp)) != NULL) {
+                                          sizeof(MAC_SUBTAB), maccmp)) != NULL) {
       return result->data;
     }
   }
@@ -620,7 +620,7 @@ MSTEP* dataGetMacro(u16 mid) {
   return NULL;
 }
 
-static s32 smpcmp(void* p1, void* p2) { return ((SDIR_DATA*)p1)->id - ((SDIR_DATA*)p2)->id; }
+static s32 smpcmp(void* p1, void* p2) { return MD16(((SDIR_DATA*)p1)->id) - MD16(((SDIR_DATA*)p2)->id); }
 
 s32 dataGetSample(u16 sid, SAMPLE_INFO* newsmp) {
   static SDIR_DATA key;
@@ -628,23 +628,23 @@ s32 dataGetSample(u16 sid, SAMPLE_INFO* newsmp) {
   static SAMPLE_HEADER* sheader;
   long i;
 
-  key.id = sid;
+  key.id = MD16(sid);
 
   for (i = 0; i < dataSmpSDirNum; ++i) {
     if ((result = sndBSearch(&key, dataSmpSDirs[i].data, dataSmpSDirs[i].numSmp, sizeof(SDIR_DATA),
                              smpcmp)) != NULL) {
       if (result->ref_cnt != (MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 1) ? 0xFFFF : 0)) {
         sheader = &result->header;
-        newsmp->info = sheader->info;
-        newsmp->addr = result->addr;
+        newsmp->info = MD32(sheader->info);
+        newsmp->addr = (void*)result->addr;
         newsmp->offset = 0;
-        newsmp->loop = sheader->loopOffset;
-        newsmp->length = sheader->length & 0xffffff;
-        newsmp->loopLength = sheader->loopLength;
-        newsmp->compType = sheader->length >> 24;
+        newsmp->loop = MD32(sheader->loopOffset);
+        newsmp->length = MD32(sheader->length) & 0xffffff;
+        newsmp->loopLength = MD32(sheader->loopLength);
+        newsmp->compType = MD32(sheader->length) >> 24;
 
         if (result->extraData) {
-          newsmp->extraData = (void*)((size_t) & (dataSmpSDirs[i].data)->id + result->extraData);
+          newsmp->extraData = (void*)((size_t) & (dataSmpSDirs[i].data)->id + MD32(result->extraData));
         }
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
         else {
@@ -700,14 +700,14 @@ void* dataGetLayer(u16 cid, u16* n) {
   return NULL;
 }
 
-static s32 fxcmp(void* p1, void* p2) { return ((FX_TAB*)p1)->id - ((FX_TAB*)p2)->id; }
+static s32 fxcmp(void* p1, void* p2) { return MD16(((FX_TAB*)p1)->id) - MD16(((FX_TAB*)p2)->id); }
 
 struct FX_TAB* dataGetFX(u16 fid) {
   static FX_TAB key;
   FX_TAB* ret;
   long i;
 
-  key.id = fid;
+  key.id = MD16(fid);
   for (i = 0; i < dataFXGroupNum; ++i) {
     if ((ret = (FX_TAB*)sndBSearch(&key, dataFXGroups[i].fxTab, dataFXGroups[i].fxNum,
                                    sizeof(FX_TAB), fxcmp))) {

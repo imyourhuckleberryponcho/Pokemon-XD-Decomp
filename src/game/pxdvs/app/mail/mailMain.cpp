@@ -28,13 +28,13 @@ u32 GSflagGet(u32 flag);
 void floorExecScriptInteger(u32 script, s32, s32, s32, s32);
 s32 floorGetScriptResult(void);
 f32 HSD_Randf(void);
-void heroMoveAddStepCallback(void (*callback)(long, FootStepCounter, long), s32);
+void heroMoveAddStepCallback(void (*callback)(s32, FootStepCounter, s32), s32);
 }
 
 static MailReceiveWork ReceiveWork;
 
 static int chkMailSend(int id, f32 rnd);
-static void cbStep(long, FootStepCounter, long);
+static void cbStep(s32, FootStepCounter, s32);
 
 static inline void receiveStart() {
     if (ReceiveWork.active == 0) {
@@ -180,7 +180,7 @@ static int chkMailSend(int id, f32 rnd) {
     return result;
 }
 
-static void cbStep(long, FootStepCounter, long) {
+static void cbStep(s32, FootStepCounter, s32) {
     f32 rnd = HSD_Randf();
     s32 num = mailGetNbMailData();
     int i;

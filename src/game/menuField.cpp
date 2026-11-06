@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/winwork.h>
 #include <game/shared/menu_work.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -21,10 +24,10 @@ struct tagWINDOW_WORK;
 
 #pragma peephole off
 
-static void _menuFieldMenuCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, long index);
-static void _menuFieldFlashCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, long index);
-static void _menuFieldCursorCheck(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, long index);
-static void _menuFieldDrawItemSub(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, long index);
+static void _menuFieldMenuCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32 index);
+static void _menuFieldFlashCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32 index);
+static void _menuFieldCursorCheck(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32 index);
+static void _menuFieldDrawItemSub(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32 index);
 
 extern "C" {
 
@@ -58,13 +61,13 @@ s32 GSgfxVideoSetLockFrameRate(s32);
 void GSmodelAllPauseAnimation(void);
 void GSmodelAllUnpauseAnimation(void);
 u32 GSmsgGetRect(u32);
-s32 GSmsgPrint2(s32, s16, s16, s32, u32);
+s32 GSmsgPrint2(s32, PCARG(s16, s32), PCARG(s16, s32), s32, u32);
 void GSsndPopVolumeALL(u32 time, u32 bgm, u32 se);
 void GSsndPushVolumeALL(s32 vol, s32 time, u32 bgm, u32 se);
 void GSthreadSwitch(void);
 s32 __construct_array(s32*, void*, s32, s32, s32);
 s8 fadeCheck(bool);
-s32 floorEventExecScript(s32, u16);
+s32 floorEventExecScript(s32, PCARG(u16, u32));
 void floorFieldCameraPause();
 void floorFieldCameraUnpause();
 s32 fn_80233AB4();
@@ -95,7 +98,7 @@ s32 pokecoloGetRomVersion(void);
 s32 scriptContinueSave();
 double sin(double x);
 u32 soundGetEnvID();
-s32 soundGetVolume();
+s32 soundGetVolume(u32 id);
 s32 soundSetVolumeID(u32, s32, s32);
 f32 timeGetLastFrameSec(void);
 void winAnimeCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
@@ -105,13 +108,13 @@ void winSpriteSetDisp(tagSPRITE_WORK* sp, bool on);
 void __ct__5GSvecFv();
 }
 extern "C++" {
-static void _animAlpha(long p0);
-static s32 _menuFieldCheckCursor(long p0);
+static void _animAlpha(s32 p0);
+static s32 _menuFieldCheckCursor(s32 p0);
 static u8 _menuFieldCheckPDA();
-static void _menuFieldCursorCheck(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2);
-static void _menuFieldDrawItemSub(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2);
-static void _menuFieldFlashCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2);
-static void _menuFieldMenuCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2);
+static void _menuFieldCursorCheck(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2);
+static void _menuFieldDrawItemSub(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2);
+static void _menuFieldFlashCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2);
+static void _menuFieldMenuCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2);
 }
 void menuFieldDrawItem2(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     switch (sprite->id) {
@@ -226,11 +229,11 @@ void menuFieldDrawItem2(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     }
 }
 extern "C++" {
-static void _menuFieldMenuCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2) {
+static void _menuFieldMenuCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2) {
     s16 temp_r0;
 
-    temp_r0 = M2C_FIELD(p0, s16 *, 0x9E);
-    s16 prev = M2C_FIELD(p0, s16 *, 0xA2);
+    temp_r0 = M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor);
+    s16 prev = M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0xA2, pad_a0[2]);
     if (temp_r0 == p2) {
         if (prev != temp_r0) {
             winAnimeCursor((tagWINDOW_WORK*)(p0), (tagSPRITE_WORK*)(p1));
@@ -240,16 +243,16 @@ static void _menuFieldMenuCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2
     } else {
         winSpriteSetDisp((tagSPRITE_WORK*)(p1), 0U);
     }
-    if ((s8) M2C_FIELD(p0, u8 *, 1) == 3) {
+    if ((s8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x1, state) == 3) {
         winSetSequence((tagSEQ_WORK*)(((u8*)(p1) + 0xC)), 0U);
     }
 }
 }
 
 extern "C++" {
-static void _menuFieldFlashCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2) {
-    if ((s16) M2C_FIELD(p0, s16 *, 0x9E) == p2) {
-        M2C_FIELD(p1, f32 *, 0x70) = (f32) _menuFieldCursorAngle;
+static void _menuFieldFlashCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2) {
+    if ((s16) M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor) == p2) {
+        M2C_NAMED(((SpriteWorkLayout*)(p1)), f32 *, 0x70, rot) = (f32) _menuFieldCursorAngle;
         winSpriteSetDisp((tagSPRITE_WORK*)(p1), 1U);
         return;
     }
@@ -258,29 +261,29 @@ static void _menuFieldFlashCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p
 }
 
 extern "C++" {
-static void _menuFieldCursorCheck(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2) {
-    s32 color = M2C_FIELD(p0, s16 *, 0x9E);
+static void _menuFieldCursorCheck(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2) {
+    s32 color = M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor);
     winSpriteSetDisp(p1, 0U);
-    if (M2C_FIELD(p1, u32 *, 0x4C) != 0) {
+    if (M2C_NAMED(((SpriteWorkLayout*)(p1)), u32 *, 0x4C, msg) != 0) {
         if (color == p2) {
             color = 0xF0F0F0FF;
         } else {
             color = 0xF0F0F080;
         }
-        p2 = (s16)((M2C_FIELD(p1, s16 *, 0x54) - (s16)(GSmsgGetRect(M2C_FIELD(p1, u32 *, 0x4C)) >> 16)) / 2);
-        s16 y = (M2C_FIELD(p1, s16 *, 0x56) - (s16)(u16)GSmsgGetRect(M2C_FIELD(p1, u32 *, 0x4C))) / 2 - 2;
-        GSmsgPrint2(M2C_FIELD(p0, s32 *, 0x1C), p2, y, color, M2C_FIELD(p1, u32 *, 0x4C));
+        p2 = (s16)((M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x54, w) - (s16)(GSmsgGetRect(M2C_NAMED(((SpriteWorkLayout*)(p1)), u32 *, 0x4C, msg)) >> 16)) / 2);
+        s16 y = (M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x56, h) - (s16)(u16)GSmsgGetRect(M2C_NAMED(((SpriteWorkLayout*)(p1)), u32 *, 0x4C, msg))) / 2 - 2;
+        GSmsgPrint2(M2C_NAMED(((WinWorkLayout*)(p0)), s32 *, 0x1C, layerID), p2, y, color, M2C_NAMED(((SpriteWorkLayout*)(p1)), u32 *, 0x4C, msg));
     }
 }
 }
 
 extern "C++" {
-static void _menuFieldDrawItemSub(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p2) {
+static void _menuFieldDrawItemSub(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2) {
     f32 temp_f0;
     f32 temp_f2;
     s16 temp_r31;
 
-    temp_r31 = M2C_FIELD(p0, s16 *, 0x9E);
+    temp_r31 = M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor);
     temp_f2 = (255.0f * timeGetLastFrameSec()) / 0.4f;
     if (temp_r31 == p2) {
         winSpriteSetDisp((tagSPRITE_WORK*)(p1), 1U);
@@ -294,12 +297,12 @@ static void _menuFieldDrawItemSub(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, long p
             }
         }
     }
-    M2C_FIELD(p1, s32 *, 0x64) = (s32) (barcolor | (u8) (s32) _menuFiledAlpha[p2]);
+    M2C_NAMED(((SpriteWorkLayout*)(p1)), s32 *, 0x64, color[0]) = (s32) (barcolor | (u8) (s32) _menuFiledAlpha[p2]);
 }
 }
 
 extern "C++" {
-static void _animAlpha(long p0) {
+static void _animAlpha(s32 p0) {
     f32 temp_f1;
     f32 temp_f31;
     f32 var_f1;
@@ -322,12 +325,12 @@ static void _animAlpha(long p0) {
 
 extern "C" {
 s32 menuFieldMainCtrl(void *p0) {
-    switch ((s8) M2C_FIELD(p0, u8 *, 1)) {
+    switch ((s8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x1, state)) {
     case 0:
-        if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
-            winSeqSetMenu(M2C_FIELD(p0, s32 *, 4), 1U);
+        if ((s8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x2, seqSet) == 0) {
+            winSeqSetMenu(M2C_NAMED(((WinWorkLayout*)(p0)), s32 *, 0x4, menuID), 1U);
             int i;
-            s16 cur = M2C_FIELD(p0, s16 *, 0x9E);
+            s16 cur = M2C_NAMED(((WinWorkLayout*)(p0)), s16 *, 0x9E, cursor);
             _fieldMenuTimer = 0.0f;
             f32* alpha = _menuFiledAlpha;
             for (i = 0; i < 5; i++) {
@@ -338,13 +341,13 @@ s32 menuFieldMainCtrl(void *p0) {
                 }
                 alpha++;
             }
-            M2C_FIELD(p0, u8 *, 2) = 1U;
+            M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x2, seqSet) = 1U;
         }
         break;
     case 3:
-        if ((s8) M2C_FIELD(p0, u8 *, 2) == 0) {
-            winSeqSetMenu(M2C_FIELD(p0, s32 *, 4), 7U);
-            M2C_FIELD(p0, u8 *, 2) = 1U;
+        if ((s8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x2, seqSet) == 0) {
+            winSeqSetMenu(M2C_NAMED(((WinWorkLayout*)(p0)), s32 *, 0x4, menuID), 7U);
+            M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x2, seqSet) = 1U;
         }
         break;
     }
@@ -392,7 +395,7 @@ s32 menuFieldMain(u8 p0) {
     temp_r3_2 = soundGetEnvID();
     _soundEnvID = temp_r3_2;
     if (temp_r3_2 != 0) {
-        _soundEnvVol = soundGetVolume();
+        _soundEnvVol = soundGetVolume(temp_r3_2);
     }
     GSsndPushVolumeALL(0x55, 0x1F4, 1U, 1U);
     GSgfxVideoSetLockFrameRate(0);
@@ -497,6 +500,9 @@ s32 menuFieldMain(u8 p0) {
 }
 
 extern "C++" {
+#ifndef __MWERKS__
+inline
+#endif
 GSvec::GSvec() {
 }
 }
@@ -505,7 +511,7 @@ u8 menuFieldIsOpen(void) {
     return _openFieldMenu;
 }
 extern "C++" {
-static s32 _menuFieldCheckCursor(long p0) {
+static s32 _menuFieldCheckCursor(s32 p0) {
     s32 var_r3;
 
     if (_menuFieldCheckPDA() != 0) {

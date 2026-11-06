@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include <dolphin/os.h>
 #include <dolphin/dvd.h>
 
@@ -72,7 +73,7 @@ void GSmemFree(void* p);
 void GSthreadSwitch(void);
 u32 GSdvdOpen(const char* name);
 u32 GSdvdGetLength(u32 file);
-u8 GSdvdReadAsync(u32 file, void* dst, u32 len, s32 a, s32 b);
+u8 GSdvdReadAsync(u32 file, void* dst, u32 len, s32 a, void* callback);
 s32 GSdvdGetFileInfoStatus(u32 file);
 void GSdvdClose(u32 file);
 }
@@ -89,10 +90,10 @@ static u32 jbSize1;
 static u32 _gameName;
 static OSThread* _thread;
 
-static long AGB_Initialize(long ch);
-static void _AGB_Work_Clear(long ch);
-static void _job_type_clear(long ch, const char* name);
-static void _timer_set(long ch, u32 ms);
+static s32 AGB_Initialize(s32 ch);
+static void _AGB_Work_Clear(s32 ch);
+static void _job_type_clear(s32 ch, const char* name);
+static void _timer_set(s32 ch, u32 ms);
 static u32 SwapEndian(u32 v);
 static u32 _PKJBUpGenerateKeyA(void);
 static u32 _PKJBUpValidateKeyB(u32 key);
@@ -100,143 +101,143 @@ static void _AdjustGbaImageRegistry(u8* image, char* name);
 static void _ReadJBCode(const char* name, u8* buf, u32* size);
 static u32 _PKJBUpCalcCrc(u32 crc, u32 data);
 static u32 _PKJBUpFindBootKey(u32 recv, u32 crc);
-static long _AGB_SendWazaText(long ch, u8* data);
-static long _AGB_EntryRequest(long ch, u32 value);
-static long _AGB_BattleRequest(long ch, const u8* data, int size);
-static long _AGB_EntryGetStatus(long ch, u32* out);
-static long _AGB_ReturnTitle(long ch);
-static long _InitialExchange(long ch);
-static long _GBATimerRead(long ch, u8* dst, u8* status, int ms);
-static long _SendRecv(long ch, u32 cmd, u32* recv);
-static long _BulkSend(long ch, const u8* data, int size);
-static long _BulkSend2(long ch, const u8* data, int size);
-static long _AGB_ExchangeStart(long ch, u8* data);
+static s32 _AGB_SendWazaText(s32 ch, u8* data);
+static s32 _AGB_EntryRequest(s32 ch, u32 value);
+static s32 _AGB_BattleRequest(s32 ch, const u8* data, int size);
+static s32 _AGB_EntryGetStatus(s32 ch, u32* out);
+static s32 _AGB_ReturnTitle(s32 ch);
+static s32 _InitialExchange(s32 ch);
+static s32 _GBATimerRead(s32 ch, u8* dst, u8* status, int ms);
+static s32 _SendRecv(s32 ch, u32 cmd, u32* recv);
+static s32 _BulkSend(s32 ch, const u8* data, int size);
+static s32 _BulkSend2(s32 ch, const u8* data, int size);
+static s32 _AGB_ExchangeStart(s32 ch, u8* data);
 static void _alarm_handler(OSAlarm* alarm, OSContext* ctx);
 static void _sleep_thread(int ms);
-static long _AGB_ExchangeIsPrepared(long ch);
-static long _AGB_ExchangeEnd(long ch);
-static void _upload_00s(long ch, long ret);
-static void _upload_01(long ch, long ret);
-static void _upload_02(long ch, long ret);
-static void _upload_03(long ch, long ret);
-static void _upload_04(long ch, long ret);
-static void _upload_05(long ch, long ret);
-static void _upload_06(long ch, long ret);
-static void _upload_07(long ch, long ret);
-static void _upload_08(long ch, long ret);
-static void _upload_09(long ch, long ret);
-static void _upload_10(long ch, long ret);
-static void _upload_11(long ch, long ret);
-static void _upload_11s(long ch, long ret);
-static void _upload_12(long ch, long ret);
-static void _upload_12s(long ch, long ret);
-static void _upload_13(long ch, long ret);
-static void _upload_13s(long ch, long ret);
-static void _upload_14(long ch, long ret);
-static void _upload_15(long ch, long ret);
-static void _upload_16(long ch, long ret);
-static void _upload_16s0(long ch, long ret);
-static void _upload_16s(long ch, long ret);
-static void _upload_17(long ch, long ret);
-static void _upload_17s(long ch, long ret);
-static void _upload_18(long ch, long ret);
-static void _upload_19(long ch, long ret);
-static void _upload_20(long ch, long ret);
-static void _upload_21(long ch, long ret);
-static void _upload_21s(long ch, long ret);
-static void _upload_22(long ch, long ret);
-static void _upload_23(long ch, long ret);
-static void _upload_23s(long ch, long ret);
-static void _upload_24(long ch, long ret);
-static void _upload_25(long ch, long ret);
-static void _getpokemon_01(long ch, long ret);
-static void _getpokemon_01s(long ch, long ret);
-static void _getpokemon_02(long ch, long ret);
-static void _getpokemon_03(long ch, long ret);
-static void _getpokemon_04(long ch, long ret);
-static void _getpokemon_05(long ch, long ret);
-static void _getpokemon_05s(long ch, long ret);
-static void _getpokemon_06(long ch, long ret);
-static void _getpokemon_07(long ch, long ret);
-static void _getpokemon_07s(long ch, long ret);
-static void _getpokemon_08(long ch, long ret);
-static void _getpokemon_09(long ch, long ret);
-static void _getpokemon_09s(long ch, long ret);
-static void _getpokemon_10(long ch, long ret);
-static void _getpokemon_11(long ch, long ret);
-static void _timer_set(long ch, u32 ms);
-static void _job_type_clear(long ch, const char* name);
-static void _AGB_Work_Clear(long ch);
+static s32 _AGB_ExchangeIsPrepared(s32 ch);
+static s32 _AGB_ExchangeEnd(s32 ch);
+static void _upload_00s(s32 ch, s32 ret);
+static void _upload_01(s32 ch, s32 ret);
+static void _upload_02(s32 ch, s32 ret);
+static void _upload_03(s32 ch, s32 ret);
+static void _upload_04(s32 ch, s32 ret);
+static void _upload_05(s32 ch, s32 ret);
+static void _upload_06(s32 ch, s32 ret);
+static void _upload_07(s32 ch, s32 ret);
+static void _upload_08(s32 ch, s32 ret);
+static void _upload_09(s32 ch, s32 ret);
+static void _upload_10(s32 ch, s32 ret);
+static void _upload_11(s32 ch, s32 ret);
+static void _upload_11s(s32 ch, s32 ret);
+static void _upload_12(s32 ch, s32 ret);
+static void _upload_12s(s32 ch, s32 ret);
+static void _upload_13(s32 ch, s32 ret);
+static void _upload_13s(s32 ch, s32 ret);
+static void _upload_14(s32 ch, s32 ret);
+static void _upload_15(s32 ch, s32 ret);
+static void _upload_16(s32 ch, s32 ret);
+static void _upload_16s0(s32 ch, s32 ret);
+static void _upload_16s(s32 ch, s32 ret);
+static void _upload_17(s32 ch, s32 ret);
+static void _upload_17s(s32 ch, s32 ret);
+static void _upload_18(s32 ch, s32 ret);
+static void _upload_19(s32 ch, s32 ret);
+static void _upload_20(s32 ch, s32 ret);
+static void _upload_21(s32 ch, s32 ret);
+static void _upload_21s(s32 ch, s32 ret);
+static void _upload_22(s32 ch, s32 ret);
+static void _upload_23(s32 ch, s32 ret);
+static void _upload_23s(s32 ch, s32 ret);
+static void _upload_24(s32 ch, s32 ret);
+static void _upload_25(s32 ch, s32 ret);
+static void _getpokemon_01(s32 ch, s32 ret);
+static void _getpokemon_01s(s32 ch, s32 ret);
+static void _getpokemon_02(s32 ch, s32 ret);
+static void _getpokemon_03(s32 ch, s32 ret);
+static void _getpokemon_04(s32 ch, s32 ret);
+static void _getpokemon_05(s32 ch, s32 ret);
+static void _getpokemon_05s(s32 ch, s32 ret);
+static void _getpokemon_06(s32 ch, s32 ret);
+static void _getpokemon_07(s32 ch, s32 ret);
+static void _getpokemon_07s(s32 ch, s32 ret);
+static void _getpokemon_08(s32 ch, s32 ret);
+static void _getpokemon_09(s32 ch, s32 ret);
+static void _getpokemon_09s(s32 ch, s32 ret);
+static void _getpokemon_10(s32 ch, s32 ret);
+static void _getpokemon_11(s32 ch, s32 ret);
+static void _timer_set(s32 ch, u32 ms);
+static void _job_type_clear(s32 ch, const char* name);
+static void _AGB_Work_Clear(s32 ch);
 static u32 SwapEndian(u32 v);
 static u32 _PKJBUpGenerateKeyA(void);
 static u32 _PKJBUpValidateKeyB(u32 key);
 static u32 _PKJBUpCalcCrc(u32 crc, u32 data);
 static u32 _PKJBUpFindBootKey(u32 recv, u32 crc);
 static void _ReadJBCode(const char* name, u8* buf, u32* size);
-static long _InitialExchange(long ch);
-static long _SendRecv(long ch, u32 cmd, u32* recv);
-static long _GBATimerRead(long ch, u8* dst, u8* status, int ms);
-static long _BulkSend(long ch, const u8* data, int size);
-static long _BulkSend2(long ch, const u8* data, int size);
+static s32 _InitialExchange(s32 ch);
+static s32 _SendRecv(s32 ch, u32 cmd, u32* recv);
+static s32 _GBATimerRead(s32 ch, u8* dst, u8* status, int ms);
+static s32 _BulkSend(s32 ch, const u8* data, int size);
+static s32 _BulkSend2(s32 ch, const u8* data, int size);
 static void _alarm_handler(OSAlarm* alarm, OSContext* ctx);
 static void _sleep_thread(int ms);
-static long AGB_Initialize(long ch);
+static s32 AGB_Initialize(s32 ch);
 static void _AdjustGbaImageRegistry(u8* image, char* name);
-static long _AGB_EntryGetStatus(long ch, u32* out);
-extern "C" long PKJB_GetKey(long ch, u16* out);
+static s32 _AGB_EntryGetStatus(s32 ch, u32* out);
+extern "C" s32 PKJB_GetKey(s32 ch, u16* out);
 
-static void _getpokemon_01(long ch, long ret);
-static void _getpokemon_01s(long ch, long ret);
-static void _getpokemon_02(long ch, long ret);
-static void _getpokemon_03(long ch, long ret);
-static void _getpokemon_04(long ch, long ret);
-static void _getpokemon_05(long ch, long ret);
-static void _getpokemon_05s(long ch, long ret);
-static void _getpokemon_06(long ch, long ret);
-static void _getpokemon_07(long ch, long ret);
-static void _getpokemon_07s(long ch, long ret);
-static void _getpokemon_08(long ch, long ret);
-static void _getpokemon_09(long ch, long ret);
-static void _getpokemon_09s(long ch, long ret);
-static void _getpokemon_10(long ch, long ret);
-static void _getpokemon_11(long ch, long ret);
+static void _getpokemon_01(s32 ch, s32 ret);
+static void _getpokemon_01s(s32 ch, s32 ret);
+static void _getpokemon_02(s32 ch, s32 ret);
+static void _getpokemon_03(s32 ch, s32 ret);
+static void _getpokemon_04(s32 ch, s32 ret);
+static void _getpokemon_05(s32 ch, s32 ret);
+static void _getpokemon_05s(s32 ch, s32 ret);
+static void _getpokemon_06(s32 ch, s32 ret);
+static void _getpokemon_07(s32 ch, s32 ret);
+static void _getpokemon_07s(s32 ch, s32 ret);
+static void _getpokemon_08(s32 ch, s32 ret);
+static void _getpokemon_09(s32 ch, s32 ret);
+static void _getpokemon_09s(s32 ch, s32 ret);
+static void _getpokemon_10(s32 ch, s32 ret);
+static void _getpokemon_11(s32 ch, s32 ret);
 
-static void _upload_00s(long ch, long ret);
-static void _upload_01(long ch, long ret);
-static void _upload_02(long ch, long ret);
-static void _upload_03(long ch, long ret);
-static void _upload_04(long ch, long ret);
-static void _upload_05(long ch, long ret);
-static void _upload_06(long ch, long ret);
-static void _upload_07(long ch, long ret);
-static void _upload_08(long ch, long ret);
-static void _upload_09(long ch, long ret);
-static void _upload_10(long ch, long ret);
-static void _upload_11(long ch, long ret);
-static void _upload_11s(long ch, long ret);
-static void _upload_12(long ch, long ret);
-static void _upload_12s(long ch, long ret);
-static void _upload_13(long ch, long ret);
-static void _upload_13s(long ch, long ret);
-static void _upload_14(long ch, long ret);
-static void _upload_15(long ch, long ret);
-static void _upload_16(long ch, long ret);
-static void _upload_16s0(long ch, long ret);
-static void _upload_16s(long ch, long ret);
-static void _upload_17(long ch, long ret);
-static void _upload_17s(long ch, long ret);
-static void _upload_18(long ch, long ret);
-static void _upload_19(long ch, long ret);
-static void _upload_20(long ch, long ret);
-static void _upload_21(long ch, long ret);
-static void _upload_21s(long ch, long ret);
-static void _upload_22(long ch, long ret);
-static void _upload_23(long ch, long ret);
-static void _upload_23s(long ch, long ret);
-static void _upload_24(long ch, long ret);
-static void _upload_25(long ch, long ret);
+static void _upload_00s(s32 ch, s32 ret);
+static void _upload_01(s32 ch, s32 ret);
+static void _upload_02(s32 ch, s32 ret);
+static void _upload_03(s32 ch, s32 ret);
+static void _upload_04(s32 ch, s32 ret);
+static void _upload_05(s32 ch, s32 ret);
+static void _upload_06(s32 ch, s32 ret);
+static void _upload_07(s32 ch, s32 ret);
+static void _upload_08(s32 ch, s32 ret);
+static void _upload_09(s32 ch, s32 ret);
+static void _upload_10(s32 ch, s32 ret);
+static void _upload_11(s32 ch, s32 ret);
+static void _upload_11s(s32 ch, s32 ret);
+static void _upload_12(s32 ch, s32 ret);
+static void _upload_12s(s32 ch, s32 ret);
+static void _upload_13(s32 ch, s32 ret);
+static void _upload_13s(s32 ch, s32 ret);
+static void _upload_14(s32 ch, s32 ret);
+static void _upload_15(s32 ch, s32 ret);
+static void _upload_16(s32 ch, s32 ret);
+static void _upload_16s0(s32 ch, s32 ret);
+static void _upload_16s(s32 ch, s32 ret);
+static void _upload_17(s32 ch, s32 ret);
+static void _upload_17s(s32 ch, s32 ret);
+static void _upload_18(s32 ch, s32 ret);
+static void _upload_19(s32 ch, s32 ret);
+static void _upload_20(s32 ch, s32 ret);
+static void _upload_21(s32 ch, s32 ret);
+static void _upload_21s(s32 ch, s32 ret);
+static void _upload_22(s32 ch, s32 ret);
+static void _upload_23(s32 ch, s32 ret);
+static void _upload_23s(s32 ch, s32 ret);
+static void _upload_24(s32 ch, s32 ret);
+static void _upload_25(s32 ch, s32 ret);
 
-static long AGB_Initialize(long ch) {
+static s32 AGB_Initialize(s32 ch) {
     if (ch < 0 || ch > 3) {
         return 0;
     }
@@ -251,7 +252,7 @@ static long AGB_Initialize(long ch) {
 extern "C" {
 
 void AGB_Terminate_init(void) {
-    for (long i = 0; i < 4; i++) {
+    for (s32 i = 0; i < 4; i++) {
         _AGB_Work_Clear(i);
         _job_type_clear(i, __FUNCTION__);
     }
@@ -261,7 +262,7 @@ void AGB_Terminate_init(void) {
 
 extern "C" {
 
-long AGB_Terminate(long ch) {
+s32 AGB_Terminate(s32 ch) {
     if (ch < 0 || ch > 3) {
         return 0;
     }
@@ -279,7 +280,7 @@ long AGB_Terminate(long ch) {
 
 extern "C" {
 
-long AGB_GetStatus(long ch) {
+s32 AGB_GetStatus(s32 ch) {
     if (ch < 0 || ch > 3) {
         return 1;
     }
@@ -290,7 +291,7 @@ long AGB_GetStatus(long ch) {
 
 extern "C" {
 
-u8 AGB_IsComplete(long ch) {
+PCRET(u8) AGB_IsComplete(s32 ch) {
     if (ch < 0 || ch > 3) {
         return 0;
     }
@@ -312,7 +313,7 @@ u8 AGB_IsComplete(long ch) {
 
 }
 
-static void _AGB_Work_Clear(long ch) {
+static void _AGB_Work_Clear(s32 ch) {
     _gba_wk[ch].w1C = 0;
     _gba_wk[ch].w20 = 0;
     _gba_wk[ch].w24 = 0;
@@ -346,13 +347,13 @@ static void _AGB_Work_Clear(long ch) {
     _gba_wk[ch].jobType = 0;
 }
 
-static void _job_type_clear(long ch, const char* name) {
+static void _job_type_clear(s32 ch, const char* name) {
     _gba_wk[ch].active = 0;
     _gba_wk[ch].mode = 0;
     _gba_wk[ch].jobType = 0;
 }
 
-static void _timer_set(long ch, u32 ms) {
+static void _timer_set(s32 ch, u32 ms) {
     _gba_wk[ch].limit0 = ms * ((BUS_CLOCK / 4) / 1000);
     _gba_wk[ch].tick0 = OSGetTick();
 }
@@ -408,7 +409,7 @@ static u32 _PKJBUpValidateKeyB(u32 key) {
 }
 
 static void _AdjustGbaImageRegistry(u8* image, char* name) {
-    long i = 0xA0;
+    s32 i = 0xA0;
     int sum = 0xE7;
     image[0xAC] = name[0];
     image[0xAD] = name[1];
@@ -471,9 +472,9 @@ static u32 _PKJBUpFindBootKey(u32 recv, u32 crc) {
 
 extern "C" {
 
-long PKJB_GetKey(long ch, u16* out) {
+s32 PKJB_GetKey(s32 ch, u16* out) {
     u32 recv;
-    long r = _InitialExchange(ch);
+    s32 r = _InitialExchange(ch);
     if (r != 0) {
         return r;
     }
@@ -492,7 +493,7 @@ long PKJB_GetKey(long ch, u16* out) {
 
 extern "C" {
 
-long PKJB_IdleSend(long ch) {
+s32 PKJB_IdleSend(s32 ch) {
     u32 word;
     u8 status;
     if (gba_SIProbe(ch) != 0x40000) {
@@ -509,21 +510,21 @@ long PKJB_IdleSend(long ch) {
 
 extern "C" {
 
-long PKJB_SendWazaText(long ch, u8* data) {
-    long key = ch + 1;
+s32 PKJB_SendWazaText(s32 ch, u8* data) {
+    s32 key = ch + 1;
     gbaCommandSetKeyState(key, 2);
-    long r = _AGB_SendWazaText(ch, data);
+    s32 r = _AGB_SendWazaText(ch, data);
     gbaCommandSetKeyState(key, 1);
     return r;
 }
 
 }
 
-static long _AGB_SendWazaText(long ch, u8* data) {
+static s32 _AGB_SendWazaText(s32 ch, u8* data) {
     u32 recv;
     u32 limit = ((BUS_CLOCK / 4) / 1000) * 5;
     u32 start = OSGetTick();
-    long r;
+    s32 r;
     int timeout;
     do {
         timeout = OSGetTick() - start > limit;
@@ -544,11 +545,11 @@ static long _AGB_SendWazaText(long ch, u8* data) {
 
 extern "C" {
 
-long PKJB_EntryRequest(long ch, u32 value) {
+s32 PKJB_EntryRequest(s32 ch, u32 value) {
     int timeout;
     u32 start;
-    long key = ch + 1;
-    long r;
+    s32 key = ch + 1;
+    s32 r;
     u32 limit;
     gbaCommandSetKeyState(key, 2);
     limit = ((BUS_CLOCK / 4) / 1000) * 100;
@@ -563,11 +564,11 @@ long PKJB_EntryRequest(long ch, u32 value) {
 
 }
 
-static long _AGB_EntryRequest(long ch, u32 value) {
+static s32 _AGB_EntryRequest(s32 ch, u32 value) {
     u32 recv;
     u32 word;
     u8 status;
-    long r = _InitialExchange(ch);
+    s32 r = _InitialExchange(ch);
     if (r != 0) {
         return r;
     }
@@ -598,11 +599,11 @@ static long _AGB_EntryRequest(long ch, u32 value) {
 
 extern "C" {
 
-long PKJB_BattleRequest(long ch, const u8* data, int size) {
+s32 PKJB_BattleRequest(s32 ch, const u8* data, int size) {
     int timeout;
     u32 start;
-    long key = ch + 1;
-    long r;
+    s32 key = ch + 1;
+    s32 r;
     u32 limit;
     gbaCommandSetKeyState(key, 2);
     limit = ((BUS_CLOCK / 4) / 1000) * 100;
@@ -617,9 +618,9 @@ long PKJB_BattleRequest(long ch, const u8* data, int size) {
 
 }
 
-static long _AGB_BattleRequest(long ch, const u8* data, int size) {
+static s32 _AGB_BattleRequest(s32 ch, const u8* data, int size) {
     u32 recv;
-    long r = _InitialExchange(ch);
+    s32 r = _InitialExchange(ch);
     if (r != 0) {
         return r;
     }
@@ -635,13 +636,13 @@ static long _AGB_BattleRequest(long ch, const u8* data, int size) {
 
 extern "C" {
 
-long PKJB_EntryGetStatus(long ch, u32* out) {
+s32 PKJB_EntryGetStatus(s32 ch, u32* out) {
     return _AGB_EntryGetStatus(ch, out);
 }
 
 }
 
-static long _AGB_EntryGetStatus(long ch, u32* out) {
+static s32 _AGB_EntryGetStatus(s32 ch, u32* out) {
     u32 sendWord;
     u32 data;
     u8 status;
@@ -665,8 +666,8 @@ static long _AGB_EntryGetStatus(long ch, u32* out) {
 
 extern "C" {
 
-long PKJB_BattleGetStatus(long ch, u32* out) {
-    long r = _AGB_EntryGetStatus(ch, out);
+s32 PKJB_BattleGetStatus(s32 ch, u32* out) {
+    s32 r = _AGB_EntryGetStatus(ch, out);
     if (r >= 0) {
         gbaCommandSetKeyState(ch + 1, 1);
     }
@@ -677,21 +678,21 @@ long PKJB_BattleGetStatus(long ch, u32* out) {
 
 extern "C" {
 
-long PKJB_ReturnTitle(long ch) {
-    long key = ch + 1;
+s32 PKJB_ReturnTitle(s32 ch) {
+    s32 key = ch + 1;
     gbaCommandSetKeyState(key, 2);
-    long r = _AGB_ReturnTitle(ch);
+    s32 r = _AGB_ReturnTitle(ch);
     gbaCommandSetKeyState(key, 1);
     return r;
 }
 
 }
 
-static long _AGB_ReturnTitle(long ch) {
+static s32 _AGB_ReturnTitle(s32 ch) {
     u32 word;
     u16 key;
     u8 status;
-    long r = _InitialExchange(ch);
+    s32 r = _InitialExchange(ch);
     if (r != 0) {
         return r;
     }
@@ -706,7 +707,7 @@ static long _AGB_ReturnTitle(long ch) {
         if (OSGetTick() - start > limit) {
             return 0x10;
         }
-        long k = PKJB_GetKey(ch, &key);
+        s32 k = PKJB_GetKey(ch, &key);
         GSthreadSwitch();
         if (k == 0) {
             return r;
@@ -714,7 +715,7 @@ static long _AGB_ReturnTitle(long ch) {
     }
 }
 
-static long _InitialExchange(long ch) {
+static s32 _InitialExchange(s32 ch) {
     u32 data;
     u8 status;
     if (gba_SIProbe(ch) != 0x40000) {
@@ -723,7 +724,7 @@ static long _InitialExchange(long ch) {
     if (GBAReset(ch, &status) != 0) {
         return 2;
     }
-    long r = _GBATimerRead(ch, (u8*)&data, &status, 100);
+    s32 r = _GBATimerRead(ch, (u8*)&data, &status, 100);
     if (r != 0) {
         return r + 2;
     }
@@ -751,7 +752,7 @@ static long _InitialExchange(long ch) {
     }
 }
 
-static long _GBATimerRead(long ch, u8* dst, u8* status, int ms) {
+static s32 _GBATimerRead(s32 ch, u8* dst, u8* status, int ms) {
     u8 st;
     u32 limit = ms * ((BUS_CLOCK / 4) / 1000);
     u32 start = OSGetTick();
@@ -771,19 +772,19 @@ static long _GBATimerRead(long ch, u8* dst, u8* status, int ms) {
     }
 }
 
-static long _SendRecv(long ch, u32 cmd, u32* recv) {
+static s32 _SendRecv(s32 ch, u32 cmd, u32* recv) {
     u32 status;
     if (GBAWrite(ch, &cmd, &status) != 0) {
         return 0xB;
     }
-    long r = _GBATimerRead(ch, (u8*)recv, (u8*)&status, 100);
+    s32 r = _GBATimerRead(ch, (u8*)recv, (u8*)&status, 100);
     if (r != 0) {
         return r + 0xB;
     }
     return 0;
 }
 
-static long _BulkSend(long ch, const u8* data, int size) {
+static s32 _BulkSend(s32 ch, const u8* data, int size) {
     u32 word;
     u8 status;
     u32 start;
@@ -812,7 +813,7 @@ static long _BulkSend(long ch, const u8* data, int size) {
     return 0;
 }
 
-static long _BulkSend2(long ch, const u8* data, int size) {
+static s32 _BulkSend2(s32 ch, const u8* data, int size) {
     u32 word;
     u8 status;
     int i = 0;
@@ -844,11 +845,11 @@ static long _BulkSend2(long ch, const u8* data, int size) {
 
 extern "C" {
 
-long PKJB_ExchangeStart(long ch, u8* data) {
+s32 PKJB_ExchangeStart(s32 ch, u8* data) {
     int timeout;
     u32 start;
-    long key = ch + 1;
-    long r;
+    s32 key = ch + 1;
+    s32 r;
     u32 limit;
     gbaCommandSetKeyState(key, 2);
     limit = ((BUS_CLOCK / 4) / 1000) * 100;
@@ -863,7 +864,7 @@ long PKJB_ExchangeStart(long ch, u8* data) {
 
 }
 
-static long _AGB_ExchangeStart(long ch, u8* data) {
+static s32 _AGB_ExchangeStart(s32 ch, u8* data) {
     u32 recv;
     u32 limit = ((BUS_CLOCK / 4) / 1000) * 100;
     u32 start = OSGetTick();
@@ -872,7 +873,7 @@ static long _AGB_ExchangeStart(long ch, u8* data) {
             return 1;
         }
         if (gba_SIProbe(ch) == 0x40000) {
-            long r = _InitialExchange(ch);
+            s32 r = _InitialExchange(ch);
             if (r != 0) {
                 return r;
             }
@@ -904,8 +905,8 @@ static void _sleep_thread(int ms) {
 
 extern "C" {
 
-long PKJB_ExchangeIsPrepared(long ch) {
-    long r = _AGB_ExchangeIsPrepared(ch);
+s32 PKJB_ExchangeIsPrepared(s32 ch) {
+    s32 r = _AGB_ExchangeIsPrepared(ch);
     if (r == 0 || r >= 3) {
         gbaCommandSetKeyState(ch + 1, 1);
     }
@@ -914,7 +915,7 @@ long PKJB_ExchangeIsPrepared(long ch) {
 
 }
 
-static long _AGB_ExchangeIsPrepared(long ch) {
+static s32 _AGB_ExchangeIsPrepared(s32 ch) {
     u32 data;
     u8 status;
     _sleep_thread(1);
@@ -938,20 +939,20 @@ static long _AGB_ExchangeIsPrepared(long ch) {
 
 extern "C" {
 
-long PKJB_ExchangeEnd(long ch) {
-    long key = ch + 1;
+s32 PKJB_ExchangeEnd(s32 ch) {
+    s32 key = ch + 1;
     gbaCommandSetKeyState(key, 2);
-    long r = _AGB_ExchangeEnd(ch);
+    s32 r = _AGB_ExchangeEnd(ch);
     gbaCommandSetKeyState(key, 1);
     return r;
 }
 
 }
 
-static long _AGB_ExchangeEnd(long ch) {
+static s32 _AGB_ExchangeEnd(s32 ch) {
     u32 data;
     u8 status;
-    long r = _InitialExchange(ch);
+    s32 r = _InitialExchange(ch);
     if (r != 0) {
         return r;
     }
@@ -974,7 +975,7 @@ static long _AGB_ExchangeEnd(long ch) {
 
 extern "C" {
 
-long AGB_Prepare(const char* name) {
+s32 AGB_Prepare(const char* name) {
     if (strlen(name) >= 0x7F) {
         return 0;
     }
@@ -993,7 +994,7 @@ long AGB_Prepare(const char* name) {
 
 extern "C" {
 
-long AGB_Upload(long ch, long type) {
+s32 AGB_Upload(s32 ch, s32 type) {
     if (!AGB_Initialize(ch)) {
         return 0;
     }
@@ -1016,7 +1017,7 @@ long AGB_Upload(long ch, long type) {
 
 }
 
-static void _upload_00s(long ch, long ret) {
+static void _upload_00s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x2710;
         _gba_wk[ch].jobType = 0;
@@ -1037,7 +1038,7 @@ static void _upload_00s(long ch, long ret) {
     }
 }
 
-static void _upload_01(long ch, long ret) {
+static void _upload_01(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 1;
         if (ret == 1) {
@@ -1053,7 +1054,7 @@ static void _upload_01(long ch, long ret) {
     }
 }
 
-static void _upload_02(long ch, long ret) {
+static void _upload_02(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 2;
         if (ret == 1) {
@@ -1075,7 +1076,7 @@ static void _upload_02(long ch, long ret) {
     }
 }
 
-static void _upload_03(long ch, long ret) {
+static void _upload_03(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 3;
         if (ret == 1) {
@@ -1099,7 +1100,7 @@ static void _upload_03(long ch, long ret) {
     }
 }
 
-static void _upload_04(long ch, long ret) {
+static void _upload_04(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 4;
         if (ret == 1) {
@@ -1116,7 +1117,7 @@ static void _upload_04(long ch, long ret) {
     }
 }
 
-static void _upload_05(long ch, long ret) {
+static void _upload_05(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 5;
         if (ret == 1) {
@@ -1132,7 +1133,7 @@ static void _upload_05(long ch, long ret) {
     }
 }
 
-static void _upload_06(long ch, long ret) {
+static void _upload_06(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 6;
         if (ret == 1) {
@@ -1166,7 +1167,7 @@ static void _upload_06(long ch, long ret) {
     }
 }
 
-static void _upload_07(long ch, long ret) {
+static void _upload_07(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 7;
         if (ret == 1) {
@@ -1183,7 +1184,7 @@ static void _upload_07(long ch, long ret) {
     }
 }
 
-static void _upload_08(long ch, long ret) {
+static void _upload_08(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 8;
         if (ret == 1) {
@@ -1206,7 +1207,7 @@ static void _upload_08(long ch, long ret) {
     }
 }
 
-static void _upload_09(long ch, long ret) {
+static void _upload_09(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 9;
         if (ret == 1) {
@@ -1232,7 +1233,7 @@ static void _upload_09(long ch, long ret) {
     }
 }
 
-static void _upload_10(long ch, long ret) {
+static void _upload_10(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xA;
         if (ret == 1) {
@@ -1249,7 +1250,7 @@ static void _upload_10(long ch, long ret) {
     }
 }
 
-static void _upload_11(long ch, long ret) {
+static void _upload_11(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xB;
         if (ret == 1) {
@@ -1280,7 +1281,7 @@ static void _upload_11(long ch, long ret) {
     }
 }
 
-static void _upload_11s(long ch, long ret) {
+static void _upload_11s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x3F3;
         _gba_wk[ch].w60 = SwapEndian(*(u32*)((u8*)_gba_wk[ch].buf + _gba_wk[ch].index));
@@ -1306,7 +1307,7 @@ static void _upload_11s(long ch, long ret) {
     }
 }
 
-static void _upload_12(long ch, long ret) {
+static void _upload_12(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xC;
         if (ret == 1) {
@@ -1325,7 +1326,7 @@ static void _upload_12(long ch, long ret) {
     }
 }
 
-static void _upload_12s(long ch, long ret) {
+static void _upload_12s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x3F4;
         while (1) {
@@ -1342,7 +1343,7 @@ static void _upload_12s(long ch, long ret) {
     }
 }
 
-static void _upload_13(long ch, long ret) {
+static void _upload_13(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xD;
         if (ret == 1) {
@@ -1371,7 +1372,7 @@ static void _upload_13(long ch, long ret) {
     }
 }
 
-static void _upload_13s(long ch, long ret) {
+static void _upload_13s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x3F5;
         if (OSGetTick() - _gba_wk[ch].tick0 > _gba_wk[ch].limit0) {
@@ -1387,7 +1388,7 @@ static void _upload_13s(long ch, long ret) {
     }
 }
 
-static void _upload_14(long ch, long ret) {
+static void _upload_14(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xE;
         if (ret == 1) {
@@ -1412,7 +1413,7 @@ static void _upload_14(long ch, long ret) {
     }
 }
 
-static void _upload_15(long ch, long ret) {
+static void _upload_15(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xF;
         if (ret == 1) {
@@ -1441,7 +1442,7 @@ static void _upload_15(long ch, long ret) {
     }
 }
 
-static void _upload_16(long ch, long ret) {
+static void _upload_16(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x10;
         if (ret == 1) {
@@ -1455,7 +1456,7 @@ static void _upload_16(long ch, long ret) {
     }
 }
 
-static void _upload_16s0(long ch, long ret) {
+static void _upload_16s0(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xD8;
         _gba_wk[ch].jobType = 0;
@@ -1478,7 +1479,7 @@ static void _upload_16s0(long ch, long ret) {
     }
 }
 
-static void _upload_16s(long ch, long ret) {
+static void _upload_16s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x3F8;
         _gba_wk[ch].jobType = 0;
@@ -1499,7 +1500,7 @@ static void _upload_16s(long ch, long ret) {
     }
 }
 
-static void _upload_17(long ch, long ret) {
+static void _upload_17(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 17;
         if (ret == 1) {
@@ -1513,7 +1514,7 @@ static void _upload_17(long ch, long ret) {
     }
 }
 
-static void _upload_17s(long ch, long ret) {
+static void _upload_17s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 1017;
         if (OSGetTick() - _gba_wk[ch].tick1 > _gba_wk[ch].limit1) {
@@ -1528,7 +1529,7 @@ static void _upload_17s(long ch, long ret) {
     }
 }
 
-static void _upload_18(long ch, long ret) {
+static void _upload_18(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 18;
         if (ret == 1) {
@@ -1545,7 +1546,7 @@ static void _upload_18(long ch, long ret) {
     }
 }
 
-static void _upload_19(long ch, long ret) {
+static void _upload_19(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 19;
         if (ret == 1) {
@@ -1562,7 +1563,7 @@ static void _upload_19(long ch, long ret) {
     }
 }
 
-static void _upload_20(long ch, long ret) {
+static void _upload_20(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 20;
         if (ret == 1) {
@@ -1577,7 +1578,7 @@ static void _upload_20(long ch, long ret) {
     }
 }
 
-static void _upload_21(long ch, long ret) {
+static void _upload_21(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x15;
         if (ret == 1) {
@@ -1589,7 +1590,7 @@ static void _upload_21(long ch, long ret) {
     }
 }
 
-static void _upload_21s(long ch, long ret) {
+static void _upload_21s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 1021;
         if (OSGetTick() - _gba_wk[ch].tick0 > _gba_wk[ch].limit0) {
@@ -1604,7 +1605,7 @@ static void _upload_21s(long ch, long ret) {
     }
 }
 
-static void _upload_22(long ch, long ret) {
+static void _upload_22(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 22;
         if (ret == 1) {
@@ -1622,7 +1623,7 @@ static void _upload_22(long ch, long ret) {
     }
 }
 
-static void _upload_23(long ch, long ret) {
+static void _upload_23(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 23;
         if (ret == 1) {
@@ -1636,7 +1637,7 @@ static void _upload_23(long ch, long ret) {
     }
 }
 
-static void _upload_23s(long ch, long ret) {
+static void _upload_23s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 1023;
         if (OSGetTick() - _gba_wk[ch].tick1 > _gba_wk[ch].limit1) {
@@ -1651,7 +1652,7 @@ static void _upload_23s(long ch, long ret) {
     }
 }
 
-static void _upload_24(long ch, long ret) {
+static void _upload_24(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 24;
         if (ret == 1) {
@@ -1668,7 +1669,7 @@ static void _upload_24(long ch, long ret) {
     }
 }
 
-static void _upload_25(long ch, long ret) {
+static void _upload_25(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 25;
         if (ret == 1) {
@@ -1686,11 +1687,11 @@ static void _upload_25(long ch, long ret) {
 
 extern "C" {
 
-long AGB_GetPokemon(long ch, s32 id, u32* out) {
+s32 AGB_GetPokemon(s32 ch, s32 id, u32* out) {
     if (!AGB_Initialize(ch)) {
         return 0;
     }
-    long key = ch + 1;
+    s32 key = ch + 1;
     gbaCommandSetKeyState(key, 2);
     _AGB_Work_Clear(ch);
     _gba_wk[ch].mode = 4;
@@ -1716,7 +1717,7 @@ long AGB_GetPokemon(long ch, s32 id, u32* out) {
 
 }
 
-static void _getpokemon_01(long ch, long ret) {
+static void _getpokemon_01(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 1;
         if (ret == 1) {
@@ -1732,7 +1733,7 @@ static void _getpokemon_01(long ch, long ret) {
     }
 }
 
-static void _getpokemon_01s(long ch, long ret) {
+static void _getpokemon_01s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x3E9;
         if (OSGetTick() - _gba_wk[ch].tick1 > _gba_wk[ch].limit1) {
@@ -1749,7 +1750,7 @@ static void _getpokemon_01s(long ch, long ret) {
     }
 }
 
-static void _getpokemon_02(long ch, long ret) {
+static void _getpokemon_02(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 2;
         if (ret == 1) {
@@ -1768,7 +1769,7 @@ static void _getpokemon_02(long ch, long ret) {
     }
 }
 
-static void _getpokemon_03(long ch, long ret) {
+static void _getpokemon_03(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 3;
         if (ret == 1) {
@@ -1787,7 +1788,7 @@ static void _getpokemon_03(long ch, long ret) {
     }
 }
 
-static void _getpokemon_04(long ch, long ret) {
+static void _getpokemon_04(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 4;
         if (ret == 1) {
@@ -1804,7 +1805,7 @@ static void _getpokemon_04(long ch, long ret) {
     }
 }
 
-static void _getpokemon_05(long ch, long ret) {
+static void _getpokemon_05(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 5;
         if (ret == 1) {
@@ -1818,7 +1819,7 @@ static void _getpokemon_05(long ch, long ret) {
     }
 }
 
-static void _getpokemon_05s(long ch, long ret) {
+static void _getpokemon_05s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x3ED;
         if (OSGetTick() - _gba_wk[ch].tick0 > _gba_wk[ch].limit0) {
@@ -1835,7 +1836,7 @@ static void _getpokemon_05s(long ch, long ret) {
     }
 }
 
-static void _getpokemon_06(long ch, long ret) {
+static void _getpokemon_06(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 6;
         if (ret == 1) {
@@ -1855,7 +1856,7 @@ static void _getpokemon_06(long ch, long ret) {
     }
 }
 
-static void _getpokemon_07(long ch, long ret) {
+static void _getpokemon_07(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 7;
         if (ret == 1) {
@@ -1871,7 +1872,7 @@ static void _getpokemon_07(long ch, long ret) {
     }
 }
 
-static void _getpokemon_07s(long ch, long ret) {
+static void _getpokemon_07s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x3EF;
         if (OSGetTick() - _gba_wk[ch].tick1 > _gba_wk[ch].limit1) {
@@ -1888,7 +1889,7 @@ static void _getpokemon_07s(long ch, long ret) {
     }
 }
 
-static void _getpokemon_08(long ch, long ret) {
+static void _getpokemon_08(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 8;
         if (ret == 1) {
@@ -1907,7 +1908,7 @@ static void _getpokemon_08(long ch, long ret) {
     }
 }
 
-static void _getpokemon_09(long ch, long ret) {
+static void _getpokemon_09(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 9;
         if (ret == 1) {
@@ -1926,7 +1927,7 @@ static void _getpokemon_09(long ch, long ret) {
     }
 }
 
-static void _getpokemon_09s(long ch, long ret) {
+static void _getpokemon_09s(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0x3F1;
         if (OSGetTick() - _gba_wk[ch].tick0 > _gba_wk[ch].limit0) {
@@ -1943,7 +1944,7 @@ static void _getpokemon_09s(long ch, long ret) {
     }
 }
 
-static void _getpokemon_10(long ch, long ret) {
+static void _getpokemon_10(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xA;
         if (ret == 1) {
@@ -1962,7 +1963,7 @@ static void _getpokemon_10(long ch, long ret) {
     }
 }
 
-static void _getpokemon_11(long ch, long ret) {
+static void _getpokemon_11(s32 ch, s32 ret) {
     if (_gba_wk[ch].active) {
         _gba_wk[ch].state = 0xB;
         if (ret == 1) {

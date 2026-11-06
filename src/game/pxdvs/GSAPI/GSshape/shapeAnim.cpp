@@ -60,7 +60,7 @@ struct tagGsFilePrimKeyFrame {
     const f32* cRot[3];
     const f32* cColor[4];
     const f32* cRadius[2];
-    u8 unk14C[8];
+    const f32* unk14C[2];
     const f32* cShowAngle[2];
     const f32* cTexScale[4][2];
     const f32* cTexOffset[4][2];
@@ -141,6 +141,9 @@ void PSMTXScaleApply(const f32 src[3][4], f32 dst[3][4], f32 x, f32 y, f32 z);
 void PSMTXTransApply(const f32 src[3][4], f32 dst[3][4], f32 x, f32 y, f32 z);
 }
 
+#ifndef __MWERKS__
+static
+#endif
 inline double fabs(double x) {
     return __fabs(x);
 }
@@ -161,7 +164,7 @@ static inline f32 bezier(const f32* pts, u8 count, f32 t) {
     f32 iu;
     f32 iu2;
     f32 u;
-    u = (t - seg[0]) / (pts[k * 6] - seg[0]);
+    u = (t - pts[(k - 1) * 6]) / (pts[k * 6] - pts[(k - 1) * 6]);
     iu = 1.0f - u;
     iu2 = iu * iu;
     u2 = u * u;
@@ -173,46 +176,58 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
                                  const tagGsFilePrimKeyFrame* b, f32 t) const {
     volatile f32 rot[3];
     volatile f32 pivot[3];
-    volatile f32 trans[3];
     volatile f32 scale[3];
     f32 it = 1.0f - t;
     int i;
+    const f32* pa;
+    const f32* pb;
+    volatile f32 trans[3];
+    pa = a->scale;
+    pb = b->scale;
     for (i = 0; i < 3; i++) {
         if (a->nScale[i] != 0) {
             scale[i] = header->rangeScale * bezier(a->cScale[i], a->nScale[i], t);
         } else {
-            scale[i] = it * a->scale[i] + t * b->scale[i];
+            scale[i] = it * pa[i] + t * pb[i];
         }
     }
+    pa = a->trans;
+    pb = b->trans;
     for (i = 0; i < 3; i++) {
         if (a->nTrans[i] != 0) {
             trans[i] = header->rangeTrans * bezier(a->cTrans[i], a->nTrans[i], t);
         } else {
-            trans[i] = it * a->trans[i] + t * b->trans[i];
+            trans[i] = it * pa[i] + t * pb[i];
         }
     }
+    pa = a->pivot;
+    pb = b->pivot;
     for (i = 0; i < 3; i++) {
         if (a->nPivot[i] != 0) {
             pivot[i] = header->rangePivot * bezier(a->cPivot[i], a->nPivot[i], t);
         } else {
-            pivot[i] = it * a->pivot[i] + t * b->pivot[i];
+            pivot[i] = it * pa[i] + t * pb[i];
         }
     }
+    pa = a->rot;
+    pb = b->rot;
     for (i = 0; i < 3; i++) {
         if (a->nRot[i] != 0) {
             rot[i] = header->rangeRot * bezier(a->cRot[i], a->nRot[i], t);
         } else {
-            rot[i] = it * a->rot[i] + t * b->rot[i];
+            rot[i] = it * pa[i] + t * pb[i];
         }
     }
     f32 npx = -pivot[0];
-    f32 npy = -pivot[1];
-    f32 npz = -pivot[2];
+    f32 npz;
+    f32 npy;
+    npy = -pivot[1];
+    npz = -pivot[2];
     f32 px = pivot[0], py = pivot[1], pz = pivot[2];
-    f32 rx = rot[0], ry = rot[1], rz = rot[2];
     f32 tx = trans[0], ty = trans[1], tz = trans[2];
     f32 sx = scale[0], sy = scale[1], sz = scale[2];
     u8 identityScale = 1;
+    f32 rx = rot[0], ry = rot[1], rz = rot[2];
     memcpy(mtx, &mtxIdent, 0x30);
     for (int n = 0; n < count; n++, order++) {
         switch (*order) {
@@ -290,20 +305,23 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
 
 bool GsKeyObject::GetGradationParameter(u8* kind, tagGScol4ub* out, const tagGsFilePrimKeyFrame* a,
                                         const tagGsFilePrimKeyFrame* b, f32 t) const {
-    const tagGScol4ub* pa;
-    const tagGScol4ub* pb;
+    const tagGScol4ub* ga;
+    const tagGScol4ub* gb;
     u32 n;
     *kind = a->gradKind;
     if (a->gradKind == 0) {
-        pa = a->grad0;
-        pb = b->grad0;
+        ga = a->grad0;
+        gb = b->grad0;
         n = a->nGrad0;
     } else {
-        pa = a->grad1;
-        pb = b->grad1;
+        ga = a->grad1;
+        gb = b->grad1;
         n = a->nGrad1;
     }
     f32 it = 1.0f - t;
+    const tagGScol4ub* pa;
+    const tagGScol4ub* pb = gb;
+    pa = ga;
     for (u32 i = 0; i < n; i++, out++, pa++, pb++) {
         out->r = (s8)(it * (f32)pa->r + t * (f32)pb->r);
         out->g = (s8)(it * (f32)pa->g + t * (f32)pb->g);
@@ -373,13 +391,11 @@ tagGScol4ub GsKeyObject::GetTextureColorLow(const tagGsFilePrimKeyFrame* a, cons
                                             f32 t, u32 idx) const {
     tagGScol4ub col;
     f32 v[4];
-    s32 rf_t = header->texFlag[idx];
-    if (rf_t == 0) {
-        const u8* src = frames[0]->texColorLow[idx];
-        col.r = src[0];
-        col.g = src[1];
-        col.b = src[2];
-        col.a = src[3];
+    if (header->texFlag[idx] == 0) {
+        col.r = frames[0]->texColorLow[idx][0];
+        col.g = frames[0]->texColorLow[idx][1];
+        col.b = frames[0]->texColorLow[idx][2];
+        col.a = frames[0]->texColorLow[idx][3];
         return col;
     }
     const u8* av = a->texColorLow[idx];
@@ -397,10 +413,10 @@ tagGScol4ub GsKeyObject::GetTextureColorLow(const tagGsFilePrimKeyFrame* a, cons
             v[i] = it * (f32)av[i] + t * (f32)bv[i];
         }
     }
-    col.r = (s8)v[0];
-    col.g = (s8)v[1];
-    col.b = (s8)v[2];
-    col.a = (s8)v[3];
+    col.r = (u8)v[0];
+    col.g = (u8)v[1];
+    col.b = (u8)v[2];
+    col.a = (u8)v[3];
     return col;
 }
 
@@ -408,13 +424,11 @@ tagGScol4ub GsKeyObject::GetTextureColor(const tagGsFilePrimKeyFrame* a, const t
                                          u32 idx) const {
     tagGScol4ub col;
     f32 v[4];
-    s32 rf_t = header->texFlag[idx];
-    if (rf_t == 0) {
-        const u8* src = frames[0]->texColor[idx];
-        col.r = src[0];
-        col.g = src[1];
-        col.b = src[2];
-        col.a = src[3];
+    if (header->texFlag[idx] == 0) {
+        col.r = frames[0]->texColor[idx][0];
+        col.g = frames[0]->texColor[idx][1];
+        col.b = frames[0]->texColor[idx][2];
+        col.a = frames[0]->texColor[idx][3];
         return col;
     }
     const u8* av = a->texColor[idx];
@@ -432,10 +446,10 @@ tagGScol4ub GsKeyObject::GetTextureColor(const tagGsFilePrimKeyFrame* a, const t
             v[i] = it * (f32)av[i] + t * (f32)bv[i];
         }
     }
-    col.r = (s8)v[0];
-    col.g = (s8)v[1];
-    col.b = (s8)v[2];
-    col.a = (s8)v[3];
+    col.r = (u8)v[0];
+    col.g = (u8)v[1];
+    col.b = (u8)v[2];
+    col.a = (u8)v[3];
     return col;
 }
 
@@ -523,6 +537,8 @@ f32 GsKeyObject::GetShapeColorAlpha(const tagGsFilePrimKeyFrame* a, const tagGsF
 tagGScol4ub GsKeyObject::GetShapeColor(const tagGsFilePrimKeyFrame* a, const tagGsFilePrimKeyFrame* b, f32 t) const {
     tagGScol4ub col;
     f32 v[4];
+    const u8* av = a->color;
+    const u8* bv = b->color;
     f32 it = 1.0f - t;
     for (int i = 0; i < 4; i++) {
         if (a->nColor[i] != 0) {
@@ -533,14 +549,13 @@ tagGScol4ub GsKeyObject::GetShapeColor(const tagGsFilePrimKeyFrame* a, const tag
                 v[i] = 255.0f;
             }
         } else {
-            u32 i_c = i;
-            v[i_c] = it * (f32)a->color[i_c] + t * (f32)b->color[i_c];
+            v[i] = it * (f32)av[i] + t * (f32)bv[i];
         }
     }
-    col.r = (s8)v[0];
-    col.g = (s8)v[1];
-    col.b = (s8)v[2];
-    col.a = (s8)v[3];
+    col.r = (u8)v[0];
+    col.g = (u8)v[1];
+    col.b = (u8)v[2];
+    col.a = (u8)v[3];
     return col;
 }
 

@@ -1,11 +1,11 @@
 #include <dolphin/types.h>
 
-class Pokemon;
-class FightPokemon;
+struct Pokemon;
+struct FightPokemon;
 
 extern "C" Pokemon* fightPokemon_GetPokemonBuffPtr(FightPokemon* fightPokemon);
 
-class FightPokemon {
+struct FightPokemon {
 public:
     Pokemon* getPokemonBuffPtr();
 };

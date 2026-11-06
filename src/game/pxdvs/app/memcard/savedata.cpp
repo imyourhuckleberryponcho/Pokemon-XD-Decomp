@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/statusval.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -47,18 +48,26 @@ struct Savedata;
 extern "C" {
 struct CReliveHall {
     u8 _draft[1];
+#ifdef __MWERKS__
     s32 init();
+#else
+    void init();
+#endif
 };
 struct Gamedata {
     u8 _draft[1];
 };
 struct Hero {
     u8 _draft[1];
+#ifdef __MWERKS__
     s32 setFollowerID(unsigned char);
+#else
+    void setFollowerID(u8 followID);
+#endif
     void setBattleResumeFloorID(unsigned int);
     void setBattleResumeFloorIndex(unsigned char);
     void setHeroStyle(unsigned char, bool);
-    Pokemon* getPokemon(long);
+    Pokemon* getPokemon(s32);
     s16 pokemonGet(HeroPokemonGetParam*, bool);
 };
 struct HeroPokemonGetParam {
@@ -105,7 +114,7 @@ u8 heroBiosGetSexDataId(Hero* hero);
 void heroCreate(Hero* hero, char16* name, u8 sex);
 void heroInit(void* hero);
 s32 heroItemAddItemDataId(Hero* hero, u32 itemID, u32 amount, u32 index);
-void heroSetStatus(Hero* hero, u32 selector, u32 value);
+void heroSetStatus(Hero* hero, u32 selector, StatusU32 value);
 void mailInitMailbox(void* box);
 void* memcpy(void* dst, const void* src, size_t n);
 void memoInit(void* memo);

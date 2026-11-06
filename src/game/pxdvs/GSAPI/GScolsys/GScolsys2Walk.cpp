@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/bitfield.h>
 
 struct GSvec {
     f32 x, y, z;
@@ -7,49 +9,51 @@ struct GSvec {
 typedef f32 GSmtx[3][4];
 
 struct CCD_TRI {
-    GSvec verts[3];
-    GSvec normal;
-    u8 surface : 4;
-    u8 attr : 4;
-    u8 layer : 4;
-    u8 subLayer : 4;
-    u16 id;
+    gc_vec(GSvec) verts[3];
+    gc_vec(GSvec) normal;
+    GC_BITS2(
+    u8 surface : 4,
+    u8 attr : 4)
+    GC_BITS2(
+    u8 layer : 4,
+    u8 subLayer : 4)
+    gc_be16 id;
 };
 
 struct CCD_GRID_CELL {
-    u32 first;
-    u32 count;
+    gc_be32 first;
+    gc_be32 count;
 };
 
 struct CCD_GRID {
-    CCD_TRI* tris;
-    u32 numTris;
-    CCD_GRID_CELL* cells;
-    u32* indices;
-    u16 cellsX;
-    u16 cellsZ;
-    f32 cellWidth;
-    f32 cellDepth;
-    f32 minX;
-    f32 minZ;
+    gc_ptr32(CCD_TRI) tris;
+    gc_be32 numTris;
+    gc_ptr32(CCD_GRID_CELL) cells;
+    gc_ptr32(gc_be32) indices;
+    gc_be16 cellsX;
+    gc_be16 cellsZ;
+    gc_bef32 cellWidth;
+    gc_bef32 cellDepth;
+    gc_bef32 minX;
+    gc_bef32 minZ;
 };
 
 struct CCD_TRILIST {
-    CCD_TRI* tris;
-    u32 count;
+    gc_ptr32(CCD_TRI) tris;
+    gc_be32 count;
 };
 
 struct CCD_OBJ {
     u8 unk0[0x24];
-    void* walk;
+    gc_ptr32(void) walk;
     u8 unk28[0x14];
-    u16 flags;
+    gc_be16 flags;
     u8 unk3E[2];
 };
 
 struct CCD_FILEHEAD {
-    CCD_OBJ* objs;
-    u32 numObjs;
+    gc_ptr32(CCD_OBJ) objs;
+    gc_be32 numObjs;
 };
 
 struct GSwalkHit {
@@ -121,9 +125,9 @@ static inline s32 collectList(GSwalkHit* list, GSvec* point, CCD_TRILIST* tris, 
     tri = tris->tris;
     for (j = 0; j < tris->count && count < 8; j++, tri++) {
         for (v = 0; v < 3; v++) {
-            PSMTXMultVec(matrix, &tri->verts[v], &verts[v]);
+            PSMTXMultVec(matrix, GC_VEC3P(GSvec, &tri->verts[v]), &verts[v]);
         }
-        PSMTXMultVec(normalMatrix, &tri->normal, &normal);
+        PSMTXMultVec(normalMatrix, GC_VEC3P(GSvec, &tri->normal), &normal);
         if (getCpPolyVec(&cp, point, verts, &normal) != 0) {
             if (addHit(list, count, &cp, tri)) {
                 count++;
@@ -137,7 +141,7 @@ static inline s32 collectGrid(GSwalkHit* list, GSvec* point, CCD_GRID* grid) {
     GSvec cp;
     CCD_TRI* tri;
     CCD_GRID_CELL* cell;
-    u32* index;
+    gc_be32* index;
     u32 j;
     s32 z;
     s32 x;
@@ -160,7 +164,7 @@ static inline s32 collectGrid(GSwalkHit* list, GSvec* point, CCD_GRID* grid) {
     for (j = 0; j < cell->count && count < 8; j++, index++) {
         tri = grid->tris;
         tri += *index;
-        if (getCpPolyVec(&cp, point, tri->verts, &tri->normal) != 0) {
+        if (getCpPolyVec(&cp, point, GC_VEC3AP(GSvec, tri->verts, 3), GC_VEC3P(GSvec, &tri->normal)) != 0) {
             if (addHit(list, count, &cp, tri)) {
                 count++;
             }

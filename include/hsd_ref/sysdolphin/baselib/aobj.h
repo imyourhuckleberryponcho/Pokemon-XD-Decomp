@@ -50,22 +50,22 @@ struct HSD_AObj {
 };
 
 struct HSD_AObjDesc {
-    u32 flags;
-    f32 end_frame;
-    HSD_FObjDesc* fobjdesc;
+    gc_be32 flags;
+    gc_bef32 end_frame;
+    gc_ptr32(HSD_FObjDesc) fobjdesc;
  /// The descriptor of the object to animate, whose address is the key
  /// that object is registered under once loaded (#HSD_IDGetDataFromTable):
  /// a joint, a material, or another kind. Loaded as a joint if nothing is
  /// registered under it yet.
-    void* obj_id DAT_TYPE(HSD_Joint);
+    gc_ptr32(void) obj_id DAT_TYPE(HSD_Joint);
 };
 
 struct HSD_AnimJoint {
-    HSD_AnimJoint* child;
-    HSD_AnimJoint* next;
-    HSD_AObjDesc* aobjdesc;
-    HSD_RObjAnimJoint* robj_anim;
-    u32 flags;
+    gc_ptr32(HSD_AnimJoint) child;
+    gc_ptr32(HSD_AnimJoint) next;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
+    gc_ptr32(HSD_RObjAnimJoint) robj_anim;
+    gc_be32 flags;
 };
 
 void HSD_AObjInitAllocData(void);

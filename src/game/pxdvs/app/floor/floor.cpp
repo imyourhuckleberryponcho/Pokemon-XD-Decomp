@@ -1,4 +1,11 @@
+#include <game/gcdata.h>
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#include <game/tigadata.h>
+#include <game/pxdvs/app/floor/floorData.h>
+#include <game/bitfield.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -27,24 +34,11 @@ extern "C" void GSgfxVideoGetEFBSize(GSgfxSize*, s32);
 
 enum GSgfxFogType { GSFOG_0 };
 
-struct GSgfxLayer {
-    u8 pad0[0x1678];
-    s32 fogType;
-    f32 fogStart;
-    f32 fogEnd;
-    u8 pad1[0x168c - 0x1684];
-    GSgfxColAu8 fogColor;
-    u8 pad2[0x16a4 - 0x1690];
-    u16 fogRange;
-    u8 fogRangeOn;
-    u8 fogOn;
-    u32 dirty16a8;
-    u8 pad3[0x170c - 0x16ac];
-    u32 dirty170c;
-    u8 pad4[0x1760 - 0x1710];
-    u32 dirty1760;
-    u8 pad5[0x17c4 - 0x1764];
-    u32 dirty17c4;
+enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
+enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
     inline void fog(bool on);
     inline void setFogRange(bool on, u16 range);
     inline void setFog(GSgfxFogType type, f32 start, f32 end, GSgfxColAu8 col);
@@ -69,10 +63,10 @@ struct FloorModuleInterface {
     void (*finalize)(unsigned int, FloorEnterMode);
     void (*free)(unsigned int, FloorEnterMode);
     const char* (*getModuleName)();
-    void (*makeStateData)(FloorStateMode, void*, unsigned long);
-    void (*restoreStateData)(FloorStateMode, void*, unsigned long);
-    unsigned long (*getStateSize)(FloorStateMode);
-    unsigned long (*getUID)();
+    void (*makeStateData)(FloorStateMode, void*, u32);
+    void (*restoreStateData)(FloorStateMode, void*, u32);
+    u32 (*getStateSize)(FloorStateMode);
+    u32 (*getUID)();
 };
 
 typedef void (*FloorUniqueFn)(GSfloor_dd_*, u32);
@@ -124,9 +118,9 @@ struct StateCtx {
 };
 
 struct SceneData {
-    void** models;
-    void* camera;
-    void** lights;
+    gc_ptr32(gc_ptr32(void)) models;
+    gc_ptr32(void) camera;
+    gc_ptr32(gc_ptr32(void)) lights;
 };
 
 struct FogRange {
@@ -141,60 +135,46 @@ struct FogData {
     GSgfxColAu8 color;
 };
 
-struct FloorTresureEntry {
-    u8 type : 3;
-    u8 pad0 : 5;
-    u8 pad1;
-    s16 angle;
-    u16 floorID;
-    u16 flagA;
-    u16 flagB;
-    u8 pad2[6];
-    f32 x;
-    f32 y;
-    f32 z;
-};
-
-struct FloorDoorEntry {
-    u8 pad0[7];
-    u8 type;
-    u8 pad1[4];
-    u16 floorID;
-    u16 flag;
-    u8 pad2[8];
-};
-
 struct FloorCharInfo2 {
-    u8 pad0 : 3;
-    u8 neckTarget : 1;
-    u8 pad1 : 4;
+    GC_BITS3(
+    u8 pad0 : 3,
+    u8 neckTarget : 1,
+    u8 pad1 : 4)
 };
 
 struct FloorPosEntry {
-    s16 angle;
-    s16 pad;
-    f32 x;
-    f32 y;
-    f32 z;
+    gc_bes16 angle;
+    gc_bes16 pad;
+    gc_bef32 x;
+    gc_bef32 y;
+    gc_bef32 z;
 };
 struct FloorPosCount {
-    u32 count;
+    gc_be32 count;
 };
 struct FloorPosList {
-    FloorPosCount* count;
-    FloorPosEntry* entries;
+    gc_ptr32(FloorPosCount) count;
+    gc_ptr32(FloorPosEntry) entries;
 };
 
 struct HeroRef;
 struct FLOOR_BGM_MASK;
 
 namespace GSscript {
-struct Tiga {
+class Tiga {
+public:
+    GSSCRIPT_TIGA_VIEW_DATA
+    virtual ~Tiga();
+#ifdef __MWERKS__
     u32 getNameToFuncId(const char*);
+#else
+    s32 getNameToFuncId(const char* name);
+#endif
     void debugDump();
 };
 }
 struct AppScript : GSscript::Tiga {
+    GSscript::tigaWaza waza[7];
     void unload();
 };
 struct Hero {
@@ -210,10 +190,10 @@ struct FloorBgmMask {
     void update(f32);
 };
 
-typedef void (*FloorMapCB)(unsigned long, unsigned long, unsigned long, void*, void*);
+typedef void (*FloorMapCB)(u32, u32, u32, void*, void*);
 typedef BOOL (*FloorUnloadFunc)(void*, u32, u32);
 
-AppScript* floorGetCurentScript();
+GSscript::Tiga* floorGetCurentScript();
 void EvlogPrint();
 void EvlogSet(s8, u32);
 
@@ -253,7 +233,13 @@ u8 pokecoloIsDVDETHMode();
 s32 pokecoloGetCountryCode();
 u8 floorDataBiosGetFloorKind(void*);
 void cameraSetType(s32);
+#ifdef __MWERKS__
 void GSgfxVideoSetClearColor(GSgfxColAu8);
+#define FLOOR_SET_CLEAR_COLOR(c) GSgfxVideoSetClearColor(c)
+#else
+void GSgfxVideoSetClearColor(GSgfxColAu8*);
+#define FLOOR_SET_CLEAR_COLOR(c) do { GSgfxColAu8 clearTmp_ = (c); GSgfxVideoSetClearColor(&clearTmp_); } while (0)
+#endif
 s32 GSfsysGetStatus(u32);
 void GSfsysReadWait(u32);
 void GSfsysReadIDWait(u32, u32);
@@ -335,7 +321,7 @@ void peopleSetFlagOn(u32, u32, u32);
 void peopleSetFlagOff(u32, u32, u32);
 void peopleSetDisp(u32, u32, u32);
 void peopleManualAnimation(u32, u32);
-void peopleBiosSetTresureID(void*, u16);
+void peopleBiosSetTresureID(void*, PCARG(u16, u32));
 void GSmodelClearShadowFlags(void*, u32);
 u8 GSflagTest(s32);
 void GSflagClear(s32);
@@ -400,7 +386,7 @@ void GSmodelSetAnimRate(void*, f32);
 void GSmodelStartAnimation(void*);
 void GSmodelSetTexAnimIndex(void*, s32);
 void GSmodelStartTexAnimation(void*);
-s32 gamedatasaveGetStatus(s32, s32);
+StatusS32 gamedatasaveGetStatus(s32, s32);
 void* OSGetArenaLo();
 void OSSetArenaLo(void*);
 s32 GSmemCreateHeap(void*, void*);
@@ -409,7 +395,7 @@ void GSprint(s32, s32, s32, u32, const char*, ...);
 void floorLinkWithSE(u32, u32, u32);
 void PSMTXIdentity(GSmtx*);
 void floorClearReturnPoint();
-GSgfxLayer* GSgfxLayerFindByID(s32);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 void GSmodelSetShadowToCameraHeightCheck(bool);
 void GSmodelSetShadowBoundExpansion(f32);
 void GSmodelSetShadowDistLimits(f32, f32);
@@ -430,14 +416,14 @@ void GSmodelSetFogState(void*, s32, s32);
 static const char* _floorGetModuleName();
 static u32 _floorGetUID();
 static u32 _floorGetStateSize(FloorStateMode);
-static void _floorRestoreStateData(FloorStateMode, void*, unsigned long);
-static void _floorMakeStateData(FloorStateMode, void*, unsigned long);
-static void _floorMapPopCB(unsigned long, unsigned long, unsigned long, void*, void*);
-static void _floorMapPushCB(unsigned long, unsigned long, unsigned long, void*, void*);
+static void _floorRestoreStateData(FloorStateMode, void*, u32);
+static void _floorMakeStateData(FloorStateMode, void*, u32);
+static void _floorMapPopCB(u32, u32, u32, void*, void*);
+static void _floorMapPushCB(u32, u32, u32, void*, void*);
 static void _floorMapGetResourceCounts(int*, int*);
-static void _floorMapGetCountCB(unsigned long, unsigned long, unsigned long, void*, void*);
-static void _floorMapSetDispCB(unsigned long, unsigned long, unsigned long, void*, void*);
-static void _floorFsysFree(unsigned long);
+static void _floorMapGetCountCB(u32, u32, u32, void*, void*);
+static void _floorMapSetDispCB(u32, u32, u32, void*, void*);
+static void _floorFsysFree(u32);
 static void _floorCreateCommon(unsigned int, FloorEnterMode);
 static void _floorUniqueFinalize(unsigned int, FloorEnterMode);
 static void _floorUniqueUpdate();
@@ -454,7 +440,7 @@ static void _floorInitMapFog(GSfloor_dd_*);
 static void _floorInitTresure(GSfloor_dd_*);
 static void _floorInitDoor(GSfloor_dd_*);
 static void _floorInitCharacters(GSfloor_dd_*);
-static void _floorInitCharactor(unsigned long, unsigned long, unsigned long);
+static void _floorInitCharactor(u32, u32, u32);
 static void _floorSetInitPosition();
 static void _floorClearFlag();
 static void _floorFinalize(unsigned int, FloorEnterMode);
@@ -463,7 +449,7 @@ static void _floorInitialize(unsigned int, FloorEnterMode);
 static const char* _floorGetUniqueModuleName();
 static const char* _floorGetMenuModuleName();
 static const char* _floorGetFieldModuleName();
-static BOOL _floorUnloadModel(void*, unsigned long, unsigned long);
+static BOOL _floorUnloadModel(void*, u32, u32);
 
 static FloorModuleInterface _floorModuleCommon;
 static FloorModuleInterface _floorModuleField;
@@ -724,7 +710,7 @@ void* floorOpenModel(u32, u32 id) {
     return floorOpenObject(id);
 }
 
-static BOOL _floorUnloadModel(void* model, unsigned long, unsigned long) {
+static BOOL _floorUnloadModel(void* model, u32, u32) {
     GSmodelFree(model);
     return TRUE;
 }
@@ -1013,7 +999,7 @@ void floorInitMap(u32 group, u32 mapRes) {
     }
 }
 
-static void _floorInitCharactor(unsigned long group, unsigned long id, unsigned long obj) {
+static void _floorInitCharactor(u32 group, u32 id, u32 obj) {
     GSvec a;
     GSvec b;
     u32 sct;
@@ -1092,16 +1078,16 @@ static void _floorInitCharacters(GSfloor_dd_* floor) {
 static void _floorInitDoor(GSfloor_dd_* floor) {
     u32 off;
     u32 i;
-    for (i = 0, off = 0; i < *floor_door_list_number; off += sizeof(FloorDoorEntry), i++) {
-        FloorDoorEntry* d = (FloorDoorEntry*)((u8*)floor_door_list + off);
+    for (i = 0, off = 0; i < *floor_door_list_number; off += sizeof(FloorDoor), i++) {
+        FloorDoor* d = (FloorDoor*)((u8*)floor_door_list + off);
         if (d->floorID == floor->floorID) {
-            switch (d->type) {
+            switch (d->doorType) {
             case 1:
             case 3:
             case 4:
             case 5:
             case 6:
-                if (GSflagTest(d->flag)) {
+                if (GSflagTest(d->openFlag)) {
                     floorEventCtrlDoor(floor->floorID, i, 1);
                 } else {
                     floorEventCtrlDoor(floor->floorID, i, 3);
@@ -1119,17 +1105,17 @@ static void _floorInitTresure(GSfloor_dd_* floor) {
     GSvec pos;
     GSvec rot;
     u32 off;
-    FloorTresureEntry* t;
+    FloorTresure* t;
     u32 i;
     u32 group;
     u32 id;
     u32 res;
     u32 count = 0;
     group = floorDataBiosGetGroupID(floor);
-    for (i = 0, off = 0; i < *floor_tresure_list_number; off += sizeof(FloorTresureEntry), i++) {
-        t = (FloorTresureEntry*)((u8*)floor_tresure_list + off);
+    for (i = 0, off = 0; i < *floor_tresure_list_number; off += sizeof(FloorTresure), i++) {
+        t = (FloorTresure*)((u8*)floor_tresure_list + off);
         if (t->floorID == floor->floorID) {
-            switch (t->type) {
+            switch (t->kind) {
             case 1:
                 res = 0x2F80400;
                 break;
@@ -1160,14 +1146,14 @@ static void _floorInitTresure(GSfloor_dd_* floor) {
                 if (people != 0) {
                     peopleBiosSetTresureID(people, (u16)i);
                 }
-                if (t->type == 2) {
+                if (t->kind == 2) {
                     void* model = GSresGetResource(group, id);
                     if (model != 0) {
                         GSmodelClearShadowFlags(model, 1);
                     }
                 }
-                if (t->flagA != 0) {
-                    if (GSflagTest(t->flagA)) {
+                if (t->eventFlag != 0) {
+                    if (GSflagTest(t->eventFlag)) {
                         floorEventCtrlTresure(group, id, 0);
                     } else {
                         floorEventCtrlTresure(group, id, 1);
@@ -1175,7 +1161,7 @@ static void _floorInitTresure(GSfloor_dd_* floor) {
                             if (!GSflagTest(t->flagB)) {
                                 peopleSetDisp(group, id, false);
                             }
-                            peopleExecMoveScript(group, id, 0x596000B, t->flagA, t->flagB);
+                            peopleExecMoveScript(group, id, 0x596000B, t->eventFlag, t->flagB);
                         }
                     }
                 }
@@ -1248,7 +1234,7 @@ static void _floorInitMapFog(GSfloor_dd_* floor) {
             }
             layerA->fog(true);
             layerB->fog(true);
-            GSgfxVideoSetClearColor(fog->color);
+            FLOOR_SET_CLEAR_COLOR(fog->color);
             idx = 0;
             SceneData* scene = (SceneData*)HSD_ArchiveGetPublicAddress(GSresGetResource(group, mapRes), "scene_data");
             if (scene != 0 && scene->models != 0) {
@@ -1269,7 +1255,7 @@ static void _floorInitMapFog(GSfloor_dd_* floor) {
             layerB->setFog((GSgfxFogType)2, 0.0f, 5000.0f, zero);
             layerB->setFogRange(false, 0xFFFF);
             layerB->fog(false);
-            GSgfxVideoSetClearColor(zero);
+            FLOOR_SET_CLEAR_COLOR(zero);
         }
         break;
     }
@@ -1483,9 +1469,9 @@ static void _floorInitializeCommon(unsigned int id, FloorEnterMode mode) {
             break;
         }
         if (pokecoloGetRomVersion() != 2 && floorGetCurentScriptMode() == 1) {
-            u32 pre = floorGetCurentScript()->getNameToFuncId("preprocess");
-            u32 main = floorGetCurentScript()->getNameToFuncId("hero_main");
-            u32 post = floorGetCurentScript()->getNameToFuncId("postprocess");
+            u32 pre = ((AppScript*)floorGetCurentScript())->getNameToFuncId("preprocess");
+            u32 main = ((AppScript*)floorGetCurentScript())->getNameToFuncId("hero_main");
+            u32 post = ((AppScript*)floorGetCurentScript())->getNameToFuncId("postprocess");
             _hModuleFloorScript = floorRegisterScriptModule(0xF, group, pre, main, post);
         }
         FloorModuleInterface_clear(&_floorModuleUniqueFunc);
@@ -1519,7 +1505,7 @@ static void _floorUpdateCommon(unsigned int id, FloorEnterMode mode) {
         floorExecScriptIntegerThread(_floorChangeInfo.fadeIn, 0, 0, 0, 0);
     }
     if (floorIsDispScriptInfo()) {
-        floorGetCurentScript()->debugDump();
+        ((AppScript*)floorGetCurentScript())->debugDump();
     }
     FloorBgmMask* bgm = (FloorBgmMask*)floorSound_getBgmMaskObj();
     if (bgm != 0) {
@@ -1542,7 +1528,7 @@ static void _floorFinalizeCommon(unsigned int id, FloorEnterMode mode) {
 static void _floorFreeCommon(unsigned int id, FloorEnterMode mode) {
     GSfloor_dd_* floor = floorDataBiosGetPtr(id);
     floorDataBiosGetPtr(floorGetNextChangeID());
-    AppScript* script = floorGetCurentScript();
+    AppScript* script = (AppScript*)floorGetCurentScript();
     if (script != 0) {
         script->unload();
     }
@@ -1698,7 +1684,7 @@ u8 floorReadCharacter(u32 group, u32 id, u32 modelRes) {
     return 1;
 }
 
-static void _floorFsysFree(unsigned long id) {
+static void _floorFsysFree(u32 id) {
     switch (GSfsysGetStatus(id)) {
     case -1:
         break;
@@ -1751,7 +1737,7 @@ static void _floorCreateCommon(unsigned int id, FloorEnterMode mode) {
     GSgfxColAu8 clearColor = {0};
     GSfloor_dd_* floor = floorDataBiosGetPtr(id);
     cameraSetType(3);
-    GSgfxVideoSetClearColor(clearColor);
+    FLOOR_SET_CLEAR_COLOR(clearColor);
     switch (floorDataBiosGetFloorKind(floor)) {
     case 6:
         _floorFsysFree(0x9A);
@@ -1810,7 +1796,7 @@ u8 floorGetHumanColision() {
     return _floorChangeInfo.humanColision;
 }
 
-static void _floorMapSetDispCB(unsigned long kind, unsigned long, unsigned long, void* res, void* ctx) {
+static void _floorMapSetDispCB(u32 kind, u32, u32, void* res, void* ctx) {
     bool disp = ctx != 0;
     switch (kind) {
     case 1:
@@ -1861,7 +1847,7 @@ void floorMapResourceDataIterate(FloorMapCB cb, void* ctx) {
     }
 }
 
-static void _floorMapGetCountCB(unsigned long kind, unsigned long, unsigned long, void*, void* ctx) {
+static void _floorMapGetCountCB(u32 kind, u32, u32, void*, void* ctx) {
     int* counts = (int*)ctx;
     switch (kind) {
     case 1:
@@ -1882,7 +1868,7 @@ static void _floorMapGetResourceCounts(int* models, int* lights) {
     *lights = counts[1];
 }
 
-static void _floorMapPopCB(unsigned long kind, unsigned long, unsigned long id, void* res, void* ctx) {
+static void _floorMapPopCB(u32 kind, u32, u32 id, void* res, void* ctx) {
     StateCtx* c = (StateCtx*)ctx;
     StateEntry* e = c->cur;
     for (u32 i = c->count; i != 0; i--, e++) {
@@ -1900,7 +1886,7 @@ static void _floorMapPopCB(unsigned long kind, unsigned long, unsigned long id, 
     }
 }
 
-static void _floorMakeStateData(FloorStateMode mode, void* data, unsigned long size) {
+static void _floorMakeStateData(FloorStateMode mode, void* data, u32 size) {
     u32* d = (u32*)data;
     if (mode == 1 || mode == 2) {
         if (mode == 1) {
@@ -1916,7 +1902,7 @@ static void _floorMakeStateData(FloorStateMode mode, void* data, unsigned long s
     }
 }
 
-static void _floorRestoreStateData(FloorStateMode mode, void* data, unsigned long size) {
+static void _floorRestoreStateData(FloorStateMode mode, void* data, u32 size) {
     u32* d = (u32*)data;
     if (mode == 1 || mode == 2) {
         if (_floorChangeInfo.bgmFlag != 0 && d[0] != soundGetBGMID()) {
@@ -1952,7 +1938,7 @@ static const char* _floorGetModuleName() {
     return "floorModuleCommon";
 }
 
-static void _floorMapPushCB(unsigned long kind, unsigned long, unsigned long id, void* res, void* ctx) {
+static void _floorMapPushCB(u32 kind, u32, u32 id, void* res, void* ctx) {
     StateEntry** pp = (StateEntry**)ctx;
     StateEntry* e = *pp;
     e->id = id;
@@ -1998,51 +1984,51 @@ inline GSmtx GSmtx::makeIdentity() {
 }
 
 inline void GSgfxLayer::fog(bool on) {
-    fogOn = on;
-    dirty170c |= 0x40;
-    dirty17c4 |= 0x40;
+    hw.fogEnable = on;
+    dirty[0].pe |= 0x40;
+    dirty[1].pe |= 0x40;
     if (on) {
-        dirty170c |= 0x200;
-        dirty17c4 |= 0x200;
-        if (fogRangeOn) {
-            dirty170c |= 0x100;
-            dirty17c4 |= 0x100;
+        dirty[0].pe |= 0x200;
+        dirty[1].pe |= 0x200;
+        if (hw.fogRangeEnable) {
+            dirty[0].pe |= 0x100;
+            dirty[1].pe |= 0x100;
         }
     }
-    dirty16a8 |= 0x40;
-    dirty1760 |= 0x40;
+    dirty[0].groups |= 0x40;
+    dirty[1].groups |= 0x40;
 }
 
 inline void GSgfxLayer::setFogRange(bool on, u16 range) {
-    fogRangeOn = on;
+    hw.fogRangeEnable = on;
     if (range != 0xFFFF) {
-        fogRange = range;
+        hw.fogCenter = range;
     } else {
         GSgfxSize size;
         GSgfxVideoGetEFBSize(&size, 0);
-        fogRange = size.w >> 1;
+        hw.fogCenter = size.w >> 1;
     }
-    if (fogOn) {
-        dirty170c |= 0x200;
-        dirty17c4 |= 0x200;
+    if (hw.fogEnable) {
+        dirty[0].pe |= 0x200;
+        dirty[1].pe |= 0x200;
         if (on) {
-            dirty170c |= 0x100;
-            dirty17c4 |= 0x100;
+            dirty[0].pe |= 0x100;
+            dirty[1].pe |= 0x100;
         }
-        dirty16a8 |= 0x40;
-        dirty1760 |= 0x40;
+        dirty[0].groups |= 0x40;
+        dirty[1].groups |= 0x40;
     }
 }
 
 inline void GSgfxLayer::setFog(GSgfxFogType type, f32 start, f32 end, GSgfxColAu8 col) {
-    fogType = type;
-    fogStart = start;
-    fogEnd = end;
-    fogColor.rgba = col.rgba;
-    if (fogOn) {
-        dirty170c |= 0x40;
-        dirty16a8 |= 0x40;
-        dirty17c4 |= 0x40;
-        dirty1760 |= 0x40;
+    hw.fogType = type;
+    hw.fogStart = start;
+    hw.fogEnd = end;
+    *(u32*)&hw.fogColor = col.rgba;
+    if (hw.fogEnable) {
+        dirty[0].pe |= 0x40;
+        dirty[0].groups |= 0x40;
+        dirty[1].pe |= 0x40;
+        dirty[1].groups |= 0x40;
     }
 }

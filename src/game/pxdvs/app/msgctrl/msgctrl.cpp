@@ -1,6 +1,18 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #pragma peephole off
 
+#ifdef __MWERKS__
+#define MSG_NEXT_CHAR_HI(p) (*(p))
+#define MSG_ARG32(p) (*(p))
+#else
+#define MSG_NEXT_CHAR_HI(p) ((p)[1])
+#define MSG_ARG32(p) ((((u8*)(p))[0] << 24) | (((u8*)(p))[1] << 16) | (((u8*)(p))[2] << 8) | ((u8*)(p))[3])
+#endif
+
+#ifdef __MWERKS__
 struct MsgCtrl {
     u8 unk0;
     u8 activeFlag;
@@ -33,12 +45,56 @@ struct MsgCtrl {
     u8 pad4e[0x1a];
     f32 f68;
 };
+#else
+struct MsgCtrl {
+    u8 unk0;
+    u8 activeFlag;
+    u8 shadow;
+    u8 talkSE;
+    f32 f04;
+    f32 f08;
+    f32 f0c;
+    f32 f10;
+    f32 charW;
+    s16 width;
+    s16 height;
+    u32 key;
+    s16 font;
+    u8 pad22;
+    u8 unk23;
+    u32 color;
+    u8* pad28;
+    u8* saved;
+    u8* stream;
+    u8* stack[3];
+    s8 depth;
+    u8 indentOff;
+    s8 lineSpace;
+    s8 baseLineBias;
+    u8 flags;
+    u8 pending;
+    u8 waitFlag;
+    u8 waitFlag2;
+    u8 pad48[2];
+    s16 wait;
+    u8 align;
+    u8 ruby;
+    u8 pad4e[2];
+    f32 f50;
+    f32 f54;
+    u8* rubyPtr;
+    u8 r5c[4];
+    f32 f60;
+    f32 scaleX;
+    f32 f68;
+};
+#endif
 
 struct FightOutPokemon;
 
 extern "C" {
-s32 GSsndGetStatus(u16);
-void soundOpenPlay(u16, s32, s32);
+s32 GSsndGetStatus(PCARG(u16, u32));
+void soundOpenPlay(PCARG(u16, u32), s32, s32);
 void GSsndPlayNow(u32);
 void GSmsgAdjustAlign(MsgCtrl*);
 void GSmsgSetColor(MsgCtrl*);
@@ -61,7 +117,7 @@ void* itemDataBiosGetName(void*);
 void* savedataGetStatus(s32, s32);
 void* heroBiosGetNamePtr(void*);
 void* heroBiosGetHizukiNamePtr(void*);
-s32 fightFloorGetStatus(s32, s32, s32, s32);
+StatusS32 fightFloorGetStatus(s32, s32, s32, s32);
 void* fightTargetGetPtrAsNowFightType(s32, FightOutPokemon*);
 void* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(s32, FightOutPokemon*);
 void* fightSideGetValidFightTrainerPtr(void*, u16);
@@ -79,61 +135,61 @@ static inline void* getTrainer(FightOutPokemon* m)
     return fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, m);
 }
 
-static u32 _EV_STR_BUF0;
-static u32 _EV_STR_BUF1;
-static u32 _EV_STR_BUF2;
-static u32 _ATTACK_MONS;
-static u32 _DEFENCE_MONS;
-static u32 _CLIENT_MONS;
-static u32 _TSUIKA_MONS;
-static u32 _MY_NAME;
-static u32 _MY_MONS;
-static u32 _MY_MONS2;
-static u32 _ENEMY_MONS;
-static u32 _ENEMY_MONS2;
-static u32 _ENEMY_TMONS;
-static u32 _ENEMY_TMONS2;
-static u32 _SPEABI_NAMEA;
-static u32 _SPEABI_NAMED;
-static u32 _SPEABI_NAMEC;
-static u32 _SPEABI_NAMET;
-static u32 _CLIENTNOWORK;
-static u32 _SIDE_ATTACK_NAMEHA;
-static u32 _SIDE_ATTACK_NAMEWO;
-static u32 _SIDE_ATTACK_NAMENO;
-static u32 _TRAINER_TYPE;
-static u32 _TRAINER_NAME;
-static u32 _TRAINER_LOSE;
-static u32 _TRAINER_ENENAME;
-static u32 _TRAINER_ENENAME2;
-static u32 _TRAINER_CLIENTNO;
-static u32 _WAZA_NAME;
-static u32 _ITEM_NAME;
-static u32 _PASO_NAME;
-static u32 _SIDE_DEFENCE_NAMEHA;
-static u32 _SIDE_DEFENCE_NAMEWO;
-static u32 _SIDE_DEFENCE_NAMENO;
+static GCuptr _EV_STR_BUF0;
+static GCuptr _EV_STR_BUF1;
+static GCuptr _EV_STR_BUF2;
+static GCuptr _ATTACK_MONS;
+static GCuptr _DEFENCE_MONS;
+static GCuptr _CLIENT_MONS;
+static GCuptr _TSUIKA_MONS;
+static GCuptr _MY_NAME;
+static GCuptr _MY_MONS;
+static GCuptr _MY_MONS2;
+static GCuptr _ENEMY_MONS;
+static GCuptr _ENEMY_MONS2;
+static GCuptr _ENEMY_TMONS;
+static GCuptr _ENEMY_TMONS2;
+static GCuptr _SPEABI_NAMEA;
+static GCuptr _SPEABI_NAMED;
+static GCuptr _SPEABI_NAMEC;
+static GCuptr _SPEABI_NAMET;
+static GCuptr _CLIENTNOWORK;
+static GCuptr _SIDE_ATTACK_NAMEHA;
+static GCuptr _SIDE_ATTACK_NAMEWO;
+static GCuptr _SIDE_ATTACK_NAMENO;
+static GCuptr _TRAINER_TYPE;
+static GCuptr _TRAINER_NAME;
+static GCuptr _TRAINER_LOSE;
+static GCuptr _TRAINER_ENENAME;
+static GCuptr _TRAINER_ENENAME2;
+static GCuptr _TRAINER_CLIENTNO;
+static GCuptr _WAZA_NAME;
+static GCuptr _ITEM_NAME;
+static GCuptr _PASO_NAME;
+static GCuptr _SIDE_DEFENCE_NAMEHA;
+static GCuptr _SIDE_DEFENCE_NAMEWO;
+static GCuptr _SIDE_DEFENCE_NAMENO;
 static u16 _Item;
 static u16 _Item2;
-static u32 _Digit;
-static u32 _Digit2;
-static u32 _MsgID;
-static u32 _Pokemon;
-static u32 _Pokemon2;
-static u32 _MenuDigit;
-static u32 _MenuDigit2;
-static u32 _MenuPokemon;
-static u32 _MenuMsg;
-static u32 _MenuMsg2;
+static GCuptr _Digit;
+static GCuptr _Digit2;
+static GCuptr _MsgID;
+static GCuptr _Pokemon;
+static GCuptr _Pokemon2;
+static GCuptr _MenuDigit;
+static GCuptr _MenuDigit2;
+static GCuptr _MenuPokemon;
+static GCuptr _MenuMsg;
+static GCuptr _MenuMsg2;
 static u16 _Waza;
-static u32 _Money;
-static u32 _Time;
-static u32 _String;
-static u32 _String2;
+static GCuptr _Money;
+static GCuptr _Time;
+static GCuptr _String;
+static GCuptr _String2;
 static u16 _PokemonID;
-static u32 _MenuMoney;
-static u32 _MenuMsgID;
-static u32 _MenuMsgID2;
+static GCuptr _MenuMoney;
+static GCuptr _MenuMsgID;
+static GCuptr _MenuMsgID2;
 static u16 _Tribe;
 static u16 _Npc;
 static u16 _SndID;
@@ -154,7 +210,7 @@ void msgctrlInitValue()
     _String2 = 0;
 }
 
-void msgctrlSetValue(s32 id, u32 value)
+void msgctrlSetValue(s32 id, GCuptr value)
 {
     switch (id) {
     case 0x2D: _Item = (u16)value; break;
@@ -364,7 +420,7 @@ u32 msgctrlCheckWait(MsgCtrl* o)
         if (o->pending) {
             o->pending = 0;
             o->saved = o->stream;
-            if (*o->stream != 0) {
+            if (MSG_NEXT_CHAR_HI(o->stream) != 0) {
                 peopleSetTalkKeyWaitCallback();
             }
             if (!(o->flags & 2)) {
@@ -393,7 +449,7 @@ u32 msgctrlKeyWait(MsgCtrl* o)
         if (o->pending) {
             o->pending = 0;
             o->saved = o->stream;
-            if (*o->stream != 0) {
+            if (MSG_NEXT_CHAR_HI(o->stream) != 0) {
                 peopleSetTalkKeyWaitCallback();
             }
             if (!(o->flags & 2)) {
@@ -449,7 +505,7 @@ u32 msgctrlColor(MsgCtrl* o)
     if (o->activeFlag != 0) {
         u32* p = (u32*)o->stream;
         u8 low = o->color;
-        o->color = *p;
+        o->color = MSG_ARG32(p);
         o->color &= ~0xFF;
         o->color |= low;
         GSmsgSetColor(o);
@@ -545,17 +601,17 @@ u16* msgctrlDigit2()
     return _msgctrlMakeDigit(buff, 0x10, _Digit2, 0);
 }
 
-u32 msgctrlMsgID()
+GCuptr msgctrlMsgID()
 {
     return _MsgID;
 }
 
-u32 msgctrlPokemon()
+GCuptr msgctrlPokemon()
 {
     return _Pokemon;
 }
 
-u32 msgctrlPokemon2()
+GCuptr msgctrlPokemon2()
 {
     return _Pokemon2;
 }
@@ -572,17 +628,17 @@ u16* msgctrlMenuDigit2()
     return _msgctrlMakeDigit(buff, 0x10, _MenuDigit2, 0);
 }
 
-u32 msgctrlMenuPokemon()
+GCuptr msgctrlMenuPokemon()
 {
     return _MenuPokemon;
 }
 
-u32 msgctrlMenuMsg()
+GCuptr msgctrlMenuMsg()
 {
     return _MenuMsg;
 }
 
-u32 msgctrlMenuMsg2()
+GCuptr msgctrlMenuMsg2()
 {
     return _MenuMsg2;
 }
@@ -693,17 +749,17 @@ u16* msgctrlDigitH2()
     return _msgctrlMakeDigit(buff, 0x10, _Digit2, 6);
 }
 
-u32 msgctrlEvStrBuf0()
+GCuptr msgctrlEvStrBuf0()
 {
     return _EV_STR_BUF0;
 }
 
-u32 msgctrlEvStrBuf1()
+GCuptr msgctrlEvStrBuf1()
 {
     return _EV_STR_BUF1;
 }
 
-u32 msgctrlEvStrBuf2()
+GCuptr msgctrlEvStrBuf2()
 {
     return _EV_STR_BUF2;
 }
@@ -714,8 +770,8 @@ void* msgctrlAttackMons()
     FightOutPokemon* mon = (FightOutPokemon*)_ATTACK_MONS;
     trainer = getTrainer(mon);
     if (fightFloorIsNowEncountTuusinTaisen(0) == 1 && trainer != 0) {
-        msgctrlSetValue(0x4D, (u32)fightTrainerGetNamePtr(trainer));
-        msgctrlSetValue(0x57, (u32)fightOutPokemonGetNicknamePtr(mon));
+        msgctrlSetValue(0x4D, (GCuptr)fightTrainerGetNamePtr(trainer));
+        msgctrlSetValue(0x57, (GCuptr)fightOutPokemonGetNicknamePtr(mon));
         return GSmsgGetGSchar(0x4FE4);
     }
     return fightOutPokemonGetNicknamePtr(mon);
@@ -727,8 +783,8 @@ void* msgctrlDeffenceMons()
     FightOutPokemon* mon = (FightOutPokemon*)_DEFENCE_MONS;
     trainer = getTrainer(mon);
     if (fightFloorIsNowEncountTuusinTaisen(0) == 1 && trainer != 0) {
-        msgctrlSetValue(0x4D, (u32)fightTrainerGetNamePtr(trainer));
-        msgctrlSetValue(0x57, (u32)fightOutPokemonGetNicknamePtr(mon));
+        msgctrlSetValue(0x4D, (GCuptr)fightTrainerGetNamePtr(trainer));
+        msgctrlSetValue(0x57, (GCuptr)fightOutPokemonGetNicknamePtr(mon));
         return GSmsgGetGSchar(0x4FE4);
     }
     return fightOutPokemonGetNicknamePtr(mon);
@@ -740,8 +796,8 @@ void* msgctrlClientMos()
     FightOutPokemon* mon = (FightOutPokemon*)_CLIENT_MONS;
     trainer = getTrainer(mon);
     if (fightFloorIsNowEncountTuusinTaisen(0) == 1 && trainer != 0) {
-        msgctrlSetValue(0x4D, (u32)fightTrainerGetNamePtr(trainer));
-        msgctrlSetValue(0x57, (u32)fightOutPokemonGetNicknamePtr(mon));
+        msgctrlSetValue(0x4D, (GCuptr)fightTrainerGetNamePtr(trainer));
+        msgctrlSetValue(0x57, (GCuptr)fightOutPokemonGetNicknamePtr(mon));
         return GSmsgGetGSchar(0x4FE4);
     }
     return fightOutPokemonGetNicknamePtr(mon);
@@ -753,64 +809,64 @@ void* msgctrlTsuikaMons()
     FightOutPokemon* mon = (FightOutPokemon*)_TSUIKA_MONS;
     trainer = getTrainer(mon);
     if (fightFloorIsNowEncountTuusinTaisen(0) == 1 && trainer != 0) {
-        msgctrlSetValue(0x4D, (u32)fightTrainerGetNamePtr(trainer));
-        msgctrlSetValue(0x57, (u32)fightOutPokemonGetNicknamePtr(mon));
+        msgctrlSetValue(0x4D, (GCuptr)fightTrainerGetNamePtr(trainer));
+        msgctrlSetValue(0x57, (GCuptr)fightOutPokemonGetNicknamePtr(mon));
         return GSmsgGetGSchar(0x4FE4);
     }
     return fightOutPokemonGetNicknamePtr(mon);
 }
 
-u32 msgctrlMyName()
+GCuptr msgctrlMyName()
 {
     return _MY_NAME;
 }
 
-u32 msgctrlMyMons()
+GCuptr msgctrlMyMons()
 {
     return _MY_MONS;
 }
 
-u32 msgctrlMyMons2()
+GCuptr msgctrlMyMons2()
 {
     return _MY_MONS2;
 }
 
-u32 msgctrlEnemyMons()
+GCuptr msgctrlEnemyMons()
 {
     return _ENEMY_MONS;
 }
 
-u32 msgctrlEnemyMons2()
+GCuptr msgctrlEnemyMons2()
 {
     return _ENEMY_MONS2;
 }
 
-u32 msgctrlEnemyTmons()
+GCuptr msgctrlEnemyTmons()
 {
     return _ENEMY_TMONS;
 }
 
-u32 msgctrlEnemyTmons2()
+GCuptr msgctrlEnemyTmons2()
 {
     return _ENEMY_TMONS2;
 }
 
-u32 msgctrlSpeabiNamea()
+GCuptr msgctrlSpeabiNamea()
 {
     return _SPEABI_NAMEA;
 }
 
-u32 msgctrlSpeabiNamed()
+GCuptr msgctrlSpeabiNamed()
 {
     return _SPEABI_NAMED;
 }
 
-u32 msgctrlSpeabiNamec()
+GCuptr msgctrlSpeabiNamec()
 {
     return _SPEABI_NAMEC;
 }
 
-u32 msgctrlSpeabiNamet()
+GCuptr msgctrlSpeabiNamet()
 {
     return _SPEABI_NAMET;
 }
@@ -821,8 +877,8 @@ void* msgctrlClientnowork()
     FightOutPokemon* mon = (FightOutPokemon*)_CLIENTNOWORK;
     trainer = getTrainer(mon);
     if (fightFloorIsNowEncountTuusinTaisen(0) == 1 && trainer != 0) {
-        msgctrlSetValue(0x4D, (u32)fightTrainerGetNamePtr(trainer));
-        msgctrlSetValue(0x57, (u32)fightOutPokemonGetNicknamePtr(mon));
+        msgctrlSetValue(0x4D, (GCuptr)fightTrainerGetNamePtr(trainer));
+        msgctrlSetValue(0x57, (GCuptr)fightOutPokemonGetNicknamePtr(mon));
         return GSmsgGetGSchar(0x4FE4);
     }
     return fightOutPokemonGetNicknamePtr(mon);
@@ -842,16 +898,16 @@ static void* _msgctrlSideName(FightOutPokemon* mon, u8 kind)
         t = fightSideGetValidFightTrainerPtr(side, i);
         if (t != 0 && fightTrainerCheckDoFight(t) != 0) {
             if (count == 0) {
-                msgctrlSetValue(0x4D, (u32)fightTrainerGetNamePtr(t));
+                msgctrlSetValue(0x4D, (GCuptr)fightTrainerGetNamePtr(t));
             } else if (count == 1) {
-                msgctrlSetValue(0x57, (u32)fightTrainerGetNamePtr(t));
+                msgctrlSetValue(0x57, (GCuptr)fightTrainerGetNamePtr(t));
             }
             count++;
         }
     }
     if (fightFloorIsNowEncountTuusinTaisen(0) == 1 && self != 0) {
         if (count <= 1) {
-            msgctrlSetValue(0x4D, (u32)fightTrainerGetNamePtr(self));
+            msgctrlSetValue(0x4D, (GCuptr)fightTrainerGetNamePtr(self));
             if (kind == 0) {
                 return GSmsgGetGSchar(0x4FE5);
             } else if (kind == 1) {
@@ -914,47 +970,47 @@ void* msgctrlSideDefenceNameno()
     return _msgctrlSideName((FightOutPokemon*)_SIDE_DEFENCE_NAMENO, 2);
 }
 
-u32 msgctrlTrainerType()
+GCuptr msgctrlTrainerType()
 {
     return _TRAINER_TYPE;
 }
 
-u32 msgctrlTrainerName()
+GCuptr msgctrlTrainerName()
 {
     return _TRAINER_NAME;
 }
 
-u32 msgctrlTrainerLose()
+GCuptr msgctrlTrainerLose()
 {
     return _TRAINER_LOSE;
 }
 
-u32 msgctrlTrainerEnename()
+GCuptr msgctrlTrainerEnename()
 {
     return _TRAINER_ENENAME;
 }
 
-u32 msgctrlTrainerEnename2()
+GCuptr msgctrlTrainerEnename2()
 {
     return _TRAINER_ENENAME2;
 }
 
-u32 msgctrlTrainerClientno()
+GCuptr msgctrlTrainerClientno()
 {
     return _TRAINER_CLIENTNO;
 }
 
-u32 msgctrlWazaName()
+GCuptr msgctrlWazaName()
 {
     return _WAZA_NAME;
 }
 
-u32 msgctrlItemName()
+GCuptr msgctrlItemName()
 {
     return _ITEM_NAME;
 }
 
-u32 msgctrlPasoName()
+GCuptr msgctrlPasoName()
 {
     return _PASO_NAME;
 }
@@ -1046,7 +1102,7 @@ u16* msgctrlTime()
     return buff;
 }
 
-u32 msgctrlString()
+GCuptr msgctrlString()
 {
     return _String;
 }
@@ -1096,17 +1152,17 @@ u32 msgctrlTalkSE(MsgCtrl* o)
     return 0;
 }
 
-u32 msgctrlMenuMsgID()
+GCuptr msgctrlMenuMsgID()
 {
     return _MenuMsgID;
 }
 
-u32 msgctrlMenuMsgID2()
+GCuptr msgctrlMenuMsgID2()
 {
     return _MenuMsgID2;
 }
 
-u32 msgctrlString2()
+GCuptr msgctrlString2()
 {
     return _String2;
 }

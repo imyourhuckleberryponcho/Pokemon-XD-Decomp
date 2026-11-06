@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/gcdata.h>
+#include <game/bitfield.h>
 #include <dolphin/gx/GXVert.h>
 
 #pragma peephole off
@@ -23,59 +27,23 @@ struct Quat4 {
     f32 w;
 };
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0x28];
-    s32 layerID;
-    u8 pad2c[0xD34 - 0x2C];
-    u8 colorCount;
-    u8 padD35[3];
-    u32 colorMode;
-    u8 padD3C[0x1644 - 0xD3C];
-    s32 s1644;
-    s32 s1648;
-    s32 s164C;
-    s32 s1650;
-    u8 pad1654[0x1664 - 0x1654];
-    s32 s1664;
-    s32 s1668;
-    s32 s166C;
-    u8 b1670;
-    u8 b1671;
-    u8 b1672;
-    u8 pad1673;
-    u8 pad1674[0x16A8 - 0x1674];
-    u32 flagsA;
-    u32 flagsB;
-    u8 pad16B0[0x170C - 0x16B0];
-    u32 f170C;
-    u8 pad1710[0x173C - 0x1710];
-    u32 f173C;
-    GStexture* tex1740;
-    u8 pad1744[0x1760 - 0x1744];
-    u32 flagsC;
-    u32 flagsD;
-    u8 pad1768[0x17C4 - 0x1768];
-    u32 f17C4;
-    u8 pad17C8[0x17F4 - 0x17C8];
-    u32 f17F4;
-    GStexture* tex17F8;
-    u8 pad17FC[0x1818 - 0x17FC];
-    u8 surfaces[2][0xBC];
-    void* curSurface;
-    s32 curSurfaceIdx;
-    u32 primitive;
-    u32 f199C;
     void setRenderStateAndSelect(GSgfxVF*);
     void beginSurface(u16);
     void endSurface();
 };
 
 struct SEQ_CMD {
-    u8 rel : 1;
-    u8 ease : 2;
-    u8 keep : 2;
-    u8 rest : 3;
+    GC_BITS4(
+    u8 rel : 1,
+    u8 ease : 2,
+    u8 keep : 2,
+    u8 rest : 3)
     u8 type;
     s16 arg;
     s32 a;
@@ -161,13 +129,25 @@ struct tagWINDOW_WORK {
     s8 state;
     u8 pad2[2];
     s32 menuID;
-    u8 pad8[0x14];
+    u8 pad8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0x4];
     s32 layerID;
     u8 pad20[4];
     tagSPRITE_WORK* itemSprites;
     tagSPRITE_WORK* cursorSprites;
     tagSEQ_WORK seq;
-    u8 pad_68[0x24];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0x4];
     s16 offX;
     s16 offY;
     u8 color[4];
@@ -175,12 +155,14 @@ struct tagWINDOW_WORK {
     s16 cursor;
     u8 pad_a0[2];
     s16 cursorPrev;
-    u8 pad_a4[0x18];
+    u8 pad_a4[0x14];
+    void* slotB8;
 };
 
 struct MENU_DATA {
-    u8 f0a : 3;
-    u8 f0b : 5;
+    GC_BITS2(
+    u8 f0a : 3,
+    u8 f0b : 5)
     u8 pad[5];
     s16 firstItem;
     s16 x;
@@ -214,7 +196,7 @@ void GSlogWrite(const char*, ...);
 s32 timeGetLastFrameTime(void);
 void* menuSeqBiosGetPtr(u32);
 MENU_DATA* menuDataBiosGetPtr(s32);
-MENU_ITEM* menuItemBiosGetPtr(s32, s16);
+MENU_ITEM* menuItemBiosGetPtr(s32, PCARG(s16, u32));
 void* menuSpriteBiosGetPtr(u32);
 MENU_SPRITE_VAL* menuSpriteBiosGetValPtr(void*);
 tagWINDOW_WORK* windowSearchID(s32);
@@ -222,7 +204,7 @@ s32 windowGetActiveID(void);
 s32 dbgMenuGetLayerID(void);
 s32 floorGetMenuLayerID(void);
 s32 menuBiosGetCursorSize(tagWINDOW_WORK*);
-GSgfxLayer* GSgfxLayerFindByID(s32);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 void spriteSetOffset(s32, s16, s16);
 void spriteSetEnv(s32);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
@@ -274,10 +256,10 @@ s32 winSpriteGetLayerID(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 
 void winSpriteInit(void)
 {
-    void* p = GSmemAlloc(0xEA60);
+    void* p = GSmemAlloc(500 * sizeof(tagSPRITE_WORK));
     _spriteWork = (tagSPRITE_WORK*)p;
     if (p != 0) {
-        memset(p, 0, 0xEA60);
+        memset(p, 0, 500 * sizeof(tagSPRITE_WORK));
     }
 }
 
@@ -292,7 +274,7 @@ tagSPRITE_WORK* winSpriteAdd(tagSPRITE_WORK** head)
     sp = _spriteWork;
     for (i = 500; i > 0; i--) {
         if (sp->kind == 0) {
-            memset(sp, 0, 0x78);
+            memset(sp, 0, sizeof(tagSPRITE_WORK));
             p = (tagSPRITE_WORK*)head;
             sp->kind = 7;
             sp->sx = 1.0f;
@@ -350,76 +332,76 @@ static void _spriteSetAlphaMode(GSgfxLayer* l, u8 mode)
 {
     switch (mode) {
     case 0:
-        l->s1664 = 7;
-        l->b1670 = 0;
-        l->s1668 = 0;
-        l->s166C = 7;
-        l->b1671 = 0;
-        l->b1672 = 1;
-        l->f170C |= 0x10;
-        l->flagsA |= 0x40;
-        l->f17C4 |= 0x10;
-        l->flagsC |= 0x40;
-        if (l->curSurfaceIdx != 1) {
-            l->curSurfaceIdx = 1;
-            l->curSurface = l->surfaces[l->curSurfaceIdx];
+        (*(s32*)&l->hw.alphaComp0) = 7;
+        (*(u8*)&l->hw.alphaRef0) = 0;
+        (*(s32*)&l->hw.alphaCmpOp) = 0;
+        (*(s32*)&l->hw.alphaComp1) = 7;
+        (*(u8*)&l->hw.alphaRef1) = 0;
+        (*(u8*)&l->hw.zCompLoc) = 1;
+        (*(u32*)&l->dirty[0].pe) |= 0x10;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 0x10;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->s1644 = 1;
-        l->s1648 = 4;
-        l->s164C = 5;
-        l->s1650 = 5;
-        l->f170C |= 1;
-        l->flagsA |= 0x40;
-        l->f17C4 |= 1;
-        l->flagsC |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 1;
+        (*(s32*)&l->hw.blend[1]) = 4;
+        (*(s32*)&l->hw.blend[2]) = 5;
+        (*(s32*)&l->hw.blend[3]) = 5;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     case 1:
-        l->s1664 = 4;
-        l->b1670 = 0;
-        l->s1668 = 1;
-        l->s166C = 0;
-        l->b1671 = 0;
-        l->b1672 = 0;
-        l->f170C |= 0x10;
-        l->flagsA |= 0x40;
-        l->f17C4 |= 0x10;
-        l->flagsC |= 0x40;
-        if (l->curSurfaceIdx != 1) {
-            l->curSurfaceIdx = 1;
-            l->curSurface = l->surfaces[l->curSurfaceIdx];
+        (*(s32*)&l->hw.alphaComp0) = 4;
+        (*(u8*)&l->hw.alphaRef0) = 0;
+        (*(s32*)&l->hw.alphaCmpOp) = 1;
+        (*(s32*)&l->hw.alphaComp1) = 0;
+        (*(u8*)&l->hw.alphaRef1) = 0;
+        (*(u8*)&l->hw.zCompLoc) = 0;
+        (*(u32*)&l->dirty[0].pe) |= 0x10;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 0x10;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->s1644 = 1;
-        l->s1648 = 2;
-        l->s164C = 0;
-        l->s1650 = 5;
-        l->f170C |= 1;
-        l->flagsA |= 0x40;
-        l->f17C4 |= 1;
-        l->flagsC |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 1;
+        (*(s32*)&l->hw.blend[1]) = 2;
+        (*(s32*)&l->hw.blend[2]) = 0;
+        (*(s32*)&l->hw.blend[3]) = 5;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     case 2:
-        l->s1664 = 7;
-        l->b1670 = 0;
-        l->s1668 = 0;
-        l->s166C = 7;
-        l->b1671 = 0;
-        l->b1672 = 1;
-        l->f170C |= 0x10;
-        l->flagsA |= 0x40;
-        l->f17C4 |= 0x10;
-        l->flagsC |= 0x40;
-        if (l->curSurfaceIdx != 1) {
-            l->curSurfaceIdx = 1;
-            l->curSurface = l->surfaces[l->curSurfaceIdx];
+        (*(s32*)&l->hw.alphaComp0) = 7;
+        (*(u8*)&l->hw.alphaRef0) = 0;
+        (*(s32*)&l->hw.alphaCmpOp) = 0;
+        (*(s32*)&l->hw.alphaComp1) = 7;
+        (*(u8*)&l->hw.alphaRef1) = 0;
+        (*(u8*)&l->hw.zCompLoc) = 1;
+        (*(u32*)&l->dirty[0].pe) |= 0x10;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 0x10;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
+        if ((*(s32*)&l->curPass) != 1) {
+            (*(s32*)&l->curPass) = 1;
+            l->curFifo = &l->passes[l->curPass];
         }
-        l->s1644 = 1;
-        l->s1648 = 4;
-        l->s164C = 1;
-        l->s1650 = 5;
-        l->f170C |= 1;
-        l->flagsA |= 0x40;
-        l->f17C4 |= 1;
-        l->flagsC |= 0x40;
+        (*(s32*)&l->hw.blend[0]) = 1;
+        (*(s32*)&l->hw.blend[1]) = 4;
+        (*(s32*)&l->hw.blend[2]) = 1;
+        (*(s32*)&l->hw.blend[3]) = 5;
+        (*(u32*)&l->dirty[0].pe) |= 1;
+        (*(u32*)&l->dirty[0].groups) |= 0x40;
+        (*(u32*)&l->dirty[1].pe) |= 1;
+        (*(u32*)&l->dirty[1].groups) |= 0x40;
         break;
     }
 }
@@ -448,6 +430,7 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     GSgfxLayer* gfx;
     s32 layer;
     u8 g;
+    u8 b2;
     u8 r;
 
     GSgfxLayerFindByID(w->layerID);
@@ -467,8 +450,8 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     if (!winSpriteGetDisp(sp)) {
         return;
     }
-    r = sp->color[0] * w->color[0] / 255;
     g = sp->color[1] * w->color[1] / 255;
+    r = sp->color[0] * w->color[0] / 255;
     b = sp->color[2] * w->color[2] / 255;
     a = sp->color[3] * w->color[3] / 255;
     color = (r << 24) | (g << 16) | (b << 8) | a;
@@ -482,7 +465,7 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     if (sp->flags & 2) {
         switch ((u32)sp->tex - 0x10000) {
         case 0:
-            gfx->primitive = 0x90;
+            (*(u32*)&gfx->unk1998) = 0x90;
             gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
             gfx->beginSurface(3);
             wsPos(sp->x, sp->y);
@@ -494,25 +477,25 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             gfx->endSurface();
             break;
         case 1:
-            menuSubDrawSimpleWindow(gfx->layerID, sp->x, sp->y, sp->w, sp->h);
+            menuSubDrawSimpleWindow((*(s32*)&gfx->id), sp->x, sp->y, sp->w, sp->h);
             break;
         case 4:
-            menuSubDrawNormalWindow2(gfx->layerID, sp->x, sp->y, sp->w, sp->h, a);
+            menuSubDrawNormalWindow2((*(s32*)&gfx->id), sp->x, sp->y, sp->w, sp->h, a);
             break;
         case 5:
-            menuSubDrawMsgWindow2(gfx->layerID, sp->x, sp->y, sp->w, sp->h, a, 1);
+            menuSubDrawMsgWindow2((*(s32*)&gfx->id), sp->x, sp->y, sp->w, sp->h, a, 1);
             break;
         case 6: {
             MENU_ITEM* item = menuItemBiosGetPtr(w->menuID, sp->id);
             tagWINDOW_WORK* active = windowSearchID(windowGetActiveID());
             if (item->spriteID == 0xbd) {
                 if (w == active) {
-                    menuSubDrawCursorBack(gfx->layerID, sp->x, sp->y, item->w, item->h, a, 0);
+                    menuSubDrawCursorBack((*(s32*)&gfx->id), sp->x, sp->y, item->w, item->h, a, 0);
                 } else {
-                    menuSubDrawCursorBackAnimeOnOff(gfx->layerID, sp->x, sp->y, item->w, item->h, a, 0, 0);
+                    menuSubDrawCursorBackAnimeOnOff((*(s32*)&gfx->id), sp->x, sp->y, item->w, item->h, a, 0, 0);
                 }
             } else {
-                menuSubDrawCursorBackAnimeOnOff(gfx->layerID, sp->x, sp->y, item->w, item->h, a, 0, 0);
+                menuSubDrawCursorBackAnimeOnOff((*(s32*)&gfx->id), sp->x, sp->y, item->w, item->h, a, 0, 0);
             }
             break;
         }
@@ -521,20 +504,20 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             tagWINDOW_WORK* active = windowSearchID(windowGetActiveID());
             if (item->spriteID == 0xc3) {
                 if (w == active) {
-                    menuSubDrawCursorBack(gfx->layerID, sp->x, sp->y, item->w, item->h, a, 1);
+                    menuSubDrawCursorBack((*(s32*)&gfx->id), sp->x, sp->y, item->w, item->h, a, 1);
                 } else {
-                    menuSubDrawCursorBackAnimeOnOff(gfx->layerID, sp->x, sp->y, item->w, item->h, a, 1, 0);
+                    menuSubDrawCursorBackAnimeOnOff((*(s32*)&gfx->id), sp->x, sp->y, item->w, item->h, a, 1, 0);
                 }
             } else {
-                menuSubDrawCursorBackAnimeOnOff(gfx->layerID, sp->x, sp->y, item->w, item->h, a, 1, 0);
+                menuSubDrawCursorBackAnimeOnOff((*(s32*)&gfx->id), sp->x, sp->y, item->w, item->h, a, 1, 0);
             }
             break;
         }
         case 2: {
             u8 r2 = (u16)sp->u * r / 255;
             u8 g2 = (u16)sp->v * g / 255;
-            u8 b2 = (u16)sp->uw * b / 255;
-            gfx->primitive = 0x98;
+            b2 = (u16)sp->uw * b / 255;
+            (*(u32*)&gfx->unk1998) = 0x98;
             gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
             gfx->beginSurface(4);
             wsPos(sp->x, sp->y);
@@ -549,16 +532,18 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             break;
         }
         case 8: {
-            u8 r2 = (u16)sp->u * r / 255;
-            u8 g2 = (u16)sp->v * g / 255;
-            u8 b2 = (u16)sp->uw * b / 255;
-            gfx->colorCount = 6;
-            gfx->colorMode = 0;
-            gfx->flagsB |= 4;
-            gfx->flagsA |= 1;
-            gfx->flagsD |= 4;
-            gfx->flagsC |= 1;
-            gfx->primitive = 0xb0;
+            u8 g2;
+            u8 r2;
+            r2 = (u16)sp->u * r / 255;
+            g2 = (u16)sp->v * g / 255;
+            u16 b2 = (u16)sp->uw * b / 255;
+            (*(u8*)&gfx->hw.lineWidth) = 6;
+            (*(u32*)&gfx->hw.lineOffset) = 0;
+            (*(u32*)&gfx->dirty[0].geom) |= 4;
+            (*(u32*)&gfx->dirty[0].groups) |= 1;
+            (*(u32*)&gfx->dirty[1].geom) |= 4;
+            (*(u32*)&gfx->dirty[1].groups) |= 1;
+            (*(u32*)&gfx->unk1998) = 0xb0;
             gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
             gfx->beginSurface(5);
             wsPos(sp->x, sp->y);
@@ -578,13 +563,13 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             u8 r2 = (u16)sp->u * r / 255;
             u8 g2 = (u16)sp->v * g / 255;
             u8 b2 = (u16)sp->uw * b / 255;
-            gfx->colorCount = 6;
-            gfx->colorMode = 0;
-            gfx->flagsB |= 4;
-            gfx->flagsA |= 1;
-            gfx->flagsD |= 4;
-            gfx->flagsC |= 1;
-            gfx->primitive = 0xa8;
+            (*(u8*)&gfx->hw.lineWidth) = 6;
+            (*(u32*)&gfx->hw.lineOffset) = 0;
+            (*(u32*)&gfx->dirty[0].geom) |= 4;
+            (*(u32*)&gfx->dirty[0].groups) |= 1;
+            (*(u32*)&gfx->dirty[1].geom) |= 4;
+            (*(u32*)&gfx->dirty[1].groups) |= 1;
+            (*(u32*)&gfx->unk1998) = 0xa8;
             gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
             gfx->beginSurface(2);
             wsPos(sp->x, sp->y);
@@ -646,11 +631,11 @@ void winSpriteDrawTexture(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     s32 i;
 
     if (tex != 0) {
-        if (gfx->tex1740 != tex || gfx->tex17F8 != tex || tex->flag != 0) {
-            gfx->tex1740 = tex;
-            gfx->f173C |= 1;
-            gfx->tex17F8 = tex;
-            gfx->f17F4 |= 1;
+        if ((*(GStexture**)&gfx->dirty[0].tex[0]) != tex || (*(GStexture**)&gfx->dirty[1].tex[0]) != tex || tex->flag != 0) {
+            (*(GStexture**)&gfx->dirty[0].tex[0]) = tex;
+            (*(u32*)&gfx->dirty[0].texMask) |= 1;
+            (*(GStexture**)&gfx->dirty[1].tex[0]) = tex;
+            (*(u32*)&gfx->dirty[1].texMask) |= 1;
         }
         switch (sp->b76) {
         case 0:
@@ -756,7 +741,7 @@ void winSpriteDrawTexture(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
         q.z = 0.0f;
         q.w = 1.0f;
     }
-    gfx->primitive = 0x80;
+    (*(u32*)&gfx->unk1998) = 0x80;
     gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 1, 1, 4));
     gfx->beginSurface(4);
     for (i = 0; i < 4; i++) {
@@ -784,7 +769,7 @@ void winSetSequence(tagSEQ_WORK* s, u32 id)
         s->cmds = 0;
         s->idx = 0;
     } else {
-        memset(s, 0, 0x3c);
+        memset(s, 0, sizeof(*s));
         s->cmds = (SEQ_CMD*)menuSeqBiosGetPtr((u16)id);
     }
 }

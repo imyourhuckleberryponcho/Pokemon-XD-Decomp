@@ -1,9 +1,15 @@
 #include <dolphin/types.h>
 #pragma pool_strings off
 
+#ifdef __MWERKS__
 typedef struct DVDFileInfo {
     u8 raw[0x3C];
 } DVDFileInfo;
+#define DVD_FILE_LENGTH(fi) (*(u32*)&(fi).raw[0x34])
+#else
+#include <dolphin/dvd.h>
+#define DVD_FILE_LENGTH(fi) ((fi).length)
+#endif
 
 typedef struct GSDVDWork GSDVDWork;
 struct GSDVDWork {
@@ -19,11 +25,14 @@ typedef struct InAddr {
     u32 addr;
 } InAddr;
 
+#ifdef __MWERKS__
 typedef void (*DVDCallback)(s32, DVDFileInfo*);
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+#ifdef __MWERKS__
 int DVDSeekAsyncPrio(DVDFileInfo* fileInfo, s32 offset, DVDCallback callback, s32 prio);
 s32 DVDGetCommandBlockStatus(DVDFileInfo* fileInfo);
 s32 DVDGetDriveStatus(void);
@@ -35,6 +44,7 @@ int DVDOpen(const char* path, DVDFileInfo* fileInfo);
 void DVDInit(void);
 void DVDSetAutoFatalMessaging(int enable);
 u8* DVDGetCurrentDiskID(void);
+#endif
 void DCInvalidateRange(void* addr, u32 nBytes);
 u32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(u32 level);
@@ -242,7 +252,7 @@ u32 GSdvdGetLength(GSDVDWork* work) {
     if (work == 0) {
         return 0;
     }
-    return *(u32*)&work->fileInfo.raw[0x34];
+    return DVD_FILE_LENGTH(work->fileInfo);
 }
 
 s32 GSdvdClose(GSDVDWork* work) {

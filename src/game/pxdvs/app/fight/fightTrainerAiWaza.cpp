@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 struct FIGHT_TRAINER;
 struct FIGHT_SIDE;
@@ -20,7 +21,7 @@ u16 fightTrainerDB_GetAiDataId(u16);
 u8 fightAi_FixedActCheck(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 u16 fightAi_GetWazaDataIDFromFixActWaza(FIGHT_TRAINER*, FightOutPokemon*, u8);
 FightOutPokemon* fightAi_GetWazaDataIDFromFixActDef(FIGHT_TRAINER*, FightOutPokemon*, u8);
-s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon*, s16, u8, s8, s8);
+s16 fightAi_ThreatEnemyValue(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon*, s16, PCARG(u8, u32), PCARG(s8, s32), PCARG(s8, s32));
 FIGHT_TRAINER* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(void*, FightOutPokemon*);
 u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(void*, FIGHT_TRAINER*, FightOutPokemon**, u8, u8);
 u16 fightFloorGetValidFightOutPokemonCount(void*, u8, FightOutPokemon*, u8);
@@ -28,14 +29,14 @@ u8 fightFloor_GetFightTypeEntryPokemonNum(void*);
 u8 fightFloor_GetFightTypeFightoutPokemonNum(void*);
 u8 fightFloor_GetFightTypeTrainerNum(void*);
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
-void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon*, u8, u8, u8, FightActionData*, u32, u32, s8, u32);
+void fightOutPokemonCreateFightActionAttackWaza(FightOutPokemon*, PCARG(u8, s32), PCARG(u8, s32), PCARG(u8, s32), FightActionData*, u32, u32, s8, u32);
 s16 fightOutPokemonGetFightEntryId(FightOutPokemon*);
 Pokemon* fightOutPokemonGetPokemonPtr(FightOutPokemon*);
 u8 fightOutPokemon_GetFixAiDef(FightOutPokemon*);
 u8 fightOutPokemon_GetFixAiWaza(FightOutPokemon*);
 void fightOutPokemon_SetFixAiWaza(FightOutPokemon*, u8);
-FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, u16, FightOutPokemon* (*)(), u8, u8, s32);
-u32 fightSideGetHikaeFightPokemonNum(FIGHT_SIDE*, u8, u8, u8);
+FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, PCARG(u16, u32), FightOutPokemon* (*)(), u8, u8, s32);
+u32 fightSideGetHikaeFightPokemonNum(FIGHT_SIDE*, PCARG(u8, u16), PCARG(u8, u16), PCARG(u8, u16));
 FightOutPokemon* fightTargetGetPtr(u16, FightOutPokemon*, u16);
 FIGHT_SIDE* fightTargetGetPtrAsNowFightType(u16, FIGHT_TRAINER*);
 u32 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon*, u16);
@@ -56,7 +57,7 @@ u8 fightTrainerAiGetFightOutPokemonKeyPlayerFlag(FIGHT_TRAINER*, FightOutPokemon
 u16 fightTrainerAiGetFightOutPokemonNowHp(FIGHT_TRAINER*, FightOutPokemon*);
 u8 fightTrainerAiGetFightOutPokemonPartDataId(FIGHT_TRAINER*, FightOutPokemon*);
 u16 fightTrainerAiGetFightOutPokemonSoubiItemSoubiDataId(FIGHT_TRAINER*, FightOutPokemon*);
-u16 fightTrainerAiGetFightOutPokemonWazaDataId(FIGHT_TRAINER*, FightOutPokemon*, u8);
+u16 fightTrainerAiGetFightOutPokemonWazaDataId(FIGHT_TRAINER*, FightOutPokemon*, PCARG(u8, u32));
 u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(FIGHT_TRAINER*, FightOutPokemon*, u16*, s16*, u8);
 u16 fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(FIGHT_TRAINER*, FightOutPokemon*, u16, s16);
 s32 fightTrainerAiGetValueAryMaxBanme(s32*, u16, u8);
@@ -64,13 +65,13 @@ u8 fightTrainerAiGetWazaAvg(FIGHT_TRAINER*, u16);
 s16 fightTrainerAiGetWazaIryoku(FIGHT_TRAINER*, u16);
 u8 fightTrainerAiGetWazaRangeId(FIGHT_TRAINER*, u16);
 u8 fightTrainerAiGetWazaRiskFlag(FIGHT_TRAINER*, u16);
-u8 fightTrainerAiGetWazaTypeId(FIGHT_TRAINER*, u16, u8);
+u8 fightTrainerAiGetWazaTypeId(FIGHT_TRAINER*, u16, PCARG(u8, u32));
 u16 fightTrainerAiGetWazaZokuseiDataId(FIGHT_TRAINER*, u16, FightOutPokemon*);
 u8 fightTrainerAiIsFightOutPokemonAllAbiCntTakai(FIGHT_TRAINER*, FightOutPokemon*);
 u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(FIGHT_TRAINER*, FightOutPokemon*, u16);
 u8 fightTrainerAiIsFightOutPokemonJoutaiNormal(FIGHT_TRAINER*, FightOutPokemon*);
 u8 fightTrainerAiIsFightOutPokemonNokoriHpHikui(FIGHT_TRAINER*, FightOutPokemon*);
-u8 fightTrainerAiIsFightOutPokemonNokoriWazaPpHikui(FIGHT_TRAINER*, FightOutPokemon*, u8);
+u8 fightTrainerAiIsFightOutPokemonNokoriWazaPpHikui(FIGHT_TRAINER*, FightOutPokemon*, PCARG(u8, u32));
 u8 fightTrainerAiIsFightOutPokemonTokuseiDataId(FIGHT_TRAINER*, FightOutPokemon*, u16);
 u8 fightTrainerAiIsWazaAvgTakai(FIGHT_TRAINER*, u16);
 u8 fightTrainerAiIsWazaTypeId(FIGHT_TRAINER*, u16, u8);
@@ -80,7 +81,7 @@ s32 fightTrainerAiWazaDamageFightPokemonNull(FIGHT_TRAINER*, FightOutPokemon*, u
 u8 fightTrainerAiWazaHitNull(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaValueNull(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaValueToriaezutukae(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
-u8 fightTrainerPokemonPartDB_GetWazaTypeRevise(u16, u8);
+s32 fightTrainerPokemonPartDB_GetWazaTypeRevise(u16, u8);
 void pokemonGetMezamerupower(Pokemon*, u16*, u16*);
 u8 wazaDB_GetBouon(u16);
 void* wazaDB_GetFightTrainerAiWazaDamageFightPokemonFuncPtr(u16);
@@ -93,7 +94,7 @@ extern FightActionData fight_action_data_waza;
 FightOutPokemon* fightTrainerAiWazaSelectDefensePokemon();
 s32 fightTrainerAiWazaDoWazaDamageFightPokemonFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*, u8);
 s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*, u8);
-u8 fightTrainerAiWazaDoWazaHitFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
+PCRET(u8) fightTrainerAiWazaDoWazaHitFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaDoWazaValueFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 }
 
@@ -680,7 +681,7 @@ s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER* trainer, FightOutPokemon* 
     return result;
 }
 
-u8 fightTrainerAiWazaDoWazaHitFunc(FIGHT_TRAINER* trainer, FightOutPokemon* pokemon, u16 waza, FightOutPokemon* target) {
+PCRET(u8) fightTrainerAiWazaDoWazaHitFunc(FIGHT_TRAINER* trainer, FightOutPokemon* pokemon, u16 waza, FightOutPokemon* target) {
     FightOutPokemon* party[8];
     FightWazaHitFunc func;
     u16 partyCount;

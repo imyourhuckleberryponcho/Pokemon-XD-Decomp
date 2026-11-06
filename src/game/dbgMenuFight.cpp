@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 #pragma pool_strings off
@@ -37,20 +40,20 @@ s32 dbgMenuFightTrainerAiDataEditSub(u16);
 void dbgMenuFightTrainerDataStatusInputDigit(u16, s32, s32, s32, s32);
 void dbgMenuFightTrainerPokemonPartDataEditSub(u16);
 void dbgMenuFightWazaEditSub(u16);
-s32 dbgMenuPokemonEditSub(void*, s32, u8*, u8*, u8*, u8*);
+s32 dbgMenuPokemonEditSub(void*, u8, u8*, u8*, u8*, u8*);
 void* fightFloorGetFightPokemonPtrToFightTrainerPtr(s32, void*);
-u32 fightFloorGetStatus(s32, u32, s32, s32);
+StatusU32 fightFloorGetStatus(s32, u16, u16, u16);
 void fightFloorSetTimeOutAllFightResult(s32);
 u8 fightIsFight(void);
 u32 fightKindDataBiosGetName(void*);
 void* fightKindDataBiosGetPtr(u16);
 void fightMenuFightOutPokemonRenewStatusMenu(void*, u16, s32);
 void fightMenuFightTrainerRenewStatusMenu(void*, u16);
-void fightOutPokemonGetTokuseiDataId(void*);
-void fightOutPokemonGetZokuseiDataId(void*, s32);
-void fightOutPokemonInitJoutaiDataId(void*, s32);
-u8 fightOutPokemonIsUseHensinBuff(void);
-void fightOutPokemonSetTokuseiDataId(void*, s32);
+u16 fightOutPokemonGetTokuseiDataId(void*);
+u16 fightOutPokemonGetZokuseiDataId(void*, u8);
+void fightOutPokemonInitJoutaiDataId(void*, u16);
+u8 fightOutPokemonIsUseHensinBuff(void* fop);
+void fightOutPokemonSetTokuseiDataId(void*, u16);
 void fightOutPokemonSetZokuseiDataId(void*, u8, u16);
 void* fightPokemonGetPokemonPtr(void*);
 u8 fightSeqCheckYubiwohuruWazaDataId(u16);
@@ -61,7 +64,7 @@ void* fightSideGetValidFightTrainerPtr(void*, s32);
 void* fightTargetGetPtrAsNowFightType(s32, s32);
 u8 fightTrainerCheckCanIrekaeFightPokemon(void*, void*);
 void* fightTrainerGetFightPokemonPtrToFightOutPokemonPtr(void*, void*);
-u32 fightTrainerGetStatus(void*, u16, u32, u32);
+StatusU32 fightTrainerGetStatus(void*, u16, u32, u32);
 void* fightTrainerGetValidFightPokemonPtr(void*, s32);
 u8 figthPokemonGetLevel(void*);
 void* getDeckMsgID(u16, s32);
@@ -74,14 +77,14 @@ s32 menuOpen(s32, s32);
 s32 menuOpenCustom(s32, ...);
 void menuSubCloseNumberInput(void);
 u8 menuSubOpenNumberInput(s32, s32*, s32, s32, s32, s32);
-u8 menuSubOpenNumberInputID(u16, u32*, void* (*)(u32));
-s8 menuSubOpenYesNo(s32, s32, s32, bool);
+u8 menuSubOpenNumberInputID(PCARG(u16, u32), u32*, void* (*)(u32));
+s8 menuSubOpenYesNo(s32, s32, s32, PCARG(bool, s32));
 void msgctrlSetValue(s32, void*);
 void* pokemonCreateSequence(void*);
-u32 pokemonGetStatus(void*, u32, u32, u16);
-s32 pokemonGetTokuseiDataId(void*);
+StatusU32 pokemonGetStatus(void*, u16, u16, u16);
+u16 pokemonGetTokuseiDataId(void*);
 void pokemonSetSequenceStatus(void*, u32);
-void pokemonSetStatus(void*, s32, s32, s32, s32);
+void pokemonSetStatus(void*, u16, u16, u16, u32);
 void* wazaGetStatus(void*, u16, s32, s32);
 void* wazaGetWazaTypeIdName(u8);
 u8 winMsgCloseCheckFight(void);
@@ -212,7 +215,23 @@ extern "C" {
 struct DbgMenuWindow {
     u8 unk0[4];
     s32 menuID;
-    u8 unk8[0x80];
+    u8 unk8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
     s32 result;
     u8 unk8C[0x18];
     u8 done;
@@ -1483,7 +1502,7 @@ static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon) {
     level = figthPokemonGetLevel(fightPokemon);
     if (fightTrainerCheckCanIrekaeFightPokemon(trainer, fightPokemon) == 2) {
         outPokemon = fightTrainerGetFightPokemonPtrToFightOutPokemonPtr(trainer, fightPokemon);
-        if (fightOutPokemonIsUseHensinBuff() == 1) {
+        if (fightOutPokemonIsUseHensinBuff(outPokemon) == 1) {
             return -1;
         }
         if (outPokemon != 0) {
@@ -1496,7 +1515,8 @@ static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon) {
         if (result == 1) {
             species = pokemonGetStatus(pokemon, 0, 0x6E, 0);
             if (outPokemon != 0) {
-                seq = (void*)pokemonGetStatus(outPokemon, 0, 0xEE, 0);
+                u32 status = pokemonGetStatus(outPokemon, 0, 0xEE, 0);
+                seq = (void*)status;
                 if (seq != 0) {
                     menuFaceLoad(pokemon, 0, 0);
                     while (menuFaceSearchEnable(menuFaceGetID(pokemon)) == 0) {
@@ -1505,7 +1525,7 @@ static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon) {
                     newSeq = pokemonCreateSequence(fightPokemon);
                     battleGridReplacePokemon(seq, newSeq);
                     battleGridUpdate();
-                    pokemonSetStatus(outPokemon, 0, 0xEE, 0, (s32)newSeq);
+                    pokemonSetStatus(outPokemon, 0, 0xEE, 0, (GCsptr)newSeq);
                     Sequence_Free(seq);
                     Sequence_SetVisibility(newSeq, 1);
                     fightOutPokemonInitJoutaiDataId(outPokemon, 0x14);

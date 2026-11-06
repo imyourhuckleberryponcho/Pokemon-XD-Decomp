@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include <libc/string.h>
 
 #pragma peephole off
@@ -8,7 +9,7 @@ struct Pokemon;
 
 extern "C" {
 Pokemon* heroBiosGetPokemonPtr(void* hero, u16 index);
-u16 pokemonBiosGetPokemonWazaDataId(Pokemon* pokemon, u16 index);
+u16 pokemonBiosGetPokemonWazaDataId(Pokemon* pokemon, PCARG(u16, u32) index);
 WazaData* wazaDataBiosGetPtr(u16 id);
 u32 wazaDataBiosGetDoc(WazaData* waza);
 const u16* GSmsgGetGSchar(u32 msgID);

@@ -1,28 +1,30 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 
 extern "C" {
 
-s32 gamedataSetStatus(void* p, u16 b, s32 value);
+s32 gamedataSetStatus(void* p, PCARG(u16, u32) b, s32 value);
 s32 pcboxSetStatus(void* p, u16 b, s32 value);
-s32 heroSetStatus(void* p, u16 b, s32 value);
-s32 itemSetStatus(void* p, u16 a, u16 b, void* target, s32 value);
-s32 pokemonSetStatus(void* p, u16 a, u16 b, void* target, s32 value);
-s32 wazaSetStatus(void* p, u16 a, u16 b, void* target, s32 value);
-s32 fightFloorSetStatus(void* p, u16 a, u16 b, void* target, s32 value);
-s32 fightSideSetStatus(void* p, u16 a, u16 b, void* target, s32 value);
-s32 fightTrainerSetStatus(void* p, u16 a, u16 b, void* target, s32 value);
+s32 heroSetStatus(void* p, PCARG(u16, u32) b, s32 value);
+s32 itemSetStatus(void* p, u16 a, u16 b, PCARG(void*, u32) target, s32 value);
+s32 pokemonSetStatus(void* p, u16 a, u16 b, PCARG(void*, u32) target, s32 value);
+s32 wazaSetStatus(void* p, u16 a, u16 b, PCARG(void*, u32) target, s32 value);
+s32 fightFloorSetStatus(void* p, u16 a, u16 b, PCARG(void*, u32) target, s32 value);
+s32 fightSideSetStatus(void* p, PCARG(u16, u32) a, u16 b, PCARG(void*, u32) target, s32 value);
+s32 fightTrainerSetStatus(void* p, u16 a, u16 b, PCARG(void*, u32) target, s32 value);
 
-s32 gamedataGetStatus(void* p, u16 b);
+StatusS32 gamedataGetStatus(void* p, PCARG(u16, u32) b);
 s32 pcboxGetStatus(void* p, u16 b, u16 c);
-s32 heroGetStatus(void* p, u16 b, u16 c);
-s32 itemGetStatus(void* p, u16 a, u16 b, u16 c);
-s32 pokemonGetStatus(void* p, u16 a, u16 b, u16 c);
-s32 wazaGetStatus(void* p, u16 a, u16 b, u16 c);
-s32 fightFloorGetStatus(void* p, u16 a, u16 b, u16 c);
-s32 fightSideGetStatus(void* p, u16 a, u16 b, u16 c);
-s32 fightTrainerGetStatus(void* p, u16 a, u16 b, u16 c);
+StatusS32 heroGetStatus(void* p, PCARG(u16, u32) b, u16 c);
+StatusS32 itemGetStatus(void* p, u16 a, u16 b, u16 c);
+StatusS32 pokemonGetStatus(void* p, u16 a, u16 b, u16 c);
+StatusS32 wazaGetStatus(void* p, u16 a, u16 b, PCARG(u16, u32) c);
+StatusS32 fightFloorGetStatus(void* p, u16 a, u16 b, u16 c);
+s32 fightSideGetStatus(void* p, PCARG(u16, u32) a, u16 b, PCARG(u16, u32) c);
+StatusS32 fightTrainerGetStatus(void* p, u16 a, u16 b, u16 c);
 
-s32 statusSetStatus(u8 kind, void* p, u16 a, u16 b, void* target, s32 value) {
+s32 statusSetStatus(u8 kind, void* p, u16 a, u16 b, PCARG(void*, u32) target, s32 value) {
     s32 result = 0;
     switch (kind) {
     case 0:

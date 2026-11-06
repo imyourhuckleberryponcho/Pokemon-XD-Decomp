@@ -1,16 +1,8 @@
+#include <game/declspec.h>
 #include <dolphin/types.h>
+#include <game/miscTables.h>
 #pragma pool_strings off
 #pragma peephole off
-
-struct floorsound_dd_ {
-    u8 kind;
-    u8 volume;
-    u16 floorId;
-    u16 sndId;
-    u16 time;
-    u16 envFade;
-    u16 flagId;
-};
 
 class FloorBgmMask {
 public:
@@ -301,13 +293,18 @@ static u8 _playSound(floorsound_dd_* e) {
     return 1;
 }
 
+#ifdef __MWERKS__
 extern "C" void __ct__12FloorBgmMaskFv(void*);
+#else
+inline void* operator new(size_t, void* p) { return p; }
+#define __ct__12FloorBgmMaskFv(p) ((void)new (p) FloorBgmMask)
+#endif
 
 static void __sinit_floorsound_cpp() {
     __ct__12FloorBgmMaskFv(&_bgmMask);
 }
 
-__declspec(section ".ctors") extern void* const __sinit_floorsound_cpp_ctor = (void*)__sinit_floorsound_cpp;
+DECL_SECTION(".ctors") extern void* const __sinit_floorsound_cpp_ctor = (void*)__sinit_floorsound_cpp;
 
 inline void FloorBgmMask::changeMode(BgmMaskMode m) {
     mode = m;

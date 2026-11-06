@@ -35,7 +35,7 @@ void GSlogWrite(const char* fmt, ...);
 
 static u8 gPachiruCoords[4][2] = { { 0x06, 0x07 }, { 0x5B, 0x06 }, { 0x1E, 0x41 }, { 0x44, 0x41 } };
 
-static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spot, unsigned long seed);
+static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spot, u32 seed);
 
 extern "C" {
 
@@ -89,7 +89,7 @@ bool pachiruEffectCreate(PachiruEffect* effect, GSmodel* model, u32 seed) {
 
 }
 
-static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spotTex, unsigned long seed) {
+static GStexture* _pachiruEffectCreateTexture(GStexture* base, GStexture* spotTex, u32 seed) {
     u16* output;
     u16* source;
     GStexture* texture;

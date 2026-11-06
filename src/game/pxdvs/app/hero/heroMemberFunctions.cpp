@@ -1,4 +1,6 @@
+#include <game/pcret.h>
 #include <game/pxdvs/app/hero/hero.hpp>
+#include <game/statusval.h>
 #include <game/pxdvs/app/hero/heroMove.hpp>
 #include <game/pxdvs/app/memcard/savedata.hpp>
 #include <game/pxdvs/app/gamedata/gamedata.hpp>
@@ -10,10 +12,10 @@ const f32 unkFloat = 57.29578;
 
 extern "C" {
 void* heroItemGetItemKindToItemAryPtr(Hero*, u8, u16*, u16*, u8*, u8*);
-void* heroItemGetItemDataIdToItemAryPtr(Hero*, u16, u16*, u16*, u8*, u8*);
+void* heroItemGetItemDataIdToItemAryPtr(Hero*, PCARG(u16, u32), u16*, u16*, u8*, u8*);
 void itemSortAryByPriority(void*, u16, u32);
 u16 itemGetQuantityInAry(void*, u16, u16, u16);
-s32 gamedataGetStatus(s32, s32);
+StatusS32 gamedataGetStatus(s32, s32);
 void pokemonCreate(Pokemon*, u16, u8, s32);
 void pokemonWazaCreate(Pokemon*, u16, u16);
 u32 pokemonCreateRndFit(Pokemon*, s32, s32, s32, u32);
@@ -319,7 +321,7 @@ void Hero::setMeetDarkPokemonCount(u8 shadowPokemonCount) {
 
 u8 Hero::getMeetDarkPokemonCount() const { return meetShadowPokemonCount; }
 
-Item **Hero::getDisk() { return battleCDItems; }
+Item **Hero::getDisk() { return (Item **)battleCDItems; }
 
 void Hero::addFootStep(u32 footstepsToAdd) {
   u32 newFootStepAmount;

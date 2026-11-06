@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma peephole off
 
@@ -14,10 +15,10 @@ extern u32* snd_test_bgm_number;
 extern u16* snd_test_bgm;
 
 void GSsndSetMasterVolume(s32 volume, s32, s32, s32);
-s32 GSsndGetStatus(u16 id);
-void GSsndClose(u16 id);
-void soundOpenPlay(u16 id, s32, s32 volume);
-void soundOpenPlayEnv(u16 id, s32, s32 volume);
+s32 GSsndGetStatus(PCARG(u16, u32) id);
+void GSsndClose(PCARG(u16, u32) id);
+void soundOpenPlay(PCARG(u16, u32) id, s32, s32 volume);
+void soundOpenPlayEnv(PCARG(u16, u32) id, s32, s32 volume);
 s32 menuOpen(s32 menuID, s32);
 void menuClose(s32 menuID);
 

@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 
 #pragma peephole off
 
@@ -9,39 +13,60 @@ struct CURSOR {
 
 struct FIGHT_TRAINER;
 struct tagSPRITE_WORK {
-    u8 pad0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 itemId;
-    u8 pad8[0x44];
-    s32 msgId;
+    u8 pad8[0x4];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    GCsptr msgId;
     u8 pad4C[4];
     s16 w;
     s16 h;
     u8 pad58[0xC];
-    u32 color;
+    gc_be32 color;
 };
 
 enum MENU_POKEMON_CB_TYPE { MENU_POKEMON_CB_TYPE_0 };
 
-class DarkPokemon {
+struct DarkPokemon {
 public:
     bool isWazaNew(u8) const;
     void setWazaNew(u8, bool);
 };
 
-class Pokemon {
+struct Pokemon {
 public:
     bool isDarkPokemon() const;
     DarkPokemon* getDarkPokemon();
 };
 
-typedef Pokemon* (*MenuPokemonCB)(Pokemon*, MENU_POKEMON_CB_TYPE, long);
+typedef Pokemon* (*MenuPokemonCB)(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr);
 
 struct tagWINDOW_WORK {
     u8 pad0[1];
     s8 state;
     u8 pad2[2];
     s32 menuId;
-    u8 pad8[0x8B];
+    u8 pad8[0x4];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 alpha;
     u8 pad94[8];
     CURSOR cursor;
@@ -64,7 +89,7 @@ struct MenuStatus {
     FIGHT_TRAINER* trainer;
     Pokemon* pokemon;
     MenuPokemonCB cb;
-    long cbArg;
+    GCsptr cbArg;
     u16 sel;
     s8 f1a;
     u8 pad1b[1];
@@ -82,7 +107,14 @@ struct MenuItemInfo {
 
 struct MENU_MODEL {
     MENU_MODEL() {}
-    u8 unk0[0xEC];
+    u8 unk0[0x58];
+    void* slot58;
+    u8 pad5C[0x10];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    u8 pad7C[0x70];
 };
 
 extern "C" {
@@ -110,8 +142,8 @@ void floorSetFadeScript(s32, s32);
 void floorWaitForChange(void);
 void winMsgOpen(s32, s32, s32, s32);
 void winMsgClose(s32);
-s32 wazaGetStatus(void*, u16, s32, s32);
-s32 pokemonGetStatus(Pokemon*, s32, s32, u16);
+StatusS32 wazaGetStatus(void*, u16, s32, s32);
+StatusS32 pokemonGetStatus(Pokemon*, s32, s32, u16);
 void* savedataGetStatus(s32, s32);
 void* heroBiosGetPokemonPtr(void*, s32);
 bool pokemonCheckValid(void*);
@@ -133,7 +165,7 @@ bool menuModelComparePokemon(MENU_MODEL*, Pokemon*);
 void pokemonWazaReplace(Pokemon*, s32, s32);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);
 void* windowSearchID(s32);
-void msgctrlSetValue(s32, s32);
+void msgctrlSetValue(s32, GCuptr);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void GSmsgPrintRect(s32, s32, s32, s32, s32, u32, s32);
 void windowDrawSprite(s16, s16, tagWINDOW_WORK*, s32, s32, s32);
@@ -148,7 +180,7 @@ void menuModelAdjustCamera(MENU_MODEL*);
 u8 menuModelCheck(MENU_MODEL*, s32);
 void menuModelRender(MENU_MODEL*);
 void menuModelSetAngle(MENU_MODEL*, f32*);
-void menuModelSetSize(MENU_MODEL*, s16, s16, s16, s16);
+void menuModelSetSize(MENU_MODEL*, PCARG(s16, s32), PCARG(s16, s32), PCARG(s16, s32), PCARG(s16, s32));
 s32 menuPokemonGetJoutaiSpriteID(Pokemon*, s32);
 u8 menuSubGetPokemonSexForDisp(Pokemon*);
 u8 pokemonBiosGetCatchBallId(Pokemon*);
@@ -195,7 +227,7 @@ u32 pokemonTokuseiDataBiosGetPtr(u16);
 u32 pokemonTokuseiDataBiosGetName(u32);
 u32 pokemonTokuseiDataBiosGetDoc(u32);
 void menuDrawReliveMeter(Pokemon*, s32, s32, s32);
-u16 zokuseiBiosGetWazaJoutai(u16, u16);
+u16 zokuseiBiosGetWazaJoutai(PCARG(u16, u32), PCARG(u16, u32));
 u8 wazaDB_GetCompatible(u16);
 u8 pokemonWazaGetMaxPP(Pokemon*, u16);
 void GSmsgPrintRight(s32, s32, s32, s32, s32, u32, s32);
@@ -235,29 +267,29 @@ void menuPokemonStatusClose(void);
 u16 _menuPokemonStatusGetWazaDataID(Pokemon*, u16);
 void _menuPokemonStatusMakeRibbon(Pokemon*, RIBBON_WORK*);
 static s32 _menuPokemonStatusChangeSubMenu(CURSOR cursor);
-static s32 _menuPokemonStatusSub(u8, FIGHT_TRAINER*, Pokemon*, u16, MenuPokemonCB, long);
-static s32 _menuPokemonStatusOpen(u8, FIGHT_TRAINER*, Pokemon*, u16, MenuPokemonCB, long);
+static s32 _menuPokemonStatusSub(u8, FIGHT_TRAINER*, Pokemon*, u16, MenuPokemonCB, GCsptr);
+static s32 _menuPokemonStatusOpen(u8, FIGHT_TRAINER*, Pokemon*, u16, MenuPokemonCB, GCsptr);
 
 extern "C" {
-s32 menuPokemonStatusOpenFieldMenu(Pokemon* pokemon, MenuPokemonCB cb, long arg) {
+s32 menuPokemonStatusOpenFieldMenu(Pokemon* pokemon, MenuPokemonCB cb, GCsptr arg) {
     return _menuPokemonStatusOpen(0x8E, 0, pokemon, 0, cb, arg);
 }
 }
 
 extern "C" {
-s32 menuPokemonStatusOpenFightMenu(FIGHT_TRAINER* trainer, Pokemon* pokemon, MenuPokemonCB cb, long arg) {
+s32 menuPokemonStatusOpenFightMenu(FIGHT_TRAINER* trainer, Pokemon* pokemon, MenuPokemonCB cb, GCsptr arg) {
     return _menuPokemonStatusOpen(0xAC, trainer, pokemon, 0, cb, arg);
 }
 }
 
 extern "C" {
-s32 menuPokemonStatusOpenFromPcBox(Pokemon* pokemon, MenuPokemonCB cb, long arg) {
+s32 menuPokemonStatusOpenFromPcBox(Pokemon* pokemon, MenuPokemonCB cb, GCsptr arg) {
     return _menuPokemonStatusOpen(0xE, 0, pokemon, 0, cb, arg);
 }
 }
 
 extern "C" {
-s32 menuPokemonStatusOpenFromPokemonChange(Pokemon* pokemon, MenuPokemonCB cb, long arg) {
+s32 menuPokemonStatusOpenFromPokemonChange(Pokemon* pokemon, MenuPokemonCB cb, GCsptr arg) {
     return _menuPokemonStatusOpen(0xC, 0, pokemon, 0, cb, arg);
 }
 }
@@ -359,7 +391,7 @@ void menuPokemonStatusClose(void) {
 }
 }
 
-static s32 _menuPokemonStatusOpen(u8 flags, FIGHT_TRAINER* trainer, Pokemon* pokemon, u16 sel, MenuPokemonCB cb, long arg) {
+static s32 _menuPokemonStatusOpen(u8 flags, FIGHT_TRAINER* trainer, Pokemon* pokemon, u16 sel, MenuPokemonCB cb, GCsptr arg) {
     while (menuFaceCheckLoading()) {
         GSthreadSwitch();
     }
@@ -422,7 +454,7 @@ static s32 _menuPokemonStatusOpen(u8 flags, FIGHT_TRAINER* trainer, Pokemon* pok
     return st->result;
 }
 
-static s32 _menuPokemonStatusSub(u8 flags, FIGHT_TRAINER* trainer, Pokemon* pokemon, u16 sel, MenuPokemonCB cb, long arg) {
+static s32 _menuPokemonStatusSub(u8 flags, FIGHT_TRAINER* trainer, Pokemon* pokemon, u16 sel, MenuPokemonCB cb, GCsptr arg) {
     MenuItemInfo* item = menuItemBiosGetPtr(0x5E, 0x81F);
     menuModelInit(&_menuModel, item->a, item->b);
     menuModelFree(&_menuModel);
@@ -602,9 +634,8 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
                     }
                     st->pokemon = next;
                     int i;
-                    u8* slot;
-                    for (i = 0, slot = (u8*)&_menuStatus; i < 4; i++, slot++) {
-                        slot[0x44] = 0;
+                    for (i = 0; i < 4; i++) {
+                        _menuStatus.dark[i] = 0;
                         if (next->isDarkPokemon()) {
                             DarkPokemon* dp = next->getDarkPokemon();
                             if (dp) {
@@ -632,7 +663,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
                                     break;
                                 default:
                                     if (!dp->isWazaNew(i - 1)) {
-                                        slot[0x44] = 1;
+                                        _menuStatus.dark[i] = 1;
                                     }
                                     break;
                                 }
@@ -703,7 +734,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
                 } while (r-- > 0);
             }
         } else if (keys & 8) {
-            bool found = false;
+            int found = false;
             for (c = col; c < 4; c++) {
                 r = (c == col) ? row + 1 : 0;
                 for (; r < 9; r++) {
@@ -1029,7 +1060,7 @@ void menuPokemonStatusDrawTitle(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             msgctrlSetValue(0x2D, item);
             GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color, 0x3AE7);
         } else {
-            msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(0x3C1A));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0x3C1A));
             GSmsgPrint2(winSpriteGetLayerID(win, sprite), 0, 0, color, 0x4277);
         }
         break;
@@ -1067,7 +1098,7 @@ void menuPokemonStatusDrawTitle(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             break;
         }
         if (sexMsg != 0) {
-            msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(sexMsg));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(sexMsg));
             GSmsgPrint2(winSpriteGetLayerID(win, sprite), 0x78, 0, color, 0x4276);
         }
         break;
@@ -1135,10 +1166,14 @@ bool _menuPokemonStatusCheckDanny(Pokemon* pokemon) {
 }
 
 extern "C" {
+static inline u32 _placeName(u32 p0) { return floorGetPlaceName(p0); }
+
+static inline u32 _seikakuName(void* p0) { return pokemonSeikakuDataBiosGetName(p0); }
+
 void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     u16 id;
-    u8 place;
-    s32 x;
+    u32 val;
+    s16 x;
     MenuStatus* st = &_menuStatus;
     Pokemon* pk = st->pokemon;
     void* pdata;
@@ -1184,7 +1219,7 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         if (pokemonGetDarkPokemonLevel(pk) < 3) {
             msg = 0x945;
         } else {
-            msg = pokemonSeikakuDataBiosGetName(pokemonSeikakuDataBiosGetPtr((u8)pokemonGetStatus(pk, 0, 0xBF, 0)));
+            msg = _seikakuName(pokemonSeikakuDataBiosGetPtr((u8)pokemonGetStatus(pk, 0, 0xBF, 0)));
         }
         msgctrlSetValue(0x55, msg);
         switch (msg) {
@@ -1196,13 +1231,11 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             msgctrlSetValue(0x56, 0x3AEC);
             break;
         }
-        {
-            u32 n = pokemonGetStatus(pk, 0, 0x72, 0) & 0xFF;
-            if (n == 0) {
-                n = 5;
-            }
-            msgctrlSetValue(0x34, n);
+        val = pokemonGetStatus(pk, 0, 0x72, 0) & 0xFF;
+        if (val == 0) {
+            val = 5;
         }
+        msgctrlSetValue(0x34, val);
         if (_menuPokemonStatusCheckOya(pk)) {
             switch ((u16)pokemonGetStatus(pk, 0, 0x6E, 0)) {
             case 0x85:
@@ -1223,7 +1256,7 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color, msg);
         msg = 0x3AFA;
         placeId = pokemonGetStatus(pk, 0, 0x71, 0);
-        place = floorGetPlaceName(placeId);
+        val = _placeName(placeId);
         if (_menuPokemonStatusCheckOya(pk)) {
             switch ((u16)pokemonGetStatus(pk, 0, 0x6E, 0)) {
             case 0x85:
@@ -1237,8 +1270,8 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
                 }
                 break;
             default:
-                if (place != 0) {
-                    msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(place));
+                if (val != 0) {
+                    msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(val));
                     msg = 0x3AEB;
                 }
                 break;
@@ -1247,13 +1280,13 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             switch ((u8)gamedataGetStatus(pokemonGetStatus(pk, 0, 0x70, 0), 2)) {
             case 0xB:
                 if (_menuPokemonStatusCheckGinzaru(pk)) {
-                    if (place != 0) {
-                        msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(place));
+                    if (val != 0) {
+                        msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(val));
                         msg = 0x3AEB;
                     }
                 } else if (_menuPokemonStatusCheckDanny(pk)) {
-                    if (place != 0) {
-                        msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(place));
+                    if (val != 0) {
+                        msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(val));
                         msg = 0x3AEB;
                     }
                 } else if (placeId == 0xFF) {
@@ -1346,11 +1379,11 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color, 0x4287);
         break;
     case 0x843:
-        msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(pokemonTokuseiDataBiosGetDoc(pokemonTokuseiDataBiosGetPtr(pokemonGetTokuseiDataId(pk)))));
+        msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetDoc(pokemonTokuseiDataBiosGetPtr(pokemonGetTokuseiDataId(pk)))));
         GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color, 0x4276);
         break;
     case 0x844:
-        msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(pokemonGetTokuseiDataId(pk)))));
+        msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(pokemonGetTokuseiDataId(pk)))));
         GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color, 0x4276);
         break;
     case 0x25F: {
@@ -1359,13 +1392,12 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             GSmsgPrint2(winSpriteGetLayerID(win, sprite), x, 0, color, 0x3AD4);
         } else {
             s32 i;
-            u32 v;
             u32 div;
-            v = pokemonGetStatus(pk, 0, 0x75, 0);
+            val = (u16)pokemonGetStatus(pk, 0, 0x75, 0);
             div = 10000;
             for (i = 0; i < 5; i++) {
-                u32 digit = v / div;
-                v = v % div;
+                u32 digit = val / div;
+                val = val % div;
                 div = div / 10;
                 msgctrlSetValue(0x34, digit);
                 GSmsgPrint2(winSpriteGetLayerID(win, sprite), x + i * 13, 0, color, 0x426F);
@@ -1375,7 +1407,7 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     }
     case 0x261: {
         if (pokemonIsDarkPokemon(pk) == 1) {
-            msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(0x3AD4));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0x3AD4));
         } else {
             msgctrlSetValue(0x37, pokemonGetStatus(pk, 0, 0x76, 0));
         }
@@ -1405,8 +1437,7 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             u32 base = pokemonGetLevelToExp(pk, lv);
             u32 range = next - base;
             u32 have = pokemonGetStatus(pk, 0, 0x79, 0) - base;
-            s16 num = range + have * sprite->w;
-            s16 w = (num - 1) / range;
+            s16 w = (range - 1 + have * sprite->w) / range;
             windowDrawSprite2(0, 0, w, sprite->h, color, win, 0xF6, 0, winSpriteGetLayerID(win, sprite));
         }
         break;
@@ -1503,7 +1534,7 @@ u16 _menuPokemonStatusGetWazaDataID(Pokemon* pokemon, u16 index) {
     return waza;
 }
 
-static long NotDarkWaza(long id) {
+static s32 NotDarkWaza(s32 id) {
     if (id >= 0x176) {
         return id;
     }
@@ -1672,7 +1703,7 @@ void menuPokemonStatusDrawWaza(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             if (name == 0) {
                 return;
             }
-            msgctrlSetValue(0x37, (s32)GSmsgGetGSchar(name));
+            msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(name));
             GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color, 0x4277);
         }
         break;
@@ -1744,8 +1775,8 @@ void menuPokemonStatusDrawWaza(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         break;
     }
     case 0x24C: {
-        u32 v = wazaGetStatus(0, _menuPokemonStatusGetWazaDataID(pk, _menuStatus.cursor), 0x22, 0);
-        GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color, (u16)v);
+        GSmsgPrintRect(winSpriteGetLayerID(win, sprite), 0, 0, sprite->w, sprite->h, color,
+                       wazaGetStatus(0, _menuPokemonStatusGetWazaDataID(pk, _menuStatus.cursor), 0x22, 0));
         break;
     }
     case 0x24D:

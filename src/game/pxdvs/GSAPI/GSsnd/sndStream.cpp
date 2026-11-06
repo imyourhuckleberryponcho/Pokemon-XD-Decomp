@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/pxdvs/GSAPI/GSsnd/sndData.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -100,17 +102,16 @@ void* memcpy(void* dst, const void* src, size_t n);
 void* memset(void* dst, int val, size_t n);
 s32 sndStreamADPCMParameter(s32, void*);
 s32 sndStreamARAMUpdate(s32, u32, u32, s32, s32);
+#ifdef __MWERKS__
 s32 sndStreamActivate(s32);
+#else
+bool sndStreamActivate(u32);
+#endif
 void sndStreamDeactivate(u32 stid);
 s32 sndStreamFrq(s32, s32);
 s32 sndStreamMixParameterEx(s32, u8, s32, s32, s32, s32);
 s32 sndStreamMixParameterVolume(s32 stid, s32 vol, s32 pan, s32 span);
-struct SndDataEntry {
-    u8 unk0;
-    u8 vol;
-    u8 unk2[10];
-};
-extern SndDataEntry* snd_data;
+extern SndData* snd_data;
 }
 
 void _sndStreamPrepareGetData(SndStream* s) {
@@ -365,7 +366,7 @@ u32 _sndStreamCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
 
 extern "C" {
 static void _sndStreamFadePostProcess(void *p0) {
-    _sndStreamCtrl((SndStream*)((SndStream *) p0), (u32) M2C_FIELD(p0, u8 *, 0x36));
+    _sndStreamCtrl((SndStream*)((SndStream *) p0), (u32) M2C_NAMED((SndStream *) p0, u8 *, 0x36, unk36));
 }
 }
 
@@ -373,17 +374,17 @@ extern "C" {
 void _sndStreamCtrl(SndStream* p0, u32 p1) {
     switch ((s32) (u8) p1) {
     case 1:
-        M2C_FIELD(p0, s32 *, 8) = 0xA;
+        M2C_NAMED(p0, s32 *, 8, state) = 0xA;
         return;
     case 2:
-        M2C_FIELD(p0, s8 *, 0x3D) = 1;
+        M2C_NAMED(p0, s8 *, 0x3D, mute) = 1;
         return;
     case 3:
-        M2C_FIELD(p0, s8 *, 0x3D) = 1;
+        M2C_NAMED(p0, s8 *, 0x3D, mute) = 1;
         return;
     default:
     case 0:
-        M2C_FIELD(p0, s8 *, 0x3D) = 0;
+        M2C_NAMED(p0, s8 *, 0x3D, mute) = 0;
         return;
     }
 }

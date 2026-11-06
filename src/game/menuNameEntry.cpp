@@ -1,4 +1,8 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #include <dolphin/gx/GXVert.h>
 #include <game/shared/menu_work.h>
 
@@ -19,16 +23,11 @@ struct GStexture {
     u8 flag;
 };
 
-class GSgfxLayer {
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0x173C];
-    u32 f173C;
-    GStexture* tex1740;
-    u8 pad1744[0x17F4 - 0x1744];
-    u32 f17F4;
-    GStexture* tex17F8;
-    u8 pad17FC[0x1998 - 0x17FC];
-    u32 primitive;
     void setRenderStateAndSelect(GSgfxVF*);
     void beginSurface(u16);
     void endSurface();
@@ -38,7 +37,7 @@ struct NAME_ENTRY_ARG {
     u16 defName[12];
     u16* name;
     s32 mode;
-    s32 param;
+    GCsptr param;
     s32* sheet;
     s32* curX;
     s32* curY;
@@ -81,13 +80,20 @@ struct MENU_MODEL {
     MENU_MODEL() {}
     u8 unk0[0x24];
     u16 pokemonID;
-    u8 unk26[0xEC - 0x26];
+    u8 unk26[0x32];
+    void* slot58;
+    u8 pad5C[0x10];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    u8 pad7C[0x70];
 };
 
 struct NAME_ENTRY_WORK {
     u16 name[12];
     s32 mode;
-    s32 param;
+    GCsptr param;
     s32 result;
     s32 fadeOut;
     s32 onFloor;
@@ -106,21 +112,21 @@ struct MenuSpriteVal {
     s16 h;
 };
 
-static inline u32 colorAlpha(tagWINDOW_WORK* w) { return *(u32*)w->color; }
+static inline u32 colorAlpha(tagWINDOW_WORK* w) { return GC_BYTES32(w->color); }
 static inline NAME_ENTRY_ARG* entryArg(tagWINDOW_WORK* w) { return (NAME_ENTRY_ARG*)w->params[0]; }
 
 extern "C" {
 void winSpriteSetDisp(tagSPRITE_WORK*, bool);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void menuSubDrawCursorBackAnimeOnOffAuto(tagWINDOW_WORK*, s32, s32, s32, s32, s32, u8, u8);
-GSgfxLayer* GSgfxLayerFindByID(s32);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
-u32 heroGetStatus(Hero*, u32, u16);
+StatusU32 heroGetStatus(Hero*, u32, u16);
 Pokemon* fightFloorGetDefPokemonPtr(FIGHT_FLOOR*);
 u8 pokemonGetSex(Pokemon*);
 bool pokemonCheckValid(Pokemon*);
 u16 pokemonBiosGetPokemonDataId(Pokemon*);
-void msgctrlSetValue(s32, u32);
+void msgctrlSetValue(s32, GCuptr);
 u16* GSmsgGetGSchar(u32);
 s32 GSmsgGetLength(u32);
 u32 GSmsgGetRect(u32);
@@ -166,7 +172,7 @@ extern const u32 DakuHanTbl[2] = {0, 0x3B1B};
 
 static s32 menuNameEntryDrawNameCursor(tagWINDOW_WORK*, tagSPRITE_WORK*, int, int);
 static s32 menuNameEntryDrawNameText(tagWINDOW_WORK*, tagSPRITE_WORK*, int, int);
-static void putGScharL(GSgfxLayerID, int, int, unsigned long, unsigned short);
+static void putGScharL(GSgfxLayerID, int, int, u32, unsigned short);
 static u16 getCharSheet(SHEET, int, int);
 static int getSpchar(unsigned short);
 
@@ -187,8 +193,8 @@ void menuClose(s32);
 void menuCloseSync(s32, s32);
 }
 
-static int setName(unsigned short*, int, int);
-static int getName(unsigned short*, int, int);
+static int setName(unsigned short*, int, GCsint);
+static int getName(unsigned short*, int, GCsint);
 
 struct S16x2 {
     s16 a;
@@ -197,13 +203,13 @@ struct S16x2 {
 
 struct MODEL_ARG {
     s32 mode;
-    s32 param;
+    GCsptr param;
 };
 
 extern "C" {
 MenuItem* menuItemBiosGetPtr(s32, s32);
 void menuModelAdjustCamera(MENU_MODEL*);
-void menuModelSetSize(MENU_MODEL*, s16, s16, s16, s16);
+void menuModelSetSize(MENU_MODEL*, PCARG(s16, s32), PCARG(s16, s32), PCARG(s16, s32), PCARG(s16, s32));
 void menuModelSetClip(MENU_MODEL*, s32);
 void menuModelSetAngle(MENU_MODEL*, f32*);
 void menuModelSetZoom(MENU_MODEL*, f32);
@@ -233,7 +239,7 @@ void floorWaitForChange(void);
 void menuTitleBattleSelectFree(void);
 bool menuIsCheck(s32);
 void menuSetDisp(s32, s32);
-void heroSetStatus(Hero*, u32, u32);
+void heroSetStatus(Hero*, u32, StatusU32);
 void pokemonBiosSetNicknamePtr(Pokemon*, void*);
 u16* pokemonBiosGetNicknamePtr(Pokemon*);
 void pcboxSetPokemonBoxName(void*, s8, u16*);
@@ -284,10 +290,10 @@ s32 menuNameEntryBackDrawPokemonModel(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
 s32 menuNameEntryBackDrawBall(tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
 s32 menuNameEntryBackCtrl(tagWINDOW_WORK* w);
 void menuNameEntry(void);
-s32 menuNameEntryCall(s32 mode, s32 param);
+s32 menuNameEntryCall(s32 mode, GCsptr param);
 void menuNameEntryGetLastName(u16* out);
-s32 menuNameEntryOpenNoFade(s32 mode, s32 param);
-s32 menuNameEntryOpen(s32 mode, s32 param);
+s32 menuNameEntryOpenNoFade(s32 mode, GCsptr param);
+s32 menuNameEntryOpen(s32 mode, GCsptr param);
 void menuNameEntryButton(void);
 }
 
@@ -297,7 +303,7 @@ static s32 menuNameEntryDrawNameText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, int 
 static void drawControlCursor(NAME_ENTRY_ARG* a, tagSPRITE_WORK* sp);
 static u16 getCharSheet(SHEET sheet, int idx, int row);
 static int getGScharLen(unsigned short* s);
-static void putGScharL(GSgfxLayerID layer, int x, int y, unsigned long color, unsigned short ch);
+static void putGScharL(GSgfxLayerID layer, int x, int y, u32 color, unsigned short ch);
 static u16 exchangeDakuon(unsigned short ch, DAKUON_MODE mode);
 static int confirmName(unsigned short* name);
 static bool backNameCursor(NAME_ENTRY_ARG* a);
@@ -305,19 +311,19 @@ static int getSpchar(unsigned short ch);
 static void change50Sheet(NAME_ENTRY_ARG* a);
 static int selectLetter(NAME_ENTRY_ARG* a);
 static int chkValidName(unsigned short* name);
-static int inputName(unsigned short* name, unsigned short* defName, int mode, int param, int flag);
-static void setDefNameText(tagSPRITE_WORK* sp, unsigned long msg);
-static int selectName(unsigned short* name, const unsigned long* list, int count);
+static int inputName(unsigned short* name, unsigned short* defName, int mode, GCsint param, int flag);
+static void setDefNameText(tagSPRITE_WORK* sp, u32 msg);
+static int selectName(unsigned short* name, const u32* list, int count);
 static void ballMain1(BALL_WORK* b);
 static void generateBall(void);
 static void ballMain(void);
-static void loadModel(long id, MENU_MODEL* model, int mode, int param);
-static int setName(unsigned short* name, int mode, int param);
-static int getName(unsigned short* out, int mode, int param);
-static int chkParam(int mode, int param);
-static int pushNameEntryFloor(int mode, int param, int flag);
+static void loadModel(s32 id, MENU_MODEL* model, int mode, GCsint param);
+static int setName(unsigned short* name, int mode, GCsint param);
+static int getName(unsigned short* out, int mode, GCsint param);
+static int chkParam(int mode, GCsint param);
+static int pushNameEntryFloor(int mode, GCsint param, int flag);
 
-s32 menuNameEntryOpen(s32 mode, s32 param) {
+s32 menuNameEntryOpen(s32 mode, GCsptr param) {
     int ids[4] = {0x37, 0x40, 0x38, 0x41};
     s32 result;
     int i;
@@ -335,11 +341,11 @@ s32 menuNameEntryOpen(s32 mode, s32 param) {
     return result;
 }
 
-s32 menuNameEntryOpenNoFade(s32 mode, s32 param) {
+s32 menuNameEntryOpenNoFade(s32 mode, GCsptr param) {
     return pushNameEntryFloor(mode, param, 0);
 }
 
-static int pushNameEntryFloor(int mode, int param, int flag) {
+static int pushNameEntryFloor(int mode, GCsint param, int flag) {
     if (chkParam(mode, param) == 0) {
         return 0;
     }
@@ -361,7 +367,7 @@ void menuNameEntryGetLastName(u16* out) {
     GScharCpy(out, NameEntryWork.name);
 }
 
-s32 menuNameEntryCall(s32 mode, s32 param) {
+s32 menuNameEntryCall(s32 mode, GCsptr param) {
     if (chkParam(mode, param) == 0) {
         return 0;
     }
@@ -374,7 +380,7 @@ s32 menuNameEntryCall(s32 mode, s32 param) {
     return NameEntryWork.result;
 }
 
-static int chkParam(int mode, int param) {
+static int chkParam(int mode, GCsint param) {
     int ok = 1;
     switch (mode) {
     case 2:
@@ -404,7 +410,7 @@ static int chkParam(int mode, int param) {
     return ok;
 }
 
-static int getName(unsigned short* out, int mode, int param) {
+static int getName(unsigned short* out, int mode, GCsint param) {
     u16* src;
     switch (mode) {
     case 0:
@@ -451,7 +457,7 @@ static int getName(unsigned short* out, int mode, int param) {
     return 1;
 }
 
-static int setName(unsigned short* name, int mode, int param) {
+static int setName(unsigned short* name, int mode, GCsint param) {
     Pokemon* p;
     int ok = 1;
     switch (mode) {
@@ -506,7 +512,7 @@ void menuNameEntry(void) {
     FlashSystemSetNowFrameLabel(0x22063000, "start");
     arg.mode = NameEntryWork.mode;
     arg.param = NameEntryWork.param;
-    menuOpenCustom(0x68, windowGetActiveID(), 0, 0, 1, 1, (s32)&arg);
+    menuOpenCustom(0x68, windowGetActiveID(), 0, 0, 1, 1, (GCsptr)&arg);
     if (NameEntryWork.onFloor == 0) {
         fadeSet(2, 0.5f);
         fadeCheck(1);
@@ -556,7 +562,7 @@ void menuNameEntry(void) {
     }
 }
 
-static void loadModel(long id, MENU_MODEL* model, int mode, int param) {
+static void loadModel(s32 id, MENU_MODEL* model, int mode, GCsint param) {
     u32 res[4] = {0x16C90400, 0x16C70400, 0, 0x10560400};
     s32 index;
     switch (mode) {
@@ -786,7 +792,7 @@ s32 menuNameEntryBackDrawHumanModel(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     return 0;
 }
 
-static int selectName(unsigned short* name, const unsigned long* list, int count) {
+static int selectName(unsigned short* name, const u32* list, int count) {
     int r;
     int ok;
     u16* chosen;
@@ -794,7 +800,7 @@ static int selectName(unsigned short* name, const unsigned long* list, int count
         SELECT_ARG arg;
         arg.list = list;
         arg.count = count;
-        r = menuOpenCustom(0x65, windowGetActiveID(), 0, 0, 1, 1, (s32)&arg);
+        r = menuOpenCustom(0x65, windowGetActiveID(), 0, 0, 1, 1, (GCsptr)&arg);
         if (r == 0) {
             GSsndPlayNow(0x11);
             ok = 0;
@@ -867,12 +873,12 @@ s32 menuNameEntrySelectDrawSelText3(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     return 0;
 }
 
-static void setDefNameText(tagSPRITE_WORK* sp, unsigned long msg) {
-    msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(msg));
+static void setDefNameText(tagSPRITE_WORK* sp, u32 msg) {
+    msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(msg));
     sp->msgID = 0x4276;
 }
 
-static int inputName(unsigned short* name, unsigned short* defName, int mode, int param, int flag) {
+static int inputName(unsigned short* name, unsigned short* defName, int mode, GCsint param, int flag) {
     NAME_ENTRY_ARG arg;
     u16* result;
     int ok;
@@ -899,7 +905,7 @@ static int inputName(unsigned short* name, unsigned short* defName, int mode, in
     arg.defNameTrainerCurPosX = &DefNameTrainerCurPosX;
     dbgMenuSetEnable(0);
     while (done == 0) {
-        menuOpenCustom(0x66, windowGetActiveID(), 0, 0, 1, 1, (s32)&arg);
+        menuOpenCustom(0x66, windowGetActiveID(), 0, 0, 1, 1, (GCsptr)&arg);
         if (chkValidName(arg.name)) {
             result = arg.name;
         } else {
@@ -1186,7 +1192,7 @@ static bool backNameCursor(NAME_ENTRY_ARG* a) {
 
 static int confirmName(unsigned short* name) {
     GSsndPlayNow(0x1D);
-    msgctrlSetValue(0x4D, (u32)name);
+    msgctrlSetValue(0x4D, (GCuptr)name);
     winMsgOpen(2, (void*)0x3B1A, 1, 0);
     s32 r = menuSubOpenYesNo(0, 0x2C, 0xC0, 0);
     winMsgClose(1);
@@ -1315,11 +1321,11 @@ s32 menuNameEntryDraw50Text(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     return 0;
 }
 
-static void putGScharL(GSgfxLayerID layer, int x, int y, unsigned long color, unsigned short ch) {
+static void putGScharL(GSgfxLayerID layer, int x, int y, u32 color, unsigned short ch) {
     u16 buf[2];
     buf[0] = ch;
     buf[1] = 0;
-    msgctrlSetValue(0x37, (u32)buf);
+    msgctrlSetValue(0x37, (GCuptr)buf);
     s16 w = GSmsgGetRect(0x4275) >> 16;
     GSmsgPrint2(layer, x + (0x1B - w) / 2, y, color, 0x4275);
 }
@@ -1620,7 +1626,7 @@ s32 menuNameEntryDrawNamePokemonWaku(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
                 flag = 0x9C6;
             }
             if (flag != 0) {
-                msgctrlSetValue(0x37, (u32)GSmsgGetGSchar(flag));
+                msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(flag));
                 GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, 0, colorAlpha(w), 0x4275);
                 flag = 0;
             }
@@ -1639,13 +1645,13 @@ static void drawTexture(GStexture* tex, tagSPRITE_WORK* sp, GSgfxLayerID id) {
     GSgfxLayer* layer = GSgfxLayerFindByID(id);
     if (layer != 0) {
         layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 1, 1, 4));
-        if (layer->tex1740 != tex || layer->tex17F8 != tex || tex->flag != 0) {
-            layer->tex1740 = tex;
-            layer->f173C |= 1;
-            layer->tex17F8 = tex;
-            layer->f17F4 |= 1;
+        if ((*(GStexture**)&layer->dirty[0].tex[0]) != tex || (*(GStexture**)&layer->dirty[1].tex[0]) != tex || tex->flag != 0) {
+            (*(GStexture**)&layer->dirty[0].tex[0]) = tex;
+            (*(u32*)&layer->dirty[0].texMask) |= 1;
+            (*(GStexture**)&layer->dirty[1].tex[0]) = tex;
+            (*(u32*)&layer->dirty[1].texMask) |= 1;
         }
-        layer->primitive = 0x98;
+        (*(u32*)&layer->unk1998) = 0x98;
         layer->beginSurface(4);
         f32 zero = 0.0f;
         f32 one = 1.0f;

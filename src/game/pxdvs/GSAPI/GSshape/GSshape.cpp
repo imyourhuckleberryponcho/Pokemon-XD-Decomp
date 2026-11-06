@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <dolphin/mtx.h>
 #include <dolphin/gx/GXVert.h>
 #pragma pool_strings off
@@ -17,44 +18,15 @@ public:
     void pop();
 };
 
-class GSgfxLayer {
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderStateAndSelect(GSgfxVF* vf);
     void beginSurface(u16 count);
     void endSurface();
 
-    u8 pad0[0xd34];
-    u8 d34;
-    u8 padd35[3];
-    s32 d38;
-    u8 padd3c[0xd8c - 0xd3c];
-    s32 d8c;
-    u8 padd90[0x1644 - 0xd90];
-    s32 blendOp;
-    s32 blendSrc;
-    s32 blendDst;
-    s32 blendLogic;
-    u8 pad1654[0x16a8 - 0x1654];
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad16b0[8];
-    u32 dirty16b8;
-    u8 pad16bc[0x170c - 0x16bc];
-    u32 dirty170c;
-    u8 pad1710[0x1760 - 0x1710];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad1768[8];
-    u32 dirty1770;
-    u8 pad1774[0x17c4 - 0x1774];
-    u32 dirty17c4;
-    u8 pad17c8[0x1818 - 0x17c8];
-    u8 blendTable[2][0xbc];
-    u8* curBlend;
-    s32 curBlendIdx;
-    u32 primType;
-    s32 vf;
-    GSgfxMatrixStack* matrixStack;
 };
 
 struct GsShapeAnimHeader {
@@ -80,9 +52,22 @@ public:
     void InitShapeRender();
 
     u8 loaded;
-    u8 pad1[0x13];
+    u8 pad1[0xF];
+    void* slot10;
     GsShapeAnimHeader* anim;
-    u8 pad18[0x964 - 0x18];
+    u8 pad18[0x4];
+    void* slot1C;
+    u8 pad20[0x4];
+    void* slot24;
+    u8 pad28[0x4];
+    void* slot2C;
+    u8 pad30[0x8];
+    void* slot38;
+    void* slot3C;
+    void* slot40;
+    void* slot44;
+    void* slot48;
+    u8 pad4C[0x918];
 };
 
 struct GSgfxRenderModule {
@@ -103,7 +88,7 @@ void* GSmemAllocClr(u32 size);
 void GSmemFree(void* p);
 u8 GSgfxVideoGetVsyncRate(void);
 f32 GSgfxVideoGetLastRenderTime(void);
-GSgfxLayer* GSgfxLayerFindByID(int id);
+GSgfxLayer* GSgfxLayerFindByID(GCsint id);
 void GScameraLoadActiveCameraMatrix(int id);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 u32 GSgfxPerfbarCPUEntry(u32 id);
@@ -178,7 +163,7 @@ s32 shapeInit(u16 count) {
         GSgfxRenderModuleRegister(0x50, &module, 0);
         g_moduleInited = 1;
     }
-    g_shapeRender = (GsShapeRender**)GSmemAllocClr(count * 4);
+    g_shapeRender = (GsShapeRender**)GSmemAllocClr(count * sizeof(GsShapeRender*));
     if (g_shapeRender == 0) {
         g_shapeRenderNum = 0;
         return 0;
@@ -310,32 +295,32 @@ void shapePrimitiveEditorRender(GSgfxLayerID layerId) {
             GScameraLoadActiveCameraMatrix(layerId);
             PSMTXRotRad(m, 'Y', -1.5707964f);
             PSMTXTransApply(m, m, 0.0f, 0.1f, 0.0f);
-            layer->matrixStack->pushMult((GSmtx*)m);
+            (*(GSgfxMatrixStack**)&layer->matrixStack)->pushMult((GSmtx*)m);
             layer->setRenderStateAndSelect(GSgfxVFGetPredef(0));
-            layer->d8c = 0;
-            layer->dirty16b8 |= 2;
-            layer->dirty16a8 |= 2;
-            layer->dirty1770 |= 2;
-            layer->dirty1760 |= 2;
-            layer->primType = 0xA8;
-            if (layer->curBlendIdx != 1) {
-                layer->curBlendIdx = 1;
-                layer->curBlend = layer->blendTable[layer->curBlendIdx];
+            (*(s32*)&layer->hw.cullMode) = 0;
+            (*(u32*)&layer->dirty[0].raster) |= 2;
+            (*(u32*)&layer->dirty[0].groups) |= 2;
+            (*(u32*)&layer->dirty[1].raster) |= 2;
+            (*(u32*)&layer->dirty[1].groups) |= 2;
+            (*(u32*)&layer->unk1998) = 0xA8;
+            if ((*(s32*)&layer->curPass) != 1) {
+                (*(s32*)&layer->curPass) = 1;
+                layer->curFifo = &layer->passes[layer->curPass];
             }
-            layer->blendOp = 1;
-            layer->blendSrc = 4;
-            layer->blendDst = 5;
-            layer->blendLogic = 5;
-            layer->dirty170c |= 1;
-            layer->dirty16a8 |= 0x40;
-            layer->dirty17c4 |= 1;
-            layer->dirty1760 |= 0x40;
-            layer->d34 = 6;
-            layer->d38 = 0;
-            layer->dirty16ac |= 4;
-            layer->dirty16a8 |= 1;
-            layer->dirty1764 |= 4;
-            layer->dirty1760 |= 1;
+            (*(s32*)&layer->hw.blend[0]) = 1;
+            (*(s32*)&layer->hw.blend[1]) = 4;
+            (*(s32*)&layer->hw.blend[2]) = 5;
+            (*(s32*)&layer->hw.blend[3]) = 5;
+            (*(u32*)&layer->dirty[0].pe) |= 1;
+            (*(u32*)&layer->dirty[0].groups) |= 0x40;
+            (*(u32*)&layer->dirty[1].pe) |= 1;
+            (*(u32*)&layer->dirty[1].groups) |= 0x40;
+            (*(u8*)&layer->hw.lineWidth) = 6;
+            (*(s32*)&layer->hw.lineOffset) = 0;
+            (*(u32*)&layer->dirty[0].geom) |= 4;
+            (*(u32*)&layer->dirty[0].groups) |= 1;
+            (*(u32*)&layer->dirty[1].geom) |= 4;
+            (*(u32*)&layer->dirty[1].groups) |= 1;
             layer->beginSurface(6);
             GXWGFifo.f32 = zero;
             GXWGFifo.f32 = zero;
@@ -394,7 +379,7 @@ void shapePrimitiveEditorRender(GSgfxLayerID layerId) {
                 }
             }
             GSprint(getEditorLayer(), 0x226, 0x1E, -1, "%dKB", instancedMemory / 1024);
-            layer->matrixStack->pop();
+            (*(GSgfxMatrixStack**)&layer->matrixStack)->pop();
         }
     }
 }

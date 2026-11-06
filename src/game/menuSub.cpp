@@ -1,4 +1,10 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 #include <dolphin/gx/GXVert.h>
 
 #pragma peephole off
@@ -6,20 +12,11 @@
 struct GSgfxVF;
 enum GSgfxLayerID { GSgfxLayerID0 };
 enum menuSubCursorBackColor { menuSubCursorBackColor0, menuSubCursorBackColor1 };
-class GSgfxLayer {
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0xD34];
-    u8 colorCount;
-    u8 padD35[3];
-    u32 colorMode;
-    u8 padD3C[0x16A8 - 0xD3C];
-    u32 flagsA;
-    u32 flagsB;
-    u8 pad16B0[0x1760 - 0x16B0];
-    u32 flagsC;
-    u32 flagsD;
-    u8 pad1768[0x1998 - 0x1768];
-    u32 primitive;
     void setRenderStateAndSelect(GSgfxVF*);
     void beginSurface(u16);
     void endSurface();
@@ -28,7 +25,23 @@ public:
 struct tagWINDOW_WORK {
     u8 unk0;
     s8 state;
-    u8 unk2[0x86];
+    u8 unk2[0xA];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
     s32 result;
     u8 unk8C[0x12];
     s16 cursor;
@@ -38,7 +51,8 @@ struct tagWINDOW_WORK {
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[6];
+    void* slot0;
+    u8 pad4[0x2];
     s16 id;
 };
 
@@ -76,7 +90,7 @@ struct MenuSubColorContext {
 
 extern "C" {
 
-GSgfxLayer* GSgfxLayerFindByID(s32);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 void menuSubCursorAnimeInit(void);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 u32 GSinputButtonsChanged(s32);
@@ -86,12 +100,12 @@ s32 GScharCmp(void*, void*);
 void GSthreadSwitch(void);
 s32 menuCB_GetDisconnectedGBA(void);
 void menuClose(s32);
-void menuCloseCustom(s16, s32, s32);
+void menuCloseCustom(PCARG(s16, s32), s32, s32);
 void menuCloseSync(s32, s32);
 f32 menuGetTotalTime(void);
 void* menuItemBiosGetPtr(s32, s32);
 s32 menuOpenCustom(s32, ...);
-void menuSetPosition(s16, s16, s16);
+void menuSetPosition(PCARG(s16, s32), s16, s16);
 void* menuSpriteBiosGetPtr(u32);
 MenuSpriteVal* menuSpriteBiosGetValPtr(void*);
 u16 pokemonBiosGetPokemonDataId(void*);
@@ -99,14 +113,14 @@ u8 pokemonCheckValid(void*);
 void* pokemonDataBiosGetName(void*);
 void* pokemonDataBiosGetPtr(u16);
 s32 pokemonGetSex(void*);
-u32 pokemonGetStatus(void*, s32, s32, s32);
+StatusU32 pokemonGetStatus(void*, s32, s32, s32);
 f32 timeGetLastFrameSec(void);
 s32 timeGetLastFrameTime(void);
 void winSpriteSetDisp(tagSPRITE_WORK*, u8);
-u8 windowCheckCursor(s16, s32);
-void windowDrawSprite2(s16, s16, s16, s16, u32, s32, u16, s32, s32);
+u8 windowCheckCursor(PCARG(s16, s32), s32);
+void windowDrawSprite2(s16, s16, s16, s16, u32, void*, u16, s32, s32);
 s32 windowGetActiveID(void);
-s32 windowGetValue(s16);
+s32 windowGetValue(PCARG(s16, s32));
 tagWINDOW_WORK* windowSearchID(s32);
 f64 cos(f64);
 
@@ -234,30 +248,37 @@ static void _menuSubDrawCursorBackSub(GSgfxLayerID layer, s32 x, s32 y, s32 w, s
     u8 a;
     u16 idA;
     u16 idB;
+    void* pa;
+    void* pb;
     MenuSpriteVal* side;
     MenuSpriteVal* mid;
     u32 c;
-    s16 midW;
-    s32 x1;
+    s32 midW;
+    s16 sx;
+    s16 sy;
 
-    if (anim != 0) {
-        a = _animAlpha();
-    } else {
-        a = 0xFF;
-    }
-    a = a * alpha / 255;
+    _animAlpha();
+    a = anim ? _animAlpha() : 0xFF;
+    a = (u16)(a * alpha) / 255;
+
     if (GSgfxLayerFindByID(layer) != 0) {
         if (type == 0) {
-            side = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0xBB));
+            sx = x;
+            sy = y;
+            pa = menuSpriteBiosGetPtr(0xBB);
+            pb = menuSpriteBiosGetPtr(0xBC);
+            side = menuSpriteBiosGetValPtr(pa);
+            mid = menuSpriteBiosGetValPtr(pb);
             c = color | a;
-            mid = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0xBC));
             midW = w - side->w - side->w;
-            windowDrawSprite2(x, y, side->w, side->h, c, 0, 0xBB, 0, layer);
-            x1 = x + side->w;
-            windowDrawSprite2(x1, y, midW, mid->h, c, 0, 0xBC, 0, layer);
-            windowDrawSprite2(x1 + midW, (u8)y, side->w, side->h, c, 0, 0xBB, 1, layer);
+            windowDrawSprite2(sx, sy, side->w, side->h, c, 0, 0xBB, 0, layer);
+            sx += side->w;
+            windowDrawSprite2(sx, sy, midW, mid->h, c, 0, 0xBC, 0, layer);
+            windowDrawSprite2(sx + midW, sy, side->w, side->h, c, 0, 0xBB, 1, layer);
             return;
         }
+        sx = x;
+        sy = y;
         if (colorKind == menuSubCursorBackColor0) {
             idA = 0xBF;
             idB = 0xC0;
@@ -265,14 +286,16 @@ static void _menuSubDrawCursorBackSub(GSgfxLayerID layer, s32 x, s32 y, s32 w, s
             idA = 0x1F6;
             idB = 0x1F7;
         }
-        mid = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(idB));
-        side = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(idA));
+        pa = menuSpriteBiosGetPtr(idA);
+        pb = menuSpriteBiosGetPtr(idB);
+        side = menuSpriteBiosGetValPtr(pa);
+        mid = menuSpriteBiosGetValPtr(pb);
         c = color | a;
         midW = w - side->w - side->w;
-        windowDrawSprite2((u8)x, y, side->w, side->h, c, 0, idA, 0, layer);
-        x1 = x + side->w;
-        windowDrawSprite2((u8)x1, y, midW, mid->h, c, 0, idB, 0, layer);
-        windowDrawSprite2(x1 + midW, (u8)y, side->w, side->h, c, 0, idA, 1, layer);
+            windowDrawSprite2(sx, sy, side->w, side->h, c, 0, idA, 0, layer);
+            sx += side->w;
+            windowDrawSprite2(sx, sy, midW, mid->h, c, 0, idB, 0, layer);
+            windowDrawSprite2(sx + midW, sy, side->w, side->h, c, 0, idA, 1, layer);
     }
 }
 
@@ -541,7 +564,7 @@ void menuSubOpenColosseumEnter(void) {
     menuSubOpenSelect2(0, values, 3, 0x32, 0x32, 0, 3, 1);
 }
 
-s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial) {
+PCRET(s8) menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial) {
     s16 menuID;
     s8 result;
     s32 id;
@@ -626,7 +649,7 @@ u8 menuSubOpenNumberInputDigit(u32 value, u32* out) {
 void menuSubDrawTriangle(s32 layer, s32 x0, s32 y0, s32 x1, s32 y1, s32 x2, s32 y2) {
     GSgfxLayer* gfx = GSgfxLayerFindByID(layer);
     if (gfx != 0) {
-        gfx->primitive = 0x90;
+        (*(u32*)&gfx->unk1998) = 0x90;
         gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
         gfx->beginSurface(3);
         GXWGFifo.s16 = x0;
@@ -659,17 +682,17 @@ void menuSubDrawTile(s32 layer, s32 x, s32 y, s32 w, s32 h, u8* color) {
     u8 r;
 
     if (gfx != 0) {
-        gfx->primitive = 0x98;
+        (*(u32*)&gfx->unk1998) = 0x98;
         gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
         h += y;
         w += x;
         gfx->beginSurface(4);
         GXWGFifo.s16 = x;
+        r = color[0];
         GXWGFifo.s16 = y;
         g = color[1];
         GXWGFifo.u8 = r;
         b = color[2];
-        r = color[0];
         GXWGFifo.u8 = g;
         a = color[3];
         GXWGFifo.u8 = b;
@@ -704,7 +727,7 @@ void menuSubDrawSimpleWindow(s32 layer, s32 x, s32 y, s32 w, s32 h) {
     GSgfxLayer* gfx = GSgfxLayerFindByID(layer);
 
     if (gfx != 0) {
-        gfx->primitive = 0x98;
+        (*(u32*)&gfx->unk1998) = 0x98;
         gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
         gfx->beginSurface(4);
         x0 = x - 10;
@@ -725,13 +748,13 @@ void menuSubDrawSimpleWindow(s32 layer, s32 x, s32 y, s32 w, s32 h) {
         GXWGFifo.s16 = y1;
         GXWGFifo.u32 = 0xC0;
         gfx->endSurface();
-        gfx->colorCount = 6;
-        gfx->colorMode = 0;
-        gfx->flagsB |= 4;
-        gfx->flagsA |= 1;
-        gfx->flagsD |= 4;
-        gfx->flagsC |= 1;
-        gfx->primitive = 0xB0;
+        (*(u8*)&gfx->hw.lineWidth) = 6;
+        (*(u32*)&gfx->hw.lineOffset) = 0;
+        (*(u32*)&gfx->dirty[0].geom) |= 4;
+        (*(u32*)&gfx->dirty[0].groups) |= 1;
+        (*(u32*)&gfx->dirty[1].geom) |= 4;
+        (*(u32*)&gfx->dirty[1].groups) |= 1;
+        (*(u32*)&gfx->unk1998) = 0xB0;
         gfx->beginSurface(5);
         x0 = x - 10;
         y0 = y;

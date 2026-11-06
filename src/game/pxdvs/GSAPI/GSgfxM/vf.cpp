@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/gsvfarray.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -67,8 +69,11 @@ struct GSgfxVF {
 
 extern "C" {
 
-struct GSgfxLayer {
-    u8 _draft[1];
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
     void ResetVertexFormat(GSgfxVF*);
 };
 struct _struct__vfPredefFmt_0x440 {
@@ -81,7 +86,7 @@ GSgfxVF* GSgfxVFBuildTemp(s32 posType, s32 posCnt, u8 hasNormal, s32 normalType,
 void GSgfxVFCreate(GSgfxVF* vf);
 void GSgfxVFFree(GSgfxVF* vf);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
-s32 GSgfxVFHasElement(s32 p0, s32 p1);
+s32 GSgfxVFHasElement(GCsptr p0, s32 p1);
 void GSgfxVFInit(GSgfxVF* vf);
 void GSgfxVFSetArray(GSgfxVF* vf, s32, s32, void*, s32, u32);
 void GSgfxVFSetElement(GSgfxVF* vf, s32, s32, s32, s32);
@@ -255,6 +260,15 @@ void GSgfxVFSetArray(GSgfxVF* vf, s32 type, s32 compData, void* array, s32 size,
     vf->flags |= 0xC;
     }
 }
+#ifndef __MWERKS__
+extern "C" void GSgfxVFSetArrayNative(GSgfxVF* vf, s32 type, s32 compData, void* array, s32 size, u32 stride) {
+    GSgfxVFSetArray(vf, type, compData, array, size, stride);
+    GSgfxVFFmt* fmt = vfFindFmt(vf, type);
+    if (fmt != NULL && array != NULL) {
+        fmt->flags |= GSGFX_VF_ARRAY_NATIVE;
+    }
+}
+#endif
 extern "C" {
 void GSgfxVFRemoveElement(void* p, s32 type) {
     GSgfxVFFmt* n;
@@ -442,7 +456,7 @@ static inline GSgfxVFElement* vfFindElement(GSgfxVF* vf, s32 type) {
     return NULL;
 }
 
-s32 GSgfxVFHasElement(s32 vf, s32 type) {
+s32 GSgfxVFHasElement(GCsptr vf, s32 type) {
     if (vfFindElement((GSgfxVF*)vf, type) != NULL) {
         return 1;
     }

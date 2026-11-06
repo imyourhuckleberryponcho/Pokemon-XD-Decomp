@@ -23,7 +23,12 @@ void __assert(const char* file, s32 line, const char* expr);
 
 typedef struct HSD_ObjAllocData {
     u8 flags;
+#ifdef __MWERKS__
     u8 unk1[7];
+#else
+    u8 unk1[3];
+    void* freehead;
+#endif
     u32 used;
     u32 free;
     u32 peak;
@@ -236,7 +241,9 @@ OSHeapHandle HSD_CreateMainHeap(void* lo, void* hi) {
         _HSD_AObjForgetMemory, _HSD_DispForgetMemory, _HSD_IDForgetMemory, _HSD_ObjAllocForgetMemory,
         _HSD_RandForgetMemory, _HSD_RObjForgetMemory, NULL,
     };
+#ifdef __MWERKS__
     hsdForgetClassLibrary("sysdolphin_base_library");
+#endif
     HSD_ObjInit();
     for (i = 0; cb_table[i] != NULL; i++) {
         cb_table[i](hsd_heap_next_arena_lo, hsd_heap_next_arena_hi);

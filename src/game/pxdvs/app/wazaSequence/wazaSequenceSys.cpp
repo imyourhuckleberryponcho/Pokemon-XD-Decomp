@@ -1,4 +1,9 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/wazashadow.h>
 
 struct GSvec {
     f32 x, y, z;
@@ -33,32 +38,40 @@ enum GSmodelAnimType {
 static inline u16 __OSf32tou16(register f32 inF) {
     u16 tmp;
     register u16* tmpPtr = &tmp;
+#ifdef __MWERKS__
     asm { psq_st inF, 0(tmpPtr), 1, 3 }
+#else
+    PSQ_STORE(tmpPtr, 0, inF, 3);
+#endif
     return *tmpPtr;
 }
 
 static inline f32 __OSu16tof32(register const u16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 3 }
+#else
+    ret = PSQ_LOAD(arg, 0, 3);
+#endif
     return ret;
 }
 
 struct MotionEntry {
-    s32 type;
-    s32 index;
+    gc_bes32 type;
+    gc_bes32 index;
 };
 
 struct MotionSection {
     u8 pad0[4];
-    s32 count;
+    gc_bes32 count;
     u8 pad8[0x44];
-    s32 joints[16];
+    gc_bes32 joints[16];
     MotionEntry motions[8];
-    s32 pad;
+    gc_bes32 pad;
 };
 
 struct ColorInfo {
-    s32 swap[4];
+    gc_bes32 swap[4];
     u8 mod[4];
 };
 
@@ -85,21 +98,21 @@ struct PartAnimData {
 };
 
 struct PkxHeader {
-    s32 size;
-    void* model;
-    s32 unk8;
-    GSparticleBank* particle;
-    s32 count;
-    s32 modelSize;
-    u16 id;
-    u16 type;
+    gc_bes32 size;
+    gc_ptr32(void) model;
+    gc_bes32 unk8;
+    gc_ptr32(GSparticleBank) particle;
+    gc_bes32 count;
+    gc_bes32 modelSize;
+    gc_be16 id;
+    gc_be16 type;
     PartAnimData anims[4];
     u8 flags;
     u8 pad69;
-    u16 distortionID;
+    gc_be16 distortionID;
     u8 distortionParam;
     u8 pad6D;
-    u16 headJoint;
+    gc_be16 headJoint;
     ColorInfo colors;
 };
 
@@ -138,7 +151,7 @@ f32 GSmodelGetAnimFrame(_GSmodel* model);
 void GSmodelRemoveNull(_GSmodel* model);
 u16 GSmodelCenterNull(_GSmodel* model);
 GSpart* GSmodelGetPart(_GSmodel* model, s32 joint);
-f32 menuModelGetScale(u8 a, u16 b);
+f32 menuModelGetScale(s32 hasParent, s32 id, f32 scale);
 u8 GSgfxVideoGetVsyncRate(void);
 void GSmodelSetDontResetPartAnimFlag(_GSmodel* model, s32 flag);
 void GSparticleDestroyGenerator(GSparticleGen* gen, s32 children);
@@ -169,7 +182,12 @@ void GSresFreeResource(u32 group, u32 id);
 void GSresIsUniqueID(u32 group, u32 id, u32 x);
 void* GSresGetResource(u32 group, u32 id);
 s32 wazaSequenceSysGetResID(void);
+#ifdef __MWERKS__
 void GSmodelSetGroundPlane(_GSmodel* model, s32 a, f32 b);
+#else
+void GSmodelSetGroundPlane(_GSmodel* model, f32 plane, bool enable);
+#define GSmodelSetGroundPlane(m, e, p) GSmodelSetGroundPlane((m), (p), (e) != 0)
+#endif
 void GSmodelRemoveRootJointAnimation(_GSmodel* model);
 void GSmodelSetSkipFractionalFramesFlag(_GSmodel* model, s32 flag);
 GSparticleBank* GSparticleLoad(void* data);
@@ -209,11 +227,11 @@ void GSmodelGetRotation(_GSmodel* model, GSvec* v);
 void GSmodelGetPosition(_GSmodel* model, GSvec* v);
 }
 
-extern GSvec zeroVector;
+extern "C" GSvec zeroVector;
 extern GSvec unitScaleVector;
-u32 wazaSequenceSysGetModelShadowLight(void);
+WazaShadowAddr wazaSequenceSysGetModelShadowLight(void);
 u32 wazaSequenceSysGetModelShadowCount(void);
-s32 wazaSequenceSysGetModelShadowList(void);
+WazaShadowListAddr wazaSequenceSysGetModelShadowList(void);
 class ModelSequence;
 void wazaSequenceSysFreeSequenceResource(ModelSequence* seq);
 f32 _getHeadRotationCallback(GSpart* part, GSpartMixType type, void* user, GSvec* out);
@@ -230,7 +248,7 @@ extern u32 rare_deoxys_pokemon_pkx_data_number;
 extern u32 rare_pokemon_pkx_data_number;
 extern u32 trainer_pkx_data_number;
 
-void* operator new(unsigned long size);
+void* operator new(size_t size);
 void operator delete(void* p);
 u8* wazaSequenceSysLoadResource(u32 a, u32 b);
 void _sequenceModelAnimEndedCallback(_GSmodel* model, _GSmodelAnimCBData* data);
@@ -440,13 +458,13 @@ struct SectionTimes {
     f32 time[1];
 };
 
-extern PokemonWazaWzxEntry pokemon_waza_wzx_data[];
-extern WazaWzxEntry waza_wzx_data[];
-extern WazaExtWzxEntry waza_ext_wzx_data[];
-extern u16 waza_generic_wzx_data[];
-extern u32 waza_wzx_data_number;
-extern u32 waza_ext_wzx_data_number;
-extern u32 waza_generic_wzx_data_number;
+extern "C" PokemonWazaWzxEntry pokemon_waza_wzx_data[];
+extern "C" WazaWzxEntry waza_wzx_data[];
+extern "C" WazaExtWzxEntry waza_ext_wzx_data[];
+extern "C" u16 waza_generic_wzx_data[];
+extern "C" u32 waza_wzx_data_number;
+extern "C" u32 waza_ext_wzx_data_number;
+extern "C" u32 waza_generic_wzx_data_number;
 extern "C" {
 void GSmodelSetPartAnimIndex(_GSmodel* model, s32 partIndex, u32 a, u32 b, f32 c);
 void GSmodelSetPartTexAnimIndex(_GSmodel* model, s32 partIndex, u32 a, u32 b, u32 c, f32 d);
@@ -458,13 +476,17 @@ static GSparticleBank* g_IceParticle;
 static GSparticleBank* g_SleepParticle;
 static u32 _resource_id_count;
 static u32 _modelShadowCount;
-static u32 _modelShadowLight;
+static WazaShadowAddr _modelShadowLight;
 static void* g_SoundListener;
+extern "C" {
 _GSmodel* gCameraShakeModel;
+}
 u8 g_EnableModelLayerChange;
 
+extern "C" {
 _GSmodel* gCameraShakeModels[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-static u32 _modelShadowList[16];
+}
+static WazaShadowAddr _modelShadowList[16];
 
 struct FloorData;
 extern "C" {
@@ -880,7 +902,7 @@ struct WazaResourceEntry {
     u32 groupID;
     u32 unk4;
 };
-extern WazaResourceEntry waza_resource_data[];
+extern "C" WazaResourceEntry waza_resource_data[];
 
 extern "C" {
 void GSresFreeGroup(u32 group);
@@ -1187,7 +1209,7 @@ static inline void _wazaSequenceSysReleaseAll() {
     GSfsysFree(0x634);
     _modelShadowCount = 0;
     _modelShadowLight = 0;
-    memset(_modelShadowList, 0, _modelShadowCount * 4);
+    memset(_modelShadowList, 0, _modelShadowCount * sizeof(WazaShadowAddr));
     if (g_SoundListener != 0) {
         GSsndFreeListener(g_SoundListener);
         g_SoundListener = 0;
@@ -1265,13 +1287,13 @@ void wazaSequenceSysInit() {
         for (i = 0; i < n; i++) {
             void* res = GSresGetResource(group, floorDataBiosGetShadowReciveID(floor, i));
             if (res != 0) {
-                _modelShadowList[_modelShadowCount++] = (u32)res;
+                _modelShadowList[_modelShadowCount++] = (WazaShadowAddr)res;
             }
         }
         {
             u32 light = floorDataBiosGetShadowLightID(floor);
             if (light != 0) {
-                _modelShadowLight = (u32)GSresGetResource(group, light);
+                _modelShadowLight = (WazaShadowAddr)GSresGetResource(group, light);
             }
         }
     }
@@ -1429,7 +1451,7 @@ void wazaSequenceSysFreeWazaResource(WazaSequence* waza) {
     freeWazaRes(waza->m_resID);
 }
 
-u32 wazaSequenceSysGetModelShadowLight() {
+WazaShadowAddr wazaSequenceSysGetModelShadowLight() {
     return _modelShadowLight;
 }
 
@@ -1437,8 +1459,8 @@ u32 wazaSequenceSysGetModelShadowCount() {
     return _modelShadowCount;
 }
 
-s32 wazaSequenceSysGetModelShadowList() {
-    return (s32)_modelShadowList;
+WazaShadowListAddr wazaSequenceSysGetModelShadowList() {
+    return (WazaShadowListAddr)_modelShadowList;
 }
 
 void wazaSequenceSysResetAnimationExcept(ModelSequence* except) {

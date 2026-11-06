@@ -1,13 +1,20 @@
 
 
 #include <dolphin/types.h>
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 
 #pragma pool_strings off
 
 void __assert(const char* file, s32 line, const char* expr);
 
 typedef struct HSD_ObjAllocData {
+#ifdef __MWERKS__
     u8 unk0[0x2C];
+#else
+    void* unk0[7];
+#endif
 } HSD_ObjAllocData;
 
 typedef struct IDEntry {

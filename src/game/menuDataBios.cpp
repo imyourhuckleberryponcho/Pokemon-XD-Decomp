@@ -1,32 +1,42 @@
 #include <dolphin/types.h>
+#include <game/menuTables.h>
+#include <game/bitfield.h>
 
 #pragma peephole off
 
 struct MenuData {
-    u8 type : 3;
-    u8 unk0 : 5;
+    GC_BITS2(
+    u8 type : 3,
+    u8 unk0 : 5)
     u8 unk1[2];
     u8 dispMax;
     u8 unk4[4];
     s16 x;
     s16 y;
-    u8 unkC[0x1C - 0xC];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    void* slot18;
 };
 
 struct MenuItem {
-    u8 selectFlag : 1;
-    u8 unk0 : 7;
+    GC_BITS2(
+    u8 selectFlag : 1,
+    u8 unk0 : 7)
     u8 unk1[5];
     s16 x;
     s16 y;
     u8 unkA[4];
     s16 spriteId;
-    u8 unk10[0x1C - 0x10];
+    u8 unk10[0x4];
+    void* slot14;
+    u8 pad18[0x4];
 };
 
-struct MenuSe {
-    u16 sndId[6];
-};
+#ifndef __MWERKS__
+static_assert(sizeof(MenuData) == 0x30, "MenuData must match menuData.c's MenuDataEntry on PC");
+static_assert(sizeof(MenuItem) == 0x28, "MenuItem must match menuItem.c's MenuItemEntry on PC");
+#endif
 
 struct MenuSpriteVal {
     u8 unk0[0xC];

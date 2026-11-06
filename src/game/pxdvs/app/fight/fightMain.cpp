@@ -14,7 +14,7 @@ struct FightActionWork {
 extern "C" {
 
 s32 wazaSequenceSysGetWazaGroupID(u32 id, u32 arg);
-u8 GSfsysPreReadKeepCache(void);
+u8 GSfsysPreReadKeepCache(u32 id);
 s32 GSfsysGetStatus(s32 id);
 void GSthreadSwitch(void);
 u16 fightGetFightEncountDataId(void);
@@ -69,7 +69,7 @@ u8 fightFloorIsUseFightTimerCommand(FIGHT_FLOOR* floor);
 void fightFloorSetTimeOutAllFightResult(FIGHT_FLOOR* floor);
 
 void fightActionFlowKaisiPreSubLoad(void);
-void fightActionCreateAndFlowFifo(void* work, u16 a, u16 b, u16 kind, u32 index, void* table);
+u8 fightActionCreateAndFlowFifo(void* action, void* moto, void* actor, u16 kind, u32 buff, void* data);
 void fightActionDispFifoAll(void);
 extern u8 fight_action_data_kaisi[];
 extern u8 fight_action_data_turn[];
@@ -139,7 +139,7 @@ void fightRegWzxLoadAll(s8 group) {
 
 s32 fightRegWzxLoadGenric(u32 id) {
     s32 group = wazaSequenceSysGetWazaGroupID(id, 4);
-    if (GSfsysPreReadKeepCache() == 0) {
+    if (GSfsysPreReadKeepCache(group) == 0) {
         return 0;
     }
     while (1) {

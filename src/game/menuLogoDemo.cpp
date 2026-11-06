@@ -1,6 +1,8 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/statusval.h>
 #include <game/shared/menu_work.h>
 
 #pragma force_active on
@@ -16,9 +18,14 @@ struct GSgfxColAu8 {
     };
 };
 
+#ifdef __MWERKS__
 struct OSThread2 {
     u8 pad[0x318];
 };
+#else
+#include <dolphin/os/OSThread.h>
+typedef OSThread OSThread2;
+#endif
 
 struct OPDEMO_SE_SEQUENCE_dd_ {
     u16 time;
@@ -45,28 +52,12 @@ struct GSmtx44 {
     f32 m[4][4];
 };
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
-    u8 pad0[0xd54];
-    s32 projType;
-    f32 proj[6];
-    u8 pad_d70[0x1684 - 0xd70];
-    f32 nearZ;
-    f32 farZ;
-    u8 pad_168c[0x16a6 - 0x168c];
-    u8 f16a6;
-    u8 f16a7;
-    u32 dirty16a8;
-    u32 dirty16ac;
-    u8 pad_16b0[0x170c - 0x16b0];
-    u32 dirty170c;
-    u8 pad_1710[0x1760 - 0x1710];
-    u32 dirty1760;
-    u32 dirty1764;
-    u8 pad_1768[0x17c4 - 0x1768];
-    u32 dirty17c4;
-    u8 pad_17c8[0x19a0 - 0x17c8];
-    GSlayerCam* cam;
 };
 
 extern "C" {
@@ -98,11 +89,11 @@ void GSmsgPrintRect(s32, s32, s32, s32, s32, u32, u32);
 KeyInfo2* windowGetKeyInfo(void);
 void* savedataGetStatus(void* save, s32 kind);
 void gamedatasaveSetStatus(void* ptr, u32 kind, u32 value);
-u32 gamedatasaveGetStatus(void* ptr, u32 kind);
+StatusU32 gamedatasaveGetStatus(void* ptr, u32 kind);
 void* memcardMemAllocForSavedata(void);
 void* memcardMemFreeForSavedata(void* ptr);
 s32 memcardTaskCall(s32, s32, s32);
-u32 heroGetStatus(void* hero, u32 selector, u16 index);
+StatusU32 heroGetStatus(void* hero, u32 selector, u16 index);
 void winMsgOpen(s32 type, s32 msg, s32 a, s32 b);
 void winMsgClose(bool flag);
 s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial);
@@ -129,7 +120,7 @@ void GSgfxVideoSetFilter(u8* filter);
 f32 timeGetLastFrameSec(void);
 s32 pokecoloGetRomVersion(void);
 void floorLayerConfig(u32 floorID, u8 kind);
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 void GSprimSetBlendMode(s32 mode);
 void GSprimSetQuadVertexOrder(s32 order);
 void GSprimDraw2DTexQuad4V(GSvec2* pos, GSvec2* uv, GStexture* tex, GSgfxColAu8 col);
@@ -151,8 +142,10 @@ u32 OSGetProgressiveMode(void);
 void OSSetProgressiveMode(u32 on);
 u32 VIGetDTVStatus(void);
 void VIWaitForRetrace(void);
+#ifdef __MWERKS__
 s32 OSCreateThread(OSThread2* thread, void* (*func)(void*), void* param, void* stack, u32 stackSize, s32 priority, u16 attr);
 s32 OSResumeThread(OSThread2* thread);
+#endif
 }
 
 void GSprimSetup2DRender(GSgfxLayer* layer);
@@ -341,16 +334,20 @@ static void _menuGSfsysInitWait(void)
 }
 
 extern "C" {
+extern "C++" {
 void menuGSfsysInit(void)
 {
     _menuGSfsysInit();
 }
 }
+}
 
 extern "C" {
+extern "C++" {
 void menuGSfsysInitWait(void)
 {
     _menuGSfsysInitWait();
+}
 }
 }
 
@@ -591,32 +588,32 @@ void menuNintendoWarningHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     GSgfxLayer* layer = GSgfxLayerFindByID(7);
     f32 mtx[16];
     GSmtx44Ortho(mtx, -23.0f, 448.0f, 0.0f, 608.0f, 0.0f, -30000.0f);
-    layer->projType = 1;
-    layer->proj[0] = mtx[0];
-    layer->proj[1] = mtx[3];
-    layer->proj[2] = mtx[5];
-    layer->proj[3] = mtx[7];
-    layer->proj[4] = mtx[10];
-    layer->proj[5] = mtx[11];
-    GSlayerCam* cam = layer->cam;
+    (*(s32*)&layer->hw.projType) = 1;
+    ((f32*)layer->hw.proj)[0] = mtx[0];
+    ((f32*)layer->hw.proj)[1] = mtx[3];
+    ((f32*)layer->hw.proj)[2] = mtx[5];
+    ((f32*)layer->hw.proj)[3] = mtx[7];
+    ((f32*)layer->hw.proj)[4] = mtx[10];
+    ((f32*)layer->hw.proj)[5] = mtx[11];
+    GSlayerCam* cam = (*(GSlayerCam**)&layer->matrixStack);
     memcpy(cam->data + 1, &mtxIdent, 0x30);
     cam->data[0] |= 1;
-    layer->nearZ = 0.0f;
-    layer->farZ = 30000.0f;
-    if (layer->f16a7) {
-        if (layer->f16a6) {
-            layer->dirty170c |= 0x100;
-            layer->dirty17c4 |= 0x100;
+    (*(f32*)&layer->hw.fogNear) = 0.0f;
+    (*(f32*)&layer->hw.fogFar) = 30000.0f;
+    if ((*(u8*)&layer->hw.fogEnable)) {
+        if ((*(u8*)&layer->hw.fogRangeEnable)) {
+            (*(u32*)&layer->dirty[0].pe) |= 0x100;
+            (*(u32*)&layer->dirty[1].pe) |= 0x100;
         }
-        layer->dirty170c |= 0x40;
-        layer->dirty16a8 |= 0x40;
-        layer->dirty17c4 |= 0x40;
-        layer->dirty1760 |= 0x40;
+        (*(u32*)&layer->dirty[0].pe) |= 0x40;
+        (*(u32*)&layer->dirty[0].groups) |= 0x40;
+        (*(u32*)&layer->dirty[1].pe) |= 0x40;
+        (*(u32*)&layer->dirty[1].groups) |= 0x40;
     }
-    layer->dirty16ac |= 0x20;
-    layer->dirty16a8 |= 1;
-    layer->dirty1764 |= 0x20;
-    layer->dirty1760 |= 1;
+    (*(u32*)&layer->dirty[0].geom) |= 0x20;
+    (*(u32*)&layer->dirty[0].groups) |= 1;
+    (*(u32*)&layer->dirty[1].geom) |= 0x20;
+    (*(u32*)&layer->dirty[1].groups) |= 1;
     GSprimSetup2DRender(layer);
     GSprimSetBlendMode(1);
     GSprimSetQuadVertexOrder(1);

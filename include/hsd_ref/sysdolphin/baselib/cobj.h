@@ -76,51 +76,51 @@ struct HSD_CObj {
 };
 
 struct HSD_CameraDescCommon {
-    char* class_name;    // 0x00
-    u16 flags;           // 0x04
-    u16 projection_type; // 0x06
-    HSD_RectS16 viewport;
-    Scissor scissor;
-    HSD_WObjDesc* eyepos;   // 0x18
-    HSD_WObjDesc* interest; // 0x1C
-    f32 roll;               // 0x20
-    Vec3* up_vector;        // 0x24
-    f32 nnear;              // 0x28
-    f32 ffar;               // 0x2C
+    gc_ptr32(char) class_name;    // 0x00
+    gc_be16 flags;           // 0x04
+    gc_be16 projection_type; // 0x06
+    gc_s16x4(HSD_RectS16) viewport;
+    gc_s16x4(Scissor) scissor;
+    gc_ptr32(HSD_WObjDesc) eyepos;   // 0x18
+    gc_ptr32(HSD_WObjDesc) interest; // 0x1C
+    gc_bef32 roll;               // 0x20
+    gc_ptr32(Vec3) up_vector;        // 0x24
+    gc_bef32 nnear;              // 0x28
+    gc_bef32 ffar;               // 0x2C
 };
 
 struct HSD_CameraDescFrustum {
-    char* class_name;    // 0x00
-    u16 flags;           // 0x04
-    u16 projection_type; // 0x06
-    HSD_RectS16 viewport;
-    Scissor scissor;
-    HSD_WObjDesc* eyepos;   // 0x18
-    HSD_WObjDesc* interest; // 0x1C
-    f32 roll;               // 0x20
-    Vec3* up_vector;        // 0x24
-    f32 nnear;              // 0x28
-    f32 ffar;               // 0x2C
-    f32 top;
-    f32 bottom;
-    f32 left;
-    f32 right;
+    gc_ptr32(char) class_name;    // 0x00
+    gc_be16 flags;           // 0x04
+    gc_be16 projection_type; // 0x06
+    gc_s16x4(HSD_RectS16) viewport;
+    gc_s16x4(Scissor) scissor;
+    gc_ptr32(HSD_WObjDesc) eyepos;   // 0x18
+    gc_ptr32(HSD_WObjDesc) interest; // 0x1C
+    gc_bef32 roll;               // 0x20
+    gc_ptr32(Vec3) up_vector;        // 0x24
+    gc_bef32 nnear;              // 0x28
+    gc_bef32 ffar;               // 0x2C
+    gc_bef32 top;
+    gc_bef32 bottom;
+    gc_bef32 left;
+    gc_bef32 right;
 };
 
 struct HSD_CameraDescPerspective {
-    char* class_name;    // 0x00
-    u16 flags;           // 0x04
-    u16 projection_type; // 0x06
-    HSD_RectS16 viewport;
-    Scissor scissor;
-    HSD_WObjDesc* eyepos;   // 0x18
-    HSD_WObjDesc* interest; // 0x1C
-    f32 roll;               // 0x20
-    Vec3* up_vector;        // 0x24
-    f32 nnear;              // 0x28
-    f32 ffar;               // 0x2C
-    f32 fov;
-    f32 aspect;
+    gc_ptr32(char) class_name;    // 0x00
+    gc_be16 flags;           // 0x04
+    gc_be16 projection_type; // 0x06
+    gc_s16x4(HSD_RectS16) viewport;
+    gc_s16x4(Scissor) scissor;
+    gc_ptr32(HSD_WObjDesc) eyepos;   // 0x18
+    gc_ptr32(HSD_WObjDesc) interest; // 0x1C
+    gc_bef32 roll;               // 0x20
+    gc_ptr32(Vec3) up_vector;        // 0x24
+    gc_bef32 nnear;              // 0x28
+    gc_bef32 ffar;               // 0x2C
+    gc_bef32 fov;
+    gc_bef32 aspect;
 };
 
 union HSD_CObjDesc {

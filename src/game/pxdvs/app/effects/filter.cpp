@@ -1,17 +1,16 @@
+#include <game/gcdata.h>
 #include <dolphin/types.h>
+#include <game/effects.h>
 
 #pragma pool_strings off
 
 struct GSgfxLayer;
-enum GSgfxLayerPass {
-    GS_GFX_LAYER_PASS_0
-};
 
 struct GSfilterEntry;
 struct GSmodel;
 
 struct SceneData {
-    void** models;
+    gc_ptr32(gc_ptr32(void)) models;
 };
 
 extern "C" {
@@ -36,43 +35,6 @@ void GSmodelEnableModulation(GSmodel* model, u8* color);
 void GSmodelResetPEdescr(GSmodel* model);
 void GSmodelSetPEdescr(GSmodel* model, u8* desc);
 }
-
-class GSeffect {
-public:
-    bool m_active;
-    bool m_visible;
-    GSeffect* m_next;
-
-    GSeffect();
-    bool Start();
-    void Stop();
-
-    virtual bool _start();
-    virtual void _stop();
-    virtual bool _update(f32 dt);
-    virtual void _render(GSgfxLayer* layer, GSgfxLayerPass pass);
-    virtual void _fastRender();
-    virtual ~GSeffect();
-};
-
-class filterEffect : public GSeffect {
-public:
-    virtual ~filterEffect();
-    virtual bool _start();
-    virtual void _stop();
-    virtual bool _update(f32 dt);
-    void UpdateModulation();
-    void InitModulation();
-
-    void* m_target;
-    u8 m_saved[4];
-    u8 m_resetPE;
-    u8 m_useSaved;
-    u8 m_hasSaved;
-    u8 m_pad17;
-    u8 m_modulate;
-    u8 m_color[4];
-};
 
 filterEffect::~filterEffect() {
     Stop();

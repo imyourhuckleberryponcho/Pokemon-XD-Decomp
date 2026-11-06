@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/pxdvs/app/people/peopleInfo.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -49,8 +51,11 @@ struct tagPeopleWork;
 extern "C" {
 
 extern "C++" {
-struct GSgfxLayer {
-    u8 _draft[1];
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 };
 struct GSlight {
     u8 _draft[1];
@@ -69,9 +74,6 @@ struct Hero {
     static Hero* getHeroPtr();
     u32 getFollowerResID();
     u32 getFollowerGrpID();
-};
-struct PeopleInfo {
-    u8 _draft[1];
 };
 struct PeopleWork {
     u8 _draft[1];
@@ -100,7 +102,7 @@ struct _struct_char_tbl_0xC {
 };
 extern "C" {
 s32 GSfloorGetCurrent(void);
-int GSgfxLayerFindByID(int id);
+struct GSgfxLayer* GSgfxLayerFindByID(GCsint id);
 u8 GSgfxVideoGetVsyncRate(void);
 u32 GSinputButtonsChanged(s32 pad);
 u32 GSinputButtonsPressed(s32 pad);
@@ -144,7 +146,7 @@ void peoplePartAnimationSpeakStart(tagPeopleWork* people);
 void peoplePartAnimationSpeakStop(tagPeopleWork* people);
 void peopleReadObject(s32, s32, s32);
 void peopleRemoveNeckTarget(s32, s32, f32);
-f32* peopleSearchID();
+f32* peopleSearchID(u32 searchID);
 void peopleSetDisp(s32, s32, u8);
 void peopleSetFlagOff(s32, s32, s32);
 void peopleSetMotion(u32, u32, u32, u32, u32);
@@ -164,7 +166,7 @@ void GSprimSetup2DRender(GSgfxLayer* layer);
 static void _peopleViewerDrawParams();
 static s32 _peopleViewerFallMotion();
 static void _peopleViewerFallReady(float p0);
-static struct _struct_motiontype_str_0x20* _peopleViewerGetActName(long p0);
+static struct _struct_motiontype_str_0x20* _peopleViewerGetActName(s32 p0);
 static void _peopleViewerGetWalkAndRunInfo();
 static void _peopleViewerInitChara();
 static void _peopleViewerInit();
@@ -565,7 +567,7 @@ extern "C++" static void _peopleViewerInit();
 extern "C++" static void _peopleViewerMain();
 extern "C" void peopleViewerSetHeroPos();
 extern "C++" static void _peopleViewerGetWalkAndRunInfo();
-extern "C++" static struct _struct_motiontype_str_0x20* _peopleViewerGetActName(long id);
+extern "C++" static struct _struct_motiontype_str_0x20* _peopleViewerGetActName(s32 id);
 extern "C++" static void _peopleViewerDrawParams();
 extern "C" s32 peopleViewerDisplayDaemonInfo(void *p0);
 extern "C" s32 peopleViewerDisplayRandWalk(void *p0);
@@ -620,7 +622,7 @@ s32 peopleViewerDisplayAnimRate(s32* pw, f32 p0) {
     if (peopleViewerIsCheckNpc(pw) == 0) {
         return 0;
     }
-    gimmickBoxDrawString((long)(0x1E), (long)(5), (_struct_motiontype_str_0x20 *)("animRate"));
+    gimmickBoxDrawString((s32)(0x1E), (s32)(5), (_struct_motiontype_str_0x20 *)("animRate"));
     gimmickBoxDrawFloat(0x26, 5, p0);
     return 1;
 }
@@ -631,7 +633,7 @@ s32 peopleViewerDisplayMoveRotInfo(s32* pw, f32 p0) {
     if (peopleViewerIsCheckNpc(pw) == 0) {
         return 0;
     }
-    gimmickBoxDrawString((long)(0x1E), (long)(0xB), (_struct_motiontype_str_0x20 *)("dest_diff_rot"));
+    gimmickBoxDrawString((s32)(0x1E), (s32)(0xB), (_struct_motiontype_str_0x20 *)("dest_diff_rot"));
     gimmickBoxDrawFloat(0x28, 0xB, p0);
     return 1;
 }
@@ -642,10 +644,10 @@ s32 peopleViewerDisplayRandWalk(void *p0) {
     if (peopleViewerIsCheckNpc((s32 *) p0) == 0) {
         return 0;
     }
-    gimmickBoxDrawString((long)(0), (long)(6), (_struct_motiontype_str_0x20 *)("randWait"));
+    gimmickBoxDrawString((s32)(0), (s32)(6), (_struct_motiontype_str_0x20 *)("randWait"));
     gimmickBoxDrawFloat(0xA, 6, M2C_FIELD(p0, f32 *, 0x90));
     if ((p0 != NULL) && ((_GSmodel *) M2C_FIELD(p0, _GSmodel **, 8) != NULL)) {
-        gimmickBoxDrawString((long)(0), (long)(7), (_struct_motiontype_str_0x20 *)("AnimFrame"));
+        gimmickBoxDrawString((s32)(0), (s32)(7), (_struct_motiontype_str_0x20 *)("AnimFrame"));
         gimmickBoxDrawFloat(0xA, 7, GSmodelGetAnimFrame((_GSmodel*)(M2C_FIELD(p0, _GSmodel **, 8))));
     }
     return 1;
@@ -684,28 +686,28 @@ static void _peopleViewerDrawParams() {
     GSprimSetBlendMode(1);
     GXColor back = {0x20, 0x20, 0xFF, 0x20};
     GSprimDraw2DQuad(back, 10.0f, 10.0f, 630.0f, 72.0f);
-    gimmickBoxDrawString((long)(0), (long)(0), (_struct_motiontype_str_0x20 *)("Character"));
+    gimmickBoxDrawString((s32)(0), (s32)(0), (_struct_motiontype_str_0x20 *)("Character"));
     gimmickBoxDrawString(0, 1, (struct _struct_motiontype_str_0x20*)char_tbl[m_char_number].name);
     gimmickBoxDrawInt(0, 2, m_char_number);
-    gimmickBoxDrawString((long)(0xC), (long)(0), (_struct_motiontype_str_0x20 *)("Animation"));
+    gimmickBoxDrawString((s32)(0xC), (s32)(0), (_struct_motiontype_str_0x20 *)("Animation"));
     GSmodelGetAnimIndex((_GSmodel*)(M2C_FIELD(m_pChara, _GSmodel **, 8)), (u32*)(&sp10), (u32*)(&spC));
     if ((s32) sp10 < 0) {
-        gimmickBoxDrawString((long)(0xC), (long)(1), (_struct_motiontype_str_0x20 *)("NONE"));
+        gimmickBoxDrawString((s32)(0xC), (s32)(1), (_struct_motiontype_str_0x20 *)("NONE"));
     } else {
         gimmickBoxDrawString(0xC, 1, _peopleViewerGetActName((s32) sp10));
     }
     if ((s32) spC < 0) {
-        gimmickBoxDrawString((long)(0xC), (long)(2), (_struct_motiontype_str_0x20 *)("NONE"));
+        gimmickBoxDrawString((s32)(0xC), (s32)(2), (_struct_motiontype_str_0x20 *)("NONE"));
     } else {
         gimmickBoxDrawString(0xC, 2, _peopleViewerGetActName((s32) spC));
     }
     temp_r3 = GSmodelGetAnimType((_GSmodel*)(M2C_FIELD(m_pChara, _GSmodel **, 8)));
     if (temp_r3 == 1) {
-        gimmickBoxDrawString((long)(0xC), (long)(3), (_struct_motiontype_str_0x20 *)("Loop"));
+        gimmickBoxDrawString((s32)(0xC), (s32)(3), (_struct_motiontype_str_0x20 *)("Loop"));
     } else if (temp_r3 == 0) {
-        gimmickBoxDrawString((long)(0xC), (long)(3), (_struct_motiontype_str_0x20 *)("Once"));
+        gimmickBoxDrawString((s32)(0xC), (s32)(3), (_struct_motiontype_str_0x20 *)("Once"));
     } else {
-        gimmickBoxDrawString((long)(0xC), (long)(3), (_struct_motiontype_str_0x20 *)("Error"));
+        gimmickBoxDrawString((s32)(0xC), (s32)(3), (_struct_motiontype_str_0x20 *)("Error"));
     }
     gimmickBoxDrawString(0x18, 0, (_struct_motiontype_str_0x20 *)("Motion Type"));
     gimmickBoxDrawString(0x18, 1, &motiontype_str[m_current_motion_type]);
@@ -736,13 +738,13 @@ static void _peopleViewerDrawParams() {
     gimmickBoxDrawFloat(0, 0xF, M2C_FIELD(m_pChara, f32 *, 0x68));
     gimmickBoxDrawFloat(0, 0x10, M2C_FIELD(m_pChara, f32 *, 0x6C));
     gimmickBoxDrawFloat(0, 0x11, M2C_FIELD(m_pChara, f32 *, 0x70));
-    gimmickBoxDrawString((long)(0), (long)(0x13), (_struct_motiontype_str_0x20 *)("randRadius"));
+    gimmickBoxDrawString((s32)(0), (s32)(0x13), (_struct_motiontype_str_0x20 *)("randRadius"));
     gimmickBoxDrawFloat(0, 0x14, M2C_FIELD(m_pChara, f32 *, 0x8C));
-    gimmickBoxDrawString((long)(0), (long)(0x16), (_struct_motiontype_str_0x20 *)("randCenter"));
+    gimmickBoxDrawString((s32)(0), (s32)(0x16), (_struct_motiontype_str_0x20 *)("randCenter"));
     gimmickBoxDrawFloat(0, 0x17, M2C_FIELD(m_pChara, f32 *, 0x80));
     gimmickBoxDrawFloat(0, 0x18, M2C_FIELD(m_pChara, f32 *, 0x84));
     gimmickBoxDrawFloat(0, 0x19, M2C_FIELD(m_pChara, f32 *, 0x88));
-    gimmickBoxDrawString((long)(0), (long)(0x1B), (_struct_motiontype_str_0x20 *)("distance: from pos to target"));
+    gimmickBoxDrawString((s32)(0), (s32)(0x1B), (_struct_motiontype_str_0x20 *)("distance: from pos to target"));
     gimmickBoxDrawFloat(0, 0x1C, PSVECDistance((const register Vec*)(m_pChara + 0x68), (const register Vec*)(peopleBiosGetPosPtr((PeopleWork*)((PeopleWork *) m_pChara)))));
     if (GSmodelIsAnimating((_GSmodel*)(M2C_FIELD(m_pChara, _GSmodel **, 8)))) {
         gimmickBoxDrawString(0, 3, (_struct_motiontype_str_0x20 *)("Animating"));
@@ -753,7 +755,7 @@ static void _peopleViewerDrawParams() {
 }
 
 extern "C++" {
-static struct _struct_motiontype_str_0x20* _peopleViewerGetActName(long id) {
+static struct _struct_motiontype_str_0x20* _peopleViewerGetActName(s32 id) {
     for (s32 i = 0; i < 0x88; i++) {
         if ((u32)id == anim_str[i].unk4) {
             return (_struct_motiontype_str_0x20*)anim_str[i].name;
@@ -924,12 +926,10 @@ static void _peopleViewerInit() {
         peopleSetFlagOff(0xFA1, 0, 0x100);
         peopleSetFlagOff(0xFA1, 0, 0x400);
         m_current_motion_type = 0;
-        peopleGetHumanID(0xFA1, 0);
-        temp_r3_2 = (tagPeopleWork *)(peopleSearchID());
+        temp_r3_2 = (tagPeopleWork *)(peopleSearchID(peopleGetHumanID(0xFA1, 0)));
         m_pChara = temp_r3_2;
         if (temp_r3_2 != NULL) {
-            peopleGetHumanID(0, 0x64);
-            temp_r3_3 = peopleSearchID();
+            temp_r3_3 = peopleSearchID(peopleGetHumanID(0, 0x64));
             m_pKen = temp_r3_3;
             if (temp_r3_3 != NULL) {
                 peopleGetPos(0, 0x64, (GSvec*)(&init_hero_pos));

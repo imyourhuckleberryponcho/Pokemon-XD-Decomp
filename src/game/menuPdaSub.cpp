@@ -1,17 +1,40 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
 
 #pragma peephole off
 
 struct tagWINDOW_WORK {
-    u8 unk0[0x93];
+    u8 unk0[0xC];
+    void* slotC;
+    void* slot10;
+    void* slot14;
+    u8 pad18[0xC];
+    void* slot24;
+    void* slot28;
+    void* slot2C;
+    u8 pad30[0x38];
+    void* slot68;
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    void* slot7C;
+    void* slot80;
+    void* slot84;
+    u8 pad88[0xB];
     u8 alpha;
 };
 
 struct tagSPRITE_WORK {
-    u8 unk0[4];
+    void* unk0;
     s8 flags;
-    u8 unk5[0x62];
+    u8 unk5[0x7];
+    void* slotC;
+    u8 pad10[0x38];
+    void* slot48;
+    void* slot4C;
+    u8 pad50[0x17];
     u8 alpha;
 };
 
@@ -23,36 +46,22 @@ struct MenuItem {
 
 struct GSgfxVF;
 
-class GSgfxLayer {
+enum GSgfxLayerID {};
+enum GSgfxLayerType {};
+#include <game/gsgfxlayer.h>
+
+struct GSgfxLayer : public GSgfxLayerData {
 public:
     void setRenderStateAndSelect(GSgfxVF* vf);
     void beginSurface(u16 count);
     void endSurface();
 
-    u8 unk0[0x1644];
-    s32 unk1644;
-    s32 unk1648;
-    s32 unk164C;
-    s32 unk1650;
-    u8 unk1654[0x16A8 - 0x1654];
-    u32 unk16A8;
-    u8 unk16AC[0x170C - 0x16AC];
-    u32 unk170C;
-    u8 unk1710[0x1760 - 0x1710];
-    u32 unk1760;
-    u8 unk1764[0x17C4 - 0x1764];
-    u32 unk17C4;
-    u8 unk17C8[0x1818 - 0x17C8];
-    u8 surfaces[2][0xBC];
-    void* curSurface;
-    s32 curSurfaceIdx;
-    u32 unk1998;
 };
 
 extern "C" {
 f32 timeGetLastFrameSec(void);
 s32 winSpriteGetLayerID(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
-GSgfxLayer* GSgfxLayerFindByID(s32 id);
+GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 MenuItem* menuItemBiosGetPtr(s32 menuID, s32 itemID);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 u8 menuSubAnimAlpha(tagWINDOW_WORK* window);
@@ -138,19 +147,19 @@ void menuPdaSubScrollBar(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32 men
     y0 = scale * (f32)*top;
     y1 = scale * (f32)(*top + visible);
 
-    if (layer->curSurfaceIdx != 1) {
-        layer->curSurfaceIdx = 1;
-        layer->curSurface = layer->surfaces[layer->curSurfaceIdx];
+    if ((*(s32*)&layer->curPass) != 1) {
+        (*(s32*)&layer->curPass) = 1;
+        layer->curFifo = &layer->passes[layer->curPass];
     }
-    layer->unk1644 = 1;
-    layer->unk1648 = 4;
-    layer->unk164C = 5;
-    layer->unk1650 = 5;
-    layer->unk170C |= 1;
-    layer->unk16A8 |= 0x40;
-    layer->unk17C4 |= 1;
-    layer->unk1760 |= 0x40;
-    layer->unk1998 = 0x80;
+    (*(s32*)&layer->hw.blend[0]) = 1;
+    (*(s32*)&layer->hw.blend[1]) = 4;
+    (*(s32*)&layer->hw.blend[2]) = 5;
+    (*(s32*)&layer->hw.blend[3]) = 5;
+    (*(u32*)&layer->dirty[0].pe) |= 1;
+    (*(u32*)&layer->dirty[0].groups) |= 0x40;
+    (*(u32*)&layer->dirty[1].pe) |= 1;
+    (*(u32*)&layer->dirty[1].groups) |= 0x40;
+    (*(u32*)&layer->unk1998) = 0x80;
     layer->setRenderStateAndSelect(GSgfxVFGetPredef(3));
     layer->beginSurface(4);
     GXWGFifo.s16 = 1;

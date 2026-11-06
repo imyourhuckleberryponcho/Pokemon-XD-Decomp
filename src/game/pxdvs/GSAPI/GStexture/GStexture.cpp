@@ -4,29 +4,7 @@
 
 #pragma pool_strings off
 
-struct GStexture {
-    u16 width;
-    u16 height;
-    u8 bitsPerPixel;
-    u8 mipLevels;
-    u8 inUse;
-    u8 dirty;
-    s32 format;
-    u32 tlutFormat;
-    u32 wrapS;
-    u32 wrapT;
-    s32 minFilter;
-    s32 magFilter;
-    u32 mipFilter;
-    void* memHandle;
-    void* mipData[8];
-    void* tlutData;
-    u32 totalSize;
-    u16 refCount;
-    u16 pad52;
-    GXTexObj texObj;
-    GXTlutObj tlutObj;
-};
+#include <game/gstexture.h>
 
 extern "C" {
 void* memcpy(void*, const void*, u32);
@@ -44,6 +22,62 @@ void GSgfxVideoGetEFBSize(u16* w, u16* h);
 static u16 _texXformBuf[0xA00];
 static GStexture* _textureStructList;
 static u32 _textureStructCount;
+
+#ifndef __MWERKS__
+static_assert(sizeof(GStextureDisc) == 0x80, "GStextureDisc");
+#define GSTEXTURE_PC_LOADED 0x5043
+
+extern "C" GStexture* GStextureResolve(void* p)
+{
+    GStextureDisc* d = (GStextureDisc*)p;
+    if (d != 0 && d->pcMagic == GSTEXTURE_PC_MAGIC && d->pcRecord != 0 && d->pcRecord->pad52 == GSTEXTURE_PC_LOADED &&
+        d->pcRecord->pcDisc == p) {
+        return d->pcRecord;
+    }
+    return (GStexture*)p;
+}
+
+static GStexture* _textureFromDisc(GStextureDisc* d)
+{
+    GStexture* tex = GStextureResolve(d);
+    s32 i;
+
+    if (tex != (GStexture*)d) {
+        return tex;
+    }
+    tex = (GStexture*)GSmemAlloc(sizeof(GStexture));
+    if (tex == 0) {
+        return 0;
+    }
+    memset(tex, 0, sizeof(GStexture));
+    tex->width = d->width;
+    tex->height = d->height;
+    tex->bitsPerPixel = d->bitsPerPixel;
+    tex->mipLevels = d->mipLevels;
+    tex->inUse = d->inUse;
+    tex->dirty = d->dirty;
+    tex->format = d->format;
+    tex->tlutFormat = d->tlutFormat;
+    tex->wrapS = d->wrapS;
+    tex->wrapT = d->wrapT;
+    tex->minFilter = d->minFilter;
+    tex->magFilter = d->magFilter;
+    tex->mipFilter = d->mipFilter;
+    for (i = 0; i < tex->mipLevels && i < 8; i++) {
+        tex->mipData[i] = (u8*)d + (u32)d->mipData[i];
+    }
+    if ((u32)d->tlutData != 0) {
+        tex->tlutData = (u8*)d + (u32)d->tlutData;
+    }
+    tex->totalSize = d->totalSize;
+    tex->refCount = d->refCount;
+    tex->pad52 = GSTEXTURE_PC_LOADED;
+    tex->pcDisc = d;
+    d->pcRecord = tex;
+    d->pcMagic = GSTEXTURE_PC_MAGIC;
+    return tex;
+}
+#endif
 
 extern "C" {
 
@@ -66,28 +100,25 @@ void GStextureConvertToHW(GStexture* tex)
         for (x = 0, off = 0; x < tex->width; x += 4) {
             src = (u16*)((u8*)data + y * tex->width * 2 + off);
             off += 8;
-            dst[0] = src[0];
-            dst[1] = src[1];
-            dst[2] = src[2];
-            dst[3] = src[3];
-            src = (u16*)((u8*)src + (tex->width * 2 - 8));
-            src += 4;
-            dst[4] = src[0];
-            dst[5] = src[1];
-            dst[6] = src[2];
-            dst[7] = src[3];
-            src += 4;
-            src = (u16*)((u8*)src + (tex->width * 2 - 8));
-            dst[8] = src[0];
-            dst[9] = src[1];
-            dst[10] = src[2];
-            dst[11] = src[3];
-            src += 4;
-            src = (u16*)((u8*)src + (tex->width * 2 - 8));
-            dst[12] = src[0];
-            dst[13] = src[1];
-            dst[14] = src[2];
-            dst[15] = src[3];
+            dst[0] = *src++;
+            dst[1] = *src++;
+            dst[2] = *src++;
+            dst[3] = *src++;
+            src = (u16*)((u8*)src + tex->width * 2 - 8);
+            dst[4] = *src++;
+            dst[5] = *src++;
+            dst[6] = *src++;
+            dst[7] = *src++;
+            src = (u16*)((u8*)src + tex->width * 2 - 8);
+            dst[8] = *src++;
+            dst[9] = *src++;
+            dst[10] = *src++;
+            dst[11] = *src++;
+            src = (u16*)((u8*)src + tex->width * 2 - 8);
+            dst[12] = *src++;
+            dst[13] = *src++;
+            dst[14] = *src++;
+            dst[15] = *src++;
             dst += 16;
         }
         memcpy((u8*)data + y * tex->width * 2, _texXformBuf, tex->width * 8);
@@ -101,7 +132,6 @@ void GStextureConvertFromHW(GStexture* tex)
 {
     u16* data;
     s32 y;
-    u16* buf;
     s32 x;
     u16* src;
     u16* dst;
@@ -112,36 +142,35 @@ void GStextureConvertFromHW(GStexture* tex)
     {
         {
             tex->refCount++;
-            buf = _texXformBuf;
             data = (u16*)tex->mipData[0];
             for (y = 0; y < tex->height; y += 4) {
-                dst = buf;
+                dst = _texXformBuf;
                 src = (u16*)((u8*)data + y * tex->width * 2);
                 for (x = 0; x < tex->width; x += 4) {
                     u16* d = dst;
-                    d[0] = src[0];
-                    d[1] = src[1];
-                    d[2] = src[2];
-                    d[3] = src[3];
-                    d = (u16*)((u8*)(d + 4) + (tex->width * 2 - 8));
-                    d[0] = src[4];
-                    d[1] = src[5];
-                    d[2] = src[6];
-                    d[3] = src[7];
-                    d = (u16*)((u8*)(d + 4) + (tex->width * 2 - 8));
-                    d[0] = src[8];
-                    d[1] = src[9];
-                    d[2] = src[10];
-                    d[3] = src[11];
-                    d = (u16*)((u8*)(d + 4) + (tex->width * 2 - 8));
-                    d[0] = src[12];
-                    d[1] = src[13];
-                    d[2] = src[14];
-                    d[3] = src[15];
+                    *d++ = src[0];
+                    *d++ = src[1];
+                    *d++ = src[2];
+                    *d++ = src[3];
+                    d = (u16*)((u8*)d + tex->width * 2 - 8);
+                    *d++ = src[4];
+                    *d++ = src[5];
+                    *d++ = src[6];
+                    *d++ = src[7];
+                    d = (u16*)((u8*)d + tex->width * 2 - 8);
+                    *d++ = src[8];
+                    *d++ = src[9];
+                    *d++ = src[10];
+                    *d++ = src[11];
+                    d = (u16*)((u8*)d + tex->width * 2 - 8);
+                    *d++ = src[12];
+                    *d++ = src[13];
+                    *d++ = src[14];
+                    *d++ = src[15];
                     src += 16;
                     dst += 4;
                 }
-                memcpy((u8*)data + y * tex->width * 2, buf, tex->width * 8);
+                memcpy((u8*)data + y * tex->width * 2, _texXformBuf, tex->width * 8);
             }
             DCStoreRange(tex->mipData[0], tex->totalSize);
             GXInvalidateTexAll();
@@ -319,6 +348,9 @@ void GStextureSetWrap(GStexture* tex, u32 wrapS, u32 wrapT)
 
 void GStextureFree(GStexture* tex)
 {
+#ifndef __MWERKS__
+    tex = GStextureResolve(tex);
+#endif
     if (tex->inUse != 0) {
         GSgfxRenderWaitForDrawComplete();
         tex->inUse = 0;
@@ -326,6 +358,13 @@ void GStextureFree(GStexture* tex)
             GSmemFree(tex->memHandle);
         }
     }
+#ifndef __MWERKS__
+    if (tex->pad52 == GSTEXTURE_PC_LOADED) {
+        GSgfxRenderWaitForDrawComplete();
+        ((GStextureDisc*)tex->pcDisc)->pcMagic = 0;
+        GSmemFree(tex);
+    }
+#endif
 }
 
 static inline s32 _textureGetGXFormat(GStexture* tex)
@@ -491,7 +530,7 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void
     size = (tex->bitsPerPixel * (width * height)) >> 3;
     _textureCalcSize(tex, levels, size);
     if (tlutEntries != 0) {
-        if (tlutFormat > 0 && tlutFormat < 4) {
+        if (tlutFormat != 0 && tlutFormat >= 0 && tlutFormat < 4) {
             tex->totalSize += (tlutEntries << 4) >> 3;
         } else {
             return 0;
@@ -692,6 +731,7 @@ GStexture* GStextureLoad(GStexture* tex)
     int j;
     GXTexFilter min;
 
+#ifdef __MWERKS__
     for (i = 0; i < tex->mipLevels; i++) {
         tex->mipData[i] = (u8*)tex + (u32)tex->mipData[i];
     }
@@ -701,6 +741,12 @@ GStexture* GStextureLoad(GStexture* tex)
     if (tex->tlutData != 0) {
         tex->tlutData = (u8*)tex + (u32)tex->tlutData;
     }
+#else
+    tex = _textureFromDisc((GStextureDisc*)tex);
+    if (tex == 0) {
+        return 0;
+    }
+#endif
     _textureInitObjs(tex);
     _textureApplyWrap(tex);
     switch (tex->mipFilter) {
@@ -740,7 +786,11 @@ void GStextureInit(u32 count)
     u32 i;
 
     _textureStructCount = count;
+#ifdef __MWERKS__
     _textureStructList = (GStexture*)GSmemAlloc(count << 7);
+#else
+    _textureStructList = (GStexture*)GSmemAlloc(count * sizeof(GStexture));
+#endif
     if (_textureStructList != 0) {
         for (i = 0; i < _textureStructCount; i++) {
             _textureStructList[i].inUse = 0;

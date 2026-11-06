@@ -1,4 +1,6 @@
+#include <game/pcret.h>
 #include <game/pxdvs/app/hero/hero.hpp>
+#include <game/statusval.h>
 #include <game/pxdvs/app/memcard/savedata.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
@@ -19,7 +21,7 @@ extern u32 darkPokemonList_number;
 DarkPokemon* darkPokemonGetDarkPokemon(u32 id);
 DeckDarkPokemon* deckGetDeckDarkPokemon(u32 id);
 u32 deckGetDarkPokemonSize(void);
-u32 fightFloorGetStatus(s32, s32, s32, s32);
+StatusU32 fightFloorGetStatus(s32, s32, s32, s32);
 u16* darkPokemonListBiosGetDPList(u16 index);
 u16 darkPokemonBiosGetInitDarkPoint(u16 id);
 
@@ -51,7 +53,7 @@ u32 darkpokemonBiosGetScenarioNum(void) {
     return count;
 }
 
-u16 darkPokemonBiosGetSteps(u16 id) {
+PCRET(u16) darkPokemonBiosGetSteps(u16 id) {
     DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
     if (dark == NULL) {
         return 0;
@@ -197,7 +199,7 @@ u8 darkPokemonBiosGetHokakuritu(u16 id) {
     return 0;
 }
 
-u16 darkPokemonBiosGetDarkPoint(u16 id) { return darkPokemonBiosGetInitDarkPoint(id); }
+PCRET(u16) darkPokemonBiosGetDarkPoint(u16 id) { return darkPokemonBiosGetInitDarkPoint(id); }
 
 u16 darkPokemonBiosGetInitDarkPoint(u16 id) {
     DeckDarkPokemon* deck = deckGetDeckDarkPokemon(id);

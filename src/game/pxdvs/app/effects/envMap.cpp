@@ -1,9 +1,7 @@
 #include <dolphin/types.h>
+#include <game/effects.h>
 
 struct GSgfxLayer;
-enum GSgfxLayerPass {
-    GS_GFX_LAYER_PASS_0
-};
 
 struct GSmodel;
 
@@ -13,37 +11,6 @@ bool GSmodelIsEnvMapEnabled(GSmodel* model);
 void GSmodelEnableEnvMap(GSmodel* model, u32 texture, u32 texture2, f32 blend);
 void GSmodelSetEnvMapBlendValue(GSmodel* model, f32 blend);
 }
-
-class GSeffect {
-public:
-    bool m_active;
-    bool m_visible;
-    GSeffect* m_next;
-
-    GSeffect();
-    bool Start();
-    void Stop();
-
-    virtual bool _start();
-    virtual void _stop();
-    virtual bool _update(f32 dt);
-    virtual void _render(GSgfxLayer* layer, GSgfxLayerPass pass);
-    virtual void _fastRender();
-    virtual ~GSeffect();
-};
-
-class envMapEffect : public GSeffect {
-public:
-    virtual ~envMapEffect();
-    virtual bool _start();
-    virtual void _stop();
-    virtual bool _update(f32 dt);
-
-    GSmodel* m_model;
-    u32 m_texture;
-    u32 m_texture2;
-    f32 m_blend;
-};
 
 envMapEffect::~envMapEffect() {
     Stop();

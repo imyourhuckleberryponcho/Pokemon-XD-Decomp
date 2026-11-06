@@ -12,4 +12,6 @@ static inline GSmtx GSmtxMakeIdentity() {
     return mtx;
 }
 
+extern "C" {
 GSmtx mtxIdent = GSmtxMakeIdentity();
+}

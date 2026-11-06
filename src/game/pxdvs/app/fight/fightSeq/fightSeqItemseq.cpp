@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
+#include <game/fightseqscript.h>
 
 struct Pokemon;
 struct FightOutPokemon;
@@ -15,7 +18,7 @@ public:
     u8 getRevers() const;
 };
 
-class DarkPokemon {
+struct DarkPokemon {
 public:
     void setPlace(darkPokemonWhere where, u8 flag);
     void setReversPattern(u8 pattern);
@@ -28,8 +31,10 @@ extern u8 WildPokemonCatchFlag;
 extern u8 ServerWork[8];
 extern u32 GetFailMsgTbl[];
 extern u32 GetYaseiFailMsgTbl[];
+#ifdef __MWERKS__
 extern u8 ITEM_MonsGetSuccess[];
 extern u8 ITEM_MonsGetFail[];
+#endif
 
 u8* fightSeq_GetWazaSeq(void);
 void fightSeq_NextWazaSeq(s32 size);
@@ -37,7 +42,12 @@ void fightSeq_JumpWazaSeq(void* target);
 FightOutPokemon* fightTargetGetPtrAsNowFightType(u16 slotType, void* ptr);
 s32 fightFloor_GetFightType(void* floor);
 u8 fightFloor_GetFightKind(void* floor);
+#ifdef __MWERKS__
 u32 fightFloor_GetEncountFloorId(void);
+#else
+u32 fightFloor_GetEncountFloorId(void* floor);
+#define fightFloor_GetEncountFloorId() fightFloor_GetEncountFloorId(0)
+#endif
 u16 fightFloor_GetEncountDataId(void* floor);
 u8 fightFloor_GetTikeiDataId(void* floor);
 u8 fightFloor_GetFightTypeEntryPokemonNum(void* floor);
@@ -91,7 +101,7 @@ u8 darkPokemonBiosGetLevel(u16 id);
 u8 darkPokemonBiosGetHokakuritu(u16 id);
 u8 darkPokemonBiosGetSnatchSuccessFlag(u16 id);
 DarkPokemon* darkPokemonGetDarkPokemon(u32 id);
-s16 heroCatchPokemon(Hero* hero, Pokemon* pokemon, u32 floorId, u8 ball, u8 allowPCBox);
+s16 heroCatchPokemon(Hero* hero, Pokemon* pokemon, u32 floorId, PCARG(u8, u32) ball, u8 allowPCBox);
 Pokemon* heroGetStatus(Hero* hero, u32 selector, u16 index);
 FightPokemon* fightTrainerSearchInvalidFightPokemonPtr(FIGHT_TRAINER* trainer, u16 num);
 u8 fightTrainerIsGcHero(FIGHT_TRAINER* trainer);
@@ -104,7 +114,7 @@ void fightMsgctrlSetValue(s32 id, u32 value);
 u32 fightMenuOpenMsg(u32 msg);
 void fightMenuCloseMsg(void);
 u8 fightSeqOpenMsg(u32 msgId);
-u32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* p, u8 type, bool flag);
+u32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* p, PCARG(u8, u16) type, bool flag);
 void fightSeqKizetuInit(FightOutPokemon* p);
 void fightSeqCheckSetHensinBuffToMotoFightPokemon(FightOutPokemon* p, u16 id);
 void fightMainAllCamera(u8 a, u8 b);
@@ -112,9 +122,9 @@ u32 GSthreadGetCurrentThread(void);
 void menuCloseCustom(s32 menuID, s32 a, s32 b);
 s32 winMsgOpenField(u32 msg, bool a, bool b);
 s8 menuSubOpenYesNoField(void);
-s32 menuNameEntryOpen(s32 mode, s32 param);
+s32 menuNameEntryOpen(s32 mode, GCsptr param);
 char* GSmsgGetGSchar(u32 msg);
-void soundOpenPlayME(u32 id, u32 a, u8 volume);
+void soundOpenPlayME(u32 id, u32 a, PCARG(u8, s32) volume);
 u32 HSD_Rand(void);
 double sqrt(double x);
 
@@ -209,7 +219,7 @@ void WS_ADD_POKE(void) {
             fightSeqOpenMsg(0x5002);
             fightMenuCloseMsg();
         }
-        fightSeq_JumpWazaSeq(*(void**)(seq + 1));
+        fightSeq_JumpWazaSeq(WS_RDPTR(seq + 1));
     }
 }
 

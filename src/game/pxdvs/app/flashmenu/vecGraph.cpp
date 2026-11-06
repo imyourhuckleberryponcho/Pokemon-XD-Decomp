@@ -1,3 +1,6 @@
+#ifndef __MWERKS__
+#include <game/psq.h>
+#endif
 #include <dolphin/types.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -26,7 +29,7 @@ extern "C" {
 double sin(double);
 double cos(double);
 double acos(double);
-extern unsigned long __float_nan[];
+extern u32 __float_nan[];
 }
 
 static inline int vgFPClassify(f32 x) {
@@ -70,7 +73,11 @@ struct GSvec2 {
 
 static inline f32 __OSs16tof32(register const s16* arg) {
     register f32 ret;
+#ifdef __MWERKS__
     asm { psq_l ret, 0(arg), 1, 5 }
+#else
+    ret = PSQ_LOAD(arg, 0, 5);
+#endif
     return ret;
 }
 
@@ -79,7 +86,11 @@ static inline f32 OSs16tof32(s16 v) {
 }
 
 static inline void __OSf32tos16(register f32 arg, volatile register s16* out) {
+#ifdef __MWERKS__
     asm { psq_st arg, 0(out), 1, 5 }
+#else
+    PSQ_STORE(out, 0, arg, 5);
+#endif
 }
 
 static inline s16 OSf32tos16(f32 in) {
@@ -93,41 +104,52 @@ struct GSgfxLayer;
 struct FLASHMATRIXF {
     f32 a, b, c, d, tx, ty;
 };
+#include <game/gcdata.h>
+#include <game/gcptr.h>
 struct FLASHMATRIX {
-    s32 a, b, c, d, tx, ty;
+    gc_bes32 a, b, c, d, tx, ty;
 };
 struct FLASHCXFORM {
-    s16 ra, rb, ga, gb, ba, bb, aa, ab;
+    gc_bes16 ra, rb, ga, gb, ba, bb, aa, ab;
 };
 
 struct _SHAPERECORD;
 struct _FILLSTYLEARRAY {
-    u32 count;
-    u8* list;
+    gc_be32 count;
+    gc_ptr32(u8) list;
 };
 struct _LINESTYLEARRAY {
-    u32 count;
-    u8* list;
+    gc_be32 count;
+    gc_ptr32(u8) list;
 };
 
 struct SHAPEDATA {
     u8 flags;
     u8 pad01[3];
-    s32 x;
-    s32 y;
+    gc_bes32 x;
+    gc_bes32 y;
     u8 line;
     u8 fill;
     u8 lineWidth;
     u8 pad0F[5];
-    u32 newStyles;
+    gc_be32 newStyles;
 };
 
 struct _SHAPERECORD {
     u8 type;
     u8 pad1[3];
-    void* data;
-    _SHAPERECORD* next;
+    gc_ptr32(void) data;
+    gc_ptr32(_SHAPERECORD) next;
 };
+#ifdef __MWERKS__
+typedef s32 vg_s32;
+#define VG_VOLATILE volatile
+#define VG_STYLES(sd) ((u8*)(sd)->newStyles)
+#else
+typedef gc_bes32 vg_s32;
+#define VG_VOLATILE
+#define VG_STYLES(sd) ((u8*)(uintptr_t)(u32)(sd)->newStyles)
+#endif
 
 struct VEC_RECT {
     s16 x0, y0, x1, y1;
@@ -141,7 +163,7 @@ struct VEC_GRAPH_DATA {
     s16 minX, minY, maxX, maxY;
     s16 cx, cy, w, h;
     s32 color;
-    s32 cxform;
+    GCsptr cxform;
     s32 color2;
     u32 numStyles;
     u8* styles;
@@ -167,7 +189,7 @@ struct LPOINT {
 };
 
 extern "C" {
-int GSgfxLayerFindByID(int id);
+struct GSgfxLayer* GSgfxLayerFindByID(GCsint id);
 int GSgfxLayerGetActive();
 void GSprimDraw2DLineListC(void* verts, u32 count, void* colors);
 struct SDCol4 {
@@ -177,18 +199,32 @@ struct SDAdd4 {
     s16 v[4];
 };
 void GSprimDraw2DTexQuad4V(GSvec2* pos, GSvec2* uv, GStexture* tex, SDCol4 col);
+#ifdef __MWERKS__
 void GSprimDraw2DTexQuad4VCA(GSvec2* pos, GSvec2* uv, GStexture* tex, SDCol4 col, SDAdd4 add);
+#define VG_ADD4(a) (a)
+#else
+void GSprimDraw2DTexQuad4VCA(GSvec2* pos, GSvec2* uv, GStexture* tex, SDCol4 col, SDAdd4* add);
+#define VG_ADD4(a) (&(a))
+#endif
 void GSprimSetLineWidth(f32 w);
 void GSprimSetQuadVertexOrder(s32 order);
 void flcalcBezier3(GSvec2* out, GSvec2* pts, f32 t);
 void flcalcMatrix(GSvec2* out, FLASHMATRIXF* m, GSvec2* in);
 void flcalcMulMatrixf(FLASHMATRIXF* out, FLASHMATRIXF* a, FLASHMATRIXF* b);
-s32 flcalcMultiTransformColor(s32 cx, s32 color);
-GStexture* FlashSystemGetGStexture(u16 id);
+s32 flcalcMultiTransformColor(GCsptr cx, s32 color);
+GStexture* FlashSystemGetGStexture(u32 flashId, s32 texId);
 }
 void GSprimSetup2DRender(GSgfxLayer* layer);
 
 #define AT(T, p, o) (*(T*)((u8*)(p) + (o)))
+#ifdef __MWERKS__
+#define VL(T, l, off, m) AT(T, l, off)
+#else
+enum GSgfxLayerID { GSgfxLayerID_vecGraph };
+enum GSgfxLayerType { GSgfxLayerType_vecGraph };
+#include <game/gsgfxlayer.h>
+#define VL(T, l, off, m) (*(T*)&((GSgfxLayerData*)(l))->m)
+#endif
 
 static s32 bit_value[0x20] = {
     1,          2,          4,          8,          0x10,       0x20,       0x40,       0x80,
@@ -212,12 +248,12 @@ static s32 _dstmask = 5;
 static void SBscan(void);
 static void SBdec(u32 mask, s16 x, u32 n);
 static void SBline(GSvec2* p0, GSvec2* p1);
-static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long i);
-static void getCrossPoint(long a, short b, short c, short d, short e, short f, VEC_GRAPH_DATA* g);
+static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, s32 i);
+static void getCrossPoint(s32 a, short b, short c, short d, short e, short f, VEC_GRAPH_DATA* g);
 static void gradientline(short x0, short x1, short y, VEC_GRAPH_DATA* d);
 static void getUV(GSvec2* a, GSvec2* b, GSvec2* c, FLASHMATRIXF* m, FLASHMATRIXF* n, GStexture* t);
 static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2* pts, VEC_GRAPH_DATA* d, FLASHCXFORM* cx);
-static _SHAPERECORD* SpriteCode(u32, _SHAPERECORD* rec, u16 id, FLASHMATRIXF* mf, FLASHMATRIX* m, long x, long y, VEC_GRAPH_DATA* d, FLASHCXFORM* cx);
+static _SHAPERECORD* SpriteCode(u32, _SHAPERECORD* rec, u16 id, FLASHMATRIXF* mf, FLASHMATRIX* m, s32 x, s32 y, VEC_GRAPH_DATA* d, FLASHCXFORM* cx);
 
 static inline void lListPush(u32 color, s16 x, s16 y) {
     if (lList[0] >= 0x200) {
@@ -470,7 +506,7 @@ static void SBline(GSvec2* p0, GSvec2* p1) {
     }
 }
 
-static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long idx) {
+static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, s32 idx) {
     f32 len;
     u32 tmp = d->maxX + d->minX;
     d->cx = (s16)((s32)((tmp >> 31) + tmp) >> 1);
@@ -484,7 +520,7 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long idx) {
             u8* st = styles + (idx << 7);
             switch (st[0]) {
             case 0:
-                d->color = flcalcMultiTransformColor(d->cxform, AT(s32, st, 4));
+                d->color = flcalcMultiTransformColor(d->cxform, GC_AT(s32, st, 4));
                 d->grad = 0;
                 return;
             case 16:
@@ -495,12 +531,12 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long idx) {
             }
         } else {
             u8* st = styles + (idx << 7);
-            f32 sy = (f32)AT(s32, st, 0xC);
-            s32 sx = AT(s32, st, 8);
-            d->gx = AT(s32, st, 0x18) / 20 - d->cx;
+            f32 sy = (f32)GC_AT(s32, st, 0xC);
+            s32 sx = GC_AT(s32, st, 8);
+            d->gx = GC_AT(s32, st, 0x18) / 20 - d->cx;
             f32 fx = (f32)sx;
             len = fx * fx + sy * sy;
-            d->gy = AT(s32, d->styles + (idx << 7), 0x1C) / 20 - d->cy;
+            d->gy = GC_AT(s32, d->styles + (idx << 7), 0x1C) / 20 - d->cy;
             if (len > 0.0f) len = vgSqrtf(len);
             d->gAngle = vgAcosf(fx / len);
             if (sy < 0.0f) d->gAngle = -d->gAngle;
@@ -515,7 +551,7 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long idx) {
             u8* st2 = d->styles + (idx << 7);
             switch (st2[0]) {
             case 0:
-                d->color = flcalcMultiTransformColor(d->cxform, AT(s32, st2, 4));
+                d->color = flcalcMultiTransformColor(d->cxform, GC_AT(s32, st2, 4));
                 d->grad = 0;
                 break;
             case 16:
@@ -551,14 +587,14 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, long idx) {
     }
 }
 
-static _SHAPERECORD* SpriteCode(u32, _SHAPERECORD* rec, u16 id, FLASHMATRIXF* mf, FLASHMATRIX* m, long x, long y, VEC_GRAPH_DATA* d, FLASHCXFORM* cx) {
+static _SHAPERECORD* SpriteCode(u32 flashId, _SHAPERECORD* rec, u16 id, FLASHMATRIXF* mf, FLASHMATRIX* m, s32 x, s32 y, VEC_GRAPH_DATA* d, FLASHCXFORM* cx) {
     _SHAPERECORD* last = 0;
     u8 more = 1;
     GSvec2 pts[4];
     s32 n = 0;
     do {
         if (rec->type == 2) {
-            s32* data = (s32*)rec->data;
+            vg_s32* data = (vg_s32*)rec->data;
             x += data[1];
             y += data[2];
             last = rec;
@@ -570,7 +606,7 @@ static _SHAPERECORD* SpriteCode(u32, _SHAPERECORD* rec, u16 id, FLASHMATRIXF* mf
             more = 0;
         }
     } while (more != 0);
-    GStexture* tex = FlashSystemGetGStexture((u16)id);
+    GStexture* tex = FlashSystemGetGStexture(flashId, (u16)id);
     SpriteDisp(tex, mf, m, pts, d, cx);
     return last;
 }
@@ -609,7 +645,7 @@ static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2*
             GSprimDraw2DTexQuad4V(pos, uv, tex, col);
             return;
         }
-        GSprimDraw2DTexQuad4VCA(pos, uv, tex, col, add);
+        GSprimDraw2DTexQuad4VCA(pos, uv, tex, col, VG_ADD4(add));
     }
 }
 
@@ -695,7 +731,7 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
 }
 
 extern "C++" {
-static void getCrossPoint(long p0, short p1, short p2, short p3, short p4, short p5, VEC_GRAPH_DATA* p6) {
+static void getCrossPoint(s32 p0, short p1, short p2, short p3, short p4, short p5, VEC_GRAPH_DATA* p6) {
     s32 dy0 = p2 - p5;
     s32 dy1 = p3 - p5;
     s32 dx0 = p1 - p4;
@@ -762,7 +798,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
     switch (fills->count) {
     case 0:
             void* t = fills->list;
-            if (t != 0) AT(s32, t, 4) = -1;
+            if (t != 0) GC_AT(s32, t, 4) = -1;
         break;
     }
     s32 y = 0;
@@ -778,7 +814,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             loop = 0;
             break;
         case 1: {
-            volatile SHAPEDATA* sd = (SHAPEDATA*)rec->data;
+            VG_VOLATILE SHAPEDATA* sd = (SHAPEDATA*)rec->data;
             inLine = 0;
             if ((sd->flags & 1) != 0) {
                 x = sd->x;
@@ -820,7 +856,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
                 gVecDat.maxY = -0x8000;
                 gVecDat.maxX = -0x8000;
                 memset(scanline_buffer, 0, 0x25800);
-                gVecDat.styles = (u8*)sd->newStyles;
+                gVecDat.styles = VG_STYLES(sd);
                 gVecDat.idx[1] = 0;
                 gVecDat.idx[0] = 0;
                 gVecDat.on[1] = 0;
@@ -844,13 +880,13 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
                         if ((gVecDat.styles[si << 7] & 0x40) != 0) {
                             switch ((sd->flags & 1)) {
                             case 0:
-                                    int y = 0;
+                                    y = 0;
                                     x = 0;
                                 break;
                             }
                             u8* st = gVecDat.styles;
                             st += (si << 7);
-                            rec = SpriteCode(a0, rec, (u16)((u16*)rec)[4], mat, (FLASHMATRIX*)(st + 0x68), (u16)x, y, &gVecDat, cx);
+                            rec = SpriteCode(a0, rec->next, (u16)GC_AT(u32, st, 0x64), mat, (FLASHMATRIX*)(st + 0x68), x, y, &gVecDat, cx);
                             inLine = 1;
                         }
                     }
@@ -859,7 +895,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             break;
         }
         case 2: {
-            s32* data = (s32*)rec->data;
+            vg_s32* data = (vg_s32*)rec->data;
             x += data[1];
             y += data[2];
             cur.x = (f32)x / 20.0f;
@@ -878,7 +914,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             break;
         }
         case 3: {
-            s32* data = (s32*)rec->data;
+            vg_s32* data = (vg_s32*)rec->data;
             s32 cx_ = x + data[0];
             s32 cy_ = y + data[1];
             cur.x = (f32)cx_ / 20.0f;
@@ -933,39 +969,47 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
 }
 static inline void vecLayerSetBlend(u8* l, s32 type, s32 src, s32 dst) {
     if (type == 0) {
-        if (AT(s32, l, 0x1994) != 0) {
-            AT(s32, l, 0x1994) = 0;
-            AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
+        if (VL(s32, l, 0x1994, curPass) != 0) {
+            VL(s32, l, 0x1994, curPass) = 0;
+#ifdef __MWERKS__
+            VL(u8*, l, 0x1990, curFifo) = l + VL(s32, l, 0x1994, curPass) * 0xBC + 0x1818;
+#else
+            VL(u8*, l, 0x1990, curFifo) = LAYER_CUR_PASS((GSgfxLayerData*)l);
+#endif
         }
-        AT(s32, l, 0x1644) = 0;
-        AT(s32, l, 0x1648) = 1;
-        AT(s32, l, 0x164C) = 1;
-        AT(s32, l, 0x1650) = 5;
+        VL(s32, l, 0x1644, hw.blend[0]) = 0;
+        VL(s32, l, 0x1648, hw.blend[1]) = 1;
+        VL(s32, l, 0x164C, hw.blend[2]) = 1;
+        VL(s32, l, 0x1650, hw.blend[3]) = 5;
     } else {
-        if (AT(s32, l, 0x1994) != 1) {
-            AT(s32, l, 0x1994) = 1;
-            AT(u8*, l, 0x1990) = l + AT(s32, l, 0x1994) * 0xBC + 0x1818;
+        if (VL(s32, l, 0x1994, curPass) != 1) {
+            VL(s32, l, 0x1994, curPass) = 1;
+#ifdef __MWERKS__
+            VL(u8*, l, 0x1990, curFifo) = l + VL(s32, l, 0x1994, curPass) * 0xBC + 0x1818;
+#else
+            VL(u8*, l, 0x1990, curFifo) = LAYER_CUR_PASS((GSgfxLayerData*)l);
+#endif
         }
-        AT(s32, l, 0x1644) = type;
-        AT(s32, l, 0x1648) = src;
-        AT(s32, l, 0x164C) = dst;
-        AT(s32, l, 0x1650) = 5;
+        VL(s32, l, 0x1644, hw.blend[0]) = type;
+        VL(s32, l, 0x1648, hw.blend[1]) = src;
+        VL(s32, l, 0x164C, hw.blend[2]) = dst;
+        VL(s32, l, 0x1650, hw.blend[3]) = 5;
     }
-    AT(s32, l, 0x170C) |= 1;
-    AT(s32, l, 0x16A8) |= 0x40;
-    AT(s32, l, 0x17C4) |= 1;
-    AT(s32, l, 0x1760) |= 0x40;
+    VL(s32, l, 0x170C, dirty[0].pe) |= 1;
+    VL(s32, l, 0x16A8, dirty[0].groups) |= 0x40;
+    VL(s32, l, 0x17C4, dirty[1].pe) |= 1;
+    VL(s32, l, 0x1760, dirty[1].groups) |= 0x40;
 }
 
 extern "C" void vectorGraph(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHAPERECORD* rec, FLASHMATRIXF* parent, FLASHMATRIXF* mat, FLASHCXFORM* cx, u8 flags) {
     if (debugstep != 0x18) {
         GSprimSetup2DRender(0);
         u8* l = (u8*)GSgfxLayerFindByID(GSgfxLayerGetActive());
-        AT(u8, l, 0x1674) = 1;
-        AT(s32, l, 0x170C) |= 0x20;
-        AT(s32, l, 0x16A8) |= 0x40;
-        AT(s32, l, 0x17C4) |= 0x20;
-        AT(s32, l, 0x1760) |= 0x40;
+        VL(u8, l, 0x1674, hw.dither) = 1;
+        VL(s32, l, 0x170C, dirty[0].pe) |= 0x20;
+        VL(s32, l, 0x16A8, dirty[0].groups) |= 0x40;
+        VL(s32, l, 0x17C4, dirty[1].pe) |= 0x20;
+        VL(s32, l, 0x1760, dirty[1].groups) |= 0x40;
         if ((flags & 0x40) != 0) {
             vecLayerSetBlend(l, _typemask, _srcmask, _dstmask);
         } else {
@@ -979,10 +1023,10 @@ extern "C" void vectorGraph(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lin
         gVecDat.idx[1] = -1;
         gVecDat.width[1] = -1;
         gVecDat.numStyles = fills->count;
-        gVecDat.cxform = (s32)cx;
-        gVecDat.color2 = flcalcMultiTransformColor((s32)cx, -1);
+        gVecDat.cxform = (GCsptr)cx;
+        gVecDat.color2 = flcalcMultiTransformColor((GCsptr)cx, -1);
         gVecDat.styles = fills->list;
-        gVecDat.f3C = ((s32*)lines)[1];
+        gVecDat.f3C = GC_AT(s32, lines, 4);
         gVecDat.minY = 0x7FFF;
         gVecDat.minX = 0x7FFF;
         gVecDat.maxY = -0x8000;

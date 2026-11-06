@@ -18,9 +18,9 @@ struct HSD_WObj {
 };
 
 struct HSD_WObjDesc {
-    char* class_name;
-    Vec3 pos;
-    HSD_RObjDesc* robjdesc;
+    gc_ptr32(char) class_name;
+    gc_vec(Vec3) pos;
+    gc_ptr32(HSD_RObjDesc) robjdesc;
 };
 
 struct HSD_WObjInfo {
@@ -29,8 +29,8 @@ struct HSD_WObjInfo {
 };
 
 struct HSD_WObjAnim {
-    HSD_AObjDesc* aobjdesc;
-    HSD_RObjAnimJoint* robjanim;
+    gc_ptr32(HSD_AObjDesc) aobjdesc;
+    gc_ptr32(HSD_RObjAnimJoint) robjanim;
 };
 
 extern HSD_WObjInfo hsdWObj;

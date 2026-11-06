@@ -1,3 +1,5 @@
+#include <game/declspec.h>
+#include <game/pxdvs/app/fight/fightData.h>
 #include <dolphin/types.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -69,9 +71,6 @@ extern "C" {
 extern MenuCBBattleStartWork _menuCBBattleStartWork;
 
 extern "C++" {
-struct FightTrainerKindData {
-    u8 _draft[1];
-};
 struct Hero {
     u8 _draft[1];
 };
@@ -93,7 +92,7 @@ struct _struct_menuCBBattleStartDispWork_0x18 {
 extern "C" {
 void GScharCpy(char16*, const char16*);
 void GSfsysFree(u32 id);
-u8 GSfsysReadIDEX(u32 id, u32 idx, void (*cb)(long, void*, long), void* user, u32 c);
+u8 GSfsysReadIDEX(u32 id, u32 idx, void (*cb)(s32, void*, s32), void* user, u32 c);
 char* GSmsgGetGSchar(u32 msg);
 void GSresFreeGroup(u32 grp);
 void GSresFreeResource(u32 grp, u32 id);
@@ -119,19 +118,23 @@ u16 toolentryTaisenGetTrainerDataID(s32 player);
 extern s32 jtbl_2154;
 }
 extern "C++" {
-static u8 _menuCBBattleCheckTrainer(long p0, long p1);
-static void _menuCBBattleStartDispTrainerTexCallBack(long p0, void* p1, long p2);
+static u8 _menuCBBattleCheckTrainer(s32 p0, s32 p1);
+static void _menuCBBattleStartDispTrainerTexCallBack(s32 p0, void* p1, s32 p2);
 static s32 _menuCBBattleStartGetTrainerFaceSize();
-static void _menuCBBattleStartSetIndexDouble(long p0, unsigned short p1);
-static void _menuCBBattleStartSetIndexMulti(long p0, unsigned short p1);
-static void _menuCBBattleStartSetIndexSingle(long p0, unsigned short p1);
+static void _menuCBBattleStartSetIndexDouble(s32 p0, unsigned short p1);
+static void _menuCBBattleStartSetIndexMulti(s32 p0, unsigned short p1);
+static void _menuCBBattleStartSetIndexSingle(s32 p0, unsigned short p1);
 static void _menuCBBattleStartSetIndex();
 static void _menuCBBattleStartSetTrainerData();
 static void _menuCBBattleStartWorkInit();
 }
 static struct _struct_menuCBBattleStartDispWork_0x18 menuCBBattleStartDispWork[4];
+extern "C" {
 MenuCBBattleStartWork _menuCBBattleStartWork;
+}
+extern "C" {
 s32 menuCBBattleStartResID;
+}
 extern "C++" {
 extern "C++" {
 extern "C++" {
@@ -190,7 +193,7 @@ extern "C" {
 extern "C" {
 static void __sinit_menuCB_BattleStart_cpp() {
 }
-__declspec(section ".ctors") extern void* const __sinit_menuCB_BattleStart_cpp_reference = __sinit_menuCB_BattleStart_cpp;
+DECL_SECTION(".ctors") extern void* const __sinit_menuCB_BattleStart_cpp_reference = __sinit_menuCB_BattleStart_cpp;
 }
 
 extern "C" {
@@ -220,7 +223,8 @@ void menuCBBattleStartTrainerFaceFree() {
 }
 }
 
-static void _menuCBBattleStartDispTrainerTexCallBack(long unused, void* done, long arg) {
+extern "C++" {
+static void _menuCBBattleStartDispTrainerTexCallBack(s32 unused, void* done, s32 arg) {
     MenuCBBattleStartTrainerTexture* completed = (MenuCBBattleStartTrainerTexture*)done;
     MenuCBBattleStartTrainerTextureState* state;
     MenuCBBattleStartTrainerTexture* entry;
@@ -267,6 +271,7 @@ static void _menuCBBattleStartDispTrainerTexCallBack(long unused, void* done, lo
             }
         }
     } while (keepLoading != 0);
+}
 }
 
 extern "C++" {
@@ -347,7 +352,8 @@ void menuCBBattleStartInit(s32 p0, s32 p1) {
 }
 }
 
-static u8 _menuCBBattleCheckTrainer(long p0, long p1) {
+extern "C++" {
+static u8 _menuCBBattleCheckTrainer(s32 p0, s32 p1) {
     s32 temp_r3;
     u8 var_r31;
 
@@ -361,6 +367,7 @@ static u8 _menuCBBattleCheckTrainer(long p0, long p1) {
         var_r31 = 0;
     }
     return var_r31;
+}
 }
 
 extern "C++" {
@@ -397,6 +404,7 @@ u32 menuCB_BattleStartSoundCheck() {
     return (u32) ((2 - temp_r3) | (temp_r3 - 2)) >> 0x1FU;
 }
 
+extern "C++" {
 static void _menuCBBattleStartWorkInit() {
     struct _struct_menuCBBattleStartDispWork_0x18* p = menuCBBattleStartDispWork;
     for (int i = 0; i < 4; i++, p++) {
@@ -408,9 +416,10 @@ static void _menuCBBattleStartWorkInit() {
         p->unk14 = 5;
     }
 }
+}
 
 extern "C++" {
-static void _menuCBBattleStartSetIndexMulti(long idx, unsigned short kind) {
+static void _menuCBBattleStartSetIndexMulti(s32 idx, unsigned short kind) {
     u16 i;
     u16 n;
     s32* dst = (s32*)&menuCBBattleStartDispWork[idx];
@@ -425,7 +434,7 @@ static void _menuCBBattleStartSetIndexMulti(long idx, unsigned short kind) {
 }
 
 extern "C++" {
-static void _menuCBBattleStartSetIndexSingle(long idx, unsigned short kind) {
+static void _menuCBBattleStartSetIndexSingle(s32 idx, unsigned short kind) {
     struct _struct_menuCBBattleStartDispWork_0x18* dst = &menuCBBattleStartDispWork[idx];
     struct _struct_menuCBBattleStartDispWork_0x18 tbl[6] = {{1, 2, 0, 3, 4, 5}, {2, 0, 1, 3, 4, 5}, {0, 1, 2, 3, 4, 5}, {0, 1, 2, 3, 4, 5}, {0, 1, 2, 3, 4, 5}, {0, 1, 2, 3, 4, 5}};
     struct _struct_menuCBBattleStartDispWork_0x18* src = &tbl[kind - 1];
@@ -434,7 +443,7 @@ static void _menuCBBattleStartSetIndexSingle(long idx, unsigned short kind) {
 }
 
 extern "C++" {
-static void _menuCBBattleStartSetIndexDouble(long idx, unsigned short kind) {
+static void _menuCBBattleStartSetIndexDouble(s32 idx, unsigned short kind) {
     struct _struct_menuCBBattleStartDispWork_0x18* dst = &menuCBBattleStartDispWork[idx];
     struct _struct_menuCBBattleStartDispWork_0x18 tbl[6] = {{0, 1, 2, 3, 4, 5}, {0, 1, 2, 3, 4, 5}, {0, 1, 2, 3, 4, 5}, {4, 0, 1, 5, 2, 3}, {0, 1, 2, 3, 4, 5}, {0, 1, 2, 3, 4, 5}};
     struct _struct_menuCBBattleStartDispWork_0x18* src = &tbl[kind - 1];
@@ -442,6 +451,7 @@ static void _menuCBBattleStartSetIndexDouble(long idx, unsigned short kind) {
 }
 }
 
+extern "C++" {
 static void _menuCBBattleStartSetIndex() {
     s32 type = toolentryTaisenGetBattleType();
     u16 nums[4] = {6, 6, 6, 6};
@@ -477,6 +487,7 @@ static void _menuCBBattleStartSetIndex() {
         }
         break;
     }
+}
 }
 }
 }
