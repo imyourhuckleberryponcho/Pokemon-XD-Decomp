@@ -39,10 +39,10 @@ original bytes exactly.
 
 ### Steps
 
-1. Clone the repository with its submodules:
+1. Clone the repository (the MusyX audio library is included under `extern/musyx`):
 
    ```
-   git clone --recursive <this repository>
+   git clone <this repository>
    ```
 
 2. Extract `sys/main.dol` from your copy of the game (USA, `GXXE01`) and place it at
