@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #ifndef __MWERKS__
 struct Pokemon;
@@ -259,7 +260,7 @@ s8 _getWazaMaxValueIndex__FPUcPsUsUc(u8* value, s16* slot, u16 count, u8 min)
             n++;
         }
     }
-    pick = buf[HSD_Rand() % n];
+    pick = buf[GC_MODS(HSD_Rand(), n)];
     result = -1;
     if (best > min) {
         result = pick;

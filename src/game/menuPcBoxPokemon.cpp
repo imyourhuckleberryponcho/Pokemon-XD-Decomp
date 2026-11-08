@@ -3,6 +3,7 @@
 #include <game/gcptr.h>
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
+#include <game/ppcops.h>
 
 #pragma peephole off
 
@@ -180,7 +181,7 @@ enum MENU_POKEMON_CB_TYPE { MENU_POKEMON_CB_TYPE_0 };
 
 struct VP {
     u32 id;
-    u32 value;
+    GCuptr value;
 };
 
 class CMetaMenu;
@@ -200,7 +201,7 @@ struct CInfoWindow {
     void init(s32, u32);
     void initTutorialTalk();
     void open(u32, bool);
-    void setMsgCtrlValue(u32, u32);
+    void setMsgCtrlValue(u32, GCuptr);
 };
 
 struct CState {
@@ -548,7 +549,7 @@ void CMenuPokemonLeave::init(CMenuGlobalState& st)
     scroll = 0.0f;
     memset(model, 0, 0xEC);
     modelFlag = 0;
-    pokemonInit((u32)&displayPokemon);
+    pokemonInit((GCuptr)&displayPokemon);
     displayFlag = 0;
     if (st.tutorial) {
         tutorialMode = 1;
@@ -670,7 +671,7 @@ void CMenuPokemonLeave::loop()
             list[0] = 0x3C13;
             list[1] = 0x3C14;
             info2.open(0x3BDA, false);
-            info2.setMsgCtrlValue(0x4D, (u32)PCBOX::getPointer()->getPokemonBoxName(boxIndex));
+            info2.setMsgCtrlValue(0x4D, (GCuptr)PCBOX::getPointer()->getPokemonBoxName(boxIndex));
             s32 sel = actionMenu(list, 2, 0x1EC, 0x106, 0);
             info2.close();
             if (sel == 0) {
@@ -742,9 +743,9 @@ void CMenuPokemonLeave::loop()
             if (area != 1) {
                 displayHide = 1;
             }
-            info2.setMsgCtrlValue(0x32, (u32)buf);
+            info2.setMsgCtrlValue(0x32, (GCuptr)buf);
             infoMessageDisplay(0x3BE5);
-            info2.setMsgCtrlValue(0x32, (u32)buf);
+            info2.setMsgCtrlValue(0x32, (GCuptr)buf);
             infoMessageDisplay(0x3BE6);
             if (area == 2) {
                 animState.change(9);
@@ -857,7 +858,7 @@ void CMenuPokemonLeave::stateActionMenuMainProc()
     list[4] = 0x3BE8;
     list[5] = 0x3BCC;
     info2.open(0x3BC7, false);
-    info2.setMsgCtrlValue(0x32, (u32)currentPokemonGetPointer()->getNicknamePtr());
+    info2.setMsgCtrlValue(0x32, (GCuptr)currentPokemonGetPointer()->getNicknamePtr());
     s32 sel = actionMenu(list, 6, 0x1C6, 0x8A, 0);
     actionExecByMsgID(list[sel]);
     info2.close();
@@ -1536,7 +1537,7 @@ void CMenuPokemonLeave::animationStateUpdate()
         break;
     }
     case 5: {
-        u32 total = (u32)(0.5f * (f32)GSgfxVideoGetVsyncRate());
+        u32 total = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
         u32 n = animState.count + 1;
         f32 nextF = (f32)(n + 1) / (f32)total;
         f32 curF = (f32)n / (f32)total;
@@ -1882,7 +1883,7 @@ void CMenuPokemonLeave::temochiPokemonSet(Pokemon* p, int slot)
 
 void CMenuPokemonLeave::temochiPokemonDel(int slot)
 {
-    pokemonInit((u32)temochiPokemonGetPointer(slot));
+    pokemonInit((GCuptr)temochiPokemonGetPointer(slot));
 }
 
 void CMenuPokemonLeave::temochiPokemonDelShift(int slot)
@@ -2082,7 +2083,7 @@ void CMenuPokemonLeave::setStatusAndModelDisplayPokemon(Pokemon* p)
 {
     displayFlag = 1;
     if (p == 0) {
-        pokemonInit((u32)&displayPokemon);
+        pokemonInit((GCuptr)&displayPokemon);
     } else {
         memcpy(&displayPokemon, p, 0xC4);
     }
@@ -2090,7 +2091,7 @@ void CMenuPokemonLeave::setStatusAndModelDisplayPokemon(Pokemon* p)
 
 void CMenuPokemonLeave::resetStatusAndModelDisplayPokemon()
 {
-    pokemonInit((u32)&displayPokemon);
+    pokemonInit((GCuptr)&displayPokemon);
     displayFlag = 0;
 }
 

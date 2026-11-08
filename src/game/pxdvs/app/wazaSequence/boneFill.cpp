@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 #include <game/effects.h>
 
 struct GSgfxLayer;
@@ -14,9 +15,10 @@ struct GSpart;
 
 struct NullJointTable {
     u8 unk0[0x4C];
-    s32 joints[1];
+    gc_bes32 joints[1];
 };
 
+#ifdef __MWERKS__
 struct BoneFillOwner {
     u8 unk0[0x52];
     u8 tableIndex;
@@ -25,6 +27,16 @@ struct BoneFillOwner {
     u8 unk98[4];
     u8* tables;
 };
+#define BFO_TABLEINDEX(o) ((o)->tableIndex)
+#define BFO_MODEL(o) ((o)->model)
+#define BFO_TABLES(o) ((o)->tables)
+#else
+#include <game/modelsequenceview.h>
+struct BoneFillOwner : ModelSequenceLayout {};
+#define BFO_TABLEINDEX(o) ((o)->m_section)
+#define BFO_MODEL(o) ((GSmodel*)(o)->m_model)
+#define BFO_TABLES(o) ((u8*)(o)->m_sections)
+#endif
 
 extern "C" {
 double asin(double x);
@@ -59,7 +71,7 @@ void boneFillEffect::_stop() {
 }
 
 static inline GSmodel* _ownerModel(BoneFillOwner* owner) {
-    return owner->model;
+    return BFO_MODEL(owner);
 }
 
 bool boneFillEffect::_update(f32 dt) {
@@ -121,10 +133,10 @@ bool boneFillEffect::_start() {
     if (m_owner == NULL) {
         return false;
     }
-    if (m_owner->model == NULL) {
+    if (BFO_MODEL(m_owner) == NULL) {
         return false;
     }
-    table = (NullJointTable*)(m_owner->tables + m_owner->tableIndex * 0xD0);
+    table = (NullJointTable*)(BFO_TABLES(m_owner) + BFO_TABLEINDEX(m_owner) * 0xD0);
     if (table == NULL) {
         return false;
     }

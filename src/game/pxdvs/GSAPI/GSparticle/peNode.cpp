@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 
 struct Vec3 {
     f32 x, y, z;
@@ -32,11 +33,11 @@ struct peXform {
 };
 
 struct peEmitParams {
-    u32 flags;
+    gc_be32 flags;
     u8 pad4[0x9C];
-    f32 drag;
-    f32 bounce;
-    f32 force;
+    gc_bef32 drag;
+    gc_bef32 bounce;
+    gc_bef32 force;
 };
 
 struct peEmitterNode {

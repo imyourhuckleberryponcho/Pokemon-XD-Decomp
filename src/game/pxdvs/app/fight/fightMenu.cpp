@@ -116,7 +116,7 @@ u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon*, u16
 void fightTrainerTimeOutSelectFightAction(FIGHT_TRAINER*, FightOutPokemon*, PCARG(u16, u32));
 s16 fightTrainerTimeOutSelectIrekaeFightPokemon(FIGHT_TRAINER*, FightOutPokemon*, u16);
 void fightTrainerAllInitFightActionBuff(FIGHT_TRAINER*);
-s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER*, u16, u8, u32);
+s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER*, u16, u8, GCuptr);
 u8 fightTrainerIsUsedItem(FIGHT_TRAINER*);
 u8 fightTrainerIsSelectedItemBall(FIGHT_TRAINER*);
 s16 fightTrainerGetFightOutPokemonToTemotiBanme(FIGHT_TRAINER*, FightOutPokemon*);
@@ -253,7 +253,7 @@ extern "C" u32 fightMenuOpenMsg2(u32 msg, u32 arg);
 extern "C" u32 fightMenuOpenMsg(u32 msg);
 extern "C" u32 fightMenuFightTrainerAgbHeroOpenMenu(FIGHT_TRAINER* trainer, u16 id);
 extern "C++" static FightOutPokemon* _fightMenuFightTrainerAgbHeroSelectDefensePokemon(FightOutPokemon*, u16, u16);
-extern "C" s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, u16 id, u8 kind, u32 target);
+extern "C" s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, u16 id, u8 kind, GCuptr target);
 extern "C" u32 fightMenuFightTrainerGcHeroOpenMenu(FIGHT_TRAINER* trainer, u16 id, u8 cancel);
 extern "C++" static u8 _fightMenuFightTrainerGcHeroOpenMenuSubMain(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id, s32 top);
 extern "C++" static u8 _fightMenuFightTrainerGcHeroOpenMenuSubIrekae(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id);
@@ -1032,7 +1032,7 @@ end:
 }
 
 extern "C" {
-s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, u16 id, u8 kind, u32 target)
+s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, u16 id, u8 kind, GCuptr target)
 {
     u16 i;
     s16 result;
@@ -1044,7 +1044,7 @@ s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer,
     gbaWork = fightTrainerGetStatus(trainer, 0, 0x4B, 0);
     num = fightTypeDataBiosGetFightoutPokemonNum(fightTypeDataBiosGetPtr(id));
     for (i = 0; i < num; i++) {
-        s32 cmpv = fightTrainerGetStatus(trainer, 0, 0x46, i);
+        PCARG(s32, StatusU32) cmpv = fightTrainerGetStatus(trainer, 0, 0x46, i);
         if (cmpv == target) {
             break;
         }

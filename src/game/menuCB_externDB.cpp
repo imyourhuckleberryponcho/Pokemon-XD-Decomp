@@ -227,7 +227,11 @@ struct CB {
     CBTrainer trainers[4];
     u8 pad4C98[0x4FE0];
     RuleData* unk9C78;
+#ifdef __MWERKS__
     u8 pad9C7C[0x1358];
+#else
+    u8 pad9C7C[0x1354];
+#endif
     s32 unkAFD4;
     s32 unkAFD8;
     s32 unkAFDC;
@@ -235,7 +239,7 @@ struct CB {
     s32 unkAFE4;
     u8 padAFE8[0x4];
     s32 unkAFEC;
-    u8 padAFF0[0x4];
+    s32 unkAFF0;
     s32 unkAFF4;
     s32 unkAFF8;
     s32 unkAFFC;
@@ -261,7 +265,7 @@ struct CB {
     s32 unkB064;
     s32 unkB068;
     s32 unkB06C;
-    u8 padB070[0x4];
+    s32 unkB070;
     s32 unkB074;
     s32 unkB078;
     s32 unkB07C;
@@ -281,7 +285,7 @@ struct CB {
     s32 unkB0F4;
     s32 unkB0F8;
     s32 unkB0FC;
-    u8 padB100[0x4];
+    s32 unkB100;
     s32 unkB104;
     s32 unkB108;
     s32 unkB10C;
@@ -532,6 +536,7 @@ void windowDrawSprite3(s16, s16, s16, s16, u32, void*, u16, s16, s16, s16, s16, 
 static s32 field_anime[12];
 static s32 _ruleCursol2;
 static s32 _ruleTempBuff_DB[0x1F];
+static s32 gap_ruleCursol_unused[5];
 static s32 _ruleCursol[5];
 
 extern "C" {
@@ -1505,13 +1510,8 @@ extern "C" {
 void menuTool_tunaide01_3_Button(void) {
 }
 }
-
 extern "C" {
-void menuTool_tunaide01_4_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-    menuCB_MenuDispCheckONorOFF_TUNAIDESUB(window, 3);
-}
+
 extern "C" {
 void menuCB_Tunaide01_3_Disp(void *p0, void *p1) {
     s16 temp_r0;
@@ -1635,6 +1635,14 @@ void menuCB_Tunaide01_3_Disp(void *p0, void *p1) {
         break;
     }
 }
+}
+}
+
+extern "C" {
+void menuTool_tunaide01_4_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
+    menuCB_MenuDispCheckONorOFF_TUNAIDESUB(window, 3);
 }
 
 }
@@ -1838,18 +1846,8 @@ void menuTool_tunaide02_Button(tagWINDOW_WORK* window) {
     }
 }
 }
-
 extern "C" {
-void menuTool_tunaide03_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-    if (menuCB_GetDisconnectedGBA()) {
-        _CB.unkB198 = 1;
-        window->done = 1;
-        window->cancel = 1;
-    }
-    menuCB_AlphaGet(window);
-}
+
 extern "C" {
 void menuCB_Tunaide02_Disp(GCsptr p0, void *p1) {
     s32 temp_r0;
@@ -2223,6 +2221,19 @@ void menuCB_Tunaide02_Disp(GCsptr p0, void *p1) {
     }
 }
 }
+}
+
+extern "C" {
+void menuTool_tunaide03_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
+    if (menuCB_GetDisconnectedGBA()) {
+        _CB.unkB198 = 1;
+        window->done = 1;
+        window->cancel = 1;
+    }
+    menuCB_AlphaGet(window);
+}
 
 }
 
@@ -2409,21 +2420,8 @@ void menuTool_error00_Button(tagWINDOW_WORK* window) {
     }
 }
 }
-
 extern "C" {
-void menuTool_error01_Ctrl(tagWINDOW_WORK* window) {
-    if (window->state == 2) {
-        s32 i = 0;
-        for (; i <= _CB.unkB0E4; i++) {
-            menuItemBiosSetSelectFlag(0xA7, _error01_cursol_item_tbl[i], 1);
-        }
-        for (; i < 14; i++) {
-            menuItemBiosSetSelectFlag(0xA7, _error01_cursol_item_tbl[i], 0);
-        }
-    }
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-}
+
 extern "C" {
 void menuCB_error00_Disp(void *p0, void *p1) {
     s16 temp_r0;
@@ -2686,6 +2684,22 @@ void menuCB_error00_Disp(void *p0, void *p1) {
     }
 }
 }
+}
+
+extern "C" {
+void menuTool_error01_Ctrl(tagWINDOW_WORK* window) {
+    if (window->state == 2) {
+        s32 i = 0;
+        for (; i <= _CB.unkB0E4; i++) {
+            menuItemBiosSetSelectFlag(0xA7, _error01_cursol_item_tbl[i], 1);
+        }
+        for (; i < 14; i++) {
+            menuItemBiosSetSelectFlag(0xA7, _error01_cursol_item_tbl[i], 0);
+        }
+    }
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
+}
 
 }
 
@@ -2764,12 +2778,8 @@ extern "C" {
 void menuTool_GBAConnect_Button(void) {
 }
 }
-
 extern "C" {
-void menuTool_BattleBA01_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-}
+
 extern "C" {
 void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
     s16 temp_r3;
@@ -2939,6 +2949,13 @@ void menuCB_GBAConnect_Disp(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1) {
         return;
     }
 }
+}
+}
+
+extern "C" {
+void menuTool_BattleBA01_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
 }
 
 }
@@ -3794,1246 +3811,8 @@ extern "C" {
 void menuTool_tunaideGCEntry_Button(void) {
 }
 }
-
 extern "C" {
-void menuTool_tunaideGCEntry00_Button(void) {
-}
-extern "C" {
-void menuTool_tunaideGCEntry00_Ctrl(void *p0) {
-    s32 var_r29;
-    s32 temp_r28;
 
-    temp_r28 = M2C_FIELD(&_CB, s32 *, 0xB0F8);
-    menuCB_DispEffect((tagWINDOW_WORK *)((s32 *) p0));
-    menuSetStatus(M2C_FIELD(p0, s32 *, 4), 0x10);
-    if ((s8) M2C_FIELD(p0, u8 *, 1) != 2) {
-        goto block_362;
-    }
-    s32 cmpv = pauseIsPause();
-    if (cmpv != 0) {
-        goto block_362;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB150) == 0) {
-        goto block_6;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB158) != 0) {
-        goto block_5;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB150) = 0;
-    return;
-block_5:
-    M2C_FIELD(&_CB, s32 *, 0xB154) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB154) + M2C_FIELD(&_CB, s32 *, 0xB150));
-    M2C_FIELD(&_CB, s32 *, 0xB158) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB158) + M2C_FIELD(&_CB, s32 *, 0xB150));
-    return;
-block_6:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0FC) >= 2) {
-        goto block_362;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0FC) == 1) {
-        goto block_362;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F4) == 1) {
-        goto block_362;
-    }
-    if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x20) != 0) {
-        goto block_12;
-    }
-    if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x10) == 0) {
-        goto block_15;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) != 0x24) {
-        goto block_15;
-    }
-block_12:
-    menuCB_SE_Play(0x443);
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB100) != 0) {
-        goto block_14;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xAFF0) = 1;
-    M2C_FIELD(&_CB, s32 *, 0xB070) = 1;
-    M2C_FIELD(&_CB, s32 *, 0xB0F4) = 1;
-    return;
-block_14:
-    menuCBGCDelPokemon();
-    return;
-block_15:
-    if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x10) == 0) {
-        goto block_22;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) != 0x25) {
-        goto block_19;
-    }
-    menuCB_SE_Play(0x442);
-    menuCB_GCEntry_OkPushErrorCheck();
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0FC) >= 2) {
-        goto block_362;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xAFF0) = 1;
-    M2C_FIELD(&_CB, s32 *, 0xB0F4) = 1;
-    return;
-block_19:
-    menuCBGCEntryTypeIndex();
-    if (menuCBPokemonCheck(M2C_FIELD(&_CB, u32 *, 0xB1D4), M2C_FIELD(&_CB, u32 *, 0xB1D8)) == 0) {
-        goto block_362;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) > 0x23) {
-        goto block_362;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0FC) = 1;
-    return;
-block_22:
-    if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 6) & 0x400) == 0) {
-        goto block_42;
-    }
-    menuCB2DPokemonClearSHIFT(0);
-    menuCB_SE_Play(0x444);
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) == 1) {
-        goto block_30;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 1) {
-        goto block_27;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 0) {
-        goto block_29;
-    }
-    goto block_37;
-block_27:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 3) {
-        goto block_37;
-    }
-    goto block_35;
-block_29:
-    M2C_FIELD(&_CB, s32 *, 0xB0F0) = 1;
-    M2C_FIELD(&_CB, s32 *, 0xB0E8) = 0;
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_37;
-block_30:
-    M2C_FIELD(&_CB, s32 *, 0xB0E8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0E8) + 1);
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0E8) != 8) {
-        goto block_37;
-    }
-    if ((u8) M2C_FIELD(&_CB, u8 *, 0xB4A0) != 1) {
-        goto block_33;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F0) = 2;
-    M2C_FIELD(&_CB, s32 *, 0xB0EC) = 0;
-    goto block_34;
-block_33:
-    M2C_FIELD(&_CB, s32 *, 0xB0F0) = 0;
-block_34:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    M2C_FIELD(&_CB, s32 *, 0xB0E8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0E8) - 1);
-    goto block_37;
-block_35:
-    M2C_FIELD(&_CB, s32 *, 0xB0EC) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0EC) + 1);
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0EC) != 9) {
-        goto block_37;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F0) = 0;
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    M2C_FIELD(&_CB, s32 *, 0xB0EC) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0EC) - 1);
-block_37:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) != 2) {
-        goto block_39;
-    }
-    menuCBReliveHallCursolInit();
-block_39:
-    if (temp_r28 < 0x1E) {
-        goto block_362;
-    }
-    if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-        goto block_362;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = temp_r28;
-    return;
-block_42:
-    if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 6) & 0x200) == 0) {
-        goto block_64;
-    }
-    menuCB2DPokemonClearSHIFT(1);
-    menuCB_SE_Play(0x444);
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) == 1) {
-        goto block_53;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 1) {
-        goto block_47;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 0) {
-        goto block_49;
-    }
-    goto block_59;
-block_47:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 3) {
-        goto block_59;
-    }
-    goto block_56;
-block_49:
-    if ((u8) M2C_FIELD(&_CB, u8 *, 0xB4A0) != 1) {
-        goto block_51;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F0) = 2;
-    M2C_FIELD(&_CB, s32 *, 0xB0EC) = 8;
-    goto block_52;
-block_51:
-    M2C_FIELD(&_CB, s32 *, 0xB0F0) = 1;
-    M2C_FIELD(&_CB, s32 *, 0xB0E8) = 7;
-block_52:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_59;
-block_53:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0E8) != 0) {
-        goto block_55;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F0) = 0;
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_59;
-block_55:
-    M2C_FIELD(&_CB, s32 *, 0xB0E8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0E8) - 1);
-    goto block_59;
-block_56:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0EC) != 0) {
-        goto block_58;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F0) = 1;
-    M2C_FIELD(&_CB, s32 *, 0xB0E8) = 7;
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_59;
-block_58:
-    M2C_FIELD(&_CB, s32 *, 0xB0EC) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0EC) - 1);
-block_59:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) != 2) {
-        goto block_61;
-    }
-    menuCBReliveHallCursolInit();
-block_61:
-    if (temp_r28 < 0x1E) {
-        goto block_362;
-    }
-    if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-        goto block_362;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = temp_r28;
-    return;
-block_64:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) != 2) {
-        goto block_66;
-    }
-    var_r29 = M2C_FIELD(&_CB, s32 *, 0xB0EC);
-    var_r29 = CReliveHall::getPointer()->getStage(var_r29)->getDancerQuantity();
-block_66:
-    if ((s32) (windowGetKeyRepeat() & 1) == 0) {
-        goto block_144;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) == 1) {
-        goto block_83;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 1) {
-        goto block_71;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 0) {
-        goto block_73;
-    }
-    goto block_142;
-block_71:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 3) {
-        goto block_142;
-    }
-    goto block_96;
-block_73:
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-    case 0: goto block_142;
-    case 2: goto block_142;
-    case 30: goto block_142;
-    default: goto block_82;
-    case 37:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 5;
-    goto block_142;
-    case 36:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_142;
-    case 31:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
-    goto block_142;
-    case 32:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1F;
-    goto block_142;
-    case 33:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x20;
-    goto block_142;
-    case 34:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x21;
-    goto block_142;
-    case 35:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x22;
-    goto block_142;
-    case 1:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-    case 10:
-    case 11:
-    case 12:
-    case 13:
-    case 14:
-    case 15:
-    case 16:
-    case 17:
-    case 18:
-    case 19:
-    case 20:
-    case 21:
-    case 22:
-    case 23:
-    case 24:
-    case 25:
-    case 26:
-    case 27:
-    case 28:
-    case 29:
-block_82:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 1);
-    goto block_142;
-    }
-block_83:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 0x1E) {
-        goto block_142;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1E) {
-        goto block_88;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 6) {
-        goto block_95;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0) {
-        goto block_142;
-    }
-    goto block_95;
-block_88:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 0x25) {
-        goto block_92;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x25) {
-        goto block_95;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x24) {
-        goto block_93;
-    }
-    goto block_94;
-block_92:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1D;
-    goto block_142;
-block_93:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x18;
-    goto block_142;
-block_94:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 1);
-    goto block_142;
-block_95:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 6);
-    goto block_142;
-block_96:
-    { s32 stageIndex = M2C_FIELD(&_CB, s32 *, 0xB0EC);
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-    case 0: goto block_142;
-    case 5: goto block_142;
-    case 6: goto block_142;
-    case 7: goto block_142;
-    case 8: goto block_142;
-    case 9: goto block_142;
-    case 10: goto block_142;
-    case 11: goto block_142;
-    case 12: goto block_142;
-    case 13: goto block_142;
-    case 14: goto block_142;
-    case 15: goto block_142;
-    case 16: goto block_142;
-    case 17: goto block_142;
-    case 18: goto block_142;
-    case 19: goto block_142;
-    case 20: goto block_142;
-    case 21: goto block_142;
-    case 22: goto block_142;
-    case 23: goto block_142;
-    case 24: goto block_142;
-    case 25: goto block_142;
-    case 26: goto block_142;
-    case 27: goto block_142;
-    case 28: goto block_142;
-    case 29: goto block_142;
-    case 30: goto block_142;
-    default: goto block_142;
-    case 37:
-    if (var_r29 == 4) {
-        goto block_108;
-    }
-    if (var_r29 >= 4) {
-        goto block_142;
-    }
-    if (var_r29 >= 2) {
-        goto block_107;
-    }
-    if (var_r29 >= 0) {
-        goto block_103;
-    }
-    goto block_142;
-block_103:
-    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
-        goto block_105;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_142;
-block_105:
-    if (var_r29 != 1) {
-        goto block_142;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_142;
-block_107:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_142;
-block_108:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_142;
-    case 36:
-    if (var_r29 == 3) {
-        goto block_121;
-    }
-    if (var_r29 >= 3) {
-        goto block_114;
-    }
-    if (var_r29 >= 2) {
-        goto block_120;
-    }
-    if (var_r29 >= 0) {
-        goto block_116;
-    }
-    goto block_142;
-block_114:
-    if (var_r29 >= 5) {
-        goto block_142;
-    }
-    goto block_122;
-block_116:
-    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
-        goto block_118;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_142;
-block_118:
-    if (var_r29 != 1) {
-        goto block_142;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_142;
-block_120:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_142;
-block_121:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_142;
-block_122:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 3;
-    goto block_142;
-    case 1:
-    if (var_r29 >= 4) {
-        goto block_142;
-    }
-    if (var_r29 >= 2) {
-        goto block_126;
-    }
-    goto block_142;
-block_126:
-    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
-        goto block_128;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_142;
-block_128:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_142;
-    case 2:
-    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
-        goto block_131;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_142;
-block_131:
-    if (var_r29 != 3) {
-        goto block_133;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_142;
-block_133:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_142;
-    case 3:
-    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
-        goto block_136;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_142;
-block_136:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_142;
-    case 4:
-    if (var_r29 == 0) {
-        goto block_142;
-    }
-    if (var_r29 < 0) {
-        goto block_142;
-    }
-    if (var_r29 >= 5) {
-        goto block_142;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_142;
-    case 31:
-    case 32:
-    case 33:
-    case 34:
-    case 35:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 1);
-    }
-    }
-block_142:
-    if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-        goto block_228;
-    }
-    menuCB_SE_Play(0x441);
-    goto block_228;
-block_144:
-    if ((s32) (windowGetKeyRepeat() & 2) == 0) {
-        goto block_228;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) == 1) {
-        goto block_164;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 1) {
-        goto block_149;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 0) {
-        goto block_151;
-    }
-    goto block_226;
-block_149:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 3) {
-        goto block_226;
-    }
-    goto block_174;
-block_151:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 5) {
-        goto block_162;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 5) {
-        goto block_157;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 1) {
-        goto block_161;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 1) {
-        goto block_163;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0) {
-        goto block_163;
-    }
-    goto block_226;
-block_157:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x23) {
-        goto block_160;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1E) {
-        goto block_163;
-    }
-    goto block_226;
-block_160:
-    goto block_226;
-block_161:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
-    goto block_226;
-block_162:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_226;
-block_163:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 1);
-    goto block_226;
-block_164:
-    if (M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1E) {
-        goto block_168;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1B) {
-        goto block_172;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x18) {
-        goto block_171;
-    }
-    goto block_173;
-block_168:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x26) {
-        goto block_173;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x23) {
-        goto block_226;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 1);
-    goto block_226;
-block_171:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
-    goto block_226;
-block_172:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_226;
-block_173:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 6);
-    goto block_226;
-block_174:
-    { s32 stageIndex = M2C_FIELD(&_CB, s32 *, 0xB0EC);
-    if (M2C_FIELD(&_CB, s32 *, 0xB0F8) == 4) {
-        goto block_214;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 4) {
-        goto block_182;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 1) {
-        goto block_199;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 1) {
-        goto block_180;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0) {
-        goto block_186;
-    }
-    goto block_226;
-block_180:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 3) {
-        goto block_213;
-    }
-    goto block_207;
-block_182:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x23) {
-        goto block_185;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1E) {
-        goto block_225;
-    }
-    goto block_226;
-block_185:
-    goto block_226;
-block_186:
-    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
-        goto block_188;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_226;
-block_188:
-    if (var_r29 == 3) {
-        goto block_197;
-    }
-    if (var_r29 >= 3) {
-        goto block_193;
-    }
-    if (var_r29 == 1) {
-        goto block_195;
-    }
-    if (var_r29 >= 1) {
-        goto block_196;
-    }
-    goto block_226;
-block_193:
-    if (var_r29 >= 5) {
-        goto block_226;
-    }
-    goto block_198;
-block_195:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_226;
-block_196:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_226;
-block_197:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_226;
-block_198:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 3;
-    goto block_226;
-block_199:
-    if (var_r29 == 4) {
-        goto block_204;
-    }
-    if (var_r29 >= 4) {
-        goto block_226;
-    }
-    if (var_r29 >= 2) {
-        goto block_203;
-    }
-    goto block_226;
-block_203:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_226;
-block_204:
-    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
-        goto block_206;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_226;
-block_206:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_226;
-block_207:
-    if (var_r29 == 4) {
-        goto block_212;
-    }
-    if (var_r29 >= 4) {
-        goto block_226;
-    }
-    if (var_r29 >= 3) {
-        goto block_211;
-    }
-    goto block_226;
-block_211:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
-    goto block_226;
-block_212:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_226;
-block_213:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
-    goto block_226;
-block_214:
-    if (var_r29 == 3) {
-        goto block_223;
-    }
-    if (var_r29 >= 3) {
-        goto block_219;
-    }
-    if (var_r29 >= 2) {
-        goto block_222;
-    }
-    if (var_r29 >= 0) {
-        goto block_221;
-    }
-    goto block_226;
-block_219:
-    if (var_r29 >= 5) {
-        goto block_226;
-    }
-    goto block_224;
-block_221:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_226;
-block_222:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_226;
-block_223:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_226;
-block_224:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 3;
-    goto block_226;
-block_225:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 1);
-    }
-block_226:
-    if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-        goto block_228;
-    }
-    menuCB_SE_Play(0x441);
-block_228:
-    if ((s32) (windowGetKeyRepeat() & 4) == 0) {
-        goto block_291;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) == 1) {
-        goto block_247;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 1) {
-        goto block_233;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 0) {
-        goto block_235;
-    }
-    goto block_289;
-block_233:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 3) {
-        goto block_289;
-    }
-    goto block_257;
-block_235:
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-    case 0: goto block_289;
-    case 1: goto block_289;
-    case 6: goto block_289;
-    case 7: goto block_289;
-    case 8: goto block_289;
-    case 9: goto block_289;
-    case 10: goto block_289;
-    case 11: goto block_289;
-    case 12: goto block_289;
-    case 13: goto block_289;
-    case 14: goto block_289;
-    case 15: goto block_289;
-    case 16: goto block_289;
-    case 17: goto block_289;
-    case 18: goto block_289;
-    case 19: goto block_289;
-    case 20: goto block_289;
-    case 21: goto block_289;
-    case 22: goto block_289;
-    case 23: goto block_289;
-    case 24: goto block_289;
-    case 25: goto block_289;
-    case 26: goto block_289;
-    case 27: goto block_289;
-    case 28: goto block_289;
-    case 29: goto block_289;
-    case 36: goto block_289;
-    default: goto block_289;
-    case 37:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
-    goto block_289;
-    case 30:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_289;
-    case 31:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 3;
-    goto block_289;
-    case 32:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_289;
-    case 33:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 5;
-    goto block_289;
-    case 34:
-    case 35:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_289;
-    case 2:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_289;
-    case 3:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_289;
-    case 4:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_289;
-    case 5:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_289;
-    }
-block_247:
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-    case 0: goto block_289;
-    case 6: goto block_289;
-    case 12: goto block_289;
-    case 18: goto block_289;
-    case 24: goto block_289;
-    case 36: goto block_289;
-    default: goto block_256;
-    case 37:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
-    goto block_289;
-    case 30:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 5;
-    goto block_289;
-    case 31:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0xB;
-    goto block_289;
-    case 32:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x11;
-    goto block_289;
-    case 33:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x17;
-    goto block_289;
-    case 34:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1D;
-    goto block_289;
-    case 35:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_289;
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 7:
-    case 8:
-    case 9:
-    case 10:
-    case 11:
-    case 13:
-    case 14:
-    case 15:
-    case 16:
-    case 17:
-    case 19:
-    case 20:
-    case 21:
-    case 22:
-    case 23:
-    case 25:
-    case 26:
-    case 27:
-    case 28:
-    case 29:
-block_256:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) - 1);
-    goto block_289;
-    }
-block_257:
-    { s32 stageIndex = M2C_FIELD(&_CB, s32 *, 0xB0EC);
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 4) {
-        goto block_279;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 4) {
-        goto block_264;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 1) {
-        goto block_270;
-    }
-    if ((s32) (u16)M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 1) {
-        goto block_262;
-    }
-    goto block_289;
-block_262:
-    if ((s32) (u16)M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 3) {
-        goto block_289;
-    }
-    goto block_276;
-block_264:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 0x24) {
-        goto block_289;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x24) {
-        goto block_268;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x1E) {
-        goto block_286;
-    }
-    goto block_289;
-block_268:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x26) {
-        goto block_289;
-    }
-    goto block_285;
-block_270:
-    if (var_r29 == 4) {
-        goto block_275;
-    }
-    if (var_r29 >= 4) {
-        goto block_289;
-    }
-    if (var_r29 >= 3) {
-        goto block_274;
-    }
-    goto block_289;
-block_274:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_289;
-block_275:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_289;
-block_276:
-    switch (var_r29) {
-    case 4:
-            goto block_278;
-        break;
-    }
-    goto block_289;
-block_278:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 3;
-    goto block_289;
-block_279:
-    if (var_r29 == 4) {
-        goto block_284;
-    }
-    if (var_r29 >= 4) {
-        goto block_289;
-    }
-    if (var_r29 >= 3) {
-        goto block_283;
-    }
-    goto block_289;
-block_283:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_289;
-block_284:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0;
-    goto block_289;
-block_285:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x24;
-    goto block_289;
-block_286:
-    if (menuCBPokemonCheck(6U, ((stageIndex * 0x10000) & 0xFFFF0000) | 4) == 0) {
-        goto block_288;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_289;
-block_288:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    }
-block_289:
-    if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-        goto block_359;
-    }
-    menuCB_SE_Play(0x441);
-    goto block_359;
-block_291:
-    if ((s32) (windowGetKeyRepeat() & 8) == 0) {
-        goto block_359;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) == 1) {
-        goto block_308;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 1) {
-        goto block_296;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 0) {
-        goto block_298;
-    }
-    goto block_357;
-block_296:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F0) >= 3) {
-        goto block_357;
-    }
-    goto block_318;
-block_298:
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-    case 6: goto block_357;
-    case 7: goto block_357;
-    case 8: goto block_357;
-    case 9: goto block_357;
-    case 10: goto block_357;
-    case 11: goto block_357;
-    case 12: goto block_357;
-    case 13: goto block_357;
-    case 14: goto block_357;
-    case 15: goto block_357;
-    case 16: goto block_357;
-    case 17: goto block_357;
-    case 18: goto block_357;
-    case 19: goto block_357;
-    case 20: goto block_357;
-    case 21: goto block_357;
-    case 22: goto block_357;
-    case 23: goto block_357;
-    case 24: goto block_357;
-    case 25: goto block_357;
-    case 26: goto block_357;
-    case 27: goto block_357;
-    case 28: goto block_357;
-    case 29: goto block_357;
-    case 30: goto block_357;
-    case 31: goto block_357;
-    case 32: goto block_357;
-    case 33: goto block_357;
-    case 34: goto block_357;
-    case 35: goto block_357;
-    default: goto block_357;
-    case 0:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_357;
-    case 1:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 4;
-    goto block_357;
-    case 2:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
-    goto block_357;
-    case 3:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1F;
-    goto block_357;
-    case 4:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x20;
-    goto block_357;
-    case 5:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x21;
-    goto block_357;
-    case 37:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x22;
-    goto block_357;
-    case 36:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_357;
-    }
-block_308:
-    switch (M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-    case 30: goto block_357;
-    case 31: goto block_357;
-    case 32: goto block_357;
-    case 33: goto block_357;
-    case 34: goto block_357;
-    case 35: goto block_357;
-    default: goto block_317;
-    case 5:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
-    goto block_357;
-    case 11:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1F;
-    goto block_357;
-    case 17:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x20;
-    goto block_357;
-    case 23:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x21;
-    goto block_357;
-    case 29:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x22;
-    goto block_357;
-    case 37:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x23;
-    goto block_357;
-    case 36:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    goto block_357;
-    case 6:
-    case 7:
-    case 8:
-    case 9:
-    case 10:
-    case 12:
-    case 13:
-    case 14:
-    case 15:
-    case 16:
-    case 18:
-    case 19:
-    case 20:
-    case 21:
-    case 22:
-    case 24:
-    case 25:
-    case 26:
-    case 27:
-    case 28:
-block_317:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = (s32) (M2C_FIELD(&_CB, s32 *, 0xB0F8) + 1);
-    goto block_357;
-    }
-block_318:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 4) {
-        goto block_348;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 4) {
-        goto block_326;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 1) {
-        goto block_337;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 1) {
-        goto block_324;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0) {
-        goto block_331;
-    }
-    goto block_357;
-block_324:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 3) {
-        goto block_347;
-    }
-    goto block_341;
-block_326:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 0x24) {
-        goto block_356;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x24) {
-        goto block_329;
-    }
-    goto block_357;
-block_329:
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) >= 0x26) {
-        goto block_357;
-    }
-    goto block_355;
-block_331:
-    if (var_r29 == 4) {
-        goto block_336;
-    }
-    if (var_r29 >= 4) {
-        goto block_357;
-    }
-    if (var_r29 >= 1) {
-        goto block_335;
-    }
-    goto block_357;
-block_335:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
-    goto block_357;
-block_336:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_357;
-block_337:
-    if (var_r29 >= 5) {
-        goto block_357;
-    }
-    if (var_r29 >= 2) {
-        goto block_340;
-    }
-    goto block_357;
-block_340:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
-    goto block_357;
-block_341:
-    if (var_r29 == 4) {
-        goto block_346;
-    }
-    if (var_r29 >= 4) {
-        goto block_357;
-    }
-    if (var_r29 >= 3) {
-        goto block_345;
-    }
-    goto block_357;
-block_345:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_357;
-block_346:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
-    goto block_357;
-block_347:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 2;
-    goto block_357;
-block_348:
-    if (var_r29 >= 3) {
-        goto block_351;
-    }
-    if (var_r29 >= 0) {
-        goto block_353;
-    }
-    goto block_357;
-block_351:
-    if (var_r29 >= 5) {
-        goto block_357;
-    }
-    goto block_354;
-block_353:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x1E;
-    goto block_357;
-block_354:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 1;
-    goto block_357;
-block_355:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x23;
-    goto block_357;
-block_356:
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-block_357:
-    if (temp_r28 == (s32) M2C_FIELD(&_CB, s32 *, 0xB0F8)) {
-        goto block_359;
-    }
-    menuCB_SE_Play(0x441);
-block_359:
-    if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x800) == 0) {
-        goto block_362;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB0F8) == 0x25) {
-        goto block_362;
-    }
-    M2C_FIELD(&_CB, s32 *, 0xB0F8) = 0x25;
-    menuCB_SE_Play(0x441);
-block_362:
-    return;
-}
 extern "C" {
 void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2, s32 n) {
     s16 temp_r3;
@@ -5464,15 +4243,750 @@ void menuCB_tunaideGCEntry_Disp(void *p0, void *p1, s32 p2, s32 n) {
 }
 }
 
+void menuTool_tunaideGCEntry00_Ctrl(void *p0) {
+    s32 qty;
+    s32 prev = _CB.unkB0F8;
+    menuCB_DispEffect((tagWINDOW_WORK *)p0);
+    menuSetStatus(((tagWINDOW_WORK *)p0)->seq, 0x10);
+    if (((tagWINDOW_WORK *)p0)->state == 2 && !pauseIsPause()) {
+    if (_CB.unkB150 != 0) {
+        if (_CB.unkB158 == 0) {
+            _CB.unkB150 = 0;
+        } else {
+            _CB.unkB154 += _CB.unkB150;
+            _CB.unkB158 += _CB.unkB150;
+        }
+    } else if (_CB.unkB0FC < 2 && _CB.unkB0FC != 1 && _CB.unkB0F4 != 1) {
+    if ((windowGetKeyInfo()->trg & 0x20) || ((windowGetKeyInfo()->trg & 0x10) && _CB.unkB0F8 == 0x24)) {
+        menuCB_SE_Play(0x443);
+        if (_CB.unkB100 == 0) {
+            _CB.unkAFF0 = 1;
+            _CB.unkB070 = 1;
+            _CB.unkB0F4 = 1;
+        } else {
+            menuCBGCDelPokemon();
+        }
+    } else if (windowGetKeyInfo()->trg & 0x10) {
+        if (_CB.unkB0F8 == 0x25) {
+            menuCB_SE_Play(0x442);
+            menuCB_GCEntry_OkPushErrorCheck();
+            if (_CB.unkB0FC < 2) {
+                _CB.unkAFF0 = 1;
+                _CB.unkB0F4 = 1;
+            }
+        } else {
+            menuCBGCEntryTypeIndex();
+            if (menuCBPokemonCheck(_CB.unkB1D4, _CB.unkB1D8) && _CB.unkB0F8 <= 0x23) {
+                _CB.unkB0FC = 1;
+            }
+        }
+    } else if (windowGetKeyInfo()->rep & 0x400) {
+        menuCB2DPokemonClearSHIFT(0);
+        menuCB_SE_Play(0x444);
+        switch (_CB.unkB0F0) {
+        case 0:
+            _CB.unkB0F0 = 1;
+            _CB.unkB0E8 = 0;
+            _CB.unkB0F8 = 0;
+            break;
+        case 1:
+            _CB.unkB0E8++;
+            if (_CB.unkB0E8 == 8) {
+                if (M2C_FIELD(&_CB, u8 *, 0xB4A0) == 1) {
+                    _CB.unkB0F0 = 2;
+                    _CB.unkB0EC = 0;
+                } else {
+                    _CB.unkB0F0 = 0;
+                }
+                _CB.unkB0F8 = 0;
+                _CB.unkB0E8--;
+            }
+            break;
+        case 2:
+            _CB.unkB0EC++;
+            if (_CB.unkB0EC == 9) {
+                _CB.unkB0F0 = 0;
+                _CB.unkB0F8 = 0;
+                _CB.unkB0EC--;
+            }
+            break;
+        }
+        if (_CB.unkB0F0 == 2) {
+            menuCBReliveHallCursolInit();
+        }
+        if (prev >= 0x1E && prev != _CB.unkB0F8) {
+            _CB.unkB0F8 = prev;
+        }
+    } else if (windowGetKeyInfo()->rep & 0x200) {
+        menuCB2DPokemonClearSHIFT(1);
+        menuCB_SE_Play(0x444);
+        switch (_CB.unkB0F0) {
+        case 0:
+            if (M2C_FIELD(&_CB, u8 *, 0xB4A0) == 1) {
+                _CB.unkB0F0 = 2;
+                _CB.unkB0EC = 8;
+            } else {
+                _CB.unkB0F0 = 1;
+                _CB.unkB0E8 = 7;
+            }
+            _CB.unkB0F8 = 0;
+            break;
+        case 1:
+            if (_CB.unkB0E8 == 0) {
+                _CB.unkB0F0 = 0;
+                _CB.unkB0F8 = 0;
+            } else {
+                _CB.unkB0E8--;
+            }
+            break;
+        case 2:
+            if (_CB.unkB0EC == 0) {
+                _CB.unkB0F0 = 1;
+                _CB.unkB0E8 = 7;
+                _CB.unkB0F8 = 0;
+            } else {
+                _CB.unkB0EC--;
+            }
+            break;
+        }
+        if (_CB.unkB0F0 == 2) {
+            menuCBReliveHallCursolInit();
+        }
+        if (prev >= 0x1E && prev != _CB.unkB0F8) {
+            _CB.unkB0F8 = prev;
+        }
+    } else {
+        if (_CB.unkB0F0 == 2) {
+            s32 st = _CB.unkB0EC;
+            CReliveHall* hall = CReliveHall::getPointer();
+            qty = hall->getStage(st)->getDancerQuantity();
+        }
+        if (windowGetKeyRepeat() & 1) {
+            switch (_CB.unkB0F0) {
+            case 0:
+                switch (_CB.unkB0F8) {
+                case 0:
+                case 2:
+                case 30:
+                    break;
+                case 37:
+                    _CB.unkB0F8 = 5;
+                    break;
+                case 36:
+                    _CB.unkB0F8 = 1;
+                    break;
+                case 31:
+                    _CB.unkB0F8 = 0x1E;
+                    break;
+                case 32:
+                    _CB.unkB0F8 = 0x1F;
+                    break;
+                case 33:
+                    _CB.unkB0F8 = 0x20;
+                    break;
+                case 34:
+                    _CB.unkB0F8 = 0x21;
+                    break;
+                case 35:
+                    _CB.unkB0F8 = 0x22;
+                    break;
+                default:
+                    _CB.unkB0F8--;
+                    break;
+                }
+                break;
+            case 1:
+                switch (_CB.unkB0F8) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 0x1E:
+                    break;
+                case 0x25:
+                    _CB.unkB0F8 = 0x1D;
+                    break;
+                case 0x24:
+                    _CB.unkB0F8 = 0x18;
+                    break;
+                case 0x1F:
+                case 0x20:
+                case 0x21:
+                case 0x22:
+                case 0x23:
+                    _CB.unkB0F8--;
+                    break;
+                default:
+                    _CB.unkB0F8 -= 6;
+                    break;
+                }
+                break;
+            case 2: {
+                s32 stage = _CB.unkB0EC;
+                switch (_CB.unkB0F8) {
+                case 0:
+                    break;
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                case 13:
+                case 14:
+                case 15:
+                case 16:
+                case 17:
+                case 18:
+                case 19:
+                case 20:
+                case 21:
+                case 22:
+                case 23:
+                case 24:
+                case 25:
+                case 26:
+                case 27:
+                case 28:
+                    break;
+                case 37:
+                    switch (qty) {
+                    case 0:
+                    case 1:
+                        if (menuCBPokemonCheck(6, ((stage << 16) & 0xFFFF0000) | 4)) {
+                            _CB.unkB0F8 = 4;
+                        } else if (qty == 1) {
+                            _CB.unkB0F8 = 0;
+                        }
+                        break;
+                    case 2:
+                    case 3:
+                        _CB.unkB0F8 = 1;
+                        break;
+                    case 4:
+                        _CB.unkB0F8 = 2;
+                        break;
+                    }
+                    break;
+                case 36:
+                    switch (qty) {
+                    case 0:
+                    case 1:
+                        if (menuCBPokemonCheck(6, ((stage << 16) & 0xFFFF0000) | 4)) {
+                            _CB.unkB0F8 = 4;
+                        } else if (qty == 1) {
+                            _CB.unkB0F8 = 0;
+                        }
+                        break;
+                    case 2:
+                        _CB.unkB0F8 = 1;
+                        break;
+                    case 3:
+                        _CB.unkB0F8 = 2;
+                        break;
+                    case 4:
+                        _CB.unkB0F8 = 3;
+                        break;
+                    }
+                    break;
+                case 1:
+                    switch (qty) {
+                    case 2:
+                    case 3:
+                        if (menuCBPokemonCheck(6, ((stage << 16) & 0xFFFF0000) | 4)) {
+                            _CB.unkB0F8 = 4;
+                        } else {
+                            _CB.unkB0F8 = 0;
+                        }
+                        break;
+                    }
+                    break;
+                case 2:
+                    if (menuCBPokemonCheck(6, ((stage << 16) & 0xFFFF0000) | 4)) {
+                        _CB.unkB0F8 = 4;
+                    } else if (qty == 3) {
+                        _CB.unkB0F8 = 0;
+                    } else {
+                        _CB.unkB0F8 = 1;
+                    }
+                    break;
+                case 3:
+                    if (menuCBPokemonCheck(6, ((stage << 16) & 0xFFFF0000) | 4)) {
+                        _CB.unkB0F8 = 4;
+                    } else {
+                        _CB.unkB0F8 = 0;
+                    }
+                    break;
+                case 4:
+                    switch (qty) {
+                    case 0:
+                        break;
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                        _CB.unkB0F8 = 0;
+                        break;
+                    }
+                    break;
+                case 31:
+                case 32:
+                case 33:
+                case 34:
+                case 35:
+                    _CB.unkB0F8--;
+                    break;
+                }
+                break;
+            }
+            }
+            if (prev != _CB.unkB0F8) {
+                menuCB_SE_Play(0x441);
+            }
+        } else if (windowGetKeyRepeat() & 2) {
+            switch (_CB.unkB0F0) {
+            case 0:
+                switch (_CB.unkB0F8) {
+                case 1:
+                    _CB.unkB0F8 = 0x24;
+                    break;
+                case 5:
+                    _CB.unkB0F8 = 0x25;
+                    break;
+                case 0x23:
+                case 0x24:
+                case 0x25:
+                    break;
+                case 0:
+                case 2:
+                case 3:
+                case 4:
+                case 0x1E:
+                case 0x1F:
+                case 0x20:
+                case 0x21:
+                case 0x22:
+                    _CB.unkB0F8++;
+                    break;
+                }
+                break;
+            case 1:
+                switch (_CB.unkB0F8) {
+                case 0x1E:
+                case 0x1F:
+                case 0x20:
+                case 0x21:
+                case 0x22:
+                    _CB.unkB0F8++;
+                    break;
+                case 0x23:
+                case 0x24:
+                case 0x25:
+                    break;
+                case 0x18:
+                case 0x19:
+                case 0x1A:
+                    _CB.unkB0F8 = 0x24;
+                    break;
+                case 0x1B:
+                case 0x1C:
+                case 0x1D:
+                    _CB.unkB0F8 = 0x25;
+                    break;
+                default:
+                    _CB.unkB0F8 += 6;
+                    break;
+                }
+                break;
+            case 2: {
+                s32 stage = _CB.unkB0EC;
+                switch (_CB.unkB0F8) {
+                case 0:
+                    if (menuCBPokemonCheck(6, ((stage << 16) & 0xFFFF0000) | 4)) {
+                        _CB.unkB0F8 = 4;
+                    } else {
+                        switch (qty) {
+                        case 1:
+                            _CB.unkB0F8 = 0x25;
+                            break;
+                        case 2:
+                            _CB.unkB0F8 = 1;
+                            break;
+                        case 3:
+                            _CB.unkB0F8 = 2;
+                            break;
+                        case 4:
+                            _CB.unkB0F8 = 3;
+                            break;
+                        }
+                    }
+                    break;
+                case 1:
+                    switch (qty) {
+                    case 2:
+                    case 3:
+                        _CB.unkB0F8 = 0x25;
+                        break;
+                    case 4:
+                        if (menuCBPokemonCheck(6, ((stage << 16) & 0xFFFF0000) | 4)) {
+                            _CB.unkB0F8 = 4;
+                        } else {
+                            _CB.unkB0F8 = 2;
+                        }
+                        break;
+                    }
+                    break;
+                case 2:
+                    switch (qty) {
+                    case 3:
+                        _CB.unkB0F8 = 0x24;
+                        break;
+                    case 4:
+                        _CB.unkB0F8 = 0x25;
+                        break;
+                    }
+                    break;
+                case 3:
+                    _CB.unkB0F8 = 0x24;
+                    break;
+                case 4:
+                    switch (qty) {
+                    case 0:
+                    case 1:
+                        _CB.unkB0F8 = 0x25;
+                        break;
+                    case 2:
+                        _CB.unkB0F8 = 1;
+                        break;
+                    case 3:
+                        _CB.unkB0F8 = 2;
+                        break;
+                    case 4:
+                        _CB.unkB0F8 = 3;
+                        break;
+                    }
+                    break;
+                case 0x1E:
+                case 0x1F:
+                case 0x20:
+                case 0x21:
+                case 0x22:
+                    _CB.unkB0F8++;
+                    break;
+                case 0x23:
+                case 0x24:
+                case 0x25:
+                    break;
+                }
+                break;
+            }
+            }
+            if (prev != _CB.unkB0F8) {
+                menuCB_SE_Play(0x441);
+            }
+        }
+        if (windowGetKeyRepeat() & 4) {
+            switch (_CB.unkB0F0) {
+            case 0:
+                switch (_CB.unkB0F8) {
+                case 37:
+                    _CB.unkB0F8 = 0x24;
+                    break;
+                case 30:
+                    _CB.unkB0F8 = 2;
+                    break;
+                case 31:
+                    _CB.unkB0F8 = 3;
+                    break;
+                case 32:
+                    _CB.unkB0F8 = 4;
+                    break;
+                case 33:
+                    _CB.unkB0F8 = 5;
+                    break;
+                case 34:
+                case 35:
+                    _CB.unkB0F8 = 0x25;
+                    break;
+                case 2:
+                    _CB.unkB0F8 = 0;
+                    break;
+                case 3:
+                    _CB.unkB0F8 = 0;
+                    break;
+                case 4:
+                    _CB.unkB0F8 = 1;
+                    break;
+                case 5:
+                    _CB.unkB0F8 = 1;
+                    break;
+                }
+                break;
+            case 1:
+                switch (_CB.unkB0F8) {
+                case 0:
+                case 6:
+                case 12:
+                case 18:
+                case 24:
+                case 36:
+                    break;
+                case 37:
+                    _CB.unkB0F8 = 0x24;
+                    break;
+                case 30:
+                    _CB.unkB0F8 = 5;
+                    break;
+                case 31:
+                    _CB.unkB0F8 = 0xB;
+                    break;
+                case 32:
+                    _CB.unkB0F8 = 0x11;
+                    break;
+                case 33:
+                    _CB.unkB0F8 = 0x17;
+                    break;
+                case 34:
+                    _CB.unkB0F8 = 0x1D;
+                    break;
+                case 35:
+                    _CB.unkB0F8 = 0x25;
+                    break;
+                default:
+                    _CB.unkB0F8--;
+                    break;
+                }
+                break;
+            case 2: {
+                s32 stage = _CB.unkB0EC;
+                switch (_CB.unkB0F8) {
+                case 0:
+                    break;
+                case 1:
+                    switch (qty) {
+                    case 3:
+                        _CB.unkB0F8 = 2;
+                        break;
+                    case 4:
+                        _CB.unkB0F8 = 0;
+                        break;
+                    }
+                    break;
+                case 2:
+                    switch (qty) {
+                    case 4:
+                        _CB.unkB0F8 = 3;
+                        break;
+                    }
+                    break;
+                case 4:
+                    switch (qty) {
+                    case 3:
+                        _CB.unkB0F8 = 2;
+                        break;
+                    case 4:
+                        _CB.unkB0F8 = 0;
+                        break;
+                    }
+                    break;
+                case 0x25:
+                    _CB.unkB0F8 = 0x24;
+                    break;
+                case 0x1E:
+                case 0x1F:
+                case 0x20:
+                case 0x21:
+                case 0x22:
+                case 0x23:
+                    if (menuCBPokemonCheck(6, ((stage << 16) & 0xFFFF0000) | 4)) {
+                        _CB.unkB0F8 = 4;
+                    } else {
+                        _CB.unkB0F8 = 0x25;
+                    }
+                    break;
+                }
+                break;
+            }
+            }
+            if (prev != _CB.unkB0F8) {
+                menuCB_SE_Play(0x441);
+            }
+        } else if (windowGetKeyRepeat() & 8) {
+            switch (_CB.unkB0F0) {
+            case 0:
+                switch (_CB.unkB0F8) {
+                case 0:
+                    _CB.unkB0F8 = 2;
+                    break;
+                case 1:
+                    _CB.unkB0F8 = 4;
+                    break;
+                case 2:
+                    _CB.unkB0F8 = 0x1E;
+                    break;
+                case 3:
+                    _CB.unkB0F8 = 0x1F;
+                    break;
+                case 4:
+                    _CB.unkB0F8 = 0x20;
+                    break;
+                case 5:
+                    _CB.unkB0F8 = 0x21;
+                    break;
+                case 37:
+                    _CB.unkB0F8 = 0x22;
+                    break;
+                case 36:
+                    _CB.unkB0F8 = 0x25;
+                    break;
+                case 6:
+                case 7:
+                case 8:
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                case 13:
+                case 14:
+                case 15:
+                case 16:
+                case 17:
+                case 18:
+                case 19:
+                case 20:
+                case 21:
+                case 22:
+                case 23:
+                case 24:
+                case 25:
+                case 26:
+                case 27:
+                case 28:
+                    break;
+                }
+                break;
+            case 1:
+                switch (_CB.unkB0F8) {
+                case 30:
+                case 31:
+                case 32:
+                case 33:
+                case 34:
+                case 35:
+                    break;
+                case 5:
+                    _CB.unkB0F8 = 0x1E;
+                    break;
+                case 11:
+                    _CB.unkB0F8 = 0x1F;
+                    break;
+                case 17:
+                    _CB.unkB0F8 = 0x20;
+                    break;
+                case 23:
+                    _CB.unkB0F8 = 0x21;
+                    break;
+                case 29:
+                    _CB.unkB0F8 = 0x22;
+                    break;
+                case 37:
+                    _CB.unkB0F8 = 0x23;
+                    break;
+                case 36:
+                    _CB.unkB0F8 = 0x25;
+                    break;
+                default:
+                    _CB.unkB0F8++;
+                    break;
+                }
+                break;
+            case 2:
+                switch (_CB.unkB0F8) {
+                case 0:
+                    switch (qty) {
+                    case 1:
+                    case 2:
+                    case 3:
+                        _CB.unkB0F8 = 0x1E;
+                        break;
+                    case 4:
+                        _CB.unkB0F8 = 1;
+                        break;
+                    }
+                    break;
+                case 1:
+                    switch (qty) {
+                    case 2:
+                    case 3:
+                    case 4:
+                        _CB.unkB0F8 = 0x1E;
+                        break;
+                    }
+                    break;
+                case 2:
+                    switch (qty) {
+                    case 3:
+                        _CB.unkB0F8 = 1;
+                        break;
+                    case 4:
+                        _CB.unkB0F8 = 0x1E;
+                        break;
+                    }
+                    break;
+                case 3:
+                    _CB.unkB0F8 = 2;
+                    break;
+                case 4:
+                    switch (qty) {
+                    case 0:
+                    case 1:
+                    case 2:
+                        _CB.unkB0F8 = 0x1E;
+                        break;
+                    case 3:
+                    case 4:
+                        _CB.unkB0F8 = 1;
+                        break;
+                    }
+                    break;
+                case 0x25:
+                    _CB.unkB0F8 = 0x23;
+                    break;
+                case 0x24:
+                    _CB.unkB0F8 = 0x25;
+                    break;
+                case 0x1E:
+                case 0x1F:
+                case 0x20:
+                case 0x21:
+                case 0x22:
+                case 0x23:
+                    break;
+                }
+                break;
+            }
+            if (prev != _CB.unkB0F8) {
+                menuCB_SE_Play(0x441);
+            }
+        }
+        if ((windowGetKeyInfo()->trg & 0x800) && _CB.unkB0F8 != 0x25) {
+            _CB.unkB0F8 = 0x25;
+            menuCB_SE_Play(0x441);
+        }
+    }
+    }
+    }
 }
-
 }
 
 extern "C" {
-void menuTool_tunaideGCEntry01_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
+void menuTool_tunaideGCEntry00_Button(void) {
 }
+
 extern "C" {
 void menuCB_tunaideGCEntry00_Disp(GCsptr p0, void *p1) {
     s16 temp_r5;
@@ -5626,6 +5140,17 @@ void menuCB_tunaideGCEntry00_Disp(GCsptr p0, void *p1) {
         break;
     }
 }
+}
+extern "C" {
+
+}
+
+}
+
+extern "C" {
+void menuTool_tunaideGCEntry01_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
 }
 
 }
@@ -5789,16 +5314,8 @@ extern "C" {
 void menuTool_tunaideGCEntry02_Button(void) {
 }
 }
-
 extern "C" {
-void menuTool_tunaideGCEntry03_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-    menuCB_MenuDispCheckONorOFF(window, _CB.unkB0F0 == 0);
-    if (_CB.unkB150 != 0 && _CB.unkB0F0 == 0) {
-        window->value = _CB.unkB158;
-    }
-}
+
 extern "C" {
 void menuCB_tunaideGCEntry02_Disp(void *p0, void *p1) {
     s16 temp_r0;
@@ -5935,6 +5452,17 @@ void menuCB_tunaideGCEntry02_Disp(void *p0, void *p1) {
     }
 }
 }
+}
+
+extern "C" {
+void menuTool_tunaideGCEntry03_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
+    menuCB_MenuDispCheckONorOFF(window, _CB.unkB0F0 == 0);
+    if (_CB.unkB150 != 0 && _CB.unkB0F0 == 0) {
+        window->value = _CB.unkB158;
+    }
+}
 
 }
 
@@ -5942,16 +5470,8 @@ extern "C" {
 void menuTool_tunaideGCEntry03_Button(void) {
 }
 }
-
 extern "C" {
-void menuTool_tunaideGCEntry04_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-    menuCB_MenuDispCheckONorOFF(window, _CB.unkB0F0 == 2);
-    if (_CB.unkB150 != 0 && _CB.unkB0F0 == 2) {
-        window->value = _CB.unkB158;
-    }
-}
+
 extern "C" {
 void menuCB_tunaideGCEntry03_Disp(void *p0, void *p1) {
     s16 temp_r0;
@@ -5982,6 +5502,17 @@ void menuCB_tunaideGCEntry03_Disp(void *p0, void *p1) {
     }
 }
 }
+}
+
+extern "C" {
+void menuTool_tunaideGCEntry04_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
+    menuCB_MenuDispCheckONorOFF(window, _CB.unkB0F0 == 2);
+    if (_CB.unkB150 != 0 && _CB.unkB0F0 == 2) {
+        window->value = _CB.unkB158;
+    }
+}
 
 }
 
@@ -5989,12 +5520,8 @@ extern "C" {
 void menuTool_tunaideGCEntry04_Button(void) {
 }
 }
-
 extern "C" {
-void menuTool_tunaidePokemonSelect0_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-}
+
 extern "C" {
 void menuCB_tunaideGCEntry04_Disp(void *p0, void *p1) {
     s16 temp_r0;
@@ -6083,6 +5610,13 @@ void menuCB_tunaideGCEntry04_Disp(void *p0, void *p1) {
         return;
     }
 }
+}
+}
+
+extern "C" {
+void menuTool_tunaidePokemonSelect0_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
 }
 
 }
@@ -6724,10 +6258,8 @@ void menuCB_Cursol_Disp(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     }
 }
 }
-
 extern "C" {
-void menuTool_Rule00_Button(void) {
-}
+
 extern "C" {
 void menuTool_Rule00_Ctrl(void * p0) {
     s16 temp_r30;
@@ -6820,8 +6352,8 @@ block_17:
                             return;
                         }
                         menuCB_SE_Play(0x11);
-                        var_r7 = (u8*)(M2C_FIELD(&_CB, s32 *, 0xB02C) + (GCsptr)M2C_FIELD(&_CB, u8 **, 0x9C78)) + 0x52;
-                        var_r7[M2C_FIELD(&_CB, s32 *, 0xB028)] ^= 1;
+                        var_r7 = (u8*)(M2C_FIELD(&_CB, s32 *, 0xB028) + (GCsptr)M2C_FIELD(&_CB, u8 **, 0x9C78)) + 0x52;
+                        var_r7[M2C_FIELD(&_CB, s32 *, 0xB02C)] ^= 1;
                         goto block_27;
                     }
 block_27:
@@ -7669,14 +7201,12 @@ switch ((s32) M2C_FIELD(&_CB, s32 *, 0xB11C)) {
     }
 }
 }
-
 }
 
-static void _menuCB_Rule_Page_Chenge_Init(void) {
-    _CB.unkB124 = _CB.unkB118;
-    _CB.unkB128 = 0xFF;
-    _CB.unkB12C = 0xF;
+extern "C" {
+void menuTool_Rule00_Button(void) {
 }
+
 extern "C" {
 void menuCB_Rule00_Disp(void *p0, void *p1) {
     s16 temp_r0;
@@ -7755,6 +7285,14 @@ void menuCB_Rule00_Disp(void *p0, void *p1) {
 }
 }
 
+}
+
+static void _menuCB_Rule_Page_Chenge_Init(void) {
+    _CB.unkB124 = _CB.unkB118;
+    _CB.unkB128 = 0xFF;
+    _CB.unkB12C = 0xF;
+}
+
 static void menuCB_RuleCustomMainCursolColorChenge(tagSPRITE_WORK* sprite) {
     if (_CB.unkB11C != 0) {
         sprite->b = 0x7F;
@@ -7779,13 +7317,8 @@ extern "C" {
 void menuTool_Rule01_Button(void) {
 }
 }
-
 extern "C" {
-void menuTool_Rule02_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-    menuCB_MenuDispCheckONorOFF_RULE(window, 1);
-}
+
 extern "C" {
 void menuCB_Rule01_Disp(GCsptr p0, void *p1) {
     s32 temp_r0;
@@ -8150,6 +7683,14 @@ void menuCB_Rule01_Disp(GCsptr p0, void *p1) {
     }
 }
 }
+}
+
+extern "C" {
+void menuTool_Rule02_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
+    menuCB_MenuDispCheckONorOFF_RULE(window, 1);
+}
 
 }
 
@@ -8157,13 +7698,8 @@ extern "C" {
 void menuTool_Rule02_Button(void) {
 }
 }
-
 extern "C" {
-void menuTool_Rule03_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_DispEffect(window);
-    menuSetStatus(window->seq, 0x10);
-    menuCB_MenuDispCheckONorOFF_RULE(window, 2);
-}
+
 extern "C" {
 void menuCB_Rule02_Disp(GCsptr p0, void *p1) {
     s16 temp_r0;
@@ -8296,6 +7832,14 @@ void menuCB_Rule02_Disp(GCsptr p0, void *p1) {
         return;
     }
 }
+}
+}
+
+extern "C" {
+void menuTool_Rule03_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_DispEffect(window);
+    menuSetStatus(window->seq, 0x10);
+    menuCB_MenuDispCheckONorOFF_RULE(window, 2);
 }
 
 }
@@ -8788,163 +8332,8 @@ void menuCB_Flash_WINLOSE_Disp(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     }
 }
 }
-
 extern "C" {
-void menuTool_tunaideGCEntry02_1_Ctrl(tagWINDOW_WORK* window) {
-    menuCB_MenuDispCheckONorOFF(window, _CB.unkB150 != 0);
-    window->value = 0x180;
-    if (_CB.unkB150 != 0 && _CB.unkB15C == 1) {
-        window->value = _CB.unkB154;
-    }
-}
-extern "C" {
-void menuCB_tunaideGCEntry04_Disp_1(void *p0, void *p1) {
-    s16 temp_r4;
-    s32 temp_r29;
-    s32 temp_r3;
 
-    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
-    spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
-    spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB150) == 0) {
-        goto block_35;
-    }
-    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C) != 2) {
-        goto block_35;
-    }
-    temp_r29 = M2C_FIELD(&_CB, s32 *, 0xB164);
-    temp_r3 = CReliveHall::getPointer()->getStage(temp_r29)->getDancerQuantity();
-    temp_r4 = M2C_FIELD(p1, s16 *, 6);
-    switch (temp_r4) { case 0x5E2: goto sw0_c0x5E2; case 0x5E3: goto sw0_c0x5E3; case 0x5E4: goto sw0_c0x5E4; case 0x5E5: goto sw0_c0x5E5; case 0x5E6: goto sw0_c0x5E6; case 0x5E8: goto sw0_c0x5E8; case 0x5E7: goto sw0_c0x5E7; case 0x5EB: goto sw0_c0x5EB; case 0x5EC: goto sw0_c0x5EC; case 0x5E9: goto sw0_c0x5E9; case 0x5EA: goto sw0_c0x5EA; default: goto block_35; }
-sw0_c0x5E2:;
-    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 4);
-    return;
-sw0_c0x5E3:;
-    if (temp_r3 != 1) {
-        goto block_7;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, (temp_r29 * 0x10000) & 0xFFFF0000);
-    return;
-block_7:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5E4:;
-    if (temp_r3 != 2) {
-        goto block_10;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, (temp_r29 * 0x10000) & 0xFFFF0000);
-    return;
-block_10:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5E5:;
-    if (temp_r3 != 2) {
-        goto block_13;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 1);
-    return;
-block_13:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5E6:;
-    if (temp_r3 != 3) {
-        goto block_16;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, (temp_r29 * 0x10000) & 0xFFFF0000);
-    return;
-block_16:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5E8:;
-    if (temp_r3 != 3) {
-        goto block_19;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 1);
-    return;
-block_19:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5E7:;
-    if (temp_r3 != 3) {
-        goto block_22;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 2);
-    return;
-block_22:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5EB:;
-    if (temp_r3 != 4) {
-        goto block_25;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, (temp_r29 * 0x10000) & 0xFFFF0000);
-    return;
-block_25:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5EC:;
-    if (temp_r3 != 4) {
-        goto block_28;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 1);
-    return;
-block_28:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5E9:;
-    if (temp_r3 != 4) {
-        goto block_31;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 2);
-    return;
-block_31:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-    return;
-sw0_c0x5EA:;
-    if (temp_r3 != 4) {
-        goto block_34;
-    }
-    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 3);
-    return;
-block_34:
-    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
-block_35:
-    return;
-}
-}
-
-extern "C" {
-extern "C" {
-void menuCB_tunaideGCEntry03_Disp_1(void *p0, void *p1) {
-    s16 temp_r0;
-
-    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
-    spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
-    spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
-    if (((s32) M2C_FIELD(&_CB, s32 *, 0xB150) != 0) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C) == 0)) {
-        temp_r0 = M2C_FIELD(p1, s16 *, 6);
-        switch (temp_r0) {
-        case 0x59D:
-            menuCB2DPokemonDisp2(p0, p1, 4, 0);
-            return;
-        case 0x59E:
-            menuCB2DPokemonDisp2(p0, p1, 4, 1);
-            return;
-        case 0x59F:
-            menuCB2DPokemonDisp2(p0, p1, 4, 2);
-            return;
-        case 0x5A0:
-            menuCB2DPokemonDisp2(p0, p1, 4, 3);
-            return;
-        case 0x5A1:
-            menuCB2DPokemonDisp2(p0, p1, 4, 4);
-            return;
-        case 0x5A2:
-            menuCB2DPokemonDisp2(p0, p1, 4, 5);
-            break;
-        }
-    }
-}
 extern "C" {
 void menuCB_tunaideGCEntry02_Disp_1(void * p0, void * p1) {
     s16 temp_r3;
@@ -9089,6 +8478,166 @@ block_35:
     return;
 }
 }
+
+void menuCB_tunaideGCEntry03_Disp_1(void *p0, void *p1) {
+    s16 temp_r0;
+
+    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
+    spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
+    spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
+    if (((s32) M2C_FIELD(&_CB, s32 *, 0xB150) != 0) && ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C) == 0)) {
+        temp_r0 = M2C_FIELD(p1, s16 *, 6);
+        switch (temp_r0) {
+        case 0x59D:
+            menuCB2DPokemonDisp2(p0, p1, 4, 0);
+            return;
+        case 0x59E:
+            menuCB2DPokemonDisp2(p0, p1, 4, 1);
+            return;
+        case 0x59F:
+            menuCB2DPokemonDisp2(p0, p1, 4, 2);
+            return;
+        case 0x5A0:
+            menuCB2DPokemonDisp2(p0, p1, 4, 3);
+            return;
+        case 0x5A1:
+            menuCB2DPokemonDisp2(p0, p1, 4, 4);
+            return;
+        case 0x5A2:
+            menuCB2DPokemonDisp2(p0, p1, 4, 5);
+            break;
+        }
+    }
+}
+
+extern "C" {
+void menuCB_tunaideGCEntry04_Disp_1(void *p0, void *p1) {
+    s16 temp_r4;
+    s32 temp_r29;
+    s32 temp_r3;
+
+    spriteSetOffset(M2C_FIELD(p0, s32 *, 0x1C), 0, 0);
+    spriteSetEnv(M2C_FIELD(p0, s32 *, 0x1C));
+    spriteSetScissor(M2C_FIELD(p0, s32 *, 0x1C), 0x12, 0x51, 0x180, 0x140);
+    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB150) == 0) {
+        goto block_35;
+    }
+    if ((s32) M2C_FIELD(&_CB, s32 *, 0xB15C) != 2) {
+        goto block_35;
+    }
+    temp_r29 = M2C_FIELD(&_CB, s32 *, 0xB164);
+    temp_r3 = CReliveHall::getPointer()->getStage(temp_r29)->getDancerQuantity();
+    temp_r4 = M2C_FIELD(p1, s16 *, 6);
+    switch (temp_r4) { case 0x5E2: goto sw0_c0x5E2; case 0x5E3: goto sw0_c0x5E3; case 0x5E4: goto sw0_c0x5E4; case 0x5E5: goto sw0_c0x5E5; case 0x5E6: goto sw0_c0x5E6; case 0x5E8: goto sw0_c0x5E8; case 0x5E7: goto sw0_c0x5E7; case 0x5EB: goto sw0_c0x5EB; case 0x5EC: goto sw0_c0x5EC; case 0x5E9: goto sw0_c0x5E9; case 0x5EA: goto sw0_c0x5EA; default: goto block_35; }
+sw0_c0x5E2:;
+    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 4);
+    return;
+sw0_c0x5E3:;
+    if (temp_r3 != 1) {
+        goto block_7;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, (temp_r29 * 0x10000) & 0xFFFF0000);
+    return;
+block_7:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5E4:;
+    if (temp_r3 != 2) {
+        goto block_10;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, (temp_r29 * 0x10000) & 0xFFFF0000);
+    return;
+block_10:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5E5:;
+    if (temp_r3 != 2) {
+        goto block_13;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 1);
+    return;
+block_13:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5E6:;
+    if (temp_r3 != 3) {
+        goto block_16;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, (temp_r29 * 0x10000) & 0xFFFF0000);
+    return;
+block_16:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5E8:;
+    if (temp_r3 != 3) {
+        goto block_19;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 1);
+    return;
+block_19:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5E7:;
+    if (temp_r3 != 3) {
+        goto block_22;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 2);
+    return;
+block_22:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5EB:;
+    if (temp_r3 != 4) {
+        goto block_25;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, (temp_r29 * 0x10000) & 0xFFFF0000);
+    return;
+block_25:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5EC:;
+    if (temp_r3 != 4) {
+        goto block_28;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 1);
+    return;
+block_28:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5E9:;
+    if (temp_r3 != 4) {
+        goto block_31;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 2);
+    return;
+block_31:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+    return;
+sw0_c0x5EA:;
+    if (temp_r3 != 4) {
+        goto block_34;
+    }
+    menuCB2DPokemonDisp2(p0, p1, 6, ((temp_r29 * 0x10000) & 0xFFFF0000) | 3);
+    return;
+block_34:
+    winSpriteSetDisp((tagSPRITE_WORK*)((tagSPRITE_WORK *) p1), 0U);
+block_35:
+    return;
+}
+}
+}
+
+extern "C" {
+void menuTool_tunaideGCEntry02_1_Ctrl(tagWINDOW_WORK* window) {
+    menuCB_MenuDispCheckONorOFF(window, _CB.unkB150 != 0);
+    window->value = 0x180;
+    if (_CB.unkB150 != 0 && _CB.unkB15C == 1) {
+        window->value = _CB.unkB154;
+    }
+}
+
+extern "C" {
+extern "C" {
 
 }
 

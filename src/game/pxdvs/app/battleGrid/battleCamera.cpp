@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/gcdata.h>
 #include <game/pcret.h>
 
 #pragma pool_strings off
@@ -30,9 +31,9 @@ public:
 
 struct SequenceSection {
     u8 pad0[8];
-    u32 flags;
+    gc_be32 flags;
     u8 padC[0x4c - 0xC];
-    u32 parts[1];
+    gc_be32 parts[1];
 };
 
 class ModelSequence : public NullSequence {

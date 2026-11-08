@@ -149,57 +149,64 @@ static inline void primSetTexture(GStexture* tex) {
 #define PRIM_CLAMP_S10(x) PRIM_MIN(PRIM_MAX(x, -0x400), 0x3FF)
 
 static inline void primMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
+#ifdef __MWERKS__
     PRIM_U32(l, off) |= bit;
     (*(u32*)&l->dirty[0].groups) |= sum;
     PRIM_U32(l, off + 0xB8) |= bit;
     (*(u32*)&l->dirty[1].groups) |= sum;
+#else
+    GSL_IN(l, u32, dirty[0], 0x16A8, off) |= bit;
+    l->dirty[0].groups |= sum;
+    GSL_IN(l, u32, dirty[1], 0x1760, off + 0xB8) |= bit;
+    l->dirty[1].groups |= sum;
+#endif
 }
 
 static inline void primSetTevColorS10(GXColorS10 c) {
     GSgfxLayer* l = primData.layer;
-    PRIM_U32(l, 0x13FC) = 1;
-    PRIM_S16(l, 0x1400) = PRIM_CLAMP_S10(c.r);
-    PRIM_S16(l, 0x1402) = PRIM_CLAMP_S10(c.g);
-    PRIM_S16(l, 0x1404) = PRIM_CLAMP_S10(c.b);
-    PRIM_S16(l, 0x1406) = PRIM_CLAMP_S10(c.a);
+    LAYER_F(l, u32 *, 0x13FC, hw.tevColor[1].type) = 1;
+    LAYER_F(l, s16 *, 0x1400, hw.tevColor[1].v.s10[0]) = PRIM_CLAMP_S10(c.r);
+    LAYER_F(l, s16 *, 0x1402, hw.tevColor[1].v.s10[1]) = PRIM_CLAMP_S10(c.g);
+    LAYER_F(l, s16 *, 0x1404, hw.tevColor[1].v.s10[2]) = PRIM_CLAMP_S10(c.b);
+    LAYER_F(l, s16 *, 0x1406, hw.tevColor[1].v.s10[3]) = PRIM_CLAMP_S10(c.a);
     primMark(l, 8, 0x16E4, 2);
 }
 
 static inline void primSetTevColorOp(u32 op, u32 bias, u32 scale, u8 clamp, u32 reg) {
     GSgfxLayer* l = primData.layer;
-    PRIM_U32(l, 0x1170) = op;
-    PRIM_U32(l, 0x1174) = bias;
-    PRIM_U32(l, 0x1178) = scale;
-    PRIM_U8(l, 0x117C) = clamp;
-    PRIM_U32(l, 0x1180) = reg;
+    LAYER_F(l, u32 *, 0x1170, hw.colorOp[0].op) = op;
+    LAYER_F(l, u32 *, 0x1174, hw.colorOp[0].bias) = bias;
+    LAYER_F(l, u32 *, 0x1178, hw.colorOp[0].scale) = scale;
+    LAYER_F(l, u8 *, 0x117C, hw.colorOp[0].clamp) = clamp;
+    LAYER_F(l, u32 *, 0x1180, hw.colorOp[0].reg) = reg;
     primMark(l, 8, 0x16DC, 1);
 }
 
 static inline void primSetTevColorIn(u32 a, u32 b, u32 c, u32 d) {
     GSgfxLayer* l = primData.layer;
-    PRIM_U32(l, 0xF70) = a;
-    PRIM_U32(l, 0xF74) = b;
-    PRIM_U32(l, 0xF78) = c;
-    PRIM_U32(l, 0xF7C) = d;
+    LAYER_F(l, u32 *, 0xF70, hw.colorIn[0][0]) = a;
+    LAYER_F(l, u32 *, 0xF74, hw.colorIn[0][1]) = b;
+    LAYER_F(l, u32 *, 0xF78, hw.colorIn[0][2]) = c;
+    LAYER_F(l, u32 *, 0xF7C, hw.colorIn[0][3]) = d;
     primMark(l, 8, 0x16D4, 1);
 }
 
 static inline void primSetTevAlphaOp(u32 op, u32 bias, u32 scale, u8 clamp, u32 reg) {
     GSgfxLayer* l = primData.layer;
-    PRIM_U32(l, 0x12B0) = op;
-    PRIM_U32(l, 0x12B4) = bias;
-    PRIM_U32(l, 0x12B8) = scale;
-    PRIM_U8(l, 0x12BC) = clamp;
-    PRIM_U32(l, 0x12C0) = reg;
+    LAYER_F(l, u32 *, 0x12B0, hw.alphaOp[0].op) = op;
+    LAYER_F(l, u32 *, 0x12B4, hw.alphaOp[0].bias) = bias;
+    LAYER_F(l, u32 *, 0x12B8, hw.alphaOp[0].scale) = scale;
+    LAYER_F(l, u8 *, 0x12BC, hw.alphaOp[0].clamp) = clamp;
+    LAYER_F(l, u32 *, 0x12C0, hw.alphaOp[0].reg) = reg;
     primMark(l, 8, 0x16E0, 1);
 }
 
 static inline void primSetTevAlphaIn(u32 a, u32 b, u32 c, u32 d) {
     GSgfxLayer* l = primData.layer;
-    PRIM_U32(l, 0x1070) = a;
-    PRIM_U32(l, 0x1074) = b;
-    PRIM_U32(l, 0x1078) = c;
-    PRIM_U32(l, 0x107C) = d;
+    LAYER_F(l, u32 *, 0x1070, hw.alphaIn[0][0]) = a;
+    LAYER_F(l, u32 *, 0x1074, hw.alphaIn[0][1]) = b;
+    LAYER_F(l, u32 *, 0x1078, hw.alphaIn[0][2]) = c;
+    LAYER_F(l, u32 *, 0x107C, hw.alphaIn[0][3]) = d;
     primMark(l, 8, 0x16D8, 1);
 }
 

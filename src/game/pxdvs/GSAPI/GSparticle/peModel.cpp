@@ -93,7 +93,7 @@ struct peXform {
 };
 
 struct peEmitParams {
-    u32 flags;
+    gc_be32 flags;
 };
 
 struct peEmitterNode {

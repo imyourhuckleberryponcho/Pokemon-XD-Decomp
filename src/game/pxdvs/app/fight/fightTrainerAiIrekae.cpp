@@ -164,7 +164,10 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
     u8 weather = fightTrainerAiGetFightFloorNowTenkouDataId(trainer, 0, 1);
     for (u8 i = 0; i < 6; i++) values[i] = 0;
     fightOutPokemonBiosCopy(&saved, pokemon);
-    if (fightOutPokemonCheckFightOut(pokemon) == 1) fightOutPokemonIsFightActionAttackWazaOut(pokemon, 0xE2, 0);
+    if (fightOutPokemonCheckFightOut(pokemon) == 1) {
+        opponent = pokemon;
+        fightOutPokemonIsFightActionAttackWazaOut(opponent, 0xE2, 0);
+    }
     u16 count = fightTrainerGetIrekaeFightPokemonAry(trainer, candidates);
     u16 opponentCount = fightFloorGetFightTrainerFightOutPokemonPtrAry(0, trainer, opponents, 0, 1);
     u16 partyCount = fightFloorGetFightTrainerFightPokemonPtrAry(0, trainer, party, 1, 1);

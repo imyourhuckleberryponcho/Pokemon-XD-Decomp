@@ -244,9 +244,8 @@ void dbgMenuFlagCursor(FlagWindow* window) {
             u.c.pos = 0;
         }
     }
-    s16 rf_t = u.raw;
-    *(u32*)&window->cursor = rf_t;
-    window->selection = (u.c.pos + 1) + u.c.top;
+    *(u32*)&window->cursor = u.raw;
+    window->selection = u.c.top + u.c.pos + 1;
 }
 
 void dbgMenuFlagSetEtc(s32 index);
@@ -328,7 +327,11 @@ static s32 _dbgMenuFlagGetMenuNum(FlagWindow* window, s32* maxWidth) {
     }
     count = 0;
     for (i = 0, offset = 0; i < *flag_etc_number; i++) {
+#ifdef __MWERKS__
         void* msg = *(void**)((u8*)flag_etc + offset + 0x1C);
+#else
+        void* msg = (void*)(uintptr_t)flag_etc[i].msg;
+#endif
         if (msg != 0) {
             if (msg != 0) {
                 count++;

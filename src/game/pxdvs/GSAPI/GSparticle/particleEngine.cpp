@@ -234,6 +234,7 @@ struct peTexLayerView {
     GStexture* texShadow[0x2D];
 };
 
+#ifdef __MWERKS__
 static inline void layerSetTexture(u8* layer, u8 slot, GStexture* tex) {
     peTexLayerView* l = (peTexLayerView*)layer;
     l->tex[slot] = tex;
@@ -241,13 +242,27 @@ static inline void layerSetTexture(u8* layer, u8 slot, GStexture* tex) {
     l->texShadow[slot] = tex;
     l->texDirtyShadow |= 1 << slot;
 }
+#else
+static inline void layerSetTexture(u8* layer, u8 slot, GStexture* tex) {
+    GSgfxLayer* l = (GSgfxLayer*)layer;
+    l->dirty[0].tex[slot] = (GSgfxTex*)tex;
+    l->dirty[0].texMask |= 1 << slot;
+    l->dirty[1].tex[slot] = (GSgfxTex*)tex;
+    l->dirty[1].texMask |= 1 << slot;
+}
+#endif
 
 void particleEngineSetupTexture(u8 slot, GStexture* tex, s32 wrapS, s32 wrapT, s32 minFilter, s32 magFilter) {
     GStextureSetWrap(tex, wrapS, wrapT);
     GStextureSetFilter(tex, minFilter, magFilter, 0);
     u8* layer = (u8*)g_current_layer;
+#ifdef __MWERKS__
     peTexLayerView* l = (peTexLayerView*)layer;
     if (l->tex[slot] != tex || l->texShadow[slot] != tex || M2C_FIELD(tex, u8 *, 7) != 0) {
+#else
+    GSgfxLayer* l = (GSgfxLayer*)layer;
+    if ((GStexture*)l->dirty[0].tex[slot] != tex || (GStexture*)l->dirty[1].tex[slot] != tex || M2C_FIELD(tex, u8 *, 7) != 0) {
+#endif
         layerSetTexture(layer, slot, tex);
     }
 }
@@ -403,10 +418,17 @@ void particleEngineSetupBlendMode(u32 mode) {
 
 #define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
 static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
+#ifdef __MWERKS__
     LAYER_FIELD(l, u32, off) |= bit;
-    LAYER_FIELD(l, u32, 0x16A8) |= sum;
+    LAYER_F(l, u32 *, 0x16A8, dirty[0].groups) |= sum;
     LAYER_FIELD(l, u32, off + 0xB8) |= bit;
-    LAYER_FIELD(l, u32, 0x1760) |= sum;
+    LAYER_F(l, u32 *, 0x1760, dirty[1].groups) |= sum;
+#else
+    GSL_IN(l, u32, dirty[0], 0x16A8, off) |= bit;
+    l->dirty[0].groups |= sum;
+    GSL_IN(l, u32, dirty[1], 0x1760, off + 0xB8) |= bit;
+    l->dirty[1].groups |= sum;
+#endif
 }
 
 extern "C" {
@@ -421,23 +443,23 @@ void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2) {
         blendedTexturesSetup = p2;
         {
             GSgfxLayer* l = g_current_layer;
-            LAYER_FIELD(l, s8, 0xC70) = 1;
+            LAYER_F(l, s8 *, 0xC70, hw.nTexGens) = 1;
             layerMark(l, 1, 0x16AC, 1);
         }
         ((GSgfxLayer*)(g_current_layer))->tgenFunc(0U, (GSgfxTgenFunc)(1), (GSgfxTgenSrc)(4), (GSmtx*)(NULL), 0U, (GSmtx*)(NULL));
         {
             GSgfxLayer* l = g_current_layer;
-            LAYER_FIELD(l, s8, 0x14B0) = 0;
+            LAYER_F(l, s8 *, 0x14B0, hw.nIndStages) = 0;
             layerMark(l, 0x80, 0x16EC, 1);
         }
         {
             GSgfxLayer* l = g_current_layer;
-            LAYER_FIELD(l, s32, 0x1420) = 0;
+            LAYER_F(l, s32 *, 0x1420, hw.ind[0].type) = 0;
             layerMark(l, 8, 0x16E8, 1);
         }
         {
             GSgfxLayer* l = g_current_layer;
-            LAYER_FIELD(l, s8, 0xDB8) = 1;
+            LAYER_F(l, s8 *, 0xDB8, hw.nChans) = 1;
             layerMark(l, 4, 0x16BC, 1);
         }
         sp8 = 0;
@@ -445,185 +467,185 @@ void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2) {
         if (p2 != 0) {
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s8, 0xEAC) = 3;
+                LAYER_F(l, s8 *, 0xEAC, hw.nTevStages) = 3;
                 layerMark(l, 8, 0x16CC, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1584) = 0;
-                LAYER_FIELD(l, s32, 0x1588) = 0;
+                LAYER_F(l, s32 *, 0x1584, hw.swapSel[0][0]) = 0;
+                LAYER_F(l, s32 *, 0x1588, hw.swapSel[0][1]) = 0;
                 layerMark(l, 0x20, 0x1704, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0xEB0) = 0;
-                LAYER_FIELD(l, s32, 0xEB4) = 0;
-                LAYER_FIELD(l, s32, 0xEB8) = 4;
+                LAYER_F(l, s32 *, 0xEB0, hw.tevOrder[0][0]) = 0;
+                LAYER_F(l, s32 *, 0xEB4, hw.tevOrder[0][1]) = 0;
+                LAYER_F(l, s32 *, 0xEB8, hw.tevOrder[0][2]) = 4;
                 layerMark(l, 8, 0x16D0, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1170) = 0;
-                LAYER_FIELD(l, s32, 0x1174) = 0;
-                LAYER_FIELD(l, s32, 0x1178) = 0;
-                LAYER_FIELD(l, s8, 0x117C) = 0;
-                LAYER_FIELD(l, s32, 0x1180) = 1;
+                LAYER_F(l, s32 *, 0x1170, hw.colorOp[0].op) = 0;
+                LAYER_F(l, s32 *, 0x1174, hw.colorOp[0].bias) = 0;
+                LAYER_F(l, s32 *, 0x1178, hw.colorOp[0].scale) = 0;
+                LAYER_F(l, s8 *, 0x117C, hw.colorOp[0].clamp) = 0;
+                LAYER_F(l, s32 *, 0x1180, hw.colorOp[0].reg) = 1;
                 layerMark(l, 8, 0x16DC, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x12B0) = 0;
-                LAYER_FIELD(l, s32, 0x12B4) = 0;
-                LAYER_FIELD(l, s32, 0x12B8) = 0;
-                LAYER_FIELD(l, s8, 0x12BC) = 0;
-                LAYER_FIELD(l, s32, 0x12C0) = 1;
+                LAYER_F(l, s32 *, 0x12B0, hw.alphaOp[0].op) = 0;
+                LAYER_F(l, s32 *, 0x12B4, hw.alphaOp[0].bias) = 0;
+                LAYER_F(l, s32 *, 0x12B8, hw.alphaOp[0].scale) = 0;
+                LAYER_F(l, s8 *, 0x12BC, hw.alphaOp[0].clamp) = 0;
+                LAYER_F(l, s32 *, 0x12C0, hw.alphaOp[0].reg) = 1;
                 layerMark(l, 8, 0x16E0, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0xF70) = 0xF;
-                LAYER_FIELD(l, s32, 0xF74) = 0xA;
-                LAYER_FIELD(l, s32, 0xF78) = 8;
-                LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                LAYER_F(l, s32 *, 0xF70, hw.colorIn[0][0]) = 0xF;
+                LAYER_F(l, s32 *, 0xF74, hw.colorIn[0][1]) = 0xA;
+                LAYER_F(l, s32 *, 0xF78, hw.colorIn[0][2]) = 8;
+                LAYER_F(l, s32 *, 0xF7C, hw.colorIn[0][3]) = 0xF;
                 layerMark(l, 8, 0x16D4, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1070) = 7;
-                LAYER_FIELD(l, s32, 0x1074) = 5;
-                LAYER_FIELD(l, s32, 0x1078) = 4;
-                LAYER_FIELD(l, s32, 0x107C) = 7;
+                LAYER_F(l, s32 *, 0x1070, hw.alphaIn[0][0]) = 7;
+                LAYER_F(l, s32 *, 0x1074, hw.alphaIn[0][1]) = 5;
+                LAYER_F(l, s32 *, 0x1078, hw.alphaIn[0][2]) = 4;
+                LAYER_F(l, s32 *, 0x107C, hw.alphaIn[0][3]) = 7;
                 layerMark(l, 8, 0x16D8, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x158C) = 0;
-                LAYER_FIELD(l, s32, 0x1590) = 0;
+                LAYER_F(l, s32 *, 0x158C, hw.swapSel[1][0]) = 0;
+                LAYER_F(l, s32 *, 0x1590, hw.swapSel[1][1]) = 0;
                 layerMark(l, 0x20, 0x1704, 2);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0xEBC) = 0;
-                LAYER_FIELD(l, s32, 0xEC0) = 1;
-                LAYER_FIELD(l, s32, 0xEC4) = 4;
+                LAYER_F(l, s32 *, 0xEBC, hw.tevOrder[1][0]) = 0;
+                LAYER_F(l, s32 *, 0xEC0, hw.tevOrder[1][1]) = 1;
+                LAYER_F(l, s32 *, 0xEC4, hw.tevOrder[1][2]) = 4;
                 layerMark(l, 8, 0x16D0, 2);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1184) = 0;
-                LAYER_FIELD(l, s32, 0x1188) = 0;
-                LAYER_FIELD(l, s32, 0x118C) = 0;
-                LAYER_FIELD(l, s8, 0x1190) = 0;
-                LAYER_FIELD(l, s32, 0x1194) = 2;
+                LAYER_F(l, s32 *, 0x1184, hw.colorOp[1].op) = 0;
+                LAYER_F(l, s32 *, 0x1188, hw.colorOp[1].bias) = 0;
+                LAYER_F(l, s32 *, 0x118C, hw.colorOp[1].scale) = 0;
+                LAYER_F(l, s8 *, 0x1190, hw.colorOp[1].clamp) = 0;
+                LAYER_F(l, s32 *, 0x1194, hw.colorOp[1].reg) = 2;
                 layerMark(l, 8, 0x16DC, 2);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x12C4) = 0;
-                LAYER_FIELD(l, s32, 0x12C8) = 0;
-                LAYER_FIELD(l, s32, 0x12CC) = 0;
-                LAYER_FIELD(l, s8, 0x12D0) = 0;
-                LAYER_FIELD(l, s32, 0x12D4) = 2;
+                LAYER_F(l, s32 *, 0x12C4, hw.alphaOp[1].op) = 0;
+                LAYER_F(l, s32 *, 0x12C8, hw.alphaOp[1].bias) = 0;
+                LAYER_F(l, s32 *, 0x12CC, hw.alphaOp[1].scale) = 0;
+                LAYER_F(l, s8 *, 0x12D0, hw.alphaOp[1].clamp) = 0;
+                LAYER_F(l, s32 *, 0x12D4, hw.alphaOp[1].reg) = 2;
                 layerMark(l, 8, 0x16E0, 2);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0xF80) = 0xF;
-                LAYER_FIELD(l, s32, 0xF84) = 0xA;
-                LAYER_FIELD(l, s32, 0xF88) = 8;
-                LAYER_FIELD(l, s32, 0xF8C) = 0xF;
+                LAYER_F(l, s32 *, 0xF80, hw.colorIn[1][0]) = 0xF;
+                LAYER_F(l, s32 *, 0xF84, hw.colorIn[1][1]) = 0xA;
+                LAYER_F(l, s32 *, 0xF88, hw.colorIn[1][2]) = 8;
+                LAYER_F(l, s32 *, 0xF8C, hw.colorIn[1][3]) = 0xF;
                 layerMark(l, 8, 0x16D4, 2);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1080) = 7;
-                LAYER_FIELD(l, s32, 0x1084) = 5;
-                LAYER_FIELD(l, s32, 0x1088) = 4;
-                LAYER_FIELD(l, s32, 0x108C) = 7;
+                LAYER_F(l, s32 *, 0x1080, hw.alphaIn[1][0]) = 7;
+                LAYER_F(l, s32 *, 0x1084, hw.alphaIn[1][1]) = 5;
+                LAYER_F(l, s32 *, 0x1088, hw.alphaIn[1][2]) = 4;
+                LAYER_F(l, s32 *, 0x108C, hw.alphaIn[1][3]) = 7;
                 layerMark(l, 8, 0x16D8, 2);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1594) = 0;
-                LAYER_FIELD(l, s32, 0x1598) = 0;
+                LAYER_F(l, s32 *, 0x1594, hw.swapSel[2][0]) = 0;
+                LAYER_F(l, s32 *, 0x1598, hw.swapSel[2][1]) = 0;
                 layerMark(l, 0x20, 0x1704, 4);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0xEC8) = 0xFF;
-                LAYER_FIELD(l, s32, 0xECC) = 0xFF;
-                LAYER_FIELD(l, s32, 0xED0) = 0xFF;
+                LAYER_F(l, s32 *, 0xEC8, hw.tevOrder[2][0]) = 0xFF;
+                LAYER_F(l, s32 *, 0xECC, hw.tevOrder[2][1]) = 0xFF;
+                LAYER_F(l, s32 *, 0xED0, hw.tevOrder[2][2]) = 0xFF;
                 layerMark(l, 8, 0x16D0, 4);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1198) = 0;
-                LAYER_FIELD(l, s32, 0x119C) = 0;
-                LAYER_FIELD(l, s32, 0x11A0) = 0;
-                LAYER_FIELD(l, s8, 0x11A4) = 1;
-                LAYER_FIELD(l, s32, 0x11A8) = 0;
+                LAYER_F(l, s32 *, 0x1198, hw.colorOp[2].op) = 0;
+                LAYER_F(l, s32 *, 0x119C, hw.colorOp[2].bias) = 0;
+                LAYER_F(l, s32 *, 0x11A0, hw.colorOp[2].scale) = 0;
+                LAYER_F(l, s8 *, 0x11A4, hw.colorOp[2].clamp) = 1;
+                LAYER_F(l, s32 *, 0x11A8, hw.colorOp[2].reg) = 0;
                 layerMark(l, 8, 0x16DC, 4);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x12D8) = 0;
-                LAYER_FIELD(l, s32, 0x12DC) = 0;
-                LAYER_FIELD(l, s32, 0x12E0) = 0;
-                LAYER_FIELD(l, s8, 0x12E4) = 1;
-                LAYER_FIELD(l, s32, 0x12E8) = 0;
+                LAYER_F(l, s32 *, 0x12D8, hw.alphaOp[2].op) = 0;
+                LAYER_F(l, s32 *, 0x12DC, hw.alphaOp[2].bias) = 0;
+                LAYER_F(l, s32 *, 0x12E0, hw.alphaOp[2].scale) = 0;
+                LAYER_F(l, s8 *, 0x12E4, hw.alphaOp[2].clamp) = 1;
+                LAYER_F(l, s32 *, 0x12E8, hw.alphaOp[2].reg) = 0;
                 layerMark(l, 8, 0x16E0, 4);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x150C) = 0xC;
+                LAYER_F(l, s32 *, 0x150C, hw.kcsel[2]) = 0xC;
                 layerMark(l, 0x10, 0x16FC, 4);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x154C) = 0x1C;
+                LAYER_F(l, s32 *, 0x154C, hw.kasel[2]) = 0x1C;
                 layerMark(l, 0x10, 0x1700, 4);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0xF90) = 2;
-                LAYER_FIELD(l, s32, 0xF94) = 4;
-                LAYER_FIELD(l, s32, 0xF98) = 0xE;
-                LAYER_FIELD(l, s32, 0xF9C) = 0xF;
+                LAYER_F(l, s32 *, 0xF90, hw.colorIn[2][0]) = 2;
+                LAYER_F(l, s32 *, 0xF94, hw.colorIn[2][1]) = 4;
+                LAYER_F(l, s32 *, 0xF98, hw.colorIn[2][2]) = 0xE;
+                LAYER_F(l, s32 *, 0xF9C, hw.colorIn[2][3]) = 0xF;
                 layerMark(l, 8, 0x16D4, 4);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1090) = 1;
-                LAYER_FIELD(l, s32, 0x1094) = 2;
-                LAYER_FIELD(l, s32, 0x1098) = 6;
-                LAYER_FIELD(l, s32, 0x109C) = 7;
+                LAYER_F(l, s32 *, 0x1090, hw.alphaIn[2][0]) = 1;
+                LAYER_F(l, s32 *, 0x1094, hw.alphaIn[2][1]) = 2;
+                LAYER_F(l, s32 *, 0x1098, hw.alphaIn[2][2]) = 6;
+                LAYER_F(l, s32 *, 0x109C, hw.alphaIn[2][3]) = 7;
                 layerMark(l, 8, 0x16D8, 4);
             }
             if (p1 != 0) {
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1504) = 0xD;
+                    LAYER_F(l, s32 *, 0x1504, hw.kcsel[0]) = 0xD;
                     layerMark(l, 0x10, 0x16FC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xF70) = 0xE;
-                    LAYER_FIELD(l, s32, 0xF74) = 0xA;
-                    LAYER_FIELD(l, s32, 0xF78) = 8;
-                    LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                    LAYER_F(l, s32 *, 0xF70, hw.colorIn[0][0]) = 0xE;
+                    LAYER_F(l, s32 *, 0xF74, hw.colorIn[0][1]) = 0xA;
+                    LAYER_F(l, s32 *, 0xF78, hw.colorIn[0][2]) = 8;
+                    LAYER_F(l, s32 *, 0xF7C, hw.colorIn[0][3]) = 0xF;
                     layerMark(l, 8, 0x16D4, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1508) = 0xD;
+                    LAYER_F(l, s32 *, 0x1508, hw.kcsel[1]) = 0xD;
                     layerMark(l, 0x10, 0x16FC, 2);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xF80) = 0xE;
-                    LAYER_FIELD(l, s32, 0xF84) = 0xA;
-                    LAYER_FIELD(l, s32, 0xF88) = 8;
-                    LAYER_FIELD(l, s32, 0xF8C) = 0xF;
+                    LAYER_F(l, s32 *, 0xF80, hw.colorIn[1][0]) = 0xE;
+                    LAYER_F(l, s32 *, 0xF84, hw.colorIn[1][1]) = 0xA;
+                    LAYER_F(l, s32 *, 0xF88, hw.colorIn[1][2]) = 8;
+                    LAYER_F(l, s32 *, 0xF8C, hw.colorIn[1][3]) = 0xF;
                     layerMark(l, 8, 0x16D4, 2);
                 }
             }
@@ -631,170 +653,169 @@ void particleEngineSetupTevStages(u8 p0, u8 p1, u8 p2) {
             if (p1 != 0) {
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s8, 0xDB8) = 2;
+                    LAYER_F(l, s8 *, 0xDB8, hw.nChans) = 2;
                     layerMark(l, 4, 0x16BC, 1);
                 }
                 sp8 = 0;
                 ((GSgfxLayer*)(g_current_layer))->cunitChannelGen(1U, (GSgfxCunitAlpha)(2), (GSgfxCunitSrc)(1), (GSgfxCunitSrc)(1), 0U, (GSgfxLight**)(NULL), (GSgfxLightType)(2), (GSgfxDiffuseFunc)(M2C_ERROR( )));
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s8, 0xEAC) = 2;
+                    LAYER_F(l, s8 *, 0xEAC, hw.nTevStages) = 2;
                     layerMark(l, 8, 0x16CC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1070) = 7;
-                    LAYER_FIELD(l, s32, 0x1074) = 7;
-                    LAYER_FIELD(l, s32, 0x1078) = 7;
-                    LAYER_FIELD(l, s32, 0x107C) = 7;
+                    LAYER_F(l, s32 *, 0x1070, hw.alphaIn[0][0]) = 7;
+                    LAYER_F(l, s32 *, 0x1074, hw.alphaIn[0][1]) = 7;
+                    LAYER_F(l, s32 *, 0x1078, hw.alphaIn[0][2]) = 7;
+                    LAYER_F(l, s32 *, 0x107C, hw.alphaIn[0][3]) = 7;
                     layerMark(l, 8, 0x16D8, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1584) = 0;
-                    LAYER_FIELD(l, s32, 0x1588) = 0;
+                    LAYER_F(l, s32 *, 0x1584, hw.swapSel[0][0]) = 0;
+                    LAYER_F(l, s32 *, 0x1588, hw.swapSel[0][1]) = 0;
                     layerMark(l, 0x20, 0x1704, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xEB0) = 0;
-                    LAYER_FIELD(l, s32, 0xEB4) = 0;
-                    LAYER_FIELD(l, s32, 0xEB8) = 4;
+                    LAYER_F(l, s32 *, 0xEB4, hw.tevOrder[0][1]) = LAYER_F(l, s32 *, 0xEB0, hw.tevOrder[0][0]) = 0;
+                    LAYER_F(l, s32 *, 0xEB8, hw.tevOrder[0][2]) = 4;
                     layerMark(l, 8, 0x16D0, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1170) = 0;
-                    LAYER_FIELD(l, s32, 0x1174) = 0;
-                    LAYER_FIELD(l, s32, 0x1178) = 0;
-                    LAYER_FIELD(l, s8, 0x117C) = 0;
-                    LAYER_FIELD(l, s32, 0x1180) = 1;
+                    LAYER_F(l, s32 *, 0x1170, hw.colorOp[0].op) = 0;
+                    LAYER_F(l, s32 *, 0x1174, hw.colorOp[0].bias) = 0;
+                    LAYER_F(l, s32 *, 0x1178, hw.colorOp[0].scale) = 0;
+                    LAYER_F(l, s8 *, 0x117C, hw.colorOp[0].clamp) = 0;
+                    LAYER_F(l, s32 *, 0x1180, hw.colorOp[0].reg) = 1;
                     layerMark(l, 8, 0x16DC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x12B4) = 0;
-                    LAYER_FIELD(l, s32, 0x12B8) = 0;
-                    LAYER_FIELD(l, s32, 0x12B0) = 0;
-                    LAYER_FIELD(l, s8, 0x12BC) = 0;
-                    LAYER_FIELD(l, s32, 0x12C0) = 1;
+                    LAYER_F(l, s32 *, 0x12B0, hw.alphaOp[0].op) = 0;
+                    LAYER_F(l, s32 *, 0x12B4, hw.alphaOp[0].bias) = 0;
+                    LAYER_F(l, s32 *, 0x12B8, hw.alphaOp[0].scale) = 0;
+                    LAYER_F(l, s8 *, 0x12BC, hw.alphaOp[0].clamp) = 0;
+                    LAYER_F(l, s32 *, 0x12C0, hw.alphaOp[0].reg) = 1;
                     layerMark(l, 8, 0x16E0, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xF70) = 0xF;
-                    LAYER_FIELD(l, s32, 0xF74) = 0xA;
-                    LAYER_FIELD(l, s32, 0xF78) = 8;
-                    LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                    LAYER_F(l, s32 *, 0xF70, hw.colorIn[0][0]) = 0xF;
+                    LAYER_F(l, s32 *, 0xF74, hw.colorIn[0][1]) = 0xA;
+                    LAYER_F(l, s32 *, 0xF78, hw.colorIn[0][2]) = 8;
+                    LAYER_F(l, s32 *, 0xF7C, hw.colorIn[0][3]) = 0xF;
                     layerMark(l, 8, 0x16D4, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1070) = 7;
-                    LAYER_FIELD(l, s32, 0x1074) = 5;
-                    LAYER_FIELD(l, s32, 0x1078) = 4;
-                    LAYER_FIELD(l, s32, 0x107C) = 7;
+                    LAYER_F(l, s32 *, 0x1070, hw.alphaIn[0][0]) = 7;
+                    LAYER_F(l, s32 *, 0x1074, hw.alphaIn[0][1]) = 5;
+                    LAYER_F(l, s32 *, 0x1078, hw.alphaIn[0][2]) = 4;
+                    LAYER_F(l, s32 *, 0x107C, hw.alphaIn[0][3]) = 7;
                     layerMark(l, 8, 0x16D8, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x158C) = 0;
-                    LAYER_FIELD(l, s32, 0x1590) = 0;
+                    LAYER_F(l, s32 *, 0x158C, hw.swapSel[1][0]) = 0;
+                    LAYER_F(l, s32 *, 0x1590, hw.swapSel[1][1]) = 0;
                     layerMark(l, 0x20, 0x1704, 2);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xEBC) = 0;
-                    LAYER_FIELD(l, s32, 0xEC0) = 0;
-                    LAYER_FIELD(l, s32, 0xEC4) = 5;
+                    LAYER_F(l, s32 *, 0xEBC, hw.tevOrder[1][0]) = 0;
+                    LAYER_F(l, s32 *, 0xEC0, hw.tevOrder[1][1]) = 0;
+                    LAYER_F(l, s32 *, 0xEC4, hw.tevOrder[1][2]) = 5;
                     layerMark(l, 8, 0x16D0, 2);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1184) = 0;
-                    LAYER_FIELD(l, s32, 0x1188) = 0;
-                    LAYER_FIELD(l, s32, 0x118C) = 0;
-                    LAYER_FIELD(l, s8, 0x1190) = 1;
-                    LAYER_FIELD(l, s32, 0x1194) = 0;
+                    LAYER_F(l, s32 *, 0x1184, hw.colorOp[1].op) = 0;
+                    LAYER_F(l, s32 *, 0x1188, hw.colorOp[1].bias) = 0;
+                    LAYER_F(l, s32 *, 0x118C, hw.colorOp[1].scale) = 0;
+                    LAYER_F(l, s8 *, 0x1190, hw.colorOp[1].clamp) = 1;
+                    LAYER_F(l, s32 *, 0x1194, hw.colorOp[1].reg) = 0;
                     layerMark(l, 8, 0x16DC, 2);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x12C4) = 0;
-                    LAYER_FIELD(l, s32, 0x12C8) = 0;
-                    LAYER_FIELD(l, s32, 0x12CC) = 0;
-                    LAYER_FIELD(l, s8, 0x12D0) = 1;
-                    LAYER_FIELD(l, s32, 0x12D4) = 0;
+                    LAYER_F(l, s32 *, 0x12C4, hw.alphaOp[1].op) = 0;
+                    LAYER_F(l, s32 *, 0x12C8, hw.alphaOp[1].bias) = 0;
+                    LAYER_F(l, s32 *, 0x12CC, hw.alphaOp[1].scale) = 0;
+                    LAYER_F(l, s8 *, 0x12D0, hw.alphaOp[1].clamp) = 1;
+                    LAYER_F(l, s32 *, 0x12D4, hw.alphaOp[1].reg) = 0;
                     layerMark(l, 8, 0x16E0, 2);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xF80) = 0xA;
-                    LAYER_FIELD(l, s32, 0xF84) = 0xF;
-                    LAYER_FIELD(l, s32, 0xF88) = 8;
-                    LAYER_FIELD(l, s32, 0xF8C) = 2;
+                    LAYER_F(l, s32 *, 0xF80, hw.colorIn[1][0]) = 0xA;
+                    LAYER_F(l, s32 *, 0xF84, hw.colorIn[1][1]) = 0xF;
+                    LAYER_F(l, s32 *, 0xF88, hw.colorIn[1][2]) = 8;
+                    LAYER_F(l, s32 *, 0xF8C, hw.colorIn[1][3]) = 2;
                     layerMark(l, 8, 0x16D4, 2);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1080) = 7;
-                    LAYER_FIELD(l, s32, 0x1084) = 5;
-                    LAYER_FIELD(l, s32, 0x1088) = 4;
-                    LAYER_FIELD(l, s32, 0x108C) = 7;
+                    LAYER_F(l, s32 *, 0x1080, hw.alphaIn[1][0]) = 7;
+                    LAYER_F(l, s32 *, 0x1084, hw.alphaIn[1][1]) = 5;
+                    LAYER_F(l, s32 *, 0x1088, hw.alphaIn[1][2]) = 4;
+                    LAYER_F(l, s32 *, 0x108C, hw.alphaIn[1][3]) = 7;
                     layerMark(l, 8, 0x16D8, 2);
                 }
                 return;
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s8, 0xEAC) = 1;
+                LAYER_F(l, s8 *, 0xEAC, hw.nTevStages) = 1;
                 layerMark(l, 8, 0x16CC, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1584) = 0;
-                LAYER_FIELD(l, s32, 0x1588) = 0;
+                LAYER_F(l, s32 *, 0x1584, hw.swapSel[0][0]) = 0;
+                LAYER_F(l, s32 *, 0x1588, hw.swapSel[0][1]) = 0;
                 layerMark(l, 0x20, 0x1704, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0xEB0) = 0;
-                LAYER_FIELD(l, s32, 0xEB4) = 0;
-                LAYER_FIELD(l, s32, 0xEB8) = 4;
+                LAYER_F(l, s32 *, 0xEB0, hw.tevOrder[0][0]) = 0;
+                LAYER_F(l, s32 *, 0xEB4, hw.tevOrder[0][1]) = 0;
+                LAYER_F(l, s32 *, 0xEB8, hw.tevOrder[0][2]) = 4;
                 layerMark(l, 8, 0x16D0, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1170) = 0;
-                LAYER_FIELD(l, s32, 0x1174) = 0;
-                LAYER_FIELD(l, s32, 0x1178) = 0;
-                LAYER_FIELD(l, s8, 0x117C) = 1;
-                LAYER_FIELD(l, s32, 0x1180) = 0;
+                LAYER_F(l, s32 *, 0x1170, hw.colorOp[0].op) = 0;
+                LAYER_F(l, s32 *, 0x1174, hw.colorOp[0].bias) = 0;
+                LAYER_F(l, s32 *, 0x1178, hw.colorOp[0].scale) = 0;
+                LAYER_F(l, s8 *, 0x117C, hw.colorOp[0].clamp) = 1;
+                LAYER_F(l, s32 *, 0x1180, hw.colorOp[0].reg) = 0;
                 layerMark(l, 8, 0x16DC, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x12B0) = 0;
-                LAYER_FIELD(l, s32, 0x12B4) = 0;
-                LAYER_FIELD(l, s32, 0x12B8) = 0;
-                LAYER_FIELD(l, s8, 0x12BC) = 1;
-                LAYER_FIELD(l, s32, 0x12C0) = 0;
+                LAYER_F(l, s32 *, 0x12B0, hw.alphaOp[0].op) = 0;
+                LAYER_F(l, s32 *, 0x12B4, hw.alphaOp[0].bias) = 0;
+                LAYER_F(l, s32 *, 0x12B8, hw.alphaOp[0].scale) = 0;
+                LAYER_F(l, s8 *, 0x12BC, hw.alphaOp[0].clamp) = 1;
+                LAYER_F(l, s32 *, 0x12C0, hw.alphaOp[0].reg) = 0;
                 layerMark(l, 8, 0x16E0, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0xF70) = 0xF;
-                LAYER_FIELD(l, s32, 0xF74) = 0xA;
-                LAYER_FIELD(l, s32, 0xF78) = 8;
-                LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                LAYER_F(l, s32 *, 0xF70, hw.colorIn[0][0]) = 0xF;
+                LAYER_F(l, s32 *, 0xF74, hw.colorIn[0][1]) = 0xA;
+                LAYER_F(l, s32 *, 0xF78, hw.colorIn[0][2]) = 8;
+                LAYER_F(l, s32 *, 0xF7C, hw.colorIn[0][3]) = 0xF;
                 layerMark(l, 8, 0x16D4, 1);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1070) = 7;
-                LAYER_FIELD(l, s32, 0x1074) = 5;
-                LAYER_FIELD(l, s32, 0x1078) = 4;
-                LAYER_FIELD(l, s32, 0x107C) = 7;
+                LAYER_F(l, s32 *, 0x1070, hw.alphaIn[0][0]) = 7;
+                LAYER_F(l, s32 *, 0x1074, hw.alphaIn[0][1]) = 5;
+                LAYER_F(l, s32 *, 0x1078, hw.alphaIn[0][2]) = 4;
+                LAYER_F(l, s32 *, 0x107C, hw.alphaIn[0][3]) = 7;
                 layerMark(l, 8, 0x16D8, 1);
             }
         }

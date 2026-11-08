@@ -447,8 +447,8 @@ u8 isAnimBlend__13tagPeopleWorkCFv(PeopleWork* work) {
 
 bool isFollower__13tagPeopleWorkCFv(const PeopleWork* work) {
     void* hero = getHeroPtr__4HeroFv();
-    if (*(const u32*)((const u8*)work+0x14)==getFollowerGrpID__4HeroFv(hero) &&
-        *(const u32*)((const u8*)work+0x18)==getFollowerResID__4HeroFv(hero)) return true;
+    if (((const PeopleWorkLayout*)work)->groupID==getFollowerGrpID__4HeroFv(hero) &&
+        ((const PeopleWorkLayout*)work)->peopleID==getFollowerResID__4HeroFv(hero)) return true;
     return false;
 }
 

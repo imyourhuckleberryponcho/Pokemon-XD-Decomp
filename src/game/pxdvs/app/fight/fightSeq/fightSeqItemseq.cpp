@@ -2,6 +2,7 @@
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/fightseqscript.h>
+#include <game/ppcops.h>
 
 struct Pokemon;
 struct FightOutPokemon;
@@ -406,8 +407,8 @@ void WS_BALL_THROW(void) {
         if (value >= 0xFF) {
             shakes = 4;
         } else {
-            u32 root = sqrt(0xFF0000 / value);
-            threshold = 0xFFFF0 / (u32)sqrt(root);
+            u32 root = GC_F2U32(sqrt(0xFF0000 / value));
+            threshold = 0xFFFF0 / GC_F2U32(sqrt(root));
             for (shakes = 0; shakes < 4; shakes++) {
                 if ((u16)HSD_Rand() >= threshold) {
                     break;

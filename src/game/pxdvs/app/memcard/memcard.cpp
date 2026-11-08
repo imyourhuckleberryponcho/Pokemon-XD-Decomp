@@ -269,9 +269,9 @@ static inline void _memcardKeyStep(u16* key)
         v[j] = v[j] + primes[j];
     }
     key[0] = (((((((v[1] * 0x10) & 0xF0 & ~0xF) | (v[0] & 0xF)) & ~0xF00) | ((v[2] << 8) & 0xF00)) & ~0xF000) | ((v[3] << 0xC) & 0xF000));
-    key[1] = ((((((v[1] & 0xF0 & ~0xF) | ((v[0] >> 4) & 0xF)) & ~0xF00) | ((v[2] << 4) & 0xF00)) & ~0xF000) | ((v[3] << 8) & 0xF000));
+    key[1] = ((v[0] >> 4) & 0xF) | (v[1] & 0xF0) | ((v[2] << 4) & 0xF00) | ((v[3] << 8) & 0xF000);
     key[2] = (((((((s32)(v[0] & 0xF00) >> 8) | ((s32)(v[1] & 0xF00) >> 4)) & ~0xF00) | (v[2] & 0xF00)) & ~0xF000) | ((v[3] << 4) & 0xF000));
-    key[3] = (((((((v[0] >> 0xC) & 0xF & ~0xF0) | ((v[1] >> 8) & 0xF0)) & ~0xF00) | ((v[2] >> 4) & 0xF00)) & ~0xF000) | (v[3] & 0xF000));
+    key[3] = ((v[0] & 0xF000) >> 0xC) | ((v[1] & 0xF000) >> 8) | ((v[2] & 0xF000) >> 4) | (v[3] & 0xF000);
 }
 
 static u8 _memcardMsgOpen(MEMCARD_MSGTYPE type);
@@ -709,119 +709,6 @@ static void* _memcardGetMultiSaveDataToSTRUCT(void* data, s32 idx)
     return (void*)ret;
 }
 
-static void _memcardStoreSaveData_multi(void* data)
-{
-    void* src;
-    void* dst;
-    u32 n;
-    u8* extra;
-    void* tail;
-    void* tail2;
-    void* tail3;
-    src = _memcardGetMultiSaveDataToSTRUCT(data, 1);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 1);
-    n = *(u16*)((u8*)data + 0x18);
-    if (n > 0x88) {
-        n = 0x88;
-    }
-    memcpy(dst, src, n);
-    src = _memcardGetMultiSaveDataToSTRUCT(data, 2);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 2);
-    n = *(u16*)((u8*)data + 0x1a);
-    if (n > 0x978) {
-        n = 0x978;
-    }
-    memcpy(dst, src, n);
-    src = _memcardGetMultiSaveDataToSTRUCT(data, 3);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 3);
-    n = *(u16*)((u8*)data + 0x80) << 16;
-    n += *(u16*)((u8*)data + 0x1c);
-    if (n > 0xbc50) {
-        n = 0xbc50;
-    }
-    memcpy(dst, src, n);
-    src = _memcardGetMultiSaveDataToSTRUCT(data, 10);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 10);
-    n = *(u16*)((u8*)data + 0x1e);
-    if (n > 0x4a) {
-        n = 0x4a;
-    }
-    memcpy(dst, src, n);
-    src = _memcardGetMultiSaveDataToSTRUCT(data, 11);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 11);
-    n = *(u16*)((u8*)data + 0x20);
-    if (n > 0xcc) {
-        n = 0xcc;
-    }
-    memcpy(dst, src, n);
-    src = _memcardGetMultiSaveDataToSTRUCT(data, 12);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 12);
-    n = *(u16*)((u8*)data + 0x22);
-    if (n > 0x1774) {
-        n = 0x1774;
-    }
-    memcpy(dst, src, n);
-    src = _memcardGetMultiSaveDataToSTRUCT(data, 14);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 14);
-    n = *(u16*)((u8*)data + 0x24);
-    if (n > 0x364) {
-        n = 0x364;
-    }
-    memcpy(dst, src, n);
-    src = _memcardGetMultiSaveDataToSTRUCT(data, 15);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 15);
-    n = *(u16*)((u8*)data + 0x26);
-    if (n > 0x2400) {
-        n = 0x2400;
-    }
-    memcpy(dst, src, n);
-    extra = (u8*)_memcardGetMultiSaveDataToSTRUCT(data, 0x17);
-    n = *(u16*)((u8*)data + 0x28);
-    if (n == 0x6b4) {
-        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 4), extra, *(u16*)((u8*)data + 0x78));
-        extra += *(u16*)((u8*)data + 0x78);
-        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 5), extra, *(u16*)((u8*)data + 0x7a));
-        extra += *(u16*)((u8*)data + 0x7a);
-        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 6), extra, *(u16*)((u8*)data + 0x7c));
-        extra += *(u16*)((u8*)data + 0x7c);
-        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 0x18), extra, *(u16*)((u8*)data + 0x7e));
-        extra += *(u16*)((u8*)data + 0x7e);
-        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 0x1b), extra, *(u16*)((u8*)data + 0x82));
-    } else {
-        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 0x17), extra, n);
-    }
-    tail = _memcardGetMultiSaveDataToSTRUCT(data, 16);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 16);
-    n = *(u16*)((u8*)data + 0x2a);
-    if (n > 0xb) {
-        n = 0xb;
-    }
-    memcpy(dst, tail, n);
-    tail2 = _memcardGetMultiSaveDataToSTRUCT(data, 22);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 22);
-    n = *(u16*)((u8*)data + 0x36);
-    if (n > 0xc800) {
-        n = 0xc800;
-    }
-    memcpy(dst, tail2, n);
-    tail3 = _memcardGetMultiSaveDataToSTRUCT(data, 21);
-    dst = savedataGetStatus(_memcardStatusPtr->savedata, 21);
-    n = *(u16*)((u8*)data + 0x34);
-    if (n > 0x2298) {
-        n = 0x2298;
-    }
-    memcpy(dst, tail3, n);
-    _memcardGetMultiSaveDataToSTRUCT(data, 0x11);
-    _memcardGetMultiSaveDataToSTRUCT(data, 0x12);
-    _memcardGetMultiSaveDataToSTRUCT(data, 0x13);
-    _memcardGetMultiSaveDataToSTRUCT(data, 0x14);
-}
-
-static void _memcardCallback(s32, s32)
-{
-    _memcardStatusPtr->cbDone = 1;
-}
-
 struct _MemcardSector {
     s32 v;
     u8 pad[0x1fc];
@@ -844,56 +731,6 @@ static inline u8 _memcardCheckSum(u8* pack)
         return 0;
     }
     return 1;
-}
-
-static s32 _memcardExamineDataPack()
-{
-    u8* pack = (u8*)_memcardStatusPtr->buf50;
-    u8 ok = _memcard_Decryption(pack + 8);
-    if (ok) {
-        ok = _memcardCheckSum(pack);
-    }
-    if (ok) {
-        _memcardGetMultiSaveDataToSTRUCT(pack + 8, 1);
-    }
-    if (ok) {
-        if (_memcardStatusPtr->kind != 3) {
-            _memcardStatusPtr->f2c = *(s32*)(pack + 4);
-            if (_memcardStatusPtr->f30 > _memcardStatusPtr->f2c) {
-                _memcardStatusPtr->f2c = _memcardStatusPtr->f30;
-                _memcardStatusPtr->msgType = 5;
-                switch (_memcardStatusPtr->kind) {
-                case 1:
-                case 2:
-                    _memcardStoreSaveData_multi(pack + 8);
-                    _memcardStatusPtr->resumeState = 0x25;
-                    break;
-                default:
-                    _memcardStatusPtr->resumeState = 0x24;
-                    break;
-                }
-                return 0x30;
-            }
-        }
-        switch (_memcardStatusPtr->kind) {
-        case 1:
-        case 2:
-        case 3:
-            _memcardStoreSaveData_multi(pack + 8);
-            _memcardStatusPtr->msgType = 0xc;
-            _memcardStatusPtr->result = 3;
-            if (_memcardStatusPtr->f40) {
-                return 0x11;
-            }
-            return 0x2c;
-        default:
-            return 0x24;
-        }
-    }
-    s32 rf_t = _memcardStatusPtr->f20;
-    s32 idx = rf_t;
-    ((_MemcardSector*)((u8*)_memcardStatusPtr->buf50 + 0x28004))[idx].v = 0;
-    return 0x1f;
 }
 
 static inline bool _memcardHeaderValid(u8* h)
@@ -925,152 +762,7 @@ static inline void _memcardDecryptHeader(u8* pack)
     }
 }
 
-static s32 _memcardExamineHeader()
-{
-    s32 bestCount = 0;
-    s32 best = -1;
-    s32 i;
-    s32 off = 0x28000;
-    for (i = 0; i < 2; i++, off += 0x200) {
-        u8 ok = 0;
-        u8* h = (u8*)_memcardStatusPtr->buf50 + off;
-        if (h[0] == 1 && h[1] == 1 && h[2] == 1) {
-            ok = 1;
-        }
-        if (ok == 0) {
-            _memcardStatusPtr->msgType = 0x13;
-            return 0x2B;
-        }
-        if (*(s32*)(h + 4) > bestCount) {
-            bestCount = *(s32*)(h + 4);
-            best = i;
-            if (*(s32*)(h + 4) > _memcardStatusPtr->f30) {
-                _memcardStatusPtr->f30 = *(s32*)(h + 4);
-            }
-        }
-    }
-    _memcardStatusPtr->f20 = best;
-    switch (_memcardStatusPtr->kind) {
-    case 10:
-    case 11:
-        _memcardDuplicateSaveData_multi((u8*)_memcardStatusPtr->buf50 + 8);
-        _memcardStatusPtr->f2c = _memcardStatusPtr->f30;
-        return 0x25;
-    case 1:
-    case 2:
-    case 3:
-    case 5:
-    case 7:
-    case 9:
-    case 13:
-        if (best == -1) {
-            if (_memcardStatusPtr->f30 > 0) {
-                switch (_memcardStatusPtr->kind) {
-                case 3:
-                    break;
-                case 9:
-                    return 0xB;
-                default:
-                    _memcardStatusPtr->msgType = 0x11;
-                    return 0x2B;
-                }
-            }
-            switch (_memcardStatusPtr->kind) {
-            case 1:
-            case 2:
-            case 3:
-                _memcardStatusPtr->msgType = 0xC;
-                _memcardStatusPtr->result = 1;
-                if (_memcardStatusPtr->f40 != 0) {
-                    return 0x11;
-                }
-                return 0x2C;
-            }
-            memset(_memcardStatusPtr->buf50, 0, 0x28000);
-            _memcardDuplicateSaveData_multi((u8*)_memcardStatusPtr->buf50 + 8);
-            _memcard_new_saveDataCrateFlag = 1;
-            _memcardStatusPtr->f2c = 0;
-            _memcard_new_saveDataCrateFlag = 0;
-            _memcardStatusPtr->f20 = -1;
-            return 0x24;
-        } else {
-            return 0x20;
-        }
-        break;
-    case 4:
-    case 6:
-    case 8:
-        if (best != -1 && bestCount <= _memcardStatusPtr->f2c) {
-            u8* pack = (u8*)_memcardStatusPtr->buf50 + 0x30000 - 0x8000 + (best << 9);
-            u64 myId;
-            u64 saveId;
-            myId = gamedatasaveBiosGetMemcardID(gamedatasaveBiosGetPtr(savedataGetStatus(0, 1)));
-            _memcardDecryptHeader(pack);
-            if (pack + 8 == 0) {
-                saveId = gamedatasaveBiosGetMemcardID(gamedatasaveBiosGetPtr(savedataGetStatus(pack + 8, 1)));
-            } else {
-                saveId = gamedatasaveBiosGetMemcardID((GamedataSave*)((u8*)_memcardGetMultiSaveDataToSTRUCT(pack + 8, 1) + 8));
-            }
-            if (myId == saveId) {
-                if (_memcardStatusPtr->kind == 6) {
-                    _memcardStatusPtr->f20 = best;
-                    return 0x20;
-                }
-                _memcardDuplicateSaveData_multi((u8*)_memcardStatusPtr->buf50 + 8);
-                return 0x25;
-            }
-        }
-    default:
-        _memcardStatusPtr->msgType = 0x13;
-        return 0x2B;
-    }
-}
 extern "C" {
-u32 fn_801CC508() {
-#ifndef __MWERKS__
-    const u8* _memcardBannerImage = PortXD_GetDolTable("_memcardBannerImage");
-    const u8* _memcardIconImage = PortXD_GetDolTable("_memcardIconImage");
-#endif
-    OSCalendarTime ct;
-    s8* buf;
-    s32* p;
-    int i;
-
-    OSTicksToCalendarTime(OSGetTime(), &ct);
-    buf = (s8*)_memcardStatusPtr->buf50;
-    memset(buf, 0, 0x6000);
-    switch (pokecoloGetCountryCode()) {
-    case 0:
-        strcpy((char*)buf, "\x83\x7C\x83\x50\x83\x82\x83\x93\x82\x77\x82\x63");
-        strcpy((char*)buf + 0x20, "\x83\x5A\x81\x5B\x83\x75\x83\x74\x83\x40\x83\x43\x83\x8B Yy/Mm/Dd");
-        buf[0x2F] = ct.year / 10 % 10 + '0';
-        buf[0x30] = ct.year % 10 + '0';
-        buf[0x32] = (ct.mon + 1) / 10 % 10 + '0';
-        buf[0x33] = (ct.mon + 1) % 10 + '0';
-        buf[0x35] = ct.mday / 10 % 10 + '0';
-        buf[0x36] = ct.mday % 10 + '0';
-        break;
-    case 1:
-    case 2:
-        strcpy((char*)buf, "POKeMON XD");
-        strcpy((char*)buf + 0x20, "SAVE FILE Mm/Dd/20Yy");
-        buf[3] = 0xE9;
-        buf[0x32] = ct.year / 10 % 10 + '0';
-        buf[0x33] = ct.year % 10 + '0';
-        buf[0x2A] = (ct.mon + 1) / 10 % 10 + '0';
-        buf[0x2B] = (ct.mon + 1) % 10 + '0';
-        buf[0x2D] = ct.mday / 10 % 10 + '0';
-        buf[0x2E] = ct.mday % 10 + '0';
-        break;
-    }
-    memcpy(buf + 0x40, _memcardBannerImage, 0x1800);
-    memcpy(buf + 0x1840, _memcardIconImage, 0x2200);
-    p = (s32*)buf;
-    for (i = 0; i < 0xE90; i++) {
-        *(s32*)(buf + 0x3A40) += p[i];
-    }
-    return 0x12;
-}
 extern "C++" {
 struct MemcardSave1 {
     s32 a;
@@ -1182,13 +874,14 @@ static void _memcardDuplicateSaveData_multi(void* data)
     s8* slot;
     s16 j;
     int i;
-    int k;
+    u8 k;
     s8 order[16];
     u32 floorSize;
     u8* floorData;
 
     if (_memcardStatusPtr->kind == 0xB) {
-        gamedatasaveSetStatus(0, 5, floorGetNextFloorID());
+        s32 tmp2 = floorGetNextFloorID();
+        gamedatasaveSetStatus(0, 5, tmp2);
     }
     {
         u16* key = _memcard_encrypt_key;
@@ -1196,9 +889,9 @@ static void _memcardDuplicateSaveData_multi(void* data)
             *key++ = HSD_Rand();
         }
     }
-    for (i = 0; i < 0x13FE8; i += 4) {
+    for (int i_loop = 0; i_loop < 0x13FE8; i_loop += 4) {
         for (k = 0; k < 4; k++) {
-            d[i + k] += _memcard_encrypt_key[k];
+            d[i_loop + k] += _memcard_encrypt_key[k];
         }
         _memcardKeyStep(_memcard_encrypt_key);
     }
@@ -1226,8 +919,8 @@ static void _memcardDuplicateSaveData_multi(void* data)
     for (j = 0; j < 15; j++) {
         order[j] = j + 1;
     }
-    d[0x38 / 2] = 0;
     order[15] = -1;
+    d[0x38 / 2] = 0;
     d[0x3A / 2] = 0;
     *(MemcardSave1*)((u8*)data + 0xA0) = *(MemcardSave1*)savedataGetStatus(0, 1);
     off = 0xA0;
@@ -1400,6 +1093,119 @@ static inline s32 _memcardSearchFile(void) {
     return result;
 }
 
+static void _memcardStoreSaveData_multi(void* data)
+{
+    void* src;
+    void* dst;
+    u32 n;
+    u8* extra;
+    void* tail;
+    void* tail2;
+    void* tail3;
+    src = _memcardGetMultiSaveDataToSTRUCT(data, 1);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 1);
+    n = *(u16*)((u8*)data + 0x18);
+    if (n > 0x88) {
+        n = 0x88;
+    }
+    memcpy(dst, src, n);
+    src = _memcardGetMultiSaveDataToSTRUCT(data, 2);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 2);
+    n = *(u16*)((u8*)data + 0x1a);
+    if (n > 0x978) {
+        n = 0x978;
+    }
+    memcpy(dst, src, n);
+    src = _memcardGetMultiSaveDataToSTRUCT(data, 3);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 3);
+    n = *(u16*)((u8*)data + 0x80) << 16;
+    n += *(u16*)((u8*)data + 0x1c);
+    if (n > 0xbc50) {
+        n = 0xbc50;
+    }
+    memcpy(dst, src, n);
+    src = _memcardGetMultiSaveDataToSTRUCT(data, 10);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 10);
+    n = *(u16*)((u8*)data + 0x1e);
+    if (n > 0x4a) {
+        n = 0x4a;
+    }
+    memcpy(dst, src, n);
+    src = _memcardGetMultiSaveDataToSTRUCT(data, 11);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 11);
+    n = *(u16*)((u8*)data + 0x20);
+    if (n > 0xcc) {
+        n = 0xcc;
+    }
+    memcpy(dst, src, n);
+    src = _memcardGetMultiSaveDataToSTRUCT(data, 12);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 12);
+    n = *(u16*)((u8*)data + 0x22);
+    if (n > 0x1774) {
+        n = 0x1774;
+    }
+    memcpy(dst, src, n);
+    src = _memcardGetMultiSaveDataToSTRUCT(data, 14);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 14);
+    n = *(u16*)((u8*)data + 0x24);
+    if (n > 0x364) {
+        n = 0x364;
+    }
+    memcpy(dst, src, n);
+    src = _memcardGetMultiSaveDataToSTRUCT(data, 15);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 15);
+    n = *(u16*)((u8*)data + 0x26);
+    if (n > 0x2400) {
+        n = 0x2400;
+    }
+    memcpy(dst, src, n);
+    extra = (u8*)_memcardGetMultiSaveDataToSTRUCT(data, 0x17);
+    n = *(u16*)((u8*)data + 0x28);
+    if (n == 0x6b4) {
+        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 4), extra, *(u16*)((u8*)data + 0x78));
+        extra += *(u16*)((u8*)data + 0x78);
+        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 5), extra, *(u16*)((u8*)data + 0x7a));
+        extra += *(u16*)((u8*)data + 0x7a);
+        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 6), extra, *(u16*)((u8*)data + 0x7c));
+        extra += *(u16*)((u8*)data + 0x7c);
+        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 0x18), extra, *(u16*)((u8*)data + 0x7e));
+        extra += *(u16*)((u8*)data + 0x7e);
+        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 0x1b), extra, *(u16*)((u8*)data + 0x82));
+    } else {
+        memcpy(savedataGetStatus(_memcardStatusPtr->savedata, 0x17), extra, n);
+    }
+    tail = _memcardGetMultiSaveDataToSTRUCT(data, 16);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 16);
+    n = *(u16*)((u8*)data + 0x2a);
+    if (n > 0xb) {
+        n = 0xb;
+    }
+    memcpy(dst, tail, n);
+    tail2 = _memcardGetMultiSaveDataToSTRUCT(data, 22);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 22);
+    n = *(u16*)((u8*)data + 0x36);
+    if (n > 0xc800) {
+        n = 0xc800;
+    }
+    memcpy(dst, tail2, n);
+    tail3 = _memcardGetMultiSaveDataToSTRUCT(data, 21);
+    dst = savedataGetStatus(_memcardStatusPtr->savedata, 21);
+    n = *(u16*)((u8*)data + 0x34);
+    if (n > 0x2298) {
+        n = 0x2298;
+    }
+    memcpy(dst, tail3, n);
+    _memcardGetMultiSaveDataToSTRUCT(data, 0x11);
+    _memcardGetMultiSaveDataToSTRUCT(data, 0x12);
+    _memcardGetMultiSaveDataToSTRUCT(data, 0x13);
+    _memcardGetMultiSaveDataToSTRUCT(data, 0x14);
+}
+
+static void _memcardCallback(s32, s32)
+{
+    _memcardStatusPtr->cbDone = 1;
+}
+
 static u32 _memcardCardOpen() {
     s32 freeBytes;
     s32 freeFiles;
@@ -1464,6 +1270,205 @@ static u32 _memcardCardOpen() {
 }
 
 #pragma dont_inline on
+extern "C" {
+u32 fn_801CC508() {
+#ifndef __MWERKS__
+    const u8* _memcardBannerImage = PortXD_GetDolTable("_memcardBannerImage");
+    const u8* _memcardIconImage = PortXD_GetDolTable("_memcardIconImage");
+#endif
+    OSCalendarTime ct;
+    s8* buf;
+    s32* p;
+    int i;
+
+    OSTicksToCalendarTime(OSGetTime(), &ct);
+    buf = (s8*)_memcardStatusPtr->buf50;
+    memset(buf, 0, 0x6000);
+    switch (pokecoloGetCountryCode()) {
+    case 0:
+        strcpy((char*)buf, "\x83\x7C\x83\x50\x83\x82\x83\x93\x82\x77\x82\x63");
+        strcpy((char*)buf + 0x20, "\x83\x5A\x81\x5B\x83\x75\x83\x74\x83\x40\x83\x43\x83\x8B Yy/Mm/Dd");
+        buf[0x2F] = ct.year / 10 % 10 + '0';
+        buf[0x30] = ct.year % 10 + '0';
+        buf[0x32] = (ct.mon + 1) / 10 % 10 + '0';
+        buf[0x33] = (ct.mon + 1) % 10 + '0';
+        buf[0x35] = ct.mday / 10 % 10 + '0';
+        buf[0x36] = ct.mday % 10 + '0';
+        break;
+    case 1:
+    case 2:
+        strcpy((char*)buf, "POKeMON XD");
+        strcpy((char*)buf + 0x20, "SAVE FILE Mm/Dd/20Yy");
+        buf[3] = 0xE9;
+        buf[0x32] = ct.year / 10 % 10 + '0';
+        buf[0x33] = ct.year % 10 + '0';
+        buf[0x2A] = (ct.mon + 1) / 10 % 10 + '0';
+        buf[0x2B] = (ct.mon + 1) % 10 + '0';
+        buf[0x2D] = ct.mday / 10 % 10 + '0';
+        buf[0x2E] = ct.mday % 10 + '0';
+        break;
+    }
+    memcpy(buf + 0x40, _memcardBannerImage, 0x1800);
+    memcpy(buf + 0x1840, _memcardIconImage, 0x2200);
+    p = (s32*)buf;
+    for (i = 0; i < 0xE90; i++) {
+        *(s32*)(buf + 0x3A40) += p[i];
+    }
+    return 0x12;
+}
+
+}
+static s32 _memcardExamineHeader()
+{
+    s32 bestCount = 0;
+    s32 best = -1;
+    s32 i;
+    s32 off = 0x28000;
+    for (i = 0; i < 2; i++, off += 0x200) {
+        u8 ok = 0;
+        u8* h = (u8*)_memcardStatusPtr->buf50 + off;
+        if (h[0] == 1 && h[1] == 1 && h[2] == 1) {
+            ok = 1;
+        }
+        if (ok == 0) {
+            _memcardStatusPtr->msgType = 0x13;
+            return 0x2B;
+        }
+        if (*(s32*)(h + 4) > bestCount) {
+            bestCount = *(s32*)(h + 4);
+            best = i;
+            if (*(s32*)(h + 4) > _memcardStatusPtr->f30) {
+                _memcardStatusPtr->f30 = *(s32*)(h + 4);
+            }
+        }
+    }
+    _memcardStatusPtr->f20 = best;
+    switch (_memcardStatusPtr->kind) {
+    case 10:
+    case 11:
+        _memcardDuplicateSaveData_multi((u8*)_memcardStatusPtr->buf50 + 8);
+        _memcardStatusPtr->f2c = _memcardStatusPtr->f30;
+        return 0x25;
+    case 1:
+    case 2:
+    case 3:
+    case 5:
+    case 7:
+    case 9:
+    case 13:
+        if (best == -1) {
+            if (_memcardStatusPtr->f30 > 0) {
+                switch (_memcardStatusPtr->kind) {
+                case 3:
+                    break;
+                case 9:
+                    return 0xB;
+                default:
+                    _memcardStatusPtr->msgType = 0x11;
+                    return 0x2B;
+                }
+            }
+            switch (_memcardStatusPtr->kind) {
+            case 1:
+            case 2:
+            case 3:
+                _memcardStatusPtr->msgType = 0xC;
+                _memcardStatusPtr->result = 1;
+                if (_memcardStatusPtr->f40 != 0) {
+                    return 0x11;
+                }
+                return 0x2C;
+            }
+            memset(_memcardStatusPtr->buf50, 0, 0x28000);
+            _memcard_new_saveDataCrateFlag = 0;
+            _memcardDuplicateSaveData_multi((u8*)_memcardStatusPtr->buf50 + 8);
+            _memcard_new_saveDataCrateFlag = 1;
+            _memcardStatusPtr->f2c = 0;
+            _memcardStatusPtr->f20 = -1;
+            return 0x24;
+        } else {
+            return 0x20;
+        }
+        break;
+    case 4:
+    case 6:
+    case 8:
+        if (best != -1 && bestCount <= _memcardStatusPtr->f2c) {
+            u8* pack = (u8*)_memcardStatusPtr->buf50 + 0x30000 - 0x8000 + (best << 9);
+            u64 myId;
+            u64 saveId;
+            myId = gamedatasaveBiosGetMemcardID(gamedatasaveBiosGetPtr(savedataGetStatus(0, 1)));
+            _memcardDecryptHeader(pack);
+            if (pack + 8 == 0) {
+                saveId = gamedatasaveBiosGetMemcardID(gamedatasaveBiosGetPtr(savedataGetStatus(pack + 8, 1)));
+            } else {
+                saveId = gamedatasaveBiosGetMemcardID((GamedataSave*)((u8*)_memcardGetMultiSaveDataToSTRUCT(pack + 8, 1) + 8));
+            }
+            if (myId == saveId) {
+                if (_memcardStatusPtr->kind == 6) {
+                    _memcardStatusPtr->f20 = best;
+                    return 0x20;
+                }
+                _memcardDuplicateSaveData_multi((u8*)_memcardStatusPtr->buf50 + 8);
+                return 0x25;
+            }
+        }
+    default:
+        _memcardStatusPtr->msgType = 0x13;
+        return 0x2B;
+    }
+}
+
+static s32 _memcardExamineDataPack()
+{
+    u8* pack = (u8*)_memcardStatusPtr->buf50;
+    u8 ok = _memcard_Decryption(pack + 8);
+    if (ok) {
+        ok = _memcardCheckSum(pack);
+    }
+    if (ok) {
+        _memcardGetMultiSaveDataToSTRUCT(pack + 8, 1);
+    }
+    if (ok) {
+        if (_memcardStatusPtr->kind != 3) {
+            _memcardStatusPtr->f2c = *(s32*)(pack + 4);
+            if (_memcardStatusPtr->f30 > _memcardStatusPtr->f2c) {
+                _memcardStatusPtr->f2c = _memcardStatusPtr->f30;
+                _memcardStatusPtr->msgType = 5;
+                switch (_memcardStatusPtr->kind) {
+                case 1:
+                case 2:
+                    _memcardStoreSaveData_multi(pack + 8);
+                    _memcardStatusPtr->resumeState = 0x25;
+                    break;
+                default:
+                    _memcardStatusPtr->resumeState = 0x24;
+                    break;
+                }
+                return 0x30;
+            }
+        }
+        switch (_memcardStatusPtr->kind) {
+        case 1:
+        case 2:
+        case 3:
+            _memcardStoreSaveData_multi(pack + 8);
+            _memcardStatusPtr->msgType = 0xc;
+            _memcardStatusPtr->result = 3;
+            if (_memcardStatusPtr->f40) {
+                return 0x11;
+            }
+            return 0x2c;
+        default:
+            return 0x24;
+        }
+    }
+    s32 rf_t = _memcardStatusPtr->f20;
+    s32 idx = rf_t;
+    ((_MemcardSector*)((u8*)_memcardStatusPtr->buf50 + 0x28004))[idx].v = 0;
+    return 0x1f;
+}
+
 static s32 _memcardMergeDataPack()
 {
     void* save;
@@ -1488,16 +1493,6 @@ static s32 _memcardMergeDataPack()
 }
 #pragma dont_inline reset
 
-extern "C" {
-void memcard_debug_Save(void* data)
-{
-    memcardSetupTask(0xb, 2, 0);
-    _memcardDuplicateSaveData_multi(data);
-    _memcard_Encryption(data);
-    memcardFinalizeTask();
-}
-}
-
 static inline void _memcardSumBlocks(u16* data, u32* sums)
 {
     int i;
@@ -1509,84 +1504,6 @@ static inline void _memcardSumBlocks(u16* data, u32* sums)
     }
 }
 
-static u8 _memcard_Decryption(void* data)
-{
-    u16* d = (u16*)data;
-    u32 sums[10];
-    u32 stored[4];
-    int i;
-    int k;
-    sums[2] = 0;
-    sums[0] = 0;
-    sums[1] = 0;
-    sums[3] = 0;
-    _memcard_encrypt_key[0] = d[0];
-    _memcard_encrypt_key[1] = d[1];
-    _memcard_encrypt_key[2] = d[2];
-    _memcard_encrypt_key[3] = d[3];
-    for (i = 4; i < 0x13FE8; i += 4) {
-        for (k = 0; k < 4; k++) {
-            d[i + k] -= _memcard_encrypt_key[k];
-        }
-        _memcardKeyStep(_memcard_encrypt_key);
-    }
-    stored[2] = d[6] | (d[7] << 16);
-    stored[3] = d[4] | (d[5] << 16);
-    stored[1] = d[8] | (d[9] << 16);
-    stored[0] = d[10] | (d[11] << 16);
-    d[10] = 0;
-    d[11] = 0;
-    d[8] = 0;
-    d[9] = 0;
-    d[6] = 0;
-    d[7] = 0;
-    d[4] = 0;
-    d[5] = 0;
-    _memcardSumBlocks(d, sums);
-    if (sums[0] == stored[0] && sums[1] == stored[1] && sums[2] == stored[2] && sums[3] == stored[3]) {
-        return 1;
-    }
-    return 0;
-}
-
-static void _memcard_Encryption(void* data)
-{
-    u16* d = (u16*)data;
-    u32 sums[4];
-    int i;
-    int k;
-    sums[0] = 0;
-    sums[1] = 0;
-    sums[2] = 0;
-    sums[3] = 0;
-    _memcard_encrypt_key[0] = d[0];
-    _memcard_encrypt_key[1] = d[1];
-    _memcard_encrypt_key[2] = d[2];
-    _memcard_encrypt_key[3] = d[3];
-    d[10] = 0;
-    d[11] = 0;
-    d[8] = 0;
-    d[9] = 0;
-    d[6] = 0;
-    d[7] = 0;
-    d[4] = 0;
-    d[5] = 0;
-    _memcardSumBlocks(d, sums);
-    d[10] = sums[0];
-    d[11] = sums[0] >> 16;
-    d[8] = sums[1];
-    d[9] = sums[1] >> 16;
-    d[6] = sums[2];
-    d[7] = sums[2] >> 16;
-    d[4] = sums[3];
-    d[5] = sums[3] >> 16;
-    for (i = 4; i < 0x13FE8; i += 4) {
-        for (k = 0; k < 4; k++) {
-            d[i + k] += _memcard_encrypt_key[k];
-        }
-        _memcardKeyStep(_memcard_encrypt_key);
-    }
-}
 extern "C++" {
 #define CARD_STAT_BANNER_MASK 3
 #define CARD_STAT_ANIM_MASK 4
@@ -2511,6 +2428,97 @@ static void _memcardJobMain(u32, u32)
 }
 }
 
+static void _memcard_Encryption(void* data)
+{
+    u16* d = (u16*)data;
+    u32 sums[4];
+    int i;
+    s32 k;
+    sums[0] = 0;
+    sums[1] = 0;
+    sums[2] = 0;
+    sums[3] = 0;
+    _memcard_encrypt_key[0] = d[0];
+    _memcard_encrypt_key[1] = d[1];
+    _memcard_encrypt_key[2] = d[2];
+    _memcard_encrypt_key[3] = d[3];
+    d[10] = 0;
+    d[11] = 0;
+    d[8] = 0;
+    d[9] = 0;
+    d[6] = 0;
+    d[7] = 0;
+    d[4] = 0;
+    d[5] = 0;
+    _memcardSumBlocks(d, sums);
+    d[10] = sums[0];
+    d[11] = sums[0] >> 16;
+    d[8] = sums[1];
+    d[9] = sums[1] >> 16;
+    d[6] = sums[2];
+    d[7] = sums[2] >> 16;
+    d[4] = sums[3];
+    d[5] = sums[3] >> 16;
+    for (i = 4; i < 0x13FE8; i += 4) {
+        for (k = 0; k < 4; k++) {
+            d[i + k] += _memcard_encrypt_key[k];
+        }
+        _memcardKeyStep(_memcard_encrypt_key);
+    }
+}
+
+static u8 _memcard_Decryption(void* data)
+{
+    u16* d = (u16*)data;
+    u32 sums[4];
+    u32 stored[4];
+    int i;
+    s32 k;
+    sums[0] = 0;
+    sums[1] = 0;
+    sums[2] = 0;
+    sums[3] = 0;
+    _memcard_encrypt_key[0] = d[0];
+    _memcard_encrypt_key[1] = d[1];
+    _memcard_encrypt_key[2] = d[2];
+    _memcard_encrypt_key[3] = d[3];
+    for (i = 4; i < 0x13FE8; i += 4) {
+        for (k = 0; k < 4; k++) {
+            d[i + k] -= _memcard_encrypt_key[k];
+        }
+        _memcardKeyStep(_memcard_encrypt_key);
+    }
+    stored[2] = d[6] | (d[7] << 16);
+    stored[3] = d[4] | (d[5] << 16);
+    stored[0] = d[10] | (d[11] << 16);
+    stored[1] = d[8] | (d[9] << 16);
+    d[10] = 0;
+    d[11] = 0;
+    d[8] = 0;
+    d[9] = 0;
+    d[6] = 0;
+    d[7] = 0;
+    d[4] = 0;
+    d[5] = 0;
+    _memcardSumBlocks(d, sums);
+    if (sums[0] == stored[0] && sums[1] == stored[1] && sums[2] == stored[2] && sums[3] == stored[3]) {
+        return 1;
+    }
+    return 0;
+}
+
+extern "C" {
+extern "C" {
+void memcard_debug_Save(void* data)
+{
+    memcardSetupTask(0xb, 2, 0);
+    _memcardDuplicateSaveData_multi(data);
+    _memcard_Encryption(data);
+    memcardFinalizeTask();
+}
+}
+
+}
 extern "C" {
 void memcard_debug_Load(void* data)
 {

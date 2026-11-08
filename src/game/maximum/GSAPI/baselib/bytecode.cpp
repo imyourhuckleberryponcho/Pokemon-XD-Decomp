@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 #include <game/gcptr.h>
 
 
@@ -371,7 +372,7 @@ float HSD_ByteCodeEval(u8* bytecode, const f32* args, s32 nb_args)
             d1 = ((ByteCodeVal*) &stack->data)->i;
             stack = HSD_SListRemove(stack);
             ((ByteCodeVal*) &stack->data)->i =
-                (((ByteCodeVal*) &stack->data)->i / d1);
+                GC_DIVS(((ByteCodeVal*) &stack->data)->i, d1);
             break;
         case 0x20:
             HSD_ASSERT(551, stack);
@@ -379,7 +380,7 @@ float HSD_ByteCodeEval(u8* bytecode, const f32* args, s32 nb_args)
             d1 = ((ByteCodeVal*) &stack->data)->i;
             stack = HSD_SListRemove(stack);
             d0 = ((ByteCodeVal*) &stack->data)->i;
-            ((ByteCodeVal*) &stack->data)->i = (d0 % d1);
+            ((ByteCodeVal*) &stack->data)->i = GC_MODS(d0, d1);
             break;
         case 0x21:
             HSD_ASSERT(556, stack);

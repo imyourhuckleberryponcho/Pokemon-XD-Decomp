@@ -78,6 +78,7 @@ struct GSgfxVF;
 enum GSgfxLayerID {};
 enum GSgfxLayerType {};
 #include <game/gsgfxlayer.h>
+#include <game/ppcops.h>
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -641,7 +642,7 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 }
                 break;
             }
-            t = (u32)(100.0f * menuStatusTime) % 100;
+            t = GC_F2U32(100.0f * menuStatusTime) % 100;
             sprite->color = 0xFFFFFFFF;
             sv = sin(3.14f * (0.01f * (f32)t));
             val = (200.0f * sv);

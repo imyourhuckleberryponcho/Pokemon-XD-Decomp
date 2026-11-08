@@ -171,17 +171,46 @@ static inline f32 bezier(const f32* pts, u8 count, f32 t) {
     return seg[7] * (u2 * u) + (seg[5] * (3.0f * u2 * iu) + (seg[1] * (iu2 * iu) + seg[3] * (3.0f * u * iu2)));
 }
 
+static inline f32 bezierPts(const f32* pts, u8 count, f32 t) {
+    s32 n = (count - 1) / 3 + 1;
+    s32 k;
+    for (k = 0; k < n; k++) {
+        if (t < pts[k * 6])
+            break;
+    }
+    if (k == 0)
+        return pts[1];
+    if (k == n)
+        return pts[(n - 1) * 6 + 1];
+    f32 u2;
+    f32 iu;
+    f32 iu2;
+    f32 u;
+    u = (t - pts[(k - 1) * 6]) / (pts[k * 6] - pts[(k - 1) * 6]);
+    iu = 1.0f - u;
+    iu2 = iu * iu;
+    u2 = u * u;
+    return pts[(k - 1) * 6 + 7] * (u2 * u) + (pts[(k - 1) * 6 + 5] * (3.0f * u2 * iu) + (pts[(k - 1) * 6 + 1] * (iu2 * iu) + pts[(k - 1) * 6 + 3] * (3.0f * u * iu2)));
+}
+
 bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePrimObjectEntry* entry, u8 count,
                                  const u8* order, const tagGsFilePrimKeyFrame* a,
                                  const tagGsFilePrimKeyFrame* b, f32 t) const {
-    volatile f32 rot[3];
-    volatile f32 pivot[3];
-    volatile f32 scale[3];
+    GSmtx rX;
+    GSmtx rY;
+    GSmtx rZ;
+    GSmtx rA;
+    GSmtx rB;
+    f32 axA[3];
+    f32 axB[3];
+    f32 scale[3];
+    f32 trans[3];
+    f32 pivot[3];
+    f32 rot[3];
     f32 it = 1.0f - t;
     int i;
     const f32* pa;
     const f32* pb;
-    volatile f32 trans[3];
     pa = a->scale;
     pb = b->scale;
     for (i = 0; i < 3; i++) {
@@ -191,6 +220,8 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
             scale[i] = it * pa[i] + t * pb[i];
         }
     }
+    float sx0 = scale[0];
+    f32 sx = sx0, sy = scale[1], sz = scale[2];
     pa = a->trans;
     pb = b->trans;
     for (i = 0; i < 3; i++) {
@@ -200,6 +231,8 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
             trans[i] = it * pa[i] + t * pb[i];
         }
     }
+    float tx0 = trans[0];
+    f32 tx = tx0, ty = trans[1], tz = trans[2];
     pa = a->pivot;
     pb = b->pivot;
     for (i = 0; i < 3; i++) {
@@ -209,6 +242,8 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
             pivot[i] = it * pa[i] + t * pb[i];
         }
     }
+    float px0 = pivot[0];
+    f32 px = px0, py = pivot[1], pz = pivot[2];
     pa = a->rot;
     pb = b->rot;
     for (i = 0; i < 3; i++) {
@@ -218,17 +253,18 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
             rot[i] = it * pa[i] + t * pb[i];
         }
     }
+    f32 rx = rot[0], ry = rot[1], rz = rot[2];
     f32 npx = -pivot[0];
+    f32 rrx;
     f32 npz;
     f32 npy;
     npy = -pivot[1];
     npz = -pivot[2];
-    f32 px = pivot[0], py = pivot[1], pz = pivot[2];
-    f32 tx = trans[0], ty = trans[1], tz = trans[2];
-    f32 sx = scale[0], sy = scale[1], sz = scale[2];
     u8 identityScale = 1;
-    f32 rx = rot[0], ry = rot[1], rz = rot[2];
     memcpy(mtx, &mtxIdent, 0x30);
+    rrx = 0.017453292f * rx;
+    f32 rry = 0.017453292f * ry;
+    f32 rrz = 0.017453292f * rz;
     for (int n = 0; n < count; n++, order++) {
         switch (*order) {
         case 4:
@@ -247,28 +283,25 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
             break;
         case 1:
             if ((f32)fabs(rx) > 0.00001f) {
-                GSmtx r;
                 PSMTXTransApply(mtx->m, mtx->m, npx, npy, npz);
-                PSMTXRotRad(r.m, 'X', 0.017453292f * rx);
-                PSMTXConcat(r.m, mtx->m, mtx->m);
+                PSMTXRotRad(rX.m, 'X', rrx);
+                PSMTXConcat(rX.m, mtx->m, mtx->m);
                 PSMTXTransApply(mtx->m, mtx->m, px, py, pz);
             }
             break;
         case 2:
             if ((f32)fabs(ry) > 0.00001f) {
-                GSmtx r;
                 PSMTXTransApply(mtx->m, mtx->m, npx, npy, npz);
-                PSMTXRotRad(r.m, 'Y', 0.017453292f * ry);
-                PSMTXConcat(r.m, mtx->m, mtx->m);
+                PSMTXRotRad(rY.m, 'Y', rry);
+                PSMTXConcat(rY.m, mtx->m, mtx->m);
                 PSMTXTransApply(mtx->m, mtx->m, px, py, pz);
             }
             break;
         case 3:
             if ((f32)fabs(rz) > 0.00001f) {
-                GSmtx r;
                 PSMTXTransApply(mtx->m, mtx->m, npx, npy, npz);
-                PSMTXRotRad(r.m, 'Z', 0.017453292f * rz);
-                PSMTXConcat(r.m, mtx->m, mtx->m);
+                PSMTXRotRad(rZ.m, 'Z', rrz);
+                PSMTXConcat(rZ.m, mtx->m, mtx->m);
                 PSMTXTransApply(mtx->m, mtx->m, px, py, pz);
             }
             break;
@@ -281,22 +314,18 @@ bool GsKeyObject::GetShapeMatrix(GSmtx* scaleMtx, GSmtx* mtx, const tagGsFilePri
     }
     if (entry->hasRot != 0) {
         if (entry->hasAxisA != 0) {
-            f32 axis[3];
-            GSmtx r;
-            axis[0] = entry->axisA[0];
-            axis[1] = entry->axisA[1];
-            axis[2] = entry->axisA[2];
-            PSMTXRotAxisRad(r.m, axis, entry->angleA);
-            PSMTXConcat(r.m, scaleMtx->m, scaleMtx->m);
+            axA[0] = entry->axisA[0];
+            axA[1] = entry->axisA[1];
+            axA[2] = entry->axisA[2];
+            PSMTXRotAxisRad(rA.m, axA, entry->angleA);
+            PSMTXConcat(rA.m, scaleMtx->m, scaleMtx->m);
         }
         if (entry->hasAxisB != 0) {
-            f32 axis[3];
-            GSmtx r;
-            axis[0] = entry->axisB[0];
-            axis[1] = entry->axisB[1];
-            axis[2] = entry->axisB[2];
-            PSMTXRotAxisRad(r.m, axis, entry->angleB);
-            PSMTXConcat(r.m, scaleMtx->m, scaleMtx->m);
+            axB[0] = entry->axisB[0];
+            axB[1] = entry->axisB[1];
+            axB[2] = entry->axisB[2];
+            PSMTXRotAxisRad(rB.m, axB, entry->angleB);
+            PSMTXConcat(rB.m, scaleMtx->m, scaleMtx->m);
         }
         PSMTXTransApply(scaleMtx->m, scaleMtx->m, entry->pos[0], entry->pos[1], entry->pos[2]);
     }
@@ -522,7 +551,7 @@ f32 GsKeyObject::GetShapeColorAlpha(const tagGsFilePrimKeyFrame* a, const tagGsF
     f32 v;
     f32 it = 1.0f - t;
     if (a->nColor[3] != 0) {
-        v = 255.0f * bezier(a->cColor[3], a->nColor[3], t);
+        v = 255.0f * bezierPts(a->cColor[3], a->nColor[3], t);
         if (v < 0.0f) {
             v = 0.0f;
         } else if (v > 255.0f) {

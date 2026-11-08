@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/tigadata.h>
 
@@ -629,7 +630,7 @@ void tigaVariant::mod(tigaVariant* result, tigaVariant* b)
         if (d == 0) {
             tigaErrMessage("integer mod 0");
         }
-        result->setInteger(getInteger() % d);
+        result->setInteger(GC_MODS(getInteger(), d));
         break;
     }
     default:

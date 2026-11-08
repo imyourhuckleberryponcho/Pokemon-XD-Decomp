@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/miscTables.h>
 #include <game/worldMapData.h>
@@ -128,7 +129,7 @@ void underTakerCallBackFunc(s32 unused0, s32 unused1, u16 amount) {
                 u16 mid = undertakerdata->midChance;
                 u16 mod = undertakerdata->randMod;
                 high = low + mid;
-                u16 rnd = (u16)HSD_Rand() % mod;
+                u16 rnd = GC_MODS((u16)HSD_Rand(), mod);
                 if (rnd < low) {
                     level = (u16)GSflagGet(undertakerdata->flagLevel) + 1;
                     if ((u16)level >= undertakerdata->maxCount - 1) {
@@ -186,7 +187,7 @@ static void _appearMirabo(void) {
         total += place->weight;
         i++;
     }
-    rnd = (u16)HSD_Rand() % total;
+    rnd = GC_MODS((u16)HSD_Rand(), total);
     sum = 0;
     i = 0;
     for (;;) {

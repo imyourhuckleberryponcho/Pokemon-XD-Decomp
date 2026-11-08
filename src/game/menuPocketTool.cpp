@@ -6,6 +6,7 @@
 #include <game/bitfield.h>
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
+#include <game/ppcops.h>
 
 #pragma peephole off
 
@@ -34,145 +35,6 @@ StatusS32 gamedataGetStatus(s32, s32);
 void pokemonSetDarkPokemonStatus(Pokemon*, u16);
 u16 pokemonBiosGetInitDp(Pokemon*);
 extern u32 darkPokemonList_number;
-}
-
-static u32 _darkPokemonIndex = 0xC;
-
-void menuPtRestoreSound(MenuPtWorkSound* s)
-{
-    if (s->bgm != 0 && s->bgm != soundGetBGMID()) {
-        soundOpenPlay(s->bgm, 0x32, s->bgmVol);
-    }
-    if (s->env != 0 && s->env != soundGetEnvID()) {
-        soundOpenPlayEnv(s->env, 0x32, s->envVol);
-    }
-}
-
-void menuPtSaveSound(MenuPtWorkSound* s)
-{
-    u32 bgm = soundGetBGMID();
-    u8 bgmVol;
-    if (bgm) bgmVol = soundGetVolume(bgm); else bgmVol = 0;
-    u32 env = soundGetEnvID();
-    u8 envVol;
-    if (env) envVol = soundGetVolume(env); else envVol = 0;
-    s->bgm = bgm;
-    s->env = env;
-    s->bgmVol = bgmVol;
-    s->envVol = envVol;
-}
-
-void menuPtStopSound(MenuPtWorkSound* s)
-{
-    u32 bgm = soundGetBGMID();
-    u8 bgmVol;
-    if (bgm) {
-        bgmVol = soundGetVolume(bgm);
-        soundOpenPlay(8, 0x32, 0xFF);
-    } else {
-        bgmVol = 0;
-    }
-    u32 env = soundGetEnvID();
-    u8 envVol;
-    if (env) envVol = soundGetVolume(env); else envVol = 0;
-    s->bgm = bgm;
-    s->env = env;
-    s->bgmVol = bgmVol;
-    s->envVol = envVol;
-}
-
-void menuPocketButtonWait()
-{
-    do {
-        GSthreadSwitch();
-    } while ((windowGetKeyTrg() & 0x30) == 0);
-}
-
-static inline f32 pmax(f32 a, f32 b)
-{
-    if (a > b) {
-    } else {
-        a = b;
-    }
-    return a;
-}
-
-f32 menuGetPokemonScale(GCuptr id, int index)
-{
-    f32 size[4];
-    f32 scale;
-    f32 memoScale;
-    f32 angle;
-    void* model = Sequence_GetGSmodel(id);
-    switch (Sequence_GetModelSize(id)) {
-    case -2: scale = 0.6f; break;
-    case -1: scale = 0.75f; break;
-    case 0: scale = 1.0f; break;
-    case 1: scale = 1.15f; break;
-    case 2: scale = 1.25f; break;
-    case 3: scale = 1.4f; break;
-    default: scale = 1.0f; break;
-    }
-    memoGetScaleAngle(index, &memoScale, &angle);
-    GSboundGetSize(GSmodelGetBound(model), size, 0, 0);
-    f32 m = size[0] > size[1] ? size[0] : size[1];
-    f32 r = 11.0f / (memoScale * (m / scale));
-    static f32 multi = 2.0f;
-    return r * multi;
-}
-
-void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id);
-static u16 pokemonindex(int);
-
-void menuPocketDebugMakeDarkPokemonByID(Pokemon& p, u16 id, f32 mult)
-{
-    DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
-    u16 pid = dark->getPokemonID();
-    pokemonCreate(&p, pid, 0x19, gamedataGetStatus(0, 1));
-    menuPocketSetDarkPokemon(p, mult, id);
-    pokemonBiosGetInitDp(&p);
-}
-
-void menuPocketDebugMakePokemonByID(Pokemon& p, u16 id, bool dark, f32 mult)
-{
-    pokemonCreate(&p, id, 0x19, gamedataGetStatus(0, 1));
-    if (dark) {
-        int tries = 0;
-        do {
-            _darkPokemonIndex++;
-            if (_darkPokemonIndex >= darkPokemonList_number) _darkPokemonIndex = 1;
-            menuPocketSetDarkPokemon(p, mult, (u16)_darkPokemonIndex);
-            if (pokemonBiosGetInitDp(&p) != 0) break;
-            tries++;
-        } while (tries < 10);
-    }
-}
-
-void makePocketDeubugMakeDarkPokemonReset()
-{
-    _darkPokemonIndex = 0xC;
-}
-
-void menuPocketDebugMakePokemonBySN(Pokemon& p, u16 sn, bool dark, f32 mult)
-{
-    menuPocketDebugMakePokemonByID(p, pokemonindex(sn % 386), dark, mult);
-}
-
-void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id)
-{
-    pokemonSetDarkPokemonStatus(&p, id);
-    u16 dp = pokemonBiosGetInitDp(&p);
-    p.setDarkPoint((f32)dp * mult);
-    DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
-    dark->setStatus((darkPokemonStatus)3);
-    dark->setSnatchIndex((u8)id);
-}
-
-static u16 pokemonindex(int n)
-{
-    int v = n + 1;
-    if (v > 0xFB) v += 0x19;
-    return v;
 }
 
 struct tagSPRITE_WORK {
@@ -391,8 +253,6 @@ public:
 void menuPtSpriteDrawColor(u16, s32, s32, s32, s32, u32);
 void menuPtSpriteDrawColor(u16, s32, s32, u32);
 
-PocketVec<short> CMenuPokemonCursor::defaultPositionTbl;
-
 class CMenuGlobalState {
 public:
     s32 pad0, pad4, pad8;
@@ -402,167 +262,11 @@ public:
     void init();
 };
 
-void CMenuGlobalState::init()
-{
-    memset(this, 0, sizeof(*this));
-    cursor.init();
-    state.init();
-}
-
-void CMenuPokemonCursor::draw()
-{
-    if (active) {
-        PocketVec<short> p;
-        if (mode == 3) {
-            PocketVec<short>* dst = &table[index];
-            p.x = (short)(t * (f32)(dst->x - pos.x) + (f32)pos.x);
-            p.y = (short)(t * (f32)(dst->y - pos.y) + (f32)pos.y);
-        } else {
-            PocketVec<short>* src = &table[index];
-            p.x = src->x;
-            p.y = src->y;
-        }
-        if (isCatchPokemon()) {
-            p.x += 8;
-            p.y -= 8;
-            if (mode == 1) {
-                f32 sn = msl_sinf(3.1415927f * t);
-                short d2 = (short)(20.0f * sn);
-                short d1 = (short)(-8.0f * t);
-                PocketVec<short> v2 = p;
-                PocketVec<short> v1 = p;
-                PocketVec<short> v3 = p;
-                v2.x += d2;
-                v1.x -= d2;
-                v2.y -= d1;
-                v1.y -= -8 - d1;
-                if (t < 0.5f) {
-                    ant.drawAndUpdate(v1);
-                    before.drawAndUpdate(v2);
-                } else {
-                    before.drawAndUpdate(v2);
-                    ant.drawAndUpdate(v1);
-                }
-            } else {
-                ant.drawAndUpdate(p);
-            }
-        } else if (mode == 2) {
-            before.aC = 1.0f - t;
-            before.drawAndUpdate();
-        }
-        f32 q = timer / 0.5f;
-        if (q > 0.5f) q = 1.0f - q;
-        f32 pulse = 2.0f * q;
-        timer = timer + timeGetLastFrameSec();
-        if (timer >= 0.5f) timer = (f32)fmod(timer, 0.5);
-        p.x -= 0x2D;
-        p.y -= 0x2D;
-        u32 col;
-        if (flag) col = 0xFFC800FF; else col = 0xFFFFFFFF;
-        if (!isCatchPokemon()) {
-            MENU_SPRITE_dd_* sp = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0x216));
-            short w = sp->w;
-            short h = sp->h;
-            int off = (short)(5.0f * pulse);
-            if (off > 4) off = 4;
-            short x1 = p.x + 4 + off;
-            short y1 = p.y + 4 + off;
-            menuPtSpriteDrawColor(0x216, x1, y1, w, h, col);
-            short x2 = p.x + 0x32 - off;
-            menuPtSpriteDrawColor(0x216, x2, y1, -w, h, col);
-            short y2 = p.y + 0x32 - off;
-            menuPtSpriteDrawColor(0x216, x1, y2, w, -h, col);
-            menuPtSpriteDrawColor(0x216, x2, y2, -w, -h, col);
-        } else {
-            menuPtSpriteDrawColor(0x215, (short)(p.x + 0xE), (short)(p.y + 0xE), (col & 0xFFFFFF00) | (short)(155.0f * pulse + 100.0f));
-        }
-        menuPtSpriteDrawColor(0x214, (short)(p.x + 7), (short)(p.y + 0x23), col);
-    }
-}
-
-bool CMenuPokemonCursor::isCatchPokemon()
-{
-    return pokemon.checkValid();
-}
-
-void CMenuPokemonCursor::deletePokemon()
-{
-    pokemonInit((u32)&pokemon);
-    before = ant;
-    ant.init();
-}
-
-void CMenuPokemonCursor::setBeforAnt(CAnt& a)
-{
-    before = a;
-}
-
-void CMenuPokemonCursor::setPokemon(Pokemon* p)
-{
-    before = ant;
-    if (p == 0) {
-        pokemonInit((u32)&pokemon);
-        ant.init();
-        return;
-    }
-    memcpy(&pokemon, p, 0xC4);
-    ant.initByPokemonAndSetColorAnimationInAny(&pokemon);
-    ant.setAnimation(0);
-}
-
-void CMenuPokemonCursor::setPositionTableDummy()
-{
-    PocketVec<short> v = table[index];
-    defaultPositionTbl.x = v.x;
-    defaultPositionTbl.y = v.y;
-    table = &defaultPositionTbl;
-    index = 0;
-    prevIndex = 0;
-}
-
-void CMenuPokemonCursor::setPositionIndex(s32 i)
-{
-    PocketVec<short> v = table[index];
-    pos.x = v.x;
-    pos.y = v.y;
-    prevIndex = index;
-    index = i;
-}
-
-void CMenuPokemonCursor::setPositionTable(PocketVec<short>* t, s32 i)
-{
-    setPositionIndex(i);
-    prevIndex = 0;
-    table = t;
-}
-
-void CMenuPokemonCursor::setAnimationOff()
-{
-    mode = 0;
-    t = 0.0f;
-    before.init();
-}
-
-void CMenuPokemonCursor::init()
-{
-    memset(this, 0, sizeof(*this));
-    active = 1;
-    pokemonInit((u32)&pokemon);
-    ant.init();
-    before.init();
-    flag = 0;
-    defaultPositionTbl.x = 0;
-    defaultPositionTbl.y = 0;
-    pos.x = 0;
-    pos.y = 0;
-    table = &defaultPositionTbl;
-}
-
 class CMetaMenu;
 
 struct VP {
     u32 id;
-    u32 value;
+    GCuptr value;
 };
 
 struct CInfoWindow {
@@ -576,7 +280,7 @@ struct CInfoWindow {
 
     void exec(CMetaMenu&, u32, bool);
     void draw();
-    void setMsgCtrlValue(u32, u32);
+    void setMsgCtrlValue(u32, GCuptr);
     bool isMsgEnd();
     void open(u32, bool);
     void close();
@@ -653,12 +357,314 @@ public:
     void tutorialManageUpdate();
 };
 
-CMetaMenu* CMetaMenu::pCurrentMenu;
+template <>
+PocketVec<short> PocketVec<short>::zero = { 0, 0 };
+
+extern "C" {
+u16 menuRelivehallPcBoxDefaultPokemonSprite = 0x2DF;
+}
+
 s32 CMetaMenu::defautlLocalWindowOpenTable[1] = { 0 };
-extern const GSgfxColAu8 GSgfxColAu8_Black;
-const GSgfxColAu8 GSgfxColAu8_Black = { 0, 0, 0, 0xFF };
+static u32 _darkPokemonIndex = 0xC;
+CMetaMenu* CMetaMenu::pCurrentMenu;
 static CMetaMenu* _pThis;
 static s32 _selectItemQuantity;
+PocketVec<short> CMenuPokemonCursor::defaultPositionTbl;
+extern const GSgfxColAu8 GSgfxColAu8_Black;
+const GSgfxColAu8 GSgfxColAu8_Black = { 0, 0, 0, 0xFF };
+
+void menuPtRestoreSound(MenuPtWorkSound* s)
+{
+    if (s->bgm != 0 && s->bgm != soundGetBGMID()) {
+        soundOpenPlay(s->bgm, 0x32, s->bgmVol);
+    }
+    if (s->env != 0 && s->env != soundGetEnvID()) {
+        soundOpenPlayEnv(s->env, 0x32, s->envVol);
+    }
+}
+
+void menuPtSaveSound(MenuPtWorkSound* s)
+{
+    u32 bgm = soundGetBGMID();
+    u8 bgmVol;
+    if (bgm) bgmVol = soundGetVolume(bgm); else bgmVol = 0;
+    u32 env = soundGetEnvID();
+    u8 envVol;
+    if (env) envVol = soundGetVolume(env); else envVol = 0;
+    s->bgm = bgm;
+    s->env = env;
+    s->bgmVol = bgmVol;
+    s->envVol = envVol;
+}
+
+void menuPtStopSound(MenuPtWorkSound* s)
+{
+    u32 bgm = soundGetBGMID();
+    u8 bgmVol;
+    if (bgm) {
+        bgmVol = soundGetVolume(bgm);
+        soundOpenPlay(8, 0x32, 0xFF);
+    } else {
+        bgmVol = 0;
+    }
+    u32 env = soundGetEnvID();
+    u8 envVol;
+    if (env) envVol = soundGetVolume(env); else envVol = 0;
+    s->bgm = bgm;
+    s->env = env;
+    s->bgmVol = bgmVol;
+    s->envVol = envVol;
+}
+
+void menuPocketButtonWait()
+{
+    do {
+        GSthreadSwitch();
+    } while ((windowGetKeyTrg() & 0x30) == 0);
+}
+
+static inline f32 pmax(f32 a, f32 b)
+{
+    if (a > b) {
+    } else {
+        a = b;
+    }
+    return a;
+}
+
+f32 menuGetPokemonScale(GCuptr id, int index)
+{
+    f32 size[4];
+    f32 scale;
+    f32 memoScale;
+    f32 angle;
+    void* model = Sequence_GetGSmodel(id);
+    switch (Sequence_GetModelSize(id)) {
+    case -2: scale = 0.6f; break;
+    case -1: scale = 0.75f; break;
+    case 0: scale = 1.0f; break;
+    case 1: scale = 1.15f; break;
+    case 2: scale = 1.25f; break;
+    case 3: scale = 1.4f; break;
+    default: scale = 1.0f; break;
+    }
+    memoGetScaleAngle(index, &memoScale, &angle);
+    GSboundGetSize(GSmodelGetBound(model), size, 0, 0);
+    f32 m = size[0] > size[1] ? size[0] : size[1];
+    f32 r = 11.0f / (memoScale * (m / scale));
+    static f32 multi = 2.0f;
+    return r * multi;
+}
+
+void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id);
+static u16 pokemonindex(int);
+
+void menuPocketDebugMakeDarkPokemonByID(Pokemon& p, u16 id, f32 mult)
+{
+    DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
+    u16 pid = dark->getPokemonID();
+    pokemonCreate(&p, pid, 0x19, gamedataGetStatus(0, 1));
+    menuPocketSetDarkPokemon(p, mult, id);
+    pokemonBiosGetInitDp(&p);
+}
+
+void menuPocketDebugMakePokemonByID(Pokemon& p, u16 id, bool dark, f32 mult)
+{
+    pokemonCreate(&p, id, 0x19, gamedataGetStatus(0, 1));
+    if (dark) {
+        int tries = 0;
+        do {
+            _darkPokemonIndex++;
+            if (_darkPokemonIndex >= darkPokemonList_number) _darkPokemonIndex = 1;
+            menuPocketSetDarkPokemon(p, mult, (u16)_darkPokemonIndex);
+            if (pokemonBiosGetInitDp(&p) != 0) break;
+            tries++;
+        } while (tries < 10);
+    }
+}
+
+void makePocketDeubugMakeDarkPokemonReset()
+{
+    _darkPokemonIndex = 0xC;
+}
+
+void menuPocketDebugMakePokemonBySN(Pokemon& p, u16 sn, bool dark, f32 mult)
+{
+    menuPocketDebugMakePokemonByID(p, pokemonindex(sn % 386), dark, mult);
+}
+
+void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id)
+{
+    pokemonSetDarkPokemonStatus(&p, id);
+    u16 dp = pokemonBiosGetInitDp(&p);
+    p.setDarkPoint((f32)dp * mult);
+    DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
+    dark->setStatus((darkPokemonStatus)3);
+    dark->setSnatchIndex((u8)id);
+}
+
+static u16 pokemonindex(int n)
+{
+    int v = n + 1;
+    if (v > 0xFB) v += 0x19;
+    return v;
+}
+
+void CMenuGlobalState::init()
+{
+    memset(this, 0, sizeof(*this));
+    cursor.init();
+    state.init();
+}
+
+void CMenuPokemonCursor::draw()
+{
+    if (active) {
+        PocketVec<short> p;
+        if (mode == 3) {
+            PocketVec<short>* dst = &table[index];
+            p.x = (short)(t * (f32)(dst->x - pos.x) + (f32)pos.x);
+            p.y = (short)(t * (f32)(dst->y - pos.y) + (f32)pos.y);
+        } else {
+            PocketVec<short>* src = &table[index];
+            p.x = src->x;
+            p.y = src->y;
+        }
+        if (isCatchPokemon()) {
+            p.x += 8;
+            p.y -= 8;
+            if (mode == 1) {
+                f32 sn = msl_sinf(3.1415927f * t);
+                short d2 = (short)(20.0f * sn);
+                short d1 = (short)(-8.0f * t);
+                PocketVec<short> v2 = p;
+                PocketVec<short> v1 = p;
+                PocketVec<short> v3 = p;
+                v2.x += d2;
+                v1.x -= d2;
+                v2.y -= d1;
+                v1.y -= -8 - d1;
+                if (t < 0.5f) {
+                    ant.drawAndUpdate(v1);
+                    before.drawAndUpdate(v2);
+                } else {
+                    before.drawAndUpdate(v2);
+                    ant.drawAndUpdate(v1);
+                }
+            } else {
+                ant.drawAndUpdate(p);
+            }
+        } else if (mode == 2) {
+            before.aC = 1.0f - t;
+            before.drawAndUpdate();
+        }
+        f32 q = timer / 0.5f;
+        if (q > 0.5f) q = 1.0f - q;
+        f32 pulse = 2.0f * q;
+        timer = timer + timeGetLastFrameSec();
+        if (timer >= 0.5f) timer = (f32)fmod(timer, 0.5);
+        p.x -= 0x2D;
+        p.y -= 0x2D;
+        u32 col;
+        if (flag) col = 0xFFC800FF; else col = 0xFFFFFFFF;
+        if (!isCatchPokemon()) {
+            MENU_SPRITE_dd_* sp = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0x216));
+            short w = sp->w;
+            short h = sp->h;
+            int off = (short)(5.0f * pulse);
+            if (off > 4) off = 4;
+            short y1 = p.y + 4 + off;
+            short x1 = p.x + 4 + off;
+            menuPtSpriteDrawColor(0x216, x1, y1, w, h, col);
+            short x2 = p.x + 0x32 - off;
+            menuPtSpriteDrawColor(0x216, x2, y1, -w, h, col);
+            short y2 = p.y + 0x32 - off;
+            menuPtSpriteDrawColor(0x216, x1, y2, w, -h, col);
+            menuPtSpriteDrawColor(0x216, x2, y2, -w, -h, col);
+        } else {
+            menuPtSpriteDrawColor(0x215, (short)(p.x + 0xE), (short)(p.y + 0xE), (col & 0xFFFFFF00) | (short)(155.0f * pulse + 100.0f));
+        }
+        menuPtSpriteDrawColor(0x214, (short)(p.x + 7), (short)(p.y + 0x23), col);
+    }
+}
+
+bool CMenuPokemonCursor::isCatchPokemon()
+{
+    return pokemon.checkValid();
+}
+
+void CMenuPokemonCursor::deletePokemon()
+{
+    pokemonInit((GCuptr)&pokemon);
+    before = ant;
+    ant.init();
+}
+
+void CMenuPokemonCursor::setBeforAnt(CAnt& a)
+{
+    before = a;
+}
+
+void CMenuPokemonCursor::setPokemon(Pokemon* p)
+{
+    before = ant;
+    if (p == 0) {
+        pokemonInit((GCuptr)&pokemon);
+        ant.init();
+        return;
+    }
+    memcpy(&pokemon, p, 0xC4);
+    ant.initByPokemonAndSetColorAnimationInAny(&pokemon);
+    ant.setAnimation(0);
+}
+
+void CMenuPokemonCursor::setPositionTableDummy()
+{
+    PocketVec<short> v = table[index];
+    defaultPositionTbl.x = v.x;
+    defaultPositionTbl.y = v.y;
+    table = &defaultPositionTbl;
+    index = 0;
+    prevIndex = 0;
+}
+
+void CMenuPokemonCursor::setPositionIndex(s32 i)
+{
+    PocketVec<short> v = table[index];
+    pos.x = v.x;
+    pos.y = v.y;
+    prevIndex = index;
+    index = i;
+}
+
+void CMenuPokemonCursor::setPositionTable(PocketVec<short>* t, s32 i)
+{
+    setPositionIndex(i);
+    prevIndex = 0;
+    table = t;
+}
+
+void CMenuPokemonCursor::setAnimationOff()
+{
+    mode = 0;
+    t = 0.0f;
+    before.init();
+}
+
+void CMenuPokemonCursor::init()
+{
+    memset(this, 0, sizeof(*this));
+    active = 1;
+    pokemonInit((GCuptr)&pokemon);
+    ant.init();
+    before.init();
+    flag = 0;
+    defaultPositionTbl.x = 0;
+    defaultPositionTbl.y = 0;
+    pos.x = 0;
+    pos.y = 0;
+    table = &defaultPositionTbl;
+}
 
 void menuPtWindowWorkDraw(s32);
 tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(tagWINDOW_WORK*, u32, s32);
@@ -708,7 +714,7 @@ void CInfoWindow::draw()
     }
 }
 
-void CInfoWindow::setMsgCtrlValue(u32 id, u32 value)
+void CInfoWindow::setMsgCtrlValue(u32 id, GCuptr value)
 {
     int i = 0;
     while (values[i].id != 0) i++;
@@ -798,7 +804,7 @@ f32 CMetaMenu::calcAnimationTimeRate0to1to0(f32 sec)
 
 f32 CMetaMenu::calcAnimationTimeRate0to1(f32 sec)
 {
-    u32 frames = (u32)(sec * (f32)GSgfxVideoGetVsyncRate());
+    u32 frames = GC_F2U32(sec * (f32)GSgfxVideoGetVsyncRate());
     return (f32)(u32)(time % frames) / (f32)frames;
 }
 
@@ -883,11 +889,11 @@ u8 CMetaMenu::getAlphaFadeAlpha() const
     case 0:
         return 0xFF;
     case 3: {
-        u32 total = (u32)(0.5f * (f32)GSgfxVideoGetVsyncRate());
-        return (s32)(((u32)(0.5f * (f32)GSgfxVideoGetVsyncRate()) - fadeTime) * 0xFF) / (s32)total;
+        u32 total = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
+        return (s32)((GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate()) - fadeTime) * 0xFF) / (s32)total;
     }
     case 1:
-        return (s32)(fadeTime * 0xFF) / (s32)(u32)(0.5f * (f32)GSgfxVideoGetVsyncRate());
+        return (s32)(fadeTime * 0xFF) / (s32)GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
     case 2:
         return 0;
     default:
@@ -924,13 +930,13 @@ void CMetaMenu::alphaFadeUpdate()
 
 void CMetaMenu::alphaFadeOutKick()
 {
-    fadeTime = (u32)(0.5f * (f32)GSgfxVideoGetVsyncRate());
+    fadeTime = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
     fadeState = 1;
 }
 
 void CMetaMenu::alphaFadeInKick()
 {
-    fadeTime = (u32)(0.5f * (f32)GSgfxVideoGetVsyncRate());
+    fadeTime = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
     fadeState = 3;
 }
 
@@ -1078,7 +1084,7 @@ void CMetaMenu::localWindowRemove(s32 id)
 
 void CMetaMenu::localWindowDrawAll(s32 from, s32 to)
 {
-    for (s32 i = from; i <= to; i++) {
+    for (int i = from; i <= to; i++) {
         if (windowIds[i] != 0) {
             if (windowFuncs[i] != 0) {
                 windowFuncs[i](this, windowIds[i]);
@@ -1253,7 +1259,7 @@ void menuPtSpriteDrawAndRollScale(u16 id, u32 color, f32 ox, f32 oy, f32 angle, 
     u8 b = color >> 8;
     u8 r = color >> 24;
     u8 a = color;
-    GSgfxColAu8 col = GSgfxColAu8();
+    GSgfxColAu8 col = { 0, 0, 0, 0 };
     col.r = r;
     col.g = g;
     col.b = b;
@@ -1498,11 +1504,12 @@ static inline int ptFPClassify(f32 x)
 static inline f32 ptSqrt(f32 x)
 {
     if (x > 0.0f) {
-        f64 guess = __frsqrte(x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        return x * guess;
+        f32 y = x;
+        f64 guess = __frsqrte(y);
+        guess = 0.5 * guess * (3.0 - guess * guess * y);
+        guess = 0.5 * guess * (3.0 - guess * guess * y);
+        guess = 0.5 * guess * (3.0 - guess * guess * y);
+        return y * guess;
     } else if (x < 0.0) {
         return *(f32*)__float_nan;
     } else if (ptFPClassify(x) == 1) {
@@ -1623,9 +1630,3 @@ bool getBitTable(u32* table, s32 i)
     return (table[i / 32] & (1 << (i % 32))) != 0;
 }
 
-template <>
-PocketVec<short> PocketVec<short>::zero = { 0, 0 };
-
-extern "C" {
-u16 menuRelivehallPcBoxDefaultPokemonSprite = 0x2DF;
-}

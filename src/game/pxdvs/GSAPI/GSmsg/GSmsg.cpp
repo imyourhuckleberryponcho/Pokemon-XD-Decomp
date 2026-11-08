@@ -81,7 +81,7 @@ struct CtrlEntry {
     u8 flagA : 1,
     u8 rest : 3)
     u8 pad1[3];
-    u32 (*func)(MSG_TASK_WORK*);
+    GCuptr (*func)(MSG_TASK_WORK*);
 };
 
 struct MSG_TASK_WORK {
@@ -1844,7 +1844,7 @@ static inline u8 _msgCallCtrlFunc(MSG_TASK_WORK* t, u32 code)
     CtrlEntry* e;
     u8* next;
     u32 flag;
-    u32 result;
+    GCuptr result;
     u32 mode;
 
     table = _pMw->ctrl;
@@ -2225,7 +2225,7 @@ static void _msgSetChar(MSG_TASK_WORK* t, u16 code)
     }
     e = _msgGetCodeInfo(t, code, &info);
     if (e == 0) {
-        s32 x = (s32)t->curX;
+        u16 x = t->curX;
         s16 y = (s32)t->curY + 2;
         s32 x2 = (s32)((f32)t->fontW * t->scaleX + (f32)(s16)x);
         s32 y2 = (s32)((f32)t->fontH * t->scaleY + (f32)y);
@@ -3532,11 +3532,11 @@ s32 GScharMakeFromGBA(u16* dst, u8* src, s32 len, s32 lang)
 static inline s32 gbaStore(u8* dst, const u16* src, const u16* tbl)
 {
     s32 n = 0;
-    u32 c;
     if (src == 0) {
         return 0;
     }
-    while ((c = *src) != 0) {
+    while (*src != 0) {
+        u32 c = *src;
         const u16* p = tbl;
         s32 i = 0;
         while (c != *p) {

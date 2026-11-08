@@ -119,7 +119,7 @@ void fightOutPokemonDamageEffect(FightOutPokemon*);
 u8 fightMenuYesNo(void);
 void fightMenuCloseMsg(void);
 s32 fightMenuWazaWasure(Pokemon*, u16);
-u32 pokemon_GetPokemonWazaDataId(Pokemon*, u16);
+u32 pokemon_GetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
 u8 wazaDB_GetHidenFlag(u32);
 u8 fightMenuOpenMsg(u32);
 void pokemonWazaCreate(Pokemon*, u16, u16);

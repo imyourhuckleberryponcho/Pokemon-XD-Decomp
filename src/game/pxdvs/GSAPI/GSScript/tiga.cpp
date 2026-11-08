@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
@@ -1129,6 +1130,14 @@ void Tiga::calcExpr2(int op, tigaVariant* result, tigaVariant* a, tigaVariant* b
     }
 }
 
+static inline void clearTop(TigaThread* t, u8 n)
+{
+    for (int i = 0; i < n; i++) {
+        t->ctx.sp->clear();
+        t->ctx.sp++;
+    }
+}
+
 s32 Tiga::execute(TigaThread* t)
 {
     bool running = true;
@@ -1299,8 +1308,8 @@ s32 Tiga::execute(TigaThread* t)
             break;
         }
         case 6: {
-            int n = pc->a;
             int i;
+            int n = pc->a;
             for (i = 0; i < n; i++) {
                 t->ctx.sp->clear();
                 t->ctx.sp++;
@@ -1385,12 +1394,7 @@ s32 Tiga::execute(TigaThread* t)
             break;
         }
         case 14: {
-            int n = pc->a;
-            int i;
-            for (i = 0; i < (u8)n; i++) {
-                t->ctx.sp->clear();
-                t->ctx.sp++;
-            }
+            clearTop(t, pc->a);
             c->pc++;
             break;
         }
@@ -1490,10 +1494,10 @@ bool Tiga::execMethod(int type, int cmd, tigaVariant* args, tigaVariant* result)
             result->setSingle(sqrtf(args[0].getSingle()));
             break;
         case 0x21:
-            result->setInteger(args[0].getInteger() | (1 << args[1].getInteger()));
+            result->setInteger(args[0].getInteger() | GC_SHL(1, args[1].getInteger()));
             break;
         case 0x22:
-            result->setInteger(args[0].getInteger() & ~(1 << args[1].getInteger()));
+            result->setInteger(args[0].getInteger() & ~GC_SHL(1, args[1].getInteger()));
             break;
         case 0x23: {
             int a = args[0].getInteger();
@@ -1640,7 +1644,8 @@ void Tiga::makeStateData(GSBinWriteStream* stream)
 s32 Tiga::restoreStateData(void* data, u32 length)
 {
     GSBinReadStream stream(data, length);
-    s32 t;
+    int t;
+    s32 i;
     s32 handle;
     u32 n;
     CurrentGuard guard(this);
@@ -1649,21 +1654,22 @@ s32 Tiga::restoreStateData(void* data, u32 length)
     stateId = stream.read32();
     u32 id = stream.read32();
     if (id != ftblId && (id != 0 || ftblId != 0)) return 0;
-    if (chankSize != stream.read32()) return 0;
+    if (stream.read32() != chankSize) return 0;
     threadCount = stream.read32();
-    for (s32 i = 0; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         n = stream.read32();
         timers[i] = *(f32*)&n;
     }
-    for (s32 i = 0; 16 > i; i++) userFlags[i] = stream.read8();
+    for (i = 0; 16 > i; i++) userFlags[i] = stream.read8();
     nextHandle = stream.read32();
     saveFlag = stream.read8() != 0;
     unk930 = stream.read32();
     gvarCount = stream.read32();
-    for (s32 i = 0; i < gvarCount; i++) gvars[i].restoreStateData(&stream);
+    for (i = 0; i < gvarCount; i++) gvars[i].restoreStateData(&stream);
     arrayCount = stream.read32();
-    for (s32 i = 0; i < arrayCount; i++) {
-        if (stream.read8() == 0) {
+    for (i = 0; i < arrayCount; i++) {
+        stream.read8();
+        if (arrays[i]->flag == 0) {
             stream.read32();
             for (s32 j = 0; j < arrays[i]->size; j++) arrays[i]->get(j)->restoreStateData(&stream);
         }
@@ -1671,7 +1677,7 @@ s32 Tiga::restoreStateData(void* data, u32 length)
     s32 count = 8;
     s32 nthreads = stream.read32();
     if (nthreads < 8) count = nthreads;
-    for (s32 i = 0; i < count; i++) {
+    for (i = 0; i < count; i++) {
         threads[i]->initTiga();
         threads[i]->restoreStateData(&stream);
         if (threads[i]->state != 0) {
@@ -1680,9 +1686,10 @@ s32 Tiga::restoreStateData(void* data, u32 length)
             if (nextHandle == 0) nextHandle = 1;
         }
     }
-    for (s32 i = 0; i < count; i++) {
+    for (i = 0; i < count; i++) {
         if (threads[i]->state != 0) {
-            handle = threads[i]->handle;
+            s32 rf_t = threads[i]->handle;
+            handle = rf_t;
             t = GC_ADDR32(floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread));
             GSthreadSetName(t, "GSscript thread");
             GSthreadSetArgs(t, 2, this, handle);

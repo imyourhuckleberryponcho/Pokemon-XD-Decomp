@@ -787,6 +787,6 @@ inline void FloorPostCallManager::add(u32 a, u32 b, u32 c, FloorPostFunc func) {
 }
 
 #pragma dont_inline on
-inline FloorPostCallManager::FloorPostCallManager() {
+FloorPostCallManager::FloorPostCallManager() {
     memset(this, 0, sizeof(entries));
 }

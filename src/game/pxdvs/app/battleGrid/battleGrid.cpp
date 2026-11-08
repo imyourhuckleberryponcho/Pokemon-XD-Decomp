@@ -284,13 +284,35 @@ static inline void PlaceModel(ModelSequence* m, GSvec* pos, GSvec* rot, u8 mirro
     }
 }
 
+static inline bool battleGridFindMaxModelSize(BattleGridEntry* e) {
+    u16 a;
+    u16 b;
+    bool found;
+    ModelSequence** p;
+    found = false;
+    g_max_model_size = -2;
+    for (a = 0; a < 4; a++, e++) {
+        if (e->slot != 0) {
+            p = e->pokemon;
+            for (b = 0; b < 2; b++, p++) {
+                ModelSequence* m = *p;
+                if (m != 0) {
+                    s32 size = m->modelSize;
+                    found = true;
+                    if (size > g_max_model_size) {
+                        g_max_model_size = size;
+                    }
+                }
+            }
+        }
+    }
+    return found;
+}
+
 void battleGridUpdate(void) {
     u16 i;
     u16 count = gBattleGrid.count;
     BattleGridEntry* g = gBattleGrid.entries;
-    bool found;
-    ModelSequence** p;
-    u16 a;
     wazaSequenceSysGetActiveWazaNum();
     if (count != 0) {
         f32 distance;
@@ -306,28 +328,8 @@ void battleGridUpdate(void) {
         GSvec rot;
         GSvec slotPos;
         GSvec pairPos;
-        u16 b;
-        BattleGridEntry* e;
 
-        found = false;
-        e = gBattleGrid.entries;
-        g_max_model_size = -2;
-        for (a = 0; a < 4; e++, a++) {
-            if (e->slot != 0) {
-                p = e->pokemon;
-                for (b = 0; b < 2; b++, p++) {
-                    ModelSequence* m = *p;
-                    if (m != 0) {
-                        s32 size = m->modelSize;
-                        found = true;
-                        if (size > g_max_model_size) {
-                            g_max_model_size = size;
-                        }
-                    }
-                }
-            }
-        }
-        if (!found) {
+        if (!battleGridFindMaxModelSize(gBattleGrid.entries)) {
             g_max_model_size = 0;
         }
         distance = GetBaseDistance();

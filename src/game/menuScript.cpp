@@ -741,7 +741,7 @@ static u16 _checkWaza2(void)
     for (i = 0; i < *wazaoshie_data_number; i++) {
         u32 mission = wazaoshie_data[i].mission;
         if (GSflagGet(0x3C4) >= flag_etc[mission].flagValue) {
-            u8 idx = count;
+            u16 idx = count;
             ids[idx] = wazaoshie_data[i].id;
             flags[idx] = GSflagTest(wazaoshie_data[i].flag);
             if (flags[idx]) {
@@ -815,6 +815,70 @@ void menuScriptEeveeCtrl(tagWINDOW_WORK* w)
 
 }
 
+static inline u32 copyWords(u16* src, u16* dst, int prev)
+{
+    int spaces = 0;
+    u32 k = 0;
+    for (;;) {
+        u16 ch = *src;
+        if (ch == 0x20 || ch == 0x3000) {
+            if (spaces == prev) {
+                break;
+            }
+            *dst = ch;
+            spaces++;
+        } else {
+            if (ch == 0) {
+                break;
+            }
+            *dst = ch;
+        }
+        src++;
+        dst++;
+        k++;
+    }
+    return k;
+}
+
+static inline void splitLines(u16* text, u16* buf1, u16* buf2, int best)
+{
+    u16* p = text;
+    u8 second = 0;
+    int n1 = 0;
+    int n2 = 0;
+    u32 total = GSmsgGetCharLength(text);
+    u32 idx = 0;
+    int spaces = 0;
+    for (;; p++, idx++) {
+        u16 ch = *p;
+        if (ch == 0xFFFF) {
+            continue;
+        }
+        if (ch == 0x20 || ch == 0x3000) {
+            if (spaces == best - 1) {
+                second = 1;
+            } else if (second) {
+                buf2[n2++] = ch;
+            } else {
+                buf1[n1++] = ch;
+            }
+            spaces++;
+            continue;
+        }
+        if (ch == 0) {
+            if (total <= idx) {
+                break;
+            }
+        } else if (second) {
+            buf2[n2++] = ch;
+        } else {
+            buf1[n1++] = ch;
+        }
+    }
+    buf1[n1] = 0;
+    buf2[n2] = 0;
+}
+
 static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite, CURSOR* c, POKEMON_DATA_dd_* pd)
 {
     u8 second;
@@ -833,78 +897,22 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
         int best = 0;
         u8 wrap = 0;
         do {
-            int spaces = 0;
             int prev = n;
-            u16* src;
-            u16* dst = buf1;
-            src = text;
-            k = 0;
             n++;
-            for (;;) {
-                u16 ch = *src;
-                if (ch == 0x20 || ch == 0x3000) {
-                    if (spaces == prev) {
-                        break;
-                    }
-                    *dst = ch;
-                    spaces++;
-                } else {
-                    if (ch == 0) {
-                        break;
-                    }
-                    *dst = ch;
-                }
-                src++;
-                dst++;
-                k++;
-            }
+            k = copyWords(text, buf1, prev);
             buf1[k++] = 0;
             msgctrlSetValue(0x37, (GCuptr)name);
             u32 width = GSmsgGetRect(0x4276) >> 16;
             if (width <= item->w) {
                 best = n;
             }
-            s8 rf_t = item->w;
+            u16 rf_t = item->w;
             if (!(rf_t >= width)) {
                 wrap = 1;
             }
         } while (k < len);
         if (wrap) {
-            u16* p = text;
-            n1 = 0;
-            n2 = 0;
-            second = 0;
-            u32 total = GSmsgGetCharLength(text);
-            u32 idx = 0;
-            int spaces = 0;
-            for (;; p++, idx++) {
-                u16 ch = *p;
-                if (ch == 0xFFFF) {
-                    continue;
-                }
-                if (ch == 0x20 || ch == 0x3000) {
-                    if (spaces == best - 1) {
-                        second = 1;
-                    } else if (second) {
-                        buf2[n2++] = ch;
-                    } else {
-                        buf1[n1++] = ch;
-                    }
-                    spaces++;
-                    continue;
-                }
-                if (ch == 0) {
-                    if (total <= idx) {
-                        break;
-                    }
-                } else if (second) {
-                    buf2[n2++] = ch;
-                } else {
-                    buf1[n1++] = ch;
-                }
-            }
-            buf1[n1] = 0;
-            buf2[n2] = 0;
+            splitLines(text, buf1, buf2, best);
             msgctrlSetValue(0x37, (GCuptr)buf1);
             GSmsgPrint2(w->layer, 0, 0, w->alpha | 0xFFFFFF00, 0x4276);
             msgctrlSetValue(0x37, (GCuptr)buf2);
@@ -1172,7 +1180,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
     extern void windowDrawSprite(s16 x, s16 y, void* ctx, u16 key, u32 flags, int layer);
     CURSOR c = *(CURSOR*)&w->top;
     u16 n = _wazaOshieWazaNum(w);
-    volatile WAZAOSHIEDEF* waza = _getWaza2Pointer(c.pos + c.top);
+    WAZAOSHIEDEF* waza = _getWaza2Pointer(c.pos + c.top);
     int layer = winSpriteGetLayerID(w, sprite);
     u32 color = w->alpha | 0xFFFFFF00;
     switch (sprite->id) {
@@ -1197,7 +1205,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
             MenuItem* a = menuItemBiosGetPtr(w->menuID, 0x6D5);
             MenuItem* b = menuItemBiosGetPtr(w->menuID, sprite->id);
             spriteSetScissor(layer, a->x - b->x, a->y - b->y, a->w, a->h);
-            u16 y = -c.top * 0x1F;
+            u16 y = (s16)(-c.top * 0x1F);
             for (u16 i = 0; i < n; y += 0x1F, i++) {
                 if (i >= c.top - 1 && i < c.top + 10) {
                     WAZAOSHIEDEF* p = _getWaza2Pointer(i);
@@ -1205,8 +1213,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
                         GSmsgPrint2(layer, 0, y, color, p->name);
                         if (w->menuID == 0xE4) {
                             msgctrlSetValue(0x50, 1000);
-                            u32 r = GSmsgGetRect(0x4359);
-                            GSmsgPrint2(layer, sprite->w - (r >> 16), y, color, 0x4359);
+                            GSmsgPrint2(layer, sprite->w - (GSmsgGetRect(0x4359) >> 16), y, color, 0x4359);
                         } else if (p->flag) {
                             MenuSpriteVal* v = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0x241));
                             windowDrawSprite(b->w - v->x, y + (0x12 - v->w) / 2, w, 0x241, 0, layer);
@@ -1234,8 +1241,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
         if (w->menuID == 0xE4) {
             s32 tmp1 = heroBiosGetPokecoupon(savedataGetStatus(0, 2));
             msgctrlSetValue(0x50, tmp1);
-            u32 r = GSmsgGetRect(0x434E);
-            GSmsgPrint2(layer, sprite->w - (r >> 16), 0, color, 0x434E);
+            GSmsgPrint2(layer, sprite->w - ((u32)(GSmsgGetRect(0x434E)) >> 16), 0, color, 0x434E);
         }
         break;
     case 0x6CF:

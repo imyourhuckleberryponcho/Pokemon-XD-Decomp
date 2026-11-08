@@ -41,10 +41,14 @@ public:
     u16 turnCount;
     u16 encountDataId;
     FIGHT_SIDE sides[2];
+#ifdef __MWERKS__
     u8 rest[FIGHT_FLOOR_SIZE - FIGHT_FLOOR_SIDES_END];
+#else
+    alignas(sizeof(void*)) u8 rest[FIGHT_FLOOR_SIZE - FIGHT_FLOOR_SIDES_END - (sizeof(void*) - 4)];
+#endif
 };
 
-typedef u8 (*FightFloorLoopFunc)(void*, u8, void*);
+typedef u8 (*FightFloorLoopFunc)(void*, PCARG(u8, u16), void*);
 
 extern "C" {
 extern u8 wildPokemonDownFlag;

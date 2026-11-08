@@ -291,9 +291,9 @@ static inline void __OSf32tou8(register f32 arg, volatile register u8* out) {
 }
 
 static inline u8 OSf32tou8(f32 in) {
-    u8 out;
-    __OSf32tou8(in, &out);
-    return out;
+    f32 out;
+    __OSf32tou8(in, (u8*)&out);
+    return *(u8*)&out;
 }
 
 static inline u8 __OSf32tou8b(register f32 inF) {
@@ -311,24 +311,42 @@ static inline void OSf32tou8p(f32* in, u8* out) {
     *out = __OSf32tou8b(*in);
 }
 
-static inline void _lfSub(GSvec* out, const Vec* sun, const Vec* dir, f32 k) {
-    Vec t, u, v;
-    PSVECScale(dir, &t, k);
-    u = t;
-    PSVECSubtract(sun, &u, &v);
+static inline void _lfVecScale(Vec* dst, const Vec* src, f32 k) {
+    Vec t;
+    PSVECScale(src, &t, k);
+    *dst = t;
+}
+
+static inline void _lfScale(Vec* dst, const Vec* src, f32 k) {
+    _lfVecScale(dst, src, k);
+}
+
+static inline void _lfSubTo(GSvec* out, const Vec* a, const Vec* b) {
+    Vec v;
+    PSVECSubtract(a, b, &v);
     out->x = v.x;
     out->y = v.y;
     out->z = v.z;
 }
 
-static inline void _lfAdd(GSvec* out, const Vec* sun, const Vec* dir, f32 k) {
-    Vec t, u, v;
-    PSVECScale(dir, &t, k);
-    u = t;
-    PSVECAdd(sun, &u, &v);
+static inline void _lfAddTo(GSvec* out, const Vec* a, const Vec* b) {
+    Vec v;
+    PSVECAdd(a, b, &v);
     out->x = v.x;
     out->y = v.y;
     out->z = v.z;
+}
+
+static inline void _lfSub(GSvec* out, const Vec* sun, const Vec* dir, f32 k) {
+    Vec u;
+    _lfScale(&u, dir, k);
+    _lfSubTo(out, sun, &u);
+}
+
+static inline void _lfAdd(GSvec* out, const Vec* sun, const Vec* dir, f32 k) {
+    Vec u;
+    _lfScale(&u, dir, k);
+    _lfAddTo(out, sun, &u);
 }
 
 #pragma peephole off
@@ -340,6 +358,10 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
     f32 dist, cx, cy;
     f32 x0, y0, x1, sz;
     f32 fade, bright, refSize, farDist, baseSize, ang;
+    f32 mtx[16];
+    f32 m[12];
+    f32 m2[12];
+    bool hits[21];
     if (pass != 1 || (id != 6 && id != 5)) {
         return;
     }
@@ -347,11 +369,12 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
     for (i = 0; i < 4; i++) {
         LensFlare* lf = _lfLensFlarePtrs[i];
         LensFlareData* d;
+        GSvec proj;
+        GSvec scr;
+        GSvec off;
         GSvec up;
         GSvec right;
         GSvec camPos;
-        GSvec scr;
-        Vec proj;
         s32 status;
         if (lf == 0) {
             continue;
@@ -396,7 +419,6 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
         if (d->flags & 0x10) {
             if (d->flags & 0x20) {
                 GSvec pts[21];
-                bool hits[57];
                 f32 step = 0.2f * d->sunRadius;
                 u16 j;
                 for (j = 0; j < 5; j++) {
@@ -423,7 +445,6 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
             }
         }
         if (!orthoReady) {
-            f32 mtx[16];
             GScameraLoadActiveCameraMatrix(id);
             GSmtx44Ortho(mtx, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
             (*(s32*)&layer->hw.projType) = 1;
@@ -536,7 +557,6 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                     PSMTXTransApply((f32(*)[4])(c2->data + 1), (f32(*)[4])(c2->data + 1), proj.x, proj.y, 0.0f);
                     c2->data[0] |= 1;
                 } else {
-                    Vec off;
                     GSlayerCam* c2;
                     PSVECScale(&scr, &off, 1.0f / e->pos);
                     if (anchored) {
@@ -561,7 +581,6 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                 sz = sz * (f32)(GStextureGetYsize(tex) >> 1);
                 if (d->flags & 2) {
                     if (d->flags & 4) {
-                        f32 m[12];
                         ang = (f32)atan2(scr.y, scr.x);
                         cam = (*(GSlayerCam**)&layer->matrixStack);
                         PSMTXRotRad((f32(*)[4])m, 'X', 0.0f);
@@ -572,7 +591,6 @@ static void _lensFlareRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
                         PSMTXConcat((f32(*)[4])(cam->data + 1), (f32(*)[4])m, (f32(*)[4])(cam->data + 1));
                         cam->data[0] |= 1;
                     } else {
-                        f32 m2[12];
                         ang = (f32)atan2(scr.y, scr.x);
                         cam = (*(GSlayerCam**)&layer->matrixStack);
                         PSMTXRotRad((f32(*)[4])m2, 'X', 0.0f);

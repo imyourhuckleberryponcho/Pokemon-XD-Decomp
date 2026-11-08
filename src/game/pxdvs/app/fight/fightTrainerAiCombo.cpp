@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #ifndef __MWERKS__
@@ -257,7 +258,6 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
     FightEncountData* enc;
     u16 trainerId;
     DeckTrainer* deck;
-    FixAiShell* shell;
     u8 i;
     u8 k;
     s32 t;
@@ -273,10 +273,10 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
         trainerId = fightEncountDataBiosGetFightTrainerDataId(enc, 1);
     }
     deck = getDeckTrainerObj__11DeckTrainerFUl(trainerId);
-    shell = &fixAiShell[(u8)getFixedActionID__11DeckTrainerCFv(deck)];
+    u8 id = getFixedActionID__11DeckTrainerCFv(deck);
     u8* acts[2] = {0, 0};
-    acts[0] = shell->act[0];
-    acts[1] = shell->act[1];
+    acts[0] = fixAiShell[id].act[0];
+    acts[1] = fixAiShell[id].act[1];
     for (i = 0; i < 2; i++) {
         if (acts[i] != 0) {
             for (k = 0; k < 10; k++) {
@@ -308,14 +308,15 @@ void fightAi_FixedAct(FIGHT_TRAINER* trainer) {
                 idx = t;
             } else if (n == t) {
                 idx = t;
-                if (acts[i][idx] == 6) {
+                u8 v = acts[i][idx];
+                if (v == 6) {
                     fightOutPokemon_SetFixAiWaza(poke, 6);
                     continue;
-                } else if (acts[i][idx] == 7) {
-                    idx = t % n;
+                } else if (v == 7) {
+                    idx = GC_MODS(t, n);
                 }
             } else {
-                idx = t % n;
+                idx = GC_MODS(t, n);
             }
         }
         a = acts[i][idx];
@@ -809,7 +810,7 @@ s16 fightAiCombo_GetAllWazaMaxValueTable(AI_ALLWAZA_VALID_TBL* tbls, u8 num, s16
             }
             {
                 u16 r = HSD_Rand();
-                fightAi_CopyAllWazaValidTable(out, &tbls[best[r % bestNum]]);
+                fightAi_CopyAllWazaValidTable(out, &tbls[best[GC_MODS(r, bestNum)]]);
             }
         }
     }

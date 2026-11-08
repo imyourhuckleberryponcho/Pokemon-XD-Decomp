@@ -6,6 +6,7 @@
 #include <game/statusval.h>
 #include <game/bingoData.h>
 #include <game/shared/menu_work.h>
+#include <game/ppcops.h>
 #ifdef __MWERKS__
 #define BINGO_SPRITE_BYTES 0x78
 #else
@@ -597,7 +598,7 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     case 0x88B: {
         u32 cnt = countPokemon();
         if (n < cnt) {
-            int i = findPokemonNo((u8)n);
+            int i = findPokemonNo(n);
             u32 waza = wazaGetStatus(0, BIOS->getPanelWaza(gBingo.sheet, i), 1, 0);
             if (waza != 0) {
                 msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0xDB44));
@@ -618,7 +619,7 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         u32 cnt = countPokemon();
         if (n < cnt) {
             findPokemonOrder(n + 1);
-            int i = findPokemonNo((u8)n);
+            int i = findPokemonNo(n);
             u32 key = zokuseiBiosGetSpriteID(wazaDB_GetZokuseiDataId(BIOS->getPanelWaza(gBingo.sheet, i)));
             if (key != 0) {
                 windowDrawSprite(0, 0, w, key, 0, layer);
@@ -1082,7 +1083,7 @@ s32 menuBingoScoreDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         s32 layer = winSpriteGetLayerID(w, sp);
         if (gBingo.mode != 0) {
             f32 kc1436 = 1.5f;
-            score = (u32)((f32)score * kc1436);
+            score = GC_F2U32((f32)score * kc1436);
         }
         msgctrlSetValue(0x34, score);
         u32 lines = gBingo.countLines();
@@ -2663,15 +2664,13 @@ void cBingo::dispOpenPanel(u32 n, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 
 void cBingo::dispShufflePanel(u32 n, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     u32 off = n * 8;
-    BingoPanel* q = &shuf[n];
-    BingoPanel* p = &panel[n];
     f32 ang = 3.14f * shuf[n].scale;
     s32 layer = winSpriteGetLayerID(w, sp);
     if (shuf[n].scale <= 0.0f) {
         if (panel[n].state != 0) {
             windowDrawSprite2(0, 0, 0x46, 0x43, -1, w, 0x29E, 0, layer);
         } else {
-            int key = faceKey(this, p, n);
+            int key = faceKey(this, &panel[n], n);
             windowDrawSprite2(0, 0, 0x46, 0x43, -1, w, key, 0, layer);
         }
         panel[n].scale -= 8.0f * timeGetLastFrameSec();
@@ -2685,7 +2684,7 @@ void cBingo::dispShufflePanel(u32 n, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             f32 kc658 = 35.0f;
             windowDrawSprite2(a + 0x23, 0, (s16)(c * kc658 - (f32)a), 0x43, -1, w, 0x29E, 0, layer);
         } else {
-            int key = faceKey(this, p, n);
+            int key = faceKey(this, &panel[n], n);
             f32 c = (f32)fabsInline(cosfInline(ang));
             f32 ka = -35.0f;
             s16 a = (s16)(c * ka);
@@ -2702,7 +2701,7 @@ void cBingo::dispShufflePanel(u32 n, tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         f32 kc1320 = 35.0f;
         windowDrawSprite2(a + 0x23, 0, (s16)(c * kc1320 - (f32)a), 0x43, -1, w, 0x29E, 0, layer);
     } else {
-        int key = faceKeyShuf(this, q);
+        int key = faceKeyShuf(this, &shuf[n]);
         f32 c = (f32)fabsInline(cosfInline(ang));
         f32 ka = -35.0f;
         s16 a = (s16)(c * ka);

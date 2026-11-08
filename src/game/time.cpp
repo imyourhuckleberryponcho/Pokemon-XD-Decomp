@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 
 #pragma peephole off
 
@@ -19,7 +20,7 @@ u32 timeGetLastFrameTime(void) {
     if (pauseIsPause()) {
         return 0;
     }
-    return GSgfxVideoGetLastRenderTime() + 0.5f;
+    return GC_F2U32(GSgfxVideoGetLastRenderTime() + 0.5f);
 }
 
 f32 timeGetLastFrameSec(void) {

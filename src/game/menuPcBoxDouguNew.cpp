@@ -464,11 +464,11 @@ static s32 printItemListDougu(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, u32 color) 
     s32 count;
     s32 numW;
     u16 id;
-    s32 row;
-    s16 nameW;
     s32 first;
+    s32 row;
     int xAdj;
     u32 name;
+    s16 nameW;
     first = 0;
     last = 8;
     scroll = 0;

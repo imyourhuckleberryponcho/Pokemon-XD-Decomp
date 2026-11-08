@@ -263,7 +263,7 @@ s32 menuPocketBattleDiskCtrl(void *p0) {
         break;
     case 2: {
         _controlCursor();
-        menuPocketToolFloatToZero(*(float*)((u8*)&Data + 0x10), 7.0f);
+        menuPocketToolFloatToZero(Data.scroll, 7.0f);
         f32 kc494 = 0.033333335f;
         temp_f1 = M2C_NAMED(&Data, f32 *, 0x18, unk18) + kc494;
         M2C_NAMED(&Data, f32 *, 0x18, unk18) = temp_f1;

@@ -9,6 +9,7 @@
 typedef struct PSGenerator PSGenerator;
 typedef struct PSParticle PSParticle;
 
+#ifdef __MWERKS__
 struct PSGenerator {
  PSGenerator* next;
  u32 flags;
@@ -35,6 +36,38 @@ struct PSGenerator {
  void* linkedJObj;
  f32 angleRadiusScale[3];
 };
+#else
+struct PSGenerator {
+    PSGenerator* next;
+    u32 flags;
+    u8 pad08[0x08];
+    u16 maxLife;
+    u16 angleFlags;
+    u8 bank;
+    u8 linkNo;
+    u8 pad16[2];
+    u16 familyId;
+    u8 pad1A[2];
+    void* cmdList;
+    f32 pos[3];
+    f32 vel[3];
+    f32 gravity;
+    f32 friction;
+    u8 pad40[4];
+    f32 radius;
+    u8 pad48[4];
+    u32 childCount;
+    void* appSRT;
+    f32 shape[12];
+    u8 auxTail[4];
+    void* camera;
+    u16 generatorFlags;
+    u16 index;
+    u8 pad90[0x18];
+    void* linkedJObj;
+    f32 angleRadiusScale[3];
+};
+#endif
 
 struct PSParticle {
  PSParticle* next;
@@ -162,6 +195,11 @@ void OSPanic(const char* file, s32 line, const char* msg, ...);
 void _psListDelete(PSParticle* pp, PSParticle* parent);
 s32 psRemoveParticleAppSRT(PSParticle* pp);
 void psKillGeneratorID(s32 familyId);
+struct PsHSDObj {
+    void* parent;
+    u16 ref_count;
+    u16 ref_count_individual;
+};
 void HSD_JObjUnref(void* jobj);
 void __assert(const char* file, u32 line, const char* msg);
 
@@ -676,7 +714,7 @@ void psSetPointJObj(s32 index, void* jobj)
         *slot = jobj;
 
         if (jobj != NULL) {
-            u16* refCount = (u16*) ((u8*) jobj + 4);
+            u16* refCount = &((struct PsHSDObj*) jobj)->ref_count;
 
             (*refCount)++;
             if (*refCount == 0xFFFF) {
@@ -727,7 +765,7 @@ void psSetPointJObjNodup(void* jobj, s32 index)
         *slot = jobj;
 
         if (jobj != NULL) {
-            u16* refCount = (u16*) ((u8*) jobj + 4);
+            u16* refCount = &((struct PsHSDObj*) jobj)->ref_count;
 
             (*refCount)++;
             if (*refCount == 0xFFFF) {

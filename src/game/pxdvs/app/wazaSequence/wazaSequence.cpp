@@ -708,7 +708,7 @@ bool WazaSequence::Update(f32 dt) {
 SequenceEntry* WazaSequence::GetEntryFromID(u8 id) {
     SequenceEntry* e;
     for (e = m_entries; e != 0; e = e->m_next) {
-        if (*((u8*)e + 4) == id) {
+        if (e->unk04 == id) {
             break;
         }
     }
@@ -723,8 +723,7 @@ bool WazaSequence::IsImpactPoint(u8 flag) {
 }
 
 bool WazaSequence::LoadData(u8* data) {
-    u8* p = data;
-    MainSequenceEntry main(this, &p);
+    MainSequenceEntry main(this, &data);
     WazaHeader* hdr;
     ModelSequence* ms;
     SequenceEntry* e;
@@ -733,8 +732,8 @@ bool WazaSequence::LoadData(u8* data) {
     if (m_owner == 0) {
         return false;
     }
-    hdr = (WazaHeader*)p;
-    p = (u8*)hdr + 0x20;
+    hdr = (WazaHeader*)data;
+    data = (u8*)hdr + 0x20;
     m_numEntries = hdr->count - 1;
     m_section = hdr->section;
     if (hdr->version >= 6) {
@@ -763,7 +762,7 @@ bool WazaSequence::LoadData(u8* data) {
     }
     m_flags = hdr->flags;
     m_partKind = hdr->partKind;
-    p = Align32(p);
+    data = Align32(data);
     if (hdr->version <= 3) {
         m_flags |= 0x78;
     }
@@ -777,33 +776,33 @@ bool WazaSequence::LoadData(u8* data) {
         if (GSresGetResource(20000, id) != 0) {
             m_camera = id;
         }
-        p = p + (((u32)hdr->cameraSize + 0x1F) & ~0x1F);
+        data = data + (((u32)hdr->cameraSize + 0x1F) & ~0x1F);
     } else {
         m_camera = 0;
     }
     if (m_numEntries != 0) {
         for (i = 0; i < m_numEntries; i++) {
-            switch (GC_AT(u32, p, 4)) {
+            switch (GC_AT(u32, data, 4)) {
             case 1:
-                e = new CameraEntry(this, &p);
+                e = new CameraEntry(this, &data);
                 break;
             case 2:
-                e = new ModelEntry(this, &p);
+                e = new ModelEntry(this, &data);
                 break;
             case 3:
-                e = new ParticleEntry(this, &p);
+                e = new ParticleEntry(this, &data);
                 break;
             case 4:
-                e = new EffectEntry(this, &p);
+                e = new EffectEntry(this, &data);
                 break;
             case 5:
-                e = new SoundEntry(this, &p);
+                e = new SoundEntry(this, &data);
                 break;
             case 6:
-                e = new EventEntry(this, &p);
+                e = new EventEntry(this, &data);
                 break;
             case 7:
-                e = new LensFlareEntry(this, &p);
+                e = new LensFlareEntry(this, &data);
                 break;
             default:
                 return false;

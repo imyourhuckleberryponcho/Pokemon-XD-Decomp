@@ -4,6 +4,7 @@
 #define THP_DECODER_QUANT_ONLY
 #define THP_DECODER_CORE_ONLY
 #define THP_DECODER_MIDDLE_ONLY
+#include <game/ppcops.h>
 #include "dolphin/types.h"
 #include "dolphin/PPCArch.h"
 
@@ -1806,7 +1807,7 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
             }
 
             if (__cntlzw((u32)diff) > 32 - t) {
-                diff += ((0xFFFFFFFF << t) + 1);
+                diff += (GC_SHL(0xFFFFFFFF, t) + 1);
             }
         };
 
@@ -2089,7 +2090,7 @@ static void __THPHuffDecodeDCTCompY(register THPFileInfo *info, THPCoeff *block)
                 }
 
                 if (__cntlzw((u32)ssss) > 32 - rrrr) {
-                    ssss += ((0xFFFFFFFF << rrrr) + 1);
+                    ssss += (GC_SHL(0xFFFFFFFF, rrrr) + 1);
                 }
 
                 block[__THPJpegNaturalOrder[k]] = (s16)ssss;
@@ -2172,7 +2173,7 @@ static void __THPHuffDecodeDCTCompU(register THPFileInfo *info, THPCoeff *block)
         }
 
         if (__cntlzw((u32)diff) > 32 - t) {
-            diff += ((0xFFFFFFFF << t) + 1);
+            diff += (GC_SHL(0xFFFFFFFF, t) + 1);
         }
     }
 
@@ -2221,7 +2222,7 @@ static void __THPHuffDecodeDCTCompU(register THPFileInfo *info, THPCoeff *block)
             }
 
             if (__cntlzw((u32)rrrr) > 32 - ssss) {
-                rrrr += ((0xFFFFFFFF << ssss) + 1);
+                rrrr += (GC_SHL(0xFFFFFFFF, ssss) + 1);
             }
 
             block[__THPJpegNaturalOrder[k]] = (s16)rrrr;
@@ -2292,7 +2293,7 @@ static void __THPHuffDecodeDCTCompV(register THPFileInfo *info, THPCoeff *block)
         }
 
         if (__cntlzw((u32)diff) > 32 - t) {
-            diff += ((0xFFFFFFFF << t) + 1);
+            diff += (GC_SHL(0xFFFFFFFF, t) + 1);
         }
     }
 
@@ -2346,7 +2347,7 @@ static void __THPHuffDecodeDCTCompV(register THPFileInfo *info, THPCoeff *block)
             }
 
             if (__cntlzw((u32)rrrr) > 32 - ssss) {
-                rrrr += ((0xFFFFFFFF << ssss) + 1);
+                rrrr += (GC_SHL(0xFFFFFFFF, ssss) + 1);
             }
 
             block[__THPJpegNaturalOrder[k]] = (s16)rrrr;

@@ -231,7 +231,7 @@ KeyInfo* windowGetKeyInfo(void);
 KeyInfo* windowGetKeyInfo2(void);
 tagWINDOW_WORK* windowSearchID(s32);
 s32 windowGetActiveID(void);
-void windowDrawSprite2(s16, s16, s16, s16, u32, void*, u16, u32, s32);
+void windowDrawSprite2(s16, s16, s16, s16, u32, void*, u16, u32, int);
 }
 
 extern "C" {
@@ -269,7 +269,7 @@ s32 windowCheckCursor(s32 id, u8 wait);
 Cursor windowGetCursor(s32 id);
 s32 windowGetValue(s32 id);
 tagSPRITE_WORK* windowGetCursorToItem(tagWINDOW_WORK* w);
-void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx_in, u16 key, u32 flags, s32 layer);
+void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx_in, u16 key, u32 flags, int layer);
 void windowDrawSprite(s16 x, s16 y, void* ctx, u16 key, u32 flags, s32 layer);
 StatusU32 windowGetParam(tagWINDOW_WORK* w, u32 idx);
 void windowSetParam(tagWINDOW_WORK* w, u32 idx, u32 value);
@@ -484,7 +484,7 @@ static tagWINDOW_WORK* _winGetNewWork(void)
     s32 i;
     for (i = n; i > 0; i--) {
         if ((s8)w->used == 0) {
-            memset(w, 0, 0xbc);
+            memset(w, 0, sizeof(tagWINDOW_WORK));
             w->used = 7;
             w->f94 = 1.0f;
             w->f98 = 1.0f;
@@ -813,7 +813,7 @@ static s32 _windowCreateItemSprite(tagWINDOW_WORK* w)
         sp->msg = (u32)item->msg;
         if (item->callback != 0) {
             sp->flags |= 8;
-            sp->callback = (u32)item->callback;
+            sp->callback = (GCuptr)item->callback;
         }
         if (item->last) {
             break;
@@ -1082,7 +1082,7 @@ void windowDrawSprite3(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx, u16 key
         spp->v = (s16)(val->v + dv);
         spp->uw = uw;
         spp->uh = uh;
-        spp->c.a = spp->c.a * info->alpha / 255;
+        spp->c.a = info->alpha * spp->c.a / 255;
         if (flags & 1) {
             spp->w = -spp->w;
         }
@@ -1106,14 +1106,13 @@ void windowDrawSprite3(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx, u16 key
 }
 
 extern "C" {
-void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx_in, u16 key, u32 flags, s32 layer)
+void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx, u16 key, u32 flags, int layer)
 {
-    void* ctx = ctx_in;
-    MENU_SPRITE* info;
     tagSPRITE_WORK sp;
     tagWINDOW_WORK ctxbuf;
-    tagSPRITE_WORK* spp = &sp;
     MENU_SPRITE_VAL* val;
+    MENU_SPRITE* info;
+    tagSPRITE_WORK* spp = &sp;
 
     info = menuSpriteBiosGetPtr(key);
     while (true) {
@@ -1144,7 +1143,7 @@ void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx_in, u16 
         spp->v = val->v;
         spp->uw = val->w;
         spp->uh = val->h;
-        spp->c.a = spp->c.a * info->alpha / 255;
+        spp->c.a = info->alpha * spp->c.a / 255;
         if (flags & 1) {
             spp->w = -spp->w;
         }
@@ -1168,17 +1167,15 @@ void windowDrawSprite2(s16 x, s16 y, s16 w, s16 h, u32 color, void* ctx_in, u16 
 }
 
 extern "C" {
-void windowDrawSpriteCursor(s16 x, s16 y, u32 color0, void* ctx, u16 key, u32 flags, s32 layer, f32* off,
+void windowDrawSpriteCursor(s16 x, s16 y, u32 color0, void* ctx, u16 key, u32 flags, int layer, f32* off,
                             u32 color1)
 {
     tagSPRITE_WORK sp;
     tagWINDOW_WORK ctxbuf;
-    s32 i;
-    tagSPRITE_WORK* spp;
-    spp = &sp;
-    i = 0;
     MENU_SPRITE_VAL* val;
     MENU_SPRITE* info;
+    tagSPRITE_WORK* spp = &sp;
+    s32 i = 0;
 
     info = menuSpriteBiosGetPtr(key);
     while (true) {
@@ -1207,11 +1204,10 @@ void windowDrawSpriteCursor(s16 x, s16 y, u32 color0, void* ctx, u16 key, u32 fl
         }
         if (i == 0) {
             spp->x = (s16)(x + info->offX);
-            s32 rf_t = info->offY;
-            spp->y = (s16)(y + rf_t);
+            spp->y = (s16)(y + info->offY);
         } else {
-            spp->x = (s16)(x + (info->offX + (s32)off[0]));
-            spp->y = (s16)(y + (info->offY + (s32)off[1]));
+            spp->x = (s16)(x + info->offX + (s32)off[0]);
+            spp->y = (s16)(y + info->offY + (s32)off[1]);
         }
         spp->w = val->w;
         spp->h = val->h;
@@ -1219,7 +1215,7 @@ void windowDrawSpriteCursor(s16 x, s16 y, u32 color0, void* ctx, u16 key, u32 fl
         spp->v = val->v;
         spp->uw = val->w;
         spp->uh = val->h;
-        spp->c.a = spp->c.a * info->alpha / 255;
+        spp->c.a = info->alpha * spp->c.a / 255;
         if (flags & 1) {
             spp->w = -spp->w;
         }

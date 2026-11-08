@@ -19,6 +19,7 @@ extern "C" void* __va_arg(va_list, unsigned char);
 #include <game/statusval.h>
 #include <game/shopData.h>
 #include <game/shared/menu_work.h>
+#include <game/ppcops.h>
 #ifndef __MWERKS__
 void menuPtPlaySe(u32);
 #define menuPtPlaySe__FUl(...) (menuPtPlaySe(__VA_ARGS__))
@@ -1398,7 +1399,7 @@ static void decCouponAddItem(int coupon, u16 id, int n, u8 kind, VPC_BOX* box) {
 }
 static void waitTime(f32 seconds) {
     int i;
-    u32 frames = (u32)(seconds * GSgfxVideoGetVsyncRate());
+    u32 frames = GC_F2U32(seconds * GSgfxVideoGetVsyncRate());
     i = 0;
     while (i < (int)frames) {
         GSthreadSwitch();

@@ -450,8 +450,8 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     if (!winSpriteGetDisp(sp)) {
         return;
     }
-    g = sp->color[1] * w->color[1] / 255;
     r = sp->color[0] * w->color[0] / 255;
+    g = sp->color[1] * w->color[1] / 255;
     b = sp->color[2] * w->color[2] / 255;
     a = sp->color[3] * w->color[3] / 255;
     color = (r << 24) | (g << 16) | (b << 8) | a;

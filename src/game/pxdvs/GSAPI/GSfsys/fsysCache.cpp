@@ -30,7 +30,7 @@ void* _fsysDoMalloc(u32 size);
 void _fsysAddTAG(FsysTag* tag, FsysTag** root);
 void _fsysDelTAG(FsysTag* tag, FsysTag** root);
 
-static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, void (*callback)(u32),
+static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, FsysArqCallback callback,
                       u32 arg0, u32 arg1, u32 arg2);
 FsysArqTrans* _fsysArq2ArqTrans(FsysArqAddr request);
 FsysCacheManage* _fsysGetCacheManage(u32 group, u32 id);
@@ -62,7 +62,7 @@ static u32 _fsysCACHEManageSize;
 static u32 _fsysCACHESize;
 
 void _fsysWriteCache(Fsys* fsys, FsysResHeader* res, void* src, u32 base, u32 size, u32 offset,
-                     void (*callback)(u32)) {
+                     FsysArqCallback callback) {
     FsysArqTrans* trans;
     trans = _fsysGetNewArq();
     if (trans == 0) {
@@ -80,16 +80,16 @@ void _fsysWriteCache(Fsys* fsys, FsysResHeader* res, void* src, u32 base, u32 si
                    _fsysARQCallbackWrite);
 }
 
-u8 _fsysReadCacheEX(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, void (*callback)(u32),
+u8 _fsysReadCacheEX(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, FsysArqCallback callback,
                     u32 arg0, u32 arg1, u32 arg2) {
     return _fsysReadCacheExec(fsys, res, dst, size, offset, callback, arg0, arg1, arg2);
 }
 
-u8 _fsysReadCache(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, void (*callback)(u32)) {
+u8 _fsysReadCache(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, FsysArqCallback callback) {
     return _fsysReadCacheExec(fsys, res, dst, size, offset, callback, 0, 0, 0);
 }
 
-static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, void (*callback)(u32),
+static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, FsysArqCallback callback,
                       u32 arg0, u32 arg1, u32 arg2) {
     FsysCacheManage* manage;
     FsysArqTrans* trans;
@@ -150,7 +150,7 @@ static void _fsysARQCallbackWrite(FsysArqAddr request) {
         return;
     }
     if (trans->callback != 0) {
-        trans->callback((u32)request);
+        trans->callback(request);
     }
     _fsysDelARQTrans(trans);
 }
@@ -166,7 +166,7 @@ static void _fsysARQCallbackRead(FsysArqAddr request) {
     }
     DCInvalidateRange(trans->dst, trans->size);
     if (trans->callback != 0) {
-        trans->callback((u32)request);
+        trans->callback(request);
     }
     _fsysDelARQTrans(trans);
 }

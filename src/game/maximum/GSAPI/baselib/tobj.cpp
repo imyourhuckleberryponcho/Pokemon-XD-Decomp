@@ -652,23 +652,23 @@ static void TObjSetupMtx(HSD_TObj* tobj)
 
         switch (HSD_CObjGetProjectionType(cobj)) {
         case PROJ_PERSPECTIVE:
-            MTXLightPerspective(projection, cobj->projection_param.perspective.fov,
-                                cobj->projection_param.perspective.aspect, 0.5F,
+            MTXLightPerspective(projection, GC_BEF32(cobj->projection_param.perspective.fov),
+                                GC_BEF32(cobj->projection_param.perspective.aspect), 0.5F,
                                 -0.5F, 0.5F, 0.5F);
             break;
         case PROJ_FRUSTUM:
-            MTXLightFrustum(projection, cobj->projection_param.frustum.top,
-                            cobj->projection_param.frustum.bottom,
-                            cobj->projection_param.frustum.left,
-                            cobj->projection_param.frustum.right, cobj->near,
+            MTXLightFrustum(projection, GC_BEF32(cobj->projection_param.frustum.top),
+                            GC_BEF32(cobj->projection_param.frustum.bottom),
+                            GC_BEF32(cobj->projection_param.frustum.left),
+                            GC_BEF32(cobj->projection_param.frustum.right), cobj->near,
                             0.5F, -0.5F, 0.5F, 0.5F);
             break;
         case PROJ_ORTHO:
         default:
-            MTXLightOrtho(projection, cobj->projection_param.ortho.top,
-                          cobj->projection_param.ortho.bottom,
-                          cobj->projection_param.ortho.left,
-                          cobj->projection_param.ortho.right, 0.5F, -0.5F,
+            MTXLightOrtho(projection, GC_BEF32(cobj->projection_param.ortho.top),
+                          GC_BEF32(cobj->projection_param.ortho.bottom),
+                          GC_BEF32(cobj->projection_param.ortho.left),
+                          GC_BEF32(cobj->projection_param.ortho.right), 0.5F, -0.5F,
                           0.5F, 0.5F);
             break;
         }

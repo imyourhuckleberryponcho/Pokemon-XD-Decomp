@@ -1571,7 +1571,8 @@ static void _peopleMoveTypeRandomWalk(tagPeopleWork* work) {
 
 static void _peopleMoveTypeList(tagPeopleWork* work, bool loop) {
     GSvec rot;
-    f32 maxRotSpeed, speed, angle, dist, dist2, factor, rotRate, rate, target;
+    f32 target, speed, rate, angle;
+    f32 dist, dist2, seg, factor, rotRate;
     bool first = false;
     bool arrived;
     rate = 2.0f;
@@ -1635,16 +1636,19 @@ static void _peopleMoveTypeList(tagPeopleWork* work, bool loop) {
             if (work->pointIndex) {
                 static f32 max_rot_speed = 5.0f;
                 dist = PSVECDistance(&work->points[work->pointIndex], peopleBiosGetPosPtr(work));
-                if (dist < PSVECDistance(&work->points[work->pointIndex - 1], &work->points[work->pointIndex])) {
-                    factor = peopleGetBlendFactor(dist, 0.0f, 0.0f);
+                seg = PSVECDistance(&work->points[work->pointIndex - 1], &work->points[work->pointIndex]);
+                if (dist < seg) {
+                    factor = peopleGetBlendFactor(dist, 0.0f, seg);
                     rotRate = 2.0f * factor + max_rot_speed * (1.0f - factor);
                     if (rate < rotRate) {
                         rate = rotRate;
                     }
                 }
-                dist2 = PSVECDistance(&work->points[work->pointIndex - 1], peopleBiosGetPosPtr(work));
-                if (dist2 < PSVECDistance(&work->points[work->pointIndex - 1], &work->points[work->pointIndex])) {
-                    factor = peopleGetBlendFactor(dist2, 0.0f, 0.0f);
+                GSvec* pos = peopleBiosGetPosPtr(work);
+                dist2 = PSVECDistance(&work->points[work->pointIndex - 1], pos);
+                seg = PSVECDistance(&work->points[work->pointIndex - 1], &work->points[work->pointIndex]);
+                if (dist2 < seg) {
+                    factor = peopleGetBlendFactor(dist2, 0.0f, seg);
                     rotRate = 2.0f * factor + max_rot_speed * (1.0f - factor);
                     if (rate < rotRate) {
                         rate = rotRate;
@@ -1941,18 +1945,14 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
     }
     {
         f32 realSpeed = speed;
-        f32 rate1 = 0.0f;
+        f32 rate1;
         GSmodelGetAnimIndex(model, &index, &blendIndex);
         GSmodelGetFrameCount(model, &count, &blendCount);
         f32 frame = GSmodelGetAnimFrame(model);
-        if (count > 1.0f) {
-            rate1 = frame / count;
-        }
+        rate1 = count > 0.0f ? frame / count : 0.0f;
         first = rate1;
-        f32 rate2 = 0.0f;
-        if (blendCount > 1.0f) {
-            rate2 = frame / blendCount;
-        }
+        f32 rate2;
+        rate2 = blendCount > 0.0f ? frame / blendCount : 0.0f;
         second = rate2;
         if (rate1 > 1.0f) {
             first = 0.0f;
@@ -1962,13 +1962,11 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
         }
         if (work->groupID == 0 && work->peopleID == 0x64) {
             if (realSpeed < 0.00001f && realSpeed > -0.00001f && !peopleBiosCheckFlag(work, 0x8000000C)) {
-                if ((u32)(index - 0x13) > 1U) {
-                    if (index == 0x15) {
-                        return;
-                    }
-                    m_hero_idling_time += _getLastFrameSec();
-                    goto general;
+                if ((u32)(index - 0x13) <= 1U || index == 0x15) {
+                    return;
                 }
+                m_hero_idling_time += _getLastFrameSec();
+                goto general;
             } else {
                 m_hero_idling_time = 0.0f;
                 goto general;
@@ -1998,6 +1996,8 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
                     work->setAnimRate(0.5f, true);
                     work->followState = 5;
                     return;
+                case 4:
+                case 5:
                 default:
                     work->f17F = 1;
                     return;
@@ -2304,7 +2304,9 @@ bool peopleGazeCheck(u32 groupID, u32 peopleID, u32 targetGroupID, u32 targetPeo
         return false;
     }
     peopleBiosGetRot(viewer, &rot);
-    if (fabsf(peopleVecCalcRotY(&viewerPos, &targetPos, rot.y)) > 0.5f * (0.017453292f * angle)) {
+    f32 turn = fabsf(peopleVecCalcRotY(&viewerPos, &targetPos, rot.y));
+    angle = 0.5f * (0.017453292f * angle);
+    if (turn > angle) {
         return false;
     }
     PeopleInfo* dc_peopleInfoBiosGetPtr = peopleInfoBiosGetPtr(viewer->objectID);
@@ -3784,24 +3786,22 @@ struct ThruEvent {
 };
 
 static bool _peopleAdjustPositionSub(tagPeopleWork* work, GSvec* pos, GSvec* saved) {
-    GSvec hit, hiNew, hiOld, newPos, oldPos;
+    GSvec oldPos, newPos, hiOld, hiNew, hit;
     f32 h;
     WalkHit hits[8];
     ThruEvent events[4];
-    volatile f32 radius;
+    f32 radius;
     if (peopleBiosCheckFlag(work, 0x700)) {
         newPos.x = pos->x;
         newPos.y = pos->y;
         newPos.z = pos->z;
         oldPos.x = saved->x;
-        oldPos.z = saved->z;
         oldPos.y = saved->y;
+        oldPos.z = saved->z;
         hiOld = oldPos;
         hiNew = newPos;
-        f32 kc515 = 6.0f;
-        f32 kc577 = 6.0f;
-        hiOld.y = oldPos.y + kc577;
-        hiNew.y = newPos.y + kc515;
+        hiOld.y += 6.0f;
+        hiNew.y += 6.0f;
         PeopleInfo* dc_peopleInfoBiosGetPtr = peopleInfoBiosGetPtr(work->objectID);
         if (dc_peopleInfoBiosGetPtr == 0) {
             radius = 3.0f;
@@ -3845,23 +3845,20 @@ static bool _peopleAdjustPositionSub(tagPeopleWork* work, GSvec* pos, GSvec* sav
             s32 n = GScolsys2WalkGetHeight(&newPos, &hits[0].height);
             if (n >= 2) {
                 WalkHit* p = hits;
-                int found = false;
+                bool found = false;
                 f32 highest;
-                s32 left = n;
                 f32 best = -1000000.0f;
                 highest = -1000000.0f;
-                if (n > 0) {
-                    do {
-                        h = p->height;
-                        if (highest < h) {
-                            highest = h;
-                        }
-                        if (!(h - newPos.y >= 10.0f) && best < h) {
-                            best = h;
-                            found = true;
-                        }
-                        p++;
-                    } while (--left);
+                for (s32 i = 0; i < n; i++) {
+                    h = p->height;
+                    if (highest < h) {
+                        highest = h;
+                    }
+                    if (!(h - newPos.y >= 10.0f) && best < h) {
+                        best = h;
+                        found = true;
+                    }
+                    p++;
                 }
                 if (found) {
                     newPos.y = best;
@@ -3870,15 +3867,14 @@ static bool _peopleAdjustPositionSub(tagPeopleWork* work, GSvec* pos, GSvec* sav
                 }
                 if (fabsf(newPos.y - peopleBiosGetPrevPosPtr(work)->y) >= 10.0f) {
                     f32 closest = hits[0].height;
-                    volatile f32 bestDist = fabsf(peopleBiosGetPrevPosPtr(work)->y - hits[0].height);
+                    f32 bestDist = fabsf(peopleBiosGetPrevPosPtr(work)->y - hits[0].height);
                     WalkHit* q = &hits[1];
                     s32 k = 1;
                     while (k < n) {
-                        f32 h = q->height;
-                        f32 d = fabsf(peopleBiosGetPrevPosPtr(work)->y - h);
+                        f32 d = fabsf(peopleBiosGetPrevPosPtr(work)->y - q->height);
                         if (bestDist > d) {
                             bestDist = d;
-                            closest = h;
+                            closest = q->height;
                         }
                         q++;
                         k++;

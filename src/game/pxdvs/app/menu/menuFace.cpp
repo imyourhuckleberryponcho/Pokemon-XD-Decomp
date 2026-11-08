@@ -9,6 +9,9 @@ struct Pokemon;
 struct FightPokemon;
 struct GStexture;
 struct tagWINDOW_WORK;
+#ifndef __MWERKS__
+#include <game/gstexture.h>
+#endif
 
 struct GSvec2 {
     f32 x;
@@ -353,6 +356,7 @@ static void _menuFaceLoadCallBack(s32, void*, s32 arg) {
         }
     } else {
         e = &pMenuFaceList[idx];
+#ifdef __MWERKS__
         FaceRes* res = (FaceRes*)GSresGetResource(0x5C0, texID);
         res->flag = 0;
         res->off28 -= (GCsptr)res;
@@ -360,6 +364,11 @@ static void _menuFaceLoadCallBack(s32, void*, s32 arg) {
             res->off48 -= (GCsptr)res;
         }
         memcpy(pMenuFaceTexList[e->texIdx].data, res, 0x1F60);
+#else
+        FaceRes* res = (FaceRes*)((GStexture*)GSresGetResource(0x5C0, texID))->pcDisc;
+        memcpy(pMenuFaceTexList[e->texIdx].data, res, 0x1F60);
+        ((FaceRes*)pMenuFaceTexList[e->texIdx].data)->flag = 0;
+#endif
         GSresFreeResource(0x5C0, texID);
         GStexture* tex = GStextureLoad((GStexture*)pMenuFaceTexList[e->texIdx].data);
         GSresRegisterResource(tex, 0x5C0, texID, (void*)_unloadTexture);

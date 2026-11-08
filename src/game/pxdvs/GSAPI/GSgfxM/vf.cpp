@@ -489,11 +489,10 @@ GSgfxVF* GSgfxVFGetPredef(s32 p0) {
 static inline void _vfCreate(GSgfxVF* vf) {
     int i;
     u32 index = _vfAllocIndex;
-    u32 next = index + 1;
-    if (next >= 8) {
-        next = 0;
+    _vfAllocIndex++;
+    if (_vfAllocIndex >= 8) {
+        _vfAllocIndex = 0;
     }
-    _vfAllocIndex = next;
     vf->index = index;
     vf->flags |= 1;
     for (i = 0; i < 27; i++) {

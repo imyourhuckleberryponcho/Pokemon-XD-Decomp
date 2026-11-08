@@ -55,10 +55,16 @@ void GSgfxBackFBInit();
 void GSgfxResetInit();
 void GSgfxRenderSetupFirstFrame();
 
+#ifdef __MWERKS__
+typedef GSscratchNotify GfxScratchNotifyArg;
+#else
+typedef u8 GfxScratchNotifyArg;
+#endif
+
 extern "C" {
 void* memcpy(void* dst, const void* src, unsigned long n);
 void* memset(void* dst, int c, unsigned long n);
-void* GSscratchAlloc(s32 id, void (*notify)(GSscratchNotify, void*, unsigned char));
+void* GSscratchAlloc(s32 id, void (*notify)(GfxScratchNotifyArg, void*, unsigned char));
 void GSgfx_GCFirstInit(void);
 void GSgfx_GCInitState(void);
 void GSmathInit(void);
@@ -70,7 +76,7 @@ static GSgfxState _gfxMemoryState;
 extern "C" GSgfxState* gsgfxState;
 GSgfxState* gsgfxState;
 
-static void _gfxScratchNotify(GSscratchNotify notify, void* mem, unsigned char);
+static void _gfxScratchNotify(GfxScratchNotifyArg notify, void* mem, unsigned char);
 
 extern "C" void GSgfxRelocToScratch(void) {
     GSgfxState* state = (GSgfxState*)GSscratchAlloc(0xC, _gfxScratchNotify);
@@ -109,7 +115,7 @@ void GSgfxInit(_GSgfxInitParms* parms) {
     GSlogWrite("GSgfx: Init OK, state located at %08Xh (size=%d)\n", gsgfxState, sizeof(GSgfxState));
 }
 
-static void _gfxScratchNotify(GSscratchNotify notify, void* mem, unsigned char) {
+static void _gfxScratchNotify(GfxScratchNotifyArg notify, void* mem, unsigned char) {
     switch (notify) {
     case GS_SCRATCH_NOTIFY_RELEASE:
         memcpy(&_gfxMemoryState, mem, sizeof(GSgfxState));

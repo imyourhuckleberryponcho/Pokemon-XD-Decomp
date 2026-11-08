@@ -137,7 +137,7 @@ struct peEmitterNode {
     void* f28;
     void* f2c;
     u8 pad30[0xCC];
-    u32* flagsPtr;
+    gc_be32* flagsPtr;
     void* f100;
 
     peEmitterNode() {
@@ -301,7 +301,7 @@ f32 peBankGetLife(peBank* bank) {
         return 0.0f;
     }
     if (bank->flags & 1) {
-        return *(f32*)((u8*)bank + 8);
+        return *(f32*)((u8*)&bank->node + 4);
     }
     return 0.0f;
 }
@@ -528,9 +528,8 @@ peBank* peBankCreate(_gpdHeader* file) {
 #endif
             }
         }
-        u16 m = ((bank->maxParticles + 9) / 10);
         g_emitParamsBank = bank;
-        m *= 10;
+        u16 m = ((bank->maxParticles + 9) / 10) * 10;
         g_maxEmitParams = m;
         g_emitParams = new _EmitParams[m];
         g_particle_debug_stats.emitMem += g_maxEmitParams * sizeof(_EmitParams);
@@ -547,7 +546,7 @@ void peBankFreeFile(_gpdHeader* file) {
         _gpdResourceItem* items = file->items;
         _peFreeInternalBankData((_particleData*)(items + file->count));
         u32 n = file->count;
-        _gpdResourceItem* it = items;
+        _gpdResourceItem* it = file->items;
         for (; n != 0; it++, n--) {
             if ((it->flags & 0x40) == 0x40) {
                 switch (it->type) {

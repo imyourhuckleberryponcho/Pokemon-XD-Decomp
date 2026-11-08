@@ -1263,11 +1263,6 @@ void GSmodelSetPartAnimIndex(_GSmodel* model, s32 partIndex, u32 a, u32 b, f32 c
 }
 
 void GSmodelAdvanceAnimation(_GSmodel* model, f32 dt) {
-    u32 index;
-    s32 type;
-    u32 stopFlag;
-    u32 loopFlag;
-
     if (model->flags & 0x100) {
         return;
     }
@@ -1291,6 +1286,19 @@ void GSmodelAdvanceAnimation(_GSmodel* model, f32 dt) {
         modelAnimEnded(model, animType, animStopFlag, animLoopFlag, 1, animIndex, false);
     }
     if (model->flags & 0x8000) {
+        u32 index;
+        s32 type;
+        u32 stopFlag;
+        u32 loopFlag;
+
+#ifndef __MWERKS__
+
+
+        index = 0;
+        type = -1;
+        stopFlag = 0x40;
+        loopFlag = 0x8000;
+#endif
         if (!(model->flags & 0x80)) {
             index = model->texAnimIndex;
             type = model->texAnimType;

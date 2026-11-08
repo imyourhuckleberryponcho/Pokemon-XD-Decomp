@@ -3,6 +3,7 @@
 
 #define HSD_FILE_NAME "fobj.c"
 
+#include <game/ppcops.h>
 #include <sysdolphin/baselib/fobj.h>
 
 #include <string.h>
@@ -168,7 +169,7 @@ inline static u32 parsePackInfo(u8** adp)
     }
     do {
         d = *(*adp)++;
-        nb_pack += (d & 0x7F) << shift;
+        nb_pack += GC_SHL(d & 0x7F, shift);
         shift += 7;
     } while (d & 0x80);
     return nb_pack;
@@ -192,7 +193,7 @@ inline static s32 parseWait(u8** adp)
 
     do {
         d = *(*adp)++;
-        wait |= (d & 0x7f) << shift;
+        wait |= GC_SHL(d & 0x7f, shift);
         shift += 7;
     } while (d & 0x80);
 

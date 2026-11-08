@@ -111,6 +111,14 @@ inline float atan2fInline(float y, float x)
 #include <sysdolphin/baselib/particle.h>
 #include <sysdolphin/baselib/psdisptev.h>
 #include <sysdolphin/baselib/psstructs.h>
+#ifndef __MWERKS__
+#include <stddef.h>
+static_assert(sizeof(HSD_Particle) == 0xB8, "pslist.cpp allocates 0xB8-byte particles on PC: keep both in step");
+
+static_assert(offsetof(HSD_Generator, pos) == 0x28 && offsetof(HSD_Generator, camera) == 0x98 &&
+                  offsetof(HSD_Generator, flags) == 0xA0 && offsetof(HSD_Generator, jobj) == 0xC0,
+              "PSGenerator views (GSparticle.cpp, particle.cpp) must match HSD_Generator on PC");
+#endif
 #include <sysdolphin/baselib/state.h>
 #include <sysdolphin/baselib/tobj.h>
 #include <sysdolphin/baselib/util.h>
@@ -815,7 +823,7 @@ inline void psDispSubAPPSRTPoint(HSD_Particle* pp)
     } else {
         if (prevPointSize != (s32) w) {
             prevPointSize = w;
-            GXSetPointSize((u16)w, GX_TO_ONE);
+            GXSetPointSize(w, GX_TO_ONE);
         }
         if (pp->kind & DispTexture) {
             setVtxDesc(0);

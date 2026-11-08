@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
@@ -723,7 +724,7 @@ s32 fightTrainerAiWazaValueOomugaesi(FIGHT_TRAINER* t, FightOutPokemon* self, u1
 
 s32 fightTrainerAiWazaValueRandamuSentaku(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 status = fightTrainerGetStatus(0, 0x210, 0x3e, 0);
-    return fightTrainerAiAddValue(0, HSD_Rand() % (status + 1));
+    return fightTrainerAiAddValue(0, GC_MODS(HSD_Rand(), status + 1));
 }
 
 s32 fightTrainerAiWazaValueHurahuradansu(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {

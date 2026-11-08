@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 #pragma pool_strings off
 #define ATTRIBUTE_ALIGN(num) __attribute__((aligned(num)))
 #pragma peephole off
@@ -321,7 +322,7 @@ void pokecoloSetPlayTime(f64 time) {
 
 extern "C" {
 u32 pokecoloGetPlayTimeValue() {
-    return (u32) pokecoloGetPlayTime();
+    return GC_F2U32(pokecoloGetPlayTime());
 }
 }
 

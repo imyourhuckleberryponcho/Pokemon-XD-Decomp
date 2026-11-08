@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <game/pxdvs/app/memcard/savedata.hpp>
 #include <game/bingoData.h>
 
@@ -71,13 +72,13 @@ void bingo_bios::setClearPlus(u32 index) {
 void bingo_bios::setClear(u32 index) {
     if (index < *bingo_data_number) {
         BingoSave* save = (BingoSave*)savedataGetStatus(0, 0x1B);
-        save->flags |= 1 << (index * 2);
+        save->flags |= GC_SHL(1, index * 2);
     }
 }
 
 void bingo_bios::setSelect(u32 index) {
     BingoSave* save = (BingoSave*)savedataGetStatus(0, 0x1B);
-    save->flags |= 2 << (index * 2);
+    save->flags |= GC_SHL(2, index * 2);
 }
 
 bool bingo_bios::isSelect(u32 index) {
@@ -85,7 +86,7 @@ bool bingo_bios::isSelect(u32 index) {
         return false;
     }
     BingoSave* save = (BingoSave*)savedataGetStatus(0, 0x1B);
-    return (save->flags & (2 << (index * 2))) ? 1 : 0;
+    return (save->flags & (GC_SHL(2, index * 2))) ? 1 : 0;
 }
 
 bool bingo_bios::isClear(u32 index) {
@@ -93,7 +94,7 @@ bool bingo_bios::isClear(u32 index) {
         return false;
     }
     BingoSave* save = (BingoSave*)savedataGetStatus(0, 0x1B);
-    return (save->flags & (1 << (index * 2))) ? 1 : 0;
+    return (save->flags & (GC_SHL(1, index * 2))) ? 1 : 0;
 }
 
 u32 bingo_bios::getClearLv() {

@@ -5,6 +5,9 @@
 
 
 #include <dolphin/types.h>
+#ifndef __MWERKS__
+#include <game/gcdata.h>
+#endif
 #ifdef __MWERKS__
 #define _MATH_H_
 
@@ -394,6 +397,7 @@ void HSD_JObjDisp(HSD_JObj* jobj, MtxPtr vmtx, HSD_TrspMask trsp_mask,
             HSD_JObjDispDObj(jobj, vmtx, trsp_mask, rendermode);
         } else if (union_type_ptcl(jobj) && sptcl_callback != NULL) {
             HSD_SList* sp;
+#ifdef __MWERKS__
             for (sp = jobj->u.ptcl; sp != NULL; sp = sp->next) {
                 if ((((u32) sp->data) & 0x80000000) != 0) {
                     u32 bank = JOBJ_PTCL_BANK_MASK & ((u32) sp->data);
@@ -403,6 +407,18 @@ void HSD_JObjDisp(HSD_JObj* jobj, MtxPtr vmtx, HSD_TrspMask trsp_mask,
                 }
                 sp->data = (void*) ((u32) sp->data & JOBJ_PTCL_ACTIVE);
             }
+#else
+
+            for (sp = jobj->u.ptcl; sp != NULL; sp = (HSD_SList*)(uintptr_t)gc_rd32((const u8*)sp)) {
+                u32 data = gc_rd32((const u8*)sp + 4);
+                if ((data & 0x80000000) != 0) {
+                    u32 bank = JOBJ_PTCL_BANK_MASK & data;
+                    u32 offset = (data >> JOBJ_PTCL_OFFSET_SHIFT) & JOBJ_PTCL_OFFSET_MASK;
+                    (*sptcl_callback)(0, bank, offset, jobj);
+                }
+                gc_wr32((u8*)sp + 4, data & JOBJ_PTCL_ACTIVE);
+            }
+#endif
         }
     }
 }

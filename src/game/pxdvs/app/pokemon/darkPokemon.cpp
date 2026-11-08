@@ -1,4 +1,7 @@
 #include <dolphin/types.h>
+#ifndef __MWERKS__
+#include <game/gcdata.h>
+#endif
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -153,7 +156,11 @@ void darkpokemonValInit() {
 
 extern "C++" {
 void DarkPokemon::setPlace(darkPokemonWhere where, unsigned char id) {
+#ifdef __MWERKS__
     M2C_FIELD(this, s32 *, 0) = (s32) ((M2C_FIELD(this, s32 *, 0) & ~0x38000) | ((where << 0xF) & 0x38000));
+#else
+    GC_SETBYTES32(this, (GC_BYTES32(this) & ~0x38000) | ((where << 0xF) & 0x38000));
+#endif
     M2C_FIELD(this, u8 *, 0x11) = 0;
     if (where == 1) {
         if (id <= 6) {

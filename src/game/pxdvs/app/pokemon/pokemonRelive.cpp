@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/declspec.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -149,7 +150,7 @@ s8 menuSubOpenYesNoField(void);
 void msgctrlSetValue(s32 id, GCuptr value);
 void pokemonAllKaihuku(Pokemon* pokemon);
 u16 pokemonBiosGetDarkpokemonDataId(Pokemon* poke);
-u16 pokemonBiosGetFriend(Pokemon* poke);
+u32 pokemonBiosGetFriend(Pokemon* poke);
 u8 pokemonBiosGetLevel(Pokemon* poke);
 char* pokemonBiosGetNicknamePtr(Pokemon* poke);
 u16 pokemonBiosGetPokemonWazaDataId(Pokemon* poke, PCARG(u16, u32) wazaNum);
@@ -458,6 +459,18 @@ static inline bool reliveStartNormal(Pokemon* pokemon) {
     return false;
 }
 
+static inline void _relivePlayWaza2(WazaSequence* waza1, WazaSequence* waza0) {
+    WazaSequence_Start(waza0, 0);
+    WazaSequence_Start(waza1, 0);
+    f32 t = 0.0f;
+    while (WazaSequence_IsActive(waza0) || WazaSequence_IsActive(waza1)) {
+        GSthreadSwitch();
+        t += timeGetLastFrameSec();
+    }
+    WazaSequence_Free(waza0);
+    WazaSequence_Free(waza1);
+}
+
 static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
     WazaSequence* waza;
     GCsptr pokemon_c = (GCsptr)pokemon;
@@ -501,17 +514,7 @@ static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
             Sequence_SetPosition(newSeq, &pos);
             Sequence_SetRotation(newSeq, &rot);
             Sequence_SetScale(newSeq, &scale);
-            WazaSequence* waza0 = Sequence_GetWaza((Sequence*)p2, 0x103, 4);
-            WazaSequence* waza1 = Sequence_GetWaza(newSeq, 0x104, 4);
-            WazaSequence_Start(waza0, 0);
-            WazaSequence_Start(waza1, 0);
-            f32 t = 0.0f;
-            while (WazaSequence_IsActive(waza0) || WazaSequence_IsActive(waza1)) {
-                GSthreadSwitch();
-                t += timeGetLastFrameSec();
-            }
-            WazaSequence_Free(waza0);
-            WazaSequence_Free(waza1);
+            _relivePlayWaza2(Sequence_GetWaza(newSeq, 0x104, 4), Sequence_GetWaza((Sequence*)p2, 0x103, 4));
             result = newSeq;
         } else {
             s32 num;
@@ -526,8 +529,10 @@ static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
             Vec holoScale;
             Sequence_GetScale((Sequence*)p2, &holoScale);
             menuModelSetScale(holoScale.x);
-            for (s32 i = 0; i < num; i++) {
-                Sequence_LoadWaza((Sequence*)p2, tbl[i].id, tbl[i].kind, 0);
+            u32 count;
+            count = num;
+            for (newCount = 0; newCount < count; newCount++) {
+                Sequence_LoadWaza((Sequence*)p2, tbl[newCount].id, tbl[newCount].kind, 0);
             }
             Sequence_SetVisibility((Sequence*)p2, 1);
             for (s32 i = 0; i < num; tbl++, i++) {
@@ -550,7 +555,7 @@ static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
     if (pokemonCheckValid(pokemon) != 1) {
         return 0;
     }
-    s32 oldCount;
+    int oldCount;
     for (oldCount = 0; oldCount < 4; oldCount++) {
         u16 id = pokemonBiosGetPokemonWazaDataId(pokemon, oldCount);
         if (id == 0) {
@@ -591,7 +596,7 @@ static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
             soundOpenPlayME(0x3C7, 0, 0xFF);
             u16 newWaza = pokemonBiosGetPokemonWazaDataId(pokemon, i);
             msgctrlSetValue(0x39, newWaza);
-            winMsgOpenField((void*)((u8*)0xC54E + (i == newCount - 1 ? 1 : 0)), 1, 0);
+            winMsgOpenField((void*)(i == newCount - 1 ? 0xC54F : 0xC54E), 1, 0);
         }
     }
     u32 poolExp = pokemonBiosGetPoolExp(pokemon);
@@ -747,6 +752,7 @@ extern "C" {
 extern "C" {
 static void __sinit_pokemonRelive_cpp() {
 }
+DECL_SECTION(".ctors") extern void* const __sinit_pokemonRelive_cpp_reference = __sinit_pokemonRelive_cpp;
 }
 }
 

@@ -1,17 +1,26 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 extern "C" {
 extern u32* waza_data_number;
 extern u8* waza_data;
 extern u32 waza_func_data_number;
-extern u8 waza_func_data[];
+struct WazaFuncRow {
+    GCuptr aiValue;
+    GCuptr aiHit;
+    GCuptr aiDamage;
+    GCuptr aiDamageFightPokemon;
+    GCuptr wzxType;
+    GCuptr wzxVariation;
+};
+extern WazaFuncRow waza_func_data[];
 
-void wazaDataBiosSetFightWazaWzxVariationFuncPtr(u8* ptr, u32 val) { u16 idx; u8* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return; } *(u32*)(entry + 0x14) = val; }
-void wazaDataBiosSetFightWazaWzxTypeFuncPtr(u8* ptr, u32 val) { u16 idx; u8* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return; } *(u32*)(entry + 0x10) = val; }
-u32 wazaDataBiosGetFightWazaWzxVariationFuncPtr(u8* ptr) { u16 idx; u8* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return 0; } return *(u32*)(entry + 0x14); }
-u32 wazaDataBiosGetFightWazaWzxTypeFuncPtr(u8* ptr) { u16 idx; u8* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return 0; } return *(u32*)(entry + 0x10); }
-void wazaDataBiosSetFightTrainerAiWazaDamageFuncPtr(u8* ptr, u32 val) { u16 idx; u8* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return; } *(u32*)(entry + 0x8) = val; }
-void wazaDataBiosSetFightTrainerAiWazaHitFuncPtr(u8* ptr, u32 val) { u16 idx; u8* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return; } *(u32*)(entry + 0x4) = val; }
-void wazaDataBiosSetFightTrainerAiWazaValueFuncPtr(u8* ptr, u32 val) { u16 idx; u8* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return; } *(u32*)(entry + 0x0) = val; }
+void wazaDataBiosSetFightWazaWzxVariationFuncPtr(u8* ptr, GCuptr val) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return; } entry->wzxVariation = val; }
+void wazaDataBiosSetFightWazaWzxTypeFuncPtr(u8* ptr, GCuptr val) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return; } entry->wzxType = val; }
+GCuptr wazaDataBiosGetFightWazaWzxVariationFuncPtr(u8* ptr) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return 0; } return entry->wzxVariation; }
+GCuptr wazaDataBiosGetFightWazaWzxTypeFuncPtr(u8* ptr) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return 0; } return entry->wzxType; }
+void wazaDataBiosSetFightTrainerAiWazaDamageFuncPtr(u8* ptr, GCuptr val) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return; } entry->aiDamage = val; }
+void wazaDataBiosSetFightTrainerAiWazaHitFuncPtr(u8* ptr, GCuptr val) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return; } entry->aiHit = val; }
+void wazaDataBiosSetFightTrainerAiWazaValueFuncPtr(u8* ptr, GCuptr val) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return; } entry->aiValue = val; }
 void wazaDataBiosSetRiskFlag(u8* ptr, u8 val) {
     if (ptr == NULL) { return; }
     *(u8*)(&ptr[0x14]) = val;
@@ -23,9 +32,9 @@ void wazaDataBiosSetTypeId(u8* ptr, u16 idx, u8 val) {
     ptr[idx + 0x34] = val;
 }
 
-u32 wazaDataBiosGetFightTrainerAiWazaDamageFuncPtr(u8* ptr) { u16 idx; u8* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return 0; } return *(u32*)(entry + 0x8); }
-u32 wazaDataBiosGetFightTrainerAiWazaHitFuncPtr(u8* ptr) { u16 idx; u8* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return 0; } return *(u32*)(entry + 0x4); }
-u32 wazaDataBiosGetFightTrainerAiWazaValueFuncPtr(u8* ptr) { u16 idx; u8* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx * 0x18; } if (entry == NULL) { return 0; } return *(u32*)(entry + 0x0); }
+GCuptr wazaDataBiosGetFightTrainerAiWazaDamageFuncPtr(u8* ptr) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return 0; } return entry->aiDamage; }
+GCuptr wazaDataBiosGetFightTrainerAiWazaHitFuncPtr(u8* ptr) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return 0; } return entry->aiHit; }
+GCuptr wazaDataBiosGetFightTrainerAiWazaValueFuncPtr(u8* ptr) { u16 idx; WazaFuncRow* entry; if (ptr == NULL) { return 0; } if (ptr == NULL) { idx = 0; } else { idx = *(u16*)(ptr + 0x1e); } if ((u32)idx >= waza_func_data_number) { entry = NULL; } else { entry = waza_func_data + (u32)idx; } if (entry == NULL) { return 0; } return entry->aiValue; }
 u16 wazaDataBiosGetWazaFuncDataId(u8* ptr) { if (ptr == NULL) { return 0; } return *(u16*)(ptr + 0x1e); }
 u8 wazaDataBiosGetRiskFlag(u8* ptr) {
     if (ptr == NULL) { return 0; }
@@ -305,6 +314,6 @@ u32 wazaDataBiosGetName(u8* ptr) {
 }
 
 void* wazaDataBiosGetPtr(u16 idx) { if ((u32)idx >= *waza_data_number) { return waza_data; } return waza_data + (u32)idx * 0x38; }
-void* wazaFuncDataBiosGetPtr(u16 idx) { if ((u32)idx >= waza_func_data_number) { return NULL; } return waza_func_data + (u32)idx * 0x18; }
+void* wazaFuncDataBiosGetPtr(u16 idx) { if ((u32)idx >= waza_func_data_number) { return NULL; } return waza_func_data + (u32)idx; }
 }
 

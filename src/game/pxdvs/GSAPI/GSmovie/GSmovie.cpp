@@ -113,7 +113,11 @@ struct THPPlayer {
     s16* audioWork0;
     s16* audioWork1;
     u8 f822C[4];
+#ifdef __MWERKS__
     u8 f8230[0x50];
+#else
+    u64 f8230[10];
+#endif
 };
 
 struct __GSmovieStreaming {
@@ -139,6 +143,7 @@ enum GSgfxLayerPass {
 enum GSgfxLayerID {};
 enum GSgfxLayerType {};
 #include <game/gsgfxlayer.h>
+#include <game/ppcops.h>
 
 struct GSgfxLayer : public GSgfxLayerData {
     void textureCopy(GSgfxLayerPass pass, struct GStexture* texture, bool clear, u8* clearColor, bool, bool, bool);
@@ -599,6 +604,8 @@ static void _movieRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
     }
 }
 
+static inline THPPlayer * movieStreamPlayer(__GSmovieStreaming * p) { return p->player; }
+
 static void _movieBeforeRender(f32 dt) {
     u32 id;
     __GSmovieStreaming* s;
@@ -633,7 +640,7 @@ static void _movieBeforeRender(f32 dt) {
         for (i = 0; i < _maxStreaming; i++) {
             __GSmovieStreaming* s = &_movieStreaming[i];
             if (s->state != 0) {
-                THPPlayer* p = s->player;
+                THPPlayer* p = movieStreamPlayer(s);
                 u32 j;
                 GSgfxTokenWaitForClearAndReset(&s->token);
                 for (j = 0; j < 3; j++) {
@@ -719,7 +726,7 @@ static inline u32 _THPPlayerCalcNeedMemory(THPPlayer* p) {
     size += (((tex >> 2) + 0x1F) & ~0x1F) * 3;
     if (p->audioExist != 0) {
         size += ((p->header.audioMaxSamples * 4 + 0x1F) & ~0x1F) * 6;
-        size += (((u32)(0.5f + (f32)(p->audioInfo.sndFrequency * 60) / 1000.0f) + 0x1F) * 2 & ~0x3F) *
+        size += ((GC_F2U32(0.5f + (f32)(p->audioInfo.sndFrequency * 60) / 1000.0f) + 0x1F) * 2 & ~0x3F) *
                 p->audioInfo.sndChannels;
     }
     return size + 0x1000;
@@ -729,24 +736,24 @@ static inline bool _movieStreamPrepareStart(__GSmovieStreaming* s) {
     THPPlayer* p = s->player;
     bool loop = s->loop == 1;
     u8 startOffset = s->startOffset;
-    if (p->state != 0) {
-        return false;
-    }
-    p->initOffset = p->header.movieDataOffsets;
-    p->initReadSize = p->header.firstFrameSize;
-    p->initReadFrame = 0;
-    p->f806C = p->initReadSize;
-    if (p->audioExist != 0) {
-        if ((s32)startOffset < 0 || startOffset >= p->audioInfo.sndNumTracks) {
-            return false;
+    if (p->state == 0) {
+        p->initOffset = p->header.movieDataOffsets;
+        p->initReadSize = p->header.firstFrameSize;
+        p->initReadFrame = 0;
+        p->f806C = p->initReadSize;
+        if (p->audioExist != 0) {
+            if ((s32)startOffset < 0 || startOffset >= p->audioInfo.sndNumTracks) {
+                return false;
+            }
+            p->curAudioTrack = startOffset;
         }
-        p->curAudioTrack = startOffset;
+        p->playFlag = loop & 1;
+        p->videoDecodeCount = 0;
+        p->curVideoNumber = -1;
+        p->curAudioNumber = 0;
+        return true;
     }
-    p->playFlag = loop;
-    p->videoDecodeCount = 0;
-    p->curVideoNumber = -1;
-    p->curAudioNumber = 0;
-    return true;
+    return false;
 }
 
 static void _movieDaemon() {
@@ -776,7 +783,11 @@ static void _movieDaemon() {
                 }
                 _THPPlayerSetBuffer(s);
                 if (p->audioInfo.sndNumTracks != 1) {
+#ifdef __MWERKS__
                     s->startOffset = OSGetTick() % p->audioInfo.sndNumTracks;
+#else
+                    s->startOffset = p->audioInfo.sndNumTracks != 0 ? OSGetTick() % p->audioInfo.sndNumTracks : OSGetTick();
+#endif
                 } else {
                     s->startOffset = 0;
                 }
@@ -821,7 +832,6 @@ static void _movieDaemon() {
                 if (started == 1) {
                     s->state = 5;
                 }
-                break;
             }
             case 5: {
                 u32 r;
@@ -833,11 +843,11 @@ static void _movieDaemon() {
                     r = 0;
                 }
                 switch (r) {
-                case 1:
-                    s->state = 7;
-                    break;
                 case 0:
                     s->state = 6;
+                    break;
+                case 1:
+                    s->state = 7;
                     break;
                 }
                 break;
@@ -853,11 +863,11 @@ static void _movieDaemon() {
                         _StreamInit(s);
                         _StreamInitFillStreamBuffer(s);
                     }
-                    if (s->player->state == 1 || s->player->state == 4) {
-                        s->player->prevCount = 0;
-                        s->player->state = 2;
-                        s->player->curCount = 0;
-                        s->player->retraceCount = -1;
+                    if (p->state == 1 || p->state == 4) {
+                        p->prevCount = 0;
+                        p->state = 2;
+                        p->curCount = 0;
+                        p->retraceCount = -1;
                         if (OldVIPostCallback == 0) {
                             OldVIPostCallback = GSgfxVideoSetVSyncCallback((void (*)(void))_PlayControl);
                         }
@@ -1075,10 +1085,10 @@ static u8 _THPPlayerSetBuffer(__GSmovieStreaming* s) {
                 work += (p->header.audioMaxSamples * 4 + 0x1F) & ~0x1F;
             }
             p->audioWork0 = (s16*)work;
-            work += (((u32)(0.5f + (f32)(p->audioInfo.sndFrequency * 60) / 1000.0f) + 0x1F) * 2) & ~0x3F;
+            work += ((GC_F2U32(0.5f + (f32)(p->audioInfo.sndFrequency * 60) / 1000.0f) + 0x1F) * 2) & ~0x3F;
             if (p->audioInfo.sndChannels == 2) {
                 p->audioWork1 = (s16*)work;
-                work += (((u32)(0.5f + (f32)(p->audioInfo.sndFrequency * 60) / 1000.0f) + 0x1F) * 2) & ~0x3F;
+                work += ((GC_F2U32(0.5f + (f32)(p->audioInfo.sndFrequency * 60) / 1000.0f) + 0x1F) * 2) & ~0x3F;
             }
         }
         p->thpWork = work;

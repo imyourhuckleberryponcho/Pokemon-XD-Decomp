@@ -5,6 +5,7 @@
 
 #pragma peephole off
 #pragma pool_strings off
+#pragma force_active on
 
 struct EncountData {
     u8 bytes[0x3C];
@@ -1171,6 +1172,7 @@ s32 dbgMenuFightFlagEdit(void) {
     s32 waza;
     s32 result;
     s8 answer;
+    extern s32 dbgMenuFightGetWazaDataId(PCARG(u16, u32));
 
     msgSpeed = dbgMenuFightGetMsgSpeed();
     tuikakouka = dbgMenuFightGetTuikakoukaFlag();
@@ -1216,7 +1218,8 @@ s32 dbgMenuFightFlagEdit(void) {
                 dbgMenuFightSetTuikakoukaFlag(0);
             }
         } else if (result == 0x76) {
-            if (menuSubOpenNumberInput(dbgMenuFightGetMsgSpeed(), &value, 1, 0x32, 0x32, 0) == 0) {
+            u8 speed = dbgMenuFightGetMsgSpeed();
+            if (menuSubOpenNumberInput(speed, &value, 1, 0x32, 0x32, 0) == 0) {
                 menuSubCloseNumberInput();
             } else {
                 dbgMenuFightSetMsgSpeed(value);
@@ -1268,7 +1271,7 @@ s32 dbgMenuFightFlagEdit(void) {
             if (fightIsFight() != 0) {
                 waza = dbgMenuFightGetYubiwohuruWazaDataId();
                 for (;;) {
-                    waza = dbgMenuFightGetWazaDataId((u16)waza);
+                    waza = dbgMenuFightGetWazaDataId(waza);
                     if (waza < 0) {
                         break;
                     }

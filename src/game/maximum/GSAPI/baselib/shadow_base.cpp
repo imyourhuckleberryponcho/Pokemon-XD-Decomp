@@ -317,28 +317,28 @@ void HSD_ShadowRender(HSD_Shadow* shadow)
             switch (HSD_CObjGetProjectionType(shadow->camera)) {
             case PROJ_PERSPECTIVE:
                 MTXLightPerspective(
-                    proj, shadow->camera->projection_param.perspective.fov,
-                    shadow->camera->projection_param.perspective.aspect,
+                    proj, GC_BEF32(shadow->camera->projection_param.perspective.fov),
+                    GC_BEF32(shadow->camera->projection_param.perspective.aspect),
                     shadow->scaleS, shadow->scaleT, shadow->transS,
                     shadow->transT);
                 break;
 
             case PROJ_FRUSTUM:
                 MTXLightFrustum(
-                    proj, shadow->camera->projection_param.frustum.top,
-                    shadow->camera->projection_param.frustum.bottom,
-                    shadow->camera->projection_param.frustum.left,
-                    shadow->camera->projection_param.frustum.right,
+                    proj, GC_BEF32(shadow->camera->projection_param.frustum.top),
+                    GC_BEF32(shadow->camera->projection_param.frustum.bottom),
+                    GC_BEF32(shadow->camera->projection_param.frustum.left),
+                    GC_BEF32(shadow->camera->projection_param.frustum.right),
                     shadow->camera->near, shadow->scaleS, shadow->scaleT,
                     shadow->transS, shadow->transT);
                 break;
 
             case PROJ_ORTHO:
                 MTXLightOrtho(
-                    proj, shadow->camera->projection_param.ortho.top,
-                    shadow->camera->projection_param.ortho.bottom,
-                    shadow->camera->projection_param.ortho.left,
-                    shadow->camera->projection_param.ortho.right,
+                    proj, GC_BEF32(shadow->camera->projection_param.ortho.top),
+                    GC_BEF32(shadow->camera->projection_param.ortho.bottom),
+                    GC_BEF32(shadow->camera->projection_param.ortho.left),
+                    GC_BEF32(shadow->camera->projection_param.ortho.right),
                     shadow->scaleS, shadow->scaleT, shadow->transS,
                     shadow->transT);
                 break;

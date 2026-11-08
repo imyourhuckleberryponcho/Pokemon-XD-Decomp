@@ -32,6 +32,10 @@ struct CCD_WALKTRI {
     u8 pad32[2];
 };
 
+#ifndef __MWERKS__
+static_assert(sizeof(CCD_WALKTRI) == 0x34, "CCD_WALKTRI");
+#endif
+
 struct CCD_TRI_GROUP {
     gc_ptr32(u8) data;
     gc_be32 count;
@@ -76,7 +80,11 @@ struct GScolsys2Data {
 };
 
 struct ColsysDL {
-    u32 w[4];
+    u16 flags;
+    u16 count;
+    u8* data;
+    u32 size;
+    void* vf;
 };
 
 extern GScolsys2Data GScolsys2;
@@ -138,7 +146,7 @@ static inline void drawObj(CCD_DRAW_OBJ* obj, GSmtx* mtx, GSmtx* rot) {
                 int j;
                 GSgfxDLBeginSurface(3);
                 for (j = 0; j < 3; j++) {
-                    PSMTXMultVec(mtx, (Vec3*)(tri + j * 12), &v);
+                    PSMTXMultVec(mtx, GC_VEC3P(Vec3, (gc_vec(Vec3)*)(tri + j * 12)), &v);
                     putVtx(v, color);
                 }
                 GSgfxDLEndSurface();
@@ -157,7 +165,7 @@ static inline void drawObj(CCD_DRAW_OBJ* obj, GSmtx* mtx, GSmtx* rot) {
                 int j;
                 GSgfxDLBeginSurface(3);
                 for (j = 0; j < 3; j++) {
-                    PSMTXMultVec(mtx, (Vec3*)(tri + j * 12), &v);
+                    PSMTXMultVec(mtx, GC_VEC3P(Vec3, (gc_vec(Vec3)*)(tri + j * 12)), &v);
                     putVtx(v, color);
                 }
                 GSgfxDLEndSurface();
@@ -179,7 +187,7 @@ static inline void drawObj(CCD_DRAW_OBJ* obj, GSmtx* mtx, GSmtx* rot) {
                 int j;
                 GSgfxDLBeginSurface(3);
                 for (j = 0; j < 3; j++) {
-                    PSMTXMultVec(mtx, (Vec3*)(tri + j * 12), &v);
+                    PSMTXMultVec(mtx, GC_VEC3P(Vec3, (gc_vec(Vec3)*)(tri + j * 12)), &v);
                     putVtx(v, color);
                 }
                 GSgfxDLEndSurface();
@@ -315,7 +323,7 @@ static void drawHitMdl(CCD_HITMDL_HEAD* head, GSmtx* mtx, GSmtx* rot) {
     for (i = 0; i < head->count; i++, tri += 0x34) {
         int j;
         for (j = 0; j < 3; j++) {
-            PSMTXMultVec(mtx, (Vec3*)(tri + j * 12), &verts[j]);
+            PSMTXMultVec(mtx, GC_VEC3P(Vec3, (gc_vec(Vec3)*)(tri + j * 12)), &verts[j]);
         }
         GSgfxDLPrimitiveType(0xA8);
         for (j = 0; j < 3; j++) {

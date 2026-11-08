@@ -22,16 +22,9 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 enum ASM { ASM_draft_dummy };
 struct GXFifoObj;
 #ifdef __MWERKS__
-enum Mtx44 { Mtx44_draft_dummy };
-enum PrimColor { PrimColor_draft_dummy };
-#define LAYER_PRIMCOLOR(v) ((PrimColor)((s32) &(v)))
-#define LAYER_MSTACK_TOP(m) M2C_FIELD(m, s32 **, 4)
-#else
-typedef f32 Mtx44[4][4];
-struct PrimColor { u8 r, g, b, a; };
-#define LAYER_PRIMCOLOR(v) (*(PrimColor*)&(v))
-#define LAYER_MSTACK_TOP(m) (((s32**)(m))[1])
 #endif
+typedef f32 Mtx44[4][4];
+struct StatCol { u8 r, g, b, a; };
 #pragma pool_strings off
 
 struct GStexture;
@@ -149,14 +142,15 @@ void* memcpy(void*, const void*, u32);
 
 void GSgfxRenderModuleDoRenderFast();
 #include <game/gsgfxstate.h>
+#include <game/ppcops.h>
 extern "C" GSgfxState* gsgfxState;
 
-static GSgfxLayer* _layerBottom;
-static u8 _layerRenderStats;
 extern "C" u8 gsgfx_layer_inPrimitive;
 extern "C" void* gsgfx_layer_activeFifo;
 void* gsgfx_layer_activeFifo;
 u8 gsgfx_layer_inPrimitive;
+static GSgfxLayer* _layerBottom;
+static u8 _layerRenderStats;
 static u32 _layerPerfColor[8] = {0xFF, 0x8000, 0x800000, 0x8080, 0x800080, 0x808000, 0x80FF, 0x808080};
 static u32 _layerPerfUserColor[2] = {0xFF8000, 0};
 static GSgfxLayer* _layerIDTable[16];
@@ -171,11 +165,11 @@ struct GXFifoObj {
 extern "C" {
 void GSmemFree(void* ptr);
 void GSmtx44Ortho(Mtx44 m, f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
-s32 GSprimDraw2DHLine(s32*, f32, f32, f32);
-s32 GSprimDraw2DQuadWH(s32*, s32, f32, f32, f32, f32, f32);
+void GSprimDraw2DHLine(StatCol color, f32 x0, f32 x1, f32 y);
+void GSprimDraw2DQuadWH(StatCol color, f32 x, f32 y, f32 w, f32 h);
 void GSprimSetLineWidth(f32 w);
 void GSprimSetQuadVertexOrder(s32 order);
-void GSprimSetTextColor(PrimColor color);
+void GSprimSetTextColor(StatCol color);
 void GSprimSetTextSize(f32 xpel, f32 ypel);
 void GSprimSetTextWidth(f32 w);
 void GSprimWriteChar(char c, f32 x, f32 y);
@@ -192,32 +186,10 @@ extern u16 fbTexRefCount__10GSgfxLayer;
 #define distTexRefCount__10GSgfxLayer GSgfxLayer::distTexRefCount
 #endif
 extern f32 mtxIdent[3][4];
-extern s32 jtbl_1809;
 #ifdef __MWERKS__
-extern s32 jtbl_1810;
-extern s32 jtbl_1811;
-extern s32 jtbl_1812;
-extern s32 jtbl_1813;
-extern s32 jtbl_1814;
-extern s32 jtbl_1815;
+extern StatCol c_localstatic3_GSgfxPerfColorToGSgfxCol;
 #else
-static const u8 jtbl_1810_rgba[4] = { 0x20, 0x20, 0x20, 0xC0 };
-#define jtbl_1810 (*(const s32*)jtbl_1810_rgba)
-static const u8 jtbl_1811_rgba[4] = { 0x60, 0x60, 0x60, 0xFF };
-#define jtbl_1811 (*(const s32*)jtbl_1811_rgba)
-static const u8 jtbl_1812_rgba[4] = { 0xA0, 0xA0, 0xA0, 0xFF };
-#define jtbl_1812 (*(const s32*)jtbl_1812_rgba)
-static const u8 jtbl_1813_rgba[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
-#define jtbl_1813 (*(const s32*)jtbl_1813_rgba)
-static const u8 jtbl_1814_rgba[4] = { 0xFF, 0xFF, 0x00, 0xFF };
-#define jtbl_1814 (*(const s32*)jtbl_1814_rgba)
-static const u8 jtbl_1815_rgba[4] = { 0xE0, 0x40, 0x40, 0xFF };
-#define jtbl_1815 (*(const s32*)jtbl_1815_rgba)
-#endif
-#ifdef __MWERKS__
-extern s32 c_localstatic3_GSgfxPerfColorToGSgfxCol;
-#else
-static s32 c_localstatic3_GSgfxPerfColorToGSgfxCol;
+static StatCol c_localstatic3_GSgfxPerfColorToGSgfxCol;
 #endif
 }
 extern "C++" {
@@ -393,560 +365,374 @@ struct RedirectLegend {
     s32 offset;
 };
 
-void GSgfxLayerRenderStats(GSgfxLayer* p0) {
-    u16 sp38;
-#ifdef __MWERKS__
-    s32 saved_reg_r25;
-    s32 saved_reg_r26;
-#else
-    s32 saved_reg_r25 = 0;
-    s32 saved_reg_r26 = 0;
-#endif
-    f32 spB8;
-    f32 spC0;
-    f32 spC8;
-    f32 spD4;
-    f32 spD8;
-    s32 sp128;
-    s32 sp124;
-    s32 sp120;
-    s32 sp11C;
-    s32 sp118;
-    s32 sp114;
-    s32 sp110;
-    s32 sp10C;
-    s32 sp108;
-    s32 sp104;
-    s32 sp100;
-    s32 spFC;
-    s32 spF8;
-    s32 spF4;
-    s32 spF0;
-    s32 spEC;
-    f32 spAC;
-    s8 sp9E;
-    s32 sp8C;
-    s8 sp88;
-    s8 sp87;
-    volatile s8 sp86;
-    volatile s8 sp85;
-    s8 sp84;
-    u8 var_r6;
-    u32 sp7C;
-    u32 sp78;
-    u32 sp74;
-    u32 sp70;
-    u32 sp6C;
-    u32 sp68;
-    s32 sp60;
-    GSgfxLayer *temp_r24;
-    s32 sp5C;
-    s32 sp58;
-    s32 sp54;
-    s32 sp50;
-    s32 sp4C;
-    s32 sp48;
-    s32 sp44;
-    s32 sp40;
-    s32 sp3C;
-    s32 sp24;
-    s32 sp34;
-    s32 sp30;
-    u16 sp2C;
-    u16 sp28;
-    f32 var_f27;
-    s32 sp20;
-    s32 sp1C;
-    s32 sp18;
-    s32 sp14;
-    s32 sp10;
-    u8 spF;
-    u8 spE;
-    u8 spD;
-    u8 spC;
-    u8 spB;
-    u8 spA;
-    u8 sp9;
-    u8 sp8;
-    s32 var_r21;
-    GSgfxLayer *temp_r3_2;
-    GSgfxLayer *var_r20;
-    s32 *var_r3;
-    s32 *var_r4_3;
-    s32 *var_r6_2;
-    f32 var_f26;
-    f32 var_f26_2;
-#ifdef __MWERKS__
-    s32 saved_reg_f26;
-#else
-    s32 saved_reg_f26 = 0;
-#endif
-    f32 var_f27_2;
-    s32 *temp_r3;
-    s32 *var_r17;
-    s32 temp_r0;
-    s32 temp_r0_2;
-    s32 temp_r0_3;
-    s32 temp_r22;
-    s32 var_r18;
-    s32 sp64;
-    GCsptr var_r25;
-    GCsptr var_r26;
-    s32 var_r30;
-    s32 var_r31;
-    s32 var_r4;
-    s8 var_r0_2;
-    u32 var_r0;
-    u32 var_r5;
-    u8 temp_r4;
-    u8 var_r0_3;
-    u8 var_r0_4;
-    u8 var_r3_2;
-    u8 var_r3_3;
-    u8 var_r3_4;
-    u8 var_r3_5;
-    u8 var_r4_2;
-    s32 sp80;
-    u8 *temp_r16;
-    u8 *temp_r4_2;
-    u8 *temp_r4_3;
-    u32 temp_r7;
-    GCsptr temp_r16_2;
+static inline StatCol* perfColor(u32 color) {
+    static StatCol c;
+    c.g = color >> 8;
+    c.b = color;
+    c.r = color >> 16;
+    c.a = 0xFF;
+    return &c;
+}
 
+struct StatMtxEntry {
+    u32 flags;
+    f32 m[3][4];
+};
+
+static inline bool statsLegendFill(GSgfxLayer::PassFifo& pf, RedirectLegend* e) {
+#ifdef __MWERKS__
+    GSgfxLayer* target;
+#else
+    GSgfxLayer* target = NULL;
+#endif
+    if (pf.data == NULL) {
+        return false;
+    }
+    if (pf.flag == 0) {
+        return false;
+    }
+    if (&e->layer != NULL) {
+        if (pf.redirectId == -1) {
+            target = NULL;
+        } else if (pf.redirectId < 0x10) {
+            target = _layerIDTable[pf.redirectId];
+        }
+        e->layer = target;
+    }
+    if (&e->pass != NULL) {
+        e->pass = pf.redirectPass;
+    }
+    if (&e->offset != NULL) {
+        e->offset = pf.redirectOffset;
+    }
+    return true;
+}
+
+#ifdef __MWERKS__
+#define LEGEND_AT(off) ((RedirectLegend*)((u8*)legend + (off)))
+#else
+#define LEGEND_AT(off) (&legend[(off) >> 4])
+#endif
+
+void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     RedirectLegend legend[4] = {
         { '#', NULL, 2, 0 },
         { '$', NULL, 2, 0 },
         { '=', NULL, 2, 0 },
         { '+', NULL, 2, 0 },
     };
-    var_r25 = saved_reg_r25;
-    sp58 = jtbl_1814;
-    var_r26 = saved_reg_r26;
-    var_f26 = saved_reg_f26;
-    sp80 = jtbl_1810;
-    sp64 = jtbl_1811;
-    sp60 = jtbl_1812;
-    sp5C = jtbl_1813;
-    sp54 = jtbl_1815;
-    if ((u8) _layerRenderStats != 0) {
-        var_r31 = 0;
-        var_r30 = 0;
-        GSprimSetRenderLayer((GSgfxLayer*)(p0));
-        GSprimSetQuadVertexOrder(0);
-        GSprimSetLineWidth(1.0f);
+    Mtx44 ortho;
+    char nameBuf[0x20];
+    char tcaz[5];
+    StatCol colBg = { 0x20, 0x20, 0x20, 0xC0 };
+    u32 limit0, limit1, used0, used1, size0, size1;
+    StatCol colLine = { 0x60, 0x60, 0x60, 0xFF };
+    StatCol colDim = { 0xA0, 0xA0, 0xA0, 0xFF };
+    StatCol colText = { 0xFF, 0xFF, 0xFF, 0xFF };
+    StatCol colHead = { 0xFF, 0xFF, 0x00, 0xFF };
+    StatCol colMark = { 0xE0, 0x40, 0x40, 0xFF };
+    u8 bFlag1, bFlag2, bR0, bR1, bR2, bNextC, bNextB, bNextA;
+    bool r0v, r1v, r2v;
+    f32 y;
+    GSgfxMatrixStack* ms;
+    GSgfxLayer* cur;
+    GSgfxLayer* next;
+    s32 numLayers;
+    s32 legendCount;
+    s32 legendOff;
+    s32 i;
+
+    f32 kb = 0.0009765625f;
+    if (_layerRenderStats == 0) {
+        return;
+    }
+    legendCount = 0;
+    legendOff = 0;
+    GSprimSetRenderLayer(p0);
+    GSprimSetQuadVertexOrder(0);
+    GSprimSetLineWidth(1.0f);
+    GSprimSetTextSize(10.0f, 10.0f);
+    GSprimSetTextWidth(1.0f);
+    p0->hw.blend[0] = 1;
+    p0->hw.blend[1] = 4;
+    p0->hw.blend[2] = 5;
+    p0->hw.blend[3] = 5;
+    p0->dirty[0].pe |= 1;
+    p0->dirty[0].groups |= 0x40;
+    p0->dirty[1].pe |= 1;
+    p0->dirty[1].groups |= 0x40;
+    GSmtx44Ortho(ortho, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
+    p0->hw.projType = 1;
+    p0->hw.proj[0] = ortho[0][0];
+    p0->hw.proj[1] = ortho[0][3];
+    p0->hw.proj[2] = ortho[1][1];
+    p0->hw.proj[3] = ortho[1][3];
+    p0->hw.proj[4] = ortho[2][2];
+    p0->hw.proj[5] = ortho[2][3];
+    ms = p0->matrixStack;
+    memcpy(&((StatMtxEntry*)ms->mTop)->m, mtxIdent, 0x30U);
+    ((StatMtxEntry*)ms->mTop)->flags |= 1;
+    p0->hw.fogNear = 0.0f;
+    p0->hw.fogFar = 30000.0f;
+    if (p0->hw.fogEnable != 0) {
+        if (p0->hw.fogRangeEnable != 0) {
+            p0->dirty[0].pe |= 0x100;
+            p0->dirty[1].pe |= 0x100;
+        }
+        p0->dirty[0].pe |= 0x40;
+        p0->dirty[0].groups |= 0x40;
+        p0->dirty[1].pe |= 0x40;
+        p0->dirty[1].groups |= 0x40;
+    }
+    p0->dirty[0].geom |= 0x20;
+    p0->dirty[0].groups |= 1;
+    p0->dirty[1].geom |= 0x20;
+    p0->dirty[1].groups |= 1;
+    p0->hw.colorUpdate = 1;
+    p0->hw.alphaUpdate = 0;
+    p0->hw.zUpdate = 0;
+    p0->dirty[0].pe |= 4;
+    p0->dirty[0].groups |= 0x40;
+    p0->dirty[1].pe |= 4;
+    p0->dirty[1].groups |= 0x40;
+    p0->hw.zEnable = 0;
+    p0->hw.zFunc = 3;
+    p0->dirty[0].pe |= 8;
+    p0->dirty[0].groups |= 0x40;
+    p0->dirty[1].pe |= 8;
+    p0->dirty[1].groups |= 0x40;
+    p0->hw.alphaComp0 = 7;
+    p0->hw.alphaRef0 = 0;
+    p0->hw.alphaCmpOp = 0;
+    p0->hw.alphaComp1 = 7;
+    p0->hw.alphaRef1 = 0;
+    p0->hw.zCompLoc = 1;
+    p0->dirty[0].pe |= 0x10;
+    p0->dirty[0].groups |= 0x40;
+    p0->dirty[1].pe |= 0x10;
+    p0->dirty[1].groups |= 0x40;
+    p0->hw.cullMode = 0;
+    p0->dirty[0].raster |= 2;
+    p0->dirty[0].groups |= 2;
+    p0->dirty[1].raster |= 2;
+    p0->dirty[1].groups |= 2;
+    p0->hw.clipMode = 1;
+    p0->dirty[0].raster |= 4;
+    p0->dirty[0].groups |= 2;
+    p0->dirty[1].raster |= 4;
+    p0->dirty[1].groups |= 2;
+
+    numLayers = 0;
+    for (cur = _layerBottom; cur != NULL; cur = cur->next) {
+        numLayers++;
+    }
+    GSprimDraw2DQuadWH(colBg, 10.0f, 22.0f, 620.0f, 12.0f * (f32)numLayers + 28.0f);
+    GSprimSetTextColor(colText);
+    GSprimSetTextSize(10.0f, 10.0f);
+    GSprimWriteStr(25.0f, 29.0f, "#");
+    GSprimWriteStr(50.0f, 29.0f, "ID");
+    GSprimWriteStr(85.0f, 29.0f, "Name");
+    GSprimWriteStr(245.0f, 29.0f, "TCAZ");
+    GSprimWriteStr(295.0f, 29.0f, "Opaque");
+    GSprimWriteStr(470.0f, 29.0f, "Xluc");
+    GSprimDraw2DHLine(colHead, 20.0f, 620.0f, 42.0f);
+    cur = _layerBottom;
+    i = 0;
+    while (cur != NULL) {
+        s32 id = cur->id;
+        f32 x;
+        next = cur->next;
+        y = 12.0f * (f32)i + 47.0f;
+        GSprimDraw2DQuadWH(*perfColor(id < 8 ? _layerPerfColor[id] : _layerPerfUserColor[0]), 20.0f, y - 1.0f, 50.0f, 12.0f);
+        GSprimSetTextColor(colText);
+        GSprimWriteStr(25.0f, y, "%d", i);
+        GSprimWriteStr(55.0f, y, "%d", id);
+        if (&bFlag1 != NULL) {
+            bFlag1 = (cur->flags >> 1) & 1;
+        }
+        if (&bFlag2 != NULL) {
+            bFlag2 = (cur->flags >> 2) & 1;
+        }
+        if ((cur->flags & 1) != 1) {
+            GSprimSetTextColor(colLine);
+            bFlag1 = 0;
+            bFlag2 = 0;
+        }
+        GSprimSetTextSize(8.5f, 10.0f);
+        if ((u8)strlen(cur->name) + 1 <= 0x13) {
+            memcpy(nameBuf, cur->name, (u8)strlen(cur->name) + 1);
+        } else {
+            memcpy(nameBuf, cur->name, 0x12);
+            nameBuf[0x12] = 0;
+        }
+        GSprimWriteStr(85.0f, y, "%s", nameBuf);
         GSprimSetTextSize(10.0f, 10.0f);
-        GSprimSetTextWidth(1.0f);
-        p0->hw.blend[0] = 1;
-        p0->hw.blend[1] = 4;
-        p0->hw.blend[2] = 5;
-        p0->hw.blend[3] = 5;
-        p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 1);
-        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
-        p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 1);
-        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
-#ifdef __MWERKS__
-        GSmtx44Ortho((Mtx44)((s32) &spAC), 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-        p0->hw.projType = 1;
-        M2C_FIELD((u16)p0, f32 *, 0xD58) = spAC;
-#else
-        {
-            f32 ortho[4][4];
-            GSmtx44Ortho(ortho, 0.0f, 480.0f, 0.0f, 640.0f, 0.0f, -30000.0f);
-            spAC = ortho[0][0];
-            spB8 = ortho[0][3];
-            spC0 = ortho[1][1];
-            spC8 = ortho[1][3];
-            spD4 = ortho[2][2];
-            spD8 = ortho[2][3];
+        tcaz[0] = ((cur->flags & 0x200) ? cur->texCopy : NULL) != NULL ? 'O' : 'X';
+        if (cur->next == NULL) {
+            r0v = r1v = r2v = 0;
+        } else {
+            GSgfxLayer* n = cur->next;
+            u32 fl;
+            u8 t;
+            if (&bNextA != NULL) {
+                bNextA = (n->flags >> 6) & 1;
+            }
+            if (&bNextB != NULL) {
+                bNextB = (n->flags >> 7) & 1;
+            }
+            if (&bNextC != NULL) {
+                bNextC = (n->flags >> 8) & 1;
+            }
+            fl = cur->flags;
+            t = 0;
+            if ((fl & 8) || bNextA != 0) {
+                t = 1;
+            }
+            r0v = t != 0;
+            t = 0;
+            if ((fl & 0x10) || bNextB != 0) {
+                t = 1;
+            }
+            r1v = t != 0;
+            t = 0;
+            if ((fl & 0x20) || bNextC != 0) {
+                t = 1;
+            }
+            r2v = t != 0;
         }
-        p0->hw.projType = 1;
-        p0->hw.proj[0] = spAC;
-#endif
-        p0->hw.proj[1] = spB8;
-        p0->hw.proj[2] = spC0;
-        p0->hw.proj[3] = spC8;
-        p0->hw.proj[4] = spD4;
-        p0->hw.proj[5] = spD8;
-        temp_r16 = ((u8*)p0->matrixStack);
-        memcpy((void*)(LAYER_MSTACK_TOP(temp_r16) + 1), (const void*)mtxIdent, 0x30U);
-        temp_r3 = LAYER_MSTACK_TOP(temp_r16);
-        *temp_r3 |= 1;
-        p0->hw.fogNear = 0.0f;
-        p0->hw.fogFar = 30000.0f;
-        if ((u8) p0->hw.fogEnable != 0) {
-            if ((u8) p0->hw.fogRangeEnable != 0) {
-                p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 0x100);
-                p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 0x100);
-            }
-            p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 0x40);
-            p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
-            p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 0x40);
-            p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
+        if (&bR0 != NULL) {
+            bR0 = r0v;
         }
-        p0->dirty[0].geom = (s32) (p0->dirty[0].geom | 0x20);
-        var_r4 = 0;
-        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 1);
-        p0->dirty[1].geom = (s32) (p0->dirty[1].geom | 0x20);
-        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 1);
-        p0->hw.colorUpdate = 1;
-        p0->hw.alphaUpdate = 0;
-        p0->hw.zUpdate = 0;
-        p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 4);
-        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
-        p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 4);
-        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
-        p0->hw.zEnable = 0;
-        p0->hw.zFunc = 3;
-        p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 8);
-        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
-        p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 8);
-        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
-        p0->hw.alphaComp0 = 7;
-        p0->hw.alphaRef0 = 0;
-        p0->hw.alphaCmpOp = 0;
-        p0->hw.alphaComp1 = 7;
-        p0->hw.alphaRef1 = 0;
-        p0->hw.zCompLoc = 1;
-        p0->dirty[0].pe = (s32) (p0->dirty[0].pe | 0x10);
-        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 0x40);
-        p0->dirty[1].pe = (s32) (p0->dirty[1].pe | 0x10);
-        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 0x40);
-        p0->hw.cullMode = 0;
-        p0->dirty[0].raster = (s32) (p0->dirty[0].raster | 2);
-        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 2);
-        p0->dirty[1].raster = (s32) (p0->dirty[1].raster | 2);
-        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 2);
-        p0->hw.clipMode = 1;
-        p0->dirty[0].raster = (s32) (p0->dirty[0].raster | 4);
-        p0->dirty[0].groups = (s32) (p0->dirty[0].groups | 2);
-        p0->dirty[1].raster = (s32) (p0->dirty[1].raster | 4);
-        p0->dirty[1].groups = (s32) (p0->dirty[1].groups | 2);
-        var_r3 = (s32 *)(_layerBottom);
-        while (var_r3 != NULL) {
-            var_r3 = (s32 *)(*var_r3);
-            var_r4 += 1;
+        if (&bR1 != NULL) {
+            bR1 = r1v;
         }
-        sp50 = sp80;
-        GSprimDraw2DQuadWH(&sp50, sp80, 10.0f, 22.0f, 620.0f, (12.0f * (f32) var_r4) + 28.0f, M2C_ERROR( ));
-        sp4C = sp5C;
-        GSprimSetTextColor(LAYER_PRIMCOLOR(sp4C));
-        GSprimSetTextSize(10.0f, 10.0f);
-        GSprimWriteStr(25.0f, 29.0f, (char*)("#"));
-        GSprimWriteStr(50.0f, 29.0f, (char*)("ID"));
-        GSprimWriteStr(85.0f, 29.0f, (char*)("Name"));
-        GSprimWriteStr(245.0f, 29.0f, (char*)("TCAZ"));
-        GSprimWriteStr(295.0f, 29.0f, (char*)("Opaque"));
-        GSprimWriteStr(470.0f, 29.0f, (char*)("Xluc"));
-        var_r21 = 0;
-        sp48 = sp58;
-        GSprimDraw2DHLine(&sp48, 20.0f, 620.0f, 42.0f);
-        var_r20 = _layerBottom;
-loop_138:
-        if (var_r20 != NULL) {
-            temp_r22 = var_r20->id;
-            temp_r24 = var_r20->next;
-            f32 kc8463 = 12.0f;
-            f32 kc8495 = 47.0f;
-            var_f26 = (kc8463 * (f32) var_r21) + kc8495;
-            if (temp_r22 < 8) {
-                var_r5 = _layerPerfColor[temp_r22];
-            } else {
-                var_r5 = (u32)(_layerPerfUserColor);
-            }
-            temp_r4 = (u8) (var_r5 >> 0x10U);
-            M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, u8 *, 1) = (u8) (var_r5 >> 8U);
-            M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, s8 *, 2) = (s8) var_r5;
-            M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, u8 *, 0) = temp_r4;
-            M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, s8 *, 3) = 0xFF;
-            sp44 = (s32) M2C_FIELD(&c_localstatic3_GSgfxPerfColorToGSgfxCol, u8 *, 0);
-            GSprimDraw2DQuadWH(&sp44, (s32) temp_r4, 20.0f, var_f26 - 1.0f, 50.0f, 12.0f, M2C_ERROR( ));
-            sp40 = sp5C;
-            GSprimSetTextColor(LAYER_PRIMCOLOR(sp40));
-            GSprimWriteStr(25.0f, var_f26, (char*)("%d"), var_r21);
-            GSprimWriteStr(55.0f, var_f26, (char*)("%d"), temp_r22);
-            if (&spF != NULL) {
-                spF = ((u32) var_r20->flags >> 1U) & 1;
-            }
-            if (&spE != NULL) {
-                spE = ((u32) var_r20->flags >> 2U) & 1;
-            }
-            if ((u32) (var_r20->flags & 1) != 1) {
-                sp3C = sp64;
-                GSprimSetTextColor(LAYER_PRIMCOLOR(sp3C));
-                spF = 0;
-                spE = 0;
-            }
-            GSprimSetTextSize(8.5f, 10.0f);
-            if ((s32) (strlen((const char*)((s8 *) (var_r20 + 8))) + 1) <= 0x13) {
-                memcpy((void*)(&sp8C), (const void*)(var_r20 + 8), strlen((const char*)((s8 *) (var_r20 + 8))) + 1);
-            } else {
-                memcpy((void*)(&sp8C), (const void*)(var_r20->name), 0x12U);
-                sp9E = 0;
-            }
-            GSprimWriteStr(85.0f, var_f26, (char*)("%s"), &sp8C);
-            GSprimSetTextSize(10.0f, 10.0f);
-            if (var_r20->flags & 0x200) {
-                var_r0 = (u32)var_r20->texCopy;
-            } else {
-                var_r0 = 0U;
-            }
-            var_r0_2 = 0x58;
-            if (var_r0 != 0U) {
-                var_r0_2 = 0x4F;
-            }
-            sp84 = var_r0_2;
-            temp_r3_2 = var_r20->next;
-            if (temp_r3_2 == NULL) {
-                var_r6 = 0;
-                var_r4_2 = 0;
-                var_r3_2 = 0;
-            } else {
-                if (&sp8 != NULL) {
-                    sp8 = ((u32) temp_r3_2->flags >> 6U) & 1;
-                }
-                if (&sp9 != NULL) {
-                    sp9 = ((u32) temp_r3_2->flags >> 7U) & 1;
-                }
-                if (&spA != NULL) {
-                    spA = ((u32) temp_r3_2->flags >> 8U) & 1;
-                }
-                temp_r7 = var_r20->flags;
-                var_r3_3 = 0;
-                if ((temp_r7 & 8) || (sp8 != 0)) {
-                    var_r3_3 = 1;
-                }
-                var_r3_4 = 0;
-                var_r6 = var_r3_3 != 0;
-                if ((temp_r7 & 0x10) || (sp9 != 0)) {
-                    var_r3_4 = 1;
-                }
-                var_r3_5 = 0;
-                var_r4_2 = var_r3_4 != 0;
-                if ((temp_r7 & 0x20) || (spA != 0)) {
-                    var_r3_5 = 1;
-                }
-                var_r3_2 = var_r3_5 != 0;
-            }
-            if (&spD != NULL) {
-                spD = var_r6;
-            }
-            if (&spC != NULL) {
-                spC = var_r4_2;
-            }
-            if (&spB != NULL) {
-                spB = var_r3_2;
-            }
-            if (spD == 1) {
-                sp85 = 0x4F;
-            } else {
-                sp85 = 0x58;
-            }
-            if (spC == 1) {
-                sp86 = 0x4F;
-            } else {
-                sp86 = 0x58;
-            }
-            if (spB == 1) {
-                sp87 = 0x4F;
-            } else {
-                sp87 = 0x58;
-            }
-            if ((temp_r24 != NULL) && ((u32) (temp_r24->flags & 1) == 1)) {
-                temp_r0 = temp_r24->type;
-                switch (temp_r0) {
-                case 1:
-                    sp85 = 0x2B;
-                    sp86 = 0x2B;
-                case 4:
-                    sp84 = 0x2B;
-                    break;
-                }
-            }
-            sp88 = 0;
-            GSprimWriteStr(245.0f, var_f26, (char*)(&sp84), var_r4_2);
-            if (&sp7C != NULL) {
-                if ((u32) var_r20->passes[0].data != 0U) {
-                    sp7C = var_r20->passes[0].unkB0;
-                } else {
-                    sp7C = 0;
-                }
-            }
-            if (&sp78 != NULL) {
-                if ((u32) var_r20->passes[1].data != 0U) {
-                    sp78 = var_r20->passes[1].unkB0;
-                } else {
-                    sp78 = 0;
-                }
-            }
-            if (&sp74 != NULL) {
-                if ((u32) var_r20->passes[0].data != 0U) {
-                    sp74 = var_r20->passes[0].unkB8;
-                } else {
-                    sp74 = 0;
-                }
-            }
-            if (&sp70 != NULL) {
-                if ((u32) var_r20->passes[1].data != 0U) {
-                    sp70 = var_r20->passes[1].unkB8;
-                } else {
-                    sp70 = 0;
-                }
-            }
-            if (&sp6C != NULL) {
-                sp6C = var_r20->passes[0].size;
-            }
-            if (&sp68 != NULL) {
-                sp68 = var_r20->passes[1].size;
-            }
-            var_f27 = 295.0f;
-            if ((u32) var_r20->passes[0].data == 0U) {
-                var_r0_3 = 0;
-            } else if ((u8) var_r20->passes[0].flag == 0) {
-                var_r0_3 = 0;
-            } else {
-                temp_r4_2 = (unsigned char *)((s32*)legend + var_r30);
-                if ((temp_r4_2 + 4) != NULL) {
-                    temp_r0_2 = var_r20->passes[0].redirectId;
-                    if (temp_r0_2 == -1) {
-                        var_r26 = 0;
-                    } else if (temp_r0_2 < 0x10) {
-                        var_r26 = (GCsptr)(_layerIDTable[temp_r0_2]);
-                    }
-                    M2C_FIELD(temp_r4_2, s32 *, 4) = var_r26;
-                }
-                if ((temp_r4_2 + 8) != NULL) {
-                    M2C_FIELD(temp_r4_2, s32 *, 8) = (s32) var_r20->passes[0].redirectPass;
-                }
-                if ((temp_r4_2 + 0xC) != NULL) {
-                    M2C_FIELD(temp_r4_2, s32 *, 0xC) = (s32) var_r20->passes[0].redirectOffset;
-                }
-                var_r0_3 = 1;
-            }
-            if ((s16)var_r0_3 == 1) {
-                sp38 = sp54;
-                GSprimSetTextColor(LAYER_PRIMCOLOR(sp38));
-                GSprimWriteChar((s8) *((s32*)legend + var_r30), 295.0f, var_f26);
-                var_r30 += 0x10;
-                var_r31 += 1;
-                f32 kc15772 = 295.0f;
-                f32 kc15810 = 11.0f;
-                var_f27 = kc15772 + kc15810;
-            }
-            sp34 = sp5C;
-            GSprimSetTextColor(LAYER_PRIMCOLOR(sp34));
-            if (sp6C != 0) {
-                if (spF == 0) {
-                    sp30 = sp64;
-                    GSprimSetTextColor(LAYER_PRIMCOLOR(sp30));
-                } else if (sp7C == 0) {
-                    sp2C = sp60;
-                    GSprimSetTextColor(LAYER_PRIMCOLOR(sp2C));
-                }
-                if (sp7C != 0) {
-                    f32 kc16339 = 0.0009765625f;
-                    f32 kc16388 = 0.0009765625f;
-                    f32 kc16437 = 0.5f;
-                    f32 kc16477 = 0.0009765625f;
-                    GSprimWriteStr(var_f27, var_f26, "%.1f/%dK (%dK)", (u32) ((f32) sp6C * kc16339), (u32) (((f32) sp74 * kc16388) + kc16437), (f32) sp7C * kc16477);
-                } else {
-                    f32 kc16727 = 0.0009765625f;
-                    f32 kc16776 = 0.0009765625f;
-                    f32 kc16825 = 0.5f;
-                    GSprimWriteStr(var_f27, var_f26, "---/%dK (%dK)", (u32) ((f32) sp6C * kc16727), (u32) (((f32) sp74 * kc16776) + kc16825));
-                }
-            }
-            var_f27_2 = 470.0f;
-            if ((u32) var_r20->passes[1].data == 0U) {
-                var_r0_4 = 0;
-            } else if ((u8) var_r20->passes[1].flag == 0) {
-                var_r0_4 = 0;
-            } else {
-                temp_r4_3 = (unsigned char *)((s32*)legend + var_r30);
-                if ((temp_r4_3 + 4) != NULL) {
-                    temp_r0_3 = var_r20->passes[1].redirectId;
-                    if (temp_r0_3 == -1) {
-                        var_r25 = 0;
-                    } else if (temp_r0_3 < 0x10) {
-                        var_r25 = (GCsptr)(_layerIDTable[temp_r0_3]);
-                    }
-                    M2C_FIELD(temp_r4_3, s32 *, 4) = var_r25;
-                }
-                if ((temp_r4_3 + 8) != NULL) {
-                    M2C_FIELD(temp_r4_3, s32 *, 8) = (s32) var_r20->passes[1].redirectPass;
-                }
-                if ((temp_r4_3 + 0xC) != NULL) {
-                    M2C_FIELD(temp_r4_3, s32 *, 0xC) = (s32) var_r20->passes[1].redirectOffset;
-                }
-                var_r0_4 = 1;
-            }
-            if (var_r0_4 == 1) {
-                sp28 = sp54;
-                GSprimSetTextColor(LAYER_PRIMCOLOR(sp28));
-                GSprimWriteChar((s8) *((s32*)legend + var_r30), 470.0f, var_f26);
-                var_r30 += 0x10;
-                var_r31 += 1;
-                f32 kc18405 = 470.0f;
-                f32 kc18443 = 11.0f;
-                var_f27_2 = kc18405 + kc18443;
-            }
-            sp24 = sp5C;
-            GSprimSetTextColor(LAYER_PRIMCOLOR(sp24));
-            if (sp68 != 0) {
-                if (spE == 0) {
-                    sp20 = sp64;
-                    GSprimSetTextColor(LAYER_PRIMCOLOR(sp20));
-                } else if (sp78 == 0) {
-                    if (sp1C < sp60) sp1C = sp60;
-                    GSprimSetTextColor(LAYER_PRIMCOLOR(sp1C));
-                }
-                if (sp78 != 0) {
-                    f32 kc18974 = 0.0009765625f;
-                    f32 kc19023 = 0.0009765625f;
-                    f32 kc19072 = 0.5f;
-                    f32 kc19112 = 0.0009765625f;
-                    GSprimWriteStr(var_f27_2, var_f26, "%.1f/%dK (%dK)", (u32) ((f32) sp68 * kc18974), (u32) (((f32) sp70 * kc19023) + kc19072), (f32) sp78 * kc19112);
-                } else {
-                    f32 kc19364 = 0.0009765625f;
-                    f32 kc19413 = 0.0009765625f;
-                    f32 kc19462 = 0.5f;
-                    GSprimWriteStr(var_f27_2, var_f26, "---/%dK (%dK)", (u32) ((f32) sp68 * kc19364), (u32) (((f32) sp70 * kc19413) + kc19462));
-                }
-            }
-            var_r20 = temp_r24;
-            var_r21 += 1;
-            goto loop_138;
+        if (&bR2 != NULL) {
+            bR2 = r2v;
         }
-        if (var_r31 > 0) {
-            sp18 = sp80;
-            GSprimDraw2DQuadWH(&sp18, 0x43300000, 10.0f, (12.0f * (f32) var_r21) + 50.0f, 620.0f, (12.0f * (f32) var_r31) + 4.0f, 12.0f);
-            var_r17 = &spEC;
-            var_r18 = 0;
-            f32 kc20051 = 18.0f;
-            var_f26_2 = var_f26 + kc20051;
-            while (var_r18 < var_r31) {
-                sp14 = sp54;
-                GSprimSetTextColor(LAYER_PRIMCOLOR(sp14));
-                GSprimWriteChar((s8) M2C_FIELD(var_r17, u8 *, 0), 40.0f, var_f26_2);
-                sp10 = sp5C;
-                GSprimSetTextColor(LAYER_PRIMCOLOR(sp10));
-                temp_r16_2 = M2C_FIELD(var_r17, s32 *, 4);
-                if ((s32) (strlen((const char*)(temp_r16_2 + 8)) + 1) <= 0x13) {
-                    memcpy((void*)(&sp8C), (const void*)(temp_r16_2 + 8), strlen((const char*)(temp_r16_2 + 8)) + 1);
-                } else {
-                    memcpy((void*)(&sp8C), (const void*)(temp_r16_2 + 8), 0x12U);
-                    sp9E = 0;
-                }
-                var_r6_2 = (s32 *)("xluc");
-                if ((s32) M2C_FIELD(var_r17, s32 *, 8) == 0) {
-                    var_r6_2 = (s32 *)("opaque");
-                }
-                var_r4_3 = (s32 *)("after");
-                var_r4_3 = !((s32) M2C_FIELD(var_r17, s32 *, 0xC) == 1) ? var_r4_3 : (s32 *)("before");
-                GSprimWriteStr(60.0f, var_f26_2, "redirected %s: %s %s pass", var_r4_3, &sp8C, var_r6_2);
-                var_f26_2 += 12.0f;
-                var_r17 += 4;
-                var_r18 += 1;
+        if (bR0 == 1) {
+            tcaz[1] = 'O';
+        } else {
+            tcaz[1] = 'X';
+        }
+        if (bR1 == 1) {
+            tcaz[2] = 'O';
+        } else {
+            tcaz[2] = 'X';
+        }
+        if (bR2 == 1) {
+            tcaz[3] = 'O';
+        } else {
+            tcaz[3] = 'X';
+        }
+        if (next != NULL && (next->flags & 1) == 1) {
+            switch (next->type) {
+            case 1:
+                tcaz[1] = '+';
+                tcaz[2] = '+';
+            case 4:
+                tcaz[0] = '+';
+                break;
             }
+        }
+        tcaz[4] = 0;
+        GSprimWriteStr(245.0f, y, tcaz);
+        if (&limit0 != NULL) {
+            if (cur->passes[0].data != NULL) {
+                limit0 = cur->passes[0].unkB0;
+            } else {
+                limit0 = 0;
+            }
+        }
+        if (&limit1 != NULL) {
+            if (cur->passes[1].data != NULL) {
+                limit1 = cur->passes[1].unkB0;
+            } else {
+                limit1 = 0;
+            }
+        }
+        if (&used0 != NULL) {
+            if (cur->passes[0].data != NULL) {
+                used0 = cur->passes[0].unkB8;
+            } else {
+                used0 = 0;
+            }
+        }
+        if (&used1 != NULL) {
+            if (cur->passes[1].data != NULL) {
+                used1 = cur->passes[1].unkB8;
+            } else {
+                used1 = 0;
+            }
+        }
+        if (&size0 != NULL) {
+            size0 = cur->passes[0].size;
+        }
+        if (&size1 != NULL) {
+            size1 = cur->passes[1].size;
+        }
+
+        x = 295.0f;
+        if (statsLegendFill(cur->passes[0], LEGEND_AT(legendOff)) == 1) {
+            GSprimSetTextColor(colMark);
+            GSprimWriteChar(LEGEND_AT(legendOff)->sym, 295.0f, y);
+            legendOff += 0x10;
+            legendCount++;
+            x = 295.0f + 11.0f;
+        }
+        GSprimSetTextColor(colText);
+        if (size0 != 0) {
+            if (bFlag1 == 0) {
+                GSprimSetTextColor(colLine);
+            } else if (limit0 == 0) {
+                GSprimSetTextColor(colDim);
+            }
+            if (limit0 != 0) {
+                GSprimWriteStr(x, y, "%.1f/%dK (%dK)", GC_F2U32((f32)size0 * kb), GC_F2U32((f32)used0 * kb + 0.5f), (f32)limit0 * kb);
+            } else {
+                GSprimWriteStr(x, y, "---/%dK (%dK)", GC_F2U32((f32)size0 * kb), GC_F2U32((f32)used0 * kb + 0.5f));
+            }
+        }
+        x = 470.0f;
+        if (statsLegendFill(cur->passes[1], LEGEND_AT(legendOff)) == 1) {
+            GSprimSetTextColor(colMark);
+            GSprimWriteChar(LEGEND_AT(legendOff)->sym, 470.0f, y);
+            legendOff += 0x10;
+            legendCount++;
+            x = 470.0f + 11.0f;
+        }
+        GSprimSetTextColor(colText);
+        if (size1 != 0) {
+            if (bFlag2 == 0) {
+                GSprimSetTextColor(colLine);
+            } else if (limit1 == 0) {
+                GSprimSetTextColor(colDim);
+            }
+            if (limit1 != 0) {
+                GSprimWriteStr(x, y, "%.1f/%dK (%dK)", GC_F2U32((f32)size1 * kb), GC_F2U32((f32)used1 * kb + 0.5f), (f32)limit1 * kb);
+            } else {
+                GSprimWriteStr(x, y, "---/%dK (%dK)", GC_F2U32((f32)size1 * kb), GC_F2U32((f32)used1 * kb + 0.5f));
+            }
+        }
+        cur = next;
+        i++;
+    }
+    if (legendCount > 0) {
+        s32 k;
+        y += 18.0f;
+        GSprimDraw2DQuadWH(colBg, 10.0f, 12.0f * (f32)i + 50.0f, 620.0f, 12.0f * (f32)legendCount + 4.0f);
+        for (k = 0; k < legendCount; k++) {
+            RedirectLegend* e = &legend[k];
+            GSprimSetTextColor(colMark);
+            GSprimWriteChar(e->sym, 40.0f, y);
+            GSprimSetTextColor(colText);
+            if ((u8)strlen(e->layer->name) + 1 <= 0x13) {
+                memcpy(nameBuf, e->layer->name, (u8)strlen(e->layer->name) + 1);
+            } else {
+                memcpy(nameBuf, e->layer->name, 0x12);
+                nameBuf[0x12] = 0;
+            }
+            GSprimWriteStr(60.0f, y, "redirected %s: %s %s pass", e->offset == 1 ? "before" : "after", nameBuf, e->pass == 0 ? "opaque" : "xluc");
+            y += 12.0f;
         }
     }
 }
@@ -1271,12 +1057,12 @@ void GSgfxLayer::SendFifoToRenderer(_gsgfxLayerFifo* fifo) {
     }
     layerCalcFifoUsage(f);
     if (f->unkAE == 1) {
-        GSlogWrite("fifo overflow in [%s]: %s pass", name, curPass != 0 ? "xluc" : "opaque");
+        GSlogWrite("fifo overflow in [%s]: %s pass", name, curPass == 0 ? "opaque" : "xluc");
         return;
     }
     start = (u32*)f->unk88;
-    hook = hooks;
-    for (i = 0; i < 4; i++, hook++) {
+    for (i = 0; i < 4; i++) {
+        hook = &hooks[i];
         if (hook->callback == NULL) {
             break;
         }
@@ -1357,6 +1143,8 @@ void GSgfxLayer::Prerender() {
     if (flags & 1) {
         temp_r0 = type;
         switch (temp_r0) {
+        case 0:
+            break;
         case 1:
             ((GSgfxLayer*)(this))->EffectDistortion();
             break;

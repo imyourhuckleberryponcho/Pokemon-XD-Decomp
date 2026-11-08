@@ -236,7 +236,7 @@ void modelDistortionRender() {
                     M2C_NAMED(temp_r29, s32 *, 0x1760, dirty[1].groups) = (s32) (M2C_NAMED(temp_r29, s32 *, 0x1760, dirty[1].groups) | 2);
                     M2C_NAMED(temp_r29, s16 *, 0xD70, hw.scissor[0]) = 0;
                     M2C_NAMED(temp_r29, s16 *, 0xD72, hw.scissor[1]) = 0;
-                    GSgfxVideoGetEFBSize((u16*)(((u8*)(temp_r29) + 0xD74)), (u16*)(((u8*)(temp_r29) + 0xD76)));
+                    GSgfxVideoGetEFBSize((u16*)&M2C_NAMED(temp_r29, u16 *, 0xD74, hw.scissor[2]), (u16*)&M2C_NAMED(temp_r29, u16 *, 0xD76, hw.scissor[3]));
                     M2C_NAMED(temp_r29, s32 *, 0x16B8, dirty[0].raster) = (s32) (M2C_NAMED(temp_r29, s32 *, 0x16B8, dirty[0].raster) | 1);
                     M2C_NAMED(temp_r29, s32 *, 0x16A8, dirty[0].groups) = (s32) (M2C_NAMED(temp_r29, s32 *, 0x16A8, dirty[0].groups) | 2);
                     M2C_NAMED(temp_r29, s32 *, 0x1770, dirty[1].raster) = (s32) (M2C_NAMED(temp_r29, s32 *, 0x1770, dirty[1].raster) | 1);
@@ -656,7 +656,7 @@ void modelDustUpdate(_GSmodel* model) {
     scale.x = s;
     scale.y = s;
     scale.z = s;
-    dust = (ModelDust*)((u8*)model + 0x5FC);
+    dust = (ModelDust*)&M2C_NAMED(((GSmodelLayout*)(model)), f32 *, 0x5FC, unk5FC);
     for (i = 0; i < 2; i++, dust++) {
         if (dust->active == 0) {
             continue;

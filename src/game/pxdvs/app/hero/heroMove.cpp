@@ -211,7 +211,7 @@ char* pokemonBiosGetNicknamePtr(Pokemon*);
 void msgctrlSetValue(s32, GCuptr);
 s32 winMsgOpenField(u32, bool, bool);
 void winMsgCloseField(bool);
-u8 GSinputGetLeftStickXData(s32, s32);
+s8 GSinputGetLeftStickXData(s32, s32);
 s8 GSinputGetLeftStickYData(s32, s32);
 s8 GSinputGetRightStickXData(s32, s32);
 s8 GSinputGetRightStickYData(s32, s32);
@@ -1837,6 +1837,8 @@ static s32 abs(s8 v) {
     return (s8)((sign ^ v) - sign);
 }
 
+static inline s8 _stickLX(s32 m) { return GSinputGetLeftStickXData(1, m); }
+static inline s8 _stickLY(s32 m) { return GSinputGetLeftStickYData(1, m); }
 static void _getStickData(s8& a, s8& b, s8& c, s8& d) {
     s8 lx;
     s8 ly;
@@ -1848,10 +1850,10 @@ static void _getStickData(s8& a, s8& b, s8& c, s8& d) {
         rx = HeroMove.stickData[2];
         ry = HeroMove.stickData[3];
     } else {
-        lx = GSinputGetLeftStickXData(1, 1);
-        ly = GSinputGetLeftStickYData(1, 1);
-        rx = GSinputGetLeftStickXData(1, 0);
-        ry = GSinputGetLeftStickYData(1, 0);
+        lx = _stickLX(1);
+        ly = _stickLY(1);
+        rx = _stickLX(0);
+        ry = _stickLY(0);
         if (lx == 0 && ly == 0) {
             if (GSinputButtonsPressed(1) & 8) {
                 ly = -0x38;

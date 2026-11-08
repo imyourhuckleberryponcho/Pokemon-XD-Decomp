@@ -259,21 +259,79 @@ u8 FloorModuleInterface_exec(s32 *p0, s32 p1, s32 p2, s32 p3, bool p4);
 void FloorModuleList::dumpModule() {
 }
 #pragma pop
+
+extern "C++" {
+void FloorModuleList::waitFloorScript(FloorState p0) {
+    while (((FloorModuleList*)(this))->executeIsDone((FloorState)(p0)) == 0) {
+        GSthreadSwitch();
+    }
+}
+}
+
+u8 FloorModuleList::executeIsDone(FloorState state) {
+    FloorModuleEntry* entry;
+    for (entry = head; entry != NULL; entry = entry->getNext()) {
+        if (!entry->isBlock() && entry->isScriptRunning(state)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+extern "C++" {
+void FloorModuleList::executeAll(unsigned int arg, FloorState state, FloorModuleType type, FloorEnterMode mode, u32 group) {
+    FloorModuleEntry* entry;
+    FloorModuleEntry* prev;
+    FloorModuleEntry* next;
+
+    if (state == 6 || state == 8) {
+        entry = getFMEEnd();
+        while (entry != 0) {
+            prev = entry->getPrev();
+            if ((group == entry->getGroupID() || entry->isBlock() == 0) && (type == 0xFF || type == entry->getType())) {
+                entry->exec(state, arg, mode);
+            }
+            if (entry->getPrev() != 0) {
+                entry = entry->getPrev();
+            } else {
+                entry = prev;
+            }
+        }
+        return;
+    }
+    entry = head;
+    while (entry != 0) {
+        next = entry->getNext();
+        if ((group == entry->getGroupID() || entry->isBlock() == 0) && (type == 0xFF || type == entry->getType())) {
+            entry->exec(state, arg, mode);
+        }
+        if (entry->getNext() != 0) {
+            entry = entry->getNext();
+        } else {
+            entry = next;
+        }
+    }
+}
+}
 extern "C++" {
 void FloorModuleList::restorePopState(void* state, FloorStateMode mode, bool free) {
     if (state == 0) {
         return;
     }
     dumpModule();
-    u8* p = (u8*)state + 8;
-    u8* end = (u8*)state + ((u32*)state)[1];
-    if (((u32*)state)[0] != 0x464C4F52) {
+    u32* hdr = (u32*)state;
+    u32 id;
+    u32 size;
+    u32 magic = *hdr++;
+    u8* end = (u8*)state + *hdr++;
+    u8* p = (u8*)hdr;
+    if (magic != 0x464C4F52) {
         return;
     }
     while (p < end) {
-        u32* hdr = (u32*)p;
-        u32 id = *hdr++;
-        u32 size = *hdr++;
+        hdr = (u32*)p;
+        id = *hdr++;
+        size = *hdr++;
         p = (u8*)hdr;
         for (FloorModuleEntry* entry = head; entry != 0; entry = entry->getNext()) {
             FloorModuleInterface* iface = entry->getModuleInterface();
@@ -287,6 +345,60 @@ void FloorModuleList::restorePopState(void* state, FloorStateMode mode, bool fre
     if (free) {
         GSmemFree(state);
     }
+}
+}
+
+extern "C++" {
+void* FloorModuleList::makePushState(FloorStateMode mode) {
+    FloorModuleInterface* iface;
+    u32 size;
+    u8* p;
+    u8* data;
+    u32 total;
+    FloorModuleEntry* entry;
+
+    dumpModule();
+    total = 0;
+    for (entry = head; entry != 0; entry = entry->getNext()) {
+        iface = entry->getModuleInterface();
+        if (iface != 0 && iface->getPushSize != 0) {
+            size = iface->getPushSize(mode);
+            if (size != 0) {
+                total += ((size + 3) & ~3) + 8;
+            }
+        }
+    }
+    void* state = GSmemAlloc(total + 8);
+    if (state == 0) {
+        return 0;
+    }
+    pushSize = total + 8;
+    u32* hdr = (u32*)state;
+    *hdr++ = 0x464C4F52;
+    *hdr++ = total + 8;
+    p = (u8*)hdr;
+    for (entry = head; entry != 0; entry = entry->getNext()) {
+        iface = entry->getModuleInterface();
+        if (iface != 0 && iface->getPushSize != 0) {
+            size = iface->getPushSize(mode);
+            if (size == 0) {
+                if (mode == 3) {
+                    iface->pushState(mode, 0, 0);
+                }
+            } else {
+                size = (size + 3) & ~3;
+                if (iface->getID == 0) {
+                    return 0;
+                }
+                ((u32*)p)[0] = iface->getID();
+                data = p + 8;
+                ((u32*)p)[1] = size + 8;
+                iface->pushState(mode, data, size);
+                p = data + size;
+            }
+        }
+    }
+    return state;
 }
 }
 
@@ -347,116 +459,11 @@ void FloorModuleList::unregisterModuleGroup(u32 group) {
 }
 
 extern "C++" {
-void FloorModuleList::waitFloorScript(FloorState p0) {
-    while (((FloorModuleList*)(this))->executeIsDone((FloorState)(p0)) == 0) {
-        GSthreadSwitch();
-    }
-}
-}
-
-extern "C++" {
 #pragma peephole off
-u8 FloorModuleList::executeIsDone(FloorState state) {
-    FloorModuleEntry* entry;
-    for (entry = head; entry != NULL; entry = entry->getNext()) {
-        if (!entry->isBlock() && entry->isScriptRunning(state)) {
-            return 0;
-        }
-    }
-    return 1;
-}
 #pragma peephole reset
 }
 
 extern "C++" {
-void FloorModuleList::executeAll(unsigned int arg, FloorState state, FloorModuleType type, FloorEnterMode mode, u32 group) {
-    FloorModuleEntry* entry;
-    FloorModuleEntry* prev;
-    FloorModuleEntry* next;
-
-    if (state == 6 || state == 8) {
-        entry = getFMEEnd();
-        while (entry != 0) {
-            prev = entry->getPrev();
-            if ((group == entry->getGroupID() || entry->isBlock() == 0) && (type == 0xFF || type == entry->getType())) {
-                entry->exec(state, arg, mode);
-            }
-            if (entry->getPrev() != 0) {
-                entry = entry->getPrev();
-            } else {
-                entry = prev;
-            }
-        }
-        return;
-    }
-    entry = head;
-    while (entry != 0) {
-        next = entry->getNext();
-        if ((group == entry->getGroupID() || entry->isBlock() == 0) && (type == 0xFF || type == entry->getType())) {
-            entry->exec(state, arg, mode);
-        }
-        if (entry->getNext() != 0) {
-            entry = entry->getNext();
-        } else {
-            entry = next;
-        }
-    }
-}
-}
-
-extern "C++" {
-extern "C++" {
-void* FloorModuleList::makePushState(FloorStateMode mode) {
-    FloorModuleInterface* iface;
-    u32 size;
-    u8* p;
-    u8* data;
-    u32 total;
-    FloorModuleEntry* entry;
-
-    dumpModule();
-    total = 0;
-    for (entry = head; entry != 0; entry = entry->getNext()) {
-        iface = entry->getModuleInterface();
-        if (iface != 0 && iface->getPushSize != 0) {
-            size = iface->getPushSize(mode);
-            if (size != 0) {
-                total += ((size + 3) & ~3) + 8;
-            }
-        }
-    }
-    u32* state = (u32*)GSmemAlloc(total + 8);
-    if (state == 0) {
-        return 0;
-    }
-    pushSize = total + 8;
-    state[0] = 0x464C4F52;
-    p = (u8*)(state + 2);
-    state[1] = total + 8;
-    for (entry = head; entry != 0; entry = entry->getNext()) {
-        iface = entry->getModuleInterface();
-        if (iface != 0 && iface->getPushSize != 0) {
-            size = iface->getPushSize(mode);
-            if (size == 0) {
-                if (mode == 3) {
-                    iface->pushState(mode, 0, 0);
-                }
-            } else {
-                size = (size + 3) & ~3;
-                if (iface->getID == 0) {
-                    return 0;
-                }
-                ((u32*)p)[0] = iface->getID();
-                data = p + 8;
-                ((u32*)p)[1] = size + 8;
-                iface->pushState(mode, data, size);
-                p = data + size;
-            }
-        }
-    }
-    return state;
-}
-}
 
 extern "C++" {
 extern "C++" {
@@ -506,6 +513,37 @@ void FloorModuleList::unregisterModule(u32 p0) {
 }
 }
 
+u32 FloorModuleList::registerScriptModule(unsigned char p0, u32 p1, u32 p2, u32 p3, u32 p4) {
+    FloorModuleEntry *temp_r3;
+
+    temp_r3 = (FloorModuleEntry *)(((FloorModuleList*)(this))->findFree());
+    if (temp_r3 == NULL) {
+        return 0U;
+    }
+    ((FloorModuleEntry*)(temp_r3))->init();
+    ((FloorModuleEntry*)(temp_r3))->setScriptModule(p0, p1, p2, p3, p4);
+    ((FloorModuleList*)(this))->insertFuncIntoList((FloorModuleEntry*)(temp_r3));
+    ((FloorModuleEntry*)(temp_r3))->setHandle(((FloorModuleList*)(this))->getNewHandle());
+    return ((FloorModuleEntry*)(temp_r3))->getHandle();
+}
+
+u32 FloorModuleList::registerModule(unsigned char p0, u32 p1, FloorModuleInterface* p2) {
+    FloorModuleEntry *temp_r3;
+
+    if (p2 == NULL) {
+        return 0U;
+    }
+    temp_r3 = (FloorModuleEntry *)(((FloorModuleList*)(this))->findFree());
+    if (temp_r3 == NULL) {
+        return 0U;
+    }
+    ((FloorModuleEntry*)(temp_r3))->init();
+    ((FloorModuleEntry*)(temp_r3))->setModule(p0, p1, (FloorModuleInterface*)(p2));
+    ((FloorModuleList*)(this))->insertFuncIntoList((FloorModuleEntry*)(temp_r3));
+    ((FloorModuleEntry*)(temp_r3))->setHandle(((FloorModuleList*)(this))->getNewHandle());
+    return ((FloorModuleEntry*)(temp_r3))->getHandle();
+}
+
 extern "C++" {
 void FloorModuleList::removeFuncFromList(FloorModuleEntry* p0) {
     u32 temp_r31;
@@ -524,6 +562,37 @@ void FloorModuleList::removeFuncFromList(FloorModuleEntry* p0) {
     }
     ((FloorModuleEntry*)(p0))->setPrev((FloorModuleEntry*)(NULL));
     ((FloorModuleEntry*)(p0))->setNext((FloorModuleEntry*)(NULL));
+}
+}
+
+extern "C++" {
+void FloorModuleList::insertFuncIntoList(FloorModuleEntry* entry) {
+    if (head == NULL) {
+        head = entry;
+        return;
+    }
+    FloorModuleEntry* cur = head;
+    while (cur->getNext() != NULL) {
+        if (!(cur->getPriority() < entry->getPriority())) {
+            break;
+        }
+        cur = cur->getNext();
+    }
+    if (cur->getNext() == NULL && cur->getPriority() < entry->getPriority()) {
+        entry->setPrev(cur);
+        entry->setNext(NULL);
+        cur->setNext(entry);
+        return;
+    }
+    if (cur->getPrev() != NULL) {
+        cur->getPrev()->setNext(entry);
+    }
+    entry->setPrev(cur->getPrev());
+    entry->setNext(cur);
+    cur->setPrev(entry);
+    if (head == cur) {
+        head = entry;
+    }
 }
 }
 
@@ -1159,75 +1228,16 @@ extern "C++" {
 extern "C++" {
 #pragma push
 #pragma peephole off
-u32 FloorModuleList::registerScriptModule(unsigned char p0, u32 p1, u32 p2, u32 p3, u32 p4) {
-    FloorModuleEntry *temp_r3;
-
-    temp_r3 = (FloorModuleEntry *)(((FloorModuleList*)(this))->findFree());
-    if (temp_r3 == NULL) {
-        return 0U;
-    }
-    ((FloorModuleEntry*)(temp_r3))->init();
-    ((FloorModuleEntry*)(temp_r3))->setScriptModule(p0, p1, p2, p3, p4);
-    ((FloorModuleList*)(this))->insertFuncIntoList((FloorModuleEntry*)(temp_r3));
-    ((FloorModuleEntry*)(temp_r3))->setHandle(((FloorModuleList*)(this))->getNewHandle());
-    return ((FloorModuleEntry*)(temp_r3))->getHandle();
-}
 #pragma pop
 }
 
 extern "C++" {
 #pragma push
 #pragma peephole off
-u32 FloorModuleList::registerModule(unsigned char p0, u32 p1, FloorModuleInterface* p2) {
-    FloorModuleEntry *temp_r3;
-
-    if (p2 == NULL) {
-        return 0U;
-    }
-    temp_r3 = (FloorModuleEntry *)(((FloorModuleList*)(this))->findFree());
-    if (temp_r3 == NULL) {
-        return 0U;
-    }
-    ((FloorModuleEntry*)(temp_r3))->init();
-    ((FloorModuleEntry*)(temp_r3))->setModule(p0, p1, (FloorModuleInterface*)(p2));
-    ((FloorModuleList*)(this))->insertFuncIntoList((FloorModuleEntry*)(temp_r3));
-    ((FloorModuleEntry*)(temp_r3))->setHandle(((FloorModuleList*)(this))->getNewHandle());
-    return ((FloorModuleEntry*)(temp_r3))->getHandle();
-}
 #pragma pop
 }
 
 extern "C++" {
-extern "C++" {
-void FloorModuleList::insertFuncIntoList(FloorModuleEntry* entry) {
-    if (head == NULL) {
-        head = entry;
-        return;
-    }
-    FloorModuleEntry* cur = head;
-    while (cur->getNext() != NULL) {
-        if (!(cur->getPriority() < entry->getPriority())) {
-            break;
-        }
-        cur = cur->getNext();
-    }
-    if (cur->getNext() == NULL && cur->getPriority() < entry->getPriority()) {
-        entry->setPrev(cur);
-        entry->setNext(NULL);
-        cur->setNext(entry);
-        return;
-    }
-    if (cur->getPrev() != NULL) {
-        cur->getPrev()->setNext(entry);
-    }
-    entry->setPrev(cur->getPrev());
-    entry->setNext(cur);
-    cur->setPrev(entry);
-    if (head == cur) {
-        head = entry;
-    }
-}
-}
 
 extern "C++" {
 extern "C++" {
@@ -1374,6 +1384,14 @@ void FloorModuleEntry::setScriptModule(unsigned char p0, u32 p1, u32 p2, u32 p3,
 }
 }
 
+void FloorModuleEntry::setModule(unsigned char priority, u32 group, FloorModuleInterface* iface) {
+    init();
+    type = FloorTypeFunc;
+    groupID = group;
+    this->priority = priority;
+    *(FloorModuleInterface*)module = *iface;
+}
+
 }
 
 extern "C++" {
@@ -1391,17 +1409,102 @@ void FloorModuleEntry::init() {
 }
 
 extern "C++" {
-void FloorModuleEntry::setModule(unsigned char priority, u32 group, FloorModuleInterface* iface) {
-    init();
-    type = FloorTypeFunc;
-    groupID = group;
-    this->priority = priority;
-    *(FloorModuleInterface*)module = *iface;
-}
 
 FloorModuleEntry::FloorModuleEntry() {
     ((FloorModuleEntry*)(this))->init();
     return;
+}
+
+u8 FloorScriptModule::isRunning(FloorState state) {
+    ScriptTpcNode* node = stateToNode(state);
+    if (node != NULL) {
+        return node->isRunning();
+    }
+    return 0;
+}
+
+extern "C++" {
+void FloorScriptModule::kill() {
+    ((ScriptTpcNode*)((ScriptTpcNode *) this))->terminate();
+    ((ScriptTpcNode*)((u8*)this + 8))->terminate();
+    ((ScriptTpcNode*)((u8*)this + 0x10))->terminate();
+}
+}
+
+extern "C++" {
+void FloorScriptModule::terminate() {
+    ((ScriptTpcNode*)((ScriptTpcNode *) this))->terminate();
+    ((ScriptTpcNode*)((u8*)this + 8))->terminate();
+    ((ScriptTpcNode*)((u8*)this + 0x10))->terminate();
+}
+}
+
+extern "C++" {
+void FloorScriptModule::unblock() {
+    ((ScriptTpcNode*)((ScriptTpcNode *) this))->unblock();
+    ((ScriptTpcNode*)((u8*)this + 8))->unblock();
+    ((ScriptTpcNode*)((u8*)this + 0x10))->unblock();
+}
+}
+
+extern "C++" {
+void FloorScriptModule::block() {
+    ((ScriptTpcNode*)((ScriptTpcNode *) this))->block();
+    ((ScriptTpcNode*)((u8*)this + 8))->block();
+    ((ScriptTpcNode*)((u8*)this + 0x10))->block();
+}
+}
+
+void FloorScriptModule::exec(FloorState state, unsigned char type, u32 group, FloorEnterMode mode) {
+    ScriptTpcNode* node = stateToNode(state);
+    if (node != NULL) {
+        node->exec(type, group, mode);
+    }
+}
+
+ScriptTpcNode* FloorScriptModule::stateToNode(FloorState state) {
+    switch (state) {
+    case 2:
+        return &init;
+    case 4:
+        return &enter;
+    case 6:
+        return &exit;
+    }
+    return NULL;
+}
+
+u8 ScriptTpcNode::isRunning() {
+    if (!getScript()->isRunningThread(script)) {
+        script = 0;
+        return 0;
+    }
+    return 1;
+}
+
+void ScriptTpcNode::exec(unsigned char, u32, FloorEnterMode mode) {
+    GSscript::tigaVariant args[4];
+    args[0].setInteger(mode);
+    args[1].setInteger(0);
+    args[2].setInteger(0);
+    args[3].setInteger(0);
+    script = getScript()->runParams(id, args, 4, true);
+}
+
+#pragma push
+#pragma dont_inline on
+void ScriptTpcNode::terminate() {
+    getScript()->deleteThread(script);
+}
+
+#pragma push
+#pragma dont_inline on
+void ScriptTpcNode::unblock() {
+    getScript()->unblockThread(script);
+}
+
+void ScriptTpcNode::block() {
+    getScript()->blockThread(script);
 }
 
 extern "C++" {
@@ -1411,6 +1514,163 @@ GSscript::Tiga* ScriptTpcNode::getScript() {
     }
     return floorGetCurentScript();
 }
+
+void ScriptTpcNode::setID(u32 newID) {
+    id = newID;
+    script = 0;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+
+#pragma defer_codegen on
+#ifndef __MWERKS__
+inline
+#endif
+void GSscript::tigaVariant::setInteger(s32 value) {
+    type = 1;
+    this->value = value;
+}
+
+#pragma push
+#pragma peephole off
+void FloorScriptModule::setIDs(u32 initID, u32 enterID, u32 exitID) {
+    init.setID(initID);
+    enter.setID(enterID);
+    exit.setID(exitID);
+}
+#pragma pop
+
+bool FloorModuleEntry::isTpcScript() const {
+    return type == 2;
+}
+
+bool FloorModuleEntry::isEmpty() const {
+    return handle == 0;
+}
+
+u8 FloorModuleEntry::getPriority() const {
+    return priority;
+}
+
+void FloorModuleEntry::setNext(FloorModuleEntry* entry) {
+    next = entry;
+}
+
+void FloorModuleEntry::setPrev(FloorModuleEntry* entry) {
+    prev = entry;
+}
+
+u32 FloorModuleList::getNewHandle() {
+    u32 temp_r4;
+
+    nextHandle = nextHandle + 1;
+    temp_r4 = nextHandle;
+    if (temp_r4 == 0) {
+        nextHandle = temp_r4 + 1;
+    }
+    return nextHandle;
+}
+
+void FloorModuleEntry::setHandle(u32 newHandle) {
+    handle = newHandle;
+}
+
+u32 FloorModuleEntry::getHandle() const {
+    return handle;
+}
+
+FloorModuleInterface* FloorModuleEntry::getModuleInterface() {
+    if ((s32) type == 0) {
+        return (FloorModuleInterface*)module;
+    }
+    return NULL;
+}
+
+FloorModuleEntry* FloorModuleEntry::getPrev() const {
+    return prev;
+}
+
+u32 FloorModuleEntry::getGroupID() const {
+    return groupID;
+}
+
+FloorModuleType FloorModuleEntry::getType() const {
+    return type;
+}
+
+bool FloorModuleEntry::isBlock() const {
+    return blocked;
+}
+
+FloorModuleEntry* FloorModuleEntry::getNext() const {
+    return next;
+}
+
+static const char* _floorStateToStr(FloorState state) {
+    switch (state) {
+    case 0:
+        return "FloorStateUnused";
+    case 1:
+        return "FloorStateCreate";
+    case 2:
+        return "FloorStatePre";
+    case 3:
+        return "FloorStatePreWait";
+    case 4:
+        return "FloorStateNormal";
+    case 5:
+        return "FloorStateNormalWait";
+    case 6:
+        return "FloorStatePost";
+    case 7:
+        return "FloorStatePostWait";
+    case 8:
+        return "FloorStateFree";
+    }
+    return "unknownState";
+}
+
+static const char* _floorTypeToStr(FloorModuleType type) {
+    switch (type) {
+    case 0:
+        return "FloorTypeFunc";
+    case 1:
+        return "FloorTypeGSvm";
+    case 2:
+        return "FloorTypeTpc";
+    case 3:
+        return "FloorTypeSingleGSvm";
+    case 4:
+        return "FloorTypeSingleTpc";
+    case 5:
+        return "FloorTypeAny";
+    }
+    return "FloorUnknown";
+}
+
+extern "C" {
+void FloorModuleInterface_clear(FloorModuleInterface* p0) {
+    memset((void*)(p0), 0, sizeof(FloorModuleInterface));
+}
+}
+
+static void _dispModuleName(FloorModuleInterface* p0, const char* p1) {
+}
+
 extern "C" {
 #define IFACE(p) ((FloorModuleInterface*)(p))
 u8 FloorModuleInterface_exec(s32 *p0, s32 p1, s32 p2, s32 p3, bool p4) {
@@ -1472,290 +1732,4 @@ sw0_c7:;
 block_16:
     return 0U;
 }
-}
-
-}
-
-}
-
-extern "C++" {
-u8 FloorScriptModule::isRunning(FloorState state) {
-    ScriptTpcNode* node = stateToNode(state);
-    if (node != NULL) {
-        return node->isRunning();
-    }
-    return 0;
-}
-
-#pragma push
-#pragma peephole off
-void FloorScriptModule::exec(FloorState state, unsigned char type, u32 group, FloorEnterMode mode) {
-    ScriptTpcNode* node = stateToNode(state);
-    if (node != NULL) {
-        node->exec(type, group, mode);
-    }
-}
-#pragma pop
-extern "C++" {
-void FloorScriptModule::kill() {
-    ((ScriptTpcNode*)((ScriptTpcNode *) this))->terminate();
-    ((ScriptTpcNode*)((u8*)this + 8))->terminate();
-    ((ScriptTpcNode*)((u8*)this + 0x10))->terminate();
-}
-}
-
-extern "C++" {
-void FloorScriptModule::terminate() {
-    ((ScriptTpcNode*)((ScriptTpcNode *) this))->terminate();
-    ((ScriptTpcNode*)((u8*)this + 8))->terminate();
-    ((ScriptTpcNode*)((u8*)this + 0x10))->terminate();
-}
-}
-
-extern "C++" {
-void FloorScriptModule::unblock() {
-    ((ScriptTpcNode*)((ScriptTpcNode *) this))->unblock();
-    ((ScriptTpcNode*)((u8*)this + 8))->unblock();
-    ((ScriptTpcNode*)((u8*)this + 0x10))->unblock();
-}
-}
-
-extern "C++" {
-void FloorScriptModule::block() {
-    ((ScriptTpcNode*)((ScriptTpcNode *) this))->block();
-    ((ScriptTpcNode*)((u8*)this + 8))->block();
-    ((ScriptTpcNode*)((u8*)this + 0x10))->block();
-}
-}
-
-extern "C++" {
-extern "C++" {
-ScriptTpcNode* FloorScriptModule::stateToNode(FloorState state) {
-    switch (state) {
-    case 2:
-        return &init;
-    case 4:
-        return &enter;
-    case 6:
-        return &exit;
-    }
-    return NULL;
-}
-extern "C++" {
-#pragma push
-#pragma dont_inline on
-#pragma push
-#pragma peephole off
-u8 ScriptTpcNode::isRunning() {
-    if (!getScript()->isRunningThread(script)) {
-        script = 0;
-        return 0;
-    }
-    return 1;
-}
-#pragma pop
-extern "C++" {
-#pragma push
-#pragma dont_inline on
-#pragma push
-#pragma peephole off
-void ScriptTpcNode::exec(unsigned char, u32, FloorEnterMode mode) {
-    GSscript::tigaVariant args[4];
-    args[0].setInteger(mode);
-    args[1].setInteger(0);
-    args[2].setInteger(0);
-    args[3].setInteger(0);
-    script = getScript()->runParams(id, args, 4, true);
-}
-#pragma pop
-extern "C++" {
-#pragma push
-#pragma dont_inline on
-void ScriptTpcNode::terminate() {
-    getScript()->deleteThread(script);
-}
-extern "C++" {
-#pragma push
-#pragma dont_inline on
-void ScriptTpcNode::unblock() {
-    getScript()->unblockThread(script);
-}
-
-void ScriptTpcNode::block() {
-    getScript()->blockThread(script);
-}
-#pragma pop
-}
-#pragma pop
-}
-#pragma pop
-}
-#pragma pop
-}
-
-}
-
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-void ScriptTpcNode::setID(u32 newID) {
-    id = newID;
-    script = 0;
-}
-extern "C" {
-extern "C++" {
-static void _dispModuleName(FloorModuleInterface* p0, const char* p1) {
-}
-}
-
-extern "C" {
-void FloorModuleInterface_clear(FloorModuleInterface* p0) {
-    memset((void*)(p0), 0, sizeof(FloorModuleInterface));
-}
-extern "C++" {
-#pragma push
-#pragma peephole off
-void FloorScriptModule::setIDs(u32 initID, u32 enterID, u32 exitID) {
-    init.setID(initID);
-    enter.setID(enterID);
-    exit.setID(exitID);
-}
-#pragma pop
-}
-
-}
-
-extern "C++" {
-static const char* _floorTypeToStr(FloorModuleType type) {
-    switch (type) {
-    case 0:
-        return "FloorTypeFunc";
-    case 1:
-        return "FloorTypeGSvm";
-    case 2:
-        return "FloorTypeTpc";
-    case 3:
-        return "FloorTypeSingleGSvm";
-    case 4:
-        return "FloorTypeSingleTpc";
-    case 5:
-        return "FloorTypeAny";
-    }
-    return "FloorUnknown";
-}
-
-static const char* _floorStateToStr(FloorState state) {
-    switch (state) {
-    case 0:
-        return "FloorStateUnused";
-    case 1:
-        return "FloorStateCreate";
-    case 2:
-        return "FloorStatePre";
-    case 3:
-        return "FloorStatePreWait";
-    case 4:
-        return "FloorStateNormal";
-    case 5:
-        return "FloorStateNormalWait";
-    case 6:
-        return "FloorStatePost";
-    case 7:
-        return "FloorStatePostWait";
-    case 8:
-        return "FloorStateFree";
-    }
-    return "unknownState";
-}
-}
-}
-
-FloorModuleEntry* FloorModuleEntry::getNext() const {
-    return next;
-}
-
-bool FloorModuleEntry::isBlock() const {
-    return blocked;
-}
-
-FloorModuleType FloorModuleEntry::getType() const {
-    return type;
-}
-
-u32 FloorModuleEntry::getGroupID() const {
-    return groupID;
-}
-
-FloorModuleEntry* FloorModuleEntry::getPrev() const {
-    return prev;
-}
-extern "C++" {
-FloorModuleInterface* FloorModuleEntry::getModuleInterface() {
-    if ((s32) type == 0) {
-        return (FloorModuleInterface*)module;
-    }
-    return NULL;
-}
-}
-
-u32 FloorModuleEntry::getHandle() const {
-    return handle;
-}
-
-void FloorModuleEntry::setHandle(u32 newHandle) {
-    handle = newHandle;
-}
-extern "C++" {
-u32 FloorModuleList::getNewHandle() {
-    u32 temp_r4;
-
-    nextHandle = nextHandle + 1;
-    temp_r4 = nextHandle;
-    if (temp_r4 == 0) {
-        nextHandle = temp_r4 + 1;
-    }
-    return nextHandle;
-}
-}
-
-void FloorModuleEntry::setPrev(FloorModuleEntry* entry) {
-    prev = entry;
-}
-
-void FloorModuleEntry::setNext(FloorModuleEntry* entry) {
-    next = entry;
-}
-
-u8 FloorModuleEntry::getPriority() const {
-    return priority;
-}
-
-bool FloorModuleEntry::isEmpty() const {
-    return handle == 0;
-}
-extern "C++" {
-bool FloorModuleEntry::isTpcScript() const {
-    return type == 2;
-}
-}
-
-#ifndef __MWERKS__
-inline
-#endif
-void GSscript::tigaVariant::setInteger(s32 value) {
-    type = 1;
-    this->value = value;
 }

@@ -16,7 +16,7 @@ enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 }
 
 struct DarkPokemon {
 public:
-    u8 unk0x0[60];
+    u8 unk0x0[0x48];
     u16 getPokemonID() const;
     s32 getInitDarkPointDirect() const;
     s32 getDarkPointDirect() const;

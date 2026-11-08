@@ -1152,11 +1152,19 @@ int menuPocketInputNumber(tagWINDOW_WORK* w, int value, int max, u16 keys, int d
                 } else if (d0 < 9) {
                     value += p;
                 } else if (pos >= digits - 1) {
-                    value = nines(digits);
+                    value = 0;
+                    for (int i = 0; i < digits; i++) {
+                        value *= 10;
+                        value += 9;
+                    }
                 } else if (d1 < 9) {
                     value += p;
                 } else if (pos >= digits - 2) {
-                    value = nines(digits);
+                    value = 0;
+                    for (int i = 0; i < digits; i++) {
+                        value *= 10;
+                        value += 9;
+                    }
                 } else if (d2 < 9) {
                     value += p;
                 } else {
@@ -1185,13 +1193,11 @@ int menuPocketInputNumber(tagWINDOW_WORK* w, int value, int max, u16 keys, int d
                 }
             }
         } else if (keys & 8) {
-            w->cursor++;
-            if (w->cursor >= digits) {
+            if (++w->cursor >= digits) {
                 w->cursor = (s8)(digits - 1);
             }
         } else if (keys & 4) {
-            w->cursor--;
-            if (w->cursor < 0) {
+            if (--w->cursor < 0) {
                 w->cursor = 0;
             }
         }
@@ -2029,7 +2035,7 @@ int _execActionMenu(int tab, u16 item, int pos, u16* out)
     }
     int count = _makeActMenu(menu, 4, tab, pos);
     _setExplanationMsgID(0x4296);
-    int sel = _actionMenuOpen(menu, (u16)count);
+    int sel = _actionMenuOpen(menu, count);
     if (sel < 0) {
         return 1;
     }

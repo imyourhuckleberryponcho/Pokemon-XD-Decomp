@@ -1,4 +1,5 @@
 #pragma pool_strings off
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
@@ -165,10 +166,10 @@ static void _movieStreamPrepareGetDataCallback(s32 error, void* arg, GCsptr size
 static void _movieStreamPrepareGetDataCallback_Exec(__GSmovieStreaming* s, u32 offset, u32 size);
 
 static inline u32 _audioChunkSamples(THPPlayer* p) {
-    return ((u32)(0.5f + (f32)(p->audioInfo.sndFrequency * 60) / 1000.0f) + 0x1F) & ~0x1F;
+    return (GC_F2U32(0.5f + (f32)(p->audioInfo.sndFrequency * 60) / 1000.0f) + 0x1F) & ~0x1F;
 }
 static inline u32 _audioChunkSamplesFreq(u32 freq) {
-    return ((u32)(0.5f + (f32)(freq * 60) / 1000.0f) + 0x1F) & ~0x1F;
+    return (GC_F2U32(0.5f + (f32)(freq * 60) / 1000.0f) + 0x1F) & ~0x1F;
 }
 
 extern "C" void _StreamQuit(__GSmovieStreaming* s) {
@@ -349,7 +350,7 @@ static u32 StreamUpdateCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 
 static u32 GetAudioSample(__GSmovieStreaming* s, s16* left, s16* right, u32 count, s32* status) {
     THPPlayer* p = s->player;
     THPAudioBuffer* ab;
-    u16 n;
+    u32 n;
     s16* src;
     if (p->playAudioBuffer == 0) {
         if (p->audioBuffer[p->audioGetIdx].ready == 0) {
@@ -476,7 +477,7 @@ static inline void _movieStreamVideoDecode(__GSmovieStreaming* s) {
             }
             {
                 u32 n = p->header.numFrames;
-                if ((u32)(rb->frameNumber + p->initReadFrame) % n == n - 1 && !(p->playFlag & 1)) {
+                if (GC_MODU((u32)(rb->frameNumber + p->initReadFrame), n) == n - 1 && !(p->playFlag & 1)) {
                     _VideoDecode(s, rb, ts);
                 }
             }
@@ -624,9 +625,19 @@ extern "C" void _movieStreamPrepareGetData(__GSmovieStreaming* s) {
 }
 
 static void _movieStreamPrepareGetDataCallback(s32, void* size, GCsptr arg) {
-    u32 size_c = (u32)size;
     __GSmovieStreaming* s = (__GSmovieStreaming*)arg;
-    _movieStreamAdvanceReadOffset(s);
+    u32 size_c = (u32)size;
+    THPPlayer* p = s->player;
+    p->readOffset += 0x8000;
+    if (p->onMemory != 0) {
+        if (p->readOffset >= p->header.movieDataSize) {
+            p->readOffset = 0;
+        }
+    } else if (p->readOffset >= p->header.movieDataSize) {
+        p->readOffset = 0;
+    } else if (p->readOffset >= GSfsysStreamGetCacheSize()) {
+        p->readOffset = 0;
+    }
     _movieStreamPrepareGetDataCallback_Exec(s, 0, size_c);
 }
 

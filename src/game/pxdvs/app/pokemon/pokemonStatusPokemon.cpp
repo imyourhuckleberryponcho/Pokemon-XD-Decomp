@@ -1,4 +1,5 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
+#include <game/gcdata.h>
 #include <game/bitfield.h>
 #include <game/pxdvs/app/pokemon/pokemonBios.hpp>
 #include <game/pxdvs/app/pokemon/pokemonDB.hpp>
@@ -337,7 +338,11 @@ u8 DarkPokemon::getSnatchIndex() const {
     return *(reinterpret_cast<const u8*>(this) + 0x13);
 }
 void DarkPokemon::getPlace(darkPokemonWhere& where, u8& floor) const {
+#ifdef __MWERKS__
     where = static_cast<darkPokemonWhere>(reinterpret_cast<const DarkPokemonPlaceBits*>(this)->where);
+#else
+    where = static_cast<darkPokemonWhere>((GC_BYTES32(this) >> 15) & 7);
+#endif
     floor = *(reinterpret_cast<const u8*>(this) + 0x11);
 }
 void DarkPokemon::setWazaNew(u8 index, bool isNew) {
@@ -364,11 +369,20 @@ u32 DarkPokemon::getPoolFriendLevel() const {
     return *reinterpret_cast<const u16*>(reinterpret_cast<const u8*>(this) + 0x18);
 }
 void DarkPokemon::setPoolExp(u32 exp) {
+#ifdef __MWERKS__
     DarkPokemonPoolExpBits* bits = reinterpret_cast<DarkPokemonPoolExpBits*>(reinterpret_cast<u8*>(this) + 0x04);
     bits->exp = exp;
+#else
+    u8* p = reinterpret_cast<u8*>(this) + 0x04;
+    GC_SETBYTES32(p, (GC_BYTES32(p) & 0xFFF) | ((exp & 0xFFFFF) << 12));
+#endif
 }
 u32 DarkPokemon::getPoolExp() const {
+#ifdef __MWERKS__
     return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(this) + 0x04) >> 12;
+#else
+    return GC_BYTES32(reinterpret_cast<const u8*>(this) + 0x04) >> 12;
+#endif
 }
 void DarkPokemon::setDarkPointDirect(s32 value) {
     *reinterpret_cast<s32*>(reinterpret_cast<u8*>(this) + 0x24) = value;
@@ -383,11 +397,20 @@ bool DarkPokemon::isReversMode() const {
     return reinterpret_cast<const DarkPokemonReverseBits*>(reinterpret_cast<const u8*>(this) + 0x01)->revers != 0;
 }
 void DarkPokemon::setSnatchFromWho(darkPokemonSnatchWho who) {
+#ifdef __MWERKS__
     u16* value = reinterpret_cast<u16*>(this);
     *value = (*value & ~0x0180) | ((static_cast<u16>(who) & 3) << 7);
+#else
+    u8* value = reinterpret_cast<u8*>(this);
+    gc_wr16(value, (u16)((gc_rd16(value) & ~0x0180) | ((static_cast<u16>(who) & 3) << 7)));
+#endif
 }
 darkPokemonSnatchWho DarkPokemon::getSnatchFromWho() const {
+#ifdef __MWERKS__
     return static_cast<darkPokemonSnatchWho>((*reinterpret_cast<const u16*>(this) >> 7) & 3);
+#else
+    return static_cast<darkPokemonSnatchWho>((gc_rd16(reinterpret_cast<const u8*>(this)) >> 7) & 3);
+#endif
 }
 void DarkPokemon::setSnatchInfoLevel(u8 level) {
     reinterpret_cast<DarkPokemonStatusBits*>(this)->snatchInfoLevel = level;
@@ -600,7 +623,7 @@ u16 Pokemon::getHp() const {
     return hp;
 }
 char* Pokemon::getNicknamePtr() {
-    return &nickname[0];
+    return (char*)&nickname[0];
 }
 u8 Pokemon::getNimblenessRnd() const {
     return statusRnd.getNimbleness();

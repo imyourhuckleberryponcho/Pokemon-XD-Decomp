@@ -159,7 +159,8 @@ void GSmemPoolAllocator::init(u32 num, u32 size) {
         *(u8**)cell = next;
         cell = next;
     }
-    *(u8**)prev = NULL;
+    cell = prev;
+    *(u8**)cell = NULL;
 }
 
 static void _setDabr(u32 addr) {}

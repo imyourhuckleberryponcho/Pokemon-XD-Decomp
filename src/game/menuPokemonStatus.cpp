@@ -1173,7 +1173,7 @@ static inline u32 _seikakuName(void* p0) { return pokemonSeikakuDataBiosGetName(
 void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     u16 id;
     u32 val;
-    s16 x;
+    s32 x;
     MenuStatus* st = &_menuStatus;
     Pokemon* pk = st->pokemon;
     void* pdata;
@@ -1973,7 +1973,7 @@ void _menuPokemonStatusMakeRibbon(Pokemon* pokemon, RIBBON_WORK* work) {
     u32 k;
     s32 j;
     int n;
-    int idx = 0;
+    int idx;
     int count;
     int i;
     for (i = 0; i < 4; i++) {
@@ -1981,14 +1981,19 @@ void _menuPokemonStatusMakeRibbon(Pokemon* pokemon, RIBBON_WORK* work) {
             work->grid[j][i] = -1;
         }
     }
+    idx = 0;
     for (k = 0; k < 10; k++) {
         n = pokemonGetStatus(pokemon, 0, ribbon_mapping_tbl[k].id, 0);
         if (n > ribbon_mapping_tbl[k].max) {
             n = ribbon_mapping_tbl[k].max;
         }
-        for (i = 0; i < n; i++) {
-            work->grid[idx % 9][idx / 9] = ribbon_mapping_tbl[k].start + i;
-            idx++;
+        if (n != 0) {
+            for (i = 0; i < n; i++) {
+                work->grid[idx % 9][idx / 9] = ribbon_mapping_tbl[k].start + i;
+                idx++;
+            }
+        } else {
+            idx += ribbon_mapping_tbl[k].max;
         }
     }
     idx = 0;
@@ -1997,9 +2002,13 @@ void _menuPokemonStatusMakeRibbon(Pokemon* pokemon, RIBBON_WORK* work) {
         if (n > exribbon_mapping_tbl[k].max) {
             n = exribbon_mapping_tbl[k].max;
         }
-        for (i = 0; i < n; i++) {
-            work->grid[idx][3] = exribbon_mapping_tbl[k].start + i;
-            idx++;
+        if (n != 0) {
+            for (i = 0; i < n; i++) {
+                work->grid[idx][3] = exribbon_mapping_tbl[k].start + i;
+                idx++;
+            }
+        } else {
+            idx += exribbon_mapping_tbl[k].max;
         }
     }
     count = 0;
@@ -2158,7 +2167,7 @@ void menuPokemonStatusDrawRibbon(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         if (idx < 0) {
             break;
         }
-        volatile s32 col = idx % 9;
+        s32 col = idx % 9;
         windowDrawSprite(col * 30, (idx / 9) * 0x34, win, 0x366, 0, winSpriteGetLayerID(win, sprite));
         break;
     }

@@ -36,6 +36,7 @@ struct GSlayerCam {
 
 enum GSgfxLayerType {};
 #include <game/gsgfxlayer.h>
+#include <game/ppcops.h>
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -3167,7 +3168,7 @@ static bool fadeEffectHookFunction_distortion(GSgfxLayerID id, bool pending, f32
     f32 progress = elapsed / duration;
     f32 hprogress = hookElapsed / hookDuration;
     if (timeGetLastFrameTime() != 0) {
-        _fadeDistortionDo((u32)(10.0f - 3.0f * hprogress - 6.0f * progress));
+        _fadeDistortionDo(GC_F2U32(10.0f - 3.0f * hprogress - 6.0f * progress));
         GSgfxBeginBackFBCapture(t, _myBackFB, 0);
     } else {
         GSgfxEndBackFBCapture(t);

@@ -22,6 +22,7 @@ struct GSlayerCam {
 enum GSgfxLayerID {};
 enum GSgfxLayerType {};
 #include <game/gsgfxlayer.h>
+#include <game/ppcops.h>
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -323,8 +324,8 @@ void fadeFluidDisp(GStexture* tex, f32 progress, f32 blend) {
 
 void fadeFluidSetShockSecond(GSvec* position, f32 strength) {
     f32 cellSize = _fadeFluidWork.cellSize;
-    u32 x = position->x / cellSize;
-    u32 y = position->y / cellSize;
+    u32 x = GC_F2U32(position->x / cellSize);
+    u32 y = GC_F2U32(position->y / cellSize);
     f32 edge, corner;
 
     _fadeFluidSetShockSub(x, y, strength);
@@ -368,8 +369,8 @@ void fadeFluidEvaluateSecond(void) {
 
 void fadeFluidSetShock(GSvec* position, f32 strength) {
     f32 cellSize = _fadeFluidWork.cellSize;
-    u32 x = position->x / cellSize;
-    u32 y = position->y / cellSize;
+    u32 x = GC_F2U32(position->x / cellSize);
+    u32 y = GC_F2U32(position->y / cellSize);
 
     _fadeFluidSetShockSub(x, y, strength);
     strength *= 0.5f;

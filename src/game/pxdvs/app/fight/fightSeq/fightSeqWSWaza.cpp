@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/fightrecords.h>
@@ -891,7 +892,7 @@ void CriticalCheckHikaePokemon(void* hikae) {
     if (pokemonDB_GetTokuseiDataId(defMonsno, tokuseiFlag) != 4 && pokemonDB_GetTokuseiDataId(defMonsno, tokuseiFlag) != 0x4B &&
         fightFloor_GetFightKindDoCriticalAttackFlag(0) == 1) {
         rnd = HSD_Rand();
-        if (rnd % fightWazaCriticalDataBiosGetBunbo(fightWazaCriticalDataBiosGetPtr(rank)) == 0) {
+        if (GC_MODS(rnd, fightWazaCriticalDataBiosGetBunbo(fightWazaCriticalDataBiosGetPtr(rank))) == 0) {
             fightWaza_SetCritical(waza, 2);
         } else {
             fightWaza_SetCritical(waza, 1);

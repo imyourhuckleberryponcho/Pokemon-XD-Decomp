@@ -16,6 +16,7 @@ typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C
 #endif
 enum ASM { ASM_draft_dummy };
 #include <game/gcdata.h>
+#include <game/ppcops.h>
 #ifdef __MWERKS__
 #define FL16(p, off) M2C_FIELD(p, s16 *, off)
 #define FL32(p, off) M2C_FIELD(p, s32 *, off)
@@ -69,12 +70,18 @@ static void flcalcBezier(FlPoint* out, FlPoint* pts, s32 n, f32 t) {
 
 static void flcalcBezier4(FlPoint* out, FlPoint* p, f32 t) {
     f32 u = 1.0f - t;
-    f32 a = u * u * u;
-    f32 b = 3.0f * t * u * u;
-    f32 c = 3.0f * t * t * u;
-    f32 d = t * t * t;
-    out->x = a * p[0].x + b * p[1].x + c * p[2].x + d * p[3].x;
-    out->y = a * p[0].y + b * p[1].y + c * p[2].y + d * p[3].y;
+    f32 x0 = p[0].x * u + p[1].x * t;
+    f32 x1 = p[1].x * u + p[2].x * t;
+    f32 x2 = p[2].x * u + p[3].x * t;
+    f32 y0 = p[0].y * u + p[1].y * t;
+    f32 y1 = p[1].y * u + p[2].y * t;
+    f32 y2 = p[2].y * u + p[3].y * t;
+    x0 = x0 * u + x1 * t;
+    x1 = x1 * u + x2 * t;
+    y0 = y0 * u + y1 * t;
+    y1 = y1 * u + y2 * t;
+    out->x = x0 * u + x1 * t;
+    out->y = y0 * u + y1 * t;
 }
 
 void flcalcBezier3(void *p0, void *p1, f32 p2) {
@@ -115,10 +122,10 @@ s32 flcalcBlendColor(u32 from, u32 to, f32 t) {
     f32 r = from >> 24;
     f32 g = (from >> 16) & 0xFF;
     f32 b = (from >> 8) & 0xFF;
-    u32 rr = t * ((f32)(to >> 24) - r) + r;
-    u32 ra = t * ((f32)(to & 0xFF) - a) + a;
-    u32 rg = t * ((f32)((to >> 16) & 0xFF) - g) + g;
-    u32 rb = t * ((f32)((to >> 8) & 0xFF) - b) + b;
+    u32 rr = GC_F2U32(t * ((f32)(to >> 24) - r) + r);
+    u32 ra = GC_F2U32(t * ((f32)(to & 0xFF) - a) + a);
+    u32 rg = GC_F2U32(t * ((f32)((to >> 16) & 0xFF) - g) + g);
+    u32 rb = GC_F2U32(t * ((f32)((to >> 8) & 0xFF) - b) + b);
     return ra | (rr << 24) | (rg << 16) | (rb << 8);
 }
 }

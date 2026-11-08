@@ -111,6 +111,18 @@ static inline void fillBox(s8 b, int& sn) {
     }
 }
 
+static inline void fillAll() {
+    int sn = 0;
+    for (int i = 0; i < 8; i++) {
+        int b = i;
+        for (int j = 0; j < 30; j++) {
+            Pokemon pk;
+            menuPocketDebugMakePokemonBySN(pk, sn++, j == 1, 0.5f);
+            PCBOX::getPointer()->setPokemonImpl(&pk, b, j);
+        }
+    }
+}
+
 void pcboxDebugPokemonSetupFull() {
     PCBOX* pcbox = PCBOX::getPointer();
     for (int i = 0; i < 8; i++) {
@@ -121,10 +133,7 @@ void pcboxDebugPokemonSetupFull() {
     itemInitAry(pcbox->item, 235);
     pcbox->lastViewBox = 0;
     PCBOX::getPointer();
-    int sn = 0;
-    for (int i = 0; i < 8; i++) {
-        fillBox(i, sn);
-    }
+    fillAll();
 }
 
 static inline void fillBoxLast(s8 b, int& sn) {
@@ -144,6 +153,26 @@ static inline void fillBoxFew(s8 b, int& sn, Pokemon& pk) {
     }
 }
 
+static inline void fillAllFew(Pokemon& pk) {
+    int sn = 0;
+    for (int i = 0; i < 8; i++) {
+        if (i == 7) {
+            int box = i;
+            for (int j = 0; j < 30; j++) {
+                Pokemon pk2;
+                menuPocketDebugMakePokemonBySN(pk2, sn++, false, 0.0f);
+                PCBOX::getPointer()->setPokemonImpl(&pk2, box, j);
+            }
+        } else {
+            int box = i;
+            for (int j = 0; j < 3; j++) {
+                menuPocketDebugMakePokemonBySN(pk, sn++, j % 10 == 0, 0.1f);
+                PCBOX::getPointer()->setPokemonImpl(&pk, box, j);
+            }
+        }
+    }
+}
+
 void pcboxDebugPokemonSetup() {
     Pokemon pk;
     PCBOX* pcbox = PCBOX::getPointer();
@@ -155,14 +184,7 @@ void pcboxDebugPokemonSetup() {
     itemInitAry(pcbox->item, 235);
     pcbox->lastViewBox = 0;
     PCBOX::getPointer();
-    int sn = 0;
-    for (int i = 0; i < 8; i++) {
-        if (i == 7) {
-            fillBoxLast(i, sn);
-        } else {
-            fillBoxFew(i, sn, pk);
-        }
-    }
+    fillAllFew(pk);
 }
 
 }

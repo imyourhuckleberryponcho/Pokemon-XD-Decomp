@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <dolphin/mtx.h>
+#include "game/gcdata.h"
 
 class ModelSequence {
 public:
@@ -96,9 +97,9 @@ WazaCameraPattern* wazaSequenceCameraGetPattern(bool attack, int flags);
 extern "C" void cameraSetFov(f32 fov);
 
 struct TemplateExpFileHeader {
-    s32 count;
+    gc_bes32 count;
     u8 pad4[4];
-    f32 times[1];
+    gc_bef32 times[1];
 };
 
 static inline f32 Lerp(f32 a, f32 b, f32 t) {
@@ -148,9 +149,9 @@ static inline f32 WazaSqrtf(f32 x) {
 }
 
 struct FOVTiming {
-    s32 count;
+    gc_bes32 count;
     u8 pad4[8];
-    f32 times[3];
+    gc_bef32 times[3];
 };
 
 struct FOVShot {
@@ -428,7 +429,7 @@ void _wazaSequenceCameraDoPosition(ModelSequence* modelSequence, wazaSequenceCam
     TemplateExpFileHeader* timing =
         (TemplateExpFileHeader*)(modelSequence->timings + modelSequence->sequenceId * 0xD0);
 
-    cameraLockYTarget((*(u32*)((u8*)timing + 8) >> 4) & 1);
+    cameraLockYTarget((GC_AT(u32, timing, 8) >> 4) & 1);
 
     switch (params->motion) {
     case 0:

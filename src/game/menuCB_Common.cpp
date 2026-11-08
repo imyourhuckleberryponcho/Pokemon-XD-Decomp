@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/shared/menu_work.h>
 
 #pragma peephole off
 
@@ -21,23 +22,6 @@ struct MenuSpriteVal {
     s32 unk8;
 };
 
-struct MenuWindow {
-    u8 unk0[0xC];
-    void* slotC;
-    void* slot10;
-    void* slot14;
-    u8 pad18[0xC];
-    void* slot24;
-    void* slot28;
-    void* slot2C;
-    u8 pad30[0x24];
-    s16 unk54;
-    s16 unk56;
-    s32 unk58;
-    s16 unk5C;
-    s16 unk5E;
-};
-
 struct MenuStackEntry {
     s32 id;
     s32 cursor;
@@ -57,7 +41,7 @@ void winMsgClose(s32);
 void winMsgOpen(s32, s32 msgID, s32, s32);
 BOOL menuCBTrainerBios_GetHomePlace(CBTrainer* trainer);
 bool gbaCommandIsConnected(s32 gba);
-MenuSpriteVal* menuSpriteBiosGetValPtr(s32 id);
+MenuSpriteVal* menuSpriteBiosGetValPtr(void* sprite);
 s32 windowGetActiveID(void);
 void menuCloseCustom(s32 menuID, s32, s32);
 
@@ -89,13 +73,13 @@ s32 menuCB_GetDisconnectedGBA(void) {
     return 0;
 }
 
-void menuCB_SetSprite(MenuWindow* window, s32 id) {
-    MenuSpriteVal* val = menuSpriteBiosGetValPtr(id);
-    window->unk54 = val->unk4;
-    window->unk56 = val->unk6;
+void menuCB_SetSprite(tagSPRITE_WORK* window, void* sprite) {
+    MenuSpriteVal* val = menuSpriteBiosGetValPtr(sprite);
+    window->w = val->unk4;
+    window->h = val->unk6;
     window->unk58 = val->unk8;
-    window->unk5C = val->unk0;
-    window->unk5E = val->unk2;
+    window->sx = val->unk0;
+    window->sy = val->unk2;
 }
 
 s32 menuCB_MenuRollback(s32 id) {

@@ -377,19 +377,11 @@ u8 dbgMenuGetEnable(void) {
 }
 
 extern "C" {
-void dbgMenuCursor(tagWINDOW_WORK* window) {
-    s32 count;
-    s32 repeat = windowGetKeyInfo()->repeat;
-    count = (s8)_dbgMenuGetMenuNum(window, 0);
+static inline void moveCursor(tagWINDOW_WORK* w, s32 repeat, s32 count, s8 visible) {
     s16 cursor;
     s16 top;
-    s8 visible = menuDataBiosGetDispMax(window->menuID);
-
-    if (count < visible) {
-        visible = count;
-    }
-    top = window->top;
-    cursor = window->cursor;
+    top = w->top;
+    cursor = w->cursor;
     if (repeat & 1) {
         cursor -= 1;
     } else if (repeat & 2) {
@@ -406,11 +398,25 @@ void dbgMenuCursor(tagWINDOW_WORK* window) {
         top = top + (cursor - (visible - 1));
         cursor = (s8)(visible - 1);
         if (top + cursor >= count) {
-            cursor = top = 0;
+            top = 0;
+            cursor = top;
         }
     }
-    window->top = top;
-    window->cursor = cursor;
+    w->top = top;
+    w->cursor = cursor;
+}
+
+void dbgMenuCursor(tagWINDOW_WORK* window) {
+    s32 count;
+    s32 repeat = windowGetKeyInfo()->repeat;
+    s8 num = _dbgMenuGetMenuNum(window, 0);
+    count = num;
+    s16 visible = menuDataBiosGetDispMax(window->menuID);
+
+    if (count < visible) {
+        visible = count;
+    }
+    moveCursor(window, repeat, count, visible);
 }
 }
 

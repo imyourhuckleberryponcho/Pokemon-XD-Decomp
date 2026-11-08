@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 
 struct GSgfxLayer;
 
@@ -39,7 +40,7 @@ bool GSgfxRenderModuleIsRendering() {
 
 void GSgfxRenderModuleDoPostUpdate(f32 dt) {
     RenderModuleNode* node;
-    u32 frames = dt + *(f32*)__float_epsilon;
+    u32 frames = GC_F2U32(dt + *(f32*)__float_epsilon);
     u32 i;
 
     for (i = 0; i < frames; i++) {

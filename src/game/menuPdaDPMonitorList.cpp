@@ -7,7 +7,7 @@ enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 }
 
 struct DarkPokemon {
 public:
-    u8 unk0x0[60];
+    u8 unk0x0[0x48];
     u16 getPokemonID() const;
     u8 getSnatchIndex() const;
     s32 getInitDarkPointDirect() const;
@@ -555,7 +555,7 @@ void menuPdaDPMList::ListCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) 
             break;
         }
     }
-    *((s8*)sprite + 0x67) = alpha[i];
+    ((u8*)&sprite->color)[3] = alpha[i];
     if (pos == i) {
         winSpriteSetDisp(sprite, 1);
         return;
@@ -624,8 +624,10 @@ void menuPdaDPMList::SetItemColor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
 }
 
 s32 menuPdaDPMList::SortPlace() {
+    DarkPokemon* placed;
     DarkPokemon* dark;
     int i;
+    int fl;
     s32 n;
     u16 did;
     u8 floor;
@@ -651,10 +653,11 @@ s32 menuPdaDPMList::SortPlace() {
         SortSub(temp, n, true);
         SortSetTemp(temp2, temp, n);
     }
-    for (int fl = 0; fl < 9; fl++) {
+    for (fl = 0; fl < 9; fl++) {
         for (n = 0, i = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
-            DarkPokemon* dark = darkPokemonGetDarkPokemon(did);
+            placed = darkPokemonGetDarkPokemon(did);
+            DarkPokemon* dark = placed;
             dark->getPlace(place, floor);
             if (dark->isSnach() && place == 3 && floor == fl) {
                 u16 pid = dark->getPokemonID();
@@ -668,7 +671,7 @@ s32 menuPdaDPMList::SortPlace() {
             SortSetTemp(temp2, temp, n);
         }
     }
-    for (int fl = 0; fl < 8; fl++) {
+    for (fl = 0; fl < 8; fl++) {
         for (n = 0, i = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);

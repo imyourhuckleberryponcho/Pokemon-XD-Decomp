@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/declspec.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/pxdvs/app/fight/fightData.h>
@@ -165,7 +166,11 @@ static void _fightUpdate(unsigned int p0, FloorEnterMode p1);
 static void _fsysLoadCallbak(s32 p0, void* p1, s32 p2);
 struct DeckDataVirtual* deckDataVirtual_GetPtr(unsigned short);
 }
+#ifdef __MWERKS__
 static s32 fight_action[0xC];
+#else
+alignas(8) static s32 fight_action[0x12];
+#endif
 #ifdef __MWERKS__
 static u8 _floorModuleFight[0x2C];
 #define FIGHT_FM_SLOT(T, off) M2C_FIELD(&_floorModuleFight, T, off)
@@ -187,6 +192,7 @@ u32 dbgEffLoadFsysGroupID;
 extern "C" {
 static void __sinit_fight_cpp() {
 }
+DECL_SECTION(".ctors") extern void* const __sinit_fight_cpp_reference = __sinit_fight_cpp;
 }
 
 extern "C" {

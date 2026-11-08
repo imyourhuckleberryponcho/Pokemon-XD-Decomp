@@ -387,7 +387,7 @@ struct peEmitterNodeData {
     u8 pad30[0x8];
     f32 color[4];
     u8 pad48[0xb4];
-    u32* params;
+    gc_be32* params;
 };
 
 static inline f32 evalSpline(peSpline* sp, f32 t) {
@@ -447,19 +447,21 @@ static inline void vecScale(Vec* dst, Vec* a, f32 k) {
     *dst = t;
 }
 
-static inline void projectToNode(Vec* v, peXformP* xf) {
+static inline void projectToNode(Vec* v, peParticleNodeData* n) {
     Quaternion qi;
     Mtx m;
     Vec t;
     Vec p;
-    PSQUATInverse(&xf->rot, &qi);
-    quatToMtx(m, qi);
+    PSQUATInverse(&n->xform->rot, &qi);
+    Quaternion q2;
+    q2.x = qi.x; q2.y = qi.y; q2.z = qi.z; q2.w = qi.w;
+    PSMTXQuat(m, &q2);
     PSMTXMultVecSR(m, v, &t);
     p = t;
-    p.x *= xf->scale.x;
-    p.y *= xf->scale.y;
-    p.z *= xf->scale.z;
-    rotateBy(&p, &xf->rot);
+    p.x *= n->xform->scale.x;
+    p.y *= n->xform->scale.y;
+    p.z *= n->xform->scale.z;
+    rotateBy(&p, &n->xform->rot);
     PSVECScale(v, v, PSVECDotProduct(v, &p));
 }
 
@@ -510,7 +512,7 @@ struct peDLView {
     u16 flags;
     u16 stride;
     u8* buf;
-    u8 pad8[8];
+    u8 pad8[4 + sizeof(void*)];
 };
 
 struct peNodeView {
@@ -548,7 +550,8 @@ inline void peParticleContainer::hideNode(peNodeView* n) {
 }
 
 #pragma push
-#pragma optimize_for_size on
+#pragma optimize_for_size off
+#pragma opt_unroll_loops off
 struct peParticleDLView {
     u16 flags;
     u16 stride;
@@ -560,8 +563,8 @@ static inline bool peParticleActive(peParticleNodeData* n) {
 }
 
 static inline u8 peParticleBehind(peParticleNodeData* n, peParticleNodeData* p) {
-    f32 nd = n->depth;
     f32 pd = p->depth;
+    f32 nd = n->depth;
     if (pd == nd) {
         return 0;
     }
@@ -575,15 +578,46 @@ static inline s32 peParticlePrevActive(peParticleNodeData** list, s32 i) {
     if (list == 0) {
         return -1;
     }
-    peParticleNodeData** p = &list[i];
     while (i > 0) {
-        p--;
-        i--;
-        if (peParticleActive(*p)) {
+        if (peParticleActive(list[--i])) {
             return i;
         }
     }
     return -1;
+}
+
+static inline void peParticleRewriteDL(peParticleContainer* c) {
+    peParticleDLView* dl = (peParticleDLView*)c->dl[c->cur];
+    u32 wide = (((peParticleDef*)c->data)->flags >> 25) & 1;
+    u16 perQuad = 13 + (wide != 0);
+    for (s32 i = 0; i < c->maxCount; i++) {
+        peParticleNodeData* n = ((peParticleNodeData**)c->sorted)[i];
+        if (!peParticleActive(n) || n->sortIndex == (u16)i) {
+            continue;
+        }
+        n->sortIndex = i;
+        u16 base = n->index * perQuad;
+        u8* q = (dl->flags & 1) ? dl->data + ((i << 2) & 0xffff) * dl->stride + 3 : 0;
+        u16 v = 0;
+        if (wide) {
+            for (; v < 4; v++) {
+                PE_DL_W16(q, s16, 0, base + v * 3);
+                PE_DL_W16(q, u16, 1, base);
+                PE_DL_W16(q, u16, 2, base);
+                PE_DL_W16(q, s16, 3, (u16)(v * 2));
+                q += 8;
+            }
+        } else {
+            for (; v < 4; v++) {
+                PE_DL_W16(q, s16, 0, base + v * 3);
+                PE_DL_W16(q, u16, 1, base);
+                PE_DL_W16(q, s16, 2, (u16)(v * 2));
+                q += 6;
+            }
+        }
+    }
+    dl->flags |= 2;
+    c->dirty = 1;
 }
 
 void peParticleContainer::DepthSort() {
@@ -607,35 +641,7 @@ void peParticleContainer::DepthSort() {
             }
         }
         if (changed) {
-            peParticleDLView* dl = (peParticleDLView*)this->dl[cur];
-            u16 perQuad = 13 + ((((peParticleDef*)data)->flags >> 25) & 1 ? 1 : 0);
-            for (s32 i = 0; i < maxCount; i++) {
-                peParticleNodeData* n = ((peParticleNodeData**)sorted)[i];
-                if (!peParticleActive(n) || n->sortIndex == (u16)i) {
-                    continue;
-                }
-                n->sortIndex = i;
-                u16 base = n->index * perQuad;
-                u8* q = (dl->flags & 1) ? dl->data + (u16)(i * 4) * dl->stride + 3 : 0;
-                if ((((peParticleDef*)data)->flags >> 25) & 1) {
-                    for (u16 v = 0; v < 4; v++) {
-                        PE_DL_W16(q, s16, 0, base + v * 3);
-                        PE_DL_W16(q, u16, 1, base);
-                        PE_DL_W16(q, u16, 2, base);
-                        PE_DL_W16(q, s16, 3, v * 2);
-                        q += 8;
-                    }
-                } else {
-                    for (u16 v = 0; v < 4; v++) {
-                        PE_DL_W16(q, s16, 0, base + v * 3);
-                        PE_DL_W16(q, u16, 1, base);
-                        PE_DL_W16(q, s16, 2, v * 2);
-                        q += 6;
-                    }
-                }
-            }
-            dl->flags |= 2;
-            dirty = 1;
+            peParticleRewriteDL(this);
         }
     }
 }
@@ -793,13 +799,15 @@ inline bool peParticleContainer::updateNode(peNodeView* node, f32 dt) {
 
 void peParticleContainer::Update(float dt) {
     if (started) {
+        peNodeView* n = (peNodeView*)activeList;
         peNodeView* next;
-        for (peNodeView* n = (peNodeView*)activeList; n != NULL; n = next) {
+        while (n != NULL) {
             next = n->next;
             if (!updateNode(n, dt)) {
                 hideNode(n);
                 RemoveNode((peNode*)n);
             }
+            n = next;
         }
         DepthSort();
     }
@@ -1228,8 +1236,8 @@ void peParticleNode::UpdateRenderData(peEmitterNode* emitter, _peParticle* part,
         rotateBy(&up, &q);
         rotateBy(&right, &q);
     }
-    projectToNode(&right, n->xform);
-    projectToNode(&up, n->xform);
+    projectToNode(&right, n);
+    projectToNode(&up, n);
     PSVECScale(&right, &right, n->sizeX * evalSpline(p->scaleX, t));
     PSVECScale(&up, &up, n->sizeY * evalSpline(p->scaleY, t));
     if (!spinFirst && (angle < 0.0f ? -angle : angle) > 0.00001f) {

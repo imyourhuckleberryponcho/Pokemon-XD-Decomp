@@ -51,6 +51,7 @@ struct FightPokemon {
 struct FightOutPokemon;
 struct FightOutPokemonEnemy;
 
+#ifdef __MWERKS__
 struct Sequence {
     u8 unk0[8];
     s32 kind;
@@ -65,6 +66,20 @@ public:
 
     void DoModelAnimation(int anim);
 };
+#define SEQ_KIND(s) ((s)->kind)
+#define MSEQ_LOOKFLAG(m) ((m)->lookFlag)
+#define MSEQ_LOOKSEQ(m) ((m)->lookSeq)
+#else
+#include <game/modelsequenceview.h>
+struct Sequence : ModelSequenceLayout {};
+class ModelSequence : public ModelSequenceLayout {
+public:
+    void DoModelAnimation(int anim);
+};
+#define SEQ_KIND(s) ((s)->m_kind)
+#define MSEQ_LOOKFLAG(m) ((m)->m_unk61)
+#define MSEQ_LOOKSEQ(m) (*(Sequence**)&(m)->m_unk78)
+#endif
 u16 wazaSequenceSysGetResourceID(ModelSequence* seq, u16 wzx, u16 kind, u8 flag);
 
 struct RegWzxWork {
@@ -689,8 +704,8 @@ void fightOutPokemonKizetuEffect(FightOutPokemon* fop, u8 mode) {
         wazaSequenceSysFreeAllWazaExcept(seq, waza);
         WazaSequence_Start(waza, 1);
         if (model != 0) {
-            if (model->lookFlag != 0) {
-                model->lookSeq = mySeq;
+            if (MSEQ_LOOKFLAG(model) != 0) {
+                MSEQ_LOOKSEQ(model) = mySeq;
             }
             model->DoModelAnimation(4);
         }
@@ -744,8 +759,8 @@ void fightOutPokemonKizetuEffect(FightOutPokemon* fop, u8 mode) {
             fightMenuCloseMsg();
         }
     } else if (mode == 3) {
-        if (model != 0 && model->lookFlag != 0) {
-            model->lookSeq = 0;
+        if (model != 0 && MSEQ_LOOKFLAG(model) != 0) {
+            MSEQ_LOOKSEQ(model) = 0;
         }
         fightOutPokemonFreeSequence(fop);
     }
@@ -804,8 +819,8 @@ void fightOutPokemonDasuEffect(FightTrainer* trainer, FightOutPokemon* fop, u8 m
         }
     } else if (mode == 3) {
         WazaSequence_Start(Sequence_GetWaza(seq, outWzx, 4), 1);
-        if (model != 0 && model->lookFlag != 0) {
-            model->lookSeq = mySeq;
+        if (model != 0 && MSEQ_LOOKFLAG(model) != 0) {
+            MSEQ_LOOKSEQ(model) = mySeq;
         }
     } else if (mode == 4) {
         if (trainerSeq != 0) {
@@ -837,8 +852,8 @@ void fightOutPokemonDasuEffect(FightTrainer* trainer, FightOutPokemon* fop, u8 m
             }
         }
     } else if (mode == 5) {
-        if (model != 0 && model->lookFlag != 0) {
-            model->lookSeq = 0;
+        if (model != 0 && MSEQ_LOOKFLAG(model) != 0) {
+            MSEQ_LOOKSEQ(model) = 0;
         }
         WazaSequence_Free(Sequence_GetWaza(trainerSeq, openWzx, 4));
         WazaSequence_Free(Sequence_GetWaza(seq, outWzx, 4));
@@ -1065,7 +1080,7 @@ void fightOutPokemonLoadWazaEffect(FightOutPokemon* fop, u16 waza, u8 kind, u8 f
     Sequence* seq = fightOutPokemon_GetSequencePtr(fop);
     if (seq != 0) {
         Sequence_LoadWaza(seq, wzx, kind, flag);
-        u16 res = wazaSequenceSysGetResourceID(seq->kind == 1 ? (ModelSequence*)seq : 0, wzx, kind & 0xFFFF, flag);
+        u16 res = wazaSequenceSysGetResourceID(SEQ_KIND(seq) == 1 ? (ModelSequence*)seq : 0, wzx, kind & 0xFFFF, flag);
         if (res != 0) {
             dbgEffLoadFsysGroupID = waza_resource_data[res].groupId;
         }

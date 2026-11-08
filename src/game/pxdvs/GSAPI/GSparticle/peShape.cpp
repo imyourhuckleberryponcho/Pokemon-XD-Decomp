@@ -304,10 +304,17 @@ extern "C++" {
 
 #define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
 static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
+#ifdef __MWERKS__
     LAYER_FIELD(l, u32, off) |= bit;
-    LAYER_FIELD(l, u32, 0x16A8) |= sum;
+    LAYER_F(l, u32 *, 0x16A8, dirty[0].groups) |= sum;
     LAYER_FIELD(l, u32, off + 0xB8) |= bit;
-    LAYER_FIELD(l, u32, 0x1760) |= sum;
+    LAYER_F(l, u32 *, 0x1760, dirty[1].groups) |= sum;
+#else
+    GSL_IN(l, u32, dirty[0], 0x16A8, off) |= bit;
+    l->dirty[0].groups |= sum;
+    GSL_IN(l, u32, dirty[1], 0x1760, off + 0xB8) |= bit;
+    l->dirty[1].groups |= sum;
+#endif
 }
 
 struct peShapeLightVec : Vec {
@@ -371,14 +378,17 @@ static inline void lightSetDir(GSgfxLight* light, Vec* dir) {
     }
 }
 
+#ifdef __MWERKS__
 struct peShapeLayerLights {
     u8 pad0[0xD94];
     u8 numLights;
     u8 padD95[3];
     GSgfxLight* lights[8];
 };
+#endif
 
 static inline void layerSetLights(GSgfxLayer* l, u8 n, GSgfxLight** lights) {
+#ifdef __MWERKS__
     peShapeLayerLights* ll = (peShapeLayerLights*)l;
     ll->numLights = n;
     for (u8 i = 0; i < 8; i++) {
@@ -388,6 +398,16 @@ static inline void layerSetLights(GSgfxLayer* l, u8 n, GSgfxLight** lights) {
             ll->lights[i] = NULL;
         }
     }
+#else
+    l->hw.lightCount = n;
+    for (u8 i = 0; i < 8; i++) {
+        if (i < n) {
+            l->hw.lights[i] = (u8*)lights[i];
+        } else {
+            l->hw.lights[i] = NULL;
+        }
+    }
+#endif
     layerMark(l, 4, 0x16BC, 0x10);
 }
 
@@ -456,13 +476,13 @@ void peShapeContainer::Render() {
             if (temp_r31 & 0x800) {
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xD8C) = 2;
+                    LAYER_F(l, s32 *, 0xD8C, hw.cullMode) = 2;
                     layerMark(l, 2, 0x16B8, 2);
                 }
             } else {
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xD8C) = 0;
+                    LAYER_F(l, s32 *, 0xD8C, hw.cullMode) = 0;
                     layerMark(l, 2, 0x16B8, 2);
                 }
             }
@@ -483,51 +503,51 @@ void peShapeContainer::Render() {
                 lights[0] = light0;
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s8, 0xEAC) = 1;
+                    LAYER_F(l, s8 *, 0xEAC, hw.nTevStages) = 1;
                     layerMark(l, 8, 0x16CC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s8, 0xDB8) = 1;
+                    LAYER_F(l, s8 *, 0xDB8, hw.nChans) = 1;
                     layerMark(l, 4, 0x16BC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1170) = 0;
-                    LAYER_FIELD(l, s32, 0x1174) = 0;
-                    LAYER_FIELD(l, s32, 0x1178) = 0;
-                    LAYER_FIELD(l, s8, 0x117C) = 1;
-                    LAYER_FIELD(l, s32, 0x1180) = 0;
+                    LAYER_F(l, s32 *, 0x1170, hw.colorOp[0].op) = 0;
+                    LAYER_F(l, s32 *, 0x1174, hw.colorOp[0].bias) = 0;
+                    LAYER_F(l, s32 *, 0x1178, hw.colorOp[0].scale) = 0;
+                    LAYER_F(l, s8 *, 0x117C, hw.colorOp[0].clamp) = 1;
+                    LAYER_F(l, s32 *, 0x1180, hw.colorOp[0].reg) = 0;
                     layerMark(l, 8, 0x16DC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x12B0) = 0;
-                    LAYER_FIELD(l, s32, 0x12B4) = 0;
-                    LAYER_FIELD(l, s32, 0x12B8) = 0;
-                    LAYER_FIELD(l, s8, 0x12BC) = 1;
-                    LAYER_FIELD(l, s32, 0x12C0) = 0;
+                    LAYER_F(l, s32 *, 0x12B0, hw.alphaOp[0].op) = 0;
+                    LAYER_F(l, s32 *, 0x12B4, hw.alphaOp[0].bias) = 0;
+                    LAYER_F(l, s32 *, 0x12B8, hw.alphaOp[0].scale) = 0;
+                    LAYER_F(l, s8 *, 0x12BC, hw.alphaOp[0].clamp) = 1;
+                    LAYER_F(l, s32 *, 0x12C0, hw.alphaOp[0].reg) = 0;
                     layerMark(l, 8, 0x16E0, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xF70) = 0xF;
-                    LAYER_FIELD(l, s32, 0xF74) = 0xA;
-                    LAYER_FIELD(l, s32, 0xF78) = 8;
-                    LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                    LAYER_F(l, s32 *, 0xF70, hw.colorIn[0][0]) = 0xF;
+                    LAYER_F(l, s32 *, 0xF74, hw.colorIn[0][1]) = 0xA;
+                    LAYER_F(l, s32 *, 0xF78, hw.colorIn[0][2]) = 8;
+                    LAYER_F(l, s32 *, 0xF7C, hw.colorIn[0][3]) = 0xF;
                     layerMark(l, 8, 0x16D4, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1544) = 0x1C;
+                    LAYER_F(l, s32 *, 0x1544, hw.kasel[0]) = 0x1C;
                     layerMark(l, 0x10, 0x1700, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1070) = 7;
-                    LAYER_FIELD(l, s32, 0x1074) = 6;
-                    LAYER_FIELD(l, s32, 0x1078) = 4;
-                    LAYER_FIELD(l, s32, 0x107C) = 7;
+                    LAYER_F(l, s32 *, 0x1070, hw.alphaIn[0][0]) = 7;
+                    LAYER_F(l, s32 *, 0x1074, hw.alphaIn[0][1]) = 6;
+                    LAYER_F(l, s32 *, 0x1078, hw.alphaIn[0][2]) = 4;
+                    LAYER_F(l, s32 *, 0x107C, hw.alphaIn[0][3]) = 7;
                     layerMark(l, 8, 0x16D8, 1);
                 }
                 Vec dir;
@@ -541,53 +561,53 @@ void peShapeContainer::Render() {
                     lights[1] = light1;
                     {
                         GSgfxLayer* l = g_current_layer;
-                        LAYER_FIELD(l, s8, 0xEAC) = 2;
+                        LAYER_F(l, s8 *, 0xEAC, hw.nTevStages) = 2;
                         layerMark(l, 8, 0x16CC, 1);
                     }
                     {
                         GSgfxLayer* l = g_current_layer;
-                        LAYER_FIELD(l, s32, 0xEBC) = 0xFF;
-                        LAYER_FIELD(l, s32, 0xEC0) = 0xFF;
-                        LAYER_FIELD(l, s32, 0xEC4) = 5;
+                        LAYER_F(l, s32 *, 0xEBC, hw.tevOrder[1][0]) = 0xFF;
+                        LAYER_F(l, s32 *, 0xEC0, hw.tevOrder[1][1]) = 0xFF;
+                        LAYER_F(l, s32 *, 0xEC4, hw.tevOrder[1][2]) = 5;
                         layerMark(l, 8, 0x16D0, 2);
                     }
                     {
                         GSgfxLayer* l = g_current_layer;
-                        LAYER_FIELD(l, s32, 0x1184) = 0;
-                        LAYER_FIELD(l, s32, 0x1188) = 0;
-                        LAYER_FIELD(l, s32, 0x118C) = 0;
-                        LAYER_FIELD(l, s8, 0x1190) = 1;
-                        LAYER_FIELD(l, s32, 0x1194) = 0;
+                        LAYER_F(l, s32 *, 0x1184, hw.colorOp[1].op) = 0;
+                        LAYER_F(l, s32 *, 0x1188, hw.colorOp[1].bias) = 0;
+                        LAYER_F(l, s32 *, 0x118C, hw.colorOp[1].scale) = 0;
+                        LAYER_F(l, s8 *, 0x1190, hw.colorOp[1].clamp) = 1;
+                        LAYER_F(l, s32 *, 0x1194, hw.colorOp[1].reg) = 0;
                         layerMark(l, 8, 0x16DC, 2);
                     }
                     {
                         GSgfxLayer* l = g_current_layer;
-                        LAYER_FIELD(l, s32, 0x12C4) = 0;
-                        LAYER_FIELD(l, s32, 0x12C8) = 0;
-                        LAYER_FIELD(l, s32, 0x12CC) = 0;
-                        LAYER_FIELD(l, s8, 0x12D0) = 0;
-                        LAYER_FIELD(l, s32, 0x12D4) = 0;
+                        LAYER_F(l, s32 *, 0x12C4, hw.alphaOp[1].op) = 0;
+                        LAYER_F(l, s32 *, 0x12C8, hw.alphaOp[1].bias) = 0;
+                        LAYER_F(l, s32 *, 0x12CC, hw.alphaOp[1].scale) = 0;
+                        LAYER_F(l, s8 *, 0x12D0, hw.alphaOp[1].clamp) = 0;
+                        LAYER_F(l, s32 *, 0x12D4, hw.alphaOp[1].reg) = 0;
                         layerMark(l, 8, 0x16E0, 2);
                     }
                     {
                         GSgfxLayer* l = g_current_layer;
-                        LAYER_FIELD(l, s32, 0xF80) = 0xF;
-                        LAYER_FIELD(l, s32, 0xF84) = 0xA;
-                        LAYER_FIELD(l, s32, 0xF88) = 0xC;
-                        LAYER_FIELD(l, s32, 0xF8C) = 0;
+                        LAYER_F(l, s32 *, 0xF80, hw.colorIn[1][0]) = 0xF;
+                        LAYER_F(l, s32 *, 0xF84, hw.colorIn[1][1]) = 0xA;
+                        LAYER_F(l, s32 *, 0xF88, hw.colorIn[1][2]) = 0xC;
+                        LAYER_F(l, s32 *, 0xF8C, hw.colorIn[1][3]) = 0;
                         layerMark(l, 8, 0x16D4, 2);
                     }
                     {
                         GSgfxLayer* l = g_current_layer;
-                        LAYER_FIELD(l, s32, 0x1080) = 7;
-                        LAYER_FIELD(l, s32, 0x1084) = 7;
-                        LAYER_FIELD(l, s32, 0x1088) = 7;
-                        LAYER_FIELD(l, s32, 0x108C) = 0;
+                        LAYER_F(l, s32 *, 0x1080, hw.alphaIn[1][0]) = 7;
+                        LAYER_F(l, s32 *, 0x1084, hw.alphaIn[1][1]) = 7;
+                        LAYER_F(l, s32 *, 0x1088, hw.alphaIn[1][2]) = 7;
+                        LAYER_F(l, s32 *, 0x108C, hw.alphaIn[1][3]) = 0;
                         layerMark(l, 8, 0x16D8, 2);
                     }
                     {
                         GSgfxLayer* l = g_current_layer;
-                        LAYER_FIELD(l, s8, 0xDB8) = 2;
+                        LAYER_F(l, s8 *, 0xDB8, hw.nChans) = 2;
                         layerMark(l, 4, 0x16BC, 1);
                     }
                     g_current_layer->cunitChannelGen(1, (GSgfxCunitAlpha)0, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 1, &light1, (GSgfxLightType)0, (GSgfxDiffuseFunc)2);
@@ -608,54 +628,54 @@ void peShapeContainer::Render() {
             } else {
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s8, 0xDB8) = 0;
+                    LAYER_F(l, s8 *, 0xDB8, hw.nChans) = 0;
                     layerMark(l, 4, 0x16BC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s8, 0xEAC) = 1;
+                    LAYER_F(l, s8 *, 0xEAC, hw.nTevStages) = 1;
                     layerMark(l, 8, 0x16CC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xEB0) = 0;
-                    LAYER_FIELD(l, s32, 0xEB4) = 0;
-                    LAYER_FIELD(l, s32, 0xEB8) = 0xFF;
+                    LAYER_F(l, s32 *, 0xEB0, hw.tevOrder[0][0]) = 0;
+                    LAYER_F(l, s32 *, 0xEB4, hw.tevOrder[0][1]) = 0;
+                    LAYER_F(l, s32 *, 0xEB8, hw.tevOrder[0][2]) = 0xFF;
                     layerMark(l, 8, 0x16D0, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1170) = 0;
-                    LAYER_FIELD(l, s32, 0x1174) = 0;
-                    LAYER_FIELD(l, s32, 0x1178) = 0;
-                    LAYER_FIELD(l, s8, 0x117C) = 1;
-                    LAYER_FIELD(l, s32, 0x1180) = 0;
+                    LAYER_F(l, s32 *, 0x1170, hw.colorOp[0].op) = 0;
+                    LAYER_F(l, s32 *, 0x1174, hw.colorOp[0].bias) = 0;
+                    LAYER_F(l, s32 *, 0x1178, hw.colorOp[0].scale) = 0;
+                    LAYER_F(l, s8 *, 0x117C, hw.colorOp[0].clamp) = 1;
+                    LAYER_F(l, s32 *, 0x1180, hw.colorOp[0].reg) = 0;
                     layerMark(l, 8, 0x16DC, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x12B0) = 0;
-                    LAYER_FIELD(l, s32, 0x12B4) = 0;
-                    LAYER_FIELD(l, s32, 0x12B8) = 0;
-                    LAYER_FIELD(l, s8, 0x12BC) = 1;
-                    LAYER_FIELD(l, s32, 0x12C0) = 0;
+                    LAYER_F(l, s32 *, 0x12B0, hw.alphaOp[0].op) = 0;
+                    LAYER_F(l, s32 *, 0x12B4, hw.alphaOp[0].bias) = 0;
+                    LAYER_F(l, s32 *, 0x12B8, hw.alphaOp[0].scale) = 0;
+                    LAYER_F(l, s8 *, 0x12BC, hw.alphaOp[0].clamp) = 1;
+                    LAYER_F(l, s32 *, 0x12C0, hw.alphaOp[0].reg) = 0;
                     layerMark(l, 8, 0x16E0, 1);
                 }
                 ((GSgfxLayer*)(g_current_layer))->tunitKRegSel(0U, (GSgfxTunitKReg)(0));
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xF70) = 0xF;
-                    LAYER_FIELD(l, s32, 0xF74) = 0xE;
-                    LAYER_FIELD(l, s32, 0xF78) = 8;
-                    LAYER_FIELD(l, s32, 0xF7C) = 0xF;
+                    LAYER_F(l, s32 *, 0xF70, hw.colorIn[0][0]) = 0xF;
+                    LAYER_F(l, s32 *, 0xF74, hw.colorIn[0][1]) = 0xE;
+                    LAYER_F(l, s32 *, 0xF78, hw.colorIn[0][2]) = 8;
+                    LAYER_F(l, s32 *, 0xF7C, hw.colorIn[0][3]) = 0xF;
                     layerMark(l, 8, 0x16D4, 1);
                 }
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0x1070) = 7;
-                    LAYER_FIELD(l, s32, 0x1074) = 6;
-                    LAYER_FIELD(l, s32, 0x1078) = 4;
-                    LAYER_FIELD(l, s32, 0x107C) = 7;
+                    LAYER_F(l, s32 *, 0x1070, hw.alphaIn[0][0]) = 7;
+                    LAYER_F(l, s32 *, 0x1074, hw.alphaIn[0][1]) = 6;
+                    LAYER_F(l, s32 *, 0x1078, hw.alphaIn[0][2]) = 4;
+                    LAYER_F(l, s32 *, 0x107C, hw.alphaIn[0][3]) = 7;
                     layerMark(l, 8, 0x16D8, 1);
                 }
             }
@@ -1456,7 +1476,7 @@ struct peShapeColor {
 
 static inline void peShapeSetKColor(GSgfxLayer* layer, peShapeColor c) {
 #ifdef __MWERKS__
-    *(peShapeColor*)((u8*)layer + 0x14F4) = c;
+    LAYER_F(layer, peShapeColor*, 0x14F4, hw.kcolor[0].r) = c;
 #else
     *(peShapeColor*)&layer->hw.kcolor[0] = c;
 #endif
@@ -1485,8 +1505,8 @@ static inline void peShapeSetChanColor(GSgfxLayer* layer, int ch, peShapeColor a
 struct peShapeSpline {
     u8 flags;
     u8 pad1[3];
-    f32 value;
-    f32 time;
+    gc_bef32 value;
+    gc_bef32 time;
 };
 struct peShapeVecC : Vec {
     peShapeVecC(const Vec& o) {
@@ -1504,12 +1524,18 @@ struct peShapeXform {
     Vec scale;
 };
 struct peShapeEmitParams {
-    u32 flags;
+    gc_be32 flags;
 };
 struct peShapeEmitter {
+#ifdef __MWERKS__
     u8 pad0[0x38];
     f32 color[4];
     u8 pad48[0xFC - 0x48];
+#else
+    u8 pad0[0x48];
+    f32 color[4];
+    u8 pad58[0x110 - 0x58];
+#endif
     peShapeEmitParams* params;
 };
 struct peShapeDef {

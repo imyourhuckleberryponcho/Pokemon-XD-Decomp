@@ -143,11 +143,11 @@ public:
 class EventEntry : public SequenceEntry {
 public:
     EVENT_ENTRY_MEMBERS
+    ~EventEntry();
     bool Update(f32 time);
 public:
     static bool Load(unsigned char**);
     s32 Start();
-    ~EventEntry();
     static void Unload(unsigned char**);
     EventEntry(WazaSequence*, unsigned char**);
 };
@@ -155,8 +155,8 @@ public:
 class CameraEntry : public SequenceEntry {
 public:
     CAMERA_ENTRY_MEMBERS
-    void Stop(bool);
     ~CameraEntry();
+    void Stop(bool);
     CameraEntry(WazaSequence*, unsigned char**);
     static void Unload(unsigned char**);
     bool Update(float);
@@ -224,11 +224,11 @@ class LensFlareEntry : public SequenceEntry {
 public:
     LENSFLARE_ENTRY_MEMBERS
     LensFlareEntry(WazaSequence*, unsigned char**);
+    ~LensFlareEntry();
     s32 Start();
     void Stop(bool);
     static void Unload(unsigned char**);
     static bool Load(unsigned char**);
-    ~LensFlareEntry();
     bool Update(float);
 };
 class MainSequenceEntry : public SequenceEntry {
@@ -273,6 +273,7 @@ struct ModelSequence {
 class ParticleEntry : public SequenceEntry {
 public:
     PARTICLE_ENTRY_MEMBERS
+    ~ParticleEntry();
     s32 Start();
     void End();
     void Stop(bool);
@@ -281,7 +282,6 @@ public:
     bool Update(float);
     ParticleEntry(WazaSequence*, unsigned char**);
     static void Unload(unsigned char**);
-    ~ParticleEntry();
 };
 struct SVec {
     f32 x, y, z;
@@ -292,11 +292,11 @@ struct SndEmitter {
 class SoundEntry : public SequenceEntry {
 public:
     SOUND_ENTRY_MEMBERS
+    ~SoundEntry();
     s32 Start();
     void Stop(bool);
     static bool Load(unsigned char**);
     bool Update(float);
-    ~SoundEntry();
     SoundEntry(WazaSequence*, unsigned char**);
     static void Unload(unsigned char**);
 };
@@ -443,14 +443,6 @@ WazaShadowAddr wazaSequenceSysGetModelShadowLight();
 WazaShadowListAddr wazaSequenceSysGetModelShadowList();
 }
 GSthread* gSoundThread;
-
-extern "C" {
-#ifdef __MWERKS__
-extern s32 jtbl_2422;
-#else
-static const s32 jtbl_2422 = 4;
-#endif
-}
 
 extern "C++" {
 
@@ -1063,8 +1055,7 @@ bool EffectEntry::Load(unsigned char** p0) {
         }
         *p0 += GC_AT(s32, hdr, 4) * 0x10;
     }
-block_21:
-        return 1;
+        break;
     case 5:
         temp_r30 = *p0;
         *p0 = temp_r30 + 0x40;
@@ -1078,17 +1069,17 @@ block_21:
             }
             *p0 = &(*p0)[(GC_AT(s32, temp_r30, 0x34) + 0x1F) & 0xFFFFFFE0];
         }
-        goto block_21;
+        break;
     case 6:
         temp_r3_4 = *p0;
         *p0 = temp_r3_4 + 0x10;
         *p0 += GC_AT(s32, temp_r3_4, 8) * 0x10;
-        goto block_21;
+        break;
     case 7:
         temp_r3_5 = *p0;
         *p0 = temp_r3_5 + 0xC;
         *p0 += GC_AT(s32, temp_r3_5, 0) * 0x10;
-        goto block_21;
+        break;
     case 1:
         temp_r30_2 = *p0;
         *p0 = temp_r30_2 + 0x18;
@@ -1098,7 +1089,7 @@ block_21:
             GC_AT(s32, temp_r30_2, 0x10) = GC_ADDR32(GSparticleLoad(*p0));
         }
         *p0 = &(*p0)[(GC_AT(s32, temp_r30_2, 0xC) + 0x1F) & 0xFFFFFFE0];
-        goto block_21;
+        break;
     case 9:
         temp_r30_3 = *p0;
         *p0 = temp_r30_3 + 0x20;
@@ -1117,10 +1108,11 @@ block_21:
             GC_AT(s32, temp_r30_3, 0xC) = GC_ADDR32(GSparticleLoad(*p0));
             *p0 = &(*p0)[(GC_AT(s32, temp_r30_3, 8) + 0x1F) & 0xFFFFFFE0];
         }
-        goto block_21;
+        break;
     default:
         return 0;
     }
+    return 1;
 }
 }
 
@@ -1615,6 +1607,9 @@ s32 ModelEntry::Start() {
                             GSmodelSetRotation((_GSmodel*)(var_r28), &rot);
                             GSmodelSetPosition((_GSmodel*)(var_r28), &pos);
                             break;
+                        case 4:
+                        case 7:
+                            break;
                         }
                     }
                 }
@@ -1669,6 +1664,9 @@ block_68:
                             GSmodelSetPosition((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), &pos);
                             GSmodelSetRotation((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), &rot);
                             break;
+                        case 0:
+                        case 7:
+                            break;
                         }
                     }
                     GSpartFree((GSpart*)(var_r30_2));
@@ -1679,8 +1677,8 @@ block_68:
     GSmodelSetVisibility((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), 1U);
     GSmodelSetBoundCheck((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), 0U);
     if (THIS_F(u16 *, 0x48, unk48) & 1) {
-        sp8 = jtbl_2422;
-        GSmodelSetRenderLayer((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), 1, (s32*)(&sp8));
+        s32 layers[1] = {4};
+        GSmodelSetRenderLayer((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), 1, layers);
     }
     if (THIS_F(u16 *, 0x48, unk48) & 4) {
         GSmodelSet60fpsAnimFlag((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), 1U);
@@ -2071,11 +2069,11 @@ bool ParticleEntry::Update(float dt) {
     }
     SeqCameraTarget* target = (SeqCameraTarget*)seq->m_owner;
     if (((ModelSequenceLayout*)target)->m_kind != 1 && !(THIS_F(u16 *, 0xA, unk0A) & 4) && THIS_F(s32 *, 0x40, unk40) == 0) {
-        u32 flags = THIS_F(u32 *, 0x34, unk34);
         target->GetPosition((f32*)&pos);
+        u32 flags = THIS_F(u32 *, 0x34, unk34);
+        u16 local = (flags >> 5) & 1;
         target->GetRotation((f32*)&rot);
         target->GetScale((f32*)&scale);
-        u16 local = (flags >> 5) & 1;
         GSparticleSetGeneratorPosition(generator, (Vec*)&pos);
         GSparticleSetGeneratorRotation((PCARG(u32, void*))generator, (f32*)&rot);
         GSparticleSetGeneratorScale((PCARG(u32, void*))generator, (f32*)&scale, local, (flags >> 9) & 1);
@@ -2298,7 +2296,6 @@ s32 EffectEntry::Start() {
         GSpart* part;
         GSeffect* e;
         e = m_effect;
-        part = 0;
         GSvec pos;
         if (unk0A & 1) {
             u8 id = unk05;
@@ -2310,14 +2307,17 @@ s32 EffectEntry::Start() {
                         part = 0;
                     } else if (gm != 0) {
                         part = GSmodelGetPart(gm, THIS_F(s16 *, 0x12, unk12));
-                    }
-                }
-            }
+                    } else goto zero;
+                } else goto zero;
+            } else goto zero;
         } else {
             ModelSequence* m = seq->m_owner;
             m = M2C_NAMED(((ModelSequenceLayout*)(m)), s32*, 0x8, m_kind) == 1 ? m : 0;
             if (m != 0) {
                 part = m->GetPart((enumNullJointName)unk10);
+            } else {
+zero:
+                part = 0;
             }
         }
         if (part != 0) {
@@ -2411,7 +2411,7 @@ bool EffectEntry::Update(f32 dt) {
     case 0: {
         bool useAlpha;
         EffectKey* key = &m_keys[m_curKey];
-        u8* fx = (u8*)m_effect;
+        filterEffect* fx = (filterEffect*)m_effect;
         f32 a = t;
         u8 r, g, b, alpha;
 
@@ -2425,24 +2425,22 @@ bool EffectEntry::Update(f32 dt) {
         g = EffectLerp(a, key->color.from[1], key->color.to[1]);
         b = EffectLerp(a, key->color.from[2], key->color.to[2]);
         alpha = EffectLerp(a, key->color.from[3], key->color.to[3]);
-        fx[0x19] = r;
-        fx[0x1A] = g;
-        fx[0x1B] = b;
+        fx->m_color[0] = r;
+        fx->m_color[1] = g;
+        fx->m_color[2] = b;
         useAlpha = false;
-        if (fx[0x18] == 0 || fx[0x14] != 0) {
+        if (fx->m_modulate == 0 || fx->m_resetPE != 0) {
             useAlpha = true;
         }
-        fx[0x1C] = useAlpha ? alpha : 0xFF;
+        fx->m_color[3] = useAlpha ? alpha : 0xFF;
         break;
     }
     case 6: {
-        EffectKey* key = &m_keys[m_curKey];
-        *(f32*)((u8*)m_effect + 0x18) = t * (key->value.to - key->value.from) + key->value.from;
+        ((envMapEffect*)m_effect)->m_blend = t * (m_keys[m_curKey].value.to - m_keys[m_curKey].value.from) + m_keys[m_curKey].value.from;
         break;
     }
     case 7: {
-        EffectKey* key = &m_keys[m_curKey];
-        *(f32*)((u8*)m_effect + 0x18) = t * (key->value.to - key->value.from) + key->value.from;
+        ((blurEffect*)m_effect)->m_strength = t * (m_keys[m_curKey].value.to - m_keys[m_curKey].value.from) + m_keys[m_curKey].value.from;
         break;
     }
     case 1:
@@ -2589,8 +2587,8 @@ bool SoundEntry::Update(float p0) {
             temp_r4 = THIS_F(u8 *, 5, unk05);
             if ((temp_r4 != 0) && (temp_r4 != 0xFF)) {
                 temp_r3 = (unsigned char *)(((WazaSequence*)(THIS_F(WazaSequence * *, 0x2C, seq)))->GetEntryFromID(temp_r4));
-                if ((M2C_FIELD(temp_r3, f32 *, 0x1C) <= THIS_F(f32 *, 0x1C, m_start)) && ((s32) M2C_FIELD(temp_r3, s32 *, 0xC) == 2)) {
-                    temp_r31_2 = M2C_FIELD(temp_r3, _GSmodel **, 0x4C);
+                if ((((SequenceEntry*)temp_r3)->m_start <= THIS_F(f32 *, 0x1C, m_start)) && ((s32) M2C_NAMED(((ModelEntry*)(temp_r3)), s32*, 0xC, type) == 2)) {
+                    temp_r31_2 = M2C_NAMED(((ModelEntry*)(temp_r3)), _GSmodel**, 0x4C, model);
                     if (temp_r31_2 != NULL) {
                         GSmodelForceAnimTransformUpdate((_GSmodel*)(temp_r31_2));
                         GSmodelGetPosition((_GSmodel*)(temp_r31_2), (GSvec*)pos);

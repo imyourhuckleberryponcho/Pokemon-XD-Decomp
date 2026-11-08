@@ -185,7 +185,7 @@ public:
 extern "C" {
 void GSgfxVideoGetEFBSize(u16* w, u16* h);
 void GSmtx44Ortho(f32* m, f32 t, f32 b, f32 l, f32 r, f32 n, f32 f);
-GStexture* GStextureCreateFromMemory(GStexture*, u16, PCARG(u16, u32), void*, s32, void*, PCARG(u8, u32));
+s32 GStextureCreateFromMemory(GStexture*, u16, PCARG(u16, u32), void*, s32, void*, PCARG(u8, u32));
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 void* memcpy(void* dst, const void* src, u32 n);
 extern u8 mtxIdent[0x30];
@@ -290,7 +290,7 @@ void THPGXYuv2RgbSetup(void) {
     ((f32*)l->hw.proj)[5] = m[11];
     {
         THPMatrixStack* ms = (*(THPMatrixStack**)&l->matrixStack);
-        memcpy(ms->top->mtx, mtxIdent, 0x30);
+        memcpy((*(THPMatrixStack**)&l->matrixStack)->top->mtx, mtxIdent, 0x30);
         ms->top->flags |= 1;
     }
     l->hw.fogNear = 0.0f;

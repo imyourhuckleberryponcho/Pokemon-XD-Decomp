@@ -188,10 +188,10 @@ s32 fightTrainerAiCheckSawagu(void* trainer, void* target)
 
 s32 _fightTrainerAiSawaguCheckSub(void* currentPtr, void* unused, void* dataPtr)
 {
-    s32 temp_r31;
-    s32 temp_r30;
-    temp_r31 = *(s32*)dataPtr;
-    temp_r30 = *(s32*)((u8*)dataPtr + 4);
+    GCsptr temp_r31;
+    GCsptr temp_r30;
+    temp_r31 = (GCsptr)((SawaguArgs*)dataPtr)->pokemon;
+    temp_r30 = (GCsptr)((SawaguArgs*)dataPtr)->trainer;
     if (!fightOutPokemonCheckFightOut((FightOutPokemon*)currentPtr)) return 1;
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(temp_r31, (GCsptr)currentPtr, 0xb) == 1 &&
         fightTrainerAiIsFightOutPokemonTokuseiDataId(temp_r31, temp_r30, 0x2b) == 0) return 0;

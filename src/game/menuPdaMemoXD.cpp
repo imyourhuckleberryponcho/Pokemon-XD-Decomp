@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/gcptr.h>
+#include <game/ppcops.h>
 
 #pragma peephole off
 
@@ -854,7 +855,7 @@ void menuPdaMemoXD::PokemonWeight(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
     s32 layer = winSpriteGetLayerID(window, sprite);
     u16 weight = pokemonDataBiosGetWeight(data);
     if (pokecoloGetLanguage() == 2) {
-        u32 pounds = (u32)(2.2045856f * (f32)weight + 0.5f);
+        u32 pounds = GC_F2U32(2.2045856f * (f32)weight + 0.5f);
         msgctrlSetValue(0x34, pounds / 10);
         msgctrlSetValue(0x35, pounds % 10);
         GSmsgPrintRect(layer, 0, 0, item->width, item->height, window->alpha | ~0xFF, 0x3BA1);
@@ -876,7 +877,7 @@ void menuPdaMemoXD::PokemonHeight(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
     u32 value;
     if (pokecoloGetLanguage() == 2) {
         f32 inch = 39.37f * (height / 10.0f);
-        u32 inches = 0.5f + inch;
+        u32 inches = GC_F2U32(0.5f + inch);
         s32 pos = 10;
         s32 digits = 3;
         value = (inches % 12) + (inches / 12) * 100;
@@ -974,8 +975,8 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     case 0x100:
         sprite->colorR = 0xD5;
         sprite->colorG = 0xAA;
-        pMemo->PokemonWeight(window, sprite, contents);
         sprite->colorB = 0x33;
+        pMemo->PokemonWeight(window, sprite, contents);
         break;
     case 0x101:
         sprite->colorR = 0xD5;

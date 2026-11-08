@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
@@ -796,7 +797,7 @@ u32 scriptGetRandom(u32 range)
 {
     u32 low = HSD_Rand();
     u32 high = HSD_Rand() << 16;
-    return (high | low) % range;
+    return GC_MODU(high | low, range);
 }
 
 s32 controlTVScreen()

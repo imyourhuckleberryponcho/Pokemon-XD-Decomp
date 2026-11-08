@@ -454,8 +454,8 @@ struct WazaWzxEntry {
 };
 
 struct SectionTimes {
-    s32 count;
-    f32 time[1];
+    gc_bes32 count;
+    gc_bef32 time[1];
 };
 
 extern "C" PokemonWazaWzxEntry pokemon_waza_wzx_data[];
@@ -1076,16 +1076,16 @@ f32 wazaSequenceSysGetWazaTime(ModelSequence* seq, WazaSequence* waza, u8 mode) 
         return t;
     }
     if (mode == 3 || mode == 4) {
-        return t + sec->time[sec->count + 1];
+        return t + GC_BEF32(sec->time[GC_BES32(sec->count) + 1]);
     }
     if (mode == 1) {
-        return t + sec->time[3];
+        return t + GC_BEF32(sec->time[3]);
     }
     if (mode == 2) {
-        if (sec->count > 2) {
-            return t + sec->time[sec->count];
+        if (GC_BES32(sec->count) > 2) {
+            return t + GC_BEF32(sec->time[GC_BES32(sec->count)]);
         } else {
-            return t + sec->time[sec->count + 1];
+            return t + GC_BEF32(sec->time[GC_BES32(sec->count) + 1]);
         }
     }
     return 0.0f;

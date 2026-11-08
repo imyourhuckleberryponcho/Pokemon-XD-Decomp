@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/menucbsize.h>
 
 #pragma peephole off
 
@@ -39,7 +40,7 @@ struct _MENUCBWORK {
     u8 pad9C78[4];
     u8 pad9C7C[8];
     ErrEntry err[4][6];
-    u8 padrest[0xB5F4 - 0x9CE4];
+    u8 padrest[MENUCB_SIZE - 0x9CE4];
 };
 
 extern "C" {

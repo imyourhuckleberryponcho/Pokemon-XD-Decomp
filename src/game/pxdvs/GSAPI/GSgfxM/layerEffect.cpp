@@ -297,10 +297,7 @@ void GSgfxLayer::EffectTextureCopy(GStexture* tex, bool filter, unsigned char* c
     GSgfxVideoGetEFBSize(&w, &h);
     w = TEX_F(tex, u16 *, 0, width) < w ? TEX_F(tex, u16 *, 0, width) : w;
     h = TEX_F(tex, u16 *, 2, height) < h ? TEX_F(tex, u16 *, 2, height) : h;
-    mask = false;
-    if (r || g || b) {
-        mask = true;
-    }
+    mask = r || g || b;
     if (mask == true) {
         oldR = LAYER_F(this, u8 *, 0x1656, hw.colorUpdate);
         oldG = LAYER_F(this, u8 *, 0x1657, hw.alphaUpdate);

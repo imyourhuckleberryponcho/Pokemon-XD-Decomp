@@ -40,7 +40,14 @@ struct Quaternion {
 typedef f32 Mtx[3][4];
 
 struct _GScamera {
+#ifdef __MWERKS__
     u8 unk0[0x6C];
+#else
+    u8 unk0_flags[4];
+    void* unk4_desc;
+    void* unk8_cobj;
+    u8 unkC[0x60];
+#endif
     GSvec unk6C;
     u8 unk78[0xFC - 0x78];
     GSvec unkFC;

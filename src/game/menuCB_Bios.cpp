@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/menucbsize.h>
 
 #pragma peephole off
 
@@ -52,7 +53,7 @@ struct _MENUCBWORK {
     CBRule rule[6];
     u8 pad9C78[0xB0E0 - 0x9C78];
     s32 controller2P;
-    u8 padB0E4[0xB5F4 - 0xB0E4];
+    u8 padB0E4[MENUCB_SIZE - 0xB0E4];
 };
 
 extern "C" {
@@ -463,7 +464,7 @@ static void menuCBBios_InitContextAtFirst(_MENUCBWORK* cb, _TOOL_SAVEDATA* save)
     _MENUCBWORK * *new_var;
     menuCBBios_UnlockContext();
     new_var = &cb;
-    memset(cb, 0, 0xB5F4);
+    memset(cb, 0, MENUCB_SIZE);
     cb->rule[0] = *menuCBRule_ConstantRule(0);
     cb->rule[1] = *menuCBRule_ConstantRule(1);
     cb->rule[2] = *menuCBRule_ConstantRule(2);

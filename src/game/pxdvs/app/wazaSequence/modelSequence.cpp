@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 #include <game/gcdata.h>
 #include <game/hsdarchive.h>
 #include <game/wazashadow.h>
@@ -952,10 +953,11 @@ void ModelSequence::SetVisibility(bool visible) {
 }
 
 u8 ModelSequence::LoadData(u8* data) {
+    PkxHeader* hdr;
     GSpart* part;
     s32 list;
     s32 resID = wazaSequenceSysGetResID();
-    PkxHeader* hdr = (PkxHeader*)data;
+    hdr = (PkxHeader*)data;
     if (hdr->size == 0) {
         return 0;
     }
@@ -975,17 +977,15 @@ u8 ModelSequence::LoadData(u8* data) {
     if (m_distortionID == 0) {
         m_unk5C &= ~1;
     }
-    data += 0x84;
-    MotionSection* sections = (MotionSection*)data;
-    MotionSection* sec = sections;
     u16 i = 0;
+    MotionSection* sec = (MotionSection*)(data += 0x84);
     m_unk46 = hdr->headJoint;
     m_modelSize = hdr->modelSize;
     m_section = 0;
     m_step = 0;
     m_timer = 0;
     m_stepRestart = 0;
-    m_sections = sections;
+    m_sections = (MotionSection*)data;
     m_modelID = hdr->count;
     for (; i < m_modelID; i++, sec++) {
         MotionEntry* motion = sec->motions;
@@ -996,7 +996,9 @@ u8 ModelSequence::LoadData(u8* data) {
             }
         }
     }
-    u8* body = (u8*)ALIGN32(sections + m_modelID);
+    data += m_modelID * 0xD0;
+    data = (u8*)ALIGN32(data);
+    u8* body = data;
     if (hdr->unk8 != 0) {
         m_unkB0 = GSmemAllocAlign(ALIGN32(hdr->unk8), 0x20);
         if (m_unkB0 != 0) {
@@ -1430,7 +1432,7 @@ void ModelSequence::Update(f32 dt) {
         if (m_mouthState != 0) {
             m_unk4A = 0;
         } else if (m_unk8C->enabled != 0) {
-            m_unk4A += (u16)(u32)(dt * (f32)GSgfxVideoGetVsyncRate());
+            m_unk4A += (u16)GC_F2U32(dt * (f32)GSgfxVideoGetVsyncRate());
             u16 t = m_unk4A;
             if (t >= 10) {
                 f32 chance;
@@ -1681,7 +1683,7 @@ void ModelSequence::LinkWithWazaSequence(WazaSequence* seq) {
         m_section = seq->m_section;
         m_step = 0;
         f32 duration = seq->m_duration;
-        m_timer = (u32)(duration * (f32)GSgfxVideoGetVsyncRate());
+        m_timer = GC_F2U32(duration * (f32)GSgfxVideoGetVsyncRate());
         m_stepRestart = 0;
     }
 }
@@ -1743,9 +1745,9 @@ bool ModelSequence::ModelMotionStart() {
             rem = t - 1;
         }
         u16 divisor = OSf32tou16(frames);
-        m_timer = rem / divisor;
+        m_timer = GC_DIVS((u16)rem, divisor);
         u16 mod = OSf32tou16(0.5f + frames);
-        u16 part = divisor % mod;
+        u16 part = GC_MODS(rem, mod);
         if (part == 0 && m_timer != 0) {
             part = OSf32tou16(0.5f + frames);
             m_timer--;

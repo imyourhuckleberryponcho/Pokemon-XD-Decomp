@@ -78,15 +78,34 @@ struct MenuSubCursorAnimeWork {
     u8 to[4];
 };
 
+#ifndef __MWERKS__
+#include <stddef.h>
+namespace menusub_mw {
+#include <game/shared/menu_work.h>
+}
+#endif
+
 struct MenuSubColorItem {
+#ifdef __MWERKS__
     u8 unk0[0x64];
+#else
+    u8 unk0[offsetof(menusub_mw::tagSPRITE_WORK, r)];
+#endif
     u8 color[4];
 };
 
 struct MenuSubColorContext {
+#ifdef __MWERKS__
     u8 unk0[0x90];
+#else
+    u8 unk0[offsetof(menusub_mw::tagWINDOW_WORK, color)];
+#endif
     u8 color[4];
 };
+#ifndef __MWERKS__
+static_assert(offsetof(menusub_mw::tagSPRITE_WORK, alpha) == offsetof(menusub_mw::tagSPRITE_WORK, r) + 3, "sprite rgba");
+static_assert(offsetof(menusub_mw::tagWINDOW_WORK, alpha) == offsetof(menusub_mw::tagWINDOW_WORK, color) + 3, "window rgba");
+#endif
 
 extern "C" {
 
@@ -248,14 +267,14 @@ static void _menuSubDrawCursorBackSub(GSgfxLayerID layer, s32 x, s32 y, s32 w, s
     u8 a;
     u16 idA;
     u16 idB;
-    void* pa;
+    s32 midW;
     void* pb;
     MenuSpriteVal* side;
     MenuSpriteVal* mid;
     u32 c;
-    s32 midW;
-    s16 sx;
     s16 sy;
+    s16 sx;
+    void* pa;
 
     _animAlpha();
     a = anim ? _animAlpha() : 0xFF;
@@ -269,12 +288,13 @@ static void _menuSubDrawCursorBackSub(GSgfxLayerID layer, s32 x, s32 y, s32 w, s
             pb = menuSpriteBiosGetPtr(0xBC);
             side = menuSpriteBiosGetValPtr(pa);
             mid = menuSpriteBiosGetValPtr(pb);
-            c = color | a;
             midW = w - side->w - side->w;
+            c = color | a;
             windowDrawSprite2(sx, sy, side->w, side->h, c, 0, 0xBB, 0, layer);
             sx += side->w;
             windowDrawSprite2(sx, sy, midW, mid->h, c, 0, 0xBC, 0, layer);
-            windowDrawSprite2(sx + midW, sy, side->w, side->h, c, 0, 0xBB, 1, layer);
+            sx += midW;
+            windowDrawSprite2(sx, sy, side->w, side->h, c, 0, 0xBB, 1, layer);
             return;
         }
         sx = x;
@@ -295,7 +315,8 @@ static void _menuSubDrawCursorBackSub(GSgfxLayerID layer, s32 x, s32 y, s32 w, s
             windowDrawSprite2(sx, sy, side->w, side->h, c, 0, idA, 0, layer);
             sx += side->w;
             windowDrawSprite2(sx, sy, midW, mid->h, c, 0, idB, 0, layer);
-            windowDrawSprite2(sx + midW, sy, side->w, side->h, c, 0, idA, 1, layer);
+            sx += midW;
+            windowDrawSprite2(sx, sy, side->w, side->h, c, 0, idA, 1, layer);
     }
 }
 
@@ -478,9 +499,7 @@ void menuSubCursorAnimeMain(void) {
             w->cur[1] = -1;
             w->cur[0] = -1;
         }
-        s16 rf_t = w->cur[3];
-        w->color = rf_t | (w->cur[2] << 8) |
-                                 (w->cur[0] << 24) | (w->cur[1] << 16);
+        w->color = (w->cur[0] << 24) | (w->cur[1] << 16) | (w->cur[2] << 8) | w->cur[3];
     }
     _cursorAnimeWork.timer += timeGetLastFrameSec();
 }
@@ -676,16 +695,16 @@ void menuSubDrawTriangle(s32 layer, s32 x0, s32 y0, s32 x1, s32 y1, s32 x2, s32 
 
 void menuSubDrawTile(s32 layer, s32 x, s32 y, s32 w, s32 h, u8* color) {
     GSgfxLayer* gfx = GSgfxLayerFindByID(layer);
-    u8 a;
+    u8 r;
     u8 g;
     u8 b;
-    u8 r;
+    u8 a;
 
     if (gfx != 0) {
         (*(u32*)&gfx->unk1998) = 0x98;
         gfx->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 0, 0, 0));
-        h += y;
         w += x;
+        h += y;
         gfx->beginSurface(4);
         GXWGFifo.s16 = x;
         r = color[0];

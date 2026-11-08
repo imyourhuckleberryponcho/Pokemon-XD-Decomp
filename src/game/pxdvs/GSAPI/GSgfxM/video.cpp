@@ -589,10 +589,10 @@ void GSgfxVideoSecondInit() {
 }
 
 void GSgfxVideoInit(u8 count, u16 efbHeight, GSgfxVideoMode mode) {
-    s32 i;
     GSgfxVideoState* st;
     u32 words;
     u32 bytes;
+    s32 i;
     if (count != 0 && count <= 3 && efbHeight <= 0x210) {
         VIInit();
         _videoState.xfbCount = count;
@@ -621,13 +621,14 @@ void GSgfxVideoInit(u8 count, u16 efbHeight, GSgfxVideoMode mode) {
             if (i < st->xfbCount) {
                 st->xfb[i].buf = GSmemAlloc(bytes);
                 st->xfb[i].state = 3;
-                u32* p = (u32*)st->xfb[i].buf;
+                void* buf = st->xfb[i].buf;
+                u32* p = (u32*)buf;
                 u32 n = words;
                 while (n != 0) {
                     *p++ = 0x10801080;
                     n--;
                 }
-                DCFlushRange(st->xfb[i].buf, bytes);
+                DCFlushRange(buf, bytes);
             } else {
                 st->xfb[i].buf = 0;
                 st->xfb[i].state = 0;
@@ -637,7 +638,7 @@ void GSgfxVideoInit(u8 count, u16 efbHeight, GSgfxVideoMode mode) {
         VISetPostRetraceCallback(_videoPostRetraceFunc);
         _videoState.xfb[0].state = 1;
         VISetNextFrameBuffer(_videoState.xfb[0].buf);
-        _videoState.cur = &_videoState.xfb[0];
+        _videoState.cur = _videoState.xfb;
         _videoState.f90 = 0;
         _videoState.clear.r = 0;
         _videoState.clear.g = 0;
@@ -647,12 +648,12 @@ void GSgfxVideoInit(u8 count, u16 efbHeight, GSgfxVideoMode mode) {
         _videoState.f94 = 0;
         _videoState.dropCount = 0;
         _videoState.flipCount = 0;
-        _videoState.lockActive = 0;
         _videoState.renderTime = 0.0f;
         _videoState.realTime = 0.0f;
         _videoState.lastTime = OSGetTime();
         _videoState.lockRate = 0;
         _videoState.lockCount = 0;
+        _videoState.lockActive = 0;
         VISetBlack(1);
         VIConfigure(&_videoState);
         VIFlush();

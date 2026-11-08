@@ -1,6 +1,7 @@
 #include <game/declspec.h>
 #include <dolphin/types.h>
 #include <game/miscTables.h>
+#include <game/ppcops.h>
 #pragma pool_strings off
 #pragma peephole off
 
@@ -93,7 +94,7 @@ void FloorBgmMask::update(f32 dt) {
         name = "fadeInDelay";
         timer -= dt;
         if (timer <= 0.0f) {
-            soundSetVolumeID(bgmId, (u32)(1000.0f * fadeInTime), baseVolume);
+            soundSetVolumeID(bgmId, GC_F2U32(1000.0f * fadeInTime), baseVolume);
             timer = fadeInTime;
             changeMode(MODE_FADEIN);
         }
@@ -124,7 +125,7 @@ void FloorBgmMask::endMECallback() {
 void FloorBgmMask::startMECallback() {
     switch (mode) {
     case MODE_FADEINDELAY:
-        soundSetVolumeID(bgmId, (u32)(1000.0f * fadeInTime), baseVolume);
+        soundSetVolumeID(bgmId, GC_F2U32(1000.0f * fadeInTime), baseVolume);
         changeMode(MODE_NONE);
         break;
     }
@@ -132,7 +133,7 @@ void FloorBgmMask::startMECallback() {
 
 void FloorBgmMask::stopMask() {
     if (isEnable() && mode != MODE_NONE) {
-        soundSetVolumeID(bgmId, (u32)(1000.0f * fadeInTime), baseVolume);
+        soundSetVolumeID(bgmId, GC_F2U32(1000.0f * fadeInTime), baseVolume);
         changeMode(MODE_NONE);
     }
 }
@@ -163,7 +164,7 @@ void FloorBgmMask::startMask() {
             baseVolume = curVolume;
             maskVolume = (u8)(curVolume * volumeRate);
         }
-        soundSetVolumeID(bgmId, (u32)(1000.0f * fadeOutTime), maskVolume);
+        soundSetVolumeID(bgmId, GC_F2U32(1000.0f * fadeOutTime), maskVolume);
         changeMode(MODE_FADEOUT);
         timer = fadeOutTime;
     }

@@ -1,6 +1,7 @@
 #include <dolphin/types.h>
 #include <game/gcdata.h>
 #include <game/pxdvs/GSAPI/GSsnd/sndData.h>
+#include <game/ppcops.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -261,21 +262,21 @@ static void _sndStreamPrepareGetDataCallback_Exec(SndStream* s, SndStream* maste
 extern "C" {
 static u32 _sndStreamNibble_GetHeaderPos(u32 p0) {
     f64 scale = 0.5;
-    return (u32)(p0 * scale) & 0xFFFFFFF8;
+    return GC_F2U32(p0 * scale) & 0xFFFFFFF8;
 }
 }
 
 extern "C" {
 u32 _sndStreamNibble_HeaderOFF2ON(u32 p0) {
     f64 scale = 1.1428571428571428;
-    return (u32)(p0 * scale);
+    return GC_F2U32(p0 * scale);
 }
 }
 
 extern "C" {
 u32 _sndStreamNibble_HeaderON2OFF(u32 p0) {
     f64 scale = 0.875;
-    return (u32)(p0 * scale);
+    return GC_F2U32(p0 * scale);
 }
 }
 
@@ -306,10 +307,11 @@ u32 _sndStreamCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
         } else {
             f32 target;
             f32 step;
-            target = s->targetVol;
-            step = (target - s->startVol) / s->fadeTime;
             vol = s->startVol;
-            step *= (s->fadeFrame++ * 20);
+            target = s->targetVol;
+            step = (target - vol) / s->fadeTime;
+            step *= (s->fadeFrame * 20);
+            s->fadeFrame++;
             vol += step;
             if (step > 0.0f && vol >= target) {
                 vol = target;
@@ -330,7 +332,7 @@ u32 _sndStreamCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
         return 0;
     }
     if (master->loop == 0 && master->ch[0].busy[master->half] == 1 && master->ch[1].busy[other->half] == 1 &&
-        len1 + (len2 + s->played) >= master->endPos) {
+        len1 + len2 + s->played >= master->endPos) {
         sndStreamDeactivate(master->stid);
         master->state = 0xA;
         sndStreamDeactivate(other->stid);

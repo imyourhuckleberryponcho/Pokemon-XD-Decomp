@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -393,7 +394,7 @@ static void _esabaCallBackAppFunc(u16 place, FootStepCounter, s32 amount) {
     u32 limit;
     u32 stepB;
 
-    if (mirabo == table[place]) {
+    if (mirabo == table[(int)place]) {
         return;
     }
     if (GSflagTest(esabadata[place].flag14)) {
@@ -410,7 +411,7 @@ static void _esabaCallBackAppFunc(u16 place, FootStepCounter, s32 amount) {
             stepB += amount;
             if (stepB >= limit) {
                 mod = esabaappdata->randMod;
-                if ((u16)HSD_Rand() % (s32)mod == 0) {
+                if (GC_MODS((u16)HSD_Rand(), (s32)mod) == 0) {
                     _esabaAppearPokemon(place);
                 } else {
                     GSflagSet(esabadata[place].flag8, stepB - limit);
@@ -505,9 +506,8 @@ static void _esabaAppearPokemonSub(u16 place) {
     u16 count = getMax(id);
     u16 roll = (u16)HSD_Rand() % 100;
     u16 total = 0;
-    u8 rf_t = esabapokemondata_EX[0].prob;
-    u16 probA = rf_t;
-    int probB = esabapokemondata_EX[1].prob;
+    u16 probA = esabapokemondata_EX[0].prob;
+    u16 probB = esabapokemondata_EX[1].prob;
     s32 k;
 
     if (isExPokemonPlaced(0)) {
@@ -519,7 +519,7 @@ static void _esabaAppearPokemonSub(u16 place) {
     roll = (u16)HSD_Rand() % 100;
     if (roll < probA) {
         setPokemon(id, esabapokemondata_EX[0].id);
-    } else if (roll < (u16)(probA == 0 ? probB : probA + probB)) {
+    } else if (roll < (probA == 0 ? probB : (u16)(probA + probB))) {
         setPokemon(id, esabapokemondata_EX[1].id);
     } else {
         roll = (u16)HSD_Rand() % 100;

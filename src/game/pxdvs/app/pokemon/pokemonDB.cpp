@@ -1451,7 +1451,7 @@ u16 fightOutPokemon_GetUsedItemDataId(FightOutPokemon* fop) {
     return fop->usedItemDataId;
 }
 
-u8 fightOutPokemon_GetNamakeFlag(FightOutPokemon* fop) {
+PCRET(u8) fightOutPokemon_GetNamakeFlag(FightOutPokemon* fop) {
     if (fop == nullptr) {
         return 0;
     }
@@ -2029,7 +2029,7 @@ char* pokemon_GetNicknamePtr(Pokemon* poke) {
     {
         return nullptr;
     }
-    return &poke->nickname[0];
+    return (char*)&poke->nickname[0];
 }
 
 u32 pokemon_GetCatchTrainerRnd(Pokemon* poke) {

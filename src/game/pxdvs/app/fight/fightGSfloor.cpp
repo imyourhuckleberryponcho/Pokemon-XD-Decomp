@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/statusval.h>
+#include <game/gcptr.h>
 
 struct GSvec {
     f32 x, y, z;
@@ -8,14 +9,17 @@ struct GSvec {
 struct _GSmodel;
 struct FIGHT_FLOOR;
 struct GridRow {
-    u32 trainer;
-    u32 pokemon[2];
+    GCuptr trainer;
+    GCuptr pokemon[2];
     u32 info;
 };
 struct battleGrid {
     GridRow rows[4];
     u8 rest[4];
 };
+#ifndef __MWERKS__
+static_assert(sizeof(battleGrid) == 0x88, "battleGrid.cpp's BattleGrid is 0x88 bytes on PC");
+#endif
 
 struct GSmodelState {
     u8 data[0x6C];
@@ -30,22 +34,22 @@ struct GSfloorScan {
 };
 
 struct GSfloorTrainerEntry {
-    u32 target;
+    GCuptr target;
     u16 id;
     u8 flags;
     u8 flipped;
-    u32* bgSeq;
+    GCuptr* bgSeq;
     GSmodelState state;
 };
 
 struct GSfloorPokemonEntry {
-    u32 target;
+    GCuptr target;
     u16 id;
     u8 flags;
     u8 rare;
     u8 flipped;
     u32 rnd;
-    u32* bgSeq;
+    GCuptr* bgSeq;
     GSmodelState state;
 };
 
@@ -54,7 +58,7 @@ struct GSfloorPush {
     u16 pokemonCount;
     u16 evtFlag;
     u8 pad[2];
-    u8 grid[0x44];
+    u8 grid[sizeof(battleGrid)];
 };
 
 typedef u8 (*GSfloorLoopFunc)(void*, u16, void*);
@@ -94,12 +98,16 @@ u8 Sequence_IsRare(u32 seq);
 u32 Sequence_GetPokemonRndVal(u32 seq);
 u16 Sequence_GetID(u32 seq);
 void Sequence_Free(u32 seq);
+#ifndef __MWERKS__
+void fightTrainer_SetSequencePtr(u8* t, u32 v);
+void fightOutPokemonBiosSetSequencePtr(u8* p, GCuptr v);
+#endif
 }
 
 static u8 _fightGSfloorTrainerEvt(void*, u16, void*);
 static u8 _fightGSfloorPokemonCB(void*, u16, void*);
 static u8 _fightGSfloorTrainerCB(void*, u16, void*);
-static u32* _fightGSfloorFindBGSeqPtr(battleGrid* grid, u32 seq, bool trainer);
+static GCuptr* _fightGSfloorFindBGSeqPtr(battleGrid* grid, GCuptr seq, bool trainer);
 
 extern "C" {
 
@@ -133,9 +141,9 @@ u32 fightGSfloorGetPushDataSize(void) {
     if (fightFloorIsNowEncountSnatchOnly(0) == 1) {
         trainerCount++;
     }
-    total = trainerCount * 0x78;
-    total += pokemonCount * 0x80;
-    return total + 0x4C;
+    total = trainerCount * (s32)sizeof(GSfloorTrainerEntry);
+    total += pokemonCount * (s32)sizeof(GSfloorPokemonEntry);
+    return total + (s32)sizeof(GSfloorPush);
 }
 
 void fightGSfloorPushData(GSfloorPush* out) {
@@ -143,12 +151,12 @@ void fightGSfloorPushData(GSfloorPush* out) {
     u16 trainerCount;
     u16 pokemonCount;
     u8* grid = out->grid;
-    memcpy(grid, battleGridGetPtr(), 0x44);
+    memcpy(grid, battleGridGetPtr(), sizeof(battleGrid));
     scan.collect = 1;
     scan.consume = 0;
     scan.count = 0;
     scan.grid = (battleGrid*)grid;
-    scan.next = grid + 0x44;
+    scan.next = grid + sizeof(battleGrid);
     fightFloorLoopValidFightTrainer(0, _fightGSfloorTrainerCB, &scan, 0);
     trainerCount = scan.count;
     if (fightFloorIsNowEncountSnatchOnly(0) == 1) {
@@ -177,13 +185,17 @@ void fightGSfloorPopData(GSfloorPush* in) {
     GSvec v;
 
     grid = in->grid;
-    t = (GSfloorTrainerEntry*)(grid + 0x44);
+    t = (GSfloorTrainerEntry*)(grid + sizeof(battleGrid));
     trainerCount = in->trainerCount;
     pokemonCount = in->pokemonCount;
     evtFlag = in->evtFlag;
     while (trainerCount-- != 0) {
         seq = Sequence_LoadTrainer(t->id);
+#ifdef __MWERKS__
         *(u32*)(t->target + 0x3544) = seq;
+#else
+        fightTrainer_SetSequencePtr((u8*)t->target, seq);
+#endif
         *t->bgSeq = seq;
         model = Sequence_GetGSmodel(seq);
         GSmodelPopState(model, &t->state);
@@ -217,7 +229,11 @@ void fightGSfloorPopData(GSfloorPush* in) {
     p = (GSfloorPokemonEntry*)t;
     while (pokemonCount-- != 0) {
         seq = Sequence_LoadPokemon(p->id, p->rnd, p->rare);
+#ifdef __MWERKS__
         *(u32*)(p->target + 0x7AC) = seq;
+#else
+        fightOutPokemonBiosSetSequencePtr((u8*)p->target, seq);
+#endif
         *p->bgSeq = seq;
         model = Sequence_GetGSmodel(seq);
         GSmodelPopState(model, &p->state);
@@ -232,7 +248,7 @@ void fightGSfloorPopData(GSfloorPush* in) {
         Sequence_SetVisibility(seq, GSmodelGetVisibility(model));
         p++;
     }
-    memcpy(battleGridGetPtr(), grid, 0x44);
+    memcpy(battleGridGetPtr(), grid, sizeof(battleGrid));
     fightMainAllCamera(1, 0);
     fightFloorSetShadow();
 }
@@ -251,7 +267,7 @@ static u8 _fightGSfloorTrainerEvt(void* target, u16 id, void* data) {
         e->id = 0x40;
         e->flags = Sequence_GetFlags(seq);
         e->flipped = Sequence_IsFlipped(seq);
-        e->bgSeq = (u32*)&seq;
+        e->bgSeq = (GCuptr*)&seq;
         GSmodelPushState(Sequence_GetGSmodel(seq), &e->state);
         scan->next = (u8*)((GSfloorTrainerEntry*)scan->next + 1);
     }
@@ -277,7 +293,7 @@ static u8 _fightGSfloorPokemonCB(void* target, u16 id, void* data) {
     }
     if (scan->collect != 0) {
         e = (GSfloorPokemonEntry*)scan->next;
-        e->target = (u32)target;
+        e->target = (GCuptr)target;
         e->id = seqId;
         e->flags = Sequence_GetFlags(seq);
         e->flipped = Sequence_IsFlipped(seq);
@@ -309,7 +325,7 @@ static u8 _fightGSfloorTrainerCB(void* target, u16 id, void* data) {
     }
     if (scan->collect != 0) {
         e = (GSfloorTrainerEntry*)scan->next;
-        e->target = (u32)target;
+        e->target = (GCuptr)target;
         e->id = seqId;
         e->flags = Sequence_GetFlags(seq);
         e->flipped = Sequence_IsFlipped(seq);
@@ -324,7 +340,7 @@ static u8 _fightGSfloorTrainerCB(void* target, u16 id, void* data) {
     return 1;
 }
 
-static u32* _fightGSfloorFindBGSeqPtr(battleGrid* grid, u32 seq, bool trainer) {
+static GCuptr* _fightGSfloorFindBGSeqPtr(battleGrid* grid, GCuptr seq, bool trainer) {
     GridRow* row;
     s32 i;
     s32 j;

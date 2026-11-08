@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 
 class FightEncountData;
 class FIGHT_FLOOR;
@@ -7,9 +8,15 @@ class FIGHT_TRAINER;
 class FightOutPokemon;
 class Sequence;
 
+#ifdef __MWERKS__
 struct FightActionWork {
     u8 raw[0x30];
 };
+#else
+struct alignas(8) FightActionWork {
+    u8 raw[0x48];
+};
+#endif
 
 extern "C" {
 
@@ -422,7 +429,7 @@ static void _fightMainWaitFrameSub(u32 frames) {
         u32 t = 0;
         while (t < frames) {
             GSthreadSwitch();
-            t = (u32)((f32)t + GSgfxVideoGetLastRenderTime());
+            t = GC_F2U32((f32)t + GSgfxVideoGetLastRenderTime());
         }
     }
 }

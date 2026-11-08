@@ -244,7 +244,7 @@ static void _menuFieldMenuCursor(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2)
         winSpriteSetDisp((tagSPRITE_WORK*)(p1), 0U);
     }
     if ((s8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0x1, state) == 3) {
-        winSetSequence((tagSEQ_WORK*)(((u8*)(p1) + 0xC)), 0U);
+        winSetSequence((tagSEQ_WORK*)&M2C_NAMED(((SpriteWorkLayout*)(p1)), u8 *, 0xC, seq), 0U);
     }
 }
 }

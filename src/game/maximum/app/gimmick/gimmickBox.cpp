@@ -1134,7 +1134,7 @@ static s32 _gimmickBoxGetPeopleNum() {
     return peopleBiosGetMaxNum();
 }
 
-extern "C" s32 gimmickBoxSetKenShadowOnBoxIfOnBoxFloor(tagPeopleWork* ken, s32* list, s32* count) {
+extern "C" s32 gimmickBoxSetKenShadowOnBoxIfOnBoxFloor(tagPeopleWork* ken, GCsptr* list, s32* count) {
     if (pd.mode == 0) return 0;
     if (ken->id != heroMoveGetKenObjID()) return 0;
     f32 dx;

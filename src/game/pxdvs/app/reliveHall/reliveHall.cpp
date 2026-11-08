@@ -126,19 +126,7 @@ static inline s32 countDancers(CReliveStage* s) {
     return n;
 }
 
-namespace {
-extern u16 jyoutai2levelTbl[4];
-}
-
-static inline s32 jyoutaiLevel(u16 st) {
-    for (s32 k = 0; k < 4; k++) {
-        if ((s32)st == (s32)jyoutai2levelTbl[k]) {
-            s32 r = k - 1;
-            return r & ~(r >> 31);
-        }
-    }
-    return 0x7B;
-}
+static inline s32 jyoutaiLevel(u16 st);
 
 static inline s32 pairAisyou(Pokemon* a, Pokemon* b) {
     Pokemon* ps[2];
@@ -233,8 +221,8 @@ static inline void pokemonSetupAfterInsert(CReliveHall* hall, CReliveStage* stag
 
 void CReliveStage::init() {
     memset(this, 0, 0x3D8);
-    pokemonInitAry((u32)stageDancer(this, 0), 4);
-    pokemonInit((u32)stageVisitor(this));
+    pokemonInitAry((GCuptr)stageDancer(this, 0), 4);
+    pokemonInit((GCuptr)stageVisitor(this));
 }
 
 Pokemon* CReliveStage::getVisitorPointer() {
@@ -244,7 +232,7 @@ Pokemon* CReliveStage::getVisitorPointer() {
 void CReliveStage::putVisitor(Pokemon& p) {
     memcpy(visitor, &p, 0xC4);
     pokemonSetupAfterInsert(0, this, (Pokemon*)visitor);
-    pokemonInit((u32)&p);
+    pokemonInit((GCuptr)&p);
 }
 
 Pokemon* CReliveStage::getDancerPointer(s32 i) {
@@ -283,7 +271,7 @@ void CReliveStage::pickupDancer(Pokemon& out, s32 slot) {
     s32 next = slot + 1;
     s32 cnt = 4 - next;
     if (cnt != 0) memmove(src, dancer[next], cnt * 0xC4);
-    pokemonInit((u32)(Pokemon*)dancer[3]);
+    pokemonInit((GCuptr)(Pokemon*)dancer[3]);
 }
 
 void CReliveStage::insertDancer(Pokemon& in, s32 slot) {
@@ -293,12 +281,12 @@ void CReliveStage::insertDancer(Pokemon& in, s32 slot) {
     Pokemon* dst = stageDancer(this, slot);
     memcpy(dst, &in, 0xC4);
     pokemonSetupAfterInsert(0, this, dst);
-    pokemonInit((u32)&in);
+    pokemonInit((GCuptr)&in);
 }
 
 void CReliveStage::pickupVisitor(Pokemon& out) {
     memcpy(&out, visitor, 0xC4);
-    pokemonInit((u32)stageVisitor(this));
+    pokemonInit((GCuptr)stageVisitor(this));
 }
 
 s32 CReliveStage::getPassion() {
@@ -391,7 +379,7 @@ bool CReliveStage::isPokemonZokuseiAllUnique(bool withVisitor) {
 
 Pokemon* CReliveStage::heroWalkReliveCallBack(s32 steps, bool pay) {
     u32 cur;
-    if ((s16)getPassion() == 0) return 0;
+    if (getPassion() == 0) return 0;
     Pokemon* v = VISITOR_OR_NULL(this);
     if (v->getPokemonDataId() == 0xF9) return 0;
     u16 id = pokemonBiosGetDarkpokemonDataId(v);
@@ -399,7 +387,8 @@ Pokemon* CReliveStage::heroWalkReliveCallBack(s32 steps, bool pay) {
     if (v->getDarkPointDirect() == 0) return 0;
     cur = darkPokemonBiosGetSteps(id);
     if ((u16)cur >= relivehall_data->steps && pay) {
-        pokemonAddDp(v, (f32)-getPassion());
+        s32 ps = getPassion();
+        pokemonAddDp(v, (f32)-ps);
         darkPokemonBiosSetSteps(id, cur - relivehall_data->steps);
         if (v->getDarkPointDirect() != 0) return 0;
         return v;
@@ -448,8 +437,8 @@ void CReliveHall::init() {
     memset(this, 0, 0x2298);
     for (u32 i = 0; i < 9; i++) {
         memset(&stage[i], 0, 0x3D8);
-        pokemonInitAry((u32)stageDancer(&stage[i], 0), 4);
-        pokemonInit((u32)stageVisitor(&stage[i]));
+        pokemonInitAry((GCuptr)stageDancer(&stage[i], 0), 4);
+        pokemonInit((GCuptr)stageVisitor(&stage[i]));
     }
 }
 
@@ -568,8 +557,8 @@ void CReliveHall::debugPokemonSetup(s32 mode) {
         memset(this, 0, 0x2298);
         for (u32 i = 0; i < 9; i++) {
             memset(&stage[i], 0, 0x3D8);
-            pokemonInitAry((u32)stageDancer(&stage[i], 0), 4);
-            pokemonInit((u32)stageVisitor(&stage[i]));
+            pokemonInitAry((GCuptr)stageDancer(&stage[i], 0), 4);
+            pokemonInit((GCuptr)stageVisitor(&stage[i]));
         }
         u32 base = 0;
         for (s32 s = 0; s < 8; s++, base += 2) {
@@ -585,12 +574,12 @@ void CReliveHall::debugPokemonSetup(s32 mode) {
                 Pokemon* dst = stageDancer(&stage[s], slot);
                 memcpy(dst, tmp, 0xC4);
                 pokemonSetupAfterInsert(this, &stage[s], dst);
-                pokemonInit((u32)(Pokemon*)tmp);
+                pokemonInit((GCuptr)(Pokemon*)tmp);
             }
-            menuPocketDebugMakePokemonByID(*(Pokemon*)tmp, dptbl[s], true, darkRateTbl[s + (mode != 1) * 10]);
-            memcpy(stageVisitor(&stage[s]), tmp, 0xC4);
-            pokemonSetupAfterInsert(this, &stage[s], stageVisitor(&stage[s]));
-            pokemonInit((u32)(Pokemon*)tmp);
+            menuPocketDebugMakePokemonByID(*(Pokemon*)tmp, dptbl[s], true, darkRateTbl[(mode != 1) * 10 + s]);
+            memcpy(stage[s].visitor, tmp, 0xC4);
+            pokemonSetupAfterInsert(this, &stage[s], (Pokemon*)stage[s].visitor);
+            pokemonInit((GCuptr)(Pokemon*)tmp);
             stage[s].hit = 0;
         }
         return;
@@ -602,8 +591,8 @@ void CReliveHall::debugPokemonSetup(s32 mode) {
         memset(this, 0, 0x2298);
         for (u32 i = 0; i < 9; i++) {
             memset(&stage[i], 0, 0x3D8);
-            pokemonInitAry((u32)stageDancer(&stage[i], 0), 4);
-            pokemonInit((u32)stageVisitor(&stage[i]));
+            pokemonInitAry((GCuptr)stageDancer(&stage[i], 0), 4);
+            pokemonInit((GCuptr)stageVisitor(&stage[i]));
         }
         for (s32 s = 0; s < 9; s++) {
             for (s32 d = 0; d < 4; d++) {
@@ -612,15 +601,26 @@ void CReliveHall::debugPokemonSetup(s32 mode) {
                 Pokemon* dst = stageDancer(&stage[s], slot);
                 memcpy(dst, tmp, 0xC4);
                 pokemonSetupAfterInsert(this, &stage[s], dst);
-                pokemonInit((u32)(Pokemon*)tmp);
+                pokemonInit((GCuptr)(Pokemon*)tmp);
             }
             menuPocketDebugMakeDarkPokemonByID(*(Pokemon*)tmp, dptbl2[s], darkRateTbl[10 + s]);
-            memcpy(stageVisitor(&stage[s]), tmp, 0xC4);
-            pokemonSetupAfterInsert(this, &stage[s], stageVisitor(&stage[s]));
-            pokemonInit((u32)(Pokemon*)tmp);
+            memcpy(stage[s].visitor, tmp, 0xC4);
+            pokemonSetupAfterInsert(this, &stage[s], (Pokemon*)stage[s].visitor);
+            pokemonInit((GCuptr)(Pokemon*)tmp);
             stage[s].hit = 0;
         }
     }
+}
+
+static inline s32 jyoutaiLevel(u16 st) {
+    static u16 jyoutai2levelTbl[4] = { 0x43, 0x42, 0x3F, 0x41 };
+    for (s32 k = 0; k < 4; k++) {
+        if ((s32)st == (s32)jyoutai2levelTbl[k]) {
+            s32 r = k - 1;
+            return r & ~(r >> 31);
+        }
+    }
+    return 0x7B;
 }
 
 s32 reliveHallPokemonToAisyou(Pokemon* a, Pokemon* b) {
@@ -694,6 +694,3 @@ extern "C" void reliveHallDebugPokemonSetup(s32 mode) {
     hallPtr()->debugPokemonSetup(mode);
 }
 
-namespace {
-u16 jyoutai2levelTbl[4] = { 0x43, 0x42, 0x3F, 0x41 };
-}

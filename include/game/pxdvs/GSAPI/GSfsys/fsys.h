@@ -110,13 +110,19 @@ typedef void (*FsysStreamCallback)(void* data, u32 arg0, u32 arg1);
 #define FSYS_U32_TO_PTR(T, v) ((T)(uintptr_t)(v))
 #endif
 
+#ifdef __MWERKS__
+typedef void (*FsysArqCallback)(u32);
+#else
+typedef void (*FsysArqCallback)(uintptr_t);
+#endif
+
 struct FsysArqTrans {
     FsysArqTrans* prev;
     FsysArqTrans* next;
     u8 used;
     u8 pad9[3];
     ARQRequest request;
-    void (*callback)(u32);
+    FsysArqCallback callback;
     Fsys* fsys;
     FsysResHeader* res;
     u32 arg0;

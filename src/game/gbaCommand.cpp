@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
@@ -433,7 +434,7 @@ u32 gbaCommandRequestAction(s32 port, GCsptr trainer, s32 slot, s32 irekae) {
     }
     count = i;
 
-    partyIds |= -(1 << (count * 4 + 8));
+    partyIds |= -GC_SHL(1, count * 4 + 8);
     snap.partyIds = _swap32(partyIds);
     snap.canSwitch = _swap32(canSwitch);
 

@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/ppcops.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 #include <game/bingoData.h>
@@ -37,7 +39,11 @@ public:
     u8 getAddPlace() const;
     u8 getAddID() const;
     u8 getSwapMode() const;
+#ifdef __MWERKS__
+    u32 getSwapDeckNO() const;
+#else
     u16 getSwapDeckNO() const;
+#endif
 };
 enum darkPokemonSnatchWho { darkPokemonSnatchWho0, darkPokemonSnatchWho1, darkPokemonSnatchWho2, darkPokemonSnatchWho3 };
 struct DarkPokemon {
@@ -207,8 +213,8 @@ void fightMenuFightTrainerGcHeroOpenMenu(FightTrainer* trainer, u32 side, u32 fl
 u8 fightMenuFightTrainerAgbHeroOpenMenu(FightTrainer* trainer, u32 side);
 u8 dbgMenuFightGetAllFightTrainerOperateFlag(void);
 s16 fightMenuFightTrainerGcHeroSelectIrekaeFightPokemon(FightTrainer* trainer, u32 a, u32 b, u32 c, u32 d);
-s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FightTrainer* trainer, u32 a, u32 b, u32 c);
-s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FightTrainer* trainer, u32 a, u32 b, u32 c);
+s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FightTrainer* trainer, u32 a, u32 b, GCuptr c);
+s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FightTrainer* trainer, u32 a, u32 b, GCuptr c);
 u32 fightTrainer_GetSequencePtr(FightTrainer* trainer);
 void Sequence_LoadWaza(u32 seq, u32 id, u32 kind, u32 flag);
 u32 Sequence_GetWaza(u32 seq, u32 id, u32 kind);
@@ -271,7 +277,7 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
 void deckCreate(u16 id, u16 pokemonId, Pokemon* pokemon);
 void pokemon_SetFightTrainerPokemonDataId(Pokemon* pokemon, u16 id);
 s16 heroCatchPokemon(Hero* hero, Pokemon* pokemon, u32 a, PCARG(u16, u32) ballId, u32 b);
-u16 HSD_Rand(void);
+u32 HSD_Rand(void);
 u16 fightFloor_GetFightFloorDataId(u32 side);
 void heroBiosSetRnd(Hero* hero, u32 rnd);
 u16 esabaGetPokemonID(s32 index);
@@ -1198,7 +1204,7 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     u8 j;
     u8 done;
     u16 w;
-    u16 rnd;
+    u32 rnd;
     u16 tries;
 
     deck = DeckPokemon::getDeckPokemonObj(id);
@@ -1268,7 +1274,8 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
             do {
                 total = 0;
                 for (j = 0; j < 6; j++) {
-                    statusEffort[j] += (u16)HSD_Rand() % 256;
+                    u16 r = HSD_Rand();
+                    statusEffort[j] += r % 256;
                     total += statusEffort[j];
                 }
                 if (fightKind == 10 || fightKind == 17) {
@@ -1404,7 +1411,7 @@ static void _fightTrainer_SortUnderTakerDarkPoke(u8* list, u8 count) {
 }
 
 static void _fightTrainer_GetUnderTakerDarkPoke(u8* list, u8 count, u8 start, Hero* hero, u8 num, u16 encountId) {
-    f32 step = 20.0f / count;
+    f32 step;
     u8 i;
     u8 first = start;
     DeckDarkPokemon* deckDark;
@@ -1412,6 +1419,7 @@ static void _fightTrainer_GetUnderTakerDarkPoke(u8* list, u8 count, u8 start, He
     f32 limit;
     u8 loops = 0;
     f32 total = 0.0f;
+    step = 20.0f / count;
     u16 ballId;
     u16 darkId;
     u8 used[2] = {0, 0};
@@ -1501,7 +1509,7 @@ static void _fightTrainerCreateDeckUnderTaker(u16 id, Hero* hero, u16 encountId)
     count = _fightTrainer_GetListUnderTakerDarkPoke(list);
     if (count != 0) {
         _fightTrainer_SortUnderTakerDarkPoke(list, count);
-        _fightTrainer_GetUnderTakerDarkPoke(list, count, i, hero, (u32)count > 6 ? 2 : 1, encountId);
+        _fightTrainer_GetUnderTakerDarkPoke(list, count, i, hero, count >= 7 ? 2 : 1, encountId);
     }
 }
 
@@ -1678,7 +1686,7 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
     u8 k;
     s16 maxLevel;
     u8 minLevel;
-    s32 levelRnd;
+    u16 levelRnd;
     Pokemon pokemon;
     u16 item0;
     u16 item1;
@@ -1723,7 +1731,7 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
     levelRnd = HSD_Rand();
     trainerPokemonId = fightTrainerDB_GetTemotiPokemonId(id, 0);
     DeckTrainer::getDeckTrainerObj(id)->getDarkPokemonDataID(0);
-    pokemonCreate(&pokemon, pokemonId, minLevel + levelRnd % (maxLevel - minLevel + 1), gamedataGetStatus(0, 1));
+    pokemonCreate(&pokemon, pokemonId, minLevel + GC_MODS(levelRnd, maxLevel - minLevel + 1), gamedataGetStatus(0, 1));
     if (rnd != 0) {
         pokemon.setRnd(rnd);
         pokemonResetBasisStatus(&pokemon);
@@ -1745,14 +1753,14 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
 }
 
 static void _fightTrainerCreateDeckNormal(u16 id, Hero* hero, u16 encountId) {
+    u16 swapId;
     u8 j;
     u16 darkId;
     u8 hasDark;
     u16 ballId;
-    u16 swapDeck;
+    u32 swapDeck;
     DarkPokemon* dark;
     Pokemon pokemon;
-    u16 swapId;
     u8 i;
     u16 pokemonId;
     FIGHT_ENCOUNT* encount;
@@ -1773,7 +1781,7 @@ static void _fightTrainerCreateDeckNormal(u16 id, Hero* hero, u16 encountId) {
     swapId = swapDeck;
     for (j = 0;; j++) {
         if (swapMode == 2 && hasDark == 1) {
-            pokemonId = fightTrainerDB_GetTemotiPokemonId((u16)swapId, j);
+            pokemonId = fightTrainerDB_GetTemotiPokemonId(swapId, j);
             darkId = DeckTrainer::getDeckTrainerObj(swapId)->getDarkPokemonDataID(j);
         } else {
             pokemonId = fightTrainerDB_GetTemotiPokemonId(id, j);
@@ -1788,7 +1796,7 @@ static void _fightTrainerCreateDeckNormal(u16 id, Hero* hero, u16 encountId) {
 
 static bool _fightTrainerCreateDeckPokemon(Hero* hero, u16 pokemonId, u16 darkId, u16 ballId, Pokemon* pokemon, u8 index,
                                            u16 encountId) {
-    u16 swapDeck;
+    u32 swapDeck;
     DarkPokemon* dark;
     u8 addId;
     u32 fightMode;
@@ -1904,7 +1912,6 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* her
     Pokemon* p;
     u32 num;
     u8 fightKind;
-    u16 disk;
     u32 sex;
 
     if (encountId == 0) {
@@ -1939,13 +1946,13 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* her
         } else if (fightKind == 15 || fightKind == 14) {
             heroCreate(hero, heroBiosGetNamePtr(player), 0);
             _fightTrainerCreateDeckVirtual(id, hero, encountId);
-            disk = fightEncountDataBiosGetDiskId(fightEncountDataBiosGetPtr(encountId));
+            id = fightEncountDataBiosGetDiskId(fightEncountDataBiosGetPtr(encountId));
             for (i = 0; i < 4; i++) {
-                item = deckDataVirtualDB_GetItemID(disk, i);
+                item = deckDataVirtualDB_GetItemID(id, i);
                 if (item == 0) {
                     continue;
                 }
-                num = deckDataVirtualDB_GetItemNum(disk, i);
+                num = deckDataVirtualDB_GetItemNum(id, i);
                 if (num == 0) {
                     continue;
                 }
@@ -1994,13 +2001,14 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* her
         _fightTrainerCreateRndCheckRare(hero, false);
     }
     if (fightKind == 15 || fightKind == 14) {
-        disk = fightEncountDataBiosGetDiskId(fightEncountDataBiosGetPtr(encountId));
+        u16 diskId = fightEncountDataBiosGetDiskId(fightEncountDataBiosGetPtr(encountId));
+        id = diskId;
         for (i = 0; i < 4; i++) {
-            item = deckDataVirtualDB_GetItemID(disk, i);
+            item = deckDataVirtualDB_GetItemID(id, i);
             if (item == 0) {
                 continue;
             }
-            num = deckDataVirtualDB_GetItemNum(disk, i);
+            num = deckDataVirtualDB_GetItemNum(id, i);
             if (num == 0) {
                 continue;
             }
@@ -2032,7 +2040,7 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16 id, s32 allowNoAi, Hero* her
 void fightTrainerSortFightTrainerDataIdToHeroTemotiPokemon(FightTrainer* trainer, u16 num, u32 mode) {
     Pokemon* ary[6];
     Pokemon pokemon[6];
-    u16 swapDeck;
+    u32 swapDeck;
     u16 id;
     u16 aiId;
     Hero* hero;
@@ -2056,7 +2064,7 @@ void fightTrainerSortFightTrainerDataIdToHeroTemotiPokemon(FightTrainer* trainer
     if (_fightTrainerGetHeroKind(id) == 0 || _fightTrainerGetHeroKind(id) == 1) {
         return;
     }
-    if (swapDeck != 0 && fightTrainerAiDB_GetPokemonDataOrderOutFlag(aiId) == 1) {
+    if ((u16)swapDeck != 0 && fightTrainerAiDB_GetPokemonDataOrderOutFlag(aiId) == 1) {
         return;
     }
     for (i = 0; i < 6; i++) {
@@ -2153,7 +2161,7 @@ void fightTrainerAllInitFightActionBuff(FightTrainer* trainer) {
     fightOutPokemonInitFightActionBuff(fightTrainer_GetFightoutPokemonBuffPtr(trainer));
 }
 
-s16 fightTrainerSelectIrekaeFightPokemon(FightTrainer* trainer, u32 a, u32 b, u32 c) {
+s16 fightTrainerSelectIrekaeFightPokemon(FightTrainer* trainer, u32 a, u32 b, GCuptr c) {
     u16 aiId;
     u16 id;
     s16 result;

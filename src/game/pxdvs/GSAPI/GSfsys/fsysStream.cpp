@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/pxdvs/GSAPI/GSfsys/fsys.h>
 
@@ -19,7 +20,7 @@ void _fsysMemFreeCache(void* cache);
 static void _fsysStreamGetDataCallback(void* arq);
 
 u32 _fsysStreamGetReadBlockFlag(u32 offset) {
-    return 1 << (offset / _fsysBlockByteSize);
+    return GC_SHL(1, offset / _fsysBlockByteSize);
 }
 
 #pragma dont_inline on

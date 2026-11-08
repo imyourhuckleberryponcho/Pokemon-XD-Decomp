@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 #ifndef __MWERKS__
 #include <string.h>
 #endif
@@ -22,7 +23,12 @@ struct ReliveTutorial {
 };
 class CMetaMenu;
 struct CInfoWindow {
+#ifdef __MWERKS__
     u8 reserved[0x30];
+#else
+    void* reserved0;
+    u8 reserved[0x48];
+#endif
     u16 buttons;
     u8 reserved32[2];
     void exec(CMetaMenu&, u32, bool);
@@ -66,7 +72,7 @@ u16 CMetaMenu::tutorialManagePrime()
     }
     state.tutorialTimer++;
     if (!tutorialReady()) return 0;
-    if (state.tutorialTimer < (u32)(0.9f * (f32)GSgfxVideoGetVsyncRate())) return 0;
+    if (state.tutorialTimer < GC_F2U32(0.9f * (f32)GSgfxVideoGetVsyncRate())) return 0;
     state.tutorialTimer = 0;
     u16 input = 0;
     state.update();

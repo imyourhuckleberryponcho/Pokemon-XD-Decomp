@@ -5,6 +5,7 @@
 #include <game/hsdarchive.h>
 #include <game/gcfield.h>
 #include <game/gsmaterialview.h>
+#include <game/ppcops.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -208,7 +209,7 @@ bool leafEffect::_update(float dt) {
     if (unk44 >= unk48) {
         return 0;
     }
-    f32 step = params[7] * (f32)(u32)(dt * (f32)GSgfxVideoGetVsyncRate());
+    f32 step = params[7] * (f32)GC_F2U32(dt * (f32)GSgfxVideoGetVsyncRate());
     f32 t = unk44;
     f32 start = unk40;
     if (t < start) {
@@ -472,7 +473,7 @@ s32 leafEffect::GenerateLeafData(leafData* leaf) {
         f32 theta = 6.2831855f * HSD_Randf();
         f32 phi = 1.5707964f * HSD_Randf();
         f32 sinPhi = sin(phi);
-        f32 len = leaf->scale * (params[9] * (2.0f * HSD_Randf() - 1.0f) + params[8]) * (params[3] * (2.0f * HSD_Randf() - 1.0f) + params[2]);
+        f32 len = (params[9] * (2.0f * HSD_Randf() - 1.0f) + params[8]) * (params[3] * (2.0f * HSD_Randf() - 1.0f) + params[2]) * leaf->scale;
         f32 sinTheta = sin(theta);
         f32 cosPhi = cos(phi);
         v->x = sinPhi * (f32)cos(theta);

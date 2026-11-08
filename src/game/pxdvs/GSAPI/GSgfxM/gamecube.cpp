@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 #include <game/bitfield.h>
 #include <game/gcdata.h>
 #ifndef M2C_MACROS_H
@@ -471,7 +472,7 @@ u8* GSgfx_GCWriteCopyDispDirect(u8* p, CopyReq* req, u32 dest, u8 colorUpd, u8 a
     WrBP(p, RAW(cz));
     RAW(ys) = 0; RAW(src) = 0; RAW(size) = 0; RAW(st) = 0; RAW(dst) = 0; RAW(cmd) = 0;
     ys.id = 0x4e; src.id = 0x49; size.id = 0x4a; st.id = 0x4d; dst.id = 0x4b; cmd.id = 0x52;
-    ys.scale = (u32)(256.0f / req->gamma);
+    ys.scale = GC_F2U32(256.0f / req->gamma);
     cmd.f14 = 1;
     cmd.clamp = req->clamp;
     size.x = req->width - 1;
@@ -597,7 +598,7 @@ void GSgfx_GCWriteCopyDisp(CopyReq* req, u32 dest, int colorUpd, int alphaUpd, u
     WrFifo(RAW(cz));
     RAW(ys) = 0; RAW(src) = 0; RAW(size) = 0; RAW(st) = 0; RAW(dst) = 0; RAW(cmd) = 0;
     ys.id = 0x4e; src.id = 0x49; size.id = 0x4a; st.id = 0x4d; dst.id = 0x4b; cmd.id = 0x52;
-    ys.scale = (u32)(256.0f / req->gamma);
+    ys.scale = GC_F2U32(256.0f / req->gamma);
     size.x = req->width - 1;
     cmd.clamp = req->clamp;
     src.x = req->left;
@@ -651,8 +652,9 @@ void GSgfx_GCWriteCopyTex(CopyTexReq* req, u32 dest) {
         FlushPE();
     }
     RAW(src) = 0; RAW(size) = 0; RAW(st2) = 0; RAW(dst) = 0; RAW(cmd) = 0;
-    src.id = 0x49; size.id = 0x4a; st2.id = 0x4d; dst.id = 0x4b; cmd.id = 0x52;
+    src.id = 0x49; size.id = 0x4a; st2.id = 0x4d; dst.id = 0x4b;
     size.x = req->width - 1;
+    cmd.id = 0x52;
     src.x = req->left;
     src.y = req->top;
     size.y = req->height - 1;
@@ -683,7 +685,7 @@ void GSgfx_GCWriteCopyTex(CopyTexReq* req, u32 dest) {
     cmd.b16 = 1;
     cmd.mip = req->mip;
     cmd.clear = req->clear;
-    if (req->fmt >= 4 || req->fmt < 0) cmd.b15 = 0; else cmd.b15 = 1;
+    if (req->fmt < 4 && req->fmt >= 0) cmd.b15 = 1; else cmd.b15 = 0;
     WrFifo(RAW(src));
     WrFifo(RAW(size));
     WrFifo(RAW(st2));
@@ -709,10 +711,10 @@ void GSgfx_GCWriteCopyTex(CopyTexReq* req, u32 dest) {
 void GSgfx_GCWriteCopyFilter(u8 aa, u8* pat, u8 vf, u8* vfilt) {
     RegMsLoc ms;
     RegCoeff co;
-    int i, j;
+    int j, i;
     if (!aa) pat = _gcDefaultAASample;
     if (!vf) vfilt = _gcDefaultVFilt;
-    for (i = 0, j = 0; i < 4; i++, j += 6) {
+    for (j = 0, i = 0; i < 4; i++, j += 6) {
         ms.id = i + 1;
         ms.x0 = pat[j];
         ms.y0 = pat[j + 1];
@@ -774,7 +776,7 @@ void GSgfx_GCWriteFog(u32 type, f32 startz, f32 endz, f32 nearz, f32 farz) {
                 bs--;
             }
             a = A / (f32)(1 << bs);
-            bm = (u32)(8388638.0f * Bm);
+            bm = GC_F2U32(8388638.0f * Bm);
         }
         u32 a_hex = *(u32*)&a;
         u32 c_hex = *(u32*)&c;
@@ -840,12 +842,12 @@ static inline void WrIndTexMtx(u32 id, f32* m, s32 scaleExp) {
     s32 mtx[6];
     u32 reg;
     s8 scale;
-    mtx[5] = (int)(1024.0f * m[5]) & 0x7FF;
-    mtx[4] = (int)(1024.0f * m[2]) & 0x7FF;
-    mtx[3] = (int)(1024.0f * m[4]) & 0x7FF;
-    mtx[2] = (int)(1024.0f * m[1]) & 0x7FF;
-    mtx[1] = (int)(1024.0f * m[3]) & 0x7FF;
     mtx[0] = (int)(1024.0f * m[0]) & 0x7FF;
+    mtx[1] = (int)(1024.0f * m[3]) & 0x7FF;
+    mtx[3] = (int)(1024.0f * m[4]) & 0x7FF;
+    mtx[5] = (int)(1024.0f * m[5]) & 0x7FF;
+    mtx[2] = (int)(1024.0f * m[1]) & 0x7FF;
+    mtx[4] = (int)(1024.0f * m[2]) & 0x7FF;
     scale = scaleExp + 17;
     WrFifo(mtx[0] | (mtx[1] << 11) | ((scale & 3) << 22) | ((id + 6) << 24));
     WrFifo(mtx[2] | (mtx[3] << 11) | (((scale >> 2) & 3) << 22) | ((id + 7) << 24));
@@ -1032,7 +1034,7 @@ void GSgfx_GCWriteLoadTlut(void* obj, s32 name) {
 }
 
 void GSgfx_GCWriteVtxAttrFmt(u32 fmt, VtxAttrEntry* list) {
-    u32 attr;
+    s32 attr;
     s32 nrmType = 4, nrmCnt = 1, nrmFlag = 0;
     s32 posCnt = 1, posType = 4, posFrac = 0;
     s32 c0Cnt = 1, c0Type = 5;
@@ -1604,8 +1606,8 @@ static inline void GSgfx_GCWriteClipMode(s32 mode) {
 static inline void GSgfx_GCWriteScissor(u16 x, u16 y, u16 w, u16 h, s32 xo, s32 yo) {
     gsgfxState->scis0.x = x + (xo + 0x156);
     gsgfxState->scis0.y = y + (yo + 0x156);
-    gsgfxState->scis1.x = gsgfxState->scis0.x + (w - 1);
-    gsgfxState->scis1.y = gsgfxState->scis0.y + (h - 1);
+    gsgfxState->scis1.x = gsgfxState->scis0.x + w - 1;
+    gsgfxState->scis1.y = gsgfxState->scis0.y + h - 1;
     gsgfxState->dirty |= 0x4000;
     gsgfxState->scis[0] = x;
     gsgfxState->scis[1] = y;

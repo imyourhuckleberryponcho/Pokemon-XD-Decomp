@@ -67,7 +67,7 @@ struct GSstreamFileOutput;
 struct GSvec;
 struct GXColor;
 struct LightEditor;
-enum Mtx { Mtx_draft_dummy };
+typedef f32 Mtx[3][4];
 struct PeopleWork;
 struct Vec;
 
@@ -126,7 +126,7 @@ struct PeopleWork {
     u8 _draft[1];
 };
 struct Vec {
-    u8 _draft[1];
+    f32 x, y, z;
 };
 
 extern "C" {
@@ -183,19 +183,14 @@ extern "C++" {
 void GSprimSetup3DRender(GSgfxLayer* layer);
 }
 
-struct _struct_widthArray_S2051_0x8 {
-     f32 unk0;                             
-     f32 unk4;                             
-};
-static struct _struct_widthArray_S2051_0x8 widthArray_S2051[4] = { { -1.0f, -1.0f }, { 1.0f, -1.0f }, { 1.0f, 1.0f }, { -1.0f, 1.0f } };
-
 #ifdef __MWERKS__
-#define FIFO_F32(v) (*(f32*)0xCC008000 = (v))
-#define FIFO_U8(v) (*(u8*)0xCC008000 = (v))
-#else
+typedef union { u8 u8; f32 f32; } LightWGPipe;
+volatile LightWGPipe GXWGFifo : 0xCC008000;
+#endif
 #define FIFO_F32(v) (GXWGFifo.f32 = (v))
 #define FIFO_U8(v) (GXWGFifo.u8 = (v))
-#endif
+static inline void lightPosition3f32(f32 x, f32 y, f32 z) { FIFO_F32(x); FIFO_F32(y); FIFO_F32(z); }
+static inline void lightColor4u8(u8 r, u8 g, u8 b, u8 a) { FIFO_U8(r); FIFO_U8(g); FIFO_U8(b); FIFO_U8(a); }
 #define FIFO_COLOR3(r, g, b) (FIFO_U8(r), FIFO_U8(g), FIFO_U8(b), FIFO_U8(0xFF))
 #define FIFO_COLOR(c) (FIFO_U8((c).r), FIFO_U8((c).g), FIFO_U8((c).b), FIFO_U8(0xFF))
 
@@ -215,23 +210,48 @@ void LightEditor::init() {
     M2C_FIELD(this, s8 *, 3) = 0;
 }
 
+static inline void dispAll(LightEditor* e, s32 layer) {
+    u32 info;
+    u32 count;
+    GSgfxLayer* layer3d;
+    s32 y;
+    s32 color;
+
+    floorGetLightInfo((u32*)(&info), (u32*)(&count));
+    count = lightGetLightSize();
+    layer3d = (GSgfxLayer *)(GSgfxLayerFindByID(2));
+    if (layer3d != NULL) {
+        GSprimSetup3DRender((GSgfxLayer*)(layer3d));
+    }
+    for (s32 i = 0; i < (s32) count; i++) {
+        e->dispLightModel((GSlight*)(lightGetLight(i)), (s8) M2C_FIELD(e, u8 *, 0) == i);
+    }
+    y = 0x1E;
+    for (s32 i = 0; i < (s32) count; i++) {
+        e->dispInfo((GSlight*)(lightGetLight(i)), 0x14, y, (s8) M2C_FIELD(e, u8 *, 0) == i);
+        y += 0xD;
+    }
+    if (layer != -1) {
+        color = (M2C_FIELD(e, s8 *, 0) < 0) ? -0x7F01 : -1;
+        GSprint(layer, 0x14, y, color, (const char*)("save"));
+    }
+}
+
 void LightEditor::editUpdate() {
-    u32 sp8;
-    s32 sp14;
-    u8 sp12;
-    u8 sp11;
+    u32 sp14;
     s32 var_r29;
-    s32 unksp10;
-    GSgfxLayer *temp_r3_6;
+    s32 var_r29_2;
+    s32 var_r31;
+    s32 temp_r30;
+    GXColor unksp10;
+    u32 spC;
+    u32 sp8;
+    GSgfxLayer *layer3d;
     GSlight *temp_r3_3;
     f32 temp_f1;
-    u16 temp_r30;
     s32 temp_r31;
     s32 temp_r3;
     s32 temp_r3_7;
-    u32 spC;
-    s32 var_r29_2;
-    s32 var_r31;
     s32 var_r6;
     u8 *var_r30;
     u8 temp_r0;
@@ -251,94 +271,83 @@ void LightEditor::editUpdate() {
     }
     if (cameraGetType() != 6) {
         if (temp_r3 & 4) {
-            M2C_FIELD(this, u8 *, 0) = (u8) (M2C_FIELD(this, u8 *, 0) + 1);
+            M2C_FIELD(this, s8 *, 0) += 1;
         }
-        if ((s8) M2C_FIELD(this, u8 *, 0) >= lightGetLightSize()) {
-            M2C_FIELD(this, u8 *, 0) = -1U;
+        if (M2C_FIELD(this, s8 *, 0) >= lightGetLightSize()) {
+            M2C_FIELD(this, s8 *, 0) = -1;
         }
         if (temp_r3 & 8) {
-            M2C_FIELD(this, u8 *, 0) = (u8) (M2C_FIELD(this, u8 *, 0) - 1);
+            M2C_FIELD(this, s8 *, 0) -= 1;
         }
-        if ((s8) M2C_FIELD(this, u8 *, 0) < -1) {
-            M2C_FIELD(this, u8 *, 0) = (u8) (lightGetLightSize() - 1);
+        if (M2C_FIELD(this, s8 *, 0) < -1) {
+            M2C_FIELD(this, s8 *, 0) = lightGetLightSize() - 1;
         }
-        temp_r3_2 = M2C_FIELD(this, u8 *, 0);
-        if ((s8) temp_r3_2 < 0) {
+        if (M2C_FIELD(this, s8 *, 0) < 0) {
             ((LightEditor*)(this))->editCommand();
             goto block_59;
         }
-        temp_r3_3 = (GSlight *)(lightGetLight((s32) temp_r3_2));
+        temp_r3_3 = (GSlight *)(lightGetLight(M2C_FIELD(this, s8 *, 0)));
         if (temp_r3_3 != NULL) {
             temp_r31 = GSlightGetType((GSlight*)(temp_r3_3));
             if (temp_r3 & 2) {
-                temp_r3_4 = M2C_FIELD(this, u8 *, 1);
-                switch (temp_r3_4 - 1) {
-                case -1:
-                    M2C_FIELD(this, u8 *, 1) = 1U;
-                    M2C_FIELD(this, u8 *, 2) = 0U;
-                    break;
-                case 0:
-                    M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
-                    if ((s8) M2C_FIELD(this, u8 *, 2) > 2) {
+                if (M2C_FIELD(this, s8 *, 1) == 0) {
+                    M2C_FIELD(this, s8 *, 1) = 1;
+                    M2C_FIELD(this, s8 *, 2) = 0;
+                } else if (M2C_FIELD(this, s8 *, 1) == 1) {
+                    M2C_FIELD(this, s8 *, 2) += 1;
+                    if (M2C_FIELD(this, s8 *, 2) > 2) {
                         if (temp_r31 == 0) {
-                            M2C_FIELD(this, u8 *, 1) = 0U;
+                            M2C_FIELD(this, s8 *, 1) = 0;
                         } else {
-                            M2C_FIELD(this, u8 *, 1) = 2U;
+                            M2C_FIELD(this, s8 *, 1) = 2;
                         }
-                        M2C_FIELD(this, u8 *, 2) = 0U;
+                        M2C_FIELD(this, s8 *, 2) = 0;
                     }
-                    break;
-                case 1:
-                    M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) + 1);
-                    if ((s8) M2C_FIELD(this, u8 *, 2) > 2) {
-                        M2C_FIELD(this, u8 *, 1) = 0U;
-                        M2C_FIELD(this, u8 *, 2) = 0U;
+                } else if (M2C_FIELD(this, s8 *, 1) == 2) {
+                    M2C_FIELD(this, s8 *, 2) += 1;
+                    if (M2C_FIELD(this, s8 *, 2) > 2) {
+                        M2C_FIELD(this, s8 *, 1) = 0;
+                        M2C_FIELD(this, s8 *, 2) = 0;
                     }
-                    break;
                 }
             }
             if (temp_r3 & 1) {
-                temp_r3_5 = M2C_FIELD(this, u8 *, 1);
-                switch (temp_r3_5 - 1) {
-                case -1:
+                if (M2C_FIELD(this, s8 *, 1) == 0) {
                     if (temp_r31 == 0) {
-                        M2C_FIELD(this, u8 *, 1) = 1U;
-                        M2C_FIELD(this, u8 *, 2) = 2U;
+                        M2C_FIELD(this, s8 *, 1) = 1;
+                        M2C_FIELD(this, s8 *, 2) = 2;
                     } else {
-                        M2C_FIELD(this, u8 *, 1) = 2U;
+                        M2C_FIELD(this, s8 *, 1) = 2;
                     }
-                    M2C_FIELD(this, u8 *, 2) = 2U;
-                    break;
-                case 0:
-                    M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) - 1);
-                    if ((s8) M2C_FIELD(this, u8 *, 2) < 0) {
-                        M2C_FIELD(this, u8 *, 1) = 0U;
-                        M2C_FIELD(this, u8 *, 2) = 0U;
+                    M2C_FIELD(this, s8 *, 2) = 2;
+                } else if (M2C_FIELD(this, s8 *, 1) == 1) {
+                    M2C_FIELD(this, s8 *, 2) -= 1;
+                    if (M2C_FIELD(this, s8 *, 2) < 0) {
+                        M2C_FIELD(this, s8 *, 1) = 0;
+                        M2C_FIELD(this, s8 *, 2) = 0;
                     }
-                    break;
-                case 1:
-                    M2C_FIELD((u8)this, u8 *, 2) = (u8) (M2C_FIELD((u16)this, u8 *, 2) - 1);
-                    if ((s8) M2C_FIELD(this, u8 *, 2) < 0) {
-                        M2C_FIELD((u8)this, u8 *, 1) = 1U;
-                        M2C_FIELD(this, u8 *, 2) = 2U;
+                } else if (M2C_FIELD(this, s8 *, 1) == 2) {
+                    M2C_FIELD(this, s8 *, 2) -= 1;
+                    if (M2C_FIELD(this, s8 *, 2) < 0) {
+                        M2C_FIELD(this, s8 *, 1) = 1;
+                        M2C_FIELD(this, s8 *, 2) = 2;
                     }
-                    break;
                 }
             }
             ((LightEditor*)(this))->editType((GSlight*)(temp_r3_3));
             var_r30 = NULL;
             if ((s32) M2C_FIELD(this, u8 *, 1) == 1) {
-                GSlightGetColor((GSlight*)(temp_r3_3), (GXColor*)(&unksp10));
+                GSlightGetColor((GSlight*)(temp_r3_3), &unksp10);
                 temp_r0 = M2C_FIELD(this, u8 *, 2);
                 switch ((s8) temp_r0) {
                 case 0:
-                    var_r30 = (unsigned char *)(&unksp10);
+                    var_r30 = &unksp10.r;
                     break;
                 case 1:
-                    var_r30 = &sp11;
+                    var_r30 = &unksp10.g;
                     break;
                 case 2:
-                    var_r30 = &sp12;
+                    var_r30 = &unksp10.b;
                     break;
                 }
                 if (var_r30 != NULL) {
@@ -348,8 +357,8 @@ void LightEditor::editUpdate() {
                     if (GSinputButtonsRepeat(1) & 0x800) {
                         *var_r30 += 1;
                     }
-                    sp14 = unksp10;
-                    GSlightSetColor((GSlight*)(temp_r3_3), (const GXColor*)((GXColor *) &sp14));
+                    sp14 = *(u32*)&unksp10;
+                    GSlightSetColor((GSlight*)(temp_r3_3), (GXColor*)&sp14);
                 }
             }
             if (temp_r31 == 1) {
@@ -361,41 +370,14 @@ void LightEditor::editUpdate() {
         }
     } else {
 block_59:
-        temp_r30 = dbgMenuGetLayerID();
-        floorGetLightInfo((u32*)(&sp8), (u32*)(&spC));
-        spC = lightGetLightSize();
-        temp_r3_6 = (GSgfxLayer *)(GSgfxLayerFindByID(2));
-        if (temp_r3_6 != NULL) {
-            GSprimSetup3DRender((GSgfxLayer*)(temp_r3_6));
-        }
-        var_r29 = 0;
-        while (var_r29 < (s32) spC) {
-            ((LightEditor*)(this))->dispLightModel((GSlight*)(lightGetLight(var_r29)), (s8) M2C_FIELD(this, u8 *, 0) == var_r29);
-            var_r29 += 1;
-        }
-        var_r31 = 0x1E;
-        var_r29_2 = 0;
-        while (var_r29_2 < (s32) spC) {
-            ((LightEditor*)(this))->dispInfo((GSlight*)(lightGetLight(var_r29_2)), 0x14, var_r31, (s8) M2C_FIELD(this, u8 *, 0) == var_r29_2);
-            var_r31 += 0xD;
-            var_r29_2 += 1;
-        }
-        if (temp_r30 != -1) {
-            var_r6 = -1;
-            if (M2C_FIELD(this, u8 *, 0) < 0) {
-                var_r6 = -0x7F01;
-            }
-            GSprint(temp_r30, 0x14, var_r31, var_r6, (const char*)("save"));
-        }
+        dispAll(this, dbgMenuGetLayerID());
         temp_r3_7 = dbgMenuGetLayerID();
         if (temp_r3_7 != -1) {
-            temp_ret = cameraGetType();
-            temp_f1 = M2C_BITWISE(f32, temp_ret);
-            if (temp_ret == 6) {
-                GSprint((u16)temp_r3_7, 0x1F4, 0x20, -1, (const char*)("camera mode"), temp_f1);
+            if (cameraGetType() == 6) {
+                GSprint(temp_r3_7, 0x1F4, 0x20, -1, "camera mode");
                 return;
             }
-            GSprint((u16)temp_r3_7, 0x1F4, 0x20, -1, (const char*)("light mode"), temp_f1);
+            GSprint(temp_r3_7, 0x1F4, 0x20, -1, "light mode");
         }
     }
 }
@@ -403,124 +385,88 @@ block_59:
 #pragma push
 #pragma dont_inline on
 void LightEditor::dispInfo(GSlight* p0, s32 p1, s32 p2, bool p3) {
-    f32 sp1C;
-    s32 *var_r8;
-    volatile s32 sp9;
-    f32 sp18;
-    u8 unksp8;
-    volatile s32 spA;
-    volatile f32 sp20;
-    s32 temp_r3;
-    u8 var_r29;
-    s32 temp_ret;
-    s32 var_r24;
-    s32 var_r3;
-    s32 var_r6;
-    s32 var_r6_10;
-    s32 var_r6_11;
-    s32 var_r6_3;
-    s32 var_r6_5;
-    s32 var_r6_6;
-    s32 var_r6_8;
-    bool temp_r31;
-    s32 temp_r3_2;
-    u8 var_r3_2;
-    u8 var_r3_3;
-    u8 var_r6_2;
-    u8 var_r6_4;
-    u8 var_r6_7;
-    u8 var_r6_9;
-    f32 spC;
+    Vec pos;
+    Vec tgt;
+    GXColor col;
+    u32 layer2;
+    s32 last;
+    s32 layer;
+    s32 colr;
+    bool shadow;
+    bool isLight;
+    const char* name;
+    s32 type;
+    s32 hl;
 
-    var_r29 = 0;
-    temp_r31 = GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)(floorDataBiosGetCurrentPtr()))) == p0;
-    temp_r3 = dbgMenuGetLayerID();
-    if (temp_r3 != -1) {
-        var_r3 = -1;
-        var_r3 = p3 == 0 ? var_r3 : -0x7F01;
-        GSlightGetActive((GSlight*)(p0));
-        GSlightGetPosition((GSlight*)(p0), (f32*)(&sp18));
-        GSlightGetTarget((GSlight*)(p0), (f32*)(&spC));
-        GSlightGetColor((GSlight*)(p0), (GXColor*)(&unksp8));
-        GSlightCanAnimate((GSlight*)(p0));
-        temp_ret = GSlightGetType((GSlight*)(p0));
-        temp_r3_2 = temp_ret;
-        switch (temp_r3_2) {
+    isLight = 0;
+    shadow = GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)(floorDataBiosGetCurrentPtr()))) == p0;
+    layer = dbgMenuGetLayerID();
+    if (layer != -1) {
+        hl = p3 ? -0x7F01 : -1;
+        GSlightGetActive(p0);
+        GSlightGetPosition(p0, &pos.x);
+        GSlightGetTarget(p0, &tgt.x);
+        GSlightGetColor(p0, &col);
+        GSlightCanAnimate(p0);
+        type = GSlightGetType(p0);
+        switch (type) {
         case 0:
-            var_r8 = (s32 *)("Amb");
+            name = "Amb";
             break;
         case 1:
-            var_r8 = (s32 *)("Dir");
-            var_r29 = 1;
+            name = "Dir";
+            isLight = 1;
             break;
         case 2:
-            var_r8 = (s32 *)("Pnt");
-            var_r29 = 1;
+            name = "Pnt";
+            isLight = 1;
             break;
         case 3:
-            var_r8 = (s32 *)("Spt");
-            var_r29 = 1;
+            name = "Spt";
+            isLight = 1;
             break;
         default:
-            var_r8 = (s32 *)("???");
+            name = "???";
             break;
         }
-        var_r6 = -1;
-        var_r6 = !((s8) M2C_FIELD(this, u8 *, 1) == 0) ? var_r6 : var_r3;
-        GSprint(temp_r3, p1, p2, var_r6, (const char*)("%s:"), var_r8, M2C_BITWISE(f32, temp_ret));
-        var_r6_2 = 0;
-        var_r6_2 = !(((s8) M2C_FIELD((GCsptr)this, u8 *, 2) == 0) && ((GCsptr) M2C_FIELD(this, u8 *, 1) == 1)) ? var_r6_2 : 1;
-        var_r6_3 = -1;
-        var_r6_3 = var_r6_2 == 0 ? var_r6_3 : var_r3;
-        GSprint(temp_r3, p1 + 0x34, p2, var_r6_3, (const char*)("(%02x,"), unksp8);
-        var_r6_4 = 0;
-        if (!(((s32) M2C_FIELD(this, u8 *, 2) == 1) && ((s32) M2C_FIELD(this, u8 *, 1) == 1))) {
-            var_r6_4 = var_r6_4;
-        } else {
-            var_r6_4 = 1;
+        colr = -1;
+        if (M2C_FIELD(this, s8 *, 1) == 0) {
+            colr = hl;
         }
-        var_r6_5 = -1;
-        var_r6_5 = var_r6_4 == 0 ? var_r6_5 : var_r3;
-        GSprint(temp_r3, p1 + 0x5B, p2, var_r6_5, (const char*)("%02x,"), sp9);
-        var_r3_2 = 0;
-        var_r3_2 = !(((s32) M2C_FIELD(this, u8 *, 2) == 2) && ((s32) M2C_FIELD(this, u8 *, 1) == 1)) ? var_r3_2 : 1;
-        var_r6_6 = -1;
-        var_r6_6 = var_r3_2 == 0 ? var_r6_6 : var_r3;
-        GSprint(temp_r3, p1 + 0x7A, p2, var_r6_6, (const char*)("%02x)"), spA);
-        var_r24 = var_r6_6;
-        if (var_r29 != 0) {
-            var_r6_7 = 0;
-            var_r6_7 = !(((s8) M2C_FIELD(this, u8 *, 2) == 0) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) ? var_r6_7 : 1;
-            var_r6_8 = -1;
-            var_r6_8 = var_r6_7 == 0 ? var_r6_8 : var_r3;
-            GSprint(temp_r3, p1 + 0xB6, p2, var_r6_8, (const char*)("(%.2f,"), sp18);
-            var_r6_9 = 0;
-            var_r6_9 = !(((s32) M2C_FIELD(this, u8 *, 2) == 1) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) ? var_r6_9 : 1;
-            var_r6_10 = -1;
-            var_r6_10 = var_r6_9 == 0 ? var_r6_10 : var_r3;
-            GSprint(temp_r3, p1 + 0xF7, p2, var_r6_10, (const char*)(" %.2f,"), sp1C);
-            var_r3_3 = 0;
-            var_r3_3 = !(((s32) M2C_FIELD(this, u8 *, 2) == 2) && ((s32) M2C_FIELD(this, u8 *, 1) == 2)) ? var_r3_3 : 1;
-            var_r6_11 = -1;
-            var_r6_11 = var_r3_3 == 0 ? var_r6_11 : var_r3;
-            var_r24 = var_r6_11;
-            GSprint(temp_r3, p1 + 0x130, p2, var_r6_11, (const char*)(" %.2f)"), sp20);
+        layer2 = layer;
+        GSprint(layer, p1, p2, colr, "%s:", name);
+        colr = (((u16)M2C_FIELD(this, s8 *, 2) == 0) && (M2C_FIELD(this, s8 *, 1) == 1)) ? hl : -1;
+        GSprint(layer2, p1 + 0x34, p2, colr, "(%02x,", col.r);
+        colr = ((M2C_FIELD(this, s8 *, 2) == 1) && (M2C_FIELD(this, s8 *, 1) == 1)) ? hl : -1;
+        GSprint(layer2, p1 + 0x5B, p2, colr, "%02x,", col.g);
+        colr = ((M2C_FIELD(this, s8 *, 2) == 2) && (M2C_FIELD(this, s8 *, 1) == 1)) ? hl : -1;
+        last = colr;
+        GSprint(layer2, p1 + 0x7A, p2, colr, "%02x)", col.b);
+        if (isLight) {
+            colr = ((M2C_FIELD(this, s8 *, 2) == 0) && (M2C_FIELD(this, s8 *, 1) == 2)) ? hl : -1;
+            GSprint(layer2, p1 + 0xB6, p2, colr, "(%.2f,", pos.x);
+            colr = ((M2C_FIELD(this, s8 *, 2) == 1) && (M2C_FIELD(this, s8 *, 1) == 2)) ? hl : -1;
+            GSprint(layer2, p1 + 0xF7, p2, colr, " %.2f,", pos.y);
+            colr = ((M2C_FIELD(this, s8 *, 2) == 2) && (M2C_FIELD(this, s8 *, 1) == 2)) ? hl : -1;
+            last = colr;
+            GSprint(layer2, p1 + 0x130, p2, colr, " %.2f)", pos.z);
         }
-        if (temp_r31 != 0) {
-            GSprint(temp_r3, p1 + 0x17E, p2, var_r24, (const char*)("(shadow)"));
+        if (shadow) {
+            GSprint(layer2, p1 + 0x17E, p2, last, "(shadow)");
         }
     }
 }
 #pragma pop
 
 void LightEditor::dispLightModel(GSlight* light, bool selected) {
+    static f32 widthArray[4][2] = { { -1.0f, -1.0f }, { 1.0f, -1.0f }, { 1.0f, 1.0f }, { -1.0f, 1.0f } };
     f32 size = 0.5f;
     GSvec pos;
-    GSvec target;
-    GXColor col;
-    GSvec peoplePos;
     GSvec dir;
+    GSvec target;
+    GSvec peoplePos;
     GSvec tmp;
+    GXColor col;
     int i;
     if (GSlightGetActive(light) != 0) {
         if (selected != 0) {
@@ -530,8 +476,8 @@ void LightEditor::dispLightModel(GSlight* light, bool selected) {
             } else {
                 pulse = (f32)sin((f64)M2C_FIELD(this, f32*, 8)) / 2.0f;
             }
-            size = 0.5f + pulse;
-            M2C_FIELD(this, f32*, 8) = (f32)(M2C_FIELD(this, f32*, 8) + 0.1f);
+            size += pulse;
+            M2C_FIELD(this, f32*, 8) += 0.1f;
             if (M2C_FIELD(this, f32*, 8) > 6.2831855f) {
                 M2C_FIELD(this, f32*, 8) = 0.0f;
             }
@@ -541,7 +487,7 @@ void LightEditor::dispLightModel(GSlight* light, bool selected) {
             GSlightGetTarget(light, (f32*)&target);
             GSlightGetColor(light, &col);
             if (GSlightGetType(light) == 1) {
-                PeopleWork* work = peopleBiosGetWorkPtr((s32)(s8)M2C_FIELD(this, u8*, 4));
+                PeopleWork* work = peopleBiosGetWorkPtr(M2C_FIELD(this, s8*, 4));
                 if (work != NULL) {
                     GSvec* wp = (GSvec*)peopleBiosGetPosPtr(work);
                     peoplePos.x = wp->x;
@@ -592,7 +538,7 @@ void LightEditor::dispLightModel(GSlight* light, bool selected) {
                 M2C_NAMED(layer, s32*, 0x1760, dirty[1].groups) = (s32)(M2C_NAMED(layer, s32*, 0x1760, dirty[1].groups) | 2);
                 if ((s32)M2C_NAMED(layer, s32*, 0x1994, curPass) != 1) {
                     M2C_NAMED(layer, s32*, 0x1994, curPass) = 1;
-                    M2C_NAMED(layer, s32*, 0x1990, curFifo) = (GCsptr)((GCsptr)layer + ((M2C_NAMED(layer, s32*, 0x1994, curPass) * 0xBC) + 0x1818));
+                    M2C_NAMED(layer, s32*, 0x1990, curFifo) = (GCsptr)((u8*)layer + 0x1818 + M2C_NAMED(layer, s32*, 0x1994, curPass) * 0xBC);
                 }
                 M2C_NAMED(layer, s32*, 0x1644, hw.blend[0]) = 1;
                 M2C_NAMED(layer, s32*, 0x1648, hw.blend[1]) = 4;
@@ -605,50 +551,29 @@ void LightEditor::dispLightModel(GSlight* light, bool selected) {
                 layer->setRenderStateAndSelect((GSgfxVF*)(GSgfxVFGetPredef(0)));
                 M2C_NAMED(layer, s32*, 0x1998, unk1998) = 0x80;
                 layer->beginSurface(0x18U);
-                f32 px = pos.x;
-                f32 py = pos.y;
-                f32 pz = pos.z;
-                u8 cr = col.r;
-                u8 cg = col.g;
-                u8 cb = col.b;
                 for (i = 0; i < 4; i++) {
-                    FIFO_F32(px + size);
-                    FIFO_F32(size * widthArray_S2051[i].unk0 + py);
-                    FIFO_F32(size * widthArray_S2051[i].unk4 + pz);
-                    FIFO_COLOR3(cr, cg, cb);
+                    lightPosition3f32(pos.x + size, size * widthArray[i][0] + pos.y, size * widthArray[i][1] + pos.z);
+                    lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    struct _struct_widthArray_S2051_0x8* w = &widthArray_S2051[3 - i];
-                    FIFO_F32(px - size);
-                    FIFO_F32(size * w->unk0 + py);
-                    FIFO_F32(size * w->unk4 + pz);
-                    FIFO_COLOR3(cr, cg, cb);
+                    lightPosition3f32(pos.x - size, size * widthArray[3 - i][0] + pos.y, size * widthArray[3 - i][1] + pos.z);
+                    lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    FIFO_F32(size * widthArray_S2051[i].unk0 + px);
-                    FIFO_F32(py + size);
-                    FIFO_F32(size * widthArray_S2051[i].unk4 + pz);
-                    FIFO_COLOR3(cr, cg, cb);
+                    lightPosition3f32(size * widthArray[i][0] + pos.x, pos.y + size, size * widthArray[i][1] + pos.z);
+                    lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    struct _struct_widthArray_S2051_0x8* w = &widthArray_S2051[3 - i];
-                    FIFO_F32(size * w->unk0 + px);
-                    FIFO_F32(py - size);
-                    FIFO_F32(size * w->unk4 + pz);
-                    FIFO_COLOR3(cr, cg, cb);
+                    lightPosition3f32(size * widthArray[3 - i][0] + pos.x, pos.y - size, size * widthArray[3 - i][1] + pos.z);
+                    lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    FIFO_F32(size * widthArray_S2051[i].unk0 + px);
-                    FIFO_F32(size * widthArray_S2051[i].unk4 + py);
-                    FIFO_F32(pz + size);
-                    FIFO_COLOR3(cr, cg, cb);
+                    lightPosition3f32(size * widthArray[i][0] + pos.x, size * widthArray[i][1] + pos.y, pos.z + size);
+                    lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    struct _struct_widthArray_S2051_0x8* w = &widthArray_S2051[3 - i];
-                    FIFO_F32(size * w->unk0 + px);
-                    FIFO_F32(size * w->unk4 + py);
-                    FIFO_F32(pz - size);
-                    FIFO_COLOR3(cr, cg, cb);
+                    lightPosition3f32(size * widthArray[3 - i][0] + pos.x, size * widthArray[3 - i][1] + pos.y, pos.z - size);
+                    lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 layer->endSurface();
                 if (selected != 0) {
@@ -727,6 +652,10 @@ void LightEditor::dispLightModel(GSlight* light, bool selected) {
             }
         }
     }
+}
+
+static void lightEditorSaveUnused(s32 layer, s32 y, s32 color) {
+    GSprint(layer, 0x14, y, color, "save");
 }
 
 void LightEditor::editCommand() {
@@ -825,257 +754,212 @@ void LightEditor::editType(GSlight* light) {
 }
 
 void LightEditor::editPosition(GSlight* p0) {
-    s32 sp18;
-    s32 sp1C;
-    s32 sp30;
-    s32 sp34;
-    u32 unksp14;
-    u8 unksp5C[sizeof(s32) + 64];
-    f32 sp50;
-    f32 sp2C;
-    f32 sp6C;
-    volatile f32 sp28;
-    f32 sp20;
-    f32 sp54;
-    f32 sp4C;
-    volatile f32 sp48;
-    f32 sp44;
-    f32 sp40;
-    f32 sp3C;
-    f32 sp38;
-    f32 sp70;
-    f32 sp68;
-    f32 sp24;
-    f32 var_f30;
-    f32 sp8;
-    GScamera *temp_r3;
-    GScamera *temp_r3_2;
-    f32 *var_r29;
-    f32 var_f29;
-    f32 temp_f28;
-    f32 temp_f30;
-    f32 temp_f30_2;
-    f32 var_f0;
-    f32 var_f1;
-    f32 temp_f27;
-    f32 sp58;
-    f32 var_f31;
-    s8 temp_r0;
+    f32* sel;
+    GScamera* cam;
+    f32 ry;
+    f32 step;
+    f32 dx;
+    f32 dy;
+    f32 dt;
+    f32 rx;
+    f32 scale;
+    f32 a0;
+    f32 a1;
+    Vec pos;
+    Vec sum;
+    Vec va;
+    Vec vb;
+    Vec vc;
+    Vec front;
+    Vec up;
+    Vec cross;
+    Vec tmp;
 
-    temp_f30 = GSgfxVideoGetLastRenderTime();
-    var_f31 = 64.0f;
-    temp_r3 = GScameraGetActiveCamera();
-    GScameraGetPosition((GScamera*)(temp_r3), (f32*)(&sp68));
-    GScameraGetFrontVector((GScamera*)(temp_r3), (f32*)(&sp2C));
-    sp20 = 0.0f;
-    sp24 = 1.0f;
-    sp28 = 0.0f;
-    PSVECCrossProduct((const register Vec*)((Vec *) &sp2C), (const register Vec*)((Vec *) &sp20), (register Vec*)(&unksp14));
-    PSVECCrossProduct((const register Vec*)((Vec *) &sp2C), (const register Vec*)(&unksp14), (register Vec*)((Vec *) &sp20));
-    sp48 = 0.0f;
-    sp50 = 0.0f;
-    sp54 = 0.0f;
-    sp58 = 0.0f;
-    sp44 = 0.0f;
-    sp4C = 0.0f;
-    sp38 = 0.0f;
-    sp3C = 0.0f;
-    sp40 = 0.0f;
-    GSlightGetPosition((GSlight*)(p0), (f32*)(&sp68));
-    var_f29 = temp_f30 * (f32) GSinputGetLeftStickXData(1, 0);
-    temp_f28 = (f32) GSinputGetLeftStickYData(1, 0);
-    temp_f28 *= temp_f30;
-    temp_f27 = temp_f30 * (f32) GSinputGetRightStickXData(1, 0);
-    temp_f30_2 = temp_f30 * (f32) GSinputGetRightStickYData(1, 0);
-    if (temp_f27 < 0.0f) {
-        var_f1 = -temp_f27;
+    dt = GSgfxVideoGetLastRenderTime();
+    scale = 64.0f;
+    cam = GScameraGetActiveCamera();
+    GScameraGetPosition(cam, &pos.x);
+    GScameraGetFrontVector(cam, &front.x);
+    up.x = 0.0f;
+    up.y = 1.0f;
+    up.z = 0.0f;
+    PSVECCrossProduct(&front, &up, &cross);
+    PSVECCrossProduct(&front, &cross, &up);
+    va.x = 0.0f;
+    va.y = 0.0f;
+    va.z = 0.0f;
+    vb.x = 0.0f;
+    vb.y = 0.0f;
+    vb.z = 0.0f;
+    vc.x = 0.0f;
+    vc.y = 0.0f;
+    vc.z = 0.0f;
+    GSlightGetPosition(p0, &pos.x);
+    dx = dt * (f32) GSinputGetLeftStickXData(1, 0);
+    dy = dt * (f32) GSinputGetLeftStickYData(1, 0);
+    rx = dt * (f32) GSinputGetRightStickXData(1, 0);
+    ry = dt * (f32) GSinputGetRightStickYData(1, 0);
+    if (rx < 0.0f) {
+        a1 = -rx;
     } else {
-        var_f1 = temp_f27;
+        a1 = rx;
     }
-    if (var_f29 < 0.0f) {
-        var_f0 = -var_f29;
+    if (dx < 0.0f) {
+        a0 = -dx;
     } else {
-        var_f0 = var_f29;
+        a0 = dx;
     }
-    if (var_f0 < var_f1) {
-        var_f29 = temp_f27;
+    if (a0 < a1) {
+        dx = rx;
     }
     if (GSinputButtonsPressed(1) & 0x40) {
-        var_f31 = (f32) (5.51221563e-315 * 0.25);
+        scale *= 0.25;
     }
-    sp50 = unksp14;
-    sp54 = sp18;
-    sp58 = sp1C;
-    PSVECScale((const register Vec*)((Vec *) &sp50), (register Vec*)((Vec *) &sp50), var_f29 / var_f31);
-    sp48 = sp24;
-    sp4C = sp28;
-    PSVECScale((const register Vec*)((Vec *) &sp44), (register Vec*)((Vec *) &sp44), temp_f28 / var_f31);
-    sp38 = sp2C;
-    sp44 = sp20;
-    sp3C = sp30;
-    sp40 = sp34;
-    PSVECScale((const register Vec*)((Vec *) &sp38), (register Vec*)((Vec *) &sp38), -temp_f30_2 / var_f31);
-    PSVECAdd((const register Vec*)((Vec *) &sp50), (const register Vec*)((Vec *) &sp44), (register Vec*)(&unksp5C));
-    PSVECAdd((const register Vec*)((Vec *) &sp68), (const register Vec*)(&unksp5C), (register Vec*)((Vec *) &sp68));
-    PSVECAdd((const register Vec*)(&unksp5C), (const register Vec*)((Vec *) &sp38), (register Vec*)(&unksp5C));
+    va.x = cross.x;
+    va.y = cross.y;
+    va.z = cross.z;
+    PSVECScale(&va, &va, dx / scale);
+    vb.x = up.x;
+    vb.y = up.y;
+    vb.z = up.z;
+    PSVECScale(&vb, &vb, dy / scale);
+    vc.x = front.x;
+    vc.y = front.y;
+    vc.z = front.z;
+    PSVECScale(&vc, &vc, -ry / scale);
+    PSVECAdd(&va, &vb, &sum);
+    PSVECAdd(&sum, &vc, &sum);
+    PSVECAdd(&pos, &sum, &pos);
     if ((s32) M2C_FIELD(this, s8 *, 1) == 2) {
-        temp_r0 = M2C_FIELD(this, s8 *, 2);
-        var_r29 = NULL;
-        var_f30 = 0.1f;
-        switch ((s8) temp_r0) {
+        sel = NULL;
+        step = 0.1f;
+        switch (M2C_FIELD(this, s8 *, 2)) {
         case 0:
-            var_r29 = &sp68;
+            sel = &pos.x;
             break;
         case 1:
-            var_r29 = &sp6C;
+            sel = &pos.y;
             break;
         case 2:
-            var_r29 = &sp70;
+            sel = &pos.z;
             break;
         }
-        if (var_r29 != NULL) {
+        if (sel != NULL) {
             if (GSinputButtonsPressed(1) & 0x40) {
-                var_f30 = 1.0f;
+                step = 1.0f;
             }
             if (GSinputButtonsRepeat(1) & 0x400) {
-                *var_r29 -= var_f30;
+                *sel -= step;
             }
             if (GSinputButtonsRepeat(1) & 0x800) {
-                *var_r29 += var_f30;
+                *sel += step;
             }
         }
     }
     if (GSinputButtonsRepeat(1) & 0x10) {
         M2C_FIELD(this, s8 *, 3) = (s8) ((s8) M2C_FIELD(this, s8 *, 3) == 0);
         if ((s8) M2C_FIELD(this, s8 *, 3) != 0) {
-            peopleGetPos(0, 0x64, (GSvec*)((GSvec *) &sp68));
-            sp6C += 18.0f;
+            peopleGetPos(0, 0x64, (GSvec*)&pos);
+            pos.y += 18.0f;
         } else {
-            temp_r3_2 = GScameraGetActiveCamera();
-            GScameraGetPosition((GScamera*)(temp_r3_2), (f32*)(&sp68));
-            GScameraGetFrontVector((GScamera*)(temp_r3_2), (f32*)(&sp8));
-            PSVECScale((const register Vec*)((Vec *) &sp8), (register Vec*)((Vec *) &sp8), 50.0f);
-            PSVECAdd((const register Vec*)((Vec *) &sp68), (const register Vec*)((Vec *) &sp8), (register Vec*)((Vec *) &sp68));
+            GScamera* cam2 = GScameraGetActiveCamera();
+            GScameraGetPosition(cam2, &pos.x);
+            GScameraGetFrontVector(cam2, &tmp.x);
+            PSVECScale(&tmp, &tmp, 50.0f);
+            PSVECAdd(&pos, &tmp, &pos);
         }
     }
-    GSlightSetPosition((GSlight*)(p0), (f32*)(&sp68));
+    GSlightSetPosition(p0, &pos.x);
 }
 
-void LightEditor::editDirection(GSlight* p0) {
-    s32 var_r29;
-    s32 var_r30;
-    volatile s32 sp64;
-    volatile s32 sp40;
-    s32 sp44;
-    s32 sp48;
-    s32 sp4C;
-    s32 sp50;
-    s32 sp54;
-    s32 sp58;
-    s32 sp5C;
-    s32 sp60;
-    s32 sp38;
-    volatile s32 sp3C;
-    volatile s32 spC8;
-    volatile s32 spC4;
-    f32 sp2C;
-    volatile f32 sp24;
-    s32 spB8;
-    s32 spB4;
-    s32 spB0;
-    s32 spAC;
-    s32 spA8;
-    s32 spA4;
-    volatile s32 spA0;
-    f32 sp20;
-    s32 sp98;
-    s32 sp68;
-    s32 unksp14;
-    s32 spC0;
-    f32 sp28;
-    s32 spBC;
-    volatile f32 sp10;
-    volatile s32 sp9C;
-    f32 spC;
-    volatile f32 sp8;
-    u32 sp30;
-    f32 temp_f31;
-    f32 temp_f31_2;
-    s32 temp_r28_2;
-    s32 temp_r28_3;
-    f32 temp_f30;
-    s32 sp34;
-    f32 var_f28;
+struct MtxBox {
+    f32 m[3][4];
+};
 
-    temp_f31 = GSgfxVideoGetLastRenderTime();
-    var_f28 = 1000.0f;
-    temp_r28_2 = GSinputButtonsPressed(1) & (u32)(GSinputButtonsChanged(1));
-    temp_r28_3 = peopleBiosGetMaxNum();
-    var_r30 = (s8) M2C_FIELD(this, u8 *, 4);
-    if (temp_r28_2 & 0x20) {
-        for (var_r29 = 0; var_r29 < temp_r28_3; var_r29++) {
-            var_r30 += 1;
-            if (temp_r28_3 <= var_r30) {
-                var_r30 = 0;
+void LightEditor::editDirection(GSlight* p0) {
+    s32 i;
+    s32 sel;
+    s32 maxNum;
+    s32 pressed;
+    f32 dt;
+    f32 stepX;
+    f32 stepY;
+    f32 rotY;
+    f32 rotX;
+    f32 scale;
+    Mtx acc;
+    MtxBox copy;
+    Mtx rotB;
+    Mtx rotA;
+    Vec pos;
+    Vec dir;
+    Vec cross;
+    Vec up;
+
+    dt = GSgfxVideoGetLastRenderTime();
+    scale = 1000.0f;
+    pressed = GSinputButtonsPressed(1) & GSinputButtonsChanged(1);
+    maxNum = peopleBiosGetMaxNum();
+    sel = M2C_FIELD(this, s8 *, 4);
+    if (pressed & 0x20) {
+        for (i = 0; i < maxNum; i++) {
+            sel += 1;
+            if (sel >= maxNum) {
+                sel = 0;
             }
-            if (peopleBiosGetState((PeopleWork*)(peopleBiosGetWorkPtr((s32) var_r30))) == 3U) {
-                M2C_FIELD(this, u8 *, 4) = (u8) var_r30;
+            if (peopleBiosGetState(peopleBiosGetWorkPtr(sel)) == 3U) {
+                M2C_FIELD(this, u8 *, 4) = (u8) sel;
                 break;
             }
         }
     }
-    GSlightGetPosition((GSlight*)(p0), (f32*)(&sp2C));
-    sp20 = sp2C;
-    sp24 = sp30;
-    sp28 = sp34;
-    PSVECNormalize((const register Vec*)((Vec *) &sp20), (register Vec*)((Vec *) &sp20));
-    temp_f30 = temp_f31 * (f32) GSinputGetLeftStickXData(1, 0);
-    temp_f31_2 = temp_f31 * (f32) GSinputGetLeftStickYData(1, 0);
+    GSlightGetPosition(p0, &pos.x);
+    dir.x = pos.x;
+    dir.y = pos.y;
+    dir.z = pos.z;
+    PSVECNormalize(&dir, &dir);
+    stepX = dt * (f32) GSinputGetLeftStickXData(1, 0);
+    stepY = dt * (f32) GSinputGetLeftStickYData(1, 0);
     GSinputGetRightStickXData(1, 0);
     GSinputGetRightStickYData(1, 0);
     if (!(GSinputButtonsPressed(1) & 0x40)) {
-        var_f28 = 1000.0f * 4.0f;
+        scale *= 4.0f;
     }
-    sp28 = sp34;
-    sp24 = sp30;
-    PSVECNormalize((const register Vec*)((Vec *) &sp20), (register Vec*)((Vec *) &sp20));
-    sp20 = sp2C;
-    sp8 = 0.0f;
-    spC = 1.0f;
-    sp10 = 0.0f;
-    if ((sp20 < 0.00001f) && (sp20 > -0.00001f) && (sp28 < 0.00001f) && (sp28 > -0.00001f)) {
-        if (sp24 > 0.0f) {
-            sp8 = 1.0f;
-            spC = 0.0f;
-            sp10 = 0.0f;
+    rotX = stepX / scale;
+    rotY = stepY / scale;
+    dir.x = pos.x;
+    dir.y = pos.y;
+    dir.z = pos.z;
+    PSVECNormalize(&dir, &dir);
+    up.x = 0.0f;
+    up.y = 1.0f;
+    up.z = 0.0f;
+    if ((dir.x < 0.00001f) && (dir.x > -0.00001f) && (dir.z < 0.00001f) && (dir.z > -0.00001f)) {
+        if (dir.y > 0.0f) {
+            up.x = 1.0f;
+            up.y = 0.0f;
+            up.z = 0.0f;
         } else {
-            sp8 = 1.0f;
-            spC = 0.0f;
-            sp10 = 0.0f;
+            up.x = 1.0f;
+            up.y = 0.0f;
+            up.z = 0.0f;
         }
     }
-    PSVECCrossProduct((const register Vec*)((Vec *) &sp20), (const register Vec*)((Vec *) &sp8), (register Vec*)(&unksp14));
-    PSMTXRotAxisRad((Mtx)((GCsptr) &sp38), (const Vec*)(&unksp14), -(temp_f31_2 / var_f28));
-    sp98 = sp38;
-    sp9C = sp3C;
-    spA0 = sp40;
-    spA4 = sp44;
-    spA8 = sp48;
-    spAC = sp4C;
-    spB0 = sp50;
-    spB4 = sp54;
-    spB8 = sp58;
-    spBC = sp5C;
-    spC0 = sp60;
-    spC4 = sp64;
-    PSMTXCopy((const Mtx)((GCsptr) &sp98), (Mtx)((GCsptr) &spC8));
-    PSMTXRotRad((Mtx)((GCsptr) &sp68), 0x59, temp_f30 / var_f28);
-    PSMTXConcat((const Mtx)((GCsptr) &sp68), (const Mtx)((GCsptr) &spC8), (Mtx)((GCsptr) &spC8));
-#ifdef __MWERKS__
-    PSMTXMultVec((const Mtx)(&spC8), (const Vec *)((const register Vec*)((Vec *) &sp2C)), (Vec *)((register Vec*)((Vec *) &sp2C)));
-#else
-    PSMTXMultVec(*(Mtx*)(&spC8), (const Vec *)((Vec *) &sp2C), (Vec *)((Vec *) &sp2C));
-#endif
-    GSlightSetPosition((GSlight*)(p0), (f32*)(&sp2C));
+    PSVECCrossProduct(&dir, &up, &cross);
+    PSMTXRotAxisRad(rotA, &cross, -rotY);
+    copy = *(MtxBox*)rotA;
+    PSMTXCopy(copy.m, acc);
+    PSMTXRotRad(rotB, 0x59, rotX);
+    PSMTXConcat(rotB, acc, acc);
+    PSMTXMultVec(acc, &pos, &pos);
+    GSlightSetPosition(p0, &pos.x);
 }
+}
+
+static void lightEditorStepUnused(f32* v) {
+    f32 step = 0.1f;
+    if (GSinputButtonsPressed(1) & 0x40) {
+        step = 1.0f;
+    }
+    *v += step;
 }

@@ -1,5 +1,11 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/fightrecords.h>
+#ifdef __MWERKS__
+typedef u8 FIGHTOUT_COPY[0x898];
+#else
+struct FIGHTOUT_COPY { alignas(8) u8 data[FIGHT_OUT_POKEMON_SIZE]; };
+#endif
 
 #pragma optimize_for_size on
 
@@ -232,11 +238,11 @@ void fightWazaWzxTypeFuncMigawari(u16 waza, FightOutPokemon* user) {
     wazaDB_GetWazawzxdataId(waza);
     oldSeq = fightOutPokemon_GetSequencePtr(user);
     void* newSeq = fightOutPokemonCreateSequence(user, weather, -1);
-    u8 copy[0x898];
-    fightOutPokemonBiosCopy(copy, user);
-    fightOutPokemon_SetSequencePtr(copy, newSeq);
+    FIGHTOUT_COPY copy;
+    fightOutPokemonBiosCopy(&copy, user);
+    fightOutPokemon_SetSequencePtr(&copy, newSeq);
     fightOutPokemonLoadWazaEffect(user, waza, 1, false);
-    fightOutPokemonLoadWazaEffect((FightOutPokemon*)copy, waza, 3, false);
+    fightOutPokemonLoadWazaEffect((FightOutPokemon*)&copy, waza, 3, false);
     _fightWazaWxzfightOutPokemonWazaEffectAtk(user, waza, true);
     battleGridReplacePokemon(oldSeq, newSeq);
     battleGridUpdate();
@@ -252,11 +258,11 @@ void fightWazaWzxTypeFuncHensin(u16 waza, FightOutPokemon* user) {
     oldSeq = fightOutPokemon_GetSequencePtr(user);
     s32 rare = pokemonCheckRare(fightPokemonGetPokemonPtr(fightOutPokemon_GetMotoFightPokemonPtr(user)));
     void* newSeq = fightOutPokemonCreateSequence(user, weather, rare);
-    u8 copy[0x898];
-    fightOutPokemonBiosCopy(copy, user);
-    fightOutPokemon_SetSequencePtr(copy, newSeq);
+    FIGHTOUT_COPY copy;
+    fightOutPokemonBiosCopy(&copy, user);
+    fightOutPokemon_SetSequencePtr(&copy, newSeq);
     fightOutPokemonLoadWazaEffect(user, waza, 3, false);
-    fightOutPokemonLoadWazaEffect((FightOutPokemon*)copy, waza, 3, true);
+    fightOutPokemonLoadWazaEffect((FightOutPokemon*)&copy, waza, 3, true);
     _fightWazaWxzfightOutPokemonWazaEffectSpe(user, waza, true);
     battleGridReplacePokemon(oldSeq, newSeq);
     battleGridUpdate();

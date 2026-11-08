@@ -1741,7 +1741,7 @@ u16 pokemonBiosGetDarkpokemonDataId(Pokemon* poke) {
     return poke->darkPokemonDataID;
 }
 
-u16 pokemonBiosGetFriend(Pokemon* poke) {
+PCRET(u16) pokemonBiosGetFriend(Pokemon* poke) {
     if (poke == nullptr) {
         return 0;
     }
@@ -1979,21 +1979,21 @@ char* pokemonBiosGetNicknameOrgPtr(Pokemon* poke) {
     if (poke == nullptr) {
         return nullptr;
     }
-    return &poke->nicknameOrg[0];
+    return (char*)&poke->nicknameOrg[0];
 }
 
 char* pokemonBiosGetNicknamePtr(Pokemon* poke) {
     if (poke == nullptr) {
         return nullptr;
     }
-    return &poke->nickname[0];
+    return (char*)&poke->nickname[0];
 }
 
 char* pokemonBiosGetCatchTrainerNamePtr(Pokemon* poke) {
     if (poke == nullptr) {
         return nullptr;
     }
-    return &poke->catchTrainerName[0];
+    return (char*)&poke->catchTrainerName[0];
 }
 
 u32 pokemonBiosGetCatchTrainerRnd(Pokemon* poke) {

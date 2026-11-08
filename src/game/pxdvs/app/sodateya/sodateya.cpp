@@ -276,11 +276,11 @@ static inline void reliveEvent(Pokemon* p) {
 }
 
 static void _sodateyaCallBackFunc(s32, FootStepCounter mode, s32 steps) {
+    u16 i;
     void* hero = savedataGetStatus(0, 2);
     Pokemon* p;
     u16 progress;
-    u16 i;
-    u16 dark;
+    u32 dark;
     if (hero != 0) {
         for (i = 0; i < 6; i++) {
             p = heroBiosGetPokemonPtr(hero, i);
@@ -289,7 +289,8 @@ static void _sodateyaCallBackFunc(s32, FootStepCounter mode, s32 steps) {
                 if (dark != 0) {
                     u32 cmpv = pokemonBiosGetDp(p);
                     if (cmpv != 0) {
-                        u16 sum = darkPokemonBiosGetSteps(dark) + steps;
+                        s32 cur = darkPokemonBiosGetSteps(dark);
+                        u16 sum = cur + steps;
                         if (sum >= 0x100) {
                             pokemonAddDpFormPokemonDpFilterId(p, 0, 1);
                             if (pokemonGetDp(p) == 0.0f) {

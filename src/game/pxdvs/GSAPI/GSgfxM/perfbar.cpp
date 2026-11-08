@@ -173,9 +173,8 @@ void GSgfxPerfbarRender(GSgfxLayer* layer) {
         _perfPeakGPUTimer = 60;
     }
     if (_perfUpdateCount-- < 0) {
-        double t = GSgfxVideoGetLastRenderTime();
-        _perfUpdateTime = t;
-        if (t > *(f32*)__float_epsilon) {
+        _perfUpdateTime = GSgfxVideoGetLastRenderTime();
+        if (_perfUpdateTime > *(f32*)__float_epsilon) {
             _perfUpdateFPS = 0.1f + GSgfxVideoGetVsyncRate() / _perfUpdateTime;
             if (_perfUpdateFPS > 60.0f) {
                 _perfUpdateFPS = 60.0f;

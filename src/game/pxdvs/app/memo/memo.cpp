@@ -28,6 +28,13 @@ static inline u32 memoGetRandom(u32 range) {
     return (high | low) % range;
 }
 
+static inline Memo* memoGetPtr(Memo* m) {
+    if (m == 0) {
+        m = (Memo*)savedataGetStatus(0, 0xC);
+    }
+    return m;
+}
+
 static inline u16 memoGetCountInline(Memo* memo) {
     if (memo == 0) {
         memo = (Memo*)savedataGetStatus(0, 0xC);
@@ -36,14 +43,12 @@ static inline u16 memoGetCountInline(Memo* memo) {
 }
 
 static inline void memoSetPokemonIDInline(Memo* memo, u16 id) {
-    Memo* m = memo;
-    if (m == 0) {
-        m = (Memo*)savedataGetStatus(0, 0xC);
-    }
+    Memo* m = memoGetPtr(memo);
     u16 count = m->count;
     u16 i;
     for (i = 0; i < count; i++) {
-        if (((u32)m->entries[i].id & 0x3FFF) == (u16)id) {
+        u16 entryId = ((u32)m->entries[i].id) & 0x3FFF;
+        if (entryId == id) {
             return;
         }
     }
@@ -242,7 +247,18 @@ u32 memoDataSetMemoFlag(Memo* memo) {
 }
 
 void memoDataSetPokemonID(Memo* memo, u16 id) {
-    memoSetPokemonIDInline(memo, (u16)id);
+    Memo* m = memoGetPtr(memo);
+    u16 count = m->count;
+    u16 i;
+    for (i = 0; i < count; i++) {
+        u16 nv = ((u32)m->entries[i].id) & 0x3FFF;
+        if (nv == id) {
+            return;
+        }
+    }
+    m->entries[count].id = id | 0x8000;
+    m->entries[m->count].rnd = memoGetRandom(0xFFFFFFFF);
+    m->count++;
 }
 
 void memoDataSet(Memo* memo, void* pokemon) {
@@ -267,11 +283,8 @@ void memoDataSet(Memo* memo, void* pokemon) {
 }
 
 void memoInit(Memo* memo_in) {
-    Memo* memo = memo_in;
+    Memo* memo = memoGetPtr(memo_in);
     int i;
-    if (memo == 0) {
-        memo = (Memo*)savedataGetStatus(0, 0xC);
-    }
     memo->count = 0;
     for (i = 0; i < 500; i++) {
         memo->entries[i].id = 0;

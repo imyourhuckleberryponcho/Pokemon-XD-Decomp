@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
@@ -186,7 +187,7 @@ u32 heroBiosGetNamePtr(Hero*);
 void menuCBMessageCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, u32);
 u32 itemDataBiosGetName(void*);
 StatusU32 wazaGetStatus(s32, s32, s32, s32);
-s32 pokemonBiosGetPokemonWazaDataId(Pokemon*, u16);
+s32 pokemonBiosGetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
 u8 pokemonWazaCheckValid(Pokemon*, u16);
 u32 pokemonDataBiosGetName(void*);
 s32 pokecoloGetCountryCode();
@@ -196,7 +197,7 @@ void menuModelSetZoom(MENU_MODEL*, f32);
 void menuModelRender(MENU_MODEL*);
 u8 GSgfxVideoGetVsyncRate();
 double sin(double);
-void pokemonInit(u32);
+void pokemonInit(GCuptr);
 void pokemonBiosSetFriend(Pokemon*, u16);
 void pokemonBiosCopy(Pokemon*, const Pokemon*);
 u16 pokemonBiosGetPokemonDataId(Pokemon*);
@@ -914,14 +915,16 @@ namespace {
 
 void CMenuPokemonChange::requestPokemonFaceLoad()
 {
-    static Pokemon* stPokemonListFace[14];
-    s32 player = 0;
     s32 count = 0;
+    static Pokemon* stPokemonListFace[14];
+    enumPlayerIndex who;
+    s32 player = 0;
     for (; player < 2; player++) {
+        who = (enumPlayerIndex)player;
         for (s32 i = 0; i < 6; i++) {
             Hero* hero = (player == 0) ? m_hero0 : (Hero*)m_hero1;
             Pokemon* pokemon = hero->getPokemon(i);
-            if (_isPokemonValid(pokemon, (enumPlayerIndex)player)) {
+            if (_isPokemonValid(pokemon, who)) {
                 stPokemonListFace[count++] = pokemon;
             }
         }
@@ -1286,10 +1289,10 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         pulse = 0xFF;
     } else {
         f32 scale = 1.0f;
-        u32 rate = (u32)(scale * GSgfxVideoGetVsyncRate());
+        u32 rate = GC_F2U32(scale * GSgfxVideoGetVsyncRate());
         u32 phase = m_time % rate;
         f32 wave = (f32)sin(3.1415927f * ((f32)phase / (f32)rate));
-        u32 value = (u32)(205.0f * wave + 50.0f);
+        u32 value = GC_F2U32(205.0f * wave + 50.0f);
         pulse = (u8)(sprite->rgba.a * value / 255);
     }
     switch (itemId) {
@@ -1978,7 +1981,7 @@ namespace {
 void CMenuPokemonChange::stateFunctionExChangeMain()
 {
     static Pokemon pokemon;
-    pokemonInit((u32)&pokemon);
+    pokemonInit((GCuptr)&pokemon);
     Pokemon* pokemons[2];
     for (s32 i = 0; i < 2; i++) {
         pokemons[i] = getPokemonByIndex(m_sel[i]);

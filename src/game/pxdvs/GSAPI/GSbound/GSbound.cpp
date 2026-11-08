@@ -11,6 +11,7 @@ public:
 enum GSgfxLayerID {};
 enum GSgfxLayerType {};
 #include <game/gsgfxlayer.h>
+#include <game/gcdata.h>
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -63,8 +64,8 @@ struct GSbound {
 #endif
 
 struct BoundAnim {
-    u16 count;
-    u16 pad;
+    gc_be16 count;
+    gc_be16 pad;
 };
 
 struct BoundData3 {
@@ -141,7 +142,7 @@ void GSboundCreate(GSbound* b, BoundAnim* anim)
         p = (u16*) (BOUND_ANIM(b) + 1);
         for (i = 0; i < (BOUND_ANIM(b))->count; i++) {
             BOUND_ANIM_TABLE(b)[i] = p;
-            p = (u16*) ((u8*) (p + 2) + p[1] * 0x18);
+            p = (u16*) ((u8*) (p + 2) + ((gc_be16*) p)[1] * 0x18);
         }
         b->flags |= 8;
     }
@@ -567,7 +568,7 @@ void GSboundSetAnimFrame(GSbound* b, f32 frame)
 {
     if (b->flags & 8) {
         u16** table = BOUND_ANIM_TABLE(b);
-        u16 count = table[BOUND_ANIM_INDEX(b)][1];
+        u16 count = ((gc_be16*) table[BOUND_ANIM_INDEX(b)])[1];
         if (frame >= (f32) count) {
             frame = (f32) (count - 1);
         }
@@ -588,7 +589,7 @@ void GSboundGetMinMax(GSbound* b, Vec* min, Vec* max, bool scale, bool rot, bool
 
     if (b->flags & 8) {
         u16** table = BOUND_ANIM_TABLE(b);
-        f32* entry = (f32*) ((u8*) table[BOUND_ANIM_INDEX(b)] + (s32) BOUND_ANIM_FRAME(b) * 0x18);
+        gc_bef32* entry = (gc_bef32*) ((u8*) table[BOUND_ANIM_INDEX(b)] + (s32) BOUND_ANIM_FRAME(b) * 0x18);
         min->x = entry[1];
         min->y = entry[2];
         min->z = entry[3];

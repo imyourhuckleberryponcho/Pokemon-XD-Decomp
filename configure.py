@@ -759,7 +759,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(MatchingFor("GXXE01"), "game/dbgMenuCamera.cpp"),
-            Object(NonMatching, "game/dbgMenuFight.cpp", extra_cflags=["-inline noauto,deferred"]),
+            Object(MatchingFor("GXXE01"), "game/dbgMenuFight.cpp", extra_cflags=["-inline noauto,deferred"]),
             Object(NonMatching, "game/dbgMenuFlag.cpp"),
             Object(MatchingFor("GXXE01"), "game/dbgMenuPokemon.cpp"),
             Object(MatchingFor("GXXE01"), "game/dbgMenuHero.cpp"),
@@ -1066,7 +1066,7 @@ config.libs = [
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/menu/menuFaceBios.cpp"),
             Object(NonMatching, "game/pxdvs/app/menu/menuModel.cpp", extra_cflags=["-inline noauto,deferred"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/menu/menuOffScreen.cpp", extra_cflags=["-inline noauto"]),
-            Object(NonMatching, "game/pxdvs/app/menu/window.cpp"),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/menu/window.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/menu/cursorBios.cpp"),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/menu/winMsg.cpp"),
 
@@ -1298,7 +1298,7 @@ config.libs = [
             Object(NonMatching, "game/pxdvs/app/pokemon/pokemonRelive.cpp", extra_cflags=["-inline noauto"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/pokemon/pokemonWazaSequenceDisplay.cpp"),
 
-            Object(NonMatching, "game/pxdvs/app/memo/memo.cpp", extra_cflags=["-O4,s"]),
+            Object(MatchingFor("GXXE01"), "game/pxdvs/app/memo/memo.cpp", extra_cflags=["-O4,s"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/evolution/evolution.cpp", extra_cflags=["-inline noauto"]),
             Object(MatchingFor("GXXE01"), "game/pxdvs/app/charName/charNameBios.cpp"),
 

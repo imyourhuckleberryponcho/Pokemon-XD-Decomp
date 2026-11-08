@@ -630,14 +630,13 @@ void GSmemCell::clear() {
 extern "C++" {
 GSmemCell* GSmemHeapDesc::searchAllocCell(void* ptr) {
     GSmemCell* cell;
-    for (cell = allocated; cell != NULL; cell = cell->next) {
-        u32 area = cell->get_area(this);
-        if (area != (u32)ptr) {
-            continue;
-        }
-        {
+    cell = allocated;
+    while (cell != NULL) {
+        if ((void*)cell->get_area(this) == ptr) {
             return cell;
         }
+        GSmemCell* next = cell->next;
+        cell = next;
     }
     return NULL;
 }

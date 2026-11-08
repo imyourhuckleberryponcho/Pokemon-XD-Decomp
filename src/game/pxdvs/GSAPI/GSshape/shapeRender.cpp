@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/gcdata.h>
 #ifndef __MWERKS__
@@ -412,12 +413,6 @@ static void _shapeEntryToNative(ShapeDoneSet* set, u8* base, u32 off) {
     for (o = 0x38; o < 0x58; o += 4) {
         GC_FIX32(*(u32*)(e + o));
     }
-    for (o = 0x70; o < 0x7C; o += 4) {
-        GC_FIX32(*(u32*)(e + o));
-    }
-    for (o = 0x94; o < 0xB4; o += 4) {
-        GC_FIX32(*(u32*)(e + o));
-    }
 }
 
 static tagGsFilePrimKeyFrame* _shapeKeyFrameToNative(ShapeDoneSet* set, u8* base, u32 off, const tagGsFilePrimObjectEntry* entry) {
@@ -485,6 +480,12 @@ static GsShapeData* _shapeDataToNative(ShapeDoneSet* set, u8* base, u32 off) {
         GC_FIX32(*(u32*)(tail + k));
     }
     GC_FIX32(*(u32*)(tail + 0xC8));
+    for (k = 0x70; k < 0x7C; k += 4) {
+        GC_FIX32(*(u32*)(tail + k));
+    }
+    for (k = 0x94; k < 0xB4; k += 4) {
+        GC_FIX32(*(u32*)(tail + k));
+    }
     GC_FIX32(*(u32*)(tail + 0xD0));
     n = d->vertCount;
     d->pos = (f32*)(base + GC_AT(u32, g, 0x10));
@@ -683,6 +684,79 @@ void GsShapeRender::FreeShapeRender() {
     freeCount[1] = 0;
 }
 
+#ifdef __MWERKS__
+static inline bool relocShapes(GsShapeRender* r, u8* base, u32* shapeOffsets, bool needRefract) {
+    s32 i;
+    for (i = 0; i < r->shapeCount; i++) {
+        u8* sd = base + shapeOffsets[i];
+        r->shapes[i].data = (GsShapeData*)sd;
+        *(u32*)(sd + 0x10) += (u32)base;
+        *(u32*)(sd + 0x14) += (u32)base;
+        *(u32*)(sd + 0x18) += (u32)base;
+        if (*(u32*)(sd + 0x1C) != 0) {
+            *(u32*)(sd + 0x1C) += (u32)base;
+        }
+        GsShapeData* d = (GsShapeData*)sd;
+        for (s32 k = 0; k < d->texCount; k++) {
+            if (*(u32*)(sd + 0x28 + k * 4) != 0) {
+                *(u32*)(sd + 0x28 + k * 4) += (u32)base;
+            }
+        }
+        if (d->enabled == 1 && d->mode == 8) {
+            needRefract = true;
+        }
+        memset(r->shapes[i].drawBuf, 0, sizeof(r->shapes[i].drawBuf));
+    }
+    return needRefract;
+}
+#endif
+
+static inline void calcTevAll(GsShapeRender* r) {
+    for (s32 i = 0; i < r->shapeCount; i++) {
+        s32 k = 0;
+        u8 n = 0;
+        GsShapeObject* s = &r->shapes[i];
+        for (k = 0; k < s->data->texCount; k++) {
+            n++;
+            if (k < 2) {
+                GsShapeTexInfo* ti = r->shapes[i].data->texInfo[k];
+                if (*((u8*)r->texes[ti->index].info + 0xE) != 0) {
+                    n += 2;
+                } else {
+                    n += 1;
+                }
+            }
+        }
+        if (n != 0) {
+            n = n + 1;
+        }
+        s->numTev = n;
+    }
+}
+
+static inline void loadTexes(GsShapeRender* r, u8* base, u32* texOffsets) {
+    for (s32 i = 0; i < r->texCount; i++) {
+#ifdef __MWERKS__
+        u8* ti = base + texOffsets[i];
+        r->texes[i].info = ti;
+        r->texes[i].tex = GStextureLoad(base + *(u32*)(ti + 0x14), ti);
+#else
+        u8* ti = base + GC_AT(u32, &texOffsets[i], 0);
+        r->texes[i].info = ti;
+        r->texes[i].tex = GStextureLoad(base + GC_AT(u32, ti, 0x14), ti);
+#endif
+        GStextureSetWrap(r->texes[i].tex, 1, 1);
+    }
+}
+
+static inline void countPolys(GsShapeRender* r) {
+    r->polygonCount = 0;
+    for (s32 i = 0; i < r->shapeCount; i++) {
+        u32 i_c = i;
+        r->polygonCount += r->shapes[i_c].GetPolygonCount();
+    }
+}
+
 bool GsShapeRender::LoadShapeRender(void* file) {
     tagGsFilePrimObjectEntry* entry;
     u8* base = (u8*)file;
@@ -741,7 +815,7 @@ bool GsShapeRender::LoadShapeRender(void* file) {
         key->frames = (tagGsFilePrimKeyFrame**)GSmemAlloc(key->entry->count * sizeof(tagGsFilePrimKeyFrame*));
 #endif
         entry = key->entry;
-        for (s32 j = 0; j < entry->count; j++) {
+        for (s32 j = 0; j < key->entry->count; j++) {
 #ifdef __MWERKS__
             tagGsFilePrimKeyFrame* kf = (tagGsFilePrimKeyFrame*)(base + (u32)key->frames[j]);
             key->frames[j] = kf;
@@ -831,6 +905,9 @@ bool GsShapeRender::LoadShapeRender(void* file) {
     shapeCount = pcShapeCount;
 #endif
     shapes = (GsShapeObject*)GSmemAlloc(shapeCount * sizeof(GsShapeObject));
+#ifdef __MWERKS__
+    bool needRefract = relocShapes(this, base, shapeOffsets, false);
+#else
     s32 i;
     bool needRefract;
     for (i = 0, needRefract = false; i < shapeCount; i++) {
@@ -858,6 +935,7 @@ bool GsShapeRender::LoadShapeRender(void* file) {
         }
         memset(shapes[i].drawBuf, 0, sizeof(shapes[i].drawBuf));
     }
+#endif
 #ifdef __MWERKS__
     u8* texSec = base + *(u32*)(base + 0x14);
     u32* texOffsets = (u32*)(base + *(u32*)(texSec + 8));
@@ -874,38 +952,8 @@ bool GsShapeRender::LoadShapeRender(void* file) {
     } else {
         texes = 0;
     }
-    for (s32 i = 0; i < texCount; i++) {
-#ifdef __MWERKS__
-        u8* ti = base + texOffsets[i];
-        texes[i].info = ti;
-        texes[i].tex = GStextureLoad(base + *(u32*)(ti + 0x14), ti);
-#else
-        u8* ti = base + GC_AT(u32, &texOffsets[i], 0);
-        texes[i].info = ti;
-        texes[i].tex = GStextureLoad(base + GC_AT(u32, ti, 0x14), ti);
-#endif
-        GStextureSetWrap(texes[i].tex, 1, 1);
-    }
-    for (s32 i = 0; i < shapeCount; i++) {
-        s32 k = 0;
-        u8 n = 0;
-        GsShapeObject* s = &shapes[i];
-        for (k = 0; k < s->data->texCount; k++) {
-            n++;
-            if (k < 2) {
-                GsShapeTexInfo* ti = s->data->texInfo[k];
-                if (*((u8*)texes[ti->index].info + 0xE) != 0) {
-                    n += 2;
-                } else {
-                    n += 1;
-                }
-            }
-        }
-        if (n != 0) {
-            n = n + 1;
-        }
-        s->numTev = n;
-    }
+    loadTexes(this, base, texOffsets);
+    calcTevAll(this);
     for (s32 i = 0; i < shapeCount; i++) {
         GsShapeData* d;
         GsShapeObject* s;
@@ -957,11 +1005,7 @@ bool GsShapeRender::LoadShapeRender(void* file) {
         }
     }
 #endif
-    polygonCount = 0;
-    for (s32 i = 0; i < shapeCount; i++) {
-        u32 i_c = i;
-        polygonCount += shapes[i_c].GetPolygonCount();
-    }
+    countPolys(this);
     loaded = 1;
     usedMemory = 0;
     usedMemory += 0x964;
@@ -981,9 +1025,9 @@ static inline u32 calcFrame(const GsShapeAnimHeader* hdr, f32 time) {
     if (hdr == 0) {
         return 0;
     }
-    u32 f = (u32)(time * (f32)hdr->fps);
+    u32 f = GC_F2U32(time * (f32)hdr->fps);
     if (hdr->loopMode == 1) {
-        f = f % (hdr->frameCount - 1);
+        f = GC_MODU(f, hdr->frameCount - 1);
     } else if (hdr->loopMode == 2) {
         if (f > hdr->frameCount - 1) {
             f = hdr->frameCount - 1;
@@ -997,6 +1041,8 @@ void GsShapeRender::Update(f32 time, s16 id) {
     tagGsFilePrimObjectEntry* entry;
     GsShapeObject* shape;
     GsShapeData* data;
+    s32 deformTex;
+    s32 twistTex;
     if (loaded == 0) {
         return;
     }
@@ -1015,7 +1061,6 @@ void GsShapeRender::Update(f32 time, s16 id) {
     }
     for (s32 i = 0; i < keyCount; i++) {
         f32 ox;
-        GsShapeTexInfo* info;
         GSmtx* m;
         key = &keys[i];
         entry = key->entry;
@@ -1091,14 +1136,18 @@ void GsShapeRender::Update(f32 time, s16 id) {
                                      entry->showAngle != 0, s0, s1, (bool)twistKey, paramTwist);
         }
         GsShapeAnimHeader* h = anim;
+#ifdef __MWERKS__
         key->GetShapeMatrix(&key->mtxA, &key->mtxB, (tagGsFilePrimObjectEntry*)data, h->orderCount, h->order, a, b, t);
-        s32 deformTex;
+#else
+        key->GetShapeMatrix(&key->mtxA, &key->mtxB,
+                            (tagGsFilePrimObjectEntry*)((u8*)data + offsetof(GsShapeData, unk38) - 0x38), h->orderCount,
+                            h->order, a, b, t);
+#endif
         if (entry->uvDeform == 1 && entry->uvDeformKey == 0) {
             deformTex = 1;
         } else {
             deformTex = 0;
         }
-        s32 twistTex;
         if (entry->twist == 1 && entry->twistKey == 0) {
             twistTex = 1;
         } else {
@@ -1124,7 +1173,7 @@ void GsShapeRender::Update(f32 time, s16 id) {
                 off.v[1] = off.v[1] * scl.v[1];
                 shape->WaveTextureCoord(k, off.v[0], off.v[1], &key->mtxA, false);
             }
-            info = shape->data->texInfo[k];
+            GsShapeTexInfo* info = shape->data->texInfo[k];
             if (data->mode == 8 && k == 0) {
                 memcpy(&key->texMtx[k], &mtxIdent, 0x30);
             } else if (entry->texAnim[k] == 1) {
@@ -1214,6 +1263,10 @@ void GsShapeRender::Update(f32 time, s16 id) {
     }
 }
 
+static inline GSmtx* topMtx(GSgfxLayer* l) {
+    return &(*(GSgfxMatrixStack**)&l->matrixStack)->top->m;
+}
+
 void GsShapeRender::Render(s16 id, GSgfxLayerID layerID) {
     if (loaded == 0) {
         return;
@@ -1231,7 +1284,7 @@ void GsShapeRender::Render(s16 id, GSgfxLayerID layerID) {
     if (camera != 0) {
         GScameraGetPerspective(camera, &fov, &aspect, &nearZ, &farZ);
     }
-    camMtx = &(*(GSgfxMatrixStack**)&layer->matrixStack)->top->m;
+    camMtx = topMtx(layer);
     if (camMtx == 0) {
         return;
     }
@@ -1248,11 +1301,7 @@ void GsShapeRender::Render(s16 id, GSgfxLayerID layerID) {
         if (bb == 1) {
             shape->MakeMatrixBillboard(camMtx, nearZ);
         }
-        if (bb == 1) {
-            viewMtx = &shape->mtx;
-        } else {
-            viewMtx = camMtx;
-        }
+        viewMtx = (bb == 1) ? &shape->mtx : camMtx;
         if (data->vertexColorKind != 0 && shape->data->vertexColors != 0) {
             tagGsFilePrimKeyFrame* a;
             tagGsFilePrimKeyFrame* b;

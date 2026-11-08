@@ -60,11 +60,7 @@ struct FightTrainerKindData;
 struct Hero;
 struct char16;
 
-struct MenuCBBattleStartWork {
-    u32 unk0;
-    s32 status;
-    u8 unk8[0x140];
-};
+#include <game/menuCB_BattleStartWork.h>
 
 extern "C" {
 
@@ -174,17 +170,7 @@ extern "C" {
 extern "C" {
 
 extern "C++" {
-struct MenuCBBattleStartTrainerTexture {
-    void* texture;
-    u32 resource;
-};
-
-struct MenuCBBattleStartTrainerTextureState {
-    u8 pad0[0xC];
-    MenuCBBattleStartTrainerTexture entries[4];
-    s32 current;
-    s32 count;
-};
+typedef MenuCBBattleStartWork MenuCBBattleStartTrainerTextureState;
 
 #pragma dont_inline on
 
@@ -198,7 +184,7 @@ DECL_SECTION(".ctors") extern void* const __sinit_menuCB_BattleStart_cpp_referen
 
 extern "C" {
 void menuCBBattleStartTrainerFaceFree() {
-    u8* p;
+    MenuCBBattleStartTrainerTexture* p;
     u32 group;
     s32 i;
 
@@ -209,15 +195,15 @@ void menuCBBattleStartTrainerFaceFree() {
     }
     GSfsysFree(group);
     GSresFreeGroup(group);
-    p = (u8*)&_menuCBBattleStartWork + 0xC;
+    p = _menuCBBattleStartWork.entries;
     if (_menuCBBattleStartGetTrainerFaceSize() == 0) {
-        M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x30) = 4;
+        _menuCBBattleStartWork.count = 4;
     } else {
-        M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x30) = 2;
+        _menuCBBattleStartWork.count = 2;
     }
-    for (i = 0; i < M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x30); i++) {
-        GSresFreeResource(group, M2C_FIELD(p, u32 *, 4));
-        p += 8;
+    for (i = 0; i < _menuCBBattleStartWork.count; i++) {
+        GSresFreeResource(group, p->resource);
+        p++;
     }
     menuCBBattleStartDispTrainerInit();
 }
@@ -286,29 +272,29 @@ static s32 _menuCBBattleStartGetTrainerFaceSize() {
 extern "C" {
 void menuCBBattleStartTrainerLoadTex() {
     _menuCBBattleStartGetTrainerFaceSize();
-    M2C_FIELD(&_menuCBBattleStartWork, s8 *, 0x34) = 1;
+    _menuCBBattleStartWork.loading = 1;
     _menuCBBattleStartDispTrainerTexCallBack(0, (void*)(NULL), 0);
 }
 }
 
 extern "C" {
 void menuCBBattleStartDispTrainerInit() {
-    u8* work = (u8*)&_menuCBBattleStartWork;
-    M2C_FIELD(work, s8 *, 0x34) = 0;
-    M2C_FIELD(work, s32 *, 0x2C) = 0;
+    MenuCBBattleStartWork* work = &_menuCBBattleStartWork;
+    work->loading = 0;
+    work->current = 0;
     if (_menuCBBattleStartGetTrainerFaceSize() == 0) {
-        M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x30) = 4;
+        _menuCBBattleStartWork.count = 4;
     } else {
-        M2C_FIELD(&_menuCBBattleStartWork, s32 *, 0x30) = 2;
+        _menuCBBattleStartWork.count = 2;
     }
-    M2C_FIELD(work, s32 *, 0x10) = 0;
-    M2C_FIELD(work, s32 *, 0xC) = 0;
-    M2C_FIELD(work, s32 *, 0x18) = 0;
-    M2C_FIELD(work, s32 *, 0x14) = 0;
-    M2C_FIELD(work, s32 *, 0x20) = 0;
-    M2C_FIELD(work, s32 *, 0x1C) = 0;
-    M2C_FIELD(work, s32 *, 0x28) = 0;
-    M2C_FIELD(work, s32 *, 0x24) = 0;
+    work->entries[0].resource = 0;
+    work->entries[0].texture = 0;
+    work->entries[1].resource = 0;
+    work->entries[1].texture = 0;
+    work->entries[2].resource = 0;
+    work->entries[2].texture = 0;
+    work->entries[3].resource = 0;
+    work->entries[3].texture = 0;
 }
 }
 

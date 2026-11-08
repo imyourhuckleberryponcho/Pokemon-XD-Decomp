@@ -280,7 +280,7 @@ struct peDLView {
     u16 flags;
     u16 stride;
     u8* buf;
-    u8 pad8[8];
+    u8 pad8[4 + sizeof(void*)];
 };
 
 struct peStripRNode {
@@ -297,10 +297,11 @@ struct peStripRNode {
 
 void peParticleStripContainer::RearrangeIndices() {
     if (started) {
-        u16 vtx = 0;
-        u16 nodeIdx = 0;
         u32 flags = GC_AT(u32, data, 0);
         u32 hasColor2 = (flags >> 18) & 1;
+        u16 vtx = 0;
+        u16 nodeIdx = 0;
+        f32* v;
         if (count >= 2) {
             f32 scale;
             u8* fc = PE_EMITTER_DEF_M2C(emitter, u8 **);
@@ -323,10 +324,11 @@ void peParticleStripContainer::RearrangeIndices() {
                 step = 6;
                 stride = 0x2C;
             }
+            peStripRNode* node;
             u8* buf = (&bufA)[cur];
-            peDLView* d = (peDLView*)dl[cur];
-            for (peStripRNode* node = (peStripRNode*)activeList; node != NULL; node = node->next) {
-                f32* v = (f32*)(buf + node->index * stride);
+            peDLView* d;
+            for (node = (peStripRNode*)activeList, d = (peDLView*)dl[cur]; node != NULL; node = node->next) {
+                v = (f32*)(buf + node->index * stride);
                 node->vtx = vtx;
                 u16 base = node->index * idxMul;
                 u16* idx;
@@ -341,15 +343,15 @@ void peParticleStripContainer::RearrangeIndices() {
                     for (; i < 2; i++) {
                         idx[0] = base + i * 3;
                         idx[1] = base;
-                        idx[2] = base;
                         idx[3] = base + i * 2;
+                        idx[2] = base;
                         idx += 4;
                     }
                 } else {
                     for (; i < 2; i++) {
                         idx[0] = base + i * 3;
-                        idx[1] = base;
                         idx[2] = base + i * 2;
+                        idx[1] = base;
                         idx += 3;
                     }
                 }
@@ -558,10 +560,17 @@ void peParticleStripContainer::Stop() {
 
 #define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
 static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
+#ifdef __MWERKS__
     LAYER_FIELD(l, u32, off) |= bit;
-    LAYER_FIELD(l, u32, 0x16A8) |= sum;
+    LAYER_F(l, u32 *, 0x16A8, dirty[0].groups) |= sum;
     LAYER_FIELD(l, u32, off + 0xB8) |= bit;
-    LAYER_FIELD(l, u32, 0x1760) |= sum;
+    LAYER_F(l, u32 *, 0x1760, dirty[1].groups) |= sum;
+#else
+    GSL_IN(l, u32, dirty[0], 0x16A8, off) |= bit;
+    l->dirty[0].groups |= sum;
+    GSL_IN(l, u32, dirty[1], 0x1760, off + 0xB8) |= bit;
+    l->dirty[1].groups |= sum;
+#endif
 }
 
 static inline bool canRender(peParticleStripContainer* c) {

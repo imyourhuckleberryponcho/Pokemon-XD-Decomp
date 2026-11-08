@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/gcptr.h>
 #include <game/statusval.h>
 
 extern "C" {
@@ -65,18 +66,18 @@ void wazaDataBiosSetHidenFlag(void*, u8);
 u8 wazaDataBiosGetHidenFlag(void*);
 void wazaDataBiosSetRiskFlag(void*, u8);
 u8 wazaDataBiosGetRiskFlag(void*);
-void wazaDataBiosSetFightTrainerAiWazaValueFuncPtr(void*, u32);
-u32 wazaDataBiosGetFightTrainerAiWazaValueFuncPtr(void*);
-void wazaDataBiosSetFightTrainerAiWazaHitFuncPtr(void*, u32);
-u32 wazaDataBiosGetFightTrainerAiWazaHitFuncPtr(void*);
-void wazaDataBiosSetFightTrainerAiWazaDamageFuncPtr(void*, u32);
-u32 wazaDataBiosGetFightTrainerAiWazaDamageFuncPtr(void*);
+void wazaDataBiosSetFightTrainerAiWazaValueFuncPtr(void*, GCuptr);
+GCuptr wazaDataBiosGetFightTrainerAiWazaValueFuncPtr(void*);
+void wazaDataBiosSetFightTrainerAiWazaHitFuncPtr(void*, GCuptr);
+GCuptr wazaDataBiosGetFightTrainerAiWazaHitFuncPtr(void*);
+void wazaDataBiosSetFightTrainerAiWazaDamageFuncPtr(void*, GCuptr);
+GCuptr wazaDataBiosGetFightTrainerAiWazaDamageFuncPtr(void*);
 void wazaDataBiosSetWazawzxdataId(void*, u32);
 u32 wazaDataBiosGetWazawzxdataId(void*);
-void wazaDataBiosSetFightWazaWzxTypeFuncPtr(void*, u32);
-u32 wazaDataBiosGetFightWazaWzxTypeFuncPtr(void*);
-void wazaDataBiosSetFightWazaWzxVariationFuncPtr(void*, u32);
-u32 wazaDataBiosGetFightWazaWzxVariationFuncPtr(void*);
+void wazaDataBiosSetFightWazaWzxTypeFuncPtr(void*, GCuptr);
+GCuptr wazaDataBiosGetFightWazaWzxTypeFuncPtr(void*);
+void wazaDataBiosSetFightWazaWzxVariationFuncPtr(void*, GCuptr);
+GCuptr wazaDataBiosGetFightWazaWzxVariationFuncPtr(void*);
 void wazaDataBiosSetDoc(void*, u32);
 u32 wazaDataBiosGetDoc(void*);
 void fightWazaBiosSetWazaBanme(void*, s8);
@@ -281,19 +282,19 @@ void wazaSetStatus(void* ptr, u16 dataID, u16 status, u32 index, u32 value) {
         wazaDataBiosSetRiskFlag(ptr, (u8)value);
         break;
     case 28:
-        wazaDataBiosSetFightTrainerAiWazaValueFuncPtr(ptr, (u32)value);
+        wazaDataBiosSetFightTrainerAiWazaValueFuncPtr(ptr, (GCuptr)value);
         break;
     case 29:
-        wazaDataBiosSetFightTrainerAiWazaHitFuncPtr(ptr, (u32)value);
+        wazaDataBiosSetFightTrainerAiWazaHitFuncPtr(ptr, (GCuptr)value);
         break;
     case 30:
-        wazaDataBiosSetFightTrainerAiWazaDamageFuncPtr(ptr, (u32)value);
+        wazaDataBiosSetFightTrainerAiWazaDamageFuncPtr(ptr, (GCuptr)value);
         break;
     case 32:
-        wazaDataBiosSetFightWazaWzxTypeFuncPtr(ptr, (u32)value);
+        wazaDataBiosSetFightWazaWzxTypeFuncPtr(ptr, (GCuptr)value);
         break;
     case 33:
-        wazaDataBiosSetFightWazaWzxVariationFuncPtr(ptr, (u32)value);
+        wazaDataBiosSetFightWazaWzxVariationFuncPtr(ptr, (GCuptr)value);
         break;
     case 31:
         wazaDataBiosSetWazawzxdataId(ptr, (u32)value);

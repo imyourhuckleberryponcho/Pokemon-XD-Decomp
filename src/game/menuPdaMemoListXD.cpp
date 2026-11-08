@@ -566,8 +566,7 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     MenuItem* type1 = menuItemBiosGetPtr(0x78, 0xEF);
     MenuItem* type2 = menuItemBiosGetPtr(0x78, 0xF0);
     MenuItem* area = menuItemBiosGetPtr(0x78, 0xEE);
-    u16 rf_t = sprite->id;
-    MenuItem* self = menuItemBiosGetPtr(0x78, rf_t);
+    MenuItem* self = menuItemBiosGetPtr(0x78, sprite->id);
     spriteSetScissor(layer, area->x - self->x, area->y - self->y, area->width, area->height);
     f32 y = unk248;
     f32 offset;
@@ -714,13 +713,18 @@ void* pdaMemoList::GetPokemonPointer(s32 index) {
 void pdaMemoList::ListCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     s16 pos = window->pos;
     s32 n = GetMenuItemNumber(sprite);
+#ifdef __MWERKS__
     AlphaSlot* slot = (AlphaSlot*)((u8*)this + n * 4);
-    sprite->fade = slot->value;
+#define ALPHA_SLOT_VALUE slot->value
+#else
+#define ALPHA_SLOT_VALUE alpha[n]
+#endif
+    sprite->fade = ALPHA_SLOT_VALUE;
     if (pos == n) {
         winSpriteSetDisp(sprite, 1);
         return;
     }
-    if (slot->value == 0.0f) {
+    if (ALPHA_SLOT_VALUE == 0.0f) {
         winSpriteSetDisp(sprite, 0);
     }
 }

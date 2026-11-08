@@ -35,14 +35,18 @@ struct CCD_CHECKMDL_HEAD {
 
 struct CheckObj {
     u8 unk0[0x30];
-    CCD_CHECKMDL_HEAD* mdl;
+    gc_ptr32(CCD_CHECKMDL_HEAD) mdl;
     u8 unk34[0xc];
 };
 
 struct CCDFileHead {
-    CheckObj* objs;
-    u32 numObjs;
+    gc_ptr32(CheckObj) objs;
+    gc_be32 numObjs;
 };
+#ifndef __MWERKS__
+static_assert(sizeof(CheckTri) == 0x34, "CheckTri stride in the CCD file");
+static_assert(sizeof(CheckObj) == 0x40, "CheckObj stride in the CCD file");
+#endif
 
 extern "C" {
 f32 PSVECDistance(const Vec3* a, const Vec3* b);

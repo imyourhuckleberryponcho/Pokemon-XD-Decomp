@@ -82,11 +82,14 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
     if (scale < 50) gap /= 2;
     color.r = color.g = color.b = 0;
     color.a = alpha;
-    rect(layer, x, y, width*5+gap*4+2+x, height+y+2, color);
+    rect(layer, x, y, width*5+gap*4+2+x, y+2+height, color);
     color.b = color.r = color.g = 117;
     color.a = alpha;
     s32 i;
-    for (i = 0; i < 5; i++) rect(layer, i*(width+gap)+x+1, y+1, i*(width+gap)+x+1+width, height+y+1, color);
+    for (i = 0; i < 5; i++) {
+        s32 start = i*(width+gap)+1;
+        rect(layer, start+x, y+1, start+x+width, y+height+1, color);
+    }
     if (current) {
         s32 percent = current*100/initial;
         bars = percent/20+1;
@@ -103,7 +106,7 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
             color.a = alpha;
             if (bars == i+1) {
                 percent -= i*20;
-                rect(layer, start+x, y+1, start+x+width*percent/20, height+y+1, color);
+                rect(layer, start+x, y+1, start+x+width*percent/20, y+height+1, color);
                 color.r = 174;
                 color.g = 54;
                 color.b = 225;
@@ -113,9 +116,9 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
                 color.g = 0;
                 color.b = 181;
                 color.a = alpha;
-                line(layer, start+x, (int)(height+y)+1, start+x+width*percent/20, (int)(height+y)+1, color);
+                line(layer, start+x, (int)(y+height)+1, start+x+width*percent/20, (int)(y+height)+1, color);
             } else {
-                rect(layer, start+x, y+1, start+x+width, height+y+1, color);
+                rect(layer, start+x, y+1, start+x+width, y+height+1, color);
                 color.r = 174;
                 color.g = 54;
                 color.b = 225;
@@ -125,7 +128,7 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
                 color.g = 0;
                 color.b = 181;
                 color.a = alpha;
-                line(layer, start+x, (int)(height+y)+1, start+x+width, (int)(height+y)+1, color);
+                line(layer, start+x, (int)(y+height)+1, start+x+width, (int)(y+height)+1, color);
             }
         }
     } else {
@@ -138,12 +141,12 @@ static void _menuDrawReliveMeterSubDpValue(s32 initial, s32 current, s32 x, s32 
         for (i = 0; i < 5; i++) {
             s32 start = i*(width+gap)+1;
             color.a = opacity;
-            rect(layer, start+x, y+1, start+x+width, height+y+1, color);
+            rect(layer, start+x, y+1, start+x+width, y+height+1, color);
             color.a = opacity*75/100;
             line(layer, start+x, y+1, start+x+width, y+1, color);
-            line(layer, start+x+1, y+1, start+x+1, height+y+1, color);
-            line(layer, start+(width+x), y+1, start+(width+x), height+y+1, color);
-            line(layer, start+x, (int)(height+y)+1, start+x+width, (int)(height+y)+1, color);
+            line(layer, start+x+1, y+1, start+x+1, y+height+1, color);
+            line(layer, start+(width+x), y+1, start+(width+x), y+height+1, color);
+            line(layer, start+x, (int)(y+height)+1, start+x+width, (int)(y+height)+1, color);
         }
     }
 }

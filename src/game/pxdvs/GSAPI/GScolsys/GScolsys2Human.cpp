@@ -301,7 +301,7 @@ static u8 checkCollisionHeadToHead(GSCOLSYS2_HUMAN* p0, GSCOLSYS2_HUMAN* p1, GSv
     var_f31 = sqrtf((var_f30 * var_f30) + (var_f29 * var_f29));
     temp_f3 = M2C_FIELD(p0, f32 *, 8);
     spC = temp_f3 + M2C_FIELD(p1, f32 *, 8);
-    temp_r31 = gimmickBoxFixDistanceForPushBox(&spC, temp_r3, var_f30, var_f29, temp_f3) == 0;
+    temp_r31 = !gimmickBoxFixDistanceForPushBox(&spC, temp_r3, var_f30, var_f29, temp_f3);
     if (gimmickBoxIsBox(temp_r3) != 0) {
         heroMoveGetHeroPos((s32*)&heroPos);
         temp_f1_4 = (M2C_FIELD(temp_r3_2, f32 *, 4) + M2C_FIELD(p0, f32 *, 0xC)) - heroPos.y;

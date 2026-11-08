@@ -200,6 +200,7 @@ static inline u8 _hexDigit(char c) {
 static u32 _primRenderBuf(f32 x, f32 y, char* buf, u32 len, bool write) {
     u32 count = 0;
     char* str = buf;
+    u32 a; int b; int n; u8* p;
     while (len--) {
         switch (*str) {
         case '\r':
@@ -215,13 +216,13 @@ static u32 _primRenderBuf(f32 x, f32 y, char* buf, u32 len, bool write) {
             str += 6;
             break;
         default: {
-            u8* p = (u8*)_primChar2Ptr(*str);
-            int n = *p++;
+            p = (u8*)_primChar2Ptr(*str);
+            n = *p++;
             count += n;
             if (write == true) {
                 while (n--) {
-                    int a = p[0];
-                    int b = p[1];
+                    a = p[0];
+                    b = p[1];
                     p += 2;
                     GXWGFifo.f32 = (0.11f * (a >> 4)) * _primTextXpel + x;
                     GXWGFifo.f32 = (0.11f * (a & 0xF)) * _primTextYpel + y;

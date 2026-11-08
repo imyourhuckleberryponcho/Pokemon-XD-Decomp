@@ -961,7 +961,7 @@ void GSgfxLayer::SetupGPUState() {
                     if (d->texGen & (1 << i)) {
                         GSgfxLayerTexGen* tg = &hw->texGen[i];
                         if (tg->tex != NULL) {
-                            s16 rf_t = tg->tex[0x7c];
+                            u8 rf_t = tg->tex[0x7c];
                             tg->func = rf_t + 2;
                         }
                         GSgfx_GCSetTexCoordGen(i, tg->func, tg->src, tg->mtx, tg->norm, tg->post);
@@ -1223,7 +1223,7 @@ void GSgfxLayer::SetupGPUState() {
             }
         }
         if (d->groups & 0x40) {
-            int zEnable = hw->zEnable != 0;
+            s16 zEnable = hw->zEnable != 0;
             s32 zFunc = hw->zFunc;
             if (hw->zUpdate == 1 && zEnable == 0) {
                 zEnable = 1;
@@ -1480,15 +1480,22 @@ inline void GSgfx_GCSetTevIndBumpXYZ(s32 stage, u8 indId, s32 mtx) {
 }
 
 #pragma push
-#pragma optimize_for_size on
 inline void GSgfx_GCSetTevIndWarp(s32 stage, u8 indId, u8 signMod, u8 wrap, s32 mtx) {
+    u8 b = 0;
     int w = 0;
-    if (wrap) {
-        w = 6;
-    }
-    int bias = 0;
-    bias = !(signMod) ? bias : 7;
-    GSIndSet(stage, indId, 0, (u16)bias, mtx, w, w, 0, 0, 0);
+    if (wrap) w = 6;
+    gsgfxState->indCmd[stage].indId = indId;
+    gsgfxState->indCmd[stage].fmt = b;
+    if (signMod) b = 7;
+    gsgfxState->indCmd[stage].bias = b;
+    gsgfxState->indCmd[stage].alpha = 0;
+    gsgfxState->indCmd[stage].matrix = mtx;
+    gsgfxState->indCmd[stage].wrapS = w;
+    gsgfxState->indCmd[stage].wrapT = w;
+    gsgfxState->indCmd[stage].utcLod = 0;
+    gsgfxState->indCmd[stage].addPrev = 0;
+    gsgfxState->indDirty |= 1 << stage;
+    gsgfxState->indStatus[stage] = 2;
 }
 #pragma pop
 
@@ -1647,8 +1654,9 @@ inline void GSgfx_GCSetAmbColor(s32 ch, GSColor c) {
 
 inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 lights, s32 diff, s32 attn) {
     ChanCache* c = gsgfxState->chan;
-    if (c[chan].a != enable || c[chan].w[0] != amb || c[chan].w[1] != mat || c[chan].w[2] != lights ||
-        c[chan].w[3] != diff || c[chan].w[4] != attn) {
+    u8 rf_t = c[(u32)chan].a;
+    if (rf_t != enable || gsgfxState->chan[chan].w[0] != amb || gsgfxState->chan[chan].w[1] != mat || gsgfxState->chan[chan].w[2] != lights ||
+        gsgfxState->chan[chan].w[3] != diff || gsgfxState->chan[chan].w[4] != attn) {
         s32 d = diff;
         if (attn == 0) {
             d = 0;
@@ -1657,7 +1665,7 @@ inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 light
         GX_WGPIPE.u16 = 0;
         GX_WGPIPE.u16 = 0x100E + (chan & 3);
         GX_WGPIPE.u32 = ((lights << 7) & 0x7800) | (((attn != 0) << 10) | (((attn != 2) << 9) | ((amb << 6) | ((lights & 0xF) << 2 | (mat | (enable << 1))) | (d << 7))));
-        gsgfxState->chan[chan].a = enable;
+        c[chan].a = enable;
         gsgfxState->chan[chan].w[0] = amb;
         gsgfxState->chan[chan].w[1] = mat;
         gsgfxState->chan[chan].w[2] = lights;
@@ -1669,14 +1677,16 @@ inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 light
 inline void GSgfx_GCSetScissor(u16 x, u16 y, u16 w, u16 h, s32 xo, s32 yo) {
     if (gsgfxState->scis[0] != x || gsgfxState->scis[1] != y || gsgfxState->scis[2] != w || gsgfxState->scis[3] != h ||
         gsgfxState->scisOff[0] != xo || gsgfxState->scisOff[1] != yo) {
+        s32 ew = w - 1;
+        s32 eh = h - 1;
         gsgfxState->scis0.x = x + (xo + 0x156);
-        gsgfxState->scis[2] = w;
         gsgfxState->scis0.y = y + (yo + 0x156);
-        gsgfxState->scis1.x = gsgfxState->scis0.x + (w - 1);
-        gsgfxState->scis1.y = gsgfxState->scis0.y + (h - 1);
+        gsgfxState->scis1.x = gsgfxState->scis0.x + ew;
+        gsgfxState->scis1.y = gsgfxState->scis0.y + eh;
         gsgfxState->dirty |= 0x4000;
         gsgfxState->scis[0] = x;
         gsgfxState->scis[1] = y;
+        gsgfxState->scis[2] = w;
         gsgfxState->scis[3] = h;
         gsgfxState->scisOff[0] = xo;
         gsgfxState->scisOff[1] = yo;
@@ -1689,18 +1699,12 @@ inline void GSgfx_GCSetProjection(s32 type, u32* p) {
         diff = 1;
     } else {
         diff = 0;
-        if (gsgfxState->projCache[0] != p[0]) {
-            diff = 1;
-        } else if (p[1] != gsgfxState->projCache[1]) {
-            diff = 1;
-        } else if (gsgfxState->projCache[2] != p[2]) {
-            diff = 1;
-        } else if (gsgfxState->projCache[3] != p[3]) {
-            diff = 1;
-        } else if (gsgfxState->projCache[4] != p[4]) {
-            diff = 1;
-        } else if (gsgfxState->projCache[5] != p[5]) {
-            diff = 1;
+        u32* c = gsgfxState->projCache;
+        for (int i = 0; i < 6; i++) {
+            if (c[i] != p[i]) {
+                diff = 1;
+                break;
+            }
         }
     }
     if (diff == 1) {
@@ -1716,12 +1720,13 @@ inline void GSgfx_GCSetProjection(s32 type, u32* p) {
         GX_WGPIPE.f32 = f[5];
         GX_WGPIPE.u32 = type;
         gsgfxState->c41c = type;
-        gsgfxState->projCache[0] = p[0];
-        gsgfxState->projCache[1] = p[1];
-        gsgfxState->projCache[2] = p[2];
-        gsgfxState->projCache[3] = p[3];
-        gsgfxState->projCache[4] = p[4];
-        gsgfxState->projCache[5] = p[5];
+        u32* d = gsgfxState->projCache;
+        d[0] = p[0];
+        d[1] = p[1];
+        d[2] = p[2];
+        d[3] = p[3];
+        d[4] = p[4];
+        d[5] = p[5];
     }
 }
 extern "C++" {
@@ -1761,8 +1766,45 @@ static inline void LoadLayerMtx(GSgfxLayer* l);
 extern "C" {
 void GSgfx_GCFlushState();
 }
+static inline void _layerLoadHWState(GSgfxLayer* l) {
+    if (_layerStateLastHWState != l->hwState) {
+        if (_layerStateLastHWState != 0) {
+            memcpy(_layerStateLastHWState, gsgfxState, 0xc40);
+        }
+        memcpy(gsgfxState, l->hwState, 0xc40);
+        _layerStateLastHWState = l->hwState;
+    }
+}
+
+extern "C" {
+void GXLoadPosMtxImm(Mtx, u32);
+void GXLoadNrmMtxImm(Mtx, u32);
+void PSMTXInvXpose(const Mtx, Mtx);
+}
+
+static inline void LoadLayerMtx(GSgfxLayer* l) {
+    GSgfxMtxEntry* m = ((GSgfxMtxStack*)l->matrixStack)->top;
+    GSgfxLayer::DirtyState* d = &l->dirty[l->curPass];
+    if ((m->flags & 1) || m != d->mtx) {
+        GXLoadPosMtxImm(m->mtx, 0x1b);
+        GSgfxMtxStack* st = (GSgfxMtxStack*)l->matrixStack;
+        m = st->top;
+        if (m->flags & 1) {
+            PSMTXInvXpose(m->mtx, m->invXpose);
+            st->top->flags &= ~1;
+        }
+        GXLoadNrmMtxImm(st->top->invXpose, 0x1b);
+        d->mtx = ((GSgfxMtxStack*)l->matrixStack)->top;
+    }
+    if (d->mtxValid == 0) {
+        gsgfxState->matIdxA.pn = 0x1b;
+        gsgfxState->dirty |= 0x40;
+        d->mtxValid = 1;
+    }
+}
+
 void GSgfxLayer::SetupRenderState() {
-    LoadHWState();
+    _layerLoadHWState(this);
     if (flags & 0x80000000) {
         GSgfx_GCInvalidateState();
         flags &= ~0x80000000;
@@ -1882,45 +1924,12 @@ void GSgfxLayer::SetupRenderState() {
     }
     GSgfx_GCFlushState();
 }
-}
-
-}
 
 void GSgfxLayer::LoadHWState() {
-    if (_layerStateLastHWState != hwState) {
-        if (_layerStateLastHWState != 0) {
-            memcpy(_layerStateLastHWState, gsgfxState, 0xc40);
-        }
-        memcpy(gsgfxState, hwState, 0xc40);
-        _layerStateLastHWState = hwState;
-    }
+    _layerLoadHWState(this);
+}
 }
 
-extern "C" {
-void GXLoadPosMtxImm(Mtx, u32);
-void GXLoadNrmMtxImm(Mtx, u32);
-void PSMTXInvXpose(const Mtx, Mtx);
-}
-
-static inline void LoadLayerMtx(GSgfxLayer* l) {
-    GSgfxMtxEntry* m = ((GSgfxMtxStack*)l->matrixStack)->top;
-    GSgfxLayer::DirtyState* d = &l->dirty[l->curPass];
-    if ((m->flags & 1) || m != d->mtx) {
-        GXLoadPosMtxImm(m->mtx, 0x1b);
-        GSgfxMtxStack* st = (GSgfxMtxStack*)l->matrixStack;
-        m = st->top;
-        if (m->flags & 1) {
-            PSMTXInvXpose(m->mtx, m->invXpose);
-            st->top->flags &= ~1;
-        }
-        GXLoadNrmMtxImm(st->top->invXpose, 0x1b);
-        d->mtx = ((GSgfxMtxStack*)l->matrixStack)->top;
-    }
-    if (d->mtxValid == 0) {
-        gsgfxState->matIdxA.pn = 0x1b;
-        gsgfxState->dirty |= 0x40;
-        d->mtxValid = 1;
-    }
 }
 
 void GSgfxLayer::renderState_NL_VC_T(u8 n) {

@@ -1,3 +1,4 @@
+#include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/pxdvs/GSAPI/GSflag/flagData.h>
 
@@ -60,7 +61,7 @@ static u32 _flagGet(u32* bits, FlagData* data, u32 id) {
         u32 high = bits[word + 1];
 
         low >>= shift;
-        high <<= 32 - shift;
+        high = GC_SHL(high, 32 - shift);
         return (high | low) & _flagAND[length];
     }
     return (bits[word] >> shift) & 1;
@@ -96,7 +97,7 @@ static void _flagSet(u32* bits, FlagData* data, u32 id, u32 value) {
             u32 high;
             u32 over = length + shift - 32;
             high = bits[word + 1];
-            v = value >> (length - over);
+            v = GC_SHRU(value, length - over);
             high &= ~_flagAND[over];
             bits[word + 1] = v | high;
         }

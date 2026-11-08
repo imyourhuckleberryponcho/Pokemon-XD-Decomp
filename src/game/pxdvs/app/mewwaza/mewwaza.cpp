@@ -211,7 +211,13 @@ static s32 _mewSequence(MEWPOINTS* mp) {
 }
 
 static inline u32 mewRand(u32 n) {
-    return (u16)HSD_Rand() % n;
+    u16 r = HSD_Rand();
+    return r % n;
+}
+
+static inline u32 mewRand4() {
+    u16 r = HSD_Rand();
+    return r & 3;
 }
 
 static void _question_3(MEWPOINTS* mp) {
@@ -290,10 +296,10 @@ static void _question_4(MEWPOINTS* mp) {
         break;
     case 2:
         if ((u8)res == 0) {
-            mp->d -= (s16)(HSD_Rand() & 3) + 1;
+            mp->d -= (s16)mewRand4() + 1;
             mp->a <<= 1;
         } else {
-            mp->d += (s16)(HSD_Rand() & 3) + 1;
+            mp->d += (s16)mewRand4() + 1;
             mp->a *= (s16)mewRand(3) + 1;
         }
         break;

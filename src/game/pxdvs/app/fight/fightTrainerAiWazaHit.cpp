@@ -1,10 +1,11 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
+#include <game/gcptr.h>
 #pragma dont_inline on
 typedef struct FightOutPokemon FightOutPokemon;
 
-static s32 _fightTrainerAiWazaHitCheck(void*, u32, u32, u32, u32);
+static s32 _fightTrainerAiWazaHitCheck(void*, GCuptr, u32, GCuptr, u32);
 static s32 _fightTrainerAiWazaHitAbicnt(void*, u32, u32, u32, u32, u32, u32);
 static s32 _fightTrainerAiWazaHitJisin(void*, u32, u32, u32);
 static s32 _fightTrainerAiWazaHitWeatherKaifuku(void*, u32);
@@ -48,7 +49,7 @@ s32 fightTrainerAiWazaHit214(void* ctx, u32 param1, u32 param2, u32 param3) {
 
 s32 fightTrainerAiWazaHit213(void* ctx, u32 param1, u32 param2, u32 param3) {
     extern u16 fightFloor_GetTikeiDataId(u32);
-    extern u32 tikeiDataBiosGetZokuseiDataId(u8);
+    extern u32 tikeiDataBiosGetZokuseiDataId(PCARG(u8, u16));
     extern u8 fightTrainerAiIsFightOutPokemonZokuseiDataId(void*, u32, PCARG(u8, u16));
     u32 value;
     u32 result;
@@ -630,7 +631,7 @@ u32 fightTrainerAiWazaHit174(void) { return 1; }
 
 s32 fightTrainerAiWazaHit173(void* ctx, u32 param1, u32 param2, u32 param3) {
     extern u16 fightFloor_GetTikeiDataId(u32);
-    extern u32 tikeiDataBiosGetWazaId(u8);
+    extern u32 tikeiDataBiosGetWazaId(PCARG(u8, u16));
     extern u32 wazaDB_GetSeqId(u32);
     extern s32 fightTrainerAiWazaDoWazaHitFunc(void*, u32, u32, u32);
     u16 paramType;
@@ -1402,11 +1403,11 @@ s32 fightTrainerAiWazaHit103(void* ctx,u32 param1,u32 param2,u32 param3) {
 
 s32 fightTrainerAiWazaHit102(void* ctx, u32 param1, u32 param2, u32 param3) {
     extern u32 fightFloorGetFightTrainerFightPokemonPtrAry(u32 zero, void* ctx, void* buf, u32 one1, u32 one2);
-    extern u8 fightTrainerAiIsFightPokemonTokuseiDataId(void* ctx, u32 elem, u32 type);
-    extern u8 fightTrainerAiIsFightPokemonJoutaiNormal(void* ctx, u32 elem);
-    u32 buf[0x17];
+    extern u8 fightTrainerAiIsFightPokemonTokuseiDataId(void* ctx, GCuptr elem, u32 type);
+    extern u8 fightTrainerAiIsFightPokemonJoutaiNormal(void* ctx, GCuptr elem);
+    GCuptr buf[0x17];
     u32 count = fightFloorGetFightTrainerFightPokemonPtrAry(0, ctx, buf, 1, 1);
-    u32 *bufPtr;
+    GCuptr *bufPtr;
     u16 i;
     u8 flag;
 
@@ -2570,25 +2571,25 @@ u8 _fightTrainerAiWazaHitCheckTokusei(void* ctx, u32 pokemon, u32 zokusei) {
     return 1;
 }
 
-s32 _fightTrainerAiWazaHitCheck(void* ctx, u32 attacker, u32 waza, u32 defender, u32 mode) {
+s32 _fightTrainerAiWazaHitCheck(void* ctx, GCuptr attacker, u32 waza, GCuptr defender, u32 mode) {
     extern u32 fightFloor_GetFightType(u32);
-    extern u32 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(u32, u8);
+    extern u32 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(GCuptr, PCARG(u8, u16));
 #ifdef __MWERKS__
     extern u8 fightTrainerAiGetFightFloorNowTenkouDataId(void*, u32, u32);
 #else
     extern u32 fightTrainerAiGetFightFloorNowTenkouDataId(void*, u32, u32);
 #endif
     extern u32 wazaDB_GetSeqId(u32);
-    extern u16 fightFloorGetFightOutPokemonPtrAry(u32, u32, u32, u32, u32*);
-    extern void fightFloorSortFightOutPokemonPtrArySub(u32, u32*, u32, u32);
-    extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
-    extern u16 fightOutPokemonGetUserFightTargetIdJoutaiDataId(u32, u32);
-    extern u8 fightTrainerAiIsFightOutPokemonJoutaiKie(void*, u32);
-    extern u8 fightTrainerAiCheckGuard(void*, u32, u32);
-    extern u8 fightSeqRegulationCheck(u32, u32, u32);
+    extern u16 fightFloorGetFightOutPokemonPtrAry(u32, u32, u32, u32, GCuptr*);
+    extern void fightFloorSortFightOutPokemonPtrArySub(u32, GCuptr*, u32, u32);
+    extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, GCuptr, u32);
+    extern u16 fightOutPokemonGetUserFightTargetIdJoutaiDataId(GCuptr, u32);
+    extern u8 fightTrainerAiIsFightOutPokemonJoutaiKie(void*, GCuptr);
+    extern u8 fightTrainerAiCheckGuard(void*, GCuptr, u32);
+    extern u8 fightSeqRegulationCheck(u32, GCuptr, GCuptr);
     extern u8 fightSeqIsTenkouHit(u32);
     extern u8 fightSeqIsAllwaysHit(u32);
-    u32 ptrs[10];
+    GCuptr ptrs[10];
     u32 side;
     u32 seqId;
     u16 count;

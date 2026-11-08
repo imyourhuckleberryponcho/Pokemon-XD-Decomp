@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/ppcops.h>
 
 struct FightTarget;
 struct FightTargetData;
@@ -126,7 +127,7 @@ static s32 _fightJoukenGetValue(u16 id, u16 index, void* fightPokemon) {
         value = target;
         break;
     case 2: {
-        value = target + HSD_Rand32() % (buff - target);
+        value = target + GC_MODU(HSD_Rand32(), buff - target);
         break;
     }
     case 3: {

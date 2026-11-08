@@ -81,6 +81,16 @@ static inline f32 __OSs16tof32(register const s16* arg) {
     return ret;
 }
 
+static inline f32 __OSu8tof32(register const u8* arg) {
+    register f32 ret;
+#ifdef __MWERKS__
+    asm { psq_l ret, 0(arg), 1, 2 }
+#else
+    ret = PSQ_LOAD(arg, 0, 2);
+#endif
+    return ret;
+}
+
 static inline f32 OSs16tof32(s16 v) {
     return __OSs16tof32(&v);
 }
@@ -94,9 +104,9 @@ static inline void __OSf32tos16(register f32 arg, volatile register s16* out) {
 }
 
 static inline s16 OSf32tos16(f32 in) {
-    s16 out;
-    __OSf32tos16(in, &out);
-    return out;
+    s32 out;
+    __OSf32tos16(in, (s16*)&out);
+    return *(s16*)&out;
 }
 struct GStexture;
 struct GSgfxLayer;
@@ -160,8 +170,7 @@ struct VEC_GRAPH_DATA {
     s32 on[2];
     s32 idx[2];
     s32 width[2];
-    s16 minX, minY, maxX, maxY;
-    s16 cx, cy, w, h;
+    s16 box[8];
     s32 color;
     GCsptr cxform;
     s32 color2;
@@ -171,12 +180,7 @@ struct VEC_GRAPH_DATA {
     u8* grad;
     s32 gx;
     s32 gy;
-    f32 gScale;
-    f32 gAngle;
-    f32 sinA;
-    f32 cosA;
-    f32 sinB;
-    f32 cosB;
+    f32 gf[6];
     u32 palette[0x100];
     s16 cross[0x100][8];
 };
@@ -264,27 +268,32 @@ static inline void lListPush(u32 color, s16 x, s16 y) {
             lList[0] = 0;
         }
     }
-    memcpy(&lList[1 + lList[0]], &color, 4);
-    f32* v = (f32*)&lList[0x201];
-    v[lList[0] * 2] = __OSs16tof32(&x);
-    v[lList[0] * 2 + 1] = __OSs16tof32(&y);
+#ifdef __MWERKS__
+    memcpy(&(&lList[1])[lList[0]], &color, 4);
+#else
+    GC_SETBYTES32(&lList[1 + lList[0]], color);
+#endif
+    ((f32*)lList)[0x201 + lList[0] * 2] = __OSs16tof32(&x);
+    ((f32*)lList)[0x201 + lList[0] * 2 + 1] = __OSs16tof32(&y);
     lList[0] += 1;
 }
 
 static void SBscan(void) {
     s16 y;
     s16 x;
-    if (gVecDat.numStyles > 4) {
-        printf("ERROR:style count %d\n", gVecDat.numStyles);
+    VEC_GRAPH_DATA* gd = &gVecDat;
+    if (gd->numStyles > 4) {
+        printf("ERROR:style count %d\n", gd->numStyles);
         return;
     }
-    if (debugstep != 0x174B) {
-        if (debugstep == 0x77F) return;
-        lList[0] = 0;
+    if (debugstep == 0x174B || debugstep == 0x77F) return;
+    {
+        {
         GSprimSetLineWidth(1.0f);
-        for (u32 i = 0; i < gVecDat.numStyles; i++) {
-            calcVecRect(&vecRect, &gVecDat, i);
-            lPoint[i].d = gVecDat;
+        lList[0] = 0;
+        for (u32 i = 0; i < gd->numStyles; i++) {
+            calcVecRect(&vecRect, gd, i);
+            lPoint[i].d = *gd;
         }
         u32* row = scanline_buffer[0];
         y = vecRect.y0;
@@ -297,34 +306,34 @@ static void SBscan(void) {
             x = (s16)(vecRect.x0 / 8);
             u32* p = row + x;
             for (; x <= vecRect.x1 / 8; p++, x++) {
-                if (*p != 0) SBdec(*p, x, gVecDat.numStyles);
+                if (*p != 0) SBdec(*p, x, gd->numStyles);
             }
-            for (u32 i = 0; i < gVecDat.numStyles; i++) {
+            for (u32 i = 0; i < gd->numStyles; i++) {
                 LPOINT* lp = &lPoint[i];
-                switch (lp->n % 2) {
-                case 0:
-                        s16* xs = lp->x;
-                        for (int j = 0; j < lp->n; j += 2, xs += 2) {
-                            s16 x1 = xs[1];
-                            if (lp->d.grad != 0) {
-                                gradientline(xs[0], x1, y, &lp->d);
-                            } else {
-                                lListPush(lp->d.color, xs[0], y);
-                                lListPush(lp->d.color, x1, y);
-                            }
+                if (lp->n % 2 == 0) {
+                    u8** gp = &lp->d.grad;
+                    s32* cp = &lp->d.color;
+                    VEC_GRAPH_DATA* dp = &lp->d;
+                    for (int j = 0; j < lp->n; j += 2) {
+                        s16 x1 = lp->x[j + 1];
+                        s16 x0 = lp->x[j];
+                        if (*gp != 0) {
+                            gradientline(x0, x1, y, dp);
+                        } else {
+                            lListPush(*cp, x0, y);
+                            lListPush(*cp, x1, y);
                         }
-                    break;
+                    }
                 }
             }
         }
-        switch (debugstep) {
-        case 0x1229:
-                lList[0] = 0;
-                return;
-            break;
+        if (debugstep == 0x1229) {
+            lList[0] = 0;
+            return;
         }
         if (lList[0] != 0) GSprimDraw2DLineListC(&lList[0x201], lList[0] >> 1, &lList[1]);
         lList[0] = 0;
+        }
     }
 }
 
@@ -349,28 +358,37 @@ static inline void plot(s16 x, s16 y) {
 }
 
 static inline void buildGradient(VEC_GRAPH_DATA* d) {
-    s16 i = 0;
     s32 off = 0;
+    s16 i = 0;
     for (; i < *d->grad; i++, off += 8) {
         s32 gx = d->gx;
         f32 v = (f32)(d->grad[off + 4] - 0x80);
-        getCrossPoint(i, (s16)(gx + (s16)(v * d->gScale + 128.0f)), -0x100, 0x200, (s16)(gx + 0x80), 0x80, d);
+        getCrossPoint(i, (s16)(gx + (s16)(v * d->gf[0] + 128.0f)), -0x100, 0x200, (s16)(gx + 0x80), 0x80, d);
     }
     u32 prev;
     memcpy(&prev, d->grad + 8, 4);
+    s32 k = 0;
     s32 n = 0;
-    off = 0;
-    for (s32 k = 0; k < *d->grad; k++, off += 8) {
+    off = n << 3;
+    for (; k < *d->grad; k++, off += 8) {
         s32 span = d->grad[off + 4] - n;
         if (span != 0) {
+            u8* a = (u8*)&prev;
+            u8* b = d->grad + off + 8;
+            f32 b0 = __OSu8tof32(&b[0]);
+            f32 b1 = __OSu8tof32(&b[1]);
+            f32 b2 = __OSu8tof32(&b[2]);
+            f32 b3 = __OSu8tof32(&b[3]);
+            f32 d0 = (b0 - (f32)a[0]) / (f32)span;
+            f32 d1 = (b1 - (f32)a[1]) / (f32)span;
+            f32 d2 = (b2 - (f32)a[2]) / (f32)span;
+            f32 d3 = (b3 - (f32)a[3]) / (f32)span;
             for (s32 j = 0; j < span; j++) {
-                u8* a = (u8*)&prev;
-                u8* b = d->grad + off + 8;
-                u8 r = (u8)(s32)(((((f32)b[1]) - (f32)a[1]) / (f32)span) * (f32)j + (f32)a[1]);
-                u8 g = (u8)(s32)(((((f32)b[2]) - (f32)a[2]) / (f32)span) * (f32)j + (f32)a[2]);
-                u8 bl = (u8)(s32)(((((f32)b[3]) - (f32)a[3]) / (f32)span) * (f32)j + (f32)a[3]);
-                u8 al = (u8)(s32)(((((f32)b[0]) - (f32)a[0]) / (f32)span) * (f32)j + (f32)a[0]);
-                d->palette[j + n] = flcalcMultiTransformColor(d->cxform, r | (g << 8) | (al << 24) | (bl << 16));
+                u8 c0 = (u8)(s32)(d0 * (f32)j + (f32)a[0]);
+                u8 c1 = (u8)(s32)(d1 * (f32)j + (f32)a[1]);
+                u8 c2 = (u8)(s32)(d2 * (f32)j + (f32)a[2]);
+                u8 c3 = (u8)(s32)(d3 * (f32)j + (f32)a[3]);
+                d->palette[j + n] = flcalcMultiTransformColor(d->cxform, (c0 << 24) | (c1 << 16) | (c2 << 8) | c3);
             }
         }
         memcpy(&prev, d->grad + off + 8, 4);
@@ -437,26 +455,22 @@ static void SBline(GSvec2* p0, GSvec2* p1) {
         f32 y0 = p0->y;
         y1 = p1->y;
         if (y0 < y1) {
-            vecRect.x0 = (s16)p0->x;
-            vecRect.y0 = (s16)p0->y;
-            vecRect.x1 = (s16)p1->x;
-            vecRect.y1 = (s16)p1->y;
+            vecRect.x0 = OSf32tos16(p0->x);
+            vecRect.y0 = OSf32tos16(p0->y);
+            vecRect.x1 = OSf32tos16(p1->x);
+            vecRect.y1 = OSf32tos16(p1->y);
         } else if (y0 > y1) {
-            vecRect.x0 = (s16)p1->x;
-            vecRect.y0 = (s16)p1->y;
-            vecRect.x1 = (s16)p0->x;
-            vecRect.y1 = (s16)p0->y;
+            vecRect.x0 = OSf32tos16(p1->x);
+            vecRect.y0 = OSf32tos16(p1->y);
+            vecRect.x1 = OSf32tos16(p0->x);
+            vecRect.y1 = OSf32tos16(p0->y);
         } else {
             return;
         }
         vecRect.dy = vecRect.y1 - vecRect.y0;
         if (vecRect.dy != 0) {
-            s16 step;
-            if (vecRect.x1 > vecRect.x0) step = 1;
-            else step = -1;
-            s16 dx;
-            if (vecRect.x1 > vecRect.x0) dx = vecRect.x1 - vecRect.x0;
-            else dx = vecRect.x0 - vecRect.x1;
+            s16 step = (vecRect.x1 > vecRect.x0) ? 1 : -1;
+            s16 dx = (vecRect.x1 > vecRect.x0) ? vecRect.x1 - vecRect.x0 : vecRect.x0 - vecRect.x1;
             vecRect.dx = dx;
             s16 x = vecRect.x0;
             vecRect.dx2 = dx * 2;
@@ -507,13 +521,14 @@ static void SBline(GSvec2* p0, GSvec2* p1) {
 }
 
 static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, s32 idx) {
+    f32 sy;
     f32 len;
-    u32 tmp = d->maxX + d->minX;
-    d->cx = (s16)((s32)((tmp >> 31) + tmp) >> 1);
-    tmp = d->maxY + d->minY;
-    d->cy = (s16)((s32)((tmp >> 31) + tmp) >> 1);
-    d->w = (s16)(d->maxX - d->minX);
-    d->h = (s16)(d->maxY - d->minY);
+    u32 tmp = d->box[2] + d->box[0];
+    d->box[4] = (s16)((s32)((tmp >> 31) + tmp) >> 1);
+    tmp = d->box[3] + d->box[1];
+    d->box[5] = (s16)((s32)((tmp >> 31) + tmp) >> 1);
+    d->box[6] = (s16)(d->box[2] - d->box[0]);
+    d->box[7] = (s16)(d->box[3] - d->box[1]);
     u8* styles = d->styles;
     if (styles != 0) {
         if (idx != 0) {
@@ -525,29 +540,30 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, s32 idx) {
                 return;
             case 16:
                 d->grad = st + 0x20;
-                if (d->gScale == 0.0f) d->gScale = 1.0f;
+                if (d->gf[0] == 0.0f) d->gf[0] = 1.0f;
                 buildGradient(d);
                 return;
             }
         } else {
             u8* st = styles + (idx << 7);
-            f32 sy = (f32)GC_AT(s32, st, 0xC);
+            sy = (f32)GC_AT(s32, st, 0xC);
             s32 sx = GC_AT(s32, st, 8);
-            d->gx = GC_AT(s32, st, 0x18) / 20 - d->cx;
             f32 fx = (f32)sx;
+            d->gx = GC_AT(s32, st, 0x18) / 20 - d->box[4];
             len = fx * fx + sy * sy;
-            d->gy = GC_AT(s32, d->styles + (idx << 7), 0x1C) / 20 - d->cy;
+            u8* stb = d->styles + (idx << 7);
+            d->gy = GC_AT(s32, stb, 0x1C) / 20 - d->box[5];
             if (len > 0.0f) len = vgSqrtf(len);
-            d->gAngle = vgAcosf(fx / len);
-            if (sy < 0.0f) d->gAngle = -d->gAngle;
-            s16 hh = d->h;
+            d->gf[1] = vgAcosf(fx / len);
+            if (sy < 0.0f) d->gf[1] = -d->gf[1];
+            s16 hh = d->box[6];
             s32 hm = hh - 1;
-            if (hm != 0) d->gScale = (1638.4f * (len / 65536.0f)) / (f32)hm;
-            else d->gScale = 1638.4f * (len / 65536.0f);
-            d->sinA = sin(d->gAngle);
-            d->cosA = cos(d->gAngle);
-            d->sinB = sin(-d->gAngle);
-            d->cosB = cos(-d->gAngle);
+            if (hm != 0) d->gf[0] = (1638.4f * (len / 65536.0f)) / (f32)hm;
+            else d->gf[0] = 1638.4f * (len / 65536.0f);
+            d->gf[2] = sin(d->gf[1]);
+            d->gf[3] = cos(d->gf[1]);
+            d->gf[4] = sin(-d->gf[1]);
+            d->gf[5] = cos(-d->gf[1]);
             u8* st2 = d->styles + (idx << 7);
             switch (st2[0]) {
             case 0:
@@ -556,7 +572,7 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, s32 idx) {
                 break;
             case 16:
                 d->grad = st2 + 0x20;
-                if (d->gScale == 0.0f) d->gScale = 1.0f;
+                if (d->gf[0] == 0.0f) d->gf[0] = 1.0f;
                 buildGradient(d);
                 break;
             }
@@ -565,31 +581,31 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, s32 idx) {
     } else {
         d->gy = 0;
         d->gx = 0;
-        d->gScale = 0.0f;
-        d->gAngle = 0.0f;
-        d->sinA = sin(d->gAngle);
-        d->cosA = cos(d->gAngle);
-        d->sinB = sin(-d->gAngle);
-        d->cosB = cos(-d->gAngle);
+        d->gf[0] = 0.0f;
+        d->gf[1] = 0.0f;
+        d->gf[2] = sin(d->gf[1]);
+        d->gf[3] = cos(d->gf[1]);
+        d->gf[4] = sin(-d->gf[1]);
+        d->gf[5] = cos(-d->gf[1]);
     fin:
-        s16 v = d->minY;
+        s32 v = d->box[1];
         if (v < 0) v = 0;
         r->y0 = v;
-        v = d->maxY;
+        v = d->box[3];
         if (v >= 0x1E0) v = 0x1DF;
         r->y1 = v;
-        v = d->minX;
+        v = d->box[0];
         if (v < 0) v = 0;
         r->x0 = v;
-        v = d->maxX;
+        v = d->box[2];
         if (v >= 0x280) v = 0x27F;
         r->x1 = v;
     }
 }
 
 static _SHAPERECORD* SpriteCode(u32 flashId, _SHAPERECORD* rec, u16 id, FLASHMATRIXF* mf, FLASHMATRIX* m, s32 x, s32 y, VEC_GRAPH_DATA* d, FLASHCXFORM* cx) {
-    _SHAPERECORD* last = 0;
     u8 more = 1;
+    _SHAPERECORD* last = 0;
     GSvec2 pts[4];
     s32 n = 0;
     do {
@@ -597,11 +613,11 @@ static _SHAPERECORD* SpriteCode(u32 flashId, _SHAPERECORD* rec, u16 id, FLASHMAT
             vg_s32* data = (vg_s32*)rec->data;
             x += data[1];
             y += data[2];
+            s32 k = n++;
             last = rec;
+            pts[k].x = (f32)x / 20.0f;
+            pts[k].y = (f32)y / 20.0f;
             rec = rec->next;
-            pts[n].x = (f32)x / 20.0f;
-            pts[n].y = (f32)y / 20.0f;
-            n++;
         } else {
             more = 0;
         }
@@ -633,15 +649,15 @@ static void SpriteDisp(GStexture* tex, FLASHMATRIXF* mf, FLASHMATRIX* m, GSvec2*
         u8 c0 = (u8)((cx->ga * 0xFF) >> 8);
         u8 c1 = (u8)((cx->ba * 0xFF) >> 8);
         u8 c2 = (u8)((cx->aa * 0xFF) >> 8);
-        add.v[3] = a1;
         col.c[3] = c3;
         col.c[0] = c0;
         col.c[1] = c1;
+        add.v[3] = a1;
         col.c[2] = c2;
         add.v[0] = a2;
         add.v[1] = a3;
         add.v[2] = a4;
-        if ((a4 | (a3 | (a1 | a2))) == 0) {
+        if (((s16)add.v[2] | ((s16)add.v[1] | ((s16)add.v[3] | (s16)add.v[0]))) == 0) {
             GSprimDraw2DTexQuad4V(pos, uv, tex, col);
             return;
         }
@@ -654,7 +670,7 @@ static void getUV(GSvec2* out, GSvec2* uv, GSvec2* pts, FLASHMATRIXF* mat, FLASH
     zero.x = 0.0f;
     zero.y = 0.0f;
     flcalcMatrix(uv, mat2, &zero);
-    s32 bi = 0;
+    s32 bi;
     f32 ux = uv->x;
     f32 uy = uv->y;
     f32 sx = vgSqrtf(mat2->a * mat2->a + mat2->b * mat2->b);
@@ -689,11 +705,11 @@ static void getUV(GSvec2* out, GSvec2* uv, GSvec2* pts, FLASHMATRIXF* mat, FLASH
 
 extern "C++" {
 static inline u32 gradColor(VEC_GRAPH_DATA* d, s16 x, s16 y) {
-    s32 gyv = d->gy + ((y - d->minY) << 8) / d->h;
-    s32 gxv = ((x - d->minX) << 8) / d->w - d->gx;
+    s32 gyv = d->gy + ((y - d->box[1]) << 8) / d->box[7];
+    s32 gxv = ((x - d->box[0]) << 8) / d->box[6] - d->gx;
     f32 fy = (f32)gyv - 128.0f;
     f32 fx = (f32)gxv - 128.0f;
-    s16 idx = OSf32tos16(128.0f + (fx * d->cosB - fy * d->sinB) / d->gScale);
+    s16 idx = OSf32tos16(128.0f + (fx * d->gf[5] - fy * d->gf[4]) / d->gf[0]);
     if (idx < 0) idx = 0;
     if (idx >= 0x100) idx = 0xFF;
     return d->palette[idx % 256];
@@ -704,15 +720,16 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
     s32 n = 0;
     s32 cnt = *p3->grad;
     for (s32 i = 0; i < cnt; i++) {
-        s16 v = p3->minX + (p3->cross[((p2 - p3->minY) << 8) / p3->h][i] * p3->w) / 256;
+        s16 v = p3->box[0] + (p3->cross[((p2 - p3->box[1]) << 8) / p3->box[7]][i] * p3->box[6]) / 256;
         if (p0 < v && p1 > v) {
             xs[n++] = v;
         }
     }
     s16* a = xs;
-    for (u16 i = 0; i < n - 1; i++, a++) {
-        s16* b = &xs[i + 1];
-        for (s32 j = i + 1; j < n; j++, b++) {
+    for (s32 i = 0; i < n - 1; i++, a++) {
+        s32 j = i + 1;
+        s16* b = &xs[j];
+        for (; j < n; j++, b++) {
             if (*a > *b) {
                 s16 t = *a;
                 *a = *b;
@@ -735,13 +752,12 @@ static void getCrossPoint(s32 p0, short p1, short p2, short p3, short p4, short 
     s32 dy0 = p2 - p5;
     s32 dy1 = p3 - p5;
     s32 dx0 = p1 - p4;
-    f32 cs = p6->cosA;
-    s16 x0 = (s16)(cs * (f32)dx0 - p6->sinA * (f32)dy0);
-    s16 x1 = (s16)(cs * (f32)dx0 - p6->sinA * (f32)dy1);
-    vecRect.y0 = (s16)(p6->sinA * (f32)dx0 + cs * (f32)dy0);
-    vecRect.y1 = (s16)(p6->sinA * (f32)dx0 + cs * (f32)dy1);
-    vecRect.x0 = x0;
-    vecRect.x1 = x1;
+    vecRect.x0 = (s16)(p6->gf[3] * (f32)dx0 - p6->gf[2] * (f32)dy0);
+    vecRect.y0 = (s16)(p6->gf[2] * (f32)dx0 + p6->gf[3] * (f32)dy0);
+    vecRect.x1 = (s16)(p6->gf[3] * (f32)dx0 - p6->gf[2] * (f32)dy1);
+    vecRect.y1 = (s16)(p6->gf[2] * (f32)dx0 + p6->gf[3] * (f32)dy1);
+    s16 x1 = vecRect.x1;
+    s16 x0 = vecRect.x0;
     s32 dx;
     if (x1 > x0) {
         dx = x1 - x0;
@@ -751,7 +767,8 @@ static void getCrossPoint(s32 p0, short p1, short p2, short p3, short p4, short 
     vecRect.dx = dx;
     s32 dy;
     if (vecRect.y1 > vecRect.y0) {
-        dy = vecRect.y1 - vecRect.y0;
+        dy = vecRect.y1;
+        dy -= vecRect.y0;
     } else {
         dy = vecRect.y0 - vecRect.y1;
     }
@@ -763,7 +780,7 @@ static void getCrossPoint(s32 p0, short p1, short p2, short p3, short p4, short 
         }
     } else {
         for (s32 i = 0; i < 0x100; i++) {
-            s16 y = (p6->gy + i) - p5;
+            s16 y = (i + p6->gy) - p5;
             s32 d;
             if (y > vecRect.y0) {
                 d = y - vecRect.y0;
@@ -771,7 +788,7 @@ static void getCrossPoint(s32 p0, short p1, short p2, short p3, short p4, short 
                 d = vecRect.y0 - y;
             }
             f32 t = (f32)d / (f32)vecRect.dy;
-            s16 r;
+            s32 r;
             if (vecRect.x0 < vecRect.x1) {
                 r = (s16)((f32)vecRect.dx * t + (f32)vecRect.x0);
                 if (vecRect.x1 < r) r = vecRect.x1;
@@ -786,20 +803,22 @@ static void getCrossPoint(s32 p0, short p1, short p2, short p3, short p4, short 
 }
 
 static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHAPERECORD* rec, FLASHMATRIXF* parent, FLASHMATRIXF* mat, FLASHCXFORM* cx) {
-    GSvec2 bez;
-    GSvec2 bezPrev;
-    GSvec2 next;
-    GSvec2 seg[7];
-    GSvec2 cur;
-    GSvec2 ctl;
+    SHAPEDATA* sd;
     FLASHMATRIXF m;
+    GSvec2 ctl;
+    GSvec2 pt;
+    GSvec2* ptp = &pt;
+    GSvec2* ctlp = &ctl;
+    GSvec2 next;
+    GSvec2 seg[3];
+    GSvec2 cur;
+    GSvec2 bez;
+    GSvec2 prev;
     u8 inLine = 0;
-    u32 loop = 1;
-    switch (fills->count) {
-    case 0:
-            void* t = fills->list;
-            if (t != 0) GC_AT(s32, t, 4) = -1;
-        break;
+    u8 loop = 1;
+    if (fills->count == 0) {
+        void* t = fills->list;
+        if (t != 0) GC_AT(s32, t, 4) = -1;
     }
     s32 y = 0;
     s32 x = 0;
@@ -814,7 +833,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             loop = 0;
             break;
         case 1: {
-            VG_VOLATILE SHAPEDATA* sd = (SHAPEDATA*)rec->data;
+            sd = (SHAPEDATA*)rec->data;
             inLine = 0;
             if ((sd->flags & 1) != 0) {
                 x = sd->x;
@@ -840,53 +859,45 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
                 }
             }
             if ((sd->flags & 8) != 0) {
-                if (gVecDat.on[0] != 0) {
-                    gVecDat.width[0] = sd->lineWidth;
-                    if (sd->lineWidth != 0 && (sd->flags & 6) == 0) inLine = 1;
-                }
-                if (gVecDat.on[1] != 0) {
-                    gVecDat.width[1] = sd->lineWidth;
-                    if (sd->lineWidth != 0 && (sd->flags & 6) == 0) inLine = 1;
+                for (s32 i = 0; i < 2; i++) {
+                    if (gVecDat.on[i] != 0) {
+                        gVecDat.width[i] = sd->lineWidth;
+                        if (sd->lineWidth != 0 && (sd->flags & 6) == 0) inLine = 1;
+                    }
                 }
             }
             if ((sd->flags & 0x10) != 0 && sd->newStyles != 0) {
                 SBscan();
-                gVecDat.minY = 0x7FFF;
-                gVecDat.minX = 0x7FFF;
-                gVecDat.maxY = -0x8000;
-                gVecDat.maxX = -0x8000;
+                gVecDat.box[1] = 0x7FFF;
+                gVecDat.box[0] = 0x7FFF;
+                gVecDat.box[3] = -0x8000;
+                gVecDat.box[2] = -0x8000;
                 memset(scanline_buffer, 0, 0x25800);
                 gVecDat.styles = VG_STYLES(sd);
                 gVecDat.idx[1] = 0;
                 gVecDat.idx[0] = 0;
                 gVecDat.on[1] = 0;
                 gVecDat.on[0] = 0;
-                switch ((sd->flags & 4)) {
-                case 0:
-                        gVecDat.idx[1] = 0;
-                        gVecDat.on[1] = 0;
-                    break;
+                if ((sd->flags & 4) == 0) {
+                    gVecDat.idx[1] = 0;
+                    gVecDat.on[1] = 0;
                 }
-                switch ((sd->flags & 2)) {
-                case 0:
-                        gVecDat.idx[0] = 0;
-                        gVecDat.on[0] = 0;
-                    break;
+                if ((sd->flags & 2) == 0) {
+                    gVecDat.idx[0] = 0;
+                    gVecDat.on[0] = 0;
                 }
             } else {
                 for (s32 i = 0; i < 2; i++) {
                     if (gVecDat.on[i] != 0) {
                         s32 si = gVecDat.idx[i];
-                        if ((gVecDat.styles[si << 7] & 0x40) != 0) {
-                            switch ((sd->flags & 1)) {
-                            case 0:
-                                    y = 0;
-                                    x = 0;
-                                break;
+                        if ((gVecDat.styles[si * 0x80] & 0x40) != 0) {
+                            if ((sd->flags & 1) == 0) {
+                                y = 0;
+                                x = 0;
                             }
                             u8* st = gVecDat.styles;
                             st += (si << 7);
-                            rec = SpriteCode(a0, rec->next, (u16)GC_AT(u32, st, 0x64), mat, (FLASHMATRIX*)(st + 0x68), x, y, &gVecDat, cx);
+                            rec = SpriteCode((s32)a0, rec->next, (u16)GC_AT(u32, st, 0x64), &m, (FLASHMATRIX*)(st + 0x68), x, y, &gVecDat, cx);
                             inLine = 1;
                         }
                     }
@@ -900,16 +911,16 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             y += data[2];
             cur.x = (f32)x / 20.0f;
             cur.y = (f32)y / 20.0f;
-            switch (inLine) {
-            case 0:
-                    flcalcMatrix(&seg[0], &m, &cur);
-                    SBline(&next, &seg[0]);
-                    if ((s16)seg[0].x < gVecDat.minX) gVecDat.minX = (s16)seg[0].x;
-                    if ((s16)seg[0].x > gVecDat.maxX) gVecDat.maxX = (s16)seg[0].x;
-                    if ((s16)seg[0].y < gVecDat.minY) gVecDat.minY = (s16)seg[0].y;
-                    if ((s16)seg[0].y > gVecDat.maxY) gVecDat.maxY = (s16)seg[0].y;
-                    next = seg[0];
-                break;
+            if (inLine == 0) {
+                    flcalcMatrix(ptp, &m, &cur);
+                    SBline(&next, ptp);
+                    s16 ptX = OSf32tos16(pt.x);
+                    s16 ptY = OSf32tos16(pt.y);
+                    if (ptX < gVecDat.box[0]) gVecDat.box[0] = ptX;
+                    if (ptX > gVecDat.box[2]) gVecDat.box[2] = ptX;
+                    if (ptY < gVecDat.box[1]) gVecDat.box[1] = ptY;
+                    if (ptY > gVecDat.box[3]) gVecDat.box[3] = ptY;
+                    next = pt;
             }
             break;
         }
@@ -919,42 +930,44 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
             s32 cy_ = y + data[1];
             cur.x = (f32)cx_ / 20.0f;
             cur.y = (f32)cy_ / 20.0f;
-            flcalcMatrix(&ctl, &m, &cur);
+            flcalcMatrix(ctlp, &m, &cur);
             x = cx_ + data[2];
             y = cy_ + data[3];
             cur.x = (f32)x / 20.0f;
             cur.y = (f32)y / 20.0f;
-            switch (inLine) {
-            case 0:
-                    flcalcMatrix(&seg[0], &m, &cur);
-                    seg[3] = ctl;
-                    f32 t = 0.0f;
-                    if (next.y < seg[0].y) {
-                        seg[1] = next;
-                        seg[2] = seg[0];
-                    } else {
-                        seg[1] = seg[0];
-                        seg[2] = next;
-                    }
-                    bezPrev = seg[1];
-                    for (s32 i = 0; i < 9; i++) {
-                        t += 0.1f;
-                        flcalcBezier3(&bez, seg + 1, t);
-                        SBline(&bezPrev, &bez);
-                        bezPrev = bez;
-                        if ((s16)bez.x < gVecDat.minX) gVecDat.minX = (s16)bez.x;
-                        if ((s16)bez.x > gVecDat.maxX) gVecDat.maxX = (s16)bez.x;
-                        if (bez.y < gVecDat.minY) gVecDat.minY = (s16)bez.y;
-                        if ((s16)bez.y > gVecDat.maxY) gVecDat.maxY = (s16)bez.y;
-                    }
-                    bez = seg[2];
-                    SBline(&bezPrev, &bez);
-                    if ((s16)bez.x < gVecDat.minX) gVecDat.minX = (s16)bez.x;
-                    if ((s16)bez.x > gVecDat.maxX) gVecDat.maxX = (s16)bez.x;
-                    if ((s16)bez.y < gVecDat.minY) gVecDat.minY = (s16)bez.y;
-                    if ((s16)bez.y > gVecDat.maxY) gVecDat.maxY = (s16)bez.y;
-                    next = seg[0];
-                break;
+            if (inLine == 0) {
+                flcalcMatrix(ptp, &m, &cur);
+                seg[1] = ctl;
+                f32 t = 0.0f;
+                if (next.y < pt.y) {
+                    seg[0] = next;
+                    seg[2] = pt;
+                } else {
+                    seg[0] = pt;
+                    seg[2] = next;
+                }
+                prev = seg[0];
+                for (s32 i = 0; i < 9; i++) {
+                    t = t + 0.1f;
+                    flcalcBezier3(&bez, seg, t);
+                    SBline(&prev, &bez);
+                    prev = bez;
+                    s16 bezX = OSf32tos16(prev.x);
+                    s16 bezY = OSf32tos16(prev.y);
+                    if (bezX < gVecDat.box[0]) gVecDat.box[0] = bezX;
+                    if (bezX > gVecDat.box[2]) gVecDat.box[2] = bezX;
+                    if (bezY < gVecDat.box[1]) gVecDat.box[1] = bezY;
+                    if (bezY > gVecDat.box[3]) gVecDat.box[3] = bezY;
+                }
+                bez = seg[2];
+                SBline(&prev, &bez);
+                s16 bezX = OSf32tos16(bez.x);
+                s16 bezY = OSf32tos16(bez.y);
+                if (bezX < gVecDat.box[0]) gVecDat.box[0] = bezX;
+                if (bezX > gVecDat.box[2]) gVecDat.box[2] = bezX;
+                if (bezY < gVecDat.box[1]) gVecDat.box[1] = bezY;
+                if (bezY > gVecDat.box[3]) gVecDat.box[3] = bezY;
+                next = pt;
             }
             break;
         }
@@ -1027,10 +1040,10 @@ extern "C" void vectorGraph(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lin
         gVecDat.color2 = flcalcMultiTransformColor((GCsptr)cx, -1);
         gVecDat.styles = fills->list;
         gVecDat.f3C = GC_AT(s32, lines, 4);
-        gVecDat.minY = 0x7FFF;
-        gVecDat.minX = 0x7FFF;
-        gVecDat.maxY = -0x8000;
-        gVecDat.maxX = -0x8000;
+        gVecDat.box[1] = 0x7FFF;
+        gVecDat.box[0] = 0x7FFF;
+        gVecDat.box[3] = -0x8000;
+        gVecDat.box[2] = -0x8000;
         memset(scanline_buffer, 0, 0x25800);
         vecExec(a0, fills, lines, rec, parent, mat, cx);
     }

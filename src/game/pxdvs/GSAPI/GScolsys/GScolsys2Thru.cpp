@@ -47,15 +47,15 @@ struct CCD_THRUMDL_HEAD {
 
 struct ThruObj {
     u8 unk0[0x2C];
-    CCD_THRUMDL_HEAD* thru;
+    gc_ptr32(CCD_THRUMDL_HEAD) thru;
     u8 unk30[0xC];
-    u16 flags;
+    gc_be16 flags;
     u8 pad3E[2];
 };
 
 struct CCDFileHead {
-    ThruObj* objs;
-    u32 numObjs;
+    gc_ptr32(ThruObj) objs;
+    gc_be32 numObjs;
 };
 
 extern "C" {

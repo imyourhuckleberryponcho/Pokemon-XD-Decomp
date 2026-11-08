@@ -247,7 +247,7 @@ u32 pokemonBiosGetPoolFriend(Pokemon*);
 u32 pokemonBiosGetPoolExp(Pokemon*);
 s32 pokemonBiosGetDp(Pokemon*);
 u16 pokemonBiosGetDarkpokemonDataId(Pokemon*);
-u16 pokemonBiosGetFriend(Pokemon*);
+PCRET(u16) pokemonBiosGetFriend(Pokemon*);
 PCRET(u8) pokemonBiosGetNimblenessRnd(Pokemon*);
 PCRET(u8) pokemonBiosGetSpeDefRnd(Pokemon*);
 PCRET(u8) pokemonBiosGetSpeAtkRnd(Pokemon*);

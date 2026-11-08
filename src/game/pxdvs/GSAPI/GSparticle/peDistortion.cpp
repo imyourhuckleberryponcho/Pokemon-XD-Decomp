@@ -315,7 +315,7 @@ struct peEmitterNodeData {
     u8 pad30[0x8];
     f32 color[4];
     u8 pad48[0xb4];
-    u32* params;
+    gc_be32* params;
 };
 
 static inline f32 evalSpline(peSpline* sp, f32 t) {
@@ -367,18 +367,18 @@ static inline void vecScale(Vec* dst, Vec* a, f32 k) {
     *dst = t;
 }
 
-static inline void projectToNode(Vec* v, Vec* p, peXformP* xf) {
+static inline void projectToNode(Vec* v, Vec* p, peDistortionNodeData* n) {
     Quaternion qi;
     Mtx m;
     Vec t;
-    PSQUATInverse(&xf->rot, &qi);
+    PSQUATInverse(&n->xform->rot, &qi);
     quatToMtx(m, qi);
     PSMTXMultVecSR(m, v, &t);
     *p = t;
-    p->x *= xf->scale.x;
-    p->y *= xf->scale.y;
-    p->z *= xf->scale.z;
-    rotateBy(p, &xf->rot);
+    p->x *= n->xform->scale.x;
+    p->y *= n->xform->scale.y;
+    p->z *= n->xform->scale.z;
+    rotateBy(p, &n->xform->rot);
     PSVECScale(v, v, PSVECDotProduct(v, p));
 }
 
@@ -475,10 +475,17 @@ void peDistortionContainer::Stop() {
 
 #define LAYER_FIELD(l, T, off) (*(T*)((u8*)(l) + (off)))
 static inline void layerMark(GSgfxLayer* l, u32 sum, u32 off, u32 bit) {
+#ifdef __MWERKS__
     LAYER_FIELD(l, u32, off) |= bit;
-    LAYER_FIELD(l, u32, 0x16A8) |= sum;
+    LAYER_F(l, u32 *, 0x16A8, dirty[0].groups) |= sum;
     LAYER_FIELD(l, u32, off + 0xB8) |= bit;
-    LAYER_FIELD(l, u32, 0x1760) |= sum;
+    LAYER_F(l, u32 *, 0x1760, dirty[1].groups) |= sum;
+#else
+    GSL_IN(l, u32, dirty[0], 0x16A8, off) |= bit;
+    l->dirty[0].groups |= sum;
+    GSL_IN(l, u32, dirty[1], 0x1760, off + 0xB8) |= bit;
+    l->dirty[1].groups |= sum;
+#endif
 }
 
 #define PE_DLV(p) ((peDLView*)(p))
@@ -528,37 +535,37 @@ void peDistortionContainer::Render() {
             if (temp_r31 & 0x100) {
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xD8C) = 2;
+                    LAYER_F(l, s32 *, 0xD8C, hw.cullMode) = 2;
                     layerMark(l, 2, 0x16B8, 2);
                 }
             } else {
                 {
                     GSgfxLayer* l = g_current_layer;
-                    LAYER_FIELD(l, s32, 0xD8C) = 0;
+                    LAYER_F(l, s32 *, 0xD8C, hw.cullMode) = 0;
                     layerMark(l, 2, 0x16B8, 2);
                 }
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s8, 0x165C) = 0;
-                LAYER_FIELD(l, s32, 0x1660) = 3;
+                LAYER_F(l, s8 *, 0x165C, hw.zEnable) = 0;
+                LAYER_F(l, s32 *, 0x1660, hw.zFunc) = 3;
                 layerMark(l, 0x40, 0x170C, 8);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s8, 0x1656) = 1;
-                LAYER_FIELD(l, s8, 0x1657) = 0;
-                LAYER_FIELD(l, s8, 0x1658) = 0;
+                LAYER_F(l, s8 *, 0x1656, hw.colorUpdate) = 1;
+                LAYER_F(l, s8 *, 0x1657, hw.alphaUpdate) = 0;
+                LAYER_F(l, s8 *, 0x1658, hw.zUpdate) = 0;
                 layerMark(l, 0x40, 0x170C, 4);
             }
             {
                 GSgfxLayer* l = g_current_layer;
-                LAYER_FIELD(l, s32, 0x1664) = 7;
-                LAYER_FIELD(l, s8, 0x1670) = 0;
-                LAYER_FIELD(l, s32, 0x1668) = 0;
-                LAYER_FIELD(l, s32, 0x166C) = 7;
-                LAYER_FIELD(l, s8, 0x1671) = 0;
-                LAYER_FIELD(l, s8, 0x1672) = 1;
+                LAYER_F(l, s32 *, 0x1664, hw.alphaComp0) = 7;
+                LAYER_F(l, s8 *, 0x1670, hw.alphaRef0) = 0;
+                LAYER_F(l, s32 *, 0x1668, hw.alphaCmpOp) = 0;
+                LAYER_F(l, s32 *, 0x166C, hw.alphaComp1) = 7;
+                LAYER_F(l, s8 *, 0x1671, hw.alphaRef1) = 0;
+                LAYER_F(l, s8 *, 0x1672, hw.zCompLoc) = 1;
                 layerMark(l, 0x40, 0x170C, 0x10);
             }
             particleEngineSetupBlendMode(0);
@@ -833,8 +840,8 @@ void peDistortionNode::UpdateRenderData(peEmitterNode* emitter, _peDistortion* d
     if (spinFirst && (angle < 0.0f ? -angle : angle) > 0.00001f) {
         spinAround(&up, &right, &fwd, angle);
     }
-    projectToNode(&right, &v, n->xform);
-    projectToNode(&up, &v, n->xform);
+    projectToNode(&right, &v, n);
+    projectToNode(&up, &v, n);
     PSVECScale(&right, &right, n->sizeX * evalSpline(p->scaleX, t));
     PSVECScale(&up, &up, n->sizeY * evalSpline(p->scaleY, t));
     if (!spinFirst && (angle < 0.0f ? -angle : angle) > 0.00001f) {

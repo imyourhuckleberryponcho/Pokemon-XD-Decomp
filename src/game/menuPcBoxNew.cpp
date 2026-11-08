@@ -82,7 +82,7 @@ public:
 
 struct VP {
     u32 id;
-    u32 value;
+    GCuptr value;
 };
 
 class CMetaMenu;

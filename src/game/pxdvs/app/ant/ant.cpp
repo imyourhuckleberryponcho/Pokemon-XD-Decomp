@@ -317,11 +317,15 @@ void CAnt::systemFree() {
     memset(&_pokeDance, 0, sizeof(_pokeDance));
 }
 
-void CAnt::allRequestCancel() {
+static inline void cancelPending(PokeDanceTbl* t) {
     for (int i = 0; i < 240; i++) {
-        PokeDanceEntry* e = &_pokeDance.e[i];
-        if (i != _pokeDance.loading && e->key != 0 && e->data == 0) e->use = 0;
+        PokeDanceEntry* e = &t->e[i];
+        if (i != t->loading && e->key != 0 && e->data == 0) e->use = 0;
     }
+}
+
+void CAnt::allRequestCancel() {
+    cancelPending(&_pokeDance);
     antCompact();
 }
 
@@ -462,15 +466,15 @@ void CAnt::draw(PocketVec<short> off) {
         f32 f = colorAnimationTimeReliveReady - 0.5f;
         if (f < 0.0f) f = -f;
         f32 kc776 = 2.0f;
-        f32 t = -((kc776 * f) - 1.0f);
+        f32 t = -((f * kc776) - 1.0f);
         f32 u = 1.0f - t;
         if (t > 0.5) {
             col.a = (u8)(255.0f * t);
         } else {
             col.a = 0x80;
         }
-        col.g = (u8)((f32)colorWhite.g * t + (f32)colorPurple.g * u);
         col.r = (u8)((f32)colorWhite.r * t + (f32)colorPurple.r * u);
+        col.g = (u8)((f32)colorWhite.g * t + (f32)colorPurple.g * u);
         col.b = (u8)((f32)colorWhite.b * t + (f32)colorPurple.b * u);
         break;
     }

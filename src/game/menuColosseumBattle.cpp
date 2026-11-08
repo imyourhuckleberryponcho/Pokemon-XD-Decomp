@@ -1,3 +1,4 @@
+#include <game/menucbsize.h>
 #include <dolphin/types.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -48,6 +49,9 @@ struct _MENUCBWORK {
     void* dancer[9][4];
     u8 rest[0xB5F4 - 0xB5B4];
 };
+#ifndef __MWERKS__
+static_assert(sizeof(_MENUCBWORK) == MENUCB_SIZE, "MENUCB_SIZE (game/menucbsize.h)");
+#endif
 
 struct TunaideSelect {
     s32 mode;

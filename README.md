@@ -18,12 +18,12 @@ version where hovering a square shows the file name and how much of it matches.
 
 | | |
 |---|---|
-| Code matched (byte-identical functions) | 81.4% |
-| Code linked (complete files built from source) | 49.1% |
-| Game code matched | 78.4% |
+| Code matched (byte-identical functions) | 83.0% |
+| Code linked (complete files built from source) | 49.8% |
+| Game code matched | 80.2% |
 | Supporting SDK / runtime libraries | 100.0% |
 
-Last updated 2026-11-06.
+Last updated 2026-11-08.
 
 Every build is checked against the retail executable: the project only counts code that reproduces the
 original bytes exactly.

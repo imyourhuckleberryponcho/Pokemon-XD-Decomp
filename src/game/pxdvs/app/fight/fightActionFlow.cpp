@@ -806,7 +806,7 @@ u32 fightActionFlowSyuuryou(FightAction* action) {
                 dark->setCatchFloorId(fightFloor_GetEncountFloorId());
             }
             u32 msg = 0x5002;
-            msg = fightSeqItemSeq_AddPoke(pokemon, ball, trainer, fightTrainer_GetHeroPtr(trainer)) != 1 ? msg : 0x4f86;
+            msg = fightSeqItemSeq_AddPoke(pokemon, ball, trainer, fightTrainer_GetHeroPtr(trainer)) == 1 ? 0x4f86 : msg;
             char* nick = pokemon_GetNicknamePtr(pokemon);
             fightMsgctrlSetValue(0x16, (u32)nick);
             fightMenuOpenMsg(msg);
@@ -1567,7 +1567,7 @@ s32 fightActionFlowKaisiNyuujouPokemon(FightAction* action) {
             if (gridSeq != 0) {
                 fightTrainerGetDoFightOutFightOutPokemonCount((FightTrainer*)trainer);
                 cnt = 0;
-                for (u32 j = 0; (u16)j < 6; j++) {
+                for (u16 j = 0; j < 6; j++) {
                     if (cnt >= fopNum || cnt >= 2) break;
                     FightPokemon* fp = (FightPokemon*)fightTrainer_GetFightPokemonPtr(trainer, j);
                     if (fightPokemonCheckFightOut(fp) != 0) {
@@ -1602,13 +1602,13 @@ s32 fightActionFlowKaisiNyuujouPokemon(FightAction* action) {
         }
     } else if (fightFloorIsNowEncountOpeningVirtualBattle((FIGHT_FLOOR*)(NULL)) == 1) {
         for (u32 i = 0; (u16)i < trainerNum; i++) {
-            FIGHT_TRAINER* t = fightSideGetValidFightTrainerPtr(side, i);
-            if (t != NULL) {
+            trainer = fightSideGetValidFightTrainerPtr(side, i);
+            if (trainer != NULL) {
                 for (u32 j = 0; (u16)j < fopNum; j++) {
-                    FightOutPokemon* f = fightTrainerGetValidFightOutPokemonPtr(t, j);
-                    if (f != NULL) {
-                        fightOutPokemonDasuEffect((FightTrainer*)t, f, 0U);
-                        Sequence* s = (Sequence*)(fightOutPokemon_GetSequencePtr(f));
+                    fop = fightTrainerGetValidFightOutPokemonPtr(trainer, j);
+                    if (fop != NULL) {
+                        fightOutPokemonDasuEffect((FightTrainer*)trainer, fop, 0U);
+                        Sequence* s = (Sequence*)(fightOutPokemon_GetSequencePtr(fop));
                         if (s != NULL) {
                             Sequence_SetVisibility((u32)s, 1);
                             battleGridStoreModelVisibilityFlags();
@@ -1792,13 +1792,13 @@ s32 fightActionFlowKaisiNyuujouTrainer(FightAction* action) {
     u16 temp_r17;
     u16 temp_r17_2;
     u16 temp_r17_3;
-    s32 temp_r17_5;
+    u16 temp_r17_5;
     u16 temp_r19;
     u32 temp_r3_6;
     u8 temp_r0;
     u8 temp_r18;
     s32 temp_r21;
-    s16 temp_r21_2;
+    u8 temp_r21_2;
     u8 temp_r26;
     u8 unkspC[sizeof(s32) + 2424];
     u8 var_r22;
@@ -1874,7 +1874,7 @@ s32 fightActionFlowKaisiNyuujouTrainer(FightAction* action) {
                             if ((fightFloorIsNowEncountVirtualBattle((FIGHT_FLOOR*)(NULL)) == 1) || (fightFloorIsNowEncountOpeningVirtualBattle((FIGHT_FLOOR*)(NULL)) == 1)) {
                                 temp_r17_5 = fightEncountDataBiosGetDiskId((FightEncountData*)(fightEncountDataBiosGetPtr(fightGetFightEncountDataId())));
                                 if (fightTargetIsHostSide((void*)(temp_r31), (u8)fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 1) {
-                                    var_r4_2 = deckDataVirtualDB_GetAllyJoutai((u8)temp_r17_5, (s32)var_r23);
+                                    var_r4_2 = deckDataVirtualDB_GetAllyJoutai(temp_r17_5, var_r23);
                                 } else {
                                     var_r4_2 = deckDataVirtualDB_GetEnemyJoutai(temp_r17_5, var_r23);
                                 }

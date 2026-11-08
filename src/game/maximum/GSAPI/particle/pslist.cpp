@@ -15,7 +15,12 @@ struct HSD_Particle {
  u32 kind;
  u8 pad08[0x15];
  u8 linkNo;
+#ifdef __MWERKS__
  u8 pad1E[0x94 - 0x1E];
+#else
+
+    u8 pad1E[0xB8 - 0x1E];
+#endif
 };
 
 typedef struct {

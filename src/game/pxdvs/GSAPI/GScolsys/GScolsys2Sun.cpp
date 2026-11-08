@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcdata.h>
+#include <game/gcptr.h>
 
 struct GSvec {
     f32 x, y, z;
@@ -7,25 +9,29 @@ struct GSvec {
 typedef f32 GSmtx[3][4];
 
 struct ColTri {
-    GSvec v[3];
-    GSvec normal;
+    gc_vec(GSvec) v[3];
+    gc_vec(GSvec) normal;
 };
 
 struct ColMesh {
-    ColTri* tris;
-    u32 numTris;
+    gc_ptr32(ColTri) tris;
+    gc_be32 numTris;
 };
 
 struct ColObj {
     u8 unk0[0x38];
-    ColMesh* mesh;
+    gc_ptr32(ColMesh) mesh;
     u8 unk3C[4];
 };
 
 struct CCDFileHead {
-    ColObj* objs;
-    u32 numObjs;
+    gc_ptr32(ColObj) objs;
+    gc_be32 numObjs;
 };
+#ifndef __MWERKS__
+static_assert(sizeof(ColTri) == 0x30, "ColTri stride in the CCD file");
+static_assert(sizeof(ColObj) == 0x40, "ColObj stride in the CCD file");
+#endif
 
 extern "C" {
 f32 PSVECSquareDistance(const GSvec* a, const GSvec* b);
@@ -47,14 +53,15 @@ static int getCpSegPolyArray(bool* hits, GSvec* start, GSvec* ends, u32 num, GSv
     bool valid = true;
     GSvec cp;
     f32 t;
+    GSvec* end = ends;
 
-    for (i = 0; i < num; i++, ends++, hits++) {
+    for (i = 0; i < num; i++, end++, hits++) {
         if (*hits) {
             continue;
         }
-        if (PSVECSquareDistance(start, ends) < 0.00001f) {
+        if (PSVECSquareDistance(start, end) < 0.00001f) {
             valid = false;
-        } else if (!GScolsys2UtilGetCpPlaneLine(&cp, &t, normal, tri, start, ends)) {
+        } else if (!GScolsys2UtilGetCpPlaneLine(&cp, &t, normal, tri, start, end)) {
             valid = false;
         } else if (t < 0.0f || t > 1.0f) {
             valid = false;
@@ -94,9 +101,9 @@ static inline int checkMeshArray(bool* hits, GSvec* start, GSvec* ends, u32 num,
     for (j = 0; j < mesh->numTris; j++, tri++) {
         int k;
         int res;
-        PSMTXMultVec(rot, &tri->normal, normal);
+        PSMTXMultVec(rot, GC_VEC3P(GSvec, &tri->normal), normal);
         for (k = 0; k < 3; k++) {
-            PSMTXMultVec(mtx, &tri->v[k], &verts[k]);
+            PSMTXMultVec(mtx, GC_VEC3P(GSvec, &tri->v[k]), &verts[k]);
         }
         res = getCpSegPolyArray(hits, start, ends, num, verts, normal);
         if (res < 0) {
@@ -111,12 +118,14 @@ static inline int checkMeshArray(bool* hits, GSvec* start, GSvec* ends, u32 num,
 
 extern "C" {
 
+static inline ColMesh * colObjMesh(ColObj * p) { return p->mesh; }
+
 bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
     bool found;
     CCDFileHead* head;
-    ColObj* obj;
     int result;
     u32 i;
+    ColObj* obj;
 
     if (GScolsys2GetCCDFileHead() == NULL) {
         return false;
@@ -137,7 +146,7 @@ bool GScolsys2SunArray(bool* hits, GSvec* start, GSvec* ends, u32 num) {
         if (!enable) {
             continue;
         }
-        mesh = obj->mesh;
+        mesh = colObjMesh(obj);
         if (mesh == NULL) {
             continue;
         }
@@ -194,9 +203,9 @@ bool GScolsys2Sun(GSvec* start, GSvec* end) {
         tri = mesh->tris;
         for (j = 0; j < mesh->numTris; j++, tri++) {
             int k;
-            PSMTXMultVec(rot, &tri->normal, &normal);
+            PSMTXMultVec(rot, GC_VEC3P(GSvec, &tri->normal), &normal);
             for (k = 0; k < 3; k++) {
-                PSMTXMultVec(mtx, &tri->v[k], &verts[k]);
+                PSMTXMultVec(mtx, GC_VEC3P(GSvec, &tri->v[k]), &verts[k]);
             }
             if (checkSegTri(start, end, verts, &normal)) {
                 hit = true;

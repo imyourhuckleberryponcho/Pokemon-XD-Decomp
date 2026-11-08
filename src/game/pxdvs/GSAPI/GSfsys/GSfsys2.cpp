@@ -1021,6 +1021,7 @@ static void _fsysBackgroundTaskNormalType(FsysBG* bg, u8 copy) {
 
 static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
     FsysBlock* block;
+    u32 off;
     u8 b;
     u32 wpos;
     u32 flags;
@@ -1032,9 +1033,8 @@ static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
     u32 limit;
     u32 blockSize;
     s32 state;
-    u32 in;
-    u32 off;
     s32 len;
+    u32 in;
     s32 k;
 
     if (bg->done == 1) {
@@ -1126,10 +1126,9 @@ static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
             pos--;
             goto done;
         }
-        dest[dpos] = b;
-        dpos++;
-        window[wpos] = b;
-        wpos = (wpos + 1) & 0xFFF;
+        dest[dpos++] = b;
+        window[wpos++] = b;
+        wpos &= 0xFFF;
         goto step;
     read_off:
         pos++;
@@ -1159,10 +1158,9 @@ static void _fsysBackgroundTaskCompressType(FsysBG* bg) {
         off |= (b << 4) & 0xF00;
         for (k = 0; k <= len; k++) {
             u8 c = window[(off + k) & 0xFFF];
-            window[wpos] = c;
-            dest[dpos] = c;
-            dpos++;
-            wpos = (wpos + 1) & 0xFFF;
+            dest[dpos++] = c;
+            window[wpos++] = c;
+            wpos &= 0xFFF;
         }
     step:
         count++;
@@ -1351,6 +1349,7 @@ static void _fsysForegroundTask(FsysWork* work) {
         }
         break;
     case -999:
+    case -993:
     case -992:
     case 0:
     case 1:
@@ -1367,18 +1366,20 @@ static void _fsysForegroundTask(FsysWork* work) {
 }
 
 static void _fsysHeaderSizeReadDvdCallback(s32 result, u32 handle) {
-#ifdef __MWERKS__
-    FsysWork* work = _fsysInfo2Work((u16)handle);
-#else
     FsysWork* work = _fsysInfo2Work(handle);
-#endif
 
     if (work == 0) {
         _headerTop = 0;
         _fsysWorkSetTaskStatus(work, 3);
+        if (work != 0) {
+            return;
+        }
     } else if (result < 0) {
         _headerTop = 0;
         _fsysWorkSetTaskStatus(work, 3);
+        if (work != 0) {
+            return;
+        }
     } else {
         FsysGroup* group = work->group;
         group->headerSize = ((FsysHeader*)_headerTop)->headerSize;
@@ -1744,10 +1745,8 @@ static FsysWork* _fsysGetNewWork_Sub(s32 flag) {
 }
 
 static FsysWork* _fsysGetWork(u32 id, u8 flag) {
-    FsysWork* w = _fsysWork;
-    u32 i;
-
-    for (s32 i = 0; i < _fsysWorkMax; w++, i++) {
+    for (s32 i = 0; i < _fsysWorkMax; i++) {
+        FsysWork* w = &_fsysWork[i];
         if (flag == 1) {
             switch (w->status) {
             case 0:

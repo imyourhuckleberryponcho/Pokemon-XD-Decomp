@@ -25,7 +25,13 @@ WindowKeyInfo* windowGetKeyInfo(void);
 StatusS32 windowGetParam(Window* window, s32 index);
 void windowSetParam(Window* window, s32 index, s32 value);
 void GSgfxZCompare(s32, s32);
+#ifdef __MWERKS__
 void menuSubDrawTile(s32 layer, s32 x, s32 y, s32 w, s32 h, GXColor color);
+#define DBGLOG_TILE_COLOR(c) (c)
+#else
+void menuSubDrawTile(s32 layer, s32 x, s32 y, s32 w, s32 h, u8* color);
+#define DBGLOG_TILE_COLOR(c) ((u8*)&(c))
+#endif
 s32 GSlogGetLineCount(void);
 const char* GSlogGetLine(s32 line);
 void GSprint(s32 layer, s32 x, s32 y, u32 color, const char* fmt, ...);
@@ -73,7 +79,7 @@ s32 dbgMenuLogDraw(Window* window) {
         break;
     }
     GSgfxZCompare(0, 7);
-    menuSubDrawTile(window->layer, 15, y - 5, 605, height + 18, color);
+    menuSubDrawTile(window->layer, 15, y - 5, 605, height + 18, DBGLOG_TILE_COLOR(color));
     if (_calcStartLine) {
         _viewStartLine = GSlogGetLineCount() - lines;
         _calcStartLine = 0;

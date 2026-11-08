@@ -260,6 +260,7 @@ struct BlendState {
 };
 
 #include <game/gsgfxlayer.h>
+#include <game/ppcops.h>
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -737,7 +738,7 @@ void modelShadowRender(GSgfxLayer* layer)
                             if (size.z > largest) {
                                 largest = size.z;
                             }
-                            n = (u32)(f32)ceil(largest);
+                            n = GC_F2U32((f32)ceil(largest));
                             e = _modelShadowBoundExpansion;
                             e += (f32)n;
                             if (e > 0.1f) {
@@ -854,7 +855,7 @@ static inline bool _shadowTryReceiver(_GSmodel* model, u32 index)
             if (size.z > m) {
                 m = size.z;
             }
-            n = (u32)(f32)ceil(m);
+            n = GC_F2U32((f32)ceil(m));
             if (n < slot->sizeMin) {
                 slot->sizeMin = n;
             }
@@ -1205,7 +1206,7 @@ static inline u32 _shadowBoundSize(GSbound* bound)
     if (size.z > m) {
         m = size.z;
     }
-    return (u32)(f32)ceil(m);
+    return GC_F2U32((f32)ceil(m));
 }
 
 static inline ShadowReceive* _shadowFindReceiveModel(_GSmodel* model)
@@ -1324,7 +1325,7 @@ static ShadowReceive* _modelShadowFindValidReceiveModel(_GSmodel* model, _GSmode
                         m = dims->z;
                     }
                 }
-                n = (u32)(f32)ceil(m);
+                n = GC_F2U32((f32)ceil(m));
                 if (n < r->sizeMin) {
                     if (n < r->sizeMax / 3) {
                         continue;
@@ -1342,7 +1343,7 @@ static ShadowReceive* _modelShadowFindValidReceiveModel(_GSmodel* model, _GSmode
                 GSboundGetWorldPosition(model2->bound, &p0);
                 for (j = 0; j < 16; j++) {
                     if (r->receivers[j] != 0) {
-                        GSboundGetWorldPosition((u8*)r->receivers[j] + 0x3c, &p1);
+                        GSboundGetWorldPosition(r->receivers[j]->bound, &p1);
                         if (PSVECSquareDistance(&p0, &p1) > _modelShadowCutoffDist) {
                             ok = false;
                             j = 16;

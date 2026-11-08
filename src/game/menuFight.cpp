@@ -310,7 +310,7 @@ s32 menuGetCursorItemID(s32);
 struct TargetEntry {
     u32 unk0;
     u32 menuId;
-    u32 unk8;
+    GCuptr unk8;
 };
 
 struct TargetArg {
@@ -662,9 +662,16 @@ PCRET(bool) menuFightChkOpenBall(s32 id);
 static inline u8 zokuseiOf(void* data);
 
 struct StatusAlloc {
+#ifdef __MWERKS__
     u8 unk0[0x40];
+#else
+    u8 unk0[offsetof(MenuWazaStatus, fightOutPokemon)];
+#endif
     void* fightOut;
 };
+#ifndef __MWERKS__
+static_assert(offsetof(StatusAlloc, fightOut) == offsetof(MenuWazaStatus, fightOutPokemon), "StatusAlloc");
+#endif
 
 extern "C" {
 void* pokemonDataBiosGetPtr(u16);
@@ -2414,6 +2421,8 @@ void menuFightDrawSecretWazaSelect(tagWINDOW_WORK* window, tagSPRITE_WORK* sprit
     }
 }
 
+#pragma push
+#pragma optimize_for_size on
 void menuFightDrawSecretWazaDoc(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
 {
     WazaDocArg* arg;
@@ -2554,7 +2563,7 @@ void menuFightDrawSecretWazaDoc(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
                     case 0x26e: {
                         s16 x = (s16)(GSmsgGetRect(0x42d1) >> 16);
                         s16 w = sprite->w - x;
-                        s32 half;
+                        s16 half;
                         GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0, 0, color, 0x42d1);
                         half = (w - (s16)(GSmsgGetRect(0x42c4) >> 16)) / 2;
                         GSmsgPrint2(winSpriteGetLayerID(window, sprite), x + half, 0, color, 0x42c4);
@@ -2570,6 +2579,7 @@ void menuFightDrawSecretWazaDoc(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
         }
     }
 }
+#pragma pop
 
 static Pokemon* _menuFightGetPokemonPtr(FIGHT_TRAINER* trainer, u32 index)
 {

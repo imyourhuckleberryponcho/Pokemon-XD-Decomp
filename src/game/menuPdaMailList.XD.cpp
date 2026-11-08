@@ -321,7 +321,7 @@ static void _pdaMailListCursor(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             break;
         }
     }
-    *((s8*)sprite + 0x67) = _menuPdaMailAlpha[i];
+    sprite->alpha = _menuPdaMailAlpha[i];
     if (pos == i) {
         winSpriteSetDisp(sprite, 1);
         return;

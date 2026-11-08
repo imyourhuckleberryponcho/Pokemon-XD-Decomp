@@ -5,6 +5,7 @@
 #pragma pool_strings off
 
 #include <game/gstexture.h>
+#include <game/pcret.h>
 
 extern "C" {
 void* memcpy(void*, const void*, u32);
@@ -130,8 +131,8 @@ void GStextureConvertToHW(GStexture* tex)
 
 void GStextureConvertFromHW(GStexture* tex)
 {
-    u16* data;
     s32 y;
+    u16* data;
     s32 x;
     u16* src;
     u16* dst;
@@ -470,8 +471,8 @@ static inline void _textureCalcSize(GStexture* tex, s32 levels, u32 baseSize)
     }
 }
 
-GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void* data, s32 format, s32 tlutFormat,
-                                     u32 mipLevels)
+s32 GStextureCreateFromMemory(GStexture* tex, u16 width, PCARG(u16, u32) height, void* data, s32 format, s32 tlutFormat,
+                                     PCARG(u8, u32) mipLevels)
 {
     s32 tlutEntries = 0;
     u32 size;
@@ -512,10 +513,9 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void
         return 0;
     }
     levels = mipLevels;
-    levels = (u8)(levels + 1);
     tex->inUse = 1;
     tex->format = format;
-    tex->mipLevels = levels;
+    tex->mipLevels = levels + 1;
     tex->dirty = 1;
     tex->tlutFormat = tlutFormat;
     tex->wrapS = 0;
@@ -527,7 +527,7 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void
     tex->mipData[0] = data;
     tex->mipFilter = 0;
     tex->tlutData = 0;
-    size = (tex->bitsPerPixel * (width * height)) >> 3;
+    size = ((u32)tex->bitsPerPixel * (width * height)) >> 3;
     _textureCalcSize(tex, levels, size);
     if (tlutEntries != 0) {
         if (tlutFormat != 0 && tlutFormat >= 0 && tlutFormat < 4) {
@@ -536,7 +536,7 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void
             return 0;
         }
     }
-    size = (tex->bitsPerPixel * (width * height)) >> 3;
+    size = ((u32)tex->bitsPerPixel * (width * height)) >> 3;
     for (i = 1; i < 8; i++) {
         if (i < tex->mipLevels) {
             tex->mipData[i] = (u8*)tex->mipData[i - 1] + size;
@@ -545,14 +545,19 @@ GStexture* GStextureCreateFromMemory(GStexture* tex, u16 width, u32 height, void
             tex->mipData[i] = 0;
         }
     }
-    if (tlutFormat < 4 && tlutFormat >= 1) {
+    switch (tlutFormat) {
+    case 1:
+    case 2:
+    case 3:
         tex->tlutData = (u8*)tex->mipData[tex->mipLevels - 1] + size;
-    } else {
+        break;
+    default:
         tex->tlutData = 0;
+        break;
     }
     _textureInitObjs(tex);
     DCStoreRange(tex->mipData[0], tex->totalSize);
-    return tex;
+    return 1;
 }
 
 static inline GStexture* _textureGetFree(void)

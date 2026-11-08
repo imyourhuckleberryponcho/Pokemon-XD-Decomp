@@ -3,6 +3,7 @@
 
 #include <global.h>
 #include <game/statusval.h>
+#include <game/gcptr.h>
 #include <game/bitfield.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
@@ -112,12 +113,9 @@ struct Pokemon {
   u32 eventGetFlag;
   Attest attest;
 
-  char catchTrainerName[11];
-  s8 unk2[11];
-  char nickname[11];
-  s8 unk3[11];
-  char nicknameOrg[11];
-  s8 unk4[11];
+  u16 catchTrainerName[11];
+  u16 nickname[11];
+  u16 nicknameOrg[11];
 
   Ribbon ribbon;
   PokemonWaza wazas[MAX_WAZA];
@@ -251,8 +249,8 @@ struct Pokemon {
 extern "C" void pokemonSetDp(Pokemon*, f32);
 
 extern "C" void pokemonSetTokuseiFlag(Pokemon* , u32);
-extern "C" void pokemonInitAry(u32, u16);
-extern "C" void pokemonInit(u32);
+extern "C" void pokemonInitAry(GCuptr, u16);
+extern "C" void pokemonInit(GCuptr);
 extern "C" void pokemonInitDarkPokemon(Pokemon*);
 extern "C" void pokemonInitJoutai(Pokemon*);
 extern "C" void pokemonWazaInitAry(Pokemon* ,u16);

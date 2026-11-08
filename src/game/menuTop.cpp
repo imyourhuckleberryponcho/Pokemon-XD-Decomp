@@ -66,7 +66,16 @@ struct MenuTopWork {
 
 struct MenuModel {
     MenuModel() {}
-    u8 data[0xEC];
+    u8 unk0[0x24];
+    u16 pokemonID;
+    u8 unk26[0x32];
+    void* slot58;
+    u8 pad5C[0x10];
+    void* slot6C;
+    void* slot70;
+    void* slot74;
+    void* slot78;
+    u8 pad7C[0x70];
 };
 
 extern "C" {

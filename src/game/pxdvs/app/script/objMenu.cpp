@@ -2,6 +2,7 @@
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/tigadata.h>
+#include <game/ppcops.h>
 #ifndef __MWERKS__
 namespace GSscript { struct TigaThread { void setSaveFlag(bool); }; }
 #define setSaveFlag__Q28GSscript10TigaThreadFb(o, ...) (((GSscript::TigaThread*)(o))->setSaveFlag(__VA_ARGS__))
@@ -189,7 +190,7 @@ s32 AppScript::cmpMenu(int command, GSscript::tigaVariant* args, GSscript::tigaV
                 msgctrlSetValue(a, (GCuptr)args[2].getString8(stringBuffer));
             } else if (args[2].type == 2) {
                 s32 a = args[1].getInteger();
-                msgctrlSetValue(a, (GCuptr)args[2].getSingle());
+                msgctrlSetValue(a, GC_F2U32(args[2].getSingle()));
             }
         }
         break;

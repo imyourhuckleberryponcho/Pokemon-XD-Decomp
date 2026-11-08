@@ -2,6 +2,8 @@
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
+#include <game/gcdata.h>
+#include <game/winwork.h>
 #include <dolphin/gx/GXVert.h>
 
 #pragma peephole off
@@ -81,7 +83,11 @@ struct CBWork {
     u8 ruleStr[0x90];
     u8 pad99C6[0x2B2];
     u8* rule;
+#ifdef __MWERKS__
     u8 pad9C7C[0x8];
+#else
+    u8 pad9C7C[0x4];
+#endif
     ErrEntry err[4][6];
     u8 pad9CE4[0x978];
     u8 hero[1];
@@ -183,6 +189,12 @@ struct CBMenuItem {
     s16 x, y, w, h;
 };
 
+#ifdef __MWERKS__
+#define CBITEM_MSG(it) (*(s32*)((u8*)(it) + 0x4C))
+#else
+#define CBITEM_MSG(it) (*(GCuptr*)&((SpriteWorkLayout*)(it))->msg)
+#endif
+#ifdef __MWERKS__
 struct CBItem {
     u8 pad0[0x50];
     s16 x;
@@ -190,6 +202,16 @@ struct CBItem {
     s16 w;
     s16 h;
     u8 pad58[0xC];
+#else
+#include <stddef.h>
+struct CBItem {
+    u8 pad0[offsetof(SpriteWorkLayout, x)];
+    s16 x;
+    s16 y;
+    s16 w;
+    s16 h;
+    u8 pad58[offsetof(SpriteWorkLayout, color) - offsetof(SpriteWorkLayout, x) - 8];
+#endif
     u8 cr, cg, cb;
     u8 alpha;
     f32 scaleX;
@@ -208,17 +230,10 @@ void menuPtSpriteDrawColor(u16, s32, s32, u32);
 
 extern "C" {
 extern CBWork _CB;
-struct BSEnt {
-    u32 pad;
-    GStexture* tex;
-};
-struct BattleStartWork {
-    u8 pad0[8];
-    BSEnt ent[4];
-    u8 pad28[4];
-    s32 a, b;
-};
-extern BattleStartWork _menuCBBattleStartWork;
+}
+#include <game/menuCB_BattleStartWork.h>
+extern "C" {
+extern MenuCBBattleStartWork _menuCBBattleStartWork;
 void msgctrlSetValue(s32, void*);
 u32 GSmsgGetRect(s32);
 void GSmsgPrint2(s32, s32, s32, u32, s32);
@@ -1291,7 +1306,7 @@ void menuCBMessageYCenterDisp(CBWin* win, CBItem* item, s32 msg) {
 void fn_80080390(CBWin* win, CBItem* item, s32 msg) {
     switch (pokecoloGetCountryCode()) {
     case 0:
-        *(s32*)((u8*)item + 0x4C) = msg;
+        CBITEM_MSG(item) = msg;
         break;
     case 1:
     case 2:
@@ -2785,7 +2800,7 @@ void menuCBBattleStartDispTrainerFaceSub(CBWin* win, CBItem* item, s32 idx) {
     GStexture* tex;
     GSgfxLayer* layer;
     layer = GSgfxLayerFindByID(win->layer);
-    tex = (0, _menuCBBattleStartWork.ent[idx].tex);
+    tex = (GStexture*)(0, _menuCBBattleStartWork.entries[idx].texture);
     if (tex != 0) {
         (*(u32*)&layer->unk1998) = 0x98;
         layer->setRenderStateAndSelect(GSgfxVFBuildTemp(0, 3, 0, 0, 1, 5, 1, 1, 4));
@@ -2960,7 +2975,7 @@ void menuCB_Trainer_Error_Disp(CBWin* win, CBItem* item, s32 idx, s32 mode) {
         idx = 7;
         break;
     }
-    *(s32*)((u8*)item + 0x4C) = err_msgID[idx];
+    CBITEM_MSG(item) = err_msgID[idx];
     if (err_msgID[idx + 1] != 0) {
         GSmsgPrint2(win->layer, 0, 0x20, win->alpha | ~0xFF, err_msgID[idx + 1]);
     }
@@ -3086,7 +3101,7 @@ void menuCB_Pokemon_ErrorDisp(void* src, s32 player) {
 
 void menuCBtrainerFaceReadWait() {
     for (;;) {
-        if (_menuCBBattleStartWork.a == _menuCBBattleStartWork.b) {
+        if (_menuCBBattleStartWork.current == _menuCBBattleStartWork.count) {
             break;
         }
         GSthreadSwitch();
