@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -49,7 +50,7 @@ HSD_ObjInfo hsdObj = { { { ObjInfoInit } } };
 
 static void ObjInfoInit(void) {
     hsdInitClassInfo(&hsdObj.parent, &hsdClass, "sysdolphin_base_library", "hsd_obj", sizeof(HSD_ObjInfo),
-                     sizeof(HSD_Obj));
+                     GC_CLASS_SIZE(sizeof(HSD_Obj), 8));
 }
 
 }

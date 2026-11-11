@@ -1,7 +1,8 @@
 #include <dolphin/mtx.h>
+#include <game/gcdata.h>
 
 struct GSmtx {
-    GSmtx() {}
+    PC_KEEP_INLINE GSmtx() {}
 
     Mtx m;
 };

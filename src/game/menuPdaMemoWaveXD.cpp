@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
 
@@ -307,7 +308,8 @@ u8 pdaMemoNakigoe::NakigoeCheck() {
                 playing = 1;
                 break;
             case 0:
-            case 4:
+            case 1:
+            case 3:
                 break;
             }
         }

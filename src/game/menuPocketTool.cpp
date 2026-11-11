@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
@@ -155,7 +156,11 @@ s32 windowGetActiveID();
 void* menuDataBiosGetPtr(s32);
 s32 menuSubOpenSelect(s32, u32*, s32, s32, s32, s32);
 void windowCloseMain(void*);
+#ifdef __MWERKS__
 void menuOpenCustom(s32, s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuSetDisp(s32, s32);
 extern u8 winMsgDraw[];
 void GSsndPlayNow(u32);
@@ -370,58 +375,8 @@ CMetaMenu* CMetaMenu::pCurrentMenu;
 static CMetaMenu* _pThis;
 static s32 _selectItemQuantity;
 PocketVec<short> CMenuPokemonCursor::defaultPositionTbl;
-extern const GSgfxColAu8 GSgfxColAu8_Black;
-const GSgfxColAu8 GSgfxColAu8_Black = { 0, 0, 0, 0xFF };
-
-void menuPtRestoreSound(MenuPtWorkSound* s)
-{
-    if (s->bgm != 0 && s->bgm != soundGetBGMID()) {
-        soundOpenPlay(s->bgm, 0x32, s->bgmVol);
-    }
-    if (s->env != 0 && s->env != soundGetEnvID()) {
-        soundOpenPlayEnv(s->env, 0x32, s->envVol);
-    }
-}
-
-void menuPtSaveSound(MenuPtWorkSound* s)
-{
-    u32 bgm = soundGetBGMID();
-    u8 bgmVol;
-    if (bgm) bgmVol = soundGetVolume(bgm); else bgmVol = 0;
-    u32 env = soundGetEnvID();
-    u8 envVol;
-    if (env) envVol = soundGetVolume(env); else envVol = 0;
-    s->bgm = bgm;
-    s->env = env;
-    s->bgmVol = bgmVol;
-    s->envVol = envVol;
-}
-
-void menuPtStopSound(MenuPtWorkSound* s)
-{
-    u32 bgm = soundGetBGMID();
-    u8 bgmVol;
-    if (bgm) {
-        bgmVol = soundGetVolume(bgm);
-        soundOpenPlay(8, 0x32, 0xFF);
-    } else {
-        bgmVol = 0;
-    }
-    u32 env = soundGetEnvID();
-    u8 envVol;
-    if (env) envVol = soundGetVolume(env); else envVol = 0;
-    s->bgm = bgm;
-    s->env = env;
-    s->bgmVol = bgmVol;
-    s->envVol = envVol;
-}
-
-void menuPocketButtonWait()
-{
-    do {
-        GSthreadSwitch();
-    } while ((windowGetKeyTrg() & 0x30) == 0);
-}
+extern GC_CONST GSgfxColAu8 GSgfxColAu8_Black;
+GC_CONST GSgfxColAu8 GSgfxColAu8_Black = { 0, 0, 0, 0xFF };
 
 static inline f32 pmax(f32 a, f32 b)
 {
@@ -432,89 +387,1060 @@ static inline f32 pmax(f32 a, f32 b)
     return a;
 }
 
-f32 menuGetPokemonScale(GCuptr id, int index)
-{
-    f32 size[4];
-    f32 scale;
-    f32 memoScale;
-    f32 angle;
-    void* model = Sequence_GetGSmodel(id);
-    switch (Sequence_GetModelSize(id)) {
-    case -2: scale = 0.6f; break;
-    case -1: scale = 0.75f; break;
-    case 0: scale = 1.0f; break;
-    case 1: scale = 1.15f; break;
-    case 2: scale = 1.25f; break;
-    case 3: scale = 1.4f; break;
-    default: scale = 1.0f; break;
-    }
-    memoGetScaleAngle(index, &memoScale, &angle);
-    GSboundGetSize(GSmodelGetBound(model), size, 0, 0);
-    f32 m = size[0] > size[1] ? size[0] : size[1];
-    f32 r = 11.0f / (memoScale * (m / scale));
-    static f32 multi = 2.0f;
-    return r * multi;
-}
-
 void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id);
 static u16 pokemonindex(int);
+#pragma defer_codegen on
 
-void menuPocketDebugMakeDarkPokemonByID(Pokemon& p, u16 id, f32 mult)
-{
-    DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
-    u16 pid = dark->getPokemonID();
-    pokemonCreate(&p, pid, 0x19, gamedataGetStatus(0, 1));
-    menuPocketSetDarkPokemon(p, mult, id);
-    pokemonBiosGetInitDp(&p);
+void menuPtWindowWorkDraw(s32);
+tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(tagWINDOW_WORK*, u32, s32);
+tagSPRITE_WORK* menuPtGetSpriteWorkByHookFunction(tagWINDOW_WORK*, void*, u32, s32);
+void menuPtPlaySe(u32);
+void menuPtMenuLoad(s32);
+void menuPtWindowWorkDraw(tagWINDOW_WORK*);
+void menuPtWindowWorkDrawPrime(tagWINDOW_WORK*);
+MENU_ITEM_dd_* menuPtItemGetBySpriteWork(tagWINDOW_WORK*, tagSPRITE_WORK*);
+void menuPtSpriteWorkSetMenuSprite(tagSPRITE_WORK*, MENU_SPRITE_dd_*);
+tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(s32, u32, s32);
+u32 GSgfxColAu8To32(GSgfxColAu8);
+
+static void _tutorialWindowCursorFunc(tagWINDOW_WORK*);
+static void _tutorialWindowButtonFunc(tagWINDOW_WORK*);
+
+extern "C" {
+double atan2(double, double);
+}
+extern "C" {
+extern u32 __float_nan[];
 }
 
-void menuPocketDebugMakePokemonByID(Pokemon& p, u16 id, bool dark, f32 mult)
+static inline int ptFPClassify(f32 x)
 {
-    pokemonCreate(&p, id, 0x19, gamedataGetStatus(0, 1));
-    if (dark) {
-        int tries = 0;
-        do {
-            _darkPokemonIndex++;
-            if (_darkPokemonIndex >= darkPokemonList_number) _darkPokemonIndex = 1;
-            menuPocketSetDarkPokemon(p, mult, (u16)_darkPokemonIndex);
-            if (pokemonBiosGetInitDp(&p) != 0) break;
-            tries++;
-        } while (tries < 10);
+    switch ((*(s32*)&x) & 0x7f800000) {
+    case 0x7f800000:
+        if ((*(s32*)&x) & 0x007fffff) {
+            return 1;
+        } else {
+            return 2;
+        }
+    case 0:
+        if ((*(s32*)&x) & 0x007fffff) {
+            return 5;
+        } else {
+            return 3;
+        }
+    }
+    return 4;
+}
+
+static inline f32 ptSqrt(f32 x)
+{
+    if (x > 0.0f) {
+        f32 y = x;
+        f64 guess = __frsqrte(y);
+        guess = 0.5 * guess * (3.0 - guess * guess * y);
+        guess = 0.5 * guess * (3.0 - guess * guess * y);
+        guess = 0.5 * guess * (3.0 - guess * guess * y);
+        return y * guess;
+    } else if (x < 0.0) {
+        return *(f32*)__float_nan;
+    } else if (ptFPClassify(x) == 1) {
+        return *(f32*)__float_nan;
+    } else {
+        return x;
     }
 }
 
-void makePocketDeubugMakeDarkPokemonReset()
+f32 dirSubOne(f32 a, f32 b);
+
+int degreeRefresh180(s32);
+
+f32 dirRefresh2PI(f32 v);
+f32 dirRefreshPI(f32 v);
+
+bool getBitTable(u32* table, s32 i)
 {
-    _darkPokemonIndex = 0xC;
+    return (table[i / 32] & (1 << (i % 32))) != 0;
 }
 
-void menuPocketDebugMakePokemonBySN(Pokemon& p, u16 sn, bool dark, f32 mult)
+void setBitTable(u32* table, s32 i, bool on)
 {
-    menuPocketDebugMakePokemonByID(p, pokemonindex(sn % 386), dark, mult);
+    int word = i / 32;
+    int bit = i % 32;
+    if (on) table[word] |= 1 << bit;
 }
 
-void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id)
+void menuPocketToolFloatToZero(f32& v, f32 step)
 {
-    pokemonSetDarkPokemonStatus(&p, id);
-    u16 dp = pokemonBiosGetInitDp(&p);
-    p.setDarkPoint((f32)dp * mult);
-    DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
-    dark->setStatus((darkPokemonStatus)3);
-    dark->setSnatchIndex((u8)id);
+    if (v > 0.0f) {
+        if ((v -= step) < 0.0f) v = 0.0f;
+    } else if (v < 0.0f) {
+        if ((v += step) > 0.0f) v = 0.0f;
+    }
 }
 
-static u16 pokemonindex(int n)
+f32 dirRefreshPI(f32 v)
 {
-    int v = n + 1;
-    if (v > 0xFB) v += 0x19;
+    f32 r = -((GC_FUSED(6.2831855f, (f32)(s32)(0.15915494f * v))) - v);
+    if (r > 3.1415927f) return r - 6.2831855f;
+    if (r < -3.1415927f) r += 6.2831855f;
+    return r;
+}
+
+f32 dirRefresh2PI(f32 v)
+{
+    f32 r = -((GC_FUSED(6.2831855f, (f32)(s32)(0.15915494f * v))) - v);
+    if (r < 0.0f) r += 6.2831855f;
+    return r;
+}
+
+int degreeRefresh360(s32 d)
+{
+    int r = d % 360;
+    if (r < 0) return r + 360;
+    return r;
+}
+
+int degreeRefresh180(s32 d)
+{
+    int r = d % 360;
+    if (r >= 180) return r - 360;
+    if (r <= -180) return r + 360;
+    return r;
+}
+
+int degreeSubHalf(s32 a, s32 b)
+{
+    return degreeRefresh180(a - b);
+}
+
+f32 dirSubHalf(f32 a, f32 b)
+{
+    return dirRefreshPI(a - b);
+}
+
+f32 dirSubOne(f32 a, f32 b)
+{
+    return dirRefresh2PI(a - b);
+}
+
+int xyxy2dirDegree(const PocketVec<short>& a, const PocketVec<short>& b)
+{
+    f32 dir = atan2((f32)(a.x - b.x), (f32) - (a.y - b.y));
+    return degreeRefresh180((s32)(0.5f + (180.0f * dir) / 3.1415927f));
+}
+
+f32 xyxy2dir(const PocketVec<short>& a, const PocketVec<short>& b)
+{
+    return atan2((f32)(a.x - b.x), (f32) - (a.y - b.y));
+}
+
+f32 xy2dir(f32 x, f32 y)
+{
+    return atan2(x, -y);
+}
+
+bool isDirRegionIn(f32 a, f32 b, f32 c)
+{
+    f32 lim;
+    if (c == b) {
+        lim = 6.2831855f;
+    } else {
+        lim = dirSubOne(c, b);
+    }
+    return dirSubOne(a, b) <= lim;
+}
+
+f32 xyxy2distance(const PocketVec<short>& a, const PocketVec<short>& b)
+{
+    int dx = a.x - b.x;
+    int dy = a.y - b.y;
+    return ptSqrt((f32)(int)(dx * dx + dy * dy));
+}
+
+u32 GSgfxColAu8To32(GSgfxColAu8 c)
+{
+    u32 out;
+    memcpy(&out, &c, 4);
+    GC_FIX32(out);
+    return out;
+}
+
+MENU_ITEM_dd_* menuPtItemGetByMenuIdAndItemId(s32 menu, u32 item, s32 n)
+{
+    MENU_ITEM_dd_* p = menuItemBiosGetPtr(menu, item);
+    for (s32 i = 0; i < n; i++) {
+        p = menuItemBiosGetPtr(menu, p->next);
+    }
+    return p;
+}
+
+void menuPtSpriteWorkSetMsgId(s32 window, u32 id, s32 n, u32 msg)
+{
+    menuPtSpriteWorkGetByItemID(window, id, n)->msgId = msg;
+}
+
+tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(s32 window, u32 id, s32 n)
+{
+    return menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)windowSearchID(window), id, n);
+}
+
+tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(tagWINDOW_WORK* w, u32 id, s32 n)
+{
+    tagSPRITE_WORK* p = w->sprites;
+    while (p != 0) {
+        if (p->itemId == id) break;
+        p = p->next;
+    }
+    while (n > 0) {
+        p = p->next;
+        n--;
+    }
+    return p;
+}
+
+s32 menuPtSpriteWorkGetIndexFromId(tagWINDOW_WORK* w, tagSPRITE_WORK* spr, u32 id)
+{
+    tagSPRITE_WORK* p = menuPtSpriteWorkGetByItemID(w, id, 0);
+    s32 i = 0;
+    while (true) {
+        if (p == spr) break;
+        p = p->next;
+        i++;
+    }
+    return i;
+}
+
+MENU_ITEM_dd_* menuPtItemGetBySpriteWork(tagWINDOW_WORK* w, tagSPRITE_WORK* spr)
+{
+    return menuItemBiosGetPtr(w->menuId, spr->itemId);
+}
+
+tagSPRITE_WORK* menuPtGetSpriteWorkByHookFunction(tagWINDOW_WORK* w, void* hook, u32 idx, s32 skip)
+{
+    tagSPRITE_WORK* p = w->sprites;
+    while (p != 0) {
+        if (p->hook == (u32)hook && idx-- == 0) break;
+        p = p->next;
+    }
+    while (skip != 0 && p != 0) {
+        skip--;
+        p = p->next;
+    }
+    return p;
+}
+
+void menuPtSpriteWorkSetMenuItem(tagWINDOW_WORK* w, tagSPRITE_WORK* spr, u32 index)
+{
+    MENU_ITEM_dd_* item = menuItemBiosGetPtr(w->menuId, index);
+    MENU_SPRITE_dd_* v = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(item->spriteId));
+    spr->unk58 = v->group;
+    spr->sx = v->x;
+    spr->sy = v->y;
+    spr->sw = v->w;
+    spr->sh = v->h;
+    spr->x = item->x;
+    spr->y = item->y;
+    spr->w = item->w;
+    spr->h = item->h;
+}
+
+void menuPtSpriteWorkSetMenuSprite(tagSPRITE_WORK* spr, MENU_SPRITE_dd_* ms)
+{
+    MENU_SPRITE_dd_* v = menuSpriteBiosGetValPtr(ms);
+    spr->unk58 = v->group;
+    spr->sx = v->x;
+    spr->sy = v->y;
+    spr->sw = v->w;
+    spr->sh = v->h;
+    spr->w = v->w;
+    spr->h = v->h;
+}
+
+void menuPtSpriteWorkSetSpriteId(tagSPRITE_WORK* spr, u32 id)
+{
+    MENU_SPRITE_dd_* ms = menuSpriteBiosGetPtr(id);
+    menuPtSpriteWorkSetMenuSprite(spr, ms);
+}
+
+void menuPtSpriteWorkSetSw(tagWINDOW_WORK* w, u32 id, s32 idx, bool on)
+{
+    winSpriteSetDisp(menuPtSpriteWorkGetByItemID(w, id, idx), on);
+}
+
+void menuPtSpriteWorkSetSw(tagWINDOW_WORK* w, tagSPRITE_WORK* spr, bool on)
+{
+    winSpriteSetDisp(spr, on);
+}
+
+void menuPtSpriteWorkSetWidthRateColor(tagWINDOW_WORK* w, u32 id, s32 idx, f32 rate, GSgfxColAu8 color)
+{
+    tagSPRITE_WORK* spr = menuPtSpriteWorkGetByItemID(w, id, idx);
+    MENU_ITEM_dd_* item = menuPtItemGetBySpriteWork(w, spr);
+    spr->color = GSgfxColAu8To32(color);
+    spr->w = (s16)((f32)item->w * rate);
+    winSpriteSetDisp(spr, rate != 0.0f);
+}
+
+void menuPtItemDrawAlpha(MENU_ITEM_dd_* item, u8 alpha)
+{
+    windowDrawSprite2(item->x, item->y, item->w, item->h, alpha | ~0xFF, 0, item->spriteId, 0, 7);
+}
+
+void menuPtItemDrawOffset(MENU_ITEM_dd_* item, s32 dx, s32 dy)
+{
+    windowDrawSprite2(item->x + dx, item->y + dy, item->w, item->h, -1, 0, item->spriteId, 0, 7);
+}
+
+void menuPtItemDrawOffsetXWColor(MENU_ITEM_dd_* item, s32 dx, s32 w, u32 color)
+{
+    windowDrawSprite2(item->x + dx, item->y, w, item->h, color, 0, item->spriteId, 0, 7);
+}
+
+void menuPtSpriteDraw(u16 id, s32 x, s32 y)
+{
+    windowDrawSprite(x, y, 0, id, 0, 7);
+}
+
+void menuPtSpriteDrawColor(u16 id, s32 x, s32 y, u32 color)
+{
+    MENU_SPRITE_dd_* spr = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(id));
+    windowDrawSprite2(x, y, spr->w, spr->h, color, 0, id, 0, 7);
+}
+
+void menuPtSpriteDrawColor(u16 id, s32 x, s32 y, s32 w, s32 h, u32 color)
+{
+    windowDrawSprite2(x, y, w, h, color, 0, id, 0, 7);
+}
+
+void menuPtSpriteDrawCenterColor(u16 id, s32 x, s32 y, u32 color)
+{
+    MENU_SPRITE_dd_* spr = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(id));
+    s16 w = spr->w;
+    s16 h = spr->h;
+    x -= w / 2;
+    y -= h / 2;
+    windowDrawSprite2(x, y, w, h, color, 0, id, 0, 7);
+}
+
+void menuPtSpriteDrawAndRollScale(u16 id, u32 color, f32 ox, f32 oy, f32 angle, f32 scale)
+{
+    static f32 xy[8];
+    static f32 st[8];
+    MENU_SPRITE_dd_* spr = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(id));
+    PCARG(u8, void*) group = GSresGetResourceAllGroup(spr->group);
+    u8 g = color >> 16;
+    u8 b = color >> 8;
+    u8 r = color >> 24;
+    u8 a = color;
+    GSgfxColAu8 col = { 0, 0, 0, 0 };
+    col.r = r;
+    col.g = g;
+    col.b = b;
+    col.a = a;
+    f32 x = (f32)spr->x;
+    f32 y = (f32)spr->y;
+    f32 w = (f32)spr->w;
+    f32 h = (f32)spr->h;
+    st[0] = st[2] = x / (f32)GStextureGetXsize(group);
+    st[4] = st[6] = (x + w) / (f32)GStextureGetXsize(group);
+    st[3] = st[5] = y / (f32)GStextureGetYsize(group);
+    f32 v = (y + h) / (f32)GStextureGetYsize(group);
+    xy[2] = 0.0f;
+    xy[0] = 0.0f;
+    xy[6] = w;
+    xy[4] = w;
+    xy[5] = 0.0f;
+    xy[3] = 0.0f;
+    xy[7] = h;
+    xy[1] = h;
+    f32 half = 0.5f;
+    f32 hh = h * half;
+    f32 hw = w * half;
+    st[1] = st[7] = v;
+    for (int i = 0; i < 4; i++) {
+        xy[2 * i + 1] -= hh;
+        xy[2 * i] -= hw;
+    }
+    f32 ang = -angle;
+    f32* p = xy;
+    for (int i = 0; i < 4; i++) {
+        f32 px = p[0];
+        f32 py = p[1];
+        f32 c = msl_cosf(ang);
+        f32 s = msl_sinf(ang);
+        p[0] = GC_FUSED(py, s) + px * c;
+        f32 s2 = msl_sinf(ang);
+        p[1] = GC_FUSED(py, msl_cosf(ang)) - px * s2;
+        p += 2;
+    }
+    for (int i = 0; i < 4; i++) {
+        xy[2 * i] *= scale;
+        xy[2 * i + 1] *= scale;
+    }
+    for (int i = 0; i < 4; i++) {
+        xy[2 * i] += ox;
+        xy[2 * i + 1] += oy;
+    }
+    GSprimSetQuadVertexOrder(1);
+    GSprimDraw2DTexQuad4V(xy, st, group, col);
+}
+
+void menuPtMenuLoad(s32 id)
+{
+    menuOpenCustom(id, windowGetActiveID(), 0, 4, 0, 0);
+}
+
+void menuPtWindowWorkDrawPrime(tagWINDOW_WORK* w)
+{
+    tagSPRITE_WORK* p = w->sprites;
+    while (p != 0) {
+        winSpriteDraw(w, p);
+        p = p->next;
+    }
+    GSgfxBlendMode(1, 4, 5);
+}
+
+void menuPtWindowWorkDraw(tagWINDOW_WORK* w)
+{
+    if (w != 0) {
+        GSgfxLayerID l;
+        s32 menuLayer = floorGetMenuLayerID();
+        l = (GSgfxLayerID)w->layer;
+        spriteSetOffset(l, w->x, w->y);
+        spriteClearScissor(l);
+        spriteSetEnv(l);
+        spriteSetOffset(menuLayer, w->x, w->y);
+        spriteClearScissor(menuLayer);
+        spriteSetEnv(menuLayer);
+        menuPtWindowWorkDrawPrime(w);
+        spriteSetOffset(w->layer, 0, 0);
+        spriteClearScissor(w->layer);
+        spriteSetEnv(w->layer);
+    }
+}
+
+void menuPtWindowWorkDraw(s32 id)
+{
+    menuPtWindowWorkDraw((tagWINDOW_WORK*)windowSearchID(id));
+}
+
+void menuPtPlaySe(u32 id)
+{
+    GSsndPlayNow(id);
+}
+
+void menuPtPlayBgm(u32 id)
+{
+    soundOpenPlay(id, 0x32, 0xFF);
+}
+
+void CState::init()
+{
+    memset(this, 0, 0xA8);
+    prev = -1;
+    dt = timeGetLastFrameSec();
+}
+
+void CState::addTime()
+{
+    count++;
+    dt = timeGetLastFrameSec();
+    time = time + dt;
+}
+
+void CState::update()
+{
+    if (next != -1) {
+        prev = current;
+        current = next;
+        next = -1;
+        time = 0.0f;
+        count = 0;
+        w98 = 0;
+        w9c = 0;
+        wa0 = 0;
+        memcpy(work2, work, 0x40);
+    } else {
+        addTime();
+    }
+}
+
+extern "C" {
+s32 menuPocketToolCMetaCtrl()
+{
+    return 0;
+}
+}
+
+extern "C" {
+s32 menuPocketToolCMetaDraw()
+{
+    if (CMetaMenu::pCurrentMenu != 0) {
+        CMetaMenu::pCurrentMenu->drawHook();
+    }
+    return 0;
+}
+}
+
+extern "C" {
+s32 menuPocketToolCMetaButton()
+{
+    return 0;
+}
+}
+
+void CMetaMenu::localWindowSetTable(s32* table)
+{
+    windowTable = table;
+}
+
+void CMetaMenu::localWindowCreateAll()
+{
+    menuOpenCustom(0xDA, windowGetActiveID(), 0, 0, 0, 0);
+    int i = 0;
+    while (true) {
+        s32 id = windowTable[i];
+        if (id == 0) break;
+        menuPtMenuLoad(id);
+        menuSetDisp(id, 0);
+        i++;
+    }
+    pCurrentMenu = this;
+}
+
+void CMetaMenu::localWindowDeleteAll()
+{
+    windowCloseMain(windowSearchID(0xDA));
+    pCurrentMenu = 0;
+    int i = 0;
+    while (true) {
+        if (windowTable[i] == 0) break;
+        windowCloseMain(windowSearchID(windowTable[i]));
+        i++;
+    }
+}
+
+s32 CMetaMenu::localWindowSearch(s32 id)
+{
+    for (s32 i = 0; i < 64; i++) {
+        if (windowIds[i] == id) return i;
+    }
+    return -1;
+}
+
+void CMetaMenu::localWindowEntry(s32 id, s32 index, void (*func)(CMetaMenu*, s32))
+{
+    windowIds[index] = id;
+    windowFuncs[index] = func;
+}
+
+void CMetaMenu::localWindowDrawAll()
+{
+    localWindowDrawAll(0, 0x3F);
+}
+
+void CMetaMenu::localWindowDrawAll(s32 from, s32 to)
+{
+    for (int i = from; i <= to; i++) {
+        if (windowIds[i] != 0) {
+            if (windowFuncs[i] != 0) {
+                windowFuncs[i](this, windowIds[i]);
+            } else {
+                menuPtWindowWorkDraw(windowIds[i]);
+            }
+        }
+    }
+}
+
+void CMetaMenu::localWindowRemove(s32 id)
+{
+    s32 i = localWindowSearch(id);
+    if (i != -1) {
+        windowIds[i] = 0;
+    }
+}
+
+static void _tutorialWindowButtonFunc(tagWINDOW_WORK* w)
+{
+    if (w != 0) {
+        u16 k = _pThis->tutorialManage();
+        if (k & 0x10) {
+            w->buttonDone = 1;
+        }
+        if (k & 0x20) {
+            w->buttonDone = 1;
+            w->buttonCancel = 1;
+        }
+    }
+}
+
+static void _tutorialWindowCursorFunc(tagWINDOW_WORK* w)
+{
+    if (w != 0) {
+        menuDataBiosGetPtr(w->menuId);
+        u16 k = _pThis->tutorialManage();
+        if (k & 1) {
+            w->cursor--;
+            if (w->cursor < 0) {
+                w->cursor = (s16)(_selectItemQuantity - 1);
+            }
+        } else if (k & 2) {
+            w->cursor++;
+            if (w->cursor >= _selectItemQuantity) {
+                w->cursor = 0;
+            }
+        }
+        w->cursorShadow = w->cursor;
+    }
+}
+
+s32 CMetaMenu::actionMenu(u32* list, int a, s32 count, s32 b, s32 defaultSel)
+{
+    MENU_DATA_dd_* m = (MENU_DATA_dd_*)menuDataBiosGetPtr(0x59);
+    u8 b1, b0;
+    u8 b2, b3, b4;
+    s16 s6, s8, sA;
+    void (*f0)(tagWINDOW_WORK*);
+    void (*f1)(tagWINDOW_WORK*);
+    s32 i14, i18;
+    if (tutorialMode) {
+        _selectItemQuantity = count;
+        _pThis = this;
+        b1 = *((u8*)m + 1);
+        b2 = *((u8*)m + 2);
+        b3 = m->b3;
+        b4 = m->b4;
+        s6 = m->s6;
+        s8 = m->s8;
+        sA = m->sA;
+        f0 = m->cursorFunc;
+        f1 = m->buttonFunc;
+        i14 = m->i14;
+        i18 = m->i18;
+        b0 = m->b0;
+        m->b1mode = 4;
+        m->cursorFunc = _tutorialWindowCursorFunc;
+        m->b2mode = 4;
+        m->buttonFunc = _tutorialWindowButtonFunc;
+    }
+    s32 r = menuSubOpenSelect(0, list, a, count, b, defaultSel);
+    if (r == -1) r = a - 1;
+    if (tutorialMode) {
+        m->b0 = b0;
+        *((u8*)m + 2) = b2;
+        *((u8*)m + 1) = b1;
+        m->b3 = b3;
+        m->b4 = b4;
+        m->s6 = s6;
+        m->s8 = s8;
+        m->sA = sA;
+        m->cursorFunc = f0;
+        m->buttonFunc = f1;
+        m->i14 = i14;
+        m->i18 = i18;
+    }
+    return r;
+}
+
+void CMetaMenu::aButtonWait()
+{
+    bool done = false;
+    while (!done) {
+        switch (getKeyInfo()->trg) {
+        case 0x10:
+            done = true;
+            menuPtPlaySe(seId);
+            break;
+        }
+        updateAll();
+    }
+}
+
+CKeyInfo* CMetaMenu::getKeyInfo()
+{
+    if (tutorialMode) {
+        memset(&keyInfo, 0, 0x1A);
+        u16 k = tutorialManage();
+        keyInfo.trg = k;
+        keyInfo.rep = k;
+        return &keyInfo;
+    }
+    memset(&keyInfo, 0, 0x1A);
+    if (windowGetActiveID() != 0xDA) return &keyInfo;
+    u16 rep = 0;
+    u16 trg = windowGetKeyTrg();
+    u16 on = windowGetKeyOn();
+    bool count = false;
+    if (trg != 0) {
+        rep = trg;
+    } else if (on != 0 && on == lastOn) {
+        if (repeat >= 12) {
+            rep = on;
+        } else {
+            count = true;
+        }
+    }
+    if (count) {
+        repeat++;
+    } else {
+        repeat = 0;
+    }
+    lastOn = on;
+    keyInfo.rep = rep;
+    keyInfo.trg = trg;
+    return &keyInfo;
+}
+
+void CMetaMenu::alphaFadeInKick()
+{
+    fadeTime = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
+    fadeState = 3;
+}
+
+void CMetaMenu::alphaFadeOutKick()
+{
+    fadeTime = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
+    fadeState = 1;
+}
+
+void CMetaMenu::alphaFadeUpdate()
+{
+    if (fadeTime != 0) {
+        fadeTime -= timeGetLastFrameTime();
+        if (fadeTime <= 0) {
+            if (fadeState == 3) {
+                fadeState = 0;
+            } else if (fadeState == 1) {
+                fadeState = 2;
+            }
+        }
+    }
+}
+
+void CMetaMenu::alphaFadeOutAndWait()
+{
+    alphaFadeOutKick();
+    u8 ok;
+    do {
+        updateAll();
+        s32 st = fadeState;
+        ok = 0;
+        if (st == 0 || st == 2) ok = 1;
+    } while (ok == 0);
+    updateAll();
+}
+
+u8 CMetaMenu::getAlphaFadeAlpha() const
+{
+    switch (fadeState) {
+    case 0:
+        return 0xFF;
+    case 3: {
+        u32 total = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
+        return (s32)((GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate()) - fadeTime) * 0xFF) / (s32)total;
+    }
+    case 1:
+        return (s32)(fadeTime * 0xFF) / (s32)GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
+    case 2:
+        return 0;
+    default:
+        return 0;
+    }
+}
+
+void CMetaMenu::alphaFadeDraw()
+{
+    static f32 xy[8] = { 0.0f, 0.0f, 640.0f, 0.0f, 640.0f, 480.0f, 0.0f, 480.0f };
+    GSgfxColAu8 color = { 0, 0, 0, 0xFF };
+    GSprimSetQuadVertexOrder(1);
+    u8 a = 0xFF - getAlphaFadeAlpha();
+    color.a = a;
+    if (a != 0) {
+        GSprimDraw2DQuad4V(xy, color);
+    }
+}
+
+void CMetaMenu::systemFadeOutKeepAfterFloorPush()
+{
+    GSthreadSwitch();
+    fadeSet(3, 0.0f);
+}
+
+void CMetaMenu::systemFadeInKick()
+{
+    fadeSetToBlackInIfBlack(0.5f);
+}
+
+void CMetaMenu::systemFadeOutKick(f32 sec)
+{
+    if (sec == -1.0f) sec = 0.5f;
+    fadeSetToBlackOutIfNotBlack(sec);
+}
+
+void CMetaMenu::systemFadeOutSetAndWait(f32 sec)
+{
+    systemFadeOutKick(sec);
+    systemFadeWaitToEnd();
+}
+
+void CMetaMenu::systemFadeWaitToEnd()
+{
+    while (fadeCheck(0) != 0) {
+        updateAll();
+    }
+}
+
+void CMetaMenu::vsyncUpdate()
+{
+    GSthreadSwitch();
+}
+
+void CMetaMenu::updateAll()
+{
+    vsyncUpdate();
+}
+
+void CMetaMenu::drawHook()
+{
+    GSgfxLayerSetActive(7);
+    s32 layer = floorGetMenuLayerID();
+    spriteSetOffset(7, 0, 0);
+    spriteClearScissor(7);
+    spriteSetEnv(7);
+    spriteSetOffset(layer, 0, 0);
+    spriteClearScissor(layer);
+    spriteSetEnv(layer);
+    reservedVirtual0();
+    time += timeGetLastFrameTime();
+    alphaFadeUpdate();
+    tutorialManageUpdate();
+    spriteSetOffset(7, 0, 0);
+    spriteClearScissor(7);
+    spriteClearEnv(7);
+    spriteSetOffset(layer, 0, 0);
+    spriteClearScissor(layer);
+    spriteClearEnv(layer);
+    GSgfxLayerSetActive(2);
+}
+
+f32 CMetaMenu::calcAnimationTimeRate0to1(f32 sec)
+{
+    u32 frames = GC_F2U32(sec * (f32)GSgfxVideoGetVsyncRate());
+    return (f32)(u32)(time % frames) / (f32)frames;
+}
+
+f32 CMetaMenu::calcAnimationTimeRate0to1to0(f32 sec)
+{
+    f32 v = calcAnimationTimeRate0to1(sec);
+    if (v > 0.5f) v = 1.0f - v;
+    v *= 2.0f;
     return v;
 }
 
-void CMenuGlobalState::init()
+s32 CMetaMenu::calcAnimationTimeRate0toX(f32 sec, s32 n)
+{
+    s32 m = n + 1;
+    f32 v = (f32)m * calcAnimationTimeRate0to1(sec);
+    if ((f32)n < v) v = (f32)n;
+    return (s32)v;
+}
+
+void CMetaMenu::waitAtTime(f32 limit)
+{
+    f32 t = 0.0f;
+    while (true) {
+        updateAll();
+        if (t > limit) break;
+        t += timeGetLastFrameSec();
+    }
+}
+
+void CInfoWindow::init(s32 window, u32 item)
+{
+    itemId = 0;
+    buttons = 0;
+    opened = 0;
+    isMsg = 0;
+    msgId = 0;
+#ifdef __MWERKS__
+    memset(values, 0, 0x20);
+#else
+    memset(values, 0, sizeof(values));
+#endif
+    windowId = window;
+    itemId = item;
+    close();
+}
+
+void CInfoWindow::initTutorialTalk()
+{
+    itemId = 0;
+    buttons = 0;
+    opened = 0;
+    isMsg = 0;
+    msgId = 0;
+#ifdef __MWERKS__
+    memset(values, 0, 0x20);
+#else
+    memset(values, 0, sizeof(values));
+#endif
+    windowId = 0xE3;
+    tagWINDOW_WORK* win = (tagWINDOW_WORK*)windowSearchID(windowId);
+    tagSPRITE_WORK* spr = menuPtGetSpriteWorkByHookFunction(win, winMsgDraw, 0, 0);
+    spr->hook = 0;
+    spr->unk5 = 0;
+    itemId = spr->itemId;
+    close();
+}
+
+void CInfoWindow::close()
+{
+    if (isMsg) GSmsgKill(msgId);
+    opened = 0;
+    isMsg = 0;
+    msgId = 0;
+#ifdef __MWERKS__
+    memset(values, 0, 0x20);
+#else
+    memset(values, 0, sizeof(values));
+#endif
+}
+
+void CInfoWindow::open(u32 msg, bool isMsg_)
+{
+    isMsg = isMsg_;
+    if (msg != 0) {
+        msgId = msg;
+        if (isMsg) GSmsgExec(msgId, 0, 0);
+    }
+    opened = 1;
+}
+
+bool CInfoWindow::isMsgEnd()
+{
+    return GSmsgIsCheck(msgId) == 0;
+}
+
+void CInfoWindow::setMsgCtrlValue(u32 id, GCuptr value)
+{
+    int i = 0;
+    while (values[i].id != 0) i++;
+    values[i].id = id;
+    values[i].value = value;
+}
+
+void CInfoWindow::draw()
+{
+    if (opened) {
+        menuPtWindowWorkDraw(windowId);
+        CInfoWindow* p = this;
+        while (p->values[0].id != 0) {
+            msgctrlSetValue(p->values[0].id, p->values[0].value);
+            p = (CInfoWindow*)((u8*)p + 8);
+        }
+        tagWINDOW_WORK* win = (tagWINDOW_WORK*)windowSearchID(windowId);
+        tagSPRITE_WORK* spr = menuPtSpriteWorkGetByItemID(win, itemId, 0);
+        int layer = winSpriteGetLayerID(win, spr);
+        if (isMsg) {
+            spriteSetOffset(layer, win->x + spr->x, win->y + spr->y);
+            spriteClearScissor(layer);
+            spriteSetEnv(layer);
+            GSmsgMain((s32)layer, msgId, buttons, (win->flags & 4) == 0);
+            spriteSetOffset(layer, 0, 0);
+            spriteClearScissor(layer);
+            spriteSetEnv(layer);
+        } else {
+            GSmsgPrint2(layer, win->x + spr->x, win->y + spr->y, -1, msgId);
+        }
+    }
+}
+
+void CInfoWindow::exec(CMetaMenu& menu, u32 msg, bool close_)
+{
+    open(msg, true);
+    do {
+        buttons = windowGetKeyTrg();
+        menu.updateAll();
+    } while (!isMsgEnd());
+    if (close_) close();
+}
+
+void CMenuPokemonCursor::init()
 {
     memset(this, 0, sizeof(*this));
-    cursor.init();
-    state.init();
+    active = 1;
+    pokemonInit((GCuptr)&pokemon);
+    ant.init();
+    before.init();
+    flag = 0;
+    defaultPositionTbl.x = 0;
+    defaultPositionTbl.y = 0;
+    pos.x = 0;
+    pos.y = 0;
+    table = &defaultPositionTbl;
+}
+
+void CMenuPokemonCursor::setAnimationOff()
+{
+    mode = 0;
+    t = 0.0f;
+    before.init();
+}
+
+void CMenuPokemonCursor::setPositionTable(PocketVec<short>* t, s32 i)
+{
+    setPositionIndex(i);
+    prevIndex = 0;
+    table = t;
+}
+
+void CMenuPokemonCursor::setPositionIndex(s32 i)
+{
+    PocketVec<short> v = table[index];
+    pos.x = v.x;
+    pos.y = v.y;
+    prevIndex = index;
+    index = i;
+}
+
+void CMenuPokemonCursor::setPositionTableDummy()
+{
+    PocketVec<short> v = table[index];
+    defaultPositionTbl.x = v.x;
+    defaultPositionTbl.y = v.y;
+    table = &defaultPositionTbl;
+    index = 0;
+    prevIndex = 0;
+}
+
+void CMenuPokemonCursor::setPokemon(Pokemon* p)
+{
+    before = ant;
+    if (p == 0) {
+        pokemonInit((GCuptr)&pokemon);
+        ant.init();
+        return;
+    }
+    memcpy(&pokemon, p, 0xC4);
+    ant.initByPokemonAndSetColorAnimationInAny(&pokemon);
+    ant.setAnimation(0);
+}
+
+void CMenuPokemonCursor::setBeforAnt(CAnt& a)
+{
+    before = a;
+}
+
+void CMenuPokemonCursor::deletePokemon()
+{
+    pokemonInit((GCuptr)&pokemon);
+    before = ant;
+    ant.init();
+}
+
+bool CMenuPokemonCursor::isCatchPokemon()
+{
+    return pokemon.checkValid();
 }
 
 void CMenuPokemonCursor::draw()
@@ -588,1045 +1514,135 @@ void CMenuPokemonCursor::draw()
     }
 }
 
-bool CMenuPokemonCursor::isCatchPokemon()
-{
-    return pokemon.checkValid();
-}
-
-void CMenuPokemonCursor::deletePokemon()
-{
-    pokemonInit((GCuptr)&pokemon);
-    before = ant;
-    ant.init();
-}
-
-void CMenuPokemonCursor::setBeforAnt(CAnt& a)
-{
-    before = a;
-}
-
-void CMenuPokemonCursor::setPokemon(Pokemon* p)
-{
-    before = ant;
-    if (p == 0) {
-        pokemonInit((GCuptr)&pokemon);
-        ant.init();
-        return;
-    }
-    memcpy(&pokemon, p, 0xC4);
-    ant.initByPokemonAndSetColorAnimationInAny(&pokemon);
-    ant.setAnimation(0);
-}
-
-void CMenuPokemonCursor::setPositionTableDummy()
-{
-    PocketVec<short> v = table[index];
-    defaultPositionTbl.x = v.x;
-    defaultPositionTbl.y = v.y;
-    table = &defaultPositionTbl;
-    index = 0;
-    prevIndex = 0;
-}
-
-void CMenuPokemonCursor::setPositionIndex(s32 i)
-{
-    PocketVec<short> v = table[index];
-    pos.x = v.x;
-    pos.y = v.y;
-    prevIndex = index;
-    index = i;
-}
-
-void CMenuPokemonCursor::setPositionTable(PocketVec<short>* t, s32 i)
-{
-    setPositionIndex(i);
-    prevIndex = 0;
-    table = t;
-}
-
-void CMenuPokemonCursor::setAnimationOff()
-{
-    mode = 0;
-    t = 0.0f;
-    before.init();
-}
-
-void CMenuPokemonCursor::init()
+void CMenuGlobalState::init()
 {
     memset(this, 0, sizeof(*this));
-    active = 1;
-    pokemonInit((GCuptr)&pokemon);
-    ant.init();
-    before.init();
-    flag = 0;
-    defaultPositionTbl.x = 0;
-    defaultPositionTbl.y = 0;
-    pos.x = 0;
-    pos.y = 0;
-    table = &defaultPositionTbl;
+    cursor.init();
+    state.init();
 }
 
-void menuPtWindowWorkDraw(s32);
-tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(tagWINDOW_WORK*, u32, s32);
-tagSPRITE_WORK* menuPtGetSpriteWorkByHookFunction(tagWINDOW_WORK*, void*, u32, s32);
-void menuPtPlaySe(u32);
-void menuPtMenuLoad(s32);
-void menuPtWindowWorkDraw(tagWINDOW_WORK*);
-void menuPtWindowWorkDrawPrime(tagWINDOW_WORK*);
-MENU_ITEM_dd_* menuPtItemGetBySpriteWork(tagWINDOW_WORK*, tagSPRITE_WORK*);
-void menuPtSpriteWorkSetMenuSprite(tagSPRITE_WORK*, MENU_SPRITE_dd_*);
-tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(s32, u32, s32);
-u32 GSgfxColAu8To32(GSgfxColAu8);
-
-void CInfoWindow::exec(CMetaMenu& menu, u32 msg, bool close_)
+static u16 pokemonindex(int n)
 {
-    open(msg, true);
-    do {
-        buttons = windowGetKeyTrg();
-        menu.updateAll();
-    } while (!isMsgEnd());
-    if (close_) close();
-}
-
-void CInfoWindow::draw()
-{
-    if (opened) {
-        menuPtWindowWorkDraw(windowId);
-        CInfoWindow* p = this;
-        while (p->values[0].id != 0) {
-            msgctrlSetValue(p->values[0].id, p->values[0].value);
-            p = (CInfoWindow*)((u8*)p + 8);
-        }
-        tagWINDOW_WORK* win = (tagWINDOW_WORK*)windowSearchID(windowId);
-        tagSPRITE_WORK* spr = menuPtSpriteWorkGetByItemID(win, itemId, 0);
-        int layer = winSpriteGetLayerID(win, spr);
-        if (isMsg) {
-            spriteSetOffset(layer, win->x + spr->x, win->y + spr->y);
-            spriteClearScissor(layer);
-            spriteSetEnv(layer);
-            GSmsgMain((s32)layer, msgId, buttons, (win->flags & 4) == 0);
-            spriteSetOffset(layer, 0, 0);
-            spriteClearScissor(layer);
-            spriteSetEnv(layer);
-        } else {
-            GSmsgPrint2(layer, win->x + spr->x, win->y + spr->y, -1, msgId);
-        }
-    }
-}
-
-void CInfoWindow::setMsgCtrlValue(u32 id, GCuptr value)
-{
-    int i = 0;
-    while (values[i].id != 0) i++;
-    values[i].id = id;
-    values[i].value = value;
-}
-
-bool CInfoWindow::isMsgEnd()
-{
-    return GSmsgIsCheck(msgId) == 0;
-}
-
-void CInfoWindow::open(u32 msg, bool isMsg_)
-{
-    isMsg = isMsg_;
-    if (msg != 0) {
-        msgId = msg;
-        if (isMsg) GSmsgExec(msgId, 0, 0);
-    }
-    opened = 1;
-}
-
-void CInfoWindow::close()
-{
-    if (isMsg) GSmsgKill(msgId);
-    opened = 0;
-    isMsg = 0;
-    msgId = 0;
-    memset(values, 0, 0x20);
-}
-
-void CInfoWindow::initTutorialTalk()
-{
-    itemId = 0;
-    buttons = 0;
-    opened = 0;
-    isMsg = 0;
-    msgId = 0;
-    memset(values, 0, 0x20);
-    windowId = 0xE3;
-    tagWINDOW_WORK* win = (tagWINDOW_WORK*)windowSearchID(windowId);
-    tagSPRITE_WORK* spr = menuPtGetSpriteWorkByHookFunction(win, winMsgDraw, 0, 0);
-    spr->hook = 0;
-    spr->unk5 = 0;
-    itemId = spr->itemId;
-    close();
-}
-
-void CInfoWindow::init(s32 window, u32 item)
-{
-    itemId = 0;
-    buttons = 0;
-    opened = 0;
-    isMsg = 0;
-    msgId = 0;
-    memset(values, 0, 0x20);
-    windowId = window;
-    itemId = item;
-    close();
-}
-
-void CMetaMenu::waitAtTime(f32 limit)
-{
-    f32 t = 0.0f;
-    while (true) {
-        updateAll();
-        if (t > limit) break;
-        t += timeGetLastFrameSec();
-    }
-}
-
-s32 CMetaMenu::calcAnimationTimeRate0toX(f32 sec, s32 n)
-{
-    s32 m = n + 1;
-    f32 v = (f32)m * calcAnimationTimeRate0to1(sec);
-    if ((f32)n < v) v = (f32)n;
-    return (s32)v;
-}
-
-f32 CMetaMenu::calcAnimationTimeRate0to1to0(f32 sec)
-{
-    f32 v = calcAnimationTimeRate0to1(sec);
-    if (v > 0.5f) v = 1.0f - v;
-    v *= 2.0f;
+    int v = n + 1;
+    if (v > 0xFB) v += 0x19;
     return v;
 }
 
-f32 CMetaMenu::calcAnimationTimeRate0to1(f32 sec)
+void menuPocketSetDarkPokemon(Pokemon& p, f32 mult, u16 id)
 {
-    u32 frames = GC_F2U32(sec * (f32)GSgfxVideoGetVsyncRate());
-    return (f32)(u32)(time % frames) / (f32)frames;
+    pokemonSetDarkPokemonStatus(&p, id);
+    u16 dp = pokemonBiosGetInitDp(&p);
+    p.setDarkPoint((f32)dp * mult);
+    DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
+    dark->setStatus((darkPokemonStatus)3);
+    dark->setSnatchIndex((u8)id);
 }
 
-void CMetaMenu::drawHook()
+void menuPocketDebugMakePokemonByID(Pokemon& p, u16 id, bool dark, f32 mult);
+void menuPocketDebugMakePokemonBySN(Pokemon& p, u16 sn, bool dark, f32 mult)
 {
-    GSgfxLayerSetActive(7);
-    s32 layer = floorGetMenuLayerID();
-    spriteSetOffset(7, 0, 0);
-    spriteClearScissor(7);
-    spriteSetEnv(7);
-    spriteSetOffset(layer, 0, 0);
-    spriteClearScissor(layer);
-    spriteSetEnv(layer);
-    reservedVirtual0();
-    time += timeGetLastFrameTime();
-    alphaFadeUpdate();
-    tutorialManageUpdate();
-    spriteSetOffset(7, 0, 0);
-    spriteClearScissor(7);
-    spriteClearEnv(7);
-    spriteSetOffset(layer, 0, 0);
-    spriteClearScissor(layer);
-    spriteClearEnv(layer);
-    GSgfxLayerSetActive(2);
+    menuPocketDebugMakePokemonByID(p, pokemonindex(sn % 386), dark, mult);
 }
 
-void CMetaMenu::updateAll()
+void makePocketDeubugMakeDarkPokemonReset()
 {
-    vsyncUpdate();
+    _darkPokemonIndex = 0xC;
 }
 
-void CMetaMenu::vsyncUpdate()
+void menuPocketDebugMakePokemonByID(Pokemon& p, u16 id, bool dark, f32 mult)
 {
-    GSthreadSwitch();
-}
-
-void CMetaMenu::systemFadeWaitToEnd()
-{
-    while (fadeCheck(0) != 0) {
-        updateAll();
+    pokemonCreate(&p, id, 0x19, gamedataGetStatus(0, 1));
+    if (dark) {
+        int tries = 0;
+        do {
+            _darkPokemonIndex++;
+            if (_darkPokemonIndex >= darkPokemonList_number) _darkPokemonIndex = 1;
+            menuPocketSetDarkPokemon(p, mult, (u16)_darkPokemonIndex);
+            if (pokemonBiosGetInitDp(&p) != 0) break;
+            tries++;
+        } while (tries < 10);
     }
 }
 
-void CMetaMenu::systemFadeOutSetAndWait(f32 sec)
+void menuPocketDebugMakeDarkPokemonByID(Pokemon& p, u16 id, f32 mult)
 {
-    systemFadeOutKick(sec);
-    systemFadeWaitToEnd();
+    DarkPokemon* dark = darkPokemonGetDarkPokemon(id);
+    u16 pid = dark->getPokemonID();
+    pokemonCreate(&p, pid, 0x19, gamedataGetStatus(0, 1));
+    menuPocketSetDarkPokemon(p, mult, id);
+    pokemonBiosGetInitDp(&p);
 }
 
-void CMetaMenu::systemFadeOutKick(f32 sec)
+f32 menuGetPokemonScale(GCuptr id, int index)
 {
-    if (sec == -1.0f) sec = 0.5f;
-    fadeSetToBlackOutIfNotBlack(sec);
-}
-
-void CMetaMenu::systemFadeInKick()
-{
-    fadeSetToBlackInIfBlack(0.5f);
-}
-
-void CMetaMenu::systemFadeOutKeepAfterFloorPush()
-{
-    GSthreadSwitch();
-    fadeSet(3, 0.0f);
-}
-
-void CMetaMenu::alphaFadeDraw()
-{
-    static f32 xy[8] = { 0.0f, 0.0f, 640.0f, 0.0f, 640.0f, 480.0f, 0.0f, 480.0f };
-    GSgfxColAu8 color = { 0, 0, 0, 0xFF };
-    GSprimSetQuadVertexOrder(1);
-    u8 a = 0xFF - getAlphaFadeAlpha();
-    color.a = a;
-    if (a != 0) {
-        GSprimDraw2DQuad4V(xy, color);
+    f32 size[4];
+    f32 scale;
+    f32 memoScale;
+    f32 angle;
+    void* model = Sequence_GetGSmodel(id);
+    switch (Sequence_GetModelSize(id)) {
+    case -2: scale = 0.6f; break;
+    case -1: scale = 0.75f; break;
+    case 0: scale = 1.0f; break;
+    case 1: scale = 1.15f; break;
+    case 2: scale = 1.25f; break;
+    case 3: scale = 1.4f; break;
+    default: scale = 1.0f; break;
     }
+    memoGetScaleAngle(index, &memoScale, &angle);
+    GSboundGetSize(GSmodelGetBound(model), size, 0, 0);
+    f32 m = size[0] > size[1] ? size[0] : size[1];
+    f32 r = 11.0f / (memoScale * (m / scale));
+    static f32 multi = 2.0f;
+    return r * multi;
 }
 
-u8 CMetaMenu::getAlphaFadeAlpha() const
+void menuPocketButtonWait()
 {
-    switch (fadeState) {
-    case 0:
-        return 0xFF;
-    case 3: {
-        u32 total = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
-        return (s32)((GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate()) - fadeTime) * 0xFF) / (s32)total;
-    }
-    case 1:
-        return (s32)(fadeTime * 0xFF) / (s32)GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
-    case 2:
-        return 0;
-    default:
-        return 0;
-    }
-}
-
-void CMetaMenu::alphaFadeOutAndWait()
-{
-    alphaFadeOutKick();
-    u8 ok;
     do {
-        updateAll();
-        s32 st = fadeState;
-        ok = 0;
-        if (st == 0 || st == 2) ok = 1;
-    } while (ok == 0);
-    updateAll();
+        GSthreadSwitch();
+    } while ((windowGetKeyTrg() & 0x30) == 0);
 }
 
-void CMetaMenu::alphaFadeUpdate()
+void menuPtStopSound(MenuPtWorkSound* s)
 {
-    if (fadeTime != 0) {
-        fadeTime -= timeGetLastFrameTime();
-        if (fadeTime <= 0) {
-            if (fadeState == 3) {
-                fadeState = 0;
-            } else if (fadeState == 1) {
-                fadeState = 2;
-            }
-        }
-    }
-}
-
-void CMetaMenu::alphaFadeOutKick()
-{
-    fadeTime = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
-    fadeState = 1;
-}
-
-void CMetaMenu::alphaFadeInKick()
-{
-    fadeTime = GC_F2U32(0.5f * (f32)GSgfxVideoGetVsyncRate());
-    fadeState = 3;
-}
-
-CKeyInfo* CMetaMenu::getKeyInfo()
-{
-    if (tutorialMode) {
-        memset(&keyInfo, 0, 0x1A);
-        u16 k = tutorialManage();
-        keyInfo.trg = k;
-        keyInfo.rep = k;
-        return &keyInfo;
-    }
-    memset(&keyInfo, 0, 0x1A);
-    if (windowGetActiveID() != 0xDA) return &keyInfo;
-    u16 rep = 0;
-    u16 trg = windowGetKeyTrg();
-    u16 on = windowGetKeyOn();
-    bool count = false;
-    if (trg != 0) {
-        rep = trg;
-    } else if (on != 0 && on == lastOn) {
-        if (repeat >= 12) {
-            rep = on;
-        } else {
-            count = true;
-        }
-    }
-    if (count) {
-        repeat++;
+    u32 bgm = soundGetBGMID();
+    u8 bgmVol;
+    if (bgm) {
+        bgmVol = soundGetVolume(bgm);
+        soundOpenPlay(8, 0x32, 0xFF);
     } else {
-        repeat = 0;
+        bgmVol = 0;
     }
-    lastOn = on;
-    keyInfo.rep = rep;
-    keyInfo.trg = trg;
-    return &keyInfo;
+    u32 env = soundGetEnvID();
+    u8 envVol;
+    if (env) envVol = soundGetVolume(env); else envVol = 0;
+    s->bgm = bgm;
+    s->env = env;
+    s->bgmVol = bgmVol;
+    s->envVol = envVol;
 }
 
-void CMetaMenu::aButtonWait()
+void menuPtSaveSound(MenuPtWorkSound* s)
 {
-    bool done = false;
-    while (!done) {
-        switch (getKeyInfo()->trg) {
-        case 0x10:
-            done = true;
-            menuPtPlaySe(seId);
-            break;
-        }
-        updateAll();
-    }
+    u32 bgm = soundGetBGMID();
+    u8 bgmVol;
+    if (bgm) bgmVol = soundGetVolume(bgm); else bgmVol = 0;
+    u32 env = soundGetEnvID();
+    u8 envVol;
+    if (env) envVol = soundGetVolume(env); else envVol = 0;
+    s->bgm = bgm;
+    s->env = env;
+    s->bgmVol = bgmVol;
+    s->envVol = envVol;
 }
-
-static void _tutorialWindowCursorFunc(tagWINDOW_WORK*);
-static void _tutorialWindowButtonFunc(tagWINDOW_WORK*);
-
-s32 CMetaMenu::actionMenu(u32* list, int a, s32 count, s32 b, s32 defaultSel)
+void menuPtRestoreSound(MenuPtWorkSound* s)
 {
-    MENU_DATA_dd_* m = (MENU_DATA_dd_*)menuDataBiosGetPtr(0x59);
-    u8 b1, b0;
-    u8 b2, b3, b4;
-    s16 s6, s8, sA;
-    void (*f0)(tagWINDOW_WORK*);
-    void (*f1)(tagWINDOW_WORK*);
-    s32 i14, i18;
-    if (tutorialMode) {
-        _selectItemQuantity = count;
-        _pThis = this;
-        b1 = *((u8*)m + 1);
-        b2 = *((u8*)m + 2);
-        b3 = m->b3;
-        b4 = m->b4;
-        s6 = m->s6;
-        s8 = m->s8;
-        sA = m->sA;
-        f0 = m->cursorFunc;
-        f1 = m->buttonFunc;
-        i14 = m->i14;
-        i18 = m->i18;
-        b0 = m->b0;
-        m->b1mode = 4;
-        m->cursorFunc = _tutorialWindowCursorFunc;
-        m->b2mode = 4;
-        m->buttonFunc = _tutorialWindowButtonFunc;
+    if (s->bgm != 0 && s->bgm != soundGetBGMID()) {
+        soundOpenPlay(s->bgm, 0x32, s->bgmVol);
     }
-    s32 r = menuSubOpenSelect(0, list, a, count, b, defaultSel);
-    if (r == -1) r = count - 1;
-    if (tutorialMode) {
-        m->b0 = b0;
-        *((u8*)m + 2) = b2;
-        *((u8*)m + 1) = b1;
-        m->b3 = b3;
-        m->b4 = b4;
-        m->s6 = s6;
-        m->s8 = s8;
-        m->sA = sA;
-        m->cursorFunc = f0;
-        m->buttonFunc = f1;
-        m->i14 = i14;
-        m->i18 = i18;
-    }
-    return r;
-}
-
-static void _tutorialWindowCursorFunc(tagWINDOW_WORK* w)
-{
-    if (w != 0) {
-        menuDataBiosGetPtr(w->menuId);
-        u16 k = _pThis->tutorialManage();
-        if (k & 1) {
-            w->cursor--;
-            if (w->cursor < 0) {
-                w->cursor = (s16)(_selectItemQuantity - 1);
-            }
-        } else if (k & 2) {
-            w->cursor++;
-            if (w->cursor >= _selectItemQuantity) {
-                w->cursor = 0;
-            }
-        }
-        w->cursorShadow = w->cursor;
+    if (s->env != 0 && s->env != soundGetEnvID()) {
+        soundOpenPlayEnv(s->env, 0x32, s->envVol);
     }
 }
-
-static void _tutorialWindowButtonFunc(tagWINDOW_WORK* w)
-{
-    if (w != 0) {
-        u16 k = _pThis->tutorialManage();
-        if (k & 0x10) {
-            w->buttonDone = 1;
-        }
-        if (k & 0x20) {
-            w->buttonDone = 1;
-            w->buttonCancel = 1;
-        }
-    }
-}
-
-void CMetaMenu::localWindowRemove(s32 id)
-{
-    s32 i = localWindowSearch(id);
-    if (i != -1) {
-        windowIds[i] = 0;
-    }
-}
-
-void CMetaMenu::localWindowDrawAll(s32 from, s32 to)
-{
-    for (int i = from; i <= to; i++) {
-        if (windowIds[i] != 0) {
-            if (windowFuncs[i] != 0) {
-                windowFuncs[i](this, windowIds[i]);
-            } else {
-                menuPtWindowWorkDraw(windowIds[i]);
-            }
-        }
-    }
-}
-
-void CMetaMenu::localWindowDrawAll()
-{
-    localWindowDrawAll(0, 0x3F);
-}
-
-void CMetaMenu::localWindowEntry(s32 id, s32 index, void (*func)(CMetaMenu*, s32))
-{
-    windowIds[index] = id;
-    windowFuncs[index] = func;
-}
-
-s32 CMetaMenu::localWindowSearch(s32 id)
-{
-    for (s32 i = 0; i < 64; i++) {
-        if (windowIds[i] == id) return i;
-    }
-    return -1;
-}
-
-void CMetaMenu::localWindowDeleteAll()
-{
-    windowCloseMain(windowSearchID(0xDA));
-    pCurrentMenu = 0;
-    int i = 0;
-    while (true) {
-        if (windowTable[i] == 0) break;
-        windowCloseMain(windowSearchID(windowTable[i]));
-        i++;
-    }
-}
-
-void CMetaMenu::localWindowCreateAll()
-{
-    menuOpenCustom(0xDA, windowGetActiveID(), 0, 0, 0, 0);
-    int i = 0;
-    while (true) {
-        s32 id = windowTable[i];
-        if (id == 0) break;
-        menuPtMenuLoad(id);
-        menuSetDisp(id, 0);
-        i++;
-    }
-    pCurrentMenu = this;
-}
-
-void CMetaMenu::localWindowSetTable(s32* table)
-{
-    windowTable = table;
-}
-
-extern "C" {
-s32 menuPocketToolCMetaButton()
-{
-    return 0;
-}
-}
-
-extern "C" {
-s32 menuPocketToolCMetaDraw()
-{
-    if (CMetaMenu::pCurrentMenu != 0) {
-        CMetaMenu::pCurrentMenu->drawHook();
-    }
-    return 0;
-}
-}
-
-extern "C" {
-s32 menuPocketToolCMetaCtrl()
-{
-    return 0;
-}
-}
-
-void CState::update()
-{
-    if (next != -1) {
-        prev = current;
-        current = next;
-        next = -1;
-        time = 0.0f;
-        count = 0;
-        w98 = 0;
-        w9c = 0;
-        wa0 = 0;
-        memcpy(work2, work, 0x40);
-    } else {
-        addTime();
-    }
-}
-
-void CState::addTime()
-{
-    count++;
-    dt = timeGetLastFrameSec();
-    time = time + dt;
-}
-
-void CState::init()
-{
-    memset(this, 0, 0xA8);
-    prev = -1;
-    dt = timeGetLastFrameSec();
-}
-
-void menuPtPlayBgm(u32 id)
-{
-    soundOpenPlay(id, 0x32, 0xFF);
-}
-
-void menuPtPlaySe(u32 id)
-{
-    GSsndPlayNow(id);
-}
-
-void menuPtWindowWorkDraw(s32 id)
-{
-    menuPtWindowWorkDraw((tagWINDOW_WORK*)windowSearchID(id));
-}
-
-void menuPtWindowWorkDraw(tagWINDOW_WORK* w)
-{
-    if (w != 0) {
-        GSgfxLayerID l;
-        s32 menuLayer = floorGetMenuLayerID();
-        l = (GSgfxLayerID)w->layer;
-        spriteSetOffset(l, w->x, w->y);
-        spriteClearScissor(l);
-        spriteSetEnv(l);
-        spriteSetOffset(menuLayer, w->x, w->y);
-        spriteClearScissor(menuLayer);
-        spriteSetEnv(menuLayer);
-        menuPtWindowWorkDrawPrime(w);
-        spriteSetOffset(w->layer, 0, 0);
-        spriteClearScissor(w->layer);
-        spriteSetEnv(w->layer);
-    }
-}
-
-void menuPtWindowWorkDrawPrime(tagWINDOW_WORK* w)
-{
-    tagSPRITE_WORK* p = w->sprites;
-    while (p != 0) {
-        winSpriteDraw(w, p);
-        p = p->next;
-    }
-    GSgfxBlendMode(1, 4, 5);
-}
-
-void menuPtMenuLoad(s32 id)
-{
-    menuOpenCustom(id, windowGetActiveID(), 0, 4, 0, 0);
-}
-
-void menuPtSpriteDrawAndRollScale(u16 id, u32 color, f32 ox, f32 oy, f32 angle, f32 scale)
-{
-    static f32 xy[8];
-    static f32 st[8];
-    MENU_SPRITE_dd_* spr = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(id));
-    PCARG(u8, void*) group = GSresGetResourceAllGroup(spr->group);
-    u8 g = color >> 16;
-    u8 b = color >> 8;
-    u8 r = color >> 24;
-    u8 a = color;
-    GSgfxColAu8 col = { 0, 0, 0, 0 };
-    col.r = r;
-    col.g = g;
-    col.b = b;
-    col.a = a;
-    f32 x = (f32)spr->x;
-    f32 y = (f32)spr->y;
-    f32 w = (f32)spr->w;
-    f32 h = (f32)spr->h;
-    st[0] = st[2] = x / (f32)GStextureGetXsize(group);
-    st[4] = st[6] = (x + w) / (f32)GStextureGetXsize(group);
-    st[3] = st[5] = y / (f32)GStextureGetYsize(group);
-    f32 v = (y + h) / (f32)GStextureGetYsize(group);
-    xy[2] = 0.0f;
-    xy[0] = 0.0f;
-    xy[6] = w;
-    xy[4] = w;
-    xy[5] = 0.0f;
-    xy[3] = 0.0f;
-    xy[7] = h;
-    xy[1] = h;
-    f32 half = 0.5f;
-    f32 hh = h * half;
-    f32 hw = w * half;
-    st[1] = st[7] = v;
-    for (int i = 0; i < 4; i++) {
-        xy[2 * i + 1] -= hh;
-        xy[2 * i] -= hw;
-    }
-    f32 ang = -angle;
-    f32* p = xy;
-    for (int i = 0; i < 4; i++) {
-        f32 px = p[0];
-        f32 py = p[1];
-        f32 c = msl_cosf(ang);
-        f32 s = msl_sinf(ang);
-        p[0] = py * s + px * c;
-        f32 s2 = msl_sinf(ang);
-        p[1] = py * msl_cosf(ang) - px * s2;
-        p += 2;
-    }
-    for (int i = 0; i < 4; i++) {
-        xy[2 * i] *= scale;
-        xy[2 * i + 1] *= scale;
-    }
-    for (int i = 0; i < 4; i++) {
-        xy[2 * i] += ox;
-        xy[2 * i + 1] += oy;
-    }
-    GSprimSetQuadVertexOrder(1);
-    GSprimDraw2DTexQuad4V(xy, st, group, col);
-}
-
-void menuPtSpriteDrawCenterColor(u16 id, s32 x, s32 y, u32 color)
-{
-    MENU_SPRITE_dd_* spr = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(id));
-    s16 w = spr->w;
-    s16 h = spr->h;
-    x -= w / 2;
-    y -= h / 2;
-    windowDrawSprite2(x, y, w, h, color, 0, id, 0, 7);
-}
-
-void menuPtSpriteDrawColor(u16 id, s32 x, s32 y, s32 w, s32 h, u32 color)
-{
-    windowDrawSprite2(x, y, w, h, color, 0, id, 0, 7);
-}
-
-void menuPtSpriteDrawColor(u16 id, s32 x, s32 y, u32 color)
-{
-    MENU_SPRITE_dd_* spr = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(id));
-    windowDrawSprite2(x, y, spr->w, spr->h, color, 0, id, 0, 7);
-}
-
-void menuPtSpriteDraw(u16 id, s32 x, s32 y)
-{
-    windowDrawSprite(x, y, 0, id, 0, 7);
-}
-
-void menuPtItemDrawOffsetXWColor(MENU_ITEM_dd_* item, s32 dx, s32 w, u32 color)
-{
-    windowDrawSprite2(item->x + dx, item->y, w, item->h, color, 0, item->spriteId, 0, 7);
-}
-
-void menuPtItemDrawOffset(MENU_ITEM_dd_* item, s32 dx, s32 dy)
-{
-    windowDrawSprite2(item->x + dx, item->y + dy, item->w, item->h, -1, 0, item->spriteId, 0, 7);
-}
-
-void menuPtItemDrawAlpha(MENU_ITEM_dd_* item, u8 alpha)
-{
-    windowDrawSprite2(item->x, item->y, item->w, item->h, alpha | ~0xFF, 0, item->spriteId, 0, 7);
-}
-
-void menuPtSpriteWorkSetWidthRateColor(tagWINDOW_WORK* w, u32 id, s32 idx, f32 rate, GSgfxColAu8 color)
-{
-    tagSPRITE_WORK* spr = menuPtSpriteWorkGetByItemID(w, id, idx);
-    MENU_ITEM_dd_* item = menuPtItemGetBySpriteWork(w, spr);
-    spr->color = GSgfxColAu8To32(color);
-    spr->w = (s16)((f32)item->w * rate);
-    winSpriteSetDisp(spr, rate != 0.0f);
-}
-
-void menuPtSpriteWorkSetSw(tagWINDOW_WORK* w, tagSPRITE_WORK* spr, bool on)
-{
-    winSpriteSetDisp(spr, on);
-}
-
-void menuPtSpriteWorkSetSw(tagWINDOW_WORK* w, u32 id, s32 idx, bool on)
-{
-    winSpriteSetDisp(menuPtSpriteWorkGetByItemID(w, id, idx), on);
-}
-
-void menuPtSpriteWorkSetSpriteId(tagSPRITE_WORK* spr, u32 id)
-{
-    MENU_SPRITE_dd_* ms = menuSpriteBiosGetPtr(id);
-    menuPtSpriteWorkSetMenuSprite(spr, ms);
-}
-
-void menuPtSpriteWorkSetMenuSprite(tagSPRITE_WORK* spr, MENU_SPRITE_dd_* ms)
-{
-    MENU_SPRITE_dd_* v = menuSpriteBiosGetValPtr(ms);
-    spr->unk58 = v->group;
-    spr->sx = v->x;
-    spr->sy = v->y;
-    spr->sw = v->w;
-    spr->sh = v->h;
-    spr->w = v->w;
-    spr->h = v->h;
-}
-
-void menuPtSpriteWorkSetMenuItem(tagWINDOW_WORK* w, tagSPRITE_WORK* spr, u32 index)
-{
-    MENU_ITEM_dd_* item = menuItemBiosGetPtr(w->menuId, index);
-    MENU_SPRITE_dd_* v = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(item->spriteId));
-    spr->unk58 = v->group;
-    spr->sx = v->x;
-    spr->sy = v->y;
-    spr->sw = v->w;
-    spr->sh = v->h;
-    spr->x = item->x;
-    spr->y = item->y;
-    spr->w = item->w;
-    spr->h = item->h;
-}
-
-tagSPRITE_WORK* menuPtGetSpriteWorkByHookFunction(tagWINDOW_WORK* w, void* hook, u32 idx, s32 skip)
-{
-    tagSPRITE_WORK* p = w->sprites;
-    while (p != 0) {
-        if (p->hook == (u32)hook && idx-- == 0) break;
-        p = p->next;
-    }
-    while (skip != 0 && p != 0) {
-        skip--;
-        p = p->next;
-    }
-    return p;
-}
-
-MENU_ITEM_dd_* menuPtItemGetBySpriteWork(tagWINDOW_WORK* w, tagSPRITE_WORK* spr)
-{
-    return menuItemBiosGetPtr(w->menuId, spr->itemId);
-}
-
-s32 menuPtSpriteWorkGetIndexFromId(tagWINDOW_WORK* w, tagSPRITE_WORK* spr, u32 id)
-{
-    tagSPRITE_WORK* p = menuPtSpriteWorkGetByItemID(w, id, 0);
-    s32 i = 0;
-    while (true) {
-        if (p == spr) break;
-        p = p->next;
-        i++;
-    }
-    return i;
-}
-
-tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(tagWINDOW_WORK* w, u32 id, s32 n)
-{
-    tagSPRITE_WORK* p = w->sprites;
-    while (p != 0) {
-        if (p->itemId == id) break;
-        p = p->next;
-    }
-    while (n > 0) {
-        p = p->next;
-        n--;
-    }
-    return p;
-}
-
-tagSPRITE_WORK* menuPtSpriteWorkGetByItemID(s32 window, u32 id, s32 n)
-{
-    return menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)windowSearchID(window), id, n);
-}
-
-void menuPtSpriteWorkSetMsgId(s32 window, u32 id, s32 n, u32 msg)
-{
-    menuPtSpriteWorkGetByItemID(window, id, n)->msgId = msg;
-}
-
-MENU_ITEM_dd_* menuPtItemGetByMenuIdAndItemId(s32 menu, u32 item, s32 n)
-{
-    MENU_ITEM_dd_* p = menuItemBiosGetPtr(menu, item);
-    for (s32 i = 0; i < n; i++) {
-        p = menuItemBiosGetPtr(menu, p->next);
-    }
-    return p;
-}
-
-u32 GSgfxColAu8To32(GSgfxColAu8 c)
-{
-    u32 out;
-    memcpy(&out, &c, 4);
-    GC_FIX32(out);
-    return out;
-}
-
-extern "C" {
-double atan2(double, double);
-extern u32 __float_nan[];
-}
-
-static inline int ptFPClassify(f32 x)
-{
-    switch ((*(s32*)&x) & 0x7f800000) {
-    case 0x7f800000:
-        if ((*(s32*)&x) & 0x007fffff) {
-            return 1;
-        } else {
-            return 2;
-        }
-    case 0:
-        if ((*(s32*)&x) & 0x007fffff) {
-            return 5;
-        } else {
-            return 3;
-        }
-    }
-    return 4;
-}
-
-static inline f32 ptSqrt(f32 x)
-{
-    if (x > 0.0f) {
-        f32 y = x;
-        f64 guess = __frsqrte(y);
-        guess = 0.5 * guess * (3.0 - guess * guess * y);
-        guess = 0.5 * guess * (3.0 - guess * guess * y);
-        guess = 0.5 * guess * (3.0 - guess * guess * y);
-        return y * guess;
-    } else if (x < 0.0) {
-        return *(f32*)__float_nan;
-    } else if (ptFPClassify(x) == 1) {
-        return *(f32*)__float_nan;
-    } else {
-        return x;
-    }
-}
-
-f32 xyxy2distance(const PocketVec<short>& a, const PocketVec<short>& b)
-{
-    int dx = a.x - b.x;
-    int dy = a.y - b.y;
-    return ptSqrt((f32)(int)(dx * dx + dy * dy));
-}
-
-f32 dirSubOne(f32 a, f32 b);
-
-bool isDirRegionIn(f32 a, f32 b, f32 c)
-{
-    f32 lim;
-    if (c == b) {
-        lim = 6.2831855f;
-    } else {
-        lim = dirSubOne(c, b);
-    }
-    return dirSubOne(a, b) <= lim;
-}
-
-f32 xy2dir(f32 x, f32 y)
-{
-    return atan2(x, -y);
-}
-
-f32 xyxy2dir(const PocketVec<short>& a, const PocketVec<short>& b)
-{
-    return atan2((f32)(a.x - b.x), (f32) - (a.y - b.y));
-}
-
-int degreeRefresh180(s32);
-
-int xyxy2dirDegree(const PocketVec<short>& a, const PocketVec<short>& b)
-{
-    f32 dir = atan2((f32)(a.x - b.x), (f32) - (a.y - b.y));
-    return degreeRefresh180((s32)(0.5f + (180.0f * dir) / 3.1415927f));
-}
-
-f32 dirRefresh2PI(f32 v);
-f32 dirRefreshPI(f32 v);
-
-f32 dirSubOne(f32 a, f32 b)
-{
-    return dirRefresh2PI(a - b);
-}
-
-f32 dirSubHalf(f32 a, f32 b)
-{
-    return dirRefreshPI(a - b);
-}
-
-int degreeSubHalf(s32 a, s32 b)
-{
-    return degreeRefresh180(a - b);
-}
-
-int degreeRefresh180(s32 d)
-{
-    int r = d % 360;
-    if (r >= 180) return r - 360;
-    if (r <= -180) return r + 360;
-    return r;
-}
-
-int degreeRefresh360(s32 d)
-{
-    int r = d % 360;
-    if (r < 0) return r + 360;
-    return r;
-}
-
-f32 dirRefresh2PI(f32 v)
-{
-    f32 r = -((6.2831855f * (f32)(s32)(0.15915494f * v)) - v);
-    if (r < 0.0f) r += 6.2831855f;
-    return r;
-}
-
-f32 dirRefreshPI(f32 v)
-{
-    f32 r = -((6.2831855f * (f32)(s32)(0.15915494f * v)) - v);
-    if (r > 3.1415927f) return r - 6.2831855f;
-    if (r < -3.1415927f) r += 6.2831855f;
-    return r;
-}
-
-void menuPocketToolFloatToZero(f32& v, f32 step)
-{
-    if (v > 0.0f) {
-        f32 t = v - step;
-        v = t;
-        if (t < 0.0f) v = 0.0f;
-    } else if (v < 0.0f) {
-        f32 t = v + step;
-        v = t;
-        if (t > 0.0f) v = 0.0f;
-    }
-}
-
-void setBitTable(u32* table, s32 i, bool on)
-{
-    int word = i / 32;
-    int bit = i % 32;
-    if (on) table[word] |= 1 << bit;
-}
-
-bool getBitTable(u32* table, s32 i)
-{
-    return (table[i / 32] & (1 << (i % 32))) != 0;
-}
-
+#pragma defer_codegen off

@@ -1,5 +1,6 @@
 #pragma optimization_level 3
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <game/statusval.h>
 struct Hero {
@@ -678,8 +679,10 @@ static inline void tsLoopHelper2226() {
 }
 
 static inline void heroInitAllFootWork() {
-    for (int i = 0; i < 4; i++) {
-        initFootWork((FOOTWORK*)((u8*)&HeroMove.members[i] + 0x14));
+    int i;
+    HeroMoveMember* m = HeroMove.members;
+    for (i = 0; i < 4; i++, m++) {
+        initFootWork((FOOTWORK*)((u8*)m + 0x14));
     }
 }
 
@@ -693,15 +696,17 @@ static void initFloor() {
         getRot((GSvec*)&rot, heroMoveGetLeader());
         f32 sinY = sin(rot.y);
         f32 cosY = cos(rot.y);
+        f32 dx = -sinY;
+        f32 dz = -cosY;
         f32 offset = 10.0f;
         Vec3 target;
         target.y = pos.y;
         for (int i = 0; i < 4; i++) {
             if (heroMoveIsMember((HEROMOVE_MEMBER)i) && i != heroMoveGetLeader()) {
                 GSwalkHit hits[8];
-                target.x = -sinY * offset + pos.x;
+                target.x = dx * offset + pos.x;
                 target.y = pos.y;
-                target.z = -cosY * offset + pos.z;
+                target.z = dz * offset + pos.z;
                 s32 count = GScolsys2WalkGetHeight((GSvec*)&target, hits);
                 if (count > 0) {
                     if (count >= 2) {
@@ -1093,7 +1098,7 @@ static void updateLeaderMovement(HEROMOVE_MEMBER member, f32* speed) {
             f32 fx = (f32)ax / 28.0f;
             int ay = ly > 0 ? ly : -ly;
             f32 fy = (f32)ay / 28.0f;
-            *speed = _sqrtf(fx * fx + fy * fy);
+            *speed = _sqrtf(GC_FUSED(fx, fx) + fy * fy);
             if (*speed > 2.0f) {
                 *speed = 2.0f;
             }
@@ -1128,7 +1133,7 @@ static void updateLeaderMovement(HEROMOVE_MEMBER member, f32* speed) {
                 *speed = people->walkSpeed * peopleGetBlendFactor(*speed, 0.0f, 1.0f);
             } else {
                 f32 blend = peopleGetBlendFactor(*speed, 1.0f, 2.0f);
-                *speed = (1.0f - blend) * people->walkSpeed + blend * people->runSpeed;
+                *speed = GC_FUSED((1.0f - blend), people->walkSpeed) + blend * people->runSpeed;
             }
             peopleMoveForward(group, id, *speed);
             return;
@@ -1320,7 +1325,11 @@ static void updateAnimation(f32 rate, HEROMOVE_MEMBER member) {
 
 extern "C" {
 s32 heroMoveCheckEvent(EventTri* out) {
+#ifdef __MWERKS__
     s32 result;
+#else
+    s32 result = 0;
+#endif
     u32 group;
     u32 id;
     getResID(&group, &id, heroMoveGetLeader());
@@ -1741,7 +1750,7 @@ static void _heroMoveSlowStopFactor(f32 factor, bool moveParty_) {
             moveLeaderPosition(HEROMOVE_MEMBER_3);
         }
         GSthreadSwitch();
-        scale -= factor * timeGetLastFrameSec();
+        scale -= GC_FUSED(factor, timeGetLastFrameSec());
     }
     HeroMove.stickOverride = 0;
 }
@@ -1750,19 +1759,21 @@ static void cbPoison(s32, FootStepCounter counter, s32) {
     int faintedCount = 0;
     u8 poisoned = 0;
     int alive;
+    int i;
+    Pokemon* pokemon;
     if (counter == 0) {
         if (++HeroMove.poisonCounter >= 4) {
             alive = 0;
             HeroMove.poisonCounter = 0;
-            for (int i = 0; i < 6; i++) {
-                Pokemon* pokemon = (Pokemon*)heroGetStatus(0, 3, i);
+            for (i = 0; i < 6; i++) {
+                pokemon = (Pokemon*)heroGetStatus(0, 3, i);
                 if (pokemon != 0 && pokemonCheckValid(pokemon) && pokemon->getHp() != 0) {
                     alive++;
                 }
             }
             int faintedIdx[6];
-            for (int i = 0; i < 6; i++) {
-                Pokemon* pokemon = (Pokemon*)heroGetStatus(0, 3, i);
+            for (i = 0; i < 6; i++) {
+                pokemon = (Pokemon*)heroGetStatus(0, 3, i);
                 if (pokemon != 0 && pokemonCheckValid(pokemon)) {
                     u16 hp = pokemon->getHp();
                     if (hp != 0) {
@@ -1771,7 +1782,8 @@ static void cbPoison(s32, FootStepCounter counter, s32) {
                             poisoned = 1;
                             if (alive > 1 || hp > 1) {
                                 pokemon->setHp(hp - 1);
-                                if ((u16)(hp - 1) == 0) {
+                                hp--;
+                                if (hp == 0) {
                                     faintedIdx[faintedCount] = i;
                                     alive--;
                                     faintedCount++;
@@ -1791,9 +1803,10 @@ static void cbPoison(s32, FootStepCounter counter, s32) {
             }
             if (faintedCount > 0) {
                 heroMoveInitEvent();
-                for (int j = 0; j < faintedCount; j++) {
-                    Pokemon* pokemon = (Pokemon*)heroGetStatus(0, 3, (u16)faintedIdx[j]);
-                    msgctrlSetValue(0x32, (GCuptr)pokemonBiosGetNicknamePtr(pokemon));
+                for (i = 0; i < faintedCount; i++) {
+                    pokemon = (Pokemon*)heroGetStatus(0, 3, (u16)faintedIdx[i]);
+                    char* name = pokemonBiosGetNicknamePtr(pokemon);
+                    msgctrlSetValue(0x32, (GCuptr)name);
                     winMsgOpenField(0xC37E, 1, 0);
                     winMsgCloseField(1);
                     actionFriendSet(pokemon, 7);

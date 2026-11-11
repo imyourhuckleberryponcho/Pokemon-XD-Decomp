@@ -36,22 +36,13 @@ template <int N> struct M2C_Blob { u8 b[N]; };
 #pragma peephole off
 #pragma pool_strings off
 
-struct _MENUCBTRAINER {
-    u8 b[0x1320];
+#include <game/menuCBRecords.h>
+struct _MENUCBTRAINER : MenuCBTrainer {
     _MENUCBTRAINER() {}
 };
 
-struct _MENUCBWORK {
-    u8 pad0[0x18];
-    _MENUCBTRAINER trainer[4];
-    _MENUCBTRAINER trainerOrg[4];
-    u8 pad9918[0xB524 - 0x9918];
-    void* dancer[9][4];
-    u8 rest[0xB5F4 - 0xB5B4];
-};
-#ifndef __MWERKS__
-static_assert(sizeof(_MENUCBWORK) == MENUCB_SIZE, "MENUCB_SIZE (game/menucbsize.h)");
-#endif
+#define MENUCB_TRAINER _MENUCBTRAINER
+#include <game/menuCBWork.h>
 
 struct TunaideSelect {
     s32 mode;
@@ -147,7 +138,11 @@ void menuGBACSetRomVer(s32 a, s32 b);
 u8 menuIsCheck(s32 id);
 s32 menuNameEntryOpen(s32 a, void* name);
 void menuOpen(s32 id, s32 a);
+#ifdef __MWERKS__
 void menuOpenCustom(s32 id, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 s8 menuSubOpenYesNo(s32 a, s32 b, s32 c, s32 d);
 void menuTopOpenFlashBack();
 void menuTopSetBattleSelectMode(s32 m);
@@ -189,8 +184,6 @@ void* toolBattleTempSaveData;
 extern "C" {
 _MENUCBWORK _CB;
 }
-
-#define CB(T, off) (*(T*)((u8*)&_CB + (off)))
 
 static u8 _flashBackFlag = 1;
 
@@ -245,51 +238,51 @@ extern "C" void fn_80044314(void) {
 }
 
 static void _menuCB_RuleData_CBtoSAVEDATA() {
-    memcpy(savedataGetStatus(0, 0xE), &CB(u8, 0x9918), 0x360);
+    memcpy(savedataGetStatus(0, 0xE), _CB.rule, 0x360);
 }
 
 static void _menuCB_Rule_Page_Chenge_Init2() {
-    CB(s32, 0xB124) = CB(s32, 0xB118);
-    CB(s32, 0xB128) = 0xFF;
-    CB(s32, 0xB12C) = 0xF;
+    _CB.unkB124 = _CB.unkB118;
+    _CB.unkB128 = 0xFF;
+    _CB.unkB12C = 0xF;
 }
 
 static void _menuCB_RuleEdit_Cursol_Init(s32 v) {
-    CB(s32, 0xB0AC) = v;
-    CB(s32, 0xB0A8) = v;
-    CB(s32, 0xB0A4) = v;
-    CB(s32, 0xB0A0) = v;
-    CB(s32, 0xB09C) = v;
-    CB(s32, 0xB098) = v;
-    CB(s32, 0xB094) = v;
-    CB(s32, 0xB02C) = v;
-    CB(s32, 0xB028) = v;
-    CB(s32, 0xB024) = v;
-    CB(s32, 0xB020) = v;
-    CB(s32, 0xB01C) = v;
-    CB(s32, 0xB018) = v;
-    CB(s32, 0xB014) = v;
+    _CB.unkB0AC = v;
+    _CB.unkB0A8 = v;
+    _CB.unkB0A4 = v;
+    _CB.unkB0A0 = v;
+    _CB.unkB09C = v;
+    _CB.unkB098 = v;
+    _CB.unkB094 = v;
+    _CB.unkB02C = v;
+    _CB.scroll = v;
+    _CB.unkB024 = v;
+    _CB.unkB020 = v;
+    _CB.unkB01C = v;
+    _CB.unkB018 = v;
+    _CB.unkB014 = v;
 }
 
 static void menuCB_RuleCustomJobDisp(s32 mode) {
     s32 cursor;
     if (mode == 0) cursor = 0;
     if (mode == 1) cursor = -1;
-    CB(void*, 0x9C78) = (u8*)&_CB + CB(s32, 0xB004) * 0x90 + 0x9918;
-    menuCBRule_Copy(_menuCB_Temp + 0x3990, menuCBRule_ConstantRule2(CB(s32, 0xB004)));
-    menuCBRule_Copy(_menuCB_Temp + 0x3A20, CB(void*, 0x9C78));
+    _CB.currentRule = &_CB.rule[_CB.unkB004];
+    menuCBRule_Copy(_menuCB_Temp + 0x3990, menuCBRule_ConstantRule2(_CB.unkB004));
+    menuCBRule_Copy(_menuCB_Temp + 0x3A20, _CB.currentRule);
     _menuCB_RuleEdit_Cursol_Init(cursor);
-    CB(s32, 0xB118) = 0;
-    CB(s32, 0xB11C) = 0;
-    CB(s32, 0xB090) = 0;
-    CB(s32, 0xB010) = 0;
-    CB(s32, 0xB0B4) = 1;
-    CB(s32, 0xB0B0) = 1;
-    CB(s32, 0xB034) = 1;
-    CB(s32, 0xB030) = 1;
-    CB(s32, 0xB124) = -1;
-    CB(s32, 0xB130) = 0;
-    CB(s32, 0xB134) = 0x1F4;
+    _CB.unkB118 = 0;
+    _CB.unkB11C = 0;
+    _CB.unkB090 = 0;
+    _CB.unkB010 = 0;
+    _CB.unkB0B4 = 1;
+    _CB.unkB0B0 = 1;
+    _CB.unkB034 = 1;
+    _CB.unkB030 = 1;
+    _CB.unkB124 = -1;
+    _CB.unkB130 = 0;
+    _CB.unkB134 = 0x1F4;
     menuCB_SE_Play(0x14);
     menuOpen(0xF5, 0);
     menuOpen(0xEF, 0);
@@ -299,54 +292,54 @@ static void menuCB_RuleCustomJobDisp(s32 mode) {
     menuOpen(0xF3, 0);
     menuOpen(0xF4, 0);
     do {
-        if (CB(s32, 0xB0B0) == 0) {
+        if (_CB.unkB0B0 == 0) {
             winMsgOpen(2, 0x4411, 1, 1);
             if (_YesNo(0) == 0) {
-                menuCBRule_Copy(CB(void*, 0x9C78), _menuCB_Temp + 0x3990);
+                menuCBRule_Copy(_CB.currentRule, _menuCB_Temp + 0x3990);
                 _menuCB_RuleEdit_Cursol_Init(0);
                 winMsgClose(0);
                 _menuCB_Rule_Page_Chenge_Init2();
-                CB(s32, 0xB118) = 0;
+                _CB.unkB118 = 0;
             } else {
                 winMsgClose(0);
             }
-            CB(s32, 0xB0B0) = 1;
-            CB(s32, 0xB030) = 1;
+            _CB.unkB0B0 = 1;
+            _CB.unkB030 = 1;
         }
-        if (CB(s32, 0xB0B4) == 0) {
+        if (_CB.unkB0B4 == 0) {
             winMsgOpen(2, 0x4412, 1, 1);
             if (_YesNo(0) == 0) {
-                menuCBRule_Copy(CB(void*, 0x9C78), _menuCB_Temp + 0x3A20);
+                menuCBRule_Copy(_CB.currentRule, _menuCB_Temp + 0x3A20);
                 _menuCB_RuleEdit_Cursol_Init(0);
                 winMsgClose(0);
                 _menuCB_Rule_Page_Chenge_Init2();
-                CB(s32, 0xB118) = 0;
+                _CB.unkB118 = 0;
             } else {
                 winMsgClose(0);
             }
-            CB(s32, 0xB0B4) = 1;
-            CB(s32, 0xB034) = 1;
+            _CB.unkB0B4 = 1;
+            _CB.unkB034 = 1;
         }
-        if (CB(s32, 0xB010) == 2) {
-            if (CB(s32, 0xB014) == -1) CB(s32, 0xB010) = 0;
-            CB(s32, 0xB090) = 2;
+        if (_CB.unkB010 == 2) {
+            if (_CB.unkB014 == -1) _CB.unkB010 = 0;
+            _CB.unkB090 = 2;
         }
-        if (CB(s32, 0xB010) == 1) {
-            if (menuCBRule_IsEquals(_menuCB_Temp + 0x3A20, CB(void*, 0x9C78)) == 0) {
+        if (_CB.unkB010 == 1) {
+            if (menuCBRule_IsEquals(_menuCB_Temp + 0x3A20, _CB.currentRule) == 0) {
                 _menuCB_RuleData_SaveJob(0);
-                if (_menuCB_RuleData_SaveJob_flag == 0) CB(s32, 0xB090) = 1;
-                else CB(s32, 0xB11C) = 0;
+                if (_menuCB_RuleData_SaveJob_flag == 0) _CB.unkB090 = 1;
+                else _CB.unkB11C = 0;
             } else {
-                CB(s32, 0xB090) = 1;
+                _CB.unkB090 = 1;
             }
-            CB(s32, 0xB010) = 0;
+            _CB.unkB010 = 0;
         }
         GSthreadSwitch();
-    } while (CB(s32, 0xB090) == 0);
-    if (CB(s32, 0xB010) == 2 && menuCBRule_IsEquals(_menuCB_Temp + 0x3A20, CB(void*, 0x9C78)) == 0) {
+    } while (_CB.unkB090 == 0);
+    if (_CB.unkB010 == 2 && menuCBRule_IsEquals(_menuCB_Temp + 0x3A20, _CB.currentRule) == 0) {
         _menuCB_RuleData_SaveJob(0);
-        if (_menuCB_RuleData_SaveJob_flag == 0 && memcardIsMemCardValid() != 0) CB(s32, 0xB090) = 1;
-        else CB(s32, 0xB090) = 2;
+        if (_menuCB_RuleData_SaveJob_flag == 0 && memcardIsMemCardValid() != 0) _CB.unkB090 = 1;
+        else _CB.unkB090 = 2;
     }
     menuCB_SE_Play(0x15);
     menuCloseCustom(0xF4, 0, 0);
@@ -356,8 +349,8 @@ static void menuCB_RuleCustomJobDisp(s32 mode) {
     menuCloseCustom(0xF0, 0, 0);
     menuCloseCustom(0xEF, 0, 0);
     menuCloseCustom(0xF5, 0, 1);
-    if (CB(s32, 0xB090) == 2) {
-        menuCBRule_Copy(CB(void*, 0x9C78), _menuCB_Temp + 0x3A20);
+    if (_CB.unkB090 == 2) {
+        menuCBRule_Copy(_CB.currentRule, _menuCB_Temp + 0x3A20);
         _menuCB_RuleData_CBtoSAVEDATA();
     }
     if (memcardIsMemCardValid() == 0) {
@@ -389,14 +382,14 @@ extern "C" void menuCB_FlashEnd(u8 v) {
 
 extern "C" void menuCB_FlashStart(u8 v) {
     if (v != 0) {
-        if (CB(s32, 4) == 1) {
+        if (_CB.mode == 1) {
             FlashSystemSetPlayFrameLabel(0x200A3000, "1_start", "1_end");
             FlashSystemSetNowFrameLabel(0x200A3000, "1_start");
         } else {
             FlashSystemSetPlayFrameLabel(0x200A3000, "2_start", "2_end");
             FlashSystemSetNowFrameLabel(0x200A3000, "2_start");
         }
-    } else if (CB(s32, 4) == 1) {
+    } else if (_CB.mode == 1) {
         FlashSystemSetPlayFrameLabel(0x200A3000, "1_end", "1_end");
         FlashSystemSetNowFrameLabel(0x200A3000, "1_end");
     } else {
@@ -405,24 +398,24 @@ extern "C" void menuCB_FlashStart(u8 v) {
     }
     u8* w = (u8*)windowSearchID(0x119);
     if (w != 0) w[9] = 0;
-    CB(s32, 0xB13C) = 1;
+    _CB.unkB13C = 1;
     do {
         GSthreadSwitch();
     } while (FlashSystemIsLastFrame(0x200A3000) == 0);
 }
 
 static u8 menuCB_SubWinDisp_GCENTRY() {
-    if (CB(s32, 0xB0F4) == 1) {
-        if (CB(s32, 0xB070) == 1) {
+    if (_CB.unkB0F4 == 1) {
+        if (_CB.unkB070 == 1) {
             return 0;
         }
-        if (CB(s32, 0xAFF0) == 1) {
+        if (_CB.unkAFF0 == 1) {
             switch (menuCB_GCEntry_SubWindow_Disp()) {
             case 0:
                 return 0;
             case 1:
-                CB(s32, 0xB0F4) = 0;
-                CB(s32, 0xAFF0) = 0;
+                _CB.unkB0F4 = 0;
+                _CB.unkAFF0 = 0;
                 return 1;
             }
         }
@@ -434,13 +427,13 @@ static u8 menuCB_SubWinDisp_GCENTRY() {
     case 0:
     case 1:
         menuCBGCEntryPokemon();
-        if (CB(s32, 0xB0FC) >= 2) {
+        if (_CB.unkB0FC >= 2) {
             return 1;
         }
-        CB(s32, 0xB0FC) = 0;
+        _CB.unkB0FC = 0;
         switch (pokecoloGetCountryCode()) {
         case 0:
-            if (CB(s32, 0xB0F0) == 2) {
+            if (_CB.unkB0F0 == 2) {
                 menuCBReliveHallCursolInit();
             }
             break;
@@ -461,7 +454,7 @@ static u8 menuCB_SubWinDisp_GCENTRY() {
     case 6:
         break;
     }
-    CB(s32, 0xB0FC) = 0;
+    _CB.unkB0FC = 0;
     return 1;
 }
 
@@ -473,7 +466,7 @@ static void menuCB_SAVEDATA_recover() {
 static void menuCB_GCEntry_Job() {
     void* hero;
     void* save = savedataGetStatus(0, 2);
-    hero = &CB(u8, 0xA65C);
+    hero = _CB.hero;
     heroBiosCopy(hero, save);
     for (u32 i = 0; i < 6; i++) {
         pokemonInit(heroBiosGetPokemonPtr(hero, i));
@@ -481,16 +474,16 @@ static void menuCB_GCEntry_Job() {
     menuCB_GCPokemonHPandWAZA_MAX();
     s32 c = pokecoloGetCountryCode();
     if (c != 0 && c >= 0 && c < 3) fn_80044314();
-    CB(s32, 0xB100) = 0;
-    CB(s32, 0xB0FC) = 0;
-    CB(s32, 0xB0F8) = 0;
-    CB(s32, 0xB0F0) = 0;
-    CB(s32, 0xB0EC) = 0;
-    CB(s32, 0xB0E8) = 0;
-    CB(s32, 0xB070) = 0;
-    CB(s32, 0xAFF0) = 0;
-    CB(s32, 0xB0D8) = 0;
-    CB(s32, 0xB150) = 0;
+    _CB.unkB100 = 0;
+    _CB.unkB0FC = 0;
+    _CB.unkB0F8 = 0;
+    _CB.unkB0F0 = 0;
+    _CB.unkB0EC = 0;
+    _CB.unkB0E8 = 0;
+    _CB.unkB070 = 0;
+    _CB.unkAFF0 = 0;
+    _CB.errPlayer = 0;
+    _CB.unkB150 = 0;
     menuCB_SE_Play(0x14);
     menuOpen(0xBB, 0);
     menuOpen(0xBD, 0);
@@ -501,12 +494,12 @@ static void menuCB_GCEntry_Job() {
     menuOpen(0x10E, 0);
     menuOpen(0xC2, 0);
     do {
-        CB(s32, 0xB0F4) = 0;
-        CB(s32, 0xB0FC) = 0;
+        _CB.unkB0F4 = 0;
+        _CB.unkB0FC = 0;
         do {
             menuOpen(0xBC, 1);
         } while (menuCB_SubWinDisp_GCENTRY() != 0);
-    } while (CB(s32, 0xAFF0) == 0);
+    } while (_CB.unkAFF0 == 0);
     menuCB_SE_Play(0x15);
     menuCloseCustom(0xBC, 0, 0);
     menuCloseCustom(0xC2, 0, 0);
@@ -526,9 +519,9 @@ static void menuCB_GCEntry_Job() {
 static void _imasuguBattleMenuMain() {
     menuCB_SE_Play(0x14);
     while (1) {
-        if (CB(s32, 0xB17C) == 0) {
+        if (_CB.unkB17C == 0) {
             menuOpen(0xA4, 1);
-            if (CB(s32, 0xB054) == 1) {
+            if (_CB.unkB054 == 1) {
                 menuCB_SE_Play(0x15);
                 menuCloseCustom(0xA4, 0, 0);
                 menuCBBios_UnlockContext();
@@ -543,24 +536,24 @@ static void _imasuguBattleMenuMain() {
         } else {
             menuOpen(0xA4, 0);
         }
-        CB(s8, 0xB4A1) = -1;
-        menuOpenCustom(0x106, windowGetActiveID(), &CB(u8, 0xAFD8), 0, 1, 0);
-        if (CB(s32, 0xAFD8) == 4 || CB(s32, 0xB058) == 1) {
+        _CB.nameIndex = -1;
+        menuOpenCustom(0x106, windowGetActiveID(), &_CB.row, 0, 1, 0);
+        if (_CB.row == 4 || _CB.unkB058 == 1) {
             menuCloseCustom(0x106, 0, 1);
-            CB(s32, 0xB058) = 0;
-            CB(s32, 0xAFD8) = 0;
-            CB(s32, 0xB17C) = 0;
+            _CB.unkB058 = 0;
+            _CB.row = 0;
+            _CB.unkB17C = 0;
         } else {
-            CB(s32, 0xB17C) = 1;
-            CB(s32, 8) = 1;
-            CB(s32, 0xC) = 0;
-            CB(s32, 0x10) = HSD_Rand() % 3;
-            switch (CB(s32, 0xAFD4)) {
+            _CB.unkB17C = 1;
+            _CB.state = 1;
+            _CB.ruleType = 0;
+            _CB.selection = HSD_Rand() % 3;
+            switch (_CB.col) {
             case 0:
-                CB(s32, 0x14) = 3;
+                _CB.versus = 3;
                 break;
             case 1:
-                CB(s32, 0x14) = 4;
+                _CB.versus = 4;
                 break;
             }
             menuCB_InitBattle(&_CB);
@@ -568,11 +561,11 @@ static void _imasuguBattleMenuMain() {
             menuCloseCustom(0x106, 2, 0);
             menuCloseCustom(0xA4, 2, 1);
             menuCBpokemonFaceReadWait();
-            menuOpenCustom(0xA5, windowGetActiveID(), &CB(u8, 0xAFDC), 0, 1, 0);
+            menuOpenCustom(0xA5, windowGetActiveID(), &_CB.unkAFDC, 0, 1, 0);
             menuCloseCustom(0xA5, 0, 1);
-            if (CB(s32, 0xAFDC) == 1 || CB(s32, 0xB05C) == 1) {
-                CB(s32, 0xB05C) = 0;
-                CB(s32, 0xAFDC) = 0;
+            if (_CB.unkAFDC == 1 || _CB.unkB05C == 1) {
+                _CB.unkB05C = 0;
+                _CB.unkAFDC = 0;
                 menuCB_SE_Play(0x14);
             } else {
                 for (s32 i = 0; i < 2; i++) {
@@ -638,15 +631,15 @@ static s32 _menuCB_SaveRule() {
 
 static s32 _colosseumbattlemenu_teamselect(s32) {
     static const s8 sta[3][4] = { { 0, 1, 2, 3 }, { 0, 2, 1, 3 }, { 0, 3, 1, 2 } };
-    CB(s32, 0xB198) = 0;
-    CB(s32, 0xB06C) = 0;
-    CB(s32, 0xAFEC) = 0;
+    _CB.unkB198 = 0;
+    _CB.unkB06C = 0;
+    _CB.unkAFEC = 0;
     menuCB_SE_Play(0x14);
     menuOpen(0xAC, 1);
     menuCB_SE_Play(0x15);
     menuCloseCustom(0xAC, 0, 1);
-    s32 sel = CB(s32, 0xAFEC);
-    if (CB(s32, 0xB198) != 0 || CB(s32, 0xB06C) == 1) {
+    s32 sel = _CB.unkAFEC;
+    if (_CB.unkB198 != 0 || _CB.unkB06C == 1) {
         menuCB_GBADisconnectedErrorJob();
         return menuCB_MenuRollback(0xA9);
     }
@@ -655,10 +648,10 @@ static s32 _colosseumbattlemenu_teamselect(s32) {
     case 0:
     case 1:
     case 2: {
-        CB(s32, 0x4CC0) = sta[sel][0];
-        CB(s32, 0x5FE0) = sta[sel][1];
-        CB(s32, 0x7300) = sta[sel][2];
-        CB(s32, 0x8620) = sta[sel][3];
+        _CB.trainerOrg[0].versusId = sta[sel][0];
+        _CB.trainerOrg[1].versusId = sta[sel][1];
+        _CB.trainerOrg[2].versusId = sta[sel][2];
+        _CB.trainerOrg[3].versusId = sta[sel][3];
         menuCB_InitBattle(&_CB);
         break;
     }
@@ -672,18 +665,18 @@ static s32 _colosseumbattlemenu_teamselect(s32) {
 }
 
 static s32 _colosseumbattlemenu_playerdecide(s32) {
-    CB(s32, 0xB068) = 0;
-    CB(s32, 0xB0D4) = 0;
-    CB(s32, 0xB194) = 0;
+    _CB.unkB068 = 0;
+    _CB.tempBuff = 0;
+    _CB.unkB194 = 0;
     menuCB_SE_Play(0x14);
     menuOpen(0xAB, 1);
     menuCB_SE_Play(0x15);
     menuCloseCustom(0xAB, 0, 1);
-    if (CB(s32, 0xB194) != 0 || CB(s32, 0xB068) == 1) {
+    if (_CB.unkB194 != 0 || _CB.unkB068 == 1) {
         menuCB_GBADisconnectedErrorJob();
         return menuCB_MenuRollback(0xA9);
     }
-    if (CB(s32, 8) != 2) {
+    if (_CB.state != 2) {
         menuCB_InitBattle(&_CB);
         return 0xB1;
     }
@@ -694,14 +687,14 @@ static s32 _gbac_connect_job(s32) {
     s32 list[4];
     s32 type;
     _tempHeroInitAll();
-    menuCBTrainerBios_SetControlerID(&CB(u8, 0x18), 1);
-    menuCBTrainerBios_SetControlerID(&CB(u8, 0x1338), 2);
-    menuCBTrainerBios_SetControlerID(&CB(u8, 0x2658), 3);
-    menuCBTrainerBios_SetControlerID(&CB(u8, 0x3978), 4);
-    switch (CB(s32, 8)) {
+    menuCBTrainerBios_SetControlerID(&_CB.trainer[0], 1);
+    menuCBTrainerBios_SetControlerID(&_CB.trainer[1], 2);
+    menuCBTrainerBios_SetControlerID(&_CB.trainer[2], 3);
+    menuCBTrainerBios_SetControlerID(&_CB.trainer[3], 4);
+    switch (_CB.state) {
     case 0:
     case 1:
-        if (CB(s32, 0x4C9C) == 0) {
+        if (_CB.trainerOrg[0].homePlace == 0) {
             list[0] = (GCsptr)(_menuCB_Temp + 0x1320);
             list[1] = (GCsptr)(_menuCB_Temp + 0x1C98);
             list[2] = 0;
@@ -717,7 +710,7 @@ static s32 _gbac_connect_job(s32) {
         break;
     case 2:
     default:
-        if (CB(s32, 0x4C9C) == 0) type = 2;
+        if (_CB.trainerOrg[0].homePlace == 0) type = 2;
         else type = 3;
         list[0] = (GCsptr)(_menuCB_Temp + 0x1320);
         list[1] = (GCsptr)(_menuCB_Temp + 0x1C98);
@@ -725,10 +718,10 @@ static s32 _gbac_connect_job(s32) {
         list[3] = (GCsptr)(_menuCB_Temp + 0x2F88);
         break;
     }
-    if (CB(s32, 0x4C9C) == 0) {
+    if (_CB.trainerOrg[0].homePlace == 0) {
         menuCB_SAVEDATA_recover();
         menuCB_GCEntry_Job();
-        if (CB(s32, 0xB070) == 1) {
+        if (_CB.unkB070 == 1) {
             menuCB_SAVEDATA_recover();
             return menuCB_MenuRollback(0xA9);
         }
@@ -736,34 +729,34 @@ static s32 _gbac_connect_job(s32) {
         systemFree__4CAntFv();
     }
     if (openMenuGBA(type, 0x1A, list) < 0) return menuCB_MenuRollback(0xA9);
-    if (CB(s32, 0x4C9C) == 0) heroBiosSetHomePlace(_menuCB_Temp + 0x1320, 0);
-    switch (CB(s32, 8)) {
+    if (_CB.trainerOrg[0].homePlace == 0) heroBiosSetHomePlace(_menuCB_Temp + 0x1320, 0);
+    switch (_CB.state) {
     case 0:
     case 1: {
-        void* t0 = &CB(u8, 0x4C98);
+        void* t0 = &_CB.trainerOrg[0];
         menuCBBios_InitVersusTrainer(t0, _menuCB_Temp + 0x1320);
-        void* t1 = &CB(u8, 0x5FB8);
+        void* t1 = &_CB.trainerOrg[1];
         menuCBBios_InitVersusTrainer(t1, _menuCB_Temp + 0x1C98);
-        if (CB(s32, 0x4C9C) == 0) {
+        if (_CB.trainerOrg[0].homePlace == 0) {
             menuCBTrainerBios_SetControlerID(t0, 1);
             menuCBTrainerBios_SetControlerID(t1, 2);
         } else {
             menuCBTrainerBios_SetControlerID(t0, 2);
             menuCBTrainerBios_SetControlerID(t1, 3);
         }
-        menuCBTrainerBios_SetControlerID(&CB(u8, 0x72D8), 0);
-        menuCBTrainerBios_SetControlerID(&CB(u8, 0x85F8), 0);
+        menuCBTrainerBios_SetControlerID(&_CB.trainerOrg[2], 0);
+        menuCBTrainerBios_SetControlerID(&_CB.trainerOrg[3], 0);
         break;
     }
     case 2:
     default: {
-        void* t0 = &CB(u8, 0x4C98);
+        void* t0 = &_CB.trainerOrg[0];
         menuCBBios_InitVersusTrainer(t0, _menuCB_Temp + 0x1320);
-        void* t1 = &CB(u8, 0x5FB8);
+        void* t1 = &_CB.trainerOrg[1];
         menuCBBios_InitVersusTrainer(t1, _menuCB_Temp + 0x1C98);
-        void* t2 = &CB(u8, 0x72D8);
+        void* t2 = &_CB.trainerOrg[2];
         menuCBBios_InitVersusTrainer(t2, _menuCB_Temp + 0x2610);
-        void* t3 = &CB(u8, 0x85F8);
+        void* t3 = &_CB.trainerOrg[3];
         menuCBBios_InitVersusTrainer(t3, _menuCB_Temp + 0x2F88);
         menuCBTrainerBios_SetControlerID(t0, 1);
         menuCBTrainerBios_SetControlerID(t1, 2);
@@ -779,14 +772,14 @@ static s32 _colosseumbattlemenu_duel(s32) {
     u8* t;
     u32 i;
     s32 next;
-    memcpy(&CB(u8, 0x9918), savedataGetStatus(0, 0xE), 0x360);
+    memcpy(_CB.rule, savedataGetStatus(0, 0xE), 0x360);
     systemInit__4CAntFv();
     menuCB2DPokemonALLClear();
     cursorBiosInit();
-    CB(s32, 0xB10C) = 0;
-    CB(s32, 0xB064) = 0;
-    CB(s32, 0xAFE4) = 0;
-    CB(s32, 0xB144) = -1;
+    _CB.unkB10C = 0;
+    _CB.unkB064 = 0;
+    _CB.unkAFE4 = 0;
+    _CB.unkB144 = -1;
     menuGBACSetRomVer(0, 0xFFFF);
     menuCB_SE_Play(0x14);
     menuOpen(0xA9, 0);
@@ -797,13 +790,13 @@ static s32 _colosseumbattlemenu_duel(s32) {
     menuOpen(0xAA, 0);
     menuOpen(0xF7, 0);
 loop:
-    if (CB(s32, 0xB10C) == 2) {
-        CB(s32, 0xAFE0) = 0;
+    if (_CB.unkB10C == 2) {
+        _CB.cursor = 0;
     again:
-        if (CB(s32, 0xAFE0) >= 0x10) CB(s32, 0xAFE0) = CB(s32, 0xAFE0) - 0x10;
+        if (_CB.cursor >= 0x10) _CB.cursor = _CB.cursor - 0x10;
         menuCB_TUNAIDE01_Rule_SELECT();
         {
-            switch (CB(u32, 0xAFE0)) {
+            switch ((u32)_CB.cursor) {
             case 1:
                 menuCB_RuleNameChengeBeforeJob(0);
                 menuCB_RuleCustomJobDisp(1);
@@ -820,9 +813,9 @@ loop:
                 goto again;
             case 18: {
                 menuCB_RuleNameChengeBeforeJob(1);
-                u16* name = (u16*)menuCB_RuleTitleNameGet(CB(s32, 0xB004));
+                u16* name = (u16*)menuCB_RuleTitleNameGet(_CB.unkB004);
                 u16 save[21];
-                for (s32 k = 0; k < 21; k++) save[k] = *(u16*)((u8*)&_CB + CB(s32, 0xB004) * 0x90 + 0x9936 + k * 2);
+                for (s32 k = 0; k < 21; k++) save[k] = _CB.rule[_CB.unkB004].name[k];
                 s32 r = menuNameEntryOpen(6, name);
                 menuCB_RuleNameChengeAfterJob(1);
                 if (r != 0) {
@@ -842,46 +835,46 @@ loop:
             }
         }
     }
-    if (CB(s32, 0xB064) == 2) {
+    if (_CB.unkB064 == 2) {
         next = -1;
         menuGBACSetRomVer(0, 0xFFFF);
-        CB(s32, 0xC) = 0;
+        _CB.ruleType = 0;
         fn_80151F6C();
-    } else if (CB(s32, 0xB064) == 1) {
-        if (CB(s32, 0xAFF4) == 0 || CB(s32, 0xAFF4) == 2) {
+    } else if (_CB.unkB064 == 1) {
+        if (_CB.unkAFF4 == 0 || _CB.unkAFF4 == 2) {
             if (memcardIsMemCardValid() == 0) {
                 winMsgOpen(2, 0x82, 1, 0);
                 winMsgClose(1);
-                CB(s32, 0xB064) = 0;
+                _CB.unkB064 = 0;
                 goto loop;
             }
             if (gamedatasaveGetStatus(0, 4) == 0) {
                 winMsgOpen(2, 0x9C, 1, 0);
                 winMsgClose(1);
-                CB(s32, 0xB064) = 0;
+                _CB.unkB064 = 0;
                 goto loop;
             }
         }
         winMsgOpen(2, 0x4419, 1, 1);
         if (_YesNo(0) != 0) {
             winMsgClose(0);
-            CB(s32, 0xB064) = 0;
+            _CB.unkB064 = 0;
             goto loop;
         }
         winMsgClose(0);
-        CB(s32, 8) = tunaide_select[CB(s32, 0xAFF4)].mode;
-        if (CB(s32, 0xAFFC) == 6) CB(s32, 0x10) = 0;
-        else CB(s32, 0x10) = tunaide_select_field[CB(s32, 0xAFFC)];
-        menuCBTrainerBios_SetHomePlace(&CB(u8, 0x4C98), tunaide_select[CB(s32, 0xAFF4)].homePlace);
-        menuCBTrainerBios_SetControlerID(&CB(u8, 0x4C98), tunaide_select[CB(s32, 0xAFF4)].ctl[0]);
-        t = (u8*)&_CB + 0x1320;
-        for (i = 1; i < 4; t += 0x1320, i++) {
-            menuCBTrainerBios_SetHomePlace(t + 0x4C98, 1);
-            menuCBTrainerBios_SetControlerID(t + 0x4C98, tunaide_select[CB(s32, 0xAFF4)].ctl[i]);
+        _CB.state = tunaide_select[_CB.unkAFF4].mode;
+        if (_CB.floorSelect == 6) _CB.selection = 0;
+        else _CB.selection = tunaide_select_field[_CB.floorSelect];
+        menuCBTrainerBios_SetHomePlace(&_CB.trainerOrg[0], tunaide_select[_CB.unkAFF4].homePlace);
+        menuCBTrainerBios_SetControlerID(&_CB.trainerOrg[0], tunaide_select[_CB.unkAFF4].ctl[0]);
+        t = (u8*)&_CB + sizeof(MENUCB_TRAINER);
+        for (i = 1; i < 4; t += sizeof(MENUCB_TRAINER), i++) {
+            menuCBTrainerBios_SetHomePlace(t + MENUCB_OFFSET_OF(trainerOrg), 1);
+            menuCBTrainerBios_SetControlerID(t + MENUCB_OFFSET_OF(trainerOrg), tunaide_select[_CB.unkAFF4].ctl[i]);
         }
-        if (CB(s32, 0xAFF8) == 0) CB(s32, 8) = 0;
-        else CB(s32, 8) = 1;
-        if (CB(s32, 0xAFF4) >= 2) CB(s32, 8) = 2;
+        if (_CB.unkAFF8 == 0) _CB.state = 0;
+        else _CB.state = 1;
+        if (_CB.unkAFF4 >= 2) _CB.state = 2;
         next = 0xB0;
     } else {
         GSthreadSwitch();
@@ -895,8 +888,8 @@ loop:
     menuCloseCustom(0xCB, 0, 0);
     menuCloseCustom(0xCE, 0, 0);
     menuCloseCustom(0xA9, 0, 1);
-    if (CB(s32, 0xB064) == 2) systemFree__4CAntFv();
-    CB(s32, 0xC) = CB(s32, 0xB004);
+    if (_CB.unkB064 == 2) systemFree__4CAntFv();
+    _CB.ruleType = _CB.unkB004;
     return next;
 }
 
@@ -906,12 +899,12 @@ extern "C" void menuColosseumBattleMain(void) {
     menuCB_FlashStart(1);
     while (1) {
         soundOpenPlay(0x568, 0, 0xFF);
-        if (CB(s32, 4) == 1) {
+        if (_CB.mode == 1) {
             menuGBACSetRomVer(0, 0xFFFF);
             _imasuguBattleMenuMain();
             return;
         }
-        CB(s8, 0xB4A1) = 0;
+        _CB.nameIndex = 0;
         while (menuCB_CurrentMenuID() > 0) {
             menuCB_CurrentMenuID();
             s32 next = menuCB_CurrentMenuID();
@@ -993,7 +986,7 @@ extern "C" void menuColosseumBattleExit(void) {
     fadeCheck(1);
     if (menuCBBios_ContextIsLocked() == 0) GSflagSet(0x30D, 0);
     toolentryDebugPokemonDelete();
-    if (CB(s32, 4) == 1) {
+    if (_CB.mode == 1) {
         if (fightReadResourceID(0x842, 0x184F3400) == 0) fightFreeResourceID(0x842, 0x184F3400);
     } else if (fightReadResourceID(0x842, 0x195F3400) == 0) {
         fightFreeResourceID(0x842, 0x195F3400);
@@ -1013,12 +1006,12 @@ extern "C" void menuColosseumBattleExit(void) {
 
 extern "C" void menuColosseumBattleInit(void) {
     if (toolBattleTempSaveData == 0) {
-        CB(s32, 0x9C80) = 0;
+        _CB.unk9C80 = 0;
         menuCBBios_CurrentlyWorkingToolBattleSet(1);
         GSflagSet(0x30D, 0);
-        if (GSflagGet(0x3C4) >= flag_etc->reliveOpenFlag) CB(s8, 0xB4A0) = 1;
-        else CB(s8, 0xB4A0) = 0;
-        if (CB(s32, 4) == 1) fightReadResourceID(0x842, 0x184F3400);
+        if (GSflagGet(0x3C4) >= flag_etc->reliveOpenFlag) _CB.reliveHallOpen = 1;
+        else _CB.reliveHallOpen = 0;
+        if (_CB.mode == 1) fightReadResourceID(0x842, 0x184F3400);
         else fightReadResourceID(0x842, 0x195F3400);
         GSfsysReadWait(0x88C);
         GSfsysReadWait(0x14);
@@ -1035,16 +1028,16 @@ extern "C" {
 void menuColosseumBattle(s32 p0) {
     s32 i;
     menuCBBios_UnlockContext();
-    M2C_FIELD(&_CB, s32 *, 4) = p0;
+    _CB.mode = p0;
     for (i = 0; i < 0x20; i++) {
-        ((s32*)&_CB)[i + 0xB054 / 4] = 0;
-        ((s32*)&_CB)[i + 0xAFD4 / 4] = 0;
+        (&_CB.unkB054)[i] = 0;
+        (&_CB.col)[i] = 0;
     }
     for (i = 0; i < 0x30; i++) {
-        ((s32*)&_CB)[i + 0xB0D4 / 4] = 0;
+        (&_CB.tempBuff)[i] = 0;
     }
     for (i = 0; i < 0x10; i++) {
-        ((s32*)&_CB)[i + 0xB194 / 4] = 0;
+        (&_CB.unkB194)[i] = 0;
     }
     _flashBackFlag = 1;
     GSfloorPush(0x395U);

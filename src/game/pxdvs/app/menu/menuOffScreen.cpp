@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
 #ifdef __MWERKS__
@@ -86,7 +87,7 @@ void menuOffScreenDraw(void) {
             }
         }
         if (_menuOffScreenDisp != 0 && _menuOffScreenEnable != 0) {
-            rate = _menuOffScreenCnt / _menuOffScreenTime * (_menuOffScreenEndRate - _menuOffScreenStartRate) +
+            rate = GC_FUSED(_menuOffScreenCnt / _menuOffScreenTime, (_menuOffScreenEndRate - _menuOffScreenStartRate)) +
                    _menuOffScreenStartRate;
             _menuOffScreenCurrRate = rate;
             alpha = 255.0f - 255.0f * rate / 100.0f;

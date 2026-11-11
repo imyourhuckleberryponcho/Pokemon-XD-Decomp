@@ -202,7 +202,11 @@ void menuModelSetAngle(MENU_MODEL*, f32*);
 void menuModelSetSize(MENU_MODEL*, s32, s32, s32, s32);
 void menuModelSetZoom(MENU_MODEL*, f32);
 void menuModelTerm(MENU_MODEL*);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 s32 menuPdaDPMListDispRelive(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s32, s32, u8, u8);
 s32 menuPdaDPMListGetDPNum(void);
 DarkPokemon* menuPdaDPMListGetDPointer(s32);
@@ -290,7 +294,7 @@ s32 menuPdaDPMCtrl(tagWINDOW_WORK* window) {
 }
 
 CURSOR* menuPdaDPMon(CURSOR* cursor) {
-    _pDPM = new menuPdaDPM(cursor);
+    _pDPM = (GC_NEW_NOTE(sizeof(menuPdaDPM), 436) new menuPdaDPM(cursor));
     _pDPM->Main(cursor);
     delete _pDPM;
     _pDPM = 0;

@@ -142,7 +142,7 @@ u8 fightKind_CheckFightKind(s32);
 s32 menuFightGetStatus(void);
 void menuFightSetSeq(void);
 void menuFightSetStatus(s32);
-u32 menuSeqBiosGetPtr(s32);
+GCuptr menuSeqBiosGetPtr(s32);
 void* windowAllocMemory(tagWINDOW_WORK*, s32);
 void menuFaceDispFromID(tagWINDOW_WORK*, tagSPRITE_WORK*, u16);
 void windowDrawSprite2(s32, s32, s32, s32, s32, tagWINDOW_WORK*, u16, s32, s32);
@@ -161,7 +161,7 @@ GSgfxLayer* GSgfxLayerFindByID(GCsptr);
 GSgfxVF* GSgfxVFBuildTemp(s32, s32, s32, s32, s32, s32, s32, s32, s32);
 GSgfxVF* GSgfxVFGetPredef(s32);
 f64 sin(f64);
-u32 windowSearchID(s32);
+GCuptr windowSearchID(s32);
 MenuFightStatusAnim* windowGetFreeWork(void*);
 MenuFightStatusState* windowGetAllocPtr(void*);
 
@@ -173,7 +173,7 @@ s32 menuFightStatusWaitAnimeEXP(s32 id, u8 wait) {
         if (window == 0) {
             return 0;
         }
-        if (windowGetFreeWork((void*)window)->expFrames == 0) {
+        if (windowGetFreeWork(PC_PTR(void*, window))->expFrames == 0) {
             return 0;
         }
         if (wait != 0) {
@@ -192,8 +192,8 @@ void menuFightStatusStartAnimEXP(s32 id, u32 exp) {
 
     window = windowSearchID(id);
     if (window != 0) {
-        state = windowGetAllocPtr((void*)window);
-        anim = windowGetFreeWork((void*)window);
+        state = windowGetAllocPtr(PC_PTR(void*, window));
+        anim = windowGetFreeWork(PC_PTR(void*, window));
         if (exp > state->exp) {
             diff = exp - state->exp;
         } else {
@@ -221,7 +221,7 @@ s32 menuFightStatusWaitAnimeHP(s32 id, u8 wait) {
         if (window == 0) {
             return 0;
         }
-        if (windowGetFreeWork((void*)window)->hpFrames == 0) {
+        if (windowGetFreeWork(PC_PTR(void*, window))->hpFrames == 0) {
             return 0;
         }
         if (wait != 0) {
@@ -240,8 +240,8 @@ void menuFightStatusStartAnimHP(s32 id, s16 hp) {
 
     window = windowSearchID(id);
     if (window != 0) {
-        state = windowGetAllocPtr((void*)window);
-        anim = windowGetFreeWork((void*)window);
+        state = windowGetAllocPtr(PC_PTR(void*, window));
+        anim = windowGetFreeWork(PC_PTR(void*, window));
         diff = state->hp - hp;
         if (diff < 0) {
             diff = -diff;
@@ -260,7 +260,7 @@ void menuFightStatusSetActive(void) {
 }
 
 void menuFightStatusSetHP(s32 id, s16 hp) {
-    u32 window = windowSearchID(id);
+    GCuptr window = windowSearchID(id);
     if (window != 0) {
         windowGetAllocPtr((void*)window)->hp = hp;
     }
@@ -285,7 +285,11 @@ void menuFightDrawParam(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     s32 bar;
     s32 hp;
     void* trainer;
+#ifdef __MWERKS__
     void* ary[6];
+#else
+    void* ary[8];
+#endif
     s32 count;
     u32 msg;
     GSgfxLayer* layer;

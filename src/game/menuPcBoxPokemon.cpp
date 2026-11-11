@@ -317,7 +317,11 @@ void GSresFreeGroup(u32);
 void GSthreadSwitch();
 void menuNameEntryCall(s32, s32);
 void menuPokemonStatusOpenFromPcBox(Pokemon*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr), GCsptr);
+#ifdef __MWERKS__
 void menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 s32 windowGetActiveID();
@@ -541,8 +545,13 @@ void CMenuPokemonLeave::init(CMenuGlobalState& st)
     boxIndex = menuPcBoxGetLastViewBox();
     boxTarget = 0;
     depositBox = 0;
+#ifdef __MWERKS__
     memset(boxAnt, 0, 0x30C0);
     memset(&temochiOffset, 0, 0x140);
+#else
+    memset(boxAnt, 0, sizeof(boxAnt));
+    memset(&temochiOffset, 0, (u8*)(temochiAnt + 6) - (u8*)&temochiOffset);
+#endif
     temochiOffset = 0x1E0;
     temochiFlag = 0;
     markMask = 0;
@@ -875,8 +884,17 @@ bool CMenuPokemonLeave::confirmWindow(u32 msg, s32 defaultSel)
     return sel == 0;
 }
 
+#ifndef __MWERKS__
+extern "C" { int (*menuPcBoxActionFilter)(u32 msg, int box, int place, Pokemon* under, Pokemon* held) = 0; }
+#endif
 void CMenuPokemonLeave::actionExecByMsgID(u32 msg)
 {
+#ifndef __MWERKS__
+    if (menuPcBoxActionFilter != 0 && msg != 0x3BCC &&
+        menuPcBoxActionFilter(msg, boxIndex, cursor->index, cursorUnderPokemonGetPointer(), cursor->getPokemonPtr()) != 0) {
+        msg = 0x3BCC;
+    }
+#endif
     switch (msg) {
     case 0x3BCF: {
         menuPtPlaySe(0x446);
@@ -1348,12 +1366,12 @@ bool CMenuPokemonLeave::cursorMoveDown(s32& idx)
         idx = 0;
     } else {
         if (idx >= 0x22) {
-            if ((a - 10) % 6 <= 2) {
+            if ((idx - 10) % 6 <= 2) {
                 idx = 1;
             } else {
                 idx = 2;
             }
-        } else if (10 <= idx) {
+        } else if (idx >= 10) {
             idx += 6;
         } else if (idx == 0) {
             idx = f37E0 + 10;
@@ -1819,11 +1837,12 @@ void CMenuPokemonLeave::resetViewAntAll()
     prev = (boxIndex + 7) % 8;
     next = (boxIndex + 1) % 8;
     for (b = 0; b < 8; b++) {
-        bool near = false;
+        bool near;
+        bool show = true;
+        near = false;
         if (prev == b || boxIndex == b) {
             near = true;
         }
-        bool show = true;
         if (!near && b != next) {
             show = false;
         }
@@ -2162,7 +2181,7 @@ bool CMenuPokemonLeave::pokemonPcBoxMarkGetIndex(Pokemon* p, int index)
 
 void thisNew()
 {
-    void* mem = GSmemAllocClr(sizeof(CMenuPokemonLeave));
+    void* mem = GSmemAllocClr(GC_SIZE(sizeof(CMenuPokemonLeave), 14496));
     pMenuPokemonLeave = new (mem) CMenuPokemonLeave;
 }
 
@@ -2224,3 +2243,31 @@ s32 menuPcBoxMarkingItemCallback(tagWINDOW_WORK* w, tagSPRITE_WORK* s)
 }
 
 }
+
+#ifndef __MWERKS__
+extern "C" int menuPcBoxPeekCursor(int* box, int* place, int* state, int* holding, int* quick, Pokemon** under)
+{
+    CMenuPokemonLeave* m = pMenuPokemonLeave;
+    if (m == 0 || m->cursor == 0) {
+        return 0;
+    }
+    if (box) *box = m->boxIndex;
+    if (place) *place = m->cursor->index;
+    if (state) *state = m->state.current;
+    if (holding) *holding = m->cursor->isCatchPokemon() ? 1 : 0;
+    if (quick) *quick = m->cursor->flag ? 1 : 0;
+    if (under) *under = m->cursorUnderPokemonGetPointer();
+    return 1;
+}
+
+extern "C" int menuPcBoxPeekMore(int* stateNext, Pokemon** held)
+{
+    CMenuPokemonLeave* m = pMenuPokemonLeave;
+    if (m == 0 || m->cursor == 0) {
+        return 0;
+    }
+    if (stateNext) *stateNext = m->state.next;
+    if (held) *held = m->cursor->getPokemonPtr();
+    return 1;
+}
+#endif

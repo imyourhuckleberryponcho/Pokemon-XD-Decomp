@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/menuCBWork.h>
 
 #pragma peephole off
 
@@ -7,46 +8,8 @@ struct Hero {
     u8 data[0x978];
 };
 
-struct BattleTrainer {
-    u16 trainerDataId;
-    u8 unk2[0x22];
-    s32 gsInput;
-    s32 slot;
-    u8 unk2C[0x131C - 0x2C];
-    u16 rank;
-    u8 unk131E[2];
-};
-
-struct BattleWork {
-    u8 unk0[4];
-    s32 mode;
-    s32 type;
-    u8 unkC[4];
-    s32 selection;
-    u8 unk14[4];
-    BattleTrainer trainers[4];
-    BattleTrainer saved[4];
-    u8 unk9918[0x9C7C - 0x9918];
-    u32 bgmCounter;
-    u8 unk9C80[0xAFD4 - 0x9C80];
-    s32 col;
-    s32 row;
-};
-
-struct BattleCB {
-    u8 unk0[4];
-    s32 mode;
-    u8 unk8[0xAFFC - 8];
-    s32 floorSelect;
-    u8 unkB000[0xB0E0 - 0xB000];
-    s32 controlerId;
-    u8 unkB0E4[0xB4A1 - 0xB0E4];
-    s8 nameIndex;
-    u16 name[8];
-};
-
 extern "C" {
-extern BattleCB _CB;
+extern _MENUCBWORK _CB;
 
 void GSflagOff(s32);
 s32 soundGetBGMID(void);
@@ -64,11 +27,11 @@ void fightEncountDataBiosSetSyoukaiWzxDataId(void*, u32);
 void fightEncountDataBiosSetFightType(void*, u32);
 void fightEncountDataBiosSetFightTrainerDataId(void*, s32, u16);
 void fightEncountDataBiosSetGSInputDevice(void*, s32, s32);
-void menuCBBios_InitTrainerFromDataID(BattleTrainer*, u16, s32);
-void menuCBBios_InitTrainerFromHero(BattleTrainer*, Hero*, u16);
-void menuCBBios_CopyTrainer(BattleTrainer*, BattleTrainer*);
-void menuCBTrainerBios_SetControlerID(BattleTrainer*, s32);
-void menuCBTrainerBios_SetHomePlace(BattleTrainer*, s32);
+void menuCBBios_InitTrainerFromDataID(MenuCBTrainer*, u16, s32);
+void menuCBBios_InitTrainerFromHero(MenuCBTrainer*, Hero*, u16);
+void menuCBBios_CopyTrainer(MenuCBTrainer*, MenuCBTrainer*);
+void menuCBTrainerBios_SetControlerID(MenuCBTrainer*, s32);
+void menuCBTrainerBios_SetHomePlace(MenuCBTrainer*, s32);
 s32 menuCBBios_PortIDtoControlerID(s32);
 void fightTrainerCreateFightTrainerDataIdToHero(u16, s32, Hero*, s32);
 void heroBiosSetNamePtr(Hero*, u16*);
@@ -98,13 +61,13 @@ static const u16 staColosseum_imasugu[6] = {0x24, 0x26, 0x25, 0x3C, 0x3D, 0x3E};
 
 extern "C" {
 
-PCRET(u16) menuCB_Battle(BattleWork* work) {
+PCRET(u16) menuCB_Battle(_MENUCBWORK* work) {
     s32 id;
     u16 result;
     if (_CB.mode == 1) {
-        id = VS_TRAINER_RANK_ENCOUNT_DATA[work->trainers[1].rank];
+        id = VS_TRAINER_RANK_ENCOUNT_DATA[work->trainer[1].rank];
     } else {
-        switch (work->type) {
+        switch (work->state) {
         case 0:
             id = 5;
             break;
@@ -126,7 +89,7 @@ PCRET(u16) menuCB_Battle(BattleWork* work) {
     return result;
 }
 
-s32 menuCB_InitBattle(BattleWork* work) {
+s32 menuCB_InitBattle(_MENUCBWORK* work) {
     void* encounter;
     s32 encId = 0;
     u16 count;
@@ -141,24 +104,24 @@ s32 menuCB_InitBattle(BattleWork* work) {
         baseA = VS_TRAINER_RANK_SELECT_TBL[work->row][work->col][1];
         baseB = VS_TRAINER_RANK_SELECT_TBL[work->row][work->col][2];
         if (work->col == 0) {
-            work->trainers[0].rank = baseA + (u16)HSD_Rand() % count;
-            work->trainers[1].rank = baseB + (u16)HSD_Rand() % count;
+            work->trainer[0].rank = baseA + (u16)HSD_Rand() % count;
+            work->trainer[1].rank = baseB + (u16)HSD_Rand() % count;
         } else {
             u16 b = baseB;
-            work->trainers[0].rank = baseA + (u16)HSD_Rand() % count;
+            work->trainer[0].rank = baseA + (u16)HSD_Rand() % count;
             do {
-                work->trainers[1].rank = b + (u16)HSD_Rand() % count;
-            } while (work->trainers[0].rank == work->trainers[1].rank);
+                work->trainer[1].rank = b + (u16)HSD_Rand() % count;
+            } while (work->trainer[0].rank == work->trainer[1].rank);
             if ((u16)HSD_Rand() & 0x80) {
-                work->trainers[0].rank += 5;
-                work->trainers[1].rank += 5;
+                work->trainer[0].rank += 5;
+                work->trainer[1].rank += 5;
             }
         }
     }
     if (_CB.mode == 1) {
-        encId = VS_TRAINER_RANK_ENCOUNT_DATA[work->trainers[1].rank];
+        encId = VS_TRAINER_RANK_ENCOUNT_DATA[work->trainer[1].rank];
     } else {
-        switch (work->type) {
+        switch (work->state) {
         case 0:
             encId = 5;
             break;
@@ -210,7 +173,7 @@ s32 menuCB_InitBattle(BattleWork* work) {
     }
     switch (work->mode) {
     case 0:
-        switch (work->type) {
+        switch (work->state) {
         case 1:
             fightEncountDataBiosSetFightType(encounter, 0x18);
             break;
@@ -230,16 +193,16 @@ s32 menuCB_InitBattle(BattleWork* work) {
     }
     switch (work->mode) {
     case 1: {
-        u16 rankB = work->trainers[1].rank;
-        u16 rankA = work->trainers[0].rank;
+        u16 rankB = work->trainer[1].rank;
+        u16 rankA = work->trainer[0].rank;
         u32 idA = VS_TRAINER_RANK_NUMBER[rankA];
         u32 idB = VS_TRAINER_RANK_NUMBER[rankB];
-        menuCBBios_InitTrainerFromDataID(&work->trainers[1], idB, encId);
-        work->trainers[1].trainerDataId = idB;
-        work->trainers[1].rank = rankB;
-        menuCBTrainerBios_SetControlerID(&work->trainers[1], _CB.controlerId);
-        _menuCBBattle_DeleteAllItem((Hero*)((u8*)work + 0x1364));
-        _menuCBBattle_DeleteAllItem((Hero*)((u8*)work + 0x1CDC));
+        menuCBBios_InitTrainerFromDataID(&work->trainer[1], idB, encId);
+        work->trainer[1].dataId = idB;
+        work->trainer[1].rank = rankB;
+        menuCBTrainerBios_SetControlerID(&work->trainer[1], _CB.controlerId);
+        _menuCBBattle_DeleteAllItem((Hero*)work->trainer[1].entryHero);
+        _menuCBBattle_DeleteAllItem((Hero*)work->trainer[1].hero);
         if (_CB.nameIndex == -1) {
             static const u16 staDefaultNameID[3] = {0x3B20, 0x3B21, 0x3B22};
             u16* src;
@@ -260,49 +223,49 @@ s32 menuCB_InitBattle(BattleWork* work) {
         }
         _menuCBBattle_DeleteAllItem(&hero);
         {
-            u16 rank = work->trainers[0].rank;
-            menuCBBios_InitTrainerFromHero(&work->trainers[0], &hero, 0x1388);
-            work->trainers[0].rank = rank;
+            u16 rank = work->trainer[0].rank;
+            menuCBBios_InitTrainerFromHero(&work->trainer[0], &hero, 0x1388);
+            work->trainer[0].rank = rank;
         }
         if (_CB.controlerId != 0) {
-            work->trainers[0].trainerDataId = idA;
+            work->trainer[0].dataId = idA;
         }
-        menuCBTrainerBios_SetControlerID(&work->trainers[0], menuCBBios_PortIDtoControlerID(0));
-        menuCBTrainerBios_SetHomePlace(&work->trainers[0], 0);
+        menuCBTrainerBios_SetControlerID(&work->trainer[0], menuCBBios_PortIDtoControlerID(0));
+        menuCBTrainerBios_SetHomePlace(&work->trainer[0], 0);
         break;
     }
     case 0:
-        switch (work->type) {
+        switch (work->state) {
         case 0:
         case 1:
-            work->saved[0].slot = 0;
-            work->saved[1].slot = 1;
-            work->saved[2].slot = 2;
-            work->saved[3].slot = 3;
-            menuCBBios_CopyTrainer(&work->trainers[0], &work->saved[0]);
-            menuCBBios_CopyTrainer(&work->trainers[1], &work->saved[1]);
+            work->trainerOrg[0].versusId = 0;
+            work->trainerOrg[1].versusId = 1;
+            work->trainerOrg[2].versusId = 2;
+            work->trainerOrg[3].versusId = 3;
+            menuCBBios_CopyTrainer(&work->trainer[0], &work->trainerOrg[0]);
+            menuCBBios_CopyTrainer(&work->trainer[1], &work->trainerOrg[1]);
             break;
         case 2:
-            menuCBBios_CopyTrainer(&work->trainers[0], &work->saved[work->saved[0].slot]);
-            menuCBBios_CopyTrainer(&work->trainers[1], &work->saved[work->saved[1].slot]);
-            menuCBBios_CopyTrainer(&work->trainers[2], &work->saved[work->saved[2].slot]);
-            menuCBBios_CopyTrainer(&work->trainers[3], &work->saved[work->saved[3].slot]);
+            menuCBBios_CopyTrainer(&work->trainer[0], &work->trainerOrg[work->trainerOrg[0].versusId]);
+            menuCBBios_CopyTrainer(&work->trainer[1], &work->trainerOrg[work->trainerOrg[1].versusId]);
+            menuCBBios_CopyTrainer(&work->trainer[2], &work->trainerOrg[work->trainerOrg[2].versusId]);
+            menuCBBios_CopyTrainer(&work->trainer[3], &work->trainerOrg[work->trainerOrg[3].versusId]);
             break;
         }
         break;
     }
-    switch (work->type) {
+    switch (work->state) {
     case 2:
-        fightEncountDataBiosSetFightTrainerDataId(encounter, 2, work->trainers[2].trainerDataId);
-        fightEncountDataBiosSetFightTrainerDataId(encounter, 3, work->trainers[3].trainerDataId);
-        fightEncountDataBiosSetGSInputDevice(encounter, 2, work->trainers[2].gsInput);
-        fightEncountDataBiosSetGSInputDevice(encounter, 3, work->trainers[3].gsInput);
+        fightEncountDataBiosSetFightTrainerDataId(encounter, 2, work->trainer[2].dataId);
+        fightEncountDataBiosSetFightTrainerDataId(encounter, 3, work->trainer[3].dataId);
+        fightEncountDataBiosSetGSInputDevice(encounter, 2, work->trainer[2].controllerId);
+        fightEncountDataBiosSetGSInputDevice(encounter, 3, work->trainer[3].controllerId);
     case 0:
     case 1:
-        fightEncountDataBiosSetFightTrainerDataId(encounter, 0, work->trainers[0].trainerDataId);
-        fightEncountDataBiosSetFightTrainerDataId(encounter, 1, work->trainers[1].trainerDataId);
-        fightEncountDataBiosSetGSInputDevice(encounter, 0, work->trainers[0].gsInput);
-        fightEncountDataBiosSetGSInputDevice(encounter, 1, work->trainers[1].gsInput);
+        fightEncountDataBiosSetFightTrainerDataId(encounter, 0, work->trainer[0].dataId);
+        fightEncountDataBiosSetFightTrainerDataId(encounter, 1, work->trainer[1].dataId);
+        fightEncountDataBiosSetGSInputDevice(encounter, 0, work->trainer[0].controllerId);
+        fightEncountDataBiosSetGSInputDevice(encounter, 1, work->trainer[1].controllerId);
         break;
     }
     return 0;

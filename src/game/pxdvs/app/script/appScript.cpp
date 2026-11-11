@@ -435,7 +435,7 @@ static void _appScriptModelSetVisibility(_GSmodel* model, void* visible);
 
 AppScript* scriptCreateAppScript()
 {
-    return new AppScript;
+    return (GC_NEW_NOTE(sizeof(AppScript), 2496) new AppScript);
 }
 
 AppScript::AppScript()

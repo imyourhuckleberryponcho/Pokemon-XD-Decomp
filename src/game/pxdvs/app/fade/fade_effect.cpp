@@ -1,6 +1,7 @@
 #pragma pool_strings off
 #pragma peephole off
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
 #include <dolphin/gx/GXStruct.h>
@@ -667,16 +668,16 @@ static bool _fadeEffectFunction_UDLR_Main(GSgfxLayer* layer, bool pending, f32 e
         break;
     }
     v.z = 0.0f;
-    f32 t = (f32)_fadeEffectWork.frame / (45.0f * (1.0f - progress) + 1.0f);
+    f32 t = (f32)_fadeEffectWork.frame / (GC_FUSED(45.0f, (1.0f - progress)) + 1.0f);
     _fadeEffectSnapshotFadeFunction(layer, tex, &v, 1.0f, t, progress, 0.4f);
     switch (_fadeEffectWork.unk0C) {
     case 1:
     case 2:
-        v.x = 1.5f * _fadeEffectWork.value + 320.0f;
+        v.x = GC_FUSED(1.5f, _fadeEffectWork.value) + 320.0f;
         break;
     case 4:
     case 8:
-        v.y = 1.5f * _fadeEffectWork.value + 240.0f;
+        v.y = GC_FUSED(1.5f, _fadeEffectWork.value) + 240.0f;
         break;
     }
     f32 multiplier = -1.5f;
@@ -3136,8 +3137,9 @@ static void _fadeDistortionDo(u32 amount) {
                         sy = fadeRandInline(4) == 0 ? 1.0f : -1.0f;
                     }
                 }
-                p[0] = invX * (f32)x + sx * (f32)fadeRandInline(amount) / 1000.0f;
-                p[1] = fy + sy * (f32)fadeRandInline(amount) / 1000.0f;
+                int range = amount;
+                p[0] = invX * (f32)x + sx * (f32)fadeRandInline(range) / 1000.0f;
+                p[1] = fy + sy * (f32)fadeRandInline(range) / 1000.0f;
                 tex += 2;
                 p += 2;
             }
@@ -3421,7 +3423,7 @@ static void _fadeDistortionDoSecond(u32 amount, bool flag) {
                     }
                 }
                 range = amount;
-                p[0] = invX * (f32)x + sx * (f32)fadeRandInline(range) / 1000.0f;
+                p[0] = GC_FUSED(invX, (f32)x) + sx * (f32)fadeRandInline(range) / 1000.0f;
                 p[1] = fy + sy * (f32)fadeRandInline(range) / 1000.0f;
                 tex += 2;
                 p += 2;
@@ -3585,10 +3587,10 @@ static bool fadeEffectHookFunction_distortion_zoom(GSgfxLayerID id, bool pending
             dy = -dy;
         }
         c.y = c.y + dy;
-        f32 scale = 1.0f - 0.4f * hh;
+        f32 scale = 1.0f - GC_FUSED(0.4f, hh);
         f32 turn = _fadeEffectWork.unk0C != 0 ? 4.0f : -4.0f;
         if (hprogress < 0.99999f) {
-            _fadeEffectSnapshotFadeFunction(layer, t, &c, scale, turn, progress, 0.4f * hprogress + 0.6f);
+            _fadeEffectSnapshotFadeFunction(layer, t, &c, scale, turn, progress, GC_FUSED(0.4f, hprogress) + 0.6f);
         }
         if (progress > 0.00001f) {
             c.x = 320.0f;
@@ -3604,7 +3606,7 @@ static bool fadeEffectHookFunction_distortion_zoom(GSgfxLayerID id, bool pending
             dy = -dy;
         }
         c.y = c.y + dy;
-        f32 scale = 1.0f + 0.4f * hh;
+        f32 scale = 1.0f + GC_FUSED(0.4f, hh);
         f32 turn = _fadeEffectWork.unk0C != 0 ? 3.0f : -3.0f;
         if (hprogress < 0.99999f) {
             GSvec sc;
@@ -3651,8 +3653,9 @@ static void _fadeDistortionDoAverage(u32 amount) {
                 f32 sy;
                 sx = fadeRandInline(2) == 0 ? 1.0f : -1.0f;
                 sy = fadeRandInline(2) == 0 ? 1.0f : -1.0f;
-                p[0] = invX * (f32)x + sx * (f32)fadeRandInline(amount) / 1000.0f;
-                p[1] = fy + sy * (f32)fadeRandInline(amount) / 1000.0f;
+                int range = amount;
+                p[0] = invX * (f32)x + sx * (f32)fadeRandInline(range) / 1000.0f;
+                p[1] = fy + sy * (f32)fadeRandInline(range) / 1000.0f;
                 tex += 2;
                 p += 2;
             }
@@ -3830,8 +3833,9 @@ static bool fadeEffectHookFunction_distortion_yoko(GSgfxLayerID id, bool pending
         c.y = 240.0f + _fadeEffectWork.value;
         break;
     }
+    f32 dir = _fadeEffectWork.unk0E != 0 ? 3.0f : -3.0f;
     c.z = 0.0f;
-    _fadeEffectSnapshotFadeFunction(layer, t, &c, 1.0f, (_fadeEffectWork.unk0E != 0 ? 3.0f : -3.0f) * ((1.0f - progress) * (1.0f - hprogress)), progress, 0.5f);
+    _fadeEffectSnapshotFadeFunction(layer, t, &c, 1.0f, dir * ((1.0f - progress) * (1.0f - hprogress)), progress, 0.5f);
     return pending;
 }
 
@@ -4580,7 +4584,7 @@ static void _fadeDistortionStripDoTate() {
                 }
             }
             int s = fadeRandInline(2) != 0 ? -1 : 1;
-            t[0] = (f32)p[0] / width + 0.5f / width * (f32)s;
+            t[0] = (f32)p[0] / width + GC_FUSED(0.5f / width, (f32)s);
             t[1] = (f32)p[1] / height;
             p += 2;
             pos += 2;
@@ -4807,7 +4811,7 @@ static void _fadeDistortionStripDoYoko() {
             }
             t[0] = (f32)p[0] / width;
             int s = fadeRandInline(2) != 0 ? -1 : 1;
-            t[1] = (f32)p[1] / height + 0.5f / height * (f32)s;
+            t[1] = (f32)p[1] / height + GC_FUSED(0.5f / height, (f32)s);
             p += 2;
             pos += 2;
             t += 2;
@@ -4987,9 +4991,9 @@ static void _fadeVirtualHexaDecayInit() {
         f32 ofs = side == 0 ? 0.0f : 17.320507f;
         for (i = 0; i < 19; i++) {
             HexaLine* e = &_fadeHexaLine[side][i];
-            e->x = 4.4f * HSD_Randf() + 0.1f;
+            e->x = GC_FUSED(4.4f, HSD_Randf()) + 0.1f;
             e->count = 2;
-            e->pts[0][0] = 34.641014f * (f32)i + ofs;
+            e->pts[0][0] = GC_FUSED(34.641014f, (f32)i) + ofs;
             e->pts[0][1] = (f32)base;
             e->pts[1][0] = e->pts[0][0];
             e->pts[1][1] = e->pts[0][1];
@@ -5059,18 +5063,18 @@ static void _fadeVirtualHexaDecayLineUpdate() {
                 f32* next = e->pts[e->count - 1];
                 switch (e->dir) {
                 case 0:
-                    next[1] = (f32)sgn * fl + prev[1];
+                    next[1] = GC_FUSED((f32)sgn, fl) + prev[1];
                     break;
                 case 1: {
                     f32 kc717 = 0.8660254f;
-                    next[0] = fl * kc717 + prev[0];
-                    next[1] = fl * side2 + prev[1];
+                    next[0] = GC_FUSED(fl, kc717) + prev[0];
+                    next[1] = GC_FUSED(fl, side2) + prev[1];
                     break;
                 }
                 case 2: {
                     f32 scale = 0.8660254f;
-                    next[0] = prev[0] - fl * scale;
-                    next[1] = fl * side2 + prev[1];
+                    next[0] = prev[0] - GC_FUSED(fl, scale);
+                    next[1] = GC_FUSED(fl, side2) + prev[1];
                     break;
                 }
                 }
@@ -5085,18 +5089,18 @@ static void _fadeVirtualHexaDecayLineUpdate() {
                 switch (e->dir) {
                 case 0:
                     next[0] = prev[0];
-                    next[1] = (f32)sgn * fl + prev[1];
+                    next[1] = GC_FUSED((f32)sgn, fl) + prev[1];
                     break;
                 case 1: {
                     f32 scale = 0.8660254f;
-                    next[0] = fl * scale + prev[0];
-                    next[1] = fl * side2 + prev[1];
+                    next[0] = GC_FUSED(fl, scale) + prev[0];
+                    next[1] = GC_FUSED(fl, side2) + prev[1];
                     break;
                 }
                 case 2: {
                     f32 scale = 0.8660254f;
-                    next[0] = prev[0] - fl * scale;
-                    next[1] = fl * side2 + prev[1];
+                    next[0] = prev[0] - GC_FUSED(fl, scale);
+                    next[1] = GC_FUSED(fl, side2) + prev[1];
                     break;
                 }
                 }

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
@@ -176,7 +177,11 @@ u8 menuFaceCheckLoading(void);
 s32 menuFaceGetID(void*);
 void menuFaceDispFromID3(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s16*, s16*);
 void menuOpen(s32, s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 MenuItem* menuItemBiosGetPtr(s32, PCARG(s16, u32));
@@ -208,11 +213,11 @@ void fightTrainerCreateFightTrainerDataIdToHero(u16, s32, void*, u16);
 u16 fightEncount(u16);
 u32 fightTrainerDB_GetName(u16);
 void* heroBiosGetPokemonPtr(void*, u16);
-u32 heroBiosGetNamePtr(void*);
+GCuptr heroBiosGetNamePtr(void*);
 void* savedataGetStatus(s32, s32);
 void pokemonInit(void*);
 void pokemonBiosCopy(void*, void*);
-u32 pokemonBiosGetNicknamePtr(void*);
+GCuptr pokemonBiosGetNicknamePtr(void*);
 u8 pokemonBiosGetLevel(void*);
 u16 pokemonGetSoubiItemDataId(void*);
 }
@@ -296,7 +301,7 @@ void menuOrre::Ctrl(tagWINDOW_WORK* window) {
         }
         break;
     }
-    m_timer = (s32)(60.0f * timeGetLastFrameSec() + (f32)m_timer) % 1000;
+    m_timer = (s32)(GC_FUSED(60.0f, timeGetLastFrameSec()) + (f32)m_timer) % 1000;
 }
 
 s32 menuOrre::SelectPokemon(u16 unused, bool selected) {
@@ -862,7 +867,7 @@ extern "C" {
 
 void menuOrreInit(void) {
     if (!GSfloorIsPop()) {
-        pOrre = new menuOrre();
+        pOrre = (GC_NEW_NOTE(sizeof(menuOrre), 80) new menuOrre());
         if (pOrre != 0) {
             pOrre->Init();
         }

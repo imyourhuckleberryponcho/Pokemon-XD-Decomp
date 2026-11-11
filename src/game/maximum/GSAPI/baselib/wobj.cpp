@@ -348,7 +348,7 @@ static void WObjAmnesia(HSD_ClassInfo* info) {
 
 static void WObjInfoInit(void) {
     hsdInitClassInfo(HSD_CLASS_INFO(&hsdWObj), HSD_CLASS_INFO(&hsdObj), "sysdolphin_base_library", "had_wobj",
-                     sizeof(HSD_WObjInfo), sizeof(HSD_WObj));
+                     sizeof(HSD_WObjInfo), GC_CLASS_SIZE(sizeof(HSD_WObj), 32));
     HSD_CLASS_INFO(&hsdWObj)->release = WObjRelease;
     HSD_CLASS_INFO(&hsdWObj)->amnesia = WObjAmnesia;
     HSD_WOBJ_INFO(&hsdWObj)->load = WObjLoad;

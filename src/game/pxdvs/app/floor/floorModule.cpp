@@ -1,6 +1,8 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/tigadata.h>
 #include <game/pxdvs/app/floor/floorData.h>
+#include "game/gcdata.h"
 #pragma peephole off
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
@@ -355,6 +357,7 @@ void* FloorModuleList::makePushState(FloorStateMode mode) {
     u8* p;
     u8* data;
     u32 total;
+    void* state;
     FloorModuleEntry* entry;
 
     dumpModule();
@@ -368,15 +371,15 @@ void* FloorModuleList::makePushState(FloorStateMode mode) {
             }
         }
     }
-    void* state = GSmemAlloc(total + 8);
-    if (state == 0) {
+    u32* hdr = (u32*)GSmemAlloc(total + 8);
+    state = hdr;
+    if (hdr == 0) {
         return 0;
     }
     pushSize = total + 8;
-    u32* hdr = (u32*)state;
-    *hdr++ = 0x464C4F52;
-    *hdr++ = total + 8;
-    p = (u8*)hdr;
+    hdr[0] = 0x464C4F52;
+    hdr[1] = total + 8;
+    p = (u8*)(hdr + 2);
     for (entry = head; entry != 0; entry = entry->getNext()) {
         iface = entry->getModuleInterface();
         if (iface != 0 && iface->getPushSize != 0) {
@@ -484,7 +487,7 @@ void FloorModuleList::unblockModule(u32 p0) {
 
     temp_r3 = (u32)(this->findHandle(p0));
     if (temp_r3 != 0) {
-        ((FloorModuleEntry*)((FloorModuleEntry *) temp_r3))->unblock();
+        ((FloorModuleEntry*)(PC_PTR(FloorModuleEntry *, temp_r3)))->unblock();
     }
 }
 }
@@ -495,7 +498,7 @@ void FloorModuleList::blockModule(u32 p0) {
 
     temp_r3 = (u32)(this->findHandle(p0));
     if (temp_r3 != 0) {
-        ((FloorModuleEntry*)((FloorModuleEntry *) temp_r3))->block();
+        ((FloorModuleEntry*)(PC_PTR(FloorModuleEntry *, temp_r3)))->block();
     }
 }
 }
@@ -506,9 +509,9 @@ void FloorModuleList::unregisterModule(u32 p0) {
 
     temp_r3 = (u32)(this->findHandle(p0));
     if (temp_r3 != 0) {
-        ((FloorModuleEntry*)((FloorModuleEntry *) temp_r3))->terminate();
-        this->removeFuncFromList((FloorModuleEntry*)((FloorModuleEntry *) temp_r3));
-        ((FloorModuleEntry*)((FloorModuleEntry *) temp_r3))->init();
+        ((FloorModuleEntry*)(PC_PTR(FloorModuleEntry *, temp_r3)))->terminate();
+        this->removeFuncFromList((FloorModuleEntry*)(PC_PTR(FloorModuleEntry *, temp_r3)));
+        ((FloorModuleEntry*)(PC_PTR(FloorModuleEntry *, temp_r3)))->init();
     }
 }
 }
@@ -551,11 +554,11 @@ void FloorModuleList::removeFuncFromList(FloorModuleEntry* p0) {
 
     if (((FloorModuleEntry*)(p0))->getPrev() != 0) {
         temp_r31 = (u32)(((FloorModuleEntry*)(p0))->getPrev());
-        ((FloorModuleEntry*)((FloorModuleEntry *) temp_r31))->setNext((FloorModuleEntry*)(((FloorModuleEntry*)(p0))->getNext()));
+        ((FloorModuleEntry*)(PC_PTR(FloorModuleEntry *, temp_r31)))->setNext((FloorModuleEntry*)(((FloorModuleEntry*)(p0))->getNext()));
     }
     if (((FloorModuleEntry*)(p0))->getNext() != 0) {
         temp_r31_2 = (u32)(((FloorModuleEntry*)(p0))->getNext());
-        ((FloorModuleEntry*)((FloorModuleEntry *) temp_r31_2))->setPrev((FloorModuleEntry*)(((FloorModuleEntry*)(p0))->getPrev()));
+        ((FloorModuleEntry*)(PC_PTR(FloorModuleEntry *, temp_r31_2)))->setPrev((FloorModuleEntry*)(((FloorModuleEntry*)(p0))->getPrev()));
     }
     if (head == p0) {
         head = ((FloorModuleEntry*)(p0))->getNext();
@@ -1269,7 +1272,7 @@ extern "C++" {
 FloorModuleList::FloorModuleList(u32 p0) {
     count = p0;
     head = 0;
-    entries = new FloorModuleEntry[p0];
+    entries = (GC_NEW_NOTE(sizeof(FloorModuleEntry) * (p0), 72 * (p0) + 16) new FloorModuleEntry[p0]);
     if (entries == 0) {
         return;
     }
@@ -1538,7 +1541,7 @@ void ScriptTpcNode::setID(u32 newID) {
 
 #pragma defer_codegen on
 #ifndef __MWERKS__
-inline
+PC_KEEP_INLINE inline
 #endif
 void GSscript::tigaVariant::setInteger(s32 value) {
     type = 1;

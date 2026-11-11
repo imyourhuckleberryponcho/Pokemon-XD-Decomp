@@ -1,4 +1,5 @@
 #include <game/declspec.h>
+#include "game/gc_fused.h"
 #include <dolphin/types.h>
 #include <game/gcdata.h>
 
@@ -387,16 +388,16 @@ void floorUpdateFieldCamera() {
                 } else {
                     f32 t = g_BlendingTime / g_BlendingMaxTime;
                     if (gPowValue < -0.00001f) {
-                        gCameraHeight = t * (height - gCameraInitHeight) + gCameraInitHeight;
-                        gCameraDistance = t * (distance - gCameraInitDistance) + gCameraInitDistance;
-                        gCameraRotY = t * (rotY - gCameraInitRotY) + gCameraInitRotY;
-                        gCameraFOV = t * (fov - gCameraInitFOV) + gCameraInitFOV;
+                        gCameraHeight = GC_FUSED(t, (height - gCameraInitHeight)) + gCameraInitHeight;
+                        gCameraDistance = GC_FUSED(t, (distance - gCameraInitDistance)) + gCameraInitDistance;
+                        gCameraRotY = GC_FUSED(t, (rotY - gCameraInitRotY)) + gCameraInitRotY;
+                        gCameraFOV = GC_FUSED(t, (fov - gCameraInitFOV)) + gCameraInitFOV;
                     } else if (gPowValue < 0.19999f) {
                         t = t * t;
-                        gCameraHeight += t * (height - gCameraHeight);
-                        gCameraDistance += t * (distance - gCameraDistance);
-                        gCameraRotY += t * (rotY - gCameraRotY);
-                        gCameraFOV += t * (fov - gCameraFOV);
+                        gCameraHeight += GC_FUSED(t, (height - gCameraHeight));
+                        gCameraDistance += GC_FUSED(t, (distance - gCameraDistance));
+                        gCameraRotY += GC_FUSED(t, (rotY - gCameraRotY));
+                        gCameraFOV += GC_FUSED(t, (fov - gCameraFOV));
                     } else {
                         u8 flip = 0;
                         f32 kc2246 = 2.0f;
@@ -412,10 +413,10 @@ void floorUpdateFieldCamera() {
                             e = 2.0f - e;
                         }
                         e *= 0.5f;
-                        gCameraHeight = e * (height - gCameraInitHeight) + gCameraInitHeight;
-                        gCameraDistance = e * (distance - gCameraInitDistance) + gCameraInitDistance;
-                        gCameraRotY = e * (rotY - gCameraInitRotY) + gCameraInitRotY;
-                        gCameraFOV = e * (fov - gCameraInitFOV) + gCameraInitFOV;
+                        gCameraHeight = GC_FUSED(e, (height - gCameraInitHeight)) + gCameraInitHeight;
+                        gCameraDistance = GC_FUSED(e, (distance - gCameraInitDistance)) + gCameraInitDistance;
+                        gCameraRotY = GC_FUSED(e, (rotY - gCameraInitRotY)) + gCameraInitRotY;
+                        gCameraFOV = GC_FUSED(e, (fov - gCameraInitFOV)) + gCameraInitFOV;
                     }
                 }
             } else {
@@ -552,10 +553,10 @@ static u8 _floorFieldCameraCalculateBlendParams(GSvec* target, f32* outHeight, f
         if (sq > 1.0f) {
             f32 w = 0.001f / sq;
             weightSum += w;
-            distance += cam->distance * w;
-            height += cam->height * w;
-            rotY += cam->rotY * w;
-            fov += cam->fov * w;
+            distance += GC_FUSED(cam->distance, w);
+            height += GC_FUSED(cam->height, w);
+            rotY += GC_FUSED(cam->rotY, w);
+            fov += GC_FUSED(cam->fov, w);
         } else {
             weightSum = 1.0f;
             height = cam->height;
@@ -726,7 +727,7 @@ inline void GSBinWriteStream::writeU16(u16 n) {
     }
 }
 inline GSBinWriteSizeStream::~GSBinWriteSizeStream() {}
-inline GSBinWriteStream::~GSBinWriteStream() {
+PC_KEEP_INLINE inline GSBinWriteStream::~GSBinWriteStream() {
     if (allocation) {
         GSmemFree(allocation);
     }
@@ -794,8 +795,8 @@ inline f32 GSvec2Length(const GSvec2* v) { return std::sqrtf(v->x * v->x + v->z 
 inline void GSvec2Rot(GSvec2* r, const GSvec2* v, f32 angle) {
     f32 c = std::cosf(angle);
     f32 s = std::sinf(angle);
-    f32 rx = v->x * c + v->z * s;
-    f32 rz = -v->x * s + v->z * c;
+    f32 rx = GC_FUSED(v->x, c) + v->z * s;
+    f32 rz = GC_FUSED(-v->x, s) + v->z * c;
     r->x = rx;
     r->z = rz;
 }
@@ -819,9 +820,9 @@ static
 inline float sqrtf(float x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
         return (float)(x * guess);
     } else if (x < 0.0) {
         return __float_nan[0];

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
@@ -158,7 +159,11 @@ PCRET(u16) menuPokemonGetJoutaiSpriteID(Pokemon*, u8);
 s32 menuPokemonStatusOpenFieldMenu(Pokemon*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr), GCsptr);
 s32 menuPokemonStatusOpenFightMenu(FIGHT_TRAINER*, Pokemon*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr), GCsptr);
 void menuCloseCustom(s32, s32, s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, s32, void*, s32, bool, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 s32 menuSubOpenSelect2(u8, s32*, s32, s32, s32, s32, s32, u8);
 u8 menuOffScreenSetPriority(u8);
 void pokemonToMenuWazaStatus(Pokemon*, void*);
@@ -171,9 +176,9 @@ void menuPokemonClose(void);
 static MenuPokemonWork _menuPokemon;
 static MENU_POKEMON_STATUS_TBL _menuPokemonStatusAll[6];
 
-extern "C" const u16 spriteTbl[14];
+extern "C" GC_CONST u16 spriteTbl[14];
 extern "C" {
-const u16 spriteTbl[14] = {3, 0x83, 4, 0x83, 5, 0x80, 6, 0x81, 7, 0x82, 8, 0x85, 0, 0};
+GC_CONST u16 spriteTbl[14] = {3, 0x83, 4, 0x83, 5, 0x80, 6, 0x81, 7, 0x82, 8, 0x85, 0, 0};
 }
 
 static PanelInfo menu_info[2][6] = {
@@ -832,7 +837,7 @@ s32 menuPokemonCtrl(tagWINDOW_WORK* w) {
         winSeqSetMenu(w->menuID, 7);
         w->seqSet = 1;
     }
-    _menuPokemonTimer = (s32)(60.0f * timeGetLastFrameSec() + (f32)_menuPokemonTimer) % 1000;
+    _menuPokemonTimer = (s32)(GC_FUSED(60.0f, timeGetLastFrameSec()) + (f32)_menuPokemonTimer) % 1000;
     return 0;
 }
 }

@@ -203,25 +203,28 @@ _HSD_SceneDesc* floorRegisterCamera(u32 group, u32 id) {
 }
 
 _HSD_SceneDesc* floorRegisterLight(u32 group, u32 id) {
+    s32 off;
+    _HSD_SceneDesc* desc;
     s32 i = 0;
-    void* res = GSresGetResource(group, id);
+    void* res;
+    res = GSresGetResource(group, id);
     if (res == 0) {
         return 0;
     }
-    _HSD_SceneDesc* desc = (_HSD_SceneDesc*)HSD_ArchiveGetPublicAddress(res, "scene_data");
+    desc = (_HSD_SceneDesc*)HSD_ArchiveGetPublicAddress(res, "scene_data");
     if (desc == 0) {
         return 0;
     }
     if (desc->lights != 0) {
         u32 base = floorReadMakeLightResID(id);
-        s32 off = 0;
+        off = 0;
         while (GC_AT(void*, desc->lights, off) != 0) {
             void* l = GSlightLoad(GC_AT(void*, desc->lights, off));
             if (l != 0) {
                 GSresRegisterResource(l, group, base | i, _unloadLight);
             }
-            i++;
             off += 4;
+            i++;
         }
     }
     return desc;
@@ -342,6 +345,8 @@ void* floorReadNotLinkedParticlePreFunc(u32 group, u32 id, u32 size) {
 
 void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
     s32 off;
+    void* res;
+    void* p;
     s32 i = 0;
     void* dc_ataBiosGetCurrentPtr = floorDataBiosGetCurrentPtr();
     FloorData* fd = (FloorData*)dc_ataBiosGetCurrentPtr;
@@ -350,8 +355,6 @@ void* floorReadParticlePostFunc(u32 group, u32 id, u32 size) {
         return 0;
     }
     GSresUnlockResource(group, id);
-    void* p;
-    void* res;
     res = GSresGetResource(group, floorReadMakeObjResID(id));
     p = GSparticleLoad(res);
     if (p != 0) {
@@ -464,7 +467,7 @@ _HSD_SceneDesc* floorReadCameraPostFunc(u32 group, u32 id, u32 size) {
 }
 
 void* floorReadCameraPreFunc(u32 group, u32 id, u32 size) {
-    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, 0x20, group, floorReadMakeObjResID(id), 0);
+    void* res = GSresAllocResourceAlign(GC_SIZE(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, ((size + 0x1F) & ~0x1F) + 0x60), 0x20, group, floorReadMakeObjResID(id), 0);
     if (res == 0) {
         return 0;
     }
@@ -493,7 +496,7 @@ _HSD_SceneDesc* floorReadObjPostFunc(u32 group, u32 id, u32 size) {
 }
 
 void* floorReadObjPreFunc(u32 group, u32 id, u32 size) {
-    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, 0x20, group, id, _unloadObject);
+    void* res = GSresAllocResourceAlign(GC_SIZE(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, ((size + 0x1F) & ~0x1F) + 0x60), 0x20, group, id, _unloadObject);
     if (res == 0) {
         return 0;
     }
@@ -502,15 +505,18 @@ void* floorReadObjPreFunc(u32 group, u32 id, u32 size) {
 }
 
 _HSD_SceneDesc* floorReadMapPostFunc(u32 group, u32 id, u32 size) {
-    s32 j = 0;
-    s32 off;
+    u32 lightId;
     s32 i = 0;
-    _HSD_SceneDesc* desc = _makeArchiveHeader(group, id, size);
+    s32 off;
+    _HSD_SceneDesc* desc;
+    s32 j = 0;
+    u32 base;
+    desc = _makeArchiveHeader(group, id, size);
     if (desc == 0) {
         return 0;
     }
     if (desc->models != 0) {
-        u32 base = floorReadMakeModelResID(id);
+        base = floorReadMakeModelResID(id);
         off = 0;
         while (GC_AT(void*, desc->models, off) != 0) {
             GSresRegisterResource(GC_AT(void*, desc->models, off), group, base | i, 0);
@@ -519,8 +525,9 @@ _HSD_SceneDesc* floorReadMapPostFunc(u32 group, u32 id, u32 size) {
         }
     }
     if (desc->lights != 0) {
-        u32 base = floorReadMakeLightResID(id);
-        s32 off = 0;
+        lightId = floorReadMakeLightResID(id);
+        base = lightId;
+        off = 0;
         while (GC_AT(void*, desc->lights, off) != 0) {
             void* l = GSlightLoad(GC_AT(void*, desc->lights, off));
             if (l != 0) {
@@ -542,7 +549,7 @@ _HSD_SceneDesc* floorReadMapPostFunc(u32 group, u32 id, u32 size) {
 }
 
 void* floorReadMapPreFunc(u32 group, u32 id, u32 size) {
-    void* res = GSresAllocResourceAlign(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, 0x20, group, id, 0);
+    void* res = GSresAllocResourceAlign(GC_SIZE(((size + 0x1F) & ~0x1F) + ARCHIVE_BUF_HEADER, ((size + 0x1F) & ~0x1F) + 0x60), 0x20, group, id, 0);
     if (res == 0) {
         return 0;
     }

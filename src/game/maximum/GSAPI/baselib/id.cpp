@@ -1,6 +1,7 @@
 
 
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 #ifndef __MWERKS__
 #include <string.h>
 #endif
@@ -36,7 +37,7 @@ static HSD_IDTable default_table;
 
 HSD_ObjAllocData* HSD_IDGetAllocData(void) { return &alloc_data; }
 
-void HSD_IDInitAllocData(void) { HSD_ObjAllocInit(&alloc_data, sizeof(IDEntry), 4); }
+void HSD_IDInitAllocData(void) { HSD_ObjAllocInit(&alloc_data, GC_SIZE(sizeof(IDEntry), 12), 4); }
 
 void HSD_IDSetup(void) { memset(&default_table, 0, sizeof(HSD_IDTable)); }
 

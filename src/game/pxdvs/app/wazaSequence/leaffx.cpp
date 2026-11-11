@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/gsmodellayout.h>
 #include <game/gcptr.h>
@@ -276,7 +277,7 @@ bool leafEffect::_start() {
     if (model == NULL) {
         return 0;
     }
-    data = (leafData*)GSmemAllocClr(THIS_F(u32 *, 0x4C, unk4C) * sizeof(leafData));
+    data = (leafData*)GSmemAllocClr(GC_SIZE(THIS_F(u32 *, 0x4C, unk4C) * sizeof(leafData), THIS_F(u32 *, 0x4C, unk4C) * 92));
     temp_r0 = (ModelBank*)data;
     if (temp_r0 == NULL) {
         return 0;
@@ -346,8 +347,9 @@ void leafEffect::UpdateLeafData(leafData* leaf) {
     leaf->t -= 1.0f;
     leaf->q0 = leaf->q1;
     {
+        f32 phi;
         f32 theta = 6.2831855f * HSD_Randf();
-        f32 phi = 3.1415927f * HSD_Randf();
+        phi = 3.1415927f * HSD_Randf();
         f32 sinPhi = sin(phi);
         f32 sinTheta = sin(theta);
         f32 cosPhi = cos(phi);
@@ -363,20 +365,26 @@ void leafEffect::UpdateLeafData(leafData* leaf) {
     leaf->p2 = leaf->p3;
     PSVECSubtract(v, &leaf->p1, v);
     PSVECNormalize(v, v);
-    f32 len = params[5] * (2.0f * HSD_Randf() - 1.0f) + params[4];
+    f32 len = GC_FUSED(params[5], (2.0f * HSD_Randf() - 1.0f)) + params[4];
     len *= leaf->scale;
     PSVECScale(v, v, -len);
     PSVECAdd(v, &leaf->p0, v);
 
     v = &leaf->p1;
     {
-        f32 theta = 6.2831855f * HSD_Randf();
-        f32 phi = 3.1415927f * HSD_Randf();
-        f32 sinPhi = sin(phi);
-        f32 len = params[3] * (2.0f * HSD_Randf() - 1.0f) + params[2];
+        f32 sinPhi;
+        f32 sinTheta;
+        f32 phi;
+        f32 cosPhi;
+        f32 len;
+        f32 theta;
+        theta = 6.2831855f * HSD_Randf();
+        phi = 3.1415927f * HSD_Randf();
+        sinPhi = sin(phi);
+        len = GC_FUSED(params[3], (2.0f * HSD_Randf() - 1.0f)) + params[2];
         len *= leaf->scale;
-        f32 sinTheta = sin(theta);
-        f32 cosPhi = cos(phi);
+        sinTheta = sin(theta);
+        cosPhi = cos(phi);
         v->x = sinPhi * (f32)cos(theta);
         v->y = cosPhi;
         v->z = sinPhi * sinTheta;
@@ -387,13 +395,19 @@ void leafEffect::UpdateLeafData(leafData* leaf) {
 
     v = &leaf->p3;
     {
-        f32 theta = 6.2831855f * HSD_Randf();
-        f32 phi = 3.1415927f * HSD_Randf();
-        f32 sinPhi = sin(phi);
-        f32 len = params[5] * (2.0f * HSD_Randf() - 1.0f) + params[4];
+        f32 theta;
+        f32 sinPhi;
+        f32 sinTheta;
+        f32 phi;
+        f32 len;
+        f32 cosPhi;
+        theta = 6.2831855f * HSD_Randf();
+        phi = 3.1415927f * HSD_Randf();
+        sinPhi = sin(phi);
+        len = GC_FUSED(params[5], (2.0f * HSD_Randf() - 1.0f)) + params[4];
         len *= leaf->scale;
-        f32 sinTheta = sin(theta);
-        f32 cosPhi = cos(phi);
+        sinTheta = sin(theta);
+        cosPhi = cos(phi);
         v->x = sinPhi * (f32)cos(theta);
         v->y = cosPhi;
         v->z = sinPhi * sinTheta;
@@ -419,13 +433,14 @@ s32 leafEffect::GenerateLeafData(leafData* leaf) {
         return 0;
     }
     GSmodelSetVisibility(clone, 1U);
-    leaf->scale = params[1] * (2.0f * HSD_Randf() - 1.0f) + params[0];
+    leaf->scale = GC_FUSED(params[1], (2.0f * HSD_Randf() - 1.0f)) + params[0];
     leaf->scale = leaf->scale * unk14;
     leaf->t = 0.0f;
 
     {
+        f32 phi;
         f32 theta = 6.2831855f * HSD_Randf();
-        f32 phi = 3.1415927f * HSD_Randf();
+        phi = 3.1415927f * HSD_Randf();
         f32 sinPhi = sin(phi);
         f32 sinTheta = sin(theta);
         f32 cosPhi = cos(phi);
@@ -437,12 +452,18 @@ s32 leafEffect::GenerateLeafData(leafData* leaf) {
     }
 
     {
-        f32 theta = 6.2831855f * HSD_Randf();
-        f32 phi = 3.1415927f * HSD_Randf();
-        f32 sinPhi = sin(phi);
-        f32 sinTheta = sin(theta);
-        f32 cosPhi = cos(phi);
-        f32 cosTheta = cos(theta);
+        f32 sinPhi;
+        f32 sinTheta;
+        f32 phi;
+        f32 cosTheta;
+        f32 cosPhi;
+        f32 theta;
+        theta = 6.2831855f * HSD_Randf();
+        phi = 3.1415927f * HSD_Randf();
+        sinPhi = sin(phi);
+        sinTheta = sin(theta);
+        cosPhi = cos(phi);
+        cosTheta = cos(theta);
         axisB.y = cosPhi;
         axisB.x = sinPhi * cosTheta;
         axisB.z = sinPhi * sinTheta;
@@ -453,14 +474,20 @@ s32 leafEffect::GenerateLeafData(leafData* leaf) {
     leaf->p0.x = unk54;
     leaf->p0.y = unk58;
     leaf->p0.z = unk5C;
-    f32 len = params[5] * (2.0f * HSD_Randf() - 1.0f) + params[4];
-    len *= leaf->scale;
     {
-        f32 theta = 6.2831855f * HSD_Randf();
-        f32 phi = 3.1415927f * HSD_Randf();
-        f32 sinPhi = sin(phi);
-        f32 sinTheta = sin(theta);
-        f32 cosPhi = cos(phi);
+        f32 sinPhi;
+        f32 sinTheta;
+        f32 phi;
+        f32 len;
+        f32 cosPhi;
+        f32 theta;
+        len = GC_FUSED(params[5], (2.0f * HSD_Randf() - 1.0f)) + params[4];
+        len *= leaf->scale;
+        theta = 6.2831855f * HSD_Randf();
+        phi = 3.1415927f * HSD_Randf();
+        sinPhi = sin(phi);
+        sinTheta = sin(theta);
+        cosPhi = cos(phi);
         v->x = sinPhi * (f32)cos(theta);
         v->y = cosPhi;
         v->z = sinPhi * sinTheta;
@@ -470,12 +497,20 @@ s32 leafEffect::GenerateLeafData(leafData* leaf) {
 
     v = &leaf->p1;
     {
-        f32 theta = 6.2831855f * HSD_Randf();
-        f32 phi = 1.5707964f * HSD_Randf();
-        f32 sinPhi = sin(phi);
-        f32 len = (params[9] * (2.0f * HSD_Randf() - 1.0f) + params[8]) * (params[3] * (2.0f * HSD_Randf() - 1.0f) + params[2]) * leaf->scale;
-        f32 sinTheta = sin(theta);
-        f32 cosPhi = cos(phi);
+        f32 theta;
+        f32 sinPhi;
+        f32 sinTheta;
+        f32 cosPhi;
+        f32 phi;
+        f32 len;
+        theta = 6.2831855f * HSD_Randf();
+        phi = 1.5707964f * HSD_Randf();
+        sinPhi = sin(phi);
+        len = GC_FUSED(params[3], (2.0f * HSD_Randf() - 1.0f)) + params[2];
+        len *= GC_FUSED(params[9], (2.0f * HSD_Randf() - 1.0f)) + params[8];
+        len *= leaf->scale;
+        sinTheta = sin(theta);
+        cosPhi = cos(phi);
         v->x = sinPhi * (f32)cos(theta);
         v->y = cosPhi;
         v->z = sinPhi * sinTheta;
@@ -485,13 +520,19 @@ s32 leafEffect::GenerateLeafData(leafData* leaf) {
 
     v = &leaf->p3;
     {
-        f32 theta = 6.2831855f * HSD_Randf();
-        f32 phi = 3.1415927f * HSD_Randf();
-        f32 sinPhi = sin(phi);
-        f32 len = params[5] * (2.0f * HSD_Randf() - 1.0f) + params[4];
+        f32 theta;
+        f32 sinPhi;
+        f32 sinTheta;
+        f32 cosPhi;
+        f32 phi;
+        f32 len;
+        theta = 6.2831855f * HSD_Randf();
+        phi = 3.1415927f * HSD_Randf();
+        sinPhi = sin(phi);
+        len = GC_FUSED(params[5], (2.0f * HSD_Randf() - 1.0f)) + params[4];
         len *= leaf->scale;
-        f32 sinTheta = sin(theta);
-        f32 cosPhi = cos(phi);
+        sinTheta = sin(theta);
+        cosPhi = cos(phi);
         v->x = sinPhi * (f32)cos(theta);
         v->y = cosPhi;
         v->z = sinPhi * sinTheta;

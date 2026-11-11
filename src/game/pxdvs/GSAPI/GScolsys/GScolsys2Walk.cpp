@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/bitfield.h>
 
@@ -81,7 +82,7 @@ static inline f32 colEdgeSide(f32 ez, f32 ex, f32 z, f32 x, f32 pz, f32 px)
 {
     ez -= z;
     ex -= x;
-    return ex * (pz - z) - ez * (px - x);
+    return GC_FUSED(ex, (pz - z)) - ez * (px - x);
 }
 
 static inline bool addHit(GSwalkHit* list, s32 count, GSvec* cp, CCD_TRI* tri) {
@@ -255,8 +256,8 @@ static bool getCpPolyVec(GSvec* out, GSvec* point, GSvec* vertices, GSvec* plane
     if (0.0f == plane->y) {
         return false;
     }
-    height = -(plane->x * (point->x - vertices[0].x) + plane->y * (point->y - vertices[0].y) +
-               plane->z * (point->z - vertices[0].z)) /
+    height = -(GC_FUSED(plane->x, (point->x - vertices[0].x)) + plane->y * (point->y - vertices[0].y) +
+               GC_FUSED(plane->z, (point->z - vertices[0].z))) /
              plane->y;
     out->x = point->x;
     out->y = point->y + height;

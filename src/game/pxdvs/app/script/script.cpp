@@ -3,6 +3,7 @@
 #include <game/pcret.h>
 #include <game/statusval.h>
 #include <game/pxdvs/app/floor/floorData.h>
+#include "game/gcdata.h"
 #ifndef __MWERKS__
 #define getHeroPtr__4HeroFv(...) ((Hero*)Hero::getHeroPtr(__VA_ARGS__))
 #define getFollowerID__4HeroFv(o, ...) ((s32)((Hero*)(o))->getFollowerID(__VA_ARGS__))
@@ -1560,7 +1561,7 @@ s32 scriptPokemonTeachWazaIndex(s32 waza)
 void scriptGlowStart(f32 scale, u8 r, u8 g, u8 b, u8 additive, u8 mode)
 {
     if (m_glow == 0) {
-        m_glow = new glowEffect();
+        m_glow = (GC_NEW_NOTE(sizeof(glowEffect), 24) new glowEffect());
     }
     m_glow->scale = scale;
     m_glow->r = r;

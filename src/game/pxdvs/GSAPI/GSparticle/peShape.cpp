@@ -247,7 +247,9 @@ void PSVECNormalize(const register Vec* src, register Vec* unit);
 void PSVECScale(const register Vec* src, register Vec* dst, register f32 scale);
 f32 PSVECSquareMag(const register Vec* v);
 asm void PSVECSubtract(const register Vec* a, const register Vec* b, register Vec* a_b);
+#ifdef __MWERKS__
 double atan2(double y, double x);
+#endif
 s32 particleEngineSetDefaultRenderState(s32);
 s32 particleEngineSetupBlendMode(s32);
 enum GStexFilter { GS_TEXFILTER_NEAR = 0, GS_TEXFILTER_LINEAR = 2 };
@@ -351,12 +353,12 @@ static inline void lightSetPos(GSgfxLight* light, const Vec& p) {
     switch (l->type) {
     case 0:
         return;
-    case 1:
+    case 2:
         l->pos.x = v.x;
         l->pos.y = v.y;
         l->pos.z = v.z;
         break;
-    case 2:
+    case 1:
         l->pos.x = v.x;
         l->pos.y = v.y;
         l->pos.z = v.z;
@@ -552,7 +554,7 @@ void peShapeContainer::Render() {
                 }
                 Vec dir;
                 Vec pos;
-                PSMTXMultVec((MtxPtr)(g_CameraMatrix), (Vec*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C), &pos);
+                PSMTXMultVec((MtxPtr)(g_CameraMatrix), GC_VEC3P(Vec, (gc_vec(Vec)*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C)), &pos);
                 lightSetPos(light0, pos);
                 g_current_layer->cunitChannelGen(0, (GSgfxCunitAlpha)0, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 1, &light0, (GSgfxLightType)2, (GSgfxDiffuseFunc)2);
                 if (temp_r31 & 0x400) {
@@ -611,13 +613,13 @@ void peShapeContainer::Render() {
                         layerMark(l, 4, 0x16BC, 1);
                     }
                     g_current_layer->cunitChannelGen(1, (GSgfxCunitAlpha)0, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 1, &light1, (GSgfxLightType)0, (GSgfxDiffuseFunc)2);
-                    Vec* src = (Vec*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C);
+                    Vec* src = GC_VEC3P(Vec, (gc_vec(Vec)*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C));
                     if (PSVECSquareMag(src) < 0.00001f) {
                         dir.x = 0.0f;
                         dir.y = -1.0f;
                         dir.z = 0.0f;
                     } else {
-                        Vec* p = (Vec*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C);
+                        Vec* p = GC_VEC3P(Vec, (gc_vec(Vec)*)((u8*)THIS_F(_peShape **, 0x20, shape) + 0x5C));
                         dir = peShapeLightVec(-p->x, -p->y, -p->z);
                         PSVECNormalize(&dir, &dir);
                     }
@@ -1456,7 +1458,7 @@ peShapeContainer::~peShapeContainer() {
 extern "C++" {
 #ifndef __MWERKS__
 static u32 peShapeNodeSizePC();
-#define PE_SHAPE_NODE_SIZE peShapeNodeSizePC()
+#define PE_SHAPE_NODE_SIZE (pe_gc_node_size = 0x9C, peShapeNodeSizePC())
 #else
 #define PE_SHAPE_NODE_SIZE 0x9C
 #endif

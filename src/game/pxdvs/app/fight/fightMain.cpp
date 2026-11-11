@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/ppcops.h>
 
 class FightEncountData;
@@ -37,9 +38,9 @@ u8 fightFloor_GetFightTypeTrainerNum(FIGHT_FLOOR* floor);
 u8 fightFloor_GetFightTypeFightoutPokemonNum(FIGHT_FLOOR* floor);
 FIGHT_SIDE* fightFloorGetValidFightSidePtr(FIGHT_FLOOR* floor, u16 sideId);
 FIGHT_TRAINER* fightSideGetValidFightTrainerPtr(FIGHT_SIDE* side, u16 idx);
-u32 fightTrainer_GetSequencePtr(FIGHT_TRAINER* t);
+GCuptr fightTrainer_GetSequencePtr(FIGHT_TRAINER* t);
 FightOutPokemon* fightTrainerGetValidFightOutPokemonPtr(FIGHT_TRAINER* trainer, u16 index);
-u32 fightOutPokemon_GetSequencePtr(FightOutPokemon* fop);
+GCuptr fightOutPokemon_GetSequencePtr(FightOutPokemon* fop);
 void Sequence_SetVisibility(u32 seq, s32 visible);
 void battleGridStoreModelVisibilityFlags(void);
 void battleGridUpdate(void);
@@ -203,13 +204,13 @@ void fightMainSetAllDispFlag(s32 visible) {
             for (trainer = 0; trainer < trainerNum; trainer++) {
                 t = fightSideGetValidFightTrainerPtr(s, trainer);
                 if (t != 0) {
-                    u32 seq = fightTrainer_GetSequencePtr(t);
+                    GCuptr seq = fightTrainer_GetSequencePtr(t);
                     if (seq != 0) {
                         Sequence_SetVisibility(seq, visible);
                         for (poke = 0; poke < pokeNum; poke++) {
                             FightOutPokemon* p = fightTrainerGetValidFightOutPokemonPtr(t, poke);
                             if (p != 0) {
-                                u32 pseq = fightOutPokemon_GetSequencePtr(p);
+                                GCuptr pseq = fightOutPokemon_GetSequencePtr(p);
                                 if (pseq != 0) {
                                     Sequence_SetVisibility(pseq, visible);
                                 }

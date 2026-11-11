@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/ppcops.h>
 #include <game/gcptr.h>
 
@@ -51,9 +52,9 @@ static inline f32 byteCodeSqrt(f32 x)
 {
     if (x > 0.0f) {
         f64 guess = __frsqrte(x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (GC_MSUBR(3.0, guess * guess, x));
+        guess = 0.5 * guess * (GC_MSUBR(3.0, guess * guess, x));
+        guess = 0.5 * guess * (GC_MSUBR(3.0, guess * guess, x));
         return x * guess;
     } else if (x < 0.0) {
         return *(f32*)__float_nan;

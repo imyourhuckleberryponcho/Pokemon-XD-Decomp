@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/statusval.h>
@@ -94,7 +96,7 @@ extern "C" {
 void C_MTXLookAt(void* m, f32* pos, void* target, void* up);
 void GSboundGetMinMax(GSbound* bound, void* min, void* max, s32, s32, s32, s32);
 void GSboundGetSize(GSbound* bound, void* out, s32, s32);
-u32 GScameraCreate();
+GCuptr GScameraCreate();
 void GScameraFree(u32 c);
 void GScameraGetPerspective(u32 c, f32* fov, f32* aspect, f32* n, f32* f);
 void GScameraLookAt(u32 c, void* target, void* up);
@@ -131,7 +133,7 @@ void GSpartFree(GSpart* p);
 void GSpartGetTransform(GSpart* p, void* out, s32, s32);
 void GSthreadClose(void* t);
 void* GSthreadCreate(s32, s32, s32, s32, s32, s32 (*fn)(void*));
-u32 GSthreadGetCurrentThread();
+GCuptr GSthreadGetCurrentThread();
 u8 GSthreadIsRunning(void* t);
 void GSthreadSetArgs(void* t, s32 n, ...);
 void GSthreadSwitch();
@@ -144,17 +146,17 @@ f32 PSVECDistance(f32* a, f32* b);
 void PSVECSubtract(f32* a, f32* b, f32* c);
 void Sequence_DoAnimation(u32 s, PCARG(u8, int) anim);
 void Sequence_Free(u32 s);
-u32 Sequence_GetGSmodel(u32 s);
+GCuptr Sequence_GetGSmodel(u32 s);
 s32 Sequence_GetModelSize(u32 s);
-u32 Sequence_LoadPokemon(u16 form, s32 rnd, u8 shadow);
-u32 Sequence_LoadWaza(u32 seq, u16 waza, u8 kind, s32 b);
+GCuptr Sequence_LoadPokemon(u16 form, s32 rnd, u8 shadow);
+GCuptr Sequence_LoadWaza(u32 seq, u16 waza, u8 kind, s32 b);
 void Sequence_SetCamera(u32 s, u32 cam);
 void Sequence_SetVisibility(u32 s, s32 v);
 void WazaSequence_Free(u32 w);
 u8 WazaSequence_IsActive(u32 w);
 void WazaSequence_Start(u32 w, s32 a);
 void WazaSequence_Stop(u32 w);
-u32 floorOpenObject(s32 id);
+GCuptr floorOpenObject(s32 id);
 void* memcpy(void*, const void*, u32);
 void* memset(void*, int, u32);
 void memoGetScaleAngle(u16 id, f32* scale, void* angle);

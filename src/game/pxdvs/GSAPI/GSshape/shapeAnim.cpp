@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 
 struct tagGScol4ub {
     u8 r, g, b, a;
@@ -439,7 +440,7 @@ tagGScol4ub GsKeyObject::GetTextureColorLow(const tagGsFilePrimKeyFrame* a, cons
                 v[i] = 255.0f;
             }
         } else {
-            v[i] = it * (f32)av[i] + t * (f32)bv[i];
+            v[i] = GC_FUSED(it, (f32)av[i]) + t * (f32)bv[i];
         }
     }
     col.r = (u8)v[0];
@@ -472,7 +473,7 @@ tagGScol4ub GsKeyObject::GetTextureColor(const tagGsFilePrimKeyFrame* a, const t
                 v[i] = 255.0f;
             }
         } else {
-            v[i] = it * (f32)av[i] + t * (f32)bv[i];
+            v[i] = GC_FUSED(it, (f32)av[i]) + t * (f32)bv[i];
         }
     }
     col.r = (u8)v[0];
@@ -493,7 +494,7 @@ GsVec2 GsKeyObject::GetTextureOffset(const tagGsFilePrimKeyFrame* a, const tagGs
         if (a->nTexOffset[idx][i] != 0) {
             v[i] = header->rangeTexOffset * bezier(a->cTexOffset[idx][i], a->nTexOffset[idx][i], t);
         } else {
-            v[i] = it * av[i] + t * bv[i];
+            v[i] = GC_FUSED(it, av[i]) + t * bv[i];
         }
     }
     return r;
@@ -510,7 +511,7 @@ GsVec2 GsKeyObject::GetTextureScale(const tagGsFilePrimKeyFrame* a, const tagGsF
         if (a->nTexScale[idx][i] != 0) {
             v[i] = header->rangeTexScale * bezier(a->cTexScale[idx][i], a->nTexScale[idx][i], t);
         } else {
-            v[i] = it * av[i] + t * bv[i];
+            v[i] = GC_FUSED(it, av[i]) + t * bv[i];
         }
     }
     return r;
@@ -524,7 +525,7 @@ bool GsKeyObject::GetShapeShowAngle(f32* o0, f32* o1, const tagGsFilePrimKeyFram
         if (a->nShowAngle[i] != 0) {
             *dst[i] = header->rangeShowAngle * bezier(a->cShowAngle[i], a->nShowAngle[i], t);
         } else {
-            *dst[i] = a->showAngle[i] * it + b->showAngle[i] * t;
+            *dst[i] = GC_FUSED(a->showAngle[i], it) + b->showAngle[i] * t;
         }
     }
     return true;
@@ -541,7 +542,7 @@ bool GsKeyObject::GetShapeRadius(f32* o0, f32* o1, const tagGsFilePrimKeyFrame* 
                 *dst[i] = 0.0f;
             }
         } else {
-            *dst[i] = a->radius[i] * it + b->radius[i] * t;
+            *dst[i] = GC_FUSED(a->radius[i], it) + b->radius[i] * t;
         }
     }
     return true;
@@ -578,7 +579,7 @@ tagGScol4ub GsKeyObject::GetShapeColor(const tagGsFilePrimKeyFrame* a, const tag
                 v[i] = 255.0f;
             }
         } else {
-            v[i] = it * (f32)av[i] + t * (f32)bv[i];
+            v[i] = GC_FUSED(it, (f32)av[i]) + t * (f32)bv[i];
         }
     }
     col.r = (u8)v[0];

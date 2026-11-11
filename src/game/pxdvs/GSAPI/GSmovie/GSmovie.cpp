@@ -244,11 +244,31 @@ static inline __GSmovieStreaming* _movieGetStream(u32 id) {
     return 0;
 }
 
+static inline __GSmovieStreaming* _movieSearchStream(u32 id) {
+    u32 i;
+    for (i = 0; i < _maxStreaming; i++) {
+        if (_movieStreaming[i].state != 0 && id == _movieStreaming[i].id) {
+            return &_movieStreaming[i];
+        }
+    }
+    return 0;
+}
+
 static inline __GSmovieStreaming* _movieFindActive(u32 id) {
     if (_initFlag == 0) {
         return 0;
     }
     return _movieGetStream(id);
+}
+
+static inline bool _movieIsActive(u32 id) {
+    if (_initFlag == 0) {
+        return false;
+    }
+    if (_movieSearchStream(id) == 0) {
+        return false;
+    }
+    return true;
 }
 
 static inline void _movieFreeStream(__GSmovieStreaming* s) {
@@ -269,7 +289,7 @@ static inline __GSmovieStreaming* _movieGetNewStream() {
     for (i = 0; i < _maxStreaming; i++) {
         s = &_movieStreaming[i];
         if (s->state == 0) {
-            s->player = (THPPlayer*)GSmemAllocAlignFromEnd(sizeof(THPPlayer), 0x20);
+            s->player = (THPPlayer*)GSmemAllocAlignFromEnd(GC_SIZE(sizeof(THPPlayer), 33408), 0x20);
             if (s->player == 0) {
                 s = 0;
             } else {
@@ -364,7 +384,7 @@ extern "C" {
 
 static inline bool _movieStreamingInit(void) {
     _maxStreaming = 4;
-    _movieStreaming = (__GSmovieStreaming*)GSmemAllocAlignFromEnd(_maxStreaming * sizeof(__GSmovieStreaming), 0x20);
+    _movieStreaming = (__GSmovieStreaming*)GSmemAllocAlignFromEnd(GC_SIZE(_maxStreaming * sizeof(__GSmovieStreaming), _maxStreaming * 32), 0x20);
     if (_movieStreaming == 0) {
         return false;
     }
@@ -542,7 +562,7 @@ extern "C" void GSmovieStop(u32 id) {
 
 static inline void _moviePauseSet(u32 id, u8 v) {
     if (_initFlag != 0) {
-        __GSmovieStreaming* t = _movieGetStream(id);
+        __GSmovieStreaming* t = _movieSearchStream(id);
         if (t != 0) {
             t->player->paused = v;
         }
@@ -607,23 +627,13 @@ static void _movieRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
 static inline THPPlayer * movieStreamPlayer(__GSmovieStreaming * p) { return p->player; }
 
 static void _movieBeforeRender(f32 dt) {
-    u32 id;
     __GSmovieStreaming* s;
     u8 any = 0;
     u32 i;
     for (i = 0; i < _maxStreaming; i++) {
         s = &_movieStreaming[i];
         if (s->state != 0) {
-            bool found;
-            id = s->id;
-            if (_initFlag == 0) {
-                found = false;
-            } else if (_movieGetStream(id) == 0) {
-                found = false;
-            } else {
-                found = true;
-            }
-            if (found) {
+            if (_movieIsActive(s->id)) {
                 any = 1;
                 switch (s->player->state) {
                 case 4:

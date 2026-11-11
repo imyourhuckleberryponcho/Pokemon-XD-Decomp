@@ -108,6 +108,11 @@ public:
     void dispPkmPanel(u32 n, tagWINDOW_WORK* w, tagSPRITE_WORK* sp);
     bool isChgBingoLine(s32 n);
     int getF12e() const { return f12e; }
+    int gridAt(s32 n) {
+        int g = -1;
+        if (panel[n].state != 0) g = ((bingo_bios*)this)->getGridGrid(sheet, panel[n].idx);
+        return g;
+    }
     bool lineDone(int line);
     bool noPanelFlagged();
     u32 countLines();
@@ -376,7 +381,11 @@ struct KeyInfoB {
 extern "C" u32* bingo_data_number;
 
 extern "C" {
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 KeyInfoB* windowGetKeyInfo(void);
 void menuCloseSync(s32 menuID, s32 wait);
 u8 menuOffScreenSetPriority(u8 val);
@@ -584,7 +593,7 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         if (id != 0) {
             sp->msgID = 0xDB3A;
             msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0xDB45));
-            msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName((u32*)pokemonTokuseiDataBiosGetPtr(id))));
+            msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(PC_PTR(u32*, pokemonTokuseiDataBiosGetPtr(id)))));
             GSmsgPrint2(winSpriteGetLayerID(w, sp), 0x5A, 0, w->alpha | 0xFFFFFF00, 0x4277);
         }
         break;
@@ -646,7 +655,7 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             u32 id = pokemonDB_GetTokuseiDataId(pokemon_GetPokemonDataId(q), tok);
             if (id != 0) {
                 msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0xDB45));
-                msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName((u32*)pokemonTokuseiDataBiosGetPtr(id))));
+                msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(PC_PTR(u32*, pokemonTokuseiDataBiosGetPtr(id)))));
                 sp->msgID = 0xDB3A;
                 GSmsgPrint2(winSpriteGetLayerID(w, sp), 0x5A, 0, w->alpha | 0xFFFFFF00, 0x4277);
             }
@@ -743,14 +752,9 @@ s32 menuBingoMessageDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             break;
         }
         case 0xDAEA: {
-            BingoPanel* panels = gBingo.panel;
-            if (panels[gBingo.f134].state == 0) break;
+            if (gBingo.panel[gBingo.f134].state == 0) break;
             nick = -1;
-            int g = nick;
-            if (panels[gBingo.f134].state != 0) {
-                g = BIOS->getGridGrid(gBingo.sheet, panels[gBingo.f134].idx);
-            }
-            switch (g) {
+            switch (gBingo.gridAt(gBingo.f134)) {
             case 1:
                 nick = 0xDAED;
                 break;
@@ -2027,7 +2031,11 @@ void menuBingoMain(void) {
             menuOpen(0xC7, 0);
             menuOpen(0xC9, 0);
             menuOpen(0xCA, 0);
+#ifdef __MWERKS__
             menuOpenCustom(0xC8, 0, (GCsptr)pos, 0, 0, 0);
+#else
+            menuOpenCustom(0xC8, 0, pos, 0, 0, 0);
+#endif
             winSeqSetMenu(0xC7, 0x1A5);
             winSeqSetMenu(0xC9, 0x1A9);
             winSeqSetMenu(0xC8, 0x1AD);

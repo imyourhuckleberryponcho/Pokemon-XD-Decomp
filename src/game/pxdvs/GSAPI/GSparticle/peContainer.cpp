@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pecontainer.h>
+#include <game/gcdata.h>
 
 extern "C" {
 void* memset(void*, int, u32);
@@ -57,9 +58,12 @@ struct ParticleDebugStats {
     u32 pad18[3];
 };
 extern "C" ParticleDebugStats g_particle_debug_stats;
+#ifndef __MWERKS__
+extern "C" u32 pe_gc_node_size = 0;
+#endif
 
 struct peEmitParamsC {
-    u32 flags;
+    gc_be32 flags;
 };
 struct peEmitterNode {
     u8 pad0[0x20];
@@ -132,7 +136,11 @@ peContainer::peContainer(peEmitterNode* e, u32 nodeSize, u16 max) {
     if (hasPos) {
         total += max * 0x28;
     }
-    buffer = GSmemAllocClr(total);
+#ifndef __MWERKS__
+    u32 gcNode = pe_gc_node_size ? pe_gc_node_size : nodeSize;
+    pe_gc_node_size = 0;
+#endif
+    buffer = GSmemAllocClr(GC_SIZE(total, max * gcNode + (hasPos ? max * 0x28 : 0)));
     if (!buffer) {
         return;
     }

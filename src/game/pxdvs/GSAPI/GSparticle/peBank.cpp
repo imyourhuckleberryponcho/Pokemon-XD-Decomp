@@ -3,6 +3,7 @@
 #include <game/gsmodelview.h>
 #endif
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <game/hsdarchive.h>
 #include <game/gcdata.h>
@@ -440,7 +441,7 @@ void peBankFree(peBank* bank) {
             }
             u16 m = g_maxEmitParams;
             if (m != 0) {
-                g_emitParams = new _EmitParams[m];
+                g_emitParams = (GC_NEW_NOTE(sizeof(_EmitParams) * (m), 72 * (m) + 16) new _EmitParams[m]);
                 g_particle_debug_stats.emitMem += g_maxEmitParams * sizeof(_EmitParams);
                 g_particle_debug_stats.total += g_maxEmitParams * sizeof(_EmitParams);
             }
@@ -473,7 +474,7 @@ peBank* peBankCreate(_gpdHeader* file) {
     if (file == 0) {
         return 0;
     }
-    peBank* bank = new peBank;
+    peBank* bank = (GC_NEW_NOTE(sizeof(peBank), 360) new peBank);
     _gpdResourceItem* items = file->items;
     if (bank == 0) {
         return 0;
@@ -531,7 +532,7 @@ peBank* peBankCreate(_gpdHeader* file) {
         g_emitParamsBank = bank;
         u16 m = ((bank->maxParticles + 9) / 10) * 10;
         g_maxEmitParams = m;
-        g_emitParams = new _EmitParams[m];
+        g_emitParams = (GC_NEW_NOTE(sizeof(_EmitParams) * (m), 72 * (m) + 16) new _EmitParams[m]);
         g_particle_debug_stats.emitMem += g_maxEmitParams * sizeof(_EmitParams);
         g_particle_debug_stats.total += g_maxEmitParams * sizeof(_EmitParams);
     }
@@ -595,7 +596,7 @@ static inline u16 _peBankCalculateMaxParticles(_particleData* data, f32 scale) {
         return 0;
     }
     _peEmitter* e = data->emitter;
-    f32 v = e->range * GSrandf() + e->base;
+    f32 v = GC_FUSED(e->range, GSrandf()) + e->base;
     u16 n;
     if (e->mode <= 0.00001f) {
         n = GScast_float_to_u16(0.5f + v);
@@ -732,7 +733,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
         if (isOffset(v)) {
             v += (u32)name;
         }
-        it->data = (void*)v;
+        it->data = PC_PTR(void*, v);
         it->flags &= ~0x40;
         switch (it->type) {
         case 0: {
@@ -768,7 +769,7 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
                     ev += (u32)it->data;
                 }
                 *e = ev;
-                *e = (u32)GStextureLoad((GStexture*)(u32)*e);
+                *e = (u32)GStextureLoad(PC_PTR(GStexture*, (u32)*e));
             }
             it->flags |= 0x40;
             break;

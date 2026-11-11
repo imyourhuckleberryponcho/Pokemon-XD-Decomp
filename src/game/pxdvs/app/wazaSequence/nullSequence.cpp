@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 
 struct GSvec {
     f32 x, y, z;
@@ -213,7 +214,7 @@ NullSequence::NullSequence() {
 }
 
 NullSequence* New_NullSequence() {
-    NullSequence* seq = new NullSequence;
+    NullSequence* seq = (GC_NEW_NOTE(sizeof(NullSequence), 60) new NullSequence);
     if (seq == NULL) {
         return NULL;
     }

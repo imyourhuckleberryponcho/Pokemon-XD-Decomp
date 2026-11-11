@@ -191,7 +191,7 @@ u8 menuOffScreenSetDisp(u8 enable);
 u8 menuOffScreenSetPriority(u8 priority);
 void GSsndPlayNow(u32 id);
 void GSlogWrite(const char* fmt, ...);
-u32 GSthreadGetCurrentThread(void);
+GCuptr GSthreadGetCurrentThread(void);
 void GSthreadSwitch(void);
 f32 timeGetLastFrameSec(void);
 u32 timeGetLastFrameTime(void);
@@ -1142,8 +1142,8 @@ static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
     u16 held2;
 
     for (port = 0; port < 4; port++) {
-        k2 = &winSysWork2.port[port];
         k1 = &winSysWork.port[port];
+        k2 = &winSysWork2.port[port];
         connect_bak[port] = connect[port];
         keys = 0;
         keys2 = 0;
@@ -1230,7 +1230,8 @@ static void _menuUpdateKeyInfo(WINDOW_SYS_WORK* a, WINDOW_SYS_WORK* b) {
         repeat2 = 0;
         held2 = 0;
         for (i = 0; i < 16; i++) {
-            bit = 1 << i;
+            held = 1 << i;
+            bit = held;
             if (pressed & bit) {
                 k2->timer[i] = 15;
                 repeat2 |= bit;

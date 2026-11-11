@@ -90,6 +90,7 @@ inline float sqrtf(float x)
 #include <sysdolphin/baselib/util.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -104,8 +105,8 @@ void* HSD_Alloc(u32 size);
 
 void HSD_RObjInitAllocData(void)
 {
-    HSD_ObjAllocInit(&robj_alloc_data, sizeof(HSD_RObj), 4);
-    HSD_ObjAllocInit(&rv_alloc_data, sizeof(HSD_Rvalue), 4);
+    HSD_ObjAllocInit(&robj_alloc_data, GC_SIZE(sizeof(HSD_RObj), 28), 4);
+    HSD_ObjAllocInit(&rv_alloc_data, GC_SIZE(sizeof(HSD_Rvalue), 12), 4);
 }
 
 HSD_ObjAllocData* HSD_RObjGetAllocData(void)

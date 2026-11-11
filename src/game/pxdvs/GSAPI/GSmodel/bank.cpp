@@ -1,6 +1,7 @@
 #include <dolphin/types.h>
 #include <game/gcptr.h>
 #include <game/gsmodelview.h>
+#include "game/gcdata.h"
 
 struct ModelBank;
 
@@ -200,7 +201,7 @@ _GSmodel* modelBankGetFreeModel(void) {
         bank = bank->next;
     }
     if (bank == 0) {
-        newBank = GSmemAllocClr(sizeof(ModelBank));
+        newBank = GSmemAllocClr(GC_SIZE(sizeof(ModelBank), 12616));
         if (newBank == 0) {
             newBank = 0;
         } else {
@@ -236,7 +237,7 @@ _GSmodel* modelBankGetFreeModel(void) {
 
 void modelBankInit(void) {
     ModelBank* head;
-    ModelBank* bank = GSmemAllocClr(sizeof(ModelBank));
+    ModelBank* bank = GSmemAllocClr(GC_SIZE(sizeof(ModelBank), 12616));
 
     if (bank == 0) {
         bank = 0;

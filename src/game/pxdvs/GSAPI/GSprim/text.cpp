@@ -200,7 +200,7 @@ static inline u8 _hexDigit(char c) {
 static u32 _primRenderBuf(f32 x, f32 y, char* buf, u32 len, bool write) {
     u32 count = 0;
     char* str = buf;
-    u32 a; int b; int n; u8* p;
+    int a; int b; int n; u8* p;
     while (len--) {
         switch (*str) {
         case '\r':

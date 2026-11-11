@@ -528,9 +528,10 @@ struct peNodeView {
 };
 
 inline void peParticleContainer::hideNode(peNodeView* n) {
-    peDLView* d = (peDLView*)dl[cur];
+    peDLView* d;
     u16* idx = NULL;
     u32 hasColor2 = (GC_AT(u32, data, 0) >> 25) & 1;
+    d = (peDLView*)dl[cur];
     n->visible = 0;
     u16 off = n->vtx * 4;
     if (d->flags & 1) {
@@ -623,8 +624,9 @@ static inline void peParticleRewriteDL(peParticleContainer* c) {
 void peParticleContainer::DepthSort() {
     if (started && (((peParticleDef*)data)->flags & 0x80000) && count >= 2 && sorted != 0) {
         u8 changed = 0;
+        peParticleNodeData* n;
         for (s32 i = 1; i < maxCount; i++) {
-            peParticleNodeData* n = ((peParticleNodeData**)sorted)[i];
+            n = ((peParticleNodeData**)sorted)[i];
             if (peParticleActive(n)) {
                 s32 slot = i;
                 s32 k;
@@ -903,7 +905,7 @@ peParticleContainer::peParticleContainer(peEmitterNode* p0, _peParticle* p1, uns
     t[7] = v0;
     DCFlushRange(t, 0x20);
     if (GC_AT(u32, data, 0) & 0x80000) {
-        sorted = new peNode*[p2];
+        sorted = (GC_NEW_NOTE(sizeof(peNode*) * (p2), 4 * (p2)) new peNode*[p2]);
     }
     for (node = freeList, i = 0; node != 0; node = PE_NODE_LINK28(node), i++) {
         PE_NODE_F(node, u16, 0x30) = i;

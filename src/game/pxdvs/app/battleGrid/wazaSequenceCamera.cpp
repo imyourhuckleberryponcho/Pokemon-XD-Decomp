@@ -237,9 +237,9 @@ inline f32 _wazaSequenceCameraGetHeight(wazaSequenceCameraParams* params, f32) {
 inline void _wazaSequenceCameraDoWhalohPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
                                                 bool reverse) {
     Vec direction;
-    f32 rotation;
     f32 length;
     f32 duration = header->times[header->count];
+    f32 rotation;
 
     if (reverse) {
         rotation = params->rotationBase - 0.47123894f;
@@ -262,13 +262,13 @@ inline void _wazaSequenceCameraDoWhalohPosition(TemplateExpFileHeader* header, w
 
 inline void _wazaSequenceCameraDoFixedPosition(TemplateExpFileHeader* header, wazaSequenceCameraParams* params,
                                                f32 scale, bool reverse, s8 size) {
+    f32 duration = header->times[header->count];
     Vec direction;
     f32 sizeScale;
     f32 distance;
     f32 height;
     f32 rotation;
     f32 length;
-    f32 duration = header->times[header->count];
 
     duration *= scale;
 

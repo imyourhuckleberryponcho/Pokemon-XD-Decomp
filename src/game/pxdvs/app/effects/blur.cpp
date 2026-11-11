@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #define BLUR_EFFECT_SOURCE
 #include <game/effects.h>
 #include <dolphin/gx/GXVert.h>
@@ -116,7 +117,7 @@ void blurEffect::_render(GSgfxLayer* layer, GSgfxLayerPass pass) {
     } else if (m_model != 0) {
         if ((*(s32*)&layer->id) == 2 && pass == 0) {
             if (GSmodelIsAnimating(m_model)) {
-                s32 count = (s32)(20.0f * m_strength + 0.5f);
+                s32 count = (s32)(GC_FUSED(20.0f, m_strength) + 0.5f);
                 if (count != 0) {
                     static u8 pedesc[12] = {0x13, 0x00, 0x00, 0xFF, 0x01, 0x04, 0x05, 0x0F, 0x01, 0x07, 0x00, 0x07};
                     f32 rate;
@@ -128,7 +129,7 @@ void blurEffect::_render(GSgfxLayer* layer, GSgfxLayerPass pass) {
                     f32 start;
                     frame = GSmodelGetAnimFrame(m_model);
                     rate = GSmodelGetAnimRate(m_model);
-                    start = frame - rate * (f32)count;
+                    start = frame - GC_FUSED(rate, (f32)count);
                     if (start < 0.0f) {
                         count = (s32)(frame / rate);
                         start = 0.0f;

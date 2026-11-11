@@ -1,7 +1,11 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/bitfield.h>
+#include <game/fightfloor.h>
+#define FIGHT_TRAINER_OPAQUE_RECORDS
+#include <game/pxdvs/app/fight/fightTrainerData.h>
 
 #pragma optimize_for_size on
 
@@ -9,37 +13,7 @@ struct Hero {
     u8 getHeroStyle() const;
 };
 
-struct TrainerEnemyPokemon {
-    s16 fightEntryId;
-    u8 storeWazaNum;
-    u8 expectWazaNum;
-    u16 storeWaza[4];
-    u16 expectWaza[8];
-    u8 tokuseiFlag;
-    u8 unk1D;
-    u16 storeTokuseiData;
-    u8 nowhp1banhikuiFlag;
-    u8 lv1banhikuiFlag;
-    u8 defense1banhikuiFlag;
-    u8 badwazaHaveFlag;
-    u8 param1bantakaiFlag;
-    u8 unk25;
-};
-
-struct FightTrainerAiValueAddsubData {
-    u32 value;
-    u32 koudouName;
-    u32 prefixName;
-    u32 name;
-    u32 unk10;
-};
-
-struct FightTrainerPokemonPartData {
-    u32 name;
-    u8 unk4[4];
-    u8 wazaTypeRevise[14];
-    u8 unk16[2];
-};
+#include <game/pxdvs/app/fight/fightTrainerTables.h>
 
 class DeckPokemon {
 public:
@@ -223,147 +197,147 @@ extern "C" {
 FightTrainerAiValueAddsubData* fightTrainerAiValueAddsubDataBiosGetPtr(u16 id);
 FightTrainerPokemonPartData* fightTrainerPokemonPartDataBiosGetPtr(u16 id);
 DeckTrainer* fightTrainerDataBiosGetPtr(u16 id);
-TrainerEnemyPokemon* fightTrainerGetFightEntryIdToEnemyPokemonPtr(u8* t, s16 id);
-bool fightTrainerEnemyPokemonRegistAry(TrainerEnemyPokemon* ary, u16 num, s16 id);
+FightTrainerEnemyPokemon* fightTrainerGetFightEntryIdToEnemyPokemonPtr(FightTrainer* t, s16 id);
+bool fightTrainerEnemyPokemonRegistAry(FightTrainerEnemyPokemon* ary, u16 num, s16 id);
 Hero* savedataGetStatus(void* save, s32 kind);
-void* fightTrainer_GetFightTrainerEnemyPokemonAryPtr(u8* t, u8 i);
+void* fightTrainer_GetFightTrainerEnemyPokemonAryPtr(FightTrainer* t, u8 i);
 
-void fightTrainer_SetEnemyPokemonRegist(u8* t, s16 id) {
+void fightTrainer_SetEnemyPokemonRegist(FightTrainer* t, s16 id) {
     if (t != 0) {
-        TrainerEnemyPokemon* ary = (TrainerEnemyPokemon*)fightTrainer_GetFightTrainerEnemyPokemonAryPtr(t, 0);
+        FightTrainerEnemyPokemon* ary = (FightTrainerEnemyPokemon*)fightTrainer_GetFightTrainerEnemyPokemonAryPtr(t, 0);
         if (ary != 0) {
             fightTrainerEnemyPokemonRegistAry(ary, 12, id);
         }
     }
 }
 
-void fightTrainer_SetEnemyParam1bantakaiFlag(u8* t, s16 id, u8 v) {
+void fightTrainer_SetEnemyParam1bantakaiFlag(FightTrainer* t, s16 id, u8 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->param1bantakaiFlag = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyBadwazaHaveFlag(u8* t, s16 id, u8 v) {
+void fightTrainer_SetEnemyBadwazaHaveFlag(FightTrainer* t, s16 id, u8 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->badwazaHaveFlag = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyDefense1banhikuiFlag(u8* t, s16 id, u8 v) {
+void fightTrainer_SetEnemyDefense1banhikuiFlag(FightTrainer* t, s16 id, u8 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->defense1banhikuiFlag = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyLv1banhikuiFlag(u8* t, s16 id, u8 v) {
+void fightTrainer_SetEnemyLv1banhikuiFlag(FightTrainer* t, s16 id, u8 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->lv1banhikuiFlag = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyNowhp1banhikuiFlag(u8* t, s16 id, u8 v) {
+void fightTrainer_SetEnemyNowhp1banhikuiFlag(FightTrainer* t, s16 id, u8 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->nowhp1banhikuiFlag = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyStoreTokuseiData(u8* t, s16 id, u16 v) {
+void fightTrainer_SetEnemyStoreTokuseiData(FightTrainer* t, s16 id, u16 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->storeTokuseiData = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyTokuseiFlag(u8* t, s16 id, u8 v) {
+void fightTrainer_SetEnemyTokuseiFlag(FightTrainer* t, s16 id, u8 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->tokuseiFlag = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyExpectWazaData(u8* t, s16 id, u8 index, u16 v) {
+void fightTrainer_SetEnemyExpectWazaData(FightTrainer* t, s16 id, u8 index, u16 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->expectWaza[index] = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyStoreWazaData(u8* t, s16 id, u8 index, u16 v) {
+void fightTrainer_SetEnemyStoreWazaData(FightTrainer* t, s16 id, u8 index, u16 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->storeWaza[index] = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyExpectWazaNum(u8* t, s16 id, u8 v) {
+void fightTrainer_SetEnemyExpectWazaNum(FightTrainer* t, s16 id, u8 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->expectWazaNum = v;
         }
     }
 }
 
-void fightTrainer_SetEnemyStoreWazaNum(u8* t, s16 id, u8 v) {
+void fightTrainer_SetEnemyStoreWazaNum(FightTrainer* t, s16 id, u8 v) {
     if (t != 0) {
-        TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+        FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
         if (p != 0) {
             p->storeWazaNum = v;
         }
     }
 }
 
-void fightTrainer_SetSequencePtr(u8* t, u32 v) {
+void fightTrainer_SetSequencePtr(FightTrainer* t, u32 v) {
     if (t == 0) return;
-    *(u32*)(t + 0x3544) = v;
+    t->sequence = PC_PTR(Sequence*, v);
 }
 
-void fightTrainer_SetControllerId(u8* t, u8 v) {
+void fightTrainer_SetControllerId(FightTrainer* t, u8 v) {
     if (t == 0) return;
-    *(u8*)(t + 0x3540) = v;
+    t->controllerId = v;
 }
 
-void fightTrainer_SetNigeruCount(u8* t, u8 v) {
+void fightTrainer_SetNigeruCount(FightTrainer* t, u8 v) {
     if (t == 0) return;
-    *(u8*)(t + 0x3539) = v;
+    t->nigeruCount = v;
 }
 
-void fightTrainer_SetKoban(u8* t, u32 v) {
+void fightTrainer_SetKoban(FightTrainer* t, u32 v) {
     if (t == 0) return;
-    *(u32*)(t + 0x353c) = v;
+    t->koban = v;
 }
 
-void fightTrainer_SetOkaneBai(u8* t, u8 v) {
+void fightTrainer_SetOkaneBai(FightTrainer* t, u8 v) {
     if (t == 0) return;
-    *(u8*)(t + 0x3538) = v;
+    t->okaneBai = v;
 }
 
-void fightTrainer_SetFightTrainerDataId(u8* t, u16 v) {
+void fightTrainer_SetFightTrainerDataId(FightTrainer* t, u16 v) {
     if (t == 0) return;
-    *(u16*)(t + 0x0) = v;
+    t->fightTrainerDataId = v;
 }
 
 void fightTrainerAiValueAddsubDB_SetPrefixName(u16 id, u32 v) {
@@ -394,88 +368,88 @@ void fightTrainerAiValueAddsubDB_SetValue(u16 id, u32 v) {
     }
 }
 
-u8 fightTrainer_GetEnemyParam1bantakaiFlag(u8* t, s16 id) {
+u8 fightTrainer_GetEnemyParam1bantakaiFlag(FightTrainer* t, s16 id) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
     return p->param1bantakaiFlag;
 }
 
-u8 fightTrainer_GetEnemyBadwazaHaveFlag(u8* t, s16 id) {
+u8 fightTrainer_GetEnemyBadwazaHaveFlag(FightTrainer* t, s16 id) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
     return p->badwazaHaveFlag;
 }
 
-u8 fightTrainer_GetEnemyDefense1banhikuiFlag(u8* t, s16 id) {
+u8 fightTrainer_GetEnemyDefense1banhikuiFlag(FightTrainer* t, s16 id) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
     return p->defense1banhikuiFlag;
 }
 
-u8 fightTrainer_GetEnemyLv1banhikuiFlag(u8* t, s16 id) {
+u8 fightTrainer_GetEnemyLv1banhikuiFlag(FightTrainer* t, s16 id) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
     return p->lv1banhikuiFlag;
 }
 
-u8 fightTrainer_GetEnemyNowhp1banhikuiFlag(u8* t, s16 id) {
+u8 fightTrainer_GetEnemyNowhp1banhikuiFlag(FightTrainer* t, s16 id) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
     return p->nowhp1banhikuiFlag;
 }
 
-u16 fightTrainer_GetEnemyStoreTokuseiData(u8* t, s16 id) {
+u16 fightTrainer_GetEnemyStoreTokuseiData(FightTrainer* t, s16 id) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
     return p->storeTokuseiData;
 }
 
-u8 fightTrainer_GetEnemyTokuseiFlag(u8* t, s16 id) {
+u8 fightTrainer_GetEnemyTokuseiFlag(FightTrainer* t, s16 id) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
     return p->tokuseiFlag;
 }
 
-u16 fightTrainer_GetEnemyExpectWazaData(u8* t, s16 id, u8 index) {
+u16 fightTrainer_GetEnemyExpectWazaData(FightTrainer* t, s16 id, u8 index) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
@@ -485,11 +459,11 @@ u16 fightTrainer_GetEnemyExpectWazaData(u8* t, s16 id, u8 index) {
     return p->expectWaza[index];
 }
 
-u16 fightTrainer_GetEnemyStoreWazaData(u8* t, s16 id, u8 index) {
+u16 fightTrainer_GetEnemyStoreWazaData(FightTrainer* t, s16 id, u8 index) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
@@ -499,78 +473,78 @@ u16 fightTrainer_GetEnemyStoreWazaData(u8* t, s16 id, u8 index) {
     return p->storeWaza[index];
 }
 
-u8 fightTrainer_GetEnemyStoreWazaNum(u8* t, s16 id) {
+u8 fightTrainer_GetEnemyStoreWazaNum(FightTrainer* t, s16 id) {
     if (t == 0) {
         return 0;
     }
-    TrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
+    FightTrainerEnemyPokemon* p = fightTrainerGetFightEntryIdToEnemyPokemonPtr(t, id);
     if (p == 0) {
         return 0;
     }
     return p->storeWazaNum;
 }
 
-void* fightTrainer_GetFightTrainerEnemyPokemonAryPtr(u8* t, u8 i) {
+void* fightTrainer_GetFightTrainerEnemyPokemonAryPtr(FightTrainer* t, u8 i) {
     if (t == 0) return 0;
     if (i >= 12) return 0;
-    return t + 0x3578 + i * 0x26;
+    return &t->enemyPokemon[i];
 }
 
-u32 fightTrainer_GetSequencePtr(u8* t) {
+Sequence* fightTrainer_GetSequencePtr(FightTrainer* t) {
     if (t == 0) return 0;
-    return *(u32*)(t + 0x3544);
+    return t->sequence;
 }
 
-void* fightTrainer_GetFightActionBuffPtr(u8* t) {
+void* fightTrainer_GetFightActionBuffPtr(FightTrainer* t) {
     if (t == 0) return 0;
-    return t + 0x3548;
+    return &t->fightActionBuff;
 }
 
-u8 fightTrainer_GetControllerId(u8* t) {
+u8 fightTrainer_GetControllerId(FightTrainer* t) {
     if (t == 0) return 0;
-    return *(u8*)(t + 0x3540);
+    return t->controllerId;
 }
 
-u8 fightTrainer_GetNigeruCount(u8* t) {
+u8 fightTrainer_GetNigeruCount(FightTrainer* t) {
     if (t == 0) return 0;
-    return *(u8*)(t + 0x3539);
+    return t->nigeruCount;
 }
 
-u32 fightTrainer_GetKoban(u8* t) {
+u32 fightTrainer_GetKoban(FightTrainer* t) {
     if (t == 0) return 0;
-    return *(u32*)(t + 0x353c);
+    return t->koban;
 }
 
-u8 fightTrainer_GetOkaneBai(u8* t) {
+u8 fightTrainer_GetOkaneBai(FightTrainer* t) {
     if (t == 0) return 0;
-    return *(u8*)(t + 0x3538);
+    return t->okaneBai;
 }
 
-void* fightTrainer_GetFightoutPokemonBuffPtr(u8* t) {
+void* fightTrainer_GetFightoutPokemonBuffPtr(FightTrainer* t) {
     if (t == 0) return 0;
-    return t + 0x2ca4;
+    return &t->fightoutPokemonBuff;
 }
 
-void* fightTrainer_GetFightoutPokemonPtr(u8* t, u16 i) {
+void* fightTrainer_GetFightoutPokemonPtr(FightTrainer* t, u16 i) {
     if (t == 0) return 0;
     if (i >= 2) return 0;
-    return t + 0x1b7c + i * 0x894;
+    return &t->fightoutPokemon[i];
 }
 
-void* fightTrainer_GetFightPokemonPtr(u8* t, u16 i) {
+void* fightTrainer_GetFightPokemonPtr(FightTrainer* t, u16 i) {
     if (t == 0) return 0;
     if (i >= 6) return 0;
-    return t + 0x97c + i * 0x300;
+    return &t->fightPokemon[i];
 }
 
-u16 fightTrainer_GetFightTrainerDataId(u8* t) {
+u16 fightTrainer_GetFightTrainerDataId(FightTrainer* t) {
     if (t == 0) return 0;
-    return *(u16*)(t + 0x0);
+    return t->fightTrainerDataId;
 }
 
-void* fightTrainer_GetHeroPtr(u8* t) {
+void* fightTrainer_GetHeroPtr(FightTrainer* t) {
     if (t == 0) return 0;
-    return t + 0x4;
+    return t->hero;
 }
 
 u32 fightTrainerAiValueAddsubDB_GetPrefixName(u16 id) {

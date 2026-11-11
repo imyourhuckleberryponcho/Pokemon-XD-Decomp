@@ -46,11 +46,19 @@ s32 fightAiCombo_Batontatti_Zikoanzi_Continue(FIGHT_TRAINER* t, FightOutPokemon*
     u16 count;
     u16 want;
     u8 speed;
+#ifdef __MWERKS__
     u16 waza[4];
+#else
+    u16 waza[8];
+#endif
     FightOutPokemon* target;
     s8 best;
     u8 attack;
+#ifdef __MWERKS__
     s16 slot[4];
+#else
+    s16 slot[8];
+#endif
     u16 last;
 
     want = 0;
@@ -118,8 +126,16 @@ s32 fightAiCombo_Batontatti_Nekodamasi_Continue(FIGHT_TRAINER* t, FightOutPokemo
     u16 want;
     u8 value[4];
     u8 i;
+#ifdef __MWERKS__
     u16 waza[4];
+#else
+    u16 waza[8];
+#endif
+#ifdef __MWERKS__
     s16 slot[4];
+#else
+    s16 slot[8];
+#endif
     u8 attack;
     u16 count;
     u8 speed;
@@ -160,8 +176,16 @@ s32 fightAiCombo_Batontatti_Nekodamasi_Continue(FIGHT_TRAINER* t, FightOutPokemo
 
 s32 fightAiCombo_Sukirusuwappu_Irekae_Continue(FIGHT_TRAINER *arg0, FightOutPokemon *arg1)
 {
+#ifdef __MWERKS__
     u16 wazaIds[4];
+#else
+    u16 wazaIds[8];
+#endif
+#ifdef __MWERKS__
     s16 wazaVals[4];
+#else
+    s16 wazaVals[8];
+#endif
     u8 temp_r31;
     s16 entry;
 
@@ -186,10 +210,18 @@ s32 fightAiCombo_Sukirusuwappu_Irekae_Continue(FIGHT_TRAINER *arg0, FightOutPoke
 s32 fightAiCombo_Amaikaori_Hubuki_Continue(FIGHT_TRAINER* t, FightOutPokemon* p, FightOutPokemon** opp, u16 oppCnt)
 {
     u8 value[4];
+#ifdef __MWERKS__
     u16 waza[4];
+#else
+    u16 waza[8];
+#endif
     s8 best;
     u16 count;
+#ifdef __MWERKS__
     s16 slot[4];
+#else
+    s16 slot[8];
+#endif
     u8 i;
     FightOutPokemon* who;
     u8 n;

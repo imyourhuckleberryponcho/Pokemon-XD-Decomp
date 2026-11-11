@@ -1,4 +1,5 @@
 #include <dolphin/gx.h>
+#include "game/gc_fused.h"
 #include <dolphin/mtx.h>
 #ifndef __MWERKS__
 #include <string.h>
@@ -69,7 +70,7 @@ void HSD_FogSet(HSD_Fog* fog) {
             center = vp[0] + vp[2] * ((adj != NULL ? adj->center : -1) + 320) / 640.0F;
         } else {
             f32 half = 0.5F;
-            center = vp[0] + vp[2] * half;
+            center = GC_MADDR(vp[0], vp[2], half);
         }
         if (flags & 2) {
             width = adj != NULL ? adj->width : -1;

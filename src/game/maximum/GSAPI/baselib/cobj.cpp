@@ -6,12 +6,14 @@
 #define HSD_FILE_NAME "cobj.c"
 
 #include <sysdolphin/baselib/forward.h>
+#include "game/gc_fused.h"
 #include <sysdolphin/baselib/aobj.h>
 #include <sysdolphin/baselib/class.h>
 #include <sysdolphin/baselib/debug.h>
 #include <sysdolphin/baselib/object.h>
 #include <sysdolphin/baselib/wobj.h>
 #include <dolphin/mtx.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -198,9 +200,9 @@ inline float sqrtf(float x)
 {
     if (x > 0.0f) {
         double guess = __frsqrte((double) x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (GC_MSUBR(3.0, guess * guess, x));
+        guess = 0.5 * guess * (GC_MSUBR(3.0, guess * guess, x));
+        guess = 0.5 * guess * (GC_MSUBR(3.0, guess * guess, x));
         return (float) (x * guess);
     } else if (x < 0.0) {
         return NAN;
@@ -953,7 +955,7 @@ static void CObjInfoInit(void)
 {
     hsdInitClassInfo(HSD_CLASS_INFO(&hsdCObj), &hsdObj,
                      "sysdolphin_base_library", "hsd_cobj",
-                     sizeof(HSD_CObjInfo), sizeof(HSD_CObj));
+                     sizeof(HSD_CObjInfo), GC_CLASS_SIZE(sizeof(HSD_CObj), 140));
 
     HSD_CLASS_INFO(&hsdCObj)->init = CObjInit;
     HSD_CLASS_INFO(&hsdCObj)->release = CObjRelease;

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <game/gcdata.h>
 #ifndef M2C_MACROS_H
@@ -298,7 +299,7 @@ static u8 checkCollisionHeadToHead(GSCOLSYS2_HUMAN* p0, GSCOLSYS2_HUMAN* p1, GSv
     }
     var_f29 = M2C_FIELD(p2, f32 *, 8) - M2C_FIELD(temp_r3_2, f32 *, 8);
     var_f30 = M2C_FIELD(p2, f32 *, 0) - M2C_FIELD(temp_r3_2, f32 *, 0);
-    var_f31 = sqrtf((var_f30 * var_f30) + (var_f29 * var_f29));
+    var_f31 = sqrtf((GC_FUSED(var_f30, var_f30)) + (var_f29 * var_f29));
     temp_f3 = M2C_FIELD(p0, f32 *, 8);
     spC = temp_f3 + M2C_FIELD(p1, f32 *, 8);
     temp_r31 = !gimmickBoxFixDistanceForPushBox(&spC, temp_r3, var_f30, var_f29, temp_f3);

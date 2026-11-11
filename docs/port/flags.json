@@ -1,0 +1,724 @@
+{
+ "about": "GSflag ids used with a constant id in the game code (flagmap.py). The game has no flag names; \"meaning\" is filled only where known; \"uses\" says where and how each flag is read/written. Script-only flags are not listed (they live in the disc scripts).",
+ "flags": {
+  "4": {
+   "hex": "0x4",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "_sodateyaCallBackFunc",
+     "debug": false,
+     "source": "src/game/pxdvs/app/sodateya/sodateya.cpp:319",
+     "line": "if (GSflagGet(4) != 0) {"
+    }
+   ],
+   "functions": [
+    "_sodateyaCallBackFunc"
+   ]
+  },
+  "5": {
+   "hex": "0x5",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "_sodateyaCallBackFunc",
+     "debug": false,
+     "source": "src/game/pxdvs/app/sodateya/sodateya.cpp:320",
+     "line": "progress = GSflagGet(5);"
+    },
+    {
+     "op": "set",
+     "value": "progress",
+     "function": "_sodateyaCallBackFunc",
+     "debug": false,
+     "source": "src/game/pxdvs/app/sodateya/sodateya.cpp:324",
+     "line": "GSflagSet(5, progress);"
+    }
+   ],
+   "functions": [
+    "_sodateyaCallBackFunc"
+   ]
+  },
+  "781": {
+   "hex": "0x30d",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "set",
+     "value": "0",
+     "function": "menuColosseumBattleExit",
+     "debug": false,
+     "source": "src/game/menuColosseumBattle.cpp:996",
+     "line": "if (menuCBBios_ContextIsLocked() == 0) GSflagSet(0x30D, 0);"
+    },
+    {
+     "op": "set",
+     "value": "0",
+     "function": "menuColosseumBattleInit",
+     "debug": false,
+     "source": "src/game/menuColosseumBattle.cpp:1020",
+     "line": "GSflagSet(0x30D, 0);"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "_menuPokemonGetHeroPtr",
+     "debug": false,
+     "source": "src/game/menuPokemon.cpp:204",
+     "line": "if (GSflagGet(0x30D) == 0) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "_menuPokemonActionField",
+     "debug": false,
+     "source": "src/game/menuPokemon.cpp:416",
+     "line": "if (GSflagGet(0x30D) == 0) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "_menuPokemonStatusCheckOya",
+     "debug": false,
+     "source": "src/game/menuPokemonStatus.cpp:1142",
+     "line": "if (GSflagGet(0x30D) == 0) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "_countPlayTime",
+     "debug": false,
+     "source": "src/game/pokecolo.cpp:366",
+     "line": "if ((temp_r3 != 0U) && ((u8) __pokecolo_CountPlayTime == 1) && (GSflagGet(0x30D) == 0U)) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "isStoryMode",
+     "debug": false,
+     "source": "src/game/pxdvs/app/hero/heroMove.cpp:1938",
+     "line": "static u8 isStoryMode() { return GSflagGet(0x30D) == 0; }"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "scriptAddPoint",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:764",
+     "line": "if (GSflagGet(0x30D)) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "scriptAddPoint",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:766",
+     "line": "if (GSflagGet(0x30D)) {"
+    }
+   ],
+   "functions": [
+    "_countPlayTime",
+    "_menuPokemonActionField",
+    "_menuPokemonGetHeroPtr",
+    "_menuPokemonStatusCheckOya",
+    "isStoryMode",
+    "menuColosseumBattleExit",
+    "menuColosseumBattleInit",
+    "scriptAddPoint"
+   ]
+  },
+  "782": {
+   "hex": "0x30e",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "off",
+     "value": null,
+     "function": "fightEncount",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightEncount.cpp:228",
+     "line": "GSflagOff(0x30E);"
+    },
+    {
+     "op": "on",
+     "value": null,
+     "function": "fightEncount",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightEncount.cpp:274",
+     "line": "GSflagOn(0x30E);"
+    }
+   ],
+   "functions": [
+    "fightEncount"
+   ]
+  },
+  "793": {
+   "hex": "0x319",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "scriptGetPremium",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:721",
+     "line": "return GSflagGet(0x319);"
+    },
+    {
+     "op": "set",
+     "value": "n",
+     "function": "scriptSetPremium",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:726",
+     "line": "GSflagSet(0x319, n);"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "scriptAddPremium",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:731",
+     "line": "s32 value = GSflagGet(0x319);"
+    },
+    {
+     "op": "set",
+     "value": "value",
+     "function": "scriptAddPremium",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:733",
+     "line": "GSflagSet(0x319, value);"
+    }
+   ],
+   "functions": [
+    "scriptAddPremium",
+    "scriptGetPremium",
+    "scriptSetPremium"
+   ]
+  },
+  "803": {
+   "hex": "0x323",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "off",
+     "value": null,
+     "function": null,
+     "debug": false,
+     "source": "src/game/menuCB_Battle.cpp:84",
+     "line": "GSflagOff(0x323);"
+    },
+    {
+     "op": "off",
+     "value": null,
+     "function": "fightEncountCheckZenmetu",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightEncount.cpp:175",
+     "line": "GSflagOff(0x323);"
+    },
+    {
+     "op": "off",
+     "value": null,
+     "function": "fightEncount",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightEncount.cpp:261",
+     "line": "GSflagOff(0x323);"
+    },
+    {
+     "op": "test",
+     "value": null,
+     "function": "fightEncount",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightEncount.cpp:277",
+     "line": "if (!GSflagTest(0x323)) {"
+    },
+    {
+     "op": "off",
+     "value": null,
+     "function": "scriptAddPoint",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:762",
+     "line": "GSflagOff(0x323);"
+    },
+    {
+     "op": "off",
+     "value": null,
+     "function": "scriptAddPoint",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:765",
+     "line": "GSflagOff(0x323);"
+    },
+    {
+     "op": "on",
+     "value": null,
+     "function": "scriptAddPoint",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:774",
+     "line": "GSflagOn(0x323);"
+    },
+    {
+     "op": "off",
+     "value": null,
+     "function": "scriptAddPoint",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:787",
+     "line": "GSflagOff(0x323);"
+    }
+   ],
+   "functions": [
+    "fightEncount",
+    "fightEncountCheckZenmetu",
+    "scriptAddPoint"
+   ]
+  },
+  "964": {
+   "hex": "0x3c4",
+   "meaning": "story progress value (debug jump menu writes flag_etc[i].flagValue; \"story flag 720\" = this flag = 720)",
+   "uses": [
+    {
+     "op": "set",
+     "value": "flag_etc[index].flagValue",
+     "function": "dbgMenuFlagSetEtc",
+     "debug": true,
+     "source": "src/game/dbgMenuFlag.cpp:295",
+     "line": "GSflagSet(0x3C4, flag_etc[index].flagValue);"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "menuColosseumBattleInit",
+     "debug": false,
+     "source": "src/game/menuColosseumBattle.cpp:1021",
+     "line": "if (GSflagGet(0x3C4) >= flag_etc->reliveOpenFlag) _CB.reliveHallOpen = 1;"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "menuSaveLoadHook",
+     "debug": false,
+     "source": "src/game/menuSaveLoad.cpp:110",
+     "line": "if (GSflagGet(0x3C4) < flag_etc->storyClearFlag) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "_checkWaza2",
+     "debug": false,
+     "source": "src/game/menuScript.cpp:748",
+     "line": "if (GSflagGet(0x3C4) >= flag_etc[mission].flagValue) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "WorldMap::GetInfoLevel",
+     "debug": false,
+     "source": "src/game/menuWorldMapMX.cpp:635",
+     "line": "if (GSflagGet(0x3C4) >= need) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "WorldMap::getScooterType",
+     "debug": false,
+     "source": "src/game/menuWorldMapMX.cpp:1289",
+     "line": "if (GSflagGet(0x3C4) < flag_etc[0x44].flagValue) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "_esabaAppearPokemon",
+     "debug": false,
+     "source": "src/game/pxdvs/app/esaba/esaba.cpp:456",
+     "line": "if (GSflagGet(0x3C4) >= flag_etc[kind].flagValue) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "CReliveHall::isOpen",
+     "debug": false,
+     "source": "src/game/pxdvs/app/reliveHall/reliveHall.cpp:583",
+     "line": "return flag_etc->reliveOpenFlag <= GSflagGet(0x3C4);"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "_heroCallBackFunc",
+     "debug": false,
+     "source": "src/game/pxdvs/app/reliveHall/reliveHall.cpp:692",
+     "line": "if (GSflagGet(0x3C4) >= flag_etc->reliveOpenFlag) {"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "_isInRange",
+     "debug": false,
+     "source": "src/game/pxdvs/app/underTaker/undertaker.cpp:40",
+     "line": "u32 f = GSflagGet(0x3C4);"
+    }
+   ],
+   "functions": [
+    "CReliveHall::isOpen",
+    "WorldMap::GetInfoLevel",
+    "WorldMap::getScooterType",
+    "_checkWaza2",
+    "_esabaAppearPokemon",
+    "_heroCallBackFunc",
+    "_isInRange",
+    "dbgMenuFlagSetEtc",
+    "menuColosseumBattleInit",
+    "menuSaveLoadHook"
+   ]
+  },
+  "990": {
+   "hex": "0x3de",
+   "meaning": "set to 1 by the debug jump menu together with the story value",
+   "uses": [
+    {
+     "op": "set",
+     "value": "1",
+     "function": "dbgMenuFlagSetEtc",
+     "debug": true,
+     "source": "src/game/dbgMenuFlag.cpp:296",
+     "line": "GSflagSet(0x3DE, 1);"
+    },
+    {
+     "op": "test",
+     "value": null,
+     "function": "menuSaveload::IsReport",
+     "debug": false,
+     "source": "src/game/menuSaveLoad.cpp:225",
+     "line": "return GSflagTest(0x3DE);"
+    },
+    {
+     "op": "on",
+     "value": null,
+     "function": "savedataInit",
+     "debug": false,
+     "source": "src/game/pxdvs/app/memcard/savedata.cpp:328",
+     "line": "GSflagOn(0x3DE);"
+    }
+   ],
+   "functions": [
+    "dbgMenuFlagSetEtc",
+    "menuSaveload::IsReport",
+    "savedataInit"
+   ]
+  },
+  "1010": {
+   "hex": "0x3f2",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "on",
+     "value": null,
+     "function": "menuPda",
+     "debug": false,
+     "source": "src/game/menuPda.cpp:988",
+     "line": "GSflagOn(0x3F2);"
+    }
+   ],
+   "functions": [
+    "menuPda"
+   ]
+  },
+  "1191": {
+   "hex": "0x4a7",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "set",
+     "value": "0",
+     "function": "fightActionFlowSyuuryou",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightActionFlow.cpp:833",
+     "line": "GSflagSet(0x4a7, 0);"
+    }
+   ],
+   "functions": [
+    "fightActionFlowSyuuryou"
+   ]
+  },
+  "1266": {
+   "hex": "0x4f2",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "menuBingoMain",
+     "debug": false,
+     "source": "src/game/menuBingo.cpp:1931",
+     "line": "if (GSflagGet(0x4F2) >= 6) {"
+    }
+   ],
+   "functions": [
+    "menuBingoMain"
+   ]
+  },
+  "1443": {
+   "hex": "0x5a3",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "set",
+     "value": "1",
+     "function": "CMenuHologram::stateReliveCeremony",
+     "debug": false,
+     "source": "src/game/menuHologram.cpp:1342",
+     "line": "GSflagSet(0x5A3, 1);"
+    }
+   ],
+   "functions": [
+    "CMenuHologram::stateReliveCeremony"
+   ]
+  },
+  "1450": {
+   "hex": "0x5aa",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "set",
+     "value": "0",
+     "function": "fightActionFlowSyuuryou",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightActionFlow.cpp:837",
+     "line": "GSflagSet(0x5aa, 0);"
+    }
+   ],
+   "functions": [
+    "fightActionFlowSyuuryou"
+   ]
+  },
+  "1451": {
+   "hex": "0x5ab",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "set",
+     "value": "0",
+     "function": "fightActionFlowSyuuryou",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightActionFlow.cpp:839",
+     "line": "GSflagSet(0x5ab, 0);"
+    }
+   ],
+   "functions": [
+    "fightActionFlowSyuuryou"
+   ]
+  },
+  "1452": {
+   "hex": "0x5ac",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "set",
+     "value": "0",
+     "function": "fightActionFlowSyuuryou",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightActionFlow.cpp:838",
+     "line": "GSflagSet(0x5ac, 0);"
+    }
+   ],
+   "functions": [
+    "fightActionFlowSyuuryou"
+   ]
+  },
+  "1453": {
+   "hex": "0x5ad",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "test",
+     "value": null,
+     "function": "dbgMenuMenuUnderTakerIconFlagOnOff",
+     "debug": true,
+     "source": "src/game/dbgMenuMenu.cpp:966",
+     "line": "if (GSflagTest(0x5AD) != 0) {"
+    },
+    {
+     "op": "off",
+     "value": null,
+     "function": "dbgMenuMenuUnderTakerIconFlagOnOff",
+     "debug": true,
+     "source": "src/game/dbgMenuMenu.cpp:967",
+     "line": "GSflagOff(0x5AD);"
+    },
+    {
+     "op": "on",
+     "value": null,
+     "function": "dbgMenuMenuUnderTakerIconFlagOnOff",
+     "debug": true,
+     "source": "src/game/dbgMenuMenu.cpp:969",
+     "line": "GSflagOn(0x5AD);"
+    }
+   ],
+   "functions": [
+    "dbgMenuMenuUnderTakerIconFlagOnOff"
+   ]
+  },
+  "1500": {
+   "hex": "0x5dc",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "_fightTrainerCreateDeckUnderTaker",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightTrainer.cpp:1484",
+     "line": "switch (GSflagGet(0x5DC)) {"
+    }
+   ],
+   "functions": [
+    "_fightTrainerCreateDeckUnderTaker"
+   ]
+  },
+  "1730": {
+   "hex": "0x6c2",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "dbgMenuMenuTestPdaSyougou",
+     "debug": true,
+     "source": "src/game/dbgMenuMenu.cpp:672",
+     "line": "value = GSflagGet(0x6C2);"
+    },
+    {
+     "op": "set",
+     "value": "value",
+     "function": "dbgMenuMenuTestPdaSyougou",
+     "debug": true,
+     "source": "src/game/dbgMenuMenu.cpp:678",
+     "line": "GSflagSet(0x6C2, value);"
+    },
+    {
+     "op": "get",
+     "value": null,
+     "function": "menuPdaBackDrawTitleText",
+     "debug": false,
+     "source": "src/game/menuPda.cpp:878",
+     "line": "u32 flag = GSflagGet(0x6C2);"
+    }
+   ],
+   "functions": [
+    "dbgMenuMenuTestPdaSyougou",
+    "menuPdaBackDrawTitleText"
+   ]
+  },
+  "2257": {
+   "hex": "0x8d1",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "test",
+     "value": null,
+     "function": "_isFloorB",
+     "debug": false,
+     "source": "src/game/pxdvs/app/underTaker/undertaker.cpp:72",
+     "line": "if (GSflagTest(0x8D1) && GSflagTest(flagB) && floor != 0x3B) {"
+    }
+   ],
+   "functions": [
+    "_isFloorB"
+   ]
+  },
+  "2282": {
+   "hex": "0x8ea",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "test",
+     "value": null,
+     "function": "menuEndingDemoMain",
+     "debug": false,
+     "source": "src/game/menuLogoDemo.cpp:915",
+     "line": "if (GSflagTest(0x8ea)) {"
+    }
+   ],
+   "functions": [
+    "menuEndingDemoMain"
+   ]
+  },
+  "2285": {
+   "hex": "0x8ed",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "menuUseItemEventMirraboradar",
+     "debug": false,
+     "source": "src/game/menuUseItem.cpp:904",
+     "line": "if (GSflagGet(0x8ED)) {"
+    }
+   ],
+   "functions": [
+    "menuUseItemEventMirraboradar"
+   ]
+  },
+  "2286": {
+   "hex": "0x8ee",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "menuUseItemEventMirraboradar",
+     "debug": false,
+     "source": "src/game/menuUseItem.cpp:906",
+     "line": "} else if (GSflagGet(0x8EE)) {"
+    }
+   ],
+   "functions": [
+    "menuUseItemEventMirraboradar"
+   ]
+  },
+  "2293": {
+   "hex": "0x8f5",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "get",
+     "value": null,
+     "function": "_fightActionFlowKaisiPreSubCheckVirtualDiskCancel",
+     "debug": false,
+     "source": "src/game/pxdvs/app/fight/fightActionFlow.cpp:1475",
+     "line": "if (GSflagGet(0x8f5) == 1 || GSflagGet(deckDataVirtualDB_GetFlag(diskId)) == 1) {"
+    }
+   ],
+   "functions": [
+    "_fightActionFlowKaisiPreSubCheckVirtualDiskCancel"
+   ]
+  },
+  "2298": {
+   "hex": "0x8fa",
+   "meaning": null,
+   "uses": [
+    {
+     "op": "set",
+     "value": "1",
+     "function": "scriptSoundOpenPlayME",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:1632",
+     "line": "GSflagSet(0x8FA, 1);"
+    },
+    {
+     "op": "set",
+     "value": "0",
+     "function": "scriptSoundOpenPlayME",
+     "debug": false,
+     "source": "src/game/pxdvs/app/script/script.cpp:1650",
+     "line": "GSflagSet(0x8FA, 0);"
+    }
+   ],
+   "functions": [
+    "scriptSoundOpenPlayME"
+   ]
+  }
+ }
+}

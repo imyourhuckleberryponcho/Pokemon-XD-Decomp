@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/hsdarchive.h>
 #include <game/wazaentry.h>
@@ -283,7 +284,7 @@ static inline ModelSequence* AsModel(NullSequence* seq) {
 }
 
 static inline u8* Align32(u8* p) {
-    return (u8*)(((u32)p + 0x1F) & ~0x1F);
+    return PC_PTR(u8*, ((u32)p + 0x1F) & ~0x1F);
 }
 
 bool WazaSequence::Load(u8* data, u32 a, u32 b) {
@@ -784,25 +785,25 @@ bool WazaSequence::LoadData(u8* data) {
         for (i = 0; i < m_numEntries; i++) {
             switch (GC_AT(u32, data, 4)) {
             case 1:
-                e = new CameraEntry(this, &data);
+                e = (GC_NEW_NOTE(sizeof(CameraEntry), 56) new CameraEntry(this, &data));
                 break;
             case 2:
-                e = new ModelEntry(this, &data);
+                e = (GC_NEW_NOTE(sizeof(ModelEntry), 80) new ModelEntry(this, &data));
                 break;
             case 3:
-                e = new ParticleEntry(this, &data);
+                e = (GC_NEW_NOTE(sizeof(ParticleEntry), 68) new ParticleEntry(this, &data));
                 break;
             case 4:
-                e = new EffectEntry(this, &data);
+                e = (GC_NEW_NOTE(sizeof(EffectEntry), 68) new EffectEntry(this, &data));
                 break;
             case 5:
-                e = new SoundEntry(this, &data);
+                e = (GC_NEW_NOTE(sizeof(SoundEntry), 64) new SoundEntry(this, &data));
                 break;
             case 6:
-                e = new EventEntry(this, &data);
+                e = (GC_NEW_NOTE(sizeof(EventEntry), 52) new EventEntry(this, &data));
                 break;
             case 7:
-                e = new LensFlareEntry(this, &data);
+                e = (GC_NEW_NOTE(sizeof(LensFlareEntry), 60) new LensFlareEntry(this, &data));
                 break;
             default:
                 return false;
@@ -860,7 +861,7 @@ static inline WazaSequence* checkSeq(WazaSequence* seq) {
 }
 
 WazaSequence* Sequence_LoadWaza(NullSequence* owner, u16 wazaID, u8 kind, u8 variation) {
-    return checkSeq(new WazaSequence(owner, wazaID, kind, variation));
+    return checkSeq((GC_NEW_NOTE(sizeof(WazaSequence), 48) new WazaSequence(owner, wazaID, kind, variation)));
 }
 
 bool WazaSequence_IsActive(WazaSequence* seq) {
@@ -871,6 +872,13 @@ bool WazaSequence_IsActive(WazaSequence* seq) {
         return seq->IsActive();
     }
     return false;
+}
+
+static f32 WazaSequence_GetCurrentTimeUnused(WazaSequence* seq) {
+    if (seq == 0) {
+        return 0.0f;
+    }
+    return seq->m_time;
 }
 
 }

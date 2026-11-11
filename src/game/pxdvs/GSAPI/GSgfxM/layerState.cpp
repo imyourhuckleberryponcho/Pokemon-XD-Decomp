@@ -530,7 +530,7 @@ inline void GSgfx_GCSetTevIndBumpXYZ(s32 stage, u8 indId, s32 mtx);
 inline void GSgfx_GCSetTevIndRepeat(s32 stage);
 inline void GSgfx_GCSetTevIndWarp(s32 stage, u8 indId, u8 signMod, u8 wrap, s32 mtx);
 inline void GSgfx_GCSetTevIndirect(s32 stage, u8 indId, s32 fmt, s32 bias, s32 mtx, s32 ws, s32 wt, u8 addPrev, u8 utc, s32 alpha);
-inline void GSgfx_GCSetTevKColor(u32 i, GSColor c);
+inline void GSgfx_GCSetTevKColor(s32 i, GSColor c);
 inline void GSgfx_GCSetTevOrder(s32 stage, s32 coord, s32 map, s32 color);
 inline void GSgfx_GCSetTevSwapModeTable(s32 t, s32 r, s32 g, s32 b, s32 a);
 void GSgfx_GCWriteFog(u32 type, f32 startz, f32 endz, f32 nearz, f32 farz);
@@ -1196,8 +1196,7 @@ void GSgfxLayer::SetupGPUState() {
             if (d->kasel != 0) {
                 for (int i = 0; i < hw->nTevStages; i++) {
                     if (d->kasel & (1 << i)) {
-                        s16 rf_t = hw->kasel[i];
-                        GSgfx_GCSetTevKAlphaSel(i, rf_t);
+                        GSgfx_GCSetTevKAlphaSel(i, hw->kasel[i]);
                     }
                 }
                 d->kasel = 0;
@@ -1223,7 +1222,7 @@ void GSgfxLayer::SetupGPUState() {
             }
         }
         if (d->groups & 0x40) {
-            s16 zEnable = hw->zEnable != 0;
+            bool zEnable = hw->zEnable != 0;
             s32 zFunc = hw->zFunc;
             if (hw->zUpdate == 1 && zEnable == 0) {
                 zEnable = 1;
@@ -1409,16 +1408,17 @@ inline void GSgfx_GCSetTevSwapModeTable(s32 t, s32 r, s32 g, s32 b, s32 a) {
     }
 }
 
-inline void GSgfx_GCSetTevKColor(u32 i, GSColor c) {
-    if (*(u32*)&gsgfxState->kcolFlag[i][1] != *(u32*)&c || gsgfxState->kcolFlag[i][0] == 1) {
-        u32 v = *(u32*)&c;
+inline void GSgfx_GCSetTevKColor(s32 i, GSColor c) {
+    u32 ss = i;
+    if (*(u32*)&gsgfxState->kcolFlag[ss][1] != *(u32*)&c || gsgfxState->kcolFlag[ss][0] == 1) {
+        GSColor v = c;
         u8* b = (u8*)&v;
         gsgfxState->kcolB0[i].lo = b[0];
         gsgfxState->kcolB0[i].hi = b[3];
         gsgfxState->kcolB1[i].lo = b[2];
         gsgfxState->kcolB1[i].hi = b[1];
         gsgfxState->dKcolB |= 1 << i;
-        *(u32*)&gsgfxState->kcolFlag[i][1] = v;
+        *(u32*)&gsgfxState->kcolFlag[i][1] = *(u32*)&v;
         gsgfxState->kcolFlag[i][0] = 0;
     }
 }
@@ -1652,25 +1652,29 @@ inline void GSgfx_GCSetAmbColor(s32 ch, GSColor c) {
     }
 }
 
+static inline void _GCWriteChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 lights, s32 diff, s32 attn, ChanCache* c) {
+    s32 d = diff;
+    if (attn == 0) {
+        d = 0;
+    }
+    GX_WGPIPE.u8 = 0x10;
+    GX_WGPIPE.u16 = 0;
+    GX_WGPIPE.u16 = 0x100E + (chan & 3);
+    GX_WGPIPE.u32 = ((lights << 7) & 0x7800) | (((attn != 0) << 10) | (((attn != 2) << 9) | ((amb << 6) | ((lights & 0xF) << 2 | (mat | (enable << 1))) | (d << 7))));
+    c[chan].a = enable;
+    gsgfxState->chan[chan].w[0] = amb;
+    gsgfxState->chan[chan].w[1] = mat;
+    gsgfxState->chan[chan].w[2] = lights;
+    gsgfxState->chan[chan].w[3] = diff;
+    gsgfxState->chan[chan].w[4] = attn;
+}
+
 inline void GSgfx_GCSetChanCtrl(s32 chan, u8 enable, s32 amb, s32 mat, s32 lights, s32 diff, s32 attn) {
     ChanCache* c = gsgfxState->chan;
     u8 rf_t = c[(u32)chan].a;
     if (rf_t != enable || gsgfxState->chan[chan].w[0] != amb || gsgfxState->chan[chan].w[1] != mat || gsgfxState->chan[chan].w[2] != lights ||
         gsgfxState->chan[chan].w[3] != diff || gsgfxState->chan[chan].w[4] != attn) {
-        s32 d = diff;
-        if (attn == 0) {
-            d = 0;
-        }
-        GX_WGPIPE.u8 = 0x10;
-        GX_WGPIPE.u16 = 0;
-        GX_WGPIPE.u16 = 0x100E + (chan & 3);
-        GX_WGPIPE.u32 = ((lights << 7) & 0x7800) | (((attn != 0) << 10) | (((attn != 2) << 9) | ((amb << 6) | ((lights & 0xF) << 2 | (mat | (enable << 1))) | (d << 7))));
-        c[chan].a = enable;
-        gsgfxState->chan[chan].w[0] = amb;
-        gsgfxState->chan[chan].w[1] = mat;
-        gsgfxState->chan[chan].w[2] = lights;
-        gsgfxState->chan[chan].w[3] = diff;
-        gsgfxState->chan[chan].w[4] = attn;
+        _GCWriteChanCtrl(chan, enable, amb, mat, lights, diff, attn, c);
     }
 }
 
@@ -1976,22 +1980,23 @@ void GSgfxLayer::renderState_NL_NVC_T(u8 n) {
     }
 }
 
+static inline void _cunitColors(GSgfxLayer* l, GSgfxCol amb, GSgfxCol mat) {
+    *(GSgfxCol*)&l->hw.amb[0] = amb;
+    *(GSgfxCol*)&l->hw.mat[0] = mat;
+    l->dirty[0].amb |= 1;
+    l->dirty[0].mat |= 1;
+    l->dirty[0].groups |= 4;
+    l->dirty[1].amb |= 1;
+    l->dirty[1].mat |= 1;
+    l->dirty[1].groups |= 4;
+}
+
 void GSgfxLayer::renderState_NL_NVC_NT() {
     GSgfxCol g = {0x80808080};
-    GSgfxCol a = g;
-    GSgfxCol b = g;
-    GSgfxCol c = g;
     hw.nChans = 1;
     mark(4, 0x16bc, 1);
     markCommon(1, 0, 0);
-    *(GSgfxCol*)&hw.amb[0] = a;
-    *(GSgfxCol*)&hw.mat[0] = c;
-    dirty[0].amb |= 1;
-    dirty[0].mat |= 1;
-    dirty[0].groups |= 4;
-    dirty[1].amb |= 1;
-    dirty[1].mat |= 1;
-    dirty[1].groups |= 4;
+    _cunitColors(this, g, g);
     cunitChannelGen(0, (GSgfxCunitAlpha)2, (GSgfxCunitSrc)0, (GSgfxCunitSrc)0, 0, 0, (GSgfxLightType)2, (GSgfxDiffuseFunc)0);
     hw.tevOrder[0][0] = 0xff;
     hw.tevOrder[0][1] = 0xff;

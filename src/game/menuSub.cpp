@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -123,7 +124,11 @@ void menuCloseCustom(PCARG(s16, s32), s32, s32);
 void menuCloseSync(s32, s32);
 f32 menuGetTotalTime(void);
 void* menuItemBiosGetPtr(s32, s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuSetPosition(PCARG(s16, s32), s16, s16);
 void* menuSpriteBiosGetPtr(u32);
 MenuSpriteVal* menuSpriteBiosGetValPtr(void*);
@@ -482,16 +487,15 @@ void menuSubCursorAnimeMain(void) {
 
     if (w->x != 0.0f) {
         time = (s16)(w->time + timeGetLastFrameTime());
-        value = (f32)(s16)time * (f32)(s16)time / (f32)w->duration / (f32)w->duration *
-                    (w->endX - w->startX) +
-                w->startX;
         w->time = time;
+        ratio = (f32)w->time * (f32)w->time / (f32)w->duration / (f32)w->duration;
+        value = GC_FUSED(ratio, (w->endX - w->startX)) + w->startX;
         w->x = value;
         ratio = (f32)time / (f32)w->duration;
-        w->cur[0] = ratio * (f32)(w->to[0] - w->from[0]) + (f32)w->from[0];
-        w->cur[1] = ratio * (f32)(w->to[1] - w->from[1]) + (f32)w->from[1];
-        w->cur[2] = ratio * (f32)(w->to[2] - w->from[2]) + (f32)w->from[2];
-        w->cur[3] = ratio * (f32)(w->to[3] - w->from[3]) + (f32)w->from[3];
+        w->cur[0] = GC_FUSED(ratio, (f32)(w->to[0] - w->from[0])) + (f32)w->from[0];
+        w->cur[1] = GC_FUSED(ratio, (f32)(w->to[1] - w->from[1])) + (f32)w->from[1];
+        w->cur[2] = GC_FUSED(ratio, (f32)(w->to[2] - w->from[2])) + (f32)w->from[2];
+        w->cur[3] = GC_FUSED(ratio, (f32)(w->to[3] - w->from[3])) + (f32)w->from[3];
         if (w->x > 0.0f) {
             w->x = 0.0f;
             w->cur[3] = -1;

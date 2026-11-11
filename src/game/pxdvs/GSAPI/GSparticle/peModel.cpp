@@ -1,6 +1,7 @@
 
 
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/pecontainer.h>
@@ -44,9 +45,9 @@ static
 inline float sqrtf(float x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
         return (float)(x * guess);
     } else if (x < 0.0) {
         return NAN;

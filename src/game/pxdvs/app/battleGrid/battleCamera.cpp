@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/pcret.h>
 
@@ -211,17 +212,17 @@ static inline u16 __OSf32tou16(register f32 inF) {
 
 static inline f32 Lerp(f32 a, f32 b, f32 t) {
     f32 d = b - a;
-    return d * t + a;
+    return GC_FUSED(d, t) + a;
 }
 
 static inline f32 RotAdd(f32 min, f32 max, f32 base, f32 t) {
     f32 d = max - min;
-    return d * t + (base + min);
+    return GC_FUSED(d, t) + (base + min);
 }
 
 static inline f32 RotSub(f32 min, f32 max, f32 base, f32 t) {
     f32 d = max - min;
-    return (base - min) - d * t;
+    return (base - min) - GC_FUSED(d, t);
 }
 
 static inline f32 RandRange(f32& lo, f32& hi) {
@@ -231,9 +232,9 @@ static inline f32 RandRange(f32& lo, f32& hi) {
 static inline f32 WazaSqrtf(f32 x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
         return (f32)(x * guess);
     } else if (x < 0.0) {
         return *__float_nan;
@@ -656,11 +657,11 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         r = HSD_Randf();
         lo = params.distanceMin;
         d = params.distanceMax - lo;
-        dist1 = d * r + lo;
+        dist1 = GC_FUSED(d, r) + lo;
         r = HSD_Randf();
         lo = params.distanceMin;
         d = params.distanceMax - lo;
-        dist2 = d * r + lo;
+        dist2 = GC_FUSED(d, r) + lo;
         if (dist1 < dist2) {
             f32 tmp = dist2;
             dist2 = dist1;
@@ -680,13 +681,13 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
             r = HSD_Randf();
             lo = params.rotationMin;
             d = params.rotationMax - lo;
-            rot2 = (params.rotationBase - lo) - d * r;
+            rot2 = (params.rotationBase - lo) - GC_FUSED(d, r);
             rot1 = RotSub(params.rotationMin, params.rotationMax, params.rotationBase, HSD_Randf());
         } else {
             r = HSD_Randf();
             lo = params.rotationMin;
             d = params.rotationMax - lo;
-            rot2 = d * r + (params.rotationBase + lo);
+            rot2 = GC_FUSED(d, r) + (params.rotationBase + lo);
             rot1 = RotAdd(params.rotationMin, params.rotationMax, params.rotationBase, HSD_Randf());
         }
         break;
@@ -704,19 +705,19 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
     {
         f32 hsq = height;
         hsq *= height;
-        _wazaSequenceCameraGetFOVRange(&params, &lowA, &highA, WazaSqrtf(dist1 * dist1 + hsq));
-        _wazaSequenceCameraGetFOVRange(&params, &lowB, &highB, WazaSqrtf(dist2 * dist2 + hsq));
+        _wazaSequenceCameraGetFOVRange(&params, &lowA, &highA, WazaSqrtf(GC_FUSED(dist1, dist1) + hsq));
+        _wazaSequenceCameraGetFOVRange(&params, &lowB, &highB, WazaSqrtf(GC_FUSED(dist2, dist2) + hsq));
     }
     switch ((u8)((u16)HSD_Rand() % 3)) {
     case 1:
         r = HSD_Randf();
         fov2 = lowA;
         d = highA - fov2;
-        fov2 = d * r + fov2;
+        fov2 = GC_FUSED(d, r) + fov2;
         r = HSD_Randf();
         fov1 = lowB;
         d = highB - fov1;
-        fov1 = d * r + fov1;
+        fov1 = GC_FUSED(d, r) + fov1;
         if (fov2 < fov1) {
             f32 tmp = fov1;
             fov1 = fov2;
@@ -727,11 +728,11 @@ static void _battleCameraStartRandom(ModelSequence* seq) {
         r = HSD_Randf();
         fov2 = lowA;
         d = highA - fov2;
-        fov2 = d * r + fov2;
+        fov2 = GC_FUSED(d, r) + fov2;
         r = HSD_Randf();
         fov1 = lowB;
         d = highB - fov1;
-        fov1 = d * r + fov1;
+        fov1 = GC_FUSED(d, r) + fov1;
         if (fov2 > fov1) {
             f32 tmp = fov1;
             fov1 = fov2;

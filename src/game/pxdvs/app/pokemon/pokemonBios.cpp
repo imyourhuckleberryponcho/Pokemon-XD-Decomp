@@ -58,11 +58,11 @@ non_null:
     return (s8)value;
 }
 
-u32 pokemonDpFilterDataBiosGetPtr(u16 index) {
+s8* pokemonDpFilterDataBiosGetPtr(u16 index) {
     if (index < *pokemon_dp_filter_data_number) goto in_range;
     return 0;
 in_range:
-    return (u32)(pokemon_dp_filter_data + index);
+    return (s8*)(pokemon_dp_filter_data + index);
 }
 
 s32 pokemonFriendFilterDataBiosGetValue(s8* data, u8 index) {
@@ -107,14 +107,14 @@ u32 pokemonSeikakuRateDataBiosGetWaru(PokemonSeikakuRateBios* data) {
     if (data) goto non_null;
     return 0;
 non_null:
-    return *((u8*)data + 1);
+    return data->waru;
 }
 
 u32 pokemonSeikakuRateDataBiosGetKake(PokemonSeikakuRateBios* data) {
     if (data) goto non_null;
     return 0;
 non_null:
-    return *((u8*)data);
+    return data->kake;
 }
 
 PokemonSeikakuRateBios* pokemonSeikakuRateDataBiosGetPtr(u32 index) {
@@ -164,35 +164,35 @@ u32 pokemonSeikakuDataBiosGetNimblenessRateDataId(PokemonSeikakuDataBios* data) 
     if (data) goto non_null;
     return 0;
 non_null:
-    return *((u8*)data + 9);
+    return data->nimblenessRateDataId;
 }
 
 u32 pokemonSeikakuDataBiosGetSpeDefRateDataId(PokemonSeikakuDataBios* data) {
     if (data) goto non_null;
     return 0;
 non_null:
-    return *((u8*)data + 8);
+    return data->speDefRateDataId;
 }
 
 u32 pokemonSeikakuDataBiosGetSpeAtkRateDataId(PokemonSeikakuDataBios* data) {
     if (data) goto non_null;
     return 0;
 non_null:
-    return *((u8*)data + 7);
+    return data->speAtkRateDataId;
 }
 
 u32 pokemonSeikakuDataBiosGetPhyDefRateDataId(PokemonSeikakuDataBios* data) {
     if (data) goto non_null;
     return 0;
 non_null:
-    return *((u8*)data + 6);
+    return data->phyDefRateDataId;
 }
 
 u32 pokemonSeikakuDataBiosGetPhyAtkRateDataId(PokemonSeikakuDataBios* data) {
     if (data) goto non_null;
     return 0;
 non_null:
-    return *((u8*)data + 5);
+    return data->phyAtkRateDataId;
 }
 
 u32 pokemonSeikakuDataBiosGetName(u32* data) {
@@ -1951,7 +1951,7 @@ PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon* poke, u32 wazaNum, u8 unk) {
             return (PokemonWaza*)&_pokemon_waza_hatena;
         }
     }
-    return (PokemonWaza*)((u8*)poke + 0x80 + (u16)wazaNum * 4);
+    return &poke->wazas[(u16)wazaNum];
 }
 
 u32 pokemonBiosGetConditionAmari(Pokemon* poke) {

@@ -10,4 +10,11 @@ typedef uintptr_t GCuptr;
 typedef intptr_t GCsptr;
 typedef intptr_t GCsint;
 #endif
+
+#ifdef __MWERKS__
+#define PC_PTR(T, v) ((T)(v))
+#else
+static inline void* pc_ptr32(u32 v) { return (void*)(uintptr_t)v; }
+#define PC_PTR(T, v) ((T)pc_ptr32((u32)(v)))
+#endif
 #endif

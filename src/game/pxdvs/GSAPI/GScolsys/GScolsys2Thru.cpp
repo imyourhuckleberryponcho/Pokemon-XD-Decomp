@@ -208,16 +208,16 @@ static int getMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL_HEAD* head,
 }
 
 static inline int getFixedMdlEventListPass(GSvec* start, GSvec* end, CCD_THRUMDL_HEAD* mdl, EventTri* temp) {
+    EventTri* top;
+    EventTri* cur;
+    ThruTri* tri;
     u32 m;
+    int n;
     Vec3 cp;
     f32 t;
     Vec3 dir;
     int j;
-    int n;
-    ThruTri* tri;
     Vec3* normal;
-    EventTri* cur;
-    EventTri* top;
 
     n = 0;
     PSVECSubtract(end, start, &dir);

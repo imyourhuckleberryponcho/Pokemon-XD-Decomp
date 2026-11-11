@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/winwork.h>
 #include <game/statusval.h>
@@ -41,7 +42,12 @@ struct Gamedata {
     u8 _draft[1];
 };
 struct KeyInfo {
-    u8 _draft[1];
+    u16 on;
+    u16 up;
+    u16 trg;
+    u16 rep;
+    u16 rel;
+    u8 pad_a[0x10];
 };
 struct MenuData {
     u8 _draft[1];
@@ -134,7 +140,11 @@ s32 memcardTaskCall(s32, s32, s32);
 void menuCloseCustom(s32 menuID, s32, s32);
 MenuData* menuDataBiosGetPtr(s32 menuID);
 bool menuIsCheck(s32 menuID);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuTitle();
 void menuTitleBattlePreReadCheck();
 void menuTitleBattleSelectFree();
@@ -157,7 +167,8 @@ void menuTitlePreReadWait();
 void menuTitleReadWazaSelectMenu();
 void menuTitleSetSelect(s32 p0, s16 p1);
 void menuTitleSetStartStatus(u32 value);
-s32 menuToolInit(s16*, f32, f32, f32, f32, f32, f32);
+struct MenuTitleWork;
+s32 menuToolInit(MenuTitleWork*, f32, f32, f32, f32, f32, f32);
 s32 menuTop();
 u8 menuTopGetBattleMode();
 s32 menuTopSetInitCursor(s32);
@@ -196,7 +207,15 @@ static f32 _menuTitleFrameCount;
 static f32 _menuTitleAutoDemoCount;
 s32 _menuTitleSkipFlag;
 static GSthread* _gsthread_ptr_fight_reg_wzx;
-s16 _menuTitleWork[0x26];
+struct MenuTitleVec {
+    f32 x, y, z;
+};
+struct MenuTitleWork {
+    u8 unk0[0x10];
+    MenuTitleVec vec[4];
+    s16 select[5];
+};
+MenuTitleWork _menuTitleWork;
 static s32 _menuTitleWorkPat = 3;
 static s16 _titleCursorTimer;
 void menuTitleOpenMenu() {
@@ -209,13 +228,13 @@ void menuTitleOpenMenu() {
 
 extern "C" {
 s16 menuTitleGetSelect(s32 p0) {
-    return _menuTitleWork[p0 + 0x20];
+    return _menuTitleWork.select[p0];
 }
 }
 
 extern "C" {
 void menuTitleSetSelect(s32 p0, s16 p1) {
-    _menuTitleWork[p0 + 0x20] = p1;
+    _menuTitleWork.select[p0] = p1;
 }
 }
 
@@ -268,12 +287,12 @@ void menuTitleButton(void *p0) {
 extern "C++" {
 static void _menuTitleNormalButton(tagWINDOW_WORK* p0) {
     if (((s32) _menuTitleStatus < 0x29) && (p0 != NULL)) {
-        menuDataBiosGetPtr(M2C_NAMED(((WinWorkLayout*)(p0)), s32 *, 0x4, menuID));
-        if ((s32) (M2C_FIELD(windowGetKeyInfo(), u16 *, 4) & 0x810) != 0) {
-            if ((u8) M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0xA4, pad_a4) == 0) {
+        menuDataBiosGetPtr(((WinWorkLayout*)p0)->menuID);
+        if ((s32) (windowGetKeyInfo()->trg & 0x810) != 0) {
+            if ((u8) ((WinWorkLayout*)p0)->pad_a4 == 0) {
                 _menuTitleSetSE(0x11U);
             }
-            M2C_NAMED(((WinWorkLayout*)(p0)), u8 *, 0xA4, pad_a4) = 1U;
+            ((WinWorkLayout*)p0)->pad_a4 = 1U;
         }
     }
 }
@@ -288,17 +307,17 @@ void menuTitleCursorAnime(void *p0, void *p1) {
         M2C_NAMED(((SpriteWorkLayout*)(p1)), s32 *, 0x64, color[0]) = -1;
         if (temp_r0 < 0x1E) {
             f32 s = sin(3.14f * (temp_r0 / 30.0f));
-            M2C_NAMED(((SpriteWorkLayout*)(p1)), u8 *, 0x67, color[3]) -= (u8)(128.0f * s);
+            ((SpriteWorkLayout*)p1)->color[3] -= (u8)(128.0f * s);
         }
     } else {
-        M2C_NAMED(((SpriteWorkLayout*)(p1)), u8 *, 0x67, color[3]) = 0xFFU;
+        ((SpriteWorkLayout*)p1)->color[3] = 0xFFU;
     }
 }
 }
 
 extern "C" {
 void menuTitleCursorAnimeMain() {
-    _titleCursorTimer = (s32) ((60.0f * timeGetLastFrameSec()) + (f32) _titleCursorTimer) % 1000;
+    _titleCursorTimer = (s32) ((GC_FUSED(60.0f, timeGetLastFrameSec())) + (f32) _titleCursorTimer) % 1000;
 }
 }
 
@@ -306,7 +325,7 @@ extern "C" {
 void menuTitleHook(void *p0, void *p1) {
     s16 temp_r0;
 
-    temp_r0 = M2C_NAMED(((SpriteWorkLayout*)(p1)), s16 *, 0x6, id);
+    temp_r0 = ((SpriteWorkLayout*)p1)->id;
     if (temp_r0 < 0x42) {
         if (temp_r0 < 0x40) {
             if (temp_r0 < 0x3D) {
@@ -324,12 +343,12 @@ block_5:
 
 extern "C++" {
 static void _cursorSpriteOnOff(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
-    s16 cursor = M2C_NAMED(((WinWorkLayout*)(win)), s16 *, 0x9E, cursor);
+    s16 cursor = ((WinWorkLayout*)win)->cursor;
     s32 ids[5] = { 0x3D, 0x3E, 0x3F, 0x42, 0x43 };
     s32 i;
 
     for (i = 0; i < 5; i++) {
-        if (M2C_NAMED(((SpriteWorkLayout*)(sprite)), s16 *, 0x6, id) == ids[i]) {
+        if (((SpriteWorkLayout*)sprite)->id == ids[i]) {
             break;
         }
     }
@@ -495,7 +514,7 @@ void fn_800A3A48(u32 id, s16 anim, u8 loop, f32 frame) {
 
 extern "C" {
 void fn_800A3B34(s32 group, s32 id, bool flag) {
-    WorldMapModel* model = new WorldMapModel;
+    WorldMapModel* model = (GC_NEW_NOTE(sizeof(WorldMapModel), 4) new WorldMapModel);
     model->SetModel(group, id, flag);
     if (model != NULL) {
         delete model;
@@ -505,7 +524,7 @@ void fn_800A3B34(s32 group, s32 id, bool flag) {
 
 extern "C" {
 void fn_800A3BD4(s32 group, s32 id) {
-    WorldMapModel* model = new WorldMapModel;
+    WorldMapModel* model = (GC_NEW_NOTE(sizeof(WorldMapModel), 4) new WorldMapModel);
     model->UnloadModel(group, id);
     if (model != NULL) {
         delete model;
@@ -658,24 +677,24 @@ void menuTitleInit() {
         if (_menuTitleWorkPat >= 4) {
             _menuTitleWorkPat = 0;
         }
-        M2C_FIELD(_menuTitleWork, f32 *, 0x10) = 300.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x1C) = -300.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x28) = 0.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x34) = 0.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x14) = 400.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x20) = -400.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x2C) = 0.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x38) = 0.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x18) = 500.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x24) = -500.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x30) = 0.0f;
-        M2C_FIELD(_menuTitleWork, f32 *, 0x3C) = 0.0f;
-        _menuTitleWork[0x20] = -1;
-        _menuTitleWork[0x21] = -1;
-        _menuTitleWork[0x22] = -1;
-        _menuTitleWork[0x23] = -1;
-        _menuTitleWork[0x24] = -1;
-        menuToolInit(_menuTitleWork, 500.0f, -400.0f, 400.0f, 0.0f, -300.0f, 300.0f);
+        _menuTitleWork.vec[0].x = 300.0f;
+        _menuTitleWork.vec[1].x = -300.0f;
+        _menuTitleWork.vec[2].x = 0.0f;
+        _menuTitleWork.vec[3].x = 0.0f;
+        _menuTitleWork.vec[0].y = 400.0f;
+        _menuTitleWork.vec[1].y = -400.0f;
+        _menuTitleWork.vec[2].y = 0.0f;
+        _menuTitleWork.vec[3].y = 0.0f;
+        _menuTitleWork.vec[0].z = 500.0f;
+        _menuTitleWork.vec[1].z = -500.0f;
+        _menuTitleWork.vec[2].z = 0.0f;
+        _menuTitleWork.vec[3].z = 0.0f;
+        _menuTitleWork.select[0] = -1;
+        _menuTitleWork.select[1] = -1;
+        _menuTitleWork.select[2] = -1;
+        _menuTitleWork.select[3] = -1;
+        _menuTitleWork.select[4] = -1;
+        menuToolInit(&_menuTitleWork, 500.0f, -400.0f, 400.0f, 0.0f, -300.0f, 300.0f);
     }
 }
 }

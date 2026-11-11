@@ -35,23 +35,23 @@ struct GSvec {
 struct floorCharacter_dd_ {
     GC_BITS7(
     u8 visible : 1,
-    u8 flag6 : 1,
-    u8 flag5 : 1,
+    u8 loadInit : 1,
+    u8 isHit : 1,
     u8 flag4 : 1,
-    u8 flag3 : 1,
+    u8 talkWallThrough : 1,
     u8 flag2 : 1, u8 : 2)
     GC_BITS4(
-    u8 kind : 3,
-    u8 mode : 2,
-    u8 mode2 : 2, u8 : 1)
+    u8 moveType : 3,
+    u8 talkStartType : 2,
+    u8 talkEndType : 2, u8 : 1)
     u8 unk2;
     u8 unk3;
-    gc_bes16 unk4;
-    gc_be16 angle;
-    gc_be16 resID;
+    gc_bes16 rotY;
+    gc_be16 peopleInfoIndex;
+    gc_be16 nameID;
     gc_be32 unkC;
-    gc_be32 unk10;
-    gc_be32 unk14;
+    gc_be32 moveSctID;
+    gc_be32 talkSctID;
     gc_bef32 x, y, z;
 
 };
@@ -101,9 +101,9 @@ void floorCharacterBiosSetVisibility(u8* p0, bool visible) {
 extern "C" {
 void floorCharacterBiosSetPos(void *p0, void *p1) {
     if ((p0 != NULL) && (p1 != NULL)) {
-        GC_AT(f32, p0, 0x18) = (f32) M2C_FIELD(p1, f32 *, 0);
-        GC_AT(f32, p0, 0x1C) = (f32) M2C_FIELD(p1, f32 *, 4);
-        GC_AT(f32, p0, 0x20) = (f32) M2C_FIELD(p1, f32 *, 8);
+        ((floorCharacter_dd_*)p0)->x = (f32) M2C_FIELD(p1, f32 *, 0);
+        ((floorCharacter_dd_*)p0)->y = (f32) M2C_FIELD(p1, f32 *, 4);
+        ((floorCharacter_dd_*)p0)->z = (f32) M2C_FIELD(p1, f32 *, 8);
     }
 }
 }
@@ -111,7 +111,7 @@ void floorCharacterBiosSetPos(void *p0, void *p1) {
 extern "C" {
 s32 floorCharacterBiosGetTalkSctID(void *p0) {
     if (p0 != NULL) {
-        return GC_AT(s32, p0, 0x14);
+        return ((floorCharacter_dd_*)p0)->talkSctID;
     }
     return 0;
 }
@@ -120,7 +120,7 @@ s32 floorCharacterBiosGetTalkSctID(void *p0) {
 extern "C" {
 s32 floorCharacterBiosGetMoveSctID(void *p0) {
     if (p0 != NULL) {
-        return GC_AT(s32, p0, 0x10);
+        return ((floorCharacter_dd_*)p0)->moveSctID;
     }
     return 0;
 }
@@ -129,7 +129,7 @@ s32 floorCharacterBiosGetMoveSctID(void *p0) {
 extern "C" {
 PCRET(u16) floorCharacterBiosGetNameID(void *p0) {
     if (p0 != NULL) {
-        return GC_AT(u16, p0, 8);
+        return ((floorCharacter_dd_*)p0)->nameID;
     }
     return 0U;
 }
@@ -147,7 +147,7 @@ s32 floorCharacterBiosGetTalkWallThrough(u8 *p0) {
 extern "C" {
 s32 floorCharacterBiosGetTalkEndType(void *p0) {
     if (p0 != NULL) {
-        return ((u8) GC_AT(u8, p0, 1) >> 1U) & 3;
+        return ((floorCharacter_dd_*)p0)->talkEndType;
     }
     return 0;
 }
@@ -156,7 +156,7 @@ s32 floorCharacterBiosGetTalkEndType(void *p0) {
 extern "C" {
 s32 floorCharacterBiosGetTalkStartType(void *p0) {
     if (p0 != NULL) {
-        return ((u8) GC_AT(u8, p0, 1) >> 3U) & 3;
+        return ((floorCharacter_dd_*)p0)->talkStartType;
     }
     return 0;
 }
@@ -165,7 +165,7 @@ s32 floorCharacterBiosGetTalkStartType(void *p0) {
 extern "C" {
 s32 floorCharacterBiosGetMoveType(void *p0) {
     if (p0 != NULL) {
-        return ((u8) GC_AT(u8, p0, 1) >> 5U) & 7;
+        return ((floorCharacter_dd_*)p0)->moveType;
     }
     return 0;
 }
@@ -179,7 +179,7 @@ s32 floorCharacterBiosGetRot(void* p0, void* p1) {
     if (p1 == NULL) {
         return 0;
     }
-    GSvecSet((GSvec*)p1, 0.0f, 0.017453292f * GC_AT(s16, p0, 4), 0.0f);
+    GSvecSet((GSvec*)p1, 0.0f, 0.017453292f * ((floorCharacter_dd_*)p0)->rotY, 0.0f);
     return 1;
 }
 }
@@ -192,7 +192,7 @@ s32 floorCharacterBiosGetPos(void* p0, void* p1) {
     if (p1 == NULL) {
         return 0;
     }
-    GSvecSet((GSvec*)p1, GC_AT(f32, p0, 0x18), GC_AT(f32, p0, 0x1C), GC_AT(f32, p0, 0x20));
+    GSvecSet((GSvec*)p1, ((floorCharacter_dd_*)p0)->x, ((floorCharacter_dd_*)p0)->y, ((floorCharacter_dd_*)p0)->z);
     return 1;
 }
 }
@@ -227,7 +227,7 @@ s32 floorCharacterBiosGetVisibility(u8 *p0) {
 extern "C" {
 s32 floorCharacterBiosGetPeopleInfoPtr(void *p0) {
     if (p0 != NULL) {
-        return (GCsptr)(peopleInfoBiosGetPtrFromIndex((u32) GC_AT(u16, p0, 6)));
+        return (GCsptr)(peopleInfoBiosGetPtrFromIndex(((floorCharacter_dd_*)p0)->peopleInfoIndex));
     }
     return 0;
 }
@@ -275,38 +275,38 @@ void floorCharacterBiosInitGlobalCharacter() {
     memset(_globalCharacter, 0, sizeof(_globalCharacter));
     memset(&c, 0, sizeof(c));
     c.visible = 1;
-    c.flag5 = 1;
+    c.isHit = 1;
     c.flag4 = 1;
-    c.flag3 = 1;
+    c.talkWallThrough = 1;
     c.flag2 = 1;
-    c.kind = 0;
-    c.mode = 2;
-    c.mode2 = 0;
+    c.moveType = 0;
+    c.talkStartType = 2;
+    c.talkEndType = 0;
     c.unk2 = 0;
     c.unk3 = 0;
-    c.unk4 = 0;
-    c.angle = 0;
-    c.resID = 0;
+    c.rotY = 0;
+    c.peopleInfoIndex = 0;
+    c.nameID = 0;
     c.unkC = 0;
-    c.unk10 = 0;
-    c.unk14 = 0;
+    c.moveSctID = 0;
+    c.talkSctID = 0;
     c.x = 0.0f;
     c.y = 0.0f;
     c.z = 0.0f;
-    c.resID = 1;
-    c.angle = 2;
+    c.nameID = 1;
+    c.peopleInfoIndex = 2;
     _globalCharacter[0] = c;
-    c.resID = 3;
-    c.angle = 90;
+    c.nameID = 3;
+    c.peopleInfoIndex = 90;
     _globalCharacter[1] = c;
-    c.resID = 0x18;
-    c.angle = 45;
+    c.nameID = 0x18;
+    c.peopleInfoIndex = 45;
     _globalCharacter[2] = c;
 }
 }
 
 extern "C" {
-inline void GSvecSet(GSvec* v, f32 x, f32 y, f32 z) {
+PC_KEEP_INLINE inline void GSvecSet(GSvec* v, f32 x, f32 y, f32 z) {
     v->x = x;
     v->y = y;
     v->z = z;

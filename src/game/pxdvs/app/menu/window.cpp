@@ -220,7 +220,7 @@ void winSpriteRelease(void*);
 void winSpriteInit(void);
 void winSetSequence(void*, u32);
 void GSlogWrite(const char*, ...);
-u32 GSthreadGetCurrentThread(void);
+GCuptr GSthreadGetCurrentThread(void);
 void GSthreadSwitch(void);
 s32 menuGetCursorItemID(s32);
 void menuPlaySe(s32, s32);
@@ -414,7 +414,7 @@ void windowInit(u16 count)
     memset(&winSysWork, 0, sizeof(winSysWork));
     memset(&winSysWork2, 0, sizeof(winSysWork2));
     size = count * sizeof(tagWINDOW_WORK);
-    p = GSmemAlloc(size);
+    p = GSmemAlloc(GC_SIZE(size, count * 188));
     winSysWork.pool = (tagWINDOW_WORK*)p;
     if (p == 0) {
         GSlogWrite("windowInitの初期化に失敗しました\n");

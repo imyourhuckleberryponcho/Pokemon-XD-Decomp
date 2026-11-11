@@ -1,5 +1,7 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/statusval.h>
+#include <game/explimit.h>
 #include <game/fightfloor.h>
 
 struct Pokemon;
@@ -484,7 +486,7 @@ static inline void itemUsePPRecover(ITEMUSE2POKEMON_LOG1* log, s16* count, Pokem
     }
     target = pokemon;
     if (pokemonIsJoutaiDataId(pokemon, 0x10) || pokemonIsJoutaiDataId(pokemon, 0x31)) {
-        target = (Pokemon*)fightPokemonBiosGetMotoPokemonPtr(fightPokemon);
+        target = PC_PTR(Pokemon*, fightPokemonBiosGetMotoPokemonPtr(fightPokemon));
     }
     if (slot != 0xFF) {
         if ((delta = itemUsePPUp(target, slot, boost)) != 0) {
@@ -620,7 +622,7 @@ static inline u16 itemUseLevelUp(ITEMUSE2POKEMON_LOG1* log, s16* count, Pokemon*
         return 0;
     }
     level = pokemonBiosGetLevel(pokemon);
-    if (level >= 100) {
+    if (level >= EXP_LEVEL_LIMIT) {
         return 0;
     }
     oldMaxHp = pokemonBiosGetMaxHp(pokemon);

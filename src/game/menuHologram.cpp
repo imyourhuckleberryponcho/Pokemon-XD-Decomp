@@ -45,6 +45,10 @@ struct GSgfxColAu8 {
         u8 v[4];
     };
 };
+#define CB_R 0
+#define CB_G 1
+#define CB_B 2
+#define CB_A 3
 struct GSColor4 {
     u8 r, g, b, a;
 };
@@ -312,7 +316,7 @@ void* floorOpenObject(u32);
 u32 floorGetCurrentGroupID();
 u32 floorReadMakeLightResID(u32);
 void* peopleInfoBiosGetPtr(u32);
-s32 peopleInfoBiosGetNeckIndex(void*);
+s8 peopleInfoBiosGetNeckIndex(void*);
 void* Sequence_CreateNull();
 void* Sequence_LoadWaza(void*, u16, u8, s32);
 void* Sequence_LoadPokemon(u16, u32, u32);
@@ -352,7 +356,7 @@ extern "C" GSmtx44 mtxIdent;
 extern "C" ReliveHallData* relivehall_data;
 extern "C" s32 pcReliveHallSoundTbl[5];
 extern GSgfxColAu8 relivehallAisyou2ColorTbl[3];
-extern const GSgfxColAu8 GSgfxColAu8_Black;
+extern GC_CONST GSgfxColAu8 GSgfxColAu8_Black;
 
 void menuPtPlaySe(u32);
 void menuPtPlayBgm(u32);
@@ -994,7 +998,7 @@ void CMenuHologram::stageAllModelLoad()
     initializeOffscreenData();
     GSColor4 col;
     u16 wazaId;
-    s16 dancers;
+    s8 dancers;
     u32 camId;
     u32 sceneId;
     int st;
@@ -1150,10 +1154,10 @@ void CMenuHologram::stageAllModelLoad()
         memset(&col, 0, 4);
         if (visitor != 0) {
             GSgfxColAu8 c = pokemonToAisyouColor(visitor, stage->getDancerPointer(stage->hit));
-            col.r = c.v[0];
-            col.g = c.v[1];
-            col.b = c.v[2];
-            col.a = c.v[3];
+            col.r = c.v[CB_R];
+            col.g = c.v[CB_G];
+            col.b = c.v[CB_B];
+            col.a = c.v[CB_A];
         }
         u8 pl = ((u8*)relivehall_data)[colorLineIndexTbl[st][dancers][0] + 6];
         GSmaterial* mat = (GSmaterial*)((u8*)mats + (pl - 1) * GSMATERIAL_SIZE);
@@ -1450,7 +1454,7 @@ void CMenuHologram::drawAll()
 
 void thisNew()
 {
-    void* mem = GSmemAllocClr(sizeof(CMenuHologram));
+    void* mem = GSmemAllocClr(GC_SIZE(sizeof(CMenuHologram), 1048));
     pMenuHologram = new (mem) CMenuHologram;
 }
 

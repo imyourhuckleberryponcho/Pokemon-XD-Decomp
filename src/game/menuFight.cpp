@@ -299,7 +299,7 @@ void* memcpy(void*, const void*, u32);
 void* fightOutPokemonGetPokemonPtr(void*);
 u8 fightOutPokemonCheckCanOutOkWazaBanme(void*, u16, u8, u16*);
 StatusU32 wazaGetStatus(void*, u16, u16, u32);
-u32 GSmsgGetGSchar(u32);
+GCuptr GSmsgGetGSchar(u32);
 u16 fightOutPokemonGetSoubiItemDataId(void*);
 u32 fightFloorSetStatus(void*, u16, u16, u16, u32);
 WindowKeyInfo* windowGetKeyInfo(void);
@@ -324,7 +324,12 @@ struct TargetArg {
 extern "C" {
 void* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(void*, void*);
 void* fightFloorGetNowPtr(void);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
+#define MENU_CURSOR_ARG(b) PCARG(b, (s32*)(GCuptr)(u32)(b))
 void menuClose(s32);
 s32 menuGetCursorFromItemID(s32, s32);
 u8 fightTypeDataBiosGetFightoutPokemonNum(void*);
@@ -1008,7 +1013,7 @@ s32 menuFightOpenWaza(FIGHT_TRAINER* trainer, MENU_WAZA_STATUS* status, s32 b, s
                 menuOpen(id24, 0);
             }
             while (flag) {
-                result = menuOpenCustom(id, 0, b, 0, c, 1, status);
+                result = menuOpenCustom(id, 0, MENU_CURSOR_ARG(b), 0, c, 1, status);
                 if (result != -1) {
                     menuCloseCustom(id, 2, c);
                 }
@@ -1025,7 +1030,7 @@ s32 menuFightOpenWaza(FIGHT_TRAINER* trainer, MENU_WAZA_STATUS* status, s32 b, s
                 break;
             }
         } else {
-            result = menuOpenCustom(id, 0, b, 0, c, 1, status);
+            result = menuOpenCustom(id, 0, MENU_CURSOR_ARG(b), 0, c, 1, status);
             if (id == 0x90) {
                 menuClose(id);
             }
@@ -1149,14 +1154,14 @@ s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
             result = 0;
         } else if (isImasugu()) {
             base = fightFloorGetStatus(0, 0, 0x35, 0);
-            if (fightFloorGetFightOutPokemonPtrToFightTrainerPtr(fightFloorGetNowPtr(), (void*)arg->user) == (void*)(base + 0x64)) {
+            if (fightFloorGetFightOutPokemonPtrToFightTrainerPtr(fightFloorGetNowPtr(), PC_PTR(void*, arg->user)) == PC_PTR(void*, base + 0x64)) {
                 id = 0xa0;
                 other = 0xa2;
             } else {
                 id = 0xa3;
                 other = 0x9f;
             }
-            result = menuOpenCustom(id, 0, b, 0, c, 1, arg);
+            result = menuOpenCustom(id, 0, MENU_CURSOR_ARG(b), 0, c, 1, arg);
             menuCloseCustom(id, 2, c);
             if (menuIsCheck(other)) {
                 menuClose(other);
@@ -1214,7 +1219,7 @@ s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
         if (menuIsCheck(0x92)) {
             menuCloseCustom(0x92, 0, 1);
         }
-        result = menuOpenCustom(0x91, 0, b, 0, c, 1, arg);
+        result = menuOpenCustom(0x91, 0, MENU_CURSOR_ARG(b), 0, c, 1, arg);
     }
     return result;
 }
@@ -1670,7 +1675,7 @@ void menuFightDrawWaza(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
         break;
     }
     if (n < 4) {
-        u32 name = alloc->rows[n].name;
+        GCuptr name = alloc->rows[n].name;
         if (name != 0) {
             msgctrlSetValue(0x37, name);
             GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0x17, 0, menuSubCalcColor(window, sprite), 0x4277);
@@ -2865,7 +2870,7 @@ void menuFightDrawSecretPokemonStatus(tagWINDOW_WORK* window, tagSPRITE_WORK* sp
             case 0x2ca:
             {
                 u16 x;
-                u32 lbl = GSmsgGetGSchar(0x435a);
+                GCuptr lbl = GSmsgGetGSchar(0x435a);
                 msgctrlSetValue(0x37, lbl);
                 GSmsgPrint2(winSpriteGetLayerID(window, sprite), 0, 0, color, 0x4276);
                 x = GSmsgGetRect(0x4276) >> 16;
@@ -3062,7 +3067,7 @@ void menuFightDrawSecretPokemonStatus(tagWINDOW_WORK* window, tagSPRITE_WORK* sp
                 s16 x = 0;
                 void* pdata = pokemonDataBiosGetPtr(pokemonGetStatus(pk, 0, 0x6e, 0));
                 if (pdata != 0) {
-                    u32 name = pokemonDataBiosGetName(pdata);
+                    GCuptr name = pokemonDataBiosGetName(pdata);
                     u32 msg;
                     if (name != 0) {
                         msgctrlSetValue(0x37, GSmsgGetGSchar(name));

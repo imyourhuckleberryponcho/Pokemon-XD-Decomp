@@ -215,7 +215,7 @@ void soundOpenPlayEnv(s32, s32, s32);
 void soundSetVolumeID(s32, s32, s32);
 void floorReleaseOffscreen();
 void* memset(void*, int, unsigned long);
-u32 floorDataBiosGetCurrentPtr();
+GCuptr floorDataBiosGetCurrentPtr();
 GSfloor_dd_* floorDataBiosGetPtr(u32);
 u32 floorDataBiosGetMapResID(void*);
 u32 floorGetCurrentGroupID();
@@ -517,13 +517,13 @@ u8 floorCreateLocalHeap();
 }
 
 #pragma dont_inline on
-inline void GSvec::clear() {
+PC_KEEP_INLINE inline void GSvec::clear() {
     x = 0.0f;
     y = 0.0f;
     z = 0.0f;
 }
 
-inline void GSvec::set(f32 _x, f32 _y, f32 _z) {
+PC_KEEP_INLINE inline void GSvec::set(f32 _x, f32 _y, f32 _z) {
     x = _x;
     y = _y;
     z = _z;
@@ -1813,11 +1813,12 @@ void floorMapSetDisp(u8 disp) {
 }
 
 void floorMapResourceDataIterate(FloorMapCB cb, void* ctx) {
+    u32 mapRes;
     u32 group;
-    u32 lightIdx = 0;
-    u32 modelIdx = 0;
     u32 id;
-    u32 mapRes = floorDataBiosGetMapResID((void*)floorDataBiosGetCurrentPtr());
+    u32 modelIdx = 0;
+    u32 lightIdx = 0;
+    mapRes = floorDataBiosGetMapResID((void*)floorDataBiosGetCurrentPtr());
     if (mapRes != 0) {
         group = floorGetCurrentGroupID();
         void* archive = GSresGetResource(group, mapRes);
@@ -1836,7 +1837,7 @@ void floorMapResourceDataIterate(FloorMapCB cb, void* ctx) {
             if (scene->lights != 0) {
                 u32 base = floorReadMakeLightResID(mapRes);
                 for (int i = 0; scene->lights[i] != 0; i++, lightIdx++) {
-                    id = lightIdx | base;
+                    id = base | lightIdx;
                     void* res = GSresGetResource(group, id);
                     if (res != 0) {
                         cb(2, group, id, res, ctx);

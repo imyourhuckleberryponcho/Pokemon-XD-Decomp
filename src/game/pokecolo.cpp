@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/sysvars.h>
 #include <game/ppcops.h>
 #pragma pool_strings off
 #define ATTRIBUTE_ALIGN(num) __attribute__((aligned(num)))
@@ -224,7 +226,7 @@ void pokecoloSetPlayTime(f64 time);
 void pokecoloStartCountPlayTime(u8 value);
 s32 reliveHallCallBackInit();
 void* savedataBiosGetGamedataPtr(Savedata* savedata);
-u32 savedataBiosGetNowSavedataPtr();
+GCuptr savedataBiosGetNowSavedataPtr();
 Savedata * savedataBiosGetSavedataBufferPtr();
 void savedataBiosSetNowSavedataPtr(Savedata* savedata);
 s32 savedataCreate(s32, s32);
@@ -236,8 +238,7 @@ f32 timeGetLastFrameSec(void);
 extern s32 floordata;
 extern s32* floordata_number;
 extern s32 msgctrlcode[];
-struct XdBlob94 { u8 data[0x94]; };
-extern XdBlob94 systemVars;
+extern SystemVars systemVars;
 f32 __cvt_ull_flt(s32, s32);
 static const u32 _clearAddress[32] = {
     0x17EB, 0x2FEA, 0x183, 0x1EA, 0x283, 0x2EA, 0x383, 0x3EA, 0x483, 0x4EA, 0x583, 0x5EA, 0x683, 0x6EA, 0x783, 0x7EA,
@@ -313,7 +314,7 @@ void pokecoloStartCountPlayTime(u8 value) {
 
 extern "C" {
 void pokecoloSetPlayTime(f64 time) {
-    GamedataSave* save = (GamedataSave*)_getSaveSystemDataPtr();
+    GamedataSave* save = PC_PTR(GamedataSave*, _getSaveSystemDataPtr());
     if (save != 0) {
         gamedatasaveBiosSetPlaytime(save, time);
     }
@@ -328,7 +329,7 @@ u32 pokecoloGetPlayTimeValue() {
 
 extern "C" {
 f64 pokecoloGetPlayTime() {
-    GamedataSave* save = (GamedataSave*)_getSaveSystemDataPtr();
+    GamedataSave* save = PC_PTR(GamedataSave*, _getSaveSystemDataPtr());
     if (save != 0) {
         return gamedatasaveBiosGetPlaytime(save);
     }
@@ -344,12 +345,12 @@ static void _countPlayTime() {
 
     temp_r3 = _getSaveSystemDataPtr();
     if ((temp_r3 != 0U) && ((u8) __pokecolo_CountPlayTime == 1) && (GSflagGet(0x30D) == 0U)) {
-        temp_f31 = gamedatasaveBiosGetPlaytime((GamedataSave*)(temp_r3));
+        temp_f31 = gamedatasaveBiosGetPlaytime(PC_PTR(GamedataSave*, temp_r3));
         var_f1 = temp_f31 + pokecoloGetFrameTime();
         if (var_f1 >= M2C_BITWISE(f32, 3599940.0)) {
             var_f1 = 3599940.0;
         }
-        gamedatasaveBiosSetPlaytime((GamedataSave*)(temp_r3), var_f1);
+        gamedatasaveBiosSetPlaytime(PC_PTR(GamedataSave*, temp_r3), var_f1);
     }
 }
 }
@@ -462,7 +463,7 @@ void pokecoloMain(int argc, char** argv) {
 
     GSgfxRelocToScratch();
     pokecoloFrameCounter = 0;
-    switch ((s32) M2C_FIELD(&systemVars, s32 *, 8)) {
+    switch (systemVars.perfbar) {
     case 0:
         GSgfxPerfbarSetRenderMode(0);
         break;
@@ -540,7 +541,7 @@ void pokecoloMain(int argc, char** argv) {
     pokecoloGappMainDeamonHandle = GSgappCreate(1, 0xFE, 0, (GSgappFunc)(_mainDaemon));
     GSgappSetName(pokecoloGappMainDeamonHandle, "mainDeamon");
     GSgfxResetEnable();
-    GSgfxResetSetShutdownCallback(_pokecoloShutdown);
+    GSgfxResetSetShutdownCallback((void*)_pokecoloShutdown);
     fadeInit();
     GSfilterInitialise(8);
     GSeffectInitSystem();
@@ -634,7 +635,7 @@ extern "C" {
 void mainAntiActionReplay() {
     if (_AntiActionReplayTimer == 0) {
         for (u32 i = 0; i < 32; i += 2) {
-            memset((void*)(_clearAddress[i] + 0x80000015), 0, (_clearAddress[i + 1] + 0x16) - (_clearAddress[i] + 0x15));
+            memset(PC_PTR(void*, _clearAddress[i] + 0x80000015), 0, (_clearAddress[i + 1] + 0x16) - (_clearAddress[i] + 0x15));
         }
         memset((void*)0x80001801, 0, 0x17FF);
         _AntiActionReplayTimer = 100;

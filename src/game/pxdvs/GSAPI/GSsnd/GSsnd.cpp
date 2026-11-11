@@ -120,8 +120,33 @@ struct SndListener {
     u8 li[0x90];
 };
 
+#ifdef __MWERKS__
 struct SndRevH {
     u8 work[0x1c4];
+#else
+struct SndRevHLine {
+    s32 inPoint;
+    s32 outPoint;
+    s32 length;
+    f32* inputs;
+    f32 lastOutput;
+};
+struct SndRevHWork {
+    SndRevHLine AP[9];
+    SndRevHLine C[9];
+    f32 allPassCoeff;
+    f32 combCoef[9];
+    f32 lpLastout[3];
+    f32 level;
+    f32 damping;
+    s32 preDelayTime;
+    f32 crosstalk;
+    f32* preDelayLine[3];
+    f32* preDelayPtr[3];
+};
+struct SndRevH {
+    SndRevHWork work;
+#endif
     u8 tempDisableFX;
     u8 pad[3];
     f32 coloration;
@@ -1283,7 +1308,11 @@ static u8 _sndStreamInit(u32 n) {
     SndStream* s;
     u32 i;
     _maxStreaming = n;
+#ifdef __MWERKS__
     _sndStreaming = (SndStream*)_sndDoMalloc(n << 8);
+#else
+    _sndStreaming = (SndStream*)_sndDoMalloc(GC_SIZE(n * sizeof(SndStream), n * 256));
+#endif
     if (!_sndStreaming) {
         return 0;
     }

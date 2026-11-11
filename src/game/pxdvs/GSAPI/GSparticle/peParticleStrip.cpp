@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/gsvfarray.h>
 #include <game/pecontainer.h>
@@ -797,10 +798,10 @@ u16 peParticleStripContainer::Emit(unsigned short count) {
             peStripNodeData* n = (peStripNodeData*)node;
             ((peNode*)n)->Start(emitter, (_EmitParams*)params);
             if (p->flags & 0x2000000) {
-                vecScale(&n->extent, GC_VEC3P(Vec, &p->dir), 10.0f * (phase * p->lenRange + p->lenBase));
+                vecScale(&n->extent, GC_VEC3P(Vec, &p->dir), 10.0f * (GC_FUSED(phase, p->lenRange) + p->lenBase));
             } else {
                 f32 r = HSD_Randf();
-                vecScale(&n->extent, GC_VEC3P(Vec, &p->dir), 10.0f * (p->lenRange * r + p->lenBase));
+                vecScale(&n->extent, GC_VEC3P(Vec, &p->dir), 10.0f * (GC_FUSED(p->lenRange, r) + p->lenBase));
             }
             d->flags |= 2;
         }

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gsmodelview.h>
@@ -247,6 +248,10 @@ static_assert(sizeof(tagPeopleWork) == sizeof(PeopleWorkLayout), "peoplework.h s
 static_assert(offsetof(tagPeopleWork, points) == offsetof(PeopleWorkLayout, points), "peoplework.h points");
 static_assert(offsetof(tagPeopleWork, attachGroupID) == offsetof(PeopleWorkLayout, attachGroupID), "peoplework.h attach");
 static_assert(offsetof(tagPeopleWork, rotRate) == offsetof(PeopleWorkLayout, rotRate), "peoplework.h rotRate");
+static_assert(offsetof(tagPeopleWork, moveType) == 0x58, "PC layout: moveType");
+static_assert(offsetof(tagPeopleWork, pointCount) == 0x78, "PC layout: pointCount");
+static_assert(offsetof(tagPeopleWork, points) == 0x80, "PC layout: points");
+static_assert(offsetof(tagPeopleWork, f7C) == 0x88, "PC layout: f7C");
 #endif
 
 struct MarkRes {
@@ -430,7 +435,7 @@ void GSresFreeResourceAllGroup(u32 id);
 void* GSresGetResource(u32 grp, u32 id);
 void GSresRegisterResource(void* mem, u32 grp, u32 id, void* freeFunc);
 u8 GSsndPlayNow(u32 id);
-u32 GSthreadGetCurrentThread();
+GCuptr GSthreadGetCurrentThread();
 void GSthreadSwitch();
 void GSvecTransformQuat(GSvec* out, const GSquat* q, const GSvec* v);
 u16 HSD_Rand(void);
@@ -1228,7 +1233,7 @@ bool peopleStartRotRandom(u32 groupID, u32 peopleID, f32 base, f32 range) {
     work->mode = 0;
     peopleSetFlagOn(groupID, peopleID, 8);
     peopleBiosGetPos(work, &work->basePos);
-    work->timer = work->timeRange * (2.0f * HSD_Randf() - 1.0f) + work->timeBase;
+    work->timer = GC_FUSED(work->timeRange, (2.0f * HSD_Randf() - 1.0f)) + work->timeBase;
     work->timeBase = base;
     work->timeRange = range;
     work->curRate = work->walkRate;
@@ -1496,7 +1501,7 @@ static void _peopleMoveTypeRandomRot(tagPeopleWork* work) {
             work->mode = 1;
     case 1: {
             f32 rnd = 2.0f * HSD_Randf() - 1.0f;
-            f32 target = fmod(6.2831855f + (1.5707964f * rnd + (3.1415927f + work->angle)), 6.2831854820251465);
+            f32 target = fmod(6.2831855f + (GC_FUSED(1.5707964f, rnd) + (3.1415927f + work->angle)), 6.2831854820251465);
             f32 rate = 1.0f;
             if (work->speed > 0.1f + work->walkRate) {
                 rate = 2.0f;
@@ -1505,7 +1510,7 @@ static void _peopleMoveTypeRandomRot(tagPeopleWork* work) {
             work->mode = 2;
     }
     case 2:
-            work->timer = work->timeRange * (2.0f * HSD_Randf() - 1.0f) + work->timeBase;
+            work->timer = GC_FUSED(work->timeRange, (2.0f * HSD_Randf() - 1.0f)) + work->timeBase;
             work->mode = 0;
             return;
         }
@@ -1535,8 +1540,8 @@ static void _peopleMoveTypeRandomWalk(tagPeopleWork* work) {
                 int tries = 0;
                 do {
                     f32 angle = 6.2831855f * HSD_Randf();
-                    work->destPos.x = work->randRadius * (f32)sin(angle) + work->basePos.x;
-                    work->destPos.z = work->randRadius * (f32)cos(angle) + work->basePos.z;
+                    work->destPos.x = GC_FUSED(work->randRadius, (f32)sin(angle)) + work->basePos.x;
+                    work->destPos.z = GC_FUSED(work->randRadius, (f32)cos(angle)) + work->basePos.z;
                     work->destPos.y = GScolsys2HumanGetWalkHeight(&work->destPos);
                     if (_distanceXZ(&work->destPos, &work->startPos) > 6.0f * END_NEED_DISTANCE) {
                         break;
@@ -1560,7 +1565,7 @@ static void _peopleMoveTypeRandomWalk(tagPeopleWork* work) {
                         }
                         peopleRotateToAngle(work->groupID, work->peopleID, 3.1415927f + work->angle, rate);
                     }
-                    work->timer = work->timeRange * (2.0f * HSD_Randf() - 1.0f) + work->timeBase;
+                    work->timer = GC_FUSED(work->timeRange, (2.0f * HSD_Randf() - 1.0f)) + work->timeBase;
                     work->mode = 0;
                 }
             }
@@ -1855,7 +1860,7 @@ static void _peopleAnimEndCallback(_GSmodel* model, _GSmodelAnimCBData* data) {
                     work->setAnimType(GS_MODEL_ANIM_TYPE_0);
                     work->setAnimFrame(0.0f);
                     work->setAnimRate(0.5f, true);
-                    m_hero_next_special_idling_time = 5.0f * HSD_Randf() + 15.0f;
+                    m_hero_next_special_idling_time = GC_FUSED(5.0f, HSD_Randf()) + 15.0f;
                     return;
                 }
             }
@@ -2090,7 +2095,7 @@ static void _peopleUpdateBlendAnimation(tagPeopleWork* work, f32 speed) {
                 f32 factor = peopleGetBlendFactor(realSpeed, walkRate, runRate);
                 GSmodelSetBlendFactor(model, factor);
                 f32 half = 0.5f * playRate;
-                work->setAnimRate((half * (walkRate * (1.0f - factor) + runRate * factor)) / runRate, false);
+                work->setAnimRate((half * (GC_FUSED(walkRate, (1.0f - factor)) + runRate * factor)) / runRate, false);
                 peopleViewerDisplayAnimRate(work, factor);
             }
         }
@@ -2447,26 +2452,26 @@ bool peopleMoveAlongAngle(u32 groupID, u32 peopleID, f32 dist, f32 angle) {
         probe.x = pos.x;
         probe.y = pos.y;
         probe.z = pos.z;
-        step.x += move * (f32)sin(angle);
-        step.z += move * (f32)cos(angle);
+        step.x += GC_FUSED(move, (f32)sin(angle));
+        step.z += GC_FUSED(move, (f32)cos(angle));
         step.y = GScolsys2HumanGetWalkHeight(&step);
         f32 sq = move * move;
         f32 dy = pos.y - step.y;
         f32 dd = dy * dy;
         f32 slope = sq / sqrtf(sq + dd);
-        probe.x += slope * (f32)sin(angle);
-        probe.z += slope * (f32)cos(angle);
+        probe.x += GC_FUSED(slope, (f32)sin(angle));
+        probe.z += GC_FUSED(slope, (f32)cos(angle));
         probe.y = GScolsys2HumanGetWalkHeight(&probe);
         if (slope > move) {
             slope = move;
         }
         if (!gimmickBoxOnBox(work, peopleBiosGetPosPtr(work), &step)) {
-            pos.x += slope * (f32)sin(angle);
-            pos.z += slope * (f32)cos(angle);
+            pos.x += GC_FUSED(slope, (f32)sin(angle));
+            pos.z += GC_FUSED(slope, (f32)cos(angle));
             pos.y = GScolsys2HumanGetWalkHeight(&pos);
         } else {
-            pos.x += move * (f32)sin(angle);
-            pos.z += move * (f32)cos(angle);
+            pos.x += GC_FUSED(move, (f32)sin(angle));
+            pos.z += GC_FUSED(move, (f32)cos(angle));
             pos.y = GScolsys2HumanGetWalkHeight(&pos);
         }
     }
@@ -2547,16 +2552,16 @@ void peopleMoveNeckAngleWorld(u32 groupID, u32 peopleID, f32 yaw, f32 pitch, f32
         }
         f32 world;
         world = adjust2PI(diff + rot->y);
-        x = 1000000.0f * (f32)sin(world) + info.pos.x;
-        z = 1000000.0f * (f32)cos(world) + info.pos.z;
-        f32 y = -(1000000.0f * (f32)sin(pitch) - info.pos.y);
+        x = GC_FUSED(1000000.0f, (f32)sin(world)) + info.pos.x;
+        z = GC_FUSED(1000000.0f, (f32)cos(world)) + info.pos.z;
+        f32 y = -(GC_FUSED(1000000.0f, (f32)sin(pitch)) - info.pos.y);
         work->neckTarget.x = x;
         work->neckTarget.y = y;
         work->neckTarget.z = z;
         work->neckMode = 3;
         f32 np = _peopleGetNearAngle(pitch - info.rot.x);
         f32 ny = _peopleGetNearAngle(world - info.rot.y);
-        f32 len = sqrtf(np * np + ny * ny);
+        f32 len = sqrtf(GC_FUSED(np, np) + ny * ny);
         work->neckF1 = 1;
         work->neckF3 = 0;
         work->neckF2 = 0;
@@ -2581,16 +2586,16 @@ void peopleMoveNeckAngle(u32 groupID, u32 peopleID, f32 yaw, f32 pitch, f32 spee
         pitch = 0.017453292f * pitch;
         f32 x;
         f32 z;
-        x = 1000000.0f * (f32)sin(yaw) + info.pos.x;
-        z = 1000000.0f * (f32)cos(yaw) + info.pos.z;
-        f32 y = -(1000000.0f * (f32)sin(pitch) - info.pos.y);
+        x = GC_FUSED(1000000.0f, (f32)sin(yaw)) + info.pos.x;
+        z = GC_FUSED(1000000.0f, (f32)cos(yaw)) + info.pos.z;
+        f32 y = -(GC_FUSED(1000000.0f, (f32)sin(pitch)) - info.pos.y);
         work->neckTarget.x = x;
         work->neckTarget.y = y;
         work->neckTarget.z = z;
         work->neckMode = 3;
         f32 np = _peopleGetNearAngle(pitch);
         f32 ny = _peopleGetNearAngle(yaw);
-        f32 len = sqrtf(np * np + ny * ny);
+        f32 len = sqrtf(GC_FUSED(np, np) + ny * ny);
         work->neckF1 = 1;
         work->neckF3 = 0;
         work->neckF2 = 0;
@@ -3406,7 +3411,7 @@ s32 peopleOpen(u32 groupID, u32 peopleID, u32 objectID) {
     work->timeRange = 3.0f;
     f32 jitter = 2.0f * HSD_Randf() - 1.0f;
     f32 one = 1.0f;
-    work->timer = work->timeRange * jitter + work->timeBase;
+    work->timer = GC_FUSED(work->timeRange, jitter) + work->timeBase;
     work->chestReg = 0;
     work->angleSpeed = 0.0f;
     work->rotRate = one;
@@ -3991,7 +3996,8 @@ static void _peopleUpdateNeck(tagPeopleWork* work, f32 dist) {
                     }
                 }
             }
-        break;
+            break;
+        }
     }
     }
     if (work->neckF3 == 1) {
@@ -4047,7 +4053,6 @@ static void _peopleUpdateNeck(tagPeopleWork* work, f32 dist) {
         }
         work->neckCur.y += stepY;
     }
-}
 }
 
 static bool _peopleIsMoving(tagPeopleWork* work) {

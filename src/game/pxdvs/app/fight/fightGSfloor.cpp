@@ -1,6 +1,8 @@
 #include <dolphin/types.h>
 #include <game/statusval.h>
 #include <game/gcptr.h>
+#define FIGHT_TRAINER_OPAQUE_RECORDS
+#include <game/pxdvs/app/fight/fightTrainerData.h>
 
 struct GSvec {
     f32 x, y, z;
@@ -73,8 +75,8 @@ void fightFloorLoopValidFightTrainer(FIGHT_FLOOR* floor, GSfloorLoopFunc func, v
 u8 fightFloorLoopValidFightOutPokemon(FIGHT_FLOOR* floor, GSfloorLoopFunc func, void* data, u8 useAry);
 u8 fightFloorIsNowEncountSnatchOnly(FIGHT_FLOOR* floor);
 void fightFloorSetShadow(void);
-u32 fightEvtGetSequence(void);
-void fightEvtSetSequence(u32 seq);
+GCuptr fightEvtGetSequence(void);
+void fightEvtSetSequence(GCuptr seq);
 StatusU32 pokemonGetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index);
 StatusU32 fightTrainerGetStatus(void* trainer, u16 id, u16 kind, u16 arg);
 void GSmodelPushState(_GSmodel* model, GSmodelState* state);
@@ -83,23 +85,22 @@ void GSmodelGetPosition(_GSmodel* model, GSvec* v);
 void GSmodelGetRotation(_GSmodel* model, GSvec* v);
 void GSmodelGetScale(_GSmodel* model, GSvec* v);
 u32 GSmodelGetVisibility(_GSmodel* model);
-u32 Sequence_LoadTrainer(u32 id);
-u32 Sequence_LoadPokemon(u32 id, u32 rnd, u32 rare);
-_GSmodel* Sequence_GetGSmodel(u32 seq);
-void Sequence_SetPosition(u32 seq, GSvec* v);
-void Sequence_SetRotation(u32 seq, GSvec* v);
-void Sequence_SetScale(u32 seq, GSvec* v);
-void Sequence_SetFlipped(u32 seq, u8 flipped);
-void Sequence_SetFlags(u32 seq, u8 flags);
-void Sequence_SetVisibility(u32 seq, u32 visible);
-u8 Sequence_GetFlags(u32 seq);
-u8 Sequence_IsFlipped(u32 seq);
+GCuptr Sequence_LoadTrainer(u32 id);
+GCuptr Sequence_LoadPokemon(u32 id, u32 rnd, u32 rare);
+_GSmodel* Sequence_GetGSmodel(GCuptr seq);
+void Sequence_SetPosition(GCuptr seq, GSvec* v);
+void Sequence_SetRotation(GCuptr seq, GSvec* v);
+void Sequence_SetScale(GCuptr seq, GSvec* v);
+void Sequence_SetFlipped(GCuptr seq, u8 flipped);
+void Sequence_SetFlags(GCuptr seq, u8 flags);
+void Sequence_SetVisibility(GCuptr seq, u32 visible);
+u8 Sequence_GetFlags(GCuptr seq);
+u8 Sequence_IsFlipped(GCuptr seq);
 u8 Sequence_IsRare(u32 seq);
 u32 Sequence_GetPokemonRndVal(u32 seq);
 u16 Sequence_GetID(u32 seq);
-void Sequence_Free(u32 seq);
+void Sequence_Free(GCuptr seq);
 #ifndef __MWERKS__
-void fightTrainer_SetSequencePtr(u8* t, u32 v);
 void fightOutPokemonBiosSetSequencePtr(u8* p, GCuptr v);
 #endif
 }
@@ -181,7 +182,7 @@ void fightGSfloorPopData(GSfloorPush* in) {
     GSfloorTrainerEntry* t;
     GSfloorPokemonEntry* p;
     _GSmodel* model;
-    u32 seq;
+    GCuptr seq;
     GSvec v;
 
     grid = in->grid;
@@ -191,11 +192,7 @@ void fightGSfloorPopData(GSfloorPush* in) {
     evtFlag = in->evtFlag;
     while (trainerCount-- != 0) {
         seq = Sequence_LoadTrainer(t->id);
-#ifdef __MWERKS__
-        *(u32*)(t->target + 0x3544) = seq;
-#else
-        fightTrainer_SetSequencePtr((u8*)t->target, seq);
-#endif
+        ((FightTrainer*)t->target)->sequence = (Sequence*)seq;
         *t->bgSeq = seq;
         model = Sequence_GetGSmodel(seq);
         GSmodelPopState(model, &t->state);
@@ -257,7 +254,7 @@ void fightGSfloorPopData(GSfloorPush* in) {
 
 static u8 _fightGSfloorTrainerEvt(void* target, u16 id, void* data) {
     GSfloorScan* scan = (GSfloorScan*)data;
-    u32 seq = fightEvtGetSequence();
+    GCuptr seq = fightEvtGetSequence();
     if (seq == 0) {
         return 1;
     }

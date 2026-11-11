@@ -26,6 +26,7 @@ public:
 #define POOL_MAX 32
 
 static GSmemPoolAllocator _poolArea[POOL_MAX];
+static u8 _poolAreaTail[0x10];
 
 static void _setDabr(u32 addr);
 static u32 _getDabr();

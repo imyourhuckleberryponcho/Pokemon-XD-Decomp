@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <libc/stdarg.h>
+#include "game/gcdata.h"
 #ifndef __MWERKS__
 #include <stdint.h>
 extern "C" {
@@ -584,7 +585,7 @@ GSthread* GSthreadCreate(u8 affinity, u32 group, u32 stackSize, u8 usesFPU, u8 a
 u32 GSthreadInit(u32 maxThreads) {
     u32 i;
     _maxThreads = maxThreads;
-    _threadList = (GSthread*)GSmemAlloc(maxThreads * sizeof(GSthread));
+    _threadList = (GSthread*)GSmemAlloc(GC_SIZE(maxThreads * sizeof(GSthread), maxThreads * 80));
     if (_threadList == 0) {
         return 0;
     }

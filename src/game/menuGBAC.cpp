@@ -4,6 +4,7 @@
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/bitfield.h>
+#include <game/menuCBWork.h>
 
 struct Hero {
     u8 data[0x978];
@@ -49,14 +50,8 @@ struct KeyInfo2 {
     u16 buttons;
 };
 
-struct CBTail {
-    u8 pad[0xB168];
-    s32 a;
-    s32 b;
-};
-
 extern "C" {
-extern CBTail _CB;
+extern _MENUCBWORK _CB;
 void AGB_Terminate_init(void);
 s32 AGB_Prepare(const char* name);
 s32 AGB_Upload(s32 ch, s32 type);
@@ -430,8 +425,8 @@ static _GBA_Connect_WORK* _open_menu(_MENU_GBAC_TYPE type, u32 flags, s32 ch)
     menuCB_SE_Play(0x14);
     menuOpen(0xb0, 0);
     menuCB_MessageDispOn(1, 0);
-    _CB.b = -1;
-    _CB.a = 2;
+    _CB.unkB16C = -1;
+    _CB.unkB168 = 2;
     return w;
 }
 
@@ -599,8 +594,8 @@ static u8 _mainFlow(_MENU_GBAC_TYPE type, u32 flags, Hero** heroes)
             }
             _message(0x441f, ch);
             work->phase.v[ch] = 3;
-            _CB.b = ch;
-            _CB.a = 2;
+            _CB.unkB16C = ch;
+            _CB.unkB168 = 2;
             if (!first) {
                 if (_waitComplete(work) == 4) {
                     return _poweroff(work, (_GBA_PHASE)6);

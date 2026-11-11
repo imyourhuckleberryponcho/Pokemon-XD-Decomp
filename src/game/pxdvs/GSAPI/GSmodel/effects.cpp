@@ -591,16 +591,16 @@ void GSmodelCreateDistortion(void *model, u16 partIndex, u8 material, u8 flags) 
                         }
                         M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C) = (u32)operator new(0x440);
                         if (M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C) != 0) {
-                            GSgfxVFInit((GSgfxVF*)M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C));
-                            GSgfxVFCreate((GSgfxVF*)M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C));
+                            GSgfxVFInit(PC_PTR(GSgfxVF*, M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C)));
+                            GSgfxVFCreate(PC_PTR(GSgfxVF*, M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C)));
                             s32 attr;
                             for (desc = ((EffPObjView*)dl)->verts; (attr = desc->attr) != 0xFF; desc++) {
                                 if (attr >= 9 || attr < 0) {
-                                    GSgfxVFSetElement((GSgfxVF*)M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C), attr, desc->cnt, desc->compType,
+                                    GSgfxVFSetElement(PC_PTR(GSgfxVF*, M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C)), attr, desc->cnt, desc->compType,
                                                       desc->frac);
                                 }
                                 if (desc->type != 1) {
-                                    GSgfxVFSetArray((GSgfxVF*)M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C), desc->attr, desc->type, desc->data,
+                                    GSgfxVFSetArray(PC_PTR(GSgfxVF*, M2C_NAMED(((GSmodelLayout*)(model)), u32 *, 0x61C, unk61C)), desc->attr, desc->type, desc->data,
                                                     (u8)desc->stride, 0);
                                 }
                             }

@@ -6,7 +6,11 @@ extern "C" {
 
 bool menuIsCheck(s32 menuID);
 void menuClose(s32 menuID);
+#ifdef __MWERKS__
 void menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuSetPosition(s32 menuID, s32 x, s32 y);
 void cameraResetFloor(void);
 void cameraSetType(s32 type);

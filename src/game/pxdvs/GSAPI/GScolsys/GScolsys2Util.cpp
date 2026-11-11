@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 
 struct GSvec {
     f32 x, y, z;
@@ -17,12 +18,12 @@ BOOL GScolsys2UtilGetCpPlaneLine(GSvec* out, f32* tOut, GSvec* normal, GSvec* pl
     f32 t;
 
     PSVECSubtract(lineEnd, lineStart, &direction);
-    if ((denominator = normal->x * direction.x + normal->y * direction.y + normal->z * direction.z) == 0.0f) {
+    if ((denominator = GC_FUSED(normal->x, direction.x) + normal->y * direction.y + GC_FUSED(normal->z, direction.z)) == 0.0f) {
         return FALSE;
     }
 
-    t = (normal->x * (planePoint->x - lineStart->x) + normal->y * (planePoint->y - lineStart->y) +
-         normal->z * (planePoint->z - lineStart->z)) /
+    t = (GC_FUSED(normal->x, (planePoint->x - lineStart->x)) + normal->y * (planePoint->y - lineStart->y) +
+         GC_FUSED(normal->z, (planePoint->z - lineStart->z))) /
         denominator;
     PSVECScale(&direction, &direction, t);
     PSVECAdd(&direction, lineStart, out);
@@ -44,8 +45,8 @@ f32 GScolsys2UtilGetCpLinePoint(GSvec* out, GSvec* start, GSvec* end, GSvec* poi
         return 0.0f;
     }
 
-    t = (direction.x * (point->x - start->x) + direction.y * (point->y - start->y) +
-         direction.z * (point->z - start->z)) /
+    t = (GC_FUSED(direction.x, (point->x - start->x)) + direction.y * (point->y - start->y) +
+         GC_FUSED(direction.z, (point->z - start->z))) /
         lengthSquared;
     PSVECScale(&direction, &direction, t);
     PSVECAdd(&direction, start, out);
@@ -70,7 +71,7 @@ static inline f32 colEdgeSide(f32 ez, f32 ex, f32 z, f32 x, f32 pz, f32 px)
 {
     ez -= z;
     ex -= x;
-    return ex * (pz - z) - ez * (px - x);
+    return GC_FUSED(ex, (pz - z)) - ez * (px - x);
 }
 
 BOOL GScolsy2UtilChkInTri(GSvec* point, GSvec* verts, GSvec* normal)

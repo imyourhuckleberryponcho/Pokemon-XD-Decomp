@@ -15,6 +15,7 @@ float sqrtf(float x);
 #include <math.h>
 #endif
 #include <sysdolphin/baselib/mtx.h>
+#include "game/gc_fused.h"
 #undef HSD_MtxInverseConcat
 
 #include <sysdolphin/baselib/debug.h>
@@ -449,11 +450,11 @@ void HSD_MkRotationMtx(Mtx arg0, Vec3* arg1)
     arg0[1][0] = cosY * sinZ;
     arg0[2][0] = -sinY;
     temp2 = cosX * sinY;
-    arg0[0][1] = (cosZ * temp1) - (cosX * sinZ);
-    arg0[1][1] = (sinZ * temp1) + (cosX * cosZ);
+    arg0[0][1] = GC_MSUB(cosZ, temp1, (cosX * sinZ));
+    arg0[1][1] = GC_MADD(sinZ, temp1, (cosX * cosZ));
     arg0[2][1] = sinX * cosY;
-    arg0[0][2] = (cosZ * temp2) + (sinX * sinZ);
-    arg0[1][2] = (sinZ * temp2) - (sinX * cosZ);
+    arg0[0][2] = GC_MADD(cosZ, temp2, (sinX * sinZ));
+    arg0[1][2] = GC_MSUB(sinZ, temp2, (sinX * cosZ));
     arg0[2][2] = cosX * cosY;
     arg0[0][3] = 0;
     arg0[1][3] = 0;
@@ -544,20 +545,20 @@ void HSD_MtxScaledAdd(Mtx arg0, Mtx arg1, Mtx arg2, f32 arg3)
     f32* arr1 = (&arg1[0][0]);
     f32* arr2 = (&arg2[0][0]);
 
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
 
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
 
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
-    *arr2++ = *arr1++ + (arg3 * *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
+    *arr2++ = GC_MADDR(*arr1++, arg3, *arr0++);
 }
 
 void HSD_VecGetOrthogonal(Vec3* in, Vec3* out)

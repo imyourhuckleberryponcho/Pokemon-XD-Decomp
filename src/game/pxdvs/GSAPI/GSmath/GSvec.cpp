@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 
 struct GSquat {
     f32 x, y, z, w;
@@ -36,9 +37,9 @@ void GSvecMakeFromQuat(GSvec* out, const GSquat* q) {
     f32 zz = z * z;
     f32 ww = w * w;
 
-    out->x = asin(-2.0f * (x * z - w * y));
-    out->y = atan(2.0f * (x * y + w * z) / (ww + xx - yy - zz));
-    out->z = atan(2.0f * (w * x + y * z) / (zz + (ww - xx - yy)));
+    out->x = asin(-2.0f * (GC_FUSED(x, z) - w * y));
+    out->y = atan(2.0f * (GC_FUSED(x, y) + w * z) / (ww + xx - yy - zz));
+    out->z = atan(2.0f * (GC_FUSED(w, x) + y * z) / (zz + (ww - xx - yy)));
 }
 
 void GSvecTransformQuat(GSvec* out, const GSquat* q, const GSvec* v) {
@@ -57,14 +58,14 @@ void GSvecTransformQuat(GSvec* out, const GSquat* q, const GSvec* v) {
     vx = v->x;
     qz = q->z;
     qw = q->w;
-    f32 a = vx * qw + qy * vz - vy * qz;
-    f32 b = vy * qw + qz * vx - vz * qx;
-    f32 c = vz * qw + qx * vy - vx * qy;
-    d = vx * qx + qy * vy + vz * qz;
+    f32 a = GC_FUSED(vx, qw) + qy * vz - GC_FUSED(vy, qz);
+    f32 b = GC_FUSED(vy, qw) + qz * vx - GC_FUSED(vz, qx);
+    f32 c = GC_FUSED(vz, qw) + qx * vy - GC_FUSED(vx, qy);
+    d = GC_FUSED(vx, qx) + qy * vy + GC_FUSED(vz, qz);
 
-    out->x = a * qw + qx * d + qy * c - b * qz;
-    out->y = b * qw + qy * d + qz * a - c * qx;
-    out->z = c * qw + qz * d + qx * b - a * qy;
+    out->x = GC_FUSED(a, qw) + qx * d + GC_FUSED(qy, c) - GC_FUSED(b, qz);
+    out->y = GC_FUSED(b, qw) + qy * d + GC_FUSED(qz, a) - GC_FUSED(c, qx);
+    out->z = GC_FUSED(c, qw) + qz * d + GC_FUSED(qx, b) - GC_FUSED(a, qy);
 }
 
 }

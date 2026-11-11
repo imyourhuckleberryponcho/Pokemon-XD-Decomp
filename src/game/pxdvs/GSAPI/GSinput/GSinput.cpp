@@ -75,10 +75,10 @@ struct InputDevice {
  PADStatus raw;
  PADStatus cur;
  u32 prevButtons;
- u8 prevLX;
- u8 prevLY;
- u8 prevRX;
- u8 prevRY;
+ s8 prevLX;
+ s8 prevLY;
+ s8 prevRX;
+ s8 prevRY;
  f32 deltaLX;
  f32 deltaLY;
  f32 deltaRX;
@@ -113,7 +113,7 @@ static void _inputUpdateMotors(void);
 static void _inputDoRepeat(InputDevice* d);
 static void _inputInitRepeat(InputDevice* d);
 static void _inputUpdateSmoothing(InputDevice* d);
-static void _inputDoSmoothing(InputDevice* d, s8 tx, s8 ty, u8* px, u8* py, f32* dx, f32* dy, f32* sx, f32* sy);
+static void _inputDoSmoothing(InputDevice* d, s8 tx, s8 ty, s8* px, s8* py, f32* dx, f32* dy, f32* sx, f32* sy);
 static void _inputDoClamping(InputDevice* d);
 static void ClampCircle(s8* x, s8* y, s8 radius, s8 dead);
 
@@ -226,10 +226,10 @@ void GSinputResetRightSmoothing(s32 pad, s8 x, s8 y)
 {
     InputDevice* d = _inputFindDevice(pad);
     if (d) {
-        d->smoothRX = x;
-        d->smoothRY = y;
         d->prevRX = x;
         d->prevRY = y;
+        d->smoothRX = x;
+        d->smoothRY = y;
     }
 }
 
@@ -237,10 +237,10 @@ void GSinputResetLeftSmoothing(s32 pad, s8 x, s8 y)
 {
     InputDevice* d = _inputFindDevice(pad);
     if (d) {
-        d->smoothLX = x;
-        d->smoothLY = y;
         d->prevLX = x;
         d->prevLY = y;
+        d->smoothLX = x;
+        d->smoothLY = y;
     }
 }
 
@@ -543,7 +543,7 @@ static void _inputUpdateSmoothing(InputDevice* d)
     _inputDoSmoothing(d, d->cur.substickX, d->cur.substickY, &d->prevRX, &d->prevRY, &d->deltaRX, &d->deltaRY, &d->smoothRX, &d->smoothRY);
 }
 
-static void _inputDoSmoothing(InputDevice* d, s8 tx, s8 ty, u8* px, u8* py, f32* dx, f32* dy, f32* sx, f32* sy)
+static void _inputDoSmoothing(InputDevice* d, s8 tx, s8 ty, s8* px, s8* py, f32* dx, f32* dy, f32* sx, f32* sy)
 {
     f32 ax;
     f32 ay;

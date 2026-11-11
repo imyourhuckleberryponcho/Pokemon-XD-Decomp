@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -371,7 +372,7 @@ extern "C" {
 u32 msgctrlCR(MsgCtrl* o)
 {
     o->f0c = o->f04;
-    o->f10 += o->f68 * (f32)(o->unk23 + o->lineSpace);
+    o->f10 += GC_FUSED(o->f68, (f32)(o->unk23 + o->lineSpace));
     return 0;
 }
 

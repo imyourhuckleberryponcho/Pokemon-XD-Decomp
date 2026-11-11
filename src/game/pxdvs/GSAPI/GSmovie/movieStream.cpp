@@ -300,7 +300,7 @@ static inline void _ringAdvance(__GSmovieStreaming* s, u64 total) {
     }
 }
 static u32 StreamUpdateCallback(void* buf1, u32 len1, void* buf2, u32 len2, u32 user) {
-    __GSmovieStreaming* s = (__GSmovieStreaming*)user;
+    __GSmovieStreaming* s = PC_PTR(__GSmovieStreaming*, user);
     u32 n;
     THPPlayer* p;
     if (s == 0) {
@@ -442,9 +442,10 @@ static inline void _movieStreamDecodeAudioComp(THPPlayer* p, THPAudioBuffer* ab,
 static inline void _movieStreamAudioDecode(__GSmovieStreaming* s) {
     THPPlayer* p = s->player;
     if (p->audioExist != 0) {
+        THPReadBuffer* rb;
         THPAudioBuffer* ab = &p->audioBuffer[p->audioDecodeIdx];
         if (ab->ready != 1) {
-            THPReadBuffer* rb = &p->readBuffer[p->audioReadIdx];
+            rb = &p->readBuffer[p->audioReadIdx];
             if (rb->isValid != 0 && rb->audioDone != 1) {
                 _movieStreamDecodeAudioComp(p, ab, rb);
                 if (p->audioDecodeCount < 2 && !(p->playFlag & 1) &&

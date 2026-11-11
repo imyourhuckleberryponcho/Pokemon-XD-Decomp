@@ -175,7 +175,11 @@ s32 windowGetValue(s32);
 s32 windowGetActiveID();
 void* windowSearchID(s32);
 s32 menuOpen(s32, s32);
+#ifdef __MWERKS__
 void menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 s32 menuPocket2Call(s32, s32, s32);

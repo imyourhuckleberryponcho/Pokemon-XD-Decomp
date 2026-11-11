@@ -167,10 +167,11 @@ void spriteSetEnv(s32 layer) {
         f32 kc544 = 0.5f;
         cy = height * kc544;
         f32 fov = 0.2617994f;
-        f32 dist = cy / (f32)tan(fov);
+        f32 t = tan(fov);
+        f32 dist = cy / t;
         eye.y = cy - work->offY;
-        eye.z = dist;
         eye.x = cx - work->offX;
+        eye.z = dist;
         at.x = cx - work->offX;
         at.y = cy - work->offY;
         at.z = 0.0f;

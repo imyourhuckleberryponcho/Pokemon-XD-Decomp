@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
@@ -256,7 +257,7 @@ s32 winSpriteGetLayerID(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
 
 void winSpriteInit(void)
 {
-    void* p = GSmemAlloc(500 * sizeof(tagSPRITE_WORK));
+    void* p = GSmemAlloc(GC_SIZE(500 * sizeof(tagSPRITE_WORK), 500 * 120));
     _spriteWork = (tagSPRITE_WORK*)p;
     if (p != 0) {
         memset(p, 0, 500 * sizeof(tagSPRITE_WORK));
@@ -450,8 +451,8 @@ void winSpriteDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
     if (!winSpriteGetDisp(sp)) {
         return;
     }
-    r = sp->color[0] * w->color[0] / 255;
     g = sp->color[1] * w->color[1] / 255;
+    r = sp->color[0] * w->color[0] / 255;
     b = sp->color[2] * w->color[2] / 255;
     a = sp->color[3] * w->color[3] / 255;
     color = (r << 24) | (g << 16) | (b << 8) | a;
@@ -717,8 +718,8 @@ void winSpriteDrawTexture(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
         break;
     }
     f32 half = 0.5f;
-    cxy[0] = (f32)(s16)width * half + (f32)(s16)px;
-    cxy[1] = (f32)(s16)height * half + (f32)(s16)py;
+    cxy[0] = GC_FUSED((f32)(s16)width, half) + (f32)(s16)px;
+    cxy[1] = GC_FUSED((f32)(s16)height, half) + (f32)(s16)py;
     if (sp->w < 0) {
         xy[0] = xy[2] = (f32)(px + width) - cxy[0];
         xy[4] = xy[6] = (f32)px - cxy[0];
@@ -811,20 +812,20 @@ static void _winSeqMoveSub(SEQ_WORK_COMMON* c, tagSEQ_WORK* s)
             switch (s->posMode) {
             case 1: {
                 f32 f = (f32)s->pframe / (f32)s->pdur;
-                c->x = f * (f32)(s->ex - s->sx) + (f32)s->sx;
-                c->y = f * (f32)(s->ey - s->sy) + (f32)s->sy;
+                c->x = GC_FUSED(f, (f32)(s->ex - s->sx)) + (f32)s->sx;
+                c->y = GC_FUSED(f, (f32)(s->ey - s->sy)) + (f32)s->sy;
                 break;
             }
             case 2: {
                 f32 f = (f32)s->pframe * (f32)s->pframe / (f32)s->pdur / (f32)s->pdur;
-                c->x = f * (f32)(s->ex - s->sx) + (f32)s->sx;
-                c->y = f * (f32)(s->ey - s->sy) + (f32)s->sy;
+                c->x = GC_FUSED(f, (f32)(s->ex - s->sx)) + (f32)s->sx;
+                c->y = GC_FUSED(f, (f32)(s->ey - s->sy)) + (f32)s->sy;
                 break;
             }
             case 3: {
                 f32 f = sqrt((f64)s->pframe) / sqrt((f64)s->pdur);
-                c->x = f * (f32)(s->ex - s->sx) + (f32)s->sx;
-                c->y = f * (f32)(s->ey - s->sy) + (f32)s->sy;
+                c->x = GC_FUSED(f, (f32)(s->ex - s->sx)) + (f32)s->sx;
+                c->y = GC_FUSED(f, (f32)(s->ey - s->sy)) + (f32)s->sy;
                 break;
             }
             }
@@ -837,10 +838,10 @@ static void _winSeqMoveSub(SEQ_WORK_COMMON* c, tagSEQ_WORK* s)
             switch (s->colMode) {
             case 1: {
                 f32 f = (f32)s->cframe / (f32)s->cdur;
-                c->color[0] = f * (f32)(s->ecol[0] - s->scol[0]) + (f32)s->scol[0];
-                c->color[1] = f * (f32)(s->ecol[1] - s->scol[1]) + (f32)s->scol[1];
-                c->color[2] = f * (f32)(s->ecol[2] - s->scol[2]) + (f32)s->scol[2];
-                c->color[3] = f * (f32)(s->ecol[3] - s->scol[3]) + (f32)s->scol[3];
+                c->color[0] = GC_FUSED(f, (f32)(s->ecol[0] - s->scol[0])) + (f32)s->scol[0];
+                c->color[1] = GC_FUSED(f, (f32)(s->ecol[1] - s->scol[1])) + (f32)s->scol[1];
+                c->color[2] = GC_FUSED(f, (f32)(s->ecol[2] - s->scol[2])) + (f32)s->scol[2];
+                c->color[3] = GC_FUSED(f, (f32)(s->ecol[3] - s->scol[3])) + (f32)s->scol[3];
                 break;
             }
             }
@@ -853,8 +854,8 @@ static void _winSeqMoveSub(SEQ_WORK_COMMON* c, tagSEQ_WORK* s)
             switch (s->scaleMode) {
             case 1: {
                 f32 f = (f32)s->sframe / (f32)s->sdur;
-                c->sx = f * (s->esx - s->ssx) + s->ssx;
-                c->sy = f * (s->esy - s->ssy) + s->ssy;
+                c->sx = GC_FUSED(f, (s->esx - s->ssx)) + s->ssx;
+                c->sy = GC_FUSED(f, (s->esy - s->ssy)) + s->ssy;
                 break;
             }
             }

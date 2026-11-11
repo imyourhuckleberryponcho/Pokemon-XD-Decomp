@@ -1,5 +1,7 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
+#include <game/gcptr.h>
 #include "game/shared/floor_module.h"
 
 struct GSvec {
@@ -115,7 +117,7 @@ static inline s32 getObj(s32 index, GSCOLSYS2_OBJ*& out) {
 extern "C" {
 
 f32 GScolsy2UtilGetSidePlanePoint(GSvec* normal, GSvec* a, GSvec* b) {
-    return normal->x * (b->x - a->x) + normal->y * (b->y - a->y) + normal->z * (b->z - a->z);
+    return GC_FUSED(normal->x, (b->x - a->x)) + normal->y * (b->y - a->y) + GC_FUSED(normal->z, (b->z - a->z));
 }
 
 s32 GScolsys2GetObjEnable(s32 index, bool* enable) {
@@ -230,74 +232,74 @@ static void _offsetCCD(CCD_FILEHEAD* head) {
     if (head == 0) {
         return;
     }
-    head->records = (CCD_RECORD*)((u32)head->records + GC_ADDR32(head));
+    head->records = PC_PTR(CCD_RECORD*, (u32)head->records + GC_ADDR32(head));
     record = head->records;
 
     for (i = 0; i < head->count; i++, record++) {
         if (record->block24 != 0) {
-            record->block24 = (CCD_BLOCK*)((u32)record->block24 + GC_ADDR32(head));
+            record->block24 = PC_PTR(CCD_BLOCK*, (u32)record->block24 + GC_ADDR32(head));
             block = record->block24;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
+                block->field00 = PC_PTR(void*, (u32)block->field00 + GC_ADDR32(head));
             }
             if (block->field08 != 0) {
-                block->field08 = (void*)((u32)block->field08 + GC_ADDR32(head));
+                block->field08 = PC_PTR(void*, (u32)block->field08 + GC_ADDR32(head));
             }
             if (block->field0C != 0) {
-                block->field0C = (void*)((u32)block->field0C + GC_ADDR32(head));
+                block->field0C = PC_PTR(void*, (u32)block->field0C + GC_ADDR32(head));
             }
         }
         if (record->block28 != 0) {
-            record->block28 = (CCD_BLOCK*)((u32)record->block28 + GC_ADDR32(head));
+            record->block28 = PC_PTR(CCD_BLOCK*, (u32)record->block28 + GC_ADDR32(head));
             block = record->block28;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
+                block->field00 = PC_PTR(void*, (u32)block->field00 + GC_ADDR32(head));
             }
             if (block->field08 != 0) {
-                block->field08 = (void*)((u32)block->field08 + GC_ADDR32(head));
+                block->field08 = PC_PTR(void*, (u32)block->field08 + GC_ADDR32(head));
             }
             if (block->field0C != 0) {
-                block->field0C = (void*)((u32)block->field0C + GC_ADDR32(head));
+                block->field0C = PC_PTR(void*, (u32)block->field0C + GC_ADDR32(head));
             }
         }
         if (record->block2C != 0) {
-            record->block2C = (CCD_BLOCK*)((u32)record->block2C + GC_ADDR32(head));
+            record->block2C = PC_PTR(CCD_BLOCK*, (u32)record->block2C + GC_ADDR32(head));
             block = record->block2C;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
+                block->field00 = PC_PTR(void*, (u32)block->field00 + GC_ADDR32(head));
             }
             if (block->field08 != 0) {
-                block->field08 = (void*)((u32)block->field08 + GC_ADDR32(head));
+                block->field08 = PC_PTR(void*, (u32)block->field08 + GC_ADDR32(head));
             }
             if (block->field0C != 0) {
-                block->field0C = (void*)((u32)block->field0C + GC_ADDR32(head));
+                block->field0C = PC_PTR(void*, (u32)block->field0C + GC_ADDR32(head));
             }
         }
         if (record->block30 != 0) {
-            record->block30 = (CCD_BLOCK*)((u32)record->block30 + GC_ADDR32(head));
+            record->block30 = PC_PTR(CCD_BLOCK*, (u32)record->block30 + GC_ADDR32(head));
             block = record->block30;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
+                block->field00 = PC_PTR(void*, (u32)block->field00 + GC_ADDR32(head));
             }
         }
         if (record->block34 != 0) {
-            record->block34 = (CCD_BLOCK*)((u32)record->block34 + GC_ADDR32(head));
+            record->block34 = PC_PTR(CCD_BLOCK*, (u32)record->block34 + GC_ADDR32(head));
             block = record->block34;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
+                block->field00 = PC_PTR(void*, (u32)block->field00 + GC_ADDR32(head));
             }
             if (block->field08 != 0) {
-                block->field08 = (void*)((u32)block->field08 + GC_ADDR32(head));
+                block->field08 = PC_PTR(void*, (u32)block->field08 + GC_ADDR32(head));
             }
             if (block->field0C != 0) {
-                block->field0C = (void*)((u32)block->field0C + GC_ADDR32(head));
+                block->field0C = PC_PTR(void*, (u32)block->field0C + GC_ADDR32(head));
             }
         }
         if (record->block38 != 0) {
-            record->block38 = (CCD_BLOCK*)((u32)record->block38 + GC_ADDR32(head));
+            record->block38 = PC_PTR(CCD_BLOCK*, (u32)record->block38 + GC_ADDR32(head));
             block = record->block38;
             if (block->field00 != 0) {
-                block->field00 = (void*)((u32)block->field00 + GC_ADDR32(head));
+                block->field00 = PC_PTR(void*, (u32)block->field00 + GC_ADDR32(head));
             }
         }
     }

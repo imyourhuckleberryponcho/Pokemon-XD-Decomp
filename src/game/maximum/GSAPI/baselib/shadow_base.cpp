@@ -26,6 +26,7 @@
 #include <sysdolphin/baselib/util.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -146,7 +147,7 @@ HSD_ObjAllocData* HSD_ShadowGetAllocData(void)
 
 void HSD_ShadowInitAllocData(void)
 {
-    HSD_ObjAllocInit(HSD_ShadowGetAllocData(), sizeof(HSD_Shadow), 4);
+    HSD_ObjAllocInit(HSD_ShadowGetAllocData(), GC_SIZE(sizeof(HSD_Shadow), 40), 4);
 }
 
 HSD_Shadow* HSD_ShadowAlloc(void)

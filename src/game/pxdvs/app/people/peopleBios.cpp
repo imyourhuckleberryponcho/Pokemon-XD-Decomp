@@ -1,5 +1,7 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/peoplework.h>
+#include "game/gcdata.h"
 #ifndef __MWERKS__
 struct Hero { public: static Hero* getHeroPtr(); u16 itemQuantity(u16); u8 getHeroStyle() const; void setBattleResumeFloorID(uint); void setBattleResumeFloorIndex(u8); u8 getFollowerID(); u32 getFollowerGrpID(); u32 getFollowerResID(); void setFollowerGrpID(u32); void setFollowerResID(u32); void setFollowerID(u8); };
 #define getHeroPtr__4HeroFv(...) ((void*)Hero::getHeroPtr(__VA_ARGS__))
@@ -209,7 +211,7 @@ void peopleBiosPopData(void* buffer,u32 size) {
             PeopleWork* work;
             void* model;
             u8* data;
-            data=(u8*)((u32)buffer+8);
+            data=PC_PTR(u8*, (u32)buffer+8);
             index=0;
             while(count--) {
                 work=works[index++];
@@ -435,7 +437,7 @@ bool peopleBiosFreeWork(PeopleWork* work) {
 }
 
 PeopleWork* peopleBiosAllocWork(s32 count) {
-    PeopleWork* top = (PeopleWork*)GSmemAllocClr(count * PEOPLE_WORK_SIZE);
+    PeopleWork* top = (PeopleWork*)GSmemAllocClr(GC_SIZE(count * PEOPLE_WORK_SIZE, count * 0x1B0));
     _pPeopleWorkTop = top;
     _people_num = count;
     return top;

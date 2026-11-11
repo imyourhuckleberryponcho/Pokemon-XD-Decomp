@@ -9,6 +9,18 @@
 
 
 
+#if defined(__MWERKS__) || defined(_MSC_VER)
+#define PC_KEEP_INLINE
+#else
+#define PC_KEEP_INLINE __attribute__((used, weak))
+#endif
+
+
+
+
+
+
+
 
 
 
@@ -170,8 +182,13 @@ static inline void gc_fixf32n(f32* p, int n) { int i; for (i = 0; i < n; i++) { 
     V operator++(int) { V o = get(); set((V)(o + 1)); return o; }                          \
     V operator--(int) { V o = get(); set((V)(o - 1)); return o; }
 
+
+
+
 template <class V> struct alignas(2) gc_be_num16 {
     u8 b[2];
+    gc_be_num16() = default;
+    constexpr gc_be_num16(V x) : b{(u8)((u16)x >> 8), (u8)x} {}
     V get() const { return (V)gc_rd16(b); }
     void set(V x) { gc_wr16(b, (u16)x); }
     GC_BE_OPS(gc_be_num16, V)
@@ -179,6 +196,8 @@ template <class V> struct alignas(2) gc_be_num16 {
 };
 template <class V> struct alignas(4) gc_be_num32 {
     u8 b[4];
+    gc_be_num32() = default;
+    constexpr gc_be_num32(V x) : b{(u8)((u32)x >> 24), (u8)((u32)x >> 16), (u8)((u32)x >> 8), (u8)x} {}
     V get() const { return (V)gc_rd32(b); }
     void set(V x) { gc_wr32(b, (u32)x); }
     GC_BE_OPS(gc_be_num32, V)
@@ -186,6 +205,9 @@ template <class V> struct alignas(4) gc_be_num32 {
 };
 struct alignas(4) gc_bef32_t {
     u8 b[4];
+    gc_bef32_t() = default;
+    constexpr gc_bef32_t(f32 x) : b{(u8)(__builtin_bit_cast(u32, x) >> 24), (u8)(__builtin_bit_cast(u32, x) >> 16),
+                                     (u8)(__builtin_bit_cast(u32, x) >> 8), (u8)__builtin_bit_cast(u32, x)} {}
     f32 get() const { union { u32 u; f32 f; } c; c.u = gc_rd32(b); return c.f; }
     void set(f32 x) { union { u32 u; f32 f; } c; c.f = x; gc_wr32(b, c.u); }
     GC_BE_OPS(gc_bef32_t, f32)
@@ -222,6 +244,9 @@ template <class T> struct alignas(4) gc_ptr32_t {
 static_assert(sizeof(gc_be16) == 2 && alignof(gc_be16) == 2, "gc_be16");
 static_assert(sizeof(gc_be32) == 4 && alignof(gc_be32) == 4, "gc_be32");
 static_assert(sizeof(gc_ptr32(void)) == 4 && alignof(gc_ptr32(void)) == 4, "gc_ptr32");
+static_assert(gc_be32(0x01020304u).b[0] == 1 && gc_be32(0x01020304u).b[3] == 4, "gc_be32 from a number: big-endian");
+static_assert(gc_be16((u16)0x0102).b[0] == 1 && gc_be16((u16)0x0102).b[1] == 2, "gc_be16 from a number: big-endian");
+static_assert(gc_bef32(1.0f).b[0] == 0x3F && gc_bef32(1.0f).b[1] == 0x80 && gc_bef32(1.0f).b[3] == 0, "gc_bef32 from f32");
 
 
 template <class T> struct gc_field { typedef T type; };
@@ -277,6 +302,62 @@ static inline u16* gc_s16x4tmp(const gc_s16x4* p) {
 #define GC_AT(T, p, o) (*(T*)((u8*)(p) + (o)))
 #else
 #define GC_AT(T, p, o) (*(typename gc_field<T>::type*)((u8*)(p) + (o)))
+#endif
+
+
+
+
+
+
+
+
+
+
+
+#ifdef __MWERKS__
+#define GC_SIZE(pc, gc) (pc)
+#define GC_NEW_NOTE(pc, gc)
+#define GC_PCONLY(expr) (expr)
+#define GC_CLASS_SIZE(pc, gc) (pc)
+#define GC_SYSDOL_ALLOCATOR(pc, gc) GSmemGetSysdolAllocator(GC_SIZE(pc, gc))
+#else
+#ifdef __cplusplus
+extern "C" u32 gc_size_note(u32 pc, u32 gc);
+extern "C" void gc_pconly_note(void);
+#else
+u32 gc_size_note(u32 pc, u32 gc);
+void gc_pconly_note(void);
+#endif
+#define GC_SIZE(pc, gc) gc_size_note((u32)(pc), (u32)(gc))
+#define GC_NEW_NOTE(pc, gc) gc_size_note((u32)(pc), (u32)(gc)),
+#define GC_PCONLY(expr) (gc_pconly_note(), (expr))
+
+
+#ifdef __cplusplus
+extern "C" u32 gc_class_size_next(u32 pc, u32 gc);
+#else
+u32 gc_class_size_next(u32 pc, u32 gc);
+#endif
+#define GC_CLASS_SIZE(pc, gc) gc_class_size_next((u32)(pc), (u32)(gc))
+
+
+#ifdef __cplusplus
+extern "C" void* GSmemGetSysdolAllocatorGC(u32 pc, u32 gc);
+#else
+void* GSmemGetSysdolAllocatorGC(u32 pc, u32 gc);
+#endif
+
+
+#define GC_SYSDOL_ALLOCATOR(pc, gc) GSmemGetSysdolAllocatorGC((u32)(pc), (u32)(gc))
+#endif
+
+
+
+
+#ifdef __MWERKS__
+#define GC_CONST const
+#else
+#define GC_CONST
 #endif
 
 #endif

@@ -33,6 +33,8 @@ struct ReliveHallData {
     u8 unk1;
     u16 steps;
     u16 scale;
+    u8 parts[68];
+
 };
 
 struct CharName {
@@ -74,6 +76,21 @@ struct floorsound_dd_ {
     u16 time;
     u16 envFade;
     u16 flagId;
+};
+
+struct MsgPaletteEntry {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+};
+
+struct PokemonDpFilterEntry {
+    s8 value;
+};
+
+struct TableResEntry {
+    void* res;
 };
 
 #endif

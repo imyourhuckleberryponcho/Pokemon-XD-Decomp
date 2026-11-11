@@ -317,7 +317,7 @@ void GSprimDraw2DPixelListC(s16* pts, u32 n, u32* colors) {
     primData.layer->beginSurface(n);
     while (n--) {
         GXPosition2s16(pts[0], pts[1]);
-        GXColor1u32(colors[0]);
+        GXColor1u32(GC_BYTES32(&colors[0]));
         pts += 2;
         colors++;
     }

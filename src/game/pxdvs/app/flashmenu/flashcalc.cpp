@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #pragma peephole off
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -92,8 +93,8 @@ void flcalcBezier3(void *p0, void *p1, f32 p2) {
     temp_f7 = p2 * p2;
     temp_f5 = 1.0f - p2;
     temp_f6 = temp_f5 * temp_f5;
-    M2C_FIELD(p0, f32 *, 0) = (f32) ((M2C_FIELD(p1, f32 *, 0x10) * temp_f7) + ((M2C_FIELD(p1, f32 *, 0) * temp_f6) + (p2 * (2.0f * M2C_FIELD(p1, f32 *, 8) * temp_f5))));
-    M2C_FIELD(p0, f32 *, 4) = (f32) ((M2C_FIELD(p1, f32 *, 0x14) * temp_f7) + ((M2C_FIELD(p1, f32 *, 4) * temp_f6) + (p2 * (2.0f * M2C_FIELD(p1, f32 *, 0xC) * temp_f5))));
+    M2C_FIELD(p0, f32 *, 0) = (f32) ((GC_FUSED(M2C_FIELD(p1, f32 *, 0x10), temp_f7)) + ((GC_FUSED(M2C_FIELD(p1, f32 *, 0), temp_f6)) + (p2 * (2.0f * M2C_FIELD(p1, f32 *, 8) * temp_f5))));
+    M2C_FIELD(p0, f32 *, 4) = (f32) ((GC_FUSED(M2C_FIELD(p1, f32 *, 0x14), temp_f7)) + ((GC_FUSED(M2C_FIELD(p1, f32 *, 4), temp_f6)) + (p2 * (2.0f * M2C_FIELD(p1, f32 *, 0xC) * temp_f5))));
 }
 }
 
@@ -132,7 +133,7 @@ s32 flcalcBlendColor(u32 from, u32 to, f32 t) {
 
 extern "C" {
 s32 flcalcBlend(s32 p0, s32 p1, f32 p2) {
-    return (s32) ((p2 * (f32) (p1 - p0)) + (f32) p0);
+    return (s32) ((GC_FUSED(p2, (f32) (p1 - p0))) + (f32) p0);
 }
 }
 
@@ -204,12 +205,12 @@ void flcalcMulCxform(void *p0, void *p1, void *p2) {
 
 extern "C" {
 void flcalcMulMatrixf(void *p0, void *p1, void *p2) {
-    M2C_FIELD(p0, f32 *, 0) = (f32) ((M2C_FIELD(p1, f32 *, 0) * M2C_FIELD(p2, f32 *, 0)) + (M2C_FIELD(p1, f32 *, 4) * M2C_FIELD(p2, f32 *, 8)));
-    M2C_FIELD(p0, f32 *, 4) = (f32) ((M2C_FIELD(p1, f32 *, 0) * M2C_FIELD(p2, f32 *, 4)) + (M2C_FIELD(p1, f32 *, 4) * M2C_FIELD(p2, f32 *, 0xC)));
-    M2C_FIELD(p0, f32 *, 8) = (f32) ((M2C_FIELD(p1, f32 *, 8) * M2C_FIELD(p2, f32 *, 0)) + (M2C_FIELD(p1, f32 *, 0xC) * M2C_FIELD(p2, f32 *, 8)));
-    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((M2C_FIELD(p1, f32 *, 8) * M2C_FIELD(p2, f32 *, 4)) + (M2C_FIELD(p1, f32 *, 0xC) * M2C_FIELD(p2, f32 *, 0xC)));
-    M2C_FIELD(p0, f32 *, 0x10) = (f32) (M2C_FIELD(p2, f32 *, 0x10) + ((M2C_FIELD(p1, f32 *, 0x10) * M2C_FIELD(p2, f32 *, 0)) + (M2C_FIELD(p1, f32 *, 0x14) * M2C_FIELD(p2, f32 *, 8))));
-    M2C_FIELD(p0, f32 *, 0x14) = (f32) (M2C_FIELD(p2, f32 *, 0x14) + ((M2C_FIELD(p1, f32 *, 0x10) * M2C_FIELD(p2, f32 *, 4)) + (M2C_FIELD(p1, f32 *, 0x14) * M2C_FIELD(p2, f32 *, 0xC))));
+    M2C_FIELD(p0, f32 *, 0) = (f32) ((GC_FUSED(M2C_FIELD(p1, f32 *, 0), M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 4) * M2C_FIELD(p2, f32 *, 8)));
+    M2C_FIELD(p0, f32 *, 4) = (f32) ((GC_FUSED(M2C_FIELD(p1, f32 *, 0), M2C_FIELD(p2, f32 *, 4))) + (M2C_FIELD(p1, f32 *, 4) * M2C_FIELD(p2, f32 *, 0xC)));
+    M2C_FIELD(p0, f32 *, 8) = (f32) ((GC_FUSED(M2C_FIELD(p1, f32 *, 8), M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 0xC) * M2C_FIELD(p2, f32 *, 8)));
+    M2C_FIELD(p0, f32 *, 0xC) = (f32) ((GC_FUSED(M2C_FIELD(p1, f32 *, 8), M2C_FIELD(p2, f32 *, 4))) + (M2C_FIELD(p1, f32 *, 0xC) * M2C_FIELD(p2, f32 *, 0xC)));
+    M2C_FIELD(p0, f32 *, 0x10) = (f32) (M2C_FIELD(p2, f32 *, 0x10) + ((GC_FUSED(M2C_FIELD(p1, f32 *, 0x10), M2C_FIELD(p2, f32 *, 0))) + (M2C_FIELD(p1, f32 *, 0x14) * M2C_FIELD(p2, f32 *, 8))));
+    M2C_FIELD(p0, f32 *, 0x14) = (f32) (M2C_FIELD(p2, f32 *, 0x14) + ((GC_FUSED(M2C_FIELD(p1, f32 *, 0x10), M2C_FIELD(p2, f32 *, 4))) + (M2C_FIELD(p1, f32 *, 0x14) * M2C_FIELD(p2, f32 *, 0xC))));
 }
 }
 

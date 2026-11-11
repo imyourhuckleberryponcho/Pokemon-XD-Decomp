@@ -560,7 +560,7 @@ static inline u8 modelIsNullAnimation(_GSmodel* model, u32 index) {
 
 static inline HSD_AObj* modelGetFirstAObj(HSD_JObj* jobj, u32 mask) {
     HSD_AObj* aobj = 0;
-    HSD_ForeachAnim(jobj, 6, mask, _modelGetAObjFunc, 2, &aobj);
+    HSD_ForeachAnim(jobj, 6, mask, (void*)_modelGetAObjFunc, 2, &aobj);
     return aobj;
 }
 
@@ -569,10 +569,10 @@ static inline void modelSetTexAnimType(_GSmodel* model, s32 type) {
     model->texAnimType = type;
     switch (model->texAnimType) {
     case 0:
-        HSD_ForeachAnim(jobj, 6, 0x64DB, _modelSetLoopFlag, 3, 0);
+        HSD_ForeachAnim(jobj, 6, 0x64DB, (void*)_modelSetLoopFlag, 3, 0);
         break;
     case 1:
-        HSD_ForeachAnim(jobj, 6, 0x64DB, _modelSetLoopFlag, 3, 1);
+        HSD_ForeachAnim(jobj, 6, 0x64DB, (void*)_modelSetLoopFlag, 3, 1);
         break;
     }
 }
@@ -614,7 +614,7 @@ static inline void modelSetTexAnimIndex(_GSmodel* model, u32 index) {
                 HSD_JObjRemoveAnim(jobj);
             }
             model->texAnimEndFrame = 0.0f;
-            HSD_ForeachAnim(jobj, 6, 0x64DB, _modelGetEndFrame, 2, &model->texAnimEndFrame);
+            HSD_ForeachAnim(jobj, 6, 0x64DB, (void*)_modelGetEndFrame, 2, &model->texAnimEndFrame);
             model->texAnimAObj = modelGetFirstAObj(jobj, 0x480);
         }
         modelSetTexAnimFrame(model, 0.0f);
@@ -674,15 +674,15 @@ static inline void modelSetAnimType(_GSmodel* model, s32 type) {
         modelPausePartAnims(model);
         switch (model->animType) {
         case 0:
-            HSD_ForeachAnim(jobj, 6, 0x9B2F, _modelSetLoopFlag, 3, 0);
+            HSD_ForeachAnim(jobj, 6, 0x9B2F, (void*)_modelSetLoopFlag, 3, 0);
             if (model->flags & 0x80) {
-                HSD_ForeachAnim(blend, 6, 0x9B2F, _modelSetLoopFlag, 3, 0);
+                HSD_ForeachAnim(blend, 6, 0x9B2F, (void*)_modelSetLoopFlag, 3, 0);
             }
             break;
         case 1:
-            HSD_ForeachAnim(jobj, 6, 0x9B2F, _modelSetLoopFlag, 3, 1);
+            HSD_ForeachAnim(jobj, 6, 0x9B2F, (void*)_modelSetLoopFlag, 3, 1);
             if (model->flags & 0x80) {
-                HSD_ForeachAnim(blend, 6, 0x9B2F, _modelSetLoopFlag, 3, 1);
+                HSD_ForeachAnim(blend, 6, 0x9B2F, (void*)_modelSetLoopFlag, 3, 1);
             }
             break;
         }
@@ -1036,9 +1036,9 @@ void GSmodelSetAnimBlend(_GSmodel* model, u32 index, u32 blendIndex) {
         HSD_JObjAnimAll(model->jobj);
         HSD_JObjAnimAll(model->blendJObj);
         model->animEndFrame = 0.0f;
-        HSD_ForeachAnim(model->jobj, 6, 0x9B2F, _modelGetEndFrame, 2, &model->animEndFrame);
+        HSD_ForeachAnim(model->jobj, 6, 0x9B2F, (void*)_modelGetEndFrame, 2, &model->animEndFrame);
         model->blendAnimEndFrame = 0.0f;
-        HSD_ForeachAnim(model->blendJObj, 6, 0x9B2F, _modelGetEndFrame, 2, &model->blendAnimEndFrame);
+        HSD_ForeachAnim(model->blendJObj, 6, 0x9B2F, (void*)_modelGetEndFrame, 2, &model->blendAnimEndFrame);
         model->animAObj = modelGetFirstAObj(model->jobj, 0x20);
         model->blendAnimAObj = modelGetFirstAObj(model->blendJObj, 0x20);
         modelSetAnimRate(model, rate);
@@ -1167,15 +1167,15 @@ void GSmodelSetAnimType(_GSmodel* model, s32 type) {
         modelPausePartAnims(model);
         switch (model->animType) {
         case 0:
-            HSD_ForeachAnim(jobj, 6, 0x9B2F, _modelSetLoopFlag, 3, 0);
+            HSD_ForeachAnim(jobj, 6, 0x9B2F, (void*)_modelSetLoopFlag, 3, 0);
             if (model->flags & 0x80) {
-                HSD_ForeachAnim(blend, 6, 0x9B2F, _modelSetLoopFlag, 3, 0);
+                HSD_ForeachAnim(blend, 6, 0x9B2F, (void*)_modelSetLoopFlag, 3, 0);
             }
             break;
         case 1:
-            HSD_ForeachAnim(jobj, 6, 0x9B2F, _modelSetLoopFlag, 3, 1);
+            HSD_ForeachAnim(jobj, 6, 0x9B2F, (void*)_modelSetLoopFlag, 3, 1);
             if (model->flags & 0x80) {
-                HSD_ForeachAnim(blend, 6, 0x9B2F, _modelSetLoopFlag, 3, 1);
+                HSD_ForeachAnim(blend, 6, 0x9B2F, (void*)_modelSetLoopFlag, 3, 1);
             }
             break;
         }
@@ -1218,7 +1218,7 @@ void GSmodelSetAnimIndex(_GSmodel* model, u32 index) {
                 HSD_JObjRemoveAnim(jobj);
             }
             model->animEndFrame = 0.0f;
-            HSD_ForeachAnim(jobj, 6, 0x9B2F, _modelGetEndFrame, 2, &model->animEndFrame);
+            HSD_ForeachAnim(jobj, 6, 0x9B2F, (void*)_modelGetEndFrame, 2, &model->animEndFrame);
             model->animAObj = modelGetFirstAObj(jobj, 0x20);
             modelResumePartAnims(model);
         }
@@ -1512,7 +1512,7 @@ static inline void modelSyncAObjRate(_GSmodel* model, HSD_JObj** jobj, u32 mask,
     if (rate < 0.0f) {
         rate = 0.0f;
     }
-    HSD_ForeachAnim(*jobj, 6, mask, HSD_AObjSetRate, 1, rate);
+    HSD_ForeachAnim(*jobj, 6, mask, (void*)HSD_AObjSetRate, 1, rate);
 }
 
 void modelApplyAnimation(_GSmodel* model) {

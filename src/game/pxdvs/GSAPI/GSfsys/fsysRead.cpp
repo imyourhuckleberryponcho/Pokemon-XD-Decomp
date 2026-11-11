@@ -90,7 +90,7 @@ extern u32 fsys_datatype_number;
 }
 
 void _fsysSeekRequest(void *p0) {
-    if (GSdvdSeekAsync(((FsysWork*)(p0))->file, 0, _fsysSeekCallback) == 0) {
+    if (GSdvdSeekAsync(((FsysWork*)(p0))->file, 0, (void*)_fsysSeekCallback) == 0) {
         _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), -0x3E2U);
     }
 }
@@ -175,7 +175,7 @@ extern "C" {
 static void _fsysReadHeaderCacheCallback(u32 request) {
     FsysArqTrans *temp_r3;
 
-    temp_r3 = _fsysArq2ArqTrans((void*)request);
+    temp_r3 = _fsysArq2ArqTrans(PC_PTR(void*, request));
     if (temp_r3 != NULL) {
         _fsysReadHeaderCallbackSub(((FsysArqTrans*)(temp_r3))->fsys);
     }
@@ -356,7 +356,7 @@ static void _fsysReadBlockCacheCallback(u32 request) {
     Fsys *temp_r31;
     FsysResHeader *temp_r30;
 
-    temp_r3 = _fsysArq2ArqTrans((void*)request);
+    temp_r3 = _fsysArq2ArqTrans(PC_PTR(void*, request));
     if (temp_r3 != NULL) {
         temp_r30 = ((FsysArqTrans*)(temp_r3))->res;
         temp_r31 = ((FsysArqTrans*)(temp_r3))->fsys;
@@ -426,7 +426,7 @@ extern "C" {
 static void _fsysReadBlockCacheWriteCallback(u32 request) {
     FsysArqTrans *temp_r3;
 
-    temp_r3 = _fsysArq2ArqTrans((void*)request);
+    temp_r3 = _fsysArq2ArqTrans(PC_PTR(void*, request));
     if (temp_r3 != NULL) {
         _fsysReadBlockHandling(((FsysArqTrans*)(temp_r3))->fsys, ((FsysArqTrans*)(temp_r3))->res);
     }

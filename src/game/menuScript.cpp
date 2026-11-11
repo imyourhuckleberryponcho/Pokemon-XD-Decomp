@@ -116,7 +116,11 @@ void* memset(void*, int, u32);
 void menuClose(s32 menuID);
 s32 menuOpen(s32 menuID, s32);
 void menuSetPosition(s32 menuID, s32 x, s32 y);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuCloseCustom(s32 menuID, s32, s32);
 void menuCloseSync(s32 menuID, s32);
 s32 windowGetActiveID(void);
@@ -964,11 +968,13 @@ void fn_8005DE84(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
 
 extern "C" {
 
+static inline const u16 eeveeId(const u16* tbl, CURSOR* cur) { return tbl[cur->pos]; }
+
 void menuScriptEeveeHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
 {
     const u16 pokeIds[5] = { 0x86, 0x87, 0x88, 0xC5, 0xC4 };
     CURSOR c = *(CURSOR*)&w->top;
-    POKEMON_DATA_dd_* pd = pokemonDataBiosGetPtr(pokeIds[c.pos]);
+    POKEMON_DATA_dd_* pd = pokemonDataBiosGetPtr(eeveeId(pokeIds, &c));
     switch (sprite->id) {
     case 0x4EE:
         if (c.pos >= 3) {
@@ -1205,7 +1211,7 @@ void menuScriptWazaOshieHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
             MenuItem* a = menuItemBiosGetPtr(w->menuID, 0x6D5);
             MenuItem* b = menuItemBiosGetPtr(w->menuID, sprite->id);
             spriteSetScissor(layer, a->x - b->x, a->y - b->y, a->w, a->h);
-            u16 y = (s16)(-c.top * 0x1F);
+            s32 y = -c.top * 0x1F;
             for (u16 i = 0; i < n; y += 0x1F, i++) {
                 if (i >= c.top - 1 && i < c.top + 10) {
                     WAZAOSHIEDEF* p = _getWaza2Pointer(i);

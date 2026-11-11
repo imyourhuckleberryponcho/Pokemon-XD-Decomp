@@ -544,7 +544,7 @@ void TigaThread::setStackArea(int a, int b)
 {
     free();
     stack = new tigaVariant[a];
-    callStack = new TPCCode*[b];
+    callStack = (GC_NEW_NOTE(sizeof(TPCCode*) * (b), 4 * (b)) new TPCCode*[b]);
     stackCount = a;
     callCount = b;
 }
@@ -591,7 +591,11 @@ void TigaThread::makeStateData(GSBinWriteStream* s)
     if (!(state & 0x10)) s->write32(state);
     else s->write32(0);
     s->writeFloat(sleep);
+#ifdef __MWERKS__
     u32 cpIdx = ((u32)ctx.cp - (u32)ctx.callBase) >> 2;
+#else
+    u32 cpIdx = (u32)(ctx.cp - ctx.callBase);
+#endif
     u32 pcIdx = ((u32)ctx.pc - (u32)owner->codes) >> 2;
     s->write32(pcIdx);
     s->write32(((u32)ctx.bp - (u32)ctx.stackBase) >> 3);
@@ -603,7 +607,11 @@ void TigaThread::makeStateData(GSBinWriteStream* s)
     for (i = 0; i < stackCount; i++) stack[i].makeStateData(s);
     s->write32(callCount);
     for (i = 0; i < callCount; i++) {
+#ifdef __MWERKS__
         pcIdx = (u32)(((u32)&callStack[i] - (u32)ctx.callBase) >> 2);
+#else
+        pcIdx = (u32)(&callStack[i] - ctx.callBase);
+#endif
         s->write32(pcIdx);
     }
     s->write8(timerIndex);
@@ -671,9 +679,9 @@ Tiga::Tiga()
     unk978 = 0x200;
     unk97C = 0;
     nextHandle = 1;
-    cellMemory = new tigaCellMemory;
+    cellMemory = (GC_NEW_NOTE(sizeof(tigaCellMemory), 12) new tigaCellMemory);
     for (s32 i = 0; i < 8; i++) {
-        threads[i] = new TigaThread;
+        threads[i] = (GC_NEW_NOTE(sizeof(TigaThread), 384) new TigaThread);
         threads[i]->owner = this;
     }
     for (f32* p = timers; p < &timers[4]; p++) *p = 0.0f;

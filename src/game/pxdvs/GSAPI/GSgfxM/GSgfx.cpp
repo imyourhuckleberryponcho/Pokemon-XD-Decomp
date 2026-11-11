@@ -34,6 +34,7 @@ struct _GSgfxInitParms {
 #include <game/gsgfxstate.h>
 
 #include <game/gsgfxlayer.h>
+#include "game/gcdata.h"
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -109,8 +110,8 @@ void GSgfxInit(_GSgfxInitParms* parms) {
     GSgfxBackFBInit();
     GSgfxResetInit();
     HSD_Init();
-    new GSgfxLayer((GSgfxLayerID)2, "main", parms->layerWidth, parms->layerHeight, parms->layerFlags,
-                   (GSgfxLayerType)0);
+    (GC_NEW_NOTE(sizeof(GSgfxLayer), 6676) new GSgfxLayer((GSgfxLayerID)2, "main", parms->layerWidth, parms->layerHeight, parms->layerFlags,
+                   (GSgfxLayerType)0));
     GSgfxRenderSetupFirstFrame();
     GSlogWrite("GSgfx: Init OK, state located at %08Xh (size=%d)\n", gsgfxState, sizeof(GSgfxState));
 }

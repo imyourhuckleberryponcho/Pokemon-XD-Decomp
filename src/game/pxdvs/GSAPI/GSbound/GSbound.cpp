@@ -138,7 +138,7 @@ void GSboundCreate(GSbound* b, BoundAnim* anim)
         BOUND_ANIM(b) = anim;
         BOUND_ANIM_INDEX(b) = 0;
         BOUND_ANIM_FRAME(b) = 0.0f;
-        BOUND_ANIM_TABLE_PTR(b) = GSmemAlloc((BOUND_ANIM(b))->count * sizeof(u16*));
+        BOUND_ANIM_TABLE_PTR(b) = GSmemAlloc(GC_SIZE((BOUND_ANIM(b))->count * sizeof(u16*), (BOUND_ANIM(b))->count * 4));
         p = (u16*) (BOUND_ANIM(b) + 1);
         for (i = 0; i < (BOUND_ANIM(b))->count; i++) {
             BOUND_ANIM_TABLE(b)[i] = p;

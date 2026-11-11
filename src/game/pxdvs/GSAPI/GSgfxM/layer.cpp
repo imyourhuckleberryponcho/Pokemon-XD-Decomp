@@ -143,6 +143,7 @@ void* memcpy(void*, const void*, u32);
 void GSgfxRenderModuleDoRenderFast();
 #include <game/gsgfxstate.h>
 #include <game/ppcops.h>
+#include "game/gcdata.h"
 extern "C" GSgfxState* gsgfxState;
 
 extern "C" u8 gsgfx_layer_inPrimitive;
@@ -436,11 +437,11 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     f32 y;
     GSgfxMatrixStack* ms;
     GSgfxLayer* cur;
-    GSgfxLayer* next;
     s32 numLayers;
     s32 legendCount;
     s32 legendOff;
     s32 i;
+    GSgfxLayer* next;
 
     f32 kb = 0.0009765625f;
     if (_layerRenderStats == 0) {
@@ -569,7 +570,7 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
         GSprimSetTextSize(10.0f, 10.0f);
         tcaz[0] = ((cur->flags & 0x200) ? cur->texCopy : NULL) != NULL ? 'O' : 'X';
         if (cur->next == NULL) {
-            r0v = r1v = r2v = 0;
+            r2v = r1v = r0v = 0;
         } else {
             GSgfxLayer* n = cur->next;
             u32 fl;
@@ -590,14 +591,10 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
             }
             r0v = t != 0;
             t = 0;
-            if ((fl & 0x10) || bNextB != 0) {
-                t = 1;
-            }
+            t = !((fl & 0x10) || bNextB != 0) ? t : 1;
             r1v = t != 0;
             t = 0;
-            if ((fl & 0x20) || bNextC != 0) {
-                t = 1;
-            }
+            t = !((fl & 0x20) || bNextC != 0) ? t : 1;
             r2v = t != 0;
         }
         if (&bR0 != NULL) {
@@ -675,9 +672,10 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
         if (statsLegendFill(cur->passes[0], LEGEND_AT(legendOff)) == 1) {
             GSprimSetTextColor(colMark);
             GSprimWriteChar(LEGEND_AT(legendOff)->sym, 295.0f, y);
-            legendOff += 0x10;
             legendCount++;
-            x = 295.0f + 11.0f;
+            legendOff += 0x10;
+            x = 11.0f;
+            x += 295.0f;
         }
         GSprimSetTextColor(colText);
         if (size0 != 0) {
@@ -696,8 +694,8 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
         if (statsLegendFill(cur->passes[1], LEGEND_AT(legendOff)) == 1) {
             GSprimSetTextColor(colMark);
             GSprimWriteChar(LEGEND_AT(legendOff)->sym, 470.0f, y);
-            legendOff += 0x10;
             legendCount++;
+            legendOff += 0x10;
             x = 470.0f + 11.0f;
         }
         GSprimSetTextColor(colText);
@@ -718,8 +716,8 @@ void GSgfxLayerRenderStats(GSgfxLayer* p0) {
     }
     if (legendCount > 0) {
         s32 k;
-        y += 18.0f;
         GSprimDraw2DQuadWH(colBg, 10.0f, 12.0f * (f32)i + 50.0f, 620.0f, 12.0f * (f32)legendCount + 4.0f);
+        y += 18.0f;
         for (k = 0; k < legendCount; k++) {
             RedirectLegend* e = &legend[k];
             GSprimSetTextColor(colMark);
@@ -971,7 +969,7 @@ GSgfxLayer::GSgfxLayer(GSgfxLayerID id, char* name, u32 w, u32 h, u32 depth, GSg
     LoadHWState();
     GSgfx_GCInitState();
     memset(hwState, 0, (u32)((u8*)((GSgfxLayerData*)0)->dirty - (u8*)((GSgfxLayerData*)0)->hwState));
-    matrixStack = new GSgfxMatrixStack(depth);
+    matrixStack = (GC_NEW_NOTE(sizeof(GSgfxMatrixStack), 12) new GSgfxMatrixStack(depth));
     if (_layerBottom == 0) {
         _layerBottom = this;
         next = 0;
@@ -1040,7 +1038,7 @@ void GSgfxLayer::SendFifoToRenderer(_gsgfxLayerFifo* fifo) {
         }
         f->unk8c = (u32)FIFO_OBJ(f)->write;
     }
-    start = (u32*)f->unk88;
+    start = PC_PTR(u32*, f->unk88);
     n = f->unk8c - (u32)start;
     if (n == 0) {
         empty = 1;
@@ -1060,7 +1058,7 @@ void GSgfxLayer::SendFifoToRenderer(_gsgfxLayerFifo* fifo) {
         GSlogWrite("fifo overflow in [%s]: %s pass", name, curPass == 0 ? "opaque" : "xluc");
         return;
     }
-    start = (u32*)f->unk88;
+    start = PC_PTR(u32*, f->unk88);
     for (i = 0; i < 4; i++) {
         hook = &hooks[i];
         if (hook->callback == NULL) {
@@ -1071,7 +1069,7 @@ void GSgfxLayer::SendFifoToRenderer(_gsgfxLayerFifo* fifo) {
             start = (u32*)hook->end;
         }
     }
-    GSgfxRenderAddToFifoList(FIFO_OBJ(f), start, (void*)f->unk8c, f->color, NULL, NULL);
+    GSgfxRenderAddToFifoList(FIFO_OBJ(f), start, PC_PTR(void*, f->unk8c), f->color, NULL, NULL);
 }
 }
 
@@ -1195,7 +1193,7 @@ void GSgfxLayer::PrerenderPass(GSgfxLayerPass pass) {
         if (f == (active = (PassFifo*)gsgfx_layer_activeFifo)) {
             layerFlushFifo(active);
         }
-        GSgfxGPUSetFifoWritePtr(FIFO_OBJ(f), (void*)passes[pass].unk88);
+        GSgfxGPUSetFifoWritePtr(FIFO_OBJ(f), PC_PTR(void*, passes[pass].unk88));
         passes[pass].unk8c = passes[pass].unk88;
         passes[pass].unkAC = 0;
         passes[pass].unkAE = 0;
@@ -1425,28 +1423,10 @@ void GSgfxLayer::SetPassRedirect(GSgfxLayerPass pass, bool enable, GSgfxLayer* t
             return;
         }
         PassFifo* src = &passes[pass];
-        GSgfxLayer* t;
         if (src->flag == 0) {
             return;
         }
-        int rid = src->redirectId;
-        if (rid == -1) {
-            t = 0;
-        } else if (rid < 16) {
-            t = _layerIDTable[rid];
-        }
-        PassFifo* dst = &t->passes[src->redirectPass];
-        _gsgfxLayerFifo** slot;
-        if (src->redirectOffset == LAYER_OFFSET_ABOVE) {
-            slot = &dst->pre;
-        } else {
-            slot = &dst->post;
-        }
-        src->flag = 0;
-        src->redirectId = -1;
-        src->redirectPass = 2;
-        *slot = 0;
-        src->redirectOffset = 0;
+        layerClearRedirect(src);
     }
 }
 

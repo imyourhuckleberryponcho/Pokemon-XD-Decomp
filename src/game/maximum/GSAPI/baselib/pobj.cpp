@@ -23,6 +23,7 @@ s32 HSD_Index2PosNrmMtx(u32 arg0);
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -165,7 +166,7 @@ inline void HSD_PObjAnim(HSD_PObj* pobj)
 
 inline static HSD_Envelope* HSD_EnvelopeAlloc(void)
 {
-    HSD_Envelope* envelope = hsdAllocMemPiece(sizeof(HSD_Envelope));
+    HSD_Envelope* envelope = hsdAllocMemPiece(GC_SIZE(sizeof(HSD_Envelope), 12));
     HSD_ASSERT(0x1a8, envelope);
     memset(envelope, 0, sizeof(HSD_Envelope));
     return envelope;
@@ -246,7 +247,7 @@ inline static HSD_ShapeSet* loadShapeSetDesc(HSD_ShapeSetDesc* sdesc)
 {
     int i;
 
-    HSD_ShapeSet* shape_set = hsdAllocMemPiece(sizeof(HSD_ShapeSet));
+    HSD_ShapeSet* shape_set = hsdAllocMemPiece(GC_SIZE(sizeof(HSD_ShapeSet), 32));
     HSD_ASSERT(0x1e1, shape_set);
     memset(shape_set, 0, sizeof(HSD_ShapeSet));
     shape_set->flags = GC_BE16(sdesc->flags);
@@ -1504,7 +1505,7 @@ static void PObjInfoInit(void)
 {
     hsdInitClassInfo(HSD_CLASS_INFO(&hsdPObj), HSD_CLASS_INFO(&hsdClass),
                      "sysdolphin_base_library", "hsd_pobj",
-                     sizeof(HSD_PObjInfo), sizeof(HSD_PObj));
+                     sizeof(HSD_PObjInfo), GC_CLASS_SIZE(sizeof(HSD_PObj), 28));
     HSD_CLASS_INFO(&hsdPObj)->release = PObjRelease;
     HSD_CLASS_INFO(&hsdPObj)->amnesia = PObjAmnesia;
     HSD_POBJ_INFO(&hsdPObj)->disp = HSD_PObjDisp;

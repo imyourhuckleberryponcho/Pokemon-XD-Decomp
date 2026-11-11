@@ -1,6 +1,7 @@
 #include <dolphin/types.h>
 #include <game/gcptr.h>
 #include <game/ppcops.h>
+#include "game/gcdata.h"
 
 #pragma peephole off
 
@@ -152,7 +153,11 @@ void* menuModelGetModelPtr(MENU_MODEL*);
 void menuModelSetAngle(MENU_MODEL*, f32*);
 void menuModelSetCameraRotation(MENU_MODEL*, f32*);
 void menuModelSetZoom(MENU_MODEL*, f32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void* menuPdaGetRes(void);
 void* menuPdaGetSubres(void);
 void menuPdaMemoListDispPokemonModel(tagWINDOW_WORK*, tagSPRITE_WORK*, s32);
@@ -160,20 +165,14 @@ f32 menuPdaMemoListGetDefaultAngle(s16);
 MENU_MODEL* menuPdaMemoListGetMenuModelWork(void);
 void* menuPdaMemoListGetPokemonDataPointer(s32);
 u16 menuPdaMemoListGetPokemonID(s32);
-s32 menuPdaMemoListGetPokemonName(s32);
+GCsptr menuPdaMemoListGetPokemonName(s32);
 u8 menuPdaMemoListIsLoadHero(void);
 u8 menuPdaMemoListIsTermModel(void);
 void menuPdaMemoListLoadHero(bool);
 void menuPdaMemoListLoadPokemon(s32);
 void menuPdaMemoListSetHeroMotion(void);
 void menuPdaMemoWave(s32);
-#ifdef __MWERKS__
-void menuPdaMemoWaveHook(void);
-#define MEMO_WAVE_HOOK() menuPdaMemoWaveHook()
-#else
 void menuPdaMemoWaveHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
-#define MEMO_WAVE_HOOK() menuPdaMemoWaveHook(window, sprite)
-#endif
 void menuPdaMemoWaveInit(void);
 void menuPdaSetSubres(s32, s32);
 void menuPlaySe(s32 menuID, s32);
@@ -655,25 +654,84 @@ void menuPdaMemoXD::PokemonTokusei(tagWINDOW_WORK* window, tagSPRITE_WORK* sprit
     if (slot == 0) {
         if (tokusei != 0) {
             void* data = pokemonTokuseiDataBiosGetPtr(tokusei);
-            s32 tmp1 = (u32)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(data));
+            GCsptr tmp1 = (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(data));
             msgctrlSetValue(0x37, tmp1);
             GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
         }
     } else if (tokusei != 0 && tokusei != first) {
         void* data = pokemonTokuseiDataBiosGetPtr(tokusei);
-        s32 tmp1 = (u32)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(data));
+        GCsptr tmp1 = (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(data));
         msgctrlSetValue(0x37, tmp1);
         GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
     }
 }
 }
 
+static inline u32 copyWords(u16* src, u16* dst, int prev) {
+    int spaces = 0;
+    u32 k = 0;
+    for (;;) {
+        u16 ch = *src;
+        if (ch == 0x20 || ch == 0x3000) {
+            if (spaces == prev) {
+                break;
+            }
+            *dst = ch;
+            spaces++;
+        } else {
+            if (ch == 0) {
+                break;
+            }
+            *dst = ch;
+        }
+        src++;
+        dst++;
+        k++;
+    }
+    return k;
+}
+
+static inline void splitLines(u16* text, u16* buf1, u16* buf2, int best) {
+    u16* p = text;
+    u8 second = 0;
+    int n1 = 0;
+    int n2 = 0;
+    u32 total = GSmsgGetCharLength(text);
+    u32 idx = 0;
+    int spaces = 0;
+    for (;; p++, idx++) {
+        u16 ch = *p;
+        if (ch == 0xFFFF) {
+            continue;
+        }
+        if (ch == 0x20 || ch == 0x3000) {
+            if (spaces == best - 1) {
+                second = 1;
+            } else if (second) {
+                buf2[n2++] = ch;
+            } else {
+                buf1[n1++] = ch;
+            }
+            spaces++;
+            continue;
+        }
+        if (ch == 0) {
+            if (total <= idx) {
+                break;
+            }
+        } else if (second) {
+            buf2[n2++] = ch;
+        } else {
+            buf1[n1++] = ch;
+        }
+    }
+    buf1[n1] = 0;
+    buf2[n2] = 0;
+}
+
 extern "C++" {
 void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, MEMO_CONTENTS* contents,
                                           unsigned short slot) {
-    u8 second;
-    int n2;
-    int n1;
     CURSOR* c = contents->cursor;
     void* mon = pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(c->pos + c->top));
     MenuItem* item = menuItemBiosGetPtr(0x7E, sprite->id);
@@ -695,30 +753,9 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
         int best = 0;
         u8 wrap = 0;
         do {
-            int spaces;
             int prev = n;
-            u16* src = text;
-            u16* dst = buf1;
-            k = spaces = 0;
             n++;
-            for (;;) {
-                u16 ch = *src;
-                if (ch == 0x20 || ch == 0x3000) {
-                    if (spaces == prev) {
-                        break;
-                    }
-                    *dst = ch;
-                    spaces++;
-                } else {
-                    if (ch == 0) {
-                        break;
-                    }
-                    *dst = ch;
-                }
-                src++;
-                dst++;
-                k++;
-            }
+            k = copyWords(text, buf1, prev);
             buf1[k++] = 0;
             msgctrlSetValue(0x37, (GCuptr)name);
             u32 width = GSmsgGetRect(0x4276) >> 16;
@@ -731,41 +768,7 @@ void menuPdaMemoXD::PokemonTokuseiSetumei(tagWINDOW_WORK* window, tagSPRITE_WORK
             }
         } while (k < len);
         if (wrap) {
-            u16* p = text;
-            n1 = 0;
-            n2 = 0;
-            second = 0;
-            u32 total = GSmsgGetCharLength(text);
-            u32 idx = 0;
-            int spaces = 0;
-            for (;; p++, idx++) {
-                u16 ch = *p;
-                if (ch == 0xFFFF) {
-                    continue;
-                }
-                if (ch == 0x20 || ch == 0x3000) {
-                    if (spaces == best - 1) {
-                        second = 1;
-                    } else if (second) {
-                        buf2[n2++] = ch;
-                    } else {
-                        buf1[n1++] = ch;
-                    }
-                    spaces++;
-                    continue;
-                }
-                if (ch == 0) {
-                    if (total <= idx) {
-                        break;
-                    }
-                } else if (second) {
-                    buf2[n2++] = ch;
-                } else {
-                    buf1[n1++] = ch;
-                }
-            }
-            buf1[n1] = 0;
-            buf2[n2] = 0;
+            splitLines(text, buf1, buf2, best);
             msgctrlSetValue(0x37, (GCuptr)buf1);
             GSmsgPrint2(window->layer, 0, 0, window->alpha | 0xFFFFFF00, 0x4276);
             msgctrlSetValue(0x37, (GCuptr)buf2);
@@ -939,7 +942,7 @@ void menuPdaMemoXDButton(tagWINDOW_WORK* window) {
 
 extern "C" {
 CURSOR* menuPdaMemoXDMain(CURSOR* cursor) {
-    pMemo = new menuPdaMemoXD(cursor);
+    pMemo = (GC_NEW_NOTE(sizeof(menuPdaMemoXD), 232) new menuPdaMemoXD(cursor));
     pMemo->Main(cursor);
     delete pMemo;
     pMemo = 0;
@@ -990,7 +993,7 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         sprite->colorB = 0x33;
         break;
     case 0x10B:
-        MEMO_WAVE_HOOK();
+        menuPdaMemoWaveHook(window, sprite);
         break;
     case 0x144:
     case 0x145:
@@ -1036,9 +1039,9 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         pMemo->PokemonType(window, sprite, contents, 1);
         break;
     case 0x15C: {
-        s32 name = (u32)GSmsgGetGSchar(0x3B68);
+        GCsptr name = (GCuptr)GSmsgGetGSchar(0x3B68);
         msgctrlSetValue(0x4D, name);
-        s32 text = (u32)GSmsgGetGSchar(0x3B69);
+        GCsptr text = (GCuptr)GSmsgGetGSchar(0x3B69);
         msgctrlSetValue(0x37, text);
         GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
         break;
@@ -1051,9 +1054,9 @@ s32 menuPdaMemoXDHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             second = 0;
         }
         if (second) {
-            s32 name = (u32)GSmsgGetGSchar(0x3B68);
+            GCsptr name = (GCuptr)GSmsgGetGSchar(0x3B68);
             msgctrlSetValue(0x4D, name);
-            s32 text = (u32)GSmsgGetGSchar(0x3B6A);
+            GCsptr text = (GCuptr)GSmsgGetGSchar(0x3B6A);
             msgctrlSetValue(0x37, text);
             GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4278);
         }

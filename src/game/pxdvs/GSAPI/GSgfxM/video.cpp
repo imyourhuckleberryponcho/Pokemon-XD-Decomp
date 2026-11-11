@@ -662,6 +662,41 @@ void GSgfxVideoInit(u8 count, u16 efbHeight, GSgfxVideoMode mode) {
     }
 }
 
+static inline void _videoSetViewportJitter(f32 x, f32 y, f32 w, f32 h, f32 nz, f32 fz, u32 field) {
+    GSgfxVideoGlobals* g = gsgfxState;
+    if (g->vp[0] == x && g->vp[1] == y && g->vp[2] == w && g->vp[3] == h && g->vp[4] == nz && g->vp[5] == fz &&
+        (u32)g->vpField == field) {
+        return;
+    }
+    if (field == 0) {
+        y -= 0.5f;
+    }
+    GX_WGPIPE.u8 = 0x10;
+    GX_WGPIPE.u16 = 5;
+    GX_WGPIPE.u16 = 0x101A;
+    f32 half = 0.5f;
+    f32 zs = 16777216.0f;
+    f32 halfW = w * half;
+    f32 halfH = h * half;
+    f32 farScaled = fz * zs;
+    GX_WGPIPE.f32 = halfW;
+    GX_WGPIPE.f32 = -halfH;
+    GX_WGPIPE.f32 = farScaled - nz * zs;
+    f32 kx = 342.0f;
+    GX_WGPIPE.f32 = kx + (x + halfW);
+    f32 ky = 342.0f;
+    GX_WGPIPE.f32 = ky + (y + halfH);
+    f32 kz = 0.0f;
+    GX_WGPIPE.f32 = farScaled + kz;
+    g->vp[0] = x;
+    gsgfxState->vp[1] = y;
+    gsgfxState->vp[2] = w;
+    gsgfxState->vp[3] = h;
+    gsgfxState->vp[4] = nz;
+    gsgfxState->vp[5] = fz;
+    gsgfxState->vpField = field;
+}
+
 static void _videoUpdateViewport(bool b) {
     GSgfxVideoState* st = &_videoState;
     f32 offX;
@@ -673,81 +708,11 @@ static void _videoUpdateViewport(bool b) {
         offY = 0.0f;
     }
     if (st->fieldRendering != 0) {
-        f32 x = _viewport.x + offX;
-        f32 w = _viewport.w;
-        f32 h = _viewport.h;
-        f32 nz = _viewport.nearZ;
-        f32 fz = _viewport.farZ;
-        f32 y = _viewport.y + offY;
-        GSgfxVideoGlobals* g = gsgfxState;
-        u32 field = st->nextField;
-        if (g->vp[0] == x && g->vp[1] == y && g->vp[2] == w && g->vp[3] == h && g->vp[4] == nz && g->vp[5] == fz &&
-            (u32)g->vpField == field) {
-            return;
-        }
-        if (field == 0) {
-            y -= 0.5f;
-        }
-        GX_WGPIPE.u8 = 0x10;
-        GX_WGPIPE.u16 = 5;
-        GX_WGPIPE.u16 = 0x101A;
-        f32 half = 0.5f;
-        f32 zs = 16777216.0f;
-        f32 halfH = h * half;
-        f32 halfW = w * half;
-        f32 farScaled = fz * zs;
-        GX_WGPIPE.f32 = halfW;
-        GX_WGPIPE.f32 = -halfH;
-        GX_WGPIPE.f32 = farScaled - nz * zs;
-        f32 kc1133 = 342.0f;
-        GX_WGPIPE.f32 = kc1133 + (x + halfW);
-        f32 kc1208 = 342.0f;
-        GX_WGPIPE.f32 = kc1208 + (y + halfH);
-        f32 kc1283 = 0.0f;
-        GX_WGPIPE.f32 = farScaled + kc1283;
-        g->vp[0] = x;
-        gsgfxState->vp[1] = y;
-        gsgfxState->vp[2] = w;
-        gsgfxState->vp[3] = h;
-        gsgfxState->vp[4] = nz;
-        gsgfxState->vp[5] = fz;
-        gsgfxState->vpField = field;
+        _videoSetViewportJitter(_viewport.x + offX, _viewport.y + offY, _viewport.w, _viewport.h, _viewport.nearZ,
+                                _viewport.farZ, _videoState.nextField);
     } else {
-        f32 x = _viewport.x + offX;
-        f32 w = _viewport.w;
-        f32 h = _viewport.h;
-        f32 nz = _viewport.nearZ;
-        f32 fz = _viewport.farZ;
-        f32 y = _viewport.y + offY;
-        GSgfxVideoGlobals* g = gsgfxState;
-        if (g->vp[0] == x && g->vp[1] == y && g->vp[2] == w && g->vp[3] == h && g->vp[4] == nz && g->vp[5] == fz &&
-            (u32)g->vpField == 1) {
-            return;
-        }
-        GX_WGPIPE.u8 = 0x10;
-        GX_WGPIPE.u16 = 5;
-        GX_WGPIPE.u16 = 0x101A;
-        f32 half = 0.5f;
-        f32 zs = 16777216.0f;
-        f32 halfH = h * half;
-        f32 halfW = w * half;
-        f32 farScaled = fz * zs;
-        GX_WGPIPE.f32 = halfW;
-        GX_WGPIPE.f32 = -halfH;
-        GX_WGPIPE.f32 = farScaled - nz * zs;
-        f32 kc2349 = 342.0f;
-        GX_WGPIPE.f32 = kc2349 + (x + halfW);
-        f32 kc2424 = 342.0f;
-        GX_WGPIPE.f32 = kc2424 + (y + halfH);
-        f32 kc2499 = 0.0f;
-        GX_WGPIPE.f32 = farScaled + kc2499;
-        g->vp[0] = x;
-        gsgfxState->vp[1] = y;
-        gsgfxState->vp[2] = w;
-        gsgfxState->vp[3] = h;
-        gsgfxState->vp[4] = nz;
-        gsgfxState->vp[5] = fz;
-        gsgfxState->vpField = 1;
+        _videoSetViewportJitter(_viewport.x + offX, _viewport.y + offY, _viewport.w, _viewport.h, _viewport.nearZ,
+                                _viewport.farZ, 1);
     }
 }
 

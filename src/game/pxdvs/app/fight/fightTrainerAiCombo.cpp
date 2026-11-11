@@ -409,7 +409,11 @@ static void _GetAllWazaTableValue_StatusUpWaza(FIGHT_TRAINER* t, AI_ALLWAZA_VALI
 
 extern "C" {
 s16 fightAiCombo_GetAllWazaTableDefValue(FIGHT_TRAINER* t, FightOutPokemon** foes, AI_ALLWAZA_VALID_TBL* tbl, s16 base, s8 mode) {
+#ifdef __MWERKS__
     FightOutPokemon* ary[6];
+#else
+    FightOutPokemon* ary[8];
+#endif
     s16 val;
     u16 cnt;
     s32 prod;

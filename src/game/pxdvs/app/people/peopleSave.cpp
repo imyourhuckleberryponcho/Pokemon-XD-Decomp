@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <libc/string.h>
+#include <game/bitfield.h>
 
 #pragma pool_strings off
 
@@ -34,9 +35,9 @@ struct tagPeopleWork {
     PeopleState state;
 };
 struct SavedFlags {
-    u8 active:1, display:1, flag2:1, flag150:1, flag3:1, flag4A:1, unused0:2;
-    u8 moveType:3, motion:3, mode:2;
-    u8 targetType:2, unused2:6;
+    GC_BITS7(u8 active:1, u8 display:1, u8 flag2:1, u8 flag150:1, u8 flag3:1, u8 flag4A:1, u8 unused0:2)
+    GC_BITS3(u8 moveType:3, u8 motion:3, u8 mode:2)
+    GC_BITS2(u8 targetType:2, u8 unused2:6)
     u8 unused3[2];
 };
 
@@ -93,6 +94,13 @@ public:
     void seek(s32 n) { current = begin + n; }
 };
 
+#ifdef __MWERKS__
+#define STREAM_READ_VEC(s, v) (s)->read((v), sizeof(GSvec))
+#define STREAM_WRITE_VEC(s, v) (s)->write((v), sizeof(GSvec))
+#else
+#define STREAM_READ_VEC(s, v) do { GSvec* _v = (v); _v->x = (s)->readFloat(); _v->y = (s)->readFloat(); _v->z = (s)->readFloat(); } while (0)
+#define STREAM_WRITE_VEC(s, v) do { const GSvec* _v = (v); (s)->writeFloat(_v->x); (s)->writeFloat(_v->y); (s)->writeFloat(_v->z); } while (0)
+#endif
 static void _makeAnywaySaveData(GSBinWriteStream* stream);
 
 extern "C" {
@@ -184,21 +192,21 @@ static void _peopleRestoreAnywaySaveData(GSBinReadStream* stream) {
             state->speed = stream->readFloat();
             state->motion = stream->read8();
             state->speed = stream->readFloat();
-            stream->read(&state->position, sizeof(GSvec));
-            stream->read(&state->destination, sizeof(GSvec));
+            STREAM_READ_VEC(stream, &state->position);
+            STREAM_READ_VEC(stream, &state->destination);
             state->pointCount = stream->read8();
             if (state->pointCount) {
                 state->pointIndex = stream->read8();
                 state->points = (GSvec*)GSmemAllocClr(state->pointCount * sizeof(GSvec));
-                for (s32 j = 0; j < state->pointCount; j++) stream->read(&state->points[j], sizeof(GSvec));
+                for (s32 j = 0; j < state->pointCount; j++) STREAM_READ_VEC(stream, &state->points[j]);
             }
             switch (state->targetType) {
             case 1: state->targetGroupID = stream->read32(); state->targetPeopleID = stream->read32(); break;
-            case 2: stream->read(&state->targetPosition, sizeof(GSvec)); break;
+            case 2: STREAM_READ_VEC(stream, &state->targetPosition); break;
             }
             if (model) {
-                stream->read(GSmodelGetPositionPtr(model), sizeof(GSvec));
-                stream->read(&state->savedPosition, sizeof(GSvec));
+                STREAM_READ_VEC(stream, GSmodelGetPositionPtr(model));
+                STREAM_READ_VEC(stream, &state->savedPosition);
                 state->angle = stream->readFloat();
                 state->targetAngle = stream->readFloat();
                 GSmodelGetRotationPtr(model)->y = state->angle;
@@ -247,6 +255,9 @@ static void _makeAnywaySaveData(GSBinWriteStream* stream) {
             stream->write16(0);
             model = people->model;
             SavedFlags flags;
+#ifndef __MWERKS__
+            memset(&flags, 0, sizeof(flags));
+#endif
             flags.active = state->active;
             flags.display = state->display;
             flags.flag2 = state->flag2;
@@ -265,20 +276,20 @@ static void _makeAnywaySaveData(GSBinWriteStream* stream) {
             stream->writeFloat(state->speed);
             stream->write8(state->motion);
             stream->writeFloat(state->speed);
-            stream->write(&state->position, sizeof(GSvec));
-            stream->write(&state->destination, sizeof(GSvec));
+            STREAM_WRITE_VEC(stream, &state->position);
+            STREAM_WRITE_VEC(stream, &state->destination);
             stream->write8(state->pointCount);
             if (state->pointCount) {
                 stream->write8(state->pointIndex);
-                for (s32 j = 0; j < state->pointCount; j++) stream->write(&state->points[j], sizeof(GSvec));
+                for (s32 j = 0; j < state->pointCount; j++) STREAM_WRITE_VEC(stream, &state->points[j]);
             }
             switch (state->targetType) {
             case 1: stream->write32(state->targetGroupID); stream->write32(state->targetPeopleID); break;
-            case 2: stream->write(&state->targetPosition, sizeof(GSvec)); break;
+            case 2: STREAM_WRITE_VEC(stream, &state->targetPosition); break;
             }
             if (model) {
-                stream->write(GSmodelGetPositionPtr(model), sizeof(GSvec));
-                stream->write(&state->savedPosition, sizeof(GSvec));
+                STREAM_WRITE_VEC(stream, GSmodelGetPositionPtr(model));
+                STREAM_WRITE_VEC(stream, &state->savedPosition);
                 stream->writeFloat(GSmodelGetRotationPtr(model)->y);
                 stream->writeFloat(state->targetAngle);
             } else {

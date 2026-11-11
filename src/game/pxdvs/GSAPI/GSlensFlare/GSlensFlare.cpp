@@ -208,7 +208,7 @@ u32 GSlensFlareLoad(u8* data) {
     }
     for (i = 0; i < 4; i++) {
         if (_lfLensFlarePtrs[i] == 0) {
-            lf = new LensFlare();
+            lf = (GC_NEW_NOTE(sizeof(LensFlare), 284) new LensFlare());
             if (lf == 0) {
                 lf = 0;
             } else {

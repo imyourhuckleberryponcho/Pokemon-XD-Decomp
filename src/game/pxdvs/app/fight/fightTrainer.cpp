@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/fightfloor.h>
 #include <game/gcptr.h>
 #include <game/ppcops.h>
 #include <game/pcret.h>
@@ -9,7 +10,7 @@
 #pragma auto_inline off
 
 struct FightTrainer {
-    u8 unk0[0x3744];
+    u8 unk0[FIGHT_TRAINER_SIZE];
 };
 struct FightPokemon;
 struct FightOutPokemon;
@@ -191,11 +192,11 @@ void pokemon_SetItemDataId(Pokemon* pokemon, u16 id);
 u16 charNameBiosSearchIndex(u32 nameID);
 u16 charNameBiosGetHearFlag(u16 index);
 void GSflagOn(u32 id);
-void fightMsgctrlSetValue(u32 id, u32 value);
+void fightMsgctrlSetValue(u32 id, GCuptr value);
 u16* GSmsgGetGSchar(u32 id);
 void* fightTargetGetPtr(u32 kind, void* a, u32 b);
-u32 Sequence_LoadTrainer(u32 id);
-void Sequence_SetVisibility(u32 seq, u32 visible);
+GCuptr Sequence_LoadTrainer(u32 id);
+void Sequence_SetVisibility(GCuptr seq, u32 visible);
 void fightFloorSetShadow(void);
 
 struct FightActionData;
@@ -215,12 +216,12 @@ u8 dbgMenuFightGetAllFightTrainerOperateFlag(void);
 s16 fightMenuFightTrainerGcHeroSelectIrekaeFightPokemon(FightTrainer* trainer, u32 a, u32 b, u32 c, u32 d);
 s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FightTrainer* trainer, u32 a, u32 b, GCuptr c);
 s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FightTrainer* trainer, u32 a, u32 b, GCuptr c);
-u32 fightTrainer_GetSequencePtr(FightTrainer* trainer);
-void Sequence_LoadWaza(u32 seq, u32 id, u32 kind, u32 flag);
-u32 Sequence_GetWaza(u32 seq, u32 id, u32 kind);
-void WazaSequence_Start(u32 waza, u32 flag);
-u8 WazaSequence_IsActive(u32 waza);
-void WazaSequence_Free(u32 waza);
+GCuptr fightTrainer_GetSequencePtr(FightTrainer* trainer);
+void Sequence_LoadWaza(GCuptr seq, u32 id, u32 kind, u32 flag);
+GCuptr Sequence_GetWaza(GCuptr seq, u32 id, u32 kind);
+void WazaSequence_Start(GCuptr waza, u32 flag);
+u8 WazaSequence_IsActive(GCuptr waza);
+void WazaSequence_Free(GCuptr waza);
 void GSthreadSwitch(void);
 FightTrainerEnemyPokemon* fightTrainerEnemyPokemonSearchAry(FightTrainerEnemyPokemon* ary, u16 num, s16 id);
 void fightTrainerAllInitFightActionBuff(FightTrainer* trainer);
@@ -427,12 +428,12 @@ u16 itemBallDB_GetSnatchAttackWzxDataId(u16 ballId);
 u8 pokemon_GetCatchBallId(Pokemon* pokemon);
 void battleGridBackupModelVisibilityFlags(void);
 void battleGridStoreModelVisibilityFlags(void);
-void Sequence_GetPosition(u32 seq, GSvec* pos);
-void Sequence_GetRotation(u32 seq, GSvec* rot);
-void Sequence_SetPosition(u32 seq, GSvec* pos);
-void Sequence_SetRotation(u32 seq, GSvec* rot);
-void Sequence_Free(u32 seq);
-u32 snatchSequencePtr;
+void Sequence_GetPosition(GCuptr seq, GSvec* pos);
+void Sequence_GetRotation(GCuptr seq, GSvec* rot);
+void Sequence_SetPosition(GCuptr seq, GSvec* pos);
+void Sequence_SetRotation(GCuptr seq, GSvec* rot);
+void Sequence_Free(GCuptr seq);
+GCuptr snatchSequencePtr;
 
 u8 fightTrainerCheckTrainerDataIdValid(u16 id, s32 allowNoAi);
 bool fightTrainerCheckValid(FightTrainer* trainer);
@@ -477,9 +478,9 @@ static inline u8 _esabaGetMinLevel(u32 index, u8 k) {
 extern "C" {
 
 void fightTrainerBallThrowEffect(FightTrainer* trainer, FightOutPokemon* fo, u8 mode) {
-    u32 seq = fightTrainer_GetSequencePtr(trainer);
+    GCuptr seq = fightTrainer_GetSequencePtr(trainer);
     u16 wzx;
-    u32 waza;
+    GCuptr waza;
 
     if (seq == 0) {
         return;
@@ -500,8 +501,8 @@ void fightTrainerBallThrowEffect(FightTrainer* trainer, FightOutPokemon* fo, u8 
 }
 
 void fightTrainerHokakuThrowEffect(FightTrainer* trainer, u16 ballId, u8 mode) {
-    u32 seq = fightTrainer_GetSequencePtr(trainer);
-    u32 waza;
+    GCuptr seq = fightTrainer_GetSequencePtr(trainer);
+    GCuptr waza;
     u16 wzx;
     u8 snatch;
     GSvec pos;
@@ -561,8 +562,8 @@ void fightTrainerHokakuThrowEffect(FightTrainer* trainer, u16 ballId, u8 mode) {
 }
 
 void fightTrainerCallEffect(FightTrainer* trainer, u8 mode) {
-    u32 seq = fightTrainer_GetSequencePtr(trainer);
-    u32 waza;
+    GCuptr seq = fightTrainer_GetSequencePtr(trainer);
+    GCuptr waza;
 
     if (seq == 0) {
         return;
@@ -1275,7 +1276,7 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
                 total = 0;
                 for (j = 0; j < 6; j++) {
                     u16 r = HSD_Rand();
-                    statusEffort[j] += r % 256;
+                    statusEffort[j] += (u8)(r % 256);
                     total += statusEffort[j];
                 }
                 if (fightKind == 10 || fightKind == 17) {
@@ -1509,7 +1510,7 @@ static void _fightTrainerCreateDeckUnderTaker(u16 id, Hero* hero, u16 encountId)
     count = _fightTrainer_GetListUnderTakerDarkPoke(list);
     if (count != 0) {
         _fightTrainer_SortUnderTakerDarkPoke(list, count);
-        _fightTrainer_GetUnderTakerDarkPoke(list, count, i, hero, count >= 7 ? 2 : 1, encountId);
+        _fightTrainer_GetUnderTakerDarkPoke(list, count, i, hero, count >= 7 ? 2 : 1, (s32)encountId);
     }
 }
 
@@ -2263,8 +2264,8 @@ u8 fightTrainerCheckCanGetExp(FightTrainer* trainer) {
     return fightTrainerIsGcHero(trainer) == 1;
 }
 
-u32 fightTrainerCreateSequence(u16 id) {
-    u32 seq = Sequence_LoadTrainer(fightTrainerDB_GetPkxDataId(id));
+GCuptr fightTrainerCreateSequence(u16 id) {
+    GCuptr seq = Sequence_LoadTrainer(fightTrainerDB_GetPkxDataId(id));
 
     if (seq == 0) {
         return 0;

@@ -3,6 +3,9 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
+#ifndef __MWERKS__
+#include <game/maximum/GSAPI/baselib/class.h>
+#endif
 #include <dolphin/gx/GXStruct.h>
 
 #pragma pool_strings off
@@ -170,8 +173,15 @@ static inline void _lightUnref(HSD_LObj* lobj)
     }
     if (_objRefDec(obj)) {
         if (obj != 0) {
+#ifdef __MWERKS__
             ((void (*)(void*))obj->class_info[0x30 / 4])(obj);
             ((void (*)(void*))obj->class_info[0x34 / 4])(obj);
+#else
+
+
+            HSD_CLASS_INFO(obj->class_info)->release((HSD_Class*)obj);
+            HSD_CLASS_INFO(obj->class_info)->destroy((HSD_Class*)obj);
+#endif
         }
     }
 }
@@ -189,7 +199,7 @@ void GSlightInit(u32 count)
     u32 i;
 
     _lightStructCount = count;
-    _lightStructList = (GSlight*)GSmemAlloc(count * sizeof(GSlight));
+    _lightStructList = (GSlight*)GSmemAlloc(GC_SIZE(count * sizeof(GSlight), count * 116));
     if (_lightStructList != 0) {
         for (i = 0; i < _lightStructCount; i++) {
             _lightStructList[i].used = 0;
@@ -370,7 +380,7 @@ void GSlightSetAnimIndex(GSlight* light, u32 index)
             HSD_LObjAddAnimAll(light->lobj, light->desc->anims[light->animIndex]);
             HSD_LObjReqAnimAll(light->lobj, 0.0f);
             _frameCount = 0.0f;
-            HSD_ForeachAnim(light->lobj, 7, 0xFFFF, lightGetFrameCount, 0);
+            HSD_ForeachAnim(light->lobj, 7, 0xFFFF, (void*)lightGetFrameCount, 0);
             light->frameCount = _frameCount;
             GSlightSetAnimFrame(light, 0.0f);
         }
@@ -384,7 +394,7 @@ void GSlightSetAnimRate(GSlight* light, f32 rate)
             rate *= 1.2f;
         }
         light->rate = rate;
-        HSD_ForeachAnim(light->lobj, 7, 0xFFFF, HSD_AObjSetRate, 1, light->rate);
+        HSD_ForeachAnim(light->lobj, 7, 0xFFFF, (void*)HSD_AObjSetRate, 1, light->rate);
     }
 }
 
@@ -392,10 +402,10 @@ void GSlightSetAnimFrame(GSlight* light, f32 frame)
 {
     if (light->canAnimate) {
         light->frame = frame;
-        HSD_ForeachAnim(light->lobj, 7, 0xFFFF, HSD_AObjSetRate, 1, 0.0f);
+        HSD_ForeachAnim(light->lobj, 7, 0xFFFF, (void*)HSD_AObjSetRate, 1, 0.0f);
         HSD_LObjReqAnim(light->lobj, light->frame);
         HSD_LObjAnim(light->lobj);
-        HSD_ForeachAnim(light->lobj, 7, 0xFFFF, HSD_AObjSetRate, 1, light->rate);
+        HSD_ForeachAnim(light->lobj, 7, 0xFFFF, (void*)HSD_AObjSetRate, 1, light->rate);
     }
 }
 

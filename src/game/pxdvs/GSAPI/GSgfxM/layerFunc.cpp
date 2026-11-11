@@ -266,25 +266,26 @@ static inline void tgenLoadMtx(GSgfxLayer* layer, u8 id, GSgfxTgenFunc func, GSm
 }
 
 void GSgfxLayer::tgenFunc(unsigned char id, GSgfxTgenFunc func, GSgfxTgenSrc src, GSmtx* mtx, bool normalize, GSmtx* postMtx) {
+    GSgfxLayerTgenView* view = TGEN_VIEW(this);
     u8 load = 0;
     s32 cur;
     s32 other;
 
-    TGEN(id).func = func;
-    TGEN(id).src = src;
-    TGEN(id).normalize = normalize;
-    TGEN(id).unk14 = 0;
+    view->tgen[id].func = func;
+    view->tgen[id].src = src;
+    view->tgen[id].normalize = normalize;
+    view->tgen[id].unk14 = 0;
     if (mtx == NULL) {
-        TGEN(id).mtxId = 0x3C;
+        view->tgen[id].mtxId = 0x3C;
     } else {
         load = 1;
-        TGEN(id).mtxId = id * 3 + 0x1E;
+        view->tgen[id].mtxId = id * 3 + 0x1E;
     }
     if (postMtx == NULL) {
-        TGEN(id).postMtxId = 0x7D;
+        view->tgen[id].postMtxId = 0x7D;
     } else {
         load = 1;
-        TGEN(id).postMtxId = id * 3 + 0x40;
+        view->tgen[id].postMtxId = id * 3 + 0x40;
     }
     if (load == 1) {
         SetupFifo();
@@ -616,7 +617,7 @@ void GSgfxLayer::dlDraw(GSgfxDL* p0) {
     LAYER_VF_SAVE temp_r31;
 
     if (DL_F(p0, u16 *, 0, flags) & 2) {
-        DCStoreRange((register void*)(DL_F(p0, u8 **, 4, data)), DL_F(p0, u32 *, 8, size));
+        DCStoreRange((void*)(DL_F(p0, u8 **, 4, data)), DL_F(p0, u32 *, 8, size));
         DL_F(p0, u16 *, 0, flags) = (u16) (DL_F(p0, u16 *, 0, flags) & 0xFFFFFFFD);
     }
     temp_r31 = LAYER_VF_GET(this);

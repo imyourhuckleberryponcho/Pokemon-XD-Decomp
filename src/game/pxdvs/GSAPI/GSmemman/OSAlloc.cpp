@@ -1,6 +1,7 @@
 
 #include <dolphin/types.h>
 #include <game/gcptr.h>
+#include <game/gcdata.h>
 #include <game/gsmemcell.h>
 #pragma pool_strings off
 
@@ -303,8 +304,8 @@ OSHeapHandle OSCreateHeap(void* start, void* end) {
     GSmemCell* cell;
 
     OSReport("OSCreateHeap : start=%08xh, end=%08xh\n", start, end);
-    start = (void*)(((u32)start + 0x1F) & ~0x1F);
-    end = (void*)((u32)end & ~0x1F);
+    start = PC_PTR(void*, (GC_ADDR32(start) + 0x1F) & ~0x1F);
+    end = PC_PTR(void*, GC_ADDR32(end) & ~0x1F);
     for (heap = 0; heap < NumHeaps; heap++) {
         hd = &((GSmemHeapDesc*)HeapArray)[heap];
         if (hd->size < 0) {
@@ -345,8 +346,8 @@ void* OSInitAlloc(void* arenaStart, void* arenaEnd, int maxHeaps) {
         hd->unk2C = 0;
     }
     __OSCurrHeap = -1;
-    arenaStart = (void*)((u32)((char*)HeapArray + arraySize));
-    arenaStart = (void*)(((u32)arenaStart + 0x1F) & 0xFFFFFFE0);
+    arenaStart = PC_PTR(void*, GC_ADDR32((char*)HeapArray + arraySize));
+    arenaStart = PC_PTR(void*, (GC_ADDR32(arenaStart) + 0x1F) & 0xFFFFFFE0);
     ArenaStart = (u32)arenaStart;
     ArenaEnd = (u32)arenaEnd & 0xFFFFFFE0;
     _allocFillMode = 0;
@@ -400,7 +401,7 @@ s32 OSShrinkHeap(OSHeapHandle heap, void* ptr, u32 size) {
         cell->size = size;
         newCell->addr = (u32)newCell;
     } else {
-        newCell = (GSmemCell*)((u8*)cell->start() + size);
+        newCell = (GSmemCell*)(PC_PTR(u8*, cell->start()) + size);
         cell->size = size;
         u32 end = cell->end();
         newCell->addr = end;
@@ -421,7 +422,7 @@ void OSFreeToHeap(OSHeapHandle heap, void* ptr) {
         if (ptr == NULL) {
             return;
         }
-        cell = (GSmemCell*)((u32)ptr - 0x20);
+        cell = PC_PTR(GSmemCell*, GC_ADDR32(ptr) - 0x20);
     } else {
         cell = hd->searchAllocCell(ptr);
     }
@@ -529,7 +530,7 @@ void* OSAllocFromHeap(OSHeapHandle heap, u32 size) {
     hd->allocated = (GSmemCell*)DLAddFront(hd->allocated, cell);
     cell->layer = GSmemGetCurrentLayer();
     hd->unk2C = 0;
-    return (void*)cell->get_area(hd);
+    return PC_PTR(void*, cell->get_area(hd));
 }
 }
 
@@ -632,7 +633,7 @@ GSmemCell* GSmemHeapDesc::searchAllocCell(void* ptr) {
     GSmemCell* cell;
     cell = allocated;
     while (cell != NULL) {
-        if ((void*)cell->get_area(this) == ptr) {
+        if (PC_PTR(void*, cell->get_area(this)) == ptr) {
             return cell;
         }
         GSmemCell* next = cell->next;

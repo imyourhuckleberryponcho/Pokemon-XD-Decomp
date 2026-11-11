@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 #include <game/fightseqscript.h>
@@ -92,7 +93,7 @@ u8 fightFloorIsNowEncountTuusinTaisen(s32);
 void* fightTrainerGetPrefixNamePtr(void*);
 void* fightTrainerGetNamePtr(void*);
 void* fightOutPokemonGetNicknamePtr(FightOutPokemon*);
-void fightMsgctrlSetValue(u32, u32);
+void fightMsgctrlSetValue(u32, GCuptr);
 s32 fightFloorGetEnemyFightSideManyDamageHpRate(s32, FightOutPokemon*);
 s32 fightFloorGetEnemyFightSideLittleNokoriHpRate(s32, FightOutPokemon*);
 
@@ -348,11 +349,11 @@ void WS_POKE_HPDEC_RATE(void) {
     if (fightTrainerGetPrefixNamePtr(trainer) == 0 && !isHero) {
         isTusin = 1;
     }
-    fightMsgctrlSetValue(0x16, (u32)fightOutPokemonGetNicknamePtr(p));
-    fightMsgctrlSetValue(0xd, (u32)fightOutPokemonGetNicknamePtr(p));
-    fightMsgctrlSetValue(0x22, (u32)fightTrainerGetPrefixNamePtr(trainer));
-    fightMsgctrlSetValue(0x23, (u32)fightTrainerGetNamePtr(trainer));
-    fightMsgctrlSetValue(0x25, (u32)fightTrainerGetNamePtr(trainer));
+    fightMsgctrlSetValue(0x16, (GCuptr)fightOutPokemonGetNicknamePtr(p));
+    fightMsgctrlSetValue(0xd, (GCuptr)fightOutPokemonGetNicknamePtr(p));
+    fightMsgctrlSetValue(0x22, (GCuptr)fightTrainerGetPrefixNamePtr(trainer));
+    fightMsgctrlSetValue(0x23, (GCuptr)fightTrainerGetNamePtr(trainer));
+    fightMsgctrlSetValue(0x25, (GCuptr)fightTrainerGetNamePtr(trainer));
     if (isTusin == 1) {
         ServerWork[5] = 5;
     } else if (isHero == 1) {
@@ -383,11 +384,11 @@ void WS_POKE_HPMAX_RATE(void) {
     if (fightTrainerGetPrefixNamePtr(trainer) == 0 && !isHero) {
         isTusin = 1;
     }
-    fightMsgctrlSetValue(0x16, (u32)fightOutPokemonGetNicknamePtr(p));
-    fightMsgctrlSetValue(0xd, (u32)fightOutPokemonGetNicknamePtr(p));
-    fightMsgctrlSetValue(0x22, (u32)fightTrainerGetPrefixNamePtr(trainer));
-    fightMsgctrlSetValue(0x23, (u32)fightTrainerGetNamePtr(trainer));
-    fightMsgctrlSetValue(0x25, (u32)fightTrainerGetNamePtr(trainer));
+    fightMsgctrlSetValue(0x16, (GCuptr)fightOutPokemonGetNicknamePtr(p));
+    fightMsgctrlSetValue(0xd, (GCuptr)fightOutPokemonGetNicknamePtr(p));
+    fightMsgctrlSetValue(0x22, (GCuptr)fightTrainerGetPrefixNamePtr(trainer));
+    fightMsgctrlSetValue(0x23, (GCuptr)fightTrainerGetNamePtr(trainer));
+    fightMsgctrlSetValue(0x25, (GCuptr)fightTrainerGetNamePtr(trainer));
     if (isTusin == 1) {
         ServerWork[5] = 5;
     } else if (isHero == 1) {
@@ -730,7 +731,7 @@ void WS_WAZAWASURE_CHECK(void) {
             }
             pokemonWazaCreate(pokemon, slot, OboeWazaNo);
             name = GSmsgGetGSchar(wazaDB_GetName(wazaId));
-            fightMsgctrlSetValue(0xe, (u32)name);
+            fightMsgctrlSetValue(0xe, (GCuptr)name);
             fightMsgctrlSetValue(0x5d, 0x21);
             fightSeq_JumpWazaSeq(WS_RDPTR(cmd + 1));
             return;
@@ -903,8 +904,8 @@ void WS_POKE_RESHUFFLE_WAIT(void) {
     case 1:
         break;
     case 2:
-        fightMsgctrlSetValue(0xd, (u32)fightOutPokemonGetNicknamePtr(p));
-        fightMsgctrlSetValue(0xe, (u32)fightOutPokemonGetNamePtr(p));
+        fightMsgctrlSetValue(0xd, (GCuptr)fightOutPokemonGetNicknamePtr(p));
+        fightMsgctrlSetValue(0xe, (GCuptr)fightOutPokemonGetNamePtr(p));
         break;
     }
     fightSeq_NextWazaSeq(3);
@@ -1049,7 +1050,7 @@ void WS_APPEAR_EFFECT(void) {
     fightOutPokemonCreate(p, moto, createSeq);
     fightOutPokemonRegWzxLoad(p);
     fightSeqIrekaeInit(p, buff, mode);
-    fightMsgctrlSetValue(0xd, (u32)fightOutPokemonGetNicknamePtr(p));
+    fightMsgctrlSetValue(0xd, (GCuptr)fightOutPokemonGetNicknamePtr(p));
     seq = fightTrainer_GetSequencePtr(trainer);
     if (seq) {
         void* pseq = fightOutPokemon_GetSequencePtr(p);

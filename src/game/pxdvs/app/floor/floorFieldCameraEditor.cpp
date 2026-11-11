@@ -43,6 +43,11 @@ extern "C" {
 #else
 #define GX_WGPIPE GXWGFifo
 #endif
+#ifndef __MWERKS__
+
+#define GXParam1u8 fcamEdGXParam1u8
+#define GXParam1f32 fcamEdGXParam1f32
+#endif
 static void GXParam1u8(u8 v);
 static void GXParam1f32(f32 v);
 }
@@ -50,6 +55,7 @@ static void GXParam1f32(f32 v);
 enum GSgfxLayerID { GSgfxLayerID_draft_dummy };
 enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
 #include <game/gsgfxlayer.h>
+#include "game/gcdata.h"
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -159,7 +165,11 @@ void floorInitFieldCameraEditor(u32 floorID) {
     if (floor != 0) {
         gFieldCameraEditorData.gapp = GSgappCreate(1, 0x7f, 0, floorUpdateFieldCameraEditor);
         if (gFieldCameraEditorData.gapp != 0) {
+#ifdef __MWERKS__
             mem = GSmemAlloc(8);
+#else
+            mem = GSmemAlloc(GC_SIZE(2 * sizeof(void*), 2 * 4));
+#endif
             if (mem != 0) {
                 gFieldCameraEditorData.list = (void**)mem;
                 gFieldCameraEditorData.mem0 = mem;
@@ -169,7 +179,7 @@ void floorInitFieldCameraEditor(u32 floorID) {
                 gFieldCameraEditorData.mode = floorFieldCameraGetMode();
                 gFieldCameraEditorData.list[0] = &gFieldCameraEditorData.count;
                 if (cams != 0) {
-                    count = *(u32*)cams[0];
+                    count = *PC_PTR(u32*, cams[0]);
                     if (count != 0) {
                         size = count * 0x34;
                         arr = GSmemAlloc(size);
@@ -179,7 +189,7 @@ void floorInitFieldCameraEditor(u32 floorID) {
                         gFieldCameraEditorData.count = count;
                         gFieldCameraEditorData.mem1 = arr;
                         gFieldCameraEditorData.list[1] = arr;
-                        memcpy(gFieldCameraEditorData.list[1], (void*)cams[1], size);
+                        memcpy(gFieldCameraEditorData.list[1], PC_PTR(void*, cams[1]), size);
                     }
                 }
                 return;

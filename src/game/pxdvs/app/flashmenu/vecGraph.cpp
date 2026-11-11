@@ -279,6 +279,7 @@ static inline void lListPush(u32 color, s16 x, s16 y) {
 }
 
 static void SBscan(void) {
+    u32* p;
     s16 y;
     s16 x;
     VEC_GRAPH_DATA* gd = &gVecDat;
@@ -304,7 +305,7 @@ static void SBscan(void) {
             lPoint[1].n = 0;
             lPoint[0].n = 0;
             x = (s16)(vecRect.x0 / 8);
-            u32* p = row + x;
+            p = row + x;
             for (; x <= vecRect.x1 / 8; p++, x++) {
                 if (*p != 0) SBdec(*p, x, gd->numStyles);
             }
@@ -312,10 +313,11 @@ static void SBscan(void) {
                 LPOINT* lp = &lPoint[i];
                 if (lp->n % 2 == 0) {
                     u8** gp = &lp->d.grad;
-                    s32* cp = &lp->d.color;
                     VEC_GRAPH_DATA* dp = &lp->d;
+                    s32* cp = &lp->d.color;
                     for (int j = 0; j < lp->n; j += 2) {
-                        s16 x1 = lp->x[j + 1];
+                        u16 rf_t = lp->x[j + 1];
+                        s16 x1 = rf_t;
                         s16 x0 = lp->x[j];
                         if (*gp != 0) {
                             gradientline(x0, x1, y, dp);
@@ -546,12 +548,13 @@ static void calcVecRect(VEC_RECT* r, VEC_GRAPH_DATA* d, s32 idx) {
             }
         } else {
             u8* st = styles + (idx << 7);
-            sy = (f32)GC_AT(s32, st, 0xC);
             s32 sx = GC_AT(s32, st, 8);
             f32 fx = (f32)sx;
+            sy = (f32)GC_AT(s32, st, 0xC);
             d->gx = GC_AT(s32, st, 0x18) / 20 - d->box[4];
             len = fx * fx + sy * sy;
-            u8* stb = d->styles + (idx << 7);
+            u8* stb = d->styles;
+            stb += (idx << 7);
             d->gy = GC_AT(s32, stb, 0x1C) / 20 - d->box[5];
             if (len > 0.0f) len = vgSqrtf(len);
             d->gf[1] = vgAcosf(fx / len);
@@ -716,20 +719,23 @@ static inline u32 gradColor(VEC_GRAPH_DATA* d, s16 x, s16 y) {
 }
 
 static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
+    s16* b;
     s16 xs[10];
-    s32 n = 0;
+    s32 n;
+    s32 i;
     s32 cnt = *p3->grad;
-    for (s32 i = 0; i < cnt; i++) {
+    for (i = n = 0; i < cnt; i++) {
         s16 v = p3->box[0] + (p3->cross[((p2 - p3->box[1]) << 8) / p3->box[7]][i] * p3->box[6]) / 256;
         if (p0 < v && p1 > v) {
             xs[n++] = v;
         }
     }
-    s16* a = xs;
-    for (s32 i = 0; i < n - 1; i++, a++) {
-        s32 j = i + 1;
-        s16* b = &xs[j];
-        for (; j < n; j++, b++) {
+    for (s32 i = 0; i < n - 1; i++) {
+        s16* a = &xs[i];
+        s32 j;
+        j = i + 1;
+        b = &xs[j];
+        for (; j < n; b++, j++) {
             if (*a > *b) {
                 s16 t = *a;
                 *a = *b;
@@ -738,7 +744,7 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
         }
     }
     lListPush(gradColor(p3, p0, p2), p0, p2);
-    for (s32 i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {
         u32 c = gradColor(p3, xs[i], p2);
         lListPush(c, xs[i], p2);
         lListPush(c, xs[i], p2);
@@ -807,15 +813,15 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
     FLASHMATRIXF m;
     GSvec2 ctl;
     GSvec2 pt;
-    GSvec2* ptp = &pt;
     GSvec2* ctlp = &ctl;
     GSvec2 next;
     GSvec2 seg[3];
     GSvec2 cur;
     GSvec2 bez;
     GSvec2 prev;
-    u8 inLine = 0;
+    u8 inLine;
     u8 loop = 1;
+    GSvec2* ptp = &pt;
     if (fills->count == 0) {
         void* t = fills->list;
         if (t != 0) GC_AT(s32, t, 4) = -1;
@@ -827,6 +833,7 @@ static void vecExec(u32 a0, _FILLSTYLEARRAY* fills, _LINESTYLEARRAY* lines, _SHA
     } else {
         m = *mat;
     }
+    inLine = 0;
     do {
         switch (rec->type) {
         case 0:

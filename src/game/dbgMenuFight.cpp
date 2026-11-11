@@ -75,7 +75,11 @@ s8 menuFaceSearchEnable(s32);
 void menuCloseCustom(s32, s32, s32);
 s32 menuGetCursorItemID(s32);
 s32 menuOpen(s32, s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuSubCloseNumberInput(void);
 u8 menuSubOpenNumberInput(s32, s32*, s32, s32, s32, s32);
 u8 menuSubOpenNumberInputID(PCARG(u16, u32), u32*, void* (*)(u32));
@@ -243,7 +247,7 @@ extern "C" void dbgMenuFightFightTrainerSerihuTestHaiboku2(void);
 extern "C" void dbgMenuFightFightTrainerSerihuTestHaiboku(void);
 extern "C" void dbgMenuFightFightTrainerSerihuTestSyouri(void);
 extern "C" void dbgMenuFightFightTrainerSerihuTestToujou(void);
-extern "C" static s32 _dbgMenuFightFightTrainerSerihuTestSub(u16 id, u8 kind);
+extern "C" { static s32 _dbgMenuFightFightTrainerSerihuTestSub(u16 id, u8 kind); }
 extern "C" s32 dbgMenuFightFightTrainerSerihuTest(void);
 extern "C" s32 dbgMenuFightEncountDataEditSub(u16 id);
 extern "C" s32 dbgMenuGetGsinputMsgId(s32 kind);
@@ -251,14 +255,14 @@ extern "C" void dbmMenuFightButtonNormal(DbgMenuWindow* win);
 extern "C" s32 dbgMenuFightStopTimeOut(void);
 extern "C" s32 dbgMenuFightStopHostLose(void);
 extern "C" s32 dbgMenuFightStopHostWin(void);
-extern "C" static void _dbgMenuFightStopSub(s32 result);
+extern "C" { static void _dbgMenuFightStopSub(s32 result); }
 extern "C" s32 dbgMenuFightFightPokemonSelect5(void);
 extern "C" s32 dbgMenuFightFightPokemonSelect4(void);
 extern "C" s32 dbgMenuFightFightPokemonSelect3(void);
 extern "C" s32 dbgMenuFightFightPokemonSelect2(void);
 extern "C" s32 dbgMenuFightFightPokemonSelect1(void);
 extern "C" s32 dbgMenuFightFightPokemonSelect0(void);
-extern "C" static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon);
+extern "C" { static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon); }
 extern "C" s32 dbgMenuFightFightTrainerPokemonPartDataEdit(void);
 extern "C" s32 dbgMenuFightFightTrainerAiDataEdit(void);
 extern "C" void dbgMenuFightFightTrainerAiAddsubCombo(void);
@@ -304,33 +308,33 @@ extern "C" void dbgMenuFightSetMsgSpeed(u8 speed);
 extern "C" u8 dbgMenuFightGetMsgSpeed(void);
 extern "C" u32 dbgMenuFightGetMsgSpeedToFrame(u32 frames);
 extern "C" s32 dbgMenuFightGetFightTrainerAiAddsubValueDataId(u32 id, u8 close);
-extern "C" static void* _dbgMenuFightGetFightTrainerAiAddsubValueDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetFightTrainerAiAddsubValueDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetFightTrainerPokemonPartDataId(u32 id);
-extern "C" static void* _dbgMenuFightGetFightTrainerPokemonPartDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetFightTrainerPokemonPartDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetWazaDataId(u32 id);
-extern "C" static void* _dbgMenuFightGetWazaDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetWazaDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetWazaTypeId(u8 type);
-extern "C" static void* _dbgMenuFightGetWazaTypeIdSub(u32 type);
+extern "C" { static void* _dbgMenuFightGetWazaTypeIdSub(u32 type); }
 extern "C" s32 dbgMenuFightGetZokuseiDataId(u32 id);
-extern "C" static void* _dbgMenuFightGetZokuseiDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetZokuseiDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetGsinputDevId(u32 id);
-extern "C" static void* _dbgMenuFightGetGsinputDevIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetGsinputDevIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetFightTrainerDataId(u32 id);
-extern "C" static void* _dbgMenuFightGetFightTrainerDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetFightTrainerDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetPokemonEntry(u8 entry);
-extern "C" static void* _dbgMenuFightGetPokemonEntrySub(u32 id);
+extern "C" { static void* _dbgMenuFightGetPokemonEntrySub(u32 id); }
 extern "C" s32 dbgMenuFightGetPokemonFightType(u8 type);
-extern "C" static void* _dbgMenuFightGetPokemonFightTypeSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetPokemonFightTypeSub(u32 id); }
 extern "C" s32 dbgMenuFightGetFightTypeDataId(u8 type);
-extern "C" static void* _dbgMenuFightGetFightTypeDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetFightTypeDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetFightKindDataId(u8 kind);
-extern "C" static void* _dbgMenuFightGetFightKindDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetFightKindDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetFightFloorDataId(u32 id);
-extern "C" static void* _dbgMenuFightGetFightFloorDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetFightFloorDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetFightDeckDataId(u32 id);
-extern "C" static void* _dbgMenuFightGetFightDeckDataIdSub(u32 id);
+extern "C" { static void* _dbgMenuFightGetFightDeckDataIdSub(u32 id); }
 extern "C" s32 dbgMenuFightGetFightEncountDataId(u32 id);
-extern "C" static void _dbgMenuFightGetFightEncountDataIdSub(u32 id);
+extern "C" { static void _dbgMenuFightGetFightEncountDataIdSub(u32 id); }
 
 extern "C" {
 static void _dbgMenuFightGetFightEncountDataIdSub(u32 id) {
@@ -1519,7 +1523,7 @@ static s32 _dbgMenuFightFightPokemonSelectSub(void* fightPokemon) {
             species = pokemonGetStatus(pokemon, 0, 0x6E, 0);
             if (outPokemon != 0) {
                 u32 status = pokemonGetStatus(outPokemon, 0, 0xEE, 0);
-                seq = (void*)status;
+                seq = PC_PTR(void*, status);
                 if (seq != 0) {
                     menuFaceLoad(pokemon, 0, 0);
                     while (menuFaceSearchEnable(menuFaceGetID(pokemon)) == 0) {

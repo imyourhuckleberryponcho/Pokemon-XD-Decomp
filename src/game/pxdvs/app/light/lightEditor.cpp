@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/gcptr.h>
 #include <game/pxdvs/app/floor/floorData.h>
@@ -435,7 +436,7 @@ void LightEditor::dispInfo(GSlight* p0, s32 p1, s32 p2, bool p3) {
         }
         layer2 = layer;
         GSprint(layer, p1, p2, colr, "%s:", name);
-        colr = (((u16)M2C_FIELD(this, s8 *, 2) == 0) && (M2C_FIELD(this, s8 *, 1) == 1)) ? hl : -1;
+        colr = ((M2C_FIELD(this, s8 *, 2) == 0) && (M2C_FIELD(this, s8 *, 1) == 1)) ? hl : -1;
         GSprint(layer2, p1 + 0x34, p2, colr, "(%02x,", col.r);
         colr = ((M2C_FIELD(this, s8 *, 2) == 1) && (M2C_FIELD(this, s8 *, 1) == 1)) ? hl : -1;
         GSprint(layer2, p1 + 0x5B, p2, colr, "%02x,", col.g);
@@ -496,12 +497,12 @@ void LightEditor::dispLightModel(GSlight* light, bool selected) {
                     dir.x = pos.x;
                     dir.y = pos.y;
                     dir.z = pos.z;
-                    PSVECNormalize((const register Vec*)&dir, (register Vec*)&dir);
+                    PSVECNormalize((const Vec*)&dir, (Vec*)&dir);
                     tmp.x = dir.x;
                     tmp.y = dir.y;
                     tmp.z = dir.z;
-                    PSVECScale((const register Vec*)&tmp, (register Vec*)&tmp, 20.0f);
-                    PSVECAdd((const register Vec*)&tmp, (const register Vec*)&peoplePos, (register Vec*)&pos);
+                    PSVECScale((const Vec*)&tmp, (Vec*)&tmp, 20.0f);
+                    PSVECAdd((const Vec*)&tmp, (const Vec*)&peoplePos, (Vec*)&pos);
                     pos.y += 5.0f;
                 }
             }
@@ -552,27 +553,27 @@ void LightEditor::dispLightModel(GSlight* light, bool selected) {
                 M2C_NAMED(layer, s32*, 0x1998, unk1998) = 0x80;
                 layer->beginSurface(0x18U);
                 for (i = 0; i < 4; i++) {
-                    lightPosition3f32(pos.x + size, size * widthArray[i][0] + pos.y, size * widthArray[i][1] + pos.z);
+                    lightPosition3f32(pos.x + size, GC_FUSED(size, widthArray[i][0]) + pos.y, GC_FUSED(size, widthArray[i][1]) + pos.z);
                     lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    lightPosition3f32(pos.x - size, size * widthArray[3 - i][0] + pos.y, size * widthArray[3 - i][1] + pos.z);
+                    lightPosition3f32(pos.x - size, GC_FUSED(size, widthArray[3 - i][0]) + pos.y, GC_FUSED(size, widthArray[3 - i][1]) + pos.z);
                     lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    lightPosition3f32(size * widthArray[i][0] + pos.x, pos.y + size, size * widthArray[i][1] + pos.z);
+                    lightPosition3f32(GC_FUSED(size, widthArray[i][0]) + pos.x, pos.y + size, GC_FUSED(size, widthArray[i][1]) + pos.z);
                     lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    lightPosition3f32(size * widthArray[3 - i][0] + pos.x, pos.y - size, size * widthArray[3 - i][1] + pos.z);
+                    lightPosition3f32(GC_FUSED(size, widthArray[3 - i][0]) + pos.x, pos.y - size, GC_FUSED(size, widthArray[3 - i][1]) + pos.z);
                     lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    lightPosition3f32(size * widthArray[i][0] + pos.x, size * widthArray[i][1] + pos.y, pos.z + size);
+                    lightPosition3f32(GC_FUSED(size, widthArray[i][0]) + pos.x, GC_FUSED(size, widthArray[i][1]) + pos.y, pos.z + size);
                     lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 for (i = 0; i < 4; i++) {
-                    lightPosition3f32(size * widthArray[3 - i][0] + pos.x, size * widthArray[3 - i][1] + pos.y, pos.z - size);
+                    lightPosition3f32(GC_FUSED(size, widthArray[3 - i][0]) + pos.x, GC_FUSED(size, widthArray[3 - i][1]) + pos.y, pos.z - size);
                     lightColor4u8(col.r, col.g, col.b, 0xFF);
                 }
                 layer->endSurface();
@@ -630,7 +631,7 @@ void LightEditor::dispLightModel(GSlight* light, bool selected) {
                     layer->endSurface();
                 }
                 if (GSlightGetType(light) == 1) {
-                    PSVECScale((const register Vec*)&dir, (register Vec*)&dir, 10.0f);
+                    PSVECScale((const Vec*)&dir, (Vec*)&dir, 10.0f);
                     M2C_NAMED(layer, s32*, 0x1998, unk1998) = 0xB0;
                     M2C_NAMED(layer, s8*, 0xD34, hw.lineWidth) = 0xC;
                     M2C_NAMED(layer, s32*, 0xD38, hw.lineOffset) = 0;

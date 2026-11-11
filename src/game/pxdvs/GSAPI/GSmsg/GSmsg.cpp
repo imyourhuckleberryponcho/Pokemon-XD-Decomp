@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/miscTables.h>
@@ -1656,8 +1657,8 @@ static const u16 gba_code[256] = {
     0x2193, 0x2190, 0x2192, 0xFF0B, 0x0000, 0x0000, 0x0000, 0x0000,
 };
 
-extern const u16 lbl_802F2B88[256];
-const u16 lbl_802F2B88[256] = {
+extern GC_CONST u16 lbl_802F2B88[256];
+GC_CONST u16 lbl_802F2B88[256] = {
     0x0020, 0x00C0, 0x00C1, 0x00C2, 0x00C7, 0x00C8, 0x00C9, 0x00CA,
     0x00CB, 0x00CC, 0x0000, 0x00CE, 0x00CF, 0x00D2, 0x00D3, 0x00D4,
     0x0152, 0x00D9, 0x00DA, 0x00DB, 0x00D1, 0x00DF, 0x00E0, 0x00E1,
@@ -1921,9 +1922,9 @@ s32 SJIStoGSchar(u16* dst, char* src)
             s32 step;
             if ((c >= 0x81 && c <= 0x9f) || (c >= 0xe0 && c <= 0xfc)) {
                 if (c >= 0x81 && c <= 0x9f) {
-                    c = sjis_81xx[c - 0x81][((u8*)src)[1] - 0x40];
+                    c = ((u16(*)[184])sjis_81xx)[c - 0x81][((u8*)src)[1] - 0x40];
                 } else {
-                    c = sjis_e0xx[c - 0xe0][((u8*)src)[1] - 0x40];
+                    c = ((u16(*)[184])sjis_e0xx)[c - 0xe0][((u8*)src)[1] - 0x40];
                 }
                 step = 2;
             } else {
@@ -2333,8 +2334,8 @@ static s32 _msgMainSub(MSG_TASK_WORK* t, u8 layer, u32 a, bool b)
     GStexture* tex;
     u8* savedIp;
     u8 savedDepth;
-    u32 savedStack[3];
-    u32* saved;
+    GCuptr savedStack[3];
+    GCuptr* saved;
     GXRGBA color = {{0xFF, 0xFF, 0xFF, 0xFF}};
 
     if (t == 0) {
@@ -2460,9 +2461,9 @@ static s32 _msgMainSub(MSG_TASK_WORK* t, u8 layer, u32 a, bool b)
     }
 
     saved = savedStack;
-    savedStack[0] = (u32)t->stack[0];
-    savedStack[1] = (u32)t->stack[1];
-    savedStack[2] = (u32)t->stack[2];
+    savedStack[0] = (GCuptr)t->stack[0];
+    savedStack[1] = (GCuptr)t->stack[1];
+    savedStack[2] = (GCuptr)t->stack[2];
     savedIp = t->ip;
     savedDepth = *(u8*)&t->depth;
 
@@ -2478,7 +2479,7 @@ static s32 _msgMainSub(MSG_TASK_WORK* t, u8 layer, u32 a, bool b)
             s32 d = t->depth;
             s32 j;
             for (j = 0; j < d; j++) {
-                if ((u32)t->stack[j] != saved[j]) {
+                if ((GCuptr)t->stack[j] != saved[j]) {
                     break;
                 }
             }
@@ -2571,12 +2572,12 @@ s32 GSmsgInit(u16 taskCount, u16 fontCount)
     s32 i;
     f32 one = 1.0f;
     memset(&_MsgSysWork, 0, sizeof(MsgSys));
-    _pMw->tasks = (MSG_TASK_WORK*)GSmemAlloc(taskCount * sizeof(MSG_TASK_WORK));
+    _pMw->tasks = (MSG_TASK_WORK*)GSmemAlloc(GC_SIZE(taskCount * sizeof(MSG_TASK_WORK), taskCount * 108));
     if (_pMw->tasks == 0) {
         GSlogWrite("GSmsgの初期化に失敗しました\n");
         return -1;
     }
-    _pMw->fonts = (FontSlot*)GSmemAlloc(fontCount * sizeof(FontSlot));
+    _pMw->fonts = (FontSlot*)GSmemAlloc(GC_SIZE(fontCount * sizeof(FontSlot), fontCount * 8));
     if (_pMw->fonts == 0) {
         GSlogWrite("GSmsgの初期化に失敗しました\n");
         return -1;
@@ -3136,7 +3137,7 @@ void GSmsgInitRuby(MSG_TASK_WORK* t)
 
             if (pass == 0) {
                 count0++;
-                width0 = (s16)((f32)width0 + ((f32)glyphWidth * t->scaleX + 2.0f));
+                width0 = (s16)((f32)width0 + (GC_FUSED((f32)glyphWidth, t->scaleX) + 2.0f));
             } else {
                 count1++;
                 width1 = (s16)((f32)width1 + (0.5f * ((f32)glyphWidth * t->scaleX) + 2.0f));
@@ -3149,7 +3150,7 @@ void GSmsgInitRuby(MSG_TASK_WORK* t)
     t->r5f = count1;
     t->f50 = t->curX + (f32)((width0 - width1) / 2);
     t->f60 = rubyHeight;
-    t->f54 = -((0.4f * (f32)t->fontH) - t->curY);
+    t->f54 = -((GC_FUSED(0.4f, (f32)t->fontH)) - t->curY);
 
     t->ip = savedIp;
     t->depth = savedDepth;

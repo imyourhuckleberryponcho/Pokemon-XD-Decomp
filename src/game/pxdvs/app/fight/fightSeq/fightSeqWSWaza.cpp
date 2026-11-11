@@ -1,4 +1,5 @@
 #include <game/ppcops.h>
+#include <game/gcptr.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/fightrecords.h>
@@ -155,7 +156,7 @@ u8 fightOutPokemon_GetAbicntAverage(FightOutPokemon*);
 void fightOutPokemon_SetAbicntAverage(FightOutPokemon*, u8);
 void fightOutPokemonDarkPokemonKaijoEffect(FightOutPokemon*, u8, u8, u8, PCARG(u16, u32), u8);
 u8 fightOutPokemonIsGcHeroFightOutPokemon(FightOutPokemon*);
-u32 fightOutPokemonGetNicknamePtr(FightOutPokemon*);
+GCuptr fightOutPokemonGetNicknamePtr(FightOutPokemon*);
 void fightOutPokemon_SetHitWazaDataId(FightOutPokemon*, u16);
 void fightOutPokemon_SetHitWazaZokuseiDataId(FightOutPokemon*, PCARG(u8, u16));
 u16 fightOutPokemon_GetFightoutTurnCount(FightOutPokemon*);
@@ -216,7 +217,7 @@ u8 itemParamGetGuardFlag(void*);
 s32 heroItemDecItemDataId(HeroPtr*, PCARG(u16, u32), u32, PCARG(s16, u32));
 
 HeroPtr* fightTrainer_GetHeroPtr(FIGHT_TRAINER*);
-u32 fightTrainerGetPrefixNamePtr(FIGHT_TRAINER*);
+GCuptr fightTrainerGetPrefixNamePtr(FIGHT_TRAINER*);
 u32 fightTrainerGetNamePtr(FIGHT_TRAINER*);
 void fightTrainerCallEffect(FIGHT_TRAINER*, u32);
 void* fightEncountDataBiosGetPtr(u16);
@@ -224,7 +225,7 @@ u8 fightEncountDataBiosGetFightKind(void*);
 u16 fightGetFightResultId(void);
 
 u32 GSmsgGetGSchar(u32);
-void fightMsgctrlSetValue(s32, u32);
+void fightMsgctrlSetValue(s32, GCuptr);
 void fightMainAllCamera(u32, u32);
 void fightMainWaitFrame(u32);
 u8 fightMenuOpenMsg(u32);
@@ -1541,7 +1542,11 @@ void SCA_EndCheck(void) {
 }
 
 u8 EscapeNGCheck(FightOutPokemon* pokemon) {
+#ifdef __MWERKS__
     FightOutPokemon* ary[2];
+#else
+    FightOutPokemon* ary[8];
+#endif
     s32 i;
     Pokemon* pk;
     u16 item;
@@ -1570,21 +1575,21 @@ u8 EscapeNGCheck(FightOutPokemon* pokemon) {
         if (enemyTokusei == 0x17) {
             UserWork[0x16003] = i;
             fightMsgctrlSetValue(0x1C, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(enemyTokusei))));
-            fightMsgctrlSetValue(0x1E, (u32)ary[i]);
+            fightMsgctrlSetValue(0x1E, (GCuptr)ary[i]);
             ServerWork.work[5] = 2;
             return 2;
         }
         if (enemyTokusei == 0x47 && tokusei != 0x1A && !fightOutPokemonIsZokuseiDataId(pokemon, 2)) {
             UserWork[0x16003] = i;
             fightMsgctrlSetValue(0x1C, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(enemyTokusei))));
-            fightMsgctrlSetValue(0x1E, (u32)ary[i]);
+            fightMsgctrlSetValue(0x1E, (GCuptr)ary[i]);
             ServerWork.work[5] = 2;
             return 2;
         }
         if (enemyTokusei == 0x2A && fightOutPokemonIsZokuseiDataId(pokemon, 8) == 1) {
             UserWork[0x16003] = i - 1;
             fightMsgctrlSetValue(0x1C, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(enemyTokusei))));
-            fightMsgctrlSetValue(0x1E, (u32)ary[i]);
+            fightMsgctrlSetValue(0x1E, (GCuptr)ary[i]);
             ServerWork.work[5] = 2;
             return 2;
         }

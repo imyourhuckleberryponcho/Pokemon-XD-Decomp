@@ -1,3 +1,6 @@
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 #include <dolphin/types.h>
 #include <game/gcdata.h>
 #include <game/statusval.h>
@@ -29,6 +32,9 @@ void heroPokemonGetCelebi(Hero* hero)
 {
     GamedataAttest attest;
     Pokemon pokemon;
+#ifndef __MWERKS__
+    memset(&pokemon, 0, sizeof(pokemon));
+#endif
     u8 status1 = (u8)gamedataGetStatus(0, 5);
     u8 status2 = (u8)gamedataGetStatus(0, 4);
     gamedataAttestCreate(&attest, 9, 3, status2, status1);
@@ -46,6 +52,9 @@ void heroPokemonGetPikachu(Hero* hero)
 {
     GamedataAttest attest;
     Pokemon pokemon;
+#ifndef __MWERKS__
+    memset(&pokemon, 0, sizeof(pokemon));
+#endif
     u8 status1 = (u8)gamedataGetStatus(0, 5);
     u8 status2 = (u8)gamedataGetStatus(0, 4);
     gamedataAttestCreate(&attest, 9, 3, status2, status1);
@@ -64,6 +73,9 @@ void heroPokemonGetHouou(Hero* hero)
 {
     GamedataAttest attest;
     Pokemon pokemon;
+#ifndef __MWERKS__
+    memset(&pokemon, 0, sizeof(pokemon));
+#endif
     u8 status1 = (u8)gamedataGetStatus(0, 5);
     u8 status2 = (u8)gamedataGetStatus(0, 4);
     gamedataAttestCreate(&attest, 8, 3, status2, status1);
@@ -80,6 +92,9 @@ void heroPokemonGetHouou(Hero* hero)
 void heroPokemonGetPrasle(Hero* hero)
 {
     Pokemon pokemon;
+#ifndef __MWERKS__
+    memset(&pokemon, 0, sizeof(pokemon));
+#endif
     pokemonCreate(&pokemon, 0x161, 0xD, (GamedataAttest*)gamedataGetStatus(0, 1));
     pokemonSetStatus(&pokemon, 0, 0x99, 0, 0x46);
     pokemonSetCatchStatus(&pokemon, 0x259, 0xD, 4, 0, 0x911D, (StatusU32)GSmsgGetGSchar(1));
@@ -93,6 +108,9 @@ void heroPokemonGetPrasle(Hero* hero)
 void heroPokemonGetEifie(Hero* hero)
 {
     Pokemon pokemon;
+#ifndef __MWERKS__
+    memset(&pokemon, 0, sizeof(pokemon));
+#endif
     s32 heroStatus = heroGetStatus(hero, 2, 0);
     pokemonCreate(&pokemon, 0x86, 0x1E, (GamedataAttest*)gamedataGetStatus(0, 1));
     pokemonWazaCreate(&pokemon, 0, 0x10E);
@@ -110,6 +128,9 @@ void heroPokemonGetEifie(Hero* hero)
 void heroPokemonGetBlacky(Hero* hero)
 {
     Pokemon pokemon;
+#ifndef __MWERKS__
+    memset(&pokemon, 0, sizeof(pokemon));
+#endif
     s32 heroStatus = heroGetStatus(hero, 2, 0);
     pokemonCreate(&pokemon, 0x87, 0x1A, (GamedataAttest*)gamedataGetStatus(0, 1));
     pokemonWazaCreate(&pokemon, 0, 0x62);

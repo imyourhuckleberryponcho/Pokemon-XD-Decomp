@@ -124,7 +124,11 @@ u16 itemBiosGetItemDataId(u8* p);
 u8 itemCheckValid(s32);
 u32 itemDataBiosGetName(u8* p);
 u8* itemDataBiosGetPtr(u16 index);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 MenuSprite* menuSpriteBiosGetPtr(u32 id);
 MenuSpriteVal* menuSpriteBiosGetValPtr(MenuSprite* sprite);
 void menuSubCursorAnimeStart(void);
@@ -163,7 +167,12 @@ struct BattleDiskData {
     s32 unk20;
     u8 pad24[4];
 };
+#ifdef __MWERKS__
 BattleDiskData Data;
+#else
+
+static BattleDiskData Data;
+#endif
 }
 
 extern "C" {

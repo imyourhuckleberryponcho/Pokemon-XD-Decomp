@@ -615,7 +615,7 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
                     break;
                 case 5:
                     CARG(s2, 4, 15, 15, ti == 0 ? (GSgfxTunitCArg)15 : (GSgfxTunitCArg)0);
-                    COP(s2, (s32)ti > 0, 0);
+                    COP(s2, ti != 0, 0);
                     AARG(s2, 2, 7, 7, ti == 0 ? (GSgfxTunitAArg)7 : (GSgfxTunitAArg)0);
                     AOP(s2, 0, 0);
                     break;
@@ -672,7 +672,7 @@ void GsShapeObject::SetStateTexture(GSgfxLayer* l, GsShapeTexture* texes, GStext
                     break;
                 case 5:
                     CARG(s1, 2, 15, 15, ti == 0 ? (GSgfxTunitCArg)15 : (GSgfxTunitCArg)0);
-                    COP(s1, (s32)ti > 0, 0);
+                    COP(s1, ti != 0, 0);
                     AARG(s1, 1, 7, 7, ti == 0 ? (GSgfxTunitAArg)7 : (GSgfxTunitAArg)0);
                     AOP(s1, 0, 0);
                     break;

@@ -440,7 +440,7 @@ void GSmaterialInit(void)
 
 static void _GSmaterialObjInit(void)
 {
-    hsdInitClassInfo(&_matGSmatObj, &hsdMObj, "GSmaterial MObj", "GSmaterial MObj", sizeof(HSD_MObjInfo), sizeof(HSD_MObj));
+    hsdInitClassInfo(&_matGSmatObj, &hsdMObj, "GSmaterial MObj", "GSmaterial MObj", sizeof(HSD_MObjInfo), GC_CLASS_SIZE(sizeof(HSD_MObj), 36));
     _matGSmatObj.load = _matGSmatObjLoad;
     _matGSmatObj.make_texp = _matGSmatObjMakeTExp;
 }
@@ -489,7 +489,7 @@ static void _matGSmatEnableEnvMapExt(GSmaterial* material)
         0,
         0.5f,
         1,
-        0,
+        { 0 },
         { 0, 0, 0 },
     };
     GStexture* texture = material->envTexture;

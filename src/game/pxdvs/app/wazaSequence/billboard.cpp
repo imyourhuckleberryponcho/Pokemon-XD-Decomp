@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/gcdata.h>
 
 struct GSgfxLayer;
@@ -126,7 +127,7 @@ billboardEffect::billboardEffect(u8** stream) {
     }
     m_particleIndex = data->particleIndex;
     *stream = *stream + 0x20;
-    *stream = (u8*)((u32)(*stream + 0x1f) & ~0x1f);
+    *stream = PC_PTR(u8*, (u32)(*stream + 0x1f) & ~0x1f);
     m_model = 0;
     m_bank = 0;
     m_generator = 0;

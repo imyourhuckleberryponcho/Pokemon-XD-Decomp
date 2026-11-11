@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
+#include <game/gcptr.h>
 #include <game/pxdvs/app/floor/floorData.h>
 
 #pragma pool_strings off
@@ -97,7 +99,7 @@ void GScameraLoadActiveCameraMatrix(s32 layer);
 void GScameraPushState(_GScamera* cam, void* data);
 void GScameraPopState(_GScamera* cam, void* data);
 _GScamera* GScameraCreate(void);
-u32 GSthreadGetCurrentThread(void);
+GCuptr GSthreadGetCurrentThread(void);
 void GSthreadSwitch(void);
 void GSlogWrite(const char* fmt, ...);
 void GSmodelGetPosition(_GSmodel* model, GSvec* pos);
@@ -121,7 +123,11 @@ u32 GSinputButtonsPressed(s32 pad);
 u32 GSinputButtonsChanged(s32 pad);
 u8 menuIsCheck(s32 menuID);
 void menuClose(s32 menuID);
+#ifdef __MWERKS__
 void menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuSetPosition(s32 menuID, s32 x, s32 y);
 void* GSmemAllocClr(u32 size);
 void FloorModuleInterface_clear(FloorModuleInterface* iface);
@@ -279,9 +285,9 @@ static inline void _cameraSetTarget(u32 group, u32 id) {
 static inline f32 _cameraSqrtf(f32 x) {
     if (x > 0.0f) {
         double guess = __frsqrte((double)x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
-        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
+        guess = 0.5 * guess * (3.0 - GC_FUSED(guess * guess, x));
         return (f32)(x * guess);
     } else if (x < 0.0) {
         return *__float_nan;

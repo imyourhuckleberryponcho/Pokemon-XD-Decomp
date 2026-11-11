@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/worldMapData.h>
+#include "game/gcdata.h"
 #pragma peephole off
 struct _GSparticleGen;
 enum GSattachMode { Attach0 };
@@ -117,8 +118,8 @@ u32 kyogreMoveDemo::GetNextFloorID() {
 }
 void kyogreMoveDemo::Init() {
     f32 fov,aspect,nearClip,farClip;
-    state=0; state=new DemoState; memset(state,0,sizeof(DemoState));
-    glow=0; glow=new glowEffect;
+    state=0; state=(GC_NEW_NOTE(sizeof(DemoState), 60) new DemoState); memset(state,0,sizeof(DemoState));
+    glow=0; glow=(GC_NEW_NOTE(sizeof(glowEffect), 24) new glowEffect);
     state->type=_movdemo_type;
     soundStopEnv(1000);
     if (state->type==0) playBGM(0x53D);
@@ -171,6 +172,6 @@ void kyogreMoveDemo::playBGM(u16 bgm) { soundOpenPlay(bgm,0,127); }
 extern "C" {
 void menuMoveDemoExit() { GSsndStopNow(0x5B8); delete pMDemo; pMDemo=0; }
 void menuMoveDemoMain() { pMDemo->Main(); }
-void menuMoveDemoInit() { pMDemo=new kyogreMoveDemo; }
+void menuMoveDemoInit() { pMDemo=(GC_NEW_NOTE(sizeof(kyogreMoveDemo), 12) new kyogreMoveDemo); }
 void menuMoveDemo(s32 type) { _movdemo_type=type; floorChange(0x3A9); }
 }

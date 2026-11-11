@@ -2,6 +2,7 @@
 
 
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 #ifndef __MWERKS__
 #include <string.h>
 #endif
@@ -56,12 +57,49 @@ static void* info_hash;
 static s32 nb_memory_list;
 static void* memory_list;
 
+#ifndef __MWERKS__
+
+
+static struct { HSD_ClassInfo* info; u32 gc; } s_gcClassSize[32];
+static int s_gcClassCount;
+static u32 s_gcClassNext;
+u32 gc_class_size_next(u32 pc, u32 gc) { s_gcClassNext = gc; return pc; }
+static void gcClassRecord(HSD_ClassInfo* info, u32 pc) {
+    int i;
+    u32 gc = s_gcClassNext ? s_gcClassNext : pc;
+    s_gcClassNext = 0;
+    for (i = 0; i < s_gcClassCount; i++) {
+        if (s_gcClassSize[i].info == info) {
+            s_gcClassSize[i].gc = gc;
+            return;
+        }
+    }
+    if (s_gcClassCount < 32) {
+        s_gcClassSize[s_gcClassCount].info = info;
+        s_gcClassSize[s_gcClassCount].gc = gc;
+        s_gcClassCount++;
+    }
+}
+static u32 gcClassSizeOf(HSD_ClassInfo* info) {
+    int i;
+    for (i = 0; i < s_gcClassCount; i++) {
+        if (s_gcClassSize[i].info == info) {
+            return s_gcClassSize[i].gc;
+        }
+    }
+    return (u32)info->head.obj_size;
+}
+#endif
+
 void hsdInitClassInfo(HSD_ClassInfo* class_info, HSD_ClassInfo* parent_info, char* base_class_library,
                       char* type, s32 info_size, s32 class_size) {
     class_info->head.flags = 1;
     class_info->head.library = base_class_library;
     class_info->head.class_name = type;
     class_info->head.obj_size = class_size;
+#ifndef __MWERKS__
+    gcClassRecord(class_info, (u32)class_size);
+#endif
     class_info->head.info_size = info_size;
     class_info->head.parent = parent_info;
     class_info->head.child = NULL;
@@ -87,7 +125,7 @@ void* hsdAllocMemPiece(u32 size) { return HSD_Alloc(size); }
 void hsdFreeMemPiece(void* mem, u32 size) { HSD_Free(mem); }
 
 static HSD_Class* _hsdClassAlloc(HSD_ClassInfo* info) {
-    HSD_Class* obj = (HSD_Class*)HSD_Alloc(info->head.obj_size);
+    HSD_Class* obj = (HSD_Class*)HSD_Alloc(GC_SIZE(info->head.obj_size, gcClassSizeOf(info)));
     if (obj != NULL) {
         info->head.nb_exist++;
         if (info->head.nb_exist > info->head.nb_peak) {
@@ -118,7 +156,7 @@ static void _hsdClassAmnesia(HSD_ClassInfo* info) {
 
 static void _hsdClassInfoInit(void) {
     hsdInitClassInfo(&hsdClass, NULL, "sysdolphin_base_library", "hsd_class", sizeof(HSD_ClassInfo),
-                     sizeof(HSD_Class));
+                     GC_CLASS_SIZE(sizeof(HSD_Class), 4));
     hsdClass.alloc = _hsdClassAlloc;
     hsdClass.init = _hsdClassInit;
     hsdClass.release = _hsdClassRelease;

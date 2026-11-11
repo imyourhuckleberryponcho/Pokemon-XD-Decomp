@@ -20,6 +20,7 @@ public:
 
 enum GSgfxLayerType {};
 #include <game/gsgfxlayer.h>
+#include "game/gcdata.h"
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -163,7 +164,7 @@ s32 shapeInit(u16 count) {
         GSgfxRenderModuleRegister(0x50, &module, 0);
         g_moduleInited = 1;
     }
-    g_shapeRender = (GsShapeRender**)GSmemAllocClr(count * sizeof(GsShapeRender*));
+    g_shapeRender = (GsShapeRender**)GSmemAllocClr(GC_SIZE(count * sizeof(GsShapeRender*), count * 4));
     if (g_shapeRender == 0) {
         g_shapeRenderNum = 0;
         return 0;
@@ -179,7 +180,7 @@ s32 shapeLoad(u16 index, void* file) {
     if (g_shapeRender[index] != 0) {
         GSmemFree(g_shapeRender[index]);
     }
-    g_shapeRender[index] = (GsShapeRender*)GSmemAlloc(sizeof(GsShapeRender));
+    g_shapeRender[index] = (GsShapeRender*)GSmemAlloc(GC_SIZE(sizeof(GsShapeRender), 2404));
     if (g_shapeRender[index] == 0) {
         return 0;
     }

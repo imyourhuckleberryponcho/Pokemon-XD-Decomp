@@ -1,6 +1,7 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -169,7 +170,11 @@ u32 itemDataBiosGetWazaMachineNo(u8* p);
 u8 itemDataBiosGetKinomiNo(u16 itemId);
 u32 itemDataBiosGetWazaIDByWazaMachineNo(PCARG(u8, u32) machineNo);
 MenuItem* menuItemBiosGetPtr(s32 menuID, u32 index);
+#ifdef __MWERKS__
 s32 menuShopGetMsgID(u8* out, s32 shop, ...);
+#else
+u32 menuShopGetMsgID(u8* se, int shop, int code, int arg, ...);
+#endif
 s8 menuSubOpenYesNo(s32, s32, s32, PCARG(bool, s32));
 u8 GSsndPlay(u32 id, s32 time, u32 flag);
 void heroAddPokedoru(Hero* hero, u32 offset);
@@ -182,7 +187,11 @@ u16 itemBiosGetItemDataId(void* p);
 u16 itemBiosGetNum(void* p);
 u16 pcboxGetItemCapacity(void* pcbox, u16 id);
 void pcboxAddItem(void* pcbox, u16 id, u16 n);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32 id, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuClose(s32 id);
 void menuCloseSync(s32 id, bool sync);
 void menuCloseCustom(s32 id, s32 a, bool b);
@@ -381,7 +390,12 @@ u16 item_dougu_sort[128] = {
 extern "C" {
 PocketScript menuPocketWork;
 }
+#ifdef __MWERKS__
 PocketData Data;
+#else
+
+static PocketData Data;
+#endif
 
 extern "C" {
 void menuPocket2AddItemScript(u32 id, u32 value)
@@ -836,7 +850,7 @@ int menuPocket2DrawExchangeCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp)
             t = 1.0f - t;
         }
         t *= 2.0f;
-        sp->alpha = 155.0f * t + 100.0f;
+        sp->alpha = GC_FUSED(155.0f, t) + 100.0f;
     } else {
         winSpriteSetDisp(sp, 0);
     }
@@ -1141,7 +1155,7 @@ int menuPocketInputNumber(tagWINDOW_WORK* w, int value, int max, u16 keys, int d
     int pos = digits - w->cursor - 1;
     if (keys & 0xF) {
         old = value;
-        int p = pow10(pos);
+        int p = pow10(digits - w->cursor - 1);
         int d0 = value / p % 10;
         int d1 = value / (p * 10) % 10;
         int d2 = value / (p * 100) % 10;
@@ -1999,6 +2013,8 @@ int _afterDecideItem(int mode, int tab, u16 item, int pos, u16* out)
 }
 
 namespace {
+#pragma push
+#pragma optimize_for_size on
 int _execActionMenu(int tab, u16 item, int pos, u16* out)
 {
     s32 cologne;
@@ -2061,6 +2077,7 @@ int _execActionMenu(int tab, u16 item, int pos, u16* out)
         return 0;
     }
 }
+#pragma pop
 }
 
 namespace {

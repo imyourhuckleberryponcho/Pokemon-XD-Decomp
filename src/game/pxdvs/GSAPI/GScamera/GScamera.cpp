@@ -4,8 +4,12 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <game/gcdata.h>
+#ifndef __MWERKS__
+#include <game/maximum/GSAPI/baselib/class.h>
+#endif
 #include <dolphin/mtx.h>
 
 #pragma pool_strings off
@@ -258,8 +262,15 @@ static inline void _cameraUnref(HSD_CObj* cobj)
     }
     if (_objRefDec(obj)) {
         if (obj != 0) {
+#ifdef __MWERKS__
             ((void (*)(void*))obj->class_info[0x30 / 4])(obj);
             ((void (*)(void*))obj->class_info[0x34 / 4])(obj);
+#else
+
+
+            HSD_CLASS_INFO(obj->class_info)->release((HSD_Class*)obj);
+            HSD_CLASS_INFO(obj->class_info)->destroy((HSD_Class*)obj);
+#endif
         }
     }
 }
@@ -372,7 +383,7 @@ void GScameraInit(u32 count)
     u32 i;
 
     _cameraStructCount = count;
-    _cameraStructList = (GScamera*)GSmemAlloc(count * sizeof(GScamera));
+    _cameraStructList = (GScamera*)GSmemAlloc(GC_SIZE(count * sizeof(GScamera), count * 292));
     if (_cameraStructList != 0) {
         for (i = 0; i < _cameraStructCount; i++) {
             _cameraStructList[i].used = 0;
@@ -1002,7 +1013,7 @@ void GScameraSetAnimIndex(GScamera* camera, u32 index)
             camera->animIndex = index;
             HSD_CObjAddAnim(camera->cobj, camera->desc->anims[camera->animIndex]);
             _frameCount = 0.0f;
-            HSD_ForeachAnim(camera->cobj, 2, 0xFFFF, cameraGetFrameCount, 0);
+            HSD_ForeachAnim(camera->cobj, 2, 0xFFFF, (void*)cameraGetFrameCount, 0);
             camera->frameCount = _frameCount;
             GScameraSetAnimFrame(camera, 0.0f);
         }
@@ -1016,7 +1027,7 @@ void GScameraSetAnimRate(GScamera* camera, f32 rate)
             rate *= 1.2f;
         }
         camera->rate = rate;
-        HSD_ForeachAnim(camera->cobj, 2, 0xFFFF, HSD_AObjSetRate, 1, camera->rate);
+        HSD_ForeachAnim(camera->cobj, 2, 0xFFFF, (void*)HSD_AObjSetRate, 1, camera->rate);
     }
 }
 
@@ -1024,11 +1035,11 @@ void GScameraSetAnimFrame(GScamera* camera, f32 frame)
 {
     if (camera->canAnimate) {
         camera->frame = frame;
-        HSD_ForeachAnim(camera->cobj, 2, 0xFFFF, HSD_AObjSetRate, 1, 0.0f);
+        HSD_ForeachAnim(camera->cobj, 2, 0xFFFF, (void*)HSD_AObjSetRate, 1, 0.0f);
         HSD_CObjReqAnim(camera->cobj, camera->frame);
         HSD_CObjAnim(camera->cobj);
         _cameraGetCObjVectors(camera);
-        HSD_ForeachAnim(camera->cobj, 2, 0xFFFF, HSD_AObjSetRate, 1, camera->rate);
+        HSD_ForeachAnim(camera->cobj, 2, 0xFFFF, (void*)HSD_AObjSetRate, 1, camera->rate);
     }
 }
 

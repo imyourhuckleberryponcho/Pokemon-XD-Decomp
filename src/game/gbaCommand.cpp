@@ -4,6 +4,7 @@
 #include <game/gcptr.h>
 #include <game/statusval.h>
 #include <game/pxdvs/app/fight/fightData.h>
+#include <game/menuCBWork.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -156,7 +157,7 @@ void pokemonBiosSetTokuseiFlag(Pokemon* poke, bool data);
 u8 pokemonGetDeoxysSel(u8 controllerId);
 u8 pokemonGetSex(Pokemon* pokemon);
 s32 wazaconv(void* hero, u8* out);
-extern s32 _CB[];
+extern _MENUCBWORK _CB;
 }
 extern "C++" {
 static s32 _dummySelect(FightOutPokemon* p0, unsigned short p1, unsigned short p2);
@@ -526,7 +527,7 @@ u32 gbaCommandRequestAction(s32 port, GCsptr trainer, s32 slot, s32 irekae) {
             snap.foes[i].form = 0;
             if (pokemonBiosGetPokemonDataId(foePokemon) == 0x19A) {
                 if (menuCBRule_DEOKISISUCamouflage() != 0) {
-                    if (((s32*)_CB)[2] == 2 || ((s32*)_CB)[7] == 0) {
+                    if (_CB.state == 2 || _CB.trainer[0].homePlace == 0) {
                         snap.foes[i].form = _swap16(pokemonGetDeoxysSel(controllers[i]));
                     } else {
                         snap.foes[i].form = _swap16(pokemonGetDeoxysSel(controllers[i] + 1));

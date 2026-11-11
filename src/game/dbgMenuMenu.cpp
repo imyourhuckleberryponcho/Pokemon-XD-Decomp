@@ -101,7 +101,11 @@ u8 menuIsCheck(s32);
 void menuMoveDemo(s32);
 void menuNameEntryOpen(s32, GCsptr);
 void menuNintendoWarning(void);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuOrreColosseum(u16);
 void menuOrreColosseumGetResult(void);
 void menuPokemonChange(void);

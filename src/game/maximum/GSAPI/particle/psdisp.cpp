@@ -8,6 +8,7 @@
 #include <game/psq.h>
 #endif
 #include <sysdolphin/baselib/psdisp.h>
+#include "game/gc_fused.h"
 
 #include <string.h>
 
@@ -96,7 +97,13 @@ static const f32 psdisp_float_min[1] = { FLT_MIN };
 #define __float_min psdisp_float_min
 #endif
 
-inline float atan2fInline(float y, float x)
+#ifdef __MWERKS__
+#define PS_INLINE inline
+#else
+
+#define PS_INLINE static inline
+#endif
+PS_INLINE float atan2fInline(float y, float x)
 {
     float r = (float) atan2(y, x);
     return r;
@@ -239,13 +246,13 @@ static inline bool psDispSubAbsLtF32(f32 value, f32 limit);
 static inline bool psDispSubAbsGtF32(f32 value, f64 limit);
 static inline void psScaleAppSRTAxes(HSD_Particle* pp, Mtx mtx);
 static inline void psUpdateBillboardAxes(const Mtx inv_view);
-inline void setupChanReg(HSD_Particle* pp);
-inline void setupTevReg(HSD_Particle* pp);
-inline HSD_Particle* psDispSubPointTrail(HSD_Particle* pp);
-inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f32 z, f32 vx, f32 vy, f32 vz, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1);
-inline void psDispSub(HSD_Particle* pp, u8* texform);
-inline void psDispSubAPPSRTPoint(HSD_Particle* pp);
-inline void psDispSubAppSRT(HSD_Particle* pp, u8* texform);
+PS_INLINE void setupChanReg(HSD_Particle* pp);
+PS_INLINE void setupTevReg(HSD_Particle* pp);
+PS_INLINE HSD_Particle* psDispSubPointTrail(HSD_Particle* pp);
+PS_INLINE void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f32 z, f32 vx, f32 vy, f32 vz, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1);
+PS_INLINE void psDispSub(HSD_Particle* pp, u8* texform);
+PS_INLINE void psDispSubAPPSRTPoint(HSD_Particle* pp);
+PS_INLINE void psDispSubAppSRT(HSD_Particle* pp, u8* texform);
 
 void psDispStrippedC(void* o)
 {
@@ -630,7 +637,7 @@ static inline void psUpdateBillboardAxes(const Mtx inv_view)
     rz1 = right_z - up_z;
 }
 
-inline void setupChanReg(HSD_Particle* pp)
+PS_INLINE void setupChanReg(HSD_Particle* pp)
 {
     GXColor prim_color;
     GXColor amb_color;
@@ -668,7 +675,7 @@ inline void setupChanReg(HSD_Particle* pp)
     }
 }
 
-inline void setupTevReg(HSD_Particle* pp)
+PS_INLINE void setupTevReg(HSD_Particle* pp)
 {
     GXColor prim_color;
     GXColor env_color;
@@ -725,7 +732,7 @@ inline void setupTevReg(HSD_Particle* pp)
     }
 }
 
-inline void psDispSubAPPSRTPoint(HSD_Particle* pp)
+PS_INLINE void psDispSubAPPSRTPoint(HSD_Particle* pp)
 {
     Mtx mtx;
     Mtx srt;
@@ -839,7 +846,7 @@ inline void psDispSubAPPSRTPoint(HSD_Particle* pp)
     }
 }
 
-inline HSD_Particle* psDispSubPointTrail(HSD_Particle* pp)
+PS_INLINE HSD_Particle* psDispSubPointTrail(HSD_Particle* pp)
 {
     u8 w;
     GXColor color;
@@ -879,7 +886,7 @@ inline HSD_Particle* psDispSubPointTrail(HSD_Particle* pp)
     return pp;
 }
 
-inline void psDispSubAppSRT(HSD_Particle* pp, u8* texform)
+PS_INLINE void psDispSubAppSRT(HSD_Particle* pp, u8* texform)
 {
     Mtx mtx;
     Vec3 v;
@@ -1010,27 +1017,18 @@ inline void psDispSubAppSRT(HSD_Particle* pp, u8* texform)
                 prev_y = y - vy;
                 prev_z = z - vz;
             }
-            w0 = vmtx[2][3] + (vmtx[2][2] * z + (vmtx[2][0] * x + vmtx[2][1] * y));
+            w0 = vmtx[2][3] + (GC_MADD(vmtx[2][2], z, (GC_MADD(vmtx[2][0], x, vmtx[2][1] * y))));
             if (0.0f == w0) {
                 goto no_direction;
             }
             w0inv = -1.0f / w0;
-            w1 = vmtx[2][3] + (vmtx[2][2] * prev_z +
-                               (vmtx[2][0] * prev_x + vmtx[2][1] * prev_y));
+            w1 = vmtx[2][3] + (GC_MADD(vmtx[2][2], prev_z, (GC_MADD(vmtx[2][0], prev_x, vmtx[2][1] * prev_y))));
             if (0.0f == w1) {
                 goto no_direction;
             }
             w1inv = -1.0f / w1;
-            dir_x = w0inv * (pvmtx[0][3] + (pvmtx[0][2] * z +
-                                            (pvmtx[0][0] * x + pvmtx[0][1] * y))) -
-                    w1inv * (pvmtx[0][3] + (pvmtx[0][2] * prev_z +
-                                            (pvmtx[0][0] * prev_x +
-                                             pvmtx[0][1] * prev_y)));
-            dir_y = w0inv * (pvmtx[1][3] + (pvmtx[1][2] * z +
-                                            (pvmtx[1][0] * x + pvmtx[1][1] * y))) -
-                    w1inv * (pvmtx[1][3] + (pvmtx[1][2] * prev_z +
-                                            (pvmtx[1][0] * prev_x +
-                                             pvmtx[1][1] * prev_y)));
+            dir_x = GC_MSUB(w0inv, (pvmtx[0][3] + (GC_MADD(pvmtx[0][2], z, (GC_MADD(pvmtx[0][0], x, pvmtx[0][1] * y))))), w1inv * (pvmtx[0][3] + (GC_MADD(pvmtx[0][2], prev_z, (GC_MADD(pvmtx[0][0], prev_x, pvmtx[0][1] * prev_y))))));
+            dir_y = GC_MSUB(w0inv, (pvmtx[1][3] + (GC_MADD(pvmtx[1][2], z, (GC_MADD(pvmtx[1][0], x, pvmtx[1][1] * y))))), w1inv * (pvmtx[1][3] + (GC_MADD(pvmtx[1][2], prev_z, (GC_MADD(pvmtx[1][0], prev_x, pvmtx[1][1] * prev_y))))));
         } else if (pp->kind & Tornado) {
             f32 prev_x;
             f32 prev_y;
@@ -1055,11 +1053,11 @@ inline void psDispSubAppSRT(HSD_Particle* pp, u8* texform)
             dx = x - v.x;
             dy = y - v.y;
             dz = z - v.z;
-            dir_x = pvmtx[0][2] * dz + (pvmtx[0][0] * dx + pvmtx[0][1] * dy);
-            dir_y = pvmtx[1][2] * dz + (pvmtx[1][0] * dx + pvmtx[1][1] * dy);
+            dir_x = GC_MADD(pvmtx[0][2], dz, (GC_MADD(pvmtx[0][0], dx, pvmtx[0][1] * dy)));
+            dir_y = GC_MADD(pvmtx[1][2], dz, (GC_MADD(pvmtx[1][0], dx, pvmtx[1][1] * dy)));
         } else {
-            dir_x = pvmtx[0][2] * vz + (pvmtx[0][0] * vx + pvmtx[0][1] * vy);
-            dir_y = pvmtx[1][2] * vz + (pvmtx[1][0] * vx + pvmtx[1][1] * vy);
+            dir_x = GC_MADD(pvmtx[0][2], vz, (GC_MADD(pvmtx[0][0], vx, pvmtx[0][1] * vy)));
+            dir_y = GC_MADD(pvmtx[1][2], vz, (GC_MADD(pvmtx[1][0], vx, pvmtx[1][1] * vy)));
         }
         if (fabs(dir_y) < FLT_MIN) {
             angle = (dir_x >= 0.0f) ? 1.5707964f : -1.5707964f;
@@ -1083,22 +1081,22 @@ inline void psDispSubAppSRT(HSD_Particle* pp, u8* texform)
         f32 uy = up_y;
         f32 uz = up_z;
 
-        axis.x = ry * uz - rz * uy;
-        axis.y = rz * ux - rx * uz;
-        axis.z = rx * uy - ry * ux;
+        axis.x = GC_MSUB(ry, uz, rz * uy);
+        axis.y = GC_MSUB(rz, ux, rx * uz);
+        axis.z = GC_MSUB(rx, uy, ry * ux);
         PSMTXRotAxisRad(rmtx, &axis, angle);
-        right_x = rmtx[0][2] * rz + (rmtx[0][0] * rx + rmtx[0][1] * ry);
-        right_y = rmtx[1][2] * rz + (rmtx[1][0] * rx + rmtx[1][1] * ry);
-        right_z = rmtx[2][2] * rz + (rmtx[2][0] * rx + rmtx[2][1] * ry);
-        up_x = rmtx[0][2] * uz + (rmtx[0][0] * ux + rmtx[0][1] * uy);
-        up_y = rmtx[1][2] * uz + (rmtx[1][0] * ux + rmtx[1][1] * uy);
-        up_z = rmtx[2][2] * uz + (rmtx[2][0] * ux + rmtx[2][1] * uy);
+        right_x = GC_MADD(rmtx[0][2], rz, (GC_MADD(rmtx[0][0], rx, rmtx[0][1] * ry)));
+        right_y = GC_MADD(rmtx[1][2], rz, (GC_MADD(rmtx[1][0], rx, rmtx[1][1] * ry)));
+        right_z = GC_MADD(rmtx[2][2], rz, (GC_MADD(rmtx[2][0], rx, rmtx[2][1] * ry)));
+        up_x = GC_MADD(rmtx[0][2], uz, (GC_MADD(rmtx[0][0], ux, rmtx[0][1] * uy)));
+        up_y = GC_MADD(rmtx[1][2], uz, (GC_MADD(rmtx[1][0], ux, rmtx[1][1] * uy)));
+        up_z = GC_MADD(rmtx[2][2], uz, (GC_MADD(rmtx[2][0], ux, rmtx[2][1] * uy)));
     }
     psDispSubMakePolygon(pp, texform, x, y, z, vx, vy, vz, right_x, right_y,
                          right_z, up_x, up_y, up_z);
 }
 
-inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f32 z,
+PS_INLINE void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f32 z,
                           f32 vx, f32 vy, f32 vz, f32 rx, f32 ry, f32 rz,
                           f32 ux, f32 uy, f32 uz)
 {
@@ -1296,7 +1294,7 @@ inline void psDispSubMakePolygon(HSD_Particle* pp, u8* texform, f32 x, f32 y, f3
     }
 }
 
-inline void psDispSub(HSD_Particle* pp, u8* texform)
+PS_INLINE void psDispSub(HSD_Particle* pp, u8* texform)
 {
     f32 x;
     f32 y;
@@ -1357,30 +1355,18 @@ inline void psDispSub(HSD_Particle* pp, u8* texform)
                 prev_z = pp->pos.z - pp->vel.z;
             }
             w0 = vmtx[2][3] +
-                 (vmtx[2][2] * pp->pos.z +
-                  (vmtx[2][0] * pp->pos.x + vmtx[2][1] * pp->pos.y));
+                 (GC_MADD(vmtx[2][2], pp->pos.z, (GC_MADD(vmtx[2][0], pp->pos.x, vmtx[2][1] * pp->pos.y))));
             if (0.0f == w0) {
                 goto no_direction;
             }
             w0inv = -1.0f / w0;
-            w1 = vmtx[2][3] + (vmtx[2][2] * prev_z +
-                               (vmtx[2][0] * prev_x + vmtx[2][1] * prev_y));
+            w1 = vmtx[2][3] + (GC_MADD(vmtx[2][2], prev_z, (GC_MADD(vmtx[2][0], prev_x, vmtx[2][1] * prev_y))));
             if (0.0f == w1) {
                 goto no_direction;
             }
             w1inv = -1.0f / w1;
-            dir_x = w0inv * (pvmtx[0][3] + (pvmtx[0][2] * pp->pos.z +
-                                            (pvmtx[0][0] * pp->pos.x +
-                                             pvmtx[0][1] * pp->pos.y))) -
-                    w1inv * (pvmtx[0][3] + (pvmtx[0][2] * prev_z +
-                                            (pvmtx[0][0] * prev_x +
-                                             pvmtx[0][1] * prev_y)));
-            dir_y = w0inv * (pvmtx[1][3] + (pvmtx[1][2] * pp->pos.z +
-                                            (pvmtx[1][0] * pp->pos.x +
-                                             pvmtx[1][1] * pp->pos.y))) -
-                    w1inv * (pvmtx[1][3] + (pvmtx[1][2] * prev_z +
-                                            (pvmtx[1][0] * prev_x +
-                                             pvmtx[1][1] * prev_y)));
+            dir_x = GC_MSUB(w0inv, (pvmtx[0][3] + (GC_MADD(pvmtx[0][2], pp->pos.z, (GC_MADD(pvmtx[0][0], pp->pos.x, pvmtx[0][1] * pp->pos.y))))), w1inv * (pvmtx[0][3] + (GC_MADD(pvmtx[0][2], prev_z, (GC_MADD(pvmtx[0][0], prev_x, pvmtx[0][1] * prev_y))))));
+            dir_y = GC_MSUB(w0inv, (pvmtx[1][3] + (GC_MADD(pvmtx[1][2], pp->pos.z, (GC_MADD(pvmtx[1][0], pp->pos.x, pvmtx[1][1] * pp->pos.y))))), w1inv * (pvmtx[1][3] + (GC_MADD(pvmtx[1][2], prev_z, (GC_MADD(pvmtx[1][0], prev_x, pvmtx[1][1] * prev_y))))));
         } else if (pp->kind & Tornado) {
             f32 prev_x;
             f32 prev_y;
@@ -1393,13 +1379,11 @@ inline void psDispSub(HSD_Particle* pp, u8* texform)
             dx = pp->pos.x - prev_x;
             dy = pp->pos.y - prev_y;
             dz = pp->pos.z - prev_z;
-            dir_x = pvmtx[0][2] * dz + (pvmtx[0][0] * dx + pvmtx[0][1] * dy);
-            dir_y = pvmtx[1][2] * dz + (pvmtx[1][0] * dx + pvmtx[1][1] * dy);
+            dir_x = GC_MADD(pvmtx[0][2], dz, (GC_MADD(pvmtx[0][0], dx, pvmtx[0][1] * dy)));
+            dir_y = GC_MADD(pvmtx[1][2], dz, (GC_MADD(pvmtx[1][0], dx, pvmtx[1][1] * dy)));
         } else {
-            dir_x = pvmtx[0][2] * pp->vel.z +
-                    (pvmtx[0][0] * pp->vel.x + pvmtx[0][1] * pp->vel.y);
-            dir_y = pvmtx[1][2] * pp->vel.z +
-                    (pvmtx[1][0] * pp->vel.x + pvmtx[1][1] * pp->vel.y);
+            dir_x = GC_MADD(pvmtx[0][2], pp->vel.z, (GC_MADD(pvmtx[0][0], pp->vel.x, pvmtx[0][1] * pp->vel.y)));
+            dir_y = GC_MADD(pvmtx[1][2], pp->vel.z, (GC_MADD(pvmtx[1][0], pp->vel.x, pvmtx[1][1] * pp->vel.y)));
         }
         if (fabs(dir_y) < FLT_MIN) {
             angle = (dir_x >= 0.0f) ? 1.5707964f : -1.5707964f;
@@ -1423,16 +1407,16 @@ inline void psDispSub(HSD_Particle* pp, u8* texform)
         f32 uy = up_y;
         f32 uz = up_z;
 
-        axis.x = ry * uz - rz * uy;
-        axis.y = rz * ux - rx * uz;
-        axis.z = rx * uy - ry * ux;
+        axis.x = GC_MSUB(ry, uz, rz * uy);
+        axis.y = GC_MSUB(rz, ux, rx * uz);
+        axis.z = GC_MSUB(rx, uy, ry * ux);
         PSMTXRotAxisRad(mtx, &axis, angle);
-        right_x = mtx[0][2] * rz + (mtx[0][0] * rx + mtx[0][1] * ry);
-        right_y = mtx[1][2] * rz + (mtx[1][0] * rx + mtx[1][1] * ry);
-        right_z = mtx[2][2] * rz + (mtx[2][0] * rx + mtx[2][1] * ry);
-        up_x = mtx[0][2] * uz + (mtx[0][0] * ux + mtx[0][1] * uy);
-        up_y = mtx[1][2] * uz + (mtx[1][0] * ux + mtx[1][1] * uy);
-        up_z = mtx[2][2] * uz + (mtx[2][0] * ux + mtx[2][1] * uy);
+        right_x = GC_MADD(mtx[0][2], rz, (GC_MADD(mtx[0][0], rx, mtx[0][1] * ry)));
+        right_y = GC_MADD(mtx[1][2], rz, (GC_MADD(mtx[1][0], rx, mtx[1][1] * ry)));
+        right_z = GC_MADD(mtx[2][2], rz, (GC_MADD(mtx[2][0], rx, mtx[2][1] * ry)));
+        up_x = GC_MADD(mtx[0][2], uz, (GC_MADD(mtx[0][0], ux, mtx[0][1] * uy)));
+        up_y = GC_MADD(mtx[1][2], uz, (GC_MADD(mtx[1][0], ux, mtx[1][1] * uy)));
+        up_z = GC_MADD(mtx[2][2], uz, (GC_MADD(mtx[2][0], ux, mtx[2][1] * uy)));
     }
     psDispSubMakePolygon(pp, texform, x, y, z, pp->vel.x, pp->vel.y,
                          pp->vel.z, right_x, right_y, right_z, up_x, up_y,
@@ -1539,23 +1523,23 @@ static void _psDispParticlesSub(u32 target_link, u32 sw, HSD_Generator* gp, void
                         PSMTXInverse(vmtx, rvmtx);
                         {
                             if (0.0f == prj[0]) {
-                                pvmtx[0][0] = prj[1] * vmtx[0][0] + prj[2] * vmtx[2][0];
-                                pvmtx[0][1] = prj[1] * vmtx[0][1] + prj[2] * vmtx[2][1];
-                                pvmtx[0][2] = prj[1] * vmtx[0][2] + prj[2] * vmtx[2][2];
-                                pvmtx[0][3] = prj[1] * vmtx[0][3] + prj[2] * vmtx[2][3];
-                                pvmtx[1][0] = prj[3] * vmtx[1][0] + prj[4] * vmtx[2][0];
-                                pvmtx[1][1] = prj[3] * vmtx[1][1] + prj[4] * vmtx[2][1];
-                                pvmtx[1][2] = prj[3] * vmtx[1][2] + prj[4] * vmtx[2][2];
-                                pvmtx[1][3] = prj[3] * vmtx[1][3] + prj[4] * vmtx[2][3];
+                                pvmtx[0][0] = GC_MADD(prj[1], vmtx[0][0], prj[2] * vmtx[2][0]);
+                                pvmtx[0][1] = GC_MADD(prj[1], vmtx[0][1], prj[2] * vmtx[2][1]);
+                                pvmtx[0][2] = GC_MADD(prj[1], vmtx[0][2], prj[2] * vmtx[2][2]);
+                                pvmtx[0][3] = GC_MADD(prj[1], vmtx[0][3], prj[2] * vmtx[2][3]);
+                                pvmtx[1][0] = GC_MADD(prj[3], vmtx[1][0], prj[4] * vmtx[2][0]);
+                                pvmtx[1][1] = GC_MADD(prj[3], vmtx[1][1], prj[4] * vmtx[2][1]);
+                                pvmtx[1][2] = GC_MADD(prj[3], vmtx[1][2], prj[4] * vmtx[2][2]);
+                                pvmtx[1][3] = GC_MADD(prj[3], vmtx[1][3], prj[4] * vmtx[2][3]);
                             } else {
-                                pvmtx[0][0] = prj[1] * vmtx[0][0] + prj[2];
-                                pvmtx[0][1] = prj[1] * vmtx[0][1] + prj[2];
-                                pvmtx[0][2] = prj[1] * vmtx[0][2] + prj[2];
-                                pvmtx[0][3] = prj[1] * vmtx[0][3] + prj[2];
-                                pvmtx[1][0] = prj[3] * vmtx[1][0] + prj[4];
-                                pvmtx[1][1] = prj[3] * vmtx[1][1] + prj[4];
-                                pvmtx[1][2] = prj[3] * vmtx[1][2] + prj[4];
-                                pvmtx[1][3] = prj[3] * vmtx[1][3] + prj[4];
+                                pvmtx[0][0] = GC_MADD(prj[1], vmtx[0][0], prj[2]);
+                                pvmtx[0][1] = GC_MADD(prj[1], vmtx[0][1], prj[2]);
+                                pvmtx[0][2] = GC_MADD(prj[1], vmtx[0][2], prj[2]);
+                                pvmtx[0][3] = GC_MADD(prj[1], vmtx[0][3], prj[2]);
+                                pvmtx[1][0] = GC_MADD(prj[3], vmtx[1][0], prj[4]);
+                                pvmtx[1][1] = GC_MADD(prj[3], vmtx[1][1], prj[4]);
+                                pvmtx[1][2] = GC_MADD(prj[3], vmtx[1][2], prj[4]);
+                                pvmtx[1][3] = GC_MADD(prj[3], vmtx[1][3], prj[4]);
                             }
                             rx0 = rvmtx[0][0] + rvmtx[0][1];
                             rx1 = rvmtx[0][0] - rvmtx[0][1];

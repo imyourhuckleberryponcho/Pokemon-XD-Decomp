@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/pxdvs/GSAPI/GSfsys/fsys.h>
 #pragma pool_strings off
@@ -9,9 +10,9 @@ struct FsysQue {
     s32 type;
     u32 id;
     u32 idx;
-    s32 a;
-    s32 b;
-    s32 c;
+    GCsptr a;
+    GCsptr b;
+    GCsptr c;
     s8 flag;
     u8 started;
 };
@@ -57,7 +58,7 @@ void GSdvdInit(u32 maxWork);
 s32 GSdvdGetDriveStatus(void);
 bool _fsysMemFreeCacheGroup(u32);
 void* GSresGetResource(u32, u32);
-u32 GSresAllocResourceAlign(u32, u32, u32, u32, void*);
+GCuptr GSresAllocResourceAlign(u32, u32, u32, u32, void*);
 void OSLinkFixed(void*, void*);
 void OSUnlink(void*);
 void GSmovieStreamPostFunc(u32, u32);
@@ -75,7 +76,7 @@ void _fsysMemSet(void* dst, s32 c, u32 size);
 static void _fsysFreeStatus(u32 id);
 static s32 _fsysOSUnLink(u32, u32, u32);
 void GSfsysOSUnLink(u32, u32, u32);
-u8 GSfsysReadIDEX(u32 id, u32 idx, s32 a, s32 b, s32 c);
+u8 GSfsysReadIDEX(u32 id, u32 idx, GCsptr a, GCsptr b, GCsptr c);
 u8 GSfsysReadID(u32 id, u32 idx);
 u8 GSfsysCancel(u32 id);
 s32 GSfsysGetStatus(u32 id);
@@ -83,16 +84,16 @@ u8 GSfsysPreRead(u32 id);
 u8 GSfsysRead(u32 id);
 s32 GSfsysCancelWait(u32 id);
 static s32 _fsysWait(u32 id, u8 flag);
-static u8 _fsysPreReadExec(u32 id, s8 keep, s32 a, s32 b, s32 c, s32 prio);
+static u8 _fsysPreReadExec(u32 id, s8 keep, GCsptr a, GCsptr b, GCsptr c, s32 prio);
 static s32 _fsysReadStreamingExec(u32 id, s32 a, s32 b);
-static u8 _fsysRequest(s32 type, u32 id, u32 idx, s8 flag, s32 a, s32 b, s32 c, s32 prio);
+static u8 _fsysRequest(s32 type, u32 id, u32 idx, s8 flag, GCsptr a, GCsptr b, GCsptr c, s32 prio);
 static void _fsysQueExec(void);
 static u8 _fsysQueExecSub(FsysQue* que);
 static void _fsysDelQueManage(FsysQue* que);
 static u8 _fsysAddQueManage(FsysQue* que, s32 prio);
 static FsysQue* _fsysGetQueManage(u32 id, u32 idx);
-static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, s32 a, s32 b, s32 c);
-static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, s32 a, s32 b, s32 c);
+static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, GCsptr a, GCsptr b, GCsptr c);
+static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, GCsptr a, GCsptr b, GCsptr c);
 FsysWork* _fsysGetNewWork(void);
 static FsysGroup* _fsysGetGROUP(u32 id);
 static s32 _fsysOpenFile(FsysWork* work);
@@ -117,13 +118,13 @@ void _fsysAddTAG(FsysTag*, FsysTag**);
 static FsysWork* _fsysGetNewWork_Sub(s32);
 FsysWork* _fsysInfo2Work(u32);
 void* GSmemAllocAlign(u32, u32);
-u32 GSdvdOpen(const char*);
-s32 GSdvdGetLength(u32);
-s32 GSdvdRead(u32, void*, s32, s32);
-s32 GSdvdClose(u32);
-u8 GSdvdReadAsync(u32, void*, s32, s32, void (*)(s32, u32));
+GCuptr GSdvdOpen(const char*);
+s32 GSdvdGetLength(GCuptr);
+s32 GSdvdRead(GCuptr, void*, s32, s32);
+s32 GSdvdClose(GCuptr);
+u8 GSdvdReadAsync(GCuptr, void*, s32, s32, void (*)(s32, u32));
 void _fsysFree(void*);
-u32 _fsysAlloc(u32);
+GCuptr _fsysAlloc(u32);
 void _fsysSetLockCacheFlag(u32, u32, s32);
 void _fsysSetLockCacheFlagGroup(u32, s32);
 void _fsysStreamFreeCacheAll(FsysWork*);
@@ -178,52 +179,52 @@ static u32 _fsysWorkIndex;
 static u32 _fsysWorkMax;
 
 s32 GSfsysStreamMoviePreFunc(u32 arg);
-s32 GSfsysStreamMovieHeaderPostFunc(void);
+void* GSfsysStreamMovieHeaderPostFunc(void);
 void* GSfsysStreamMovieHeaderPreFunc(u32 id);
 s32 GSfsysStreamPreFunc(u32 arg);
-s32 GSfsysStreamHeaderPostFunc(void);
+void* GSfsysStreamHeaderPostFunc(void);
 void* GSfsysStreamHeaderPreFunc(u32 id);
-u32 GSfsysOSLinkPreFunc(u32 a, u32 b, u32 size);
+GCuptr GSfsysOSLinkPreFunc(u32 a, u32 b, u32 size);
 void* GSfsysOSLinkPostFunc(u32 a, u32 b);
 typedef void* (*PreFn)(u32, u32, u32);
 typedef void (*PostFn)(u32, u32, u32);
-u32 floorReadAntPostFunc(u32, u32, u32);
-u32 floorReadAntPreFunc(u32, u32, u32);
+GCuptr floorReadAntPostFunc(u32, u32, u32);
+GCuptr floorReadAntPreFunc(u32, u32, u32);
 u32 floorReadBGMPostFunc(u32, u32, u32);
-u32 floorReadBGMPreFunc(u32, u32, u32);
-u32 floorReadCameraPostFunc(u32, u32, u32);
-u32 floorReadCameraPreFunc(u32, u32, u32);
-u32 floorReadColPostFunc(u32, u32, u32);
-u32 floorReadColPreFunc(u32, u32, u32);
-u32 floorReadDeckPostFunc(u32, u32, u32);
-u32 floorReadDeckPreFunc(u32, u32, u32);
-u32 floorReadEncodeRelPostFunc(u32, u32, u32);
-u32 floorReadEncodeRelPreFunc(u32, u32, u32);
-u32 floorReadFontPostFunc(u32, u32, u32);
-u32 floorReadFontPreFunc(u32, u32, u32);
-u32 floorReadGFLPostFunc(u32, u32, u32);
-u32 floorReadGFLPreFunc(u32, u32, u32);
-u32 floorReadGSWPostFunc(u32, u32, u32);
-u32 floorReadGSWPreFunc(u32, u32, u32);
-u32 floorReadMapPostFunc(u32, u32, u32);
-u32 floorReadMapPreFunc(u32, u32, u32);
-u32 floorReadMsgPostFunc(u32, u32, u32);
-u32 floorReadMsgPreFunc(u32, u32, u32);
-u32 floorReadNormalPreFunc(u32, u32, u32);
-u32 floorReadNotLinkedParticlePostFunc(u32, u32, u32);
-u32 floorReadNotLinkedParticlePreFunc(u32, u32, u32);
-u32 floorReadObjPostFunc(u32, u32, u32);
-u32 floorReadObjPreFunc(u32, u32, u32);
-u32 floorReadPKXPostFunc(u32, u32, u32);
-u32 floorReadPKXPreFunc(u32, u32, u32);
-u32 floorReadParticlePostFunc(u32, u32, u32);
-u32 floorReadParticlePreFunc(u32, u32, u32);
-u32 floorReadScriptPostFunc(u32, u32, u32);
-u32 floorReadScriptPreFunc(u32, u32, u32);
-u32 floorReadTexPostFunc(u32, u32, u32);
-u32 floorReadTexPreFunc(u32, u32, u32);
-u32 floorReadWZXPostFunc(u32, u32, u32);
-u32 floorReadWZXPreFunc(u32, u32, u32);
+GCuptr floorReadBGMPreFunc(u32, u32, u32);
+GCuptr floorReadCameraPostFunc(u32, u32, u32);
+GCuptr floorReadCameraPreFunc(u32, u32, u32);
+GCuptr floorReadColPostFunc(u32, u32, u32);
+GCuptr floorReadColPreFunc(u32, u32, u32);
+GCuptr floorReadDeckPostFunc(u32, u32, u32);
+GCuptr floorReadDeckPreFunc(u32, u32, u32);
+GCuptr floorReadEncodeRelPostFunc(u32, u32, u32);
+GCuptr floorReadEncodeRelPreFunc(u32, u32, u32);
+GCuptr floorReadFontPostFunc(u32, u32, u32);
+GCuptr floorReadFontPreFunc(u32, u32, u32);
+GCuptr floorReadGFLPostFunc(u32, u32, u32);
+GCuptr floorReadGFLPreFunc(u32, u32, u32);
+GCuptr floorReadGSWPostFunc(u32, u32, u32);
+GCuptr floorReadGSWPreFunc(u32, u32, u32);
+GCuptr floorReadMapPostFunc(u32, u32, u32);
+GCuptr floorReadMapPreFunc(u32, u32, u32);
+GCuptr floorReadMsgPostFunc(u32, u32, u32);
+GCuptr floorReadMsgPreFunc(u32, u32, u32);
+GCuptr floorReadNormalPreFunc(u32, u32, u32);
+GCuptr floorReadNotLinkedParticlePostFunc(u32, u32, u32);
+GCuptr floorReadNotLinkedParticlePreFunc(u32, u32, u32);
+GCuptr floorReadObjPostFunc(u32, u32, u32);
+GCuptr floorReadObjPreFunc(u32, u32, u32);
+GCuptr floorReadPKXPostFunc(u32, u32, u32);
+GCuptr floorReadPKXPreFunc(u32, u32, u32);
+GCuptr floorReadParticlePostFunc(u32, u32, u32);
+GCuptr floorReadParticlePreFunc(u32, u32, u32);
+GCuptr floorReadScriptPostFunc(u32, u32, u32);
+GCuptr floorReadScriptPreFunc(u32, u32, u32);
+GCuptr floorReadTexPostFunc(u32, u32, u32);
+GCuptr floorReadTexPreFunc(u32, u32, u32);
+GCuptr floorReadWZXPostFunc(u32, u32, u32);
+GCuptr floorReadWZXPreFunc(u32, u32, u32);
 
 FsysDataType fsys_datatype[] = {
     {800, 0, (PreFn)floorReadNormalPreFunc, 0},
@@ -313,7 +314,7 @@ s32 GSfsysStreamGetData(u32 gid, u32 id, u32 dst, u32 size, u32 offset, u32 a, u
     }
     FsysWork* work = _fsysGetWork(gid, 0);
     if (work == 0) {
-        _fsysMemSet((void*)dst, 0, size);
+        _fsysMemSet(PC_PTR(void*, dst), 0, size);
         return 0;
     }
     return _fsysStreamGetData(work, id, dst, size, offset, a, b, c);
@@ -333,15 +334,12 @@ s32 GSfsysStreamMoviePreFunc(u32 arg) {
     return 0;
 }
 
-#pragma push
-#pragma optimize_for_size on
-s32 GSfsysStreamMovieHeaderPostFunc(void) {
+void* GSfsysStreamMovieHeaderPostFunc(void) {
     if (!_initFlag) {
         return 0;
     }
     return 0;
 }
-#pragma pop
 
 void* GSfsysStreamMovieHeaderPreFunc(u32 id) {
     if (_initFlag == 0) {
@@ -364,15 +362,12 @@ s32 GSfsysStreamPreFunc(u32 arg) {
     return 0;
 }
 
-#pragma push
-#pragma optimize_for_size on
-s32 GSfsysStreamHeaderPostFunc(void) {
+void* GSfsysStreamHeaderPostFunc(void) {
     if (!_initFlag) {
         return 0;
     }
     return 0;
 }
-#pragma pop
 
 void* GSfsysStreamHeaderPreFunc(u32 id) {
     if (_initFlag == 0) {
@@ -381,9 +376,14 @@ void* GSfsysStreamHeaderPreFunc(u32 id) {
     return GSsndStreamPreFunc(id);
 }
 
-u8 GSfsysInit(u32 maxWork) {
+BOOL GSfsysInit(u32 maxWork) {
+    u8 result;
     GSdvdInit(maxWork);
-    return GSfsysInit2(0, 0, 0);
+    result = GSfsysInit2(0, 0, 0);
+    if (result == 0) {
+        return result;
+    }
+    return result;
 }
 
 s32 GSfsysGetDriveStatus(void) {
@@ -425,8 +425,8 @@ void GSfsysFree(u32 id) {
     }
 }
 
-u32 GSfsysOSLinkPreFunc(u32 a, u32 b, u32 size) {
-    u32 res = GSresAllocResourceAlign(size, 0x20, a, b, (void*)_fsysOSUnLink);
+GCuptr GSfsysOSLinkPreFunc(u32 a, u32 b, u32 size) {
+    GCuptr res = GSresAllocResourceAlign(size, 0x20, a, b, (void*)_fsysOSUnLink);
     if (res == 0) {
         res = 0;
     }
@@ -444,7 +444,7 @@ void* GSfsysOSLinkPostFunc(u32 a, u32 b) {
     }
     end = (u8*)res;
     end += res->count * 0x4C;
-    OSLinkFixed(res, (void*)(((u32)end + 0x1F) & ~0x1F));
+    OSLinkFixed(res, (void*)(((GCuptr)end + 0x1F) & ~0x1F));
 #ifdef __MWERKS__
     if (res->linkFunc != 0) {
         res->linkFunc();
@@ -477,7 +477,7 @@ void GSfsysOSUnLink(u32 a, u32 b, u32 unused) {
     }
 }
 
-s32 GSfsysReadIDEXWait(u32 id, u32 idx, s32 a, s32 b, s32 c) {
+s32 GSfsysReadIDEXWait(u32 id, u32 idx, GCsptr a, GCsptr b, GCsptr c) {
     if (_initFlag == 0) {
         return 0;
     }
@@ -503,7 +503,7 @@ s32 GSfsysReadIDWait(u32 id, u32 idx) {
     return _fsysWait(id, 0);
 }
 
-u8 GSfsysReadIDEX(u32 id, u32 idx, s32 a, s32 b, s32 c) {
+u8 GSfsysReadIDEX(u32 id, u32 idx, GCsptr a, GCsptr b, GCsptr c) {
     return _fsysRequest(1, id, idx, 0, a, b, c, 1);
 }
 
@@ -556,7 +556,7 @@ u8 GSfsysPreRead(u32 id) {
     return _fsysPreReadExec(id, 0, 0, 0, 0, 1);
 }
 
-static u8 _fsysPreReadExec(u32 id, s8 keep, s32 a, s32 b, s32 c, s32 prio) {
+static u8 _fsysPreReadExec(u32 id, s8 keep, GCsptr a, GCsptr b, GCsptr c, s32 prio) {
     return _fsysRequest(2, id, 0xFFFF, keep, a, b, c, prio);
 }
 
@@ -628,7 +628,7 @@ u8 GSfsysRead(u32 id) {
     return _fsysRequest(1, id, 0xFFFF, 0, 0, 0, 0, 1);
 }
 
-static u8 _fsysRequest(s32 type, u32 id, u32 idx, s8 flag, s32 a, s32 b, s32 c, s32 prio) {
+static u8 _fsysRequest(s32 type, u32 id, u32 idx, s8 flag, GCsptr a, GCsptr b, GCsptr c, s32 prio) {
     FsysQue* que;
 
     if (_initFlag == 0) {
@@ -760,7 +760,7 @@ static FsysQue* _fsysGetQueManage(u32 id, u32 idx) {
     return 0;
 }
 
-static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, s32 a, s32 b, s32 c) {
+static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, GCsptr a, GCsptr b, GCsptr c) {
     u32 n;
     FsysQue* p = _fsysQueManage;
     FsysQue* ret = 0;
@@ -787,14 +787,15 @@ static FsysQue* _fsysGetNewQueManage(s32 type, u32 id, u32 idx, s8 flag, s32 a, 
     return ret;
 }
 
-static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, s32 a, s32 b, s32 c) {
-    BOOL intr;
+static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, GCsptr a, GCsptr b, GCsptr c) {
     FsysWork* work;
-    int gid = (id);
+    BOOL intr;
+    int gid;
 
     intr = OSDisableInterrupts();
     _fsysFreeStatus(id);
-    work = _fsysGetWork(id, 0);
+    gid = id;
+    work = _fsysGetWork(gid, 0);
     if (work == 0) {
         work = _fsysGetNewWork();
         if (work == 0) {
@@ -821,7 +822,7 @@ static s32 _fsysExec(u32 id, s32 idx, s32 mode, s8 flag, s32 a, s32 b, s32 c) {
     work->unk28 = 0;
     work->cancel = 0;
     work->cacheType = flag;
-    work->callback = (void (*)(u32, u32, u32))a;
+    work->callback = (void (*)(u32, GCuptr, GCuptr))a;
     work->cbArg0 = b;
     work->cbArg1 = c;
     work->group = _fsysGetGROUP(gid);
@@ -929,16 +930,16 @@ u8 GSfsysInit2(s32 unused, s32 a, s32 b) {
 #ifdef __MWERKS__
     _fsysWork = (FsysWork*)_fsysDoMalloc(0x100);
 #else
-    _fsysWork = (FsysWork*)_fsysDoMalloc(4 * sizeof(FsysWork));
+    _fsysWork = (FsysWork*)_fsysDoMalloc(GC_SIZE(4 * sizeof(FsysWork), 4 * 64));
 #endif
     if (_fsysWork == 0) {
         return 0;
     }
-    _fsysBGWork = (FsysBG*)_fsysDoMalloc(_fsysBGWorkMax * sizeof(FsysBG));
+    _fsysBGWork = (FsysBG*)_fsysDoMalloc(GC_SIZE(_fsysBGWorkMax * sizeof(FsysBG), _fsysBGWorkMax * 68));
     if (_fsysBGWork == 0) {
         return 0;
     }
-    _fsysQueManage = (FsysQue*)_fsysDoMalloc(_fsysQueManageMax * sizeof(FsysQue));
+    _fsysQueManage = (FsysQue*)_fsysDoMalloc(GC_SIZE(_fsysQueManageMax * sizeof(FsysQue), _fsysQueManageMax * 36));
     if (_fsysQueManage == 0) {
         return 0;
     }
@@ -1349,11 +1350,8 @@ static void _fsysForegroundTask(FsysWork* work) {
         }
         break;
     case -999:
-    case -993:
-    case -992:
     case 0:
     case 1:
-    case 2:
     case 12:
         break;
     }
@@ -1798,7 +1796,7 @@ FsysWork* _fsysInfo2Work(u32 handle) {
 
 static u8 _fsysInitTOC(void) {
     s32 size;
-    u32 file;
+    GCuptr file;
     FsysGroup* g;
     u32 i;
 
@@ -1818,7 +1816,7 @@ static u8 _fsysInitTOC(void) {
     GSdvdClose(file);
     g = (FsysGroup*)((u8*)_fsysTOC + _fsysTOC->groupOffset);
     for (i = 0; i < _fsysTOC->count; i++) {
-        g->name = (char*)((u32)g->name + (u32)_fsysTOC);
+        g->name = PC_PTR(char*, (u32)g->name + (u32)_fsysTOC);
         g->flags = 0;
         g++;
     }

@@ -6,6 +6,7 @@
 
 #include <game/gstexture.h>
 #include <game/pcret.h>
+#include "game/gcdata.h"
 
 extern "C" {
 void* memcpy(void*, const void*, u32);
@@ -46,7 +47,7 @@ static GStexture* _textureFromDisc(GStextureDisc* d)
     if (tex != (GStexture*)d) {
         return tex;
     }
-    tex = (GStexture*)GSmemAlloc(sizeof(GStexture));
+    tex = (GStexture*)GC_PCONLY(GSmemAlloc(sizeof(GStexture)));
     if (tex == 0) {
         return 0;
     }
@@ -361,7 +362,6 @@ void GStextureFree(GStexture* tex)
     }
 #ifndef __MWERKS__
     if (tex->pad52 == GSTEXTURE_PC_LOADED) {
-        GSgfxRenderWaitForDrawComplete();
         ((GStextureDisc*)tex->pcDisc)->pcMagic = 0;
         GSmemFree(tex);
     }
@@ -459,25 +459,12 @@ static inline void _textureInitObjs(GStexture* tex)
     }
 }
 
-static inline void _textureCalcSize(GStexture* tex, s32 levels, u32 baseSize)
-{
-    u32 size = baseSize;
-    s32 i;
-
-    tex->totalSize = 0;
-    for (i = 0; i < levels; i++) {
-        tex->totalSize += (size + 31) & ~31;
-        size >>= 1;
-    }
-}
-
 s32 GStextureCreateFromMemory(GStexture* tex, u16 width, PCARG(u16, u32) height, void* data, s32 format, s32 tlutFormat,
                                      PCARG(u8, u32) mipLevels)
 {
     s32 tlutEntries = 0;
-    u32 size;
     int i;
-    s32 levels;
+    u32 size;
 
     memset(tex, 0, sizeof(GStexture));
     tex->width = width;
@@ -512,11 +499,10 @@ s32 GStextureCreateFromMemory(GStexture* tex, u16 width, PCARG(u16, u32) height,
     default:
         return 0;
     }
-    levels = mipLevels;
+    tex->mipLevels = mipLevels + 1;
     tex->inUse = 1;
-    tex->format = format;
-    tex->mipLevels = levels + 1;
     tex->dirty = 1;
+    tex->format = format;
     tex->tlutFormat = tlutFormat;
     tex->wrapS = 0;
     tex->wrapT = 0;
@@ -528,7 +514,11 @@ s32 GStextureCreateFromMemory(GStexture* tex, u16 width, PCARG(u16, u32) height,
     tex->mipFilter = 0;
     tex->tlutData = 0;
     size = ((u32)tex->bitsPerPixel * (width * height)) >> 3;
-    _textureCalcSize(tex, levels, size);
+    tex->totalSize = 0;
+    for (i = 0; i < mipLevels; i++) {
+        tex->totalSize += (size + 31) & ~31;
+        size >>= 1;
+    }
     if (tlutEntries != 0) {
         if (tlutFormat != 0 && tlutFormat >= 0 && tlutFormat < 4) {
             tex->totalSize += (tlutEntries << 4) >> 3;
@@ -675,7 +665,11 @@ GStexture* GStextureCreate(u16 width, u16 height, s32 format, s32 tlutFormat, u8
     }
     size = (u32)(tex->bitsPerPixel * (w * h)) >> 3;
     mipLevels++;
-    _textureCalcSize(tex, mipLevels, size);
+    tex->totalSize = 0;
+    for (i = 0; i < mipLevels; i++) {
+        tex->totalSize += (size + 31) & ~31;
+        size >>= 1;
+    }
     if (tlutEntries != 0) {
         if (tlutFormat != 0 && tlutFormat >= 0 && tlutFormat < 4) {
             tex->totalSize += (tlutEntries << 4) >> 3;
@@ -794,7 +788,7 @@ void GStextureInit(u32 count)
 #ifdef __MWERKS__
     _textureStructList = (GStexture*)GSmemAlloc(count << 7);
 #else
-    _textureStructList = (GStexture*)GSmemAlloc(count * sizeof(GStexture));
+    _textureStructList = (GStexture*)GSmemAlloc(GC_SIZE(count * sizeof(GStexture), count * 128));
 #endif
     if (_textureStructList != 0) {
         for (i = 0; i < _textureStructCount; i++) {

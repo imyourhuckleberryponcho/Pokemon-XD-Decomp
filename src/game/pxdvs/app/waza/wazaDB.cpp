@@ -134,7 +134,7 @@ u8 fightWaza_GetKaisuu(FightWaza* waza) {
     return waza->kaisuu;
 }
 
-u16 fightWaza_GetZokusei(FightWaza* waza) {
+PCRET(u16) fightWaza_GetZokusei(FightWaza* waza) {
     if (waza == 0) {
         return 0;
     }
@@ -385,7 +385,7 @@ u8 wazaDB_GetDageki(u16 id) {
     return data->dageki;
 }
 
-u8 wazaDB_GetAddFightKoukaAvg(u16 id) {
+PCRET(u8) wazaDB_GetAddFightKoukaAvg(u16 id) {
     WazaData* data = wazaDataBiosGetPtr(id);
     if (data == 0) {
         return 0;

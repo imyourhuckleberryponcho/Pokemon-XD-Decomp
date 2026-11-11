@@ -3,6 +3,7 @@
 
 
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -54,7 +55,7 @@ s32 _psLinkInit(s32 num)
     freeParticle = NULL;
 
     for (num--; num >= 0; num--) {
-        pp = (HSD_Particle*) HSD_Alloc(sizeof(HSD_Particle));
+        pp = (HSD_Particle*) HSD_Alloc(GC_SIZE(sizeof(HSD_Particle), 148));
         memset(pp, 0, sizeof(HSD_Particle));
         if (pp == NULL) {
             return -1;
@@ -93,7 +94,7 @@ HSD_Particle* _psListNew(HSD_Particle** parent, s32 linkNo)
     HSD_Particle* pp;
 
     if (freeParticle == NULL) {
-        freeParticle = (HSD_Particle*) HSD_Alloc(sizeof(HSD_Particle));
+        freeParticle = (HSD_Particle*) HSD_Alloc(GC_SIZE(sizeof(HSD_Particle), 148));
         memset(freeParticle, 0, sizeof(HSD_Particle));
     }
     pp = freeParticle;

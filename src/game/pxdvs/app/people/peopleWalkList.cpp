@@ -5,7 +5,13 @@ struct Vec {
 };
 
 struct People {
+#ifdef __MWERKS__
     u8 unk0[0x20];
+#else
+    u8 unk0[8];
+    void* model;
+    u8 unkC[0x20 - 0xC];
+#endif
     f32 unk20;
     u8 unk24[4];
     f32 unk28;
@@ -18,6 +24,13 @@ struct People {
     Vec* walkList;
     u8 walkListStrict;
 };
+#ifndef __MWERKS__
+#include <stddef.h>
+static_assert(offsetof(People, moveMode) == 0x58, "PC layout: moveType");
+static_assert(offsetof(People, walkListMax) == 0x78, "PC layout: pointCount");
+static_assert(offsetof(People, walkList) == 0x80, "PC layout: points");
+static_assert(offsetof(People, walkListStrict) == 0x88, "PC layout: f7C");
+#endif
 
 extern "C" {
 

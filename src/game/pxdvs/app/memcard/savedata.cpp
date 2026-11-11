@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/statusval.h>
 #pragma pool_strings off
 #ifndef M2C_MACROS_H
@@ -139,7 +140,7 @@ void* savedataBiosGetGamedataPtr(Savedata* savedata);
 void* savedataBiosGetHeroPtr(Savedata* savedata);
 void* savedataBiosGetMailboxPtr(Savedata* savedata);
 void* savedataBiosGetMemoDataPtr(Savedata* savedata);
-u32 savedataBiosGetNowSavedataPtr();
+GCuptr savedataBiosGetNowSavedataPtr();
 void* savedataBiosGetPcboxPtr(Savedata* savedata);
 void* savedataBiosGetRelivePtr(Savedata* savedata);
 void* savedataBiosGetSodateyaPtr(Savedata* savedata);

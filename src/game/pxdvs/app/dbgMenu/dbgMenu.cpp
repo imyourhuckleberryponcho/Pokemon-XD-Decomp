@@ -45,7 +45,11 @@ s32 dbgMenuGetRootMenu(void);
 void menuClose(s32);
 s8 menuDataBiosGetDispMax(s32);
 u8 menuIsCheck(s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 struct DbgKeyInfo {
     u16 unk0;
     u8 unk2[4];
@@ -149,7 +153,7 @@ extern "C" {
 
 extern "C++" {
 static s32 _dbgMenuGetItemNo(tagWINDOW_WORK* window, s32 index) {
-    int depth;
+    s32 depth;
     s32 base;
     s32 item;
     tagWINDOW_WORK* parent;
@@ -380,8 +384,8 @@ extern "C" {
 static inline void moveCursor(tagWINDOW_WORK* w, s32 repeat, s32 count, s8 visible) {
     s16 cursor;
     s16 top;
-    top = w->top;
     cursor = w->cursor;
+    top = w->top;
     if (repeat & 1) {
         cursor -= 1;
     } else if (repeat & 2) {

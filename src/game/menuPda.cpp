@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
@@ -163,7 +164,11 @@ u32 FlashSystemGetFrameFromLabel(u32 id, const char* label);
 void FlashSystemSetLoopFlag(u32 id, bool flag);
 u32 FlashSystemGetNowFrame(u32 id);
 void menuOpen(s32 id, s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32 id, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 s32 windowGetActiveID(void);
 void GSthreadSwitch(void);
 f32 timeGetLastFrameSec(void);
@@ -208,7 +213,7 @@ void menuPdaMailListXD(void);
 void menuPdaSearcher(void);
 MenuData* menuDataBiosGetPtr(s32 id);
 MenuItem* menuItemBiosGetPtr(s32 menu, s32 item);
-u32 windowGetCursorToItem(tagWINDOW_WORK* window);
+GCuptr windowGetCursorToItem(tagWINDOW_WORK* window);
 u32 windowGetKeyRepeat(void);
 
 void msgctrlSetValue(s32 id, GCuptr value);
@@ -678,23 +683,23 @@ static s32 _SelectCursorCalcPositon(GSvec2* out) {
     s32 prev;
     f32 a;
     n = 0;
-    out[n].x = _r1 * (f32)sin(_menuPdaStatus.ang0) + _center1[0];
-    out[n].y = _r1 * (f32)cos(_menuPdaStatus.ang0) + _center1[1];
+    out[n].x = GC_FUSED(_r1, (f32)sin(_menuPdaStatus.ang0)) + _center1[0];
+    out[n].y = GC_FUSED(_r1, (f32)cos(_menuPdaStatus.ang0)) + _center1[1];
     n++;
     for (i = 0; i < 16; i++) {
-        a = (f32)i * d2 + _menuPdaStatus.ang2;
-        out[n].x = _r2 * (f32)sin(a) + _center2[0];
-        out[n].y = _r2 * (f32)cos(a) + _center2[1];
+        a = GC_FUSED((f32)i, d2) + _menuPdaStatus.ang2;
+        out[n].x = GC_FUSED(_r2, (f32)sin(a)) + _center2[0];
+        out[n].y = GC_FUSED(_r2, (f32)cos(a)) + _center2[1];
         n++;
     }
     prev = n - 1;
     for (i = 0; i < 16; i++) {
-        a = d1 * (f32)(15 - i) + _menuPdaStatus.ang0;
-        out[n].x = _r1 * (f32)sin(a) + _center1[0];
+        a = GC_FUSED(d1, (f32)(15 - i)) + _menuPdaStatus.ang0;
+        out[n].x = GC_FUSED(_r1, (f32)sin(a)) + _center1[0];
         if (i == 0) {
             out[n].y = out[prev].y;
         } else {
-            out[n].y = _r1 * (f32)cos(a) + _center1[1];
+            out[n].y = GC_FUSED(_r1, (f32)cos(a)) + _center1[1];
         }
         n++;
     }

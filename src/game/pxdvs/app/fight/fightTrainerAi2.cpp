@@ -101,10 +101,10 @@ PCRET(u8) fightTrainerAiCheckTextureZokusei(FIGHT_TRAINER* trainer, void* pokemo
     var_r27 = 0;
     switch (arg6 & 0x40) {
     default:
-        var_r30 = arg1;
+        var_r30 = (u32)arg1;
         break;
     case 0:
-        var_r30 = arg2;
+        var_r30 = (u32)arg2;
         break;
     }
     temp_r21 = GC_ADDR32(fightTargetGetPtrAsNowFightType(2, var_r30));

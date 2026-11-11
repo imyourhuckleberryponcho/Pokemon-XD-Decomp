@@ -2,6 +2,7 @@
 #include <game/pcret.h>
 #include <game/statusval.h>
 #include <game/faceData.h>
+#include <game/menuCBWork.h>
 
 #pragma dont_inline on
 
@@ -34,18 +35,10 @@ struct ToolentryTrainer {
     Hero hero;
 };
 
-struct ToolentryWork {
-    u8 unk0[4];
-    s32 mode;
-    s32 type;
-    u8 unkC[8];
-    s32 versus;
-};
-
 extern "C" {
 void* GSmemAllocAlign(u32, u32);
 void GSmemFree(void*);
-ToolentryWork* menuCBBios_WorkContext(void);
+_MENUCBWORK* menuCBBios_WorkContext(void);
 void* menuCBBios_GetTrainerImmediately(s32);
 s32 menuCBTrainerBios_GetPlayerID(void*);
 s32 menuCBTrainerBios_GetHomePlace(void*);
@@ -78,7 +71,7 @@ static void _toolentryFree(void* p) {
     GSmemFree(p);
 }
 
-static ToolentryWork* _toolentryGetCBWork(void) {
+static _MENUCBWORK* _toolentryGetCBWork(void) {
     return menuCBBios_WorkContext();
 }
 
@@ -148,7 +141,7 @@ u8 toolentryTaisenGetPokemonFlag(s32 player, s32 slot) {
 }
 
 s32 toolentryTaisenGetBattleType(void) {
-    return _toolentryGetCBWork()->type;
+    return _toolentryGetCBWork()->state;
 }
 
 s32 toolentryTaisenGetEntryPlayerNum(void) {

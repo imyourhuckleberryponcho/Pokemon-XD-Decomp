@@ -623,7 +623,7 @@ void GSpartInit(u32 count) {
     u32 i;
 
     _partStructCount = count;
-    _partStructList = (GSpart*)GSmemAlloc(count * sizeof(GSpart));
+    _partStructList = (GSpart*)GSmemAlloc(GC_SIZE(count * sizeof(GSpart), count * 12));
     if (_partStructList != 0) {
         for (i = 0; i < _partStructCount; i++) {
             _partStructList[i].inUse = 0;

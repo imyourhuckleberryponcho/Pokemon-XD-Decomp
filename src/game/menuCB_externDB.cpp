@@ -422,7 +422,7 @@ u16 toolentryTaisenGetPokemonNum(s32);
 u32 GSinputButtonsPressed(s32);
 bool menuCBBattleBANextMenu(tagWINDOW_WORK*);
 s32 menuCBBattleStartGetStatus(void);
-u32 windowSearchID(s32);
+GCuptr windowSearchID(s32);
 }
 
 struct GbaConnectWork {
@@ -501,15 +501,15 @@ s32 menuCB2DPokemonClearSHIFT(s32);
 s32 menuCB2DPokemonDisp(void*, void*, s32, s32);
 s32 menuCB2DPokemonDisp2(void*, void*, s32, s32);
 s32 menuCBGCDelPokemon();
-s32 menuCBGCEntryTitleDisp(s32, void*, s32, void*);
-s32 menuCBPCBOXTitleNameDisp(s32, void*, s32, void*);
+s32 menuCBGCEntryTitleDisp(GCsptr, void*, s32, void*);
+s32 menuCBPCBOXTitleNameDisp(GCsptr, void*, s32, void*);
 s32 menuCBPokemonItem_ErrorSet(void*, s32);
 s32 menuCBPokemonMaruWaku_ErrorSet(void*, s32);
 s32 menuCBPokemon_ErrorDispSet(void*, s32);
 void menuCBRULE_EditNameDispLarge(CBWin* win, s32 idx);
 s32 menuCBReliveHallCursolInit();
-s32 menuCBReliveTitleNameDisp(s32, void*, s32, void*);
-s32 menuCBRuleNumberDisp(s32, void*, s32);
+s32 menuCBReliveTitleNameDisp(GCsptr, void*, s32, void*);
+s32 menuCBRuleNumberDisp(GCsptr, void*, s32);
 s32 menuCBRule_Copy(s32*, void*);
 void menuCB_GCEntryCursolDisp(CBWin* win, void* unused, bool flag);
 s32 menuCB_GCEntry_OkPushErrorCheck();
@@ -530,7 +530,7 @@ void menuTool_Rule00_Ctrl(void *p0);
 s32 spriteSetEnv(s32);
 void spriteSetOffset(s32, s16, s16);
 s32 spriteSetScissor(s32, s32, s32, s32, s32);
-s32 toolbattle_drawHeroID(s32, s32);
+s32 toolbattle_drawHeroID(GCsptr, s32);
 void windowDrawSprite3(s16, s16, s16, s16, u32, void*, u16, s16, s16, s16, s16, u32, s32);
 }
 static s32 field_anime[12];
@@ -6352,8 +6352,9 @@ block_17:
                             return;
                         }
                         menuCB_SE_Play(0x11);
-                        var_r7 = (u8*)(M2C_FIELD(&_CB, s32 *, 0xB028) + (GCsptr)M2C_FIELD(&_CB, u8 **, 0x9C78)) + 0x52;
-                        var_r7[M2C_FIELD(&_CB, s32 *, 0xB02C)] ^= 1;
+                        var_r7 = (u8*)M2C_FIELD(&_CB, u8 **, 0x9C78);
+                        var_r7 += M2C_FIELD(&_CB, s32 *, 0xB02C) + 0x52;
+                        var_r7[M2C_FIELD(&_CB, s32 *, 0xB028)] ^= 1;
                         goto block_27;
                     }
 block_27:

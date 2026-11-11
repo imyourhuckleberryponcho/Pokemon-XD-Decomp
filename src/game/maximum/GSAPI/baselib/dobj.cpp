@@ -353,7 +353,7 @@ static void DObjAmnesia(HSD_ClassInfo* info) {
 
 static void DObjInfoInit(void) {
     hsdInitClassInfo(HSD_CLASS_INFO(&hsdDObj), HSD_CLASS_INFO(&hsdClass), "sysdolphin_base_library", "hsd_dobj",
-                     sizeof(HSD_DObjInfo), sizeof(HSD_DObj));
+                     sizeof(HSD_DObjInfo), GC_CLASS_SIZE(sizeof(HSD_DObj), 24));
 
     HSD_CLASS_INFO(&hsdDObj)->release = DObjRelease;
     HSD_CLASS_INFO(&hsdDObj)->amnesia = DObjAmnesia;

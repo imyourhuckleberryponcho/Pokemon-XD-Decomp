@@ -1,5 +1,6 @@
 #pragma peephole off
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #pragma pool_strings off
 #include <dolphin/gx/GXVert.h>
@@ -359,9 +360,9 @@ void fadeFluidEvaluateSecond(void) {
 
         for (x = 1; x < fluid->columns; x++) {
             destination[x].z =
-                accel * source[x].z + damping * destination[x].z +
-                neighbor * (source[x + 1].z + source[x - 1].z + source[x + rowStride].z +
-                            source[x - rowStride].z);
+                GC_FUSED(accel, source[x].z) + damping * destination[x].z +
+                GC_FUSED(neighbor, (source[x + 1].z + source[x - 1].z + source[x + rowStride].z +
+                            source[x - rowStride].z));
         }
     }
     _fadeFluidSw = 1 - _fadeFluidSw;
@@ -421,9 +422,9 @@ void fadeFluidEvaluate(void) {
 
         for (x = 1; x < fluid->columns; x++) {
             destination[x].z =
-                accel * source[x].z + damping * destination[x].z +
-                neighbor * (source[x + 1].z + source[x - 1].z + source[x + rowStride].z +
-                            source[x - rowStride].z);
+                GC_FUSED(accel, source[x].z) + damping * destination[x].z +
+                GC_FUSED(neighbor, (source[x + 1].z + source[x - 1].z + source[x + rowStride].z +
+                            source[x - rowStride].z));
         }
     }
 

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/pxdvs/GSAPI/GSsnd/sndData.h>
 
@@ -26,8 +27,8 @@ u8 GSsndCheckSE(u32 id);
 u8 GSsndCheckStream(u32 id);
 s32 GSsndClose(u32 id);
 u8 GSsndContinue(u32 id, s32 time, s32 vol);
-u32 GSsndCreateEmitter(u32 id, SndPos* pos);
-u32 GSsndCreateListener(SndPos* pos);
+GCuptr GSsndCreateEmitter(u32 id, SndPos* pos);
+GCuptr GSsndCreateListener(SndPos* pos);
 s32 GSsndGetStatus(u32 id);
 u8 GSsndGetVolume(u32 id);
 u8 GSsndOpenWaveDVD(u32 wave, u32 fileId, u32 heap, u32 a, u32 b, u32 c, u32 e);
@@ -136,7 +137,7 @@ u32 soundCreateListener(void) {
     pos.x = 0.0f;
     pos.y = 0.0f;
     pos.z = 0.0f;
-    u32 r = GSsndCreateListener(&pos);
+    GCuptr r = GSsndCreateListener(&pos);
     return (r | -r) >> 31;
 }
 
@@ -145,7 +146,7 @@ u32 soundCreateEmitter(u32 id, f32 x, f32 y, f32 z) {
     pos.x = x;
     pos.y = y;
     pos.z = z;
-    u32 r = GSsndCreateEmitter(id, &pos);
+    GCuptr r = GSsndCreateEmitter(id, &pos);
     return (r | -r) >> 31;
 }
 

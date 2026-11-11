@@ -1,5 +1,6 @@
 #include <game/pcret.h>
 #include <global.h>
+#include <game/gcptr.h>
 #include <game/statusval.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 
@@ -91,7 +92,7 @@ struct EffortEntry {
 extern "C" {
 u16 figthOutPokemonGetPokemonDataId(FightOutPokemon*);
 u32 pokemonDB_GetShout(u16);
-u16 pokemon_GetPokemonDataId(Pokemon*);
+PCRET(u16) pokemon_GetPokemonDataId(Pokemon*);
 u32 pokemon_GetRnd(Pokemon*);
 u32 pokemon_GetCatchTrainerRnd(Pokemon*);
 u8 pokemon_GetCatchBallId(Pokemon*);
@@ -262,7 +263,7 @@ u8 wazaGetMaxPP(u16, u8);
 u32 zokuseiBiosGetName(PCARG(u8, u16));
 u8 sexGetPokemonSexRaitoKotei(u32);
 void memoDataSet(u32, Pokemon*);
-u32 Sequence_LoadPokemon(u16, u32, u32);
+GCuptr Sequence_LoadPokemon(u16, u32, u32);
 void Sequence_SetStatus(u32, u32);
 void Sequence_ResetStatus(u32, u32);
 void gamedataAttestInit(Attest*);
@@ -1552,7 +1553,7 @@ void pokemonSetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index, u32 val
     }
     switch (kind) {
 	case 0x1:
-		pokemonDataBiosSetName((PokemonData*)ptr, (const char*)value);
+		pokemonDataBiosSetName((PokemonData*)ptr, PC_PTR(const char*, value));
 		break;
 	case 0x3:
 		pokemonDataBiosSetBasisMaxHp((PokemonData*)ptr, value);
@@ -1867,13 +1868,13 @@ void pokemonSetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index, u32 val
 		pokemonBiosSetCatchTrainerRnd((Pokemon*)ptr, value);
 		break;
 	case 0x76:
-		pokemonBiosSetCatchTrainerNamePtr((Pokemon*)ptr, (void*)value);
+		pokemonBiosSetCatchTrainerNamePtr((Pokemon*)ptr, PC_PTR(void*, value));
 		break;
 	case 0x77:
-		pokemonBiosSetNicknamePtr((Pokemon*)ptr, (void*)value);
+		pokemonBiosSetNicknamePtr((Pokemon*)ptr, PC_PTR(void*, value));
 		break;
 	case 0x78:
-		pokemonBiosSetNicknameOrgPtr((Pokemon*)ptr, (void*)value);
+		pokemonBiosSetNicknameOrgPtr((Pokemon*)ptr, PC_PTR(void*, value));
 		break;
 	case 0x79:
 		pokemonBiosSetExp((Pokemon*)ptr, value);
@@ -2071,12 +2072,12 @@ void pokemonSetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index, u32 val
 		pokemonBiosSetPoolFriend((Pokemon*)ptr, value);
 		break;
 	case 0xcb:
-		fightPokemonBiosSetMotoPokemonPtr((FightPokemon*)ptr, (void*)value);
+		fightPokemonBiosSetMotoPokemonPtr((FightPokemon*)ptr, PC_PTR(void*, value));
 		break;
 	case 0xcd:
 		joutai = fightPokemon_GetFightJoutaiPtr((FightPokemon*)ptr, 0);
 		if (joutai) {
-			src = (FightJoutai*)value;
+			src = PC_PTR(FightJoutai*, value);
 			for (i = 0; i < 1; i++) {
 				joutai[i].joutaiDataId = src[i].joutaiDataId;
 				joutai[i].waza = src[i].waza;
@@ -2105,10 +2106,10 @@ void pokemonSetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index, u32 val
 		fightPokemonBiosSetHokakuFlag((FightPokemon*)ptr, value);
 		break;
 	case 0xd5:
-		fightOutPokemonBiosSetMotoFightPokemonPtr((FightOutPokemon*)ptr, (void*)value);
+		fightOutPokemonBiosSetMotoFightPokemonPtr((FightOutPokemon*)ptr, PC_PTR(void*, value));
 		break;
 	case 0xd6:
-		fightOutPokemonBiosSetFightPokemonPtr((FightOutPokemon*)ptr, (void*)value);
+		fightOutPokemonBiosSetFightPokemonPtr((FightOutPokemon*)ptr, PC_PTR(void*, value));
 		break;
 	case 0xda:
 		fightWaza_SetUseWazaDataId(fightOutPokemon_GetFightWazaPtr((FightOutPokemon*)ptr), value);
@@ -2175,7 +2176,7 @@ void pokemonSetStatus(void* ptr, u16 pokemonDataId, u16 kind, u16 index, u32 val
 		fightOutPokemonBiosSetFightoutTurnCount((FightOutPokemon*)ptr, value);
 		break;
 	case 0xee:
-		fightOutPokemonBiosSetSequencePtr((FightOutPokemon*)ptr, (void*)value);
+		fightOutPokemonBiosSetSequencePtr((FightOutPokemon*)ptr, PC_PTR(void*, value));
 		break;
 	case 0xef:
 		fightOutPokemonBiosSetSketchWazaDataId((FightOutPokemon*)ptr, value);

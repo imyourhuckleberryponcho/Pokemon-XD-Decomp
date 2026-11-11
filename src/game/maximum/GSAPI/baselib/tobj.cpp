@@ -19,6 +19,7 @@
 #include <sysdolphin/baselib/tev.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+#include "game/gcdata.h"
 #ifndef __MWERKS__
 void HSD_MkRotationMtx(Mtx arg0, Vec3* arg1);
 #endif
@@ -336,8 +337,8 @@ void HSD_TObjAddAnim(HSD_TObj* tobj, HSD_TexAnim* texanim)
             }
 
             if (GC_BE16(ta->n_tluttbl)) {
-                tobj->tluttbl = HSD_Alloc((s32) sizeof(HSD_Tlut*) *
-                                             (GC_BE16(ta->n_tluttbl) + 1));
+                tobj->tluttbl = HSD_Alloc(GC_SIZE((s32) sizeof(HSD_Tlut*) *
+                                             (GC_BE16(ta->n_tluttbl) + 1), (s32) 4 * (GC_BE16(ta->n_tluttbl) + 1)));
                 for (i = 0; i < GC_BE16(ta->n_tluttbl); i++) {
                     tobj->tluttbl[i] = HSD_TlutLoadDesc(GC_PTR(HSD_TlutDesc*, GC_PTR(gc_ptr32(HSD_TlutDesc)*, ta->tluttbl)[i]));
                 }
@@ -1574,7 +1575,7 @@ HSD_TObj* HSD_TObjAlloc(void)
 
 HSD_Tlut* HSD_TlutAlloc(void)
 {
-    HSD_Tlut* tlut = hsdAllocMemPiece(sizeof(HSD_Tlut));
+    HSD_Tlut* tlut = hsdAllocMemPiece(GC_SIZE(sizeof(HSD_Tlut), 16));
     HSD_ASSERT(2204, tlut);
     memset(tlut, 0, sizeof(HSD_Tlut));
     return tlut;
@@ -1658,7 +1659,7 @@ static void TObjAmnesia(HSD_ClassInfo* info)
 static void TObjInfoInit(void)
 {
     hsdInitClassInfo(HSD_CLASS_INFO(&hsdTObj), &hsdObj, "sysdolphin_base_library", "hsd_tobj",
-                     sizeof(HSD_TObjInfo), sizeof(HSD_TObj));
+                     sizeof(HSD_TObjInfo), GC_CLASS_SIZE(sizeof(HSD_TObj), 172));
     HSD_CLASS_INFO(&hsdTObj)->init = TObjInit;
     HSD_CLASS_INFO(&hsdTObj)->release = TObjRelease;
     HSD_CLASS_INFO(&hsdTObj)->amnesia = TObjAmnesia;

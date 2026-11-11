@@ -5,6 +5,7 @@
 #include <game/gcdata.h>
 #include <dolphin/arq.h>
 
+#include <game/gcptr.h>
 struct GSdvdFile;
 struct FsysHeader;
 
@@ -31,9 +32,9 @@ struct FsysWork {
     s8 cacheType;
     u8 headerValid;
     u8 pad2F;
-    void (*callback)(u32, u32, u32);
-    u32 cbArg0;
-    u32 cbArg1;
+    void (*callback)(u32, GCuptr, GCuptr);
+    GCuptr cbArg0;
+    GCuptr cbArg1;
     u32 groupId;
 };
 

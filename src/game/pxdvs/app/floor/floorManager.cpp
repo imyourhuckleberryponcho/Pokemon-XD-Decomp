@@ -2,6 +2,7 @@
 #include <game/pcret.h>
 #include <game/statusval.h>
 #include <game/tigadata.h>
+#include "game/gcdata.h"
 
 #pragma peephole off
 #pragma pool_strings off
@@ -611,7 +612,7 @@ static void _floorScriptThread();
 extern "C" {
 
 void GSfloorInit(u32 a, u32 b, u32 c, u32 d) {
-    _floorManager = new FloorManager();
+    _floorManager = (GC_NEW_NOTE(sizeof(FloorManager), 2536) new FloorManager());
     _floorManager->init(a, b + c + d);
 }
 
@@ -886,8 +887,8 @@ void FloorManager::init(u32 numStacks, u32 numModules) {
         delete m_stacks;
         m_stacks = 0;
     }
-    m_modules = new FloorModuleList(numModules);
-    m_stacks = new FloorStackList(numStacks);
+    m_modules = (GC_NEW_NOTE(sizeof(FloorModuleList), 24) new FloorModuleList(numModules));
+    m_stacks = (GC_NEW_NOTE(sizeof(FloorStackList), 12) new FloorStackList(numStacks));
     changeTaskMode(FLOOR_TASK_0);
     GSthreadSetName(GSthreadCreate(0, 0x7d0, 0x4000, 1, 1, (void*)_floorMainThread), "floorMainThread");
     GSthreadSetName(GSthreadCreate(1, 0x7d0, 0x1000, 1, 1, (void*)_floorScriptThread), "scriptUpdate");

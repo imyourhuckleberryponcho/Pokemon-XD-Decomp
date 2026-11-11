@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 #pragma pool_strings off
 
 #ifdef __MWERKS__
@@ -234,16 +235,12 @@ u32 GSdvdRemove(void) {
     return 0;
 }
 
-#pragma push
-#pragma optimization_level 1
-u32 GSdvdCreate(void) {
-    u32 result = 0;
+void* GSdvdCreate(const char* path) {
     if (_initFlag == 0) {
-        return result;
+        return 0;
     }
-    return result;
+    return 0;
 }
-#pragma pop
 
 u32 GSdvdGetLength(GSDVDWork* work) {
     if (_initFlag == 0) {
@@ -361,7 +358,7 @@ u32 GSdvdInit(u32 maxWork) {
         return 0;
     }
     _maxDvdWork = maxWork;
-    _dvdWork = (GSDVDWork*)_dvdDoMalloc(maxWork * sizeof(GSDVDWork));
+    _dvdWork = (GSDVDWork*)_dvdDoMalloc(GC_SIZE(maxWork * sizeof(GSDVDWork), maxWork * 76));
     if (_dvdWork == 0) {
         return 0;
     }

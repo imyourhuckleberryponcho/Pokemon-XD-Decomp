@@ -111,7 +111,7 @@ void fightPokemonCreate(FIGHT_TRAINER* trainer, FightPokemon* fp, Pokemon* p, s1
 void fightPokemon_SetCatchEntryFlag(FightPokemon* fp, u8 value);
 void fightPokemon_SetHokakuFlag(FightPokemon* fp, u8 value);
 void fightPokemonGetFriendFormPokemonFriendFilterId(FightPokemon* fp, u32 id);
-void fightMsgctrlSetValue(s32 id, u32 value);
+void fightMsgctrlSetValue(s32 id, GCuptr value);
 u32 fightMenuOpenMsg(u32 msg);
 void fightMenuCloseMsg(void);
 u8 fightSeqOpenMsg(u32 msgId);
@@ -119,7 +119,7 @@ u32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* p, PCARG(u8, u
 void fightSeqKizetuInit(FightOutPokemon* p);
 void fightSeqCheckSetHensinBuffToMotoFightPokemon(FightOutPokemon* p, u16 id);
 void fightMainAllCamera(u8 a, u8 b);
-u32 GSthreadGetCurrentThread(void);
+GCuptr GSthreadGetCurrentThread(void);
 void menuCloseCustom(s32 menuID, s32 a, s32 b);
 s32 winMsgOpenField(u32 msg, bool a, bool b);
 s8 menuSubOpenYesNoField(void);
@@ -243,7 +243,7 @@ u8 fightSeqItemSeq_AddPoke(Pokemon* pokemon, u8 ball, FIGHT_TRAINER* trainer, He
 
     if (fightFloor_GetFightKind(0) == 0xC) {
         WildPokemonCatchFlag = 1;
-        fightMsgctrlSetValue(0x16, (u32)pokemon_GetNicknamePtr(pokemon));
+        fightMsgctrlSetValue(0x16, (GCuptr)pokemon_GetNicknamePtr(pokemon));
         winMsgOpenField(0x4F85, 1, 1);
         if (menuSubOpenYesNoField() == 0) {
             menuNameEntryOpen(4, 0);
@@ -424,7 +424,7 @@ void WS_BALL_THROW(void) {
     }
     if (fightFloor_GetFightKind(0) == 0xC || fightFloor_GetFightKind(0) == 0xD) {
         fightMsgctrlSetValue(0x5D, 0);
-        fightMsgctrlSetValue(0x29, (u32)GSmsgGetGSchar(itemDB_GetName(ball)));
+        fightMsgctrlSetValue(0x29, (GCuptr)GSmsgGetGSchar(itemDB_GetName(ball)));
         fightMenuOpenMsg(0x4FFC);
     } else {
         fightMsgctrlSetValue(0x5D, 0);
@@ -436,7 +436,7 @@ void WS_BALL_THROW(void) {
         fightTrainerHokakuThrowEffect(trainer, ball, 3);
     }
     fightOutPokemonHokakuEffect(target, shakes, ball, 1, work);
-    fightMsgctrlSetValue(0x16, (u32)fightOutPokemonGetNicknamePtr(target));
+    fightMsgctrlSetValue(0x16, (GCuptr)fightOutPokemonGetNicknamePtr(target));
     if (shakes >= 4) {
         fightTrainerHokakuThrowEffect(trainer, ball, 4);
         if (fightFloor_GetFightKind(0) == 0xC || fightFloor_GetFightKind(0) == 0xD) {

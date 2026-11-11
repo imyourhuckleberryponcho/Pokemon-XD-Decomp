@@ -81,7 +81,11 @@ StatusU32 itemGetStatus(u32, u32, u32, u32);
 void menuClose(s32 menuID);
 void menuCloseSync(s32 menuID, s32);
 MenuItem* menuItemBiosGetPtr(s32 menuID, u32 index);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 s32 menuPocketColognCtrl(void *p0);
 s32 menuPocketColognCursor(void *p0);
 s32 menuPocketColognDrawCursor(void *p0, void *p1);

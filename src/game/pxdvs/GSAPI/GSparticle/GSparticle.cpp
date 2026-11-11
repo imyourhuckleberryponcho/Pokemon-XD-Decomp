@@ -349,15 +349,15 @@ s32 particleEngineUpdate(u8, f32);
 void particleEngineUpdate(f32 dt);
 #define particleEngineUpdate(rate, dt) ((void)(rate), particleEngineUpdate(dt))
 #endif
-void* peBankCreate(s32);
+void* peBankCreate(GCsptr);
 s32 peBankFree(void*);
-s32 peBankFreeFile(s32);
+s32 peBankFreeFile(GCsptr);
 f32 peBankGetLife(void*);
-u8 peBankIsInfinite(u32 a0 = 0);
+u8 peBankIsInfinite(GCuptr a0 = 0);
 void* peBankLoadFile(void*);
 s32 peBankStart(void*);
-s32 peBankStop(u32);
-s32 peBankStopLoop(u32);
+s32 peBankStop(GCuptr);
+s32 peBankStopLoop(GCuptr);
 HSD_Generator* psCreateGeneratorID(int linkNo, int bank, int id);
 void psDispBeginFrame(void);
 int psDispHasRenderData(u32 target_link);
@@ -510,7 +510,7 @@ static inline s32 _particleBankFindFreeGenerator(GSparticleBank* bank, const u8*
         if (*kind != (*(u8 *)&((_GSparticleGen*)(gen))->native)) {
             return -1;
         }
-        if ((*(u32 *)&((_GSparticleGen*)(gen))->data) == 0) {
+        if (((GCuptr)((_GSparticleGen*)(gen))->data) == 0) {
             return i;
         }
     }
@@ -594,10 +594,10 @@ static inline _HSD_JObj* _particleJObjGetParent(_HSD_JObj* jobj) {
     return (*(_HSD_JObj **)&((GSparticleJObjView*)(jobj))->parent);
 }
 }
-extern "C++" static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1);
-extern "C++" static void _particlePostUpdate(float p0);
-extern "C++" static void _particlePreUpdate(float frames);
-extern "C++" static void _particleUpdateAttachment(_GSparticleGen* p0);
+extern "C++" { static void _particleRender(GSgfxLayer* p0, GSgfxLayerPass p1); }
+extern "C++" { static void _particlePostUpdate(float p0); }
+extern "C++" { static void _particlePreUpdate(float frames); }
+extern "C++" { static void _particleUpdateAttachment(_GSparticleGen* p0); }
 extern "C" void GSparticleGeneratorSetCamera(void *p0, s32 p1);
 extern "C" void GSparticleBankSetCamera(_GSparticleBank* bank, HSD_CObj* camera);
 extern "C" void GSparticleDestroyAllGenerators(GSparticleBank* p0, bool p1);
@@ -624,8 +624,8 @@ extern "C" GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* p0, s3
 extern "C" void GSparticleFree(GSparticleBank* p0);
 extern "C" u8* GSparticleLoad(void* file);
 extern "C" void GSparticleInit(u32 count);
-extern "C++" static void _particleBankDestroyOldestGenerator(_GSparticleBank* bank);
-extern "C++" static void _particleJObjCallback(int p0, int p1, int p2, _HSD_JObj* p3);
+extern "C++" { static void _particleBankDestroyOldestGenerator(_GSparticleBank* bank); }
+extern "C++" { static void _particleJObjCallback(int p0, int p1, int p2, _HSD_JObj* p3); }
 
 extern "C++" {
 static void _particleJObjCallback(int p0, int p1, int p2, _HSD_JObj* p3) {
@@ -685,16 +685,18 @@ static void _particleJObjCallback(int p0, int p1, int p2, _HSD_JObj* p3) {
 
 extern "C++" {
 static void _particleBankDestroyOldestGenerator(_GSparticleBank* bank) {
-    _GSparticleGen* gens;
-    _GSparticleGen* gen;
     s32 i;
+    _GSparticleGen* gen;
+    _GSparticleGen* gens;
+    _GSparticleGenData* d;
     u32 oldest = 0xFFFFFFFF;
     s32 found = -1;
     gens = bank->gens;
     gen = gens;
     for (i = 0; i < bank->genCount; i++, gen++) {
-        if (gen->data != NULL && gen->data->serial < oldest) {
-            oldest = gen->data->serial;
+        d = gen->data;
+        if (d != NULL && d->serial < oldest) {
+            oldest = d->serial;
             found = i;
         }
     }
@@ -712,7 +714,7 @@ void GSparticleInit(u32 count) {
     memset(g_particle_cameras, 0, sizeof(g_particle_cameras));
     _particleBankStructCount = count;
     g_particle_cameras_count = 0;
-    _particleBankStructList = (u8*)GSmemAlloc(count * sizeof(_GSparticleBank));
+    _particleBankStructList = (u8*)GSmemAlloc(GC_SIZE(count * sizeof(_GSparticleBank), count * 20));
     if (_particleBankStructList == NULL) {
         return;
     }
@@ -753,7 +755,7 @@ u8* GSparticleLoad(void* file) {
         }
         bank->type = 1;
         bank->genCount = 0x10;
-        bank->gens = (_GSparticleGen*)GSmemAllocClr(0x10 * sizeof(_GSparticleGen));
+        bank->gens = (_GSparticleGen*)GSmemAllocClr(GC_SIZE(0x10 * sizeof(_GSparticleGen), 0x10 * 60));
         if (bank->gens == NULL) {
             return NULL;
         }
@@ -767,7 +769,7 @@ u8* GSparticleLoad(void* file) {
     } else {
         bank->type = 0;
         bank->genCount = 0x40;
-        bank->gens = (_GSparticleGen*)GSmemAllocClr(0x40 * sizeof(_GSparticleGen));
+        bank->gens = (_GSparticleGen*)GSmemAllocClr(GC_SIZE(0x40 * sizeof(_GSparticleGen), 0x40 * 60));
         if (bank->gens == NULL) {
             return NULL;
         }
@@ -826,7 +828,7 @@ void GSparticleFree(GSparticleBank* p0) {
     (*(u8 **)&((_GSparticleBank*)(p0))->gens) = NULL;
     (*(s8 *)&((_GSparticleBank*)(p0))->genCount) = 0;
     if ((u8) (*(u8 *)&((_GSparticleBank*)(p0))->type) != 0) {
-        peBankFreeFile((*(s32 *)&((_GSparticleBank*)(p0))->data));
+        peBankFreeFile(((GCsptr)((_GSparticleBank*)(p0))->data));
     }
     (*(s8 *)&((_GSparticleBank*)(p0))->active) = 0;
 }
@@ -849,7 +851,7 @@ GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* p0, s32 p1, s32 p
         if (idx < 0) {
             return NULL;
         }
-        u8* data = (u8*)peBankCreate((*(s32 *)&((_GSparticleBank*)(p0))->data));
+        u8* data = (u8*)peBankCreate(((GCsptr)((_GSparticleBank*)(p0))->data));
         if (data == NULL) {
             return NULL;
         }
@@ -873,7 +875,7 @@ GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* p0, s32 p1, s32 p
                 return NULL;
             }
         }
-        u8* data = (u8*)GSmemAlloc(sizeof(_GSparticleGenData));
+        u8* data = (u8*)GSmemAlloc(GC_SIZE(sizeof(_GSparticleGenData), 48));
         if (data == NULL) {
             return NULL;
         }
@@ -905,7 +907,7 @@ GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* p0, s32 p1, s32 p
     }
     _invalidateTex = 1;
     (*(s32 *)&((_GSparticleGen*)(gen))->attachMode) = 0;
-    (*(s32 *)&((_GSparticleGen*)(gen))->model) = 0;
+    (*(_GSmodel **)&((_GSparticleGen*)(gen))->model) = NULL;
     (*(s32 *)&((_GSparticleGen*)(gen))->partIndex) = 0;
     (*(s8 *)&((_GSparticleGen*)(gen))->f1) = 0;
     (*(s8 *)&((_GSparticleGen*)(gen))->f2) = 0;
@@ -931,7 +933,7 @@ void GSparticleAttachGeneratorToGSpart(void *p0, void *p1, s32 p2, s8 p3, u8 p4,
     u8 *temp_r4_3;
 
     if (((u8 *) (*(u8 **)&((_GSparticleGen*)(p0))->data) != NULL) && ((s32) (*(s32 *)&((_GSparticleGen*)(p0))->attachMode) == 0) && (p2 != 0)) {
-        (*(s32 *)&((_GSparticleGen*)(p0))->model) = (s32) (*(s32 *)&((GSparticlePartView*)(p1))->model);
+        (*(_GSmodel **)&((_GSparticleGen*)(p0))->model) = (*(_GSmodel **)&((GSparticlePartView*)(p1))->model);
         (*(s32 *)&((_GSparticleGen*)(p0))->partIndex) = (s32) (*(u16 *)&((GSparticlePartView*)(p1))->index);
         if (p4 == 1) {
             (*(f32 *)&((_GSparticleGen*)(p0))->pos[0]) = 0.0f;
@@ -1563,12 +1565,12 @@ void GSparticleSetBankVisibility(GSparticleBank* p0, bool p1) {
 
 extern "C" {
 void GSparticleStopGenerator(void *p0) {
-    if (((u32) (*(u32 *)&((_GSparticleGen*)(p0))->data) != 0) && ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0)) {
-        if (peBankIsInfinite((*(u32 *)&((_GSparticleGen*)(p0))->data)) != 0) {
-            peBankStopLoop((*(u32 *)&((_GSparticleGen*)(p0))->data));
+    if (((u32) ((GCuptr)((_GSparticleGen*)(p0))->data) != 0) && ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0)) {
+        if (peBankIsInfinite(((GCuptr)((_GSparticleGen*)(p0))->data)) != 0) {
+            peBankStopLoop(((GCuptr)((_GSparticleGen*)(p0))->data));
             return;
         }
-        peBankStop((*(u32 *)&((_GSparticleGen*)(p0))->data));
+        peBankStop(((GCuptr)((_GSparticleGen*)(p0))->data));
     }
 }
 }
@@ -1609,7 +1611,7 @@ void GSparticleDestroyAllGenerators(GSparticleBank* p0, bool p1) {
     var_r30 = 0U;
     var_r31 = (*(u8 **)&((_GSparticleBank*)(p0))->gens);
     while (var_r30 < (u8) (*(u8 *)&((_GSparticleBank*)(p0))->genCount)) {
-        if ((u32) (*(u32 *)&((_GSparticleGen*)(var_r31))->data) != 0U) {
+        if ((u32) ((GCuptr)((_GSparticleGen*)(var_r31))->data) != 0U) {
             GSparticleDestroyGenerator(var_r31, p1);
         }
         var_r30 += 1;
@@ -1655,7 +1657,7 @@ void GSparticleGeneratorSetCamera(void *p0, s32 p1) {
                 (*(s32 *)PEBANK_ENGINE_PTR(temp_r5)) = p1;
             }
         } else {
-            psGeneratorSetCamera((HSD_Generator*)((*(HSD_Generator **)&((_GSparticleGenData*)(temp_r5))->generator)), (HSD_CObj*)((HSD_CObj *) p1));
+            psGeneratorSetCamera((HSD_Generator*)((*(HSD_Generator **)&((_GSparticleGenData*)(temp_r5))->generator)), (HSD_CObj*)(PC_PTR(HSD_CObj *, p1)));
         }
     }
 }
@@ -1741,8 +1743,8 @@ static void _particleUpdateAttachment(_GSparticleGen* p0) {
         GSpartFree((GSpart*)(temp_r3));
         EulerToQuat((Vec*)(v80), (Quaternion*)(unksp64));
         GSvecTransformQuat((GSvec*)(unksp58), (const GSquat*)(unksp64), (const GSvec*)GEN_POS_P(p0));
-        PSVECAdd((const register Vec*)(v8C), (const register Vec*)(unksp58), (register Vec*)(v8C));
-        PSVECAdd((const register Vec*)(v80), (const register Vec*)GEN_ROT_P(p0), (register Vec*)(v80));
+        PSVECAdd((const Vec*)(v8C), (const Vec*)(unksp58), (Vec*)(v8C));
+        PSVECAdd((const Vec*)(v80), (const Vec*)GEN_ROT_P(p0), (Vec*)(v80));
         v74[0] *= (*(f32 *)&((_GSparticleGen*)(p0))->scale[0]);
         v74[1] *= (*(f32 *)&((_GSparticleGen*)(p0))->scale[1]);
         v74[2] *= (*(f32 *)&((_GSparticleGen*)(p0))->scale[2]);

@@ -16,6 +16,7 @@
 #include <dolphin/gx/GXEnum.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -1226,7 +1227,7 @@ static void LObjInfoInit(void)
 {
     hsdInitClassInfo(HSD_CLASS_INFO((HSD_LObjInfo*) &hsdLObj), HSD_CLASS_INFO(&hsdObj),
                      "sysdolphin_base_library", "hsd_lobj",
-                     sizeof(XD_LObjInfo), sizeof(HSD_LObj));
+                     sizeof(XD_LObjInfo), GC_CLASS_SIZE(sizeof(HSD_LObj), 212));
     HSD_CLASS_INFO((HSD_LObjInfo*) &hsdLObj)->release = LObjRelease;
     HSD_CLASS_INFO((HSD_LObjInfo*) &hsdLObj)->amnesia = LObjAmnesia;
     HSD_LOBJ_INFO((HSD_LObjInfo*) &hsdLObj)->load = LObjLoad;

@@ -215,8 +215,7 @@ game/menuFight.cpp:
 	.sdata2     start:0x804EBFE0 end:0x804EC010
 
 game/menuPocketTool.cpp:
-	.text       start:0x8001EC10 end:0x80022080
-	.text       start:0x80022080 end:0x8002208C
+	.text       start:0x8001EC10 end:0x8002208C
 	.data       start:0x80322460 end:0x80322498
 	.bss        start:0x80428260 end:0x804282A0
 	.sdata      start:0x804E7ED8 end:0x804E7EE8
@@ -253,8 +252,7 @@ game/agbCommunication.cpp:
 	.sbss       start:0x804EA780 end:0x804EA790
 
 game/floorRead.cpp:
-	.text       start:0x8002D8C0 end:0x8002F1F0
-	.text       start:0x8002F1F0 end:0x8002F308
+	.text       start:0x8002D8C0 end:0x8002F308
 	.ctors      start:0x802E9F84 end:0x802E9F88
 	.rodata     start:0x802EA898 end:0x802EA8A8
 	.bss        start:0x804290D0 end:0x80429170

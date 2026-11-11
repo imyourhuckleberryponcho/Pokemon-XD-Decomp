@@ -56,7 +56,8 @@ struct peDLRaw { u16 flags; u16 stride; u8* data; u32 size; void* vf; };
 #ifdef __MWERKS__
 #define PE_NODE_SIZE(gc, T) (gc)
 #else
-#define PE_NODE_SIZE(gc, T) sizeof(T)
+extern "C" u32 pe_gc_node_size;
+#define PE_NODE_SIZE(gc, T) (pe_gc_node_size = (gc), (u32)sizeof(T))
 #endif
 
 struct peNodeHead {

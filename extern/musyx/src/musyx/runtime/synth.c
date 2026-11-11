@@ -1401,7 +1401,7 @@ void synthInit(u32 mixFrq, u32 numVoices) {
   synthFlags = 0;
   synthMessageCallback = NULL;
 
-  synthVoice = salMalloc(numVoices * sizeof(SYNTH_VOICE));
+  synthVoice = salMalloc(MUSY_GC_SIZE(numVoices * sizeof(SYNTH_VOICE), numVoices * 1112));
   if (synthVoice == NULL) {
     MUSY_FATAL("Fatal: Could not allocate synthesizer voice array.");
   }

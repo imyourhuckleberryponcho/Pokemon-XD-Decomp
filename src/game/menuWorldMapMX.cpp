@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
@@ -145,7 +146,7 @@ struct WorldMapIconWork {
     f32 sx, sy, sz;
     WorldMapIconSubWork* sub;
     WorldMapIconWork() {
-        sub = new WorldMapIconSubWork[*worldmapXD_data_number];
+        sub = (GC_NEW_NOTE(sizeof(WorldMapIconSubWork) * (*worldmapXD_data_number), 8 * (*worldmapXD_data_number) + 16) new WorldMapIconSubWork[*worldmapXD_data_number]);
         pad[0] = -1;
         pad[1] = -1;
         pad[2] = -1;
@@ -228,7 +229,11 @@ void* memcpy(void*, const void*, u32);
 u16 HSD_Rand(void);
 void soundStopEnv(s32);
 void* GScameraGetActiveCamera(void);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 s32 windowGetActiveID(void);
@@ -541,7 +546,7 @@ void WorldMap::ControlCursor(s32) {
     }
     if (st->floorPush != 0) {
         time = time + dt;
-        bob = 5.0f * (f32)sin(6.2831855f * time) + 5.0f;
+        bob = GC_FUSED(5.0f, (f32)sin(6.2831855f * time)) + 5.0f;
         cur.y = bob;
     }
     GSmodelSetPosition(m, &cur);
@@ -819,7 +824,7 @@ bool WorldMap::IsBlending() {
 void WorldMap::ControlCamera(s32) {
     f32 dt = timeGetLastFrameSec();
     cam->time = cam->time + dt;
-    cam->speed = cam->acc * dt + cam->speed;
+    cam->speed = GC_FUSED(cam->acc, dt) + cam->speed;
     if (cam->speed <= 0.01f) {
         cam->speed = 0.01f;
     }
@@ -910,11 +915,11 @@ void WorldMap::Init() {
     s16 j;
     s16 i;
     soundStopEnv(1000);
-    st = (WorldMapState*)GSmemAlloc(sizeof(WorldMapState));
+    st = (WorldMapState*)GSmemAlloc(GC_SIZE(sizeof(WorldMapState), 148));
     memset(st, 0, sizeof(*st));
     st->camera = GC_ADDR32(GScameraGetActiveCamera());
     s32 n = *worldmapXD_data_number;
-    icons = new WorldMapIconWork[n];
+    icons = (GC_NEW_NOTE(sizeof(WorldMapIconWork) * (n) + 8, 44 * (n) + 16) new WorldMapIconWork[n]);
     cam = new WorldMapCamera;
     st->floorPush = IsFloorPush();
     j = 0;
@@ -1011,7 +1016,7 @@ static s8 _unusedGetPadIndex(f32 ang) {
 }
 
 static s8 _unusedGetPadIndex2(f32 ang, f32 tol) {
-    return (s8)((ang + tol) * 1.2732395f);
+    return (s8)((ang + tol) / 0.3926991f);
 }
 
 s8 WorldMap::GetPadIndex3(f32 ang, s32 k, f32 tol) {
@@ -1363,7 +1368,7 @@ static void* _cameraPlayAnime(u32 camera, s32 frame, bool loop);
 
 void WorldMap::moveDemo(s32 from, s32 to) {
     u16 pick = HSD_Rand() % 2;
-    glow = new glowEffect;
+    glow = (GC_NEW_NOTE(sizeof(glowEffect), 24) new glowEffect);
     GSgfxVideoSetLockFrameRate(1);
     WorldMapIconWork* ia = &icons[_cursor_index[to]];
     WorldMapIconWork* ib = &icons[_cursor_index[from]];
@@ -1684,7 +1689,7 @@ void menuWorldMapButton(tagWINDOW_WORK* w) {
 
 extern "C" {
 void menuWorldMapMXInit(void) {
-    pWorldmap = new WorldMap;
+    pWorldmap = (GC_NEW_NOTE(sizeof(WorldMap), 72) new WorldMap);
     pWorldmap->Init();
 }
 }

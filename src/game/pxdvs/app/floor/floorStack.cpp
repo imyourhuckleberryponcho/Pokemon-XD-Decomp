@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 
 #pragma peephole off
 
@@ -164,7 +165,7 @@ FloorStackList::~FloorStackList() {
 
 FloorStackList::FloorStackList(u32 num) {
     u32 i;
-    m_stacks = new FloorStack[num];
+    m_stacks = (GC_NEW_NOTE(sizeof(FloorStack) * (num), 548 * (num) + 16) new FloorStack[num]);
     m_depth = 0;
     m_num = num;
     for (i = 0; i < num; i++) {

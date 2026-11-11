@@ -1,5 +1,6 @@
 
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/gsmodelview.h>
@@ -245,9 +246,9 @@ static inline void _modelIntpScale(HSD_JObj* a, HSD_JObj* b, HSD_JObj* dst, f32 
 
     HSD_JObjGetScale(a, &va);
     HSD_JObjGetScale(b, &vb);
-    scale.x = va.x * s + vb.x * t;
-    scale.y = va.y * s + vb.y * t;
-    scale.z = va.z * s + vb.z * t;
+    scale.x = GC_FUSED(va.x, s) + vb.x * t;
+    scale.y = GC_FUSED(va.y, s) + vb.y * t;
+    scale.z = GC_FUSED(va.z, s) + vb.z * t;
     if (mix != 0) {
         modelCalculatePartMix(&scale, mix, mixFlags);
     }
@@ -262,9 +263,9 @@ static inline void _modelIntpTrans(HSD_JObj* a, HSD_JObj* b, HSD_JObj* dst, f32 
 
     HSD_JObjGetTranslate(a, &va);
     HSD_JObjGetTranslate(b, &vb);
-    translate.x = va.x * s + vb.x * t;
-    translate.y = va.y * s + vb.y * t;
-    translate.z = va.z * s + vb.z * t;
+    translate.x = GC_FUSED(va.x, s) + vb.x * t;
+    translate.y = GC_FUSED(va.y, s) + vb.y * t;
+    translate.z = GC_FUSED(va.z, s) + vb.z * t;
     if (mix != 0) {
         modelCalculatePartMix(&translate, mix, mixFlags);
     }
@@ -386,9 +387,9 @@ void modelIntpJObjScale(HSD_JObj* a, HSD_JObj* b, HSD_JObj* dst, f32 t, GSvec* m
 
     HSD_JObjGetScale(a, &va);
     HSD_JObjGetScale(b, &vb);
-    scale.x = va.x * s + vb.x * t;
-    scale.y = va.y * s + vb.y * t;
-    scale.z = va.z * s + vb.z * t;
+    scale.x = GC_FUSED(va.x, s) + vb.x * t;
+    scale.y = GC_FUSED(va.y, s) + vb.y * t;
+    scale.z = GC_FUSED(va.z, s) + vb.z * t;
     if (mix != 0) {
         modelCalculatePartMix(&scale, mix, mixFlags);
     }
@@ -403,9 +404,9 @@ void modelIntpJObjTrans(HSD_JObj* a, HSD_JObj* b, HSD_JObj* dst, f32 t, GSvec* m
 
     HSD_JObjGetTranslate(a, &va);
     HSD_JObjGetTranslate(b, &vb);
-    translate.x = va.x * s + vb.x * t;
-    translate.y = va.y * s + vb.y * t;
-    translate.z = va.z * s + vb.z * t;
+    translate.x = GC_FUSED(va.x, s) + vb.x * t;
+    translate.y = GC_FUSED(va.y, s) + vb.y * t;
+    translate.z = GC_FUSED(va.z, s) + vb.z * t;
     if (mix != 0) {
         modelCalculatePartMix(&translate, mix, mixFlags);
     }

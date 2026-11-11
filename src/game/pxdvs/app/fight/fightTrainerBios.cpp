@@ -1,42 +1,10 @@
 #include <dolphin/types.h>
+#include <game/fightfloor.h>
+#define FIGHT_TRAINER_OPAQUE_RECORDS
+#include <game/pxdvs/app/fight/fightTrainerData.h>
 #include <game/pxdvs/app/fight/fightData.h>
 
-struct FightTrainerAiValueAddsubData {
-    u8 unk0[0x14];
-};
-
-struct FightTrainerPokemonPartData {
-    u8 unk0[0x18];
-};
-
-struct FightTrainerEnemyPokemon {
-    s16 fightEntryeId;
-    u8 storeWazaNum;
-    u8 expectWazaNum;
-    u16 storeWazaDataId[4];
-    u16 expectWazaDataId[8];
-    u8 tokuseiFlag;
-    u8 unk1D;
-    u16 storeTokuseiData;
-    u8 nowhp1banhikuiFlag;
-    u8 lv1banhikuiFlag;
-    u8 defense1banhikuiFlag;
-    u8 badwazaHaveFlag;
-    u8 param1bantakaiFlag;
-};
-
-struct FightPokemon {
-    void* slot0;
-    u8 pad4[0x2FC];
-};
-
-struct FightTrainer {
-    u8 unk0[4];
-    u8 hero[0x97C - 4];
-    FightPokemon fightPokemon[6];
-    u8 unk1A7C[0x3540 - 0x97C - 6 * 0x300];
-    u8 controllerId;
-};
+#include <game/pxdvs/app/fight/fightTrainerTables.h>
 
 class DeckTrainer {
 public:
@@ -129,13 +97,13 @@ void fightTrainerEnemyPokemonBiosSetTokuseiFlag(FightTrainerEnemyPokemon* pokemo
 
 void fightTrainerEnemyPokemonBiosSetExpectWazaDataId(FightTrainerEnemyPokemon* pokemon, u8 index, u16 id) {
     if (pokemon != NULL && index <= 8) {
-        pokemon->expectWazaDataId[index] = id;
+        pokemon->expectWaza[index] = id;
     }
 }
 
 void fightTrainerEnemyPokemonBiosSetStoreWazaDataId(FightTrainerEnemyPokemon* pokemon, u8 index, u16 id) {
     if (pokemon != NULL && index <= 4) {
-        pokemon->storeWazaDataId[index] = id;
+        pokemon->storeWaza[index] = id;
     }
 }
 
@@ -153,7 +121,7 @@ void fightTrainerEnemyPokemonBiosSetStoreWazaNum(FightTrainerEnemyPokemon* pokem
 
 void fightTrainerEnemyPokemonBiosSetFightEntryeId(FightTrainerEnemyPokemon* pokemon, s16 value) {
     if (pokemon != NULL) {
-        pokemon->fightEntryeId = value;
+        pokemon->fightEntryId = value;
     }
 }
 
@@ -161,7 +129,7 @@ s16 fightTrainerEnemyPokemonBiosGetFightEntryeId(FightTrainerEnemyPokemon* pokem
     if (pokemon == NULL) {
         return 0;
     }
-    return pokemon->fightEntryeId;
+    return pokemon->fightEntryId;
 }
 
 FightTrainerAiValueAddsubData* fightTrainerAiValueAddsubDataBiosGetPtr(u16 id) {

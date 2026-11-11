@@ -425,8 +425,13 @@ public:
     _GSmodel* m_model;
     GSparticleBank* m_unk98;
     MotionSection* m_sections;
+#ifdef __MWERKS__
     u32 m_pachiruA;
     u32 m_pachiruB;
+#else
+    void* m_pachiruA;
+    void* m_pachiruB;
+#endif
     void* m_unkA8;
     void* m_unkAC;
     void* m_unkB0;

@@ -561,25 +561,25 @@ static inline f32 _pvDist(Vec* a, Vec* b) {
     return PSVECDistance(a, b);
 }
 }
-extern "C++" static void _peopleViewerInitChara();
-extern "C++" static s32 _peopleViewerFallMotion();
-extern "C++" static void _peopleViewerFallReady(float height);
+extern "C++" { static void _peopleViewerInitChara(); }
+extern "C++" { static s32 _peopleViewerFallMotion(); }
+extern "C++" { static void _peopleViewerFallReady(float height); }
 extern "C" void peopleViewerThread();
-extern "C++" static void _peopleViewerInit();
-extern "C++" static void _peopleViewerMain();
+extern "C++" { static void _peopleViewerInit(); }
+extern "C++" { static void _peopleViewerMain(); }
 extern "C" void peopleViewerSetHeroPos();
-extern "C++" static void _peopleViewerGetWalkAndRunInfo();
-extern "C++" static struct _struct_motiontype_str_0x20* _peopleViewerGetActName(s32 id);
-extern "C++" static void _peopleViewerDrawParams();
+extern "C++" { static void _peopleViewerGetWalkAndRunInfo(); }
+extern "C++" { static struct _struct_motiontype_str_0x20* _peopleViewerGetActName(s32 id); }
+extern "C++" { static void _peopleViewerDrawParams(); }
 extern "C" s32 peopleViewerDisplayDaemonInfo(void *p0);
 extern "C" s32 peopleViewerDisplayRandWalk(void *p0);
 extern "C" s32 peopleViewerDisplayMoveRotInfo(s32* pw, f32 p0);
 extern "C" s32 peopleViewerDisplayAnimRate(s32* pw, f32 p0);
 extern "C" bool peopleViewerIsCheckNpc(s32 *p0);
 extern "C" f32 peopleViewerGetPlaySpeedRate(void);
-extern "C++" static void _peopleViewerStartAnimation();
+extern "C++" { static void _peopleViewerStartAnimation(); }
 extern "C" void peopleViewerSetPlaySpeedRate(f32 value);
-extern "C++" static void _setAnimIndex(_GSmodel* p0, int p1);
+extern "C++" { static void _setAnimIndex(_GSmodel* p0, int p1); }
 
 extern "C++" {
 static void _setAnimIndex(_GSmodel* p0, int p1) {
@@ -598,9 +598,9 @@ static void _peopleViewerStartAnimation() {
     u32 spC;
     u32 sp8;
 
-    GSmodelGetAnimIndex((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)), (u32*)(&spC), (u32*)(&sp8));
-    _setAnimIndex((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)), (s32) spC);
-    GSmodelStartAnimation((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)));
+    GSmodelGetAnimIndex((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model), (u32*)(&spC), (u32*)(&sp8));
+    _setAnimIndex((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model), (s32) spC);
+    GSmodelStartAnimation((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model));
 }
 }
 
@@ -615,7 +615,7 @@ bool peopleViewerIsCheckNpc(s32 *p0) {
     if (GSfloorGetCurrent() != 0xFA1U) {
         return false;
     }
-    return M2C_NAMED(((PeopleWorkLayout*)(p0)), s32 *, 0x18, peopleID) == 0;
+    return ((PeopleWorkLayout*)p0)->peopleID == 0;
 }
 }
 
@@ -647,10 +647,10 @@ s32 peopleViewerDisplayRandWalk(void *p0) {
         return 0;
     }
     gimmickBoxDrawString((s32)(0), (s32)(6), (_struct_motiontype_str_0x20 *)("randWait"));
-    gimmickBoxDrawFloat(0xA, 6, M2C_NAMED(((PeopleWorkLayout*)(p0)), f32 *, 0x90, timer));
-    if ((p0 != NULL) && ((_GSmodel *) M2C_NAMED(((PeopleWorkLayout*)(p0)), _GSmodel **, 0x8, model) != NULL)) {
+    gimmickBoxDrawFloat(0xA, 6, ((PeopleWorkLayout*)p0)->timer);
+    if ((p0 != NULL) && ((_GSmodel *) ((PeopleWorkLayout*)p0)->model != NULL)) {
         gimmickBoxDrawString((s32)(0), (s32)(7), (_struct_motiontype_str_0x20 *)("AnimFrame"));
-        gimmickBoxDrawFloat(0xA, 7, GSmodelGetAnimFrame((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(p0)), _GSmodel **, 0x8, model))));
+        gimmickBoxDrawFloat(0xA, 7, GSmodelGetAnimFrame((_GSmodel*)(((PeopleWorkLayout*)p0)->model)));
     }
     return 1;
 }
@@ -662,13 +662,13 @@ s32 peopleViewerDisplayDaemonInfo(void *p0) {
         return 0;
     }
     gimmickBoxDrawString(0x1E, 3, (_struct_motiontype_str_0x20 *)("moveSpeed"));
-    gimmickBoxDrawFloat(0x26, 3, M2C_NAMED(((PeopleWorkLayout*)(p0)), f32 *, 0x28, curRate));
+    gimmickBoxDrawFloat(0x26, 3, ((PeopleWorkLayout*)p0)->curRate);
     gimmickBoxDrawString(0x1E, 4, (_struct_motiontype_str_0x20 *)("realDist"));
     gimmickBoxDrawFloat(0x26, 4, _pvDist((Vec*)peopleBiosGetPosPtr((PeopleWork*)p0), (Vec*)peopleBiosGetPrevPosPtr((PeopleWork*)p0)));
     gimmickBoxDrawString(0x1E, 7, (_struct_motiontype_str_0x20 *)("neck rot"));
-    gimmickBoxDrawFloat(0x26, 7, M2C_NAMED(((PeopleWorkLayout*)(p0)), f32 *, 0xE0, neckCur.x));
-    gimmickBoxDrawFloat(0x26, 8, M2C_NAMED(((PeopleWorkLayout*)(p0)), f32 *, 0xE4, neckCur.y));
-    gimmickBoxDrawFloat(0x26, 9, M2C_NAMED(((PeopleWorkLayout*)(p0)), f32 *, 0xE8, neckCur.z));
+    gimmickBoxDrawFloat(0x26, 7, ((PeopleWorkLayout*)p0)->neckCur.x);
+    gimmickBoxDrawFloat(0x26, 8, ((PeopleWorkLayout*)p0)->neckCur.y);
+    gimmickBoxDrawFloat(0x26, 9, ((PeopleWorkLayout*)p0)->neckCur.z);
     gimmickBoxDrawString(0x1E, 0xD, (_struct_motiontype_str_0x20 *)("pos"));
     gimmickBoxDrawFloat(0x26, 0xE, ((GSvec*)peopleBiosGetPosPtr((PeopleWork*)p0))->x);
     gimmickBoxDrawFloat(0x26, 0xF, ((GSvec*)peopleBiosGetPosPtr((PeopleWork*)p0))->y);
@@ -692,7 +692,7 @@ static void _peopleViewerDrawParams() {
     gimmickBoxDrawString(0, 1, (struct _struct_motiontype_str_0x20*)char_tbl[m_char_number].name);
     gimmickBoxDrawInt(0, 2, m_char_number);
     gimmickBoxDrawString((s32)(0xC), (s32)(0), (_struct_motiontype_str_0x20 *)("Animation"));
-    GSmodelGetAnimIndex((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)), (u32*)(&sp10), (u32*)(&spC));
+    GSmodelGetAnimIndex((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model), (u32*)(&sp10), (u32*)(&spC));
     if ((s32) sp10 < 0) {
         gimmickBoxDrawString((s32)(0xC), (s32)(1), (_struct_motiontype_str_0x20 *)("NONE"));
     } else {
@@ -703,7 +703,7 @@ static void _peopleViewerDrawParams() {
     } else {
         gimmickBoxDrawString(0xC, 2, _peopleViewerGetActName((s32) spC));
     }
-    temp_r3 = GSmodelGetAnimType((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)));
+    temp_r3 = GSmodelGetAnimType((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model));
     if (temp_r3 == 1) {
         gimmickBoxDrawString((s32)(0xC), (s32)(3), (_struct_motiontype_str_0x20 *)("Loop"));
     } else if (temp_r3 == 0) {
@@ -716,39 +716,39 @@ static void _peopleViewerDrawParams() {
     gimmickBoxDrawInt(0x18, 2, m_current_motion_type);
     gimmickBoxDrawString(0x24, 0, (_struct_motiontype_str_0x20 *)("Play Speed Rate"));
     gimmickBoxDrawFloat(0x24, 1, m_play_speed_rate);
-    if (M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u8 *, 0x14C, f14C) != 0) {
+    if (((PeopleWorkLayout*)m_pChara)->f14C != 0) {
         gimmickBoxDrawString(0, 8, (_struct_motiontype_str_0x20 *)("BLINK ON"));
     } else {
         gimmickBoxDrawString(0, 8, (_struct_motiontype_str_0x20 *)("BLINK OFF"));
     }
-    if (M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u8 *, 0x14D, f14D) != 0) {
+    if (((PeopleWorkLayout*)m_pChara)->f14D != 0) {
         gimmickBoxDrawString(0, 9, (_struct_motiontype_str_0x20 *)("SPEAK ON"));
     } else {
         gimmickBoxDrawString(0, 9, (_struct_motiontype_str_0x20 *)("SPEAK OFF"));
     }
-    if (M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u8 *, 0x154, blend) != 0) {
+    if (((PeopleWorkLayout*)m_pChara)->blend != 0) {
         gimmickBoxDrawString(0, 0xB, (_struct_motiontype_str_0x20 *)("GSmodel Enabled."));
     } else {
         gimmickBoxDrawString(0, 0xB, (_struct_motiontype_str_0x20 *)("GSmodel Disabled."));
     }
-    if (M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u8 *, 0x155, manualAnim) != 0) {
+    if (((PeopleWorkLayout*)m_pChara)->manualAnim != 0) {
         gimmickBoxDrawString(0, 0xC, (_struct_motiontype_str_0x20 *)("Manual Motion."));
     } else {
         gimmickBoxDrawString(0, 0xC, (_struct_motiontype_str_0x20 *)("Auto Motion."));
     }
     gimmickBoxDrawString(0, 0xE, (_struct_motiontype_str_0x20 *)("targetPos"));
-    gimmickBoxDrawFloat(0, 0xF, M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), f32 *, 0x68, destPos.x));
-    gimmickBoxDrawFloat(0, 0x10, M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), f32 *, 0x6C, destPos.y));
-    gimmickBoxDrawFloat(0, 0x11, M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), f32 *, 0x70, destPos.z));
+    gimmickBoxDrawFloat(0, 0xF, ((PeopleWorkLayout*)m_pChara)->destPos.x);
+    gimmickBoxDrawFloat(0, 0x10, ((PeopleWorkLayout*)m_pChara)->destPos.y);
+    gimmickBoxDrawFloat(0, 0x11, ((PeopleWorkLayout*)m_pChara)->destPos.z);
     gimmickBoxDrawString((s32)(0), (s32)(0x13), (_struct_motiontype_str_0x20 *)("randRadius"));
-    gimmickBoxDrawFloat(0, 0x14, M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), f32 *, 0x8C, randRadius));
+    gimmickBoxDrawFloat(0, 0x14, ((PeopleWorkLayout*)m_pChara)->randRadius);
     gimmickBoxDrawString((s32)(0), (s32)(0x16), (_struct_motiontype_str_0x20 *)("randCenter"));
-    gimmickBoxDrawFloat(0, 0x17, M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), f32 *, 0x80, basePos.x));
-    gimmickBoxDrawFloat(0, 0x18, M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), f32 *, 0x84, basePos.y));
-    gimmickBoxDrawFloat(0, 0x19, M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), f32 *, 0x88, basePos.z));
+    gimmickBoxDrawFloat(0, 0x17, ((PeopleWorkLayout*)m_pChara)->basePos.x);
+    gimmickBoxDrawFloat(0, 0x18, ((PeopleWorkLayout*)m_pChara)->basePos.y);
+    gimmickBoxDrawFloat(0, 0x19, ((PeopleWorkLayout*)m_pChara)->basePos.z);
     gimmickBoxDrawString((s32)(0), (s32)(0x1B), (_struct_motiontype_str_0x20 *)("distance: from pos to target"));
-    gimmickBoxDrawFloat(0, 0x1C, PSVECDistance((const register Vec*)(&M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), PWvec *, 0x68, destPos)), (const register Vec*)(peopleBiosGetPosPtr((PeopleWork*)((PeopleWork *) m_pChara)))));
-    if (GSmodelIsAnimating((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)))) {
+    gimmickBoxDrawFloat(0, 0x1C, PSVECDistance((const Vec*)(&((PeopleWorkLayout*)m_pChara)->destPos), (const Vec*)(peopleBiosGetPosPtr((PeopleWork*)((PeopleWork *) m_pChara)))));
+    if (GSmodelIsAnimating((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model))) {
         gimmickBoxDrawString(0, 3, (_struct_motiontype_str_0x20 *)("Animating"));
     } else {
         gimmickBoxDrawString(0, 3, (_struct_motiontype_str_0x20 *)("Anim Stopping"));
@@ -771,11 +771,11 @@ extern "C++" {
 static void _peopleViewerGetWalkAndRunInfo() {
     f32 sp8;
 
-    _setAnimIndex((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)), 5);
-    GSmodelGetFrameCount((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)), (f32*)(&sp8), (f32*)(NULL));
+    _setAnimIndex((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model), 5);
+    GSmodelGetFrameCount((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model), (f32*)(&sp8), (f32*)(NULL));
     sprintf((char*)(m_walk_parameter_str), (const char*)("WalkLength = %f frameTime = %f"), peopleInfoBiosGetWalkLength((PeopleInfo*)(m_pCharaInfo)), sp8);
-    _setAnimIndex((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)), 8);
-    GSmodelGetFrameCount((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)), (f32*)(&sp8), (f32*)(NULL));
+    _setAnimIndex((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model), 8);
+    GSmodelGetFrameCount((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model), (f32*)(&sp8), (f32*)(NULL));
     sprintf((char*)(m_run_parameter_str), (const char*)("RunLength = %f frameTime = %f"), peopleInfoBiosGetRunLength((PeopleInfo*)(m_pCharaInfo)), sp8);
 }
 }
@@ -785,8 +785,8 @@ void peopleViewerSetHeroPos() {
     GSvec heroPos;
     GSvec charaPos;
 
-    if (GSfloorGetCurrent() != 0xFA1U || m_pKen == NULL || M2C_NAMED(((PeopleWorkLayout*)(m_pKen)), void **, 0x8, model) == 0 || m_pChara == NULL ||
-        M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), void **, 0x8, model) == 0) {
+    if (GSfloorGetCurrent() != 0xFA1U || m_pKen == NULL || ((PeopleWorkLayout*)m_pKen)->model == 0 || m_pChara == NULL ||
+        ((PeopleWorkLayout*)m_pChara)->model == 0) {
         return;
     }
     if ((u32)(m_current_motion_type - 1) <= 2 || m_current_motion_type == 4) {
@@ -826,13 +826,13 @@ static void _peopleViewerMain() {
         temp_r31_2 = GSinputButtonsChanged(1);
         var_r3 = GSinputButtonsPressed(1);
         if (var_r3 & temp_r31_2 & 0x10) {
-            if ((u8) M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u8 *, 0x14D, f14D) != 0) {
+            if ((u8) ((PeopleWorkLayout*)m_pChara)->f14D != 0) {
                 peoplePartAnimationSpeakStop((tagPeopleWork*)(m_pChara));
             } else {
                 peoplePartAnimationSpeakStart((tagPeopleWork*)(m_pChara));
             }
             var_r3 = (u32) m_pChara;
-            m_b_speak_mode = M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u8 *, 0x14D, f14D);
+            m_b_speak_mode = ((PeopleWorkLayout*)m_pChara)->f14D;
         }
         temp_r3 = Hero::getHeroPtr();
         temp_r31_3 = ((Hero*)(temp_r3))->getFollowerGrpID();
@@ -845,8 +845,8 @@ static void _peopleViewerMain() {
         peopleSetFlagOff(0xFA1, 0, 0x400);
         if ((u8) m_b_change_chara != 0) {
             peopleReadObject(0xFA1, 0, char_tbl[m_char_number].unk4);
-            m_pCharaInfo = peopleInfoBiosGetPtr(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u32 *, 0x1C, objectID));
-            M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u8 *, 0x14C, f14C) = 0U;
+            m_pCharaInfo = peopleInfoBiosGetPtr(((PeopleWorkLayout*)m_pChara)->objectID);
+            ((PeopleWorkLayout*)m_pChara)->f14C = 0U;
             _peopleViewerGetWalkAndRunInfo();
             m_b_change_chara = 0;
             m_anim_number = 0;
@@ -855,8 +855,8 @@ static void _peopleViewerMain() {
         u8 cmpv = (u16)dbgMenuIsOpen();
         if (cmpv != 0) {
             m_b_play_stop = 1;
-            GSmodelStopAnimation((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pKen)), _GSmodel **, 0x8, model)));
-            GSmodelStopAnimation((_GSmodel*)(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model)));
+            GSmodelStopAnimation((_GSmodel*)(((PeopleWorkLayout*)m_pKen)->model));
+            GSmodelStopAnimation((_GSmodel*)(((PeopleWorkLayout*)m_pChara)->model));
         } else {
             switch (m_current_motion_type) {
             case 0:
@@ -877,7 +877,7 @@ static void _peopleViewerMain() {
                 } else {
                     peoplePartAnimationSpeakStop((tagPeopleWork*)(m_pChara));
                 }
-                if ((u8) M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u8 *, 0x14C, f14C) != 0) {
+                if ((u8) ((PeopleWorkLayout*)m_pChara)->f14C != 0) {
                     peoplePartAnimationBlinkStart((tagPeopleWork*)(m_pChara));
                 }
             }
@@ -893,7 +893,7 @@ static void _peopleViewerMain() {
             _peopleViewerFallMotion();
             break;
         }
-        if (((_GSmodel *) M2C_NAMED(((PeopleWorkLayout*)(m_pKen)), _GSmodel **, 0x8, model) != NULL) && ((_GSmodel *) M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), _GSmodel **, 0x8, model) != NULL)) {
+        if (((_GSmodel *) ((PeopleWorkLayout*)m_pKen)->model != NULL) && ((_GSmodel *) ((PeopleWorkLayout*)m_pChara)->model != NULL)) {
             GSvec pos;
             peopleBiosGetPos((PeopleWork*)m_pKen, &pos);
             _peopleViewerDrawParams();
@@ -936,7 +936,7 @@ static void _peopleViewerInit() {
             if (temp_r3_3 != NULL) {
                 peopleGetPos(0, 0x64, (GSvec*)(&init_hero_pos));
                 peopleGetRot(0, 0x64, (s32*)&init_hero_rot);
-                m_pCharaInfo = peopleInfoBiosGetPtr(M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), u32 *, 0x1C, objectID));
+                m_pCharaInfo = peopleInfoBiosGetPtr(((PeopleWorkLayout*)m_pChara)->objectID);
                 temp_f1 = gimmickBoxGetFrameCount((f32 *) m_pChara, 0x28);
                 m_fall_end_frame_count = temp_f1;
                 m_fall_end_anim_num = temp_f1;
@@ -1025,7 +1025,7 @@ static s32 _peopleViewerFallMotion() {
 
 extern "C++" {
 static void _peopleViewerInitChara() {
-    M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), s8 *, 0x54, moveType) = 0;
+    ((PeopleWorkLayout*)m_pChara)->moveType = 0;
     m_anim_number = 0;
     peoplePartAnimationBlinkStop((tagPeopleWork*)(m_pChara));
     peoplePartAnimationSpeakStop((tagPeopleWork*)(m_pChara));
@@ -1034,7 +1034,7 @@ static void _peopleViewerInitChara() {
     peopleSetRot(0xFA1, 0, &init_chara_rot);
     peopleSetPos(0, 0x64, (f32*)&init_hero_pos);
     peopleSetRot(0, 0x64, &init_hero_rot);
-    M2C_NAMED(((PeopleWorkLayout*)(m_pChara)), s8 *, 0x54, moveType) = 6;
+    ((PeopleWorkLayout*)m_pChara)->moveType = 6;
     static f32 degree = 0.0f;
     GSvec rot;
     rot.x = 0.0f;

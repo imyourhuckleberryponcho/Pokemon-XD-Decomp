@@ -1,76 +1,22 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/pxdvs/app/fight/fightData.h>
 #include <game/fightfloor.h>
 
 struct FightOutPokemon;
-struct FightJoutai {
-    u8 data[0x10];
-};
-
 struct Pokemon {
     u8 data[0xC4];
 };
+#define FIGHT_FLOOR_POKEMON Pokemon
+#include <game/pxdvs/app/fight/fightFloorData.h>
 
-class FIGHT_TRAINER {
-public:
-    u8 data[0x3744];
-};
-
-class FIGHT_SIDE {
-public:
-    u8 data[0x64];
-    FIGHT_TRAINER trainers[2];
-    u8 pad[4];
-};
-
-struct FightFloorStock {
-    Pokemon pokemon;
-    u8 ballID;
-    u8 pad[3];
-};
-
-class FIGHT_FLOOR {
-public:
-    u16 getTurnCount() const {
-        if (this == 0) {
-            return 0;
-        }
-        return turnCount;
+static inline u16 fightFloorTurnCount(const FIGHT_FLOOR* floor) {
+    if (floor == 0) {
+        return 0;
     }
-
-    FightJoutai joutai[1];
-    u16 turnCount;
-    u16 encountDataId;
-    FIGHT_SIDE sides[2];
-    FightOutPokemon* attackPokemon;
-    FightOutPokemon* defensePokemon;
-    FightOutPokemon* escapePokemon;
-    FightOutPokemon* irekaePokemon;
-    FightOutPokemon* kizetuPokemon;
-    FightOutPokemon* tuikakoukaPokemon;
-    FightOutPokemon* tokuseiPokemon;
-    FightOutPokemon* itemPokemon;
-    FightOutPokemon* appointPokemon;
-    void* appointTrainer;
-    void* appointWaza;
-    void* appointSide;
-    void* appointItem;
-    u32 wazakoukaMsgId;
-    u32 criticalMsgId;
-    u32 attackMsgId;
-    u32 appointMsgId;
-    u16 appointDataIds[4];
-    s16 fightPokemonEntryCnt;
-    FightOutPokemon* fightOutPokemon[8];
-    u16 firstAttackRnd;
-    u8 stockPokemonNum;
-    u8 padDE67;
-    FightFloorStock stock[6];
-};
-#ifndef __MWERKS__
-static_assert(sizeof(FIGHT_FLOOR) == FIGHT_FLOOR_SIZE, "FIGHT_FLOOR_SIZE (game/fightfloor.h)");
-#endif
+    return floor->turnCount;
+}
 
 extern "C" {
 
@@ -103,8 +49,8 @@ void fightFloorBiosSetEncountDataId(FIGHT_FLOOR*, u16);
 void fightFloorBiosSetTurnCount(FIGHT_FLOOR*, u16);
 
 void pokemonBiosCopy(Pokemon* dst, Pokemon* src);
-void fightMsgctrlSetValue(s32 id, u32 value);
-u32 GSmsgGetGSchar(u32 id);
+void fightMsgctrlSetValue(s32 id, GCuptr value);
+GCuptr GSmsgGetGSchar(u32 id);
 void* pokemonTokuseiDataBiosGetPtr(u16 id);
 u32 pokemonTokuseiDataBiosGetName(void* data);
 u32 itemDB_GetName(u16 id);
@@ -323,7 +269,7 @@ void fightFloor_SetAppointPokemonPtr(FIGHT_FLOOR* floor, FightOutPokemon* pokemo
     }
     if (pokemon != 0) {
         if (fightOutPokemonCheckValid(pokemon) == 1) {
-            fightMsgctrlSetValue(0x1E, (u32)pokemon);
+            fightMsgctrlSetValue(0x1E, (GCuptr)pokemon);
             fightMsgctrlSetValue(0x1C, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(pokemon)))));
         } else {
             fightMsgctrlSetValue(0x1E, 0);
@@ -367,7 +313,7 @@ void fightFloor_SetTuikakoukaPokemonPtr(FIGHT_FLOOR* floor, FightOutPokemon* pok
     }
     if (pokemon != 0) {
         if (fightOutPokemonCheckValid(pokemon) == 1) {
-            fightMsgctrlSetValue(0x12, (u32)pokemon);
+            fightMsgctrlSetValue(0x12, (GCuptr)pokemon);
             fightMsgctrlSetValue(0x1D, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(pokemon)))));
         } else {
             fightMsgctrlSetValue(0x12, 0);
@@ -418,11 +364,11 @@ void fightFloor_SetDefensePokemonPtr(FIGHT_FLOOR* floor, FightOutPokemon* pokemo
     }
     if (pokemon != 0) {
         if (fightOutPokemonCheckValid(pokemon) == 1) {
-            fightMsgctrlSetValue(0x10, (u32)pokemon);
+            fightMsgctrlSetValue(0x10, (GCuptr)pokemon);
             fightMsgctrlSetValue(0x1B, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(pokemon)))));
-            fightMsgctrlSetValue(0x42, (u32)pokemon);
-            fightMsgctrlSetValue(0x44, (u32)pokemon);
-            fightMsgctrlSetValue(0x43, (u32)pokemon);
+            fightMsgctrlSetValue(0x42, (GCuptr)pokemon);
+            fightMsgctrlSetValue(0x44, (GCuptr)pokemon);
+            fightMsgctrlSetValue(0x43, (GCuptr)pokemon);
         } else {
             fightMsgctrlSetValue(0x10, 0);
             fightMsgctrlSetValue(0x1B, 0);
@@ -460,11 +406,11 @@ void fightFloor_SetAttackPokemonPtr(FIGHT_FLOOR* floor, FightOutPokemon* pokemon
     }
     if (pokemon != 0) {
         if (fightOutPokemonCheckValid(pokemon) == 1) {
-            fightMsgctrlSetValue(0xF, (u32)pokemon);
+            fightMsgctrlSetValue(0xF, (GCuptr)pokemon);
             fightMsgctrlSetValue(0x1A, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(pokemon)))));
-            fightMsgctrlSetValue(0x1F, (u32)pokemon);
-            fightMsgctrlSetValue(0x21, (u32)pokemon);
-            fightMsgctrlSetValue(0x20, (u32)pokemon);
+            fightMsgctrlSetValue(0x1F, (GCuptr)pokemon);
+            fightMsgctrlSetValue(0x21, (GCuptr)pokemon);
+            fightMsgctrlSetValue(0x20, (GCuptr)pokemon);
         } else {
             fightMsgctrlSetValue(0xF, 0);
             fightMsgctrlSetValue(0x1A, 0);
@@ -1073,7 +1019,7 @@ PCRET(u16) fightFloor_GetTurnCount(FIGHT_FLOOR* floor) {
             return 0;
         }
     }
-    return floor->getTurnCount();
+    return fightFloorTurnCount(floor);
 }
 
 u8 fightFloor_GetIsJoutaiDataId(FIGHT_FLOOR* floor, u16 id) {

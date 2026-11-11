@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 
@@ -112,12 +113,16 @@ void pokemonSetStatus(void*, u16, u16, u16, u32);
 void pokemonCreate(void*, u16, u8, void*);
 StatusU32 gamedataGetStatus(void*, u32);
 void pokemonSetCatchStatus(void*, u32, u8, u32, u8, u32, void*);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuCloseCustom(s32, s32, s32);
 s32 menuOpen(s32, s32);
 u8 menuSubOpenNumberInput(u32, s32*, u8, s16, s16, bool);
 void menuSubCloseNumberInput(void);
-u32 GSmsgGetGSchar(u32);
+GCuptr GSmsgGetGSchar(u32);
 void pokemonSetTokuseiFlag(void*, u32);
 void pokemonWazaInit(void*, u16);
 void pokemonWazaCreate(void*, u16, u16);

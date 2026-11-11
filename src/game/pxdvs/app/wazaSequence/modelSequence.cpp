@@ -2,6 +2,8 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include "game/gc_fused.h"
 #include <game/ppcops.h>
 #include <game/gcdata.h>
 #include <game/hsdarchive.h>
@@ -416,8 +418,13 @@ public:
     _GSmodel* m_model;
     GSparticleBank* m_unk98;
     MotionSection* m_sections;
+#ifdef __MWERKS__
     u32 m_pachiruA;
     u32 m_pachiruB;
+#else
+    void* m_pachiruA;
+    void* m_pachiruB;
+#endif
     void* m_unkA8;
     void* m_unkAC;
     void* m_unkB0;
@@ -582,7 +589,7 @@ void sequenceAnimEndCallback(_GSmodel* model, _GSmodelAnimCBData* data) {
 }
 
 ModelSequence* New_ModelSequence(u16 id) {
-    ModelSequence* seq = new ModelSequence(id);
+    ModelSequence* seq = (GC_NEW_NOTE(sizeof(ModelSequence), 188) new ModelSequence(id));
     if (seq == 0) {
         return 0;
     }
@@ -596,7 +603,7 @@ ModelSequence* New_ModelSequence(u16 id) {
 }
 
 ModelSequence* New_ModelSequence(u16 id, u32 variant, bool rare) {
-    ModelSequence* seq = new ModelSequence(id, variant, rare);
+    ModelSequence* seq = (GC_NEW_NOTE(sizeof(ModelSequence), 188) new ModelSequence(id, variant, rare));
     if (seq == 0) {
         return 0;
     }
@@ -621,7 +628,7 @@ int ModelSequence::Load(u8* data, u32 id, u32 variant) {
     if (hdr->type == 0xC && hdr->size != 0) {
         data += 0x84;
         data += hdr->count * 0xD0;
-        data = (u8*)ALIGN32(data);
+        data = PC_PTR(u8*, ALIGN32(data));
         if (hdr->unk8 != 0) {
             hdr->particle = 0;
             data += ALIGN32(hdr->unk8);
@@ -997,7 +1004,7 @@ u8 ModelSequence::LoadData(u8* data) {
         }
     }
     data += m_modelID * 0xD0;
-    data = (u8*)ALIGN32(data);
+    data = PC_PTR(u8*, ALIGN32(data));
     u8* body = data;
     if (hdr->unk8 != 0) {
         m_unkB0 = GSmemAllocAlign(ALIGN32(hdr->unk8), 0x20);

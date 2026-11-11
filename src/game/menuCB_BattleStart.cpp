@@ -179,7 +179,7 @@ extern "C" {
 extern "C" {
 static void __sinit_menuCB_BattleStart_cpp() {
 }
-DECL_SECTION(".ctors") extern void* const __sinit_menuCB_BattleStart_cpp_reference = __sinit_menuCB_BattleStart_cpp;
+DECL_SECTION(".ctors") extern void* const __sinit_menuCB_BattleStart_cpp_reference = (void*)__sinit_menuCB_BattleStart_cpp;
 }
 
 extern "C" {

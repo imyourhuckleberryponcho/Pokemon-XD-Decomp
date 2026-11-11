@@ -231,6 +231,48 @@ static void _modelParseLoadEnvelopeMatrix(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pm
     }
 }
 
+static inline void _modelParseSetupMtx0(GSmtx* pmtx, GSmtx* stack) {
+    HSD_JObj* jobj = HSD_JObjGetCurrent();
+    void* markObj;
+    u32 mark;
+
+    HSD_PObjGetMtxMark(0, &markObj, &mark);
+    if (markObj != jobj || mark != 1) {
+        HSD_PObjSetMtxMark(0, jobj, 1);
+        PSMTXCopy(pmtx, &stack[0]);
+    }
+}
+
+static inline void _modelParseSetupMtx01(HSD_PObj* pobj, GSmtx* vmtx, GSmtx* pmtx, GSmtx* mtxStack) {
+    bool setup0 = false;
+    bool setup1 = false;
+    HSD_JObj* jobj = HSD_JObjGetCurrent();
+    void* markObj;
+    u32 mark;
+
+    HSD_PObjGetMtxMark(0, &markObj, &mark);
+    if (markObj != jobj && mark != 1) {
+        setup0 = true;
+    }
+    HSD_PObjSetMtxMark(0, jobj, 1);
+    HSD_PObjGetMtxMark(1, &markObj, &mark);
+    if (markObj != pobj->u.jobj && mark != 1) {
+        setup1 = true;
+    }
+    HSD_PObjSetMtxMark(1, pobj->u.jobj, 1);
+    if (setup0 || setup1) {
+        if (setup0) {
+            PSMTXCopy(pmtx, &mtxStack[0]);
+        }
+        if (setup1) {
+            GSmtx mtx;
+            HSD_JObjSetupMatrix(pobj->u.jobj);
+            PSMTXConcat(vmtx, &pobj->u.jobj->mtx, &mtx);
+            PSMTXCopy(&mtx, &mtxStack[1]);
+        }
+    }
+}
+
 static inline void _modelParseDObjDispBody(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx, bool rendering, GSmodelParseFunc func, void* arg) {
     HSD_PObj* pobj;
 
@@ -244,57 +286,14 @@ static inline void _modelParseDObjDispBody(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* p
             switch (pobj->flags & 0x3000) {
             case 0:
                 if (pobj->u.jobj == 0) {
-                    HSD_JObj* jobj = HSD_JObjGetCurrent();
-                    void* markObj;
-                    u32 mark;
-
-                    HSD_PObjGetMtxMark(0, &markObj, &mark);
-                    if (markObj != jobj || mark != 1) {
-                        HSD_PObjSetMtxMark(0, jobj, 1);
-                        PSMTXCopy(pmtx, &mtxStack[0]);
-                    }
+                    _modelParseSetupMtx0(pmtx, mtxStack);
                 } else {
-                    bool setup0 = false;
-                    bool setup1 = false;
-                    HSD_JObj* jobj = HSD_JObjGetCurrent();
-                    void* markObj;
-                    u32 mark;
-
-                    HSD_PObjGetMtxMark(0, &markObj, &mark);
-                    if (markObj != jobj && mark != 1) {
-                        setup0 = true;
-                    }
-                    HSD_PObjSetMtxMark(0, jobj, 1);
-                    HSD_PObjGetMtxMark(1, &markObj, &mark);
-                    if (markObj != pobj->u.jobj && mark != 1) {
-                        setup1 = true;
-                    }
-                    HSD_PObjSetMtxMark(1, pobj->u.jobj, 1);
-                    if (setup0 || setup1) {
-                        if (setup0) {
-                            PSMTXCopy(pmtx, &mtxStack[0]);
-                        }
-                        if (setup1) {
-                            GSmtx mtx;
-                            HSD_JObjSetupMatrix(pobj->u.jobj);
-                            PSMTXConcat(vmtx, &pobj->u.jobj->mtx, &mtx);
-                            PSMTXCopy(&mtx, &mtxStack[1]);
-                        }
-                    }
+                    _modelParseSetupMtx01(pobj, vmtx, pmtx, mtxStack);
                 }
                 break;
-            case 0x1000: {
-                HSD_JObj* jobj = HSD_JObjGetCurrent();
-                void* markObj;
-                u32 mark;
-
-                HSD_PObjGetMtxMark(0, &markObj, &mark);
-                if (markObj != jobj || mark != 1) {
-                    HSD_PObjSetMtxMark(0, jobj, 1);
-                    PSMTXCopy(pmtx, &mtxStack[0]);
-                }
+            case 0x1000:
+                _modelParseSetupMtx0(pmtx, mtxStack);
                 break;
-            }
             case 0x2000:
                 _modelParseLoadEnvelopeMatrix(pobj, vmtx, pmtx, mtxStack);
                 break;

@@ -200,6 +200,36 @@ static inline s32 pairSum(CReliveStage* s, s32 n) {
     return sum;
 }
 
+static inline s32 stageTempo(CReliveStage* st) {
+    s32 n;
+    s32 base;
+    s32 sum;
+    s32 i;
+    n = countDancers(st);
+    base = _tempoBase[n];
+    sum = 0;
+    for (i = 0; i < n; i++) {
+        s32 add;
+        s32 rel = pairAisyou(validOrNull(stageDancer(st, i)), validOrNull(stageDancer(st, (i + 1) % n)));
+        switch (rel) {
+        case -1:
+            add = 0;
+            break;
+        case 0:
+            add = 0;
+            break;
+        case 1:
+            add = _tempoNormal[n];
+            break;
+        case 2:
+            add = _tempoGood[n];
+            break;
+        }
+        sum += add;
+    }
+    return sum + base;
+}
+
 #define VISITOR_OR_NULL(s) (pokemonCheckValid(stageVisitor(s)) ? stageVisitor(s) : 0)
 
 static inline s32 findEmptySlot(CReliveStage* s) {
@@ -419,10 +449,7 @@ bool CReliveStage::isLugiaReliveReady() {
 
 s32 CReliveStage::getState() {
     if (isReliveReady()) return 3;
-    s32 n = countDancers(this);
-    s32 base = _tempoBase[n];
-    s32 sum = pairSum(this, n);
-    s32 total = sum + base;
+    s32 total = stageTempo(this);
     if (total == 0) return 0;
     s32 r = 1;
     if (total == 0x60) r = 2;
@@ -446,11 +473,9 @@ s32 CReliveHall::getReliveGiveStageQuantity() {
     s32 count = 0;
     for (s32 i = 0; i < 9; i++) {
         CReliveStage* st = &hallPtr()->stage[i];
-        s32 n = countDancers(st);
-        s32 base = _tempoBase[n];
-        s32 sum = pairSum(st, n);
+        s32 t = stageTempo(st);
         u8 ok = 0;
-        if (st->isPokemonZokuseiAllUnique(false) && sum + base == 0x60) ok = 1;
+        if (st->isPokemonZokuseiAllUnique(false) && t == 0x60) ok = 1;
         if (ok != 0) count++;
     }
     return count;

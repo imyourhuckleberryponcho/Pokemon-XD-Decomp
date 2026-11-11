@@ -5,6 +5,7 @@
 #define HSD_FILE_NAME "generator.c"
 
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 
 
@@ -91,7 +92,13 @@ static const f32 generator_float_min[1] = { FLT_MIN };
 #define __float_min generator_float_min
 #endif
 
-inline float atan2fInline(float y, float x)
+#ifdef __MWERKS__
+#define PS_INLINE inline
+#else
+
+#define PS_INLINE static inline
+#endif
+PS_INLINE float atan2fInline(float y, float x)
 {
     float r = (float) atan2(y, x);
     return r;
@@ -166,7 +173,7 @@ void psInitGenerator(int num)
     activeGenerator = NULL;
     freeGenerator = NULL;
     for (i = num - 1; i >= 0; i--) {
-        gp = HSD_Alloc(sizeof(HSD_Generator));
+        gp = HSD_Alloc(GC_SIZE(sizeof(HSD_Generator), 184));
         memset(gp, 0, sizeof(HSD_Generator));
         if (gp == NULL) {
             return;
@@ -441,7 +448,7 @@ static f32 generateParticle(HSD_Generator* gp)
         cos_yaw = cosf(yaw);
 
         {
-            f32 projected_z = vel_norm.y * sin_yaw + vel_norm.z * cos_yaw;
+            f32 projected_z = GC_MADD(vel_norm.y, sin_yaw, vel_norm.z * cos_yaw);
 
             if (fabs(projected_z) < FLT_MIN) {
                 if (vel_norm.x >= 0.0f) {
@@ -483,7 +490,7 @@ static f32 generateParticle(HSD_Generator* gp)
             angle1 = atan2fInline(rot_mtx[1][2], rot_mtx[2][2]);
         }
         {
-            f32 comb = rot_mtx[1][2] * sinf(angle1) + rot_mtx[2][2] * cosf(angle1);
+            f32 comb = GC_MADD(rot_mtx[1][2], sinf(angle1), rot_mtx[2][2] * cosf(angle1));
 
             if (fabs(comb) < FLT_MIN) {
                 if (rot_mtx[0][2] >= 0.0f) {
@@ -513,7 +520,7 @@ static f32 generateParticle(HSD_Generator* gp)
             f32 step = (gp->aux.cone.maxAngle - min_a) / (f32) (s32) gp->count;
 
             angle_step = step;
-            cur_angle = step * rnd + min_a;
+            cur_angle = GC_MADD(step, rnd, min_a);
             break;
         }
         case 6:
@@ -523,7 +530,7 @@ static f32 generateParticle(HSD_Generator* gp)
             f32 step = (gp->aux.cone.maxAngle - min_a) / (f32) (s32) gp->count;
 
             angle_step = step;
-            cur_angle = step * rnd + min_a;
+            cur_angle = GC_MADD(step, rnd, min_a);
             break;
         }
         default:
@@ -569,9 +576,7 @@ static f32 generateParticle(HSD_Generator* gp)
                 } else {
                     f32 min_angle = gp->aux.cone.minAngle;
 
-                    cur_angle = (gp->aux.cone.maxAngle - min_angle) *
-                                    HSD_Randf() +
-                                min_angle;
+                    cur_angle = GC_MADD((gp->aux.cone.maxAngle - min_angle), HSD_Randf(), min_angle);
                     if (fabs(dist) < FLT_MIN) {
                         if (gp->aux.cone.height >= 0.0f) {
                             cone_angle = gp->angle;
@@ -592,9 +597,7 @@ static f32 generateParticle(HSD_Generator* gp)
                     cur_angle += angle_step;
                 } else {
                     cur_angle = gp->aux.cone.minAngle;
-                    cur_angle = (gp->aux.cone.maxAngle - cur_angle) *
-                                    HSD_Randf() +
-                                cur_angle;
+                    cur_angle = GC_MADD((gp->aux.cone.maxAngle - cur_angle), HSD_Randf(), cur_angle);
                     cone_angle = (f32) (M_PI_2 + gp->angle);
                 }
                 break;
@@ -605,9 +608,7 @@ static f32 generateParticle(HSD_Generator* gp)
                     cone_angle = radius * cone_angle;
                 } else {
                     cur_angle = gp->aux.cone.minAngle;
-                    cur_angle = (gp->aux.cone.maxAngle - cur_angle) *
-                                    HSD_Randf() +
-                                cur_angle;
+                    cur_angle = GC_MADD((gp->aux.cone.maxAngle - cur_angle), HSD_Randf(), cur_angle);
                     cone_angle = radius * gp->angle;
                 }
                 break;
@@ -750,11 +751,11 @@ static f32 generateParticle(HSD_Generator* gp)
                 f32 a2 = gp->aux.rect.z;
                 f32 b2 = gp->aux.rect.y;
                 f32 c2 = gp->aux.rect.x;
-                f32 r0 = 1.0f / (c2 * (b2 + a2) + b2 * a2);
+                f32 r0 = 1.0f / (GC_MADD(c2, (b2 + a2), b2 * a2));
 
                 if (rnd < r0 * (c2 * b2)) {
                     emit_pos.z = emit_pos.z > 0.5f ? 1.0f : 0.0f;
-                } else if (rnd > 1.0f - r0 * (c2 * a2)) {
+                } else if (rnd > GC_MSUBR(1.0f, r0, (c2 * a2))) {
                     emit_pos.y = emit_pos.y > 0.5f ? 1.0f : 0.0f;
                 } else {
                     emit_pos.x = emit_pos.x > 0.5f ? 1.0f : 0.0f;
@@ -767,15 +768,9 @@ static f32 generateParticle(HSD_Generator* gp)
             emit_pos.y -= 0.5f;
             emit_pos.z -= 0.5f;
 
-            tmpvec.x = gp->aux.rect.xx * emit_pos.x +
-                       gp->aux.rect.yx * emit_pos.y +
-                       gp->aux.rect.zx * emit_pos.z;
-            tmpvec.y = gp->aux.rect.xy * emit_pos.x +
-                       gp->aux.rect.yy * emit_pos.y +
-                       gp->aux.rect.zy * emit_pos.z;
-            tmpvec.z = gp->aux.rect.xz * emit_pos.x +
-                       gp->aux.rect.yz * emit_pos.y +
-                       gp->aux.rect.zz * emit_pos.z;
+            tmpvec.x = GC_MADDR(GC_MADD(gp->aux.rect.xx, emit_pos.x, gp->aux.rect.yx * emit_pos.y), gp->aux.rect.zx, emit_pos.z);
+            tmpvec.y = GC_MADDR(GC_MADD(gp->aux.rect.xy, emit_pos.x, gp->aux.rect.yy * emit_pos.y), gp->aux.rect.zy, emit_pos.z);
+            tmpvec.z = GC_MADDR(GC_MADD(gp->aux.rect.xz, emit_pos.x, gp->aux.rect.yz * emit_pos.y), gp->aux.rect.zz, emit_pos.z);
 
             PSMTXMultVec(rot_mtx, &tmpvec, &emit_pos);
             emit_pos.x += gp->pos.x;
@@ -841,9 +836,9 @@ static f32 generateParticle(HSD_Generator* gp)
                 vec.z *= scale;
             }
 
-            emit_pos.x = dist * emit_pos.x + gp->pos.x;
-            emit_pos.y = dist * emit_pos.y + gp->pos.y;
-            emit_pos.z = dist * emit_pos.z + gp->pos.z;
+            emit_pos.x = GC_MADD(dist, emit_pos.x, gp->pos.x);
+            emit_pos.y = GC_MADD(dist, emit_pos.y, gp->pos.y);
+            emit_pos.z = GC_MADD(dist, emit_pos.z, gp->pos.z);
 
             psGenerateParticle(gp->linkNo, gp->bank, 0, gp->kind,
                                gp->texGroup, gp->cmdList, gp->life, 0,
@@ -887,7 +882,7 @@ void psExecGenerator(int mask)
             if (gp->random < 0.0F) {
                 gp->count = gp->count - gp->random;
             } else {
-                gp->count = gp->random * HSD_Randf() + gp->count;
+                gp->count = GC_MADD(gp->random, HSD_Randf(), gp->count);
             }
             if (gp->count >= 1.0F) {
                 gp->count = generateParticle(gp);
@@ -916,7 +911,7 @@ static inline HSD_Generator* allocGenerator(void)
     HSD_Generator* gp;
 
     if (freeGenerator == NULL) {
-        freeGenerator = HSD_Alloc(sizeof(HSD_Generator));
+        freeGenerator = HSD_Alloc(GC_SIZE(sizeof(HSD_Generator), 184));
         memset(freeGenerator, 0, sizeof(HSD_Generator));
     }
     gp = freeGenerator;

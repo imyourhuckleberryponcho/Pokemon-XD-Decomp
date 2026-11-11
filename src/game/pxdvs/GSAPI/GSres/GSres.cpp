@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 #pragma pool_strings off
 
 class GSmemPoolAllocator {
@@ -278,7 +279,7 @@ void* GSresAllocResource(u32 size, u32 grp, u32 id, resFreeFunc freeFunc) {
 }
 
 void GSresInit(u32 count) {
-    _resEntryAllocator = GSmemCreatePool(count, sizeof(_resEntry));
+    _resEntryAllocator = GSmemCreatePool(count, GC_SIZE(sizeof(_resEntry), 28));
 }
 
 }

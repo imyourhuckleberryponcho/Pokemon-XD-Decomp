@@ -4,12 +4,14 @@
 #define HSD_FILE_NAME "fobj.c"
 
 #include <game/ppcops.h>
+#include "game/gc_fused.h"
 #include <sysdolphin/baselib/fobj.h>
 
 #include <string.h>
 
 #include <sysdolphin/baselib/debug.h>
 #include <sysdolphin/baselib/spline.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -328,7 +330,7 @@ inline void FObjUpdateAnim(HSD_FObj* fobj, void* obj, HSD_ObjUpdateFunc obj_upda
                 fobj->p0 = fobj->p1;
             }
         }
-        fobjdata.fv = fobj->d0 * fobj->time + fobj->p0;
+        fobjdata.fv = GC_MADD(fobj->d0, fobj->time, fobj->p0);
         break;
     case HSD_A_OP_SPL0:
     case HSD_A_OP_SPL:
@@ -355,7 +357,7 @@ HSD_ObjAllocData* HSD_FObjGetAllocData(void)
 
 void HSD_FObjInitAllocData(void)
 {
-    HSD_ObjAllocInit(HSD_FObjGetAllocData(), sizeof(HSD_FObj), 4);
+    HSD_ObjAllocInit(HSD_FObjGetAllocData(), GC_SIZE(sizeof(HSD_FObj), 48), 4);
 }
 
 void HSD_FObjRemove(HSD_FObj* fobj)
@@ -528,7 +530,7 @@ HSD_FObj* HSD_FObjLoadDesc(HSD_FObjDesc* desc)
 HSD_FObj* HSD_FObjAlloc(void)
 {
     HSD_FObj* new;
-    void* pool = GSmemGetSysdolAllocator(sizeof(HSD_FObj));
+    void* pool = GC_SYSDOL_ALLOCATOR(sizeof(HSD_FObj), 48);
     if (pool != NULL && GSmemGetFreePool(pool) != 0) {
         new = GSmemAllocPool(pool);
         HSD_ASSERT(767, new);
@@ -543,7 +545,7 @@ HSD_FObj* HSD_FObjAlloc(void)
 
 void HSD_FObjFree(HSD_FObj* fobj)
 {
-    void* pool = GSmemGetSysdolAllocator(sizeof(HSD_FObj));
+    void* pool = GC_SYSDOL_ALLOCATOR(sizeof(HSD_FObj), 48);
     if (pool != NULL && GSmemIsRegistrationPool(pool, fobj)) {
         GSmemFreePool(pool, fobj);
     } else {

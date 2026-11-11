@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/gsvfarray.h>
 #include <game/pecontainer.h>
@@ -596,13 +597,14 @@ extern "C++" {
 extern "C++" {
 inline bool peDistortionContainer::updateNode(peNodeView* node, f32 dt) {
     char* buf = (char*)(&bufA)[cur];
+    peDLView* d = (peDLView*)dl[cur];
     peDistortionNodeData* n = (peDistortionNodeData*)node;
     peDistortionDef* p = (peDistortionDef*)data;
     peEmitterNode* e = emitter;
     if (buf == NULL) {
         return false;
     }
-    if ((((peDLView*)dl[cur])->flags & 1) != 1) {
+    if ((d->flags & 1) != 1) {
         return false;
     }
     if (!((peNode*)n)->Update(e, dt)) {
@@ -653,20 +655,23 @@ u16 peDistortionContainer::Emit(unsigned short count) {
     if (!started) {
         return 0;
     }
+    u32 flags;
+    peDistortionDefE* p;
     peDLView* d;
     u16 left = CreateNodes(count);
     _EmitParamsD* params = (_EmitParamsD*)g_emitParams;
     peNodeView* node = (peNodeView*)activeList;
-    u32 flags;
+    peNodeView* next;
     u16 created = left;
     while (left != 0) {
-        peDistortionDefE* p = (peDistortionDefE*)data;
-        peNodeView* next = node->next;
+        p = (peDistortionDefE*)data;
+        next = node->next;
         d = (peDLView*)dl[cur];
+        peEmitterNode* em = emitter;
         flags = p->flags;
         if ((d->flags & 1) == 1) {
             peDistortionNodeData* n = (peDistortionNodeData*)node;
-            ((peNode*)n)->Start(emitter, (_EmitParams*)params);
+            ((peNode*)n)->Start(em, (_EmitParams*)params);
             f32 r = HSD_Randf();
             n->sizeX = p->sizeXRange * r;
             n->sizeY = p->sizeYRange * r;
@@ -681,7 +686,7 @@ u16 peDistortionContainer::Emit(unsigned short count) {
                 n->spin |= 1;
             }
             n->rotOffset = p->rotBase;
-            n->rotSpeed = HSD_Randf() * p->spinRange + p->spinBase;
+            n->rotSpeed = GC_FUSED(HSD_Randf(), p->spinRange) + p->spinBase;
             {
                 u16 base = n->index * 13;
                 u16 off = n->index * 4;

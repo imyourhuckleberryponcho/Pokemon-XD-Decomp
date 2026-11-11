@@ -16,6 +16,7 @@ struct PokemonDataWaza;
 struct PokemonWaza;
 typedef struct PokemonGrowDataBios PokemonGrowDataBios;
 #include <game/pxdvs/app/pokemon/pokemonSeikaku.h>
+#include <game/gcptr.h>
 typedef struct PokemonSeikakuDataBios PokemonSeikakuDataBios;
 typedef struct PokemonSeikakuRateBios PokemonSeikakuRateBios;
 

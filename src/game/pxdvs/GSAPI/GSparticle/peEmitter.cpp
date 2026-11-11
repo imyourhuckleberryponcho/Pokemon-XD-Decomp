@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/pecontainer.h>
 #ifndef M2C_MACROS_H
@@ -436,7 +437,7 @@ enum GSgfxLayerType { GSgfxLayerType_draft_dummy };
 #define PEN(x, T, off, m) (*(T)&((peEmitterNodeE*)(x))->m)
 #define PECR PEC
 #define PENR PEN
-#define PE_EMITTER_NODE_SIZE sizeof(peEmitterNodeE)
+#define PE_EMITTER_NODE_SIZE PE_NODE_SIZE(0x104, peEmitterNodeE)
 #endif
 inline peEmitterContainer::peEmitterContainer(peEmitterNode* e, _peEmitter* em, unsigned short n) : peContainer(e, PE_EMITTER_NODE_SIZE, n) {
     peEmitterNode* node;
@@ -593,7 +594,7 @@ void peEmitterContainer::Update(float dt) {
         }
     }
     if (PECR(this, u8*, 0x19, started) != 0 && (*PECR(this, u32**, 0x20, data) & 0x40000) && PECR(this, u16*, 0x14, count) >= 2) {
-        for (node = *(peNode**)(PECR(this, u8**, 0x10, activeList) + 0x28); node != NULL; node = next) {
+        for (node = PENR(PECR(this, peNode**, 0x10, activeList), peNode**, 0x28, slot28); node != NULL; node = next) {
             depth = PENR(node, f32*, 0xF8, depth);
             pos = node;
             for (prev = PENR(node, peNode**, 0x2C, slot2C); prev != NULL && PENR(prev, f32*, 0xF8, depth) < depth;
@@ -995,9 +996,9 @@ void peEmitterNode::GetPositionParameter(GSvec* outPos, GSvec* outDir, _pePositi
             peMtxQuat(m0, &q);
             mtxMultVecSRE((Vec*)outPos, m0, GC_VEC3P(Vec, &fn->sphere.axis));
             if (fn->flags & 0x20) {
-                s = t * fn->sphere.radRange + fn->sphere.radBase;
+                s = GC_FUSED(t, fn->sphere.radRange) + fn->sphere.radBase;
             } else {
-                s = fn->sphere.radRange * HSD_Randf() + fn->sphere.radBase;
+                s = GC_FUSED(fn->sphere.radRange, HSD_Randf()) + fn->sphere.radBase;
             }
             PSVECScale((Vec*)outPos, (Vec*)outPos, s);
         } else {
@@ -1026,9 +1027,9 @@ void peEmitterNode::GetPositionParameter(GSvec* outPos, GSvec* outDir, _pePositi
         f32 a;
         f32 s;
         if (fn->flags & 0x40) {
-            a = fn->ring.angRange * (fn->ring.angSpeed * t) + fn->ring.angBase;
+            a = GC_FUSED(fn->ring.angRange, (fn->ring.angSpeed * t)) + fn->ring.angBase;
         } else {
-            a = fn->ring.angRange * HSD_Randf() + fn->ring.angBase;
+            a = GC_FUSED(fn->ring.angRange, HSD_Randf()) + fn->ring.angBase;
         }
         C_QUATRotAxisRad(&q, GC_VEC3P(Vec, &fn->ring.axis), a);
         peMtxQuat(m1, &q);
@@ -1043,9 +1044,9 @@ void peEmitterNode::GetPositionParameter(GSvec* outPos, GSvec* outDir, _pePositi
         peMtxQuat(m2, &q);
         peMtxMultVecSR(m2, (Vec*)outDir, (Vec*)outDir);
         if (fn->flags & 0x20) {
-            s = t * fn->ring.radRange + fn->ring.radBase;
+            s = GC_FUSED(t, fn->ring.radRange) + fn->ring.radBase;
         } else {
-            s = fn->ring.radRange * HSD_Randf() + fn->ring.radBase;
+            s = GC_FUSED(fn->ring.radRange, HSD_Randf()) + fn->ring.radBase;
         }
         vecScaleE((Vec*)outPos, (Vec*)outDir, s);
         return;
@@ -1064,9 +1065,9 @@ void peEmitterNode::GetPositionParameter(GSvec* outPos, GSvec* outDir, _pePositi
         peMtxQuat(m3, &q);
         mtxMultVecSRE((Vec*)outPos, m3, GC_VEC3P(Vec, &fn->line.axis));
         if (fn->flags & 0x20) {
-            s = t * fn->line.radRange + fn->line.radBase;
+            s = GC_FUSED(t, fn->line.radRange) + fn->line.radBase;
         } else {
-            s = fn->line.radRange * HSD_Randf() + fn->line.radBase;
+            s = GC_FUSED(fn->line.radRange, HSD_Randf()) + fn->line.radBase;
         }
         PSVECScale((Vec*)outPos, (Vec*)outPos, s);
         PSVECAdd((Vec*)outPos, GC_VEC3P(Vec, &fn->line.center), (Vec*)outPos);
@@ -1301,11 +1302,11 @@ void peEmitterNode::Start(peEmitterNode* parent, _peEmitter* em, _EmitParams* pa
     }
     if ((dflags & 0x80) != 0x80) {
         f32 r = HSD_Randf();
-        self->spin.x = def->spinRange.x * r + def->spinBase.x;
+        self->spin.x = GC_FUSED(def->spinRange.x, r) + def->spinBase.x;
         r = HSD_Randf();
-        self->spin.y = def->spinRange.y * r + def->spinBase.y;
+        self->spin.y = GC_FUSED(def->spinRange.y, r) + def->spinBase.y;
         r = HSD_Randf();
-        self->spin.z = def->spinRange.z * r + def->spinBase.z;
+        self->spin.z = GC_FUSED(def->spinRange.z, r) + def->spinBase.z;
     }
     self->scaleBase.x = def->scale.x;
     self->scaleBase.y = def->scale.y;
@@ -1453,33 +1454,33 @@ void peEmitterNode::Init(_peEmitter* em) {
             case 0: {
                 _peEmitter* sub = (_peEmitter*)data;
                 if (((peEmitterDefE*)sub)->items != NULL) {
-                    c = new peEmitterContainer(this, sub, n);
+                    c = (GC_NEW_NOTE(sizeof(peEmitterContainer), 36) new peEmitterContainer(this, sub, n));
                 }
                 break;
             }
             case 1:
                 if (*(s32*)((u8*)data + 0x54) != 0) {
-                    c = new peParticleContainer(this, (_peParticle*)data, n);
+                    c = (GC_NEW_NOTE(sizeof(peParticleContainer), 124) new peParticleContainer(this, (_peParticle*)data, n));
                 }
                 break;
             case 6:
                 if (*(s32*)((u8*)data + 0x1C) != 0) {
-                    c = new peParticleStripContainer(this, (_peParticleStrip*)data, n);
+                    c = (GC_NEW_NOTE(sizeof(peParticleStripContainer), 96) new peParticleStripContainer(this, (_peParticleStrip*)data, n));
                 }
                 break;
             case 3:
                 if (*(s32*)((u8*)data + 0x60) != 0) {
-                    c = new peDistortionContainer(this, (_peDistortion*)data, n);
+                    c = (GC_NEW_NOTE(sizeof(peDistortionContainer), 120) new peDistortionContainer(this, (_peDistortion*)data, n));
                 }
                 break;
             case 2:
                 if (*(s32*)((u8*)data + 0x4C) != 0) {
-                    c = new peModelContainer(this, (_peModel*)data, n);
+                    c = (GC_NEW_NOTE(sizeof(peModelContainer), 36) new peModelContainer(this, (_peModel*)data, n));
                 }
                 break;
             case 4:
                 if (*(s32*)((u8*)data + 0x74) != 0) {
-                    c = new peShapeContainer(this, (_peShape*)data, n);
+                    c = (GC_NEW_NOTE(sizeof(peShapeContainer), 36) new peShapeContainer(this, (_peShape*)data, n));
                 }
                 break;
             }

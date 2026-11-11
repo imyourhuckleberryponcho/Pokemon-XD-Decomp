@@ -1,18 +1,8 @@
 #include <dolphin/types.h>
 #include <game/shared/menu_work.h>
+#include <game/menuCBWork.h>
 
 #pragma peephole off
-
-struct CBTrainer {
-    u8 unk0[0x24];
-    s32 gba;
-    u8 unk28[0x1320 - 0x28];
-};
-
-struct CB {
-    u8 unk0[0x4C98];
-    CBTrainer trainers[4];
-};
 
 struct MenuSpriteVal {
     s16 unk0;
@@ -34,12 +24,12 @@ struct MenuStack {
 
 extern "C" {
 
-extern CB _CB;
+extern _MENUCBWORK _CB;
 
 s32 winMsgCheck(void);
 void winMsgClose(s32);
 void winMsgOpen(s32, s32 msgID, s32, s32);
-BOOL menuCBTrainerBios_GetHomePlace(CBTrainer* trainer);
+BOOL menuCBTrainerBios_GetHomePlace(MenuCBTrainer* trainer);
 bool gbaCommandIsConnected(s32 gba);
 MenuSpriteVal* menuSpriteBiosGetValPtr(void* sprite);
 s32 windowGetActiveID(void);
@@ -65,8 +55,8 @@ void menuCB_MessageDispOn(s32 msgID, s32 arg1) {
 s32 menuCB_GetDisconnectedGBA(void) {
     u32 i;
     for (i = 0; i < 4; i++) {
-        s32 gba = _CB.trainers[i].gba;
-        if (gba != 0 && menuCBTrainerBios_GetHomePlace(&_CB.trainers[i]) && !gbaCommandIsConnected(gba)) {
+        s32 gba = _CB.trainerOrg[i].controllerId;
+        if (gba != 0 && menuCBTrainerBios_GetHomePlace(&_CB.trainerOrg[i]) && !gbaCommandIsConnected(gba)) {
             return gba;
         }
     }

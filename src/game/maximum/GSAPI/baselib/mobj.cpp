@@ -39,6 +39,7 @@
 
 
 #include <string.h>
+#include "game/gcdata.h"
 #ifndef __MWERKS__
 void HSD_StateInitTev(void);
 void HSD_TObjAddNext(HSD_TObj* tobj, HSD_TObj* next);
@@ -750,7 +751,7 @@ void MObjAmnesia(HSD_ClassInfo* info) {
 
 void MObjInfoInit(void) {
     hsdInitClassInfo((HSD_ClassInfo*)&hsdMObj, &hsdClass,
-                    "sysdolphin_base_library", "hsd_mobj", sizeof(HSD_MObjInfo), sizeof(HSD_MObj));
+                    "sysdolphin_base_library", "hsd_mobj", sizeof(HSD_MObjInfo), GC_CLASS_SIZE(sizeof(HSD_MObj), 32));
     hsdMObj.parent.release = MObjRelease;
     hsdMObj.parent.amnesia = MObjAmnesia;
     hsdMObj.setup = HSD_MObjSetup;

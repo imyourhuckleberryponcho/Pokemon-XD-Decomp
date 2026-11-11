@@ -1,53 +1,15 @@
 #include <dolphin/types.h>
+#include <game/fightfloor.h>
 #include <game/pxdvs/app/fight/fightData.h>
 
-struct FightJoutai {
-    u8 unk0[0x10];
-};
-
-struct FightSide {
-    u8 unk0[0x6EF0];
-};
-
-struct FightFloor {
-    FightJoutai joutai[1];
-    u16 turnCount;
-    u16 encountDataId;
-    FightSide sides[2];
-    void* attackPokemonPtr;
-    void* defensePokemonPtr;
-    void* escapePokemonPtr;
-    void* irekaePokemonPtr;
-    void* kizetuPokemonPtr;
-    void* tuikakoukaPokemonPtr;
-    void* tokuseiPokemonPtr;
-    void* itemPokemonPtr;
-    void* appointPokemonPtr;
-    void* appointTrainerPtr;
-    void* appointWazaPtr;
-    void* appointSidePtr;
-    void* appointItemPtr;
-    u32 attackMsgId;
-    u32 criticalMsgId;
-    u32 wazakoukaMsgId;
-    u32 appointMsgId;
-    u16 appointPokemonDataId;
-    u16 appointWazaDataId;
-    u16 appointItemDataId;
-    u16 appointTokuseiDataId;
-    s16 fightPokemonEntryCnt;
-    u8 unkDE42[0x2];
-    void* fightOutPokemonPtrAry[8];
-    u16 firstAttackRnd;
-    u8 unkDE66[0x4B2];
-};
+#include <game/pxdvs/app/fight/fightFloorData.h>
 
 extern "C" {
 
 extern u32 encount_floor_id;
 extern u32* fight_floor_data_number;
 extern FightFloorData* fight_floor_data;
-extern FightFloor fight_floor;
+extern FIGHT_FLOOR fight_floor;
 
 void fightFloorBiosSetEncountFloorId(u32 id) {
     encount_floor_id = id;
@@ -57,115 +19,115 @@ u32 fightFloorBiosGetEncountFloorId(void) {
     return encount_floor_id;
 }
 
-void fightFloorBiosSetItemPokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetItemPokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->itemPokemonPtr = value;
+        p->itemPokemon = value;
     }
 }
 
-void* fightFloorBiosGetItemPokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetItemPokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->itemPokemonPtr;
+    return p->itemPokemon;
 }
 
-void fightFloorBiosSetTokuseiPokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetTokuseiPokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->tokuseiPokemonPtr = value;
+        p->tokuseiPokemon = value;
     }
 }
 
-void* fightFloorBiosGetTokuseiPokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetTokuseiPokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->tokuseiPokemonPtr;
+    return p->tokuseiPokemon;
 }
 
-void fightFloorBiosSetTuikakoukaPokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetTuikakoukaPokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->tuikakoukaPokemonPtr = value;
+        p->tuikakoukaPokemon = value;
     }
 }
 
-void* fightFloorBiosGetTuikakoukaPokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetTuikakoukaPokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->tuikakoukaPokemonPtr;
+    return p->tuikakoukaPokemon;
 }
 
-void fightFloorBiosSetKizetuPokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetKizetuPokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->kizetuPokemonPtr = value;
+        p->kizetuPokemon = value;
     }
 }
 
-void* fightFloorBiosGetKizetuPokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetKizetuPokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->kizetuPokemonPtr;
+    return p->kizetuPokemon;
 }
 
-void fightFloorBiosSetFirstAttackRnd(FightFloor* p, u16 value) {
+void fightFloorBiosSetFirstAttackRnd(FIGHT_FLOOR* p, u16 value) {
     if (p != NULL) {
         p->firstAttackRnd = value;
     }
 }
 
-u16 fightFloorBiosGetFirstAttackRnd(FightFloor* p) {
+u16 fightFloorBiosGetFirstAttackRnd(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->firstAttackRnd;
 }
 
-void fightFloorBiosSetFightOutPokemonPtrAryPtr(FightFloor* p, void** ary) {
+void fightFloorBiosSetFightOutPokemonPtrAryPtr(FIGHT_FLOOR* p, FightOutPokemon** ary) {
     u16 i;
     if (p == NULL) {
         return;
     }
     for (i = 0; i < 8; i++) {
-        p->fightOutPokemonPtrAry[i] = ary[i];
+        p->fightOutPokemon[i] = ary[i];
     }
 }
 
-void** fightFloorBiosGetFightOutPokemonPtrAryPtr(FightFloor* p) {
+FightOutPokemon** fightFloorBiosGetFightOutPokemonPtrAryPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return NULL;
     }
-    return p->fightOutPokemonPtrAry;
+    return p->fightOutPokemon;
 }
 
-void fightFloorBiosSetFightOutPokemonPtrAry(FightFloor* p, u16 index, void* pokemon) {
+void fightFloorBiosSetFightOutPokemonPtrAry(FIGHT_FLOOR* p, u16 index, FightOutPokemon* pokemon) {
     if (p == NULL) {
         return;
     }
     if (index >= 8) {
         return;
     }
-    p->fightOutPokemonPtrAry[index] = pokemon;
+    p->fightOutPokemon[index] = pokemon;
 }
 
-void* fightFloorBiosGetFightOutPokemonPtrAry(FightFloor* p, u16 index) {
+FightOutPokemon* fightFloorBiosGetFightOutPokemonPtrAry(FIGHT_FLOOR* p, u16 index) {
     if (p == NULL) {
         return NULL;
     }
     if (index >= 8) {
         return NULL;
     }
-    return p->fightOutPokemonPtrAry[index];
+    return p->fightOutPokemon[index];
 }
 
-void fightFloorBiosSetFightPokemonEntryCnt(FightFloor* p, s16 value) {
+void fightFloorBiosSetFightPokemonEntryCnt(FIGHT_FLOOR* p, s16 value) {
     if (p != NULL) {
         p->fightPokemonEntryCnt = value;
     }
 }
 
-s16 fightFloorBiosGetFightPokemonEntryCnt(FightFloor* p) {
+s16 fightFloorBiosGetFightPokemonEntryCnt(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
@@ -277,240 +239,240 @@ FightFloorData* fightFloorDataBiosGetPtr(u16 id) {
     return &fight_floor_data[id];
 }
 
-void fightFloorBiosSetAppointTokuseiDataId(FightFloor* p, u16 value) {
+void fightFloorBiosSetAppointTokuseiDataId(FIGHT_FLOOR* p, u16 value) {
     if (p != NULL) {
         p->appointTokuseiDataId = value;
     }
 }
 
-void fightFloorBiosSetAppointItemDataId(FightFloor* p, u16 value) {
+void fightFloorBiosSetAppointItemDataId(FIGHT_FLOOR* p, u16 value) {
     if (p != NULL) {
         p->appointItemDataId = value;
     }
 }
 
-void fightFloorBiosSetAppointWazaDataId(FightFloor* p, u16 value) {
+void fightFloorBiosSetAppointWazaDataId(FIGHT_FLOOR* p, u16 value) {
     if (p != NULL) {
         p->appointWazaDataId = value;
     }
 }
 
-void fightFloorBiosSetAppointPokemonDataId(FightFloor* p, u16 value) {
+void fightFloorBiosSetAppointPokemonDataId(FIGHT_FLOOR* p, u16 value) {
     if (p != NULL) {
         p->appointPokemonDataId = value;
     }
 }
 
-void fightFloorBiosSetWazakoukaMsgId(FightFloor* p, u32 value) {
+void fightFloorBiosSetWazakoukaMsgId(FIGHT_FLOOR* p, u32 value) {
     if (p != NULL) {
         p->wazakoukaMsgId = value;
     }
 }
 
-void fightFloorBiosSetCriticalMsgId(FightFloor* p, u32 value) {
+void fightFloorBiosSetCriticalMsgId(FIGHT_FLOOR* p, u32 value) {
     if (p != NULL) {
         p->criticalMsgId = value;
     }
 }
 
-void fightFloorBiosSetAttackMsgId(FightFloor* p, u32 value) {
+void fightFloorBiosSetAttackMsgId(FIGHT_FLOOR* p, u32 value) {
     if (p != NULL) {
         p->attackMsgId = value;
     }
 }
 
-void fightFloorBiosSetAppointMsgId(FightFloor* p, u32 value) {
+void fightFloorBiosSetAppointMsgId(FIGHT_FLOOR* p, u32 value) {
     if (p != NULL) {
         p->appointMsgId = value;
     }
 }
 
-void fightFloorBiosSetAppointItemPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetAppointItemPtr(FIGHT_FLOOR* p, void* value) {
     if (p != NULL) {
-        p->appointItemPtr = value;
+        p->appointItem = value;
     }
 }
 
-void fightFloorBiosSetAppointSidePtr(FightFloor* p, void* value) {
+void fightFloorBiosSetAppointSidePtr(FIGHT_FLOOR* p, void* value) {
     if (p != NULL) {
-        p->appointSidePtr = value;
+        p->appointSide = value;
     }
 }
 
-void fightFloorBiosSetAppointWazaPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetAppointWazaPtr(FIGHT_FLOOR* p, void* value) {
     if (p != NULL) {
-        p->appointWazaPtr = value;
+        p->appointWaza = value;
     }
 }
 
-void fightFloorBiosSetAppointTrainerPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetAppointTrainerPtr(FIGHT_FLOOR* p, void* value) {
     if (p != NULL) {
-        p->appointTrainerPtr = value;
+        p->appointTrainer = value;
     }
 }
 
-void fightFloorBiosSetAppointPokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetAppointPokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->appointPokemonPtr = value;
+        p->appointPokemon = value;
     }
 }
 
-void fightFloorBiosSetIrekaePokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetIrekaePokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->irekaePokemonPtr = value;
+        p->irekaePokemon = value;
     }
 }
 
-void fightFloorBiosSetEscapePokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetEscapePokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->escapePokemonPtr = value;
+        p->escapePokemon = value;
     }
 }
 
-void fightFloorBiosSetDefensePokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetDefensePokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->defensePokemonPtr = value;
+        p->defensePokemon = value;
     }
 }
 
-void fightFloorBiosSetAttackPokemonPtr(FightFloor* p, void* value) {
+void fightFloorBiosSetAttackPokemonPtr(FIGHT_FLOOR* p, FightOutPokemon* value) {
     if (p != NULL) {
-        p->attackPokemonPtr = value;
+        p->attackPokemon = value;
     }
 }
 
-void fightFloorBiosSetEncountDataId(FightFloor* p, u16 value) {
+void fightFloorBiosSetEncountDataId(FIGHT_FLOOR* p, u16 value) {
     if (p != NULL) {
         p->encountDataId = value;
     }
 }
 
-void fightFloorBiosSetTurnCount(FightFloor* p, u16 value) {
+void fightFloorBiosSetTurnCount(FIGHT_FLOOR* p, u16 value) {
     if (p != NULL) {
         p->turnCount = value;
     }
 }
 
-u16 fightFloorBiosGetAppointTokuseiDataId(FightFloor* p) {
+u16 fightFloorBiosGetAppointTokuseiDataId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->appointTokuseiDataId;
 }
 
-u16 fightFloorBiosGetAppointItemDataId(FightFloor* p) {
+u16 fightFloorBiosGetAppointItemDataId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->appointItemDataId;
 }
 
-u16 fightFloorBiosGetAppointWazaDataId(FightFloor* p) {
+u16 fightFloorBiosGetAppointWazaDataId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->appointWazaDataId;
 }
 
-u16 fightFloorBiosGetAppointPokemonDataId(FightFloor* p) {
+u16 fightFloorBiosGetAppointPokemonDataId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->appointPokemonDataId;
 }
 
-u32 fightFloorBiosGetWazakoukaMsgId(FightFloor* p) {
+u32 fightFloorBiosGetWazakoukaMsgId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->wazakoukaMsgId;
 }
 
-u32 fightFloorBiosGetCriticalMsgId(FightFloor* p) {
+u32 fightFloorBiosGetCriticalMsgId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->criticalMsgId;
 }
 
-u32 fightFloorBiosGetAttackMsgId(FightFloor* p) {
+u32 fightFloorBiosGetAttackMsgId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->attackMsgId;
 }
 
-u32 fightFloorBiosGetAppointMsgId(FightFloor* p) {
+u32 fightFloorBiosGetAppointMsgId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->appointMsgId;
 }
 
-void* fightFloorBiosGetAppointItemPtr(FightFloor* p) {
+void* fightFloorBiosGetAppointItemPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->appointItemPtr;
+    return p->appointItem;
 }
 
-void* fightFloorBiosGetAppointSidePtr(FightFloor* p) {
+void* fightFloorBiosGetAppointSidePtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->appointSidePtr;
+    return p->appointSide;
 }
 
-void* fightFloorBiosGetAppointWazaPtr(FightFloor* p) {
+void* fightFloorBiosGetAppointWazaPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->appointWazaPtr;
+    return p->appointWaza;
 }
 
-void* fightFloorBiosGetAppointTrainerPtr(FightFloor* p) {
+void* fightFloorBiosGetAppointTrainerPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->appointTrainerPtr;
+    return p->appointTrainer;
 }
 
-void* fightFloorBiosGetAppointPokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetAppointPokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->appointPokemonPtr;
+    return p->appointPokemon;
 }
 
-void* fightFloorBiosGetIrekaePokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetIrekaePokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->irekaePokemonPtr;
+    return p->irekaePokemon;
 }
 
-void* fightFloorBiosGetEscapePokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetEscapePokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->escapePokemonPtr;
+    return p->escapePokemon;
 }
 
-void* fightFloorBiosGetDefensePokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetDefensePokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->defensePokemonPtr;
+    return p->defensePokemon;
 }
 
-void* fightFloorBiosGetAttackPokemonPtr(FightFloor* p) {
+FightOutPokemon* fightFloorBiosGetAttackPokemonPtr(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
-    return p->attackPokemonPtr;
+    return p->attackPokemon;
 }
 
-FightSide* fightFloorBiosGetFightSidePtr(FightFloor* p, u16 index) {
+FIGHT_SIDE* fightFloorBiosGetFightSidePtr(FIGHT_FLOOR* p, u16 index) {
     if (p == NULL) {
         return NULL;
     }
@@ -520,21 +482,21 @@ FightSide* fightFloorBiosGetFightSidePtr(FightFloor* p, u16 index) {
     return &p->sides[index];
 }
 
-u16 fightFloorBiosGetEncountDataId(FightFloor* p) {
+u16 fightFloorBiosGetEncountDataId(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->encountDataId;
 }
 
-u16 fightFloorBiosGetTurnCount(FightFloor* p) {
+u16 fightFloorBiosGetTurnCount(FIGHT_FLOOR* p) {
     if (p == NULL) {
         return 0;
     }
     return p->turnCount;
 }
 
-FightJoutai* fightFloorBiosGetJoutaiPtr(FightFloor* p, u16 index) {
+FightJoutai* fightFloorBiosGetJoutaiPtr(FIGHT_FLOOR* p, u16 index) {
     if (p == NULL) {
         return NULL;
     }
@@ -544,7 +506,7 @@ FightJoutai* fightFloorBiosGetJoutaiPtr(FightFloor* p, u16 index) {
     return &p->joutai[index];
 }
 
-FightFloor* fightFloorBiosGetFightFloorPtr(void) {
+FIGHT_FLOOR* fightFloorBiosGetFightFloorPtr(void) {
     return &fight_floor;
 }
 

@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/gcptr.h>
+#include "game/gcdata.h"
 #pragma peephole off
 
 extern "C" void GSthreadSwitch();
@@ -212,7 +213,7 @@ void FlashSystemPlay(u32 id) {
 s32 FlashSystemInit(u32 id, void* data) {
     FlashEntry* slot = flashFree();
     if (slot != 0) {
-        slot->menu = new FlashMenu();
+        slot->menu = (GC_NEW_NOTE(sizeof(FlashMenu), 320) new FlashMenu());
         s32 r = slot->menu->Init(data, id);
         slot->id = id;
         return r;

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -55,17 +56,26 @@ extern u16 numPeakPSAppSRT;
 
 static HSD_psAppSRT* freeAppSRT;
 static u16 psSizeofAppSRT;
+#ifndef __MWERKS__
+static u32 psSizeofAppSRTGC;
+#endif
 
 s32 psInitAppSRT(s32 num, u32 size) {
     s32 i;
     HSD_psAppSRT* srt;
 
+#ifndef __MWERKS__
+    psSizeofAppSRTGC = size;
+    if (size < sizeof(HSD_psAppSRT)) {
+        size = sizeof(HSD_psAppSRT);
+    }
+#endif
     numActivePSAppSRT = 0;
     numPeakPSAppSRT = 0;
     psSizeofAppSRT = size;
     freeAppSRT = NULL;
     for (i = 0; i < num; i++) {
-        srt = HSD_Alloc(size);
+        srt = HSD_Alloc(GC_SIZE(size, psSizeofAppSRTGC));
         if (srt == NULL) {
             return i;
         }
@@ -92,7 +102,7 @@ HSD_psAppSRT* psAddGeneratorAppSRT(HSD_Generator* gp, u8 status) {
     HSD_psAppSRT* srt;
 
     if (freeAppSRT == NULL) {
-        freeAppSRT = HSD_Alloc(psSizeofAppSRT);
+        freeAppSRT = HSD_Alloc(GC_SIZE(psSizeofAppSRT, psSizeofAppSRTGC));
         if (freeAppSRT != NULL) {
             memset(freeAppSRT, 0, psSizeofAppSRT);
         }

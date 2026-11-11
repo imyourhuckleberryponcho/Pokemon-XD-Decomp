@@ -12,6 +12,7 @@
 #include <sysdolphin/baselib/tev.h>
 #include <sysdolphin/baselib/texpdag.h>
 #include <sysdolphin/baselib/tobj.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -46,14 +47,14 @@ void HSD_TExpFreeTevDesc(HSD_TExpTevDesc* tdesc);
 
 inline static HSD_TExp* TevAlloc(void)
 {
-    HSD_TExp* texp = hsdAllocMemPiece(sizeof(HSD_TETev));
+    HSD_TExp* texp = hsdAllocMemPiece(GC_SIZE(sizeof(HSD_TETev), 124));
     HSD_ASSERT(63, texp);
     return texp;
 }
 
 inline static HSD_TExp* CnstAlloc(void)
 {
-    HSD_TExp* texp = hsdAllocMemPiece(sizeof(HSD_TECnst));
+    HSD_TExp* texp = hsdAllocMemPiece(GC_SIZE(sizeof(HSD_TECnst), 20));
     HSD_ASSERT(71, texp);
     return texp;
 }
@@ -1267,7 +1268,7 @@ int HSD_TExpCompile(HSD_TExp* texp, HSD_TExpTevDesc** tevdesc,
     HSD_TExpSchedule(num, list, order, &res);
     *tevdesc = NULL;
     for (i = 0; i < num; ++i) {
-        HSD_TExpTevDesc* tdesc = hsdAllocMemPiece(sizeof(HSD_TExpTevDesc));
+        HSD_TExpTevDesc* tdesc = hsdAllocMemPiece(GC_SIZE(sizeof(HSD_TExpTevDesc), 136));
         tdesc->desc.stage = HSD_Index2TevStage(i);
         TExp2TevDesc(order[(num - i) - 1], tdesc, &init_cprev, &init_aprev);
         tdesc->desc.next = &(*tevdesc)->desc;

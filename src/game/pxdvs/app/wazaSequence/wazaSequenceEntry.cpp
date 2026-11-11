@@ -118,7 +118,12 @@ struct _GScamera;
 
 class SeqCameraTarget {
 public:
+#ifdef __MWERKS__
     virtual void unk08();
+#else
+
+    virtual ~SeqCameraTarget();
+#endif
     virtual void unk0C();
     virtual void GetPosition(f32* pos);
     virtual void GetRotation(f32* rot);
@@ -775,7 +780,7 @@ bool ModelEntry::Load(unsigned char** p0) {
         temp_r3 = (u32)(operator new(HSD_ARCHIVE_SIZE));
         if (temp_r3 != 0) {
             GC_AT(u32, temp_r31, 0x20) = temp_r3;
-            HSD_ArchiveParse((HSD_Archive*)((HSD_Archive *) temp_r3), (u8*)(*p0), (u32) GC_AT(s32, temp_r31, 0x1C));
+            HSD_ArchiveParse((HSD_Archive*)(PC_PTR(HSD_Archive *, temp_r3)), (u8*)(*p0), (u32) GC_AT(s32, temp_r31, 0x1C));
         }
         *p0 = &(*p0)[(GC_AT(s32, temp_r31, 0x1C) + 0x1F) & 0xFFFFFFE0];
     }
@@ -1065,7 +1070,7 @@ bool EffectEntry::Load(unsigned char** p0) {
             temp_r3_3 = (u32)(operator new(HSD_ARCHIVE_SIZE));
             if (temp_r3_3 != 0) {
                 GC_AT(u32, temp_r30, 0x38) = temp_r3_3;
-                HSD_ArchiveParse((HSD_Archive*)((HSD_Archive *) temp_r3_3), (u8*)(*p0), (u32) GC_AT(s32, temp_r30, 0x34));
+                HSD_ArchiveParse((HSD_Archive*)(PC_PTR(HSD_Archive *, temp_r3_3)), (u8*)(*p0), (u32) GC_AT(s32, temp_r30, 0x34));
             }
             *p0 = &(*p0)[(GC_AT(s32, temp_r30, 0x34) + 0x1F) & 0xFFFFFFE0];
         }
@@ -1099,7 +1104,7 @@ bool EffectEntry::Load(unsigned char** p0) {
             temp_r3_6 = (u32)(operator new(HSD_ARCHIVE_SIZE));
             if (temp_r3_6 != 0) {
                 GC_AT(s32, temp_r30_3, 4) = (s32) temp_r3_6;
-                HSD_ArchiveParse((HSD_Archive*)((HSD_Archive *) temp_r3_6), (u8*)(*p0), (u32) GC_AT(s32, temp_r30_3, 0));
+                HSD_ArchiveParse((HSD_Archive*)(PC_PTR(HSD_Archive *, temp_r3_6)), (u8*)(*p0), (u32) GC_AT(s32, temp_r30_3, 0));
             }
             *p0 = &(*p0)[(GC_AT(s32, temp_r30_3, 0) + 0x1F) & 0xFFFFFFE0];
         }
@@ -1179,7 +1184,7 @@ void EffectEntry::Unload(unsigned char** p0) {
         *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
         temp_r3_7 = GC_AT(u32, temp_r30_3, 4);
         if (temp_r3_7 != 0) {
-            operator delete((void*)((u8 *) temp_r3_7));
+            operator delete((void*)(PC_PTR(u8 *, temp_r3_7)));
             GC_AT(u32, temp_r30_3, 4) = 0U;
         }
         *p0 = &(*p0)[(GC_AT(u32, temp_r30_3, 0) + 0x1F) & 0xFFFFFFE0];
@@ -1226,12 +1231,12 @@ EffectEntry::EffectEntry(WazaSequence* p0, unsigned char** p1) : SequenceEntry((
         blurEffectLoad(p1);
         break;
     case 5:
-        THIS_F(GSeffect* *, 0x30, m_effect) = (GSeffect*)new leafEffect(p1, hdr->time);
+        THIS_F(GSeffect* *, 0x30, m_effect) = (GSeffect*)(GC_NEW_NOTE(sizeof(leafEffect), 96) new leafEffect(p1, hdr->time));
         THIS_F(u8 *, 0x3D, m_curKey) = 1;
         THIS_F(u8 *, 0x3C, m_keyCount) = 0;
         break;
     case 9:
-        THIS_F(GSeffect* *, 0x30, m_effect) = (GSeffect*)new billboardEffect(p1);
+        THIS_F(GSeffect* *, 0x30, m_effect) = (GSeffect*)(GC_NEW_NOTE(sizeof(billboardEffect), 40) new billboardEffect(p1));
         THIS_F(u8 *, 0x3D, m_curKey) = 0;
         THIS_F(u8 *, 0x3C, m_keyCount) = 0;
         break;
@@ -1565,7 +1570,7 @@ s32 ModelEntry::Start() {
             GSmodelSetScale((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), &scl);
         }
     } else {
-        var_r28 = var_r30 == NULL ? var_r28 : M2C_NAMED(((ModelSequenceLayout*)(var_r30)), _GSmodel **, 0x94, m_model);
+        var_r28 = var_r30 != NULL ? M2C_NAMED(((ModelSequenceLayout*)(var_r30)), _GSmodel **, 0x94, m_model) : NULL;
         if (var_r31 != 0) {
             if ((u8) THIS_F(u8 *, 0x4A, unk4A) != 0) {
                 temp_r27_3 = GSmodelGetPart((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), THIS_F(s32 *, 0x44, unk44));
@@ -1589,7 +1594,6 @@ s32 ModelEntry::Start() {
                     THIS_F(s8 *, 0x4B, unk4B) = 1;
                     M2C_NAMED(((ModelSequenceLayout*)(var_r30)), u8 *, 0x58, m_unk58) = 1U;
                     GSpartFree((GSpart*)(temp_r27_3));
-                    if ((u32) var_r31 <= 7U) {
                         switch (var_r31) {
                         case 1:
                         case 6:
@@ -1611,7 +1615,6 @@ s32 ModelEntry::Start() {
                         case 7:
                             break;
                         }
-                    }
                 }
             } else {
                 if (temp_r3_3 & 1) {
@@ -1641,7 +1644,6 @@ block_68:
                 if (var_r30_2 != NULL) {
                     GSmodelAttachToGSpart((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), (GSpart*)(var_r30_2), var_r31, ((u16) THIS_F(u16 *, 0xA, unk0A) >> 1U) & 1, 1U);
                     THIS_F(s8 *, 0x4B, unk4B) = 1;
-                    if ((u32) var_r31 <= 7U) {
                         switch (var_r31) {
                         case 4:
                             GSmodelSetScale((_GSmodel*)(THIS_F(_GSmodel * *, 0x4C, model)), &scl);
@@ -1668,7 +1670,6 @@ block_68:
                         case 7:
                             break;
                         }
-                    }
                     GSpartFree((GSpart*)(var_r30_2));
                 }
             }
@@ -1855,29 +1856,29 @@ void ParticleEntry::SetRenderCamera(_GScamera* camera) {
 
 extern "C++" {
 s32 ParticleEntry::Start() {
-    s32 temp_r29;
-    GSpart *var_r27;
-    GSparticleGenerator *temp_r3_3;
-    u32 temp_r27;
-    ModelSequence *var_r3;
-    WazaSequence *temp_r3;
-    ModelSequence *ms;
-    GSvec pos;
-    GSvec rot;
-    GSvec scl;
-    _GSmodel *temp_r30_2;
-    _GSmodel *temp_r3_6;
-    f32 temp_f1;
     ModelSequence *var_r29;
-    s32 temp_r30_3;
-    s32 var_r31;
-    u16 temp_r3_4;
-    u32 temp_r0_2;
-    u8 temp_r0;
+    ModelSequence *var_r3;
     u8 temp_r4;
-    u8 temp_r4_2;
-    u8 *temp_r3_2;
+    s32 var_r31;
+    GSvec pos;
+    u16 temp_r3_4;
+    s32 temp_r30_3;
+    ModelSequence *ms;
+    s32 temp_r29;
+    u32 temp_r0_2;
     u8 *temp_r3_5;
+    GSpart *var_r27;
+    u32 temp_r27;
+    _GSmodel *temp_r3_6;
+    GSvec rot;
+    _GSmodel *temp_r30_2;
+    u8 *temp_r3_2;
+    f32 temp_f1;
+    u8 temp_r4_2;
+    GSvec scl;
+    GSparticleGenerator *temp_r3_3;
+    u8 temp_r0;
+    WazaSequence *temp_r3;
 
     if ((GSparticleBank *) THIS_F(GSparticleBank * *, 0x38, bank) == NULL) {
         return 0;
@@ -2227,7 +2228,6 @@ s32 EffectEntry::Start() {
     } else {
         owner = 0;
     }
-    bool alpha;
     void* val = 0;
     f32 scale = 1.0f;
     if (m_effect == 0) {
@@ -2258,18 +2258,17 @@ s32 EffectEntry::Start() {
         if (e->m_modulate == 2) {
             e->m_target = val;
         }
-        if (owner != 0 && e->m_modulate == 2) {
-            e->m_useSaved = ((ModelSequenceLayout*)owner)->m_unk60;
+        if (owner != 0) {
+            u8 saved = ((ModelSequenceLayout*)owner)->m_unk60;
+            if (e->m_modulate == 2) {
+                e->m_useSaved = saved;
+            }
         }
         u8* key = (u8*)&m_keys[m_curKey];
         e->m_color[0] = key[0];
         e->m_color[1] = key[1];
         e->m_color[2] = key[2];
-        alpha = false;
-        if (e->m_modulate == 0 || e->m_resetPE != 0) {
-            alpha = true;
-        }
-        e->m_color[3] = alpha ? key[3] : 0xFF;
+        e->m_color[3] = (e->m_modulate == 0 || e->m_resetPE != 0) ? key[3] : 0xFF;
         break;
     }
     case 6: {
@@ -2311,7 +2310,8 @@ s32 EffectEntry::Start() {
                 } else goto zero;
             } else goto zero;
         } else {
-            ModelSequence* m = seq->m_owner;
+            ModelSequence* m;
+            m = seq->m_owner;
             m = M2C_NAMED(((ModelSequenceLayout*)(m)), s32*, 0x8, m_kind) == 1 ? m : 0;
             if (m != 0) {
                 part = m->GetPart((enumNullJointName)unk10);

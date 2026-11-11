@@ -80,7 +80,11 @@ struct MenuModel {
 
 extern "C" {
 void menuOpen(s32, s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuCloseCustom(s32, s32, s32);
 u8 menuIsCheck(s32 id);
 void winSeqSetMenu(s32, s32);
@@ -338,7 +342,7 @@ s32 menuTop() {
                     menuTitleSetSelect(n++, j);
                 }
             }
-            int r = menuOpenCustom(0x116, windowGetActiveID(), &_menuTopWork, 0, 1, 1, &firstFlag);
+            int r = menuOpenCustom(0x116, windowGetActiveID(), PCARG(&_menuTopWork, &_menuTopWork.select), 0, 1, 1, &firstFlag);
             firstFlag = 0;
             if (r >= 0) {
                 r = menuTitleGetSelect(r);

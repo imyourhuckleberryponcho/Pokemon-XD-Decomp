@@ -67,6 +67,12 @@ void salCalcVolume(u8 voltab_index, SAL_VOLINFO* vi, f32 vol, u32 pan, u32 span,
                    u32 itd, u32 dpl2);
 void salReconnectVoice(DSPvoice* dsp_vptr, u8 studio);
 void* salMalloc(size_t len);
+#ifdef __MWERKS__
+#define MUSY_GC_SIZE(pc, gc) (pc)
+#else
+u32 gc_size_note(u32 pc, u32 gc);
+#define MUSY_GC_SIZE(pc, gc) gc_size_note((u32)(pc), (u32)(gc))
+#endif
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
 void* salMallocPhysical(size_t len);
 #endif

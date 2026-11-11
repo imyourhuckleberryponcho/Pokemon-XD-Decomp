@@ -212,7 +212,7 @@ asm OSTime OSGetTime(void);
 void OSTicksToCalendarTime(OSTime ticks, OSCalendarTime* td);
 s32 PKJB_ReturnTitle(s32 ch);
 #ifdef __MWERKS__
-s32 __copy(void*, u16*, s32);
+GCsptr __copy(void*, u16*, s32);
 #else
 #define __copy(to, from, n) (memcpy((to), (from), (u32)(n)))
 #endif

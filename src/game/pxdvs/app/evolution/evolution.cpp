@@ -89,7 +89,7 @@ void GSsndSetPushVolumeID(u32 id, u8* buf);
 void GSthreadSwitch(void);
 _GSmodel * Sequence_GetGSmodel(s32);
 WazaSequence* Sequence_GetWaza(Sequence* sequence, u16 wzxID, u32 kind);
-u32 Sequence_LoadPokemon(u16, u32, u32);
+GCuptr Sequence_LoadPokemon(u16, u32, u32);
 void* Sequence_LoadWaza(Sequence* sequence, u16 wazaID, u8 kind, s32);
 s32 Sequence_SetVisibility(u32, s32);
 void WazaSequence_Free(WazaSequence* sequence);
@@ -110,7 +110,7 @@ void evolutionMain();
 s32 evolutionOpen(void*, void*, s32, u16*, s32, u8*);
 s32 evolutionStart(s32 *p0, s32 *p1, s32 p2, u16 *p3, s32 p4, u8 *p5);
 s32 evolutionWazaLearn(Pokemon* p0, u32 p1, s8 *p2, EVOLUTION_WINDOW_TYPE p3, void *p4, u32 *p5);
-extern "C++" static s32 evolution__Main(WORK* work, int mode, Pokemon* pokemon, Pokemon* evolved, u16* moves, s32 count, u8* result);
+extern "C++" { static s32 evolution__Main(WORK* work, int mode, Pokemon* pokemon, Pokemon* evolved, u16* moves, s32 count, u8* result); }
 s8 fadeCheck(bool);
 void fadeSet(s32 type, f32 time);
 void floorSetFadeScript(u32 out, u32 in);
@@ -401,7 +401,7 @@ static u32 loadSequence(Pokemon* pokemon, int step) {
         return 0;
     }
     for (i = 0; i < 5; i++) {
-        if (step == StepSeqTbl[i].unk4 && Sequence_LoadWaza((Sequence*)seq, StepSeqTbl[i].unk0, 4, 0) == NULL) {
+        if (step == StepSeqTbl[i].unk4 && Sequence_LoadWaza(PC_PTR(Sequence*, seq), StepSeqTbl[i].unk0, 4, 0) == NULL) {
             break;
         }
     }
@@ -734,7 +734,7 @@ static s32 evolution__Main(WORK* work, int mode, Pokemon* pokemon, Pokemon* evol
     arg = (u32*)work;
     for (i = 0; i < count; i++) {
         u16 waza = *moves;
-        if (evolutionWazaLearn(&copy, waza, (s8*)&sel, (EVOLUTION_WINDOW_TYPE)0, cbWazaForget, arg) != 0) {
+        if (evolutionWazaLearn(&copy, waza, (s8*)&sel, (EVOLUTION_WINDOW_TYPE)0, (void*)cbWazaForget, arg) != 0) {
             pokemonWazaCreate(&copy, sel, waza);
         } else {
             sel = 0xFF;

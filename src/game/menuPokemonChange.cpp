@@ -177,13 +177,13 @@ u8 fn_80098B44(u8, Pokemon*);
 StatusS32 windowGetParam(tagWINDOW_WORK*, s32);
 void menuFaceDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, Pokemon*);
 u8 menuSubGetPokemonSexForFightDisp(Pokemon*);
-u32 GSmsgGetGSchar(u32);
+GCuptr GSmsgGetGSchar(u32);
 u32 GSmsgGetRect(u32);
 void GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSmsgPrintRect(s32, s32, s32, s32, s32, u32, u32);
 u16 pokemonBiosGetItemDataId(Pokemon*);
 u16 pokemonGetSoubiItemDataId(Pokemon*);
-u32 heroBiosGetNamePtr(Hero*);
+GCuptr heroBiosGetNamePtr(Hero*);
 void menuCBMessageCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, u32);
 u32 itemDataBiosGetName(void*);
 StatusU32 wazaGetStatus(s32, s32, s32, s32);
@@ -230,7 +230,11 @@ void winSpriteSetDisp(tagSPRITE_WORK*, bool);
 void winSeqSetMenu(s32, s32);
 void menuClose(s32);
 void menuCloseCustom(s32, s32, s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuSetDisp(s32, bool);
 s32 windowGetActiveID();
 MenuItemBios* menuItemBiosGetPtr(s32, s32);
@@ -1406,15 +1410,14 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
             msg = 0;
             break;
         default:
-            s32 tmp1 = (u32)pokemonBiosGetNicknamePtr(target);
+            GCsptr tmp1 = (GCuptr)pokemonBiosGetNicknamePtr(target);
             msgctrlSetValue(0x37, tmp1);
             break;
         }
         if (msg != 0) {
             u32 rect = GSmsgGetRect(msg);
             s16 rectW = rect >> 16;
-            u32 rf_t = sprite->w;
-            s16 x = rf_t / 2 - rectW / 2;
+            s16 x = sprite->w / 2 - rectW / 2;
             GSmsgPrint2(window->msgHandle, x - 1, 0, color, 0x4277);
             winSpriteSetDisp(sprite, 1);
         } else {
@@ -1423,7 +1426,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         break;
     }
     case 0x61B: {
-        s32 tmp1 = heroBiosGetNamePtr(hero);
+        GCsptr tmp1 = (GCuptr)heroBiosGetNamePtr(hero);
         msgctrlSetValue(0x37, tmp1);
         GSmsgPrint2(window->msgHandle, 0, 0, color, 0x4277);
         break;
@@ -2197,7 +2200,7 @@ namespace {
 
 void CMenuPokemonChange::stateFunctionError(Pokemon* pokemon, u32 msg)
 {
-    u32 name = (u32)pokemonBiosGetNicknamePtr(pokemon);
+    GCuptr name = (GCuptr)pokemonBiosGetNicknamePtr(pokemon);
     msgctrlSetValue(0x32, name);
     _setInfo(msg);
     GSsndPlayNow(0x13);

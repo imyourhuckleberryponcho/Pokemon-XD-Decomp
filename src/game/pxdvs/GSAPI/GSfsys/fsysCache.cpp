@@ -7,6 +7,7 @@ typedef u32 FsysArqAddr;
 #define FSYS_ARQ_ADDR(p) ((u32)(p))
 #else
 #include <stdint.h>
+#include "game/gcdata.h"
 typedef uintptr_t FsysArqAddr;
 #define FSYS_ARQ_ADDR(p) ((uintptr_t)(p))
 #endif
@@ -203,11 +204,11 @@ u8 _fsysInitCache(u32 cacheSize, u32 manageSize) {
     if (!_fsysInitCacheHeap(_fsysCACHESize)) {
         return 0;
     }
-    _fsysCACHEManage = (FsysCacheManage*)_fsysDoMalloc(_fsysCACHEManageSize * sizeof(FsysCacheManage));
+    _fsysCACHEManage = (FsysCacheManage*)_fsysDoMalloc(GC_SIZE(_fsysCACHEManageSize * sizeof(FsysCacheManage), _fsysCACHEManageSize * 36));
     if (_fsysCACHEManage == 0) {
         return 0;
     }
-    _fsysARQTrans = (FsysArqTrans*)_fsysDoMalloc(_fsysARQTransSize * sizeof(FsysArqTrans));
+    _fsysARQTrans = (FsysArqTrans*)_fsysDoMalloc(GC_SIZE(_fsysARQTransSize * sizeof(FsysArqTrans), _fsysARQTransSize * 76));
     if (_fsysARQTrans == 0) {
         return 0;
     }

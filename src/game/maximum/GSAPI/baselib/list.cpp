@@ -1,6 +1,7 @@
 
 
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 #ifndef __MWERKS__
 #include <string.h>
 #endif
@@ -41,8 +42,8 @@ static HSD_ObjAllocData d_alloc_data;
 #define HSD_DLIST_SIZE (3 * sizeof(void*))
 #endif
 void HSD_ListInitAllocData(void) {
-    HSD_ObjAllocInit(&s_alloc_data, sizeof(HSD_SList), 4);
-    HSD_ObjAllocInit(&d_alloc_data, HSD_DLIST_SIZE, 4);
+    HSD_ObjAllocInit(&s_alloc_data, GC_SIZE(sizeof(HSD_SList), 8), 4);
+    HSD_ObjAllocInit(&d_alloc_data, GC_SIZE(HSD_DLIST_SIZE, 12), 4);
 }
 
 HSD_ObjAllocData* HSD_SListGetAllocData(void) { return &s_alloc_data; }
@@ -51,7 +52,7 @@ HSD_ObjAllocData* HSD_DListGetAllocData(void) { return &d_alloc_data; }
 
 HSD_SList* HSD_SListAlloc(void) {
     HSD_SList* list;
-    void* pool = GSmemGetSysdolAllocator(sizeof(HSD_SList));
+    void* pool = GC_SYSDOL_ALLOCATOR(sizeof(HSD_SList), 8);
     if (pool != NULL && GSmemGetFreePool(pool) != 0) {
         list = (HSD_SList*)GSmemAllocPool(pool);
         if (list == NULL) {
@@ -95,7 +96,7 @@ HSD_SList* HSD_SListRemove(HSD_SList* list) {
     HSD_SList* next;
     if (list != NULL) {
         next = list->next;
-        pool = GSmemGetSysdolAllocator(sizeof(HSD_SList));
+        pool = GC_SYSDOL_ALLOCATOR(sizeof(HSD_SList), 8);
         if (pool != NULL && GSmemIsRegistrationPool(pool, list)) {
             GSmemFreePool(pool, list);
         } else {

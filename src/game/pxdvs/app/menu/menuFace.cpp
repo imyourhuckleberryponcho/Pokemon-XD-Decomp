@@ -2,6 +2,7 @@
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
+#include "game/gcdata.h"
 #pragma peephole off
 #pragma pool_strings off
 
@@ -11,6 +12,7 @@ struct GStexture;
 struct tagWINDOW_WORK;
 #ifndef __MWERKS__
 #include <game/gstexture.h>
+#include "game/gcdata.h"
 #endif
 
 struct GSvec2 {
@@ -135,7 +137,7 @@ u8 pokemonGetAnnonKatati(u32);
 u8 pokemonIsDarkPokemon(Pokemon*);
 void GSthreadSwitch();
 void GSfsysFree(u32);
-u8 GSfsysReadIDEX(u32 id, u32 idx, s32 a, s32 b, s32 c);
+u8 GSfsysReadIDEX(u32 id, u32 idx, GCsptr a, GCsptr b, GCsptr c);
 void GSresFreeResource(u32 grp, u32 id);
 void* GSresGetResource(u32 grp, u32 id);
 void* GSresGetResourceAllGroup(u32 id);
@@ -677,11 +679,11 @@ void menuFaceInit(s32 n) {
     s32 i;
     _menuFaceListNum = n;
     if (pMenuFaceList == 0) {
-        pMenuFaceList = (FaceEntry*)GSmemAlloc(n * sizeof(FaceEntry));
+        pMenuFaceList = (FaceEntry*)GSmemAlloc(GC_SIZE(n * sizeof(FaceEntry), n * 16));
     }
     memset(pMenuFaceList, 0, _menuFaceListNum * sizeof(FaceEntry));
     if (pMenuFaceTexList == 0) {
-        pMenuFaceTexList = (FaceTex*)GSmemAlloc(_menuFaceListNum * sizeof(FaceTex));
+        pMenuFaceTexList = (FaceTex*)GSmemAlloc(GC_SIZE(_menuFaceListNum * sizeof(FaceTex), _menuFaceListNum * 8));
     }
     memset(pMenuFaceTexList, 0, _menuFaceListNum * sizeof(FaceTex));
     for (i = 0; i < _menuFaceListNum; i++) {

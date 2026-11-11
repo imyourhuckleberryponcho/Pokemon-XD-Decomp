@@ -51,7 +51,11 @@ void winMsgOpenField(s32 msgID, s32, s32);
 void winMsgClose(s32);
 bool floorIsDispScriptInfo(void);
 void floorSetDispScriptInfo(bool);
+#ifdef __MWERKS__
 void menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 bool menuIsCheck(s32 menuID);
 void menuClose(s32 menuID);
 s32 menuOpen(s32, s32);
@@ -64,7 +68,13 @@ void* floorGetActiveOffscreenTexture(void);
 void GSdvdFstRefresh(void);
 void GScharMakeFromSJIS(s16* dst, const char* src);
 void GSgfxVideoSetMode(s32, s32, s32, s32, s32);
+#ifdef __MWERKS__
 void GSgfxVideoSetFilter(GSgfxFilter);
+#define FILTER_ARG(f) f
+#else
+void GSgfxVideoSetFilter(u8* filter);
+#define FILTER_ARG(f) ((u8*)&(f))
+#endif
 bool GSgfxVideoGetLockFrameActive(void);
 void GSgfxVideoSetLockFrameActive(bool);
 void GSgfxVideoSetLockFrameRate(s32);
@@ -210,31 +220,31 @@ s32 dbgMenuFrameLockToggle(void) {
 
 s32 dbgMenuScreenFilterOff(void) {
     GSgfxFilter f = {{0x00, 0x00, 0x15, 0x16, 0x15, 0x00, 0x00}};
-    GSgfxVideoSetFilter(f);
+    GSgfxVideoSetFilter(FILTER_ARG(f));
     return 0;
 }
 
 s32 dbgMenuScreenFilterDefault(void) {
     GSgfxFilter f = {{0x08, 0x08, 0x0A, 0x0C, 0x0A, 0x08, 0x08}};
-    GSgfxVideoSetFilter(f);
+    GSgfxVideoSetFilter(FILTER_ARG(f));
     return 0;
 }
 
 s32 dbgMenuScreenFilterLow(void) {
     GSgfxFilter f = {{0x04, 0x06, 0x0E, 0x10, 0x0E, 0x06, 0x04}};
-    GSgfxVideoSetFilter(f);
+    GSgfxVideoSetFilter(FILTER_ARG(f));
     return 0;
 }
 
 s32 dbgMenuScreenFilterMed(void) {
     GSgfxFilter f = {{0x09, 0x09, 0x09, 0x0A, 0x09, 0x09, 0x09}};
-    GSgfxVideoSetFilter(f);
+    GSgfxVideoSetFilter(FILTER_ARG(f));
     return 0;
 }
 
 s32 dbgMenuScreenFilterHi(void) {
     GSgfxFilter f = {{0x0D, 0x09, 0x07, 0x06, 0x07, 0x09, 0x0D}};
-    GSgfxVideoSetFilter(f);
+    GSgfxVideoSetFilter(FILTER_ARG(f));
     return 0;
 }
 

@@ -1,3 +1,6 @@
+#ifndef __MWERKS__
+#include <string.h>
+#endif
 #include <game/pcret.h>
 #include <game/pxdvs/app/hero/hero.hpp>
 #include <game/statusval.h>
@@ -117,6 +120,9 @@ u8 Hero::getHeroStyle() const { return heroStyle; }
 
 s16 Hero::pokemonGet(HeroPokemonGetParam * param, bool flag) {
   Pokemon pokemon;
+#ifndef __MWERKS__
+  memset(&pokemon, 0, sizeof(pokemon));
+#endif
   u16 i;
   s16 slot;
   u32 rndFit;

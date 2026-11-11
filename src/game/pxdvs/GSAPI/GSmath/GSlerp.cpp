@@ -1,4 +1,5 @@
 #include <dolphin/mtx.h>
+#include "game/gc_fused.h"
 
 extern "C" {
 
@@ -25,7 +26,7 @@ f32 GSlerpGetLinearInterpolationFloat(f32 a, f32 b, f32 t) {
     if (t >= 1.0f) {
         return b;
     }
-    return t * (b - a) + a;
+    return GC_FUSED(t, (b - a)) + a;
 }
 
 }

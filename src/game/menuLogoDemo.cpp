@@ -103,7 +103,11 @@ f32 pokecoloGetFrameTime(void);
 void menuClose(s32 menuID);
 s32 menuOpen(s32 menuID, s32);
 void menuCloseSync(s32 menuID, s32);
+#ifdef __MWERKS__
 void menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuCloseCustom(s32 menuID, s32, s32);
 void menuSetPosition(s32 menuID, s16 x, s16 y);
 void menuTitleSetStartStatus(s32);

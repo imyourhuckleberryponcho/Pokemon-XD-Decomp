@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/effects.h>
 #include <game/wazaentry.h>
@@ -96,31 +97,31 @@ void EffectEntry::boneFillEffectLoad(u8** data) {
     _GSparticleBank* bank = NULL;
 
     *data += sizeof(BoneFillEffectData);
-    *data = (u8*)ALIGN32(*data);
+    *data = PC_PTR(u8*, ALIGN32(*data));
     *data += ALIGN32(effect->size);
     if (unk09 != 0) {
         EffectEntry* parent = (EffectEntry*)seq->GetEntryFromID(unk09);
         if (parent->m_effect != NULL) {
-            bank = (_GSparticleBank*)((u32*)parent->m_effect)[3];
+            bank = PC_PTR(_GSparticleBank*, ((u32*)parent->m_effect)[3]);
         }
     } else {
         bank = effect->bank;
     }
-    m_effect = new boneFillEffect(bank, (enumNullJointName)GC_BES32(effect->from), (enumNullJointName)GC_BES32(effect->to), effect->time);
+    m_effect = (GC_NEW_NOTE(sizeof(boneFillEffect), 44) new boneFillEffect(bank, (enumNullJointName)GC_BES32(effect->from), (enumNullJointName)GC_BES32(effect->to), effect->time));
 }
 
 void EffectEntry::blurEffectLoad(u8** data) {
     BlurEffectData* effect = (BlurEffectData*)*data;
     *data += sizeof(BlurEffectData);
     LOAD_KEYS(data, effect->keyNum);
-    m_effect = new blurEffect(effect->on != 0);
+    m_effect = (GC_NEW_NOTE(sizeof(blurEffect), 28) new blurEffect(effect->on != 0));
 }
 
 void EffectEntry::envMapEffectLoad(u8** data) {
     EnvMapEffectData* effect = (EnvMapEffectData*)*data;
     *data += sizeof(EnvMapEffectData);
     LOAD_KEYS(data, effect->keyNum);
-    m_effect = new envMapEffect(effect->texture, effect->model);
+    m_effect = (GC_NEW_NOTE(sizeof(envMapEffect), 28) new envMapEffect(effect->texture, effect->model));
 }
 
 void EffectEntry::filterEffectLoad(u8** data) {
@@ -131,7 +132,7 @@ void EffectEntry::filterEffectLoad(u8** data) {
     LOAD_KEYS(data, effect->keyNum);
     switch (effect->type) {
     case 0:
-        m_effect = new filterEffect();
+        m_effect = (GC_NEW_NOTE(sizeof(filterEffect), 32) new filterEffect());
         break;
     case 1:
         mono = true;
@@ -139,7 +140,7 @@ void EffectEntry::filterEffectLoad(u8** data) {
         if ((effect->flags & 1) == 1) {
             invert = true;
         }
-        m_effect = new filterEffect(invert, mono);
+        m_effect = (GC_NEW_NOTE(sizeof(filterEffect), 32) new filterEffect(invert, mono));
         break;
     }
 }

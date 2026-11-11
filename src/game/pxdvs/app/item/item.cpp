@@ -217,12 +217,18 @@ static inline s32 itemDecOne(ITEM* p, u16 id, u16 cnt) {
 }
 
 static inline int itemPriorityOf(int id) {
-    int i;
     u16* t = currentPriorityTbl;
-    for (i = 0; i < currentPriorityTblQuantity; i++, t++) {
+    int i;
+    for (i = 0; i < currentPriorityTblQuantity; t++, i++) {
         if (id == *t) return i;
     }
     return 0;
+}
+
+static inline int itemPriorityCmp(ITEM* a, ITEM* b) {
+    int idA = item_GetItemDataId(a);
+    int idB = item_GetItemDataId(b);
+    return itemPriorityOf(idA) - itemPriorityOf(idB);
 }
 
 extern "C" {
@@ -248,9 +254,7 @@ void itemSortAryByPriority(void* ary, u16 n, s32 type) {
                 q = a + j;
                 for (; j < (int)n; q++, j++) {
                     if (itemOk(q)) {
-                        int idA = item_GetItemDataId(p);
-                        int idB = item_GetItemDataId(q);
-                        if (itemPriorityOf(idA) - itemPriorityOf(idB) > 0) itemSwapI(p, q);
+                        if (itemPriorityCmp(p, q) > 0) itemSwapI(p, q);
                     }
                 }
             }
@@ -423,17 +427,19 @@ static void _itemSortAry(ITEM* ary, u16 n, u8 mode) {
         }
         if (mode == 1) {
             int i;
-            ITEM* p;
-            for (i = 0, p = ary; i < (int)(n - 1); p++, i++) {
+            int last = n - 1;
+            ITEM* q;
+            ITEM* p = ary;
+            int j;
+            for (i = 0; i < last; p++, i++) {
                 if (itemOk(p)) {
-                    ITEM* q;
-                    int j;
                     j = i + 1;
                     q = ary + j;
                     for (; j < (int)n; q++, j++) {
                         if (itemOk(q)) {
                             u16 a = item_GetItemDataId(p);
-                            if (a > item_GetItemDataId(q)) itemSwapI(p, q);
+                            u16 b = item_GetItemDataId(q);
+                            if (a > b) itemSwapI(p, q);
                         }
                     }
                 }

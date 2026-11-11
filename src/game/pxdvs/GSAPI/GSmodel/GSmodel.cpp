@@ -550,8 +550,8 @@ static void _modelRender(GSgfxLayer* layer, GSgfxLayerPass pass) {
         perf = GSgfxPerfbarCPUEntry(0xFF8000);
         modelShadowRender(layer);
         h = 240.0f;
-        w = 320.0f;
         x = 0.0f;
+        w = 320.0f;
         if (pass == GS_GFX_LAYER_PASS_OPA) {
             u16 efbH;
             u16 efbW;
@@ -1210,7 +1210,7 @@ static _GSmodel* _modelLoad(_HSD_SceneModelSet* set, _HSD_Joint* joint, GSboundA
         GSpartFree(part);
     }
     if (total != 0) {
-        material = (GSmaterial*)GSmemAlloc(total * sizeof(GSmaterial));
+        material = (GSmaterial*)GSmemAlloc(GC_SIZE(total * sizeof(GSmaterial), total * 52));
         if (material != 0) {
             model->materials = material;
             model->materialCount = total;

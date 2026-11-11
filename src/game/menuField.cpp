@@ -297,7 +297,18 @@ static void _menuFieldDrawItemSub(tagWINDOW_WORK* p0, tagSPRITE_WORK* p1, s32 p2
             }
         }
     }
+#ifdef __MWERKS__
     M2C_NAMED(((SpriteWorkLayout*)(p1)), s32 *, 0x64, color[0]) = (s32) (barcolor | (u8) (s32) _menuFiledAlpha[p2]);
+#else
+    {
+        u32 c = barcolor | (u8)(s32)_menuFiledAlpha[p2];
+        u8* d = ((SpriteWorkLayout*)(p1))->color;
+        d[0] = (u8)(c >> 24);
+        d[1] = (u8)(c >> 16);
+        d[2] = (u8)(c >> 8);
+        d[3] = (u8)c;
+    }
+#endif
 }
 }
 
@@ -501,7 +512,7 @@ s32 menuFieldMain(u8 p0) {
 
 extern "C++" {
 #ifndef __MWERKS__
-inline
+PC_KEEP_INLINE inline
 #endif
 GSvec::GSvec() {
 }

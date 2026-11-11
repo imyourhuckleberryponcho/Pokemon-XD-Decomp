@@ -73,7 +73,7 @@ s32 GSfloorGetCurrentFloorGroupID(void);
 u8 GSfloorIsPop(void);
 void GSfsysFree(u32 id);
 void GSfsysFreeCache(s32 group);
-s32 GSfsysReadIDEXWait(u32 id, u32 idx, s32 a, s32 b, s32 c);
+s32 GSfsysReadIDEXWait(u32 id, u32 idx, GCsptr a, GCsptr b, GCsptr c);
 void GSlogWrite(const char*, ...);
 void* GSmemAlloc(u32 size);
 void GSmemFree(void* ptr);
@@ -134,7 +134,7 @@ void fightSetFightEncountDataId(u16 value);
 void fightSetFightFlag(u8 value);
 void fightSetFightResultId(u16 value);
 void fightSetGsthreadPtrFightMain(u32 value);
-void fightSetMenuCtrlHero(s32 p0);
+void fightSetMenuCtrlHero(void* p0);
 void fightTrainerDB_SetKindDataId(u16 id, u8 v);
 void fightTrainerDB_SetSerihuMsgId(u16 id, u8 index, u16 v);
 void* memcpy(void* dst, const void* src, size_t n);
@@ -192,7 +192,7 @@ u32 dbgEffLoadFsysGroupID;
 extern "C" {
 static void __sinit_fight_cpp() {
 }
-DECL_SECTION(".ctors") extern void* const __sinit_fight_cpp_reference = __sinit_fight_cpp;
+DECL_SECTION(".ctors") extern void* const __sinit_fight_cpp_reference = (void*)__sinit_fight_cpp;
 }
 
 extern "C" {
@@ -438,8 +438,8 @@ void* fightGetMenuCtrlHero(void) {
 }
 
 extern "C" {
-void fightSetMenuCtrlHero(s32 p0) {
-    memcpy((void*)(&_menuCtrlHero), (const void*)((u8 *) p0), 0x978U);
+void fightSetMenuCtrlHero(void* p0) {
+    memcpy((void*)(&_menuCtrlHero), (const void*)((u8 *) p0), sizeof(_menuCtrlHero));
 }
 }
 
@@ -641,6 +641,8 @@ void fightDataRewrite() {
     u32 round;
     u8 trainerKind;
     u16 msgs[4];
+    u16 msg;
+    u8 j;
     u8 i;
 
     enc = (FIGHT_ENCOUNT*)fightEncountGetStrObj();
@@ -697,7 +699,7 @@ void fightDataRewrite() {
                 break;
             }
         }
-        fightEncountDataBiosSetFightTrainerDataId(data, 1, trainer);
+        fightEncountDataBiosSetFightTrainerDataId(data, 1, trainer & 0xFFFF);
     }
     if (field != 0) {
         fightEncountDataBiosSetFightFloorDataId(data, field);
@@ -721,10 +723,10 @@ void fightDataRewrite() {
     if (round != 0) {
         fightEncountDataBiosSetSyoukaiWzxDataId(data, round);
     }
-    for (u8 i_loop = 0; i_loop < 4; i_loop++) {
-        u16 msg = msgs[i_loop];
+    for (j = 0; j < 4; j++) {
+        msg = msgs[j];
         if (msg != 0) {
-            fightTrainerDB_SetSerihuMsgId(fightEncountDataBiosGetFightTrainerDataId(data, 1), i_loop, msg);
+            fightTrainerDB_SetSerihuMsgId(fightEncountDataBiosGetFightTrainerDataId(data, 1), j, msg);
         }
     }
     if (trainerKind != 0) {

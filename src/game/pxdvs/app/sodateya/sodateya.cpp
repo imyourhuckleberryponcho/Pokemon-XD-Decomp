@@ -1,5 +1,9 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/explimit.h>
+#ifndef __MWERKS__
+extern "C" u32 pokemonGetLevelToExp(struct Pokemon*, u8);
+#endif
 extern "C" void* memcpy(void*, const void*, unsigned long);
 
 enum FootStepCounter { FOOT_STEP_COUNTER_0, FOOT_STEP_COUNTER_1 };
@@ -318,8 +322,7 @@ static void _sodateyaCallBackFunc(s32, FootStepCounter mode, s32 steps) {
     if (GSflagGet(4) != 0) {
         progress = GSflagGet(5);
         if (progress < 10000) {
-            s32 t = progress + steps;
-            progress = t < 0xFFFF ? t : 0xFFFF;
+            progress = progress + steps < 0xFFFF ? progress + steps : 0xFFFF;
         }
         GSflagSet(5, progress);
     }
@@ -335,11 +338,19 @@ static void _sodateyaCallBackFunc(s32, FootStepCounter mode, s32 steps) {
                 }
             }
             if (dark == 0) {
-                if (pokemonBiosGetLevel(np) < 100) {
+                if (pokemonBiosGetLevel(np) < EXP_LEVEL_LIMIT) {
                     u32 exp = pokemonBiosGetExp(np);
                     u32 sum = exp + steps;
                     u32 arg = 0xFFFFFFFF;
                     arg = exp > sum ? arg : sum;
+#ifndef __MWERKS__
+                    if (EXP_LEVEL_LIMIT < 100) {
+                        u32 top = pokemonGetLevelToExp(np, EXP_LEVEL_LIMIT);
+                        if (arg > top) {
+                            arg = top;
+                        }
+                    }
+#endif
                     pokemonGrowBasisStatus(np, arg);
                     u8 learned = 0;
                     pokemonOboeWaza(np, pokemonBiosGetLevel(np), 1, &learned);

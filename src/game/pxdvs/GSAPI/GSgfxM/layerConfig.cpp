@@ -30,6 +30,7 @@ struct GSgfxLayerVec {
 };
 
 #include <game/gsgfxlayer.h>
+#include "game/gcdata.h"
 
 struct GSgfxLayer : public GSgfxLayerData {
 public:
@@ -129,7 +130,7 @@ GSgfxLayerID GSgfxLayerConfig::Add(char* name, u32 width, u32 height, u32 count,
     if (layer == NULL) {
         GSgfxLayerID newID = FindFreeID();
         if (newID != -1) {
-            layer = new GSgfxLayer(newID, name, width, height, count, (GSgfxLayerType)0);
+            layer = (GC_NEW_NOTE(sizeof(GSgfxLayer), 6676) new GSgfxLayer(newID, name, width, height, count, (GSgfxLayerType)0));
         }
         if (layer == NULL) {
             return (GSgfxLayerID)-1;
@@ -193,10 +194,10 @@ void GSgfxLayerConfig::Setup(_GSgfxLayerData* data) {
             if (cur->id == 0xFF) {
                 GSgfxLayerID newID = FindFreeID();
                 if (newID != -1) {
-                    layer = new GSgfxLayer(newID, cur->name, cur->width, cur->height, cur->count, (GSgfxLayerType)0);
+                    layer = (GC_NEW_NOTE(sizeof(GSgfxLayer), 6676) new GSgfxLayer(newID, cur->name, cur->width, cur->height, cur->count, (GSgfxLayerType)0));
                 }
             } else {
-                layer = new GSgfxLayer(cur->id, cur->name, cur->width, cur->height, cur->count, (GSgfxLayerType)0);
+                layer = (GC_NEW_NOTE(sizeof(GSgfxLayer), 6676) new GSgfxLayer(cur->id, cur->name, cur->width, cur->height, cur->count, (GSgfxLayerType)0));
             }
             if (layer == NULL) {
                 cur++;

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
@@ -188,7 +189,11 @@ void dbgMenuSetEnable(u8);
 void GScharCpy(u16*, const u16*);
 s32 GScharCmp(const u16*, const u16*);
 s32 windowGetActiveID(void);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 }
@@ -667,11 +672,11 @@ static void generateBall(void) {
         BallWork[i].x = 640.0f * HSD_Randf();
         BallWork[i].y = 480.0f * HSD_Randf();
         BallWork[i].scale = 0.001f;
-        BallWork[i].maxScale = 1.999f * HSD_Randf() + 0.001f;
+        BallWork[i].maxScale = GC_FUSED(1.999f, HSD_Randf()) + 0.001f;
         BallWork[i].color = -0x100;
         BallWork[i].alpha = 0x80;
         BallWork[i].time = 0.0f;
-        BallWork[i].life = 60.0f * HSD_Randf() + 120.0f;
+        BallWork[i].life = GC_FUSED(60.0f, HSD_Randf()) + 120.0f;
     }
 }
 
@@ -697,8 +702,8 @@ s32 menuNameEntryBackDrawBall(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             f32 sw = vw * BallWork[i].scale;
             f32 sh = vh * BallWork[i].scale;
             s32 color = BallWork[i].color | BallWork[i].alpha;
-            f32 px = BallWork[i].x - sw * half;
-            f32 py = BallWork[i].y - sh * half;
+            f32 px = BallWork[i].x - GC_FUSED(sw, half);
+            f32 py = BallWork[i].y - GC_FUSED(sh, half);
             windowDrawSprite2((s32)(half + px), (s32)(half + py), (s32)(half + sw), (s32)(half + sh), color, w, 0x1E, 0,
                               winSpriteGetLayerID(w, sp));
         }

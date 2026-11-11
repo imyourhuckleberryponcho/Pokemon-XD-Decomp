@@ -15,6 +15,13 @@ public:
     char* searchSubChankID(const char* id);
 };
 
+struct DeckChankHeader {
+    char id[4];
+    gc_bes32 size;
+    gc_be32 count;
+    u8 unkC[4];
+};
+
 class CChankBlock : public CChank {
 public:
     virtual ~CChankBlock() {}
@@ -1091,19 +1098,19 @@ void deckRegister(u32 kind, u32 id) {
         return;
     }
     if ((sub = chank.searchSubChankID("DDPK")) != 0) {
-        _deckDarkPokemonSize = GC_AT(u32, sub, 8);
+        _deckDarkPokemonSize = ((DeckChankHeader*)sub)->count;
         _deckDarkPokemon = (DeckDarkPokemon*)(sub + 0x10);
     }
     if ((sub = chank.searchSubChankID("DTNR")) != 0) {
-        _deckTrainerSize = GC_AT(u32, sub, 8);
+        _deckTrainerSize = ((DeckChankHeader*)sub)->count;
         _deckTrainer = (DeckTrainer*)(sub + 0x10);
     }
     if ((sub = chank.searchSubChankID("DPKM")) != 0) {
-        _deckPokemonSize = GC_AT(u32, sub, 8);
+        _deckPokemonSize = ((DeckChankHeader*)sub)->count;
         _deckPokemon = (DeckPokemon*)(sub + 0x10);
     }
     if ((sub = chank.searchSubChankID("DTAI")) != 0) {
-        _deckTrainerAISize = GC_AT(u32, sub, 8);
+        _deckTrainerAISize = ((DeckChankHeader*)sub)->count;
         _deckTrainerAI = (DeckTrainerAI*)(sub + 0x10);
     }
     if ((sub = chank.searchSubChankID("DSTR")) != 0) {

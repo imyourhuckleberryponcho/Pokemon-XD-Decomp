@@ -857,7 +857,7 @@ s32 particleEnginePrepareRender(u32 p0) {
     u32 var_r31;
 
     var_r31 = p0;
-    if (GScameraIsValid((GScamera*)((GScamera *) p0)) == 0) {
+    if (GScameraIsValid((GScamera*)(PC_PTR(GScamera *, p0))) == 0) {
         var_r31 = (u32)(GScameraGetActiveCamera());
         if (var_r31 == 0) {
             g_CameraMatrix = 0;
@@ -867,12 +867,12 @@ s32 particleEnginePrepareRender(u32 p0) {
     if ((u32)(g_Camera) == (u32)(var_r31)) {
         return 1;
     }
-    g_Camera = (GScamera *) var_r31;
-    g_CameraMatrix = (GCsptr)GScameraGetMatrixPtr((GScamera*)((GScamera *) var_r31));
+    g_Camera = PC_PTR(GScamera *, var_r31);
+    g_CameraMatrix = (GCsptr)GScameraGetMatrixPtr((GScamera*)(PC_PTR(GScamera *, var_r31)));
     if ((GSgfxLayer *) g_current_layer != NULL) {
-        GScameraLoadCameraMatrix((GScamera*)((GScamera *) var_r31), (GSgfxLayerID)(M2C_NAMED(g_current_layer, s32 *, 0x28, id)));
+        GScameraLoadCameraMatrix((GScamera*)(PC_PTR(GScamera *, var_r31)), (GSgfxLayerID)(M2C_NAMED(g_current_layer, s32 *, 0x28, id)));
     } else {
-        GScameraLoadCameraMatrix((GScamera*)((GScamera *) var_r31), (GSgfxLayerID)(-1));
+        GScameraLoadCameraMatrix((GScamera*)(PC_PTR(GScamera *, var_r31)), (GSgfxLayerID)(-1));
     }
     return 1;
 }
@@ -913,7 +913,7 @@ struct ParticleMtx {
 };
 
 s32 particleEnginePrepareUpdate(u32 p0) {
-    GScamera* cam = (GScamera*)p0;
+    GScamera* cam = PC_PTR(GScamera*, p0);
     Mtx m;
     ParticleMtx v;
     ParticleMtx t;

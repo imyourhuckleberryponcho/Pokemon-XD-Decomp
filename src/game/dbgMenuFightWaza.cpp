@@ -15,7 +15,11 @@ struct WazaData {
 extern "C" {
 
 WazaData* wazaDataBiosGetPtr(u16 id);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32 menuID, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuCloseCustom(s32 menuID, s32, s32);
 s32 menuOpen(s32 menuID, s32);
 s32 menuGetCursorItemID(s32 menuID);

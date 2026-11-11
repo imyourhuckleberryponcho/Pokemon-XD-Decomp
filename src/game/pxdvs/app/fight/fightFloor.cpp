@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 #include <game/fightfloor.h>
@@ -6,11 +7,9 @@
 #pragma dont_inline on
 #pragma pool_strings off
 
-struct FIGHT_FLOOR;
 struct FightOutPokemon;
 struct FightPokemon;
 struct Pokemon;
-struct FightJoutai;
 struct FightFloorData;
 struct FightAction;
 struct FightWaza;
@@ -22,31 +21,7 @@ struct MenuFightAction {
     u8 nigeru;
 };
 
-class FIGHT_TRAINER {
-public:
-    FIGHT_TRAINER() {}
-    u8 data[0x3744];
-};
-
-class FIGHT_SIDE {
-public:
-    u8 data[0x64];
-    FIGHT_TRAINER trainers[2];
-    u8 pad[4];
-};
-
-class FIGHT_FLOOR {
-public:
-    u8 joutai[0x10];
-    u16 turnCount;
-    u16 encountDataId;
-    FIGHT_SIDE sides[2];
-#ifdef __MWERKS__
-    u8 rest[FIGHT_FLOOR_SIZE - FIGHT_FLOOR_SIDES_END];
-#else
-    alignas(sizeof(void*)) u8 rest[FIGHT_FLOOR_SIZE - FIGHT_FLOOR_SIDES_END - (sizeof(void*) - 4)];
-#endif
-};
+#include <game/pxdvs/app/fight/fightFloorData.h>
 
 typedef u8 (*FightFloorLoopFunc)(void*, PCARG(u8, u16), void*);
 
@@ -411,10 +386,10 @@ void* fightFloorBiosGetFightOutPokemonPtrAry(FIGHT_FLOOR*, u16);
 void** fightFloorBiosGetFightOutPokemonPtrAryPtr(FIGHT_FLOOR*);
 u16 fightFloorBiosGetFirstAttackRnd(FIGHT_FLOOR*);
 
-void fightMsgctrlSetValue(s32, u32);
+void fightMsgctrlSetValue(s32, GCuptr);
 void* pokemonTokuseiDataBiosGetPtr(u16);
 u32 pokemonTokuseiDataBiosGetName(void*);
-u32 GSmsgGetGSchar(u32);
+GCuptr GSmsgGetGSchar(u32);
 u32 itemDB_GetName(u16);
 u16 fightOutPokemonGetSoubiItemDataId(FightOutPokemon*);
 void pokemonSetStatus(void*, u32, u32, u32, u32);
@@ -909,11 +884,11 @@ u32 fightFloorSetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg, u32
         fightFloorBiosSetEncountDataId(floor, value);
         break;
     case 0x36:
-        if ((FightOutPokemon*)value != 0) {
-            if (fightOutPokemonCheckValid((FightOutPokemon*)value) == 1) {
+        if (PC_PTR(FightOutPokemon*, value) != 0) {
+            if (fightOutPokemonCheckValid(PC_PTR(FightOutPokemon*, value)) == 1) {
                 fightMsgctrlSetValue(0xF, value);
                 fightMsgctrlSetValue(0x1A, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(
-                                               pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId((FightOutPokemon*)value)))));
+                                               pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(PC_PTR(FightOutPokemon*, value))))));
                 fightMsgctrlSetValue(0x1F, value);
                 fightMsgctrlSetValue(0x21, value);
                 fightMsgctrlSetValue(0x20, value);
@@ -931,7 +906,7 @@ u32 fightFloorSetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg, u32
             fightMsgctrlSetValue(0x21, 0);
             fightMsgctrlSetValue(0x20, 0);
         }
-        fightFloorBiosSetAttackPokemonPtr(floor, (void*)value);
+        fightFloorBiosSetAttackPokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x37:
         fightOutPokemon_SetUseWazaDataId(fightFloorBiosGetAttackPokemonPtr(floor), value);
@@ -967,11 +942,11 @@ u32 fightFloorSetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg, u32
         fightOutPokemon_SetWazaHitDamage(fightFloorBiosGetAttackPokemonPtr(floor), value);
         break;
     case 0x42:
-        if ((FightOutPokemon*)value != 0) {
-            if (fightOutPokemonCheckValid((FightOutPokemon*)value) == 1) {
+        if (PC_PTR(FightOutPokemon*, value) != 0) {
+            if (fightOutPokemonCheckValid(PC_PTR(FightOutPokemon*, value)) == 1) {
                 fightMsgctrlSetValue(0x10, value);
                 fightMsgctrlSetValue(0x1B, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(
-                                               pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId((FightOutPokemon*)value)))));
+                                               pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(PC_PTR(FightOutPokemon*, value))))));
                 fightMsgctrlSetValue(0x42, value);
                 fightMsgctrlSetValue(0x44, value);
                 fightMsgctrlSetValue(0x43, value);
@@ -989,28 +964,28 @@ u32 fightFloorSetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg, u32
             fightMsgctrlSetValue(0x44, 0);
             fightMsgctrlSetValue(0x43, 0);
         }
-        fightFloorBiosSetDefensePokemonPtr(floor, (void*)value);
+        fightFloorBiosSetDefensePokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x43:
-        fightFloor_SetDefensePokemonPtr(floor, (FightOutPokemon*)value);
+        fightFloor_SetDefensePokemonPtr(floor, PC_PTR(FightOutPokemon*, value));
         fightFloor_SetAttackPokemonFightWazaTargetId(
-            floor, fightTargetGetTragetPtrToRelativeHostSideFightTargetId((FightOutPokemon*)value, fightType));
+            floor, fightTargetGetTragetPtrToRelativeHostSideFightTargetId(PC_PTR(FightOutPokemon*, value), fightType));
         break;
     case 0x44:
-        fightFloorBiosSetEscapePokemonPtr(floor, (void*)value);
+        fightFloorBiosSetEscapePokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x45:
-        fightFloorBiosSetIrekaePokemonPtr(floor, (void*)value);
+        fightFloorBiosSetIrekaePokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x46:
-        fightFloorBiosSetKizetuPokemonPtr(floor, (void*)value);
+        fightFloorBiosSetKizetuPokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x47:
-        if ((FightOutPokemon*)value != 0) {
-            if (fightOutPokemonCheckValid((FightOutPokemon*)value) == 1) {
+        if (PC_PTR(FightOutPokemon*, value) != 0) {
+            if (fightOutPokemonCheckValid(PC_PTR(FightOutPokemon*, value)) == 1) {
                 fightMsgctrlSetValue(0x12, value);
                 fightMsgctrlSetValue(0x1D, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(
-                                               pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId((FightOutPokemon*)value)))));
+                                               pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(PC_PTR(FightOutPokemon*, value))))));
             } else {
                 fightMsgctrlSetValue(0x12, 0);
                 fightMsgctrlSetValue(0x1D, 0);
@@ -1019,26 +994,26 @@ u32 fightFloorSetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg, u32
             fightMsgctrlSetValue(0x12, 0);
             fightMsgctrlSetValue(0x1D, 0);
         }
-        fightFloorBiosSetTuikakoukaPokemonPtr(floor, (void*)value);
+        fightFloorBiosSetTuikakoukaPokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x48:
-        fightFloorBiosSetTokuseiPokemonPtr(floor, (void*)value);
+        fightFloorBiosSetTokuseiPokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x49:
-        if ((FightOutPokemon*)value != 0 && fightOutPokemonCheckValid((FightOutPokemon*)value) == 1) {
-            fightFloor_SetAppointItemDataId(floor, fightOutPokemonGetSoubiItemDataId((FightOutPokemon*)value));
+        if (PC_PTR(FightOutPokemon*, value) != 0 && fightOutPokemonCheckValid(PC_PTR(FightOutPokemon*, value)) == 1) {
+            fightFloor_SetAppointItemDataId(floor, fightOutPokemonGetSoubiItemDataId(PC_PTR(FightOutPokemon*, value)));
         }
-        fightFloorBiosSetItemPokemonPtr(floor, (void*)value);
+        fightFloorBiosSetItemPokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x4A:
         fightFloorBiosSetEncountFloorId(value);
         break;
     case 0x4B:
-        if ((FightOutPokemon*)value != 0) {
-            if (fightOutPokemonCheckValid((FightOutPokemon*)value) == 1) {
+        if (PC_PTR(FightOutPokemon*, value) != 0) {
+            if (fightOutPokemonCheckValid(PC_PTR(FightOutPokemon*, value)) == 1) {
                 fightMsgctrlSetValue(0x1E, value);
                 fightMsgctrlSetValue(0x1C, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(
-                                               pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId((FightOutPokemon*)value)))));
+                                               pokemonTokuseiDataBiosGetPtr(fightOutPokemonGetTokuseiDataId(PC_PTR(FightOutPokemon*, value))))));
             } else {
                 fightMsgctrlSetValue(0x1E, 0);
                 fightMsgctrlSetValue(0x1C, 0);
@@ -1047,19 +1022,19 @@ u32 fightFloorSetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg, u32
             fightMsgctrlSetValue(0x1E, 0);
             fightMsgctrlSetValue(0x1C, 0);
         }
-        fightFloorBiosSetAppointPokemonPtr(floor, (void*)value);
+        fightFloorBiosSetAppointPokemonPtr(floor, PC_PTR(void*, value));
         break;
     case 0x4C:
-        fightFloorBiosSetAppointTrainerPtr(floor, (void*)value);
+        fightFloorBiosSetAppointTrainerPtr(floor, PC_PTR(void*, value));
         break;
     case 0x4D:
-        fightFloorBiosSetAppointWazaPtr(floor, (void*)value);
+        fightFloorBiosSetAppointWazaPtr(floor, PC_PTR(void*, value));
         break;
     case 0x4E:
-        fightFloorBiosSetAppointSidePtr(floor, (void*)value);
+        fightFloorBiosSetAppointSidePtr(floor, PC_PTR(void*, value));
         break;
     case 0x4F:
-        fightFloorBiosSetAppointItemPtr(floor, (void*)value);
+        fightFloorBiosSetAppointItemPtr(floor, PC_PTR(void*, value));
         break;
     case 0x50:
         fightFloorBiosSetAppointMsgId(floor, value);
@@ -1091,10 +1066,10 @@ u32 fightFloorSetStatus(FIGHT_FLOOR* floor, u16 dataId, u16 status, u16 arg, u32
         fightFloorBiosSetFightPokemonEntryCnt(floor, value);
         break;
     case 0x59:
-        fightFloorBiosSetFightOutPokemonPtrAry(floor, arg, (void*)value);
+        fightFloorBiosSetFightOutPokemonPtrAry(floor, arg, PC_PTR(void*, value));
         break;
     case 0x5A:
-        fightFloorBiosSetFightOutPokemonPtrAryPtr(floor, (void**)value);
+        fightFloorBiosSetFightOutPokemonPtrAryPtr(floor, PC_PTR(void**, value));
         break;
     case 0x5B:
         fightFloorBiosSetFirstAttackRnd(floor, value);

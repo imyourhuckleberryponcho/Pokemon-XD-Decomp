@@ -1,4 +1,5 @@
 #include <game/ppcops.h>
+#include <game/gcptr.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
@@ -6,15 +7,15 @@
 struct FIGHT_TRAINER;
 struct FightPokemon;
 struct FightOutPokemon { u32 data[548]; };
-struct FightSide;
+class FIGHT_SIDE;
 
 extern "C" {
 u16 HSD_Rand();
 StatusS32 fightTrainerGetStatus(u32, u32, u32, u32);
 u16 fightFloor_GetTikeiDataId(u32);
 u16 tikeiDataBiosGetWazaId(PCARG(u8, u16));
-FightSide* fightTargetGetPtrAsNowFightType(u32, FightOutPokemon*);
-u8 fightSideIsJoutaiDataId(FightSide*, u16);
+FIGHT_SIDE* fightTargetGetPtrAsNowFightType(u32, FightOutPokemon*);
+u8 fightSideIsJoutaiDataId(FIGHT_SIDE*, u16);
 u8 fightFloorGetFightTrainerFightOutPokemonIsFightActionAttackWazaOut(u32, FIGHT_TRAINER*, u8, u8, u16, FightOutPokemon*);
 u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(u32, FIGHT_TRAINER*, FightOutPokemon**, u8, u8);
 u16 fightFloorGetFightTrainerFightPokemonPtrAry(u32, FIGHT_TRAINER*, FightPokemon**, u8, u8);
@@ -88,7 +89,7 @@ u8 fightAi_GetTokuseiHaveFlag(FIGHT_TRAINER*, FightOutPokemon*, u16);
 extern const u16 moukakeiTbl[];
 extern const u16 statusUpKinomiTbl[];
 u8 fightFloor_GetFightTypeFightoutPokemonNum(u32);
-s16 fightSideGetCountAsJoutaiDataId(FightSide*, u16);
+s16 fightSideGetCountAsJoutaiDataId(FIGHT_SIDE*, u16);
 u16 fightTrainerAiGetFightOutPokemonUsedItemDataId(FIGHT_TRAINER*, FightOutPokemon*);
 s32 fightTrainerAiWazaValueSubayasaDaun(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaValueKougekiDaun(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
@@ -119,7 +120,7 @@ u8 fightTrainerAiIsFightPokemonJoutaiNormal(FIGHT_TRAINER*, FightPokemon*);
 u8 fightTrainerAiIsFightPokemonZokuseiDataId(FIGHT_TRAINER*, FightPokemon*, u16);
 u8 fightTrainerAiIsFightPokemonTokuseiDataId(FIGHT_TRAINER*, FightPokemon*, u16);
 FIGHT_TRAINER* fightFloorGetFightOutPokemonPtrToFightTrainerPtr(u32, FightOutPokemon*);
-u32 fightTrainerSearchIrekaeFightPokemon(FIGHT_TRAINER*, s16*);
+GCuptr fightTrainerSearchIrekaeFightPokemon(FIGHT_TRAINER*, s16*);
 u8 tikeiDataBiosGetFightKoukaId(PCARG(u8, u16));
 s32 fightTrainerAiWazaValueTuikaDoku(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaValueTuikaNemuri(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*);
@@ -225,7 +226,7 @@ s32 fightTrainerAiWazaValueDarkEnd(FIGHT_TRAINER* t, FightOutPokemon* self, u16 
 
 s32 fightTrainerAiWazaValueDarkRemove(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle = 0;
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     if (fightSideIsJoutaiDataId(side, 0x49) == 1 || fightSideIsJoutaiDataId(side, 0x48) == 1 || fightSideIsJoutaiDataId(side, 0x4b) == 1) handle = fightTrainerAiAddValueByAddsubDataId(0, t, 0x26d);
     return handle;
 }
@@ -344,7 +345,7 @@ s32 fightTrainerAiWazaValueYumekui(FIGHT_TRAINER* t, FightOutPokemon* self, u16 
 
 s32 fightTrainerAiWazaValueKawarawari(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle = 0;
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     if (fightSideIsJoutaiDataId(side, 0x49) == 1 || fightSideIsJoutaiDataId(side, 0x48) == 1) handle = fightTrainerAiAddValueByAddsubDataId(0, t, 0x26b);
     if (fightFloorGetFightTrainerFightOutPokemonIsFightActionAttackWazaOut(0, t, 1, 1, 0x10e, self) == 1) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x26c);
     return handle;
@@ -759,7 +760,7 @@ s32 fightTrainerAiWazaValueHurahuradansu(FIGHT_TRAINER* t, FightOutPokemon* self
 s32 fightTrainerAiWazaValueMakibisi(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle = 0;
     s16 count;
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     if (fightSideIsJoutaiDataId(side, 0x4a) == 1) {
         count = fightSideGetCountAsJoutaiDataId(side, 0x4a);
     } else {
@@ -913,7 +914,7 @@ extern "C" {
 s32 fightTrainerAiWazaValueKyouseikoutai(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle = 0;
     s16 count;
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     if (fightSideIsJoutaiDataId(side, 0x4a) == 1) {
         count = fightSideGetCountAsJoutaiDataId(side, 0x4a);
     } else {
@@ -1730,7 +1731,7 @@ s32 fightTrainerAiWazaValueDokudokunokiba(FIGHT_TRAINER* t, FightOutPokemon* sel
 }
 
 s32 fightTrainerAiWazaValuePoizunteeru(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     s32 handle = fightTrainerAiAddValueByAddsubDataId(0, t, 0x139);
     u8 def = fightTrainerAiGetFightOutPokemonAbiCntPhyDef(t, target);
     if (def > 6) handle = fightTrainerAiAddValue(handle, (def - 6) * fightTrainerGetStatus(0, 0x13a, 0x3e, 0));
@@ -1871,7 +1872,7 @@ s32 fightTrainerAiWazaValueTuikaKoori(FIGHT_TRAINER* t, FightOutPokemon* self, u
 
 s32 fightTrainerAiWazaValueBureizukikku(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle = 0;
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     u8 def = fightTrainerAiGetFightOutPokemonAbiCntSpeDef(t, target);
     if (def > 6) handle = fightTrainerAiAddValue(0, (def - 6) * fightTrainerGetStatus(0, 0x115, 0x3e, 0));
     handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x116);
@@ -2464,7 +2465,7 @@ s32 fightTrainerAiWazaValueRokettoZutuki(FIGHT_TRAINER* t, FightOutPokemon* self
 
 s32 fightTrainerAiWazaValueKamaitati(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle = 0;
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     u8 def = fightTrainerAiGetFightOutPokemonAbiCntPhyDef(t, target);
     if (def > 6) handle = fightTrainerAiAddValue(0, (def - 6) * fightTrainerGetStatus(0, 0x62, 0x3e, 0));
     handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x64);
@@ -2525,7 +2526,7 @@ s32 fightTrainerAiWazaValueKouPuraioritii(FIGHT_TRAINER* t, FightOutPokemon* sel
 
 s32 fightTrainerAiWazaValueSpeKuritikaru(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle;
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     handle = fightTrainerAiAddValueByAddsubDataId(0, t, 0x51);
     if (fightFloorGetFightTrainerFightOutPokemonIsFightActionAttackWazaOut(0, t, 1, 1, 0x10e, self) == 1) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x52);
     u8 def = fightTrainerAiGetFightOutPokemonAbiCntSpeDef(t, target);
@@ -2536,7 +2537,7 @@ s32 fightTrainerAiWazaValueSpeKuritikaru(FIGHT_TRAINER* t, FightOutPokemon* self
 
 s32 fightTrainerAiWazaValuePhyKuritikaru(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle;
-    FightSide* side = fightTargetGetPtrAsNowFightType(2, target);
+    FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
     handle = fightTrainerAiAddValueByAddsubDataId(0, t, 0x4d);
     if (fightFloorGetFightTrainerFightOutPokemonIsFightActionAttackWazaOut(0, t, 1, 1, 0x10e, self) == 1) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x4e);
     u8 def = fightTrainerAiGetFightOutPokemonAbiCntPhyDef(t, target);

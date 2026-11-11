@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pxdvs/GSAPI/GSfsys/fsys.h>
+#include "game/gcdata.h"
 
 extern "C" {
 
@@ -156,7 +157,7 @@ BOOL _fsysInitBlock(u32 bufferSize) {
     if (_fsysBlock == NULL) {
         return FALSE;
     }
-    _fsysBlockManage = (FsysBlock*)_fsysDoMalloc(_fsysBlockSize * sizeof(FsysBlock));
+    _fsysBlockManage = (FsysBlock*)_fsysDoMalloc(GC_SIZE(_fsysBlockSize * sizeof(FsysBlock), _fsysBlockSize * 16));
     if (_fsysBlockManage == NULL) {
         return FALSE;
     }

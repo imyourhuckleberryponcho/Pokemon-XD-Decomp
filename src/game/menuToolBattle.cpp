@@ -2,28 +2,8 @@
 #include <dolphin/types.h>
 
 #pragma peephole off
+#include <game/menuCBWork.h>
 #pragma pool_strings off
-
-struct ToolBattleCB {
-    s32 result;
-    s32 mode;
-    s32 kind;
-    u8 pad0C[0xAFFC - 0xC];
-    s32 afFC;
-    u8 padB000[0xB140 - 0xB000];
-    s32 flashB140;
-    u8 padB144[0xB170 - 0xB144];
-    s32 flashB170;
-    s32 flashB174;
-    s32 flashB178;
-    u8 padB17C[8];
-    s32 battleActive;
-    u8 padB188[0xB19C - 0xB188];
-    s32 disconnected;
-    u8 padB1A0[0xB1E4 - 0xB1A0];
-    s16 timer;
-    u8 padB1E6[0xB5F8 - 0xB1E6];
-};
 
 struct KeyInfo {
     u16 pad0;
@@ -32,7 +12,7 @@ struct KeyInfo {
 };
 
 extern "C" {
-extern ToolBattleCB _CB;
+extern _MENUCBWORK _CB;
 
 void FlashSystemSetNowFrameLabel(u32 id, const char* label);
 void FlashSystemSetPlayFrameLabel(u32 id, const char* from, const char* to);
@@ -48,19 +28,19 @@ u16 fightGetFightResultId(void);
 u8 fightReadResourceID(s32 a, s32 b);
 void fightFreeResourceID(s32 a, s32 b);
 void menuCBBattleEndSetPokemonHP(void);
-void menuCBBattleStartInit(ToolBattleCB* cb, s32 flag);
+void menuCBBattleStartInit(_MENUCBWORK* cb, s32 flag);
 void menuCBBattleStartTrainerFaceFree(void);
 void menuCBBattleStartTrainerLoadTex(void);
 void menuCBBios_CurrentlyWorkingToolBattleSet(s32 on);
 void menuCBPokemonEntryLoadTex(void);
 void menuCBPokemonEntryPokemonFaceFree(void);
-s32 menuCB_Battle(ToolBattleCB* cb);
+s32 menuCB_Battle(_MENUCBWORK* cb);
 bool menuCB_BattleBA_PokemonEntryNum(void);
-s32 menuCB_BattleResult(ToolBattleCB* cb);
+s32 menuCB_BattleResult(_MENUCBWORK* cb);
 void menuCB_GBADisconnectedErrorJob(void);
-s32 menuCB_InitBattle(ToolBattleCB* cb);
+s32 menuCB_InitBattle(_MENUCBWORK* cb);
 s32 menuCB_MenuRollback(s32 id);
-s32 menuCB_PokemonEntry(ToolBattleCB* cb);
+s32 menuCB_PokemonEntry(_MENUCBWORK* cb);
 void menuCB_SE_Play(s32 id);
 void menuCBpokemonFaceReadWait(void);
 void menuCBtrainerFaceReadWait(void);
@@ -100,7 +80,7 @@ static void _menuCB_FlashStart_WINLOSE() {
         break;
     }
     FlashSystemSetLoopFlag(0x21543000, 0);
-    _CB.flashB178 = 1;
+    _CB.unkB178 = 1;
     menuOpen(0x110, 0);
     menuCB_SE_Play(0x5E0);
     do {
@@ -108,9 +88,9 @@ static void _menuCB_FlashStart_WINLOSE() {
             GSthreadSwitch();
         } while (!FlashSystemIsLastFrame(0x21543000));
         if (!pauseIsPause()) {
-            _CB.timer--;
+            _CB.waitTimer--;
         }
-    } while (_CB.timer != 0 && (windowGetKeyInfo()->trg & 0x20) == 0);
+    } while (_CB.waitTimer != 0 && (windowGetKeyInfo()->trg & 0x20) == 0);
 }
 
 static void _menuCB_FlashEnd_VS(bool open) {
@@ -120,7 +100,7 @@ static void _menuCB_FlashEnd_VS(bool open) {
             GSthreadSwitch();
         } while (winSeqCheckMove(0x113));
     } else {
-        _CB.flashB174 = 1;
+        _CB.unkB174 = 1;
     }
 }
 
@@ -132,8 +112,8 @@ static void _menuCB_FlashStart_VS(bool start) {
         FlashSystemSetPlayFrameLabel(0x21533000, "end_keep", "end_keep");
         FlashSystemSetNowFrameLabel(0x21533000, "end_keep");
     }
-    _CB.flashB170 = 1;
-    _CB.flashB174 = 0;
+    _CB.unkB170 = 1;
+    _CB.unkB174 = 0;
 }
 
 static void _menuCB_FlashEnd() {
@@ -150,7 +130,7 @@ static void _menuCB_FlashStart(bool start) {
         FlashSystemSetPlayFrameLabel(0x20093000, "end", "end");
         FlashSystemSetNowFrameLabel(0x20093000, "end");
     }
-    _CB.flashB140 = 1;
+    _CB.unkB140 = 1;
     menuOpen(0x105, 0);
     do {
         GSthreadSwitch();
@@ -185,14 +165,14 @@ void menuToolBattleMain(void) {
         menuCBBios_CurrentlyWorkingToolBattleSet(1);
         menuCBBattleStartInit(&_CB, 0);
         _CB.disconnected = 0;
-        _CB.timer = 0xF;
+        _CB.waitTimer = 0xF;
         menuCBPokemonEntryPokemonFaceFree();
         menuCBPokemonEntryLoadTex();
         menuCBpokemonFaceReadWait();
         menuCBBattleStartTrainerFaceFree();
         menuCBBattleStartTrainerLoadTex();
         menuCBtrainerFaceReadWait();
-        if (_CB.kind == 2) {
+        if (_CB.state == 2) {
             menuOpen(0xB1, 0);
             _menuCB_FlashStart_VS(true);
             menuOpen(0x103, 0);
@@ -249,7 +229,7 @@ void menuToolBattleMain(void) {
         menuCBBattleEndSetPokemonHP();
         menuCBBattleStartInit(&_CB, 1);
         _CB.disconnected = 0;
-        _CB.timer = 0xB4;
+        _CB.waitTimer = 0xB4;
         menuCBPokemonEntryPokemonFaceFree();
         menuCBPokemonEntryLoadTex();
         menuCBpokemonFaceReadWait();
@@ -257,7 +237,7 @@ void menuToolBattleMain(void) {
         menuCBBattleStartTrainerLoadTex();
         menuCBtrainerFaceReadWait();
         menuCB_SE_Play(0x14);
-        if (_CB.kind == 2) {
+        if (_CB.state == 2) {
             menuOpen(0xB1, 0);
             _menuCB_FlashStart_VS(false);
             menuOpen(0x103, 0);
@@ -305,7 +285,7 @@ void menuToolBattleMain(void) {
         }
         if (res == 0xB1 || res == 0xAC) {
             if (_CB.mode != 1) {
-                if (_CB.afFC == 6) {
+                if (_CB.floorSelect == 6) {
                     menuCB_InitBattle(&_CB);
                 }
             } else {

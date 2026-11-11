@@ -117,7 +117,7 @@ public:
     u16 SortGojyuonDataSet(u16 id);
     void DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
     void DispPokemonModel(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, u32 itemID);
-    s32 GetPokemonName(s32 index);
+    GCsptr GetPokemonName(s32 index);
     void ScrollBar(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite);
     void LoadHero(bool load);
     s32 TermThread(MENU_MODEL* model);
@@ -176,7 +176,7 @@ void __dl__FPv(void*);
 void __dla__FPv(void*);
 void* memcpy(void* dst, const void* src, unsigned long n);
 s32 GScharCmp(const char*, const char*);
-void GScharCpy(char*, s32);
+void GScharCpy(char*, GCsptr);
 s32 GSfloorGetCurrentFloorGroupID(void);
 void* GSgfxLayerFindByID(GCsptr);
 u16 * GSmsgGetGSchar(u32);
@@ -184,7 +184,7 @@ void GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSsndPlayNow(u32);
 void GSthreadClose(u32);
 u32 GSthreadCreate(s32, s32, s32, s32, s32, s32 (*)(MENU_MODEL*));
-u32 GSthreadGetCurrentThread(void);
+GCuptr GSthreadGetCurrentThread(void);
 u8 GSthreadIsRunning(u32);
 void GSthreadSetArgs(u32, s32, ...);
 void GSthreadSwitch(void);
@@ -337,7 +337,7 @@ void* menuPdaMemoListGetPokemonDataPointer(s32 index) {
     return pokemonDataBiosGetPtr(menuPdaMemoListGetPokemonID(index));
 }
 
-s32 menuPdaMemoListGetPokemonName(s32 index) {
+GCsptr menuPdaMemoListGetPokemonName(s32 index) {
     if (pMemoList == 0) {
         return 0;
     }
@@ -384,7 +384,7 @@ void menuPdaMemoListHook(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
 
 void menuPdaMemoList(void) {
     CURSOR cursor;
-    pMemoList = new pdaMemoList;
+    pMemoList = (GC_NEW_NOTE(sizeof(pdaMemoList), 612) new pdaMemoList);
     cursor.pos = 0;
     cursor.top = 0;
     menuOpen(0x7F, 0);
@@ -558,6 +558,8 @@ u16 pdaMemoList::SortGojyuonDataSet(u16 id) {
     return 0;
 }
 
+#pragma push
+#pragma optimize_for_size on
 void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     CURSOR cursor = _getCursor();
     int count = memoDataGetCount(0);
@@ -566,7 +568,8 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     MenuItem* type1 = menuItemBiosGetPtr(0x78, 0xEF);
     MenuItem* type2 = menuItemBiosGetPtr(0x78, 0xF0);
     MenuItem* area = menuItemBiosGetPtr(0x78, 0xEE);
-    MenuItem* self = menuItemBiosGetPtr(0x78, sprite->id);
+    s16 rf_t = sprite->id;
+    MenuItem* self = menuItemBiosGetPtr(0x78, rf_t);
     spriteSetScissor(layer, area->x - self->x, area->y - self->y, area->width, area->height);
     f32 y = unk248;
     f32 offset;
@@ -577,7 +580,7 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     }
     for (s32 i = 0; i < count; i++) {
         if (i >= cursor.top - 1 && i < cursor.top + 9) {
-            s32 name = GetPokemonName(i);
+            GCsptr name = GetPokemonName(i);
             void* mon = GetPokemonPointer(i);
             msgctrlSetValue(0x37, name);
             GSmsgPrint2(layer, 0, (s32)(y + offset), window->alpha | ~0xFF, 0x4277);
@@ -592,8 +595,9 @@ void pdaMemoList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         }
         y += 27.0f;
     }
-    spriteClearScissor(layer);
+    spriteClearScissor((u32) layer);
 }
+#pragma pop
 
 void pdaMemoList::DispPokemonModel(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, u32 itemID) {
     MenuItem* item = menuItemBiosGetPtr(0x78, itemID);
@@ -618,7 +622,7 @@ void pdaMemoList::DispPokemonModel(tagWINDOW_WORK* window, tagSPRITE_WORK* sprit
     }
 }
 
-s32 pdaMemoList::GetPokemonName(s32 index) {
+GCsptr pdaMemoList::GetPokemonName(s32 index) {
     u16 id;
     if (index <= memoDataGetCount(0) && index >= 0) {
         id = sortList[index];

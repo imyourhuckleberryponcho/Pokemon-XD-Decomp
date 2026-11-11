@@ -76,63 +76,10 @@ struct ErrEntry {
     u8 pad[2];
 };
 
-struct CBWork {
-    u8 pad0[0x8];
-    s32 unk8;
-    u8 padC[0x992A];
-    u8 ruleStr[0x90];
-    u8 pad99C6[0x2B2];
-    u8* rule;
-#ifdef __MWERKS__
-    u8 pad9C7C[0x8];
-#else
-    u8 pad9C7C[0x4];
-#endif
-    ErrEntry err[4][6];
-    u8 pad9CE4[0x978];
-    u8 hero[1];
-    u8 padA65D[0x983];
-    s32 unkAFE0;
-    s32 unkAFE4;
-    u8 padAFE8[0x2C];
-    s32 unkB014;
-    u8 padB018[0x10];
-    s32 scroll;
-    u8 padB02C[0xA8];
-    u32 tempBuff;
-    s32 errPlayer;
-    u8 padB0DC[0x8];
-    s32 unkB0E4;
-    s32 unkB0E8;
-    s32 unkB0EC;
-    s32 unkB0F0;
-    u8 padB0F4[0x4];
-    s32 unkB0F8;
-    s32 unkB0FC;
-    s32 unkB100;
-    u8 padB104[0x14];
-    s32 unkB118;
-    u32 unkB11C;
-    u8 padB120[0x4];
-    s32 unkB124;
-    s32 unkB128;
-    s32 unkB12C;
-    u8 padB130[0x8];
-    s32 unkB138;
-    u8 padB13C[0x8];
-    s32 unkB144;
-    s32 unkB148;
-    s32 unkB14C;
-    u8 padB150[0x84];
-    s32 unkB1D4;
-    s32 unkB1D8;
-    s32 unkB1DC;
-    s32 unkB1E0;
-    u8 padB1E4[0x2BC];
-    u8 unkB4A0;
-    u8 padB4A1[0x83];
-    Pokemon* relive[8][4];
-};
+#define MENUCB_ERR ErrEntry
+#define MENUCB_DANCER Pokemon
+#include <game/menuCBWork.h>
+#define CB_SLOT1_ROWS(T, field) ((T(*)[6]) & _CB.field[0][-1])
 struct CBMsgWin {
     void* slot0;
     u8 pad4[0x2];
@@ -229,7 +176,7 @@ void menuPtSpriteDrawColor(u16, s32, s32, s32, s32, u32);
 void menuPtSpriteDrawColor(u16, s32, s32, u32);
 
 extern "C" {
-extern CBWork _CB;
+extern _MENUCBWORK _CB;
 }
 #include <game/menuCB_BattleStartWork.h>
 extern "C" {
@@ -325,7 +272,11 @@ void menuCB_FlashEnd(s32);
 void fadeSet(s32, f32);
 void menuOpen(s32, s32);
 void menuCloseCustom(s32, s32, s32);
+#ifdef __MWERKS__
 void menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 s32 windowGetActiveID(void);
 s32 menuCB_GetDisconnectedGBA(void);
 void heroBiosCopy(void*, void*);
@@ -342,7 +293,7 @@ u16 toolentryTaisenGetPokemonNum(s32);
 u16 toolentryTaisengetEtnryPokemonOrderNum(s32);
 u8 menuCB_BattleStartSoundCheck(void);
 u8 FlashSystemIsLastFrame(u32);
-void* menuCBBios_GetTrainerOrgImmediately(s32 i);
+MenuCBTrainer* menuCBBios_GetTrainerOrgImmediately(s32 i);
 s32 menuCBTrainerBios_GetHomePlace(void*);
 u8 heroBiosGetSexDataId(void*);
 void spriteSetOffset(s32, s32, s32);
@@ -363,50 +314,14 @@ u16 pokemonBiosGetHp(Pokemon*);
 u16 pokemonBiosGetMaxHp(Pokemon*);
 u8 pokemonDataBiosGetZokuseiDataId(void*, u16);
 u16 pokemon_GetPokemonDataId(Pokemon*);
-u32 pokemonDB_GetName(u16);
+GCuptr pokemonDB_GetName(u16);
 void* memset(void*, int, u32);
 bool pauseIsPause(void);
 }
-struct CBHP {
-    u8 pad[0xB1E4];
-    s16 wait;
-    u8 pad2[2];
-    f32 f0[4][6];
-    f32 f1[4][6];
-    f32 f2[4][6];
-    f32 f3[4][6];
-    f32 f4[4][6];
-    f32 f5[4][6];
-};
-struct CBBall {
-    u8 pad[0xB426];
-    s16 x[4][6];
-    s16 y[4][6];
-    u8 pad2;
-    s8 on[4][6];
-};
-#define CBH (*(CBHP*)&_CB)
-#define CBH_ROWS(off) ((f32(*)[6])((u8*)&_CB + (off)))
-struct CBRuleData {
-    s16 v[3];
-    u8 pad6[0xE];
-    s16 c14;
-    s16 c16;
-    s16 pad18;
-    s16 c1a;
-    s16 c1c;
-};
-#define RULE ((CBRuleData*)_CB.rule)
 static inline void ruleDispTitle(CBWin* win, CBItem* item) {
     s16 w = GSmsgGetRect(0x4416) >> 16;
     GSmsgPrint2(win->layer, (s16)(item->w / 2 - w / 2), 0, win->alpha | ~0xFF, 0x4416);
 }
-#define CBB (*(CBBall*)&_CB)
-#define CBB_ROWS(type, off) ((type(*)[6])((u8*)&_CB + (off)))
-#define CB32(o) (*(s32*)((u8*)&_CB + (o)))
-#define CBF32(o) (*(f32*)((u8*)&_CB + (o)))
-#define CB16(o) (*(s16*)((u8*)&_CB + (o)))
-#define CB8(o) (*(s8*)((u8*)&_CB + (o)))
 
 struct CReliveStage {
 public:
@@ -678,7 +593,7 @@ static void _menuCB2DPokemonNewSet(u8 kind) {
             _menuCB2DPokemonNewSet2(5, 0, 0x1E, kind);
             break;
         case 1:
-            if (_CB.unkB4A0 == 1) {
+            if (_CB.reliveHallOpen == 1) {
                 _menuCB2DPokemonNewSet2(6, 0x80000, 5, kind);
             } else {
                 _menuCB2DPokemonNewSet2(5, 0x70000, 0x1E, kind);
@@ -690,7 +605,7 @@ static void _menuCB2DPokemonNewSet(u8 kind) {
         switch (kind) {
         case 0:
             if (_CB.unkB0E8 == 7) {
-                if (_CB.unkB4A0 == 1) {
+                if (_CB.reliveHallOpen == 1) {
                     _menuCB2DPokemonNewSet2(6, 0, 5, kind);
                 } else {
                     _menuCB2DPokemonNewSet2(4, 0, 6, kind);
@@ -959,7 +874,7 @@ static Pokemon* menuCBPokemonPtrGet(u32 type, u32 index) {
                 break;
             case 1:
             case 2:
-                p = _CB.relive[hi][lo];
+                p = _CB.dancer[hi][lo];
                 break;
             }
         }
@@ -1081,7 +996,7 @@ void menuCB_RuleMessageTblDisp(CBWin* win, CBItem* item, s32 idx) {
     s16 x;
     int i;
     if (idx >= 3) {
-        msgctrlSetValue(0x37, &_CB.ruleStr[idx * 0x90]);
+        msgctrlSetValue(0x37, _CB.rule[idx].name);
     } else {
         switch (idx) {
         case 0:
@@ -1167,7 +1082,7 @@ void menuCB_RuleItemFlagDisp(CBWin* win, CBSprite* sprite) {
     for (i = first; i <= last; i++, y += 0x18) {
         if (i == 0x3E) {
             GSmsgPrint2(win->layer, 0, y, win->alpha | ~0xFF, 1);
-        } else if (_CB.rule[i + 0x52]) {
+        } else if (_CB.currentRule->f[i]) {
             GSmsgPrint2(win->layer, 0, y, win->alpha | 0xFF3F0000, 0x43E4);
         } else {
             GSmsgPrint2(win->layer, 0, y, win->alpha | ~0xFF, 0x43E3);
@@ -1221,34 +1136,34 @@ void menuCBRuleNumberDisp(CBWin* win, CBItem* item, s32 digit) {
     s16 w;
     switch (digit) {
     case 0:
-        n = RULE->v[0] / 100;
+        n = _CB.currentRule->level[0] / 100;
         break;
     case 1:
-        n = RULE->v[0] % 100 / 10;
+        n = _CB.currentRule->level[0] % 100 / 10;
         break;
     case 2:
-        n = RULE->v[0] % 10;
+        n = _CB.currentRule->level[0] % 10;
         break;
     case 3:
-        n = RULE->v[1] / 100;
+        n = _CB.currentRule->level[1] / 100;
         break;
     case 4:
-        n = RULE->v[1] % 100 / 10;
+        n = _CB.currentRule->level[1] % 100 / 10;
         break;
     case 5:
-        n = RULE->v[1] % 10;
+        n = _CB.currentRule->level[1] % 10;
         break;
     case 6:
-        n = RULE->v[2] / 100;
+        n = _CB.currentRule->level[2] / 100;
         break;
     case 7:
-        n = RULE->v[2] % 100 / 10;
+        n = _CB.currentRule->level[2] % 100 / 10;
         break;
     case 8:
-        n = RULE->v[2] % 10;
+        n = _CB.currentRule->level[2] % 10;
         break;
     case 9:
-        v = RULE->c14;
+        v = _CB.currentRule->battleTimeLimit;
         if (v & 0x8000) {
             ruleDispTitle(win, item);
             return;
@@ -1256,7 +1171,7 @@ void menuCBRuleNumberDisp(CBWin* win, CBItem* item, s32 digit) {
         n = v / 10;
         break;
     case 10:
-        v = RULE->c14;
+        v = _CB.currentRule->battleTimeLimit;
         if (v & 0x8000) {
             ruleDispTitle(win, item);
             return;
@@ -1264,7 +1179,7 @@ void menuCBRuleNumberDisp(CBWin* win, CBItem* item, s32 digit) {
         n = v % 10;
         break;
     case 11:
-        v = RULE->c16;
+        v = _CB.currentRule->commandTimeLimit;
         if (v & 0x8000) {
             ruleDispTitle(win, item);
             return;
@@ -1272,7 +1187,7 @@ void menuCBRuleNumberDisp(CBWin* win, CBItem* item, s32 digit) {
         n = v / 10;
         break;
     case 12:
-        v = RULE->c16;
+        v = _CB.currentRule->commandTimeLimit;
         if (v & 0x8000) {
             ruleDispTitle(win, item);
             return;
@@ -1280,11 +1195,11 @@ void menuCBRuleNumberDisp(CBWin* win, CBItem* item, s32 digit) {
         n = v % 10;
         break;
     case 13:
-        if (RULE->c1c == 1) {
+        if (_CB.currentRule->a1C == 1) {
             ruleDispTitle(win, item);
             return;
         }
-        v = RULE->c1a;
+        v = _CB.currentRule->a1A;
         n = v % 10;
         break;
     }
@@ -1528,7 +1443,7 @@ void menuCBRULE_EditNameDispLarge(CBWin* win, s32 idx) {
     int i;
     GCsptr n;
     if (idx >= 3) {
-        msgctrlSetValue(0x37, &_CB.ruleStr[idx * 0x90]);
+        msgctrlSetValue(0x37, _CB.rule[idx].name);
     } else {
         switch (idx) {
         case 0:
@@ -1571,7 +1486,7 @@ void menuCBRULE_EditNameDispLarge(CBWin* win, s32 idx) {
 }
 
 void menuCBRULE_EditNameDisp(CBWin* win, CBItem* item, s32 idx) {
-    msgctrlSetValue(0x37, &_CB.ruleStr[idx * 0x90]);
+    msgctrlSetValue(0x37, _CB.rule[idx].name);
     GSmsgPrint2(win->layer, 0, 0, (*(u32*)&item->cr & ~0xFF) | win->alpha, 0x4277);
 }
 
@@ -1586,42 +1501,42 @@ s32 menuCB_GCEntry_SubWindow_Disp(void) {
     s16 x;
     s16 y;
     u16 idx;
-    if (CB32(0xAFF0) == 1) {
+    if (_CB.unkAFF0 == 1) {
         winMsgOpen(2, 0x43A1, 1, 0);
         switch (pokecoloGetCountryCode()) {
         case 0:
-            _CB.unkAFE0 = menuSubOpenYesNo(0, 0x3C, 0xD2, 0);
+            _CB.cursor = menuSubOpenYesNo(0, 0x3C, 0xD2, 0);
             break;
         case 1:
         case 2:
-            _CB.unkAFE0 = menuSubOpenYesNo(0, 0x3C, 0xC8, 0);
+            _CB.cursor = menuSubOpenYesNo(0, 0x3C, 0xC8, 0);
             break;
         }
-        if (_CB.unkAFE0 == -1) {
-            _CB.unkAFE0 = 1;
+        if (_CB.cursor == -1) {
+            _CB.cursor = 1;
         }
         winMsgClose(0);
-        return _CB.unkAFE0;
+        return _CB.cursor;
     }
     menuCBGCEntryTypeIndex();
     idx = _CB.unkB1D8;
     if (idx >= 0x1E && idx <= 0x23) {
-        _CB.unkAFE0 = menuSubOpenSelect2(0, submenu_msg2, 4, 0x28, 0x64, 0, 4, 1);
-        if (_CB.unkAFE0 == -1) {
-            _CB.unkAFE0 = 3;
+        _CB.cursor = menuSubOpenSelect2(0, submenu_msg2, 4, 0x28, 0x64, 0, 4, 1);
+        if (_CB.cursor == -1) {
+            _CB.cursor = 3;
         }
-        switch (_CB.unkAFE0) {
+        switch (_CB.cursor) {
         case 0:
             return 1;
         case 1:
             return 2;
         case 2:
             winMsgOpen(2, 0x43A0, 0, 0);
-            _CB.unkAFE0 = menuSubOpenSelect2(0, submenu_msg3, 3, 0x28, 0x64, 0, 3, 1);
-            if (_CB.unkAFE0 == -1) {
-                _CB.unkAFE0 = 2;
+            _CB.cursor = menuSubOpenSelect2(0, submenu_msg3, 3, 0x28, 0x64, 0, 3, 1);
+            if (_CB.cursor == -1) {
+                _CB.cursor = 2;
             }
-            switch (_CB.unkAFE0) {
+            switch (_CB.cursor) {
             case 0:
                 winMsgClose(0);
                 return 4;
@@ -1649,25 +1564,25 @@ s32 menuCB_GCEntry_SubWindow_Disp(void) {
             break;
         }
         if (_CB.unkB100 == 6) {
-            _CB.unkAFE0 = menuSubOpenSelect2(0, submenu_msg1s, 2, x, y, 0, 2, 1);
-            if (_CB.unkAFE0 == -1) {
-                _CB.unkAFE0 = 1;
+            _CB.cursor = menuSubOpenSelect2(0, submenu_msg1s, 2, x, y, 0, 2, 1);
+            if (_CB.cursor == -1) {
+                _CB.cursor = 1;
             }
         } else {
-            _CB.unkAFE0 = menuSubOpenSelect2(0, submenu_msg1, 3, x, y, 0, 3, 1);
-            if (_CB.unkAFE0 == -1) {
-                _CB.unkAFE0 = 2;
+            _CB.cursor = menuSubOpenSelect2(0, submenu_msg1, 3, x, y, 0, 3, 1);
+            if (_CB.cursor == -1) {
+                _CB.cursor = 2;
             }
         }
         if (_CB.unkB100 == 6) {
-            switch (_CB.unkAFE0) {
+            switch (_CB.cursor) {
             case 0:
                 return 2;
             case 1:
                 return 6;
             }
         } else {
-            switch (_CB.unkAFE0) {
+            switch (_CB.cursor) {
             case 0:
                 return 0;
             case 1:
@@ -1681,33 +1596,33 @@ s32 menuCB_GCEntry_SubWindow_Disp(void) {
 }
 
 void menuCB_TUNAIDE01_Rule_SELECT(void) {
-    switch (CB32(0xB004)) {
+    switch (_CB.unkB004) {
     case 0:
     case 1:
     case 2:
-        _CB.unkAFE0 = menuSubOpenSelect2(0, submenurule_msg1, 3, 0x28, 0xF4, _CB.unkAFE0, 3, 1);
-        if (_CB.unkAFE0 == -1) {
-            _CB.unkAFE0 = 2;
+        _CB.cursor = menuSubOpenSelect2(0, submenurule_msg1, 3, 0x28, 0xF4, _CB.cursor, 3, 1);
+        if (_CB.cursor == -1) {
+            _CB.cursor = 2;
         }
         break;
     case 3:
     case 4:
     case 5:
-        _CB.unkAFE0 = menuSubOpenSelect2(0, submenurule_msg2, 4, 0x28, 0xD4, _CB.unkAFE0, 4, 1);
-        if (_CB.unkAFE0 == -1) {
-            _CB.unkAFE0 = 3;
+        _CB.cursor = menuSubOpenSelect2(0, submenurule_msg2, 4, 0x28, 0xD4, _CB.cursor, 4, 1);
+        if (_CB.cursor == -1) {
+            _CB.cursor = 3;
         }
-        _CB.unkAFE0 = _CB.unkAFE0 + 0x10;
+        _CB.cursor = _CB.cursor + 0x10;
         break;
     }
-    switch (_CB.unkAFE0) {
+    switch (_CB.cursor) {
     case 0:
     case 16:
-        CB32(0xB10C) = 0;
+        _CB.unkB10C = 0;
         break;
     case 2:
     case 19:
-        CB32(0xB10C) = 1;
+        _CB.unkB10C = 1;
         break;
     }
 }
@@ -1719,7 +1634,7 @@ void menuCB_GCEntry_OkPushErrorCheck(void) {
     for (i = 0; i < 6; i++) {
         toolBattleRuleErrorFlagClear(0, i);
     }
-    hero = (u8*)&_CB + 0xA65C;
+    hero = _CB.hero;
     menuCBRule_ErrorFlagSet(hero, 0);
     for (u32 i_loop = 0; i_loop < 6; i_loop++) {
         if (menuCB_Trainer_Error_Check(i_loop, 8)) {
@@ -1812,9 +1727,9 @@ void menuCBPokemonEntryGCControlDisp(CBSprite* sprite, s32 b) {
 void menuCBPokemonEntryBallAnaDisp(CBItem* item, s32 player, u32 idx) {
     u16 max = (u16)menuCBBios_ParticipationPokemonMax();
     u16 num = toolentryTaisenGetPokemonNum(player);
-    CBB_ROWS(s16, 0xB426)[player][idx] = item->x;
-    if (CBB_ROWS(s8, 0xB487)[player][(s32)idx] == 0) {
-        CBB_ROWS(s16, 0xB456)[player][idx] = 0x32;
+    _CB.ballX[player][idx - 1] = item->x;
+    if (_CB.ballOn[player][idx - 1] == 0) {
+        _CB.ballOfs[player][idx - 1] = 0x32;
     }
     num = num < max ? num : max;
     if (idx > num) {
@@ -1832,7 +1747,7 @@ void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
     num = num < max ? num : max;
     if (idx > num || idx > order) {
         if (pauseIsPause()) {
-            if (CBB_ROWS(s8, 0xB487)[player][(s32)idx] == 0) {
+            if (_CB.ballOn[player][idx - 1] == 0) {
                 winSpriteSetDisp(item, 0);
                 return;
             }
@@ -1840,24 +1755,24 @@ void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
             return;
         }
         winSpriteSetDisp(item, 0);
-        CBB_ROWS(s8, 0xB487)[player][(s32)idx] = 0;
+        _CB.ballOn[player][idx - 1] = 0;
         return;
     }
     if (pauseIsPause()) {
-        flag = &CBB_ROWS(s8, 0xB487)[player][(s32)idx];
+        flag = &CB_SLOT1_ROWS(s8, ballOn)[player][(s32)idx];
         if (*flag != 1) {
             winSpriteSetDisp(item, 0);
             *flag = 0;
             return;
         }
     }
-    CBB_ROWS(s8, 0xB487)[player][(s32)idx] = 1;
-    item->x = CBB_ROWS(s16, 0xB426)[player][idx] + CBB_ROWS(s16, 0xB456)[player][idx];
-    if (CBB_ROWS(s16, 0xB456)[player][idx] != 0) {
-        CBB_ROWS(s16, 0xB456)[player][idx] -= 5;
+    _CB.ballOn[player][idx - 1] = 1;
+    item->x = _CB.ballX[player][idx - 1] + _CB.ballOfs[player][idx - 1];
+    if (_CB.ballOfs[player][idx - 1] != 0) {
+        _CB.ballOfs[player][idx - 1] -= 5;
     }
     winSpriteSetDisp(item, 1);
-    if (((s32(*)[0x1320 / 4])((u8*)&_CB + 0x1C))[player][idx] == 0xF) {
+    if (_CB.trainer[player].order[idx - 1] == 0xF) {
         winSpriteSetDisp(item, 0);
     }
 }
@@ -1883,7 +1798,7 @@ void menuCB_BattleEntryPokemonSelectDisp(CBSprite* sprite, u32 a, u32 b) {
 }
 
 u8 menuCB_GCStatusDispMode(CBSprite* sprite, s32 mode) {
-    if (_CB.unk8 == 2) {
+    if (_CB.state == 2) {
         if (mode == 0) {
             winSpriteSetDisp(sprite, 1);
             return 1;
@@ -2523,17 +2438,17 @@ void menuCB2DPokemonClearSHIFT(u32 dir) {
         antL[i].use();
     }
     CAnt::systemUnUseResourceRelease();
-    CB32(0xB154) = 0;
+    _CB.unkB154 = 0;
     if (dir == 0) {
-        CB32(0xB150) = -0x10;
-        CB32(0xB158) = 0x180;
+        _CB.unkB150 = -0x10;
+        _CB.unkB158 = 0x180;
     } else {
-        CB32(0xB150) = 0x10;
-        CB32(0xB158) = -0x180;
+        _CB.unkB150 = 0x10;
+        _CB.unkB158 = -0x180;
     }
-    CB32(0xB15C) = _CB.unkB0F0;
-    CB32(0xB160) = _CB.unkB0E8;
-    CB32(0xB164) = _CB.unkB0EC;
+    _CB.unkB15C = _CB.unkB0F0;
+    _CB.unkB160 = _CB.unkB0E8;
+    _CB.unkB164 = _CB.unkB0EC;
 }
 
 void menuCB2DPokemonALLClear(void) {
@@ -2570,7 +2485,7 @@ void menuCB2DPokemonDisp2(CBWin* win, CBItem* item, u32 type, u32 index) {
         }
         pos.x = item->x + 0x20 + win->x8C;
         pos.y = item->y + 0x20;
-        if ((s32)CB32(0xB150) < 0) {
+        if ((s32)_CB.unkB150 < 0) {
             a = &antR[i];
             a->initByPokemonAndSetColorAnimationInAny(p);
             antR[i].setPos(pos);
@@ -2629,7 +2544,7 @@ s32 menuCBBattleBANextMenu(CBWin* win) {
         return 0;
     }
     if (menuCBBattleStartGetStatus() == 0) {
-        if (CBH.wait == 0) {
+        if (_CB.waitTimer == 0) {
             if (menuCB_BattleStartSoundCheck()) {
                 win->unkA4 = 1;
             }
@@ -2638,14 +2553,14 @@ s32 menuCBBattleBANextMenu(CBWin* win) {
             }
             return 0;
         }
-        CBH.wait--;
+        _CB.waitTimer--;
         return 0;
     }
     if (battleEndHPEndFlag == 0) {
         win->unkA4 = 1;
         return 0;
     }
-    if (--battleEndHPEndFlag == 0x37 && CB32(0xB180) != 0) {
+    if (--battleEndHPEndFlag == 0x37 && _CB.unkB180 != 0) {
         menuCB_SE_Stop(0x5D0);
     }
     return 0;
@@ -2656,13 +2571,13 @@ void menuCBBattleBABatuMark(CBItem* sprite, s32 p, s32 i) {
         winSpriteSetDisp(sprite, 0);
         return;
     }
-    if (CBH_ROWS(0xB248)[p][i] == 0.0f && CBH_ROWS(0xB1E8)[p][i] == 0.0f) {
+    if (_CB.hpDisp[p][i] == 0.0f && _CB.hpNow[p][i] == 0.0f) {
         winSpriteSetDisp(sprite, 1);
-        CBH_ROWS(0xB368)[p][i] = CBH_ROWS(0xB368)[p][i] + CBH_ROWS(0xB3C8)[p][i];
-        if (CBH_ROWS(0xB368)[p][i] >= 1.0f) {
-            CBH_ROWS(0xB368)[p][i] = 1.0f;
+        _CB.hpFade[p][i] = _CB.hpFade[p][i] + _CB.hpFadeSpeed[p][i];
+        if (_CB.hpFade[p][i] >= 1.0f) {
+            _CB.hpFade[p][i] = 1.0f;
         }
-        f32 v = CBH_ROWS(0xB368)[p][i];
+        f32 v = _CB.hpFade[p][i];
         sprite->scaleY = v;
         sprite->scaleX = v;
         return;
@@ -2679,27 +2594,27 @@ void menuCBBattleEndSetPokemonHP(void) {
         for (i = 0; i < 6; i++) {
             mon = toolentryTaisenGetEntryPokemonPtr(p, i);
             if (mon) {
-                CBH.f0[p][i] = pokemonBiosGetHp(mon);
-                CBH.f1[p][i] = pokemonBiosGetMaxHp(mon);
-                CBH.f2[p][i] = pokemonBiosGetMaxHp(mon);
-                CBH.f3[p][i] = (CBH.f2[p][i] - CBH.f0[p][i]) / 60.0f;
-                total += CBH.f3[p][i];
-                CBH.f4[p][i] = 0.0f;
-                CBH.f5[p][i] = 0.06666667f;
+                _CB.hpNow[p][i] = pokemonBiosGetHp(mon);
+                _CB.hpDisp[p][i] = pokemonBiosGetMaxHp(mon);
+                _CB.hpMax[p][i] = pokemonBiosGetMaxHp(mon);
+                _CB.hpStep[p][i] = (_CB.hpMax[p][i] - _CB.hpNow[p][i]) / 60.0f;
+                total += _CB.hpStep[p][i];
+                _CB.hpFade[p][i] = 0.0f;
+                _CB.hpFadeSpeed[p][i] = 0.06666667f;
             } else {
-                CBH.f2[p][i] = 100.0f;
-                CBH.f5[p][i] = 0.0f;
-                CBH.f4[p][i] = 0.0f;
-                CBH.f3[p][i] = 0.0f;
-                CBH.f1[p][i] = 0.0f;
-                CBH.f0[p][i] = 0.0f;
+                _CB.hpMax[p][i] = 100.0f;
+                _CB.hpFadeSpeed[p][i] = 0.0f;
+                _CB.hpFade[p][i] = 0.0f;
+                _CB.hpStep[p][i] = 0.0f;
+                _CB.hpDisp[p][i] = 0.0f;
+                _CB.hpNow[p][i] = 0.0f;
             }
         }
     }
     if (total != 0.0f) {
-        CB32(0xB180) = 0x5D0;
+        _CB.unkB180 = 0x5D0;
     } else {
-        CB32(0xB180) = 0;
+        _CB.unkB180 = 0;
     }
     battleEndHPStartFlag = 0x1E;
     battleEndHPEndFlag = 0x87;
@@ -2709,20 +2624,20 @@ void menuCB_BattleBA_HPBarDispSet(CBItem* sprite, s32 p, s32 i) {
     if (menuCBBattleStartGetStatus() != 0 && menuCBPokemonGetDataId(p, i) != 0) {
         winSpriteSetDisp(sprite, 1);
         if (battleEndHPStartFlag == 0) {
-            CBH_ROWS(0xB248)[p][i] = CBH_ROWS(0xB248)[p][i] - CBH_ROWS(0xB308)[p][i];
-            if (CBH_ROWS(0xB248)[p][i] < CBH_ROWS(0xB1E8)[p][i]) {
-                CBH_ROWS(0xB248)[p][i] = CBH_ROWS(0xB1E8)[p][i];
+            _CB.hpDisp[p][i] = _CB.hpDisp[p][i] - _CB.hpStep[p][i];
+            if (_CB.hpDisp[p][i] < _CB.hpNow[p][i]) {
+                _CB.hpDisp[p][i] = _CB.hpNow[p][i];
             }
         } else {
             if (!pauseIsPause()) {
                 battleEndHPStartFlag = battleEndHPStartFlag - 1;
             }
-            if (battleEndHPStartFlag == 0 && CB32(0xB180) != 0) {
+            if (battleEndHPStartFlag == 0 && _CB.unkB180 != 0) {
                 menuCB_SE_Play(0x5D0);
             }
         }
-        f32 max = CBH_ROWS(0xB2A8)[p][i];
-        f32 cur = CBH_ROWS(0xB248)[p][i];
+        f32 max = _CB.hpMax[p][i];
+        f32 cur = _CB.hpDisp[p][i];
         s16 w = 48.0f * ((max - (max - cur)) / max);
         if (20.0f * max / 100.0f >= cur) {
             menuCB_SetSprite((CBWin*)sprite, menuSpriteBiosGetPtr(BATTLE_BA_HP_Bar_Char[2]));
@@ -2760,7 +2675,7 @@ void menuCB_DispEffect(CBWin* win) {
         break;
     case 3:
         if (win->state == 0) {
-            if (CB32(0xB184) == 0) {
+            if (_CB.battleActive == 0) {
                 winSeqSetMenu(win->menuId, 0x18D);
                 win->state = 1;
                 spriteClearScissor(win->layer);
@@ -3039,7 +2954,7 @@ u8 menuCB_Trainer_Error_Check(u32 player, s32 idx) {
 }
 
 static inline void* _cbHero(s32 player) {
-    return (u8*)&_CB + player * 0x1320 + 0x9BC;
+    return _CB.trainer[player].hero;
 }
 
 void menuCB_Pokemon_ErrorDisp(void* src, s32 player) {
@@ -3048,48 +2963,48 @@ void menuCB_Pokemon_ErrorDisp(void* src, s32 player) {
     _CB.errPlayer = (s8)player;
     menuCBPokemonEntryPokemonFaceFree();
     menuCBBattleStartSetStatus(0);
-    backup = (u8*)&_CB + 0x9CE4;
+    backup = _CB.heroBackup;
     cur = _cbHero(player);
     heroBiosCopy(backup, cur);
     heroBiosCopy(_cbHero(player), src);
     menuCBPokemonEntryLoadTex();
     menuCBpokemonFaceReadWait();
-    CB32(0xB088) = 0;
-    CB32(0xB008) = 0;
+    _CB.unkB088 = 0;
+    _CB.unkB008 = 0;
     _menuCB_ErrorTAMAGOCheck();
-    CB32(0xB0DC) = 5;
+    _CB.unkB0DC = 5;
     if (!_menuCBPokemon_ErrorDispSet(5)) {
-        CB32(0xB0DC) = 4;
+        _CB.unkB0DC = 4;
     }
     if (!_menuCBPokemon_ErrorDispSet(4)) {
-        CB32(0xB0DC) = 3;
+        _CB.unkB0DC = 3;
     }
     if (!_menuCBPokemon_ErrorDispSet(3)) {
-        CB32(0xB0DC) = 2;
+        _CB.unkB0DC = 2;
     }
     if (!_menuCBPokemon_ErrorDispSet(2)) {
-        CB32(0xB0DC) = 1;
+        _CB.unkB0DC = 1;
     }
     if (!_menuCBPokemon_ErrorDispSet(1)) {
-        CB32(0xB0DC) = 0;
+        _CB.unkB0DC = 0;
     }
     if (!_menuCBPokemon_ErrorDispSet(0)) {
-        CB32(0xB0DC) = -1;
+        _CB.unkB0DC = -1;
     }
     menuCB_SE_Play(0x14);
     for (;;) {
         menuOpen(0xA6, 1);
-        if (CB32(0xB008) == 6 || CB32(0xB088) == 1) {
+        if (_CB.unkB008 == 6 || _CB.unkB088 == 1) {
             break;
         }
-        CB32(0xB08C) = 0;
-        CB32(0xB00C) = 0;
+        _CB.unkB08C = 0;
+        _CB.unkB00C = 0;
         for (;;) {
-            menuOpenCustom(0xA7, windowGetActiveID(), &CB32(0xB00C), 0, 1, 0);
-            if (CB32(0xB00C) == _CB.unkB0E4 || CB32(0xB08C) == 1) {
+            menuOpenCustom(0xA7, windowGetActiveID(), &_CB.unkB00C, 0, 1, 0);
+            if (_CB.unkB00C == _CB.unkB0E4 || _CB.unkB08C == 1) {
                 break;
             }
-            _menuCB_errorMsgDisp(err_msgID2[CB32(0xB00C)]);
+            _menuCB_errorMsgDisp(err_msgID2[_CB.unkB00C]);
         }
         menuCloseCustom(0xA7, 0, 1);
     }
@@ -3118,7 +3033,7 @@ void menuCBpokemonFaceReadWait() {
 }
 
 void toobattle_drawHeroName2(CBWin* win, CBItem* item, s32 player) {
-    void* hero = (u8*)&_CB + player * 0x1320 + 0x9BC;
+    void* hero = _CB.trainer[player].hero;
     switch (pokecoloGetCountryCode()) {
     case 0:
         _drawStrings(win, heroBiosGetNamePtr(hero), 0, 0, fn_8007E634(0x4276));
@@ -3131,11 +3046,11 @@ void toobattle_drawHeroName2(CBWin* win, CBItem* item, s32 player) {
 }
 
 void toobattle_drawHeroNames(CBWin* win, s32 player) {
-    _drawStrings(win, heroBiosGetNamePtr((u8*)&_CB + player * 0x1320 + 0x9BC), 0, 0, fn_8007E634(0x4278));
+    _drawStrings(win, heroBiosGetNamePtr(_CB.trainer[player].hero), 0, 0, fn_8007E634(0x4278));
 }
 
 void toobattle_drawHeroName(CBWin* win, s32 player) {
-    _drawStrings(win, heroBiosGetNamePtr((u8*)&_CB + player * 0x1320 + 0x563C), 0, 0, fn_8007E634(0x4276));
+    _drawStrings(win, heroBiosGetNamePtr(_CB.trainerOrg[player].hero), 0, 0, fn_8007E634(0x4276));
 }
 
 #pragma push
@@ -3143,7 +3058,7 @@ void toobattle_drawHeroName(CBWin* win, s32 player) {
 void toolbattle_drawHeroID(CBWin* win, s32 player) {
     u16 wide[129];
     char str[128];
-    u32 rnd = heroBiosGetRnd((u8*)&_CB + player * 0x1320 + 0x563C);
+    u32 rnd = heroBiosGetRnd(_CB.trainerOrg[player].hero);
     u8 d0 = rnd % 10;
     u8 d1 = rnd / 10 % 10;
     u8 d2 = rnd / 100 % 10;
@@ -3156,12 +3071,12 @@ void toolbattle_drawHeroID(CBWin* win, s32 player) {
 #pragma pop
 
 s32 toolbattle_trainerFace(s32 i) {
-    void* org = menuCBBios_GetTrainerOrgImmediately(i);
+    MenuCBTrainer* org = menuCBBios_GetTrainerOrgImmediately(i);
     switch (menuCBTrainerBios_GetHomePlace(org)) {
     case 0:
         return 0;
     case 1:
-        switch (heroBiosGetSexDataId((u8*)org + 0x9A4)) {
+        switch (heroBiosGetSexDataId(org->hero)) {
         case 0:
             return 3;
         case 1:
@@ -3171,7 +3086,7 @@ s32 toolbattle_trainerFace(s32 i) {
         }
         break;
     case 2:
-        switch (heroBiosGetSexDataId((u8*)org + 0x9A4)) {
+        switch (heroBiosGetSexDataId(org->hero)) {
         case 0:
             return 1;
         case 1:
@@ -3181,7 +3096,7 @@ s32 toolbattle_trainerFace(s32 i) {
         }
         break;
     case 3:
-        switch (heroBiosGetSexDataId((u8*)org + 0x9A4)) {
+        switch (heroBiosGetSexDataId(org->hero)) {
         case 0:
             return 5;
         case 1:

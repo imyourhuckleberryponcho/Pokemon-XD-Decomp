@@ -132,8 +132,8 @@ struct tigaVariant {
             lo = b;
             return type;
         }
-        int ta = type < 0x40 ? type : 3;
-        int tb = b->type < 0x40 ? b->type : 3;
+        int ta = type < 0x40 ? (s16)type : 3;
+        int tb = b->type < 0x40 ? (s16)b->type : 3;
         if (ta == 3) ta = 0x20;
         if (tb == 3) tb = 0x20;
         if (ta > tb) {
@@ -863,7 +863,11 @@ void tigaVariant::makeStateData(GSBinWriteStream* stream)
         stream->writeFloat(((GSvec*)value.pointer)->z);
         break;
     case 5:
+#ifdef __MWERKS__
         stream->write(value.pointer, 0x30);
+#else
+        for (s32 m = 0; m < 12; m++) stream->writeFloat(((f32*)value.pointer)[m]);
+#endif
         break;
     case 0x23:
         stream->write32(((ScriptPeople*)value.pointer)->group);
@@ -919,7 +923,11 @@ void tigaVariant::restoreStateData(GSBinReadStream* stream)
         break;
     }
     case 5:
+#ifdef __MWERKS__
         stream->read(value.pointer, 0x30);
+#else
+        for (s32 m = 0; m < 12; m++) ((f32*)value.pointer)[m] = stream->readFloat();
+#endif
         break;
     case 0x23: {
         u32 group = stream->read32();

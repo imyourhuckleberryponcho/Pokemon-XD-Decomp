@@ -126,7 +126,11 @@ u16 windowGetKeyRepeat(void);
 u16 windowGetKeyTrg(void);
 void winSeqSetMenu(int, u32);
 int windowGetActiveID(void);
+#ifdef __MWERKS__
 int menuOpenCustom(int, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuClose(int);
 void menuCloseSync(int, int);
 void menuCloseCustom(int, int, int);
@@ -681,7 +685,7 @@ static int getExchangeMax(u16 id, u8 kind) {
     return n;
 }
 static void setDefMenuItem(void) {
-    DEF_MENU_ITEM* item = &DefMenuItem;
+    DEF_MENU_ITEM* item = (DEF_MENU_ITEM*)&DefMenuItem;
     item->y = menuItemBiosGetPtr(0x3C, item->id)->y;
 }
 static u16 selectItem(int shop, u8 mode, u8 flags, SHOP_MENU_ARG* arg) {
@@ -874,14 +878,14 @@ int menuShopDrawBallCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 }
 extern "C" {
 int menuShopDrawListText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
-    int last;
+    SHOP_MENU_ARG* arg;
     int listY;
     int count;
     int row;
     s32 priceX;
-    SHOP_MENU_ARG* arg;
-    int scroll;
     int idx;
+    int last;
+    int scroll;
     int y;
     int first;
     u16 id;
@@ -911,7 +915,7 @@ int menuShopDrawListText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         scroll = (int)*arg->curPos;
     }
     listY = first * 30;
-    for (row = first; row < last && idx < count; row++, idx++, listY += 30) {
+    for (row = first; row < last && idx < count; listY += 30, row++, idx++) {
         if (idx >= 0) {
             y = listY - scroll;
             id = getItem(arg, idx);
@@ -936,6 +940,7 @@ int menuShopDrawListText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     }
     if (row < last) {
         int msg;
+        y = row * 30 - scroll;
         if ((arg->flags & 1) != 0) {
             msg = 0x3ABE;
         } else {
@@ -944,7 +949,7 @@ int menuShopDrawListText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         if (arg->mode == 1) {
             msg = 0x3C3F;
         }
-        GSmsgPrint2(w->layer, 0, row * 30 - scroll, -1, msg);
+        GSmsgPrint2(w->layer, 0, y, -1, msg);
     }
     spriteClearScissor(w->layer);
     spriteSetEnv(w->layer);
@@ -1203,7 +1208,9 @@ int menuShopNumDrawBuyNum(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     for (i = 0; i < slot; i++) {
         div *= 10;
     }
-    msgctrlSetValue(0x34, (*arg->value / div) % 10);
+    value = *arg->value / div;
+    value %= 10;
+    msgctrlSetValue(0x34, value);
     GSmsgPrintRight(w->layer, 0, 0, sp->w, sp->h, -1, 0x4270);
     return 0;
 }

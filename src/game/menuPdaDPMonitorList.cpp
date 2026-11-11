@@ -219,7 +219,7 @@ static menuPdaDPMList* pDPMList;
 
 extern "C" {
 
-s32 menuPdaDPMListGetDPointer(s32 index);
+GCsptr menuPdaDPMListGetDPointer(s32 index);
 s32 menuPdaDPMListGetDarkPokemonPlace(s32 index, s32* where, u8* floor);
 s32 menuPdaDPMListGetDPNum(void);
 
@@ -337,7 +337,7 @@ PCRET(u16) menuPdaDPMListGetDarkpokemonID(s32 index) {
     return 0;
 }
 
-s32 menuPdaDPMListGetDPointer(s32 index) {
+GCsptr menuPdaDPMListGetDPointer(s32 index) {
     return (GCsptr)darkPokemonGetDarkPokemon(pDPMList->GetDarkPokemonID(index));
 }
 
@@ -416,7 +416,7 @@ s32 menuPdaDPMListCtrl(tagWINDOW_WORK* window) {
 void menuPdaDPMonList(void) {
     CURSOR cursor;
     s32 result = 0;
-    pDPMList = new menuPdaDPMList;
+    pDPMList = (GC_NEW_NOTE(sizeof(menuPdaDPMList), 96) new menuPdaDPMList);
     pDPMList->InitWork();
     cursor.pos = 0;
     cursor.top = 0;
@@ -494,8 +494,10 @@ void menuPdaDPMList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     spriteSetScissor(window->layer, area->x - self->x, area->y - self->y, area->width, area->height);
     f32 y = unk34;
     menuDrawReliveUpdate();
+    int lo = cursor.top - 1;
+    int hi = cursor.top + 11;
     for (s32 i = 0; i < n; i++) {
-        if (i >= cursor.top - 1 && i < cursor.top + 11) {
+        if (i >= lo && i < hi) {
             DarkPokemon* dark = darkPokemonGetDarkPokemon(GetDarkPokemonID(i));
             s32 color1;
             s32 color2;

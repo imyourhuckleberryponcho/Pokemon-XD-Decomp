@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 
@@ -74,7 +75,7 @@ static inline void gamedataSetStatusInline(Gamedata* ptr, u32 kind, u32 value) {
     }
     switch ((u16)kind) {
     case 1:
-        gamedataBiosSetGamedataAtttestPtr(ptr, (GamedataAttest*)value);
+        gamedataBiosSetGamedataAtttestPtr(ptr, PC_PTR(GamedataAttest*, value));
         break;
     case 2:
         gamedataAttestBiosSetVerId(attest, (u8)value);
@@ -179,7 +180,7 @@ void gamedatasaveSetStatus(Gamedata* ptr, u32 kind, u32 value) {
     }
     switch ((u16)kind) {
     case 1:
-        gamedatasaveBiosSetPtr(ptr, (GamedataSave*)value);
+        gamedatasaveBiosSetPtr(ptr, PC_PTR(GamedataSave*, value));
         break;
     case 2:
         gamedatasaveBiosSetSavernd(save, value);
@@ -280,7 +281,7 @@ void gamedataCreate(Gamedata* ptr, u8 ver, u8 gen, u8 area, u8 langarea) {
         return;
     }
     gamedataInit(ptr);
-    GamedataAttest* attest = (GamedataAttest*)gamedataGetStatusInline(ptr, 1);
+    GamedataAttest* attest = PC_PTR(GamedataAttest*, gamedataGetStatusInline(ptr, 1));
     if (attest == 0) {
         return;
     }
@@ -289,7 +290,7 @@ void gamedataCreate(Gamedata* ptr, u8 ver, u8 gen, u8 area, u8 langarea) {
 
 void gamedataInit(void* ptr) {
     u16 i;
-    GamedataAttest* attest = (GamedataAttest*)gamedataGetStatusInline((Gamedata*)ptr, 1);
+    GamedataAttest* attest = PC_PTR(GamedataAttest*, gamedataGetStatusInline((Gamedata*)ptr, 1));
     if (attest == 0) { return; }
     gamedataAttestInit(attest);
     gamedatasaveInit((Gamedata*)ptr);
@@ -377,7 +378,7 @@ void gamedataSetStatus(Gamedata* ptr, u32 kind, u32 value) {
     }
     switch ((u16)kind) {
     case 1:
-        gamedataBiosSetGamedataAtttestPtr(ptr, (GamedataAttest*)value);
+        gamedataBiosSetGamedataAtttestPtr(ptr, PC_PTR(GamedataAttest*, value));
         break;
     case 2:
         gamedataAttestBiosSetVerId(base, (u8)value);

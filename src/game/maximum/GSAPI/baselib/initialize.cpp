@@ -1,6 +1,7 @@
 
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <libc/stdarg.h>
 
 #pragma pool_strings off
@@ -154,15 +155,15 @@ void HSD_OSInit(void) {
         } else {
             u32 lo = OSRoundUp32B(OSGetArenaLo());
             u32 hi = (u32)OSGetArenaHi();
-            hsd_heap_arena_lo = (void*)lo;
+            hsd_heap_arena_lo = PC_PTR(void*, lo);
             if (iparam_heap_size > 0) {
-                hsd_heap_arena_hi = (void*)(lo + iparam_heap_size);
+                hsd_heap_arena_hi = PC_PTR(void*, lo + iparam_heap_size);
                 if ((u32)hsd_heap_arena_hi > hi) {
-                    hsd_heap_arena_hi = (void*)hi;
+                    hsd_heap_arena_hi = PC_PTR(void*, hi);
                 }
-                hsd_heap_arena_hi = (void*)OSRoundDown32B(hsd_heap_arena_hi);
+                hsd_heap_arena_hi = PC_PTR(void*, OSRoundDown32B(hsd_heap_arena_hi));
             } else {
-                hsd_heap_arena_hi = (void*)OSRoundDown32B(hi);
+                hsd_heap_arena_hi = PC_PTR(void*, OSRoundDown32B(hi));
             }
             _HSD_CreateHeap();
             OSSetArenaLo(hsd_heap_arena_hi);

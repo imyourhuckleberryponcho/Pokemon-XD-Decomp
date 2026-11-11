@@ -3,6 +3,7 @@
 #define HSD_FILE_NAME "psinterpret.c"
 
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 
 
@@ -83,7 +84,13 @@ static const f32 psinterpret_float_min[1] = { FLT_MIN };
 #define __float_min psinterpret_float_min
 #endif
 
-inline float atan2fInline(float y, float x)
+#ifdef __MWERKS__
+#define PS_INLINE inline
+#else
+
+#define PS_INLINE static inline
+#endif
+PS_INLINE float atan2fInline(float y, float x)
 {
     float r = (float) atan2(y, x);
     return r;
@@ -413,7 +420,7 @@ void modifyDirGenBase(HSD_Particle* pp, f32 angle, f32 x, f32 y, f32 z)
     }
     sx = sinf(rx);
     cx = cosf(rx);
-    w = vy * sx + vz * cx;
+    w = GC_MADD(vy, sx, vz * cx);
     if (fabs(w) < FLT_MIN) {
         ry = vx >= 0.0f ? (f32) M_PI_2 : (f32) -M_PI_2;
     } else {
@@ -428,9 +435,9 @@ void modifyDirGenBase(HSD_Particle* pp, f32 angle, f32 x, f32 y, f32 z)
     vx = r * cosf(rnd);
     vy = r * sinf(rnd);
     vz = len * cosf(angle);
-    pp->vel.x = vx * cy + vz * sy;
-    pp->vel.y = sy * (-vx * sx) + vy * cx + cy * (vz * sx);
-    pp->vel.z = sy * (-vx * cx) - vy * sx + cy * (vz * cx);
+    pp->vel.x = GC_MADD(vx, cy, vz * sy);
+    pp->vel.y = GC_MADDR(GC_MADD(sy, (-vx * sx), vy * cx), cy, (vz * sx));
+    pp->vel.z = GC_MADDR(GC_MSUB(sy, (-vx * cx), vy * sx), cy, (vz * cx));
 }
 
 
@@ -461,7 +468,7 @@ void modifyDir(HSD_Particle* pp, f32 angle)
     }
     sx = sinf(rx);
     cx = cosf(rx);
-    w = vy * sx + vz * cx;
+    w = GC_MADD(vy, sx, vz * cx);
     if (fabs(w) < FLT_MIN) {
         ry = vx >= 0.0f ? (f32) M_PI_2 : (f32) -M_PI_2;
     } else {
@@ -469,15 +476,15 @@ void modifyDir(HSD_Particle* pp, f32 angle)
     }
     sy = sinf(ry);
     cy = cosf(ry);
-    len = sqrtf(vx * vx + vy * vy + vz * vz);
+    len = sqrtf(GC_MADDR(GC_MADD(vx, vx, vy * vy), vz, vz));
     rnd = 2.0 * (M_PI * HSD_Randf());
     r = len * sinf(angle);
     vx = r * cosf(rnd);
     vy = r * sinf(rnd);
     vz = len * cosf(angle);
-    pp->vel.x = vx * cy + vz * sy;
-    pp->vel.y = sy * (-vx * sx) + vy * cx + cy * (vz * sx);
-    pp->vel.z = sy * (-vx * cx) - vy * sx + cy * (vz * cx);
+    pp->vel.x = GC_MADD(vx, cy, vz * sy);
+    pp->vel.y = GC_MADDR(GC_MADD(sy, (-vx * sx), vy * cx), cy, (vz * sx));
+    pp->vel.z = GC_MADDR(GC_MSUB(sy, (-vx * cx), vy * sx), cy, (vz * cx));
 }
 
 
@@ -498,7 +505,7 @@ void setVelToJObj(HSD_Particle* pp, HSD_JObj* jobj)
     dz = jobj->mtx[2][3] - pp->pos.z;
     speed = sqrtf(pp->vel.x * pp->vel.x + pp->vel.y * pp->vel.y +
                   pp->vel.z * pp->vel.z);
-    len = dx * dx + dy * dy + dz * dz;
+    len = GC_MADDR(GC_MADD(dx, dx, dy * dy), dz, dz);
     if (len == 0.0f) {
         return;
     }
@@ -523,7 +530,7 @@ s32 applyForceJObj(HSD_Particle* pp, HSD_JObj* jobj, f32 force, f32 radius)
     dx = jobj->mtx[0][3] - pp->pos.x;
     dy = jobj->mtx[1][3] - pp->pos.y;
     dz = jobj->mtx[2][3] - pp->pos.z;
-    len = dx * dx + dy * dy + dz * dz;
+    len = GC_MADDR(GC_MADD(dx, dx, dy * dy), dz, dz);
     if (len <= radius * radius) {
         return 1;
     }
@@ -531,9 +538,9 @@ s32 applyForceJObj(HSD_Particle* pp, HSD_JObj* jobj, f32 force, f32 radius)
         return 0;
     }
     len = force / len;
-    pp->vel.x += len * dx;
-    pp->vel.y += len * dy;
-    pp->vel.z += len * dz;
+    GC_MADD_TO(pp->vel.x, len, dx);
+    GC_MADD_TO(pp->vel.y, len, dy);
+    GC_MADD_TO(pp->vel.z, len, dz);
     return 0;
 }
 
@@ -624,7 +631,7 @@ void HSD_MTXSRT(Mtx m, Vec* scale, Vec* rot, Vec* trans, Vec* scale2)
 }
 
 
-inline u8 U8ClampAdd(u8 val, f32 add)
+PS_INLINE u8 U8ClampAdd(u8 val, f32 add)
 {
     f32 f = val + add;
 

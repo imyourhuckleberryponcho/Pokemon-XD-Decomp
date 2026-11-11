@@ -82,7 +82,7 @@ extern "C" PCRET(u16) pokemon_GetHp(Pokemon*);
 extern "C" u32 pokemon_GetExp(Pokemon*);
 extern "C" u32 pokemon_GetCatchTrainerRnd(Pokemon*);
 extern "C" u32 pokemon_GetRnd(Pokemon*);
-extern "C" u16 pokemon_GetPokemonDataId(Pokemon*);
+extern "C" PCRET(u16) pokemon_GetPokemonDataId(Pokemon*);
 extern "C" u8 pokemonDB_GetTokuseiDataId(u16, u16);
 extern "C" PCRET(u8) pokemonDB_GetGrowDataId(u16);
 #endif

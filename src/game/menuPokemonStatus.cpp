@@ -122,7 +122,11 @@ bool menuIsCheck(s32);
 void menuSetDisp(s32, s32);
 s32 menuOpen(s32, s32);
 void menuClose(s32);
+#ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
+#else
+s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#endif
 void menuCloseCustom(s32, s32, s32);
 void menuDrawReliveUpdate(void);
 MenuItemInfo* menuItemBiosGetPtr(s32, s32);
@@ -1411,7 +1415,7 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
         } else {
             msgctrlSetValue(0x37, pokemonGetStatus(pk, 0, 0x76, 0));
         }
-        x = GSmsgGetRect(sprite->msgId) >> 16;
+        x = (s16)(GSmsgGetRect(sprite->msgId) >> 16);
         GSmsgPrint2(winSpriteGetLayerID(win, sprite), x, 0, color, 0x4276);
         break;
     }

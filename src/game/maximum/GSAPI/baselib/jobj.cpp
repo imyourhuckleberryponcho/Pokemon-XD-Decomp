@@ -5,6 +5,7 @@
 
 
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/gcdata.h>
 
 
@@ -2595,7 +2596,7 @@ static void JObjInfoInit(void)
 {
     hsdInitClassInfo(HSD_CLASS_INFO(&hsdJObj), HSD_CLASS_INFO(&hsdObj),
                      "sysdolphin_base_library", "hsd_jobj",
-                     sizeof(HSD_JObjInfo), sizeof(HSD_JObj));
+                     sizeof(HSD_JObjInfo), GC_CLASS_SIZE(sizeof(HSD_JObj), 136));
     HSD_CLASS_INFO(&hsdJObj)->init = JObjInit;
     HSD_CLASS_INFO(&hsdJObj)->release = JObjRelease;
     HSD_CLASS_INFO(&hsdJObj)->amnesia = JObjAmnesia;

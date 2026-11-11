@@ -1,5 +1,6 @@
 
 #include <dolphin/types.h>
+#include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
@@ -642,12 +643,12 @@ static inline u32 _shadowLightType(GSlight* light)
 void modelShadowRender(GSgfxLayer* layer)
 {
     u8 shade;
-    _GSmodel* m;
     ShadowReceive* r = _modelShadowReceiveList;
     ShadowReceive* slot;
     u32 j;
     u32 i;
     u32 k;
+    _GSmodel* m;
 
     for (j = 0; j < 5; j++) {
     slot = &r[j];
@@ -684,7 +685,7 @@ void modelShadowRender(GSgfxLayer* layer)
                 avg.z = 0.0f;
                 j = 0;
                 for (k = 0; k < 16; k++) {
-                    _GSmodel* m = r->receivers[k];
+                    m = r->receivers[k];
                     if (m != 0 && (m->flags & 1)) {
                         HSD_ShadowAddObject(r->shadow, modelGetRenderJObj(m));
                         GSboundGetWorldPosition(m->bound, &tmp);
@@ -1075,7 +1076,7 @@ void GSmodelSetShadowSurface(_GSmodel* model, s32 count, void* surfaces)
         return;
     }
     if (model->shadowSurfaces == 0) {
-        model->shadowSurfaces = GSmemAlloc(8 * sizeof(_GSmodel*));
+        model->shadowSurfaces = GSmemAlloc(GC_SIZE(8 * sizeof(_GSmodel*), 8 * 4));
         model->shadowSurfaceCount = 0;
         if (_modelShadowLayerUseCount == 0) {
             modelShadowLayerID = GSgfxLayerConfig::Add("model shadow", 0, 0x40000, 4, (GSgfxLayerType)0, false, false,

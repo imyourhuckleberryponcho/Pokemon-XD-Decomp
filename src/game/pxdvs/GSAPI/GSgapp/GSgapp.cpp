@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 
 typedef void (*GSgappFunc)(int id, void* arg);
 
@@ -188,7 +189,7 @@ void GSgappInit(u32 maxJobs, u32 maxBkgndJobs) {
     _gappMaxBkgndJobs = maxBkgndJobs;
     _gappTotalJobs = maxJobs + maxBkgndJobs;
     _gappCurrentGapp = NULL;
-    _gappStructList = (Gapp*)GSmemAlloc(_gappTotalJobs * sizeof(Gapp));
+    _gappStructList = (Gapp*)GSmemAlloc(GC_SIZE(_gappTotalJobs * sizeof(Gapp), _gappTotalJobs * 60));
     if (_gappStructList != NULL) {
         for (i = 0; i < _gappTotalJobs; i++) {
             _gappStructList[i].type = GAPP_TYPE_FREE;

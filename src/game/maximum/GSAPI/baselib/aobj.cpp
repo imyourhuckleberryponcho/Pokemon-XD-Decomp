@@ -22,6 +22,7 @@
 #include <sysdolphin/baselib/robj.h>
 #include <sysdolphin/baselib/tobj.h>
 #include <sysdolphin/baselib/wobj.h>
+#include "game/gcdata.h"
 
 #pragma pool_strings off
 
@@ -108,7 +109,7 @@ static inline f32 getLoopedFrame(HSD_AObj* aobj)
 inline HSD_AObj* HSD_AObjAlloc(void)
 {
     HSD_AObj* new;
-    void* pool = GSmemGetSysdolAllocator(sizeof(HSD_AObj));
+    void* pool = GC_SYSDOL_ALLOCATOR(sizeof(HSD_AObj), 28);
     if (pool != NULL && GSmemGetFreePool(pool) != 0) {
         new = GSmemAllocPool(pool);
         HSD_ASSERT(502, new);
@@ -130,7 +131,7 @@ inline void HSD_AObjFree(HSD_AObj* aobj)
     }
 
     {
-        void* pool = GSmemGetSysdolAllocator(sizeof(HSD_AObj));
+        void* pool = GC_SYSDOL_ALLOCATOR(sizeof(HSD_AObj), 28);
         if (pool != NULL && GSmemIsRegistrationPool(pool, aobj)) {
             GSmemFreePool(pool, aobj);
         } else {
@@ -271,7 +272,7 @@ inline void HSD_AObjSetEndFrame(HSD_AObj* aobj, f32 frame)
 
 void HSD_AObjInitAllocData(void)
 {
-    HSD_ObjAllocInit(&alloc_data, sizeof(HSD_AObj), 4);
+    HSD_ObjAllocInit(&alloc_data, GC_SIZE(sizeof(HSD_AObj), 28), 4);
 }
 
 HSD_ObjAllocData* HSD_AObjGetAllocData(void)

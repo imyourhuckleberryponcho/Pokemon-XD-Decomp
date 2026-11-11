@@ -1,16 +1,12 @@
 #include <dolphin/types.h>
+#include <game/fightfloor.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
 
-class FIGHT_SIDE {
-public:
-    u8 data[0x6EF0];
-};
-struct FIGHT_TRAINER;
+#include <game/pxdvs/app/fight/fightSideData.h>
 struct FightOutPokemon;
 struct FightPokemon;
 struct Pokemon;
-struct FightJoutai;
 
 extern "C" {
 u16 joutaiDataBiosGetStatus(u16);

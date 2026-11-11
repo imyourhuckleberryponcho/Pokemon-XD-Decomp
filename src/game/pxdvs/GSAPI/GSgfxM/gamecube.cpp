@@ -685,7 +685,14 @@ void GSgfx_GCWriteCopyTex(CopyTexReq* req, u32 dest) {
     cmd.b16 = 1;
     cmd.mip = req->mip;
     cmd.clear = req->clear;
-    if (req->fmt < 4 && req->fmt >= 0) cmd.b15 = 1; else cmd.b15 = 0;
+    switch (req->fmt) {
+    case 0: case 1: case 2: case 3:
+        cmd.b15 = 1;
+        break;
+    default:
+        cmd.b15 = 0;
+        break;
+    }
     WrFifo(RAW(src));
     WrFifo(RAW(size));
     WrFifo(RAW(st2));
@@ -714,7 +721,9 @@ void GSgfx_GCWriteCopyFilter(u8 aa, u8* pat, u8 vf, u8* vfilt) {
     int j, i;
     if (!aa) pat = _gcDefaultAASample;
     if (!vf) vfilt = _gcDefaultVFilt;
-    for (j = 0, i = 0; i < 4; i++, j += 6) {
+    for (i = 0; i < 4; i++) {
+        j = i * 3;
+        j *= 2;
         ms.id = i + 1;
         ms.x0 = pat[j];
         ms.y0 = pat[j + 1];
@@ -972,6 +981,7 @@ void GSgfx_GCWriteTexCoordGen(u32 coord, s32 func, s32 src, u32 mtxIdx, u8 norma
 void GSgfx_GCWriteLoadTexObj(TexObj* obj, s32 id) {
     u32 w0 = obj->w0;
     u32 w1 = obj->w1;
+    u32 w3 = obj->w3;
     gsgfxState->texMode0[id].v = w0;
     gsgfxState->texMode1[id].v = w1;
     gsgfxState->texImg0[id].a.v = obj->w2;
@@ -982,7 +992,7 @@ void GSgfx_GCWriteLoadTexObj(TexObj* obj, s32 id) {
     gsgfxState->texImg2[id].addr = GSgfx_GCTmemRegions[id * 2 + 1] >> 5;
     gsgfxState->texImg2[id].cw = 3;
     gsgfxState->texImg2[id].ch = 3;
-    gsgfxState->texImg3[id].v = obj->w3;
+    gsgfxState->texImg3[id].v = w3;
     s32 fmt = gsgfxState->texImg0[id].b.fmt;
     switch (fmt) {
     case 8:
@@ -1035,7 +1045,7 @@ void GSgfx_GCWriteLoadTlut(void* obj, s32 name) {
 
 void GSgfx_GCWriteVtxAttrFmt(u32 fmt, VtxAttrEntry* list) {
     s32 attr;
-    s32 nrmType = 4, nrmCnt = 1, nrmFlag = 0;
+    s32 nrmType = 4, nrmCnt = 0, nrmFlag = 0;
     s32 posCnt = 1, posType = 4, posFrac = 0;
     s32 c0Cnt = 1, c0Type = 5;
     s32 c1Cnt = 1, c1Type = 5;

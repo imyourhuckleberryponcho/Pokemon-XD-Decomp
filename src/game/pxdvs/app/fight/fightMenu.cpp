@@ -7,7 +7,7 @@
 struct FIGHT_TRAINER;
 struct FightOutPokemon;
 struct FightPokemon;
-struct FightSide;
+class FIGHT_SIDE;
 struct Pokemon;
 struct FightActionData;
 
@@ -52,7 +52,7 @@ u8 fightFloorIsNowEncountTuusinTaisen(s32);
 u8 fightFloorIsNowEncountSnatchOnly(s32);
 StatusU32 fightFloorGetStatus(s32, s32, s32, s32);
 void fightFloorSetStatus(s32, s32, s32, s32, u32);
-FightSide* fightFloorGetValidFightSidePtr(s32, u16);
+FIGHT_SIDE* fightFloorGetValidFightSidePtr(s32, u16);
 void fightFloorSetMenuFightAction(s32, FightOutPokemon*, void*);
 u8 fightFloor_GetFightKind(s32);
 u8 fightFloor_GetFightKindNigeruFlag(s32);
@@ -75,8 +75,8 @@ void fadeCheck(s32);
 s32 menuPokemonStatusOpenWazaLearn(void*, void*);
 s8 menuSubOpenYesNoField(void);
 StatusU32 itemGetStatus(s32, u16, s32, s32);
-StatusU32 wazaGetStatus(s32, u16, s32, s32);
-u32 GSmsgGetGSchar(u32);
+StatusU32 wazaGetStatus(GCsptr, u16, s32, s32);
+GCuptr GSmsgGetGSchar(u32);
 void msgctrlSetValue(s32, GCuptr);
 void winMsgCloseFight(s32);
 u8 dbgMenuFightGetFightPokeStMenuOpenFlag(void);
@@ -111,7 +111,7 @@ StatusU32 pokemonGetStatus(void*, s32, s32, u16);
 void pokemonSetStatus(void*, s32, s32, s32, s32);
 u8 pokemonIsDarkPokemon(Pokemon*);
 FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, PCARG(u16, u32), FightOutPokemon* (*)(FightOutPokemon*, u16, u16), s32, s32, s32);
-FIGHT_TRAINER* fightSideGetValidFightTrainerPtr(FightSide*, u16);
+FIGHT_TRAINER* fightSideGetValidFightTrainerPtr(FIGHT_SIDE*, u16);
 u16 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(FightOutPokemon*, u16);
 void fightTrainerTimeOutSelectFightAction(FIGHT_TRAINER*, FightOutPokemon*, PCARG(u16, u32));
 s16 fightTrainerTimeOutSelectIrekaeFightPokemon(FIGHT_TRAINER*, FightOutPokemon*, u16);
@@ -177,7 +177,7 @@ extern FightActionData fight_action_data_turn;
 extern FightActionData fight_action_data_waza;
 extern FightActionData fight_action_data_item;
 
-u32 msgCtrlVal[4] = {0, 0, 0, 0};
+GCuptr msgCtrlVal[4] = {0, 0, 0, 0};
 }
 
 static u8 bCharSkip;
@@ -211,7 +211,7 @@ void fightMenuFightTrainerCloseStatusMenu(FIGHT_TRAINER* p, u16 id, s32 wait);
 void fightMenuFightTrainerOpenStatusMenu(FIGHT_TRAINER* p, u16 id);
 void fightMenuFightOutPokemonOpenStatusMenu(FightOutPokemon* p, u16 id, bool flag);
 void fightMenuFightOutPokemonSetStatusMenuActiveFlag(FightOutPokemon* p, u16 id, s32 active);
-void fightMsgctrlSetValue(s32 id, u32 value);
+void fightMsgctrlSetValue(s32 id, GCuptr value);
 u32 fightMenuOpenMsg(u32 msg);
 void fightMenuCloseMsg(void);
 void fightMenuCloseInfoMenu(u8 wait);
@@ -230,46 +230,46 @@ extern "C" u32 fightMenuCloseCustom(u32 menuId);
 extern "C" void fightMenuCloseInfoMenu(u8 wait);
 extern "C" void fightMenuOpenInfoMenu(s8 flag);
 extern "C" void fightMenuAllFightTrainerCloseStatusMenu(u8 wait);
-extern "C++" static bool _fightMenuAllFightTrainerCloseStatusMenuSubCloseCheck(void* trainer, u16 id, void* work);
-extern "C++" static bool _fightMenuAllFightTrainerCloseStatusMenuSub(void* trainer, u16 id, void* work);
+extern "C++" { static bool _fightMenuAllFightTrainerCloseStatusMenuSubCloseCheck(void* trainer, u16 id, void* work); }
+extern "C++" { static bool _fightMenuAllFightTrainerCloseStatusMenuSub(void* trainer, u16 id, void* work); }
 extern "C" void fightMenuAllFightTrainerOpenStatusMenu(void);
-extern "C++" static bool _fightMenuAllFightTrainerOpenStatusMenuSub(void* trainer, u16 id, void* work);
+extern "C++" { static bool _fightMenuAllFightTrainerOpenStatusMenuSub(void* trainer, u16 id, void* work); }
 extern "C" void fightMenuAllFightOutPokemonCloseStatusMenu(u8 wait);
-extern "C++" static bool _fightMenuAllFightOutPokemonCloseStatusMenuSubCloseCheck(void* p, u16 id, void* work);
-extern "C++" static bool _fightMenuAllFightOutPokemonCloseStatusMenuSub(void* p, u16 id, void* work);
+extern "C++" { static bool _fightMenuAllFightOutPokemonCloseStatusMenuSubCloseCheck(void* p, u16 id, void* work); }
+extern "C++" { static bool _fightMenuAllFightOutPokemonCloseStatusMenuSub(void* p, u16 id, void* work); }
 extern "C" void fightMenuAllFightOutPokemonOpenStatusMenu(u8 flag);
-extern "C++" static bool _fightMenuAllFightOutPokemonOpenStatusMenuSub(void* p, u16 id, void* work);
+extern "C++" { static bool _fightMenuAllFightOutPokemonOpenStatusMenuSub(void* p, u16 id, void* work); }
 extern "C" void fightMenuOpenLevelUpStatusMenu(u8* work, u8 value);
 extern "C" void fightMenuSubMenuLvupStatus(s16* now, s16* old, s16* diff);
 extern "C" s32 fightMenuWazaWasure(void* pokemon, void* waza);
 extern "C" void fightMenuCloseLevelUpStatusMenu(void);
 extern "C" u8 fightMenuYesNo(void);
-extern "C" void fightMenuWazaKoukaMsg(u32 msg, u32 value, u16 item);
-extern "C" void fightMenuWazaOutMsg(u32 value, u16 waza);
-extern "C" void fightMsgctrlSetValue(s32 id, u32 value);
+extern "C" void fightMenuWazaKoukaMsg(u32 msg, GCuptr value, u16 item);
+extern "C" void fightMenuWazaOutMsg(GCuptr value, u16 waza);
+extern "C" void fightMsgctrlSetValue(s32 id, GCuptr value);
 extern "C" void fightMenuCloseMsg(void);
 extern "C" u32 fightMenuOpenTrainerMsg(u32 msg);
 extern "C" u32 fightMenuOpenMsg2(u32 msg, u32 arg);
 extern "C" u32 fightMenuOpenMsg(u32 msg);
 extern "C" u32 fightMenuFightTrainerAgbHeroOpenMenu(FIGHT_TRAINER* trainer, u16 id);
-extern "C++" static FightOutPokemon* _fightMenuFightTrainerAgbHeroSelectDefensePokemon(FightOutPokemon*, u16, u16);
+extern "C++" { static FightOutPokemon* _fightMenuFightTrainerAgbHeroSelectDefensePokemon(FightOutPokemon*, u16, u16); }
 extern "C" s16 fightMenuFightTrainerAgbHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, u16 id, u8 kind, GCuptr target);
 extern "C" u32 fightMenuFightTrainerGcHeroOpenMenu(FIGHT_TRAINER* trainer, u16 id, u8 cancel);
-extern "C++" static u8 _fightMenuFightTrainerGcHeroOpenMenuSubMain(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id, s32 top);
-extern "C++" static u8 _fightMenuFightTrainerGcHeroOpenMenuSubIrekae(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id);
+extern "C++" { static u8 _fightMenuFightTrainerGcHeroOpenMenuSubMain(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id, s32 top); }
+extern "C++" { static u8 _fightMenuFightTrainerGcHeroOpenMenuSubIrekae(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id); }
 extern "C" s16 fightMenuFightTrainerGcHeroSelectIrekaeFightPokemon(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id, u8 cancel, u8 nested);
-extern "C++" static u8 _fightMenuFightTrainerGcHeroOpenMenuSubItem(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id);
-extern "C++" static FightOutPokemon* _fightMenuFightTrainerGcHeroOpenMenuSubBallSelectTargetPokemon(FightOutPokemon* p, u16 item, u16 id);
-extern "C++" static u8 _fightMenuFightTrainerGcHeroOpenMenuSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id);
-extern "C++" static FightOutPokemon* _fightMenuFightTrainerGcHeroOpenMenuSubWazaSelectDefensePokemon(FightOutPokemon* p, u16 waza, u16 id);
+extern "C++" { static u8 _fightMenuFightTrainerGcHeroOpenMenuSubItem(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id); }
+extern "C++" { static FightOutPokemon* _fightMenuFightTrainerGcHeroOpenMenuSubBallSelectTargetPokemon(FightOutPokemon* p, u16 item, u16 id); }
+extern "C++" { static u8 _fightMenuFightTrainerGcHeroOpenMenuSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p, u16 id); }
+extern "C++" { static FightOutPokemon* _fightMenuFightTrainerGcHeroOpenMenuSubWazaSelectDefensePokemon(FightOutPokemon* p, u16 waza, u16 id); }
 extern "C" void fightMenuFightOutPokemonCloseStatusMenuAnotherMine(u32 menuId, FightOutPokemon* p, u16 id, s32 wait, bool flag);
 extern "C" void fightMenuFightOutPokemonCloseStatusMenu(FightOutPokemon* p, u16 id, bool flag);
-extern "C++" static void _fightMenuFightOutPokemonCloseStatusMenuSub(FightOutPokemon* p, u16 id, bool flag, bool wait);
+extern "C++" { static void _fightMenuFightOutPokemonCloseStatusMenuSub(FightOutPokemon* p, u16 id, bool flag, bool wait); }
 extern "C" void fightMenuFightOutPokemonRenewStatusMenu(FightOutPokemon* p, u16 id, bool flag);
 extern "C" void fightMenuFightStatusStartAnimHP(void* a, void* b);
 extern "C" void fightMenuFightOutPokemonOpenStatusMenuStart(FightOutPokemon* p, u16 id, bool flag);
 extern "C" void fightMenuFightOutPokemonOpenStatusMenu(FightOutPokemon* p, u16 id, bool flag);
-extern "C++" static void _fightMenuFightOutPokemonOpenStatusMenuSub(FightOutPokemon* p, u16 id, bool flag, bool open, bool start);
+extern "C++" { static void _fightMenuFightOutPokemonOpenStatusMenuSub(FightOutPokemon* p, u16 id, bool flag, bool open, bool start); }
 extern "C" void fightMenuFightOutPokemonSetStatusMenuActiveFlag(FightOutPokemon* p, u16 id, s32 active);
 extern "C" u32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* p, u16 id, bool flag);
 extern "C" void fightMenuFightTrainerCloseStatusMenu(FIGHT_TRAINER* p, u16 id, s32 wait);
@@ -318,7 +318,7 @@ void fightMenuFightTrainerOpenStatusMenu(FIGHT_TRAINER* p, u16 id)
 
     fightTrainerToMenuBallStatus(p, &status);
     if (dbgMenuFightGetFightPokeStMenuOpenFlag() == 1 && menuFightChkOpenBall(menuId)) {
-        menuOpenCustom(menuId, 0, 0, 0, 0, 1, (MenuBallStatusArg)(status));
+        menuOpenCustom(menuId, 0, 0, 0, 0, 1, PCARG((MenuBallStatusArg)(status), &status));
     }
 }
 }
@@ -335,7 +335,9 @@ void fightMenuFightTrainerRenewStatusMenu(FIGHT_TRAINER* p, u16 id)
 extern "C" {
 void fightMenuFightTrainerCloseStatusMenu(FIGHT_TRAINER* p, u16 id, s32 wait)
 {
+#ifdef __MWERKS__
     extern void menuCloseCustom(u32, s32, s32);
+#endif
     u32 menuId = fightMenuGetFightTrainerPtrToStatusMenuId(p, id);
     if (menuIsCheck(menuId)) {
         menuCloseCustom(menuId, 0, wait);
@@ -393,7 +395,7 @@ static void _fightMenuFightOutPokemonOpenStatusMenuSub(FightOutPokemon* p, u16 i
         ((u8*)&status)[0x2D] = 0;
     }
     if (dbgMenuFightGetFightPokeStMenuOpenFlag() == 1) {
-        menuOpenCustom(menuId, -1, 0, 0, 0, 1, status);
+        menuOpenCustom(menuId, -1, 0, 0, 0, 1, PCARG(status, &status));
         fightFloor_SetStatusMenuCnt(menuId, -1);
     }
 }
@@ -559,7 +561,7 @@ static u8 _fightMenuFightTrainerGcHeroOpenMenuSubWaza(FIGHT_TRAINER* trainer, Fi
         check = fightOutPokemonCheckCanOutOkWazaBanme(p, sel, 1, &other);
         waza = pokemonGetStatus(pokemon, 0, 0x7F, sel);
         if (check != 0) {
-            fightMsgctrlSetValue(0x11, (u32)p);
+            fightMsgctrlSetValue(0x11, (GCuptr)p);
             fightMsgctrlSetValue(0x28, GSmsgGetGSchar(wazaGetStatus(0, waza, 1, 0)));
             u16 item = fightOutPokemonGetSoubiItemDataId(p);
             fightFloorSetStatus(0, 0, 0x56, 0, item);
@@ -859,7 +861,7 @@ static u8 _fightMenuFightTrainerGcHeroOpenMenuSubMain(FIGHT_TRAINER* trainer, Fi
     case 0:
         check = fightOutPokemonCheckFightActionWazaSelect(p, 1);
         if (check == 1) {
-            fightMsgctrlSetValue(0x11, (u32)p);
+            fightMsgctrlSetValue(0x11, (GCuptr)p);
             fightMenuOpenMsg(0x4EE5);
             fightMainWaitFrame(0x40);
             fightMenuCloseMsg();
@@ -1106,7 +1108,9 @@ static FightOutPokemon* _fightMenuFightTrainerAgbHeroSelectDefensePokemon(FightO
 extern "C" {
 u32 fightMenuFightTrainerAgbHeroOpenMenu(FIGHT_TRAINER* trainer, u16 id)
 {
+#ifdef __MWERKS__
     FightOutPokemon* fightTrainerGetValidFightOutPokemonPtr(FIGHT_TRAINER*, u32);
+#endif
     FightOutPokemon* p;
     FightOutPokemon* target;
     u32 i;
@@ -1125,7 +1129,7 @@ u32 fightMenuFightTrainerAgbHeroOpenMenu(FIGHT_TRAINER* trainer, u16 id)
     u16 trainerNum;
     s32 gba;
     s16 change;
-    FightSide* s;
+    FIGHT_SIDE* s;
     u8 found;
     u32 gbaWork;
     FightOutPokemon* sel;
@@ -1318,7 +1322,7 @@ void fightMenuCloseMsg(void)
 }
 
 extern "C" {
-void fightMsgctrlSetValue(s32 id, u32 value)
+void fightMsgctrlSetValue(s32 id, GCuptr value)
 {
     if (ServerWork[7] == 2) {
         switch (id) {
@@ -1345,9 +1349,9 @@ void fightMsgctrlSetValue(s32 id, u32 value)
 }
 
 extern "C" {
-void fightMenuWazaOutMsg(u32 value, u16 waza)
+void fightMenuWazaOutMsg(GCuptr value, u16 waza)
 {
-    u32 type;
+    GCuptr type;
 
     fightMsgctrlSetValue(0xF, value);
     type = GSmsgGetGSchar(wazaGetStatus(0, waza, 0xA, 0));
@@ -1359,9 +1363,9 @@ void fightMenuWazaOutMsg(u32 value, u16 waza)
 }
 
 extern "C" {
-void fightMenuWazaKoukaMsg(u32 msg, u32 value, u16 item)
+void fightMenuWazaKoukaMsg(u32 msg, GCuptr value, u16 item)
 {
-    u32 name;
+    GCuptr name;
 
     fightMsgctrlSetValue(0x10, value);
     name = GSmsgGetGSchar(itemGetStatus(0, item, 1, 0));

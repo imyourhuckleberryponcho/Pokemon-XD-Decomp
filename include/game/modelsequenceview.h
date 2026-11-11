@@ -56,8 +56,13 @@ typedef struct ModelSequenceLayout {
     void* m_model;
     void* m_unk98;
     void* m_sections;
+#ifdef __MWERKS__
     u32 m_pachiruA;
     u32 m_pachiruB;
+#else
+    void* m_pachiruA;
+    void* m_pachiruB;
+#endif
     void* m_unkA8;
     void* m_unkAC;
     void* m_unkB0;

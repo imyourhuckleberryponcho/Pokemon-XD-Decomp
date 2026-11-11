@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 
 class GSmemPoolAllocator {
 public:
@@ -107,6 +108,24 @@ GSmemPoolAllocator* GSmemGetSysdolAllocator(u32 size) {
     return allocator;
 }
 
+#ifndef __MWERKS__
+void* GSmemGetSysdolAllocatorGC(u32 pc, u32 gc) {
+    GSmemPoolAllocator* allocator = NULL;
+    u32 cell = 0;
+    switch (gc) {
+    case 8: allocator = _Sysdol8Allocator; cell = 16; break;
+    case 12: allocator = _Sysdol12Allocator; cell = 24; break;
+    case 20: allocator = _Sysdol20Allocator; cell = 40; break;
+    case 28: allocator = _Sysdol28Allocator; cell = 56; break;
+    case 48: allocator = _Sysdol48Allocator; cell = 96; break;
+    }
+    if (allocator != NULL && pc <= cell) {
+        return allocator;
+    }
+    return GSmemGetSysdolAllocator(pc);
+}
+#endif
+
 void GSmemInitSysdolAllocator(void) {
 #ifdef __MWERKS__
     _Sysdol8Allocator = GSmemCreatePool(4000, 8);
@@ -115,11 +134,11 @@ void GSmemInitSysdolAllocator(void) {
     _Sysdol28Allocator = GSmemCreatePool(5000, 28);
     _Sysdol48Allocator = GSmemCreatePool(5000, 48);
 #else
-    _Sysdol8Allocator = GSmemCreatePool(4000, 16);
-    _Sysdol12Allocator = GSmemCreatePool(8000, 24);
-    _Sysdol20Allocator = GSmemCreatePool(3000, 40);
-    _Sysdol28Allocator = GSmemCreatePool(5000, 56);
-    _Sysdol48Allocator = GSmemCreatePool(5000, 96);
+    _Sysdol8Allocator = GSmemCreatePool(4000, GC_SIZE(16, 8));
+    _Sysdol12Allocator = GSmemCreatePool(8000, GC_SIZE(24, 12));
+    _Sysdol20Allocator = GSmemCreatePool(3000, GC_SIZE(40, 20));
+    _Sysdol28Allocator = GSmemCreatePool(5000, GC_SIZE(56, 28));
+    _Sysdol48Allocator = GSmemCreatePool(5000, GC_SIZE(96, 48));
 #endif
     HSD_SetInitParameter(2, _memAllocCallback, _memFreeCallback, _memGetRemainCallback, _memClearCallback,
                          _memCheckOwnCallback, 0);

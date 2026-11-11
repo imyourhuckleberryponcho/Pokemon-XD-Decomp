@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <dolphin/os.h>
 #include <dolphin/dvd.h>
@@ -71,7 +72,7 @@ void pokeconv(s32 id, void* buf);
 void* GSmemAllocAlign(u32 size, u32 align);
 void GSmemFree(void* p);
 void GSthreadSwitch(void);
-u32 GSdvdOpen(const char* name);
+GCuptr GSdvdOpen(const char* name);
 u32 GSdvdGetLength(u32 file);
 u8 GSdvdReadAsync(u32 file, void* dst, u32 len, s32 a, void* callback);
 s32 GSdvdGetFileInfoStatus(u32 file);
@@ -422,7 +423,7 @@ static void _AdjustGbaImageRegistry(u8* image, char* name) {
 }
 
 static void _ReadJBCode(const char* name, u8* buf, u32* size) {
-    u32 file = GSdvdOpen(name);
+    GCuptr file = GSdvdOpen(name);
     if (file == 0) {
         return;
     }

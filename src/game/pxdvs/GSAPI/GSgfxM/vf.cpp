@@ -213,10 +213,9 @@ static inline GSgfxVFFmt* vfFindInsertPos(GSgfxVF* vf, u32 idx) {
 }
 
 static inline u32 vfElemIndex(s32 type) {
-    s32* p;
     u32 idx;
     s32 t;
-    for (idx = 0, p = _vfElemTable; (t = *p) != 0xFF; p++, idx++) {
+    for (idx = 0; (t = _vfElemTable[idx]) != 0xFF; idx++) {
         if (type == t) {
             return idx;
         }
@@ -254,7 +253,11 @@ void GSgfxVFSetArray(GSgfxVF* vf, s32 type, s32 compData, void* array, s32 size,
     fmt->unk8 = (u32)array;
     fmt->unk2 = size;
     fmt->unkC = stride;
+#ifdef __MWERKS__
     if ((fmt->unk8 & 0xC0000000) == 0x80000000) {
+#else
+    if ((uintptr_t)array >= 0x10000) {
+#endif
         fmt->flags |= 1;
     }
     vf->flags |= 0xC;
@@ -489,10 +492,12 @@ GSgfxVF* GSgfxVFGetPredef(s32 p0) {
 static inline void _vfCreate(GSgfxVF* vf) {
     int i;
     u32 index = _vfAllocIndex;
-    _vfAllocIndex++;
-    if (_vfAllocIndex >= 8) {
-        _vfAllocIndex = 0;
+    u32 next = index;
+    next++;
+    if (next >= 8) {
+        next = 0;
     }
+    _vfAllocIndex = next;
     vf->index = index;
     vf->flags |= 1;
     for (i = 0; i < 27; i++) {

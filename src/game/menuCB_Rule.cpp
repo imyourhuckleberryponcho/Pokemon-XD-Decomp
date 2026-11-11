@@ -32,16 +32,9 @@ struct ErrEntry {
     u8 pad[2];
 };
 
-struct _MENUCBWORK {
-    u8 pad0[0xC];
-    s32 ruleType;
-    u8 pad10[0x9918 - 0x10];
-    CBRule rule[6];
-    u8 pad9C78[4];
-    u8 pad9C7C[8];
-    ErrEntry err[4][6];
-    u8 padrest[MENUCB_SIZE - 0x9CE4];
-};
+#define MENUCB_RULE CBRule
+#define MENUCB_ERR ErrEntry
+#include <game/menuCBWork.h>
 
 extern "C" {
 extern _MENUCBWORK _CB;

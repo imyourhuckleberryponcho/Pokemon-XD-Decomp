@@ -1,4 +1,5 @@
 #include <dolphin/mtx.h>
+#include "game/gc_fused.h"
 
 #define M_PI_2 1.5707963267948966
 
@@ -27,10 +28,10 @@ int EulerToQuat(Vec* euler, Quaternion* q) {
 
     ss = sy * sz;
     cc = cy * cz;
-    q->w = cx * cc + sx * ss;
-    q->x = sx * cc - cx * ss;
-    q->y = cz * (cx * sy) + sz * (sx * cy);
-    q->z = sz * (cx * cy) - cz * (sx * sy);
+    q->w = GC_MADD(cx, cc, sx * ss);
+    q->x = GC_MSUB(sx, cc, cx * ss);
+    q->y = GC_MADD(cz, (cx * sy), sz * (sx * cy));
+    q->z = GC_MSUB(sz, (cx * cy), cz * (sx * sy));
 
     return 1;
 }

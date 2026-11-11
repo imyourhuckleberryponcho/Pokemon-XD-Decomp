@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/gcdata.h"
 
 #pragma peephole off
 
@@ -65,7 +66,7 @@ void menuWorldMapMoveDemoMain(void) {
     }
 }
 
-void menuWorldMapMoveDemoInit(void) { pMoveDemo = new WorldMapMoveDemo; }
+void menuWorldMapMoveDemoInit(void) { pMoveDemo = (GC_NEW_NOTE(sizeof(WorldMapMoveDemo), 4) new WorldMapMoveDemo); }
 
 }
 

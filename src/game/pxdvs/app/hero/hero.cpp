@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 
@@ -61,7 +62,7 @@ s32 itemDecItemDataIdAry(void*, u16, u32, u32, u32, u16, u8);
 s32 itemAddItemDataIdAry(void*, u16, u32, u32, u32, u16, u8, u8);
 s32 itemSearchItemDataIdAry(void*, u16, u32, u32, u16);
 s32 GScharCmp(void*, void*);
-u32 GSmsgGetGSchar(u32);
+GCuptr GSmsgGetGSchar(u32);
 u32 HSD_Rand(void);
 void* heroBiosGetPokemonPtr(Hero*, u16);
 void heroMoveDismissMember(u32);
@@ -340,7 +341,7 @@ u32 heroIsMinePokemon(Hero* hero, void* pokemon) {
     if (heroRnd != pokemonRnd) {
         return 0;
     }
-    return GScharCmp((void*)heroName, (void*)pokemonName) ? 0 : 1;
+    return GScharCmp(PC_PTR(void*, heroName), PC_PTR(void*, pokemonName)) ? 0 : 1;
 }
 
 u8 heroAddPokemon(Hero* hero, void* pokemon);
@@ -573,15 +574,15 @@ void heroSetStatus(Hero* hero, u32 selector, StatusU32 value) {
 }
 
 StatusU32 heroGetStatus(Hero* hero, u32 selector, u16 index) {
-    extern u32 heroBiosGetNamePtr(Hero*);
+    extern GCuptr heroBiosGetNamePtr(Hero*);
     extern u32 heroBiosGetRnd(Hero*);
-    extern u32 heroBiosGetItemNormalPtr(Hero*, u16);
-    extern u32 heroBiosGetExtraItemPtr(Hero*, u16);
-    extern u32 heroBiosGetItemBallPtr(Hero*, u16);
-    extern u32 heroBiosGetItemSkillPtr(Hero*, u16);
-    extern u32 heroBiosGetItemSeedPtr(Hero*, u16);
-    extern u32 heroBiosGetItemKoronPtr(Hero*, u16);
-    extern u32 heroBiosGetHizukiItemPtr(Hero*, u16);
+    extern GCuptr heroBiosGetItemNormalPtr(Hero*, u16);
+    extern GCuptr heroBiosGetExtraItemPtr(Hero*, u16);
+    extern GCuptr heroBiosGetItemBallPtr(Hero*, u16);
+    extern GCuptr heroBiosGetItemSkillPtr(Hero*, u16);
+    extern GCuptr heroBiosGetItemSeedPtr(Hero*, u16);
+    extern GCuptr heroBiosGetItemKoronPtr(Hero*, u16);
+    extern GCuptr heroBiosGetHizukiItemPtr(Hero*, u16);
     extern u8 heroBiosGetSexDataId(Hero*);
     extern u32 heroBiosGetPokedoru(Hero*);
     extern u32 heroBiosGetPokecoupon(Hero*);
@@ -594,7 +595,7 @@ StatusU32 heroGetStatus(Hero* hero, u32 selector, u16 index) {
     extern u8 heroBiosGetBadge06Flag(Hero*);
     extern u8 heroBiosGetBadge07Flag(Hero*);
     extern u8 heroBiosGetBadge08Flag(Hero*);
-    extern u32 heroBiosGetHizukiNamePtr(Hero*);
+    extern GCuptr heroBiosGetHizukiNamePtr(Hero*);
     extern u8 heroBiosGetHizukiFlag(Hero*);
     extern u8 heroBiosGetHomePlace(Hero*);
 

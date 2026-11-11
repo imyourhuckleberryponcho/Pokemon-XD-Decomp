@@ -366,7 +366,7 @@ bool salInitDspCtrl(u8 numVoices, u8 numStudios, u32 defaultStudioDPL2) {
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
       DCFlushRange(dspSurround, 160 * sizeof(long));
 #endif
-      if ((dspVoice = salMalloc(salNumVoices * sizeof(DSPvoice)))) {
+      if ((dspVoice = salMalloc(MUSY_GC_SIZE(salNumVoices * sizeof(DSPvoice), salNumVoices * 248)))) {
         MUSY_DEBUG("Allocated HW voice array.\n\n");
         if ((dspITDBuffer = SAL_MALLOC(salNumVoices * 64))) {
           MUSY_DEBUG("Allocated ITD buffers for voice array.\n\n");
