@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 
 typedef struct PokemonTokuseiData {
     u32 field_00;
@@ -6,7 +7,7 @@ typedef struct PokemonTokuseiData {
     u32 msgId;
 } PokemonTokuseiData;
 
-PokemonTokuseiData pokemon_tokusei_data[] = {
+PokemonTokuseiData pokemon_tokusei_data[PC_SPARE_ROWS(78, PC_SPARE_ABILITIES)] = {
     {0x00000000, 0x00000000, 0x00000000},
     {0x00000000, 0x00000C1D, 0x00000CE5},
     {0x00000000, 0x00000C1E, 0x00000CE6},
@@ -86,5 +87,6 @@ PokemonTokuseiData pokemon_tokusei_data[] = {
     {0x00000000, 0x00000C68, 0x00000000},
     {0x00000000, 0x00000C69, 0x00000D31},
 };
+PC_SPARE_CHECK(pokemon_tokusei_data, 78);
 
-u32 pokemon_tokusei_data_number = sizeof(pokemon_tokusei_data) / sizeof(pokemon_tokusei_data[0]);
+u32 pokemon_tokusei_data_number = PC_SPARE_COUNT(pokemon_tokusei_data, 78);

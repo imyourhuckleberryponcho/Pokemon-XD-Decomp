@@ -458,8 +458,13 @@ void pdaMemoList::SortPokemonID() {
     MemoSortBuff* buf;
     u16* ids;
     int count = memoDataGetCount(0);
+#ifdef __MWERKS__
     buf = (MemoSortBuff*)new u8[0x2BC0];
     ids = (u16*)new u8[0x320];
+#else
+    buf = (MemoSortBuff*)new u8[sizeof(MemoSortBuff) * (count > 400 ? count : 400)];
+    ids = (u16*)new u8[sizeof(u16) * (count > 400 ? count : 400)];
+#endif
     for (u16 i = 0; i < count; i++) {
         id = sortList[i];
         ids[i] = id;
@@ -482,8 +487,13 @@ void pdaMemoList::SortGojyuon() {
     MemoSortBuff* buf;
     u16* ids;
     int count = memoDataGetCount(0);
+#ifdef __MWERKS__
     buf = (MemoSortBuff*)new u8[0x2BC0];
     ids = (u16*)new u8[0x320];
+#else
+    buf = (MemoSortBuff*)new u8[sizeof(MemoSortBuff) * (count > 400 ? count : 400)];
+    ids = (u16*)new u8[sizeof(u16) * (count > 400 ? count : 400)];
+#endif
     for (u16 i = 0; i < count; i++) {
         u16 id = sortList[i];
         ids[i] = id;

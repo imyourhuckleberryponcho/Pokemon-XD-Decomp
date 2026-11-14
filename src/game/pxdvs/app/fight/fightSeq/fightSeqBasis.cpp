@@ -2605,6 +2605,9 @@ extern "C" {
 extern u8 WAZA_OverHeat[];
 #endif
 }
+#ifndef __MWERKS__
+extern "C" int PortXD_StatusBlockedByAbility(FightOutPokemon* p, u8 effect);
+#endif
 static void _fightSeqTuikaActSub(u8 direct, u8 flag, u8* out) {
     u8 ok = 0;
     u16 waza;
@@ -2650,6 +2653,12 @@ static void _fightSeqTuikaActSub(u8 direct, u8 flag, u8* out) {
         ServerWork[3] = 0;
         return;
     }
+#ifndef __MWERKS__
+    if (PortXD_StatusBlockedByAbility(p, ServerWork[3])) {
+        ServerWork[3] = 0;
+        return;
+    }
+#endif
     if (fightSideIsJoutaiDataId(side, 0x4B) == 1 && !(ServerStatusFlag & 0x2000) && direct == 0 && ServerWork[3] < 8) {
         return;
     }

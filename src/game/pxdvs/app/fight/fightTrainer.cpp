@@ -460,6 +460,13 @@ static inline EsaTable* _esabaGetPokemonTable(u32 index) {
     return *esabadata[index].table;
 }
 
+#ifndef __MWERKS__
+static inline u16 _esabaGetCount(u32 index) {
+    EsaTable* table = _esabaGetPokemonTable(index);
+    return table != 0 ? table->head->count : 0;
+}
+#endif
+
 static inline u16 _esabaGetPokemonId(u32 index, u8 k) {
     EsaTable* table = _esabaGetPokemonTable(index);
     return table != 0 ? table->entries[k].id : 0;
@@ -1721,7 +1728,12 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
             break;
         }
     }
+#ifdef __MWERKS__
     for (k = 0; k < 3; k++) {
+#else
+    slot = 0;
+    for (k = 0; k < _esabaGetCount(esabaIndex); k++) {
+#endif
         if (pokemonId == _esabaGetPokemonId(esabaIndex, k)) {
             slot = k;
             break;

@@ -1138,6 +1138,9 @@ s32 menuFightOpenPokemon(FIGHT_TRAINER* trainer, void* fop, u16 type, u8 cancel,
     return result;
 }
 
+#ifndef __MWERKS__
+extern "C" int PortXD_TargetCursorOtherSide(void* user);
+#endif
 s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
 {
     TargetEntry* e;
@@ -1185,6 +1188,17 @@ s32 menuFightOpenTarget(TargetArg* arg, s32 b, s32 c)
                     cursor = 0;
                 }
             }
+#ifndef __MWERKS__
+            if (PortXD_TargetCursorOtherSide(PC_PTR(void*, arg->user))) {
+                s32 other = menuGetCursorFromItemID(0x5c, 0x138);
+                if (other == -1) {
+                    other = menuGetCursorFromItemID(0x5c, 0x139);
+                }
+                if (other != -1) {
+                    cursor = other;
+                }
+            }
+#endif
             result = menuOpenCustom(0x5c, 0, &cursor, 0, c, 1, arg);
             switch (result) {
             case 0x13a:

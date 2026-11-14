@@ -455,7 +455,7 @@ void peDistortionContainer::Stop() {
         PreUpdate();
         started = 0;
         peNodeView* n = (peNodeView*)activeList;
-        u32 flags = *PE_EMITTER_DEF_RAW(emitter, u32**);
+        u32 flags = GC_AT(u32, PE_EMITTER_DEF_RAW(emitter, u8**), 0);
         if (flags & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
@@ -696,18 +696,18 @@ u16 peDistortionContainer::Emit(unsigned short count) {
                 } else {
                     idx = NULL;
                 }
-                idx[0] = base;
-                idx[1] = base;
-                idx[2] = 0;
-                idx[3] = base + 3;
-                idx[4] = base;
-                idx[5] = 2;
-                idx[6] = base + 6;
-                idx[7] = base;
-                idx[8] = 4;
-                idx[9] = base + 9;
-                idx[10] = base;
-                idx[11] = 6;
+                PE_DL_W16(idx, u16, 0, base);
+                PE_DL_W16(idx, u16, 1, base);
+                PE_DL_W16(idx, u16, 2, 0);
+                PE_DL_W16(idx, u16, 3, base + 3);
+                PE_DL_W16(idx, u16, 4, base);
+                PE_DL_W16(idx, u16, 5, 2);
+                PE_DL_W16(idx, u16, 6, base + 6);
+                PE_DL_W16(idx, u16, 7, base);
+                PE_DL_W16(idx, u16, 8, 4);
+                PE_DL_W16(idx, u16, 9, base + 9);
+                PE_DL_W16(idx, u16, 10, base);
+                PE_DL_W16(idx, u16, 11, 6);
             }
             d->flags |= 2;
         }

@@ -287,13 +287,13 @@ void peShapeContainer::Stop() {
     if ((u8) THIS_F(u8 *, 0x19, started) != 0) {
         ((peContainer*)this)->PreUpdate();
         THIS_F(u8 *, 0x19, started) = 0U;
-        if (*THIS_F(s32 **, 0x20, shape) & 0x800000) {
+        if (GC_AT(s32, THIS_F(u8 **, 0x20, shape), 0) & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, false);
         }
-        if (*THIS_F(s32 **, 0x20, shape) & 0x01000000) {
+        if (GC_AT(s32, THIS_F(u8 **, 0x20, shape), 0) & 0x01000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)3, false);
         }
-        if (*THIS_F(s32 **, 0x20, shape) & 0x02000000) {
+        if (GC_AT(s32, THIS_F(u8 **, 0x20, shape), 0) & 0x02000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)5, false);
         }
         ((peContainer*)((peContainer *) this))->RemoveAll();
@@ -782,7 +782,7 @@ void peShapeContainer::Update(float dt) {
     if (g_currentBound != 0 && PSC(peNode*, 0x10, activeList) != NULL) {
         GSboundAlwaysInView(g_currentBound, 1);
     }
-    if (PSC(u8, 0x19, started) != 0 && (*PSC(u32*, 0x20, shape) & 0x80) && PSC(u16, 0x14, count) >= 2) {
+    if (PSC(u8, 0x19, started) != 0 && (GC_AT(u32, PSC(u8*, 0x20, shape), 0) & 0x80) && PSC(u16, 0x14, count) >= 2) {
         for (node = PE_NEXT(PSC(peNode*, 0x10, activeList)); node != NULL; node = next) {
             depth = PE_DEPTH(node);
             pos = node;
@@ -1435,13 +1435,13 @@ extern "C++" {
 void peShapeContainer::Start() {
     if ((u8) THIS_F(u8 *, 0x19, started) == 0) {
         THIS_F(u8 *, 0x19, started) = 1U;
-        if (*THIS_F(s32 **, 0x20, shape) & 0x800000) {
+        if (GC_AT(s32, THIS_F(u8 **, 0x20, shape), 0) & 0x800000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)1, true);
         }
-        if (*THIS_F(s32 **, 0x20, shape) & 0x01000000) {
+        if (GC_AT(s32, THIS_F(u8 **, 0x20, shape), 0) & 0x01000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)3, true);
         }
-        if (*THIS_F(s32 **, 0x20, shape) & 0x02000000) {
+        if (GC_AT(s32, THIS_F(u8 **, 0x20, shape), 0) & 0x02000000) {
             peContainer::SetLayerVisibility((GSgfxLayerID)5, true);
         }
     }

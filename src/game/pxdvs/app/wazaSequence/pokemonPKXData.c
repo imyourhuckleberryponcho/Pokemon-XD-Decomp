@@ -1,11 +1,12 @@
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 
 typedef struct PkxEntry {
     u32 a;
     u32 b;
 } PkxEntry;
 
-PkxEntry pokemon_pkx_data[] = {
+PkxEntry pokemon_pkx_data[PC_SPARE_ROWS(419, PC_SPARE_SPECIES)] = {
     {0x0, 0x0},
     {0xA4, 0x2B81E00},
     {0x119, 0x33F1E00},
@@ -426,5 +427,6 @@ PkxEntry pokemon_pkx_data[] = {
     {0x8D7, 0x19661E00},
     {0x94B, 0x1F0F1E00},
 };
+PC_SPARE_CHECK(pokemon_pkx_data, 419);
 
-u32 pokemon_pkx_data_number = sizeof(pokemon_pkx_data) / sizeof(pokemon_pkx_data[0]);
+u32 pokemon_pkx_data_number = PC_SPARE_COUNT(pokemon_pkx_data, 419);

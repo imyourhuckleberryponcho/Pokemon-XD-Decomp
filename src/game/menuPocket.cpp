@@ -1,6 +1,7 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 #include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
@@ -361,13 +362,21 @@ ResizeEntry ActMenuResizeWork[7] = {
 };
 }
 extern "C" {
+#ifdef __MWERKS__
 u16 item_ball_sort[12] = {
+#else
+u16 item_ball_sort[12 + 32] = {
+#endif
     0x4, 0x3, 0x2, 0xA, 0x9, 0x8, 0x7, 0x6,
     0xC, 0xB, 0x1, 0x5,
 };
 }
 extern "C" {
+#ifdef __MWERKS__
 u16 item_dougu_sort[128] = {
+#else
+u16 item_dougu_sort[128 + PC_SPARE_ITEMS] = {
+#endif
     0xD, 0x16, 0x15, 0x14, 0x13, 0x1A, 0x1B, 0x1C,
     0x1D, 0xE, 0x12, 0x11, 0xF, 0x10, 0x17, 0x26,
     0x18, 0x19, 0x1E, 0x1F, 0x20, 0x21, 0x2D, 0x22,

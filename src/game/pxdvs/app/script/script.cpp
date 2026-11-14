@@ -1539,8 +1539,28 @@ s32 scriptPokemonRememberWaza(Pokemon* pokemon, s32 waza)
     return found;
 }
 
+#ifndef __MWERKS__
+#include <game/menuTables.h>
+extern "C" {
+extern WAZAOSHIE_DATA* wazaoshie_data;
+extern s32* wazaoshie_data_number;
+}
+#endif
+
 s32 scriptPokemonTeachWazaIndex(s32 waza)
 {
+#ifndef __MWERKS__
+    {
+        static const s8 rowToIndex[12] = {3, 5, 2, 7, 6, 4, 8, 0, 11, 9, 1, 10};
+        s32 n = *wazaoshie_data_number;
+        for (s32 row = 0; row < n && row < 12; row++) {
+            if (wazaoshie_data[row].id == waza) {
+                return rowToIndex[row];
+            }
+        }
+        return -1;
+    }
+#endif
     switch (waza) {
     case 0x22: return 0;
     case 0x26: return 1;

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 
 typedef struct WaveDispData WaveDispData;
 
@@ -391,7 +392,7 @@ extern WaveDispData wavedispdata_386_deokisis;
 extern WaveDispData wavedispdata_387_usohachi;
 extern WaveDispData wavedispdata_388_gonbe;
 
-WaveDispData* pokemon_nakigoe_data[] = {
+WaveDispData* pokemon_nakigoe_data[PC_SPARE_ROWS(389, PC_SPARE_SPECIES)] = {
     0,
     &wavedispdata_001_fushigidane,
     &wavedispdata_002_fushigisou,
@@ -782,5 +783,6 @@ WaveDispData* pokemon_nakigoe_data[] = {
     &wavedispdata_387_usohachi,
     &wavedispdata_388_gonbe,
 };
+PC_SPARE_CHECK(pokemon_nakigoe_data, 389);
 
-u32 pokemon_nakigoe_data_number = sizeof(pokemon_nakigoe_data) / sizeof(pokemon_nakigoe_data[0]);
+u32 pokemon_nakigoe_data_number = PC_SPARE_COUNT(pokemon_nakigoe_data, 389);

@@ -342,17 +342,17 @@ void peParticleStripContainer::RearrangeIndices() {
                 u16 i = 0;
                 if (hasColor2) {
                     for (; i < 2; i++) {
-                        idx[0] = base + i * 3;
-                        idx[1] = base;
-                        idx[3] = base + i * 2;
-                        idx[2] = base;
+                        PE_DL_W16(idx, u16, 0, base + i * 3);
+                        PE_DL_W16(idx, u16, 1, base);
+                        PE_DL_W16(idx, u16, 3, base + i * 2);
+                        PE_DL_W16(idx, u16, 2, base);
                         idx += 4;
                     }
                 } else {
                     for (; i < 2; i++) {
-                        idx[0] = base + i * 3;
-                        idx[2] = base + i * 2;
-                        idx[1] = base;
+                        PE_DL_W16(idx, u16, 0, base + i * 3);
+                        PE_DL_W16(idx, u16, 2, base + i * 2);
+                        PE_DL_W16(idx, u16, 1, base);
                         idx += 3;
                     }
                 }
@@ -791,7 +791,7 @@ u16 peParticleStripContainer::Emit(unsigned short count) {
     while (left != 0) {
         u8* e = (u8*)emitter;
         next = node->next;
-        f32 phase = (PE_EMITTER_DEF_RAW(e, f32**))[2] * u16tof32S(PE_NODE_F(e, u16, 0x4a) + total - left);
+        f32 phase = GC_AT(f32, PE_EMITTER_DEF_RAW(e, u8**), 8) * u16tof32S(PE_NODE_F(e, u16, 0x4a) + total - left);
         peStripDefE* p = (peStripDefE*)data;
         peDLView* d = (peDLView*)dl[cur];
         if ((d->flags & 1) == 1) {
@@ -821,7 +821,7 @@ void peParticleStripContainer::Start() {
         return;
     }
     THIS_F(u8 *, 0x19, started) = 1;
-    u32 flags = *THIS_F(u32 **, 0x54, data);
+    u32 flags = GC_AT(u32, THIS_F(u8 **, 0x54, data), 0);
     InitSwap();
     if (flags & 0x400000) {
         peContainer::SetLayerVisibility((GSgfxLayerID)1, true);

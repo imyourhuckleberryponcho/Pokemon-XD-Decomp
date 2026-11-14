@@ -422,6 +422,32 @@ void pokecoloCheckDiskTray() {
 #pragma pop
 #ifndef __MWERKS__
 extern "C" u8* PortXD_GetDolTable(const char* name);
+extern "C" s32 PortXD_GetLanguage(void);
+extern "C" const char* PortXD_GetLanguageCode(void);
+static u8* _portGetDolTableLang(const char* name) {
+    char buf[0x40];
+    const char* code = PortXD_GetLanguageCode();
+    u8* table = 0;
+    if (code != 0 && code[0] != 0) {
+        u32 n = 0;
+        const char* c;
+        for (c = name; *c != 0 && n < sizeof(buf) - 1; c++) {
+            buf[n++] = *c;
+        }
+        if (n < sizeof(buf) - 1) {
+            buf[n++] = '_';
+        }
+        for (c = code; *c != 0 && n < sizeof(buf) - 1; c++) {
+            buf[n++] = *c;
+        }
+        buf[n] = 0;
+        table = PortXD_GetDolTable(buf);
+    }
+    if (table == 0) {
+        table = PortXD_GetDolTable(name);
+    }
+    return table;
+}
 #endif
 extern "C" {
 #pragma push
@@ -449,11 +475,11 @@ void pokecoloMain(int argc, char** argv) {
 #include "pokecolo/debug_menu_fnt.inc"
     };
 #else
-    u8* resident_fnt = PortXD_GetDolTable("resident_fnt");
-    u8* common_fnt = PortXD_GetDolTable("common_fnt");
-    u8* common_tbl = PortXD_GetDolTable("common_tbl");
-    u8* system_error_fnt = PortXD_GetDolTable("system_error_fnt");
-    u8* system_error_tbl = PortXD_GetDolTable("system_error_tbl");
+    u8* resident_fnt = _portGetDolTableLang("resident_fnt");
+    u8* common_fnt = _portGetDolTableLang("common_fnt");
+    u8* common_tbl = _portGetDolTableLang("common_tbl");
+    u8* system_error_fnt = _portGetDolTableLang("system_error_fnt");
+    u8* system_error_tbl = _portGetDolTableLang("system_error_tbl");
     u8* debug_menu_tbl = PortXD_GetDolTable("debug_menu_tbl");
     u8* debug_menu_fnt = PortXD_GetDolTable("debug_menu_fnt");
 #endif
@@ -475,7 +501,11 @@ void pokecoloMain(int argc, char** argv) {
         break;
     }
     GSthreadInit(0x14);
+#ifdef __MWERKS__
     fn_8005C068(2);
+#else
+    fn_8005C068(PortXD_GetLanguage());
+#endif
     progressive = 0;
     if (_pokecoloCheckExDisc() == 1) {
         if (OSGetProgressiveMode() == 1) {

@@ -498,6 +498,9 @@ u8 menuTopGetBattleMode() {
 }
 }
 
+#ifndef __MWERKS__
+extern "C" s32 PortXD_VsMenuExtraSelected(void);
+#endif
 static s32 _menuTopSelectBattle() {
     u8 loop;
     int r;
@@ -519,6 +522,11 @@ static s32 _menuTopSelectBattle() {
     do {
         mode = menuTopGetBattleSelectMode();
         r = menuOpenCustom(0x118, windowGetActiveID(), &mode, 0, 1, 0);
+#ifndef __MWERKS__
+        if (r == 2 && PortXD_VsMenuExtraSelected()) {
+            continue;
+        }
+#endif
         switch (r) {
         case 0: {
             _menuTopClose2(0x118, 2);

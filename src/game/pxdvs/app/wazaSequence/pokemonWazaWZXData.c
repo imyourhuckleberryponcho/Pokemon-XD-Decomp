@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 
 typedef struct PokemonWazaWzxEntry {
     u8 variation;
@@ -8,7 +9,7 @@ typedef struct PokemonWazaWzxEntry {
     u16 resID;
 } PokemonWazaWzxEntry;
 
-PokemonWazaWzxEntry pokemon_waza_wzx_data[] = {
+PokemonWazaWzxEntry pokemon_waza_wzx_data[PC_SPARE_ROWS(866, PC_SPARE_MOVES)] = {
     {0, 0, 0x0, 0x0, 0x0},
     {0, 0, 0x9, 0x38, 0x8D},
     {0, 0, 0x5, 0xA, 0x15},
@@ -876,3 +877,5 @@ PokemonWazaWzxEntry pokemon_waza_wzx_data[] = {
     {1, 0, 0x184, 0x100, 0x282},
     {0, 0, 0x0, 0x0, 0x0},
 };
+PC_SPARE_CHECK(pokemon_waza_wzx_data, 866);
+

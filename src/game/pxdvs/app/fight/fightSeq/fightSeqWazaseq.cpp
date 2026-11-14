@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -2596,6 +2597,11 @@ void WS_CHIKYUUNAGE(void) {
 }
 }
 
+#ifndef __MWERKS__
+extern "C" u32* waza_data_number;
+extern "C" u16 pc_metronome_first_mod_move;
+u16 pc_metronome_first_mod_move = 0;
+#endif
 extern "C" {
 void WS_YUBIWOHURU(void) {
 #ifdef __MWERKS__
@@ -2606,7 +2612,11 @@ void WS_YUBIWOHURU(void) {
 #ifdef __MWERKS__
     extern FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, u32, u32, u32, u32, s32);
 #endif
+#ifdef __MWERKS__
     u16 ary[400];
+#else
+    u16 ary[400 + PC_SPARE_MOVES];
+#endif
     u8 type;
     FightOutPokemon* atk;
     void* fw;
@@ -2630,6 +2640,16 @@ void WS_YUBIWOHURU(void) {
             n++;
         }
     }
+#ifndef __MWERKS__
+    if (pc_metronome_first_mod_move != 0) {
+        for (i = pc_metronome_first_mod_move; i < *waza_data_number && n < sizeof(ary) / sizeof(ary[0]); i++) {
+            if ((u16)fightSeqCheckYubiwohuruWazaDataId(i) != 0) {
+                ary[n] = i;
+                n++;
+            }
+        }
+    }
+#endif
     r = HSD_Rand();
     waza = ary[r % n];
     dbg = dbgMenuFightGetYubiwohuruWazaDataId();

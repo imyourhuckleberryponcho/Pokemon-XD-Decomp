@@ -1071,9 +1071,16 @@ void FloorManager::scriptUpdate() {
     }
 }
 
+#ifndef __MWERKS__
+extern "C" s32 PortXD_FloorLanguage(s32 saveLanguage);
+#endif
 void FloorManager::load(GSfloor_dd_* floor, FloorEnterMode mode) {
     u32 fsys = floorDataBiosGetFileGroupID(floor);
+#ifdef __MWERKS__
     fn_8005C068(gamedatasaveGetStatus(0, 0xb));
+#else
+    fn_8005C068(PortXD_FloorLanguage((s32)gamedatasaveGetStatus(0, 0xb)));
+#endif
     m_modules->executeAll(floorDataBiosGetFloorID(floor), FLOOR_STATE_1, FLOOR_MODULE_TYPE_0, mode, -1);
     floorLayerConfig(floorDataBiosGetFloorID(floor), floorDataBiosGetFloorKind(floor));
     GSlogWrite("\n------------------>>> Floor %d loading... fsysid=[%d]\n\n", floorDataBiosGetFloorID(floor), fsys);

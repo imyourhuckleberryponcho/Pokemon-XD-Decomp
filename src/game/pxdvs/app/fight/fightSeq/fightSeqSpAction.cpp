@@ -339,12 +339,18 @@ void WS_STATUS_RECOVER(void) {
     }
     fightSeq_NextWazaSeq(1);
 }
+#ifndef __MWERKS__
+extern "C" int PortXD_MsgIsHeroSide(void* fop, int isHero);
+#endif
 
 void WS_POKE_HPDEC_RATE(void) {
     u8* cmd = (u8*)fightSeq_GetWazaSeq();
     FightOutPokemon* p = fightTargetGetPtrAsNowFightType(cmd[1], 0);
     void* trainer = fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, p);
     bool isHero = fightOutPokemonIsGcHeroFightOutPokemon(p) == 1;
+#ifndef __MWERKS__
+    isHero = PortXD_MsgIsHeroSide(p, isHero) != 0;
+#endif
     bool isTusin = fightFloorIsNowEncountTuusinTaisen(0) == 1;
     if (fightTrainerGetPrefixNamePtr(trainer) == 0 && !isHero) {
         isTusin = 1;
@@ -380,6 +386,9 @@ void WS_POKE_HPMAX_RATE(void) {
     FightOutPokemon* p = fightTargetGetPtrAsNowFightType(cmd[1], 0);
     void* trainer = fightFloorGetFightOutPokemonPtrToFightTrainerPtr(0, p);
     bool isHero = fightOutPokemonIsGcHeroFightOutPokemon(p) == 1;
+#ifndef __MWERKS__
+    isHero = PortXD_MsgIsHeroSide(p, isHero) != 0;
+#endif
     bool isTusin = fightFloorIsNowEncountTuusinTaisen(0) == 1;
     if (fightTrainerGetPrefixNamePtr(trainer) == 0 && !isHero) {
         isTusin = 1;

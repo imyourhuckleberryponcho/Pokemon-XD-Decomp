@@ -185,12 +185,12 @@ void menuSubDrawMsgWindow2(s32 layer, s32 x, s32 y, s32 w, s32 h, u8 alpha) {
 
     if (GSgfxLayerFindByID(layer) != 0) {
         corner = menuSpriteBiosGetValPtr(menuSpriteBiosGetPtr(0xB3));
-        color = alpha | 0xFFFFFF00;
         x1 = x + w - corner->w / 2 + 15;
         x0 = x - corner->w / 2 - 15;
-        y1 = y + h - corner->h / 2 + 10;
         y0 = y - corner->h / 2 - 10;
-        windowDrawSprite2(x0, (s32)y0, corner->w, corner->h, color, 0, 0xB3, 0, layer);
+        y1 = y + h - corner->h / 2 + 10;
+        color = alpha | 0xFFFFFF00;
+        windowDrawSprite2(x0, y0, corner->w, corner->h, color, 0, 0xB3, 0, layer);
         windowDrawSprite2(x1, y0, corner->w, corner->h, color, 0, 0xB3, 1, layer);
         windowDrawSprite2(x0, y1, corner->w, corner->h, color, 0, 0xB3, 2, layer);
         windowDrawSprite2(x1, y1, corner->w, corner->h, color, 0, 0xB3, 3, layer);

@@ -800,7 +800,7 @@ u32 fightActionFlowSyuuryou(FightAction* action) {
             dark->setStatus(darkPokemonStatus3);
             dark->setSnatchTime(Hero::getHeroPtr()->getFootStep());
             dark->setOrgTrainer(trainerId);
-            dark->setTrainerName(GSmsgGetGSchar(name));
+            dark->setTrainerName(GSmsgGetGSchar((u16)name));
             dark->setCatchBallID(ball);
             u16 catchFloor = dark->getCatchFloorId();
             if (catchFloor == 0xb5 || catchFloor == 0) {
@@ -1717,12 +1717,18 @@ s32 fightActionFlowKaisiNyuujouPokemon(FightAction* action) {
 }
 
 }
+#ifndef __MWERKS__
+extern "C" int PortXD_MsgIsHeroSide(void* fop, int isHero);
+#endif
 
 static void _fightActionFlowKaisiNyuujouPokemonSubAppearMsg(FIGHT_TRAINER* trainer, FightOutPokemon* fop, u16 trainerCount, u16 fightOutCount, u16 unused, u16 index, u8 mode) {
     u32 new_var;
     bool isHero;
     bool tuusin;
     isHero = fightOutPokemonIsGcHeroFightOutPokemon(fop) == 1;
+#ifndef __MWERKS__
+    isHero = PortXD_MsgIsHeroSide(fop, isHero) != 0;
+#endif
     tuusin = fightFloorIsNowEncountTuusinTaisen(0) == 1;
     if ((fightTrainerGetPrefixNamePtr(trainer) == 0) && (!isHero)) {
         tuusin = 1;

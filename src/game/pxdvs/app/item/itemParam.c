@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 #include <game/bitfield.h>
 
 typedef struct ItemParam {
@@ -43,7 +44,7 @@ typedef struct ItemParam {
     u8 spAttackEffortUp;
 } ItemParam;
 
-ItemParam item_param[] = {
+ItemParam item_param[PC_SPARE_ROWS(64, PC_SPARE_ITEMS)] = {
     {GC_INIT5(0, 0, 0, 0, 0), GC_INIT2(0, 0), GC_INIT2(0, 0), GC_INIT8(0, 0, 0, 0, 0, 0, 0, 0), GC_INIT6(0, 0, 0, 0, 0, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     {GC_INIT5(0, 0, 0, 0, 0), GC_INIT2(0, 0), GC_INIT2(0, 0), GC_INIT8(0, 0, 0, 0, 0, 0, 0, 0), GC_INIT6(0, 0, 0, 0, 0, 0), 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0},
     {GC_INIT5(0, 0, 0, 0, 0), GC_INIT2(0, 0), GC_INIT2(0, 0), GC_INIT8(0, 0, 0, 1, 0, 0, 0, 0), GC_INIT6(0, 0, 0, 0, 0, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -109,5 +110,6 @@ ItemParam item_param[] = {
     {GC_INIT5(0, 0, 0, 0, 0), GC_INIT2(0, 0), GC_INIT2(0, 0), GC_INIT8(0, 0, 1, 1, 1, 1, 1, 1), GC_INIT6(0, 0, 0, 0, 0, 0), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     {GC_INIT5(0, 0, 0, 0, 0), GC_INIT2(0, 0), GC_INIT2(0, 0), GC_INIT8(0, 0, 0, 0, 0, 0, 0, 0), GC_INIT6(0, 0, 0, 0, 0, 0), 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0},
 };
+PC_SPARE_CHECK(item_param, 64);
 
-u32 item_param_number = sizeof(item_param) / sizeof(item_param[0]);
+u32 item_param_number = PC_SPARE_COUNT(item_param, 64);

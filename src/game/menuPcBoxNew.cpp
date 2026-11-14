@@ -222,6 +222,34 @@ SelectMenu _selectMenuTbl[3] = {
     { 0x7B, 0x37E, 0x3BB6, { 0x3BB7, 0x3BB8, 0x3BB9, 0x3BBA, 0, 0 } },
 };
 
+#ifndef __MWERKS__
+extern "C" s32 PortXD_PcMenuExtraRow(void);
+extern "C" s32 PortXD_PcMenuExtraSelected(s32 msgId);
+static SelectMenu _portPcTopMenu[2];
+static SelectMenu* _portPcMenuWithExtraRow(SelectMenu* menu)
+{
+    s32 extra = PortXD_PcMenuExtraRow();
+    SelectMenu* copy = &_portPcTopMenu[menu == &_selectMenuTbl[0] ? 0 : 1];
+    s32 n = 0;
+    s32 i;
+    if (extra == 0) {
+        return menu;
+    }
+    *copy = *menu;
+    while (n < 6 && copy->items[n] != 0) {
+        n++;
+    }
+    if (n == 0 || n >= 6) {
+        return menu;
+    }
+    for (i = n; i > n - 1; i--) {
+        copy->items[i] = copy->items[i - 1];
+    }
+    copy->items[n - 1] = extra;
+    return copy;
+}
+#endif
+
 class CmenuPcBox : public CMetaMenu {
 public:
     SelectMenu* menu;
@@ -424,6 +452,9 @@ void CmenuPcBox::loop()
             } else {
                 menu = &_selectMenuTbl[0];
             }
+#ifndef __MWERKS__
+            menu = _portPcMenuWithExtraRow(menu);
+#endif
             state.change(4);
             break;
         case 2:
@@ -462,6 +493,17 @@ void CmenuPcBox::loop()
                     case 0x3BB4:
                         state.change(11);
                         break;
+#ifndef __MWERKS__
+                    default:
+                        if (menu->items[*sel] != 0 && menu->items[*sel] == PortXD_PcMenuExtraRow()) {
+                            if (PortXD_PcMenuExtraSelected(menu->items[*sel])) {
+                                state.change(11);
+                            } else {
+                                state.change(1);
+                            }
+                        }
+                        break;
+#endif
                     }
                 } else {
                     state.change(11);

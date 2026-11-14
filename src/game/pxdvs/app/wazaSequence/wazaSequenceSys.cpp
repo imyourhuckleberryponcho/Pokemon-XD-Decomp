@@ -929,6 +929,16 @@ u32 wazaSequenceSysGetWazaGroupID(u16 wazaID, u16 kind) {
 }
 }
 
+#ifndef __MWERKS__
+extern "C" u16 pc_pokemon_waza_wzx_ranges[2][4][2];
+extern "C" u16 pc_pokemon_waza_wzx_extra[2][4][2];
+u16 pc_pokemon_waza_wzx_ranges[2][4][2] = {
+    {{1, 0x236}, {0x238, 0x2ab}, {0x2ad, 0x338}, {0x33a, 0x33a}},
+    {{0x33c, 0x359}, {0x35b, 0x35b}, {0x35d, 0x361}, {0x33a, 0x33a}},
+};
+u16 pc_pokemon_waza_wzx_extra[2][4][2] = {};
+#endif
+
 u16 wazaSequenceSysGetResourceID(ModelSequence* seq, u16 wazaID, u16 kind, u8 variation) {
     u16 start;
     int modelID;
@@ -940,6 +950,7 @@ u16 wazaSequenceSysGetResourceID(ModelSequence* seq, u16 wazaID, u16 kind, u8 va
     }
     if (seq != 0 && seq->m_hasParent != 0) {
         modelID = seq->m_unk4;
+#ifdef __MWERKS__
         if (variation != 0 && variation < WazaSequence::GetNumVariations(wazaID, kind)) {
             switch (kind) {
             case 1:
@@ -980,12 +991,30 @@ u16 wazaSequenceSysGetResourceID(ModelSequence* seq, u16 wazaID, u16 kind, u8 va
                 break;
             }
         }
+#else
+        u32 var = (variation != 0 && variation < WazaSequence::GetNumVariations(wazaID, kind)) ? 1 : 0;
+        start = pc_pokemon_waza_wzx_ranges[var][kind - 1][0];
+        end = pc_pokemon_waza_wzx_ranges[var][kind - 1][1];
+        if (var != 0 && kind == 4) {
+            variation = 0;
+        }
+#endif
         e = &pokemon_waza_wzx_data[start];
         for (i = start; i < end; i++, e++) {
             if (e->modelID == modelID && e->wazaID == wazaID && e->variation == variation) {
                 return e->resID;
             }
         }
+#ifndef __MWERKS__
+        start = pc_pokemon_waza_wzx_extra[var][kind - 1][0];
+        end = pc_pokemon_waza_wzx_extra[var][kind - 1][1];
+        e = &pokemon_waza_wzx_data[start];
+        for (i = start; i < end; i++, e++) {
+            if (e->modelID == modelID && e->wazaID == wazaID && e->variation == variation) {
+                return e->resID;
+            }
+        }
+#endif
     }
     if (kind == 4) {
         if (wazaID == 0 || wazaID >= waza_generic_wzx_data_number) {

@@ -806,6 +806,9 @@ void menuPdaMemoXD::SetJoutaiSprite(tagWINDOW_WORK* window, unsigned short jouta
 }
 }
 
+#ifndef __MWERKS__
+extern "C" int PortXD_MemoAisyouRow(s32 spriteId, u16* type);
+#endif
 extern "C++" {
 void menuPdaMemoXD::PokemonAisyou(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, MEMO_CONTENTS* contents) {
     const s32 spriteIDs[17] = { 0x144, 0x145, 0x146, 0x147, 0x148, 0x149, 0x14A, 0x14B, 0x14C,
@@ -824,6 +827,14 @@ void menuPdaMemoXD::PokemonAisyou(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
         i++;
     }
     u16 defense = GetAisyouIndex(i);
+#ifndef __MWERKS__
+    {
+        u16 portType;
+        if (PortXD_MemoAisyouRow(sprite->id, &portType)) {
+            defense = portType;
+        }
+    }
+#endif
     types[0] = pokemonDataBiosGetZokuseiDataId(data, 0);
     s32 count = 1;
     u8 second = pokemonDataBiosGetZokuseiDataId(data, 1);

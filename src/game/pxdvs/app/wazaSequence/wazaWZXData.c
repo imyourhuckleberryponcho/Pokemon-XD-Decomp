@@ -1,10 +1,11 @@
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 
 typedef struct WazaWzxEntry {
     u16 res[3];
 } WazaWzxEntry;
 
-WazaWzxEntry waza_wzx_data[] = {
+WazaWzxEntry waza_wzx_data[PC_SPARE_ROWS(373, PC_SPARE_MOVES)] = {
     {{0x0, 0x0, 0x0}},
     {{0x1, 0x2, 0x0}},
     {{0x3, 0x4, 0x0}},
@@ -379,5 +380,6 @@ WazaWzxEntry waza_wzx_data[] = {
     {{0x46A, 0x46B, 0x0}},
     {{0x46C, 0x46D, 0x0}},
 };
+PC_SPARE_CHECK(waza_wzx_data, 373);
 
-u32 waza_wzx_data_number = sizeof(waza_wzx_data) / sizeof(waza_wzx_data[0]);
+u32 waza_wzx_data_number = PC_SPARE_COUNT(waza_wzx_data, 373);

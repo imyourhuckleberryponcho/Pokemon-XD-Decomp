@@ -1570,13 +1570,20 @@ static s32 _fsysOpenFile(FsysWork* work) {
     return 1;
 }
 
+#ifndef __MWERKS__
+extern "C" const char* PortXD_FsysGroupName(u32 id, const char* name);
+#endif
 static s32 _fsysGetFilename(FsysWork* work, char* out) {
     FsysGroup* group = _fsysGetGROUP(work->id);
 
     if (group == 0) {
         return 0;
     }
+#ifdef __MWERKS__
     sprintf(out, "%s.fsys", (char*)group->name);
+#else
+    sprintf(out, "%s.fsys", PortXD_FsysGroupName(work->id, (const char*)group->name));
+#endif
     return 1;
 }
 

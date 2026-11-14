@@ -363,21 +363,21 @@ static u32 GetAudioSample(__GSmovieStreaming* s, s16* left, s16* right, u32 coun
     n = ab->validSample;
     if (n != 0) {
         u32 i;
-        n = n >= count ? count : n;
+        s32 cnt = n >= count ? count : n;
         src = ab->curPtr;
         if (right == 0) {
-            for (i = 0; i < n; i++) {
+            for (i = 0; i < cnt; i++) {
                 *left++ = src[1];
                 src += 2;
             }
         } else {
-            for (i = 0; i < n; i++) {
+            for (i = 0; i < cnt; i++) {
                 *right++ = src[0];
                 *left++ = src[1];
                 src += 2;
             }
         }
-        p->playAudioBuffer->validSample -= n;
+        p->playAudioBuffer->validSample -= cnt;
         p->playAudioBuffer->curPtr = src;
         ab = p->playAudioBuffer;
         if (ab->validSample == 0) {
@@ -388,10 +388,10 @@ static u32 GetAudioSample(__GSmovieStreaming* s, s16* left, s16* right, u32 coun
             }
             p->playAudioBuffer = 0;
             *status = 1;
-            return n;
+            return cnt;
         }
         *status = 0;
-        return n;
+        return cnt;
     }
 #ifndef __MWERKS__
     return 0;

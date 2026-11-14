@@ -3334,6 +3334,10 @@ struct ExpectWazaData {
 };
 extern "C" {
 extern ExpectWazaData expect_waza_data[];
+#ifndef __MWERKS__
+extern "C" u16 pc_expect_waza_data_rows;
+u16 pc_expect_waza_data_rows = 0x96;
+#endif
 void fightTrainerInitEnemyPokemonFightOutStatus(void* trainer, u8 mode);
 s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*, u8);
 void fightTrainer_SetEnemyExpectWazaNum(u8* t, s16 id, u8 v);
@@ -3426,7 +3430,11 @@ void fightTrainerAiSetEnemyPokemon(FIGHT_TRAINER* t) {
                 if (maxPercent < percent[i]) {
                     maxPercent = percent[i];
                 }
+#ifdef __MWERKS__
                 for (j = 0; j < 0x96; j++) {
+#else
+                for (j = 0; j < pc_expect_waza_data_rows; j++) {
+#endif
                     s32 cmpv = pokemon_GetPokemonDataId(fightOutPokemonGetPokemonPtr(e));
                     ExpectWazaData* d = &expect_waza_data[j];
                     u32 rf_t = d->mons;

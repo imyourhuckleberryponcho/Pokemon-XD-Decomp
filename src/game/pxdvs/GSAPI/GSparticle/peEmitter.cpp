@@ -593,7 +593,7 @@ void peEmitterContainer::Update(float dt) {
             ((peContainer*)this)->RemoveNode(node);
         }
     }
-    if (PECR(this, u8*, 0x19, started) != 0 && (*PECR(this, u32**, 0x20, data) & 0x40000) && PECR(this, u16*, 0x14, count) >= 2) {
+    if (PECR(this, u8*, 0x19, started) != 0 && (GC_AT(u32, PECR(this, u8**, 0x20, data), 0) & 0x40000) && PECR(this, u16*, 0x14, count) >= 2) {
         for (node = PENR(PECR(this, peNode**, 0x10, activeList), peNode**, 0x28, slot28); node != NULL; node = next) {
             depth = PENR(node, f32*, 0xF8, depth);
             pos = node;
@@ -929,7 +929,7 @@ struct peEmitterNodeW {
     peXformE cur;
     peXformE prev;
     f32 depth;
-    u32* def;
+    gc_be32* def;
 };
 static inline void xfCopyE(peXformE* d, peXformE* s) {
     d->pos.x = s->pos.x;

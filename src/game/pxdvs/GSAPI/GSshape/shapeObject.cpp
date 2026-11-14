@@ -1854,7 +1854,7 @@ bool GsShapeObject::DeformVertexCoord(bool useUV, const f32* A, const f32* B, bo
         i = 0;
         const f32* c = C;
         const f32* b = B;
-        for (; i < rows1; i++, c++, b++) {
+        for (; i < rows1; c++, b++, i++) {
             if (scaled) {
                 z = *c;
             } else {
@@ -1874,7 +1874,8 @@ bool GsShapeObject::DeformVertexCoord(bool useUV, const f32* A, const f32* B, bo
                 } else {
                     u = (f32)j / (f32)(cols1 - 1);
                 }
-                out->x = sx * u + offX + dx;
+                f32 px = sx * u + offX;
+                out->x = px + dx;
                 out->y = y;
                 out->z = z;
             }

@@ -1,7 +1,7 @@
 # unit	status	match%	symbol	name	pragmas	asm	cflags	gc_hash
 # status: linked = byte-identical and in the DOL; exact = byte-identical, file not linked yet; draft = differs from the original (may behave differently)
 # pragmas: non-default #pragma state at the definition ("-" none, "?" definition not found by name); asm = inline asm body; cflags = the unit's extra compiler flags; gc_hash = funchash.py hash of our compiled GameCube code (relocated words masked, targets by name): same hash = same GameCube code
-# generated: 2026-11-10 21:41 from the build at source commit 82addc6c2f
+# generated: 2026-11-13 23:18 from the build at source commit c17cdce9fb
 game/character	linked	100.00	characterInit	characterInit	?	-	-	abd524a9450f
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraResetFloor	dbgMenuCameraResetFloor	peephole off	-	-	ec8086614c12
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraChangeDisp	dbgMenuCameraChangeDisp	peephole off	-	-	efda3d324df5
@@ -1768,7 +1768,7 @@ game/menuPocketCologne	exact	100.00	getStockMax__FUs	getStockMax(unsigned short)
 game/menuPocketCologne	exact	100.00	getItemNum__FUs	getItemNum(unsigned short)	peephole off	-	-inline noauto,deferred	28f32dfef063
 game/menuSub	exact	100.00	menuSubGetKaiwaCloseWindowID	menuSubGetKaiwaCloseWindowID	peephole off	-	-inline noauto	e6b673bd62e4
 game/menuSub	exact	100.00	menuSubGetKaiwaCsrID	menuSubGetKaiwaCsrID	peephole off	-	-inline noauto	e72c6640f0b8
-game/menuSub	draft	97.67	menuSubDrawMsgWindow2	menuSubDrawMsgWindow2	peephole off	-	-inline noauto	e9c6ca1b8bf1
+game/menuSub	exact	100.00	menuSubDrawMsgWindow2	menuSubDrawMsgWindow2	peephole off	-	-inline noauto	5c13234ba04f
 game/menuSub	draft	99.80	menuSubDrawNormalWindow2	menuSubDrawNormalWindow2	peephole off	-	-inline noauto	7bd9617d9716
 game/menuSub	exact	100.00	menuSubDrawCursorBack2	menuSubDrawCursorBack2	peephole off	-	-inline noauto	0e1e9cbad922
 game/menuSub	exact	100.00	menuSubDrawCursorBackAnimeOnOffAuto	menuSubDrawCursorBackAnimeOnOffAuto	peephole off	-	-inline noauto	d8c0090ea3f5
@@ -8489,7 +8489,7 @@ game/pxdvs/GSAPI/GSmovie/movieStream	exact	100.00	_StreamPlay	_StreamPlay	-	-	-O
 game/pxdvs/GSAPI/GSmovie/movieStream	draft	98.72	_StreamInitFillStreamBuffer	_StreamInitFillStreamBuffer	-	-	-O4,s	03a23cfe58ae
 game/pxdvs/GSAPI/GSmovie/movieStream	exact	100.00	_StreamInit	_StreamInit	-	-	-O4,s	46f4c1adbc42
 game/pxdvs/GSAPI/GSmovie/movieStream	draft	98.48	StreamUpdateCallback__FPvUlPvUlUl	StreamUpdateCallback(void*, unsigned long, void*, unsigned long, unsigned long)	-	-	-O4,s	24eec07ab48e
-game/pxdvs/GSAPI/GSmovie/movieStream	draft	97.19	GetAudioSample__FP18__GSmovieStreamingPsPsUlPl	GetAudioSample(__GSmovieStreaming*, short*, short*, unsigned long, long*)	-	-	-O4,s	358fc736d545
+game/pxdvs/GSAPI/GSmovie/movieStream	exact	100.00	GetAudioSample__FP18__GSmovieStreamingPsPsUlPl	GetAudioSample(__GSmovieStreaming*, short*, short*, unsigned long, long*)	-	-	-O4,s	dbf4c798824d
 game/pxdvs/GSAPI/GSmovie/movieStream	draft	99.58	_movieStreamDecode	_movieStreamDecode	-	-	-O4,s	ee6ebc78e687
 game/pxdvs/GSAPI/GSmovie/movieStream	exact	100.00	_VideoDecode__FP18__GSmovieStreamingP13THPReadBufferP13THPTextureSet	_VideoDecode(__GSmovieStreaming*, THPReadBuffer*, THPTextureSet*)	-	-	-O4,s	f0b1a843b873
 game/pxdvs/GSAPI/GSmovie/movieStream	draft	96.87	_movieStreamPrepareGetData	_movieStreamPrepareGetData	-	-	-O4,s	41fd4a903311
@@ -9671,7 +9671,7 @@ game/pxdvs/app/fight/fightActionFlow	exact	100.00	fightActionFlowTenkouInit	figh
 game/pxdvs/app/fight/fightActionFlow	exact	100.00	_fightActionFlowTenkouInitSubGetSeqFightOutPokemonPtr__FPvUsPv	_fightActionFlowTenkouInitSubGetSeqFightOutPokemonPtr(void*, unsigned short, void*)	-	-	-O4,s	03557d1f39d3
 game/pxdvs/app/fight/fightActionFlow	exact	100.00	fightActionFlowHeijou	fightActionFlowHeijou	-	-	-O4,s	625afac31f95
 game/pxdvs/app/fight/fightActionFlow	draft	99.87	fightActionFlowSyuuryouPost	fightActionFlowSyuuryouPost	-	-	-O4,s	869c8d618248
-game/pxdvs/app/fight/fightActionFlow	draft	98.97	fightActionFlowSyuuryou	fightActionFlowSyuuryou	-	-	-O4,s	bf187d1aa3dc
+game/pxdvs/app/fight/fightActionFlow	draft	99.06	fightActionFlowSyuuryou	fightActionFlowSyuuryou	-	-	-O4,s	268708a06c1e
 game/pxdvs/app/fight/fightActionFlow	exact	100.00	_darkPokemonSetUnderTaker__FP15DeckDarkPokemonP7PokemonUs	_darkPokemonSetUnderTaker(DeckDarkPokemon*, Pokemon*, unsigned short)	-	-	-O4,s	6c6e1eb09ecb
 game/pxdvs/app/fight/fightActionFlow	exact	100.00	fightActionFlowSyuuryouPre	fightActionFlowSyuuryouPre	-	-	-O4,s	5d3377a93bd3
 game/pxdvs/app/fight/fightActionFlow	exact	100.00	fightActionFlowFightOutPokemonOutWaza	fightActionFlowFightOutPokemonOutWaza	-	-	-O4,s	09a0d9c6722a
@@ -11436,7 +11436,7 @@ game/pxdvs/GSAPI/GSshape/shapeObject	draft	93.32	DeformVertexCoordTorus__13GsSha
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	91.99	DeformVertexCoordSphere__13GsShapeObjectFbPCfPCfbffbffbPCf	GsShapeObject::DeformVertexCoordSphere(bool, const float*, const float*, bool, float, float, bool, float, float, bool, const float*)	?	-	-	e107fd5dab05
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	90.76	DeformVertexCoordSpiral__13GsShapeObjectFbPCfPCfbffbffbPCf	GsShapeObject::DeformVertexCoordSpiral(bool, const float*, const float*, bool, float, float, bool, float, float, bool, const float*)	?	-	-	a9db18efc526
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	95.51	DeformVertexCoordCylinderEx__13GsShapeObjectFbPCfPCfbffbfbPCf	GsShapeObject::DeformVertexCoordCylinderEx(bool, const float*, const float*, bool, float, float, bool, float, bool, const float*)	?	-	-	3d02a89503e1
-game/pxdvs/GSAPI/GSshape/shapeObject	draft	99.54	DeformVertexCoord__13GsShapeObjectFbPCfPCfbffbffbPCf	GsShapeObject::DeformVertexCoord(bool, const float*, const float*, bool, float, float, bool, float, float, bool, const float*)	?	-	-	eb16c506146c
+game/pxdvs/GSAPI/GSshape/shapeObject	exact	100.00	DeformVertexCoord__13GsShapeObjectFbPCfPCfbffbffbPCf	GsShapeObject::DeformVertexCoord(bool, const float*, const float*, bool, float, float, bool, float, float, bool, const float*)	?	-	-	914576679a32
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	84.77	SetVertexColorGradation__13GsShapeObjectFUcPC11tagGScol4ubifb	GsShapeObject::SetVertexColorGradation(unsigned char, const tagGScol4ub*, int, float, bool)	-	-	-	0db9883fc28c
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	81.25	SetVertexColorAlpha__13GsShapeObjectFiifb	GsShapeObject::SetVertexColorAlpha(int, int, float, bool)	-	-	-	b3bfca4c2efe
 game/pxdvs/GSAPI/GSshape/shapeObject	exact	100.00	SetVertexColorSpecify__13GsShapeObjectFRC11tagGScol4ubb	GsShapeObject::SetVertexColorSpecify(const tagGScol4ub&, bool)	-	-	-	dc2d5cfda705

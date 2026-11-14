@@ -1372,6 +1372,10 @@ s32 fightSeqFightOutPokemonTokuseiCheckWazaHitBefore(FightOutPokemon* atk, Fight
 }
 }
 
+#ifndef __MWERKS__
+extern "C" void PortXD_TokuseiCheckTurnExtra(FightOutPokemon* p, u16 tokusei);
+extern "C" u16 PortXD_DamageDefenderTokusei(FightOutPokemon* attacker, FightPokemon* defender, u16 tokusei);
+#endif
 void fightSeqFightOutPokemonTokuseiCheckTurn(FightOutPokemon* p) {
     Pokemon* pokemon = (Pokemon*)fightOutPokemonGetPokemonPtr(p);
     u8 weather = fightFloorGetNowTenkouDataId(0, 1);
@@ -1421,6 +1425,9 @@ void fightSeqFightOutPokemonTokuseiCheckTurn(FightOutPokemon* p) {
             }
             break;
         }
+#ifndef __MWERKS__
+        PortXD_TokuseiCheckTurnExtra(p, tokusei);
+#endif
     }
 }
 
@@ -1777,6 +1784,9 @@ u8 fightSeqTokuseiTenkiyaAct(FightOutPokemon* p) {
 }
 
 extern "C" {
+#ifndef __MWERKS__
+extern "C" int PortXD_HyperModeAppliesTo(FightOutPokemon* p);
+#endif
 s32 fightSeqCheckDarkPokemonJoutaiHyperAct(FightOutPokemon* p, u8 mode) {
     u8 fightType = fightFloor_GetFightType(0);
     if (p == 0) {
@@ -1785,9 +1795,21 @@ s32 fightSeqCheckDarkPokemonJoutaiHyperAct(FightOutPokemon* p, u8 mode) {
     if (fightOutPokemonCheckFightOut(p) == 0) {
         return 0;
     }
+#ifdef __MWERKS__
     if (fightOutPokemonIsGcHeroFightOutPokemon(p) == 0) {
         return 0;
     }
+#else
+    {
+        int applies = PortXD_HyperModeAppliesTo(p);
+        if (applies < 0) {
+            applies = fightOutPokemonIsGcHeroFightOutPokemon(p) != 0;
+        }
+        if (applies == 0) {
+            return 0;
+        }
+    }
+#endif
     if (fightFloor_GetFightKindDarkpokemonHypermodeFlag(0) == 0) {
         return 0;
     }
@@ -3027,6 +3049,9 @@ s32 fightSeqWazaDamageCalcHikaePokemon(FightOutPokemon* attacker, FightPokemon* 
     defenderPokemonId = pokemon_GetPokemonDataId(fightPokemon_GetPokemonBuffPtr(defender));
     defenderTokusei = pokemonDB_GetTokuseiDataId(defenderPokemonId,
                                                  pokemon_GetTokuseiFlag(fightPokemon_GetPokemonBuffPtr(defender)));
+#ifndef __MWERKS__
+    defenderTokusei = PortXD_DamageDefenderTokusei(attacker, defender, defenderTokusei);
+#endif
     defenderItem = pokemonGetSoubiItemSoubiDataId(fightPokemon_GetPokemonBuffPtr(defender));
     pokemonGetSoubiItemBuff(fightPokemon_GetPokemonBuffPtr(defender));
     defense = pokemon_GetPhyDef(fightPokemon_GetPokemonBuffPtr(defender));

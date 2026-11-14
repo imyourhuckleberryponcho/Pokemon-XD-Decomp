@@ -244,3 +244,16 @@ void menuSaveload::_menuClose(s32 menuID) {
     menuClose(menuID);
     menuCloseSync(menuID, 1);
 }
+
+#ifndef __MWERKS__
+extern "C" s32 PortXD_SaveForced(void)
+{
+    s32 result;
+    menuOpen(0x64, 0);
+    gamedatasaveSetStatus(NULL, 5, floorGetNextFloorID());
+    result = memcardTaskCall(4, 2, 0);
+    menuClose(0x64);
+    menuCloseSync(0x64, 1);
+    return result;
+}
+#endif

@@ -546,3 +546,52 @@ static u8 _menuFieldCheckPDA() {
 }
 
 }
+
+#ifndef __MWERKS__
+struct Pokemon;
+struct Hero;
+struct POKEMON_EVOLUTION_INFO;
+extern "C" void fadeSet(u16 type, f32 time);
+extern "C" u8 menuOffScreenSetDisp(u8 disp);
+extern "C" u16 pokemonEvolutionCheck(Pokemon*, s32, u16, u16*, POKEMON_EVOLUTION_INFO*);
+extern "C" s32 pokemonEvolutionAll(Pokemon*, u16, u16, POKEMON_EVOLUTION_INFO*, Hero*, s32, s32, s32);
+extern "C" s32 PortXD_FieldEvolve(Pokemon* pokemon, s32 kind, s32 item)
+{
+    u32 info[1];
+    u16 extra = 0;
+    u16 evo;
+    s32 result;
+
+    if (pokemon == 0) {
+        return 2;
+    }
+    evo = pokemonEvolutionCheck(pokemon, kind, (u16)item, &extra, (POKEMON_EVOLUTION_INFO*)info);
+    if (evo == 0 || evo == 0xFFFF) {
+        return 2;
+    }
+    heroMoveInitEvent();
+    GSthreadSwitch();
+    floorFieldCameraPause();
+    GSmodelAllPauseAnimation();
+    _openFieldMenu = 1;
+    GSthreadSwitch();
+    menuCreateOffScreen(20.0f / GSgfxVideoGetVsyncRate(), 50.0f);
+    while (menuGetOffScreenFlag() == 0) {
+        GSthreadSwitch();
+    }
+    fadeSet(3, 0.5f);
+    fadeCheck(1);
+    menuOffScreenSetDisp(0);
+    result = pokemonEvolutionAll(pokemon, evo, extra, (POKEMON_EVOLUTION_INFO*)info, 0, 1, kind == 0 ? 1 : 0, 0);
+    menuOffScreenSetDisp(1);
+    fadeSet(2, 0.5f);
+    fadeCheck(1);
+    GSthreadSwitch();
+    menuReleaseOffScreen(20.0f / GSgfxVideoGetVsyncRate());
+    heroMoveTermEvent();
+    GSmodelAllUnpauseAnimation();
+    floorFieldCameraUnpause();
+    _openFieldMenu = 0;
+    return result;
+}
+#endif

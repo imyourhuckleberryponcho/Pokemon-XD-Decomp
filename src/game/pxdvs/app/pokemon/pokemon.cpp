@@ -2335,6 +2335,15 @@ void pokemonResetBasisStatus(Pokemon* pokemon)
     }
 }
 
+#ifndef __MWERKS__
+extern "C" void PortXD_PokemonSetLevelStats(Pokemon* pokemon, u8 level)
+{
+    if (pokemon != 0) {
+        _pokemonSetLevelBasisStatus(pokemon, level);
+    }
+}
+#endif
+
 void pokemonGrowBasisStatus(Pokemon* pokemon, u32 exp)
 {
     if (pokemon) {

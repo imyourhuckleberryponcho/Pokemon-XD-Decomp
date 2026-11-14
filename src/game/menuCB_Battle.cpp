@@ -275,3 +275,66 @@ s32 menuCB_InitBattle(_MENUCBWORK* work) {
 
 static void _menuCBBattle_DeleteAllItem(Hero* hero) {
 }
+
+#ifndef __MWERKS__
+#include <game/portxd_vs.h>
+extern "C" void menuCBBios_CurrentlyWorkingToolBattleSet(s8 v);
+extern "C" u8 menuCBBios_CurrentlyWorkingToolBattle(void);
+extern "C" s32 PortXD_StartVsBattle(const PortXD_VsSetup* s)
+{
+    s32 id;
+    s32 i;
+    s32 n;
+    s32 result;
+    u8 working;
+    void* encounter;
+
+    if (s == 0) {
+        return 0;
+    }
+    n = s->trainerCount == 4 ? 4 : 2;
+    id = s->encountId;
+    if (id == 0) {
+        id = (n == 4) ? 8 : 5;
+    }
+    encounter = fightEncountDataBiosGetPtr(id);
+    if (encounter == 0) {
+        return 0;
+    }
+    _CB.mode = (s->fightKind == 0xB) ? 0 : 1;
+    _CB.state = s->state;
+    for (i = 0; i < n; i++) {
+        if (s->hero[i] != 0) {
+            menuCBBios_InitTrainerFromHero(&_CB.trainer[i], (Hero*)s->hero[i], s->dataId[i]);
+        }
+        menuCBTrainerBios_SetControlerID(&_CB.trainer[i], s->controller[i]);
+        fightEncountDataBiosSetFightTrainerDataId(encounter, i, s->dataId[i]);
+        fightEncountDataBiosSetGSInputDevice(encounter, i, s->controller[i]);
+    }
+    if (s->bgm != 0) {
+        fightEncountDataBiosSetBgmSndId(encounter, s->bgm);
+    }
+    fightEncountDataBiosSetFightFloorDataId(encounter, s->floorId);
+    fightEncountDataBiosSetFightKind(encounter, s->fightKind);
+    fightEncountDataBiosSetSyoukaiWzxDataId(encounter, 0);
+    fightEncountDataBiosSetFightType(encounter, s->fightType);
+
+    working = menuCBBios_CurrentlyWorkingToolBattle();
+    menuCBBios_CurrentlyWorkingToolBattleSet(1);
+    GSflagOff(0x323);
+    soundStop(soundGetBGMID(), 0);
+    if (s->freeTitle) {
+        menuTitleBattleSelectFree();
+    }
+    menuCB_SetToolBattleModeFlag(1);
+    _CB.battleActive = 1;
+    result = fightEncount(id);
+    _CB.battleActive = 0;
+    menuCB_SetToolBattleModeFlag(0);
+    if (s->freeTitle) {
+        menuTitleReadWazaSelectMenu();
+    }
+    menuCBBios_CurrentlyWorkingToolBattleSet((s8)working);
+    return result;
+}
+#endif

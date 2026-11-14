@@ -32,12 +32,21 @@ u16 darkPokemonBiosGetTemotiDarkWaza(u16 id, s32 index);
 u8 darkPokemonBiosGetReliveFlag(u16 id);
 u8* wazaDataBiosGetPtr(u16 id);
 u8 wazaDataBiosGetPp(u8* data);
+#ifdef __MWERKS__
 static u32 _pokemon_waza_darkwaza[18] = {
     0x01640500, 0x01650500, 0x01660500, 0x01670500, 0x01680500, 0x01690500,
     0x016A0500, 0x016B0500, 0x016C0500, 0x016D0500, 0x016E0500, 0x016F0500,
     0x01700500, 0x01710500, 0x01720500, 0x01730500, 0x01740500, 0x01750500,
 };
 static u32 _pokemon_waza_hatena = 0x01760500;
+#else
+static PokemonWaza _pokemon_waza_darkwaza[18] = {
+    {0x164, 5, 0}, {0x165, 5, 0}, {0x166, 5, 0}, {0x167, 5, 0}, {0x168, 5, 0}, {0x169, 5, 0},
+    {0x16A, 5, 0}, {0x16B, 5, 0}, {0x16C, 5, 0}, {0x16D, 5, 0}, {0x16E, 5, 0}, {0x16F, 5, 0},
+    {0x170, 5, 0}, {0x171, 5, 0}, {0x172, 5, 0}, {0x173, 5, 0}, {0x174, 5, 0}, {0x175, 5, 0},
+};
+static PokemonWaza _pokemon_waza_hatena = {0x176, 5, 0};
+#endif
 
 u32 pokemonNakigoeDataBiosGetDataAddress(u8* data) {
     if (data) goto non_null;
