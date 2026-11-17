@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -338,6 +339,9 @@ void fightOutPokemon_SetFightActionFlag(FightOutPokemon*, u8);
 void fightOutPokemon_SetIrekaeTargetEntryId(FightOutPokemon*, s16);
 Pokemon* fightOutPokemonGetPokemonPtr(FightOutPokemon*);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon*, u16);
+#ifndef __MWERKS__
+u16 PortXD_XG_GetSavedWaza(FightOutPokemon*);
+#endif
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
 bool fightWazaCheckValid(FightWaza*);
 void fightWazaSetUseWazaStatus(FightWaza*, u16);
@@ -915,6 +919,14 @@ u32 fightActionFlowFightOutPokemonOutWaza(FightAction* action) {
     if (!fightWaza_GetAutoMakeFlag(waza)) {
         if (moto != pokemon_GetPokemonWazaDataId(pokemon, slot)) {
             moto = pokemon_GetPokemonWazaDataId(pokemon, slot);
+#ifndef __MWERKS__
+            if (PortXD_IsXG() && fightOutPokemonIsJoutaiDataId(actor, 0x37) == 1) {
+                u16 saved = PortXD_XG_GetSavedWaza(actor);
+                if (saved != 0) {
+                    moto = saved;
+                }
+            }
+#endif
             fightWaza_SetMotoWazaDataId(waza, moto);
             fightWazaSetUseWazaStatus(waza, moto);
             FightOutPokemon* def = fightSeqSelectDefensePokemonPtr(actor, moto, type, 0, 1, 0, -1);

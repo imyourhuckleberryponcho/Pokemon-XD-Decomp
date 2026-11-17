@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include "game/portxd_jp.h"
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -510,7 +512,7 @@ void fn_8007E5AC(CBWin* a, CBMsgWin* w) {
 }
 
 s32 fn_8007E634(s32 msg) {
-    switch (pokecoloGetCountryCode()) {
+    switch (PORT_COUNTRY_DISP()) {
     case 0:
         return msg;
     case 1:
@@ -531,6 +533,14 @@ s32 fn_8007E634(s32 msg) {
 }
 
 static s32 _menuCB_NotDarkWaza(s32 id) {
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        if (id >= 0x176) {
+            return id;
+        }
+        return PortXD_XG_IsShadowWaza((u16)id) ? 0 : id;
+    }
+#endif
     if (id < 0x176 && id >= 0x164) {
         return 0;
     }
@@ -1219,7 +1229,7 @@ void menuCBMessageYCenterDisp(CBWin* win, CBItem* item, s32 msg) {
 }
 
 void fn_80080390(CBWin* win, CBItem* item, s32 msg) {
-    switch (pokecoloGetCountryCode()) {
+    switch (PORT_COUNTRY_DISP()) {
     case 0:
         CBITEM_MSG(item) = msg;
         break;
@@ -1402,7 +1412,7 @@ void menuCB_GCEntry_ItemGiveJob() {
         if (cur != 0) {
             msgctrlSetValue(0x2D, (void*)cur);
             winMsgOpen(2, 0x3ACA, 1, 0);
-            switch (pokecoloGetCountryCode()) {
+            switch (PORT_COUNTRY_DISP()) {
             case 0:
                 answer = menuSubOpenYesNo(0, 0x3C, 0xD2, 0);
                 break;
@@ -1503,7 +1513,7 @@ s32 menuCB_GCEntry_SubWindow_Disp(void) {
     u16 idx;
     if (_CB.unkAFF0 == 1) {
         winMsgOpen(2, 0x43A1, 1, 0);
-        switch (pokecoloGetCountryCode()) {
+        switch (PORT_COUNTRY_DISP()) {
         case 0:
             _CB.cursor = menuSubOpenYesNo(0, 0x3C, 0xD2, 0);
             break;
@@ -2030,7 +2040,7 @@ void menuCBPokemonWazaNAME(CBWin* win, u32 type, u32 index, u32 slot) {
         if (nameId != 0) {
             msgctrlSetValue(0x37, GSmsgGetGSchar(nameId));
             GSmsgPrint2(win->layer, 0, 0, win->alpha | ~0xFF, 0x4279);
-            switch (pokecoloGetCountryCode()) {
+            switch (PORT_COUNTRY_DISP()) {
             case 0:
                 n = 10;
                 lv = pokemonGetStatus(p, 0, 0x80, slot);
@@ -2124,7 +2134,7 @@ void menuCBPokemonStatusDisp(CBWin* win, u32 type, u32 index, s32 mode, s32 kind
         }
         msgctrlSetValue(0x34, (void*)value);
         msgctrlSetValue(0x2F, (void*)value);
-        switch (pokecoloGetCountryCode()) {
+        switch (PORT_COUNTRY_DISP()) {
         case 0:
             n = 5;
             if (value < 10) {
@@ -2164,7 +2174,7 @@ void menuCBPokemonTOKUSEI(CBWin* win, u32 type, u32 index) {
         name = pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(pokemonGetTokuseiDataId(p)));
     }
     msgctrlSetValue(0x37, GSmsgGetGSchar(name));
-    switch (pokecoloGetCountryCode()) {
+    switch (PORT_COUNTRY_DISP()) {
     case 0:
         GSmsgPrint2(win->layer, 0, 0, win->alpha | ~0xFF, 0x435A);
         GSmsgPrint2(win->layer, 0x5A, 0, win->alpha | ~0xFF, 0x4276);
@@ -2187,7 +2197,7 @@ void menuCBPokemonHP(CBWin* win, u32 type, u32 index, s32 mode) {
         switch (mode) {
         case 0:
             GSmsgPrint2(win->layer, 0, 0, win->alpha | ~0xFF, 0x43EA);
-            switch (pokecoloGetCountryCode()) {
+            switch (PORT_COUNTRY_DISP()) {
             case 1:
             case 2:
                 GSmsgPrint2(win->layer, 0x1B, 0, win->alpha | ~0xFF, 0x427C);
@@ -2199,7 +2209,7 @@ void menuCBPokemonHP(CBWin* win, u32 type, u32 index, s32 mode) {
             return;
         case 1:
             GSmsgPrint2(win->layer, 0, 0, win->alpha | ~0xFF, 0x4397);
-            switch (pokecoloGetCountryCode()) {
+            switch (PORT_COUNTRY_DISP()) {
             case 1:
             case 2:
                 GSmsgPrint2(win->layer, 0x26, 0, win->alpha | ~0xFF, 0x427B);
@@ -2225,7 +2235,7 @@ void menuCBPokemonLevel(CBWin* win, u32 type, u32 index, s32 mode) {
         switch (mode) {
         case 0:
             GSmsgPrint2(win->layer, 0, 0, win->alpha | ~0xFF, 0x43E9);
-            switch (pokecoloGetCountryCode()) {
+            switch (PORT_COUNTRY_DISP()) {
             case 1:
             case 2:
                 GSmsgPrint2(win->layer, 0x1B, 0, win->alpha | ~0xFF, 0x427C);
@@ -2237,7 +2247,7 @@ void menuCBPokemonLevel(CBWin* win, u32 type, u32 index, s32 mode) {
             return;
         case 1:
             GSmsgPrint2(win->layer, 0, 0, win->alpha | ~0xFF, 0x4396);
-            switch (pokecoloGetCountryCode()) {
+            switch (PORT_COUNTRY_DISP()) {
             case 1:
             case 2:
                 GSmsgPrint2(win->layer, 0x26, 0, win->alpha | ~0xFF, 0x427B);
@@ -2373,7 +2383,7 @@ static void _menuCBPokemonName(CBWin* win, u32 type, u32 index, u32 mode, bool n
             }
             if (sexMsg != 0) {
                 msgctrlSetValue(0x37, GSmsgGetGSchar(sexMsg));
-                switch (pokecoloGetCountryCode()) {
+                switch (PORT_COUNTRY_DISP()) {
                 case 0:
                     switch (mode) {
                     case 0:
@@ -3034,7 +3044,7 @@ void menuCBpokemonFaceReadWait() {
 
 void toobattle_drawHeroName2(CBWin* win, CBItem* item, s32 player) {
     void* hero = _CB.trainer[player].hero;
-    switch (pokecoloGetCountryCode()) {
+    switch (PORT_COUNTRY_DISP()) {
     case 0:
         _drawStrings(win, heroBiosGetNamePtr(hero), 0, 0, fn_8007E634(0x4276));
         break;

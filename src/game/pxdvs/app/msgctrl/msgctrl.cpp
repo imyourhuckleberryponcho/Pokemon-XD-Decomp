@@ -107,6 +107,12 @@ void peopleSetTalkFlagCallback();
 void peopleSetTalkKeyWaitCallback();
 s32 pokecoloGetCountryCode();
 s32 pokecoloGetLanguage();
+#ifndef __MWERKS__
+extern "C" int PortXD_TextIsJapanese(void);
+#define PORT_TEXT_JP() PortXD_TextIsJapanese()
+#else
+#define PORT_TEXT_JP() 0
+#endif
 void* fightTrainerKindDataBiosGetPtr(u16);
 void* fightTrainerKindDataBiosGetPrefixName(void*);
 void* pokemonDataBiosGetPtr(u16);
@@ -322,7 +328,7 @@ static u16* _msgctrlMakeDigit(u16* buf, s32 len, u32 val, s32 mode)
     case 2:
     case 3:
     case 4:
-        if (pokecoloGetCountryCode() == 0) {
+        if (pokecoloGetCountryCode() == 0 || PORT_TEXT_JP()) {
             digits = full_digit_code;
         } else {
             digits = half_digit_code;
@@ -716,7 +722,7 @@ u16* msgctrlTimeH()
         top = _msgctrlMakeDigit(buff2, 0x10, hours / 100, 6);
         buff[n++] = *top;
     }
-    if (hours >= 10) {
+    if (hours >= 10 || PORT_TEXT_JP()) {
         hours -= hours / 100 * 100;
         top = _msgctrlMakeDigit(buff2, 0x10, hours / 10, 6);
         buff[n++] = *top;
@@ -1087,7 +1093,7 @@ u16* msgctrlTime()
         top = _msgctrlMakeDigit(buff2, 0x10, hours / 100, 0);
         buff[n++] = *top;
     }
-    if (hours >= 10) {
+    if (hours >= 10 || PORT_TEXT_JP()) {
         hours -= hours / 100 * 100;
         top = _msgctrlMakeDigit(buff2, 0x10, hours / 10, 0);
         buff[n++] = *top;

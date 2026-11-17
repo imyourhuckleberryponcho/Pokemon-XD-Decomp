@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 
 struct FIGHT_TRAINER;
@@ -320,7 +321,7 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
         } else {
             values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x39);
         }
-        if (zokusei != 9 && fightTrainerAiIsWazaTypeId(trainer, waza, 1) == 1) {
+        if ((XG_ON() || zokusei != 9) && fightTrainerAiIsWazaTypeId(trainer, waza, 1) == 1) {
             if (fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(trainer, defender, zokusei, fightTrainerAiGetWazaIryoku(trainer, waza)) == 0x42) {
                 values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x3B);
             }
@@ -334,7 +335,7 @@ static s32 _fightTrainerAiWazaSubWaza(FIGHT_TRAINER* trainer, FightOutPokemon* p
                 values[i] = fightTrainerAiReviseValueByAddsubDataId(values[i], fightTrainerPokemonPartDB_GetWazaTypeRevise(partDataId, type), trainer, 0x3D);
             }
         }
-        if (zokusei != 9) {
+        if (XG_ON() || zokusei != 9) {
             for (j = 0; j < 2; j++) {
                 u32 revZokusei = fightTrainerAiDB_GetZokuseiReviseZokuseiDataId(aiId, j);
                 if (revZokusei != 9 && zokusei == revZokusei) {

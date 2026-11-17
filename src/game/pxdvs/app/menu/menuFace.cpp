@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -519,6 +520,11 @@ static u16 _menuFaceGetIDSub(Pokemon* p, u8 a, s8 b) {
     }
     data = pokemonGetStatus(p, 0, 0x6E, 0);
     if (data == 0x19A) {
+#ifndef __MWERKS__
+        if (PortXD_IsXG()) {
+            a = 2;
+        }
+#endif
         if (rare == 0) {
             if (a == 1) {
                 return 0x340;

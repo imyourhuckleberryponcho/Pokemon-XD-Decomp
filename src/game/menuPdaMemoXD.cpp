@@ -861,6 +861,13 @@ void menuPdaMemoXD::PokemonSyuzoku(tagWINDOW_WORK* window, tagSPRITE_WORK* sprit
 }
 }
 
+#ifndef __MWERKS__
+extern "C" int PortXD_TextIsJapanese(void);
+#define PORT_TEXT_JP() PortXD_TextIsJapanese()
+#else
+#define PORT_TEXT_JP() 0
+#endif
+
 extern "C++" {
 void menuPdaMemoXD::PokemonWeight(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, MEMO_CONTENTS* contents) {
     CURSOR* c = contents->cursor;
@@ -868,7 +875,7 @@ void menuPdaMemoXD::PokemonWeight(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
     MenuItem* item = menuItemBiosGetPtr(0x7C, sprite->id);
     s32 layer = winSpriteGetLayerID(window, sprite);
     u16 weight = pokemonDataBiosGetWeight(data);
-    if (pokecoloGetLanguage() == 2) {
+    if (pokecoloGetLanguage() == 2 && !PORT_TEXT_JP()) {
         u32 pounds = GC_F2U32(2.2045856f * (f32)weight + 0.5f);
         msgctrlSetValue(0x34, pounds / 10);
         msgctrlSetValue(0x35, pounds % 10);
@@ -889,7 +896,7 @@ void menuPdaMemoXD::PokemonHeight(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
     s32 layer = winSpriteGetLayerID(window, sprite);
     u16 height = pokemonDataBiosGetHeight(data);
     u32 value;
-    if (pokecoloGetLanguage() == 2) {
+    if (pokecoloGetLanguage() == 2 && !PORT_TEXT_JP()) {
         f32 inch = 39.37f * (height / 10.0f);
         u32 inches = GC_F2U32(0.5f + inch);
         s32 pos = 10;

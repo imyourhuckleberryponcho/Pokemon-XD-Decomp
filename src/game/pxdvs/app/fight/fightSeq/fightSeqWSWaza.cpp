@@ -5,6 +5,7 @@
 #include <game/fightrecords.h>
 #include <game/statusval.h>
 #include <game/fightseqscript.h>
+#include "game/portxd_xg.h"
 
 #pragma auto_inline off
 
@@ -133,6 +134,11 @@ u8 fightWaza_GetDamageValue(FightWaza*);
 void fightWaza_SetCritical(FightWaza*, u8);
 void fightWazaInitJoutaiDataId(FightWaza*, PCARG(u8, u16));
 u16 fightOutPokemon_GetUseWazaDataId(FightOutPokemon*);
+#ifndef __MWERKS__
+void fightOutPokemon_SetUseWazaDataId(FightOutPokemon*, u16);
+u16 PortXD_XG_GetSavedWaza(FightOutPokemon*);
+void PortXD_XG_SCA_EndCheck(void);
+#endif
 u16 fightOutPokemon_GetMotoWazaDataId(FightOutPokemon*);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon*, u16);
 u8 fightOutPokemonIsZokuseiDataId(FightOutPokemon*, PCARG(u8, u16));
@@ -845,6 +851,11 @@ void DamageCalcHikaePokemon(void* hikae) {
     zokusei = fightWaza_GetZokusei(waza);
     damage = fightSeqWazaDamageCalcHikaePokemon(attack, hikae, side, wazaId, iryoku, zokusei);
     damage = damage * fightWaza_GetCritical(waza);
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        damage = (s32)((u32)damage >> 1);
+    }
+#endif
     damage = damage * fightWaza_GetDamageValue(waza);
     if (fightOutPokemonIsJoutaiDataId(attack, 0x24) == 1 && zokusei == 0xD) {
         damage *= 2;
@@ -894,12 +905,12 @@ void CriticalCheckHikaePokemon(void* hikae) {
         fightFloor_GetFightKindDoCriticalAttackFlag(0) == 1) {
         rnd = HSD_Rand();
         if (GC_MODS(rnd, fightWazaCriticalDataBiosGetBunbo(fightWazaCriticalDataBiosGetPtr(rank))) == 0) {
-            fightWaza_SetCritical(waza, 2);
+            fightWaza_SetCritical(waza, XG(2, 3));
         } else {
-            fightWaza_SetCritical(waza, 1);
+            fightWaza_SetCritical(waza, XG(1, 2));
         }
     } else {
-        fightWaza_SetCritical(waza, 1);
+        fightWaza_SetCritical(waza, XG(1, 2));
     }
 }
 
@@ -1074,6 +1085,11 @@ void fightSeqExec(FightAction* action, void* seq, u8 sca) {
         WazaSequenceTbl[(u16)*(u8*)fightSeq_GetWazaSeq()]();
         if (sca) {
             if (ActionSeqNo == 1) {
+#ifndef __MWERKS__
+                if (PortXD_IsXG()) {
+                    PortXD_XG_SCA_EndCheck();
+                } else
+#endif
                 SCA_EndCheck();
             }
             if (ActionSeqNo == 2) {
@@ -1091,6 +1107,17 @@ void fightSeqExec(FightAction* action, void* seq, u8 sca) {
     fight_seq_now_fight_action_ptr = oldAction;
     ActionSeqNo = oldSeqNo;
     fightSeq_JumpWazaSeq(oldSeq);
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        FightOutPokemon* a = fightTargetGetPtrAsNowFightType(0x11, 0);
+        if (fightOutPokemonIsJoutaiDataId(a, 0x37) == 1) {
+            u16 saved = PortXD_XG_GetSavedWaza(a);
+            if (saved != 0) {
+                fightOutPokemon_SetUseWazaDataId(a, saved);
+            }
+        }
+    }
+#endif
 }
 
 void fightSeqItemExec(void* floor, u16 itemId) {
@@ -1567,7 +1594,13 @@ u8 EscapeNGCheck(FightOutPokemon* pokemon) {
         ServerWork.work[5] = 0;
         return 1;
     }
-    if (soubi == 0x25 || fightFloorIsNowEncountTuusinTaisen(0) == 1 || tokusei == 0x32) {
+    if (soubi == 0x25 || fightFloorIsNowEncountTuusinTaisen(0) == 1
+#ifdef __MWERKS__
+        || tokusei == 0x32
+#else
+        || (!PortXD_IsXG() && tokusei == 0x32)
+#endif
+        ) {
         return 0;
     }
     for (i = 0; i < count; i++) {
@@ -1586,6 +1619,9 @@ u8 EscapeNGCheck(FightOutPokemon* pokemon) {
             ServerWork.work[5] = 2;
             return 2;
         }
+#ifndef __MWERKS__
+        if (!PortXD_IsXG())
+#endif
         if (enemyTokusei == 0x2A && fightOutPokemonIsZokuseiDataId(pokemon, 8) == 1) {
             UserWork[0x16003] = i - 1;
             fightMsgctrlSetValue(0x1C, GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(enemyTokusei))));

@@ -52,6 +52,11 @@ static inline void memoSetPokemonIDInline(Memo* memo, u16 id) {
             return;
         }
     }
+#ifndef __MWERKS__
+    if (count >= 500) {
+        return;
+    }
+#endif
     m->entries[count].id = id | 0x8000;
     m->entries[m->count].rnd = memoGetRandom(0xFFFFFFFF);
     m->count++;
@@ -256,6 +261,11 @@ void memoDataSetPokemonID(Memo* memo, u16 id) {
             return;
         }
     }
+#ifndef __MWERKS__
+    if (count >= 500) {
+        return;
+    }
+#endif
     m->entries[count].id = id | 0x8000;
     m->entries[m->count].rnd = memoGetRandom(0xFFFFFFFF);
     m->count++;
@@ -276,6 +286,11 @@ void memoDataSet(Memo* memo, void* pokemon) {
             return;
         }
     }
+#ifndef __MWERKS__
+    if (count >= 500) {
+        return;
+    }
+#endif
     m->entries[count].id = id | 0x8000;
     m->entries[m->count].rnd = pokemonBiosGetRnd(pokemon);
     m->entries[m->count].trainerRnd = pokemonBiosGetCatchTrainerRnd(pokemon);

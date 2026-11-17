@@ -1,4 +1,5 @@
 #include <game/ppcops.h>
+#include "game/portxd_xg.h"
 #include <game/gcptr.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
@@ -227,7 +228,7 @@ s32 fightTrainerAiWazaValueDarkEnd(FIGHT_TRAINER* t, FightOutPokemon* self, u16 
 s32 fightTrainerAiWazaValueDarkRemove(FIGHT_TRAINER* t, FightOutPokemon* self, u16 waza, FightOutPokemon* target) {
     s32 handle = 0;
     FIGHT_SIDE* side = fightTargetGetPtrAsNowFightType(2, target);
-    if (fightSideIsJoutaiDataId(side, 0x49) == 1 || fightSideIsJoutaiDataId(side, 0x48) == 1 || fightSideIsJoutaiDataId(side, 0x4b) == 1) handle = fightTrainerAiAddValueByAddsubDataId(0, t, 0x26d);
+    if (fightSideIsJoutaiDataId(side, 0x49) == 1 || fightSideIsJoutaiDataId(side, 0x48) == 1 || XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4b)) == 1) handle = fightTrainerAiAddValueByAddsubDataId(0, t, 0x26d);
     return handle;
 }
 
@@ -1335,7 +1336,7 @@ s32 fightTrainerAiWazaValueMiraakooto(FIGHT_TRAINER* t, FightOutPokemon* self, u
             break;
         }
     }
-    if (last != 0 && last != 0xffff && last != 0x176 && last != 0x163 && zokuseiBiosGetWazaKind(fightTrainerAiGetWazaZokuseiDataId(t, last, target)) == 2) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x1a4);
+    if (last != 0 && last != 0xffff && last != 0x176 && last != 0x163 && XG_CONST(0, zokuseiBiosGetWazaKind(fightTrainerAiGetWazaZokuseiDataId(t, last, target))) == 2) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x1a4);
     return handle;
 }
 
@@ -1352,7 +1353,7 @@ s32 fightTrainerAiWazaValueKauntaa(FIGHT_TRAINER* t, FightOutPokemon* self, u16 
             break;
         }
     }
-    if (last != 0 && last != 0xffff && last != 0x176 && last != 0x163 && zokuseiBiosGetWazaKind(fightTrainerAiGetWazaZokuseiDataId(t, last, target)) == 1) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x1a2);
+    if (last != 0 && last != 0xffff && last != 0x176 && last != 0x163 && XG_CONST(0, zokuseiBiosGetWazaKind(fightTrainerAiGetWazaZokuseiDataId(t, last, target))) == 1) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x1a2);
     return handle;
 }
 

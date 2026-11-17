@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_jp.h"
 #include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/winwork.h>
@@ -958,7 +959,7 @@ void CMenuReliveHall::drawStatusPanel() {
         }
     }
     if (temp_r3 != 0) {
-        switch (pokecoloGetCountryCode()) {
+        switch (PORT_COUNTRY_DISP()) {
         case 0:
             temp_r28_2 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D3U, 0));
             msgctrlSetValue((u32)(0x37), (GCuptr)(GSmsgGetGSchar((u32)(pokemonDataBiosGetName((PokemonData*)(((Pokemon*)((Pokemon *) temp_r3))->getPokemonDataPtr()))))));
@@ -974,7 +975,7 @@ void CMenuReliveHall::drawStatusPanel() {
         temp_r28_3 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x4D4U, 0));
         msgctrlSetValue(0x34, (GCuptr) ((Pokemon*)((Pokemon *) temp_r3))->getLevel());
         GSmsgPrint2(M2C_NAMED(((WinWorkLayout*)(temp_r31)), s32 *, 0x1C, layerID), M2C_NAMED(((tagSPRITE_WORK*)(temp_r28_3)), s16 *, 0x50, x), M2C_NAMED(((tagSPRITE_WORK*)(temp_r28_3)), s16 *, 0x52, y), -1, 0x4271);
-        switch (pokecoloGetCountryCode()) {
+        switch (PORT_COUNTRY_DISP()) {
         case 1:
         case 2:
             temp_r3_6 = (unsigned char *)(menuPtSpriteWorkGetByItemID((tagWINDOW_WORK*)(temp_r31), 0x8EEU, 0));
@@ -3188,7 +3189,7 @@ void CMenuReliveHall::actionPut()
             pos += 1;
         }
         c = cursor;
-        stage->insertDancer(*(c->pokemon.checkValid() ? &c->pokemon : 0), pos);
+        stage->insertDancer(*(cursor->pokemon.checkValid() ? &c->pokemon : 0), pos);
         CReliveStage* s = stage;
         s8 sel = s->hit;
         if (n != 0 && (s8)sel >= pos) sel++;

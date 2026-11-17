@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
@@ -1284,6 +1285,27 @@ HeroPtr* fightFloorGetFightOutPokemonPtrToHeroPtr(FIGHT_FLOOR* floor, FightOutPo
 }
 }
 
+#ifndef __MWERKS__
+extern "C" u8 fightSideIsJoutaiDataId(void* side, u32 id);
+extern "C" u8 waza_GetZokuseiKindData(u16 id);
+extern "C" u8 wazaDB_GetZokuseiDataId(u16 id);
+static s32 xg_rel_80B9B490(FightOutPokemon* fop) {
+    u16 id = fightOutPokemonGetMotoWazaDataId(fop);
+    if (wazaDB_GetPri(id) == 0) {
+        u32 ability = fightOutPokemonGetTokuseiDataId(fop);
+        if (ability == 0x59) {
+            if (waza_GetZokuseiKindData(id) == 0) {
+                return 1;
+            }
+        } else if (ability == 0x43) {
+            if (wazaDB_GetZokuseiDataId(id) == 2) {
+                return 1;
+            }
+        }
+    }
+    return wazaDB_GetPri(id);
+}
+#endif
 extern "C" {
 u8 fightFloorCmpfightOutPokemonNimbleness(FIGHT_FLOOR* floor, FightOutPokemon* a, FightOutPokemon* b, u8 useAction) {
     u8 tenkou;
@@ -1316,6 +1338,12 @@ u8 fightFloorCmpfightOutPokemonNimbleness(FIGHT_FLOOR* floor, FightOutPokemon* a
     }
     priA = wazaDB_GetPri(wazaA);
     priB = wazaDB_GetPri(wazaB);
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        priA = (s8)xg_rel_80B9B490(a);
+        priB = (s8)xg_rel_80B9B490(b);
+    }
+#endif
     if (priA != 0 || priB != 0) {
         if (priA > priB) {
             return 1;
@@ -1324,6 +1352,32 @@ u8 fightFloorCmpfightOutPokemonNimbleness(FIGHT_FLOOR* floor, FightOutPokemon* a
             return 0;
         }
     }
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        void* sideB = fightTargetGetPtrAsNowFightType(2, b);
+        void* sideA = fightTargetGetPtrAsNowFightType(2, a);
+        u32 x = nimbleA;
+        u32 y = nimbleB;
+        if (fightSideIsJoutaiDataId(sideA, 0x4B) == 1) {
+            x <<= 1;
+        }
+        if (fightSideIsJoutaiDataId(sideB, 0x4B) == 1) {
+            y <<= 1;
+        }
+        if (fightSideIsJoutaiDataId(sideA, 0x4C) == 1 || fightSideIsJoutaiDataId(sideB, 0x4C) == 1) {
+            u32 t = x;
+            x = y;
+            y = t;
+        }
+        if (x > y) {
+            return 1;
+        }
+        if (x < y) {
+            return 0;
+        }
+        return (HSD_Rand() & 1) ? 1 : 0;
+    }
+#endif
     if (nimbleA > nimbleB) {
         result = 1;
     } else if (nimbleA < nimbleB) {
@@ -2287,6 +2341,9 @@ u8 fightFloorIsLastActionFightOutPokemon(FIGHT_FLOOR* floor) {
 }
 }
 
+#ifndef __MWERKS__
+#define fightFloorCheckFightActionFightOutPokemonIrekaeSelect xg_IrekaeSelectBody
+#endif
 extern "C" {
 u8 fightFloorCheckFightActionFightOutPokemonIrekaeSelect(FIGHT_FLOOR* floor, FightOutPokemon* pokemon, FightOutPokemon** out) {
     FightOutPokemon* kagefumi;
@@ -2302,7 +2359,7 @@ u8 fightFloorCheckFightActionFightOutPokemonIrekaeSelect(FIGHT_FLOOR* floor, Fig
     }
     kagefumi = fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirst(floor, 0x17, 0, 2, pokemon);
     arijigoku = fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirst(floor, 0x47, 0, 2, pokemon);
-    jiryoku = fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirst(floor, 0x2A, 0, 0, pokemon);
+    jiryoku = XG_CONST(0, fightFloorGetFightOutPokemonPtrAryPokemonTokuseiDataIdFirst(floor, 0x2A, 0, 0, pokemon));
     if (fightOutPokemonIsZokuseiDataId(pokemon, 2) == 1 || fightOutPokemonGetTokuseiDataId(pokemon) == 0x1A) {
         flying = 1;
     }
@@ -2334,6 +2391,17 @@ u8 fightFloorCheckFightActionFightOutPokemonIrekaeSelect(FIGHT_FLOOR* floor, Fig
     return 0;
 }
 }
+#ifndef __MWERKS__
+#undef fightFloorCheckFightActionFightOutPokemonIrekaeSelect
+extern "C" u8 xg_IrekaeSelectBody(FIGHT_FLOOR* floor, FightOutPokemon* pokemon, FightOutPokemon** out);
+extern "C" u8 fightFloorCheckFightActionFightOutPokemonIrekaeSelect(FIGHT_FLOOR* floor, FightOutPokemon* pokemon, FightOutPokemon** out) {
+    u8 result = xg_IrekaeSelectBody(floor, pokemon, out);
+    if (PortXD_IsXG() && fightOutPokemonIsZokuseiDataId(pokemon, 7) == 1) {
+        result = 0;
+    }
+    return result;
+}
+#endif
 
 static u8 _fightFloorCheckHuuinWazaFightOutPokemonSub(void* pokemonPtr, u16 fightType, void* dataPtr) {
     HuuinWazaData* data = (HuuinWazaData*)dataPtr;

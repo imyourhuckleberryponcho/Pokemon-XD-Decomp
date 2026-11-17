@@ -1462,6 +1462,10 @@ static void procStep(HEROMOVE_MEMBER member) {
     }
 }
 
+#ifndef __MWERKS__
+extern "C" void (*PortXD_OnHeroStep)(void);
+void (*PortXD_OnHeroStep)(void) = 0;
+#endif
 static void proc1Step(f32 distance) {
     Hero* hero = Hero::getHeroPtr();
     if (isStoryMode()) {
@@ -1473,6 +1477,11 @@ static void proc1Step(f32 distance) {
             while (HeroMove.stepAccum >= 7.0f) {
                 hero->addFootStep(1);
                 heroMoveCallStepCallback((FootStepCounter)0, 1);
+#ifndef __MWERKS__
+                if (PortXD_OnHeroStep != 0) {
+                    PortXD_OnHeroStep();
+                }
+#endif
                 HeroMove.stepAccum -= 7.0f;
             }
         }

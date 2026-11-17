@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/bitfield.h>
 
@@ -988,8 +989,8 @@ u32 itemDataBiosGetHidenMachineNo(u8* p) {
         machineNo = (u8)item->buff;
     }
     if (machineNo == 0xFF) return 0xFF;
-    if (machineNo < 0x32 || machineNo >= item_waza_machine_no_number) return 0xFF;
-    return (u8)(machineNo - 0x32);
+    if (machineNo < XG(0x32, 0x36) || machineNo >= item_waza_machine_no_number) return 0xFF;
+    return (u8)(machineNo - XG(0x32, 0x36));
 }
 
 u32 itemDataBiosGetWazaIDByWazaMachineNo(u32 machineNo) {

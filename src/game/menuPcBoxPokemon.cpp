@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_jp.h"
 #include <game/gcdata.h>
 #include <game/gcptr.h>
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
@@ -1716,7 +1717,7 @@ void CMenuPokemonLeave::drawStatusArea()
     if (p != 0) {
         u32 nameId;
         u32 lvId;
-        switch (pokecoloGetCountryCode()) {
+        switch (PORT_COUNTRY_DISP()) {
         case 0:
             nameId = 0x4276;
             lvId = 0x427B;

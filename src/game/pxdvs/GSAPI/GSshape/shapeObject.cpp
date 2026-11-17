@@ -1389,11 +1389,11 @@ bool GsShapeObject::DeformTextureCoord(u32 idx, bool a, const f32* A, const f32*
     }
     int rows = data->rows;
     int j;
-    f32* out = (f32*)texArray[idx];
+    int i = 0;
     int cols = data->cols + 1;
     rows += 1;
+    f32* out = (f32*)texArray[idx];
     f32 off = 0.0f;
-    int i = 0;
     f32* src = (f32*)data->tex;
     for (; i < rows; i++, B++, C++) {
         if (b == 1) {

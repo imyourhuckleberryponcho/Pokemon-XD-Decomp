@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
@@ -1295,7 +1296,7 @@ u8 fightTrainerPokemonDB_GetFriend(u16 id) {
     if (p == 0) {
         return 0;
     }
-    return p->getFriendLevel();
+    return XG_CONST(0, p->getFriendLevel());
 }
 
 void fightTrainerPokemonDB_SetLevel(u16 id, u8 v) {

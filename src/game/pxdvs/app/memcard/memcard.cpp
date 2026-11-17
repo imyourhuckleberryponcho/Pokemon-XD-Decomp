@@ -2454,9 +2454,9 @@ static void _memcard_Encryption(void* data)
     d[10] = sums[0];
     d[11] = sums[0] >> 16;
     d[8] = sums[1];
+    d[7] = sums[2] >> 16;
     d[9] = sums[1] >> 16;
     d[6] = sums[2];
-    d[7] = sums[2] >> 16;
     d[4] = sums[3];
     d[5] = sums[3] >> 16;
     for (i = 4; i < 0x13FE8; i += 4) {

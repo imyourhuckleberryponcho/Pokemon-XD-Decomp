@@ -1,4 +1,5 @@
 #include <game/ppcops.h>
+#include "game/portxd_xg.h"
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
@@ -149,7 +150,7 @@ s32 fightAiCombo_Darkdown_PhyatkIryoku_2(FIGHT_TRAINER* t, FightOutPokemon** ary
     if (cnt < 2) {
         return 0;
     }
-    if (fightSideIsJoutaiDataId(side, 0x4C) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4C)) == 1) {
         return 0;
     }
     found = 0;
@@ -219,7 +220,7 @@ s32 fightAiCombo_Darkmist_Darkend_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u16
     if (cnt < 2) {
         return 0;
     }
-    if (fightSideIsJoutaiDataId(side, 0x4C) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4C)) == 1) {
         return 0;
     }
     found = 0;
@@ -272,7 +273,7 @@ s32 fightAiCombo_Darkmist_Darkhold_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u1
     if (cnt < 2) {
         return 0;
     }
-    if (fightSideIsJoutaiDataId(side, 0x4C) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4C)) == 1) {
         return 0;
     }
     found = 0;
@@ -325,10 +326,10 @@ s32 fightAiCombo_Darkmist_Darkpanic_2(FIGHT_TRAINER* t, FightOutPokemon** ary, u
     if (cnt < 2) {
         return 0;
     }
-    if (fightSideIsJoutaiDataId(side, 0x4C) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4C)) == 1) {
         return 0;
     }
-    if (fightSideIsJoutaiDataId(side, 0x4B) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4B)) == 1) {
         return 0;
     }
     found = 0;

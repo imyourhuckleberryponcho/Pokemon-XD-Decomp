@@ -1,4 +1,5 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
+#include "game/portxd_xg.h"
 #include <game/gcdata.h>
 #include <game/bitfield.h>
 #include <game/pxdvs/app/pokemon/pokemonBios.hpp>
@@ -217,7 +218,7 @@ bool Pokemon::isTokuseiFlag() const {
     return flags.bits.tokusei;
 }
 bool Pokemon::isRareParam(u32 a, u32 b) {
-    return (a >> 16 ^ (a & 0xFFFF) ^ b >> 16 ^ (b & 0xFFFF)) < 8;
+    return (a >> 16 ^ (a & 0xFFFF) ^ b >> 16 ^ (b & 0xFFFF)) < XG(8, 0x147);
 }
 u32 DarkPokemon::getWalkCount() const {
     return *reinterpret_cast<const u32*>(reinterpret_cast<const u8*>(this) + 0x44);

@@ -4,6 +4,7 @@
 #include <game/statusval.h>
 #include <game/pxdvs/app/floor/floorData.h>
 #include "game/gcdata.h"
+#include "game/portxd_xg.h"
 #ifndef __MWERKS__
 #define getHeroPtr__4HeroFv(...) ((Hero*)Hero::getHeroPtr(__VA_ARGS__))
 #define getFollowerID__4HeroFv(o, ...) ((s32)((Hero*)(o))->getFollowerID(__VA_ARGS__))
@@ -429,7 +430,7 @@ s16 scriptCatchPokemon(u8 kind)
     memset(&param, 0, sizeof(param));
     param.pokemonDataID = 0;
     param.shadowPokemonDataID = 0;
-    param.catchLevel = 5;
+    param.catchLevel = XG(5, 0x3C);
     param.friendLevel = 0x46;
     param.move1 = 1;
     param.trainerSexID = heroBiosGetSexDataId(hero);
@@ -442,23 +443,23 @@ s16 scriptCatchPokemon(u8 kind)
     case 7:
         param.pokemonDataID = 0xAF;
         param.shadowPokemonDataID = 0x51;
-        param.catchLevel = 0x19;
+        param.catchLevel = XG(0x19, 0x28);
         param.friendLevel = 0;
-        param.move1 = 0x10A;
-        param.move2 = 0xA1;
-        param.move3 = 0xF6;
-        param.move4 = 0x10E;
+        param.move1 = XG(0x10A, 0xA1);
+        param.move2 = XG(0xA1, 0x69);
+        param.move3 = XG(0xF6, 0x128);
+        param.move4 = XG(0x10E, 0x70);
         break;
     case 8:
-        param.pokemonDataID = 0xEF;
-        param.catchLevel = 0x14;
+        param.pokemonDataID = XG(0xEF, 0x19D);
+        param.catchLevel = XG(0x14, 0x28);
         param.trainerSexID = 0;
         param.trainerRnd = 0xA1B8;
         param.trainerNamePtr = GSmsgGetGSchar(0x1828);
-        param.move1 = 8;
-        param.move2 = 7;
-        param.move3 = 9;
-        param.move4 = 0xEE;
+        param.move1 = XG(8, 0x96);
+        param.move2 = XG(7, 0x83);
+        param.move3 = XG(9, 0x111);
+        param.move4 = XG(0xEE, 0x18);
         switch (pokecoloGetLanguage()) {
         case 2: GScharMakeFromSJIS(nickname, "ZAPRONG"); break;
         case 3: GScharMakeFromSJIS(nickname, "ZAPRONG"); break;
@@ -470,58 +471,58 @@ s16 scriptCatchPokemon(u8 kind)
         param.nicknamePtr = nickname;
         break;
     case 9:
-        param.pokemonDataID = 0x164;
-        param.catchLevel = 0x14;
+        param.pokemonDataID = XG(0x164, 0x99);
+        param.catchLevel = XG(0x14, 0x1E);
         param.trainerSexID = 0;
         param.trainerRnd = 0x911D;
         param.trainerNamePtr = GSmsgGetGSchar(0x17B9);
-        param.move1 = 0xDF;
-        param.move2 = 0x5D;
-        param.move3 = 0xF7;
-        param.move4 = 0xC5;
+        param.move1 = XG(0xDF, 0x79);
+        param.move2 = XG(0x5D, 0x49);
+        param.move3 = XG(0xF7, 0x93);
+        param.move4 = XG(0xC5, 0xDC);
         break;
     case 10:
-        param.pokemonDataID = 0xD5;
-        param.catchLevel = 0x14;
+        param.pokemonDataID = XG(0xD5, 0x9C);
+        param.catchLevel = XG(0x14, 0x1E);
         param.trainerSexID = 0;
         param.trainerRnd = 0x911D;
         param.trainerNamePtr = GSmsgGetGSchar(0x17B9);
-        param.move1 = 0x5C;
-        param.move2 = 0xA4;
-        param.move3 = 0xBC;
-        param.move4 = 0xE3;
+        param.move1 = XG(0x5C, 0x11C);
+        param.move2 = XG(0xA4, 0xFC);
+        param.move3 = XG(0xBC, 0x155);
+        param.move4 = XG(0xE3, 0x90);
         break;
     case 11:
-        param.pokemonDataID = 0xF6;
-        param.catchLevel = 0x14;
+        param.pokemonDataID = XG(0xF6, 0x9F);
+        param.catchLevel = XG(0x14, 0x1E);
         param.trainerSexID = 0;
         param.trainerRnd = 0x911D;
         param.trainerNamePtr = GSmsgGetGSchar(0x17B9);
-        param.move1 = 0xC9;
+        param.move1 = XG(0xC9, 0x25);
         param.move2 = 0x15D;
-        param.move3 = 0x2C;
-        param.move4 = 0xC8;
+        param.move3 = XG(0x2C, 0x2E);
+        param.move4 = XG(0xC8, 0x11A);
         break;
     case 12:
-        param.pokemonDataID = 0x98;
-        param.move1 = 0xF6;
-        param.move2 = 0x21;
-        param.move3 = 0x2D;
-        param.move4 = 0x152;
+        param.pokemonDataID = XG(0x98, 0x97);
+        param.move1 = XG(0xF6, 0xDA);
+        param.move2 = XG(0x21, 0x35);
+        param.move3 = XG(0x2D, 0x111);
+        param.move4 = XG(0x152, 0xE2);
         break;
     case 13:
-        param.pokemonDataID = 0x9B;
-        param.move1 = 0xB3;
-        param.move2 = 0x21;
-        param.move3 = 0x2B;
-        param.move4 = 0x133;
+        param.pokemonDataID = XG(0x9B, 0xFB);
+        param.move1 = XG(0xB3, 0x79);
+        param.move2 = XG(0x21, 0x55);
+        param.move3 = XG(0x2B, 0x111);
+        param.move4 = XG(0x133, 0x49);
         break;
     case 14:
-        param.pokemonDataID = 0x9E;
-        param.move1 = 0xF2;
-        param.move2 = 0xA;
-        param.move3 = 0x2B;
-        param.move4 = 0x134;
+        param.pokemonDataID = XG(0x9E, 0x199);
+        param.move1 = XG(0xF2, 0x135);
+        param.move2 = XG(0xA, 0x3A);
+        param.move3 = XG(0x2B, 0x111);
+        param.move4 = XG(0x134, 0xAA);
         break;
     }
 
@@ -554,6 +555,36 @@ s16 scriptCatchPokemon(u8 kind)
     }
     return -2;
 }
+
+#ifndef __MWERKS__
+extern "C" u32* pokemon_data_number;
+extern "C" s32 PortXD_GiftPokemon(s32 species, s32 level, s32 move1, s32 move2, s32 move3, s32 move4, s32 flags)
+{
+    HeroPokemonGetParam param;
+    Hero* hero = savedataGetStatus(0, 2);
+    if (species <= 0 || (u32)species >= *pokemon_data_number || level < 1 || level > 100) {
+        return -3;
+    }
+    memset(&param, 0, sizeof(param));
+    param.pokemonDataID = (u16)species;
+    param.catchLevel = (u8)level;
+    param.friendLevel = 0x46;
+    param.move1 = (u16)move1;
+    param.move2 = (u16)move2;
+    param.move3 = (u16)move3;
+    param.move4 = (u16)move4;
+    param.trainerSexID = heroBiosGetSexDataId(hero);
+    param.trainerNamePtr = heroBiosGetNamePtr(hero);
+    param.catchFloorID = floorGetCurrent();
+    param.trainerRnd = hero->getHeroRnd();
+    void* grow = pokemonGrowDataBiosGetPtr(pokemonDB_GetGrowDataId(param.pokemonDataID));
+    if (grow == 0) {
+        return -3;
+    }
+    param.exp = pokemonGrowDataBiosGetExp(grow, param.catchLevel);
+    return hero->pokemonGet(&param, (flags & 1) == 0);
+}
+#endif
 
 PCRET(u16) scriptGetEarthRibbon()
 {
@@ -1550,6 +1581,23 @@ extern s32* wazaoshie_data_number;
 s32 scriptPokemonTeachWazaIndex(s32 waza)
 {
 #ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        switch (waza) {
+        case 0x1F: return 0;
+        case 0xB6: return 1;
+        case 0x10A: return 2;
+        case 0xE3: return 3;
+        case 7: return 4;
+        case 9: return 5;
+        case 8: return 6;
+        case 0xC4: return 7;
+        case 6: return 8;
+        case 0x10D: return 9;
+        case 0xF0: return 10;
+        case 0xF1: return 11;
+        }
+        return -1;
+    }
     {
         static const s8 rowToIndex[12] = {3, 5, 2, 7, 6, 4, 8, 0, 11, 9, 1, 10};
         s32 n = *wazaoshie_data_number;

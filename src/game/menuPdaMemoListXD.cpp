@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_jp.h"
 #include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/statusval.h>
@@ -501,7 +502,7 @@ void pdaMemoList::SortGojyuon() {
         buf[i].index = i;
         GScharCpy(buf[i].name, GetPokemonName(i));
     }
-    if (pokecoloGetCountryCode() == 0) {
+    if (PORT_COUNTRY_DISP() == 0) {
         Sort_Small(buf, count);
     } else {
         fn_80055C94(this, buf, count);

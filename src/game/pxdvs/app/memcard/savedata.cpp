@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
+#include "game/portxd_jp.h"
 #include <game/gcptr.h>
 #include <game/statusval.h>
 #pragma pool_strings off
@@ -156,6 +158,10 @@ extern s32 jtbl_2134;
 }
 
 extern "C" {
+#ifndef __MWERKS__
+void heroPokemonGetEifie(Hero* hero);
+void heroPokemonGetBlacky(Hero* hero);
+#endif
 void savedataCreate(void* save, char16* name);
 s32 savedataGetBattleDiskSellOut(u32 p0);
 void savedataInit(void* save);
@@ -204,6 +210,11 @@ void savedataCreate(void* save, char16* name) {
     memset(&param, 0, sizeof(param));
     savedataInit(save);
     game = (Gamedata*)savedataGetStatus(save, 1);
+#ifndef __MWERKS__
+    if (PORT_TEXT_JP()) {
+        gamedataCreate(game, 0xB, 3, 1, 1);
+    } else
+#endif
     switch (pokecoloGetCountryCode()) {
     case 0:
         gamedataCreate(game, 0xB, 3, 1, 1);
@@ -253,7 +264,7 @@ void savedataCreate(void* save, char16* name) {
         sp2 = party;
         for (j = 0; j < 4; j++) {
             pokemon = hero->getPokemon(j);
-            u32 rnd = pokemonCreateRndFit(pokemon, sp2->sex, sp2->seikaku, 0, heroBiosGetRnd(hero));
+            u32 rnd = pokemonCreateRndFit(pokemon, sp2->sex, sp2->seikaku, XG(0, -1), heroBiosGetRnd(hero));
             pokemon_SetRnd(pokemon, rnd);
             pokemonBiosSetTokuseiFlag(pokemon, sp2->tokusei);
             pokemonResetBasisStatus(pokemon);
@@ -286,6 +297,12 @@ void savedataCreate(void* save, char16* name) {
     param.trainerNamePtr = heroBiosGetNamePtr(hero);
     param.catchFloorID = 0;
     param.exp = 0x4E2;
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        heroPokemonGetEifie(hero);
+        heroPokemonGetBlacky(hero);
+    } else
+#endif
     hero->pokemonGet(&param, 1);
     heroSetStatus(hero, 0xC, 0x1388);
     hero->setBattleResumeFloorID(0x8A);

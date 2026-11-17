@@ -7,11 +7,12 @@
 #include <string.h>
 #endif
 #include <game/pxdvs//GSAPI/GSflag/GSflag.h>
+#include "game/portxd_xg.h"
 
 extern "C" {
 
 extern u32 pokemon_nakigoe_data_number;
-extern u32 pokemon_nakigoe_data[];
+extern GCuptr pokemon_nakigoe_data[];
 extern u32* pokemon_dp_filter_data_number;
 extern u8* pokemon_dp_filter_data;
 extern u32 pokemon_friend_filter_data_number;
@@ -48,7 +49,7 @@ static PokemonWaza _pokemon_waza_darkwaza[18] = {
 static PokemonWaza _pokemon_waza_hatena = {0x176, 5, 0};
 #endif
 
-u32 pokemonNakigoeDataBiosGetDataAddress(u8* data) {
+GCuptr pokemonNakigoeDataBiosGetDataAddress(u8* data) {
     if (data) goto non_null;
     return 0;
 non_null:
@@ -95,21 +96,21 @@ u32 pokemonTokuseiDataBiosGetDoc(u32* data) {
     if (data) goto non_null;
     return 0;
 non_null:
-    return data[2];
+    return data[XG(2, 1)];
 }
 
 u32 pokemonTokuseiDataBiosGetName(u32* data) {
     if (data) goto non_null;
     return 0;
 non_null:
-    return data[1];
+    return data[XG(1, 0)];
 }
 
 u32 pokemonTokuseiDataBiosGetPtr(u16 index) {
     if (index < pokemon_tokusei_data_number) goto in_range;
     return 0;
 in_range:
-    return (u32)((u8*)pokemon_tokusei_data + index * 0xC);
+    return (u32)((u8*)pokemon_tokusei_data + index * XG(0xC, 8));
 }
 
 u32 pokemonSeikakuRateDataBiosGetWaru(PokemonSeikakuRateBios* data) {
@@ -1921,6 +1922,22 @@ PCRET(u16) pokemonBiosGetPokemonWazaDataId(Pokemon* poke, u32 wazaNum) {
     return waza->dataId;
 }
 
+#ifndef __MWERKS__
+static PokemonWaza* xg_wazaRecord(u32 id) {
+    static PokemonWaza table[0x176];
+    static bool ready = false;
+    if (!ready) {
+        for (u32 k = 0; k < 0x176; k++) {
+            table[k].dataId = (u16)k;
+            table[k].pp = 5;
+            table[k].ppCount = 0;
+        }
+        ready = true;
+    }
+    return &table[id];
+}
+#endif
+
 PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon* poke, u32 wazaNum, u8 unk) {
     u8 darkWazaCount = 0;
     u8 hidden[4] = {0, 0, 0, 0};
@@ -1940,6 +1957,17 @@ PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon* poke, u32 wazaNum, u8 unk) {
 
     for (i = 0; i < 4; i++) {
         hidden[i] = 0;
+#ifndef __MWERKS__
+        if (PortXD_IsXG()) {
+            u8 wazaDB_GetHidenFlag(u16 id);
+            u16 w = darkPokemonBiosGetTemotiDarkWaza(pokemonBiosGetDarkpokemonDataId(poke), i);
+            if (w != 0x163 && wazaDB_GetHidenFlag(w) != 1 && darkWazaCount != 0) {
+                hidden[i] = 1;
+                darkWazaCount--;
+            }
+            continue;
+        }
+#endif
         if ((s32)darkPokemonBiosGetTemotiDarkWaza(pokemonBiosGetDarkpokemonDataId(poke), i) < 0x163 && darkWazaCount != 0) {
             hidden[i] = 1;
             darkWazaCount--;
@@ -1953,6 +1981,19 @@ PokemonWaza* pokemonBiosGetPokemonWazaPtr(Pokemon* poke, u32 wazaNum, u8 unk) {
         }
     } else if (pokemonBiosGetDarkFlag(poke) == 1) {
         s32 darkWaza = darkPokemonBiosGetTemotiDarkWaza(pokemonBiosGetDarkpokemonDataId(poke), wazaNum);
+#ifndef __MWERKS__
+        if (PortXD_IsXG()) {
+            u8 wazaDB_GetHidenFlag(u16 id);
+            u16 w = (u16)darkWaza;
+            if (w != 0x163 && wazaDB_GetHidenFlag(w) != 0 && (s32)w < 0x176) {
+                return xg_wazaRecord(w);
+            }
+            if (hidden[(u16)wazaNum] == 0) {
+                return (PokemonWaza*)&_pokemon_waza_hatena;
+            }
+            return &poke->wazas[(u16)wazaNum];
+        }
+#endif
         if (darkWaza > 0x163 && darkWaza < 0x176) {
             return (PokemonWaza*)&_pokemon_waza_darkwaza[darkWaza - 0x164];
         }

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
@@ -732,7 +733,7 @@ void WS_WAZAWASURE_CHECK(void) {
                 break;
             }
             wazaId = pokemon_GetPokemonWazaDataId(pokemon, (u16)slot);
-            if (wazaDB_GetHidenFlag(wazaId) == 1) {
+            if (XG_CONST(0, wazaDB_GetHidenFlag(wazaId)) == 1) {
                 if (fightMenuOpenMsg(0x4f1e) == 1) {
                     fightMenuCloseMsg();
                 }

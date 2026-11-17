@@ -727,6 +727,10 @@ static const char* _floorGetUniqueModuleName() {
     return "floorUniqueModule";
 }
 
+#ifndef __MWERKS__
+extern "C" void (*PortXD_OnFloorReady)(u32 floorID, s32 mode);
+void (*PortXD_OnFloorReady)(u32 floorID, s32 mode) = 0;
+#endif
 static void _floorInitialize(unsigned int id, FloorEnterMode mode) {
     GSfloor_dd_* floor = floorDataBiosGetPtr(id);
     heroMoveInit(&_floorChangeInfo.pos, &_floorChangeInfo.rot);
@@ -749,6 +753,11 @@ static void _floorInitialize(unsigned int id, FloorEnterMode mode) {
     if (mode == 2) {
         floorExecScriptIntegerByName("pushpop_preprocess", GSfloorGetCurrentFloorGroupID(), 0, 0, 0);
     }
+#ifndef __MWERKS__
+    if (PortXD_OnFloorReady != 0) {
+        PortXD_OnFloorReady(id, (s32)mode);
+    }
+#endif
 }
 
 static void _floorUpdate(unsigned int id, FloorEnterMode mode) {

@@ -306,7 +306,26 @@ void GSlogSetIP() {}
 
 void GSlogWrite(const char* fmt, ...) {}
 
+#ifdef __MWERKS__
 void GSlogWritef(const char* fmt, ...) {}
+#else
+}
+#include <stdio.h>
+extern "C" {
+void (*PortXD_GSlogWritefSink)(const char* text) = 0;
+
+void GSlogWritef(const char* fmt, ...) {
+    char text[512];
+    va_list args;
+    if (PortXD_GSlogWritefSink == 0 || fmt == 0) {
+        return;
+    }
+    va_start(args, fmt);
+    vsnprintf(text, sizeof(text), fmt, args);
+    va_end(args);
+    PortXD_GSlogWritefSink(text);
+}
+#endif
 
 u32 GSlogGetLineCount() {
     return _logBuffer == 0 ? 0 : _logLineCount;

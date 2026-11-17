@@ -3,6 +3,7 @@
 #include <game/gcptr.h>
 #include <game/statusval.h>
 #include <game/miscTables.h>
+#include "game/portxd_xg.h"
 
 #pragma peephole off
 
@@ -493,7 +494,7 @@ s32 menuUseItemWPointUp(u32 item, s32* consume) {
             result = 0;
         } else {
             waza = pokemonBiosGetPokemonWazaDataId(pokemon, (u16)wazaSlot);
-            if (waza > 0x163 && waza < 0x176) {
+            if (waza > XG(0x163, 0x150) && waza < 0x176) {
                 dispMsg(0xC374);
                 result = 0;
             } else {
@@ -674,7 +675,7 @@ s32 menuUseItemSkill(u32 item, s32* consume) {
         if ((u8)hiden != 0xFF) {
             *consume = 0;
         } else {
-            *consume = 1;
+            *consume = XG(1, 0);
         }
         return 0;
     }
@@ -1120,3 +1121,44 @@ static PokemonData* getPokemonData(Pokemon* p) {
     r = pokemonDataBiosGetPtr(pokemonBiosGetPokemonDataId(p));
     return r;
 }
+
+#ifndef __MWERKS__
+extern "C" {
+void menuPocket2GetTemochiPokemon(s32 slot, Pokemon** pokemon, FightPokemon** fightPokemon);
+u8 pokemonDataBiosGetTokuseiDataId(PokemonData* data, u16 index);
+void* pokemon_GetNicknamePtr(Pokemon* p);
+u16 pokemonGetTokuseiDataId(Pokemon* p);
+u32 pokemonTokuseiDataBiosGetPtr(u16 id);
+u32 pokemonTokuseiDataBiosGetName(u32 data);
+u32 pokemon_GetTokuseiFlag(Pokemon* p);
+void pokemonBiosSetTokuseiFlag(Pokemon* poke, u8 data);
+void fightMsgctrlSetValue(s32 id, GCuptr value);
+
+s32 PortXD_XG_UseAbilityCapsule(u32 item, s32* consume) {
+    Pokemon* pokemon;
+    FightPokemon* fp;
+    s32 slot = menuPocket2OpenPokemonMenu(0, 1);
+    if (slot < 0) {
+        menuPocket2ClosePokemonMenu(slot);
+        return 1;
+    }
+    menuPocket2GetTemochiPokemon(slot, &pokemon, &fp);
+    if (pokemonDataBiosGetTokuseiDataId(pokemonDataBiosGetPtr(pokemonBiosGetPokemonDataId(pokemon)), 1) == 0) {
+        dispMsg(0xE2C4);
+        menuPocket2ClosePokemonMenu(slot);
+        return 1;
+    }
+    void* nick = pokemon_GetNicknamePtr(pokemon);
+    GCuptr oldName = (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(pokemonGetTokuseiDataId(pokemon))));
+    pokemonBiosSetTokuseiFlag(pokemon, pokemon_GetTokuseiFlag(pokemon) == 1 ? 0 : 1);
+    GCuptr newName = (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(pokemonGetTokuseiDataId(pokemon))));
+    fightMsgctrlSetValue(0x16, (GCuptr)nick);
+    fightMsgctrlSetValue(0x1A, oldName);
+    fightMsgctrlSetValue(0x1B, newName);
+    dispMsg(0xE2C3);
+    menuPocket2ClosePokemonMenu(slot);
+    *consume = 1;
+    return 0;
+}
+}
+#endif

@@ -661,9 +661,9 @@ static void lightEditorSaveUnused(s32 layer, s32 y, s32 color) {
 
 void LightEditor::editCommand() {
     GXColor color;
-    bool shadow;
     GSlight* light;
     GSvec pos;
+    const char* name;
     bool hasPos;
     GSvec target;
     GSstreamFileOutput out;
@@ -676,7 +676,7 @@ void LightEditor::editCommand() {
     }
     out.writePrintf("//type, color, pos/dir\n");
     for (s32 i = 0; i < lightGetLightSize(); i++) {
-        const char* name;
+        bool shadow;
         light = (GSlight*)lightGetLight(i);
         shadow = GSresGetResourceAllGroup(floorDataBiosGetShadowLightID((FloorData*)floorDataBiosGetCurrentPtr())) == light;
         hasPos = false;

@@ -3,6 +3,7 @@
 #include <game/gcdata.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
+#include "game/portxd_xg.h"
 
 #pragma peephole off
 
@@ -628,7 +629,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
         if (dir != 0) {
             st = &_menuStatus;
             if (st->cb) {
-                Pokemon* next = st->cb(st->pokemon, (MENU_POKEMON_CB_TYPE)dir, st->cbArg);
+                Pokemon* next = st->cb(_menuStatus.pokemon, (MENU_POKEMON_CB_TYPE)dir, st->cbArg);
                 if (st->pokemon != next) {
                     if (next) {
                         menuPlaySe(win->menuId, 1);
@@ -643,7 +644,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
                         if (next->isDarkPokemon()) {
                             DarkPokemon* dp = next->getDarkPokemon();
                             if (dp) {
-                                switch ((u16)pokemonGetStatus(next, 0, 0x7F, (u8)i)) {
+                                switch (XG_SHADOW_KEY((u16)pokemonGetStatus(next, 0, 0x7F, (u8)i))) {
                                 case 0:
                                 case 0x164:
                                 case 0x165:
@@ -716,7 +717,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
             while (c-- > 0) {
                 r = row;
                 do {
-                    if (st->ribbon.grid[r][c] >= 0) {
+                    if (_menuStatus.ribbon.grid[r][c] >= 0) {
                         col = c;
                         row = r;
                         c = -1;
@@ -729,7 +730,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
             while (++c < 4) {
                 r = row;
                 do {
-                    if (st->ribbon.grid[r][c] >= 0) {
+                    if (_menuStatus.ribbon.grid[r][c] >= 0) {
                         col = c;
                         row = r;
                         c = 5;
@@ -742,7 +743,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
             for (c = col; c < 4; c++) {
                 r = (c == col) ? row + 1 : 0;
                 for (; r < 9; r++) {
-                    if (st->ribbon.grid[r][c] >= 0) {
+                    if (_menuStatus.ribbon.grid[r][c] >= 0) {
                         row = r;
                         col = c;
                         found = true;
@@ -758,7 +759,7 @@ void menuPokemonStatusCursor(tagWINDOW_WORK* win) {
             for (c = col; c >= 0; c--) {
                 r = (c == col) ? row - 1 : 8;
                 for (; r >= 0; r--) {
-                    if (st->ribbon.grid[r][c] >= 0) {
+                    if (_menuStatus.ribbon.grid[r][c] >= 0) {
                         row = r;
                         col = c;
                         found = true;
@@ -1175,6 +1176,9 @@ static inline u32 _placeName(u32 p0) { return floorGetPlaceName(p0); }
 static inline u32 _seikakuName(void* p0) { return pokemonSeikakuDataBiosGetName(p0); }
 
 void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
+#ifdef __MWERKS__
+    extern s32 GSmsgPrint2(s32, s32, s32, s32, u32);
+#endif
     u16 id;
     u32 val;
     s32 x;
@@ -1220,7 +1224,7 @@ void menuPokemonStatusDrawStatus(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     case 0x25C: {
         u32 msg;
         u32 placeId;
-        if (pokemonGetDarkPokemonLevel(pk) < 3) {
+        if ((XG_CONST(3, pokemonGetDarkPokemonLevel(pk))) < 3) {
             msg = 0x945;
         } else {
             msg = _seikakuName(pokemonSeikakuDataBiosGetPtr((u8)pokemonGetStatus(pk, 0, 0xBF, 0)));
@@ -1542,6 +1546,11 @@ static s32 NotDarkWaza(s32 id) {
     if (id >= 0x176) {
         return id;
     }
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        return PortXD_XG_IsShadowWaza((u16)id) ? 0 : id;
+    }
+#endif
     if (id < 0x164) {
         return id;
     }
@@ -1636,7 +1645,7 @@ void menuPokemonStatusDrawWaza(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
             waza = 0;
             break;
         case 0x176:
-            waza = 0x7B;
+            waza = XG(0x7B, 0);
             break;
         default:
             waza = _menuPokemonStatusGetZokuseiSpriteID((u16)wazaGetStatus(0, waza, 3, 0));

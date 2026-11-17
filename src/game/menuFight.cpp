@@ -1,5 +1,6 @@
 #pragma defer_codegen on
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/statusval.h>
@@ -962,7 +963,7 @@ static s32 chkWazaNew(MENU_WAZA_STATUS* status, u8 index)
         DarkPokemon* dark = pk->getDarkPokemon();
         if (dark != 0) {
             u16 waza = pokemonGetStatus(pk, 0, 0x7f, index);
-            switch (waza) {
+            switch (XG_SHADOW_KEY(waza)) {
             case 0:
         case 0x164: case 0x165: case 0x166: case 0x167: case 0x168: case 0x169: case 0x16a: case 0x16b:
         case 0x16c: case 0x16d: case 0x16e: case 0x16f: case 0x170: case 0x171: case 0x172: case 0x173:
@@ -1717,7 +1718,7 @@ void menuFightDrawType(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     if (y >= 0 && y < 4 && alloc->rows[y].name != 0) {
         Pokemon* pk = (Pokemon*)fightOutPokemonGetPokemonPtr(alloc->fightOut);
         u16 waza = pk ? (u16)pokemonGetStatus(pk, 0, 0x7f, window->cursor) : 0;
-        switch (waza) {
+        switch (XG_SHADOW_KEY(waza)) {
         case 0:
         case 0x164: case 0x165: case 0x166: case 0x167: case 0x168: case 0x169: case 0x16a: case 0x16b:
         case 0x16c: case 0x16d: case 0x16e: case 0x16f: case 0x170: case 0x171: case 0x172: case 0x173:
@@ -1741,7 +1742,7 @@ void menuFightDrawPP(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite)
     if (y >= 0 && y < 4 && alloc->rows[y].name != 0) {
         Pokemon* pk = (Pokemon*)fightOutPokemonGetPokemonPtr(alloc->fightOut);
         u16 waza = pk ? (u16)pokemonGetStatus(pk, 0, 0x7f, window->cursor) : 0;
-        switch (waza) {
+        switch (XG_SHADOW_KEY(waza)) {
         case 0:
         case 0x164: case 0x165: case 0x166: case 0x167: case 0x168: case 0x169: case 0x16a: case 0x16b:
         case 0x16c: case 0x16d: case 0x16e: case 0x16f: case 0x170: case 0x171: case 0x172: case 0x173:

@@ -743,7 +743,8 @@ static void gradientline(short p0, short p1, short p2, VEC_GRAPH_DATA* p3) {
             }
         }
     }
-    lListPush(gradColor(p3, p0, p2), p0, p2);
+    u32 col = gradColor(p3, p0, p2);
+    lListPush(col, p0, p2);
     for (i = 0; i < n; i++) {
         u32 c = gradColor(p3, xs[i], p2);
         lListPush(c, xs[i], p2);

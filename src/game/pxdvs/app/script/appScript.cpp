@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/statusval.h>
@@ -522,6 +523,10 @@ s32 AppScript::execExtendMethod(int classID, int command, GSscript::tigaVariant*
     return ret;
 }
 
+#ifndef __MWERKS__
+extern "C" s32 PortXD_ScriptGlobalExt(int function, GSscript::tigaVariant* args, GSscript::tigaVariant* result);
+extern "C" s32 PortXD_GiftPokemon(s32 species, s32 level, s32 move1, s32 move2, s32 move3, s32 move4, s32 flags);
+#endif
 s32 AppScript::execExtendGlobalFunction(int function, GSscript::tigaVariant* args, GSscript::tigaVariant* result)
 {
     GSresID id;
@@ -585,7 +590,7 @@ s32 AppScript::execExtendGlobalFunction(int function, GSscript::tigaVariant* arg
         result->setInteger(((GSscript::tigaArrayFixed*)args[0].getObject(7, "pokemon not access"))->get(args[1].getInteger())->getInteger());
         break;
     }
-    case 0x98: result->setInteger(wazaDB_GetHidenFlag(args[0].getInteger())); break;
+    case 0x98: result->setInteger(XG_CONST(0, wazaDB_GetHidenFlag(args[0].getInteger()))); break;
     case 0x99: {
         result->setSingle(PSVECDistance(args[0].getVector(), args[1].getVector()));
         break;
@@ -621,6 +626,16 @@ s32 AppScript::execExtendGlobalFunction(int function, GSscript::tigaVariant* arg
     case 0x9F: result->setSingle(GSgfxVideoGetVsyncRate()); break;
     case 0xA0: result->setInteger(pokecoloGetCountryCode()); break;
     case 0xA1: result->setInteger(pokecoloGetLanguage()); break;
+#ifndef __MWERKS__
+    case 0x101:
+        result->setInteger(PortXD_GiftPokemon(args[0].getInteger(), args[1].getInteger(), args[2].getInteger(),
+                                              args[3].getInteger(), args[4].getInteger(), args[5].getInteger(),
+                                              args[6].getInteger()));
+        break;
+    default:
+        if (function >= 0x100) return PortXD_ScriptGlobalExt(function, args, result);
+        break;
+#endif
     }
     return 0;
 }

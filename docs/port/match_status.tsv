@@ -1,7 +1,7 @@
 # unit	status	match%	symbol	name	pragmas	asm	cflags	gc_hash
 # status: linked = byte-identical and in the DOL; exact = byte-identical, file not linked yet; draft = differs from the original (may behave differently)
 # pragmas: non-default #pragma state at the definition ("-" none, "?" definition not found by name); asm = inline asm body; cflags = the unit's extra compiler flags; gc_hash = funchash.py hash of our compiled GameCube code (relocated words masked, targets by name): same hash = same GameCube code
-# generated: 2026-11-13 23:18 from the build at source commit c17cdce9fb
+# generated: 2026-11-17 13:34 from the build at source commit 4a1c51b477
 game/character	linked	100.00	characterInit	characterInit	?	-	-	abd524a9450f
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraResetFloor	dbgMenuCameraResetFloor	peephole off	-	-	ec8086614c12
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraChangeDisp	dbgMenuCameraChangeDisp	peephole off	-	-	efda3d324df5
@@ -911,7 +911,7 @@ game/menuPokemonStatus	exact	100.00	_menuPokemonStatusOpen__FUcP13FIGHT_TRAINERP
 game/menuPokemonStatus	exact	100.00	_menuPokemonStatusSub__FUcP13FIGHT_TRAINERP7PokemonUsPFP7Pokemon20MENU_POKEMON_CB_TYPEl_P7Pokemonl	_menuPokemonStatusSub(unsigned char, FIGHT_TRAINER*, Pokemon*, unsigned short, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, long), long)	peephole off	-	-inline noauto,deferred	5eae0f1517d5
 game/menuPokemonStatus	draft	99.08	_menuPokemonStatusChangeSubMenu__F6CURSOR	_menuPokemonStatusChangeSubMenu(CURSOR)	peephole off	-	-inline noauto,deferred	be739f65e4f3
 game/menuPokemonStatus	exact	100.00	menuPokemonStatusCtrl	menuPokemonStatusCtrl	peephole off	-	-inline noauto,deferred	2df8596d213b
-game/menuPokemonStatus	draft	96.67	menuPokemonStatusCursor	menuPokemonStatusCursor	peephole off	-	-inline noauto,deferred	28b6399c46bf
+game/menuPokemonStatus	exact	100.00	menuPokemonStatusCursor	menuPokemonStatusCursor	peephole off	-	-inline noauto,deferred	231e9f4a6d19
 game/menuPokemonStatus	exact	100.00	menuPokemonStatusButton	menuPokemonStatusButton	peephole off	-	-inline noauto,deferred	b1bc6417e7e8
 game/menuPokemonStatus	exact	100.00	_menuPokemonStatusGetZokuseiSpriteID__FUs	_menuPokemonStatusGetZokuseiSpriteID(unsigned short)	peephole off	-	-inline noauto,deferred	07c3cacdf8c6
 game/menuPokemonStatus	exact	100.00	menuPokemonStatusChangeColor	menuPokemonStatusChangeColor	peephole off	-	-inline noauto,deferred	abd524a9450f
@@ -919,7 +919,7 @@ game/menuPokemonStatus	draft	99.98	menuPokemonStatusDrawTitle	menuPokemonStatusD
 game/menuPokemonStatus	exact	100.00	_menuPokemonStatusCheckOya__FP7Pokemon	_menuPokemonStatusCheckOya(Pokemon*)	peephole off	-	-inline noauto,deferred	c8361885f55d
 game/menuPokemonStatus	exact	100.00	_menuPokemonStatusCheckGinzaru__FP7Pokemon	_menuPokemonStatusCheckGinzaru(Pokemon*)	peephole off	-	-inline noauto,deferred	b0c423108940
 game/menuPokemonStatus	exact	100.00	_menuPokemonStatusCheckDanny__FP7Pokemon	_menuPokemonStatusCheckDanny(Pokemon*)	peephole off	-	-inline noauto,deferred	d5f41aecf17e
-game/menuPokemonStatus	draft	99.51	menuPokemonStatusDrawStatus	menuPokemonStatusDrawStatus	peephole off	-	-inline noauto,deferred	82c766a7aae3
+game/menuPokemonStatus	draft	99.63	menuPokemonStatusDrawStatus	menuPokemonStatusDrawStatus	peephole off	-	-inline noauto,deferred	006552af4ac5
 game/menuPokemonStatus	exact	100.00	_menuPokemonStatusCheckWazaItem__FP14tagWINDOW_WORKP14tagSPRITE_WORK	_menuPokemonStatusCheckWazaItem(tagWINDOW_WORK*, tagSPRITE_WORK*)	peephole off	-	-inline noauto,deferred	342ec9894819
 game/menuPokemonStatus	exact	100.00	_menuPokemonStatusGetWazaDataID__FP7PokemonUs	_menuPokemonStatusGetWazaDataID(Pokemon*, unsigned short)	peephole off	-	-inline noauto,deferred	6e89d131baae
 game/menuPokemonStatus	exact	100.00	NotDarkWaza__Fl	NotDarkWaza(long)	peephole off	-	-inline noauto,deferred	67636b981619
@@ -1049,7 +1049,7 @@ game/menuReliveHall	exact	100.00	_stateDirChangeProcHook__28@unnamed@menuReliveH
 game/menuReliveHall	exact	100.00	actionStatus__Q228@unnamed@menuReliveHall_cpp@15CMenuReliveHallFv	@unnamed@menuReliveHall_cpp@::CMenuReliveHall::actionStatus()	peephole off	-	-inline noauto	b85301cf704e
 game/menuReliveHall	exact	100.00	_cbMenuPokemonStatus__28@unnamed@menuReliveHall_cpp@FP7Pokemon20MENU_POKEMON_CB_TYPEl	@unnamed@menuReliveHall_cpp@::_cbMenuPokemonStatus(Pokemon*, MENU_POKEMON_CB_TYPE, long)	peephole off	-	-inline noauto	b2e107b98290
 game/menuReliveHall	exact	100.00	actionStatusCallback__Q228@unnamed@menuReliveHall_cpp@15CMenuReliveHallFP7Pokemon20MENU_POKEMON_CB_TYPE	@unnamed@menuReliveHall_cpp@::CMenuReliveHall::actionStatusCallback(Pokemon*, MENU_POKEMON_CB_TYPE)	peephole off	-	-inline noauto	c6d41e967c94
-game/menuReliveHall	draft	99.25	actionPut__Q228@unnamed@menuReliveHall_cpp@15CMenuReliveHallFv	@unnamed@menuReliveHall_cpp@::CMenuReliveHall::actionPut()	peephole off	-	-inline noauto	717b6db427a0
+game/menuReliveHall	exact	100.00	actionPut__Q228@unnamed@menuReliveHall_cpp@15CMenuReliveHallFv	@unnamed@menuReliveHall_cpp@::CMenuReliveHall::actionPut()	peephole off	-	-inline noauto	950235a1655f
 game/menuReliveHall	exact	100.00	actionPickup__Q228@unnamed@menuReliveHall_cpp@15CMenuReliveHallFv	@unnamed@menuReliveHall_cpp@::CMenuReliveHall::actionPickup()	peephole off	-	-inline noauto	07934ad53372
 game/menuReliveHall	exact	100.00	actionChange__Q228@unnamed@menuReliveHall_cpp@15CMenuReliveHallFv	@unnamed@menuReliveHall_cpp@::CMenuReliveHall::actionChange()	peephole off	-	-inline noauto	dc8eb55ae8a9
 game/menuReliveHall	exact	100.00	editAfterDp0VisitorCheck__Q228@unnamed@menuReliveHall_cpp@15CMenuReliveHallFv	@unnamed@menuReliveHall_cpp@::CMenuReliveHall::editAfterDp0VisitorCheck()	peephole off	-	-inline noauto	4ce725386522
@@ -4178,7 +4178,7 @@ game/pxdvs/GSAPI/GSmodel/GSmodelExt	linked	100.00	modelMaterialFree__FP10GSmater
 game/pxdvs/GSAPI/GSmodel/GSmodelExt	linked	100.00	modelMaterialInit__FP10GSmaterial	modelMaterialInit(GSmaterial*)	-	-	-	5fb48b44693f
 game/pxdvs/GSAPI/GSmodel/parse	exact	100.00	_modelParseLoadEnvelopeMatrix__FP9_HSD_PObjP5GSmtxP5GSmtxP5GSmtx	_modelParseLoadEnvelopeMatrix(_HSD_PObj*, GSmtx*, GSmtx*, GSmtx*)	-	-	-inline deferred	681b2ba50e2f
 game/pxdvs/GSAPI/GSmodel/parse	draft	99.93	_modelParseDObjDisp__FP9_HSD_DObjP5GSmtxP5GSmtxbPFP9_HSD_PObjP5GSmtxP5GSmtxP5GSmtxPv_vPv	_modelParseDObjDisp(_HSD_DObj*, GSmtx*, GSmtx*, bool, void (*)(_HSD_PObj*, GSmtx*, GSmtx*, GSmtx*, void*), void*)	-	-	-inline deferred	a670726bbd12
-game/pxdvs/GSAPI/GSmodel/parse	draft	99.14	_modelParseJObjDispSub__FP9_HSD_JObjP5GSmtxP5GSmtx12HSD_TrspMaskbPFP9_HSD_PObjP5GSmtxP5GSmtxP5GSmtxPv_vPv	_modelParseJObjDispSub(_HSD_JObj*, GSmtx*, GSmtx*, HSD_TrspMask, bool, void (*)(_HSD_PObj*, GSmtx*, GSmtx*, GSmtx*, void*), void*)	dont_inline on	-	-inline deferred	4c2d60fe31a2
+game/pxdvs/GSAPI/GSmodel/parse	exact	100.00	_modelParseJObjDispSub__FP9_HSD_JObjP5GSmtxP5GSmtx12HSD_TrspMaskbPFP9_HSD_PObjP5GSmtxP5GSmtxP5GSmtxPv_vPv	_modelParseJObjDispSub(_HSD_JObj*, GSmtx*, GSmtx*, HSD_TrspMask, bool, void (*)(_HSD_PObj*, GSmtx*, GSmtx*, GSmtx*, void*), void*)	dont_inline on	-	-inline deferred	3df6c56a9cb6
 game/pxdvs/GSAPI/GSmodel/parse	exact	100.00	_modelParseJObjDispDObj__FP9_HSD_JObjP5GSmtx12HSD_TrspMaskbPFP9_HSD_PObjP5GSmtxP5GSmtxP5GSmtxPv_vPv	_modelParseJObjDispDObj(_HSD_JObj*, GSmtx*, HSD_TrspMask, bool, void (*)(_HSD_PObj*, GSmtx*, GSmtx*, GSmtx*, void*), void*)	dont_inline on	-	-inline deferred	387a9c18a2e9
 game/pxdvs/GSAPI/GSmodel/parse	exact	100.00	_modelParseJObjDisp__FP9_HSD_JObjP5GSmtx12HSD_TrspMaskbPFP9_HSD_PObjP5GSmtxP5GSmtxP5GSmtxPv_vPv	_modelParseJObjDisp(_HSD_JObj*, GSmtx*, HSD_TrspMask, bool, void (*)(_HSD_PObj*, GSmtx*, GSmtx*, GSmtx*, void*), void*)	-	-	-inline deferred	579bdcab6aaf
 game/pxdvs/GSAPI/GSmodel/parse	exact	100.00	_modelParseSetupInstanceMtx__FP5GSmtxP9_HSD_JObjP5GSmtx	_modelParseSetupInstanceMtx(GSmtx*, _HSD_JObj*, GSmtx*)	-	-	-inline deferred	07b2b45b86bb
@@ -8174,7 +8174,7 @@ game/pxdvs/app/memcard/memcard	draft	85.38	_memcardExamineHeader__Fv	_memcardExa
 game/pxdvs/app/memcard/memcard	draft	99.59	_memcardExamineDataPack__Fv	_memcardExamineDataPack()	dont_inline on	-	-inline deferred	a4041c0cc8e9
 game/pxdvs/app/memcard/memcard	exact	100.00	_memcardMergeDataPack__Fv	_memcardMergeDataPack()	dont_inline on	-	-inline deferred	14bfd603e01f
 game/pxdvs/app/memcard/memcard	exact	100.00	_memcardJobMain__FUlUl	_memcardJobMain(unsigned long, unsigned long)	-	-	-inline deferred	c915078e681f
-game/pxdvs/app/memcard/memcard	draft	78.18	_memcard_Encryption__FPv	_memcard_Encryption(void*)	-	-	-inline deferred	8038cd30810d
+game/pxdvs/app/memcard/memcard	draft	82.36	_memcard_Encryption__FPv	_memcard_Encryption(void*)	-	-	-inline deferred	e08b91c7c974
 game/pxdvs/app/memcard/memcard	draft	69.00	_memcard_Decryption__FPv	_memcard_Decryption(void*)	-	-	-inline deferred	ef434b8d23a5
 game/pxdvs/app/memcard/memcard	exact	100.00	memcard_debug_Save	memcard_debug_Save	-	-	-inline deferred	39dee7450fbf
 game/pxdvs/app/memcard/memcard	exact	100.00	memcard_debug_Load	memcard_debug_Load	-	-	-inline deferred	e62f1cb257fe
@@ -11299,7 +11299,7 @@ game/pxdvs/app/flashmenu/vecGraph	draft	98.10	calcVecRect__FP8VEC_RECTP14VEC_GRA
 game/pxdvs/app/flashmenu/vecGraph	exact	100.00	SpriteCode__FUlP12_SHAPERECORDUsP12FLASHMATRIXFP11FLASHMATRIXllP14VEC_GRAPH_DATAP11FLASHCXFORM	SpriteCode(unsigned long, _SHAPERECORD*, unsigned short, FLASHMATRIXF*, FLASHMATRIX*, long, long, VEC_GRAPH_DATA*, FLASHCXFORM*)	peephole off	-	-inline noauto	4b00297ee0f1
 game/pxdvs/app/flashmenu/vecGraph	exact	100.00	SpriteDisp__FP9GStextureP12FLASHMATRIXFP11FLASHMATRIXP6GSvec2P14VEC_GRAPH_DATAP11FLASHCXFORM	SpriteDisp(GStexture*, FLASHMATRIXF*, FLASHMATRIX*, GSvec2*, VEC_GRAPH_DATA*, FLASHCXFORM*)	peephole off	-	-inline noauto	303ebfd0715b
 game/pxdvs/app/flashmenu/vecGraph	draft	99.29	getUV__FP6GSvec2P6GSvec2P6GSvec2P12FLASHMATRIXFP12FLASHMATRIXFP9GStexture	getUV(GSvec2*, GSvec2*, GSvec2*, FLASHMATRIXF*, FLASHMATRIXF*, GStexture*)	peephole off	-	-inline noauto	92708b3e2482
-game/pxdvs/app/flashmenu/vecGraph	draft	97.56	gradientline__FsssP14VEC_GRAPH_DATA	gradientline(short, short, short, VEC_GRAPH_DATA*)	peephole off	-	-inline noauto	fe97ac2d0f9f
+game/pxdvs/app/flashmenu/vecGraph	draft	98.66	gradientline__FsssP14VEC_GRAPH_DATA	gradientline(short, short, short, VEC_GRAPH_DATA*)	peephole off	-	-inline noauto	caf02103ced1
 game/pxdvs/app/flashmenu/vecGraph	draft	96.85	getCrossPoint__FlsssssP14VEC_GRAPH_DATA	getCrossPoint(long, short, short, short, short, short, VEC_GRAPH_DATA*)	peephole off	-	-inline noauto	16b066ac5ece
 game/pxdvs/app/flashmenu/vecGraph	draft	97.38	vecExec__FUlP15_FILLSTYLEARRAYP15_LINESTYLEARRAYP12_SHAPERECORDP12FLASHMATRIXFP12FLASHMATRIXFP11FLASHCXFORM	vecExec(unsigned long, _FILLSTYLEARRAY*, _LINESTYLEARRAY*, _SHAPERECORD*, FLASHMATRIXF*, FLASHMATRIXF*, FLASHCXFORM*)	peephole off	-	-inline noauto	f0f07873e47e
 game/pxdvs/app/flashmenu/vecGraph	exact	100.00	vectorGraph	vectorGraph	peephole off	-	-inline noauto	b3b215e23214
@@ -11431,7 +11431,7 @@ game/pxdvs/GSAPI/GSshape/shapeObject	draft	92.27	RefractTextureCoord__13GsShapeO
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	96.61	ShadeVertexColor__13GsShapeObjectFP5GSmtxP5GSmtxP5GSmtxfb	GsShapeObject::ShadeVertexColor(GSmtx*, GSmtx*, GSmtx*, float, bool)	-	-	-	bbfc78a9fec3
 game/pxdvs/GSAPI/GSshape/shapeObject	exact	100.00	MakeMatrixBillboard__13GsShapeObjectFP5GSmtxf	GsShapeObject::MakeMatrixBillboard(GSmtx*, float)	-	-	-	76575f0522d5
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	97.05	WaveTextureCoord__13GsShapeObjectFUlffPC5GSmtxb	GsShapeObject::WaveTextureCoord(unsigned long, float, float, const GSmtx*, bool)	optimize_for_size on	-	-	dad6fc52ecdb
-game/pxdvs/GSAPI/GSshape/shapeObject	draft	98.29	DeformTextureCoord__13GsShapeObjectFUlbPCfPCfbPCf	GsShapeObject::DeformTextureCoord(unsigned long, bool, const float*, const float*, bool, const float*)	-	-	-	c40c8c52e544
+game/pxdvs/GSAPI/GSshape/shapeObject	draft	98.35	DeformTextureCoord__13GsShapeObjectFUlbPCfPCfbPCf	GsShapeObject::DeformTextureCoord(unsigned long, bool, const float*, const float*, bool, const float*)	-	-	-	c4c200f79516
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	93.32	DeformVertexCoordTorus__13GsShapeObjectFbPCfPCfbffbffbPCf	GsShapeObject::DeformVertexCoordTorus(bool, const float*, const float*, bool, float, float, bool, float, float, bool, const float*)	?	-	-	ba063a7e8df6
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	91.99	DeformVertexCoordSphere__13GsShapeObjectFbPCfPCfbffbffbPCf	GsShapeObject::DeformVertexCoordSphere(bool, const float*, const float*, bool, float, float, bool, float, float, bool, const float*)	?	-	-	e107fd5dab05
 game/pxdvs/GSAPI/GSshape/shapeObject	draft	90.76	DeformVertexCoordSpiral__13GsShapeObjectFbPCfPCfbffbffbPCf	GsShapeObject::DeformVertexCoordSpiral(bool, const float*, const float*, bool, float, float, bool, float, float, bool, const float*)	?	-	-	a9db18efc526
@@ -11664,7 +11664,7 @@ game/pxdvs/app/light/lightEditor	exact	100.00	init__11LightEditorFv	LightEditor:
 game/pxdvs/app/light/lightEditor	exact	100.00	editUpdate__11LightEditorFv	LightEditor::editUpdate()	-	-	-inline noauto,deferred	4479b1325037
 game/pxdvs/app/light/lightEditor	draft	96.35	dispInfo__11LightEditorFP7GSlightllb	LightEditor::dispInfo(GSlight*, long, long, bool)	dont_inline on	-	-inline noauto,deferred	02b6b2b51827
 game/pxdvs/app/light/lightEditor	exact	100.00	dispLightModel__11LightEditorFP7GSlightb	LightEditor::dispLightModel(GSlight*, bool)	-	-	-inline noauto,deferred	5c66255aad93
-game/pxdvs/app/light/lightEditor	draft	99.50	editCommand__11LightEditorFv	LightEditor::editCommand()	-	-	-inline noauto,deferred	c4d10e2bad4f
+game/pxdvs/app/light/lightEditor	draft	99.67	editCommand__11LightEditorFv	LightEditor::editCommand()	-	-	-inline noauto,deferred	133a90eb6299
 game/pxdvs/app/light/lightEditor	exact	100.00	editType__11LightEditorFP7GSlight	LightEditor::editType(GSlight*)	-	-	-inline noauto,deferred	a63356f10a03
 game/pxdvs/app/light/lightEditor	exact	100.00	editPosition__11LightEditorFP7GSlight	LightEditor::editPosition(GSlight*)	-	-	-inline noauto,deferred	920ea51624c9
 game/pxdvs/app/light/lightEditor	exact	100.00	editDirection__11LightEditorFP7GSlight	LightEditor::editDirection(GSlight*)	-	-	-inline noauto,deferred	a196d98c6119
@@ -12041,7 +12041,7 @@ game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	logVsnprintf_float	logVsnprintf_floa
 game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogInit	GSlogInit	-	-	-inline noauto,deferred	dc5e7c470677
 game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogSetIP	GSlogSetIP	?	-	-inline noauto,deferred	abd524a9450f
 game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogWrite	GSlogWrite	?	-	-inline noauto,deferred	a7875b07fd79
-game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogWritef	GSlogWritef	?	-	-inline noauto,deferred	a7875b07fd79
+game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogWritef	GSlogWritef	-	-	-inline noauto,deferred	a7875b07fd79
 game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogGetLineCount	GSlogGetLineCount	-	-	-inline noauto,deferred	2c09a9bd7cf3
 game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogGetLine	GSlogGetLine	-	-	-inline noauto,deferred	4a816ff52356
 game/pxdvs/GSAPI/GSgfxM/backfb	linked	100.00	GSgfxEndBackFBCapture	GSgfxEndBackFBCapture	-	-	-	d9c43118b053
@@ -12509,7 +12509,7 @@ game/pxdvs/app/fight/fightTrainerAiCombo	exact	100.00	fightAiCombo_GetValidValue
 game/pxdvs/app/fight/fightTrainerAiCombo	exact	100.00	fightAiCombo_GetAllWazaTableDefValue	fightAiCombo_GetAllWazaTableDefValue	-	-	-O4,s	4dae2ceebbd3
 game/pxdvs/app/fight/fightTrainerAiCombo	exact	100.00	_GetAllWazaTableValue_StatusUpWaza__FP13FIGHT_TRAINERP20AI_ALLWAZA_VALID_TBLPs	_GetAllWazaTableValue_StatusUpWaza(FIGHT_TRAINER*, AI_ALLWAZA_VALID_TBL*, short*)	-	-	-O4,s	fb0829aae091
 game/pxdvs/app/fight/fightTrainerAiCombo	draft	99.39	_GetAllWazaTableValue_StatusDownWaza__FP13FIGHT_TRAINERPP15FightOutPokemonP20AI_ALLWAZA_VALID_TBLPs	_GetAllWazaTableValue_StatusDownWaza(FIGHT_TRAINER*, FightOutPokemon**, AI_ALLWAZA_VALID_TBL*, short*)	-	-	-O4,s	dd197a18cd34
-game/pxdvs/app/fight/fightTrainerAiCombo	draft	99.77	_GetAllWazaTableValue_JoutaiChangeWazaSub__FP13FIGHT_TRAINERPP15FightOutPokemonP20AI_ALLWAZA_VALID_TBLPsUc	_GetAllWazaTableValue_JoutaiChangeWazaSub(FIGHT_TRAINER*, FightOutPokemon**, AI_ALLWAZA_VALID_TBL*, short*, unsigned char)	-	-	-O4,s	5bcebd5b19f1
+game/pxdvs/app/fight/fightTrainerAiCombo	exact	100.00	_GetAllWazaTableValue_JoutaiChangeWazaSub__FP13FIGHT_TRAINERPP15FightOutPokemonP20AI_ALLWAZA_VALID_TBLPsUc	_GetAllWazaTableValue_JoutaiChangeWazaSub(FIGHT_TRAINER*, FightOutPokemon**, AI_ALLWAZA_VALID_TBL*, short*, unsigned char)	-	-	-O4,s	a3ca92725e93
 game/pxdvs/app/fight/fightTrainerAiCombo	exact	100.00	_GetAllWazaTableValue_JoutaiChangeWaza__FP13FIGHT_TRAINERPP15FightOutPokemonP20AI_ALLWAZA_VALID_TBLPs	_GetAllWazaTableValue_JoutaiChangeWaza(FIGHT_TRAINER*, FightOutPokemon**, AI_ALLWAZA_VALID_TBL*, short*)	-	-	-O4,s	5a4a1aab423a
 game/pxdvs/app/fight/fightTrainerAiCombo	exact	100.00	_GetAllWazaTableValue_IryokuWaza__FP13FIGHT_TRAINERPP15FightOutPokemonP20AI_ALLWAZA_VALID_TBLPs	_GetAllWazaTableValue_IryokuWaza(FIGHT_TRAINER*, FightOutPokemon**, AI_ALLWAZA_VALID_TBL*, short*)	-	-	-O4,s	9c7d7d1bb82b
 game/pxdvs/app/fight/fightTrainerAiCombo	exact	100.00	fightAiCombo_GetAllWazaValueTable	fightAiCombo_GetAllWazaValueTable	-	-	-O4,s	08388f58998a

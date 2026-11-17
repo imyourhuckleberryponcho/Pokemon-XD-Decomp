@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/fightrecords.h>
 #ifndef __MWERKS__
@@ -253,7 +254,7 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
                     move = moves[k];
                     if (move == 0) continue;
                     type = fightTrainerAiGetWazaZokuseiDataId(trainer, move, pokemon);
-                    if (type != 9 && fightTrainerAiIsWazaTypeId(trainer, move, 1) != 0 && fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(trainer, opponent, type, fightTrainerAiGetWazaIryoku(trainer, move)) == 0x41)
+                    if ((XG_ON() || type != 9) && fightTrainerAiIsWazaTypeId(trainer, move, 1) != 0 && fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(trainer, opponent, type, fightTrainerAiGetWazaIryoku(trainer, move)) == 0x41)
                         values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x25);
                 }
             }
@@ -266,7 +267,7 @@ s16 fightTrainerAiSelectIrekaeDasuFightPokemon(FIGHT_TRAINER* trainer, void*, u8
                     u16 move = moves[k];
                     if (move == 0) continue;
                     u16 type = fightTrainerAiGetWazaZokuseiDataId(trainer, move, opponent);
-                    if (type != 9 && fightTrainerAiIsWazaTypeId(trainer, move, 1) != 0 && fightTrainerAiGetFightPokemonZokuseiDataIdWazaJoutaiDataId(trainer, candidate, type, fightTrainerAiGetWazaIryoku(trainer, move)) == 0x41)
+                    if ((XG_ON() || type != 9) && fightTrainerAiIsWazaTypeId(trainer, move, 1) != 0 && fightTrainerAiGetFightPokemonZokuseiDataIdWazaJoutaiDataId(trainer, candidate, type, fightTrainerAiGetWazaIryoku(trainer, move)) == 0x41)
                         values[i] = fightTrainerAiAddValueByAddsubDataId(values[i], trainer, 0x26);
                 }
             }

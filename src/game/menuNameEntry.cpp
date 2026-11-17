@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_jp.h"
 #include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
@@ -170,6 +171,28 @@ static s32 DefNameBoxCurPosX;
 static s32 DefNameTrainerCurPosX;
 
 extern const u32 DakuHanTbl[2] = {0, 0x3B1B};
+#ifndef __MWERKS__
+static const SHEET_DATA SheetDataJP[3] = {
+    {0x0B570200, 0x3B14, {0x3AFD, 0x3AFE, 0x3AFF, 0x3B00, 0x3BF4, 0x3BF5, 0, 0}, 0},
+    {0x023C5700, 0x3B15, {0x3B01, 0x3B02, 0x3B03, 0x3B04, 0x3BF6, 0x3BF7, 0x3BF8, 0}, 0},
+    {0x4E025700, 0x3B16, {0x3B05, 0x3B06, 0x3B07, 0x3B08, 0x3BF9, 0x3BFA, 0x3BFB, 0x3BFC}, 0},
+};
+static const u32 DakuHanTblJP[3] = {0, 0x3B1B, 0x3B1C};
+static const u8 MaxLenJP[7] = {5, 5, 5, 8, 5, 5, 10};
+#define NE_SHEETS (PORT_TEXT_JP() ? SheetDataJP : SheetData)
+#define NE_NSHEET (PORT_TEXT_JP() ? 3 : 2)
+#define NE_DAKU (PORT_TEXT_JP() ? DakuHanTblJP : DakuHanTbl)
+#define NE_NDAKU (PORT_TEXT_JP() ? 3 : 2)
+#define NE_MAXLEN(m) (PORT_TEXT_JP() ? (int)MaxLenJP[m] : (int)ModeData[m].maxLen)
+#define NE_JP(us, jp) (PORT_TEXT_JP() ? (jp) : (us))
+#else
+#define NE_SHEETS SheetData
+#define NE_NSHEET 2
+#define NE_DAKU DakuHanTbl
+#define NE_NDAKU 2
+#define NE_MAXLEN(m) ModeData[m].maxLen
+#define NE_JP(us, jp) (us)
+#endif
 
 static s32 menuNameEntryDrawNameCursor(tagWINDOW_WORK*, tagSPRITE_WORK*, int, int);
 static s32 menuNameEntryDrawNameText(tagWINDOW_WORK*, tagSPRITE_WORK*, int, int);
@@ -981,6 +1004,33 @@ s32 menuNameEntryCtrl(tagWINDOW_WORK* w) {
     return 0;
 }
 
+#ifndef __MWERKS__
+static int jpDakuonKind(unsigned short ch) {
+    int k;
+    for (k = 0; k < 3; k++) {
+        u32 msg = DakuHanTblJP[k];
+        if (msg == 0) {
+            continue;
+        }
+        int len = GSmsgGetLength(msg);
+        u16* p = GSmsgGetGSchar(msg) + 1;
+        int i;
+        for (i = 1; i < len; i += 2, p += 2) {
+            if (*p == ch) {
+                break;
+            }
+        }
+        if (i < len) {
+            break;
+        }
+    }
+    if (k >= 3) {
+        k = 0;
+    }
+    return k;
+}
+#endif
+
 s32 menuNameEntryCursor(tagWINDOW_WORK* w) {
     u32 rep0 = windowGetKeyRepeat();
     u16 trg = windowGetKeyTrg();
@@ -995,7 +1045,7 @@ s32 menuNameEntryCursor(tagWINDOW_WORK* w) {
             w->done = 1;
             return 0;
         }
-        if (getGScharLen(a->name) >= ModeData[a->mode].maxLen) {
+        if (getGScharLen(a->name) >= NE_MAXLEN(a->mode)) {
             *a->curX = 10;
             *a->curY = 7;
         }
@@ -1008,6 +1058,26 @@ s32 menuNameEntryCursor(tagWINDOW_WORK* w) {
         return 0;
     }
     if (trg & 0x400) {
+#ifndef __MWERKS__
+        if (PORT_TEXT_JP()) {
+            int pos = *a->nameCurX - 1;
+            if (pos >= 0) {
+                u16 ch = a->name[pos];
+                int m = jpDakuonKind(ch);
+                u16 r;
+                do {
+                    m++;
+                    if (m >= 3) {
+                        m = 0;
+                    }
+                    r = exchangeDakuon(ch, (DAKUON_MODE)m);
+                } while (r == 0);
+                a->name[pos] = r;
+            }
+            GSsndPlayNow(0x11);
+            return 0;
+        }
+#endif
         change50Sheet(a);
         GSsndPlayNow(0x14);
         return 0;
@@ -1113,7 +1183,7 @@ static int selectLetter(NAME_ENTRY_ARG* a) {
         if (kind == 1) {
             mode = DAKUON_DAKU;
         } else {
-            mode = DAKUON_HAN;
+            mode = (DAKUON_MODE)NE_JP(DAKUON_HAN, 2);
         }
         int pos = *a->nameCurX - 1;
         if (pos >= 0) {
@@ -1143,7 +1213,7 @@ static int selectLetter(NAME_ENTRY_ARG* a) {
         ch = *GSmsgGetGSchar(0x3B1D);
     default: {
         int pos;
-        int max = ModeData[a->mode].maxLen;
+        int max = NE_MAXLEN(a->mode);
         pos = *a->nameCurX;
         if (pos >= max) {
             pos = max - 1;
@@ -1170,7 +1240,7 @@ static void change50Sheet(NAME_ENTRY_ARG* a) {
     s32* p = a->sheet;
     s32 v = *p;
     v++;
-    if (v >= 2) {
+    if (v >= NE_NSHEET) {
         v = 0;
     }
     *p = v;
@@ -1209,11 +1279,11 @@ static int confirmName(unsigned short* name) {
 
 static u16 exchangeDakuon(unsigned short ch, DAKUON_MODE mode) {
     int k = 0;
-    const u32* t = DakuHanTbl;
+    const u32* t = NE_DAKU;
     int len;
     int i;
     u16* p;
-    for (; k < 2; t++, k++) {
+    for (; k < NE_NDAKU; t++, k++) {
         if (*t == 0) {
             continue;
         }
@@ -1228,7 +1298,7 @@ static u16 exchangeDakuon(unsigned short ch, DAKUON_MODE mode) {
             break;
         }
     }
-    if (k >= 2) {
+    if (k >= NE_NDAKU) {
         k = 0;
     }
     if (k == mode) {
@@ -1240,8 +1310,8 @@ static u16 exchangeDakuon(unsigned short ch, DAKUON_MODE mode) {
     if (mode == DAKUON_NONE) {
         return ch;
     }
-    len = GSmsgGetLength(DakuHanTbl[mode]);
-    p = GSmsgGetGSchar(DakuHanTbl[mode]);
+    len = GSmsgGetLength(NE_DAKU[mode]);
+    p = GSmsgGetGSchar(NE_DAKU[mode]);
     for (i = 0; i < len; i += 2, p += 2) {
         if (*p == ch) {
             break;
@@ -1301,11 +1371,11 @@ s32 menuNameEntryDrawTitle(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 
 s32 menuNameEntryDrawXButtonText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     int sheet = *entryArg(w)->sheet + 1;
-    if (sheet >= 2) {
-        sheet -= 2;
+    if (sheet >= NE_NSHEET) {
+        sheet -= NE_NSHEET;
     }
-    if (sheet >= 0 && sheet < 2) {
-        GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, 0, w->alpha | ~0xFF, SheetData[sheet].xButtonMsg);
+    if (sheet >= 0 && sheet < NE_NSHEET) {
+        GSmsgPrint2(winSpriteGetLayerID(w, sp), 0, 0, w->alpha | ~0xFF, NE_SHEETS[sheet].xButtonMsg);
     }
     return 0;
 }
@@ -1332,7 +1402,7 @@ static void putGScharL(GSgfxLayerID layer, int x, int y, u32 color, unsigned sho
     buf[1] = 0;
     msgctrlSetValue(0x37, (GCuptr)buf);
     s16 w = GSmsgGetRect(0x4275) >> 16;
-    GSmsgPrint2(layer, x + (0x1B - w) / 2, y, color, 0x4275);
+    GSmsgPrint2(layer, x + (NE_JP(0x1B, 0x1A) - w) / 2, y, color, 0x4275);
 }
 
 static int getGScharLen(unsigned short* s) {
@@ -1343,13 +1413,13 @@ static int getGScharLen(unsigned short* s) {
 }
 
 static u16 getCharSheet(SHEET sheet, int idx, int row) {
-    if (sheet < 0 || sheet >= 2) {
+    if (sheet < 0 || sheet >= NE_NSHEET) {
         return 0;
     }
     if (row < 0 || row >= 8) {
         return 0;
     }
-    u32 msg = SheetData[sheet].rows[row];
+    u32 msg = NE_SHEETS[sheet].rows[row];
     if (msg == 0) {
         return 0;
     }
@@ -1425,7 +1495,7 @@ static s32 menuNameEntryDrawNameText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, int 
         for (; (c = *p) != 0; x += 0x1A, i++, p++) {
             putGScharL((GSgfxLayerID)winSpriteGetLayerID(w, sp), x, 0, w->alpha | ~0xFF, c);
         }
-        if (i < ModeData[a->mode].maxLen && w->done == 0) {
+        if (i < NE_MAXLEN(a->mode) && w->done == 0) {
             u16 ch = getCharSheet((SHEET)*a->sheet, *a->curX, *a->curY);
             if (ch != 0 && getSpchar(ch) == 6) {
                 f32 s = sin(2.0f * (3.14f * *a->animTime));
@@ -1447,7 +1517,12 @@ s32 menuNameEntryDrawNamePokemonText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     } else if (m == 0) {
         return 0;
     }
-    return menuNameEntryDrawNameText(w, sp, 10, m);
+#ifndef __MWERKS__
+    if (PORT_TEXT_JP()) {
+        return 0;
+    }
+#endif
+    return menuNameEntryDrawNameText(w, sp, NE_JP(10, 5), m);
 }
 
 s32 menuNameEntryDrawNameBoxText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
@@ -1455,7 +1530,16 @@ s32 menuNameEntryDrawNameBoxText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 }
 
 s32 menuNameEntryDrawNameTrainerText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
-    return menuNameEntryDrawNameText(w, sp, 7, 0);
+#ifndef __MWERKS__
+    if (PORT_TEXT_JP()) {
+        s32 m = entryArg(w)->mode;
+        if (m == 6 || m == 3) {
+            return 0;
+        }
+        return menuNameEntryDrawNameText(w, sp, 5, m == 1 ? 0 : m);
+    }
+#endif
+    return menuNameEntryDrawNameText(w, sp, NE_JP(7, 5), 0);
 }
 
 s32 menuNameEntryDrawNameRuleText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
@@ -1464,7 +1548,7 @@ s32 menuNameEntryDrawNameRuleText(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
 
 static s32 menuNameEntryDrawNameCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, int len, int kind) {
     NAME_ENTRY_ARG* a = entryArg(w);
-    int max = ModeData[a->mode].maxLen;
+    int max = NE_MAXLEN(a->mode);
     int cur = *a->nameCurX;
     int n = 0;
     int flag = 0;
@@ -1487,6 +1571,12 @@ static s32 menuNameEntryDrawNameCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp, in
         n++;
     case 0x307: {
         s32 m = a->mode;
+#ifndef __MWERKS__
+        if (PORT_TEXT_JP()) {
+            flag = m != 6 && m != 3;
+            break;
+        }
+#endif
         if (m >= 7 || m < 2) {
             flag = 1;
         }
@@ -1548,13 +1638,13 @@ s32 menuNameEntryDrawNameTrainerCursor(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     } else if (m == 3) {
         return menuNameEntryDrawNameCursor(w, sp, 8, 3);
     } else if (m == 2) {
-        return menuNameEntryDrawNameCursor(w, sp, 10, 2);
+        return menuNameEntryDrawNameCursor(w, sp, NE_JP(10, 5), NE_JP(2, 0));
     } else if (m == 4) {
-        return menuNameEntryDrawNameCursor(w, sp, 10, 4);
+        return menuNameEntryDrawNameCursor(w, sp, NE_JP(10, 5), NE_JP(4, 0));
     } else if (m == 5) {
-        return menuNameEntryDrawNameCursor(w, sp, 10, 5);
+        return menuNameEntryDrawNameCursor(w, sp, NE_JP(10, 5), NE_JP(5, 0));
     } else {
-        return menuNameEntryDrawNameCursor(w, sp, 7, 0);
+        return menuNameEntryDrawNameCursor(w, sp, NE_JP(7, 5), 0);
     }
 }
 
@@ -1572,6 +1662,12 @@ s32 menuNameEntryDrawNamePokemonWaku(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     case 0x8EA:
     case 0x8EB: {
         s32 m = a->mode;
+#ifndef __MWERKS__
+        if (PORT_TEXT_JP()) {
+            flag = sp->id != 0x8EA && sp->id != 0x8EB && m != 6 && m != 3;
+            break;
+        }
+#endif
         if (m >= 7 || m < 2) {
             flag = 1;
         }
@@ -1596,6 +1692,12 @@ s32 menuNameEntryDrawNamePokemonWaku(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
     case 0x67B:
         n++;
     case 0x67A: {
+#ifndef __MWERKS__
+        if (PORT_TEXT_JP()) {
+            flag = a->mode == 6 || (a->mode == 3 && n != 0 && n != 9);
+            break;
+        }
+#endif
         switch (a->mode) {
         case 2:
         case 4:

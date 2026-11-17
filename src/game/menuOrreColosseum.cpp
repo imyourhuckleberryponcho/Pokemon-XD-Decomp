@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include "game/gc_fused.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
@@ -690,7 +691,23 @@ void menuOrre::Main() {
         playLabel(0x1F5A3000, 0);
         do {
             s32 cursor = m_cursor;
+#ifdef __MWERKS__
             if (menuOpenCustom(0xFD, windowGetActiveID(), &cursor, 0, 1, 0) >= 0) {
+#else
+            s32 openResult = menuOpenCustom(0xFD, windowGetActiveID(), &cursor, 0, 1, 0);
+            if (PortXD_IsXG()) {
+                fightSetMenuCtrlHero(fightGetMenuCtrlHero());
+                _fightresult = fightEncount(m_deck);
+                menuCloseSync(0xFD, 1);
+                menuClose(0xFF);
+                menuCloseSync(0xFF, 1);
+                if (m_pushed) {
+                    GSfloorPop();
+                }
+                return;
+            }
+            if (openResult >= 0) {
+#endif
                 bool selected = IsSelected(m_cursor);
                 switch (SelectPokemon(m_cursor, selected)) {
                 case 0: {

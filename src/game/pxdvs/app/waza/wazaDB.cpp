@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 
 struct FightWazaJoutai {
@@ -438,6 +439,11 @@ PCRET(u8) waza_GetZokuseiKindData(u16 id) {
     if (data == 0) {
         return 0;
     }
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        return wazaDB_GetDarkWazaKind(id);
+    }
+#endif
     if (wazaCheckDarkWaza(id) == 1) {
         return wazaDB_GetDarkWazaKind(id);
     }

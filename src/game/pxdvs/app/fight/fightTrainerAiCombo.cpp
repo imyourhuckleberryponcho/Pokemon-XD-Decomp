@@ -634,7 +634,6 @@ static void _GetAllWazaTableValue_StatusDownWaza(FIGHT_TRAINER* t, FightOutPokem
 }
 
 static void _GetAllWazaTableValue_JoutaiChangeWazaSub(FIGHT_TRAINER* t, FightOutPokemon** foes, AI_ALLWAZA_VALID_TBL* tbl, s16* pval, u8 state) {
-    u8 i;
     u16 wazaList[22];
     u8 j;
     u16 tokusei[2];
@@ -689,19 +688,19 @@ static void _GetAllWazaTableValue_JoutaiChangeWazaSub(FIGHT_TRAINER* t, FightOut
         numTokusei = 1;
         break;
     }
-    for (i = 0; i < 2; i++) {
-        if (tbl->poke[i] != 0) {
+    for (n = 0; n < 2; n++) {
+        if (tbl->poke[n] != 0) {
             for (j = 0; j < numWaza; j++) {
-                if (tbl->waza[i] == wazaList[j]) {
-                    switch (tbl->mode[i]) {
+                if (tbl->waza[n] == wazaList[j]) {
+                    switch (tbl->mode[n]) {
                     case 0:
                     case 1:
-                        if (tbl->target[i] != 0) {
-                            if (fightTrainerAiIsFightOutPokemonJoutaiDataId(t, tbl->target[i], state) == 1) {
+                        if (tbl->target[n] != 0) {
+                            if (fightTrainerAiIsFightOutPokemonJoutaiDataId(t, tbl->target[n], state) == 1) {
                                 val = 0;
                             }
                             for (m = 0; m < numTokusei; m++) {
-                                if (fightAi_GetTokuseiHaveFlag(t, tbl->target[i], tokusei[m]) >= 1) {
+                                if (fightAi_GetTokuseiHaveFlag(t, tbl->target[n], tokusei[m]) >= 1) {
                                     val = 0;
                                 }
                             }
@@ -716,7 +715,7 @@ static void _GetAllWazaTableValue_JoutaiChangeWazaSub(FIGHT_TRAINER* t, FightOut
                                     break;
                                 }
                                 for (m = 0; m < numTokusei; m++) {
-                                    if (fightAi_GetTokuseiHaveFlag(t, foes[i], tokusei[m]) >= 1) {
+                                    if (fightAi_GetTokuseiHaveFlag(t, foes[n], tokusei[m]) >= 1) {
                                         cnt++;
                                         break;
                                     }

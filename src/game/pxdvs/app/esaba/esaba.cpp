@@ -5,6 +5,7 @@
 #include <game/statusval.h>
 #include <game/pxdvs/GSAPI/GSflag/flagData.h>
 #include <game/pxdvs/app/esaba/esabaData.h>
+#include "game/portxd_xg.h"
 #ifndef __MWERKS__
 struct Hero { public: static Hero* getHeroPtr(); u16 itemQuantity(u16); u8 getHeroStyle() const; void setBattleResumeFloorID(uint); void setBattleResumeFloorIndex(u8); u8 getFollowerID(); u32 getFollowerGrpID(); u32 getFollowerResID(); void setFollowerGrpID(u32); void setFollowerResID(u32); void setFollowerID(u8); };
 #define getHeroPtr__4HeroFv(...) ((Hero*)Hero::getHeroPtr(__VA_ARGS__))
@@ -133,7 +134,7 @@ static inline void setNum(s32 place, s32 n) {
     }
 }
 
-static inline void setPokemon(u16 place, u16 id) {
+static inline void setPokemon(u16 place, u16 id, s8 rare = 0) {
     Pokemon pokemon;
     u32 hero;
     u32 rnd;
@@ -146,7 +147,7 @@ static inline void setPokemon(u16 place, u16 id) {
         hero = heroGetStatus(0, 2, 0);
         pokemonCreate(&pokemon, id, 10, gamedataGetStatus(0, 1));
         pokemonBiosSetCatchTrainerRnd(&pokemon, hero);
-        rnd = pokemonCreateRndFit(&pokemon, -1, -1, 0, hero);
+        rnd = pokemonCreateRndFit(&pokemon, -1, -1, rare, hero);
         GSflagSet(esabadata[place].flagRnd, rnd);
         break;
     default:
@@ -485,7 +486,7 @@ static void _esabaAppearPokemonSub2(u16 place) {
     if (!isExPokemonPlaced(1)) {
         roll = (u16)HSD_Rand() % 100;
         if (roll < (u16)esabapokemondata_EX[1].prob) {
-            setPokemon(id, esabapokemondata_EX[1].id);
+            setPokemon(id, esabapokemondata_EX[1].id, XG(0, -1));
             return;
         }
     }
@@ -495,7 +496,7 @@ static void _esabaAppearPokemonSub2(u16 place) {
         total += t ? t->entries[k].prob : 0;
         if (total >= roll) {
             u16 tmp1 = getEntryID(id, k);
-            setPokemon(id, tmp1);
+            setPokemon(id, tmp1, XG(0, -1));
             return;
         }
     }

@@ -10,6 +10,7 @@
 #include <game/pxdvs/app/people/people.hpp>
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/pokemonBios.hpp>
+#include "game/portxd_xg.h"
 
 const f32 unkFloat = 57.29578;
 
@@ -147,7 +148,7 @@ s16 Hero::pokemonGet(HeroPokemonGetParam * param, bool flag) {
     }
   }
   if (param->shadowPokemonDataID != 0) {
-    rndFit = pokemonCreateRndFit(&pokemon, -1, -1, 0, param->trainerRnd);
+    rndFit = pokemonCreateRndFit(&pokemon, -1, -1, XG(0, -1), param->trainerRnd);
   } else {
     rndFit = pokemonCreateRndFit(&pokemon, -1, -1, -1, param->trainerRnd);
   }

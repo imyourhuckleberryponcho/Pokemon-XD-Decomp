@@ -1829,10 +1829,22 @@ u16 _getItemNumFromMenuPos(int tab, int pos)
 }
 }
 
+#ifndef __MWERKS__
+extern "C" UseFunc (*PortXD_FieldItemUseFunc)(u32 item);
+UseFunc (*PortXD_FieldItemUseFunc)(u32 item) = 0;
+#endif
 namespace {
 UseFunc _getUseFunc(u32 item)
 {
     u8* p = itemDataBiosGetPtr(item);
+#ifndef __MWERKS__
+    if (Data.mode == 0 && PortXD_FieldItemUseFunc != 0) {
+        UseFunc mod = PortXD_FieldItemUseFunc(item);
+        if (mod != 0) {
+            return mod;
+        }
+    }
+#endif
     if (Data.mode == 0) {
         return (UseFunc)itemDataBiosGetFieldUseFunc(p);
     }

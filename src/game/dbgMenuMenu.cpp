@@ -3,6 +3,7 @@
 #include <game/statusval.h>
 #include <game/worldMapData.h>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
+#include "game/portxd_xg.h"
 #ifndef __MWERKS__
 void makePocketDeubugMakeDarkPokemonReset();
 #define makePocketDeubugMakeDarkPokemonReset__Fv(...) (makePocketDeubugMakeDarkPokemonReset(__VA_ARGS__))
@@ -869,7 +870,7 @@ u32 dbgMenuMenuTestEsabaPokemon(void) {
             case 0:
                 _esabaSetPokemon(_esabaPlace, _esabaSelectPokemon);
                 _pokemonCreate(&pokemon, _esabaSelectPokemon, (u32)hero);
-                rnd = pokemonCreateRndFit(&pokemon, -1, -1, 0, (GCsptr)hero);
+                rnd = pokemonCreateRndFit(&pokemon, -1, -1, XG(0, -1), (GCsptr)hero);
                 esabaSetPokemonRnd(_esabaPlace, rnd);
                 break;
             case 1:

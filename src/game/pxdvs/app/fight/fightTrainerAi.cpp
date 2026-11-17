@@ -1,4 +1,5 @@
 #include <game/ppcops.h>
+#include "game/portxd_xg.h"
 #include "game/gc_fused.h"
 #include <dolphin/types.h>
 #include <game/pcret.h>
@@ -1756,6 +1757,13 @@ void fightAi_AddStoreWaza(FightOutPokemon* a, FIGHT_TRAINER* t, u16 waza) {
         }
     }
 }
+#ifndef __MWERKS__
+extern "C" u16 pc_metronome_first_mod_move;
+extern "C" u32* waza_data_number;
+static bool pcAiModMove(u32 id) {
+    return pc_metronome_first_mod_move != 0 && id >= pc_metronome_first_mod_move && id < *waza_data_number;
+}
+#endif
 s32 fightAi_GetEnemyWazaAndFlag(FIGHT_TRAINER* t, FightPokemon* p, u16* out, u8 idx) {
     s16 entry;
     if (p == 0) {
@@ -1770,14 +1778,22 @@ s32 fightAi_GetEnemyWazaAndFlag(FIGHT_TRAINER* t, FightPokemon* p, u16* out, u8 
         if (*out == 0) {
             return 0;
         }
+#ifndef __MWERKS__
+        return (*out > 0x176 && !pcAiModMove(*out)) ? 0 : 2;
+#else
         return *out > 0x176 ? 0 : 2;
+#endif
     }
     if (idx >= 4 && idx < 0xc) {
         *out = fightTrainer_GetEnemyExpectWazaData(t, entry, idx - 4);
         if (*out == 0) {
             return 0;
         }
+#ifndef __MWERKS__
+        return (*out <= 0x176 || pcAiModMove(*out)) ? 1 : 0;
+#else
         return *out <= 0x176 ? 1 : 0;
+#endif
     }
     return 0;
 }
@@ -2730,7 +2746,7 @@ u16 fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(FIGHT_TRAINER*
     u16 count;
     u16 result;
     u16 i;
-    if (zokusei == 9) {
+    if (zokusei == 9 && !XG_ON()) {
         return 0x3f;
     }
     if (fightTrainerAiIsFightOutPokemonTokuseiDataId(t, a, 0x1a) == 1 && zokusei == 4) {
@@ -3189,6 +3205,23 @@ PCRET(u16) fightTrainerAiGetWazaZokuseiDataId(FIGHT_TRAINER* t, u16 waza, FightO
     u8 weather;
     ai = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(t));
     weather = fightTrainerAiGetFightFloorNowTenkouDataId(t, 0, 1);
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        if (wazaDB_GetZokuseiDataId(waza) == 0) {
+            u16 tk = fightOutPokemonGetTokuseiDataId(a);
+            if (tk == 0x56) {
+                return 0xF;
+            }
+            if (tk == 0x44) {
+                return 9;
+            }
+            if (tk == 1) {
+                return 2;
+            }
+        }
+        return (u8)wazaDB_GetZokuseiDataId(waza);
+    }
+#endif
     if (fightTrainerAiDB_GetZokuseiCheckFlag(ai) == 1) {
         if (waza == 0xa5 || wazaCheckDarkWaza(waza) == 1 || waza == 0xf8 || waza == 0x161) {
             return 9;
@@ -3312,7 +3345,7 @@ void fightTrainerAiSetAllyPokemon(FIGHT_TRAINER* t) {
                     for (k = 0; k < n; k++) {
                         damage = 0;
                         u16 waza = wazas[k];
-                        if (waza != 0 && waza != 0x176 && fightTrainerAiGetWazaZokuseiDataId(t, waza, o) != 9) {
+                        if (waza != 0 && waza != 0x176 && (XG_ON() || fightTrainerAiGetWazaZokuseiDataId(t, waza, o) != 9)) {
                             u32 index;
                             if (fightTrainerAiIsWazaTypeId(t, waza, 1) == 1) {
                                 damage = fightTrainerAiWazaDoWazaDamageFightPokemonFunc(t, o, waza, fp, 0);
@@ -3419,7 +3452,7 @@ void fightTrainerAiSetEnemyPokemon(FIGHT_TRAINER* t) {
                     if (a) {
                         for (u16 k = 0; k < wazaNum; k++) {
                             waza = wazaIds[k];
-                            if (waza != 0 && waza != 0x176 && fightTrainerAiGetWazaZokuseiDataId(t, waza, e) != 9 &&
+                            if (waza != 0 && waza != 0x176 && (XG_ON() || fightTrainerAiGetWazaZokuseiDataId(t, waza, e) != 9) &&
                                 fightTrainerAiIsWazaTypeId(t, waza, 1) != 0) {
                                 damage[i] += fightTrainerAiWazaDoWazaDamageFunc(t, e, waza, a, 0);
                                 percent[i] = (s32)(damage[i] * 100) / (s32)hp;

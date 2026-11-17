@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/gcptr.h>
 #include <game/statusval.h>
 #include <game/explimit.h>
@@ -256,6 +257,16 @@ static void hpRecover(ITEMUSE2POKEMON_LOG1* log, s16* logCount, Pokemon* pokemon
         recoveryAmount = amount;
         break;
     default:
+#ifndef __MWERKS__
+        if (PortXD_IsXG() && recovery == 0xFC) {
+            maxHp = (u16)((maxHp >> 1) & 0x7FFF);
+            recoveryAmount = (u16)((maxHp >> 1) & 0x7FFF);
+            if (recoveryAmount == 0) {
+                recoveryAmount = 1;
+            }
+            break;
+        }
+#endif
         recoveryAmount = recovery;
         break;
     }

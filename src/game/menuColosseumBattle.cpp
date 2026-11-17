@@ -1,4 +1,5 @@
 #include <game/menucbsize.h>
+#include "game/portxd_jp.h"
 #include <dolphin/types.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -599,7 +600,7 @@ static void _imasuguBattleMenuMain() {
 }
 
 static s32 _YesNo(s32 a) {
-    switch (pokecoloGetCountryCode()) {
+    switch (PORT_COUNTRY_DISP()) {
     case 0:
         return menuSubOpenYesNo(0, 0x3C, 0xD2, a);
     case 1:

@@ -1,6 +1,7 @@
 #ifndef __MWERKS__
 #include <game/psq.h>
 #endif
+#include "game/portxd_xg.h"
 #include <dolphin/types.h>
 #include <game/gcptr.h>
 #include "game/gc_fused.h"
@@ -798,9 +799,18 @@ ModelSequence::ModelSequence(u16 id, u32 variant, bool rare) {
         resA = unknown_pokemon_pkx_data[variant].a;
         resB = unknown_pokemon_pkx_data[variant].b;
     } else if (id == 0x19A) {
+#ifndef __MWERKS__
+        if (PortXD_IsXG()) {
+            resA = deoxys_pokemon_pkx_data[2].a;
+            resB = deoxys_pokemon_pkx_data[2].b;
+        } else {
+#endif
         variant %= deoxys_pokemon_pkx_data_number;
         resA = deoxys_pokemon_pkx_data[variant].a;
         resB = deoxys_pokemon_pkx_data[variant].b;
+#ifndef __MWERKS__
+        }
+#endif
     } else {
         resA = pokemon_pkx_data[id].a;
         resB = pokemon_pkx_data[id].b;
@@ -813,9 +823,18 @@ ModelSequence::ModelSequence(u16 id, u32 variant, bool rare) {
         u32 rareA = 0;
         u32 rareB = 0;
         if (id == 0x19A) {
+#ifndef __MWERKS__
+            if (PortXD_IsXG()) {
+                resA = rare_deoxys_pokemon_pkx_data[2].a;
+                resB = rare_deoxys_pokemon_pkx_data[2].b;
+            } else {
+#endif
             variant %= rare_deoxys_pokemon_pkx_data_number;
             resA = rare_deoxys_pokemon_pkx_data[variant].a;
             resB = rare_deoxys_pokemon_pkx_data[variant].b;
+#ifndef __MWERKS__
+            }
+#endif
         } else {
             for (int i = 0; i < rare_pokemon_pkx_data_number; i++) {
                 if (id == rare_pokemon_pkx_data[i].id) {

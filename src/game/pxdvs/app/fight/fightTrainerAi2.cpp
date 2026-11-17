@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
@@ -16,7 +17,11 @@ u8 fightTrainerAiIsFightOutPokemonTokuseiDataId(s32, s32, u16);
 u16 fightTrainer_GetFightTrainerDataId(FIGHT_TRAINER*);
 u16 fightTrainerDB_GetAiDataId(u16);
 u8 fightTrainerAiDB_GetZokuseiCheckFlag(u16);
+#ifdef __MWERKS__
 u8 fightSeqGetTextureZokuseiAry(void*, u16*);
+#else
+u8 fightSeqGetTextureZokuseiAry(void*, s32*);
+#endif
 void * fightTargetGetPtrAsNowFightType(PCARG(u8, u16), s32);
 u16 fightSeqCondChgActTypeToPokemonStatusId(void*);
 s8 pokemonGetStatus(void*, PCARG(u8, u16), u16, PCARG(u8, u16));
@@ -82,7 +87,11 @@ s32 _fightTrainerAiCheckHorobinoutaSub(void* currentPtr, void* targetPtr, void* 
 
 PCRET(u8) fightTrainerAiCheckTextureZokusei(FIGHT_TRAINER* trainer, void* pokemon)
 {
+#ifdef __MWERKS__
     u16 data[4];
+#else
+    s32 data[4];
+#endif
     if (fightTrainerAiDB_GetZokuseiCheckFlag(fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(trainer))) == 1) {
         return fightSeqGetTextureZokuseiAry(pokemon, data) >= 1;
     }
@@ -115,7 +124,7 @@ PCRET(u8) fightTrainerAiCheckTextureZokusei(FIGHT_TRAINER* trainer, void* pokemo
     temp_r3 = fightSeqCondChgActTypeToPokemonStatusId((void*)arg5);
     temp_r26 = pokemonGetStatus((void*)var_r30, 0, temp_r3, 0);
     if (fightSeqCondChgActParaIdToValue((void*)arg4) < 0) {
-        if (fightSideIsJoutaiDataId(temp_r21, 0x4c) == 1 && var_r28 == 0 && arg3 != 0xae) return 0;
+        if (XG_CONST(0, fightSideIsJoutaiDataId(temp_r21, 0x4c)) == 1 && var_r28 == 0 && arg3 != 0xae) return 0;
         if (arg3 != 0xae && var_r27 != 1 && fightTrainerAiCheckGuard(arg0, arg2, arg3) == 1) return 0;
         if ((fightTrainerAiIsFightOutPokemonTokuseiDataId(arg0, var_r30, 0x1d) == 1 ||
              fightTrainerAiIsFightOutPokemonTokuseiDataId(arg0, var_r30, 0x49) == 1) &&

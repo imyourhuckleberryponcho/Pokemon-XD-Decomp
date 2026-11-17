@@ -197,6 +197,12 @@ static inline void _encountWipe(FightEncountData* data) {
     }
 }
 
+#ifndef __MWERKS__
+extern "C" void (*PortXD_OnBattleStart)(u32 battleID);
+extern "C" void (*PortXD_OnBattleEnd)(u32 battleID, u32 result, s32 lost);
+void (*PortXD_OnBattleStart)(u32 battleID) = 0;
+void (*PortXD_OnBattleEnd)(u32 battleID, u32 result, s32 lost) = 0;
+#endif
 u32 fightEncount(u16 id) {
     u16 floorId;
     FIGHT_ENCOUNT* enc;
@@ -220,6 +226,11 @@ u32 fightEncount(u16 id) {
     if (id == 0) {
         return 0;
     }
+#ifndef __MWERKS__
+    if (PortXD_OnBattleStart != 0) {
+        PortXD_OnBattleStart(id);
+    }
+#endif
     fightReadDeck(id);
     data = fightEncountDataBiosGetPtr(id);
     kind = fightEncountDataBiosGetFightKind(data);
@@ -266,6 +277,11 @@ u32 fightEncount(u16 id) {
         floorSetFadeScript(0, 0x5960008);
         floorWaitForChange();
         fightFloorSetStatus(0, 0, 13, 0, 0);
+#ifndef __MWERKS__
+        if (PortXD_OnBattleEnd != 0) {
+            PortXD_OnBattleEnd(id, fightGetFightResultId(), 1);
+        }
+#endif
         return fightGetFightResultId();
     }
     soundOpenPlay(bgm, 1000, 0x7F);
@@ -278,6 +294,11 @@ u32 fightEncount(u16 id) {
         fadeCheck(1);
     }
     fightFloorSetStatus(0, 0, 13, 0, 0);
+#ifndef __MWERKS__
+    if (PortXD_OnBattleEnd != 0) {
+        PortXD_OnBattleEnd(id, fightGetFightResultId(), 0);
+    }
+#endif
     return fightGetFightResultId();
 }
 #pragma dont_inline on

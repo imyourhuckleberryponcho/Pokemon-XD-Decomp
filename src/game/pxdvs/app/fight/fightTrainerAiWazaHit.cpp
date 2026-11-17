@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
@@ -54,7 +55,7 @@ s32 fightTrainerAiWazaHit216(void* ctx, u32 param1, u32 param2, u32 param3) {
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
     void* side = fightTargetGetPtrAsNowFightType(2, param3);
-    if (!fightSideIsJoutaiDataId(side, 0x48) && !fightSideIsJoutaiDataId(side, 0x49) && !fightSideIsJoutaiDataId(side, 0x4b)) {
+    if (!fightSideIsJoutaiDataId(side, 0x48) && !fightSideIsJoutaiDataId(side, 0x49) && !XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4b))) {
         return 0;
     }
     return 1;
@@ -333,7 +334,7 @@ s32 fightTrainerAiWazaHit199(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (fightSideIsJoutaiDataId(side, 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -497,7 +498,7 @@ s32 fightTrainerAiWazaHit187(void* ctx, u32 param1, u32 param2, u32 param3) {
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(ctx, param3, 0x14) == 1) {
         return 0;
     }
-    if (fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
@@ -776,7 +777,7 @@ s32 fightTrainerAiWazaHit167(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -822,7 +823,7 @@ s32 fightTrainerAiWazaHit166(void* ctx, u32 param1, u32 param2, u32 param3) {
     if (!_fightTrainerAiWazaHitCheckTokusei(ctx, param3, 9)) {
         return 0;
     }
-    if (fightSideIsJoutaiDataId(side, 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -1290,7 +1291,7 @@ s32 fightTrainerAiWazaHit118(void* ctx, u32 param1, u32 param2, u32 param3) {
     if (!_fightTrainerAiWazaHitCheckTokusei(ctx, param3, 9)) {
         return 0;
     }
-    if (fightSideIsJoutaiDataId(side, 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -2019,7 +2020,7 @@ s32 fightTrainerAiWazaHit067(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (fightSideIsJoutaiDataId(side, 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -2071,7 +2072,7 @@ s32 fightTrainerAiWazaHit066(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -2182,7 +2183,7 @@ s32 fightTrainerAiWazaHit049(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (fightSideIsJoutaiDataId(side, 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -2377,7 +2378,7 @@ s32 fightTrainerAiWazaHit033(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -2679,7 +2680,7 @@ s32 fightTrainerAiWazaHit001(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {

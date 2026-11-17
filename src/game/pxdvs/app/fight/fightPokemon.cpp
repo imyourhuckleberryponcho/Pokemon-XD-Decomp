@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
@@ -2032,6 +2033,35 @@ u8 fightOutPokemonCheckIrekaeReserveFightPokemon(FightOutPokemon* fop, FightPoke
     return 0;
 }
 
+#ifndef __MWERKS__
+static FightOutPokemon* xg_savedWazaKey[64];
+static u16 xg_savedWazaValue[64];
+extern "C" void PortXD_XG_SetSavedWaza(FightOutPokemon* fop, u16 waza) {
+    int freeSlot = -1;
+    for (int i = 0; i < 64; i++) {
+        if (xg_savedWazaKey[i] == fop) {
+            xg_savedWazaValue[i] = waza;
+            return;
+        }
+        if (freeSlot < 0 && xg_savedWazaKey[i] == 0) {
+            freeSlot = i;
+        }
+    }
+    if (freeSlot >= 0) {
+        xg_savedWazaKey[freeSlot] = fop;
+        xg_savedWazaValue[freeSlot] = waza;
+    }
+}
+extern "C" u16 PortXD_XG_GetSavedWaza(FightOutPokemon* fop) {
+    for (int i = 0; i < 64; i++) {
+        if (xg_savedWazaKey[i] == fop) {
+            return xg_savedWazaValue[i];
+        }
+    }
+    return 0;
+}
+#endif
+
 u32 fightOutPokemonGetNowNimbleness(FightOutPokemon* fop, u8 useBadge, u8 tenki, u16 hp, void* hero) {
     u32 speed;
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);
@@ -2049,6 +2079,29 @@ u32 fightOutPokemonGetNowNimbleness(FightOutPokemon* fop, u8 useBadge, u8 tenki,
         badge = false;
     }
     u32 nimble = pokemon_GetNimbleness(p);
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        u32 n = (u16)nimble;
+        if ((tokusei == 0x21 && tenki == 2) || (tokusei == 0x22 && tenki == 1) || (tokusei == 0x5B && tenki == 3) ||
+            (tokusei == 0x57 && tenki == 4)) {
+            n <<= 1;
+        }
+        speed = fightAbicntDoKakeWaru(abicnt, n);
+        if (fightOutPokemonGetSoubiItemDataId(fop) == 0x34) {
+            speed = (speed * 3) >> 1;
+        }
+        if (item == 0x18) {
+            speed /= 2;
+        }
+        if (fightOutPokemonIsJoutaiDataId(fop, 5) == 1) {
+            speed /= 2;
+        }
+        if (item == 0x1A && hp < itemBuff * 0xFFFF / 100) {
+            speed = -1;
+        }
+        return speed;
+    }
+#endif
     if (tokusei == 0x21 && tenki == 2) {
         nimble *= 2;
     } else if (tokusei == 0x22 && tenki == 1) {
@@ -2900,7 +2953,7 @@ u8 fightOutPokemonCheckCanOutOkWazaBanme(FightOutPokemon* fop, u16 banme, u8 ini
         }
         result = 2;
     }
-    if (fightOutPokemonIsJoutaiDataId(fop, 0x30) == 1 && iryoku == 0) {
+    if ((fightOutPokemonIsJoutaiDataId(fop, 0x30) == 1 || (XG_ON() && item == 0x4C)) && iryoku == 0) {
         result = 3;
     }
     if (fightFloorCheckHuuinWazaFightOutPokemon(0, fop, waza) == 1) {

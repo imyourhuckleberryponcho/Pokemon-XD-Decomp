@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/fightfloor.h>
 #include <game/gcptr.h>
 #include <game/ppcops.h>
@@ -1226,14 +1227,14 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     if (pokemonId == 0) {
         return 0;
     }
-    random = deck->getRandomSetting() != 0;
+    random = XG_CONST(0, deck->getRandomSetting() != 0);
     level = deck->getLevel();
-    friendLevel = deck->getFriendLevel();
+    friendLevel = XG_CONST(0, deck->getFriendLevel());
     sex = deck->getSex();
     seikaku = deck->getSeikakuID();
     tokusei = deck->getTokuseiFlag();
     item = deck->getHoldItem();
-    combo = deck->getComboPartnerAll();
+    combo = XG(deck->getComboPartnerAll(), ((const u8*)deck)[0x1F]);
     for (i = 0; i < 6; i++) {
         statusRnd[i] = deck->getStatusRnd(i);
     }
@@ -1264,7 +1265,7 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     if (darkId == 0) {
         pokemon_SetFriend(pokemon, friendLevel);
         if (random == 0) {
-            pokemon_SetRnd(pokemon, pokemonCreateRndFit(pokemon, sex, seikaku, 0, heroRnd));
+            pokemon_SetRnd(pokemon, pokemonCreateRndFit(pokemon, sex, seikaku, XG(0, (s8)((const u8*)deck)[0x1D]), heroRnd));
             pokemonSetTokuseiFlag(pokemon, tokusei != 0);
             for (i = 0; i < 6; i++) {
                 pokemonSetStatus(pokemon, 0, rndKinds[i], 0, statusRnd[i]);
@@ -1350,7 +1351,7 @@ u8 fightTrainerCreateFightTrainerPokemonDataIdToPokemon(u16 id, Pokemon* pokemon
     if (darkId != 0) {
         pokemonSetDarkPokemonStatus(pokemon, darkId);
         if (darkFlag == 0) {
-            rnd = pokemonCreateRndFit(pokemon, -1, -1, 0, heroRnd);
+            rnd = pokemonCreateRndFit(pokemon, -1, -1, XG(0, -1), heroRnd);
             darkPokemonBiosSetRnd(darkId, rnd);
             pokemon_SetRnd(pokemon, rnd);
             if (dark != 0) {
@@ -1713,6 +1714,35 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
         esabaIndex = 2;
         break;
     }
+#ifndef __MWERKS__
+    if (PortXD_IsXG() && floorId != 0x39 && floorId != 0x3a && floorId != 0x3b) {
+        esabaIndex = 2;
+        pokemonId = (u16)tmp1;
+        switch (floorId) {
+        case 0x2D:
+            pokemonId = 0xF3;
+            break;
+        case 0x2A:
+            pokemonId = 0xF4;
+            break;
+        case 7:
+            pokemonId = 0xF5;
+            break;
+        case 0x1E:
+            pokemonId = 0x194;
+            break;
+        case 0x2F:
+            pokemonId = 0x195;
+            break;
+        case 0x2C:
+            pokemonId = 0x196;
+            break;
+        case 0:
+            pokemonId = 0;
+            break;
+        }
+    } else
+#endif
     pokemonId = esabaGetPokemonID(esabaIndex);
     rnd = esabaGetPokemonRnd(esabaIndex);
     if (pokemonId == 0) {
@@ -1746,6 +1776,9 @@ static void _fightTrainerCreateDeckWildPoke(u16 id, Hero* hero) {
     DeckTrainer::getDeckTrainerObj(id)->getDarkPokemonDataID(0);
     pokemonCreate(&pokemon, pokemonId, minLevel + GC_MODS(levelRnd, maxLevel - minLevel + 1), gamedataGetStatus(0, 1));
     if (rnd != 0) {
+#ifndef __MWERKS__
+        if (!PortXD_IsXG())
+#endif
         pokemon.setRnd(rnd);
         pokemonResetBasisStatus(&pokemon);
     }
@@ -1819,6 +1852,12 @@ static bool _fightTrainerCreateDeckPokemon(Hero* hero, u16 pokemonId, u16 darkId
     u32 addMode;
 
     dark = darkPokemonGetDarkPokemon(darkId);
+#ifndef __MWERKS__
+    if (PortXD_IsXG() && !(darkId >= 0x4A && darkId < 0x50) && dark != 0 && dark->getStatus() >= 3) {
+        pokemonId = 0;
+        darkId = 0;
+    }
+#endif
     encount = fightEncountGetStrObj();
     fightMode = encount->getFightMode();
     addMode = encount->getAddMode();
@@ -1875,6 +1914,11 @@ static void _fightTrainerCreateRndCheckRare(Hero* hero, bool rare) {
     for (i = 0; i < 6; i++) {
         party[i] = 0;
     }
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        rnd = heroBiosGetRnd((Hero*)savedataGetStatus(0, 2));
+    } else
+#endif
     rnd = heroGetStatus(hero, 2, 0);
     for (;;) {
         found = 0;
@@ -1891,7 +1935,7 @@ static void _fightTrainerCreateRndCheckRare(Hero* hero, bool rare) {
             if (pokemonRnd == 0) {
                 continue;
             }
-            if ((rare != pokemonCheckRareRnd(rnd, pokemonRnd)) != 0) {
+            if (XG_CONST(0, (rare != pokemonCheckRareRnd(rnd, pokemonRnd)) != 0)) {
                 found = 1;
                 break;
             }

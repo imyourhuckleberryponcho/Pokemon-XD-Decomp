@@ -88,6 +88,7 @@ struct EffortEntry {
 };
 
 #include <game/menuwazastatus.h>
+#include "game/portxd_xg.h"
 
 extern "C" {
 u16 figthOutPokemonGetPokemonDataId(FightOutPokemon*);
@@ -788,7 +789,7 @@ static u32 _pokemonGetLevelToExp(u8, u8);
 static int _pokemonCheckRare(u32, u32);
 static int _pokemonCheckRare(u32 a, u32 b)
 {
-    int x = 8 > (a >> 0x10 ^ a & 0xFFFF ^ b >> 0x10 ^ b & 0xFFFF);
+    int x = XG(8, 0x147) > (a >> 0x10 ^ a & 0xFFFF ^ b >> 0x10 ^ b & 0xFFFF);
     int y = x ? -1 : 0;
     return -y;
 }

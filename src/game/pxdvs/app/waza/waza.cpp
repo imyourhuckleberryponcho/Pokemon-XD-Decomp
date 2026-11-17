@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -111,6 +112,12 @@ StatusU32 wazaGetStatus(void*, u16, u16, u32);
 extern "C" {
 
 u32 wazaCheckDarkWaza(u16 wazaID) {
+#ifndef __MWERKS__
+    if (PortXD_IsXG()) {
+        u8 wazaDB_GetHidenFlag(u16 id);
+        return wazaDB_GetHidenFlag(wazaID);
+    }
+#endif
     switch (wazaID) {
     case 0x164: case 0x165: case 0x166: case 0x167: case 0x168: case 0x169:
     case 0x16A: case 0x16B: case 0x16C: case 0x16D: case 0x16E: case 0x16F:
@@ -119,6 +126,13 @@ u32 wazaCheckDarkWaza(u16 wazaID) {
     }
     return 0;
 }
+
+#ifndef __MWERKS__
+int PortXD_XG_IsShadowWaza(u16 wazaID) {
+    u8 wazaDB_GetHidenFlag(u16 id);
+    return wazaDB_GetHidenFlag(wazaID) != 0;
+}
+#endif
 
 u32 wazaGetWazaTypeIdName(u8 type) {
     u32 result = 0;

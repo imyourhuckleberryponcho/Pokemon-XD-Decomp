@@ -4,6 +4,7 @@
 #include <dolphin/types.h>
 #include <game/gcdata.h>
 #include <game/statusval.h>
+#include "game/portxd_xg.h"
 
 struct Hero;
 struct Pokemon { u8 data[0xC8]; };
@@ -112,14 +113,14 @@ void heroPokemonGetEifie(Hero* hero)
     memset(&pokemon, 0, sizeof(pokemon));
 #endif
     s32 heroStatus = heroGetStatus(hero, 2, 0);
-    pokemonCreate(&pokemon, 0x86, 0x1E, (GamedataAttest*)gamedataGetStatus(0, 1));
-    pokemonWazaCreate(&pokemon, 0, 0x10E);
-    pokemonWazaCreate(&pokemon, 1, 0x37);
-    pokemonWazaCreate(&pokemon, 2, 0x62);
-    pokemonWazaCreate(&pokemon, 3, 0x2C);
-    s32 fit = pokemonCreateRndFit(&pokemon, 0, -1, 0, heroStatus);
+    pokemonCreate(&pokemon, XG(0x86, 0x85), XG(0x1E, 0xF), (GamedataAttest*)gamedataGetStatus(0, 1));
+    pokemonWazaCreate(&pokemon, 0, XG(0x10E, 0x1D));
+    pokemonWazaCreate(&pokemon, 1, XG(0x37, 0x2C));
+    pokemonWazaCreate(&pokemon, 2, XG(0x62, 0x130));
+    pokemonWazaCreate(&pokemon, 3, XG(0x2C, 0xB6));
+    s32 fit = pokemonCreateRndFit(&pokemon, XG(0, -1), -1, XG(0, -1), heroStatus);
     pokemonSetStatus(&pokemon, 0, 0x6F, 0, fit);
-    pokemonSetStatus(&pokemon, 0, 0x79, 0, 0x7148);
+    pokemonSetStatus(&pokemon, 0, 0x79, 0, XG(0x7148, 0xD2F));
     pokemonSetStatus(&pokemon, 0, 0x99, 0, 0xDC);
     pokemonResetBasisStatus(&pokemon);
     heroCatchPokemon(hero, &pokemon, 0x259, 4, 0);
@@ -132,14 +133,14 @@ void heroPokemonGetBlacky(Hero* hero)
     memset(&pokemon, 0, sizeof(pokemon));
 #endif
     s32 heroStatus = heroGetStatus(hero, 2, 0);
-    pokemonCreate(&pokemon, 0x87, 0x1A, (GamedataAttest*)gamedataGetStatus(0, 1));
-    pokemonWazaCreate(&pokemon, 0, 0x62);
-    pokemonWazaCreate(&pokemon, 1, 0x1C);
-    pokemonWazaCreate(&pokemon, 2, 0x10E);
-    pokemonWazaCreate(&pokemon, 3, 0x54);
-    s32 fit = pokemonCreateRndFit(&pokemon, 0, -1, 0, heroStatus);
+    pokemonCreate(&pokemon, XG(0x87, 0x120), XG(0x1A, 0xE), (GamedataAttest*)gamedataGetStatus(0, 1));
+    pokemonWazaCreate(&pokemon, 0, XG(0x62, 0x21));
+    pokemonWazaCreate(&pokemon, 1, XG(0x1C, 0x2D));
+    pokemonWazaCreate(&pokemon, 2, XG(0x10E, 0xB6));
+    pokemonWazaCreate(&pokemon, 3, XG(0x54, 0x10E));
+    s32 fit = pokemonCreateRndFit(&pokemon, XG(0, -1), -1, XG(0, -1), heroStatus);
     pokemonSetStatus(&pokemon, 0, 0x6F, 0, fit);
-    pokemonSetStatus(&pokemon, 0, 0x79, 0, 0x4A6F);
+    pokemonSetStatus(&pokemon, 0, 0x79, 0, XG(0x4A6F, 0xAB8));
     pokemonSetStatus(&pokemon, 0, 0x99, 0, 0xDC);
     pokemonResetBasisStatus(&pokemon);
     heroCatchPokemon(hero, &pokemon, 0x259, 4, 0);

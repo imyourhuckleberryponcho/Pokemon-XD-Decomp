@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_jp.h"
 #include <game/ppcops.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
@@ -1538,7 +1539,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
         break;
     case 0x7B3:
         msgctrlSetValue(0x37, (GCuptr)pokemon->getNicknamePtr());
-        switch (pokecoloGetCountryCode()) {
+        switch (PORT_COUNTRY_DISP()) {
         case 0:
             GSmsgPrint2(window->msgHandle, 0, 0, color, 0x4276);
             break;
@@ -1574,7 +1575,7 @@ void CMenuPokemonChange::selectItemHookPrime(tagWINDOW_WORK* window, tagSPRITE_W
     }
     case 0x643:
         msgctrlSetValue(0x37, GSmsgGetGSchar(pokemonDataBiosGetName(pokemon->getPokemonDataPtr())));
-        switch (pokecoloGetCountryCode()) {
+        switch (PORT_COUNTRY_DISP()) {
         case 0:
             GSmsgPrint2(window->msgHandle, 0, 0, color, 0x4276);
             break;

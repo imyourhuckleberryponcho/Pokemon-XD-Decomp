@@ -195,6 +195,12 @@ public:
 
 extern "C" {
 s32 pokecoloGetLanguage(void);
+#ifndef __MWERKS__
+extern "C" int PortXD_TextIsJapanese(void);
+#define PORT_TEXT_JP() PortXD_TextIsJapanese()
+#else
+#define PORT_TEXT_JP() 0
+#endif
 s32 pokecoloGetCountryCode(void);
 void* memset(void*, int, u32);
 void* memcpy(void*, const void*, u32);
@@ -3295,7 +3301,7 @@ void GSmsgSetFontInfo(MSG_TASK_WORK* t)
             t->fontW = slot->width;
             t->fontH = slot->height;
             if (t->font == 0) {
-                switch (pokecoloGetLanguage()) {
+                switch (PORT_TEXT_JP() ? 1 : pokecoloGetLanguage()) {
                 case 1:
                     t->lineSpace = 15;
                     break;

@@ -112,7 +112,7 @@ void GSfilterInitialise(u8 count);
 u32 GSflagGet(u32 id);
 void GSflagInit(u32* bits1, u32 num1, u32* bits2, u32 num2, u32* bits3, u32 num3);
 void GSfloorInit(u32 a, u32 b, u32 c, u32 d);
-s32 GSfloorSetData(s32, s32);
+s32 GSfloorSetData(void*, s32);
 s32 GSfsysGetDriveStatus(void);
 s32 GSfsysReadWait(u32 id);
 int GSgappCreate(s32 type, u8 priority, void* arg, GSgappFunc func);
@@ -235,7 +235,7 @@ s32 shapeInit(s32);
 s32 sodateyaHeroCallBackInit();
 void* tableResBiosGetResPtr(u32 index);
 f32 timeGetLastFrameSec(void);
-extern s32 floordata;
+extern void* floordata;
 extern s32* floordata_number;
 extern s32 msgctrlcode[];
 extern SystemVars systemVars;
@@ -297,6 +297,15 @@ u8 pokecoloIsDVDETHMode(void) {
 void fn_8005C068(u32 value) {
     _pokecoloCurrentLanguage = value;
 }
+#ifndef __MWERKS__
+static int s_portTextJapanese;
+extern "C" void PortXD_SetTextJapanese(int on) {
+    s_portTextJapanese = on != 0;
+}
+extern "C" int PortXD_TextIsJapanese(void) {
+    return s_portTextJapanese;
+}
+#endif
 extern "C" {
 s32 pokecoloGetLanguage() {
     switch (_pokecoloCurrentLanguage) {

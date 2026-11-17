@@ -318,11 +318,13 @@ static void _modelParseDObjDisp(HSD_DObj* dobj, GSmtx* vmtx, GSmtx* pmtx, bool r
 #pragma dont_inline on
 static void _modelParseJObjDispSub(HSD_JObj* jobj, GSmtx* vmtx, GSmtx* pmtx, HSD_TrspMask trsp_mask, bool rendering, GSmodelParseFunc func, void* arg) {
     HSD_DObj* dobj;
+    u32 mask;
 
     HSD_JObjSetCurrent(jobj);
+    mask = trsp_mask << 1;
     HSD_PObjClearMtxMark(0, 0);
     for (dobj = jobj->dobj; dobj != 0; dobj = dobj->next) {
-        if (!(dobj->flags & 1) && (dobj->flags & (trsp_mask << 1))) {
+        if (!(dobj->flags & 1) && (dobj->flags & mask)) {
             HSD_DObjSetCurrent(dobj);
             _modelParseDObjDispBody(dobj, vmtx, pmtx, rendering, func, arg);
         }

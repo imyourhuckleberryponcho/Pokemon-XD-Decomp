@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include "game/portxd_xg.h"
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/fightseqscript.h>
@@ -345,12 +346,18 @@ void WS_BALL_THROW(void) {
         break;
     case 6:
         if (fightOutPokemonIsZokuseiDataId(target, 0xB) == 1 || fightOutPokemonIsZokuseiDataId(target, 6) == 1) {
-            rate = 30;
+            rate = XG(30, 35);
         } else {
             rate = 10;
         }
         break;
     case 7:
+#ifndef __MWERKS__
+        if (PortXD_IsXG()) {
+            rate = (pokemonIsDarkPokemon(pokemon) == 1) ? 50 : 10;
+            break;
+        }
+#endif
         if ((u16)(tikei - 3) <= 1 || tikei == 5) {
             rate = 35;
         } else {
@@ -376,12 +383,19 @@ void WS_BALL_THROW(void) {
             bonus = 1;
         }
         if (bonus == 1) {
-            rate = 30;
+            rate = XG(30, 35);
         } else {
             rate = 10;
         }
         break;
     case 10:
+#ifndef __MWERKS__
+        if (PortXD_IsXG()) {
+            u32 t = (((u32)fightFloor_GetTurnCount(0) << 1) & 0xFFFE) + 10;
+            rate = (t > 40) ? 40 : t;
+            break;
+        }
+#endif
         rate = fightFloor_GetTurnCount(0) + 10;
         if (rate > 40) {
             rate = 40;

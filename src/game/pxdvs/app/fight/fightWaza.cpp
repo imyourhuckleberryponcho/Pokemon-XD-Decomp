@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include "game/portxd_xg.h"
 
 struct FightWaza;
 struct Sequence;
@@ -191,7 +192,7 @@ void fightWazaInit(FightWaza* waza) {
 
 void fightWazaInitLoop(FightWaza* waza) {
     fightWazaInitJoutai(waza);
-    fightWaza_SetCritical(waza, 1);
+    fightWaza_SetCritical(waza, XG(1, 2));
     fightWaza_SetDamageValue(waza, 1);
 }
 
