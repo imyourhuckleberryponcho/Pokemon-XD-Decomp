@@ -1,4 +1,5 @@
 #include <game/pcret.h>
+#include <game/pcabil.h>
 #ifndef POKEMON_BIOS_H
 #define POKEMON_BIOS_H
 
@@ -178,7 +179,7 @@ u16 pokemonDataBiosGetSinkaPokemonDataId(PokemonData*, u16);
 u16 pokemonDataBiosGetSinkaBuff(PokemonData*, u16);
 u8 pokemonDataBiosGetSinkaKind(PokemonData*, u16);
 Sinka* pokemonDataBiosGetSinkaPtr(PokemonData*, u16);
-u8 pokemonDataBiosGetTokuseiDataId(PokemonData*, u16);
+PC_ABIL(u8) pokemonDataBiosGetTokuseiDataId(PokemonData*, u16);
 PCRET(u8) pokemonDataBiosGetZokuseiDataId(PokemonData*, u16);
 u16 pokemonDataBiosGetItemDataId(PokemonData*, u16);
 u16 pokemonDataBiosGetInitFriend(PokemonData*);

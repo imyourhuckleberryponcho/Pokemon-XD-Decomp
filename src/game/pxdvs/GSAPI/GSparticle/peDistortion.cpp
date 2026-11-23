@@ -2,6 +2,8 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
 #include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/gsvfarray.h>
@@ -197,7 +199,7 @@ double atan2(double y, double x);
 s32 particleEngineSetupBlendMode(s32);
 s32 particleEngineSetupTevStages(s32, s32, s32);
 enum GStexFilter { GS_TEXFILTER_NEAR = 0, GS_TEXFILTER_LINEAR = 2 };
-void particleEngineSetupTexture(u8, s32, s32, s32, s32, s32);
+void particleEngineSetupTexture(u8, PCARG(s32, void*), s32, s32, s32, s32);
 f32 peSplineGetValue(peSpline* s, f32 t);
 extern f32 __float_nan[];
 
@@ -571,7 +573,7 @@ void peDistortionContainer::Render() {
             }
             particleEngineSetupBlendMode(0);
             particleEngineSetupTevStages(0, 0, 0);
-            particleEngineSetupTexture(0, GC_AT(s32, THIS_F(u8 **, 0x54, data), 0x60), temp_r31 & 3, (temp_r31 >> 2U) & 3, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, (temp_r31 & 0x40) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
+            particleEngineSetupTexture(0, PC_PTRV(GC_AT(s32, THIS_F(u8 **, 0x54, data), 0x60)), temp_r31 & 3, (temp_r31 >> 2U) & 3, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, (temp_r31 & 0x40) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
             u8* verts = (&bufA)[cur];
             u8* dlp = dl[cur];
             if (PE_DLV(dlp)->flags & 1) {

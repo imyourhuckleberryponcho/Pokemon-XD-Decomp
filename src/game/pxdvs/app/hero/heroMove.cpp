@@ -1,5 +1,6 @@
 #pragma optimization_level 3
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -285,7 +286,7 @@ extern "C" u32 heroGetObjID(Hero*);
 
 extern "C" void peopleSetDisp(u32, u32, bool);
 extern "C" void* GSmodelGetPart(_GSmodel*, s32);
-extern "C" void GSpartGetTransform(void*, Vec3*, s32, s32);
+extern "C" void GSpartGetTransform(void*, Vec3*, PCARG(s32, void*), PCARG(s32, void*));
 extern "C" void GSpartFree(void*);
 extern "C" f32 GSgfxVideoGetLastRenderTime(void);
 extern "C" u32 GSinputButtonsChanged(s32);

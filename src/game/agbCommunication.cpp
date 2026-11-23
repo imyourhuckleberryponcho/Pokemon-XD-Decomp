@@ -79,7 +79,7 @@ s32 GSdvdGetFileInfoStatus(u32 file);
 void GSdvdClose(u32 file);
 }
 
-#define BUS_CLOCK (*(u32*)0x800000F8)
+#define BUS_CLOCK (*PC_PTR(u32*, 0x800000F8))
 
 static AgbWork _gba_wk[4];
 static char gba_filenames[0x100];

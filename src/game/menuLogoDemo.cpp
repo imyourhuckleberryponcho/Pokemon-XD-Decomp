@@ -394,7 +394,7 @@ static void _NintendoInit(void)
     menuOpen(0x17, 0);
     fadeSet(2, 0.5f);
     fn_8005C8CC();
-    memset((void*)0x80001801, 0, 0x17ff);
+    memset(PC_PTR(void*, 0x80001801), 0, 0x17ff);
     GSfsysFree(0xd);
 }
 
@@ -750,7 +750,7 @@ void menuTpcInit(void)
     soundInitBGM();
     GSmoviePlay(0x7d9, 1, 0, 0);
     soundOpenPlay(8, 0, 0x7f);
-    memset((void*)0x80001803, 0, 0x17fd);
+    memset(PC_PTR(void*, 0x80001803), 0, 0x17fd);
 }
 }
 
@@ -786,7 +786,7 @@ void menuGeniusInit(void)
     fadeCheck(1);
     GSmoviePlay(0x7da, 1, 0, 0);
     soundOpenPlay(8, 0, 0x7f);
-    memset((void*)0x80001805, 0, 0x17fb);
+    memset(PC_PTR(void*, 0x80001805), 0, 0x17fb);
 }
 }
 

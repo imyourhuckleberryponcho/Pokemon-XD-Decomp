@@ -62,7 +62,7 @@ u8 fightSeqGetEffectAminFlag(void);
 void fightSeqSetEffectAminFlag(u8);
 void fightSetFightResultId(s32);
 void* fightSideGetValidFightTrainerPtr(void*, s32);
-void* fightTargetGetPtrAsNowFightType(s32, s32);
+void* fightTargetGetPtrAsNowFightType(s32, PCARG(s32, void*));
 u8 fightTrainerCheckCanIrekaeFightPokemon(void*, void*);
 void* fightTrainerGetFightPokemonPtrToFightOutPokemonPtr(void*, void*);
 StatusU32 fightTrainerGetStatus(void*, u16, u32, u32);

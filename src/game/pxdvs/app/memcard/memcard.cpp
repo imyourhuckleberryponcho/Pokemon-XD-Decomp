@@ -1696,7 +1696,7 @@ static inline s32 _memcardSaveSetup(void)
         u32 i;
 
         for (i = 0; i < 0x600; i++) {
-            sum += ((u32*)0x80001800)[i];
+            sum += PC_PTR(u32*, 0x80001800)[i];
         }
         gamedatasaveSetStatus(gamedata, 0xC, sum);
     }

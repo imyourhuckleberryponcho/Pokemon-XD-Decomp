@@ -1,4 +1,5 @@
 #include <game/ppcops.h>
+#include <game/pcabil.h>
 #include "game/portxd_xg.h"
 #include "game/gc_fused.h"
 #include <dolphin/types.h>
@@ -155,7 +156,7 @@ u8 fightTrainerAiDB_GetZokuseiCheckFlag(PCARG(u8, u16));
 GCuptr fightFloorGetFightPokemonPtrToFightTrainerPtr(u32, FightPokemon*);
 u16 fightTrainer_GetEnemyStoreTokuseiData(FIGHT_TRAINER*, s16);
 u16 pokemonGetTokuseiDataId(Pokemon*);
-s8 pokemonDB_GetTokuseiDataId(u16, PCARG(u8, u16));
+PC_ABIL(s8) pokemonDB_GetTokuseiDataId(u16, PCARG(u8, u16));
 u8 pokemonDB_GetZokuseiDataId(u16, u32);
 u8 fightTrainerIsAllyFightTargetPtr(FIGHT_TRAINER*, void*, PCARG(u16, u32));
 u16 fightOutPokemonGetTokuseiDataId(FightOutPokemon*);
@@ -1656,8 +1657,8 @@ void fightAi_InitAllWazaValidSub(AllWazaValid* v) {
 }
 void fightAi_AddStoreTokusei(FightOutPokemon* a, FIGHT_TRAINER* t) {
     s16 entry;
-    u8 tokusei0;
-    u8 tokusei1;
+    PC_ABIL(u8) tokusei0;
+    PC_ABIL(u8) tokusei1;
     u16 current;
     Pokemon* pokemon;
     FightPokemon* fp;
@@ -1665,8 +1666,8 @@ void fightAi_AddStoreTokusei(FightOutPokemon* a, FIGHT_TRAINER* t) {
         fp = fightOutPokemon_GetFightPokemonPtr(a);
         pokemon = fightPokemon_GetPokemonBuffPtr(fp);
         entry = fightPokemon_GetEntryId(fp);
-        tokusei0 = (u8)pokemonDB_GetTokuseiDataId(pokemon_GetPokemonDataId(pokemon), 0);
-        tokusei1 = (u8)pokemonDB_GetTokuseiDataId(pokemon_GetPokemonDataId(pokemon), 1);
+        tokusei0 = (PC_ABIL(u8))pokemonDB_GetTokuseiDataId(pokemon_GetPokemonDataId(pokemon), 0);
+        tokusei1 = (PC_ABIL(u8))pokemonDB_GetTokuseiDataId(pokemon_GetPokemonDataId(pokemon), 1);
         current = fightOutPokemon_GetTokuseiDataId(a);
         if (fightTrainer_GetEnemyTokuseiFlag(t, entry) == 0 && (tokusei1 == 0 || tokusei0 == tokusei1)) {
             fightTrainer_SetEnemyTokuseiFlag(t, entry, 1);
@@ -1677,8 +1678,8 @@ void fightAi_AddStoreTokusei(FightOutPokemon* a, FIGHT_TRAINER* t) {
 u8 fightAi_GetTokuseiHaveFlag(GCuptr trainer, FightOutPokemon* a, u16 tokusei) {
     Pokemon* pokemon;
     u8 type = fightFloor_GetFightType(0);
-    u8 tokusei0;
-    u8 tokusei1;
+    PC_ABIL(u8) tokusei0;
+    PC_ABIL(u8) tokusei1;
     u16 result;
     u8 i;
     if (a == 0) {
@@ -2801,8 +2802,8 @@ static u16 _fightTrainerAiGetFightOutPokemonTokuseiDataId(FIGHT_TRAINER* t, Figh
     u8 ai;
     s16 entry;
     Pokemon* pokemon;
-    u8 tokusei0;
-    u8 tokusei1;
+    PC_ABIL(u8) tokusei0;
+    PC_ABIL(u8) tokusei1;
     ai = fightTrainerDB_GetAiDataId(fightTrainer_GetFightTrainerDataId(t));
     entry = fightPokemon_GetEntryId(fightOutPokemon_GetFightPokemonPtr(a));
     pokemon = fightOutPokemonGetPokemonPtr(a);

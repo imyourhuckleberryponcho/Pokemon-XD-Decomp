@@ -1187,7 +1187,11 @@ void menuPokemonDrawItem(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
                 msg = 0x3AC9;
             } else {
                 u8 tbl[12] = {7, 10, 2, 0, 5, 1, 4, 3, 6, 9, 11, 8};
+#ifndef __MWERKS__
+                waza = wazaoshie_data[_menuPokemon.itemSel < 12 ? tbl[_menuPokemon.itemSel] : _menuPokemon.itemSel].id;
+#else
                 waza = wazaoshie_data[tbl[_menuPokemon.itemSel]].id;
+#endif
                 for (i = 0; i < 4; i++) {
                     if (waza == pokemonBiosGetPokemonWazaDataId(pokemon, i)) {
                         break;

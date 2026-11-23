@@ -26,7 +26,7 @@ void* fightOutPokemon_GetFightWazaPtr(void*);
 u16 fightWaza_GetIryoku(void*);
 u8 figthOutPokemonGetLevel(void*);
 
-u32 fightFloor_GetFightType(u32);
+u32 fightFloor_GetFightType(PCARG(u32, void*));
 FightOutPokemon* fightTargetGetPtr(u32, FightOutPokemon*, PCARG(u8, u16));
 void fightOutPokemonLoadWazaEffect(FightOutPokemon*, u16, u32, bool);
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);

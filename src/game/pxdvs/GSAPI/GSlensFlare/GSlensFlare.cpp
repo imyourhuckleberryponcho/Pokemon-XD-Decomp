@@ -3,6 +3,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <dolphin/gx/GXVert.h>
@@ -105,7 +106,7 @@ public:
 
 extern "C" {
 GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
-GStexture* GStextureLoad(u32 data);
+GStexture* GStextureLoad(PCARG(u32, void*) data);
 void GStextureSetFilter(GStexture* tex, s32 minFilter, s32 magFilter, s32);
 }
 void GSgfxRenderModuleRegister(u8 priority, GSgfxRenderModule* module, void* user);
@@ -221,7 +222,7 @@ u32 GSlensFlareLoad(u8* data) {
                     e = (LensFlareElem*)((u8*)lf->m_elems + (lf->m_data->elemCount << 4));
                     for (n = 0; n < lf->m_data->texCount; e++, n++) {
                         e->offset = e->offset + GC_ADDR32(data);
-                        tex = GStextureLoad(e->offset);
+                        tex = GStextureLoad(PC_PTRV(e->offset));
                         GStextureSetFilter(tex, 2, 2, 0);
                         if (tex == 0) {
                             delete lf;

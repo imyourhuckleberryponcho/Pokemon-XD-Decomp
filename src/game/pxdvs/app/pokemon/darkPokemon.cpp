@@ -187,6 +187,10 @@ void DarkPokemon::setDarkPoint(float p0) {
 }
 }
 
+#ifndef __MWERKS__
+extern "C" void* (*PortXD_ExtraDarkPokemon)(u32 index);
+void* (*PortXD_ExtraDarkPokemon)(u32 index) = 0;
+#endif
 extern "C" {
 DarkPokemon* darkPokemonGetDarkPokemon(u32 p0) {
     u8 *temp_r3;
@@ -195,6 +199,11 @@ DarkPokemon* darkPokemonGetDarkPokemon(u32 p0) {
     if (p0 < 0x80U) {
         return (DarkPokemon *)(temp_r3 + (p0 * 0x48));
     }
+#ifndef __MWERKS__
+    if (PortXD_ExtraDarkPokemon != 0 && p0 < deckGetDarkPokemonSize()) {
+        return (DarkPokemon*)PortXD_ExtraDarkPokemon(p0 - 0x80U);
+    }
+#endif
     return NULL;
 }
 }

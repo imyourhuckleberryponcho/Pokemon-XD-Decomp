@@ -2732,6 +2732,7 @@ s32 GSmsgFontClose(FontBlock* blk)
 }
 
 #ifndef __MWERKS__
+#include <game/pcalloc.h>
 static u32 _msgCtrlArgBytes(u8 ctrl)
 {
     switch (ctrl) {
@@ -2796,7 +2797,7 @@ static void _msgConvertBank(MsgBank* bank)
             return;
         }
     }
-    u32* offs = (u32*)malloc(n * sizeof(u32) + 1);
+    u32* offs = (u32*)PC_ALLOC(n * sizeof(u32) + 1);
     for (i = 0; i < n; i++) {
         offs[i] = bank->entries[i].offset;
     }
@@ -2809,7 +2810,7 @@ static void _msgConvertBank(MsgBank* bank)
         }
         doneUntil = _msgSwapText(t);
     }
-    free(offs);
+    PC_FREE(offs);
     _msgConverted[_msgConvertedNext].bank = bank;
     _msgConverted[_msgConvertedNext].hash = _msgTextHash(bank);
     _msgConvertedNext = (_msgConvertedNext + 1) % 64;

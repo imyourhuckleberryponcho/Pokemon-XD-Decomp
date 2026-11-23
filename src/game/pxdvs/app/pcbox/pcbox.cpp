@@ -28,7 +28,7 @@ struct PCBoxBox {
 };
 
 extern "C" {
-void* savedataGetStatus(s32, s32);
+void* savedataGetStatus(PCARG(s32, void*), s32);
 void msgctrlSetValue(s32, GCuptr);
 u16* GSmsgMakeGScharStr(u16*, s32, u32);
 void itemInitAry(void*, u16);

@@ -176,7 +176,7 @@ void GSprimSetTextWidth(f32 w);
 void GSprimWriteChar(char c, f32 x, f32 y);
 void GSprimWriteStr(f32 x, f32 y, char* fmt, ...);
 GXFifoObj* GXGetCPUFifo(void);
-extern u32 _layerStateLastHWState;
+extern u8* _layerStateLastHWState;
 #ifdef __MWERKS__
 extern GStexture* fbTexPtr__10GSgfxLayer;
 extern u16 fbTexRefCount__10GSgfxLayer;
@@ -1238,7 +1238,7 @@ GSgfxLayer::~GSgfxLayer() {
         GXSetCPUFifo(GSgfxGPUGetImmediateFifo());
         gsgfx_layer_activeFifo = NULL;
     }
-    if ((u32)_layerStateLastHWState == (u32)hwState) {
+    if ((GCuptr)_layerStateLastHWState == (GCuptr)hwState) {
         _layerStateLastHWState = 0;
     }
     delete matrixStack;

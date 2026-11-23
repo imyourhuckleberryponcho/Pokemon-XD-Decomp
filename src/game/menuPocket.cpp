@@ -1846,9 +1846,9 @@ UseFunc _getUseFunc(u32 item)
     }
 #endif
     if (Data.mode == 0) {
-        return (UseFunc)itemDataBiosGetFieldUseFunc(p);
+        return PC_PTR(UseFunc, itemDataBiosGetFieldUseFunc(p));
     }
-    return (UseFunc)itemDataBiosGetBattleUseFunc(p);
+    return PC_PTR(UseFunc, itemDataBiosGetBattleUseFunc(p));
 }
 }
 

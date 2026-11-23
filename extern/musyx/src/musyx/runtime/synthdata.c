@@ -1,4 +1,7 @@
 #include "musyx/synthdata.h"
+#ifndef __MWERKS__
+#include "musyx/xdport.h"
+#endif
 #include "musyx/assert.h"
 #include "musyx/hardware.h"
 #include "musyx/snd.h"
@@ -391,9 +394,17 @@ done:
 
   if (MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 1) ? (sdir->ref_cnt == 0) : TRUE) {
 #if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 1)
+#ifdef __MWERKS__
     sdir->addr = (void*)((size_t)sdir->offset + (s32)dataSmpSDirs[i].base);
 #else
+    sdir->addr = MUSY_ADDR32((u8*)dataSmpSDirs[i].base + sdir->offset);
+#endif
+#else
+#ifdef __MWERKS__
     sdir->addr = (void*)((size_t)sdir->offset + (s32)sdirTab->base);
+#else
+    sdir->addr = MUSY_ADDR32((u8*)sdirTab->base + sdir->offset);
+#endif
 #endif
     header = &sdir->header;
     hwSaveSample(&header, &sdir->addr
@@ -751,7 +762,7 @@ void* sndConvert32BitSDIRTo64BitSDIR(void* sdir_int) {
 
   ++n;
 
-  sdir = malloc(n * sizeof(SDIR_DATA));
+  sdir = MUSY_MALLOC(n * sizeof(SDIR_DATA));
 
   for (i = 0; i < n; ++i) {
     sdir[i].id = sdir_inter[i].id;

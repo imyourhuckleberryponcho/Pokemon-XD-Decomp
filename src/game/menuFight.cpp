@@ -683,8 +683,8 @@ extern "C" {
 void* pokemonDataBiosGetPtr(u16);
 u8 pokemonDataBiosGetZokuseiDataId(void*, u16);
 u32 fightOutPokemon_GetTokuseiDataId(void*);
-u32 pokemonTokuseiDataBiosGetPtr(u16);
-u32 pokemonTokuseiDataBiosGetName(u32);
+GCuptr pokemonTokuseiDataBiosGetPtr(u16);
+u32 pokemonTokuseiDataBiosGetName(GCuptr);
 u8 pokemonWazaGetMaxPP(void*, u16);
 u16 pokemonGetSoubiItemDataId(void*);
 u8* itemDataBiosGetPtr(u16);

@@ -38,6 +38,7 @@ typedef s32 gc_bes32;
 typedef f32 gc_bef32;
 #define gc_ptr32(T) T*
 #define GC_ADDR32(p) ((u32)(p))
+#define PC_ADDR32(p) ((u32)(p))
 #define GC_BE32(x) (x)
 #define GC_ADDBE32(lv, v) ((lv) += (v))
 #define GC_BE16(x) (x)
@@ -86,6 +87,9 @@ static inline void gc_wr16(u8* b, u16 v) { b[0] = (u8)(v >> 8); b[1] = (u8)v; }
 static inline void gc_wr32(u8* b, u32 v) { b[0] = (u8)(v >> 24); b[1] = (u8)(v >> 16); b[2] = (u8)(v >> 8); b[3] = (u8)v; }
 
 
+
+#include <game/gcptr.h>
+#ifndef PORT_PTR32_HOOK
 static inline u32 gc_addr32(const void* p) {
     uintptr_t v = (uintptr_t)p;
     if (v > 0xFFFFFFFFu) {
@@ -93,7 +97,9 @@ static inline u32 gc_addr32(const void* p) {
     }
     return (u32)v;
 }
+#endif
 #define GC_ADDR32(p) gc_addr32(p)
+#define PC_ADDR32(p) gc_addr32(p)
 
 #define GC_BYTES32(p) gc_rd32((const u8*)(p))
 
@@ -119,7 +125,7 @@ typedef union gc_ptr32_c { u32 raw; } gc_ptr32_c;
 #define GC_BES16(x) ((s16)gc_rd16((const u8*)&(x)))
 #define GC_BES32(x) ((s32)gc_rd32((const u8*)&(x)))
 #define GC_BEF32(x) gc_rdf32((const u8*)&(x))
-#define GC_PTR(T, x) ((T)(uintptr_t)gc_rd32((const u8*)&(x)))
+#define GC_PTR(T, x) ((T)pc_ptr32(gc_rd32((const u8*)&(x))))
 #define GC_RAW32(x) gc_rd32((const u8*)&(x))
 #define GC_SETBE16(lv, v) gc_wr16((u8*)&(lv), (u16)(v))
 #define GC_SETBE32(lv, v) gc_wr32((u8*)&(lv), (u32)(v))
@@ -223,14 +229,8 @@ typedef gc_bef32_t gc_bef32;
 
 template <class T> struct alignas(4) gc_ptr32_t {
     u8 b[4];
-    T* get() const { return (T*)(uintptr_t)gc_rd32(b); }
-    void set(const void* p) {
-        uintptr_t v = (uintptr_t)p;
-        if (v > 0xFFFFFFFFu) {
-            OSPanic(__FILE__, __LINE__, "gc_ptr32: address above 4 GB stored in a 4-byte GameCube slot");
-        }
-        gc_wr32(b, (u32)v);
-    }
+    T* get() const { return (T*)pc_ptr32(gc_rd32(b)); }
+    void set(const void* p) { gc_wr32(b, gc_addr32(p)); }
     operator T*() const { return get(); }
     template <class U> explicit operator U*() const { return (U*)get(); }
     T* operator->() const { return get(); }

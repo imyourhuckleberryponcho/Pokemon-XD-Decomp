@@ -1484,10 +1484,10 @@ static void _floorInitializeCommon(unsigned int id, FloorEnterMode mode) {
             _hModuleFloorScript = floorRegisterScriptModule(0xF, group, pre, main, post);
         }
         FloorModuleInterface_clear(&_floorModuleUniqueFunc);
-        _floorUniqueFunc.pre = (FloorUniqueFn)floorDataBiosGetPreFunc(floor);
-        _floorUniqueFuncThread = (void (*)())floorDataBiosGetMainFunc(floor);
+        _floorUniqueFunc.pre = PC_PTR(FloorUniqueFn, floorDataBiosGetPreFunc(floor));
+        _floorUniqueFuncThread = PC_PTR(void (*)(), floorDataBiosGetMainFunc(floor));
         _floorUniqueFunc.unk4 = 0;
-        _floorUniqueFunc.post = (FloorUniqueFn)floorDataBiosGetPostFunc(floor);
+        _floorUniqueFunc.post = PC_PTR(FloorUniqueFn, floorDataBiosGetPostFunc(floor));
         _floorModuleUniqueFunc.initialize = _floorUniqueInitialize;
         _floorModuleUniqueFunc.unk0c = _floorUniqueUpdate;
         _floorModuleUniqueFunc.finalize = _floorUniqueFinalize;
@@ -1496,10 +1496,10 @@ static void _floorInitializeCommon(unsigned int id, FloorEnterMode mode) {
         floorSound_playEnvSound(1);
         floorSound_playSound();
     } else {
-        _floorUniqueFunc.pre = (FloorUniqueFn)floorDataBiosGetPreFunc(floor);
-        _floorUniqueFuncThread = (void (*)())floorDataBiosGetMainFunc(floor);
+        _floorUniqueFunc.pre = PC_PTR(FloorUniqueFn, floorDataBiosGetPreFunc(floor));
+        _floorUniqueFuncThread = PC_PTR(void (*)(), floorDataBiosGetMainFunc(floor));
         _floorUniqueFunc.unk4 = 0;
-        _floorUniqueFunc.post = (FloorUniqueFn)floorDataBiosGetPostFunc(floor);
+        _floorUniqueFunc.post = PC_PTR(FloorUniqueFn, floorDataBiosGetPostFunc(floor));
     }
     FloorBgmMask* bgm = (FloorBgmMask*)floorSound_getBgmMaskObj();
     if (bgm != 0) {

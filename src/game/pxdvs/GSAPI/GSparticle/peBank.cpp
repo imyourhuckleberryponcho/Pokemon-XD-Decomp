@@ -1,5 +1,7 @@
+#include <game/pcret.h>
 #ifndef __MWERKS__
 #include <game/psq.h>
+#include <game/pcret.h>
 #include <game/gsmodelview.h>
 #endif
 #include <dolphin/types.h>
@@ -58,7 +60,7 @@ u16 shapeGenerateIndex();
 u8 shapeLoad(u16 id, void* data);
 extern GSvec zeroVector;
 extern GSvec zAxisVector;
-void GSboundCreate(GSbound* b, int a);
+void GSboundCreate(GSbound* b, PCARG(int, void*) a);
 void GSboundFree(GSbound* b);
 void GSboundReset(GSbound* b);
 void GSboundAlwaysInView(GSbound* b, int v);
@@ -931,8 +933,17 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
                         if (d == 0) {
                             break;
                         }
+#ifdef __MWERKS__
                         u32** scene = (u32**)**(u32**)d;
-                        jobj = HSD_JObjLoadJoint((HSD_Joint*)scene[0]);
+#define PE_SCENE(k) ((void*)scene[k])
+#define PE_FIRST(p) (*(void**)(p))
+#else
+
+                        u8* scene = (u8*)PC_PTR(void*, gc_rd32((const u8*)PC_PTR(void*, gc_rd32((const u8*)d))));
+#define PE_SCENE(k) PC_PTR(void*, gc_rd32(scene + 4 * (k)))
+#define PE_FIRST(p) PC_PTR(void*, gc_rd32((const u8*)(p)))
+#endif
+                        jobj = HSD_JObjLoadJoint((HSD_Joint*)PE_SCENE(0));
                         if (jobj != 0) {
                             t->res = (GCsptr)jobj;
                             t->frame = 0.0f;
@@ -940,15 +951,17 @@ static bool _peConvertFileData(_gpdHeader* h, _gpdResourceItem* items, _particle
                             void* a = 0;
                             void* b = 0;
                             void* c = 0;
-                            if (scene[1] != 0) {
-                                a = *(void**)scene[1];
+                            if (PE_SCENE(1) != 0) {
+                                a = PE_FIRST(PE_SCENE(1));
                             }
-                            if (scene[2] != 0) {
-                                b = *(void**)scene[2];
+                            if (PE_SCENE(2) != 0) {
+                                b = PE_FIRST(PE_SCENE(2));
                             }
-                            if (scene[3] != 0) {
-                                c = *(void**)scene[3];
+                            if (PE_SCENE(3) != 0) {
+                                c = PE_FIRST(PE_SCENE(3));
                             }
+#undef PE_SCENE
+#undef PE_FIRST
                             HSD_JObjAddAnimAll(jobj, a, b, c);
                             if (t->flags & 4) {
                                 HSD_ForeachAnim(jobj, 6, 0xFFFF, (void*)HSD_AObjSetFlags, 3, 0x20000000);

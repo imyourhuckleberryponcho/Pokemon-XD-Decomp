@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcabil.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -1125,11 +1126,11 @@ static PokemonData* getPokemonData(Pokemon* p) {
 #ifndef __MWERKS__
 extern "C" {
 void menuPocket2GetTemochiPokemon(s32 slot, Pokemon** pokemon, FightPokemon** fightPokemon);
-u8 pokemonDataBiosGetTokuseiDataId(PokemonData* data, u16 index);
+PC_ABIL(u8) pokemonDataBiosGetTokuseiDataId(PokemonData* data, u16 index);
 void* pokemon_GetNicknamePtr(Pokemon* p);
 u16 pokemonGetTokuseiDataId(Pokemon* p);
-u32 pokemonTokuseiDataBiosGetPtr(u16 id);
-u32 pokemonTokuseiDataBiosGetName(u32 data);
+GCuptr pokemonTokuseiDataBiosGetPtr(u16 id);
+u32 pokemonTokuseiDataBiosGetName(GCuptr data);
 u32 pokemon_GetTokuseiFlag(Pokemon* p);
 void pokemonBiosSetTokuseiFlag(Pokemon* poke, u8 data);
 void fightMsgctrlSetValue(s32 id, GCuptr value);

@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/pcabil.h>
 #include <game/gcptr.h>
 #include <game/ppcops.h>
 #include "game/gcdata.h"
@@ -144,7 +146,7 @@ void GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSmsgPrintRect(s32, s32, s32, s32, s32, u32, u32);
 void GSmsgPrintRight(s32, s32, s32, s32, s32, u32, u32);
 void GSsndPlayNow(u32);
-u16 memoDataGetCount(s32);
+u16 memoDataGetCount(PCARG(s32, void*));
 void menuClose(s32);
 void menuCloseSync(s32, bool);
 MenuItem* menuItemBiosGetPtr(s32, s32);
@@ -180,7 +182,7 @@ void msgctrlSetValue(s32, GCuptr);
 s32 pokecoloGetLanguage(void);
 u16 pokemonDataBiosGetHeight(void*);
 void* pokemonDataBiosGetPtr(u16);
-u8 pokemonDataBiosGetTokuseiDataId(void*, u16);
+PC_ABIL(u8) pokemonDataBiosGetTokuseiDataId(void*, u16);
 u32 pokemonDataBiosGetTypeName(void*);
 u16 pokemonDataBiosGetWeight(void*);
 u8 pokemonDataBiosGetZokuseiDataId(void*, u16);

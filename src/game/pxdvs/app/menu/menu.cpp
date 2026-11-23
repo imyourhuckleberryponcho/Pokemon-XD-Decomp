@@ -191,7 +191,7 @@ u8 menuOffScreenSetDisp(u8 enable);
 u8 menuOffScreenSetPriority(u8 priority);
 void GSsndPlayNow(u32 id);
 void GSlogWrite(const char* fmt, ...);
-GCuptr GSthreadGetCurrentThread(void);
+PCARG(GCuptr, void*) GSthreadGetCurrentThread(void);
 void GSthreadSwitch(void);
 f32 timeGetLastFrameSec(void);
 u32 timeGetLastFrameTime(void);

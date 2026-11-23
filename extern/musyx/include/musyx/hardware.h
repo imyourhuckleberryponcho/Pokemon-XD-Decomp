@@ -98,7 +98,11 @@ void* hwGetSampleExtraData(u32 voice);
 void hwChangeStudioMix(u8 studio, u32 isMaster);
 void hwSetStreamLoopPS(u32 voice, u8 ps);
 void hwFlushStream(void* base, u32 offset, u32 bytes, u8 hwStreamHandle, void (*callback)(size_t),
+#ifdef __MWERKS__
                    u32 user);
+#else
+                   size_t user);
+#endif
 void hwSetSaveSampleCallback(ARAMUploadCallback callback, unsigned long chunckSize);
 void hwSyncSampleMem();
 void hwSetAUXProcessingCallbacks(u8 studio, SND_AUX_CALLBACK auxA, void* userA,

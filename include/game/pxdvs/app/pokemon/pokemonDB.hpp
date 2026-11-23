@@ -1,4 +1,5 @@
 #include <game/pcret.h>
+#include <game/pcabil.h>
 #ifndef POKEMONDB_H
 #define POKEMONDB_H
 
@@ -83,6 +84,6 @@ extern "C" u32 pokemon_GetExp(Pokemon*);
 extern "C" u32 pokemon_GetCatchTrainerRnd(Pokemon*);
 extern "C" u32 pokemon_GetRnd(Pokemon*);
 extern "C" PCRET(u16) pokemon_GetPokemonDataId(Pokemon*);
-extern "C" u8 pokemonDB_GetTokuseiDataId(u16, u16);
+extern "C" PC_ABIL(u8) pokemonDB_GetTokuseiDataId(u16, u16);
 extern "C" PCRET(u8) pokemonDB_GetGrowDataId(u16);
 #endif

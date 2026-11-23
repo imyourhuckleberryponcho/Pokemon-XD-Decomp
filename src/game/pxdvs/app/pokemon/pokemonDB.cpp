@@ -1,4 +1,5 @@
 #include <game/pcret.h>
+#include <game/pcabil.h>
 #include <game/fightfloor.h>
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/bitfield.h>
@@ -2004,11 +2005,20 @@ u32 pokemonDB_GetPokebodyId(u16 id, u16 idx) {
     return cg->pokebodyId;
 }
 
+#ifndef __MWERKS__
+extern "C" int (*PortXD_TeachWazaExtra)(u16 species, u16 tutor);
+int (*PortXD_TeachWazaExtra)(u16 species, u16 tutor) = 0;
+#endif
 u8 pokemonDB_GetTeachWaza(u16 id, u16 idx) {
     PokemonData* data = pokemonDataBiosGetPtr(id);
     if (data == nullptr) {
         return 0;
     }
+#ifndef __MWERKS__
+    if (idx >= 12) {
+        return PortXD_TeachWazaExtra != 0 && PortXD_TeachWazaExtra(id, idx) != 0;
+    }
+#endif
     if (!(idx < 12 && idx > -1)) {
         return 0;
     }
@@ -2031,7 +2041,7 @@ u8 pokemonDB_GetGetWazaLevel(u16 id, u16 idx) {
     return waza->level;
 }
 
-u8 pokemonDB_GetTokuseiDataId(u16 id, u16 idx) {
+PC_ABIL(u8) pokemonDB_GetTokuseiDataId(u16 id, u16 idx) {
     PokemonData* data = pokemonDataBiosGetPtr(id);
     if (data == nullptr) {
         return 0;
@@ -2039,6 +2049,11 @@ u8 pokemonDB_GetTokuseiDataId(u16 id, u16 idx) {
     if (idx >= 2) {
         return 0;
     }
+#ifndef __MWERKS__
+    if (data->tokuseiDataId[idx] == 0xFF && PortXD_SpeciesAbility != 0) {
+        return PortXD_SpeciesAbility(id, idx);
+    }
+#endif
     return data->tokuseiDataId[idx];
 }
 

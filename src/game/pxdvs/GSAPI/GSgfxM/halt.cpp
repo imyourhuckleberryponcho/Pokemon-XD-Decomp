@@ -1,5 +1,6 @@
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -280,14 +281,14 @@ void GSgfxHaltInit() {
     __OSFpscrEnableBits = 0x10;
     OSSetErrorHandler((OSError)0x10, (OSErrorHandler)GSgfxHalt);
     enabled = OSDisableInterrupts();
-    memcpy(_haltOldDSIHandler, (void*)0x80000300, sizeof(_haltOldDSIHandler));
-    memcpy(_haltOldISIHandler, (void*)0x80000400, sizeof(_haltOldISIHandler));
-    memcpy(_haltOldAlignmentHandler, (void*)0x80000600, sizeof(_haltOldAlignmentHandler));
-    memcpy(_haltOldProgramHandler, (void*)0x80000700, sizeof(_haltOldProgramHandler));
-    memcpy((void*)0x80000300, (void*)_haltDSIHandler, 0x74);
-    memcpy((void*)0x80000400, (void*)_haltISIHandler, 0x34);
-    memcpy((void*)0x80000600, (void*)_haltAlignmentHandler, 0x34);
-    DCFlushRange((void*)0x80000300, 0x1000);
+    memcpy(_haltOldDSIHandler, PC_PTR(void*, 0x80000300), sizeof(_haltOldDSIHandler));
+    memcpy(_haltOldISIHandler, PC_PTR(void*, 0x80000400), sizeof(_haltOldISIHandler));
+    memcpy(_haltOldAlignmentHandler, PC_PTR(void*, 0x80000600), sizeof(_haltOldAlignmentHandler));
+    memcpy(_haltOldProgramHandler, PC_PTR(void*, 0x80000700), sizeof(_haltOldProgramHandler));
+    memcpy(PC_PTR(void*, 0x80000300), (void*)_haltDSIHandler, 0x74);
+    memcpy(PC_PTR(void*, 0x80000400), (void*)_haltISIHandler, 0x34);
+    memcpy(PC_PTR(void*, 0x80000600), (void*)_haltAlignmentHandler, 0x34);
+    DCFlushRange(PC_PTR(void*, 0x80000300), 0x1000);
     _haltHandlerInstalled = 1;
     OSRestoreInterrupts(enabled);
 }

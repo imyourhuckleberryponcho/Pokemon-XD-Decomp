@@ -435,7 +435,7 @@ void GSresFreeResourceAllGroup(u32 id);
 void* GSresGetResource(u32 grp, u32 id);
 void GSresRegisterResource(void* mem, u32 grp, u32 id, void* freeFunc);
 u8 GSsndPlayNow(u32 id);
-GCuptr GSthreadGetCurrentThread();
+PCARG(GCuptr, void*) GSthreadGetCurrentThread();
 void GSthreadSwitch();
 void GSvecTransformQuat(GSvec* out, const GSquat* q, const GSvec* v);
 u16 HSD_Rand(void);

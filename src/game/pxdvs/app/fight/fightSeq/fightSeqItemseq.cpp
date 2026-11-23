@@ -120,7 +120,7 @@ u32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* p, PCARG(u8, u
 void fightSeqKizetuInit(FightOutPokemon* p);
 void fightSeqCheckSetHensinBuffToMotoFightPokemon(FightOutPokemon* p, u16 id);
 void fightMainAllCamera(u8 a, u8 b);
-GCuptr GSthreadGetCurrentThread(void);
+PCARG(GCuptr, void*) GSthreadGetCurrentThread(void);
 void menuCloseCustom(s32 menuID, s32 a, s32 b);
 s32 winMsgOpenField(u32 msg, bool a, bool b);
 s8 menuSubOpenYesNoField(void);

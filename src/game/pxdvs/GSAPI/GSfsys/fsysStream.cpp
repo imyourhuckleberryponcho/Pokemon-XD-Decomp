@@ -12,7 +12,7 @@ FsysResHeader* _fsysGetResHeader(Fsys* fsys, u32 index);
 u32 _fsysID2Index(Fsys* fsys, u32 id);
 FsysHeader* _fsysGetHeader(Fsys* fsys);
 u8 _fsysReadCacheEX(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, void (*callback)(void*),
-                    u32, u32, u32);
+                    GCuptr, GCuptr, GCuptr);
 FsysArqTrans* _fsysArq2ArqTrans(void* arq);
 void _fsysMemSet(void* dst, s32 c, u32 size);
 void _fsysMemFreeCache(void* cache);
@@ -24,7 +24,7 @@ u32 _fsysStreamGetReadBlockFlag(u32 offset) {
 }
 
 #pragma dont_inline on
-BOOL _fsysStreamGetData(Fsys* fsys, u32 id, void* dst, u32 size, u32 offset, u32 arg5, u32 arg6, u32 arg7) {
+BOOL _fsysStreamGetData(Fsys* fsys, u32 id, void* dst, u32 size, u32 offset, GCuptr arg5, GCuptr arg6, GCuptr arg7) {
     FsysResHeader* res;
     BOOL intr = OSDisableInterrupts();
 

@@ -32,7 +32,7 @@ extern "C" {
 extern "C" {
 asm void DCFlushRange(register void* addr, register u32 nBytes);
 u32 GSfsysStreamGetCacheSize(void);
-u8 GSfsysStreamGetData(u32 gid, u32 id, u32 dst, u32 size, u32 offset, u32 a, u32 b, u32 c);
+u8 GSfsysStreamGetData(u32 gid, u32 id, GCuptr dst, u32 size, u32 offset, GCuptr a, GCuptr b, GCuptr c);
 asm BOOL OSDisableInterrupts(void);
 void OSReport(const char* msg, ...);
 asm BOOL OSRestoreInterrupts(register BOOL level);
@@ -126,7 +126,7 @@ static void _sndStreamPrepareGetData_GetNewData(SndStream* s, SndStream* master,
     if (master->loop == 0 && s->pos >= master->dataSize) {
         memset(dst, 0, 0x8000);
         _sndStreamPrepareGetDataCallback(0, half, s);
-    } else if (!GSfsysStreamGetData(master->gid, master->fid, (u32)dst, 0x8000, offset, (u32)_sndStreamPrepareGetDataCallback, half, (u32)s)) {
+    } else if (!GSfsysStreamGetData(master->gid, master->fid, (GCuptr)dst, 0x8000, offset, (GCuptr)_sndStreamPrepareGetDataCallback, half, (GCuptr)s)) {
         ch->state = old;
     }
 }

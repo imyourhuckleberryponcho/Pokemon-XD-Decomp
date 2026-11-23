@@ -325,7 +325,11 @@ void* _fsysReadDataExec(void* task, void* resv) {
             OSRestoreInterrupts(level);
             return NULL;
         }
+#ifdef __MWERKS__
         s32 (*func)(s32, s32, s32) = (s32 (*)(s32, s32, s32))_fsysGetDataType(res->type)[2];
+#else
+        s32 (*func)(s32, s32, s32) = (s32 (*)(s32, s32, s32))((FsysDataType*)_fsysGetDataType(res->type))->pre;
+#endif
         if (func != NULL) {
             func(((FsysWork*)(task))->id, res->id, res->size14);
         }

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma peephole off
 
@@ -12,7 +13,7 @@ void GSsndPause(u32 id, s32, s32);
 void GSsndContinue(u32 id, s32, s32);
 void GSgappPauseOn(void);
 void GSgappPauseOff(void);
-s32 GSgappCreate(s32, s32, s32, void (*func)(u32, u32));
+s32 GSgappCreate(s32, s32, PCARG(s32, void*), void (*func)(u32, u32));
 u32 soundGetBGMID(void);
 void GSmovieAllPause(void);
 void GSmovieAllContinue(void);

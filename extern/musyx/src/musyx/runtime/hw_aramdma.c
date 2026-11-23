@@ -1,4 +1,7 @@
 #include "musyx/assert.h"
+#ifndef __MWERKS__
+#include "musyx/xdport.h"
+#endif
 #include "musyx/hardware.h"
 #include "musyx/musyx.h"
 #include "musyx/platform.h"
@@ -92,7 +95,11 @@ void aramUploadData(void* mram, unsigned long aram, unsigned long len, unsigned 
       aramQueue->queue[aramQueue->write].arq.owner = 42;
       aramQueue->queue[aramQueue->write].arq.type = 0;
       aramQueue->queue[aramQueue->write].arq.priority = highPrio != 0 ? 1 : 0;
+#ifdef __MWERKS__
       aramQueue->queue[aramQueue->write].arq.source = (u32)mram;
+#else
+      aramQueue->queue[aramQueue->write].arq.source = MUSY_ADDR32(mram);
+#endif
       aramQueue->queue[aramQueue->write].arq.dest = aram;
       aramQueue->queue[aramQueue->write].arq.length = len;
       aramQueue->queue[aramQueue->write].arq.callback = aramQueueCallback;

@@ -1,7 +1,7 @@
 # unit	status	match%	symbol	name	pragmas	asm	cflags	gc_hash
 # status: linked = byte-identical and in the DOL; exact = byte-identical, file not linked yet; draft = differs from the original (may behave differently)
 # pragmas: non-default #pragma state at the definition ("-" none, "?" definition not found by name); asm = inline asm body; cflags = the unit's extra compiler flags; gc_hash = funchash.py hash of our compiled GameCube code (relocated words masked, targets by name): same hash = same GameCube code
-# generated: 2026-11-17 13:34 from the build at source commit 4a1c51b477
+# generated: 2026-11-23 15:21 from the build at source commit c19b244f71
 game/character	linked	100.00	characterInit	characterInit	?	-	-	abd524a9450f
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraResetFloor	dbgMenuCameraResetFloor	peephole off	-	-	ec8086614c12
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraChangeDisp	dbgMenuCameraChangeDisp	peephole off	-	-	efda3d324df5
@@ -5765,7 +5765,7 @@ game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetSinkaPokemonD
 game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetSinkaBuff	pokemonDataBiosGetSinkaBuff	-	-	-	894a4b03feb7
 game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetSinkaKind	pokemonDataBiosGetSinkaKind	-	-	-	2678562fe4c3
 game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetSinkaPtr	pokemonDataBiosGetSinkaPtr	-	-	-	7d39026a3a5f
-game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetTokuseiDataId	pokemonDataBiosGetTokuseiDataId	-	-	-	a0c3e70a044b
+game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetTokuseiDataId	pokemonDataBiosGetTokuseiDataId	?	-	-	a0c3e70a044b
 game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetZokuseiDataId	pokemonDataBiosGetZokuseiDataId	?	-	-	5a43ca6482c0
 game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetItemDataId	pokemonDataBiosGetItemDataId	-	-	-	ed3aca2cb12a
 game/pxdvs/app/pokemon/pokemonBios	linked	100.00	pokemonDataBiosGetInitFriend	pokemonDataBiosGetInitFriend	-	-	-	4bf67c00cedc
@@ -6151,7 +6151,7 @@ game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetPokebodyId	pokemonDB
 game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetTeachWaza	pokemonDB_GetTeachWaza	-	-	-	f9df83c66bd7
 game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetGetWazaDataId	pokemonDB_GetGetWazaDataId	-	-	-	9d4581f23335
 game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetGetWazaLevel	pokemonDB_GetGetWazaLevel	-	-	-	8e76c9df79d6
-game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetTokuseiDataId	pokemonDB_GetTokuseiDataId	-	-	-	dc2872e1c1d4
+game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetTokuseiDataId	pokemonDB_GetTokuseiDataId	?	-	-	dc2872e1c1d4
 game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetZokuseiDataId	pokemonDB_GetZokuseiDataId	-	-	-	ac410244ef0b
 game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetItemDataId	pokemonDB_GetItemDataId	-	-	-	f2e2018e5d37
 game/pxdvs/app/pokemon/pokemonDB	linked	100.00	pokemonDB_GetInitFriend	pokemonDB_GetInitFriend	?	-	-	b56a3c455115

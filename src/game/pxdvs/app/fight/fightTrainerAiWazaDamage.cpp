@@ -22,7 +22,7 @@ u32 fightTrainerAiGetWazaIryoku(FIGHT_TRAINER*, u16);
 u32 fightTrainerAiGetWazaZokuseiDataId(FIGHT_TRAINER*, u16, FightOutPokemon*);
 s32 fightTrainerAiWazaDoWazaDamageFunc(FIGHT_TRAINER*, FightOutPokemon*, u16, FightOutPokemon*, u8);
 u16 fightFloorGetFightTrainerFightPokemonPtrAry(u32, FIGHT_TRAINER*, FightPokemon**, u8, u8);
-u16 fightFloor_GetTikeiDataId(u32);
+u16 fightFloor_GetTikeiDataId(PCARG(u32, void*));
 u16 tikeiDataBiosGetWazaId(PCARG(u8, u16));
 u32 wazaDB_GetSeqId(u16);
 s16 fightOutPokemonGetCountAsJoutaiDataId(FightOutPokemon*, u16);

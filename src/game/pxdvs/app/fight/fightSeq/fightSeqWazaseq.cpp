@@ -2691,7 +2691,7 @@ void WS_YUBIWOHURU(void) {
 #ifdef __MWERKS__
     u16 ary[400];
 #else
-    u16 ary[400 + PC_SPARE_MOVES];
+    static u16 ary[400 + PC_SPARE_MOVES];
 #endif
     u8 type;
     FightOutPokemon* atk;

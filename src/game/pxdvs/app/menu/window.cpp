@@ -220,7 +220,7 @@ void winSpriteRelease(void*);
 void winSpriteInit(void);
 void winSetSequence(void*, u32);
 void GSlogWrite(const char*, ...);
-GCuptr GSthreadGetCurrentThread(void);
+PCARG(GCuptr, void*) GSthreadGetCurrentThread(void);
 void GSthreadSwitch(void);
 s32 menuGetCursorItemID(s32);
 void menuPlaySe(s32, s32);

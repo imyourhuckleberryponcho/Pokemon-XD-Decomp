@@ -1,6 +1,7 @@
 #include <game/ppcops.h>
 #include <dolphin/types.h>
 #include <game/gcptr.h>
+#include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/tigadata.h>
 
@@ -47,9 +48,9 @@ void GSmemFree(void*);
 void* GSgfxLayerFindByName_C(const char*);
 void GSprint(void* layer, s32 x, s32 y, u32 color, const char* fmt, ...);
 void GSthreadSwitch(void);
-void GSthreadTerminate(s32 thread);
-void GSthreadSetName(s32 thread, const char* name);
-void GSthreadSetArgs(s32 thread, s32 count, ...);
+void GSthreadTerminate(PCARG(s32, void*) thread);
+void GSthreadSetName(PCARG(s32, void*) thread, const char* name);
+void GSthreadSetArgs(PCARG(s32, void*) thread, s32 count, ...);
 f32 timeGetLastFrameSec(void);
 void * floorCreateThreadLocal(s32, s32, s32, void (*)(void*, s32));
 s32 floorGetCurrentFloorGroupID(void);
@@ -653,7 +654,7 @@ void TigaThread::stop()
 {
     state = 0;
     if (gsThread != 0) {
-        GSthreadTerminate(gsThread);
+        GSthreadTerminate(PC_PTRV(gsThread));
         gsThread = 0;
     }
 }
@@ -853,8 +854,8 @@ s32 Tiga::runParamsPC(TPCCode* code, tigaVariant* args, int count, bool useThrea
         t->ctx.bp = sp;
         if (useThread) {
             s32 g = GC_ADDR32(floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread));
-            GSthreadSetName(g, "GSscript thread");
-            GSthreadSetArgs(g, 2, this, handle);
+            GSthreadSetName(PC_PTRV(g), "GSscript thread");
+            GSthreadSetArgs(PC_PTRV(g), 2, this, handle);
             t->gsThread = g;
         } else {
             execute(t);
@@ -1699,8 +1700,8 @@ s32 Tiga::restoreStateData(void* data, u32 length)
             s32 rf_t = threads[i]->handle;
             handle = rf_t;
             t = GC_ADDR32(floorCreateThreadLocal(1, 0x2000, 1, (void (*)(void*, s32))_executeScriptThread));
-            GSthreadSetName(t, "GSscript thread");
-            GSthreadSetArgs(t, 2, this, handle);
+            GSthreadSetName(PC_PTRV(t), "GSscript thread");
+            GSthreadSetArgs(PC_PTRV(t), 2, this, handle);
             threads[i]->gsThread = t;
         }
     }

@@ -1,8 +1,10 @@
 #include <game/pcret.h>
+#include <game/pcabil.h>
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/pokemonBios.hpp>
 #include <game/pxdvs/app/pokemon/pokemonDB.hpp>
 #include <game/relglobal.h>
+#include <game/gcptr.h>
 #ifndef __MWERKS__
 #include <string.h>
 #endif
@@ -85,11 +87,11 @@ in_range:
     return (s8)((u8*)data)[index];
 }
 
-u32 pokemonFriendFilterDataBiosGetPtr(u16 index) {
+GCuptr pokemonFriendFilterDataBiosGetPtr(u16 index) {
     if (index < pokemon_friend_filter_data_number) goto in_range;
     return 0;
 in_range:
-    return (u32)(pokemon_friend_filter_data + index * 3);
+    return (GCuptr)(pokemon_friend_filter_data + index * 3);
 }
 
 u32 pokemonTokuseiDataBiosGetDoc(u32* data) {
@@ -106,11 +108,11 @@ non_null:
     return data[XG(1, 0)];
 }
 
-u32 pokemonTokuseiDataBiosGetPtr(u16 index) {
+GCuptr pokemonTokuseiDataBiosGetPtr(u16 index) {
     if (index < pokemon_tokusei_data_number) goto in_range;
     return 0;
 in_range:
-    return (u32)((u8*)pokemon_tokusei_data + index * XG(0xC, 8));
+    return (GCuptr)((u8*)pokemon_tokusei_data + index * XG(0xC, 8));
 }
 
 u32 pokemonSeikakuRateDataBiosGetWaru(PokemonSeikakuRateBios* data) {
@@ -1139,11 +1141,21 @@ PokemonDataCgData* pokemonDataBiosGetCgDataPtr(PokemonData* pdata, u16 cgIdx) {
     return &pdata->cgData[cgIdx];
 }
 
+#ifndef __MWERKS__
+extern "C" int (*PortXD_WazaMcnExtra)(u16 species, u16 machine);
+int (*PortXD_WazaMcnExtra)(u16 species, u16 machine) = 0;
+#endif
+
 bool pokemonDataBiosGetWazaMcn(PokemonData* pdata, u16 index) {
     if (pdata == nullptr) {
         return false;
     }
     if (index >= 58) {
+#ifndef __MWERKS__
+        if (PortXD_WazaMcnExtra != 0 && pdata >= pokemon_data && pdata < pokemon_data + *pokemon_data_number) {
+            return PortXD_WazaMcnExtra((u16)(pdata - pokemon_data), index) != 0;
+        }
+#endif
         return false;
     }
     return pdata->wazaMcn[index];
@@ -1216,13 +1228,23 @@ Sinka* pokemonDataBiosGetSinkaPtr(PokemonData* pdata, u16 sinkaIdx) {
     return &pdata->sinka[sinkaIdx];
 }
 
-u8 pokemonDataBiosGetTokuseiDataId(PokemonData* pdata, u16 index) {
+#ifndef __MWERKS__
+u16 (*PortXD_SpeciesAbility)(u16 species, u16 slot) = 0;
+#endif
+
+PC_ABIL(u8) pokemonDataBiosGetTokuseiDataId(PokemonData* pdata, u16 index) {
     if (pdata == nullptr) {
         return 0;
     }
     if (index >= 2) {
         return 0;
     }
+#ifndef __MWERKS__
+    if (pdata->tokuseiDataId[index] == 0xFF && PortXD_SpeciesAbility != 0 && pdata >= pokemon_data &&
+        pdata < pokemon_data + *pokemon_data_number) {
+        return PortXD_SpeciesAbility((u16)(pdata - pokemon_data), index);
+    }
+#endif
 
     return pdata->tokuseiDataId[index];
 }

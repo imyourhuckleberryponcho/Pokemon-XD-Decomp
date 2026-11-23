@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/pecontainer.h>
@@ -231,7 +232,7 @@ struct peXform {
 
 extern "C" {
 int EulerToQuat(Vec* euler, Quaternion* q);
-s32 GSboundAlwaysInView(u32 bound, s32 inView);
+s32 GSboundAlwaysInView(struct GSbound* bound, s32 inView);
 GSgfxVF* GSgfxVFGetPredef(s32 id);
 f32 HSD_Randf(void);
 asm void PSMTXConcat(const register Mtx a, const register Mtx b, register Mtx ab);
@@ -253,7 +254,7 @@ double atan2(double y, double x);
 s32 particleEngineSetDefaultRenderState(s32);
 s32 particleEngineSetupBlendMode(s32);
 enum GStexFilter { GS_TEXFILTER_NEAR = 0, GS_TEXFILTER_LINEAR = 2 };
-void particleEngineSetupTexture(u8, s32, s32, s32, s32, s32);
+void particleEngineSetupTexture(u8, PCARG(s32, void*), s32, s32, s32, s32);
 void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t);
 void peNodeTransformsConcat(peXform* out, peXform* a, peXform* b, bool useGfx);
 f32 peSplineGetValue(peSpline* s, f32 t);
@@ -261,7 +262,7 @@ extern f32 __float_nan[];
 extern Vec g_CameraLookDir;
 extern GCsptr g_CameraMatrix;
 extern Vec g_CameraPosition;
-extern u32 g_currentBound;
+extern struct GSbound* g_currentBound;
 extern GSgfxLayer* g_current_layer;
 extern _EmitParams* g_emitParams;
 struct ParticleDebugStats {
@@ -493,7 +494,7 @@ void peShapeContainer::Render() {
                 var_r8 = 2;
             }
             _peShape* sh = THIS_F(_peShape **, 0x20, shape);
-            particleEngineSetupTexture(0, GC_AT(s32, sh, 0x74), 0, 0, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, var_r8);
+            particleEngineSetupTexture(0, PC_PTRV(GC_AT(s32, sh, 0x74)), 0, 0, (temp_r31 & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR, var_r8);
             particleEngineSetupBlendMode(2);
             if (temp_r31 & 0x200) {
                 GSgfxLight* light0;

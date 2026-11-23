@@ -53,10 +53,10 @@ void pokemonCheckSetMonohiroi(void*);
 StatusU32 pokemonGetStatus(void*, u32, u32, u32);
 void pokemonBiosCopy(void*, void*);
 void pokemonSetCatchStatus(void*, u32, u32, u32, u32, u32, StatusU32);
-s32 pcboxAddPokemon(u32, void*, s32);
+s32 pcboxAddPokemon(PCARG(u32, void*), void*, s32);
 void pokemonInitAry(void*, u16);
 void itemInitAry(void*, u16);
-StatusU32 itemGetStatus(u32, u32, u32, u32);
+StatusU32 itemGetStatus(PCARG(u32, void*), u32, u32, u32);
 s32 itemCheckAddItemDataIdAry(void*, u16, u32, u16, u8);
 s32 itemDecItemDataIdAry(void*, u16, u32, u32, u32, u16, u8);
 s32 itemAddItemDataIdAry(void*, u16, u32, u32, u32, u16, u8, u8);
@@ -256,6 +256,11 @@ void* heroItemGetItemDataIdToItemAryPtr(Hero* hero, u32 itemID, u16* outCount, u
                                            outMax, outFlag1, outFlag2);
 }
 
+#ifndef __MWERKS__
+extern "C" void* (*PortXD_BagPocket)(Hero* hero, u8 kind, void* items, u16* count);
+void* (*PortXD_BagPocket)(Hero* hero, u8 kind, void* items, u16* count) = 0;
+#endif
+
 void* heroItemGetItemKindToItemAryPtr(Hero* hero, u8 kind, u16* outCount, u16* outMax,
                                       u8* outFlag1, u8* outFlag2) {
     void* items = 0;
@@ -318,6 +323,16 @@ void* heroItemGetItemKindToItemAryPtr(Hero* hero, u8 kind, u16* outCount, u16* o
         flag2 = 0;
         break;
     }
+#ifndef __MWERKS__
+    if (items != 0 && PortXD_BagPocket != 0) {
+        u16 pcCount = count;
+        void* pcItems = PortXD_BagPocket(hero, kind, items, &pcCount);
+        if (pcItems != 0) {
+            items = pcItems;
+            count = pcCount;
+        }
+    }
+#endif
     if (outCount != 0) {
         *outCount = count;
     }
@@ -501,7 +516,7 @@ void heroSetStatus(Hero* hero, u32 selector, StatusU32 value) {
     extern void heroBiosSetBadge06Flag(Hero*, u8);
     extern void heroBiosSetBadge07Flag(Hero*, u8);
     extern void heroBiosSetBadge08Flag(Hero*, u8);
-    extern void heroBiosSetHizukiNamePtr(Hero*, u32);
+    extern void heroBiosSetHizukiNamePtr(Hero*, PCARG(u32, StatusU32));
     extern void heroBiosSetHizukiFlag(Hero*, u8);
     extern void heroBiosSetHomePlace(Hero*, u8);
 

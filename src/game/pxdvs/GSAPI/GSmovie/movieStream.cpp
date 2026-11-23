@@ -142,7 +142,7 @@ struct __GSmovieStreaming {
 extern "C" {
 void DCFlushRange(void* addr, u32 nBytes);
 u32 GSfsysStreamGetCacheSize(void);
-bool GSfsysStreamGetData(u32 gid, u32 id, u32 dst, u32 size, u32 offset, u32 a, u32 b, u32 c);
+bool GSfsysStreamGetData(u32 gid, u32 id, GCuptr dst, u32 size, u32 offset, GCuptr a, GCuptr b, GCuptr c);
 s32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(s32 level);
 void OSReport(const char* msg, ...);
@@ -577,8 +577,8 @@ static inline void _movieStreamPrepareGetData_GetNewData(__GSmovieStreaming* s, 
         memcpy(dst, p->movieData + readOffset, 0x8000);
         _movieStreamAdvanceReadOffset(s);
         _movieStreamPrepareGetDataCallback_Exec(s, 0, size);
-    } else if (GSfsysStreamGetData(s->id, 0, (u32)dst, 0x8000, readOffset,
-                                   (u32)_movieStreamPrepareGetDataCallback, size, (u32)s) == 0) {
+    } else if (GSfsysStreamGetData(s->id, 0, (GCuptr)dst, 0x8000, readOffset,
+                                   (GCuptr)_movieStreamPrepareGetDataCallback, size, (GCuptr)s) == 0) {
         p->prepState = prev;
     }
 }

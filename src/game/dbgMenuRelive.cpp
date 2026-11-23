@@ -1,10 +1,11 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
+#include <game/pcret.h>
 
 #pragma peephole off
 
 extern "C" {
 
-Pokemon* heroGetStatus(s32, s32, s32);
+Pokemon* heroGetStatus(PCARG(s32, void*), s32, s32);
 bool pokemonIsDarkPokemon(Pokemon*);
 void preReliveSetParameter(s32, s32, s32);
 

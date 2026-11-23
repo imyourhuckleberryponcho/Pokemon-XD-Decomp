@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 #include <game/gcdata.h>
 #include <game/winwork.h>
 #include <game/gcptr.h>
@@ -121,7 +123,7 @@ struct MenuSpriteVal {
 extern "C" {
 void* heroItemGetItemKindToItemAryPtr(Hero*, u8, u16*, u16*, u8*, u8*);
 u16 itemBiosGetItemDataId(u8* p);
-u8 itemCheckValid(s32);
+u8 itemCheckValid(PCARG(s32, GCsptr));
 u32 itemDataBiosGetName(u8* p);
 u8* itemDataBiosGetPtr(u16 index);
 #ifdef __MWERKS__

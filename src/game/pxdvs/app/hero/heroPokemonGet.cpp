@@ -1,5 +1,7 @@
+#include <game/pcret.h>
 #ifndef __MWERKS__
 #include <string.h>
+#include <game/pcret.h>
 #endif
 #include <dolphin/types.h>
 #include <game/gcdata.h>
@@ -12,7 +14,7 @@ struct SmallPokemon { u8 data[0xC0]; };
 struct GamedataAttest { u32 value; };
 
 extern "C" {
-StatusS32 gamedataGetStatus(s32, s32);
+StatusS32 gamedataGetStatus(PCARG(s32, void*), s32);
 void gamedataAttestCreate(GamedataAttest*, s32, s32, s32, s32);
 void pokemonCreate(void*, s32, s32, GamedataAttest*);
 void pokemonSetStatus(void*, s32, s32, s32, s32);
@@ -21,7 +23,7 @@ void pokemonSetCatchStatus(void*, s32, s32, s32, s32, s32, StatusU32);
 s32 pokemonCreateRndFit(void*, s32, s32, s32, s32);
 void pokemonDoItemSoubi(void*, s32, s32);
 void pokemonResetBasisStatus(void*);
-void memoDataSet(s32, void*);
+void memoDataSet(PCARG(s32, void*), void*);
 void heroGetPokemon(Hero*, void*, s32);
 StatusS32 heroGetStatus(Hero*, s32, s32);
 void pokemonWazaCreate(void*, s32, s32);

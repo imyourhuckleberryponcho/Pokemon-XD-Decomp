@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <dolphin/gx/GXVert.h>
@@ -109,7 +110,7 @@ s32 GSsndGetStatus(u32);
 GSspline* GSsplineCreate(s32, s32, u8);
 void GSsplineAddControlVectorValue(GSspline*, GSvec*, f32);
 void GSsplineFree(GSspline*);
-u16 memoDataGetCount(s32);
+u16 memoDataGetCount(PCARG(s32, void*));
 void* menuPdaMemoListGetPokemonDataPointer(s32);
 s32 pokemonDataBiosGetVoice(void*);
 signed char* pokemonNakigoeDataBiosGetDataAddress(void*);

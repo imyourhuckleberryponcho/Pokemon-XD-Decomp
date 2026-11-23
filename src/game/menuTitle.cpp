@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/winwork.h>
@@ -173,7 +174,7 @@ s32 menuTop();
 u8 menuTopGetBattleMode();
 s32 menuTopSetInitCursor(s32);
 s32 pokecoloGetRomVersion(void);
-s32 savedataCreate(s32, s32);
+PCARG(s32, void*) savedataCreate(PCARG(s32, void*), PCARG(s32, void*));
 double sin(double x);
 u32 soundGetBGMID(void);
 void soundOpenPlay(s32, s32, s32);

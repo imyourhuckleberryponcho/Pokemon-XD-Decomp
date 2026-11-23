@@ -191,8 +191,8 @@ u8 wazaDB_GetPp(u16 waza);
 s32 wazaDB_GetIryoku(u16 waza);
 s8 wazaDB_GetPri(u16 waza);
 
-s32 fightFloor_GetFightType(s32 a);
-u8 fightFloor_GetFightKindPokemonStatusMenuSubbarFlag(s32 a);
+s32 fightFloor_GetFightType(PCARG(s32, void*) a);
+u8 fightFloor_GetFightKindPokemonStatusMenuSubbarFlag(PCARG(s32, void*) a);
 u8 fightFloorCheckHuuinWazaFightOutPokemon(s32 a, FightOutPokemon* fop, u16 waza);
 typedef FightOutPokemon* (*FightSelectDefenseFunc)(FightOutPokemon* fop, u16 waza, u16 type);
 FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon* fop, u16 waza, PCARG(u8, u32) type, FightSelectDefenseFunc func, s32 b, s32 c, s32 d);
@@ -232,8 +232,8 @@ void Sequence_ResetStatus(Sequence* seq, s32 flag);
 class FIGHT_SIDE;
 typedef u16 GSchar;
 void* fightTargetGetPtr(s32 kind, FightOutPokemon* fop, PCARG(u8, u16) type);
-u8 fightFloor_GetFightTypeTrainerNum(s32 a);
-u8 fightFloor_GetFightTypeFightoutPokemonNum(s32 a);
+u8 fightFloor_GetFightTypeTrainerNum(PCARG(s32, void*) a);
+u8 fightFloor_GetFightTypeFightoutPokemonNum(PCARG(s32, void*) a);
 FightTrainer* fightSide_GetFightTrainerPtr(FIGHT_SIDE* side, u16 idx);
 u8 fightTrainerCheckValid(FightTrainer* trainer);
 FightOutPokemon* fightTrainer_GetFightoutPokemonPtr(FightTrainer* trainer, u16 idx);
@@ -298,7 +298,7 @@ u16 wazaDB_GetSeqId(u16 waza);
 u16 fightWaza_GetTargetDataId(FightWaza* fw);
 FightOutPokemon* fightTargetGetPtrAsNowFightType(s32 kind, FightOutPokemon* fop);
 void fightWazaCreate(FightWaza* fw, PCARG(s8, s32) banme, u16 moto, u16 target, u8 autoMake);
-u8 fightActionCreate(FightAction* action, s32 a, FightOutPokemon* fop, s32 kind, s32 c, void* data);
+u8 fightActionCreate(FightAction* action, PCARG(s32, void*) a, FightOutPokemon* fop, s32 kind, s32 c, void* data);
 void fightActionBiosSetBuffDataId(FightAction* action, s32 id);
 s8 fightActionGetPri(FightAction* action);
 u8 fightWaza_GetZokusei(FightWaza* fw);
@@ -448,10 +448,10 @@ u32 itemBallDB_GetYaseiShakeWzxDataId(PCARG(u8, u16) ball);
 u32 itemBallDB_GetInWzxDataId(PCARG(u8, u16) ball);
 u32 itemBallDB_GetOpenWzxDataId(PCARG(u8, u16) ball);
 u32 itemBallDB_GetOutWzxDataId(PCARG(u8, u16) ball);
-u8 fightFloor_GetTrainer(s32 a);
-u8 fightFloor_GetFightKind(s32 a);
-u16 fightFloor_GetEncountDataId(s32 a);
-u32 fightFloor_GetEnvSndId(s32 a);
+u8 fightFloor_GetTrainer(PCARG(s32, void*) a);
+u8 fightFloor_GetFightKind(PCARG(s32, void*) a);
+u16 fightFloor_GetEncountDataId(PCARG(s32, void*) a);
+u32 fightFloor_GetEnvSndId(PCARG(s32, void*) a);
 u8 Sequence_GetFlags(Sequence* seq);
 void Sequence_SetDefaultFlags(Sequence* seq);
 void Sequence_SetFlags(Sequence* seq, u8 flags);
@@ -1818,7 +1818,7 @@ FightAction* fightOutPokemonCreateFightAction(FightOutPokemon* fop, s32 a, s32 k
     if (action == 0) {
         return 0;
     }
-    if (fightActionCreate(action, a, fop, kind, c, data) == 1) {
+    if (fightActionCreate(action, PC_PTRV(a), fop, kind, c, data) == 1) {
         fightActionBiosSetBuffDataId(action, buffId);
         return action;
     }

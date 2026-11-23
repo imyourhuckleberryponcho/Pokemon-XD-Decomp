@@ -104,7 +104,7 @@ struct FsysReadRequest {
     u8 unk0[0x10];
     void* data;
 };
-typedef void (*FsysStreamCallback)(void* data, u32 arg0, u32 arg1);
+typedef void (*FsysStreamCallback)(void* data, GCuptr arg0, GCuptr arg1);
 #ifdef __MWERKS__
 #define FSYS_U32_TO_PTR(T, v) ((T)(v))
 #else
@@ -126,10 +126,10 @@ struct FsysArqTrans {
     FsysArqCallback callback;
     Fsys* fsys;
     FsysResHeader* res;
-    u32 arg0;
+    GCuptr arg0;
 
-    u32 arg1;
-    u32 arg2;
+    GCuptr arg1;
+    GCuptr arg2;
     void* dst;
     u32 size;
 };

@@ -2,6 +2,7 @@
 #include <game/pcret.h>
 #include <game/bitfield.h>
 #include <game/gcdata.h>
+#include <game/pcspare.h>
 #pragma pool_strings off
 
 class CChank {
@@ -1149,6 +1150,20 @@ void deckUnRegister(u32 kind, u32 id) {
     }
 }
 
+#ifndef __MWERKS__
+extern "C" u32 darkPokemonList_number;
+extern "C" DarkPokemon* darkPokemonGetDarkPokemon(u32 id);
+extern "C" DeckDarkPokemon pc_deck_dark_pokemon_extra[PC_SPARE_SHADOWS];
+DeckDarkPokemon pc_deck_dark_pokemon_extra[PC_SPARE_SHADOWS];
+static u32 pcDarkPokemonSize(void) {
+    u32 n = darkPokemonList_number;
+    if (n <= 0x80) {
+        return 0x80;
+    }
+    return n < 0x80 + PC_SPARE_SHADOWS ? n : 0x80 + PC_SPARE_SHADOWS;
+}
+#endif
+
 void deckInitDarkPokemon(void) {
     DarkPokemon* dark;
     DeckDarkPokemon* deck = _deckDarkPokemon;
@@ -1164,6 +1179,17 @@ void deckInitDarkPokemon(void) {
             dark->setPokemonID(id);
             dark->setDarkPokemonID(i);
         }
+#ifndef __MWERKS__
+        for (i = 0x80; i < (s32)pcDarkPokemonSize(); i++) {
+            dark = darkPokemonGetDarkPokemon(i);
+            if (dark != 0) {
+                dark->init();
+                dark->setDarkPoint(pc_deck_dark_pokemon_extra[i - 0x80].getInitDarkPoint());
+                dark->setPokemonID(darkPokemonListBiosGetPokemonID(i));
+                dark->setDarkPokemonID(i);
+            }
+        }
+#endif
     }
 }
 
@@ -1171,11 +1197,20 @@ DeckDarkPokemon* deckGetDeckDarkPokemon(u32 index) {
     if (index < 0x80) {
         return &_deckDarkPokemon[index];
     }
+#ifndef __MWERKS__
+    if (index < pcDarkPokemonSize()) {
+        return &pc_deck_dark_pokemon_extra[index - 0x80];
+    }
+#endif
     return 0;
 }
 
 u32 deckGetDarkPokemonSize(void) {
+#ifndef __MWERKS__
+    return pcDarkPokemonSize();
+#else
     return 0x80;
+#endif
 }
 
 DeckTrainer* DeckTrainer::getDeckTrainerObj(u32 index) {
@@ -1197,6 +1232,11 @@ DeckPokemon* DeckPokemon::getDeckPokemonObj(u32 index) {
 }
 
 DeckDarkPokemon* DeckDarkPokemon::getDeckDarkPokemonObj(u32 index) {
+#ifndef __MWERKS__
+    if (index >= 0x80 && index < pcDarkPokemonSize()) {
+        return &pc_deck_dark_pokemon_extra[index - 0x80];
+    }
+#endif
     if (_deckDarkPokemonSize <= index) {
         return 0;
     }

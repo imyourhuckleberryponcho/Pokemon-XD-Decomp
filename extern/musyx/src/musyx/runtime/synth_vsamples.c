@@ -389,11 +389,11 @@ void sndVirtualSampleARAMUpdate(SND_INSTID instID, void* base, u32 off1, u32 len
 
     if (len1 != 0) {
       hwFlushStream(base, off1, len1, vs.streamBuffer[i].hwId, vsARAMDMACallback,
-                    (u32)&vs.streamBuffer[i]);
+                    (size_t)&vs.streamBuffer[i]);
     }
     if (len2 != 0) {
       hwFlushStream(base, off2, len2, vs.streamBuffer[i].hwId, vsARAMDMACallback,
-                    (u32)&vs.streamBuffer[i]);
+                    (size_t)&vs.streamBuffer[i]);
     }
 
     if (vs.streamBuffer[i].smpType == 5) {

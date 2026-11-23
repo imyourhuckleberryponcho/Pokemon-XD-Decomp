@@ -1,4 +1,5 @@
 #include <game/ppcops.h>
+#include <game/pcret.h>
 #include <dolphin/types.h>
 #ifndef __MWERKS__
 struct Pokemon;
@@ -18,7 +19,7 @@ u8 fightAi_CreateFightActionAttckIrekae(FightOutPokemon*, s16);
 u8 fightAi_CreateFightActionAttckWaza(FightOutPokemon*, FightOutPokemon*, u16, s16);
 u8 fightAi_GetTokuseiHaveFlag(u32, FightOutPokemon*, u16);
 FightOutPokemon* fightAi_SelectDefPoke(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon**, u16, u16, s8);
-u32 fightFloor_GetFightType(u32);
+u32 fightFloor_GetFightType(PCARG(u32, void*));
 void* fightTargetGetPtrAsNowFightType(u32, void*);
 void* fightTargetGetPtr(u16, void*, u16);
 u8 fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(FIGHT_TRAINER*, FightOutPokemon*);

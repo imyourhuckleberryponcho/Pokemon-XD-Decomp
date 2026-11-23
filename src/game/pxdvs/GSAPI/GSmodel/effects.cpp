@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/statusval.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
 #ifndef M2C_MACROS_H
@@ -152,8 +154,8 @@ void GSpartGetMatrix(GSpart* part, Mtx out);
 void GSpartGetTransform(GSpart* part, GSvec* pos, GSvec* rot, GSvec* scale);
 GSparticleGenerator* GSparticleCreateGenerator(GSparticleBank* bank, s32 index, s32);
 void GSparticleSetGeneratorPosition(GSparticleGenerator* gen, Vec* pos);
-s32 GSparticleSetGeneratorRotation(s32, s32*);
-s32 GSparticleSetGeneratorScale(s32, f32*, s32, s32);
+s32 GSparticleSetGeneratorRotation(PCARG(s32, GCsptr), s32*);
+s32 GSparticleSetGeneratorScale(PCARG(s32, GCsptr), f32*, s32, s32);
 void GStextureFree(GStexture* tex);
 void GStextureSetFilter(GStexture* tex, s32 minFilter, s32 magFilter, u32 mipFilter);
 void GStextureSetWrap(GStexture* tex, u32 wrapS, u32 wrapT);

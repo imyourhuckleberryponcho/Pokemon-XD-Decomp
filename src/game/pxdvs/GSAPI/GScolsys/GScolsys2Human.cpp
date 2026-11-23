@@ -1,6 +1,7 @@
 #include <dolphin/types.h>
 #include "game/gc_fused.h"
 #include <game/gcptr.h>
+#include <game/pcret.h>
 #include <game/gcdata.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -104,7 +105,7 @@ u8 gimmickBoxFixDistanceForPushBox(f32*, s32, f32, f32, f32);
 s32 gimmickBoxFixDistanceForPushBox(f32 fx, f32 fz, f32* dist, void* w);
 #define gimmickBoxFixDistanceForPushBox(d, w, fx, fz, extra) ((void)(extra), gimmickBoxFixDistanceForPushBox((fx), (fz), (d), (void*)(uintptr_t)(u32)(w)))
 #endif
-u8 gimmickBoxIsBox(s32);
+u8 gimmickBoxIsBox(PCARG(s32, GCsptr));
 s32 heroGetFollower();
 s32 heroMoveGetHeroPos(s32*);
 void* peopleBiosGetPosPtr(PeopleWork* work);

@@ -1,4 +1,7 @@
 #include "musyx/platform.h"
+#ifndef __MWERKS__
+#include "musyx/xdport.h"
+#endif
 
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
 #include "dolphin/os/OSCache.h"
@@ -486,7 +489,11 @@ u32 hwGetPos(u32 v) {
 }
 
 void hwFlushStream(void* base, u32 offset, u32 bytes, u8 hwStreamHandle, void (*callback)(size_t),
+#ifdef __MWERKS__
                    u32 user) {
+#else
+                   size_t user) {
+#endif
   size_t aram; // r28
   size_t mram; // r29
   size_t len;
@@ -558,10 +565,15 @@ void hwSaveSample(void* header, void* data
 #endif
 ) {
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
-  u32 len = MD32(((u32*)*((u32*)header))[1]) & 0xFFFFFF;
-  u8 type = MD32(((u32*)*((u32*)header))[1]) >> 0x18;
+  u32 len = MD32((*(u32**)header)[1]) & 0xFFFFFF;
+  u8 type = MD32((*(u32**)header)[1]) >> 0x18;
   len = convert_length(len, type);
-  *((u32*)data) = (u32)aramStoreData((void*)*((u32*)data), len
+  *((u32*)data) = (u32)aramStoreData(
+#ifdef __MWERKS__
+                                     (void*)*((u32*)data), len
+#else
+                                     MUSY_PC_PTR(*((u32*)data)), len
+#endif
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 1)
                                      ,
                                      aramInfo

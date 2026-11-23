@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/pxdvs/app/floor/floorData.h>
 #ifndef __MWERKS__
@@ -103,7 +105,7 @@ u8 floorIsPush();
 void floorMappingScript(void*);
 void floorSetLightInfo(u32, u32);
 u8 floorSound_playEnvSound(s32);
-void floorUnmappingScript(u32);
+void floorUnmappingScript(PCARG(u32, char*));
 s32 fn_8010B208(void*);
 s32 pokecoloGetLanguage();
 void soundStopEnv(s32);
@@ -717,7 +719,7 @@ static s32 _unloadScript(void* p, u32, u32) {
     if (floorIsPush() != 0) {
         return 0;
     }
-    floorUnmappingScript((u32)p);
+    floorUnmappingScript((PCARG(u32, char*))p);
     return 1;
 }
 

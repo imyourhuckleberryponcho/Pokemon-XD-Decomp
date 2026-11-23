@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
 #include <game/miscTables.h>
@@ -55,7 +56,7 @@ void GSsndPlayNow(u32 id);
 void winSeqSetMenu(s32 seq, s32 menu);
 bool winSeqCheckMove(s32 seq);
 void menuButtonNormal(MenuWindow* window);
-StatusS32 gamedatasaveGetStatus(s32, s32);
+StatusS32 gamedatasaveGetStatus(PCARG(s32, void*), s32);
 void GSinputMotorStart(s32 pad, s32, s32 strength, s32 frames, s32);
 
 }

@@ -325,7 +325,7 @@ public:
 };
 
 extern "C" {
-void* savedataGetStatus(s32, s32);
+void* savedataGetStatus(PCARG(s32, void*), s32);
 u8 floorExecScriptIntegerByName(const char* name, s32 a, s32 b, s32 c, s32 d);
 s32 floorGetLocalHeapHandle(void);
 s32 GSmemSetCurrentHeap(s32 heap);
@@ -362,7 +362,7 @@ void psRemoveGenerator(void);
 void psRemoveAppSRT(void);
 void GSlightDeleteCurrentAll(void);
 void GSmodelFreeAllShadowTextures(void);
-StatusS32 gamedatasaveGetStatus(s32, s32);
+StatusS32 gamedatasaveGetStatus(PCARG(s32, void*), s32);
 void fn_8005C068(PCARG(u8, u32));
 void floorLayerConfig(u32 floorID, u8 kind);
 void GSfsysReadWait(u32);

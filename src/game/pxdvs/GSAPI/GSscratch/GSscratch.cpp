@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 struct ScratchBlock {
     u8 index;
@@ -212,7 +213,7 @@ s32 GSscratchInit(u8 stackSize)
         _blockTable[i].index = 0xFF;
     }
     LCEnable();
-    _scratchPadBase = (void*)0xE0000000;
+    _scratchPadBase = PC_PTR(void*, 0xE0000000);
     _stackSize = (u32)stackSize << 9;
     if (stackSize != 0) {
         remaining = stackSize;

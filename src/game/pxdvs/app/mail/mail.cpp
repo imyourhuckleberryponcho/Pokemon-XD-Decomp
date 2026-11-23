@@ -16,7 +16,7 @@ struct Mailbox {
 extern "C" {
 extern MailData* mailData;
 extern u32* mailData_number;
-Mailbox* savedataGetStatus(s32, s32);
+Mailbox* savedataGetStatus(PCARG(s32, void*), s32);
 void* memset(void* dst, int c, unsigned long n);
 void mailMainInit(void);
 }

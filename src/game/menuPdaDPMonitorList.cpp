@@ -176,6 +176,9 @@ void __dl__FPv(void*);
 #define __dl__FPv(p) (operator delete(p))
 #endif
 void __dla__FPv(void*);
+#ifndef __MWERKS__
+u32 deckGetDarkPokemonSize(void);
+#endif
 void* memcpy(void* dst, const void* src, unsigned long n);
 u16 mballBiosGetSpriteID(u16);
 u16 * GSmsgGetGSchar(u32);
@@ -184,7 +187,7 @@ void GSsndPlayNow(u32);
 CURSOR cursorBiosGetPos(s32);
 CURSOR cursorBiosSetPos(s32, CURSOR);
 s32 darkPokemonGetMeetNum(void);
-void* heroBiosGetPokemonPtr(s32, s32);
+void* heroBiosGetPokemonPtr(PCARG(s32, void*), s32);
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 void menuDrawReliveMeterByDarkPokemon(DarkPokemon*, s32, s32, s32, s32, u8, s32);
@@ -199,12 +202,12 @@ void menuPdaSubCheckUpDownCursor(tagWINDOW_WORK*, tagSPRITE_WORK*, s16*, s32, s3
 void menuPdaSubInitAlpha(f32*, s32, s32);
 void menuPdaSubScrollBar(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s32, u32, s32, s32, s16*);
 void msgctrlSetValue(s32, GCuptr);
-u16 pokemonBiosGetDarkpokemonDataId(s32);
-u16 pokemonBiosGetPokemonDataId(s32);
-u8 pokemonCheckValid(s32);
+u16 pokemonBiosGetDarkpokemonDataId(PCARG(s32, void*));
+u16 pokemonBiosGetPokemonDataId(PCARG(s32, void*));
+u8 pokemonCheckValid(PCARG(s32, void*));
 u32 pokemonDataBiosGetName(void*);
 void* pokemonDataBiosGetPtr(u16);
-void * savedataGetStatus(s32, s32);
+void * savedataGetStatus(PCARG(s32, void*), s32);
 void spriteClearScissor(s32);
 void spriteSetScissor(s32, s32, s32, s32, s32);
 u8 winSeqCheckMove(s32 menuID);
@@ -755,10 +758,10 @@ u8 menuPdaDPMList::getTemochiIndex(u16 pokemonID, u16 darkID) {
     s32 party = GC_ADDR32(savedataGetStatus(0, 2));
     u8 i;
     for (i = 0; i < 6; i++) {
-        mon = GC_ADDR32(heroBiosGetPokemonPtr(party, i));
-        if (pokemonCheckValid(mon) != 0) {
-            u16 dark = pokemonBiosGetDarkpokemonDataId(mon);
-            pokemonBiosGetPokemonDataId(mon);
+        mon = GC_ADDR32(heroBiosGetPokemonPtr(PC_PTRV(party), i));
+        if (pokemonCheckValid(PC_PTRV(mon)) != 0) {
+            u16 dark = pokemonBiosGetDarkpokemonDataId(PC_PTRV(mon));
+            pokemonBiosGetPokemonDataId(PC_PTRV(mon));
             if (dark == darkID) {
                 return i;
             }
@@ -830,7 +833,14 @@ s32 menuPdaDPMList::SortPokemon() {
     int id;
     int n = 0;
     tempCount = 0;
+#ifndef __MWERKS__
+    for (id = 1; id < (int)deckGetDarkPokemonSize(); id++) {
+        if (darkPokemonGetDarkPokemon((u16)id) == 0) {
+            continue;
+        }
+#else
     for (id = 1; id < 0x80; id++) {
+#endif
         DarkPokemon* dark = darkPokemonGetDarkPokemon((u16)id);
         u16 pid = dark->getPokemonID();
         if (pid != 0 && dark->getStatus() >= 1) {
@@ -1092,10 +1102,17 @@ void menuPdaDPMList::InitWork() {
     } else {
         unk44 = n;
     }
+#ifndef __MWERKS__
+    pairs = (DPMIdPair*)__nwa__FUl(deckGetDarkPokemonSize() * sizeof(DPMIdPair));
+    sorted = (SnatchSortBuff*)__nwa__FUl(deckGetDarkPokemonSize() * sizeof(SnatchSortBuff));
+    temp = (SnatchSortBuff*)__nwa__FUl(deckGetDarkPokemonSize() * sizeof(SnatchSortBuff));
+    temp2 = (SnatchSortBuff*)__nwa__FUl(deckGetDarkPokemonSize() * sizeof(SnatchSortBuff));
+#else
     pairs = (DPMIdPair*)__nwa__FUl(0x200);
     sorted = (SnatchSortBuff*)__nwa__FUl(0x400);
     temp = (SnatchSortBuff*)__nwa__FUl(0x400);
     temp2 = (SnatchSortBuff*)__nwa__FUl(0x400);
+#endif
     Sort((DPMSelSort)sortKind);
     menuPdaSubInitAlpha(alpha, 10, 0);
 }

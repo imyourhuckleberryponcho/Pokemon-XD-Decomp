@@ -1,4 +1,5 @@
 #include <game/pcret.h>
+#include <game/pcabil.h>
 #include <global.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -203,7 +204,7 @@ u32 pokemonDB_GetPkxDataId(u16);
 u8 pokemonDB_GetGrowDataId(u16);
 u8 pokemonDB_GetSexRatio(u16);
 u32 pokemonDB_GetInitFriend(u16);
-u8 pokemonDB_GetTokuseiDataId(u16, u16);
+PC_ABIL(u8) pokemonDB_GetTokuseiDataId(u16, u16);
 u8 pokemonDB_GetGetWazaLevel(u16, u16);
 u16 pokemonDB_GetGetWazaDataId(u16, u16);
 void pokemonDB_SetMitaFlag(u16, bool);
@@ -263,7 +264,7 @@ u32 wazaDB_GetZokuseiDataId(u16);
 u8 wazaGetMaxPP(u16, u8);
 u32 zokuseiBiosGetName(PCARG(u8, u16));
 u8 sexGetPokemonSexRaitoKotei(u32);
-void memoDataSet(u32, Pokemon*);
+void memoDataSet(PCARG(u32, void*), Pokemon*);
 GCuptr Sequence_LoadPokemon(u16, u32, u32);
 void Sequence_SetStatus(u32, u32);
 void Sequence_ResetStatus(u32, u32);
@@ -475,7 +476,7 @@ u8 pokemonDataBiosGetGetWazaLevel(PokemonData*, u16);
 u8 pokemonDataBiosGetGrowDataId(PokemonData*);
 u8 pokemonDataBiosGetSexRatio(PokemonData*);
 u8 pokemonDataBiosGetSinkaKind(PokemonData*, u16);
-u8 pokemonDataBiosGetTokuseiDataId(PokemonData*, u16);
+PC_ABIL(u8) pokemonDataBiosGetTokuseiDataId(PokemonData*, u16);
 u8 pokemonDataBiosGetWazaMcn(PokemonData*, u16);
 u8 pokemonDataBiosGetZokuseiDataId(PokemonData*, u16);
 void fightOutPokemonBiosSetAbicntAverage(FightOutPokemon*, u8);

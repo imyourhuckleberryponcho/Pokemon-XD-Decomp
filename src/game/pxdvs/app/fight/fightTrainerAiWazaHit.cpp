@@ -50,11 +50,11 @@ s32 fightTrainerAiWazaHit217(void* ctx,u32 param1,u32 param2,u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit216(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
-    void* side = fightTargetGetPtrAsNowFightType(2, param3);
+    void* side = fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3));
     if (!fightSideIsJoutaiDataId(side, 0x48) && !fightSideIsJoutaiDataId(side, 0x49) && !XG_CONST(0, fightSideIsJoutaiDataId(side, 0x4b))) {
         return 0;
     }
@@ -74,7 +74,7 @@ s32 fightTrainerAiWazaHit214(void* ctx, u32 param1, u32 param2, u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit213(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern u16 fightFloor_GetTikeiDataId(u32);
+    extern u16 fightFloor_GetTikeiDataId(PCARG(u32, void*));
     extern u32 tikeiDataBiosGetZokuseiDataId(PCARG(u8, u16));
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonZokuseiDataId(void*, u32, PCARG(u8, u16));
@@ -310,7 +310,7 @@ s32 fightTrainerAiWazaHit200(void* ctx,u32 param1,u32 param2,u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit199(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
     extern u8 fightTrainerAiIsFightOutPokemonTokuseiDataId(void*, u32, u32);
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
@@ -318,7 +318,7 @@ s32 fightTrainerAiWazaHit199(void* ctx, u32 param1, u32 param2, u32 param3) {
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
-    void* side = fightTargetGetPtrAsNowFightType(2, param3);
+    void* side = fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3));
     s32 gate;
 
     if (fightTrainerAiIsFightOutPokemonTokuseiDataId(ctx, param3, 0x14) == 1) {
@@ -477,14 +477,14 @@ s32 fightTrainerAiWazaHit187(void* ctx, u32 param1, u32 param2, u32 param3) {
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void* ctx, u32 elem, u32 type);
 #endif
 #ifdef __MWERKS__
-    extern GCuptr fightTargetGetPtrAsNowFightType(u32 type, u32 elem);
+    extern GCuptr fightTargetGetPtrAsNowFightType(u32 type, PCARG(u32, void*) elem);
 #else
-    extern void* fightTargetGetPtrAsNowFightType(u32 type, u32 elem);
+    extern void* fightTargetGetPtrAsNowFightType(u32 type, PCARG(u32, void*) elem);
 #endif
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(u32 a, u32 b);
 #endif
-    extern u8 fightTrainerAiCheckSawagu(void* ctx, u32 a);
+    extern u8 fightTrainerAiCheckSawagu(void* ctx, PCARG(u32, void*) a);
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiNormal(void* ctx, u32 a);
     extern u8 fightSeqRegulationOverTwoCheck(u32 type, u32 elem);
     s32 gate;
@@ -498,11 +498,11 @@ s32 fightTrainerAiWazaHit187(void* ctx, u32 param1, u32 param2, u32 param3) {
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(ctx, param3, 0x14) == 1) {
         return 0;
     }
-    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3)), 0x4b)) == 1) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (fightTrainerAiCheckSawagu(ctx, param3) == 1) {
+    if (fightTrainerAiCheckSawagu(ctx, PC_PTRV(param3)) == 1) {
         return 0;
     }
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(ctx, param3, 0x26) == 1) {
@@ -631,13 +631,13 @@ s32 fightTrainerAiWazaHit177(void* ctx, u32 param1, u32 param2, u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit176(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
-    extern u16 fightFloor_GetFightSideFightOutPokemonSideMax(u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
+    extern u16 fightFloor_GetFightSideFightOutPokemonSideMax(PCARG(u32, void*));
     extern u8 fightOutPokemonCheckFightOut(void*);
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
 #endif
-    void* target = fightTargetGetPtrAsNowFightType(0xe, param1);
+    void* target = fightTargetGetPtrAsNowFightType(0xe, PC_PTRV(param1));
 
     if (!target) {
         return 0;
@@ -671,10 +671,10 @@ u32 fightTrainerAiWazaHit175(void* ctx, u32 slot, u32 param, u32 param3) {
 u32 fightTrainerAiWazaHit174(void) { return 1; }
 
 s32 fightTrainerAiWazaHit173(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern u16 fightFloor_GetTikeiDataId(u32);
+    extern u16 fightFloor_GetTikeiDataId(PCARG(u32, void*));
     extern u32 tikeiDataBiosGetWazaId(PCARG(u8, u16));
     extern u32 wazaDB_GetSeqId(u32);
-    extern s32 fightTrainerAiWazaDoWazaHitFunc(void*, u32, u32, u32);
+    extern s32 fightTrainerAiWazaDoWazaHitFunc(void*, PCARG(u32, void*), u32, PCARG(u32, void*));
     u16 paramType;
     u16 otherType;
     u32 other;
@@ -683,7 +683,7 @@ s32 fightTrainerAiWazaHit173(void* ctx, u32 param1, u32 param2, u32 param3) {
     param2 = other;
     otherType = wazaDB_GetSeqId(param2);
     if (otherType != paramType) {
-        return fightTrainerAiWazaDoWazaHitFunc(ctx, param1, param2, param3);
+        return fightTrainerAiWazaDoWazaHitFunc(ctx, PC_PTRV(param1), param2, PC_PTRV(param3));
     }
     return 1;
 }
@@ -744,7 +744,7 @@ s32 fightTrainerAiWazaHit168(void* ctx, u32 param1, u32 param2, u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit167(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
 #endif
@@ -777,7 +777,7 @@ s32 fightTrainerAiWazaHit167(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3)), 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -790,7 +790,7 @@ s32 fightTrainerAiWazaHit167(void* ctx, u32 param1, u32 param2, u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit166(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u8 fightTrainerAiGetFightOutPokemonAbiCntSubayasa(void*, u32);
 #else
@@ -808,7 +808,7 @@ s32 fightTrainerAiWazaHit166(void* ctx, u32 param1, u32 param2, u32 param3) {
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
-    void* side = fightTargetGetPtrAsNowFightType(2, param3);
+    void* side = fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3));
     u8 abi = fightTrainerAiGetFightOutPokemonAbiCntSubayasa(ctx, param3);
     s32 gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
 
@@ -921,7 +921,7 @@ u32 fightTrainerAiWazaHit160(void* ctx, u32 slot, u32 param) {
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void* ctx, u32 slot, u32 param);
 #endif
-    extern u32 fightOutPokemonGetCountAsJoutaiDataId(u32 slot, u32 param);
+    extern u32 fightOutPokemonGetCountAsJoutaiDataId(PCARG(u32, void*) slot, u32 param);
     extern u8 joutaiDataBiosGetMaxCount(u32 param);
     u32 result;
 
@@ -929,7 +929,7 @@ u32 fightTrainerAiWazaHit160(void* ctx, u32 slot, u32 param) {
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(ctx, slot, 0x2d) == 0) {
         result = 0;
     } else {
-        result = fightOutPokemonGetCountAsJoutaiDataId(result, 0x2d);
+        result = fightOutPokemonGetCountAsJoutaiDataId(PC_PTRV(result), 0x2d);
     }
     if ((s16)result >= (s32)joutaiDataBiosGetMaxCount(0x2d)) {
         return 0;
@@ -942,11 +942,11 @@ s32 fightTrainerAiWazaHit159(void* ctx,u32 param1,u32 param2,u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit158(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern u16 fightOutPokemon_GetFightoutTurnCount(u32);
+    extern u16 fightOutPokemon_GetFightoutTurnCount(PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonZokuseiDataId(void*, u32, u32);
 #endif
-    if (fightOutPokemon_GetFightoutTurnCount(param1) == 0) {
+    if (fightOutPokemon_GetFightoutTurnCount(PC_PTRV(param1)) == 0) {
         return 0;
     }
     return fightTrainerAiIsFightOutPokemonZokuseiDataId(ctx, param3, 7) != 1;
@@ -1095,8 +1095,8 @@ int fightTrainerAiWazaHit136(u32 r3)
 }
 
 s32 fightTrainerAiWazaHit135(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern GCuptr fightOutPokemonGetPokemonPtr(u32 v);
-    extern void pokemonGetMezamerupower(u32, void*, void*);
+    extern GCuptr fightOutPokemonGetPokemonPtr(PCARG(u32, void*) v);
+    extern void pokemonGetMezamerupower(PCARG(u32, void*), void*, void*);
 #ifdef __MWERKS__
     extern u16 fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(void* ctx, u32 param3, u32 v1, s16 v3);
 #endif
@@ -1104,7 +1104,7 @@ s32 fightTrainerAiWazaHit135(void* ctx, u32 param1, u32 param2, u32 param3) {
     u16 lo;
     s32 gate;
 
-    pokemonGetMezamerupower(fightOutPokemonGetPokemonPtr(param1), &hi, &lo);
+    pokemonGetMezamerupower(PC_PTRV(fightOutPokemonGetPokemonPtr(PC_PTRV(param1))), &hi, &lo);
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
     if (fightTrainerAiGetFightOutPokemonZokuseiDataIdWazaJoutaiDataId(ctx, param3, lo, (s16)hi) == 0x43) {
         gate = 0;
@@ -1166,13 +1166,13 @@ u32 fightTrainerAiWazaHit128(void* ctx, u32 a, u32 b, u32 c) {
 
 u32 fightTrainerAiWazaHit127(u32 r3)
 {
-    extern void* fightTrainerSearchIrekaeFightPokemon(u32,void*);
+    extern void* fightTrainerSearchIrekaeFightPokemon(PCARG(u32, void*),void*);
 
   int iVar1;
   u16 local_8[4];
 
   local_8[0] = 0;
-  iVar1 = GC_ADDR32(fightTrainerSearchIrekaeFightPokemon(r3, local_8));
+  iVar1 = GC_ADDR32(fightTrainerSearchIrekaeFightPokemon(PC_PTRV(r3), local_8));
   return (-iVar1 != 0) ? 1 : 0;
 }
 
@@ -1192,16 +1192,16 @@ u32 fightTrainerAiWazaHit124(void* ctx,u32 slot)
 
 {
 #ifdef __MWERKS__
-    extern GCuptr fightTargetGetPtrAsNowFightType(u32,u32);
+    extern GCuptr fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #else
-    extern void* fightTargetGetPtrAsNowFightType(u32,u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #endif
-    extern u32 fightSideCheckWriteJoutaiDataId(u32,u32);
+    extern u32 fightSideCheckWriteJoutaiDataId(PCARG(u32, void*),u32);
   u32 uVar1;
   u32 uVar2;
 
-  uVar1 = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(2,slot);
-  uVar2 = fightSideCheckWriteJoutaiDataId(uVar1,0x4b);
+  uVar1 = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(2,PC_PTRV(slot));
+  uVar2 = fightSideCheckWriteJoutaiDataId(PC_PTRV(uVar1),0x4b);
   uVar2 = __cntlzw(2 - (uVar2 & 0xff));
   return uVar2 >> 5;
 }
@@ -1219,7 +1219,7 @@ s32 fightTrainerAiWazaHit121(void* ctx,u32 param1,u32 param2,u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit120(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern u8 fightOutPokemonGetSex(u32);
+    extern u8 fightOutPokemonGetSex(PCARG(u32, void*));
     extern u8 fightTrainerAiIsFightOutPokemonTokuseiDataId(void*, u32, u32);
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiKie(void*, u32);
@@ -1227,8 +1227,8 @@ s32 fightTrainerAiWazaHit120(void* ctx, u32 param1, u32 param2, u32 param3) {
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
 #endif
-    u8 attackerSex = fightOutPokemonGetSex(param1);
-    u8 defenderSex = fightOutPokemonGetSex(param3);
+    u8 attackerSex = fightOutPokemonGetSex(PC_PTRV(param1));
+    u8 defenderSex = fightOutPokemonGetSex(PC_PTRV(param3));
     s32 gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
 
     if (fightTrainerAiIsFightOutPokemonTokuseiDataId(ctx, param3, 0xc) == 1) {
@@ -1254,7 +1254,7 @@ s32 fightTrainerAiWazaHit119(void* ctx,u32 param1,u32 param2,u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit118(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u8 fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(void*, u32);
 #else
@@ -1272,7 +1272,7 @@ s32 fightTrainerAiWazaHit118(void* ctx, u32 param1, u32 param2, u32 param3) {
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
-    void* side = fightTargetGetPtrAsNowFightType(2, param3);
+    void* side = fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3));
     u8 abi = fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(ctx, param3);
     s32 gate;
 
@@ -1353,21 +1353,21 @@ u32 fightTrainerAiWazaHit113(u32 r3, u32 r4, u32 r5, u32 r6)
 u32 fightTrainerAiWazaHit112(void* ctx, u32 slot, u32 param) {
     extern u8 joutaiDataBiosGetMaxCount(u32);
 #ifdef __MWERKS__
-    extern GCuptr fightTargetGetPtrAsNowFightType(u32,u32);
+    extern GCuptr fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #else
-    extern void* fightTargetGetPtrAsNowFightType(u32,u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #endif
-    extern u32 fightSideGetCountAsJoutaiDataId(u32, u32);
+    extern u32 fightSideGetCountAsJoutaiDataId(PCARG(u32, void*), u32);
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(u32, u32);
 #endif
     u32 target;
     u32 count;
 
-    target = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(3,slot);
+    target = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(3,PC_PTRV(slot));
     count = 0;
     if (fightSideIsJoutaiDataId(target, 0x4a) == 1) {
-        count = fightSideGetCountAsJoutaiDataId(target, 0x4a);
+        count = fightSideGetCountAsJoutaiDataId(PC_PTRV(target), 0x4a);
     }
     if ((s16)count >= (s32)joutaiDataBiosGetMaxCount(0x4a)) {
         return 0;
@@ -1975,7 +1975,7 @@ s32 fightTrainerAiWazaHit068(void* ctx,u32 param1,u32 param2,u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit067(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u32 fightTrainerAiGetWazaZokuseiDataId(void*, u32, u32);
 #else
@@ -1997,7 +1997,7 @@ s32 fightTrainerAiWazaHit067(void* ctx, u32 param1, u32 param2, u32 param3) {
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
-    void* side = fightTargetGetPtrAsNowFightType(2, param3);
+    void* side = fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3));
     u32 zokusei = fightTrainerAiGetWazaZokuseiDataId(ctx, param2, param1);
     s32 gate;
 
@@ -2041,7 +2041,7 @@ s32 fightTrainerAiWazaHit066(void* ctx, u32 param1, u32 param2, u32 param3) {
     extern u8 fightTrainerAiIsFightOutPokemonZokuseiDataId(void*, u32, u32);
 #endif
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiNormal(void*, u32);
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
@@ -2072,7 +2072,7 @@ s32 fightTrainerAiWazaHit066(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3)), 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -2088,16 +2088,16 @@ u32 fightTrainerAiWazaHit065(void* ctx,u32 slot)
 
 {
 #ifdef __MWERKS__
-    extern GCuptr fightTargetGetPtrAsNowFightType(u32,u32);
+    extern GCuptr fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #else
-    extern void* fightTargetGetPtrAsNowFightType(u32,u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #endif
-    extern u32 fightSideCheckWriteJoutaiDataId(u32,u32);
+    extern u32 fightSideCheckWriteJoutaiDataId(PCARG(u32, void*),u32);
   u32 uVar1;
   u32 uVar2;
 
-  uVar1 = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(2,slot);
-  uVar2 = fightSideCheckWriteJoutaiDataId(uVar1,0x48);
+  uVar1 = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(2,PC_PTRV(slot));
+  uVar2 = fightSideCheckWriteJoutaiDataId(PC_PTRV(uVar1),0x48);
   uVar2 = __cntlzw(2 - (uVar2 & 0xff));
   return uVar2 >> 5;
 }
@@ -2159,7 +2159,7 @@ s32 fightTrainerAiWazaHit050(void* ctx, u32 param1, u32 param2, u32 param3) {
 }
 
 s32 fightTrainerAiWazaHit049(void* ctx, u32 param1, u32 param2, u32 param3) {
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
     extern u8 fightTrainerAiIsFightOutPokemonTokuseiDataId(void*, u32, u32);
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
@@ -2167,7 +2167,7 @@ s32 fightTrainerAiWazaHit049(void* ctx, u32 param1, u32 param2, u32 param3) {
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
-    void* side = fightTargetGetPtrAsNowFightType(2, param3);
+    void* side = fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3));
     s32 gate;
 
     if (fightTrainerAiIsFightOutPokemonTokuseiDataId(ctx, param3, 0x14) == 1) {
@@ -2213,16 +2213,16 @@ u32 fightTrainerAiWazaHit046(void* ctx,u32 slot)
 
 {
 #ifdef __MWERKS__
-    extern GCuptr fightTargetGetPtrAsNowFightType(u32,u32);
+    extern GCuptr fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #else
-    extern void* fightTargetGetPtrAsNowFightType(u32,u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #endif
-    extern u32 fightSideCheckWriteJoutaiDataId(u32,u32);
+    extern u32 fightSideCheckWriteJoutaiDataId(PCARG(u32, void*),u32);
   u32 uVar1;
   u32 uVar2;
 
-  uVar1 = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(2,slot);
-  uVar2 = fightSideCheckWriteJoutaiDataId(uVar1,0x4c);
+  uVar1 = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(2,PC_PTRV(slot));
+  uVar2 = fightSideCheckWriteJoutaiDataId(PC_PTRV(uVar1),0x4c);
   uVar2 = __cntlzw(2 - (uVar2 & 0xff));
   return uVar2 >> 5;
 }
@@ -2301,12 +2301,12 @@ u32 fightTrainerAiWazaHit037(void* ctx, u32 param1, u32 param2) {
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
 #endif
     extern u8 fightTrainerAiIsFightOutPokemonNokoriHp(void*, u32, s32, f32);
-    extern u8 fightTrainerAiCheckSawagu(void*, u32);
+    extern u8 fightTrainerAiCheckSawagu(void*, PCARG(u32, void*));
 
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(ctx, param1, 8) == 1) {
         return 0;
     }
-    if (fightTrainerAiCheckSawagu(ctx, param1) == 1) {
+    if (fightTrainerAiCheckSawagu(ctx, PC_PTRV(param1)) == 1) {
         return 0;
     }
     return fightTrainerAiIsFightOutPokemonNokoriHp(ctx, param1, 0, 1.0f) != 1;
@@ -2320,16 +2320,16 @@ u32 fightTrainerAiWazaHit035(void* ctx,u32 slot)
 
 {
 #ifdef __MWERKS__
-    extern GCuptr fightTargetGetPtrAsNowFightType(u32,u32);
+    extern GCuptr fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #else
-    extern void* fightTargetGetPtrAsNowFightType(u32,u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32,PCARG(u32, void*));
 #endif
-    extern u32 fightSideCheckWriteJoutaiDataId(u32,u32);
+    extern u32 fightSideCheckWriteJoutaiDataId(PCARG(u32, void*),u32);
   u32 uVar1;
   u32 uVar2;
 
-  uVar1 = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(2,slot);
-  uVar2 = fightSideCheckWriteJoutaiDataId(uVar1,0x49);
+  uVar1 = (u32)(GCuptr)fightTargetGetPtrAsNowFightType(2,PC_PTRV(slot));
+  uVar2 = fightSideCheckWriteJoutaiDataId(PC_PTRV(uVar1),0x49);
   uVar2 = __cntlzw(2 - (uVar2 & 0xff));
   return uVar2 >> 5;
 }
@@ -2347,7 +2347,7 @@ s32 fightTrainerAiWazaHit033(void* ctx, u32 param1, u32 param2, u32 param3) {
     extern u8 fightTrainerAiIsFightOutPokemonZokuseiDataId(void*, u32, u32);
 #endif
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiNormal(void*, u32);
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
@@ -2378,7 +2378,7 @@ s32 fightTrainerAiWazaHit033(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3)), 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -2656,9 +2656,9 @@ s32 fightTrainerAiWazaHit001(void* ctx, u32 param1, u32 param2, u32 param3) {
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
 #endif
-    extern u8 fightTrainerAiCheckSawagu(void*, u32);
+    extern u8 fightTrainerAiCheckSawagu(void*, PCARG(u32, void*));
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiNormal(void*, u32);
-    extern void* fightTargetGetPtrAsNowFightType(u32, u32);
+    extern void* fightTargetGetPtrAsNowFightType(u32, PCARG(u32, void*));
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
 #endif
@@ -2670,7 +2670,7 @@ s32 fightTrainerAiWazaHit001(void* ctx, u32 param1, u32 param2, u32 param3) {
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(ctx, param3, 8) == 1) {
         return 0;
     }
-    if (fightTrainerAiCheckSawagu(ctx, param3) == 1) {
+    if (fightTrainerAiCheckSawagu(ctx, PC_PTRV(param3)) == 1) {
         return 0;
     }
     if (!fightTrainerAiIsFightOutPokemonJoutaiNormal(ctx, param3)) {
@@ -2680,7 +2680,7 @@ s32 fightTrainerAiWazaHit001(void* ctx, u32 param1, u32 param2, u32 param3) {
         return 0;
     }
     gate = _fightTrainerAiWazaHitCheck(ctx, param1, param2, param3, 0);
-    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, param3), 0x4b)) == 1) {
+    if (XG_CONST(0, fightSideIsJoutaiDataId(fightTargetGetPtrAsNowFightType(2, PC_PTRV(param3)), 0x4b)) == 1) {
         return 0;
     }
     if (gate == 0) {
@@ -2760,7 +2760,7 @@ u8 _fightTrainerAiWazaHitCheckTokusei(void* ctx, u32 pokemon, u32 zokusei) {
 }
 
 s32 _fightTrainerAiWazaHitCheck(void* ctx, GCuptr attacker, u32 waza, GCuptr defender, u32 mode) {
-    extern u32 fightFloor_GetFightType(u32);
+    extern u32 fightFloor_GetFightType(PCARG(u32, void*));
     extern u32 fightTargetGetTragetPtrToRelativeHostSideFightTargetId(GCuptr, PCARG(u8, u16));
 #ifdef __MWERKS__
     extern u8 fightTrainerAiGetFightFloorNowTenkouDataId(void*, u32, u32);

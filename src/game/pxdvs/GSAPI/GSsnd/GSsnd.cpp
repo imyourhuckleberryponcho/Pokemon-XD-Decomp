@@ -161,7 +161,7 @@ extern "C" {
 void* GSmemAllocAlign(u32 size, u32 align);
 void GSmemFree(void* p);
 void GSlogWrite(const char* fmt, ...);
-void* GSgappCreate(u32 a, u32 b, u32 c, void (*fn)());
+void* GSgappCreate(u32 a, u32 b, PCARG(u32, void*) c, void (*fn)());
 void GSgappSetName(void* gapp, const char* name);
 void GSgappTerminate(void* gapp);
 void* GSresGetResource(u32 a, u32 b);

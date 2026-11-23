@@ -619,7 +619,7 @@ tagSPRITE_WORK* menuPtGetSpriteWorkByHookFunction(tagWINDOW_WORK* w, void* hook,
 {
     tagSPRITE_WORK* p = w->sprites;
     while (p != 0) {
-        if (p->hook == (u32)hook && idx-- == 0) break;
+        if (p->hook == (GCuptr)hook && idx-- == 0) break;
         p = p->next;
     }
     while (skip != 0 && p != 0) {

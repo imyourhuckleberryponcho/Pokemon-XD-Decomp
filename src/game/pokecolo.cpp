@@ -591,7 +591,7 @@ void pokecoloMain(int argc, char** argv) {
         GSgappUpdate();
         pokecoloCheckDiskTray();
         u64 now = OSGetTime();
-        _frameTime = (now - start) * 8 / ((*(u32*)0x800000F8 / 4) / 125000);
+        _frameTime = (now - start) * 8 / ((*PC_PTR(u32*, 0x800000F8) / 4) / 125000);
         start = OSGetTime();
         pokecoloFrameCounter++;
     }
@@ -647,7 +647,7 @@ static void _pokecoloInit() {
     memcardInitialize();
     floorInit();
     _setSystemVars();
-    memset((void*)(0x80001803), 0, 0x17FD);
+    memset(PC_PTR(void*, 0x80001803), 0, 0x17FD);
 }
 #pragma pop
 }
@@ -676,7 +676,7 @@ void mainAntiActionReplay() {
         for (u32 i = 0; i < 32; i += 2) {
             memset(PC_PTR(void*, _clearAddress[i] + 0x80000015), 0, (_clearAddress[i + 1] + 0x16) - (_clearAddress[i] + 0x15));
         }
-        memset((void*)0x80001801, 0, 0x17FF);
+        memset(PC_PTR(void*, 0x80001801), 0, 0x17FF);
         _AntiActionReplayTimer = 100;
     }
     _AntiActionReplayTimer--;

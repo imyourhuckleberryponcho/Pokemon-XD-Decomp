@@ -32,7 +32,7 @@ void _fsysAddTAG(FsysTag* tag, FsysTag** root);
 void _fsysDelTAG(FsysTag* tag, FsysTag** root);
 
 static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, FsysArqCallback callback,
-                      u32 arg0, u32 arg1, u32 arg2);
+                      GCuptr arg0, GCuptr arg1, GCuptr arg2);
 FsysArqTrans* _fsysArq2ArqTrans(FsysArqAddr request);
 FsysCacheManage* _fsysGetCacheManage(u32 group, u32 id);
 static void _fsysARQCallbackWrite(FsysArqAddr request);
@@ -82,7 +82,7 @@ void _fsysWriteCache(Fsys* fsys, FsysResHeader* res, void* src, u32 base, u32 si
 }
 
 u8 _fsysReadCacheEX(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, FsysArqCallback callback,
-                    u32 arg0, u32 arg1, u32 arg2) {
+                    GCuptr arg0, GCuptr arg1, GCuptr arg2) {
     return _fsysReadCacheExec(fsys, res, dst, size, offset, callback, arg0, arg1, arg2);
 }
 
@@ -91,7 +91,7 @@ u8 _fsysReadCache(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offse
 }
 
 static u8 _fsysReadCacheExec(Fsys* fsys, FsysResHeader* res, void* dst, u32 size, u32 offset, FsysArqCallback callback,
-                      u32 arg0, u32 arg1, u32 arg2) {
+                      GCuptr arg0, GCuptr arg1, GCuptr arg2) {
     FsysCacheManage* manage;
     FsysArqTrans* trans;
     u32 priority;

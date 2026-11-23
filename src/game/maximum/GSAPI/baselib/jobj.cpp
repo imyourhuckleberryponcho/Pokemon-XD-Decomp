@@ -1745,7 +1745,7 @@ void HSD_JObjUnusedRootCheck(HSD_JObj* jobj_root, HSD_JObj* jp)
 }
 
 #ifndef __MWERKS__
-#include <stdlib.h>
+#include <game/pcalloc.h>
 
 
 
@@ -1764,7 +1764,7 @@ static f32* jobjSplineArray(const u8* base, int nf)
     if (base == NULL || nf <= 0) {
         return NULL;
     }
-    a = (f32*)malloc(nf * sizeof(f32));
+    a = (f32*)PC_ALLOC(nf * sizeof(f32));
     jobjSplineF32s(a, base, nf);
     return a;
 }
@@ -1789,7 +1789,7 @@ static HSD_Spline* jobjNativeSpline(const u8* d)
             return s_spl[i].sp;
         }
     }
-    sp = (HSD_Spline*)calloc(1, sizeof(HSD_Spline));
+    sp = (HSD_Spline*)PC_CALLOC(1, sizeof(HSD_Spline));
     sp->type = d[0];
     sp->numcv = (s16)gc_rd16(d + 2);
     sp->tension = gc_rdf32(d + 4);
@@ -1812,7 +1812,7 @@ static HSD_Spline* jobjNativeSpline(const u8* d)
     if (i == s_splCount) {
         if (s_splCount == s_splMax) {
             s_splMax = s_splMax ? s_splMax * 2 : 64;
-            s_spl = (JObjSplineCopy*)realloc(s_spl, s_splMax * sizeof(JObjSplineCopy));
+            s_spl = (JObjSplineCopy*)PC_REALLOC(s_spl, s_splMax * sizeof(JObjSplineCopy));
         }
         s_splCount++;
     }

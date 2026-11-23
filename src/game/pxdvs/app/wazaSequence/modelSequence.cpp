@@ -1,5 +1,7 @@
+#include <game/pcret.h>
 #ifndef __MWERKS__
 #include <game/psq.h>
+#include <game/pcret.h>
 #endif
 #include "game/portxd_xg.h"
 #include <dolphin/types.h>
@@ -152,10 +154,10 @@ void GSmodelSetTexAnimFrame(_GSmodel* model, f32 frame);
 void GSmodelSetTexAnimType(_GSmodel* model, s32 type);
 void GSmodelStartTexAnimation(_GSmodel* model);
 void GSmodelSetKeepPartAnimFlag(_GSmodel* model, s32 flag);
-void GSmodelGetFrameCount(_GSmodel* model, f32* frames, s32 tex);
+void GSmodelGetFrameCount(_GSmodel* model, f32* frames, PCARG(s32, void*) tex);
 void GSmodelSetAnimEndedCallback(_GSmodel* model, void (*cb)(_GSmodel*, _GSmodelAnimCBData*), void* user);
 void GSmodelLinkTexAnimToAnim(_GSmodel* model, s32 link);
-void GSmodelGetAnimIndex(_GSmodel* model, s32* index, s32 tex);
+void GSmodelGetAnimIndex(_GSmodel* model, s32* index, PCARG(s32, void*) tex);
 void GSmodelSetAnimType(_GSmodel* model, s32 type);
 void GSmodelSetAnimRate(_GSmodel* model, f32 rate);
 u8 GSmodelHasAnimationEnded(_GSmodel* model);
@@ -181,7 +183,7 @@ void GSparticleSetGeneratorScale(GSparticleGen* gen, GSvec* scale, s32 a, s32 b)
 void GSpartFree(GSpart* part);
 u8 GSmodelIsRootNullAdded(_GSmodel* model);
 void GSmodelGetRootPosition(_GSmodel* model, GSvec* pos);
-void GSmodelAddNull(_GSmodel* model, GSvec* pos, s32 a, s32 b);
+void GSmodelAddNull(_GSmodel* model, GSvec* pos, PCARG(s32, void*) a, PCARG(s32, void*) b);
 }
 
 extern "C" {
@@ -218,7 +220,7 @@ void GSmodelSetShadowLight(_GSmodel* model, WazaShadowAddr light);
 void GSmodelSetShadowSurface(_GSmodel* model, u32 count, WazaShadowListAddr list);
 void* GScameraGetActiveCamera(void);
 void GScameraGetRotation(void* camera, GSvec* rot);
-void GSpartGetTransform(GSpart* part, GSvec* pos, s32 a, s32 b);
+void GSpartGetTransform(GSpart* part, GSvec* pos, PCARG(s32, void*) a, PCARG(s32, void*) b);
 f32 HSD_Randf(void);
 void GSmodelSetRenderCamera(_GSmodel* model, void* camera);
 void GSparticleBankSetCamera(GSparticleBank* bank, void* camera);

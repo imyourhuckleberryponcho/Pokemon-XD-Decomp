@@ -1,6 +1,7 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
 #include <game/menucbsize.h>
+#include <game/portxd_forms.h>
 
 #pragma peephole off
 
@@ -174,7 +175,7 @@ bool menuCBRule_CheckLegendPokemon(Pokemon* p, CBRule* rule) {
     if (rule->a18 == 1) {
         return 1;
     }
-    u16 id = pokemonBiosGetPokemonDataId(p);
+    u16 id = PC_BASE_SPECIES(pokemonBiosGetPokemonDataId(p));
     u32 n = *legendPokemonData_number;
     u16* t = legendPokemonData;
     for (u32 i = 0; i < n; i++, t++) {
@@ -221,7 +222,7 @@ void menuCBRule_ErrorFlagSet(Hero* hero, s32 player) {
 }
 
 bool menuCBRule_CheckPokemonEventFlag(Pokemon* p) {
-    switch (pokemonBiosGetPokemonDataId(p)) {
+    switch (PC_BASE_SPECIES(pokemonBiosGetPokemonDataId(p))) {
     case 0x97:
     case 0x19A:
         if (!pokemonBiosGetEventGetFlag(p)) {
@@ -380,7 +381,7 @@ bool menuCBRule_CheckTrainerRegulationAt(Hero* hero, Pokemon* p, CBRule* rule, s
         for (i = 0; i < 6; i++) {
             Pokemon* q = heroBiosGetPokemonPtr(hero, i);
             if (q != p && !menuCBRule_IsBlankPokemon(q) && !_menuCBRule_IsTamagoPokemon(q)) {
-                if (pokemonBiosGetPokemonDataId(q) == pokemonBiosGetPokemonDataId(p)) {
+                if (PC_BASE_SPECIES(pokemonBiosGetPokemonDataId(q)) == PC_BASE_SPECIES(pokemonBiosGetPokemonDataId(p))) {
                     return 0;
                 }
             }
@@ -431,7 +432,7 @@ bool menuCBRule_CheckTrainerRegulation(Hero* hero, CBRule* rule, s32 kind) {
                     if (pokemonBiosGetItemDataId(p) != 0) {
                         noDupItem &= pokemonBiosGetItemDataId(p) != pokemonBiosGetItemDataId(q);
                     }
-                    noDupSpecies &= pokemonBiosGetPokemonDataId(p) != pokemonBiosGetPokemonDataId(q);
+                    noDupSpecies &= PC_BASE_SPECIES(pokemonBiosGetPokemonDataId(p)) != PC_BASE_SPECIES(pokemonBiosGetPokemonDataId(q));
                 }
             }
         }

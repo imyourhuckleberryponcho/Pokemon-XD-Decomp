@@ -215,7 +215,7 @@ u16 fightEncount(u16);
 u32 fightTrainerDB_GetName(u16);
 void* heroBiosGetPokemonPtr(void*, u16);
 GCuptr heroBiosGetNamePtr(void*);
-void* savedataGetStatus(s32, s32);
+void* savedataGetStatus(PCARG(s32, void*), s32);
 void pokemonInit(void*);
 void pokemonBiosCopy(void*, void*);
 GCuptr pokemonBiosGetNicknamePtr(void*);

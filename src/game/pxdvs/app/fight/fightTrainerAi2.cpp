@@ -22,11 +22,11 @@ u8 fightSeqGetTextureZokuseiAry(void*, u16*);
 #else
 u8 fightSeqGetTextureZokuseiAry(void*, s32*);
 #endif
-void * fightTargetGetPtrAsNowFightType(PCARG(u8, u16), s32);
+void * fightTargetGetPtrAsNowFightType(PCARG(u8, u16), PCARG(s32, void*));
 u16 fightSeqCondChgActTypeToPokemonStatusId(void*);
 s8 pokemonGetStatus(void*, PCARG(u8, u16), u16, PCARG(u8, u16));
 s8 fightSeqCondChgActParaIdToValue(void*);
-u8 fightSideIsJoutaiDataId(s32, u16);
+u8 fightSideIsJoutaiDataId(PCARG(s32, void*), u16);
 u8 fightSeqIsGuard(void*, u16);
 u8 fightTrainerAiDB_GetPokemonJoutaiFlag(u16);
 u16 fightOutPokemon_GetOumuWazaDataId(FightOutPokemon*);
@@ -116,7 +116,7 @@ PCRET(u8) fightTrainerAiCheckTextureZokusei(FIGHT_TRAINER* trainer, void* pokemo
         var_r30 = (u32)arg2;
         break;
     }
-    temp_r21 = GC_ADDR32(fightTargetGetPtrAsNowFightType(2, var_r30));
+    temp_r21 = GC_ADDR32(fightTargetGetPtrAsNowFightType(2, PC_PTRV(var_r30)));
     u8 flags = arg6;
     u8 maskedFlags = flags & 0xbf;
     if (maskedFlags & 0x80) var_r28 = 1;
@@ -124,7 +124,7 @@ PCRET(u8) fightTrainerAiCheckTextureZokusei(FIGHT_TRAINER* trainer, void* pokemo
     temp_r3 = fightSeqCondChgActTypeToPokemonStatusId((void*)arg5);
     temp_r26 = pokemonGetStatus((void*)var_r30, 0, temp_r3, 0);
     if (fightSeqCondChgActParaIdToValue((void*)arg4) < 0) {
-        if (XG_CONST(0, fightSideIsJoutaiDataId(temp_r21, 0x4c)) == 1 && var_r28 == 0 && arg3 != 0xae) return 0;
+        if (XG_CONST(0, fightSideIsJoutaiDataId(PC_PTRV(temp_r21), 0x4c)) == 1 && var_r28 == 0 && arg3 != 0xae) return 0;
         if (arg3 != 0xae && var_r27 != 1 && fightTrainerAiCheckGuard(arg0, arg2, arg3) == 1) return 0;
         if ((fightTrainerAiIsFightOutPokemonTokuseiDataId(arg0, var_r30, 0x1d) == 1 ||
              fightTrainerAiIsFightOutPokemonTokuseiDataId(arg0, var_r30, 0x49) == 1) &&

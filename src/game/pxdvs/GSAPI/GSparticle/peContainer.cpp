@@ -354,7 +354,7 @@ peRenderContainer::~peRenderContainer() {
             GSgfxDLFree(&dl[1]);
         }
         if (bufA) {
-            bufA = (u8*)((u32)bufA - 0x40000000);
+            bufA = bufA - 0x40000000;
             u32 sz = GSmemGetSize(bufA);
             g_particle_debug_stats.bufMem -= sz;
             g_particle_debug_stats.total -= sz;

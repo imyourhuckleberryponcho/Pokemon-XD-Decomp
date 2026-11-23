@@ -1,6 +1,7 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcabil.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
@@ -85,10 +86,10 @@ StatusU32 heroGetStatus(void* hero, u32 selector, u16 index);
 u16 zokuseiBiosGetSpriteID(u16 id);
 u16 zokuseiGetPokemonSpriteID(void*, u16);
 POKEMON_DATA_dd_* pokemonDataBiosGetPtr(u16 pokeNum);
-u8 pokemonDataBiosGetTokuseiDataId(POKEMON_DATA_dd_* pdata, u16 index);
-u32 pokemonTokuseiDataBiosGetPtr(u16 index);
-u32 pokemonTokuseiDataBiosGetName(u32 data);
-u32 pokemonTokuseiDataBiosGetDoc(u32 data);
+PC_ABIL(u8) pokemonDataBiosGetTokuseiDataId(POKEMON_DATA_dd_* pdata, u16 index);
+GCuptr pokemonTokuseiDataBiosGetPtr(u16 index);
+u32 pokemonTokuseiDataBiosGetName(GCuptr data);
+u32 pokemonTokuseiDataBiosGetDoc(GCuptr data);
 const char* pokemonDataBiosGetName(POKEMON_DATA_dd_* pdata);
 void* menuDataBiosGetPtr(s32 menuID);
 void winSeqSetMenu(s32 menuID, u32 id);
@@ -889,7 +890,7 @@ static void _menuScriptTokuseiSetumei(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite,
     int n2;
     int n1;
     volatile MenuItem* item = menuItemBiosGetPtr(0xAF, sprite->id);
-    u8 tid = pokemonDataBiosGetTokuseiDataId(pd, 0);
+    PC_ABIL(u8) tid = pokemonDataBiosGetTokuseiDataId(pd, 0);
     if (tid != 0) {
         u32 k;
         u16* text = (u16*)GSmsgGetGSchar(pokemonTokuseiDataBiosGetDoc(pokemonTokuseiDataBiosGetPtr(tid)));
@@ -1004,7 +1005,7 @@ void menuScriptEeveeHook(tagWINDOW_WORK* w, tagSPRITE_WORK* sprite)
         _menuScriptTokuseiSetumei(w, sprite, &c, pd);
         break;
     case 0x4FE: {
-        u8 tid = pokemonDataBiosGetTokuseiDataId(pd, 0);
+        PC_ABIL(u8) tid = pokemonDataBiosGetTokuseiDataId(pd, 0);
         if (tid != 0) {
             char* str = GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(pokemonTokuseiDataBiosGetPtr(tid)));
             msgctrlSetValue(0x37, (GCuptr)str);

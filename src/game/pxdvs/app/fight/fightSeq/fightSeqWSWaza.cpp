@@ -1,4 +1,5 @@
 #include <game/ppcops.h>
+#include <game/pcabil.h>
 #include <game/gcptr.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
@@ -6,6 +7,7 @@
 #include <game/statusval.h>
 #include <game/fightseqscript.h>
 #include "game/portxd_xg.h"
+#include "game/portxd_forms.h"
 
 #pragma auto_inline off
 
@@ -180,7 +182,7 @@ void* fightActionBiosGetFightActionDataPtr(FightAction*);
 
 u16 pokemon_GetPokemonDataId(Pokemon*);
 s32 pokemon_GetTokuseiFlag(Pokemon*);
-u8 pokemonDB_GetTokuseiDataId(u16, PCARG(u8, u16));
+PC_ABIL(u8) pokemonDB_GetTokuseiDataId(u16, PCARG(u8, u16));
 u16 pokemon_GetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
 u8 pokemonIsDarkPokemon(Pokemon*);
 u8 pokemonGetDarkPokemonCallKakuritu(Pokemon*);
@@ -888,11 +890,11 @@ void CriticalCheckHikaePokemon(void* hikae) {
     defMonsno = pokemon_GetPokemonDataId(fightPokemon_GetPokemonBuffPtr(hikae));
     tokuseiFlag = pokemon_GetTokuseiFlag(fightPokemon_GetPokemonBuffPtr(hikae));
     luckyPunch = 0;
-    if (item == 0x3F && monsno == 0x71) {
+    if (item == 0x3F && PC_BASE_SPECIES(monsno) == 0x71) {
         luckyPunch = 1;
     }
     naganegi = 0;
-    if (item == 0x42 && monsno == 0x53) {
+    if (item == 0x42 && PC_BASE_SPECIES(monsno) == 0x53) {
         naganegi = 1;
     }
     rank = (fightOutPokemonIsJoutaiDataId(attack, 0xF) == 1) * 2 + (wazaDB_GetSeqId(wazaId) == 0x2B) +

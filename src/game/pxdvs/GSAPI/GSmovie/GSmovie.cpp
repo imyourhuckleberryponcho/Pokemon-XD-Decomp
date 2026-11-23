@@ -172,7 +172,7 @@ extern "C" {
 u8 GSfsysCancel(u32 id);
 s32 GSfsysReadStreaming(u32 id);
 u32 GSfsysStreamGetCacheSize(void);
-s32 GSfsysStreamGetData(u32 gid, u32 id, u32 dst, u32 size, u32 offset, u32 a, u32 b, u32 c);
+s32 GSfsysStreamGetData(u32 gid, u32 id, GCuptr dst, u32 size, u32 offset, GCuptr a, GCuptr b, GCuptr c);
 void GSfsysStreamSetLoopFlag(u32 gid, u32 id, u8 flag);
 int GSgappCreate(s32 type, u8 priority, void* arg, void (*func)());
 void GSgappSetName(int id, const char* name);
@@ -325,7 +325,7 @@ static inline bool _movieReadStart(__GSmovieStreaming* s) {
     s32 level = OSDisableInterrupts();
     bool started;
     if ((u8)GSfsysStreamGetData(s->id, 0, _readAddr, 0x8000, _readOffset,
-                                (u32)_movieStreamTHPPlayerPrepareGetDataCallback, (u32)s, 0) == 1) {
+                                (GCuptr)_movieStreamTHPPlayerPrepareGetDataCallback, (GCuptr)s, 0) == 1) {
         _readWaitFlag = 0;
         started = true;
     } else {

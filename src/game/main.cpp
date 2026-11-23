@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/gcptr.h>
 
 #pragma peephole off
 
@@ -74,14 +75,14 @@ void main(int argc, char** argv) {
     void* hi;
 
     pokecoloInitRomVersion();
-    memset((void*)0x80001800, 0, 0x1800);
+    memset(PC_PTR(void*, 0x80001800), 0, 0x1800);
     sysvarsReadSettings(&argc, &argv);
 
     if (OSGetConsoleSimulatedMemSize() > 0x1800000) {
         if (systemVars.memSize == 24) {
-            OSSetArenaHi((void*)0x817ED780);
+            OSSetArenaHi(PC_PTR(void*, 0x817ED780));
         } else if (systemVars.memSize == 48) {
-            OSSetArenaHi((void*)0x82DED720);
+            OSSetArenaHi(PC_PTR(void*, 0x82DED720));
         }
     }
 

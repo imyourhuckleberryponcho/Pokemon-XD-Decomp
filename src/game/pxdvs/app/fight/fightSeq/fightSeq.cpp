@@ -1,10 +1,12 @@
 #include <dolphin/types.h>
+#include <game/pcabil.h>
 #include <game/gcdata.h>
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
 #include <game/fightseqscript.h>
 #include "game/portxd_xg.h"
+#include "game/portxd_forms.h"
 #ifndef __MWERKS__
 struct Hero { public: static Hero* getHeroPtr(); u16 itemQuantity(u16); u8 getHeroStyle() const; void setBattleResumeFloorID(uint); void setBattleResumeFloorIndex(u8); u8 getFollowerID(); u32 getFollowerGrpID(); u32 getFollowerResID(); void setFollowerGrpID(u32); void setFollowerResID(u32); void setFollowerID(u8); };
 #define getHeroStyle__4HeroCFv(o, ...) ((u8)((const Hero*)(o))->getHeroStyle(__VA_ARGS__))
@@ -195,7 +197,7 @@ StatusU32 heroGetStatus(void*, u32, u32);
 void* joutaiDataBiosGetName(u32);
 void* memset(void*, int, u32);
 void pokemonAddDpFormPokemonDpFilterId(Pokemon*, u32, u32);
-u8 pokemonDB_GetTokuseiDataId(u16, PCARG(u8, u16));
+PC_ABIL(u8) pokemonDB_GetTokuseiDataId(u16, PCARG(u8, u16));
 u8 pokemonGetDarkPokemonHyperJoutaiKakuritu(Pokemon*);
 void* pokemonGetJoutaiMsgId(Pokemon*);
 u16 pokemonGetSoubiItemBuff(Pokemon* p);
@@ -3670,26 +3672,26 @@ static s32 xg_fightSeqWazaDamageCalc(FightOutPokemon* attacker, FightOutPokemon*
         }
     }
 
-    if ((u8)itemFlag == 1 && attackerItem == 0x22 && (attackerPokemonId == 0x198 || attackerPokemonId == 0x197)) {
+    if ((u8)itemFlag == 1 && attackerItem == 0x22 && (PC_BASE_SPECIES(attackerPokemonId) == 0x198 || PC_BASE_SPECIES(attackerPokemonId) == 0x197)) {
         specialAttack = (specialAttack * 0x96) / 100;
     }
-    if ((u8)itemFlag == 1 && defenderItem == 0x22 && (defenderPokemonId == 0x198 || defenderPokemonId == 0x197)) {
+    if ((u8)itemFlag == 1 && defenderItem == 0x22 && (PC_BASE_SPECIES(defenderPokemonId) == 0x198 || PC_BASE_SPECIES(defenderPokemonId) == 0x197)) {
         specialDefense = (specialDefense * 0x96) / 100;
     }
-    if (attackerItem == 0x23 && attackerPokemonId == 0x175) {
+    if (attackerItem == 0x23 && PC_BASE_SPECIES(attackerPokemonId) == 0x175) {
         specialAttack *= 2;
     }
-    if (defenderItem == 0x24 && defenderPokemonId == 0x175) {
+    if (defenderItem == 0x24 && PC_BASE_SPECIES(defenderPokemonId) == 0x175) {
         specialDefense *= 2;
     }
-    if (attackerItem == 0x2D && attackerPokemonId == 0x19) {
+    if (attackerItem == 0x2D && PC_BASE_SPECIES(attackerPokemonId) == 0x19) {
         attack *= 2;
         specialAttack *= 2;
     }
-    if (defenderItem == 0x40 && defenderPokemonId == 0x84) {
+    if (defenderItem == 0x40 && PC_BASE_SPECIES(defenderPokemonId) == 0x84) {
         defense *= 2;
     }
-    if (attackerItem == 0x41 && (attackerPokemonId == 0x109 || attackerPokemonId == 0x69)) {
+    if (attackerItem == 0x41 && (PC_BASE_SPECIES(attackerPokemonId) == 0x109 || PC_BASE_SPECIES(attackerPokemonId) == 0x69)) {
         attack *= 2;
     }
     if (defenderTokusei == 0x2F && (type == 10 || type == 0xF)) {
@@ -4074,25 +4076,25 @@ s32 fightSeqWazaDamageCalcHikaePokemon(FightOutPokemon* attacker, FightPokemon* 
     if (attackerItem == 0x1D) {
         attack = (attack * 0x96) / 100;
     }
-    if ((u8)itemFlag == 1 && attackerItem == 0x22 && (attackerPokemonId == 0x198 || attackerPokemonId == 0x197)) {
+    if ((u8)itemFlag == 1 && attackerItem == 0x22 && (PC_BASE_SPECIES(attackerPokemonId) == 0x198 || PC_BASE_SPECIES(attackerPokemonId) == 0x197)) {
         specialAttack = (specialAttack * 0x96) / 100;
     }
-    if ((u8)itemFlag == 1 && defenderItem == 0x22 && (defenderPokemonId == 0x198 || defenderPokemonId == 0x197)) {
+    if ((u8)itemFlag == 1 && defenderItem == 0x22 && (PC_BASE_SPECIES(defenderPokemonId) == 0x198 || PC_BASE_SPECIES(defenderPokemonId) == 0x197)) {
         specialDefense = (specialDefense * 0x96) / 100;
     }
-    if (attackerItem == 0x23 && attackerPokemonId == 0x175) {
+    if (attackerItem == 0x23 && PC_BASE_SPECIES(attackerPokemonId) == 0x175) {
         specialAttack *= 2;
     }
-    if (defenderItem == 0x24 && defenderPokemonId == 0x175) {
+    if (defenderItem == 0x24 && PC_BASE_SPECIES(defenderPokemonId) == 0x175) {
         specialDefense *= 2;
     }
-    if (attackerItem == 0x2D && attackerPokemonId == 0x19) {
+    if (attackerItem == 0x2D && PC_BASE_SPECIES(attackerPokemonId) == 0x19) {
         specialAttack *= 2;
     }
-    if (defenderItem == 0x40 && defenderPokemonId == 0x84) {
+    if (defenderItem == 0x40 && PC_BASE_SPECIES(defenderPokemonId) == 0x84) {
         defense *= 2;
     }
-    if (attackerItem == 0x41 && (attackerPokemonId == 0x68 || attackerPokemonId == 0x69)) {
+    if (attackerItem == 0x41 && (PC_BASE_SPECIES(attackerPokemonId) == 0x68 || PC_BASE_SPECIES(attackerPokemonId) == 0x69)) {
         attack *= 2;
     }
     if (defenderTokusei == 0x2F && (type == 10 || type == 0xF)) {
@@ -4362,25 +4364,25 @@ s32 fightSeqWazaDamageCalc(FightOutPokemon* attacker, FightOutPokemon* defender,
     if (attackerItem == 0x1D) {
         attack = (attack * 0x96) / 100;
     }
-    if ((u8)itemFlag == 1 && attackerItem == 0x22 && (attackerPokemonId == 0x198 || attackerPokemonId == 0x197)) {
+    if ((u8)itemFlag == 1 && attackerItem == 0x22 && (PC_BASE_SPECIES(attackerPokemonId) == 0x198 || PC_BASE_SPECIES(attackerPokemonId) == 0x197)) {
         specialAttack = (specialAttack * 0x96) / 100;
     }
-    if ((u8)itemFlag == 1 && defenderItem == 0x22 && (defenderPokemonId == 0x198 || defenderPokemonId == 0x197)) {
+    if ((u8)itemFlag == 1 && defenderItem == 0x22 && (PC_BASE_SPECIES(defenderPokemonId) == 0x198 || PC_BASE_SPECIES(defenderPokemonId) == 0x197)) {
         specialDefense = (specialDefense * 0x96) / 100;
     }
-    if (attackerItem == 0x23 && attackerPokemonId == 0x175) {
+    if (attackerItem == 0x23 && PC_BASE_SPECIES(attackerPokemonId) == 0x175) {
         specialAttack *= 2;
     }
-    if (defenderItem == 0x24 && defenderPokemonId == 0x175) {
+    if (defenderItem == 0x24 && PC_BASE_SPECIES(defenderPokemonId) == 0x175) {
         specialDefense *= 2;
     }
-    if (attackerItem == 0x2D && attackerPokemonId == 0x19) {
+    if (attackerItem == 0x2D && PC_BASE_SPECIES(attackerPokemonId) == 0x19) {
         specialAttack *= 2;
     }
-    if (defenderItem == 0x40 && defenderPokemonId == 0x84) {
+    if (defenderItem == 0x40 && PC_BASE_SPECIES(defenderPokemonId) == 0x84) {
         defense *= 2;
     }
-    if (attackerItem == 0x41 && (attackerPokemonId == 0x68 || attackerPokemonId == 0x69)) {
+    if (attackerItem == 0x41 && (PC_BASE_SPECIES(attackerPokemonId) == 0x68 || PC_BASE_SPECIES(attackerPokemonId) == 0x69)) {
         attack *= 2;
     }
     if (defenderTokusei == 0x2F && (type == 10 || type == 0xF)) {

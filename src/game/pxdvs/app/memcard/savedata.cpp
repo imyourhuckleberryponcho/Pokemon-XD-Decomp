@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include "game/portxd_xg.h"
 #include "game/portxd_jp.h"
 #include <game/gcptr.h>
@@ -142,7 +143,7 @@ void* savedataBiosGetGamedataPtr(Savedata* savedata);
 void* savedataBiosGetHeroPtr(Savedata* savedata);
 void* savedataBiosGetMailboxPtr(Savedata* savedata);
 void* savedataBiosGetMemoDataPtr(Savedata* savedata);
-GCuptr savedataBiosGetNowSavedataPtr();
+PCARG(GCuptr, void*) savedataBiosGetNowSavedataPtr();
 void* savedataBiosGetPcboxPtr(Savedata* savedata);
 void* savedataBiosGetRelivePtr(Savedata* savedata);
 void* savedataBiosGetSodateyaPtr(Savedata* savedata);

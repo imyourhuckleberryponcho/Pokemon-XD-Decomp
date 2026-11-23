@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 
 #pragma dont_inline on
 
@@ -11,10 +12,10 @@ FightKoukaData* fightKoukaDataBiosGetPtr(u16 id);
 u16 fightKoukaDataBiosGetKoukaDataId(FightKoukaData* data);
 u16 fightKoukaDataBiosGetFightTargetDataId(FightKoukaData* data);
 u16 fightKoukaDataBiosGetFightJoukenDataId(FightKoukaData* data);
-u8 fightFloor_GetFightType(s32);
+u8 fightFloor_GetFightType(PCARG(s32, void*));
 FightTarget* fightTargetGetPtr(u16 targetDataId, void* fightPokemon, s32 fightType);
 u8 fightJoukenExec(u16 joukenDataId, void* fightPokemon);
-void koukaExec(s32 koukaDataId, FightTarget* target, void* fightPokemon, s32);
+void koukaExec(s32 koukaDataId, FightTarget* target, void* fightPokemon, PCARG(s32, void*));
 BOOL fightKoukaDoJoukenAndKouka(void* fightPokemon, u16 joukenDataId, u16 targetDataId, u16 koukaDataId);
 
 u16 fightKoukaDataGetKoukaDataId(u16 id) {

@@ -989,6 +989,9 @@ u32 itemDataBiosGetHidenMachineNo(u8* p) {
         machineNo = (u8)item->buff;
     }
     if (machineNo == 0xFF) return 0xFF;
+#ifndef __MWERKS__
+    if (machineNo >= 58) return 0xFF;
+#endif
     if (machineNo < XG(0x32, 0x36) || machineNo >= item_waza_machine_no_number) return 0xFF;
     return (u8)(machineNo - XG(0x32, 0x36));
 }

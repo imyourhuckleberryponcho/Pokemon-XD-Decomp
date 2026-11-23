@@ -1,6 +1,7 @@
 #pragma peephole off
 #pragma pool_strings off
 #include <dolphin/types.h>
+#include <game/pcabil.h>
 #include <game/gcdata.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
@@ -414,8 +415,8 @@ void menuCloseCustom(s32 menuID, s32 a, s32 b);
 extern "C" {
 u32 menuSubCalcColor(void* context, void* item);
 u16 pokemon_GetPokemonDataId(void* poke);
-u8 pokemonDB_GetTokuseiDataId(u16 id, u16 idx);
-u32 pokemonTokuseiDataBiosGetPtr(u16 index);
+PC_ABIL(u8) pokemonDB_GetTokuseiDataId(u16 id, u16 idx);
+GCuptr pokemonTokuseiDataBiosGetPtr(u16 index);
 u32 pokemonTokuseiDataBiosGetName(u32* data);
 u8 wazaDB_GetZokuseiDataId(u16 id);
 u16 zokuseiBiosGetSpriteID(u16 id);
@@ -593,7 +594,7 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         if (id != 0) {
             sp->msgID = 0xDB3A;
             msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0xDB45));
-            msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(PC_PTR(u32*, pokemonTokuseiDataBiosGetPtr(id)))));
+            msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName((u32*)pokemonTokuseiDataBiosGetPtr(id))));
             GSmsgPrint2(winSpriteGetLayerID(w, sp), 0x5A, 0, w->alpha | 0xFFFFFF00, 0x4277);
         }
         break;
@@ -655,7 +656,7 @@ s32 menuBingoPokemonDraw(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
             u32 id = pokemonDB_GetTokuseiDataId(pokemon_GetPokemonDataId(q), tok);
             if (id != 0) {
                 msgctrlSetValue(0x37, (GCuptr)GSmsgGetGSchar(0xDB45));
-                msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName(PC_PTR(u32*, pokemonTokuseiDataBiosGetPtr(id)))));
+                msgctrlSetValue(0x4D, (GCuptr)GSmsgGetGSchar(pokemonTokuseiDataBiosGetName((u32*)pokemonTokuseiDataBiosGetPtr(id))));
                 sp->msgID = 0xDB3A;
                 GSmsgPrint2(winSpriteGetLayerID(w, sp), 0x5A, 0, w->alpha | 0xFFFFFF00, 0x4277);
             }

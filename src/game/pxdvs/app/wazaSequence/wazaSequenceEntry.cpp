@@ -340,7 +340,7 @@ void leafEffectSetOrigin(leafEffect* e, f32 x, f32 y, f32 z, f32 scale);
 #endif
 
 extern "C" {
-s32 GSboundGetLocalPosition(s32, f32*);
+s32 GSboundGetLocalPosition(PCARG(s32, GCsptr), f32*);
 s32 GSboundGetWorldPosition(f32*, f32* out);
 u8 GSgfxVideoGetVsyncRate(void);
 void GSlensFlareFree(u32 id);

@@ -66,7 +66,7 @@ void* GSmovieStreamPreFunc(u32 id);
 void GSsndStreamPostFunc(u32, u32);
 void* GSsndStreamPreFunc(u32 id);
 u32 _fsysStreamGetCacheSize(void);
-s32 _fsysStreamGetData(FsysWork*, u32, u32, u32, u32, u32, u32, u32);
+s32 _fsysStreamGetData(FsysWork*, u32, GCuptr, u32, u32, GCuptr, GCuptr, GCuptr);
 
 static FsysWork* _fsysGetWork(u32 id, u8 flag);
 FsysResHeader* _fsysGetResHeader(FsysWork* work, u32 index);
@@ -308,7 +308,7 @@ void GSfsysStreamSetLoopFlag(u32 gid, u32 id, u8 flag) {
     }
 }
 
-s32 GSfsysStreamGetData(u32 gid, u32 id, u32 dst, u32 size, u32 offset, u32 a, u32 b, u32 c) {
+s32 GSfsysStreamGetData(u32 gid, u32 id, GCuptr dst, u32 size, u32 offset, GCuptr a, GCuptr b, GCuptr c) {
     if (!_initFlag) {
         return 0;
     }

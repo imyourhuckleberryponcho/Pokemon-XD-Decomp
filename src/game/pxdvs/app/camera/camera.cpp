@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include "game/gc_fused.h"
 #include <game/gcptr.h>
 #include <game/pxdvs/app/floor/floorData.h>
@@ -99,7 +100,7 @@ void GScameraLoadActiveCameraMatrix(s32 layer);
 void GScameraPushState(_GScamera* cam, void* data);
 void GScameraPopState(_GScamera* cam, void* data);
 _GScamera* GScameraCreate(void);
-GCuptr GSthreadGetCurrentThread(void);
+PCARG(GCuptr, void*) GSthreadGetCurrentThread(void);
 void GSthreadSwitch(void);
 void GSlogWrite(const char* fmt, ...);
 void GSmodelGetPosition(_GSmodel* model, GSvec* pos);

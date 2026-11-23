@@ -1,11 +1,12 @@
 #include <dolphin/types.h>
+#include <game/pcspare.h>
 
 typedef struct {
     u32 field_00;
     u32 wazaId;
 } WazaMachineData;
 
-WazaMachineData item_waza_machine_no[] = {
+WazaMachineData item_waza_machine_no[PC_SPARE_ROWS(58, PC_SPARE_MACHINES)] = {
     {0x00000000, 0x00000108},
     {0x00000000, 0x00000151},
     {0x00000000, 0x00000160},
@@ -66,4 +67,6 @@ WazaMachineData item_waza_machine_no[] = {
     {0x01000000, 0x00000123},
 };
 
-u32 item_waza_machine_no_number = sizeof(item_waza_machine_no) / sizeof(item_waza_machine_no[0]);
+PC_SPARE_CHECK(item_waza_machine_no, 58);
+
+u32 item_waza_machine_no_number = PC_SPARE_COUNT(item_waza_machine_no, 58);

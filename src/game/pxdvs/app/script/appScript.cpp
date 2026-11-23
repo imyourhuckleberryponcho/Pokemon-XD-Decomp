@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include "game/portxd_xg.h"
+#include "game/portxd_forms.h"
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/statusval.h>
@@ -819,7 +820,7 @@ s32 AppScript::cmpPokemon(int command, GSscript::tigaVariant* args, GSscript::ti
     case 0x19: result->setInteger(pokemonBiosGetPokemonWazaDataId(pokemon, args[1].getInteger())); break;
     case 0x1A: result->setInteger(pokemonBiosGetHp(pokemon)); break;
     case 0x1B: result->setInteger(pokemonBiosGetDp(pokemon)); break;
-    case 0x1C: result->setInteger(pokemonBiosGetPokemonDataId(pokemon)); break;
+    case 0x1C: result->setInteger(PC_BASE_SPECIES(pokemonBiosGetPokemonDataId(pokemon))); break;
     case 0x1D: result->setInteger(pokemon->isLegend()); break;
     case 0x1E: result->setInteger(pokemonBiosGetFriend(pokemon)); break;
     case 0x1F: result->setInteger(GC_ADDR32(pokemonDB_GetName(pokemonBiosGetPokemonDataId(pokemon)))); break;

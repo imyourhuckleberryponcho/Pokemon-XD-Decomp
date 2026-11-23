@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/pcret.h>
 #include <game/ppcops.h>
 
 struct FightTarget;
@@ -17,7 +18,7 @@ u16 fightJoukenLinkDataBiosGetJoukenDataId(u16 id);
 u8 fightJoukenLinkDataBiosGetJoint(u16 id);
 u16 fightJoukenLinkDataBiosGetNextLinkDataId(u16 id);
 u32 HSD_Rand(void);
-u8 fightFloor_GetFightType(s32);
+u8 fightFloor_GetFightType(PCARG(s32, void*));
 FightTarget* fightTargetGetPtr(u16 targetDataId, void* fightPokemon, s32 fightType);
 FightTargetData* fightTargetDataBiosGetPtr(u16 id);
 u8 fightTargetDataBiosGetStatusKid(FightTargetData* data);

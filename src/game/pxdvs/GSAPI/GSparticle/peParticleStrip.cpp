@@ -2,6 +2,8 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/pcret.h>
+#include <game/gcptr.h>
 #include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/gsvfarray.h>
@@ -195,7 +197,7 @@ double fmod(double x, double y);
 s32 particleEngineSetupBlendMode(s32);
 s32 particleEngineSetupTevStages(s32, u32, u32);
 enum GStexFilter { GS_TEXFILTER_NEAR = 0, GS_TEXFILTER_LINEAR = 2 };
-void particleEngineSetupTexture(u8, s32, s32, s32, s32, s32);
+void particleEngineSetupTexture(u8, PCARG(s32, void*), s32, s32, s32, s32);
 void peColorSplineGetValue(u8* out, peColorSpline* s, f32 t);
 f32 peSplineGetValue(peSpline* s, f32 t);
 extern GSbound* g_currentBound;
@@ -690,7 +692,7 @@ void peParticleStripContainer::Render() {
                         kc.r = kc.g = kc.b = kc.a = a;
                         peSetKColor(g_current_layer, 0, kc);
                         s32 t2 = texList[frame + 2];
-                        particleEngineSetupTexture(1, t2, 0, (flags >> 8) & 3,
+                        particleEngineSetupTexture(1, PC_PTRV(t2), 0, (flags >> 8) & 3,
                                                    (flags & 0x10) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR,
                                                    (flags & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
                     }
@@ -698,12 +700,12 @@ void peParticleStripContainer::Render() {
                     particleEngineSetupTevStages(0, tex, 0);
                 }
                 s32 t1 = texList[frame + 1];
-                particleEngineSetupTexture(0, t1, 0, (flags >> 8) & 3,
+                particleEngineSetupTexture(0, PC_PTRV(t1), 0, (flags >> 8) & 3,
                                            (flags & 0x10) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR,
                                            (flags & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
             } else {
                 particleEngineSetupTevStages(0, tex, 0);
-                particleEngineSetupTexture(0, GC_AT(s32, data, 0x1C), 0, (flags >> 8) & 3,
+                particleEngineSetupTexture(0, PC_PTRV(GC_AT(s32, data, 0x1C)), 0, (flags >> 8) & 3,
                                            (flags & 0x10) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR,
                                            (flags & 0x20) ? GS_TEXFILTER_LINEAR : GS_TEXFILTER_NEAR);
             }

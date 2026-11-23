@@ -13,8 +13,12 @@ typedef intptr_t GCsint;
 
 #ifdef __MWERKS__
 #define PC_PTR(T, v) ((T)(v))
+#define PC_PTRV(v) (v)
 #else
+#ifndef PORT_PTR32_HOOK
 static inline void* pc_ptr32(u32 v) { return (void*)(uintptr_t)v; }
+#endif
 #define PC_PTR(T, v) ((T)pc_ptr32((u32)(v)))
+#define PC_PTRV(v) pc_ptr32((u32)(v))
 #endif
 #endif

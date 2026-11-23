@@ -1,4 +1,5 @@
 #include <game/declspec.h>
+#include <game/pcret.h>
 #include "game/gc_fused.h"
 #include <dolphin/types.h>
 #include <game/gcdata.h>
@@ -145,13 +146,13 @@ void cameraSetHeight(f32);
 void cameraSetDistance(f32);
 void cameraSetRotY(f32);
 void cameraSetFov(f32);
-void cameraMoveTargetOfs(u32, GSvec*, f32);
+void cameraMoveTargetOfs(PCARG(u32, void*), GSvec*, f32);
 void cameraMoveTargetOfsAcc(f32);
-void cameraMoveTargetPos(u32, GSvec*, f32);
+void cameraMoveTargetPos(PCARG(u32, void*), GSvec*, f32);
 void cameraMoveTargetPosAcc(f32);
-void cameraMovePosition(u32, GSvec*, f32);
+void cameraMovePosition(PCARG(u32, void*), GSvec*, f32);
 void cameraMovePositionAcc(f32);
-void cameraMoveRotation(u32, GSvec*, f32);
+void cameraMoveRotation(PCARG(u32, void*), GSvec*, f32);
 void cameraMoveRotationAcc(f32);
 void GSvecAdd(GSvec*, const GSvec*, const GSvec*);
 void GSvecTransform(GSvec*, const GSmtx*, const GSvec*);

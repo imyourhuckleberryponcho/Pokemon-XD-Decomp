@@ -73,11 +73,11 @@ u32 GSmsgGetRect(s32);
 s32 GSmsgPrint2(s32 layer, s32 x, s32 y, s32 color, u32 msg);
 void* heroItemGetItemKindToItemAryPtr(Hero*, u8, u16*, u16*, u8*, u8*);
 u16 itemBiosGetNum(u8* p);
-u8 itemCheckValid(u32);
+u8 itemCheckValid(PCARG(u32, void*));
 u8 itemDataBiosGetKind(u8* p);
 u32 itemDataBiosGetName(u8* p);
 u8* itemDataBiosGetPtr(u16 index);
-StatusU32 itemGetStatus(u32, u32, u32, u32);
+StatusU32 itemGetStatus(PCARG(u32, void*), u32, u32, u32);
 void menuClose(s32 menuID);
 void menuCloseSync(s32 menuID, s32);
 MenuItem* menuItemBiosGetPtr(s32 menuID, u32 index);
@@ -359,7 +359,7 @@ static s32 getItemNum(unsigned short p0) {
     }
     var_r29 = 0;
     while (var_r29 < (s32) sp8) {
-        if ((itemCheckValid((u32) var_r30) != 0) && (p0 == itemGetStatus((u32) var_r30, 0U, 0x1BU, 0U))) {
+        if ((itemCheckValid((PCARG(u32, void*)) var_r30) != 0) && (p0 == itemGetStatus((PCARG(u32, void*)) var_r30, 0U, 0x1BU, 0U))) {
             var_r28 += itemBiosGetNum((u8*)(var_r30));
         }
         var_r29 += 1;

@@ -19,12 +19,12 @@ void* heroItemGetItemKindToItemAryPtr(Hero*, u8, u16*, u16*, u8*, u8*);
 void* heroItemGetItemDataIdToItemAryPtr(Hero*, PCARG(u16, u32), u16*, u16*, u8*, u8*);
 void itemSortAryByPriority(void*, u16, u32);
 u16 itemGetQuantityInAry(void*, u16, u16, u16);
-StatusS32 gamedataGetStatus(s32, s32);
-void pokemonCreate(Pokemon*, u16, u8, s32);
+StatusS32 gamedataGetStatus(PCARG(s32, void*), s32);
+void pokemonCreate(Pokemon*, u16, u8, PCARG(s32, StatusS32));
 void pokemonWazaCreate(Pokemon*, u16, u16);
 u32 pokemonCreateRndFit(Pokemon*, s32, s32, s32, u32);
 void pokemonSetDarkPokemonStatus(Pokemon*, u16);
-void memoDataSet(s32, Pokemon*);
+void memoDataSet(PCARG(s32, void*), Pokemon*);
 s16 heroGetPokemon(Hero*, Pokemon*, bool);
 }
 

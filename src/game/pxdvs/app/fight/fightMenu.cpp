@@ -72,7 +72,7 @@ void winMsgOpenLevelUpStatus(u8*, s32);
 void winMsgCloseLevelUpStatus(s32);
 void fadeSet(s32, f32);
 void fadeCheck(s32);
-s32 menuPokemonStatusOpenWazaLearn(void*, void*);
+s32 menuPokemonStatusOpenWazaLearn(void*, PCARG(void*, u16));
 s8 menuSubOpenYesNoField(void);
 StatusU32 itemGetStatus(s32, u16, s32, s32);
 StatusU32 wazaGetStatus(GCsptr, u16, s32, s32);
@@ -241,7 +241,7 @@ extern "C" void fightMenuAllFightOutPokemonOpenStatusMenu(u8 flag);
 extern "C++" { static bool _fightMenuAllFightOutPokemonOpenStatusMenuSub(void* p, u16 id, void* work); }
 extern "C" void fightMenuOpenLevelUpStatusMenu(u8* work, u8 value);
 extern "C" void fightMenuSubMenuLvupStatus(s16* now, s16* old, s16* diff);
-extern "C" s32 fightMenuWazaWasure(void* pokemon, void* waza);
+extern "C" s32 fightMenuWazaWasure(void* pokemon, PCARG(void*, u16) waza);
 extern "C" void fightMenuCloseLevelUpStatusMenu(void);
 extern "C" u8 fightMenuYesNo(void);
 extern "C" void fightMenuWazaKoukaMsg(u32 msg, GCuptr value, u16 item);
@@ -1389,7 +1389,7 @@ void fightMenuCloseLevelUpStatusMenu(void)
 }
 
 extern "C" {
-s32 fightMenuWazaWasure(void* pokemon, void* waza)
+s32 fightMenuWazaWasure(void* pokemon, PCARG(void*, u16) waza)
 {
     s32 result;
 
