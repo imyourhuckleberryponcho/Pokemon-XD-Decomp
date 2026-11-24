@@ -46,6 +46,47 @@ u8 joutaiIsJoutaiDataId(void* p, u16 id);
 static _JOUTAI* _joutaiGetTargetJoutaiPtrAsJoutaiDataId(void* p, u16 id);
 static void _joutaiInit(_JOUTAI* j);
 
+#ifndef __MWERKS__
+#include <game/pcjoutai.h>
+#define PC_JOUTAI_OWNERS 32
+struct PcJoutaiExtra {
+    void* key;
+    _JOUTAI slot[PC_JOUTAI_EXTRA_SLOTS];
+};
+static PcJoutaiExtra pc_joutai_extra[PC_JOUTAI_OWNERS];
+
+static _JOUTAI* pcJoutaiExtra(void* key, u16 i) {
+    PcJoutaiExtra* unused = 0;
+    if (i >= PC_JOUTAI_EXTRA_SLOTS) {
+        return 0;
+    }
+    for (int n = 0; n < PC_JOUTAI_OWNERS; n++) {
+        if (pc_joutai_extra[n].key == key) {
+            return &pc_joutai_extra[n].slot[i];
+        }
+        if (unused == 0 && pc_joutai_extra[n].key == 0) {
+            unused = &pc_joutai_extra[n];
+        }
+    }
+    if (unused == 0) {
+        return 0;
+    }
+    unused->key = key;
+    for (int k = 0; k < PC_JOUTAI_EXTRA_SLOTS; k++) {
+        unused->slot[k].init();
+    }
+    return &unused->slot[i];
+}
+
+static void pcJoutaiExtraRelease(void* key) {
+    for (int n = 0; n < PC_JOUTAI_OWNERS; n++) {
+        if (pc_joutai_extra[n].key == key) {
+            pc_joutai_extra[n].key = 0;
+        }
+    }
+}
+#endif
+
 void _JOUTAI::writeJoutaiDataId(u16 id, u16 target) {
     if (id != 0) {
         u8 mode = joutaiDataBiosGetWriteMode(id);
@@ -312,6 +353,11 @@ void joutaiInitAry(_JOUTAI* ary, u16 num) {
         for (i = 0; i < num; i++) {
             _joutaiInit(ary + i);
         }
+#ifndef __MWERKS__
+        if (num == PC_JOUTAI_SLOTS) {
+            pcJoutaiExtraRelease(ary);
+        }
+#endif
     }
 }
 
@@ -331,5 +377,10 @@ static _JOUTAI* _joutaiGetTargetJoutaiPtrAsJoutaiDataId(void* p, u16 id) {
     if (s == 0) {
         return 0;
     }
+#ifndef __MWERKS__
+    if (banme >= PC_JOUTAI_SLOTS) {
+        return pcJoutaiExtra(s, banme - PC_JOUTAI_SLOTS);
+    }
+#endif
     return (_JOUTAI*)(s + banme * 16);
 }

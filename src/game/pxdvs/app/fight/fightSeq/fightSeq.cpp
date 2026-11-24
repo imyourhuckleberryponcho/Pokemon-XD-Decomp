@@ -7,6 +7,7 @@
 #include <game/fightseqscript.h>
 #include "game/portxd_xg.h"
 #include "game/portxd_forms.h"
+#include <game/pcjoutai.h>
 #ifndef __MWERKS__
 struct Hero { public: static Hero* getHeroPtr(); u16 itemQuantity(u16); u8 getHeroStyle() const; void setBattleResumeFloorID(uint); void setBattleResumeFloorIndex(u8); u8 getFollowerID(); u32 getFollowerGrpID(); u32 getFollowerResID(); void setFollowerGrpID(u32); void setFollowerResID(u32); void setFollowerID(u8); };
 #define getHeroStyle__4HeroCFv(o, ...) ((u8)((const Hero*)(o))->getHeroStyle(__VA_ARGS__))
@@ -2167,6 +2168,11 @@ u8 fightSeqTokuseiTenkiyaAct(FightOutPokemon* p) {
         return 0;
     }
     weather = fightFloorGetNowTenkouDataId(0, 1);
+#ifndef __MWERKS__
+    if (weather == PC_WEATHER_STRONG_WINDS) {
+        weather = 0;
+    }
+#endif
     result = 0;
     if ((weather == 0 || weather == 3 || weather == 5) && fightOutPokemonIsZokuseiDataId(p, 0) == 0) {
         for (i = 0; i < 2; i++) {
@@ -2400,6 +2406,15 @@ u8 fightSeqAttackPokemonJoutaiCheck(void) {
         case 0:
             fightOutPokemonInitJoutaiDataId(p, 0x15);
             fightOutPokemonInitJoutaiDataId(p, 0x28);
+#ifndef __MWERKS__
+            if (PortXD_CarriedSkipSeq != 0 && fightOutPokemonIsJoutaiDataId(p, PC_JOUTAI_CARRIED) == 1) {
+                void* skip = PortXD_CarriedSkipSeq(p);
+                if (skip != 0) {
+                    fightSeq_JumpWazaSeq(skip);
+                    result = 1;
+                }
+            }
+#endif
             fightseq_attack_pokemon_joutai_check_buff++;
             break;
         case 1:
@@ -4557,6 +4572,9 @@ void fightSeqIrekaeInit(FightOutPokemon* newP, FightOutPokemon* oldP, u8 kind) {
     }
     arg.p = newP;
     arg.mode = mode;
+#ifndef __MWERKS__
+    PortXD_ReleaseCarried(oldP);
+#endif
     fightFloorLoopValidFightOutPokemon(0, _fightSeqIrekaeInitSub, &arg, 0);
     if (fightOutPokemonIsJoutaiDataId(oldP, 0x34) == 1) {
         fightOutPokemonCopyJoutaiDataId(newP, oldP, 0x34);
@@ -4588,6 +4606,11 @@ static s32 _fightSeqIrekaeInitSub(void* arg, u16 id, void* userData) {
     }
     _fightSeqInitFightOutPokemonJoutaiUserFightTargetId(p, other, 0xA, id);
     _fightSeqInitFightOutPokemonJoutaiUserFightTargetId(p, other, 0xE, id);
+#ifndef __MWERKS__
+    if (_fightSeqCheckFightOutPokemonJoutaiUserFightTargetId(p, other, PC_JOUTAI_CARRIED, id) == 1) {
+        PortXD_ReleaseCarried(p);
+    }
+#endif
     if (fightOutPokemonIsAlly(p, other) == 0) {
         fightOutPokemonSetOumuWazaDataId(p, other, 0);
         fightOutPokemonInitFightPokemonEnemyAry(p, other);
@@ -4604,6 +4627,9 @@ static s32 _fightSeqIrekaeInitSub(void* arg, u16 id, void* userData) {
 extern "C" {
 void fightSeqKizetuInit(FightOutPokemon* p) {
     fightFloorLoopValidFightOutPokemon(0, _fightSeqKizetuInitSub, p, 0);
+#ifndef __MWERKS__
+    PortXD_ReleaseCarried(p);
+#endif
     pokemonInitJoutai(fightOutPokemonGetPokemonPtr(p));
     fightOutPokemonResetSeqStatus(p, 0);
     fightOutPokemonInitJoutaiDataId(p, 0x17);
@@ -4629,6 +4655,11 @@ static s32 _fightSeqKizetuInitSub(void* arg, u16 id, void* userData) {
     _fightSeqInitFightOutPokemonJoutaiUserFightTargetId(p, other, 0x16, id);
     _fightSeqInitFightOutPokemonJoutaiUserFightTargetId(p, other, 0xA, id);
     _fightSeqInitFightOutPokemonJoutaiUserFightTargetId(p, other, 0xE, id);
+#ifndef __MWERKS__
+    if (_fightSeqCheckFightOutPokemonJoutaiUserFightTargetId(p, other, PC_JOUTAI_CARRIED, id) == 1) {
+        PortXD_ReleaseCarried(p);
+    }
+#endif
     if (fightOutPokemonIsAlly(p, other) == 0) {
         fightOutPokemonSetOumuWazaDataId(p, other, 0);
         fightOutPokemonInitFightPokemonEnemyAry(p, other);
@@ -4639,6 +4670,32 @@ static s32 _fightSeqKizetuInitSub(void* arg, u16 id, void* userData) {
     }
     return 1;
 }
+
+#ifndef __MWERKS__
+extern "C" void* (*PortXD_CarriedSkipSeq)(FightOutPokemon* p) = 0;
+extern "C" void (*PortXD_CarriedChanged)(FightOutPokemon* p, int carried) = 0;
+
+extern "C" void PortXD_SetCarried(FightOutPokemon* target, FightOutPokemon* carrier) {
+    if (target == 0 || carrier == 0 || fightOutPokemonCheckWriteJoutaiDataId(target, PC_JOUTAI_CARRIED) != 2) {
+        return;
+    }
+    fightOutPokemonWriteJoutaiDataId(target, PC_JOUTAI_CARRIED,
+                                     fightTargetGetTragetPtrToRelativeHostSideFightTargetId(carrier, fightFloor_GetFightType(0)));
+    if (PortXD_CarriedChanged != 0) {
+        PortXD_CarriedChanged(target, 1);
+    }
+}
+
+extern "C" void PortXD_ReleaseCarried(FightOutPokemon* target) {
+    if (target == 0 || fightOutPokemonIsJoutaiDataId(target, PC_JOUTAI_CARRIED) != 1) {
+        return;
+    }
+    fightOutPokemonInitJoutaiDataId(target, PC_JOUTAI_CARRIED);
+    if (PortXD_CarriedChanged != 0) {
+        PortXD_CarriedChanged(target, 0);
+    }
+}
+#endif
 
 static u8 _fightSeqInitFightOutPokemonJoutaiUserFightTargetId(FightOutPokemon* p, FightOutPokemon* other, u16 joutai, u16 id) {
     u8 r = _fightSeqCheckFightOutPokemonJoutaiUserFightTargetId(p, other, joutai, id);

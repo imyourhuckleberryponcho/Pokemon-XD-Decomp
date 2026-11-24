@@ -2,6 +2,7 @@
 #include "game/portxd_xg.h"
 #include <game/pcspare.h>
 #include <game/pcret.h>
+#include <game/pcjoutai.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
 #include <game/fightseqscript.h>
@@ -56,6 +57,9 @@ void fightOutPokemonInitAbiCntAll(FightOutPokemon*);
 u16 fightOutPokemon_GetFightoutTurnCount(FightOutPokemon*);
 u8 fightSeqRegulationCheck(u16, FightOutPokemon*, FightOutPokemon*);
 u8 fightFloorCheckWriteJoutaiDataId(u32, u32);
+#ifndef __MWERKS__
+u8 fightFloorIsJoutaiDataId(void*, u16);
+#endif
 void fightFloorWriteJoutaiDataId(u32, u32, u32);
 void fightFloor_SetAttackPokemonFightWazaJoutaiDataId(u32, u32);
 u8 fightFloorLoopValidFightOutPokemon(PCARG(u8, void*), s32 (*)(void*, u16, void*), void*, u8);
@@ -1371,11 +1375,28 @@ void WS_CHIISAKUNARU(void) {
 }
 }
 
+#ifndef __MWERKS__
+extern "C" int (*PortXD_VanishKind)(u16 waza);
+extern "C" int (*PortXD_VanishKind)(u16 waza) = 0;
+static int pcVanishKind(u16 waza) {
+    return PortXD_VanishKind ? PortXD_VanishKind(waza) : 0;
+}
+#endif
+
 extern "C" {
 void WS_KIERUTAME_AFTAR(void) {
     fightSeq_GetWazaSeq();
     FightOutPokemon* p = fightTargetGetPtrAsNowFightType(0x11, 0);
     u16 moveId = fightOutPokemon_GetUseWazaDataId(p);
+#ifndef __MWERKS__
+    if (int k = pcVanishKind(moveId)) {
+        if (fightOutPokemonIsJoutaiDataId(p, k) == 1) {
+            fightOutPokemonInitJoutaiDataId(p, k);
+        }
+        fightSeq_NextWazaSeq(1);
+        return;
+    }
+#endif
     switch (moveId) {
     case 0x13:
     case 0x154:
@@ -1403,6 +1424,15 @@ void WS_KIERUTAME(void) {
     fightSeq_GetWazaSeq();
     FightOutPokemon* p = fightTargetGetPtrAsNowFightType(0x11, 0);
     u16 moveId = fightOutPokemon_GetUseWazaDataId(p);
+#ifndef __MWERKS__
+    if (int k = pcVanishKind(moveId)) {
+        if (fightOutPokemonCheckWriteJoutaiDataId(p, k) == 2) {
+            fightOutPokemonWriteJoutaiDataId(p, k, 0);
+        }
+        fightSeq_NextWazaSeq(1);
+        return;
+    }
+#endif
     switch (moveId) {
     case 0x13:
     case 0x154:
@@ -1607,6 +1637,11 @@ void WS_WEATHERKAIFUKU(void) {
     fw = fightOutPokemon_GetFightWazaPtr(atk);
     fightFloor_SetDefPokemonAndAtkFightWazaTargetId(0, atk);
     weather = fightFloorGetNowTenkouDataId(0, 1);
+#ifndef __MWERKS__
+    if (weather == PC_WEATHER_STRONG_WINDS) {
+        weather = 0;
+    }
+#endif
     if (fightOutPokemonIsHpMantan(atk) == 0) {
         if (weather == 0) {
             heal = (u16)fightOutPokemonMaxHpWaruValue(atk, 2);
@@ -3068,6 +3103,16 @@ void WS_WEATHER_KEEP(void) {
 extern "C" {
 void WS_WEATHER_CHANGE(void) {
     u8* cmd = (u8*)fightSeq_GetWazaSeq();
+#ifndef __MWERKS__
+    if (cmd[1] != PC_JOUTAI_STRONG_WINDS && fightFloorIsJoutaiDataId(0, PC_JOUTAI_STRONG_WINDS) == 1 &&
+        PortXD_StrongWindsBlockSeq != 0) {
+        if (void* block = PortXD_StrongWindsBlockSeq()) {
+            fightFloor_SetAttackPokemonFightWazaJoutaiDataId(0, 0x40);
+            fightSeq_JumpWazaSeq(block);
+            return;
+        }
+    }
+#endif
     if (fightFloorCheckWriteJoutaiDataId(0, cmd[1]) != 2) {
         fightFloor_SetAttackPokemonFightWazaJoutaiDataId(0, 0x40);
         ServerWork[5] = 2;

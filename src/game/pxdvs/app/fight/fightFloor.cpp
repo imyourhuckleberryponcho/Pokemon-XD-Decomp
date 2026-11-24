@@ -2,6 +2,7 @@
 #include "game/portxd_xg.h"
 #include <game/gcptr.h>
 #include <game/pcret.h>
+#include <game/pcjoutai.h>
 #include <game/statusval.h>
 #include <game/fightfloor.h>
 
@@ -1216,6 +1217,11 @@ PCRET(u8) fightFloorGetNowTenkouDataId(FIGHT_FLOOR* floor, u8 checkTokusei) {
     if (fightFloor_GetIsJoutaiDataId(floor, 0x56) == 1) {
         return 3;
     }
+#ifndef __MWERKS__
+    if (fightFloor_GetIsJoutaiDataId(floor, PC_JOUTAI_STRONG_WINDS) == 1) {
+        return PC_WEATHER_STRONG_WINDS;
+    }
+#endif
     return 0;
 }
 }
@@ -2056,9 +2062,28 @@ u8 fightFloorCheckWriteJoutaiDataId(FightJoutai* joutai, u16 joutaiId) {
     if (joutaiDataBiosGetStatus(joutaiId) != 9) {
         return 0;
     }
+#ifndef __MWERKS__
+    if (joutaiId != PC_JOUTAI_STRONG_WINDS && joutaiIsJoutaiDataId(joutai, PC_JOUTAI_STRONG_WINDS) == 1) {
+        return 1;
+    }
+#endif
     return joutaiCheckWriteJoutaiDataId(joutai, joutaiId);
 }
 }
+
+#ifndef __MWERKS__
+extern "C" void* (*PortXD_StrongWindsBlockSeq)(void) = 0;
+
+extern "C" void PortXD_SetStrongWinds(int on) {
+    if (on) {
+        if (joutaiCheckWriteJoutaiDataId(0, PC_JOUTAI_STRONG_WINDS) == 2) {
+            joutaiWriteJoutaiDataId(0, PC_JOUTAI_STRONG_WINDS, 0);
+        }
+    } else if (joutaiIsJoutaiDataId(0, PC_JOUTAI_STRONG_WINDS) == 1) {
+        joutaiInitJoutaiDataId(0, PC_JOUTAI_STRONG_WINDS);
+    }
+}
+#endif
 
 extern "C" {
 void fightFloorWriteJoutaiDataId(FightJoutai* joutai, u16 joutaiId, u16 value) {

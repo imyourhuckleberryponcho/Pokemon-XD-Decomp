@@ -119,6 +119,7 @@ struct MenuPokemonStatus {
 };
 
 #include <game/menuwazastatus.h>
+#include <game/pcillusion.h>
 
 struct MenuLvupStatus {
     u8 unk0;
@@ -169,6 +170,9 @@ void pokemon_SetCatchTrainerRnd(Pokemon* p, u32 rnd);
 u8 pokemonCheckRare(Pokemon* p);
 void pokemonToMenuPokemonStatus(Pokemon* p, FightPokemon* fp, MenuPokemonStatus* menu, s8 rare);
 void pokemonToMenuPokemonStatusSubBar(Pokemon* p, MenuPokemonStatus* menu);
+#ifndef __MWERKS__
+void pcMenuStatusShownAs(Pokemon* shown, MenuPokemonStatus* menu);
+#endif
 u8 menuSubGetPokemonSexForFightDisp(Pokemon* p);
 void pokemonToMenuWazaStatus(Pokemon* p, MenuWazaStatus* menu);
 u16 pokemon_GetMaxHp(Pokemon* p);
@@ -1320,6 +1324,12 @@ Sequence* fightOutPokemonCreateSequence(FightOutPokemon* fop, u16 tenki, s8 rare
     u32 catchRnd;
     Pokemon* p = fightOutPokemonGetPokemonPtr(fop);
     FightPokemon* fp = fightOutPokemon_GetFightPokemonPtr(fop);
+#ifndef __MWERKS__
+    Pokemon* shown = PortXD_GetShownAs(fop);
+    if (shown != 0) {
+        p = shown;
+    }
+#endif
     pokemonBiosCopy(&pokemon, p);
     u16 dataId = pokemon_GetPokemonDataId(&pokemon);
     u32 pkx = pokemonDB_GetPkxDataId(dataId);
@@ -1333,6 +1343,12 @@ Sequence* fightOutPokemonCreateSequence(FightOutPokemon* fop, u16 tenki, s8 rare
         return 0;
     }
     fightOutPokemonGetRndStatus(fop, &rnd, &catchRnd);
+#ifndef __MWERKS__
+    if (shown != 0) {
+        rnd = pokemon_GetRnd(shown);
+        catchRnd = pokemon_GetCatchTrainerRnd(shown);
+    }
+#endif
     pokemon_SetRnd(&pokemon, rnd);
     pokemon_SetCatchTrainerRnd(&pokemon, catchRnd);
     if (rare == -1) {
@@ -1499,6 +1515,9 @@ void fightOutPokemonInit(FightOutPokemon* fop) {
         fightOutPokemon_SetFightPokemonPtr(fop, 0);
         fightPokemonInit(fightOutPokemon_GetFightPokemonHensinBuffPtr(fop));
         joutaiInitAry(fightOutPokemon_GetFightoutJoutaiPtr(fop, 0), 0x34);
+#ifndef __MWERKS__
+        PortXD_SetShownAs(fop, 0);
+#endif
         fightOutPokemonInitAbiCntAll(fop);
         fightOutPokemonBiosSetHensinMotoPkxId(fop, 0);
         fightOutPokemon_SetFightoutTurnCount(fop, 2);
@@ -2252,6 +2271,51 @@ u8 fightOutPokemonIsHinsi(FightOutPokemon* fop) {
     return pokemon_GetHinsi(p);
 }
 
+#ifndef __MWERKS__
+#define PC_SHOWN_AS_MAX 16
+static struct {
+    FightOutPokemon* fop;
+    Pokemon* shown;
+} pc_shown_as[PC_SHOWN_AS_MAX];
+
+extern "C" void (*PortXD_IllusionBroken)(FightOutPokemon* fop) = 0;
+
+extern "C" Pokemon* PortXD_GetShownAs(FightOutPokemon* fop) {
+    if (fop == 0) {
+        return 0;
+    }
+    for (int i = 0; i < PC_SHOWN_AS_MAX; i++) {
+        if (pc_shown_as[i].fop == fop) {
+            return pc_shown_as[i].shown;
+        }
+    }
+    return 0;
+}
+
+extern "C" void PortXD_SetShownAs(FightOutPokemon* fop, Pokemon* shownAs) {
+    int unused = -1;
+    if (fop == 0) {
+        return;
+    }
+    for (int i = 0; i < PC_SHOWN_AS_MAX; i++) {
+        if (pc_shown_as[i].fop == fop) {
+            if (shownAs == 0) {
+                pc_shown_as[i].fop = 0;
+            }
+            pc_shown_as[i].shown = shownAs;
+            return;
+        }
+        if (unused < 0 && pc_shown_as[i].fop == 0) {
+            unused = i;
+        }
+    }
+    if (shownAs != 0 && unused >= 0) {
+        pc_shown_as[unused].fop = fop;
+        pc_shown_as[unused].shown = shownAs;
+    }
+}
+#endif
+
 GSchar* fightPokemonGetNicknamePtr(FightPokemon* fp) {
     Pokemon* p = fightPokemonGetPokemonPtr(fp);
     if (p == 0) {
@@ -2261,6 +2325,11 @@ GSchar* fightPokemonGetNicknamePtr(FightPokemon* fp) {
 }
 
 GSchar* fightOutPokemonGetNicknamePtr(FightOutPokemon* fop) {
+#ifndef __MWERKS__
+    if (Pokemon* shown = PortXD_GetShownAs(fop)) {
+        return pokemon_GetNicknamePtr(shown);
+    }
+#endif
     return fightPokemonGetNicknamePtr(fightOutPokemon_GetFightPokemonPtr(fop));
 }
 
@@ -2273,6 +2342,11 @@ GSchar* fightPokemonGetNamePtr(FightPokemon* fp) {
 }
 
 GSchar* fightOutPokemonGetNamePtr(FightOutPokemon* fop) {
+#ifndef __MWERKS__
+    if (Pokemon* shown = PortXD_GetShownAs(fop)) {
+        return GSmsgGetGSchar(pokemonDB_GetName(pokemon_GetPokemonDataId(shown)));
+    }
+#endif
     return fightPokemonGetNamePtr(fightOutPokemon_GetFightPokemonPtr(fop));
 }
 
@@ -3252,6 +3326,11 @@ void fightOutPokemonToMenuPokemonStatus(FightOutPokemon* fop, MenuPokemonStatus*
         pokemonToMenuPokemonStatusSubBar(moto, menu);
         menu->sex = menuSubGetPokemonSexForFightDisp(moto);
     }
+#ifndef __MWERKS__
+    if (Pokemon* shown = PortXD_GetShownAs(fop)) {
+        pcMenuStatusShownAs(shown, menu);
+    }
+#endif
     menu->unk16 = 1;
     if (fightOutPokemonIsGcHeroFightOutPokemon(fop) == 1) {
         menu->unk16 = 0;

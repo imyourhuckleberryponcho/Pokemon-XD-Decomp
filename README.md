@@ -23,7 +23,7 @@ version where hovering a square shows the file name and how much of it matches.
 | Game code matched | 81.6% |
 | Supporting SDK / runtime libraries | 100.0% |
 
-Last updated 2026-11-23.
+Last updated 2026-11-24.
 
 Every build is checked against the retail executable: the project only counts code that reproduces the
 original bytes exactly.

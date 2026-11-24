@@ -5,9 +5,11 @@
 #include <game/gcptr.h>
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/pcillusion.h>
 #include <game/explimit.h>
 #include <game/statusval.h>
 #include <game/fightseqscript.h>
+#include <game/pcjoutai.h>
 
 #pragma optimize_for_size on
 #pragma pool_strings off
@@ -3393,6 +3395,9 @@ void WS_HP_DEC(void) {
         p = fightTargetGetPtrAsNowFightType(seq[1], 0);
         s16 menu;
         void* pokemon = fightOutPokemonGetPokemonPtr(p);
+#ifndef __MWERKS__
+        int pcIllusionBreak = 0;
+#endif
         hp = pokemon_GetHp(pokemon);
         u32 maxHp = pokemon_GetMaxHp(pokemon);
         s32 migawari = fightOutPokemonGetJoutaiMigawariHp(p);
@@ -3435,6 +3440,9 @@ void WS_HP_DEC(void) {
                     hitDamage = hp;
                     hp = 0;
                 }
+#ifndef __MWERKS__
+                pcIllusionBreak = damage > 0 && p != attacker && PortXD_GetShownAs(p) != 0;
+#endif
                 if (ServerStatusFlag & 0x20) {
                     ServerStatusFlag &= ~0x20;
                 } else {
@@ -3493,6 +3501,16 @@ void WS_HP_DEC(void) {
                 fightMenuFightOutPokemonCloseStatusMenuAnotherMine(0, p, type, 0, 1);
             }
             fightMenuFightStatusStartAnimHP(menu, hp);
+#ifndef __MWERKS__
+            if (pcIllusionBreak) {
+                PortXD_SetShownAs(p, 0);
+                PortXD_RebuildBattlerModel(p);
+                fightMenuFightOutPokemonRenewStatusMenu(p, type, 1);
+                if (PortXD_IllusionBroken != 0) {
+                    PortXD_IllusionBroken(p);
+                }
+            }
+#endif
         }
     } else {
         p = fightTargetGetPtrAsNowFightType(seq[1], 0);
@@ -4490,6 +4508,15 @@ u8 fightSeqWazaFloorJoutaiCheck(void* side, FightOutPokemon* target, u16 waza) {
             return 1;
         }
     }
+#ifndef __MWERKS__
+    if (fightOutPokemonIsJoutaiDataId(target, PC_JOUTAI_UNTOUCHABLE) == 1 ||
+        (fightOutPokemonIsJoutaiDataId(target, PC_JOUTAI_CARRIED) == 1 && !(ServerStatusFlag & 0x10000) &&
+         fightOutPokemonGetUserFightTargetIdJoutaiDataId(target, PC_JOUTAI_CARRIED) != id)) {
+        fightFloor_SetAttackPokemonFightWazaJoutaiDataId(0, 0x40);
+        fightSeqWazaSeqSet(7, waza);
+        return 1;
+    }
+#endif
     if (!(ServerStatusFlag & 0x10000) && fightOutPokemonIsJoutaiDataId(target, 0x1F) == 1) {
         fightFloor_SetAttackPokemonFightWazaJoutaiDataId(0, 0x40);
         fightSeqWazaSeqSet(7, waza);

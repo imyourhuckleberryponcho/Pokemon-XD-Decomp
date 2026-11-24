@@ -3645,6 +3645,16 @@ void pokemonToMenuPokemonStatus(Pokemon* pokemon, FightPokemon* fightPokemon, Me
     status->itemDataId = pokemon_GetItemDataId(pokemon);
 }
 
+#ifndef __MWERKS__
+extern "C" void pcMenuStatusShownAs(Pokemon* shown, MenuPokemonStatus* status)
+{
+    GScharCpy(status->name, pokemon_GetNicknamePtr(shown));
+    status->level = pokemon_GetLevel(shown);
+    status->faceId = menuFaceGetID(shown);
+    status->sex = menuSubGetPokemonSexForFightDisp(shown);
+}
+#endif
+
 void pokemonSetDarkPokemonStatus(Pokemon* pokemon, u16 darkPokemonDataId)
 {
     u8 i;

@@ -143,6 +143,9 @@ static u8 _fightTrainerAiWazaValueIsAllyHaveWazaDataId(FIGHT_TRAINER*, FightOutP
 static s8 _fightTrainerAiWazaValueIsFightOutPokemonNeoki(FIGHT_TRAINER*, FightOutPokemon*);
 static u8 _fightTrainerAiWazaValueKuroikiriSubAbiCntCheck(FIGHT_TRAINER*, FightOutPokemon**, u16, u8, u8);
 static u8 _fightTrainerAiWazaValueAbiCntCheck(FIGHT_TRAINER*, FightOutPokemon*, u8, u8);
+#ifndef __MWERKS__
+extern "C" int (*PortXD_VanishKind)(u16 waza);
+#endif
 
 extern "C" {
 
@@ -2414,6 +2417,11 @@ s32 fightTrainerAiWazaValueSorawotobu(FIGHT_TRAINER* t, FightOutPokemon* self, u
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(t, self, 0x18) == 1) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x7e);
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(t, self, 0x1e) == 1) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x7f);
     if (fightTrainerAiIsFightOutPokemonJoutaiDataId(t, self, 0x1c) == 1) handle = fightTrainerAiAddValueByAddsubDataId(handle, t, 0x80);
+#ifndef __MWERKS__
+    if (PortXD_VanishKind != 0 && PortXD_VanishKind(waza) != 0) {
+        kie = (u8)PortXD_VanishKind(waza);
+    } else
+#endif
     if (waza == 0x13 || waza == 0x154) {
         kie = 0x1f;
     } else if (waza == 0x5b) {

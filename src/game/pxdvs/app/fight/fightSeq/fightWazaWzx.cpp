@@ -1,5 +1,7 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/pcillusion.h>
+#include <game/pcjoutai.h>
 #include <game/fightrecords.h>
 #ifdef __MWERKS__
 typedef u8 FIGHTOUT_COPY[0x898];
@@ -104,6 +106,11 @@ s32 fightWazaWzxVariationFuncHakidasu(void) {
 }
 
 s32 fightWazaWzxVariationFuncWeatherHP(void) {
+#ifndef __MWERKS__
+    if ((u8)fightFloorGetNowTenkouDataId(0, 1) == PC_WEATHER_STRONG_WINDS) {
+        return 1;
+    }
+#endif
     switch ((u8)fightFloorGetNowTenkouDataId(0, 1)) {
     case 1: return 0;
     case 0: return 1;
@@ -270,6 +277,27 @@ void fightWazaWzxTypeFuncHensin(u16 waza, FightOutPokemon* user) {
     _fightWazaWxzfightOutPokemonWazaEffectSpe(user, waza, false);
     Sequence_Free(oldSeq);
 }
+
+#ifndef __MWERKS__
+extern "C" void PortXD_RebuildBattlerModel(FightOutPokemon* fop) {
+    if (fop == 0) {
+        return;
+    }
+    void* oldSeq = fightOutPokemon_GetSequencePtr(fop);
+    u8 weather = fightFloorGetNowTenkouDataId(0, 1);
+    void* newSeq = fightOutPokemonCreateSequence(fop, weather, -1);
+    if (oldSeq == 0 || newSeq == 0) {
+        if (newSeq != 0) {
+            Sequence_Free(newSeq);
+        }
+        return;
+    }
+    battleGridReplacePokemon(oldSeq, newSeq);
+    battleGridUpdate();
+    fightOutPokemon_SetSequencePtr(fop, newSeq);
+    Sequence_Free(oldSeq);
+}
+#endif
 
 void fightWazaWzxTypeFuncKawarawari(u16 waza, FightOutPokemon* user, FightOutPokemon* target, u16 mode, bool flag) {
     fightOutPokemonLoadWazaEffect(user, waza, 1, false);

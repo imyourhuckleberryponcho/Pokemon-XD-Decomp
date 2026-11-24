@@ -1,6 +1,7 @@
 #include <dolphin/types.h>
 #include "game/portxd_xg.h"
 #include <game/pcret.h>
+#include <game/pcillusion.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
 #include <game/fightseqscript.h>
@@ -1734,7 +1735,7 @@ extern "C" int PortXD_MsgIsHeroSide(void* fop, int isHero);
 #endif
 
 static void _fightActionFlowKaisiNyuujouPokemonSubAppearMsg(FIGHT_TRAINER* trainer, FightOutPokemon* fop, u16 trainerCount, u16 fightOutCount, u16 unused, u16 index, u8 mode) {
-    u32 new_var;
+    GCuptr new_var;
     bool isHero;
     bool tuusin;
     isHero = fightOutPokemonIsGcHeroFightOutPokemon(fop) == 1;
@@ -1745,8 +1746,13 @@ static void _fightActionFlowKaisiNyuujouPokemonSubAppearMsg(FIGHT_TRAINER* train
     if ((fightTrainerGetPrefixNamePtr(trainer) == 0) && (!isHero)) {
         tuusin = 1;
     }
-    new_var = (u32)pokemon_GetNicknamePtr(fightOutPokemonGetPokemonPtr(fop));
-    u32 nick = new_var;
+    new_var = (GCuptr)pokemon_GetNicknamePtr(fightOutPokemonGetPokemonPtr(fop));
+#ifndef __MWERKS__
+    if (Pokemon* shown = PortXD_GetShownAs(fop)) {
+        new_var = (GCuptr)pokemon_GetNicknamePtr(shown);
+    }
+#endif
+    GCuptr nick = new_var;
     if (mode == 0) {
         if (tuusin == 1) {
             if (index == 0) {
