@@ -189,7 +189,7 @@ s32 menuOpen(s32 menuID, s32);
 #ifdef __MWERKS__
 s32 menuOpenCustom(s32 menuID, ...);
 #else
-s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#include <game/pcmenuopen.h>
 #endif
 s32 windowGetActiveID(void);
 tagWINDOW_WORK* windowSearchID(s32 id);

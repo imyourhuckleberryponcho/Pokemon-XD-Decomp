@@ -66,7 +66,11 @@ void menuFightOpenTotalTimer(void);
 void GSthreadSwitch(void);
 u8 menuIsCheck(u32);
 void menuCloseCustom(s32, s32, s32);
+#ifdef __MWERKS__
 void menuOpenCustom(s32, s32, s32, s32, s32, s32, ...);
+#else
+#include <game/pcmenuopen.h>
+#endif
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
 void winMsgOpenLevelUpStatus(u8*, s32);
 void winMsgCloseLevelUpStatus(s32);
@@ -124,7 +128,7 @@ s16 fightTrainerGetFightPokemonToTemotiBanme(FIGHT_TRAINER*, u32);
 u8 fightPokemonCheckFightOut(void*);
 u8 fightPokemonCheckValid(void*);
 u8 fightOutPokemonIsJoutaiDataId(FightOutPokemon*, s32);
-void Sequence_ResetStatus(u32, s32);
+void Sequence_ResetStatus(GCuptr, s32);
 u8 getStaticBall__10bingo_biosFv(void);
 void decStaticBall__10bingo_biosFv(void);
 u8 GSgfxVideoGetVsyncRate(void);
@@ -666,7 +670,7 @@ static u8 _fightMenuFightTrainerGcHeroOpenMenuSubItem(FIGHT_TRAINER* trainer, Fi
     s32 slot;
     u16 i;
     FightOutPokemon* op;
-    u32 seq;
+    GCuptr seq;
     u8 out[2];
     u8 joutai8[2];
     u8 joutai7[2];

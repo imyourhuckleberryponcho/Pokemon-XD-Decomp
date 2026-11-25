@@ -101,7 +101,7 @@ static void _fsysOffTOCFlag(u32 id, u32 flag);
 s32 _fsysIncCacheUniqueGroupID(void);
 u8 GSfsysInit2(s32, s32, s32);
 static void _fsysForegroundTask(FsysWork*);
-static void _fsysHeaderSizeReadDvdCallback(s32, u32);
+static void _fsysHeaderSizeReadDvdCallback(s32, GCuptr);
 static void _fsysOnTOCFlag(u32, u32);
 static u8 _fsysCheckExpandCompleteAll(FsysWork*);
 static u8 _fsysCheckExpandComplete(FsysWork*, u32);
@@ -116,13 +116,13 @@ FsysBG* _fsysGetNewBGWork(void);
 void _fsysDelTAG(FsysTag*, FsysTag**);
 void _fsysAddTAG(FsysTag*, FsysTag**);
 static FsysWork* _fsysGetNewWork_Sub(s32);
-FsysWork* _fsysInfo2Work(u32);
+FsysWork* _fsysInfo2Work(GCuptr);
 void* GSmemAllocAlign(u32, u32);
 GCuptr GSdvdOpen(const char*);
 s32 GSdvdGetLength(GCuptr);
 s32 GSdvdRead(GCuptr, void*, s32, s32);
 s32 GSdvdClose(GCuptr);
-u8 GSdvdReadAsync(GCuptr, void*, s32, s32, void (*)(s32, u32));
+u8 GSdvdReadAsync(GCuptr, void*, s32, s32, void (*)(s32, GCuptr));
 void _fsysFree(void*);
 GCuptr _fsysAlloc(u32);
 void _fsysSetLockCacheFlag(u32, u32, s32);
@@ -1363,7 +1363,7 @@ static void _fsysForegroundTask(FsysWork* work) {
     OSRestoreInterrupts(intr);
 }
 
-static void _fsysHeaderSizeReadDvdCallback(s32 result, u32 handle) {
+static void _fsysHeaderSizeReadDvdCallback(s32 result, GCuptr handle) {
     FsysWork* work = _fsysInfo2Work(handle);
 
     if (work == 0) {
@@ -1537,7 +1537,7 @@ s32 _fsysGetActiveTask(s32 mode) {
 
 static u8 _fsysCloseFile(FsysWork* work, u8 flag) {
     BOOL intr;
-    u32 file;
+    GCuptr file;
 
     if (flag == 0) {
         if (work->callback != 0 && work->mode != 4) {
@@ -1769,7 +1769,7 @@ static FsysWork* _fsysGetWork(u32 id, u8 flag) {
     return 0;
 }
 
-FsysWork* _fsysInfo2Work(u32 handle) {
+FsysWork* _fsysInfo2Work(GCuptr handle) {
     FsysWork* w;
     FsysHeader* header;
     FsysResHeader* res;

@@ -432,7 +432,7 @@ u8 dbgMenuFightGetFightPokeStMenuOpenFlag(void);
 #ifdef __MWERKS__
 void menuOpenCustom(s32 menuId, ...);
 #else
-s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#include <game/pcmenuopen.h>
 #endif
 void fightFloor_SetStatusMenuCnt(s32 menuId, s32 cnt);
 void fightWazaDoEffect(Sequence* seq, s32 a, s32 b, u8 close);

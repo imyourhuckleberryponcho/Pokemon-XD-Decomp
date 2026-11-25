@@ -226,7 +226,7 @@ s32 heroItemDecItemDataId(HeroPtr*, PCARG(u16, u32), u32, PCARG(s16, u32));
 
 HeroPtr* fightTrainer_GetHeroPtr(FIGHT_TRAINER*);
 GCuptr fightTrainerGetPrefixNamePtr(FIGHT_TRAINER*);
-u32 fightTrainerGetNamePtr(FIGHT_TRAINER*);
+GCuptr fightTrainerGetNamePtr(FIGHT_TRAINER*);
 void fightTrainerCallEffect(FIGHT_TRAINER*, u32);
 void* fightEncountDataBiosGetPtr(u16);
 u8 fightEncountDataBiosGetFightKind(void*);

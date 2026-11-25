@@ -1,7 +1,7 @@
 # unit	status	match%	symbol	name	pragmas	asm	cflags	gc_hash
 # status: linked = byte-identical and in the DOL; exact = byte-identical, file not linked yet; draft = differs from the original (may behave differently)
 # pragmas: non-default #pragma state at the definition ("-" none, "?" definition not found by name); asm = inline asm body; cflags = the unit's extra compiler flags; gc_hash = funchash.py hash of our compiled GameCube code (relocated words masked, targets by name): same hash = same GameCube code
-# generated: 2026-11-23 18:28 from the build at source commit 06fc335900
+# generated: 2026-11-25 00:01 from the build at source commit 811c7a29b2
 game/character	linked	100.00	characterInit	characterInit	?	-	-	abd524a9450f
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraResetFloor	dbgMenuCameraResetFloor	peephole off	-	-	ec8086614c12
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraChangeDisp	dbgMenuCameraChangeDisp	peephole off	-	-	efda3d324df5
@@ -6802,7 +6802,7 @@ game/pxdvs/app/gamedata/gamedata	linked	100.00	gamedataAttestInit	gamedataAttest
 game/pxdvs/app/gamedata/gamedata	linked	100.00	gamedataSetStatus	gamedataSetStatus	-	-	-	d7040f501451
 game/pxdvs/app/gamedata/gamedata	linked	100.00	gamedataGetStatus	gamedataGetStatus	-	-	-	a76a0bb52abd
 game/pxdvs/app/status/status	linked	100.00	statusSetStatus	statusSetStatus	-	-	-	d95f6205c47c
-game/pxdvs/app/status/status	linked	100.00	statusGetStatus	statusGetStatus	-	-	-	18a5c72ce805
+game/pxdvs/app/status/status	linked	100.00	statusGetStatus	statusGetStatus	?	-	-	18a5c72ce805
 game/pxdvs/app/kouka/kouka	linked	100.00	koukaExec	koukaExec	-	-	-	2ef93816fe30
 game/pxdvs/app/kouka/kouka	linked	100.00	_koukaOneExec__FUlPvPvPl	_koukaOneExec(unsigned long, void*, void*, long*)	-	-	-	052e128917f7
 game/pxdvs/app/kouka/koukaBios	linked	100.00	koukaLinkDataBiosGetKouka	koukaLinkDataBiosGetKouka	-	-	-	c9826ad81908
@@ -8082,7 +8082,7 @@ game/pxdvs/app/script/script	linked	100.00	scriptFloorCharSetPos	scriptFloorChar
 game/pxdvs/app/script/script	linked	100.00	scriptGetPokemonNum	scriptGetPokemonNum	peephole off	-	-O4,s -inline noauto,deferred	62758f5e6982
 game/pxdvs/app/script/script	linked	100.00	scriptGetDarkPokemonNum	scriptGetDarkPokemonNum	?	-	-O4,s -inline noauto,deferred	71eb1f998232
 game/pxdvs/app/script/script	linked	100.00	scriptGetDarkPointZeroPokemonNum	scriptGetDarkPointZeroPokemonNum	?	-	-O4,s -inline noauto,deferred	184284dd56b7
-game/pxdvs/app/script/script	linked	100.00	scriptGetPokemonNickName	scriptGetPokemonNickName	peephole off	-	-O4,s -inline noauto,deferred	5ceda9fba95e
+game/pxdvs/app/script/script	linked	100.00	scriptGetPokemonNickName	scriptGetPokemonNickName	?	-	-O4,s -inline noauto,deferred	5ceda9fba95e
 game/pxdvs/app/script/script	linked	100.00	scriptPlayPokemonNakigoe	scriptPlayPokemonNakigoe	peephole off	-	-O4,s -inline noauto,deferred	1f3e467ed2ad
 game/pxdvs/app/script/script	linked	100.00	scriptCatchPokemon	scriptCatchPokemon	peephole off	-	-O4,s -inline noauto,deferred	79a4e15f9e9d
 game/pxdvs/app/script/script	linked	100.00	scriptGetEarthRibbon	scriptGetEarthRibbon	?	-	-O4,s -inline noauto,deferred	34aa6775a0b0
@@ -9083,7 +9083,7 @@ game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerGetNoActionFightOutPo
 game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerInitEnemyPokemonFightOutStatus	fightTrainerInitEnemyPokemonFightOutStatus	auto_inline off	-	-O4,s -inline deferred	a0ff9a099fb5
 game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerIsAllyFightTargetPtr	fightTrainerIsAllyFightTargetPtr	auto_inline off	-	-O4,s -inline deferred	282386ec95c4
 game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerGetHikaeFightPokemonNum	fightTrainerGetHikaeFightPokemonNum	?	-	-O4,s -inline deferred	e352b7aafb98
-game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerGetNamePtr	fightTrainerGetNamePtr	auto_inline off	-	-O4,s -inline deferred	e9836fac8250
+game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerGetNamePtr	fightTrainerGetNamePtr	?	-	-O4,s -inline deferred	e9836fac8250
 game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerGetPrefixNamePtr	fightTrainerGetPrefixNamePtr	auto_inline off	-	-O4,s -inline deferred	9220f7d4c336
 game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerSearchInvalidFightPokemonPtr	fightTrainerSearchInvalidFightPokemonPtr	auto_inline off	-	-O4,s -inline deferred	b3f45f7d0ff9
 game/pxdvs/app/fight/fightTrainer	exact	100.00	fightTrainerIsSelectedItemBall	fightTrainerIsSelectedItemBall	auto_inline off	-	-O4,s -inline deferred	538cdb1dd143
@@ -12043,7 +12043,7 @@ game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogSetIP	GSlogSetIP	?	-	-inline no
 game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogWrite	GSlogWrite	?	-	-inline noauto,deferred	a7875b07fd79
 game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogWritef	GSlogWritef	-	-	-inline noauto,deferred	a7875b07fd79
 game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogGetLineCount	GSlogGetLineCount	-	-	-inline noauto,deferred	2c09a9bd7cf3
-game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogGetLine	GSlogGetLine	-	-	-inline noauto,deferred	4a816ff52356
+game/pxdvs/GSAPI/GSlogM/GSlog	linked	100.00	GSlogGetLine	GSlogGetLine	?	-	-inline noauto,deferred	4a816ff52356
 game/pxdvs/GSAPI/GSgfxM/backfb	linked	100.00	GSgfxEndBackFBCapture	GSgfxEndBackFBCapture	-	-	-	d9c43118b053
 game/pxdvs/GSAPI/GSgfxM/backfb	linked	100.00	GSgfxBeginBackFBCapture	GSgfxBeginBackFBCapture	-	-	-	29d8f0431bbe
 game/pxdvs/GSAPI/GSgfxM/backfb	linked	100.00	GSgfxBackFBDoFrame__FP10GSgfxLayer	GSgfxBackFBDoFrame(GSgfxLayer*)	-	-	-	b2fdded9b242

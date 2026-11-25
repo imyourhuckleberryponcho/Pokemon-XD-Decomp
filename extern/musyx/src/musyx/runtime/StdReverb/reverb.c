@@ -232,7 +232,83 @@ L_00000710:
 }
 #else
 /* clang-format on */
+#if defined(__clang__)
+#pragma STDC FP_CONTRACT OFF
+#elif defined(_MSC_VER)
+#pragma fp_contract(off)
+#elif defined(__GNUC__)
+#pragma GCC optimize("fp-contract=off")
+#endif
+
+static f32 rv_mul(f32 a, f32 b) { return (f32)((f64)a * (f64)b); }
+
+static f32 rv_madd(f32 a, f32 c, f32 b) {
+  f64 p = (f64)a * (f64)c;
+  f64 s = p + (f64)b;
+  f64 bb = s - p;
+  f64 e = (p - (s - bb)) + ((f64)b - bb);
+  if (e != 0.0 && s - s == 0.0) {
+    u64 bits;
+    memcpy(&bits, &s, sizeof(bits));
+    if ((bits & 1) == 0) {
+      if ((e > 0.0) == (s > 0.0)) {
+        bits++;
+      } else {
+        bits--;
+      }
+      memcpy(&s, &bits, sizeof(bits));
+    }
+  }
+  return (f32)s;
+}
+
+static f32 rv_nmsub(f32 a, f32 c, f32 b) { return -rv_madd(a, c, -b); }
+
+static s32 rv_fctiwz(f32 x) {
+  if (x != x || x < -2147483648.0f) {
+    return (s32)0x80000000;
+  }
+  if (x >= 2147483648.0f) {
+    return 0x7FFFFFFF;
+  }
+  return (s32)x;
+}
+
+static s32 rv_fctiw(f32 x) {
+  f64 d = x;
+  f64 f;
+  f64 r;
+  if (d != d || d < -2147483648.0) {
+    return (s32)0x80000000;
+  }
+  if (d >= 2147483648.0) {
+    return 0x7FFFFFFF;
+  }
+  f = floor(d);
+  r = d - f;
+  if (r > 0.5 || (r == 0.5 && fmod(f, 2.0) != 0.0)) {
+    f += 1.0;
+  }
+  if (f >= 2147483648.0) {
+    return 0x7FFFFFFF;
+  }
+  return (s32)f;
+}
+
 static void DoCrossTalk(s32* a, s32* b, f32 start, f32 end) {
+  f32 s4 = start;
+  f32 e4 = end;
+  s32 i;
+#if MUSY_VERSION <= MUSY_VERSION_CHECK(2, 0, 0)
+  s4 = rv_mul(s4, 0.6f);
+  e4 = rv_mul(e4, 0.6f);
+#endif
+  for (i = 0; i < 160; ++i) {
+    f32 x = (f32)(f64)a[i];
+    f32 y = (f32)(f64)b[i];
+    a[i] = rv_fctiw(rv_mul(x, end) + rv_mul(y, start));
+    b[i] = rv_fctiw(rv_mul(x, s4) + rv_mul(y, e4));
+  }
 }
 #endif
 
@@ -595,8 +671,119 @@ L_00000C6C:
 }
 /* clang-format on */
 #else
+#define RV_AT(dl, off) (*(f32*)((u8*)(dl).inputs + (off)))
+#define RV_STEP(off, len)                                                                                  \
+  do {                                                                                                     \
+    (off) += 4;                                                                                            \
+    if ((off) == (len)) {                                                                                  \
+      (off) = 0;                                                                                           \
+    }                                                                                                      \
+  } while (0)
+
 static void HandleReverb(s32* sptr, SND_AUX_REVERBHI* rv, s32 k) {
+  _SND_REVHI_WORK* w = &rv->rv;
+  _SND_REVHI_DELAYLINE* C = &w->C[k * 3];
+  _SND_REVHI_DELAYLINE* A = &w->AP[k * 3];
+  const f32 ap = w->allPassCoeff;
+  const f32 damp = w->damping;
+  const f32 wet = rv_mul(w->level, 0.6f);
+  const f32 dry = 0.6f - wet;
+  const f32 cc0 = w->combCoef[k * 3];
+  const f32 cc1 = w->combCoef[k * 3 + 1];
+  const f32 cc2 = w->combCoef[k * 3 + 2];
+  const s32 preLen = w->preDelayTime;
+  f32 lp = w->lpLastout[k];
+  s32 c0in = C[0].inPoint, c0out = C[0].outPoint;
+  s32 c1in = C[1].inPoint, c1out = C[1].outPoint;
+  s32 c2in = C[2].inPoint, c2out = C[2].outPoint;
+  f32 c0last = C[0].lastOutput, c1last = C[1].lastOutput, c2last = C[2].lastOutput;
+  s32 a0in = A[0].inPoint, a0out = A[0].outPoint;
+  s32 a1in = A[1].inPoint, a1out = A[1].outPoint;
+  s32 a2in = A[2].inPoint, a2out = A[2].outPoint;
+  f32 a0last = A[0].lastOutput, a1last = A[1].lastOutput, a2last = A[2].lastOutput;
+  s32 i;
+
+  for (i = 0; i < 160; ++i) {
+    f32 in = (f32)(f64)sptr[i];
+    f32 x = in;
+    f32 t;
+    f32 sum;
+    f32 z;
+
+    if (preLen != 0) {
+      f32* p = w->preDelayPtr[k];
+      x = *p;
+      *p = in;
+    }
+
+    t = rv_madd(cc0, c0last, x);
+    RV_AT(C[0], c0in) = t;
+    t = rv_madd(cc1, c1last, x);
+    RV_AT(C[1], c1in) = t;
+    c0last = RV_AT(C[0], c0out);
+    c1last = RV_AT(C[1], c1out);
+    RV_STEP(c0in, C[0].length);
+    RV_STEP(c0out, C[0].length);
+    RV_STEP(c1in, C[1].length);
+    RV_STEP(c1out, C[1].length);
+    sum = c0last + c1last;
+    t = rv_madd(cc2, c2last, x);
+    RV_AT(C[2], c2in) = t;
+    c2last = RV_AT(C[2], c2out);
+    RV_STEP(c2in, C[2].length);
+    RV_STEP(c2out, C[2].length);
+    sum = sum + c2last;
+
+    t = rv_madd(ap, a0last, sum);
+    RV_AT(A[0], a0in) = t;
+    z = rv_nmsub(ap, t, a0last);
+    a0last = RV_AT(A[0], a0out);
+    RV_STEP(a0in, A[0].length);
+    RV_STEP(a0out, A[0].length);
+
+    t = rv_madd(ap, a1last, z);
+    RV_AT(A[1], a1in) = t;
+    z = rv_nmsub(ap, t, a1last);
+    a1last = RV_AT(A[1], a1out);
+    RV_STEP(a1in, A[1].length);
+    RV_STEP(a1out, A[1].length);
+
+    z = rv_mul(z, 0.3f);
+    z = rv_madd(damp, lp, z);
+    lp = z;
+
+    t = rv_madd(ap, a2last, z);
+    RV_AT(A[2], a2in) = t;
+    z = rv_nmsub(ap, t, a2last);
+    a2last = RV_AT(A[2], a2out);
+    RV_STEP(a2in, A[2].length);
+    RV_STEP(a2out, A[2].length);
+
+    sptr[i] = rv_fctiwz(rv_madd(wet, z, rv_mul(dry, in)));
+  }
+
+  C[0].inPoint = c0in;
+  C[0].outPoint = c0out;
+  C[1].inPoint = c1in;
+  C[1].outPoint = c1out;
+  C[2].inPoint = c2in;
+  C[2].outPoint = c2out;
+  C[0].lastOutput = c0last;
+  C[1].lastOutput = c1last;
+  C[2].lastOutput = c2last;
+  A[0].inPoint = a0in;
+  A[0].outPoint = a0out;
+  A[1].inPoint = a1in;
+  A[1].outPoint = a1out;
+  A[2].inPoint = a2in;
+  A[2].outPoint = a2out;
+  A[0].lastOutput = a0last;
+  A[1].lastOutput = a1last;
+  A[2].lastOutput = a2last;
+  w->lpLastout[k] = lp;
 }
+#undef RV_AT
+#undef RV_STEP
 #endif
 
 void ReverbHICallback(s32* left, s32* right, s32* surround, SND_AUX_REVERBHI* rev) {

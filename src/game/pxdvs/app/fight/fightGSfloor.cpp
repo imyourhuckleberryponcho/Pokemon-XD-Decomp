@@ -96,9 +96,9 @@ void Sequence_SetFlags(GCuptr seq, u8 flags);
 void Sequence_SetVisibility(GCuptr seq, u32 visible);
 u8 Sequence_GetFlags(GCuptr seq);
 u8 Sequence_IsFlipped(GCuptr seq);
-u8 Sequence_IsRare(u32 seq);
-u32 Sequence_GetPokemonRndVal(u32 seq);
-u16 Sequence_GetID(u32 seq);
+u8 Sequence_IsRare(GCuptr seq);
+u32 Sequence_GetPokemonRndVal(GCuptr seq);
+u16 Sequence_GetID(GCuptr seq);
 void Sequence_Free(GCuptr seq);
 #ifndef __MWERKS__
 void fightOutPokemonBiosSetSequencePtr(u8* p, GCuptr v);
@@ -278,7 +278,7 @@ static u8 _fightGSfloorTrainerEvt(void* target, u16 id, void* data) {
 static u8 _fightGSfloorPokemonCB(void* target, u16 id, void* data) {
     GSfloorScan* scan = (GSfloorScan*)data;
     GSfloorPokemonEntry* e;
-    u32 seq;
+    GCuptr seq;
     u16 seqId;
     seq = pokemonGetStatus(target, 0, 0xEE, 0);
     if (seq == 0) {
@@ -310,7 +310,7 @@ static u8 _fightGSfloorPokemonCB(void* target, u16 id, void* data) {
 static u8 _fightGSfloorTrainerCB(void* target, u16 id, void* data) {
     GSfloorScan* scan = (GSfloorScan*)data;
     GSfloorTrainerEntry* e;
-    u32 seq;
+    GCuptr seq;
     u16 seqId;
     seq = fightTrainerGetStatus(target, 0, 0x4C, 0);
     if (seq == 0) {

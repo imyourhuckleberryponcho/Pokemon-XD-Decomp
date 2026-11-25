@@ -129,7 +129,7 @@ int windowGetActiveID(void);
 #ifdef __MWERKS__
 int menuOpenCustom(int, ...);
 #else
-s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#include <game/pcmenuopen.h>
 #endif
 void menuClose(int);
 void menuCloseSync(int, int);

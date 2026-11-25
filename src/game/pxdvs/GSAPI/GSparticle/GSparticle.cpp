@@ -783,9 +783,15 @@ u8* GSparticleLoad(void* file) {
             GSlogWrite("GSparticle: unknown version\n");
             goto fail;
         case 0x47505431:
+#ifdef __MWERKS__
             hdr->cmd = (gc_be16*)((u8*)hdr->cmd + GC_ADDR32(hdr));
             hdr->tex = (int*)((u8*)hdr->tex + GC_ADDR32(hdr));
             hdr->ref = (u32*)((u8*)hdr->ref + GC_ADDR32(hdr));
+#else
+            gc_wr32(hdr->cmd.b, hdr->cmd.gc() + GC_ADDR32(hdr));
+            gc_wr32(hdr->tex.b, hdr->tex.gc() + GC_ADDR32(hdr));
+            gc_wr32(hdr->ref.b, hdr->ref.gc() + GC_ADDR32(hdr));
+#endif
             int ver = *hdr->cmd;
             if (ver != 0x43) {
                 GSlogWrite("GSparticle: version mismatch between system(%d) and ptcl-file(%d)", 0x43, ver);

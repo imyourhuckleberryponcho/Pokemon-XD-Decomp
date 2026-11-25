@@ -277,7 +277,7 @@ void menuCloseCustom(s32, s32, s32);
 #ifdef __MWERKS__
 void menuOpenCustom(s32, ...);
 #else
-s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#include <game/pcmenuopen.h>
 #endif
 s32 windowGetActiveID(void);
 s32 menuCB_GetDisconnectedGBA(void);

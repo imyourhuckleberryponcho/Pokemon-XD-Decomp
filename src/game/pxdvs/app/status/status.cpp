@@ -60,7 +60,7 @@ s32 statusSetStatus(u8 kind, void* p, u16 a, u16 b, PCARG(void*, u32) target, s3
     return result;
 }
 
-s32 statusGetStatus(u8 kind, void* p, u16 a, u16 b, u16 c) {
+StatusS32 statusGetStatus(u8 kind, void* p, u16 a, u16 b, u16 c) {
     switch (kind) {
     case 0:
         return 0;

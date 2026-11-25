@@ -158,7 +158,7 @@ typedef s32 vg_s32;
 #else
 typedef gc_bes32 vg_s32;
 #define VG_VOLATILE
-#define VG_STYLES(sd) ((u8*)(uintptr_t)(u32)(sd)->newStyles)
+#define VG_STYLES(sd) PC_PTR(u8*, (sd)->newStyles)
 #endif
 
 struct VEC_RECT {

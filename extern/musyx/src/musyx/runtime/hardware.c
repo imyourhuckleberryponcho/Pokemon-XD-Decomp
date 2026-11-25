@@ -501,7 +501,7 @@ void hwFlushStream(void* base, u32 offset, u32 bytes, u8 hwStreamHandle, void (*
   bytes += (offset & 31);
   offset &= ~31;
   bytes = (bytes + 31) & ~31;
-  mram = (u32)base + offset;
+  mram = (size_t)base + offset;
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
   DCStoreRange((void*)mram, bytes);
 #endif

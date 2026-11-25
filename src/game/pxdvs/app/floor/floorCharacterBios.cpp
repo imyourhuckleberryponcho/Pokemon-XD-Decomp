@@ -65,7 +65,7 @@ s32 floorCharacterBiosGetLoadInit(u8 *p0);
 s32 floorCharacterBiosGetMoveSctID(void *p0);
 s32 floorCharacterBiosGetMoveType(void *p0);
 PCRET(u16) floorCharacterBiosGetNameID(void *p0);
-s32 floorCharacterBiosGetPeopleInfoPtr(void *p0);
+GCsptr floorCharacterBiosGetPeopleInfoPtr(void *p0);
 s32 floorCharacterBiosGetPos(void *p0, void *p1);
 FloorCharInfo* floorCharacterBiosGetPtr(u32 key, u32 idx);
 s32 floorCharacterBiosGetRot(void *p0, void *p1);
@@ -225,7 +225,7 @@ s32 floorCharacterBiosGetVisibility(u8 *p0) {
 }
 
 extern "C" {
-s32 floorCharacterBiosGetPeopleInfoPtr(void *p0) {
+GCsptr floorCharacterBiosGetPeopleInfoPtr(void *p0) {
     if (p0 != NULL) {
         return (GCsptr)(peopleInfoBiosGetPtrFromIndex(((floorCharacter_dd_*)p0)->peopleInfoIndex));
     }

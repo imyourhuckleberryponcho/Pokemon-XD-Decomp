@@ -29,8 +29,8 @@ void GSdvdClose(GSdvdFile* file);
 u32 GSdvdGetLength(u32 file);
 GSdvdFile* GSdvdOpen(const char* name);
 u8 GSdvdOpenTest(const char* name);
-u8 GSdvdReadAsync(u32 file, void* dst, u32 len, s32 a, void* callback);
-u8 GSdvdSeekAsync(s32, s32, void*);
+u8 GSdvdReadAsync(GCuptr file, void* dst, u32 len, s32 a, void* callback);
+u8 GSdvdSeekAsync(GCsptr, s32, void*);
 asm BOOL OSDisableInterrupts(void);
 asm BOOL OSRestoreInterrupts(register BOOL level);
 void _fsysAddBGWork(FsysBG* bg);
@@ -50,13 +50,13 @@ FsysWork* _fsysGetNewWork(void);
 FsysResHeader* _fsysGetResHeader(Fsys* fsys, u32 index);
 s32 _fsysGetTransLength(s32 p0, s32 p1);
 u32 _fsysID2Index(FsysWork* work, u32 id);
-FsysWork* _fsysInfo2Work(u32 handle);
+FsysWork* _fsysInfo2Work(GCuptr handle);
 void* _fsysMemAllocCache(Fsys* fsys, u32 id, u32 size, u32 arg);
 bool _fsysMemAllocHeader(Fsys* fsys);
 void _fsysMoveBlock(FsysBlockSlot* from, FsysBlockSlot* to);
 static void _fsysReadBlockCacheCallback(u32 request);
 static void _fsysReadBlockCacheWriteCallback(u32 request);
-static void _fsysReadBlockDvdCallback(s32 p0, s32 p1);
+static void _fsysReadBlockDvdCallback(s32 p0, GCsptr p1);
 static void _fsysReadBlockHandling(void *p0, void *p1);
 u8 _fsysReadCache(void*, void*, void*, s32, u32, void*);
 static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5, void *p6, void *p7, GCsptr p8);
@@ -66,10 +66,10 @@ static void* _fsysReadFile(void *p0);
 static void _fsysReadHeaderCacheCallback(u32 request);
 static void _fsysReadHeaderCacheWriteCallback();
 static void _fsysReadHeaderCallbackSub(void *p0);
-static void _fsysReadHeaderDvdCallback(s32 p0, s32 p1);
+static void _fsysReadHeaderDvdCallback(s32 p0, GCsptr p1);
 void _fsysReadRequest(void *p0);
 void _fsysResHeaderSetTaskStatus(FsysResHeader* res, u32 status);
-static void _fsysSeekCallback(s32 p0, s32 p1);
+static void _fsysSeekCallback(s32 p0, GCsptr p1);
 void _fsysSeekRequest(void *p0);
 s32 _fsysSetLockCacheFlag(s32, void*, s32);
 u32 _fsysStreamGetCacheSize(void);
@@ -137,7 +137,7 @@ loop_4:
 
 extern "C" {
 static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5, void *p6, void *p7, GCsptr p8) {
-    u32 temp_r3;
+    GCuptr temp_r3;
     u8 *var_r9;
 
     var_r9 = (unsigned char *)(p6);
@@ -150,7 +150,11 @@ static void* _fsysReadData(void *p0, void *p1, u8 p2, s32 p3, void *p4, void *p5
         goto block_11;
     }
     if (p1 != NULL) {
+#ifdef __MWERKS__
         temp_r3 = (u32)((FsysResHeader*)(p1))->dvdFile;
+#else
+        temp_r3 = (GCuptr)((FsysResHeader*)(p1))->dvdFile.get();
+#endif
         if (temp_r3 != 0) {
             if (GSdvdReadAsync(temp_r3, (void*)(p4), (u32) p5, (GCsptr) var_r9, p7) == 0) {
                 _fsysWorkSetTaskStatus((FsysWork*)((FsysWork *) p0), -0x3E4U);
@@ -183,11 +187,11 @@ static void _fsysReadHeaderCacheCallback(u32 request) {
 }
 
 extern "C" {
-static void _fsysReadHeaderDvdCallback(s32 p0, s32 p1) {
+static void _fsysReadHeaderDvdCallback(s32 p0, GCsptr p1) {
     FsysWork *temp_r3;
     u8 *temp_r3_2;
 
-    temp_r3 = _fsysInfo2Work((u32) p1);
+    temp_r3 = _fsysInfo2Work((GCuptr) p1);
     if (temp_r3 != NULL) {
         if (p0 < 0) {
             _fsysWorkSetTaskStatus((FsysWork*)(temp_r3), -0x3E4U);
@@ -371,13 +375,13 @@ static void _fsysReadBlockCacheCallback(u32 request) {
 }
 
 extern "C" {
-static void _fsysReadBlockDvdCallback(s32 p0, s32 p1) {
+static void _fsysReadBlockDvdCallback(s32 p0, GCsptr p1) {
     s32 var_r31;
     FsysWork *temp_r3;
     s32 temp_r3_3;
     FsysResHeader *temp_r3_2;
 
-    temp_r3 = _fsysInfo2Work((u32) p1);
+    temp_r3 = _fsysInfo2Work((GCuptr) p1);
     if (temp_r3 != NULL) {
         if (p0 < 0) {
             _fsysWorkSetTaskStatus((FsysWork*)(temp_r3), -0x3E4U);
@@ -627,10 +631,10 @@ s32* _fsysGetDataType(u32 type) {
 }
 
 extern "C" {
-static void _fsysSeekCallback(s32 p0, s32 p1) {
+static void _fsysSeekCallback(s32 p0, GCsptr p1) {
     FsysWork *temp_r3;
 
-    temp_r3 = _fsysInfo2Work((u32) p1);
+    temp_r3 = _fsysInfo2Work((GCuptr) p1);
     if (temp_r3 != NULL) {
         if (p0 < 0) {
             _fsysWorkSetTaskStatus((FsysWork*)(temp_r3), -0x3E2U);

@@ -266,8 +266,8 @@ u32 zokuseiBiosGetName(PCARG(u8, u16));
 u8 sexGetPokemonSexRaitoKotei(u32);
 void memoDataSet(PCARG(u32, void*), Pokemon*);
 GCuptr Sequence_LoadPokemon(u16, u32, u32);
-void Sequence_SetStatus(u32, u32);
-void Sequence_ResetStatus(u32, u32);
+void Sequence_SetStatus(GCuptr, u32);
+void Sequence_ResetStatus(GCuptr, u32);
 void gamedataAttestInit(Attest*);
 bool gamedataAttestCheckValid(Attest*);
 void gamedataAttestBiosCopy(Attest*, Attest*);
@@ -720,8 +720,8 @@ bool pokemonIsJoutaiDataId(Pokemon*, u16);
 void pokemonInitJoutaiDataId(Pokemon*, u16);
 u8 pokemonCheckInfectPokerus(Pokemon*, u8);
 void pokemonReplace(Pokemon*, Pokemon*);
-u32 pokemonCreateSequence(FightPokemon*);
-void pokemonSetSequenceStatus(Pokemon*, u32);
+GCuptr pokemonCreateSequence(FightPokemon*);
+void pokemonSetSequenceStatus(Pokemon*, GCuptr);
 u8 pokemonGetFightPokemonDeoxysSel(FightPokemon*);
 u8 pokemonGetDeoxysSel(u8);
 u8 pokemonGetAnnonKatati(u32);
@@ -3184,7 +3184,7 @@ u8 pokemonGetFightPokemonDeoxysSel(FightPokemon* fightPokemon)
     return pokemonGetDeoxysSel(fightTrainer_GetControllerId(fightFloorGetFightPokemonPtrToFightTrainerPtr(0, fightPokemon)));
 }
 
-void pokemonSetSequenceStatus(Pokemon* pokemon, u32 sequence)
+void pokemonSetSequenceStatus(Pokemon* pokemon, GCuptr sequence)
 {
     if (pokemonIsJoutaiDataId(pokemon, 8) == 1) {
         Sequence_SetStatus(sequence, 1);
@@ -3198,9 +3198,9 @@ void pokemonSetSequenceStatus(Pokemon* pokemon, u32 sequence)
     }
 }
 
-u32 pokemonCreateSequence(FightPokemon* fightPokemon)
+GCuptr pokemonCreateSequence(FightPokemon* fightPokemon)
 {
-    u32 sequence;
+    GCuptr sequence;
     u16 dataId;
     Pokemon* pokemon;
     u32 rnd;

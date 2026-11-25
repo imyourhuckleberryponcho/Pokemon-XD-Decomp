@@ -321,7 +321,7 @@ leafEffect::leafEffect(unsigned char** p0, float p1) {
     THIS_F(s32 *, 0x4C, unk4C) = (s32) (u16) GC_AT(s32, temp_r30, 0x28);
     THIS_F(f32 *, 0x40, unk40) = (f32) GC_AT(f32, temp_r30, 0x2C);
     *p0 += 0x40;
-    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
     THIS_F(s32 *, 0x50, resID) = 0;
     temp_r29 = GC_AT(HSD_Archive *, temp_r30, 0x38);
     if (temp_r29 != NULL) {

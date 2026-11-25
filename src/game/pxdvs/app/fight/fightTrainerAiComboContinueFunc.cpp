@@ -1,6 +1,7 @@
 #include <game/ppcops.h>
 #include <game/pcret.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #ifndef __MWERKS__
 struct Pokemon;
 struct FightPokemon;
@@ -17,7 +18,7 @@ u16 HSD_Rand(void);
 u8 fightAi_CanMoveAppointWaza(FIGHT_TRAINER*, FightOutPokemon*, u16);
 u8 fightAi_CreateFightActionAttckIrekae(FightOutPokemon*, s16);
 u8 fightAi_CreateFightActionAttckWaza(FightOutPokemon*, FightOutPokemon*, u16, s16);
-u8 fightAi_GetTokuseiHaveFlag(u32, FightOutPokemon*, u16);
+u8 fightAi_GetTokuseiHaveFlag(GCuptr, FightOutPokemon*, u16);
 FightOutPokemon* fightAi_SelectDefPoke(FIGHT_TRAINER*, FightOutPokemon*, FightOutPokemon**, u16, u16, s8);
 u32 fightFloor_GetFightType(PCARG(u32, void*));
 void* fightTargetGetPtrAsNowFightType(u32, void*);
@@ -193,7 +194,7 @@ s32 fightAiCombo_Sukirusuwappu_Irekae_Continue(FIGHT_TRAINER *arg0, FightOutPoke
     temp_r31 = fightFloor_GetFightType(0);
     fightTrainerAiGetFightOutPokemonWazaDataIdAry(arg0, arg1, wazaIds, wazaVals, 1);
 
-    if (fightAi_GetTokuseiHaveFlag((u32)arg0, arg1, 0x36) != 2) {
+    if (fightAi_GetTokuseiHaveFlag((GCuptr)arg0, arg1, 0x36) != 2) {
         return 0;
     }
     if (fightTrainerAiIsFightPokemonTokuseiDataId(arg0, (FightPokemon*)getFightPokemonPtr__15FightOutPokemonFv(arg1), 0x36) == 1) {

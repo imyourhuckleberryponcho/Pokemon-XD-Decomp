@@ -205,7 +205,7 @@ void menuModelTerm(MENU_MODEL*);
 #ifdef __MWERKS__
 s32 menuOpenCustom(s32, ...);
 #else
-s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#include <game/pcmenuopen.h>
 #endif
 s32 menuPdaDPMListDispRelive(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s32, s32, u8, u8);
 s32 menuPdaDPMListGetDPNum(void);

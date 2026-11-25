@@ -1801,9 +1801,9 @@ static HSD_Spline* jobjNativeSpline(const u8* d)
     if (sp->type == 1 && 3 * numcv - 2 > ncv) {
         ncv = 3 * numcv - 2;
     }
-    sp->cv = (Vec3*)jobjSplineArray((const u8*)(uintptr_t)gc_rd32(d + 8), ncv * 3);
-    sp->segLength = jobjSplineArray((const u8*)(uintptr_t)gc_rd32(d + 0x10), numcv);
-    sp->segPoly = (f32(*)[5])jobjSplineArray((const u8*)(uintptr_t)gc_rd32(d + 0x14), (numcv - 1) * 5);
+    sp->cv = (Vec3*)jobjSplineArray(PC_PTR(const u8*, gc_rd32(d + 8)), ncv * 3);
+    sp->segLength = jobjSplineArray(PC_PTR(const u8*, gc_rd32(d + 0x10)), numcv);
+    sp->segPoly = (f32(*)[5])jobjSplineArray(PC_PTR(const u8*, gc_rd32(d + 0x14)), (numcv - 1) * 5);
     for (i = 0; i < s_splCount; i++) {
         if (s_spl[i].disc == d) {
             break;
@@ -1851,7 +1851,7 @@ static s32 JObjLoad(HSD_JObj* jobj, HSD_Joint* joint, HSD_JObj* parent)
 
         while (slist != NULL) {
             ((u8*)slist)[4] |= 0x80;
-            slist = (HSD_SList*)(uintptr_t)gc_rd32((const u8*)slist);
+            slist = PC_PTR(HSD_SList*, gc_rd32((const u8*)slist));
         }
 #endif
     } else {

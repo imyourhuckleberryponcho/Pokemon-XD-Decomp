@@ -20,7 +20,7 @@ struct FsysWork {
     u32 id;
     u32 unk4;
     u32 unk8;
-    u32 file;
+    GCuptr file;
     s32 mode;
     s32 status;
     s32 pending;

@@ -2603,7 +2603,7 @@ PCRET(u16) fightTrainerGetHikaeFightPokemonNum(FightTrainer* trainer, u16 num, u
     return hikae;
 }
 
-u32 fightTrainerGetNamePtr(FightTrainer* trainer) {
+StatusU32 fightTrainerGetNamePtr(FightTrainer* trainer) {
     Hero* hero;
 
     if (trainer == 0) {

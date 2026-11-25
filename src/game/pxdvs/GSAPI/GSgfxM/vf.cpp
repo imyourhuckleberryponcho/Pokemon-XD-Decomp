@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/gcptr.h>
+#include <game/gcdata.h>
 #include <game/gsvfarray.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
@@ -250,7 +251,7 @@ void GSgfxVFSetArray(GSgfxVF* vf, s32 type, s32 compData, void* array, s32 size,
     }
     fmt->flags = 0;
     fmt->type = type;
-    fmt->unk8 = (u32)array;
+    fmt->unk8 = GC_ADDR32(array);
     fmt->unk2 = size;
     fmt->unkC = stride;
 #ifdef __MWERKS__

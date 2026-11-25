@@ -668,11 +668,7 @@ tagWINDOW_WORK* windowOpen(s32* cursorOut, s32 menuID, s32 parentID, u32 closeFl
     }
     p = w;
     for (i = 0; i < num; i++) {
-#ifdef __MWERKS__
         p->params[0] = va_arg(args, GCuptr);
-#else
-        p->params[0] = (GCuptr)(u32)va_arg(args, GCuptr);
-#endif
         p = (tagWINDOW_WORK*)((u8*)p + sizeof(GCuptr));
     }
     if (md->f2a == 0) {

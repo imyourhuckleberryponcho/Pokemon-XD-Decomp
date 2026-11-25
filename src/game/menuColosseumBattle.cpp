@@ -142,7 +142,7 @@ void menuOpen(s32 id, s32 a);
 #ifdef __MWERKS__
 void menuOpenCustom(s32 id, ...);
 #else
-s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#include <game/pcmenuopen.h>
 #endif
 s8 menuSubOpenYesNo(s32 a, s32 b, s32 c, s32 d);
 void menuTopOpenFlashBack();

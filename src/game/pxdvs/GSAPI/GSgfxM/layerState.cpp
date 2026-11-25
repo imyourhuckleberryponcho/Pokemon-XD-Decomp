@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/bitfield.h>
 #include <game/gsvfarray.h>
 #ifndef M2C_MACROS_H
@@ -55,7 +56,7 @@ struct GSgfxVFArray {
 #define VF_ARRAY_ADDR(a) ((a)->addr)
 #else
     u32 addr;
-#define VF_ARRAY_ADDR(a) ((void*)(uintptr_t)(a)->addr)
+#define VF_ARRAY_ADDR(a) PC_PTR(void*, (a)->addr)
 #endif
     u32 size;
 };

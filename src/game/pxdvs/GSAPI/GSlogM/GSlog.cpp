@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #pragma pool_strings off
 #include <libc/stdarg.h>
 
@@ -331,7 +332,7 @@ u32 GSlogGetLineCount() {
     return _logBuffer == 0 ? 0 : _logLineCount;
 }
 
-u32 GSlogGetLine(u32 count) {
+GCuptr GSlogGetLine(u32 count) {
     u16* entries;
     u32 sum;
     u32 i;
@@ -347,7 +348,7 @@ u32 GSlogGetLine(u32 count) {
     for (i = 0; i < count; i++) {
         sum += entries[i];
     }
-    return (u32)_logBuffer + sum;
+    return (GCuptr)_logBuffer + sum;
 }
 
 }

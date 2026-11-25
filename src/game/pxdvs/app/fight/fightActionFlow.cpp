@@ -289,7 +289,7 @@ void* fightTrainer_GetFightPokemonPtr(FIGHT_TRAINER*, u16);
 Sequence* fightTrainer_GetSequencePtr(FIGHT_TRAINER*);
 u8 fightTrainer_GetNigeruCount(FIGHT_TRAINER*);
 u16* fightTrainerGetPrefixNamePtr(FIGHT_TRAINER*);
-u32 fightTrainerGetNamePtr(FIGHT_TRAINER*);
+GCuptr fightTrainerGetNamePtr(FIGHT_TRAINER*);
 u16 fightTrainerDB_GetPkxDataId(u16);
 u16 fightTrainerDB_GetName(u16);
 u16 fightTrainerDB_GetSerihuMsgId(u16, u8);
@@ -443,7 +443,7 @@ void fightTrainerSortFightTrainerDataIdToHeroTemotiPokemon(FightTrainer* trainer
 void* fightTrainer_GetFightoutPokemonPtr(u8* t, u16 i);
 s32 menuFaceLoadFightPokemon(s32, s32, s32);
 bool pokemonCheckValid(Pokemon* pokemon);
-u32 pokemonCreateSequence(FightPokemon* fightPokemon);
+GCuptr pokemonCreateSequence(FightPokemon* fightPokemon);
 u16 pokemon_GetDarkpokemonDataId(Pokemon* poke);
 void soundOpenPlay(s32, s32, s32);
 }

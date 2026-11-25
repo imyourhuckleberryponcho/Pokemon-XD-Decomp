@@ -103,7 +103,7 @@ double cos(double x);
 u8 gimmickBoxFixDistanceForPushBox(f32*, s32, f32, f32, f32);
 #else
 s32 gimmickBoxFixDistanceForPushBox(f32 fx, f32 fz, f32* dist, void* w);
-#define gimmickBoxFixDistanceForPushBox(d, w, fx, fz, extra) ((void)(extra), gimmickBoxFixDistanceForPushBox((fx), (fz), (d), (void*)(uintptr_t)(u32)(w)))
+#define gimmickBoxFixDistanceForPushBox(d, w, fx, fz, extra) ((void)(extra), gimmickBoxFixDistanceForPushBox((fx), (fz), (d), (void*)(uintptr_t)(GCsptr)(w)))
 #endif
 u8 gimmickBoxIsBox(PCARG(s32, GCsptr));
 s32 heroGetFollower();

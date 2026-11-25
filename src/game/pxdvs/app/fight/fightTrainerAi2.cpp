@@ -12,8 +12,8 @@ u16 wazaDB_GetSeqId(u16);
 u8 fightFloorLoopValidFightOutPokemon(PCARG(u8, void*), s32 (*)(void*, void*, void*), void*, u8);
 u8 fightOutPokemonCheckFightOut(FightOutPokemon*);
 u8 fightTrainerIsAllyFightTargetPtr(FIGHT_TRAINER*, FightOutPokemon*, void*);
-u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(s32, s32, u16);
-u8 fightTrainerAiIsFightOutPokemonTokuseiDataId(s32, s32, u16);
+u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(GCsptr, GCsptr, u16);
+u8 fightTrainerAiIsFightOutPokemonTokuseiDataId(GCsptr, GCsptr, u16);
 u16 fightTrainer_GetFightTrainerDataId(FIGHT_TRAINER*);
 u16 fightTrainerDB_GetAiDataId(u16);
 u8 fightTrainerAiDB_GetZokuseiCheckFlag(u16);
@@ -98,7 +98,7 @@ PCRET(u8) fightTrainerAiCheckTextureZokusei(FIGHT_TRAINER* trainer, void* pokemo
     return 1;
 }
 
- s32 fightTrainerAiCheckAbiCnt(s32 arg0, s32 arg1, s32 arg2, u16 arg3, GCsptr arg4, GCsptr arg5, u32 arg6)
+ s32 fightTrainerAiCheckAbiCnt(GCsptr arg0, GCsptr arg1, GCsptr arg2, u16 arg3, GCsptr arg4, GCsptr arg5, u32 arg6)
 {
     s32 temp_r21;
     GCsptr var_r30;
@@ -110,10 +110,10 @@ PCRET(u8) fightTrainerAiCheckTextureZokusei(FIGHT_TRAINER* trainer, void* pokemo
     var_r27 = 0;
     switch (arg6 & 0x40) {
     default:
-        var_r30 = (u32)arg1;
+        var_r30 = (GCuptr)arg1;
         break;
     case 0:
-        var_r30 = (u32)arg2;
+        var_r30 = (GCuptr)arg2;
         break;
     }
     temp_r21 = GC_ADDR32(fightTargetGetPtrAsNowFightType(2, PC_PTRV(var_r30)));

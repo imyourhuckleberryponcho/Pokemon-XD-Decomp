@@ -238,7 +238,7 @@ void fightFloor_SetDefensePokemonPtr(s32, FightOutPokemon*);
 void* pokemonTokuseiDataBiosGetPtr(u32);
 void* pokemonTokuseiDataBiosGetName(void*);
 void* GSmsgGetGSchar(void*);
-void fightMsgctrlSetValue(u32, u32);
+void fightMsgctrlSetValue(u32, GCuptr);
 #ifdef __MWERKS__
 extern u8 WAZA_IkakuLoop[];
 #endif

@@ -1,5 +1,6 @@
 #include <dolphin/types.h>
 #include <game/pcret.h>
+#include <game/pcjoutai.h>
 
 struct JoutaiData {
     u8 statusKind;
@@ -96,7 +97,17 @@ u32 joutaiDataBiosGetName(u16 id) {
     return data->name;
 }
 
+#ifndef __MWERKS__
+extern JoutaiData joutai_data_pc[];
+extern u32 joutai_data_pc_number;
+#endif
+
 JoutaiData* joutaiDataBiosGetDataPtr(u16 id) {
+#ifndef __MWERKS__
+    if (id >= PC_JOUTAI_FIRST && (u32)(id - PC_JOUTAI_FIRST) < joutai_data_pc_number) {
+        return &joutai_data_pc[id - PC_JOUTAI_FIRST];
+    }
+#endif
     if (id >= joutai_data_number) {
         return 0;
     }

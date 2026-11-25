@@ -774,7 +774,7 @@ bool ModelEntry::Load(unsigned char** p0) {
     *p0 += 0x70;
     temp_r31 = *p0;
     *p0 = temp_r31 + 0x28;
-    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
     GC_AT(u32, temp_r31, 0x20) = 0U;
     if ((s32) GC_AT(s32, temp_r31, 0x1C) != 0) {
         temp_r3 = (u32)(operator new(HSD_ARCHIVE_SIZE));
@@ -797,7 +797,7 @@ void ModelEntry::Unload(unsigned char** p0) {
     *p0 = *p0 + 0x70;
     temp_r31 = *p0;
     *p0 = temp_r31 + 0x28;
-    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
     temp_r3 = GC_AT(u8 *, temp_r31, 0x20);
     if (temp_r3 != NULL) {
         operator delete((void*)(temp_r3));
@@ -827,7 +827,7 @@ ModelEntry::ModelEntry(WazaSequence* p0, unsigned char** p1)
     temp_r31 = *p1;
     temp_r28 = wazaSequenceSysGetResID();
     *p1 += 0x28;
-    *p1 = (u8 *) ((GCsptr) (*p1 + 0x1F) & 0xFFFFFFE0);
+    *p1 = (u8 *) ((GCsptr) (*p1 + 0x1F) & ~(GCsptr)0x1F);
     THIS_F(s32 *, 0x30, unk30) = 0;
     THIS_F(_GSmodel * *, 0x4C, model) = NULL;
     temp_r3 = GC_AT(HSD_Archive *, temp_r31, 0x20);
@@ -899,7 +899,7 @@ bool ParticleEntry::Load(unsigned char** p0) {
     *p0 = temp_r4 + 0x70;
     temp_r31 = *p0;
     *p0 = temp_r31 + 0x14;
-    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
     GC_AT(s32, temp_r31, 0xC) = 0;
     if ((s32) GC_AT(s32, temp_r4, 0x6C) == 0) {
         GC_AT(s32, temp_r31, 0xC) = GC_ADDR32(GSparticleLoad(*p0));
@@ -917,7 +917,7 @@ void ParticleEntry::Unload(unsigned char** p0) {
     *p0 = *p0 + 0x70;
     temp_r31 = *p0;
     *p0 = temp_r31 + 0x14;
-    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
     temp_r3 = GC_AT(GSparticleBank *, temp_r31, 0xC);
     if (temp_r3 != NULL) {
         GSparticleFree((GSparticleBank*)(temp_r3));
@@ -937,7 +937,7 @@ ParticleEntry::ParticleEntry(WazaSequence* p0, unsigned char** p1)
     generator = 0;
     temp_r31 = *p1;
     *p1 = temp_r31 + 0x14;
-    *p1 = (u8 *) ((GCsptr) (*p1 + 0x1F) & 0xFFFFFFE0);
+    *p1 = (u8 *) ((GCsptr) (*p1 + 0x1F) & ~(GCsptr)0x1F);
     *p1 = &(*p1)[(GC_AT(s32, temp_r31, 8) + 0x1F) & 0xFFFFFFE0];
     temp_r4 = THIS_F(u8 *, 9, unk09);
     if (temp_r4 != 0) {
@@ -975,7 +975,7 @@ bool LensFlareEntry::Load(unsigned char** p0) {
     *p0 += 0x70;
     temp_r5 = *p0;
     *p0 = temp_r5 + 0x14;
-    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
     *p0 = &(*p0)[(GC_AT(u32, temp_r5, 0) + 0x1F) & 0xFFFFFFE0];
     return 1;
 }
@@ -988,7 +988,7 @@ void LensFlareEntry::Unload(unsigned char** p0) {
     *p0 += 0x70;
     temp_r5 = *p0;
     *p0 = temp_r5 + 0x14;
-    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+    *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
     *p0 = &(*p0)[(GC_AT(u32, temp_r5, 0) + 0x1F) & 0xFFFFFFE0];
 }
 }
@@ -1002,7 +1002,7 @@ LensFlareEntry::LensFlareEntry(WazaSequence* p0, unsigned char** p1)
     THIS_F(f32 *, 0x34, unk34) = (f32) GC_AT(f32, temp_r31, 0xC);
     THIS_F(s32 *, 0x38, unk38) = (s32) GC_AT(s32, temp_r31, 8);
     *p1 += 0x14;
-    *p1 = (u8 *) ((GCsptr) (*p1 + 0x1F) & 0xFFFFFFE0);
+    *p1 = (u8 *) ((GCsptr) (*p1 + 0x1F) & ~(GCsptr)0x1F);
     THIS_F(u32 *, 0x30, unk30) = GSlensFlareLoad((u8*)(*p1));
     *p1 = &(*p1)[(GC_AT(s32, temp_r31, 0) + 0x1F) & 0xFFFFFFE0];
     GSlensFlareSetVisible(THIS_F(u32 *, 0x30, unk30), 0U);
@@ -1064,7 +1064,7 @@ bool EffectEntry::Load(unsigned char** p0) {
     case 5:
         temp_r30 = *p0;
         *p0 = temp_r30 + 0x40;
-        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
         GC_AT(u32, temp_r30, 0x38) = 0U;
         if ((s32) GC_AT(s32, temp_r30, 0x34) != 0) {
             temp_r3_3 = (u32)(operator new(HSD_ARCHIVE_SIZE));
@@ -1088,7 +1088,7 @@ bool EffectEntry::Load(unsigned char** p0) {
     case 1:
         temp_r30_2 = *p0;
         *p0 = temp_r30_2 + 0x18;
-        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
         GC_AT(s32, temp_r30_2, 0x10) = 0;
         if ((s32) GC_AT(s32, temp_r4, 0x6C) == 0) {
             GC_AT(s32, temp_r30_2, 0x10) = GC_ADDR32(GSparticleLoad(*p0));
@@ -1098,7 +1098,7 @@ bool EffectEntry::Load(unsigned char** p0) {
     case 9:
         temp_r30_3 = *p0;
         *p0 = temp_r30_3 + 0x20;
-        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
         GC_AT(s32, temp_r30_3, 4) = 0;
         if ((s32) GC_AT(s32, temp_r30_3, 0) != 0) {
             temp_r3_6 = (u32)(operator new(HSD_ARCHIVE_SIZE));
@@ -1149,7 +1149,7 @@ void EffectEntry::Unload(unsigned char** p0) {
     case 5:
         temp_r30 = *p0;
         *p0 = temp_r30 + 0x40;
-        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
         temp_r3_3 = GC_AT(u8 *, temp_r30, 0x38);
         if (temp_r3_3 != NULL) {
             operator delete((void*)(temp_r3_3));
@@ -1170,7 +1170,7 @@ void EffectEntry::Unload(unsigned char** p0) {
     case 1:
         temp_r30_2 = *p0;
         *p0 = temp_r30_2 + 0x18;
-        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
         temp_r3_6 = GC_AT(GSparticleBank *, temp_r30_2, 0x10);
         if (temp_r3_6 != NULL) {
             GSparticleFree((GSparticleBank*)(temp_r3_6));
@@ -1181,7 +1181,7 @@ void EffectEntry::Unload(unsigned char** p0) {
     case 9:
         temp_r30_3 = *p0;
         *p0 = temp_r30_3 + 0x20;
-        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & 0xFFFFFFE0);
+        *p0 = (u8 *) ((GCsptr) (*p0 + 0x1F) & ~(GCsptr)0x1F);
         temp_r3_7 = GC_AT(u32, temp_r30_3, 4);
         if (temp_r3_7 != 0) {
             operator delete((void*)(PC_PTR(u8 *, temp_r3_7)));

@@ -394,7 +394,7 @@ PCRET(u16) scriptGetDarkPointZeroPokemonNum()
     return count;
 }
 
-s32 scriptGetPokemonNickName(s32 index)
+StatusS32 scriptGetPokemonNickName(s32 index)
 {
     if (index >= 6) {
         return 0;

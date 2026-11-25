@@ -98,7 +98,7 @@ s32 menuCloseCustom(s32, s32, bool);
 #ifdef __MWERKS__
 s32 menuOpenCustom(s32, s32, void*, s32, bool, ...);
 #else
-s32 menuOpenCustom(s32 menu_id, s32 parent_id, s32* cursor_out, u32 close_flags, u8 check_cursor, s32 open_param, ...);
+#include <game/pcmenuopen.h>
 #endif
 void GSthreadSwitch(void);
 }
