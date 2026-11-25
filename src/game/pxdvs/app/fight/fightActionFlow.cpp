@@ -168,7 +168,7 @@ void fightSeqPre(FightAction*);
 void fightSeqPost(FightAction*);
 void fightSeqSpecificationActionCounterInit(FightOutPokemon*);
 s32 fightSeqCheckDarkPokemonJoutaiHyperAct(FightOutPokemon*, u8);
-FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, PCARG(u8, u32), u32, u32, u32, s32);
+FightOutPokemon* fightSeqSelectDefensePokemonPtr(FightOutPokemon*, u16, PCARG(u8, u32), GCuptr, u32, u32, s32);
 void fightMainWaitFrame(u32);
 u16 fightGetFightResultId(void);
 u8 dbgMenuFightGetAllFightTrainerOperateFlag(void);
@@ -389,7 +389,7 @@ struct NullSequence {
 
 extern "C" {
 s32 GSmsgGetLength(PCARG(u16, u32));
-s32 Sequence_SetVisibility(u32, s32);
+s32 Sequence_SetVisibility(GCuptr, s32);
 bool WazaSequence_IsActive(WazaSequence* sequence);
 void WazaSequence_Stop(WazaSequence* seq);
 s32 battleCameraStartRandom(s32);
@@ -441,7 +441,7 @@ u8 fightTrainerDB_GetKindDataId(u16 id);
 int fightTrainerGetDoFightOutFightOutPokemonCount(FightTrainer* trainer);
 void fightTrainerSortFightTrainerDataIdToHeroTemotiPokemon(FightTrainer* trainer, u32 num, u32 mode);
 void* fightTrainer_GetFightoutPokemonPtr(u8* t, u16 i);
-s32 menuFaceLoadFightPokemon(s32, s32, s32);
+s32 menuFaceLoadFightPokemon(GCsptr, s32, GCsptr);
 bool pokemonCheckValid(Pokemon* pokemon);
 GCuptr pokemonCreateSequence(FightPokemon* fightPokemon);
 u16 pokemon_GetDarkpokemonDataId(Pokemon* poke);

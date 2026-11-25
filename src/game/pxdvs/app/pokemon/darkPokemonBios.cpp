@@ -3,6 +3,7 @@
 #include <game/statusval.h>
 #include <game/pxdvs/app/memcard/savedata.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
+#include <game/gcptr.h>
 
 class DeckDarkPokemon {
 public:
@@ -21,7 +22,7 @@ extern u32 darkPokemonList_number;
 DarkPokemon* darkPokemonGetDarkPokemon(u32 id);
 DeckDarkPokemon* deckGetDeckDarkPokemon(u32 id);
 u32 deckGetDarkPokemonSize(void);
-StatusU32 fightFloorGetStatus(s32, s32, s32, s32);
+StatusU32 fightFloorGetStatus(GCsptr, s32, s32, s32);
 u16* darkPokemonListBiosGetDPList(u16 index);
 u16 darkPokemonBiosGetInitDarkPoint(u16 id);
 

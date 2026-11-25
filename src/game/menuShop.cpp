@@ -92,7 +92,7 @@ void* savedataGetStatus(void*, int);
 void* memcpy(void*, const void*, u32);
 StatusU32 heroGetStatus(Hero*, u32, u16);
 void heroSetStatus(Hero*, u32, StatusU32);
-int winMsgOpenWithSE(s8, u32, bool, bool, u8);
+int winMsgOpenWithSE(s8, GCuptr, bool, bool, u8);
 int menuSubOpenYesNo(u8, s16, s16, int);
 void winMsgClose(bool);
 u8 GSgfxVideoGetVsyncRate(void);

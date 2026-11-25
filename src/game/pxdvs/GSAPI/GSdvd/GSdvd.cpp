@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include "game/gcdata.h"
 #pragma pool_strings off
 
@@ -53,7 +54,7 @@ void GSlogWrite(const char*, ...);
 void GSlogSetIP(InAddr* addr, u32 port);
 void GSnetworkSetIP(InAddr* addr, InAddr* mask, InAddr* gateway);
 void GSgfxResetDisable(void);
-void winMsgOpenError(u32 msg, u32 a, u32 b);
+void winMsgOpenError(GCuptr msg, u32 a, u32 b);
 void winMsgCloseError(u32 a);
 s32 pokecoloGetRomVersion(void);
 s32 pokecoloGetCountryCode(void);

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 
@@ -11,7 +12,7 @@ u16 koukaDataBiosGetLink(u32 id);
 u16 koukaLinkDataBiosGetKouka(u32 id, u32 index);
 s32 statusGetStatus(u8 statusKind, void* fightPokemon, u16, u16, u16);
 s32 statusSetStatus(u8 statusKind, void* fightPokemon, u16, u16, PCARG(void*, u32) target, s32 value);
-StatusU32 fightFloorGetStatus(s32, s32, s32, s32);
+StatusU32 fightFloorGetStatus(GCsptr, s32, s32, s32);
 PCARG(void*, u32) fightTargetGetTragetPtrToRelativeHostSideFightTargetId(void* target, u16 id);
 }
 

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/tigadata.h>
@@ -152,7 +153,7 @@ PeopleWork* peopleGet(s32, s32);
 void peopleTalkMessageBgmStart();
 void peopleTalkMessageBgmStop();
 s8 menuSubOpenYesNoField();
-void winMsgOpenField(s32, s32, s32);
+void winMsgOpenField(GCsptr, s32, s32);
 void winMsgCloseField(s32);
 void recoveryEventPC(s32, s32, s32, s32*, s32*);
 void scriptEncount(u16, s32, s32);

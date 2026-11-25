@@ -199,7 +199,7 @@ void* fightOutPokemonGetNicknamePtr(void*);
 void* fightPokemonGetNicknamePtr(void*);
 u16 fightOutPokemonGetTokuseiDataId(void*);
 u8 fightTrainerCheckCanIrekaeFightPokemon(void*, void*);
-s32 winMsgOpen(s8, u32, bool, bool);
+s32 winMsgOpen(s8, GCuptr, bool, bool);
 void winMsgClose(bool);
 void GSlogWrite(const char*, ...);
 s32 gbaCommandRequestAction(u32, FIGHT_TRAINER*, PCARG(u16, s32), s32);
@@ -345,7 +345,7 @@ s32 menuPokemonCheckPokemonChange(void*, FIGHT_TRAINER*, u32);
 s32 menuCB_GetBattleController2P(void);
 bool fightTargetIsHostSide(void*, u16);
 u8 fightFloor_GetFightType(void*);
-s32 winMsgOpenFight(u32, bool, bool);
+s32 winMsgOpenFight(GCuptr, bool, bool);
 void winMsgCloseFight(bool);
 }
 

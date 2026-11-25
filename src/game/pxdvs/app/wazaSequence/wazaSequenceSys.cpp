@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/gcdata.h>
 #include <game/wazashadow.h>
 
@@ -136,10 +137,10 @@ void GSmodelSetTexAnimFrame(_GSmodel* model, f32 frame);
 void GSmodelSetTexAnimType(_GSmodel* model, s32 type);
 void GSmodelStartTexAnimation(_GSmodel* model);
 void GSmodelSetKeepPartAnimFlag(_GSmodel* model, s32 flag);
-void GSmodelGetFrameCount(_GSmodel* model, f32* frames, s32 tex);
+void GSmodelGetFrameCount(_GSmodel* model, f32* frames, GCsptr tex);
 void GSmodelSetAnimEndedCallback(_GSmodel* model, void (*cb)(_GSmodel*, _GSmodelAnimCBData*), void* user);
 void GSmodelLinkTexAnimToAnim(_GSmodel* model, s32 link);
-void GSmodelGetAnimIndex(_GSmodel* model, s32* index, s32 tex);
+void GSmodelGetAnimIndex(_GSmodel* model, s32* index, GCsptr tex);
 void GSmodelSetAnimType(_GSmodel* model, s32 type);
 void GSmodelSetAnimRate(_GSmodel* model, f32 rate);
 u8 GSmodelHasAnimationEnded(_GSmodel* model);
@@ -165,7 +166,7 @@ void GSparticleSetGeneratorScale(GSparticleGen* gen, GSvec* scale, s32 a, s32 b)
 void GSpartFree(GSpart* part);
 u8 GSmodelIsRootNullAdded(_GSmodel* model);
 void GSmodelGetRootPosition(_GSmodel* model, GSvec* pos);
-void GSmodelAddNull(_GSmodel* model, GSvec* pos, s32 a, s32 b);
+void GSmodelAddNull(_GSmodel* model, GSvec* pos, GCsptr a, GCsptr b);
 }
 
 extern "C" {
@@ -198,11 +199,11 @@ void GSmodelCreateDistortion(_GSmodel* model, u16 id, u8 param);
 void GSmodelEnableDistortion(_GSmodel* model);
 void GSmodelSetBoundCheck(_GSmodel* model, s32 flag);
 void GSmodelSetShadowFlags(_GSmodel* model, s32 flags);
-void GSmodelSetShadowLight(_GSmodel* model, u32 light);
-void GSmodelSetShadowSurface(_GSmodel* model, u32 count, s32 list);
+void GSmodelSetShadowLight(_GSmodel* model, GCuptr light);
+void GSmodelSetShadowSurface(_GSmodel* model, u32 count, GCsptr list);
 void* GScameraGetActiveCamera(void);
 void GScameraGetRotation(void* camera, GSvec* rot);
-void GSpartGetTransform(GSpart* part, GSvec* pos, s32 a, s32 b);
+void GSpartGetTransform(GSpart* part, GSvec* pos, GCsptr a, GCsptr b);
 f32 HSD_Randf(void);
 void GSmodelSetRenderCamera(void* camera);
 void GSparticleBankSetCamera(void* camera);

@@ -38,7 +38,7 @@ void GSthreadSwitch(void);
 void soundPlayWait(u32 id);
 void* floorCreateThread(s32 a, u32 stackSize, s32 c, void* func);
 void msgctrlSetValue(s32 id, GCuptr value);
-s32 winMsgOpen(s32, s32 msgID, s32, s32);
+s32 winMsgOpen(s32, GCsptr msgID, s32, s32);
 void winMsgClose(s32 flag);
 void heroAddPokedoru(void* hero, u32 offset);
 s32 heroItemAddItemDataId(void* hero, PCARG(u16, u32) itemID, PCARG(u16, u32) amount, s32 index);

@@ -154,7 +154,7 @@ void soundOpenPlayME(u32 id, u32, PCARG(u8, s32) volume);
 s8 winMsgCheck(void);
 void winMsgClose(bool flag);
 void winMsgCloseLevelUpStatus(bool flag);
-s32 winMsgOpen(s8 type, u32 msg, bool a, bool b);
+s32 winMsgOpen(s8 type, GCuptr msg, bool a, bool b);
 s32 winMsgOpenLevelUpFiledStatus(void* msg, bool a);
 tagWINDOW_WORK* windowSearchID(s32 id);
 }

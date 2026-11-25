@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/winwork.h>
@@ -90,8 +91,8 @@ void menuOffScreenRelease(void);
 s32 menuOpen(s32 menuID, s32);
 void menuPdaOpen(void);
 s32 menuPocket2GetItemScript(u16);
-u16 menuPocket2Open(s32, s32*, s32);
-void menuPokemonOpen(s32, s32, s32);
+u16 menuPocket2Open(s32, s32*, GCsptr);
+void menuPokemonOpen(s32, s32, GCsptr);
 void menuReleaseOffScreen(f32);
 void menuReport(void);
 s32 pokecoloGetRomVersion(void);

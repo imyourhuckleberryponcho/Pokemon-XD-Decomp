@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/pcillusion.h>
 #include <game/pcjoutai.h>
@@ -22,7 +23,7 @@ extern "C" {
 u8 fight_seq_oiuchiflag;
 extern u8* UserWork;
 
-u32 fightFloorGetNowTenkouDataId(u32, u32);
+u32 fightFloorGetNowTenkouDataId(GCuptr, u32);
 s16 fightOutPokemonGetCountAsJoutaiDataId(void*, u32);
 void* fightOutPokemon_GetFightWazaPtr(void*);
 u16 fightWaza_GetIryoku(void*);

@@ -195,7 +195,7 @@ u32 pokemonTokuseiDataBiosGetName(void*);
 u16 wazaDB_GetSeqId(u16);
 u32 wazaDB_GetName(u16);
 u8 wazaCheckDarkWaza(u16);
-StatusU32 wazaGetStatus(u32, u32, u32, u32);
+StatusU32 wazaGetStatus(GCuptr, u32, u32, u32);
 void* fightWazaCriticalDataBiosGetPtr(u16);
 u8 fightWazaCriticalDataBiosGetBunbo(void*);
 s32 HSD_Rand(void);

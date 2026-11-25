@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 
@@ -25,11 +26,11 @@ s32 pokecoloGetRomVersion(void);
 bool floorSound_getDispSoundVolume(void);
 void floorSound_setDispSoundVolume(bool);
 void GSresDumpAll(void);
-void* savedataGetStatus(s32, s32);
-StatusS32 gamedataGetStatus(s32, s32);
-void pokemonCreate(Pokemon*, u16, u8, s32);
+void* savedataGetStatus(GCsptr, s32);
+StatusS32 gamedataGetStatus(GCsptr, s32);
+void pokemonCreate(Pokemon*, u16, u8, GCsptr);
 void heroCatchPokemon(void* hero, Pokemon*, s32, s32, s32);
-void memoDataSet(s32, Pokemon*);
+void memoDataSet(GCsptr, Pokemon*);
 void pokemonSetDarkPokemonStatus(Pokemon*, u16);
 s32 heroItemAddItemDataId(void* hero, PCARG(u16, u32) item, PCARG(u16, u32) num, s32 slot);
 void GSflagOff(u32 id);
@@ -47,7 +48,7 @@ bool menuSubOpenNumberInputDigit(s32, s32* value);
 u8 menuSubOpenNumberInputID(u32, u32*, void* (*)(u32));
 void menuSubCloseNumberInput(void);
 s8 menuSubOpenYesNoField(void);
-void winMsgOpenField(s32 msgID, s32, s32);
+void winMsgOpenField(GCsptr msgID, s32, s32);
 void winMsgClose(s32);
 bool floorIsDispScriptInfo(void);
 void floorSetDispScriptInfo(bool);
@@ -80,7 +81,7 @@ void GSgfxVideoSetLockFrameActive(bool);
 void GSgfxVideoSetLockFrameRate(s32);
 void GSmemDumpHeapInfo(void);
 void GSmemDumpHeap(s32);
-void GSmemDumpPool(s32);
+void GSmemDumpPool(GCsptr);
 bool GSmemCheckHeap(s32);
 extern s32 g_hFloorHeap;
 s32 floorGetLocalHeapHandle(void);

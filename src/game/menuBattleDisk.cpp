@@ -230,7 +230,7 @@ void spriteSetScissor(s32, s32, s32, s32, s32);
 void spriteClearScissor(s32);
 void menuPdaSubScrollBar(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s32, u32, s32, s32, s16*);
 void menuFaceDispFromID2(tagWINDOW_WORK*, tagSPRITE_WORK*, u16, GSvec2*);
-void menuFaceLoad(s32, void* (*)(void*), void*);
+void menuFaceLoad(GCsptr, void* (*)(void*), void*);
 u8 menuFaceCheckLoading(void);
 void* memcpy(void* dst, const void* src, u32 n);
 FightEncountData* fightEncountDataBiosGetPtr(u16 id);

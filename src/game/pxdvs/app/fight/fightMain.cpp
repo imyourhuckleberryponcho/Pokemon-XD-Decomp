@@ -41,7 +41,7 @@ FIGHT_TRAINER* fightSideGetValidFightTrainerPtr(FIGHT_SIDE* side, u16 idx);
 GCuptr fightTrainer_GetSequencePtr(FIGHT_TRAINER* t);
 FightOutPokemon* fightTrainerGetValidFightOutPokemonPtr(FIGHT_TRAINER* trainer, u16 index);
 GCuptr fightOutPokemon_GetSequencePtr(FightOutPokemon* fop);
-void Sequence_SetVisibility(u32 seq, s32 visible);
+void Sequence_SetVisibility(GCuptr seq, s32 visible);
 void battleGridStoreModelVisibilityFlags(void);
 void battleGridUpdate(void);
 

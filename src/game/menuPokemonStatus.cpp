@@ -106,17 +106,7 @@ struct MenuItemInfo {
     s16 b;
 };
 
-struct MENU_MODEL {
-    MENU_MODEL() {}
-    u8 unk0[0x58];
-    void* slot58;
-    u8 pad5C[0x10];
-    void* slot6C;
-    void* slot70;
-    void* slot74;
-    void* slot78;
-    u8 pad7C[0x70];
-};
+#include <game/menumodel.h>
 
 extern "C" {
 bool menuIsCheck(s32);
@@ -145,17 +135,17 @@ void GSfloorPush(s32);
 void GSfloorPop(void);
 void floorSetFadeScript(s32, s32);
 void floorWaitForChange(void);
-void winMsgOpen(s32, s32, s32, s32);
+void winMsgOpen(s32, GCsptr, s32, s32);
 void winMsgClose(s32);
 StatusS32 wazaGetStatus(void*, u16, s32, s32);
 StatusS32 pokemonGetStatus(Pokemon*, s32, s32, u16);
-void* savedataGetStatus(s32, s32);
+void* savedataGetStatus(GCsptr, s32);
 void* heroBiosGetPokemonPtr(void*, s32);
 bool pokemonCheckValid(void*);
 void* memset(void*, int, u32);
-u8 gamedataGetStatus(s32, s32);
+u8 gamedataGetStatus(GCsptr, s32);
 u32 GSflagGet(s32);
-FIGHT_TRAINER* fightFloorGetGcHeroFightTrainerPtr(s32);
+FIGHT_TRAINER* fightFloorGetGcHeroFightTrainerPtr(GCsptr);
 void* fightTrainerBiosGetHeroPtr(FIGHT_TRAINER*);
 void* menuCBBios_GetRegisteredHero(void);
 char* heroBiosGetNamePtr(void*);

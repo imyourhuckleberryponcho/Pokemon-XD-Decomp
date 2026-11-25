@@ -1,5 +1,6 @@
 #include <game/ppcops.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #ifndef __MWERKS__
 class DeckTrainer { public: static DeckTrainer* getDeckTrainerObj(u32); u16 getFixedActionID() const; u16 getComboID(u8) const; u8 getComboActive(u8) const; };
@@ -69,10 +70,10 @@ extern "C" ComboData comboid[];
 
 extern "C" {
 u16 HSD_Rand();
-u16 fightFloor_GetEncountDataId(u32);
-u32 fightFloor_GetTurnCount(u32);
-u32 fightFloor_GetFightType(u32);
-u8 fightFloorIsNowEncountVirtualBattle(u32);
+u16 fightFloor_GetEncountDataId(GCuptr);
+u32 fightFloor_GetTurnCount(GCuptr);
+u32 fightFloor_GetFightType(GCuptr);
+u8 fightFloorIsNowEncountVirtualBattle(GCuptr);
 FightEncountData* fightEncountDataBiosGetPtr(u16 id);
 u16 fightEncountDataBiosGetDiskId(FightEncountData*);
 u16 fightEncountDataBiosGetFightTrainerDataId(FightEncountData*, u8);

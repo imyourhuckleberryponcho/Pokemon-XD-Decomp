@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/gcdata.h>
 #include <game/pxdvs/GSAPI/GSsnd/sndData.h>
@@ -165,7 +166,7 @@ void* GSgappCreate(u32 a, u32 b, PCARG(u32, void*) c, void (*fn)());
 void GSgappSetName(void* gapp, const char* name);
 void GSgappTerminate(void* gapp);
 void* GSresGetResource(u32 a, u32 b);
-void* GSdvdOpen(u32 id);
+void* GSdvdOpen(GCuptr id);
 void GSdvdClose(void* f);
 s32 GSdvdRead(void* f, void* buf, u32 size, u32 offset);
 void GSfsysStreamSetLoopFlag(u32 a, u32 b, u8 flag);

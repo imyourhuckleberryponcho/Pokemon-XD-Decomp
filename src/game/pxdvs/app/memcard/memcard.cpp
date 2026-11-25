@@ -100,7 +100,7 @@ u32 HSD_Rand(void);
 void menuCBBios_RuleEditSaveON(int);
 void* memset(void*, int, u32);
 void* memcpy(void*, const void*, u32);
-s32 winMsgOpen(s8 type, s32 msg, bool a, bool b);
+s32 winMsgOpen(s8 type, GCsptr msg, bool a, bool b);
 void msgctrlSetValue(s32 id, GCuptr value);
 s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial);
 void GSsndPlay(s32, s32, s32);

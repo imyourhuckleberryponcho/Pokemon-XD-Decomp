@@ -229,7 +229,7 @@ void* savedataBiosGetGamedataPtr(Savedata* savedata);
 GCuptr savedataBiosGetNowSavedataPtr();
 Savedata * savedataBiosGetSavedataBufferPtr();
 void savedataBiosSetNowSavedataPtr(Savedata* savedata);
-s32 savedataCreate(s32, s32);
+s32 savedataCreate(GCsptr, GCsptr);
 void* savedataGetStatus(void* save, s32 kind);
 s32 shapeInit(s32);
 s32 sodateyaHeroCallBackInit();

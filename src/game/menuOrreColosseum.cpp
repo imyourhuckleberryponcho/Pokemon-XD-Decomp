@@ -173,7 +173,7 @@ u32 FlashSystemGetNowFrame(u32);
 u8 FlashSystemIsLastFrame(u32);
 void FlashSystemSetNowFrame(u32, s32);
 void FlashSystemSetPlayFrameLabel(u32, const char*, const char*);
-void menuFaceLoad(s32, void* (*)(void*), s16*);
+void menuFaceLoad(GCsptr, void* (*)(void*), s16*);
 u8 menuFaceCheckLoading(void);
 s32 menuFaceGetID(void*);
 void menuFaceDispFromID3(tagWINDOW_WORK*, tagSPRITE_WORK*, s32, s16*, s16*);
@@ -190,7 +190,7 @@ s32 menuPokemonStatusOpenFromPokemonChange(void*, Pokemon* (*)(Pokemon*, MENU_PO
 s32 menuSubOpenSelect2(s32, void*, s32, s32, s32, s32, s32, s32);
 s8 menuSubOpenYesNo(s32, s32, s32, s32);
 u8 menuSubGetPokemonSexForFightDisp(void*);
-void winMsgOpen(s32, s32, s32, s32);
+void winMsgOpen(s32, GCsptr, s32, s32);
 void winMsgClose(s32);
 void winSeqSetMenu(s32 menuID, s32);
 void winSpriteSetDisp(tagSPRITE_WORK*, s32);

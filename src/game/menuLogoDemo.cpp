@@ -94,7 +94,7 @@ void* memcardMemAllocForSavedata(void);
 void* memcardMemFreeForSavedata(void* ptr);
 s32 memcardTaskCall(s32, s32, s32);
 StatusU32 heroGetStatus(void* hero, u32 selector, u16 index);
-void winMsgOpen(s32 type, s32 msg, s32 a, s32 b);
+void winMsgOpen(s32 type, GCsptr msg, s32 a, s32 b);
 void winMsgClose(bool flag);
 s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial);
 s32 GSmovieGetStatus(u32 id);

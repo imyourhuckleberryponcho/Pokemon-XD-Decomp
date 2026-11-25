@@ -132,7 +132,7 @@ u8 GSfloorPush(u32 id);
 void floorWaitForChange(void);
 u32 GSfloorGetCurrent(void);
 u32 floorGetPlaceName(u32 id);
-s32 winMsgOpen(s8 type, u32 msg, bool a, bool b);
+s32 winMsgOpen(s8 type, GCuptr msg, bool a, bool b);
 void winMsgClose(bool flag);
 void* fightEncountDataBiosGetPtr(u16 id);
 void fightEncountDataBiosSetDiskId(void* data, u16 value);

@@ -316,7 +316,7 @@ void GSfsysFree(u32);
 void GSfsysReadWait(u32);
 void GSresFreeGroup(u32);
 void GSthreadSwitch();
-void menuNameEntryCall(s32, s32);
+void menuNameEntryCall(s32, GCsptr);
 void menuPokemonStatusOpenFromPcBox(Pokemon*, Pokemon* (*)(Pokemon*, MENU_POKEMON_CB_TYPE, GCsptr), GCsptr);
 #ifdef __MWERKS__
 void menuOpenCustom(s32, ...);
@@ -333,7 +333,7 @@ void menuModelTerm(void*);
 void menuModelSetSize(void*, s32, s32, s32, s32);
 void GScharCpy(char*, char*);
 MENU_ITEM_dd_* menuItemBiosGetPtr(s32, s32);
-SaveStatus* savedataGetStatus(s32, s32);
+SaveStatus* savedataGetStatus(GCsptr, s32);
 }
 
 inline void* operator new(size_t, void* p) { return p; }

@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include "game/portxd_xg.h"
 #include "game/portxd_forms.h"
 #include <game/pcret.h>
@@ -352,7 +353,7 @@ u16 esabaGetPokemonID(s32);
 void esabaSetEsaNum(s32, s32);
 s32 esabaGetEsaNum(s32);
 u8 esabaGetPokemonIsRare(s32);
-Hero* savedataGetStatus(s32, s32);
+Hero* savedataGetStatus(GCsptr, s32);
 DarkPokemon* darkPokemonGetDarkPokemon(PCARG(u16, u32));
 void* Sequence_CreateNull();
 void* Sequence_LoadWaza(void*, u16, u8, u8);
@@ -369,7 +370,7 @@ void sodateyaRaise(s32);
 void sodateyaReclaim(s32);
 s32 sodateyaCalcPrice(s32);
 s32 sodateyaeChekcRais();
-Pokemon* sodateyaGetPokemonPtr(s32);
+Pokemon* sodateyaGetPokemonPtr(GCsptr);
 s32 controlTV(s32);
 s32 controlTVScreen();
 void evolution();
@@ -386,7 +387,7 @@ void menuScriptReadMail(s32);
 s32 scriptIsButtonPush();
 s32 scriptIsMoveButtonPush();
 s32 scriptIsTrigerPush();
-StatusS32 gamedatasaveGetStatus(s32, s32);
+StatusS32 gamedatasaveGetStatus(GCsptr, s32);
 void* floorCreateThread(s32, s32, s32, void*);
 void GSthreadSetArgs(void*, s32, ...);
 s32 GSinputButtonsPressed(s32);

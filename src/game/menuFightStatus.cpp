@@ -149,7 +149,7 @@ void windowDrawSprite2(s32, s32, s32, s32, s32, tagWINDOW_WORK*, u16, s32, s32);
 s32 menuCloseSync(s32, s32);
 s32 menuGetCursorItemID(s32);
 u16 gamedataBiosGetFlag(void*, u16, u16);
-StatusS32 fightFloorGetStatus(s32, u32, s32, s32);
+StatusS32 fightFloorGetStatus(GCsptr, u32, s32, s32);
 u8 menuCBBios_CurrentlyWorkingToolBattle(void);
 void* fightFloorGetNowPtr(void);
 void* fightFloorGetValidFightSidePtr(void*, u16);

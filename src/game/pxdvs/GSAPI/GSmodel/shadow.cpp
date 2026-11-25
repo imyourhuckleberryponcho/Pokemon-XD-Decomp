@@ -434,7 +434,7 @@ _GSmodel* GSmodelSearchModelList(void* jobj);
 u8 GSboundHasAnimData(void* bound);
 void GSboundGetShadowSize(Vec* out, ShadowVolume* volume, Vec* eye, Vec* interest, Vec* up);
 void HSD_ShadowAddObject(HSD_Shadow* shadow, HSD_JObj* jobj);
-void HSD_ShadowDeleteObject(HSD_Shadow* shadow, s32 flag);
+void HSD_ShadowDeleteObject(HSD_Shadow* shadow, GCsptr flag);
 void HSD_ShadowCopyLightPos(HSD_Shadow* shadow, void* light, f32 dist);
 void HSD_ShadowCopyTex(HSD_Shadow* shadow);
 void HSD_ShadowRender(HSD_Shadow* shadow);

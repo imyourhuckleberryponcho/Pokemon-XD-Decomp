@@ -139,7 +139,7 @@ void OSReport(const char*, ...);
 int sprintf(char*, const char*, ...);
 u8 _fsysInitBlock(s32);
 u8 _fsysInitCache(s32, s32);
-void* GSgappCreate(u32, u32, u32, void (*)(void));
+void* GSgappCreate(u32, u32, GCuptr, void (*)(void));
 void GSgappSetName(void*, const char*);
 static u8 _fsysInitTOC(void);
 void* _fsysDoMalloc(u32);

@@ -68,15 +68,15 @@ s32 GBAReset(s32 chan, void* status);
 s32 GBAResetAsync(s32 chan, void* status, GBACallback cb);
 void GBAInit(void);
 void gbaCommandSetKeyState(s32 chan, s32 state);
-void pokeconv(s32 id, void* buf);
+void pokeconv(GCsptr id, void* buf);
 void* GSmemAllocAlign(u32 size, u32 align);
 void GSmemFree(void* p);
 void GSthreadSwitch(void);
 GCuptr GSdvdOpen(const char* name);
-u32 GSdvdGetLength(u32 file);
-u8 GSdvdReadAsync(u32 file, void* dst, u32 len, s32 a, void* callback);
-s32 GSdvdGetFileInfoStatus(u32 file);
-void GSdvdClose(u32 file);
+u32 GSdvdGetLength(GCuptr file);
+u8 GSdvdReadAsync(GCuptr file, void* dst, u32 len, s32 a, void* callback);
+s32 GSdvdGetFileInfoStatus(GCuptr file);
+void GSdvdClose(GCuptr file);
 }
 
 #define BUS_CLOCK (*PC_PTR(u32*, 0x800000F8))

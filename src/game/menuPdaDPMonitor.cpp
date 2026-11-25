@@ -45,16 +45,8 @@ struct DPM_CONTENTS {
     CURSOR* cursor;
 };
 
-struct MENU_MODEL {
-    u8 unk0[0x58];
-    void* slot58;
-    u8 pad5C[0x10];
-    void* slot6C;
-    void* slot70;
-    void* slot74;
-    void* slot78;
-    u8 pad7C[0x70];
-};
+#define MENU_MODEL_NO_CTOR
+#include <game/menumodel.h>
 
 struct MenuItem {
     u8 unk0[6];

@@ -1,10 +1,11 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #pragma optimize_for_size on
 #pragma peephole off
 
 extern "C" {
-void winMsgOpen(s32, s32, s32, s32);
+void winMsgOpen(s32, GCsptr, s32, s32);
 void winMsgClose(s32);
 s8 menuSubOpenYesNoField(void);
 void GSfloorChange(s32 floorID);

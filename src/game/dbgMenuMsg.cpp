@@ -7,11 +7,11 @@ extern "C" {
 
 void fadeSet(s32 type, f32 time);
 void fadeCheck(s32);
-void winMsgOpenError(s32, s32, s32);
+void winMsgOpenError(GCsptr, s32, s32);
 void winMsgClose(s32);
 void winMsgCloseFight(s32);
 void winMsgCloseError(s32);
-void winMsgOpenField(s32 msgID, s32, s32);
+void winMsgOpenField(GCsptr msgID, s32, s32);
 void winMsgCloseField(s32);
 void GSthreadSwitch(void);
 void msgctrlSetValue(s32, GCuptr);

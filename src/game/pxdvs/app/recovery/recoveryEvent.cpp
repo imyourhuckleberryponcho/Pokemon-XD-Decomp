@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 
 struct Vec {
@@ -29,7 +30,7 @@ FloorBgmMask* floorSound_getBgmMaskObj(void);
 u32 floorGetCurrentGroupID(void);
 GSmodel* GSresGetResource(u32 group, u32 id);
 People* peopleGet(s32 group, s32 id);
-void* savedataGetStatus(s32, s32);
+void* savedataGetStatus(GCsptr, s32);
 u32 heroGetPokeomCount(void* hero);
 u8 revoceryCatchPokemonBall(u16 index);
 GSmodel* floorOpenObject(u32 id);

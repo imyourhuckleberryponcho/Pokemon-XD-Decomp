@@ -4,6 +4,7 @@
 
 
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 #pragma pool_strings off
 
@@ -145,7 +146,7 @@ void HSD_JObjSetCurrent(HSD_JObj* jobj);
 HSD_JObj* HSD_JObjGetCurrent(void);
 void HSD_JObjMakePositionMtx(HSD_JObj* jobj, GSmtx* vmtx, GSmtx* pmtx);
 void HSD_DObjSetCurrent(HSD_DObj* dobj);
-void HSD_PObjClearMtxMark(s32 idx, u32 mark);
+void HSD_PObjClearMtxMark(GCsptr idx, u32 mark);
 void HSD_PObjGetMtxMark(s32 idx, void** obj, u32* mark);
 void HSD_PObjSetMtxMark(s32 idx, void* obj, u32 mark);
 GSmtx* _HSD_mkEnvelopeModelNodeMtx(HSD_JObj* jobj, GSmtx* mtx);

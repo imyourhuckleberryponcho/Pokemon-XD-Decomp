@@ -37,17 +37,7 @@ public:
     Pokemon* getPokemon(s32 index);
 };
 
-struct MENU_MODEL {
-    MENU_MODEL() {}
-    u8 unk0[0x58];
-    void* slot58;
-    u8 pad5C[0x10];
-    void* slot6C;
-    void* slot70;
-    void* slot74;
-    void* slot78;
-    u8 pad7C[0x70];
-};
+#include <game/menumodel.h>
 
 struct POKEMON_EVOLUTION_INFO {
     u8 kind;
@@ -187,7 +177,7 @@ u16 pokemonGetSoubiItemDataId(Pokemon*);
 GCuptr heroBiosGetNamePtr(Hero*);
 void menuCBMessageCenterDisp(tagWINDOW_WORK*, tagSPRITE_WORK*, u32);
 u32 itemDataBiosGetName(void*);
-StatusU32 wazaGetStatus(s32, s32, s32, s32);
+StatusU32 wazaGetStatus(GCsptr, s32, s32, s32);
 s32 pokemonBiosGetPokemonWazaDataId(Pokemon*, PCARG(u16, u32));
 u8 pokemonWazaCheckValid(Pokemon*, u16);
 u32 pokemonDataBiosGetName(void*);
@@ -205,7 +195,7 @@ u16 pokemonBiosGetPokemonDataId(Pokemon*);
 char* pokemonBiosGetNicknamePtr(Pokemon*);
 u16 pokemonEvolutionCheck(Pokemon*, s32, u16, u16*, POKEMON_EVOLUTION_INFO*);
 s32 pokemonEvolutionAll(Pokemon*, u16, u16, POKEMON_EVOLUTION_INFO*, Hero*, s32, s32, s32);
-void memoDataSet(s32, Pokemon*);
+void memoDataSet(GCsptr, Pokemon*);
 StatusU32 heroGetStatus(Hero*, s32, s32);
 void menuModelInit(MENU_MODEL*, PCARG(s16, s32), PCARG(s16, s32));
 void menuModelLoadPokemon(MENU_MODEL*, Pokemon*);
@@ -257,7 +247,7 @@ void scriptModelClose(s32);
 s32 scriptModelOpen(u32);
 void * GSresGetResource(s32, s32);
 void cameraSetType(s32);
-void GSmodelSetVisibility(s32, s32);
+void GSmodelSetVisibility(GCsptr, s32);
 void fadeSet(s32, f32);
 void fadeSetToBlackInIfBlack(f32);
 void fadeSetToBlackOutIfNotBlack(f32);
@@ -275,14 +265,14 @@ void* pokemonGetStatus(Pokemon*, s32, s32, s32);
 
 u32 GSmsgGetCharLength(void*);
 void GSsndPlayNow(s32);
-void winMsgOpen(s32, s32, s32, s32);
-void winMsgOpenWithSE(s32, s32, s32, s32, s32);
+void winMsgOpen(s32, GCsptr, s32, s32);
+void winMsgOpenWithSE(s32, GCsptr, s32, s32, s32);
 void winMsgClose(s32);
 s8 menuSubOpenYesNoField();
 s8 menuSubOpenYesNo(s32, s32, s32, s32);
 s32 GSfloorGetCurrentFloorGroupID();
 s32 floorGetNextFloorID();
-void gamedatasaveSetStatus(s32, s32, s32);
+void gamedatasaveSetStatus(GCsptr, s32, s32);
 s32 memcardTaskCall(s32, s32, s32);
 void GSfloorPush(s32);
 void floorWaitForChange();
@@ -302,7 +292,7 @@ void memcardUnlockWaitGBA(s32);
 s32 memcardGetTaskResult();
 void memcardFinalizeTask();
 u32 HSD_Rand();
-void* savedataGetStatus(s32, s32);
+void* savedataGetStatus(GCsptr, s32);
 void menuModelFree(MENU_MODEL*);
 void menuModelTerm(MENU_MODEL*);
 }

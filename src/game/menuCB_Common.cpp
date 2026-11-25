@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/shared/menu_work.h>
 #include <game/menuCBWork.h>
 
@@ -28,7 +29,7 @@ extern _MENUCBWORK _CB;
 
 s32 winMsgCheck(void);
 void winMsgClose(s32);
-void winMsgOpen(s32, s32 msgID, s32, s32);
+void winMsgOpen(s32, GCsptr msgID, s32, s32);
 BOOL menuCBTrainerBios_GetHomePlace(MenuCBTrainer* trainer);
 bool gbaCommandIsConnected(s32 gba);
 MenuSpriteVal* menuSpriteBiosGetValPtr(void* sprite);

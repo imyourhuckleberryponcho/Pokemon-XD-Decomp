@@ -41,70 +41,23 @@ struct Col {
 
 static inline Vec3 vecAdd(Vec3* a, Vec3* b);
 
-struct MENU_MODEL_LOAD {
-    u8 kind;
-    union {
-        u32 id;
-        struct {
-            u16 form;
-            u16 waza;
-        } pk;
-    };
-    s32 rnd;
-    u16 c;
-    u8 shadow;
-    u8 anim;
-};
-
-struct MENU_MODEL {
-    u8 state;
-    u8 loading;
-    u8 inited;
-    u8 visible;
-    u8 clip;
-    u8 pad5[7];
-    f32 progress;
-    MENU_MODEL_LOAD pending;
-    MENU_MODEL_LOAD cur;
-    u32 model;
-    u32 wazaSeq;
-    u32 nextModel;
-    u32 nextWaza;
-    f32 angle[3];
-    f32 offset[3];
-    void* thread;
-    s32 x;
-    s32 y;
-    s32 w;
-    s32 h;
-    u32 camera;
-    GSlight* light[3];
-    f32 zoom;
-    s32 waitCount;
-    u8 f84;
-    u8 pad85[3];
-    f32 camRot[3];
-    u8 mtx[0x30];
-    u8 sizeValid;
-    u8 pad[3];
-    f32 size[3];
-    f32 min[3];
-    f32 max[3];
-};
+#define MENU_MODEL_FULL_LOAD
+#define MENU_MODEL_NO_CTOR
+#include <game/menumodel.h>
 
 extern "C" {
 void C_MTXLookAt(void* m, f32* pos, void* target, void* up);
 void GSboundGetMinMax(GSbound* bound, void* min, void* max, s32, s32, s32, s32);
 void GSboundGetSize(GSbound* bound, void* out, s32, s32);
 GCuptr GScameraCreate();
-void GScameraFree(u32 c);
-void GScameraGetPerspective(u32 c, f32* fov, f32* aspect, f32* n, f32* f);
-void GScameraLookAt(u32 c, void* target, void* up);
-void GScameraSetPerspective(u32 c, f32 fov, f32 aspect, f32 n, f32 f);
-void GScameraSetPosition(u32 c, f32* pos);
-void GScameraSetRotation(u32 c, f32* rot);
-void GScameraSetScissor(u32 c, u8 on, s32 x, s32 y, s32 w, s32 h);
-void GScameraSetViewport(u32 c, s32 on, f32 x0, f32 y0, f32 x1, f32 y1);
+void GScameraFree(GCuptr c);
+void GScameraGetPerspective(GCuptr c, f32* fov, f32* aspect, f32* n, f32* f);
+void GScameraLookAt(GCuptr c, void* target, void* up);
+void GScameraSetPerspective(GCuptr c, f32 fov, f32 aspect, f32 n, f32 f);
+void GScameraSetPosition(GCuptr c, f32* pos);
+void GScameraSetRotation(GCuptr c, f32* rot);
+void GScameraSetScissor(GCuptr c, u8 on, s32 x, s32 y, s32 w, s32 h);
+void GScameraSetViewport(GCuptr c, s32 on, f32 x0, f32 y0, f32 x1, f32 y1);
 s32 GSfloorGetCurrentFloorGroupID();
 GSlight* GSlightCreate();
 void GSlightFree(GSlight* l);
@@ -114,23 +67,23 @@ void GSlightSetPosition(GSlight* l, void* pos);
 void GSlightSetTarget(GSlight* l, void* pos);
 void GSlightSetType(GSlight* l, s32 type);
 void GSlogWrite(const char* fmt, ...);
-u8 GSmodelCanAnimate(u32 m);
-u16 GSmodelCenterNull(u32 m);
-void GSmodelFree(u32 m);
-GSbound* GSmodelGetBound(u32 m);
-GSpart* GSmodelGetPart(u32 m, s32 i);
-void GSmodelGetPosition(u32 m, void* pos);
-void GSmodelSetAnimIndex(u32 m, s32 i);
-void GSmodelSetAnimRate(u32 m, f32 r);
-void GSmodelSetAnimType(u32 m, s32 t);
-void GSmodelSetBoundCheck(u32 m, s32 on);
-void GSmodelSetPosition(u32 m, void* pos);
-void GSmodelSetRenderCamera(u32 m, u32 cam);
-void GSmodelSetRenderLayer(u32 m, s32 n, void* layers);
-void GSmodelSetVisibility(u32 m, s32 v);
-void GSmodelStartAnimation(u32 m);
+u8 GSmodelCanAnimate(GCuptr m);
+u16 GSmodelCenterNull(GCuptr m);
+void GSmodelFree(GCuptr m);
+GSbound* GSmodelGetBound(GCuptr m);
+GSpart* GSmodelGetPart(GCuptr m, s32 i);
+void GSmodelGetPosition(GCuptr m, void* pos);
+void GSmodelSetAnimIndex(GCuptr m, s32 i);
+void GSmodelSetAnimRate(GCuptr m, f32 r);
+void GSmodelSetAnimType(GCuptr m, s32 t);
+void GSmodelSetBoundCheck(GCuptr m, s32 on);
+void GSmodelSetPosition(GCuptr m, void* pos);
+void GSmodelSetRenderCamera(GCuptr m, GCuptr cam);
+void GSmodelSetRenderLayer(GCuptr m, s32 n, void* layers);
+void GSmodelSetVisibility(GCuptr m, s32 v);
+void GSmodelStartAnimation(GCuptr m);
 void GSpartFree(GSpart* p);
-void GSpartGetTransform(GSpart* p, void* out, s32, s32);
+void GSpartGetTransform(GSpart* p, void* out, GCsptr, GCsptr);
 void GSthreadClose(void* t);
 void* GSthreadCreate(s32, s32, s32, s32, s32, s32 (*fn)(void*));
 GCuptr GSthreadGetCurrentThread();
@@ -144,18 +97,18 @@ void PSMTXRotRad(void* m, s32 axis, f32 rad);
 void PSVECAdd(f32* a, f32* b, f32* c);
 f32 PSVECDistance(f32* a, f32* b);
 void PSVECSubtract(f32* a, f32* b, f32* c);
-void Sequence_DoAnimation(u32 s, PCARG(u8, int) anim);
-void Sequence_Free(u32 s);
-GCuptr Sequence_GetGSmodel(u32 s);
-s32 Sequence_GetModelSize(u32 s);
+void Sequence_DoAnimation(GCuptr s, PCARG(u8, int) anim);
+void Sequence_Free(GCuptr s);
+GCuptr Sequence_GetGSmodel(GCuptr s);
+s32 Sequence_GetModelSize(GCuptr s);
 GCuptr Sequence_LoadPokemon(u16 form, s32 rnd, u8 shadow);
-GCuptr Sequence_LoadWaza(u32 seq, u16 waza, u8 kind, s32 b);
-void Sequence_SetCamera(u32 s, u32 cam);
-void Sequence_SetVisibility(u32 s, s32 v);
-void WazaSequence_Free(u32 w);
-u8 WazaSequence_IsActive(u32 w);
-void WazaSequence_Start(u32 w, s32 a);
-void WazaSequence_Stop(u32 w);
+GCuptr Sequence_LoadWaza(GCuptr seq, u16 waza, u8 kind, s32 b);
+void Sequence_SetCamera(GCuptr s, GCuptr cam);
+void Sequence_SetVisibility(GCuptr s, s32 v);
+void WazaSequence_Free(GCuptr w);
+u8 WazaSequence_IsActive(GCuptr w);
+void WazaSequence_Start(GCuptr w, s32 a);
+void WazaSequence_Stop(GCuptr w);
 GCuptr floorOpenObject(s32 id);
 void* memcpy(void*, const void*, u32);
 void* memset(void*, int, u32);
@@ -164,7 +117,7 @@ u8 menuFaceCheckLoading();
 u8 pokemonGetAnnonKatati(s32 rnd);
 u8 pokemonIsJoutaiDataId(Pokemon* p, u16 id);
 f64 tan(f64);
-u8 wazaSequenceSysIsValidWaza(u32 a0 = 0);
+u8 wazaSequenceSysIsValidWaza(GCuptr a0 = 0);
 void wazaSequenceSysSetVisibilityAll(s32 v);
 extern PokemonMenuAnim* pokemon_menu_animation;
 extern u32* pokemon_menu_animation_number;
@@ -220,7 +173,7 @@ u8 menuModelGetPokemonAnimationIndexByID(u16 id);
 PCRET(u8) menuModelGetPokemonAnimationIndexByPointer(Pokemon* p);
 void menuModelSetCameraRotation(MENU_MODEL* m, GSvec* v);
 f32* menuModelGetCameraRotation(MENU_MODEL* m);
-u32 menuModelGetModelPtr(MENU_MODEL* m);
+GCuptr menuModelGetModelPtr(MENU_MODEL* m);
 void menuModelSetClip(MENU_MODEL* m, u8 c);
 void menuModelSetZoom(MENU_MODEL* m, f32 z);
 void menuModelSetOffset(MENU_MODEL* m, GSvec* v);
@@ -342,7 +295,7 @@ static s32 _menuModelAdjustCamera(MENU_MODEL* m, bool first) {
     f32 scale;
     f32 angle;
     Col col;
-    u32 model;
+    GCuptr model;
     f32 sizeScale;
     f32 width;
     static GSvec upVec(0.0f, 1.0f, 0.0f);
@@ -479,8 +432,8 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
     f32 scale;
     f32 angle;
     Col col;
-    u32 modelA;
-    u32 modelB;
+    GCuptr modelA;
+    GCuptr modelB;
     f32 width;
     f32 depth;
     f32 sizeScale;
@@ -590,7 +543,7 @@ static s32 _menuModelAdjustCamera2(MENU_MODEL* a, MENU_MODEL* b) {
 }
 
 static s32 _menuModelLoadThread(MENU_MODEL* m) {
-    u32 model;
+    GCuptr model;
     if (m == 0) return 0;
     m->progress = 0.0f;
     if (m->loading == 0) return 0;
@@ -954,7 +907,7 @@ s32 menuModelRender(MENU_MODEL* m) {
     if (m->visible == 0) return 0;
     if (m == 0) return 0;
     if (m->state != 2) return 0;
-    u32 mdl;
+    GCuptr mdl;
     if (m->cur.kind != 0) {
         if (m->model == 0) return 0;
         mdl = Sequence_GetGSmodel(m->model);
@@ -984,7 +937,7 @@ s32 menuModelRender2(MENU_MODEL* a, MENU_MODEL* b) {
     if (b == 0) return 0;
     if (a->state != 2) return 0;
     if (b->state != 2) return 0;
-    u32 ma, mb;
+    GCuptr ma, mb;
     if (a->cur.kind != 0) ma = Sequence_GetGSmodel(a->model);
     else ma = a->model;
     if (b->cur.kind != 0) mb = Sequence_GetGSmodel(b->model);
@@ -1045,7 +998,7 @@ void menuModelSetClip(MENU_MODEL* m, u8 c) {
     m->clip = c;
 }
 
-u32 menuModelGetModelPtr(MENU_MODEL* m) {
+GCuptr menuModelGetModelPtr(MENU_MODEL* m) {
     if (m->cur.kind != 0) return Sequence_GetGSmodel(m->model);
     return m->model;
 }

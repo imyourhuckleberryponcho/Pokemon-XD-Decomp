@@ -30,7 +30,7 @@ struct GSgfxSize {
     u16 w;
     u16 h;
 };
-extern "C" void GSgfxVideoGetEFBSize(GSgfxSize*, s32);
+extern "C" void GSgfxVideoGetEFBSize(GSgfxSize*, GCsptr);
 
 enum GSgfxFogType { GSFOG_0 };
 
@@ -386,7 +386,7 @@ void GSmodelSetAnimRate(void*, f32);
 void GSmodelStartAnimation(void*);
 void GSmodelSetTexAnimIndex(void*, s32);
 void GSmodelStartTexAnimation(void*);
-StatusS32 gamedatasaveGetStatus(s32, s32);
+StatusS32 gamedatasaveGetStatus(GCsptr, s32);
 void* OSGetArenaLo();
 void OSSetArenaLo(void*);
 s32 GSmemCreateHeap(void*, void*);

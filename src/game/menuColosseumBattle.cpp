@@ -77,7 +77,7 @@ u8 fightReadResourceID(u32 a, u32 b);
 void floorSetFadeScript(s32 a, s32 b);
 void floorWaitForChange();
 void fn_80151F6C();
-StatusU32 gamedatasaveGetStatus(s32 a, s32 b);
+StatusU32 gamedatasaveGetStatus(GCsptr a, s32 b);
 u8 gbaCommandIsConnected(s32 p);
 #ifdef __MWERKS__
 void* getDancerPointer__12CReliveStageFl(void* stage, s32 i);
@@ -165,7 +165,7 @@ void toolentryDebugPokemonDelete();
 void toolentryTaisenEntryPokemon(s32 i);
 void toolentryTaisenSetEtnryPokemonOrder(s32 a, s32 b);
 void winMsgClose(s32 a);
-void winMsgOpen(s32 a, s32 b, s32 c, s32 d);
+void winMsgOpen(s32 a, GCsptr b, s32 c, s32 d);
 s32 windowGetActiveID();
 void* windowSearchID(s32 id);
 }

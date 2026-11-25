@@ -164,8 +164,8 @@ public:
 };
 
 extern "C" {
-void* savedataGetStatus(s32, s32);
-void* gamedataGetStatus(s32, s32);
+void* savedataGetStatus(GCsptr, s32);
+void* gamedataGetStatus(GCsptr, s32);
 void* memcardMemAllocForSavedata();
 void* memcardMemFreeForSavedata(void*);
 void pokemonCreate(Pokemon*, u16, u8, void*);
@@ -182,7 +182,7 @@ void menuOpenCustom(s32, ...);
 #endif
 void menuClose(s32);
 void menuCloseSync(s32, s32);
-s32 menuPocket2Call(s32, s32, s32);
+s32 menuPocket2Call(s32, s32, GCsptr);
 void GSfsysReadWait(u32);
 void GSfsysFree(u32);
 void GSresFreeGroup(u32);

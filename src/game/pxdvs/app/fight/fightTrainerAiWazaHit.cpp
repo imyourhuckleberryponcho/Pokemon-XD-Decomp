@@ -93,7 +93,7 @@ u32 fightTrainerAiWazaHit212(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
     u32 firstStatus;
     u32 secondStatus;
@@ -119,7 +119,7 @@ u32 fightTrainerAiWazaHit211(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
     u32 firstStatus;
     u32 secondStatus;
@@ -161,7 +161,7 @@ u32 fightTrainerAiWazaHit208(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
     u32 firstStatus;
     u32 secondStatus;
@@ -191,7 +191,7 @@ u32 fightTrainerAiWazaHit206(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
     u32 firstStatus;
     u32 secondStatus;
@@ -225,7 +225,7 @@ s32 fightTrainerAiWazaHit205(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
     u8 a = fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(ctx, param3);
     u8 b = fightTrainerAiGetFightOutPokemonAbiCntPhyDef(ctx, param3);
@@ -387,7 +387,7 @@ s32 fightTrainerAiWazaHit192(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u16 fightTrainerAiGetFightOutPokemonWazaDataIdAry(void*, u32, u16*, u32, u32);
 #endif
-    extern u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(u32, void*, void**, u32, u32);
+    extern u16 fightFloorGetFightTrainerFightOutPokemonPtrAry(GCuptr, void*, void**, u32, u32);
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, u32, u32);
 #endif
@@ -719,7 +719,7 @@ s32 fightTrainerAiWazaHit168(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void* ctx, u32 param3, u32 flag);
@@ -803,7 +803,7 @@ s32 fightTrainerAiWazaHit166(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
@@ -963,7 +963,7 @@ u32 fightTrainerAiWazaHit156(void* ctx, GCuptr slot, u32 param, GCuptr arg3) {
 #ifdef __MWERKS__
     extern u32 fightTrainerAiCheckAbiCnt(void*,GCuptr,GCuptr,u32,u32,u32,u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*,GCuptr,GCuptr,u32,u32,u32,u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*,GCuptr,GCuptr,u32,GCuptr,GCuptr,u32);
 #endif
     u32 result = fightTrainerAiCheckAbiCnt(ctx, slot, arg3, param, 0x10, 0x2, 0x41) & 0xFF;
     return (result != 0) ? 1 : 0;
@@ -1267,7 +1267,7 @@ s32 fightTrainerAiWazaHit118(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
 #ifdef __MWERKS__
     extern u8 fightSideIsJoutaiDataId(void*, u32);
@@ -1405,7 +1405,7 @@ s32 fightTrainerAiWazaHit109(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
     u8 a = fightTrainerAiGetFightOutPokemonAbiCntPhyAtk(ctx, param3);
     u8 b = fightTrainerAiGetFightOutPokemonAbiCntPhyDef(ctx, param3);
@@ -1493,7 +1493,7 @@ s32 fightTrainerAiWazaHit103(void* ctx,GCuptr param1,u32 param2,GCuptr param3) {
 }
 
 s32 fightTrainerAiWazaHit102(void* ctx, GCuptr param1, u32 param2, GCuptr param3) {
-    extern u32 fightFloorGetFightTrainerFightPokemonPtrAry(u32 zero, void* ctx, void* buf, u32 one1, u32 one2);
+    extern u32 fightFloorGetFightTrainerFightPokemonPtrAry(GCuptr zero, void* ctx, void* buf, u32 one1, u32 one2);
     extern u8 fightTrainerAiIsFightPokemonTokuseiDataId(void* ctx, GCuptr elem, u32 type);
     extern u8 fightTrainerAiIsFightPokemonJoutaiNormal(void* ctx, GCuptr elem);
 #ifdef __MWERKS__
@@ -2508,7 +2508,7 @@ s32 _fightTrainerAiWazaHitAbicnt(void* ctx, GCuptr attacker, GCuptr defender, u3
 #ifdef __MWERKS__
     extern u8 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
 #else
-    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, u32, u32, u32);
+    extern s32 fightTrainerAiCheckAbiCnt(void*, GCuptr, GCuptr, u32, GCuptr, GCuptr, u32);
 #endif
     s32 gate;
 
@@ -2593,7 +2593,7 @@ s32 fightTrainerAiWazaHit007(void* ctx, GCuptr param1, u32 param2, GCuptr param3
 #else
     extern u16 fightTrainerAiGetWazaZokuseiDataId(void* ctx, u32 param2, GCuptr param1);
 #endif
-    extern u32 fightFloorGetFightTrainerFightPokemonPtrAry(u32 zero, void* ctx, void* buf, u32 one1, u32 one2);
+    extern u32 fightFloorGetFightTrainerFightPokemonPtrAry(GCuptr zero, void* ctx, void* buf, u32 one1, u32 one2);
     extern u8 fightSeqRegulationZenmetuCheck(u32 param2);
     extern u8 fightTrainerAiCheckSimerike(void* ctx);
 #ifdef __MWERKS__
@@ -2767,8 +2767,8 @@ s32 _fightTrainerAiWazaHitCheck(void* ctx, GCuptr attacker, u32 waza, GCuptr def
 #else
 #endif
     extern u32 wazaDB_GetSeqId(u32);
-    extern u16 fightFloorGetFightOutPokemonPtrAry(u32, u32, u32, u32, GCuptr*);
-    extern void fightFloorSortFightOutPokemonPtrArySub(u32, GCuptr*, u32, u32);
+    extern u16 fightFloorGetFightOutPokemonPtrAry(GCuptr, u32, u32, GCuptr, GCuptr*);
+    extern void fightFloorSortFightOutPokemonPtrArySub(GCuptr, GCuptr*, u32, u32);
 #ifdef __MWERKS__
     extern u8 fightTrainerAiIsFightOutPokemonJoutaiDataId(void*, GCuptr, u32);
 #endif

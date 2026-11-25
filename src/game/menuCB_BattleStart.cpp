@@ -1,6 +1,7 @@
 #include <game/declspec.h>
 #include <game/pxdvs/app/fight/fightData.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -88,7 +89,7 @@ struct _struct_menuCBBattleStartDispWork_0x18 {
 extern "C" {
 void GScharCpy(char16*, const char16*);
 void GSfsysFree(u32 id);
-u8 GSfsysReadIDEX(u32 id, u32 idx, void (*cb)(s32, void*, s32), void* user, u32 c);
+u8 GSfsysReadIDEX(u32 id, u32 idx, void (*cb)(s32, void*, s32), void* user, GCuptr c);
 char* GSmsgGetGSchar(u32 msg);
 void GSresFreeGroup(u32 grp);
 void GSresFreeResource(u32 grp, u32 id);

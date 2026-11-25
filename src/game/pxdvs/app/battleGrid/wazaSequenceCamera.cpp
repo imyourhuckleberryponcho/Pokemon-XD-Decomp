@@ -1,4 +1,6 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
+#include <game/pcret.h>
 #include <dolphin/mtx.h>
 #include "game/gcdata.h"
 
@@ -58,7 +60,7 @@ void cameraGetTargetPos(Vec* pos);
 void cameraLockYTarget(u8 on);
 void cameraSetPosition(Vec* pos);
 void cameraMoveRotationAcc(f32 rate);
-void cameraMovePosition(int mode, Vec* pos, f32 time);
+void cameraMovePosition(PCARG(int, GCsptr) mode, Vec* pos, f32 time);
 void cameraMovePositionAcc(f32 rate);
 u8 GSgfxVideoGetVsyncRate(void);
 void GSmodelGetRotation(void* model, Vec* rotation);

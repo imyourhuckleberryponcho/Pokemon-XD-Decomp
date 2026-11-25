@@ -46,7 +46,7 @@ void winSpriteSetDisp(tagSPRITE_WORK* sprite, s32 disp);
 s32 darkPokemonGetReliveNum(void);
 s32 darkPokemonGetSnatchSuccessNum(void);
 s32 menuOpen(s32 menuID, s32);
-void winMsgOpen(s32, s32 msgID, s32, s32);
+void winMsgOpen(s32, GCsptr msgID, s32, s32);
 void winMsgClose(s32);
 s8 menuSubOpenYesNo(s32, s32, s32, s32);
 u32 floorGetNextFloorID(void);

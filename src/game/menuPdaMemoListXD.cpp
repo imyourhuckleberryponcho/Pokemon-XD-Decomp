@@ -16,16 +16,8 @@ struct PokemonBuf {
     u8 data[0xC4];
 };
 
-struct MENU_MODEL {
-    u8 unk0[0x58];
-    void* slot58;
-    u8 pad5C[0x10];
-    void* slot6C;
-    void* slot70;
-    void* slot74;
-    void* slot78;
-    u8 pad7C[0x70];
-};
+#define MENU_MODEL_NO_CTOR
+#include <game/menumodel.h>
 
 struct MemoSortBuff {
     u16 index;
@@ -183,21 +175,21 @@ void* GSgfxLayerFindByID(GCsptr);
 u16 * GSmsgGetGSchar(u32);
 void GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSsndPlayNow(u32);
-void GSthreadClose(u32);
+void GSthreadClose(GCuptr);
 u32 GSthreadCreate(s32, s32, s32, s32, s32, s32 (*)(MENU_MODEL*));
 GCuptr GSthreadGetCurrentThread(void);
-u8 GSthreadIsRunning(u32);
-void GSthreadSetArgs(u32, s32, ...);
+u8 GSthreadIsRunning(GCuptr);
+void GSthreadSetArgs(GCuptr, s32, ...);
 void GSthreadSwitch(void);
 CURSOR cursorBiosGetPos(s32);
 CURSOR cursorBiosSetPos(s32, CURSOR);
 void fn_80112AAC(MENU_MODEL*, void*);
-StatusS32 gamedataGetStatus(s32, s32);
+StatusS32 gamedataGetStatus(GCsptr, s32);
 s32 heroGetObjID(s32);
-u16 memoDataGetCount(s32);
-u16 memoDataGetPokemonID(s32, u16);
-s32 memoDataGetPokemonRndFromID(s32, u16);
-s32 memoDataGetPokemonTrainerRndFromID(s32, u16);
+u16 memoDataGetCount(GCsptr);
+u16 memoDataGetPokemonID(GCsptr, u16);
+s32 memoDataGetPokemonRndFromID(GCsptr, u16);
+s32 memoDataGetPokemonTrainerRndFromID(GCsptr, u16);
 void menuClose(s32);
 void menuCloseSync(s32, s32);
 MenuItem* menuItemBiosGetPtr(s32, s32);
@@ -230,7 +222,7 @@ void* peopleInfoBiosGetPtr(s32);
 s32 pokecoloGetCountryCode(void);
 void pokemonBiosSetCatchTrainerRnd(void*, s32);
 void pokemonBiosSetRnd(void*, s32);
-void pokemonCreate(void*, u16, s32, s32);
+void pokemonCreate(void*, u16, s32, GCsptr);
 u32 pokemonDataBiosGetName(void*);
 void* pokemonDataBiosGetPtr(u16);
 StatusS32 pokemonGetStatus(void*, u16, s32, s32);

@@ -2,6 +2,7 @@
 #include <game/psq.h>
 #endif
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include "game/gc_fused.h"
 #include <game/gcdata.h>
 #include <game/pcret.h>
@@ -159,7 +160,7 @@ void cameraSetOffsetRotation(GSvec* rot);
 void cameraSetOffsetScale(GSvec* scale);
 void cameraSetMirrorFlag(u8 flag);
 void cameraSetPosition(GSvec* pos);
-void cameraMovePosition(int mode, GSvec* pos, f32 time);
+void cameraMovePosition(PCARG(int, GCsptr) mode, GSvec* pos, f32 time);
 #ifdef __MWERKS__
 void cameraMoveRotationXYZ(int mode, f32 x, f32 y, f32 z, f32 time);
 #else
@@ -172,7 +173,7 @@ void cameraMoveFov(int mode, f32 fov, f32 time);
 void cameraMoveFov(f32 fov, f32 time);
 #define cameraMoveFov(mode, ...) ((void)(mode), cameraMoveFov(__VA_ARGS__))
 #endif
-void cameraMoveTargetOfs(int mode, GSvec* ofs, f32 time);
+void cameraMoveTargetOfs(PCARG(int, GCsptr) mode, GSvec* ofs, f32 time);
 void cameraSetFov(f32 fov);
 void cameraSetTargetPos(GSvec* pos);
 void cameraSetTargetOfs(GSvec* ofs);

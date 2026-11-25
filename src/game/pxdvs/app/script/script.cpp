@@ -1,5 +1,6 @@
 #include <game/ppcops.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/statusval.h>
 #include <game/pxdvs/app/floor/floorData.h>
@@ -131,7 +132,7 @@ s8 GSinputGetLeftStickYData(s32, s32);
 FloorCharacter* floorCharacterBiosGetCurrentPtr(s32);
 void floorCharacterBiosSetVisibility(FloorCharacter*, u8);
 void floorCharacterBiosSetPos(FloorCharacter*, GSvec*);
-Hero* savedataGetStatus(s32, s32);
+Hero* savedataGetStatus(GCsptr, s32);
 Pokemon* heroBiosGetPokemonPtr(Hero*, u16);
 u8 pokemonCheckValid(Pokemon*);
 u8 pokemonBiosGetDarkFlag(Pokemon*);
@@ -177,7 +178,7 @@ void scriptBattleMountainEnd(s32);
 void floorSetFadeScript(s32, s32);
 s32 fightEncount(u16);
 u16 fightGetFightResultId();
-u8 fightFloorIsGcHeroWin(s32, u16);
+u8 fightFloorIsGcHeroWin(GCsptr, u16);
 void GSthreadSwitch();
 void fadeSet(u16, f32);
 struct GSlight;
@@ -194,11 +195,11 @@ void floorSetOffscreenIndex(s32);
 void floorOffscreenPlayWait();
 void heroMoveInitEvent();
 void heroMoveTermEvent();
-void winMsgOpenFieldWithSE(s32, s32, s32, s32);
+void winMsgOpenFieldWithSE(GCsptr, s32, s32, s32);
 void winMsgCloseField(s32);
 void heroMoveJoinMember(s32);
 void heroMoveDismissMember(s32);
-u8 memoDataSetMemoFlag(s32);
+u8 memoDataSetMemoFlag(GCsptr);
 GSlight* GSresGetResourceAllGroup(s32);
 void GSlogWrite(const char*, ...);
 void GSlightSetActive(GSlight*, u8);
@@ -236,7 +237,7 @@ void GSpartGetTransform(GSpart*, GSvec*, GSvec*, GSvec*);
 void GSpartFree(GSpart*);
 u8 GSmodelCanAnimate(_GSmodel*);
 void GSmodelSetAnimIndex(_GSmodel*, s32);
-void GSmodelGetFrameCount(_GSmodel*, f32*, s32);
+void GSmodelGetFrameCount(_GSmodel*, f32*, GCsptr);
 void GSmodelSetAnimFrame(_GSmodel*, f32);
 void GSmodelSetAnimRate(_GSmodel*, f32);
 void GSmodelSetAnimType(_GSmodel*, s32);

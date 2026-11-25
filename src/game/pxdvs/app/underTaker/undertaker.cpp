@@ -1,5 +1,6 @@
 #include <game/ppcops.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/miscTables.h>
 #include <game/worldMapData.h>
 #include <game/pxdvs/GSAPI/GSflag/flagData.h>
@@ -21,7 +22,7 @@ void menuIntUnderTakerMenuOpen(void);
 void heroMoveInitEvent(void);
 void heroMoveSetColision(s32);
 void heroMoveTermEvent(void);
-void winMsgOpen(s32, s32, s32, s32);
+void winMsgOpen(s32, GCsptr, s32, s32);
 void winMsgClose(s32);
 u16 esabaGetPokemonID(s32);
 }

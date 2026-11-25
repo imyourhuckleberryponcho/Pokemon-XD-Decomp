@@ -69,7 +69,7 @@ void spriteClearScissor(s32);
 void spriteSetEnv(s32);
 void spriteSetScissor(s32, s32, s32, s32, s32);
 void winMsgClose(bool);
-s32 winMsgOpen(s8, u32, bool, bool);
+s32 winMsgOpen(s8, GCuptr, bool, bool);
 void winSeqSetMenu(s32, u32);
 s32 winSpriteGetLayerID(tagWINDOW_WORK*, tagSPRITE_WORK*);
 void winSpriteSetDisp(tagSPRITE_WORK*, bool);

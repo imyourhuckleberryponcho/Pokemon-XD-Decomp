@@ -211,7 +211,7 @@ void heroMoveInitEvent();
 void heroMoveTermEvent();
 char* pokemonBiosGetNicknamePtr(Pokemon*);
 void msgctrlSetValue(s32, GCuptr);
-s32 winMsgOpenField(u32, bool, bool);
+s32 winMsgOpenField(GCuptr, bool, bool);
 void winMsgCloseField(bool);
 s8 GSinputGetLeftStickXData(s32, s32);
 s8 GSinputGetLeftStickYData(s32, s32);

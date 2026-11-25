@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/statusval.h>
 
 #pragma peephole off
@@ -101,7 +102,7 @@ void menuTitleCursorAnimeMain();
 void menuToolSetSelect(s32 sel);
 f32 timeGetLastFrameSec(void);
 void winMsgClose(bool flag);
-s32 winMsgOpen(s8 type, s32 msg, bool a, bool b);
+s32 winMsgOpen(s8 type, GCsptr msg, bool a, bool b);
 void winSeqSetMenu(s32 menuID, u32 id);
 void winSpriteSetDisp(tagSPRITE_WORK* sp, bool on);
 KeyInfo* windowGetKeyInfo();

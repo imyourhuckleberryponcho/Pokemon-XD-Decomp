@@ -278,7 +278,7 @@ void fightMenuAllFightOutPokemonCloseStatusMenu(u8 wait);
 void fightMenuAllFightTrainerCloseStatusMenu(u8 wait);
 void fightMenuCloseInfoMenu(u8 wait);
 void fightMenuFightOutPokemonRenewStatusMenu(FightOutPokemon* p, u16 id, bool flag);
-void fightMenuFightStatusStartAnimHP(u32 menu, s32 hp);
+void fightMenuFightStatusStartAnimHP(GCuptr menu, GCsptr hp);
 u32 fightMenuGetFightOutPokemonPtrToStatusMenuId(FightOutPokemon* p, u16 id, bool flag);
 u32 fightMenuOpenMsg(u32 msg);
 u8 fightMenuWazaKoukaMsg(u32 msg, GCuptr value, u16 item);

@@ -96,7 +96,7 @@ f32 timeGetLastFrameSec();
 void msgctrlSetValue(s32 id, GCuptr value);
 void winMsgClose(bool flag);
 s32 winMsgCheckField();
-s32 winMsgOpenFieldWithSE(s32 msg, bool a, bool b, u8 se);
+s32 winMsgOpenFieldWithSE(GCsptr msg, bool a, bool b, u8 se);
 u8 heroMoveIsMember(s32 member);
 void heroMoveGetResID(u32* group, u32* id, s32 member);
 u8 gimmickBoxIsPushBoxFloor();

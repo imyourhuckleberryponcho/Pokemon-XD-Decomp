@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/pcret.h>
 #include <game/pxdvs/GSAPI/GSflag/flagData.h>
 
@@ -77,7 +78,7 @@ s32 menuOpen(s32, s32);
 void menuSubDrawSimpleWindow(s32, s32, s32, s32, s32);
 void menuSubDrawTriangle(s32, s32, s32, s32, s32, s32, s32);
 u8 menuSubOpenNumberInputDigit(s32, s32*);
-void* savedataGetStatus(s32, s32);
+void* savedataGetStatus(GCsptr, s32);
 
 extern FlagData* flag_data;
 extern FlagDataInfo* flag_data_number;

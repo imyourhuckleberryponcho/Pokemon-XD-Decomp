@@ -224,7 +224,7 @@ void winSeqSetMenu(s32 seq, s32 menu);
 void fadeSet(s32 mode, f32 time);
 s8 fadeCheck(s32 mode);
 u32 menuGetCursorItemID(s32 menu);
-void* savedataGetStatus(s32, s32);
+void* savedataGetStatus(GCsptr, s32);
 void windowDrawSprite(s32, s32, tagWINDOW_WORK*, s32, s32, s32);
 GSgfxLayer* GSgfxLayerFindByID(GCsptr id);
 GSgfxVF* GSgfxVFGetPredef(s32 id);

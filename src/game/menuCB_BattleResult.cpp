@@ -29,7 +29,7 @@ void toolentryCopyHero(void);
 s32 fightGetFightResultId(void);
 void menuSetEnablePort(s32);
 void msgctrlSetValue(s32, GCuptr);
-void winMsgOpen(s32, s32, s32, s32);
+void winMsgOpen(s32, GCsptr, s32, s32);
 void winMsgClose(s32);
 s32 pokecoloGetCountryCode(void);
 s32 menuSubOpenSelect_gba(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags, s32 a6, u8 a7, u8 a8);

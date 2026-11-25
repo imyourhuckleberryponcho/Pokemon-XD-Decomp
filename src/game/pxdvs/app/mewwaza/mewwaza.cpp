@@ -35,7 +35,7 @@ s32 GSfloorGetCurrent(void);
 s32 GSfsysReadWait(u32 id);
 void GSresFreeGroup(u32 grp);
 void msgctrlSetValue(s32 id, GCuptr value);
-s32 winMsgOpenFieldWithSE(s32 msg, bool a, bool b, u8 se);
+s32 winMsgOpenFieldWithSE(GCsptr msg, bool a, bool b, u8 se);
 void winMsgClose(bool flag);
 s32 menuSubOpenSelect3(u8 selection, s32* values, s32 a2, s32 x, s32 y, s32 flags, s32 a6, u8 a7, u8 a8);
 s8 menuSubOpenYesNo(u8 type, s16 x, s16 y, s32 initial);

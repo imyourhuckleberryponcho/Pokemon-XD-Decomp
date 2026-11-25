@@ -1,4 +1,5 @@
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 
 
 #pragma peephole off
@@ -28,7 +29,7 @@ void* memcardMemFreeForSavedata(void* ptr);
 s32 memcardTaskCall(s32, s32, s32);
 void* memcpy(void* dst, const void* src, unsigned long n);
 void __assert(const char* file, int line, const char* expr);
-void winMsgOpen(s32, s32 msgID, s32, s32);
+void winMsgOpen(s32, GCsptr msgID, s32, s32);
 void winMsgClose(s32);
 
 static char* saveFileName[] = {

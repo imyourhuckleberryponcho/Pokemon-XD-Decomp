@@ -26,7 +26,7 @@ struct GSdvdFile {
 
 extern "C" {
 void GSdvdClose(GSdvdFile* file);
-u32 GSdvdGetLength(u32 file);
+u32 GSdvdGetLength(GCuptr file);
 GSdvdFile* GSdvdOpen(const char* name);
 u8 GSdvdOpenTest(const char* name);
 u8 GSdvdReadAsync(GCuptr file, void* dst, u32 len, s32 a, void* callback);

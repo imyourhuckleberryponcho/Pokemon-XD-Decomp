@@ -78,19 +78,7 @@ struct BALL_WORK {
     f32 life;
 };
 
-struct MENU_MODEL {
-    MENU_MODEL() {}
-    u8 unk0[0x24];
-    u16 pokemonID;
-    u8 unk26[0x32];
-    void* slot58;
-    u8 pad5C[0x10];
-    void* slot6C;
-    void* slot70;
-    void* slot74;
-    void* slot78;
-    u8 pad7C[0x70];
-};
+#include <game/menumodel.h>
 
 struct NAME_ENTRY_WORK {
     u16 name[12];
@@ -748,7 +736,7 @@ s32 menuNameEntryBackDrawPokemonModel(tagWINDOW_WORK* w, tagSPRITE_WORK* sp) {
         offset[0] = 0.0f;
         offset[1] = 0.0f;
         offset[2] = 0.0f;
-        switch (MenuModel.pokemonID) {
+        switch (MenuModel.cur.form) {
         case 0x28:
         case 0x3E:
         case 0x47:
