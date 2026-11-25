@@ -1907,6 +1907,13 @@ extern u8 WAZA_LevelUp[];
 #endif
 #ifndef __MWERKS__
 extern "C" { unsigned char xdExpLevelLimit = 100; }
+extern "C" int PortXD_ExpAllOn(void);
+extern "C" unsigned PortXD_ExpAllBench(unsigned base, int metCount);
+#define EXP_MET_DIV(n) ((n) != 0 ? (n) : 1)
+#define EXP_GATE_ALL || PortXD_ExpAllOn()
+#else
+#define EXP_MET_DIV(n) (n)
+#define EXP_GATE_ALL
 #endif
 void WS_GET_EXP(void) {
     u8 lv;
@@ -1948,13 +1955,13 @@ void WS_GET_EXP(void) {
                 }
             }
 
-            if (metCount != 0 || shareCount != 0) {
+            if (metCount != 0 || shareCount != 0 EXP_GATE_ALL) {
                 u16 expMet;
                 u16 expShare;
                 u16 base = (giveExp * level) / 7;
                 if (shareCount != 0) {
                     u16 half = base >> 1;
-                    expMet = half / metCount;
+                    expMet = half / EXP_MET_DIV(metCount);
                     if (expMet == 0) {
                         expMet = 1;
                     }
@@ -1963,7 +1970,7 @@ void WS_GET_EXP(void) {
                         expShare = 1;
                     }
                 } else {
-                    expMet = base / metCount;
+                    expMet = base / EXP_MET_DIV(metCount);
                     if (expMet == 0) {
                         expMet = 1;
                     }
@@ -2010,6 +2017,14 @@ void WS_GET_EXP(void) {
                                 if ((u16)fightPokemonGetSoubiItemSoubiDataId(fp) == 0x19) {
                                     exp += expShare;
                                 }
+#ifndef __MWERKS__
+                                if (PortXD_ExpAllOn() && fightOutPokemonCheckMeetEnemyFightPokemon(target, fp) != 1) {
+                                    u32 bench = PortXD_ExpAllBench(base, metCount);
+                                    if (bench > exp) {
+                                        exp = bench;
+                                    }
+                                }
+#endif
                                 if (exp != 0) {
                                     u32 msg;
                                     void* pokemon;
