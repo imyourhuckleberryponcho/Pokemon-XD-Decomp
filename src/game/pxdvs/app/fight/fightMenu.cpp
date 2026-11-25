@@ -698,7 +698,7 @@ static u8 _fightMenuFightTrainerGcHeroOpenMenuSubItem(FIGHT_TRAINER* trainer, Fi
     if (fightTrainerGetStatus(trainer, 0, 0x44, 0) == 0) {
         return 0;
     }
-    s32 tmp1 = pokemonGetStatus(p, 0, 0xD5, 0);
+    GCuptr tmp1 = pokemonGetStatus(p, 0, 0xD5, 0);
     target = fightTrainerGetFightPokemonToTemotiBanme(trainer, tmp1);
     while (true) {
         if (fightKind_CheckFightKind(0xD)) {

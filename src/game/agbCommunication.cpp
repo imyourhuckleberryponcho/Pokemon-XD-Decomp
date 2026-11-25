@@ -46,7 +46,7 @@ struct AgbWork {
  s32 w88;
  u32* buf;
  u32 size;
- s32 arg;
+ GCsptr arg;
  u32* out;
 };
 
@@ -1688,7 +1688,7 @@ static void _upload_25(s32 ch, s32 ret) {
 
 extern "C" {
 
-s32 AGB_GetPokemon(s32 ch, s32 id, u32* out) {
+s32 AGB_GetPokemon(s32 ch, GCsptr id, u32* out) {
     if (!AGB_Initialize(ch)) {
         return 0;
     }

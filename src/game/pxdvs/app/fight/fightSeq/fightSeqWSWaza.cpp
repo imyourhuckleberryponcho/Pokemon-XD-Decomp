@@ -232,7 +232,7 @@ void* fightEncountDataBiosGetPtr(u16);
 u8 fightEncountDataBiosGetFightKind(void*);
 u16 fightGetFightResultId(void);
 
-u32 GSmsgGetGSchar(u32);
+GCuptr GSmsgGetGSchar(u32);
 void fightMsgctrlSetValue(s32, GCuptr);
 void fightMainAllCamera(u32, u32);
 void fightMainWaitFrame(u32);

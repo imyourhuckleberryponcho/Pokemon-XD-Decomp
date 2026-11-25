@@ -181,7 +181,7 @@ struct WorldMapCamera {
 struct WorldMapState {
     u8 floorPush;
     u8 pad1[3];
-    s32 camera;
+    GCsptr camera;
     GSvec up;
     u8 pad14[0x2C - 0x14];
     s32 cursorSel;
@@ -190,7 +190,7 @@ struct WorldMapState {
     f32 angle;
     f32 fade;
     MoveAnime* anime;
-    s32 moveCamera;
+    GCsptr moveCamera;
     u8 moveFlag;
     u8 pad49[3];
     u32 mdlRes;
@@ -269,7 +269,7 @@ void* GSgfxLayerFindByID(GCsptr);
 bool GScameraIsAnimating(GCsptr);
 f32 GScameraGetAnimFrame(GCsptr);
 void GSmodelSetRenderCamera(void*, GCsptr);
-void GSparticleGeneratorSetCamera(_GSparticleGen*, s32);
+void GSparticleGeneratorSetCamera(_GSparticleGen*, GCsptr);
 void GSmodelSetBoundCheck(void*, bool);
 void GSmodelSetShadowFlags(void*, s32);
 void GSmodelSetShadowLight(void*, void*);
@@ -917,7 +917,7 @@ void WorldMap::Init() {
     soundStopEnv(1000);
     st = (WorldMapState*)GSmemAlloc(GC_SIZE(sizeof(WorldMapState), 148));
     memset(st, 0, sizeof(*st));
-    st->camera = GC_ADDR32(GScameraGetActiveCamera());
+    st->camera = (GCsptr)GScameraGetActiveCamera();
     s32 n = *worldmapXD_data_number;
     icons = (GC_NEW_NOTE(sizeof(WorldMapIconWork) * (n) + 8, 44 * (n) + 16) new WorldMapIconWork[n]);
     cam = new WorldMapCamera;
@@ -1448,7 +1448,7 @@ void WorldMap::moveDemo(s32 from, s32 to) {
 
 void WorldMap::RenderMoveDemoModel() {
     if (pWorldmap != 0) {
-        s32 camera = st->moveCamera;
+        GCsptr camera = st->moveCamera;
         if (st->mdl54 == 0x1B4A1001) {
             if (glow != 0) {
                 glow->strength = _glowstrngth;

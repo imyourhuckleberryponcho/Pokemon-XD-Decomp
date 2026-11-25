@@ -198,8 +198,8 @@ static u8 _expRecover(Pokemon* p0, u32 p1);
 static void _preReliveDisplayHokoraParticleThreadFunc();
 void menuPtRestoreSound(MenuPtWorkSound* s);
 void menuPtStopSound(MenuPtWorkSound* s);
-static Sequence* reliveCeremonyAll(s32 p0, Pokemon* p1, u32 p2);
-void* reliveCeremonyFromHologram(Pokemon* p0, u32 p1);
+static Sequence* reliveCeremonyAll(s32 p0, Pokemon* p1, GCuptr p2);
+void* reliveCeremonyFromHologram(Pokemon* p0, GCuptr p1);
 }
 static Pokemon* mParameter;
 static GCsptr lbl_804EB994;
@@ -476,7 +476,7 @@ static inline void _relivePlayWaza2(WazaSequence* waza1, WazaSequence* waza0) {
     WazaSequence_Free(waza1);
 }
 
-static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
+static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, GCuptr p2) {
     WazaSequence* waza;
     GCsptr pokemon_c = (GCsptr)pokemon;
     Sequence* result;
@@ -498,7 +498,7 @@ static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
     case 1: {
         keepRelivePatternIsHologram = 1;
         if (pokemon->getPokemonDataId() == 0xF9) {
-            Sequence_LoadWaza(PC_PTR(Sequence*, p2), 0x103, 4, 0);
+            Sequence_LoadWaza((Sequence*)(p2), 0x103, 4, 0);
             bool flag = (s32)pokemonGetStatus(pokemon, 0, 0xC1, 0) != 0;
             Sequence* newSeq = Sequence_LoadPokemon(0xF9, pokemonBiosGetRnd(pokemon), flag);
             Sequence_LoadWaza(newSeq, 0x104, 4, 0);
@@ -514,13 +514,13 @@ static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
             scale.x = 1.0f;
             scale.y = 1.0f;
             scale.z = 1.0f;
-            Sequence_GetPosition(PC_PTR(Sequence*, p2), &pos);
-            Sequence_GetRotation(PC_PTR(Sequence*, p2), &rot);
-            Sequence_GetScale(PC_PTR(Sequence*, p2), &scale);
+            Sequence_GetPosition((Sequence*)(p2), &pos);
+            Sequence_GetRotation((Sequence*)(p2), &rot);
+            Sequence_GetScale((Sequence*)(p2), &scale);
             Sequence_SetPosition(newSeq, &pos);
             Sequence_SetRotation(newSeq, &rot);
             Sequence_SetScale(newSeq, &scale);
-            _relivePlayWaza2(Sequence_GetWaza(newSeq, 0x104, 4), Sequence_GetWaza(PC_PTR(Sequence*, p2), 0x103, 4));
+            _relivePlayWaza2(Sequence_GetWaza(newSeq, 0x104, 4), Sequence_GetWaza((Sequence*)(p2), 0x103, 4));
             result = newSeq;
         } else {
             s32 num;
@@ -533,15 +533,15 @@ static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
                 num = 1;
             }
             Vec holoScale;
-            Sequence_GetScale(PC_PTR(Sequence*, p2), &holoScale);
+            Sequence_GetScale((Sequence*)(p2), &holoScale);
             menuModelSetScale(holoScale.x);
             t = tbl;
             for (newCount = 0; newCount < num; t++, newCount++) {
-                Sequence_LoadWaza(PC_PTR(Sequence*, p2), t->id, t->kind, 0);
+                Sequence_LoadWaza((Sequence*)(p2), t->id, t->kind, 0);
             }
-            Sequence_SetVisibility(PC_PTR(Sequence*, p2), 1);
+            Sequence_SetVisibility((Sequence*)(p2), 1);
             for (s32 i = 0; i < num; tbl++, i++) {
-                waza = Sequence_GetWaza(PC_PTR(Sequence*, p2), tbl->id, tbl->kind);
+                waza = Sequence_GetWaza((Sequence*)(p2), tbl->id, tbl->kind);
                 if (waza != NULL) {
                     WazaSequence_Start(waza, 0);
                     while (WazaSequence_IsActive(waza)) {
@@ -672,7 +672,7 @@ static Sequence* reliveCeremonyAll(s32 mode, Pokemon* pokemon, u32 p2) {
 }
 
 extern "C++" {
-void* reliveCeremonyFromHologram(Pokemon* p0, u32 p1) {
+void* reliveCeremonyFromHologram(Pokemon* p0, GCuptr p1) {
     MenuPtWorkSound sound;
     menuPtStopSound(&sound);
     return reliveCeremonyAll(1, (Pokemon*)(p0), p1);

@@ -620,9 +620,9 @@ CURSOR* menuPdaMemoXD::Main(CURSOR* cursor) {
 extern "C++" {
 void menuPdaMemoXD::PokemonName(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, MEMO_CONTENTS* contents) {
     CURSOR* c = contents->cursor;
-    u32 name = menuPdaMemoListGetPokemonName(c->pos + c->top);
+    GCuptr name = menuPdaMemoListGetPokemonName(c->pos + c->top);
     if (name == 0) {
-        name = (u32)GSmsgGetGSchar(1);
+        name = (GCuptr)GSmsgGetGSchar(1);
     }
     msgctrlSetValue(0x37, name);
     GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4275);

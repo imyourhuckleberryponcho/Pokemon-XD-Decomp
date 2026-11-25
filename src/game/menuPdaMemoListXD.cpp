@@ -152,7 +152,7 @@ public:
     s32 unk254;
     s32 unk258;
     s32 unk25C;
-    u32 thread;
+    GCuptr thread;
 };
 
 extern "C" {
@@ -176,7 +176,7 @@ u16 * GSmsgGetGSchar(u32);
 void GSmsgPrint2(s32, s32, s32, u32, u32);
 void GSsndPlayNow(u32);
 void GSthreadClose(GCuptr);
-u32 GSthreadCreate(s32, s32, s32, s32, s32, s32 (*)(MENU_MODEL*));
+GCuptr GSthreadCreate(s32, s32, s32, s32, s32, s32 (*)(MENU_MODEL*));
 GCuptr GSthreadGetCurrentThread(void);
 u8 GSthreadIsRunning(GCuptr);
 void GSthreadSetArgs(GCuptr, s32, ...);
@@ -634,7 +634,7 @@ GCsptr pdaMemoList::GetPokemonName(s32 index) {
     }
     void* data = pokemonDataBiosGetPtr(id);
     if (data != 0) {
-        return GC_ADDR32(GSmsgGetGSchar(pokemonDataBiosGetName(data)));
+        return (GCsptr)GSmsgGetGSchar(pokemonDataBiosGetName(data));
     }
     return 0;
 }

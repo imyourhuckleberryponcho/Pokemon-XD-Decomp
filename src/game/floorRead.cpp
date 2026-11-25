@@ -727,7 +727,7 @@ static s32 _unloadFont(void* p, u32, u32) {
     if (floorIsPush() != 0) {
         return 0;
     }
-    GSmsgFontClose((u32)p);
+    GSmsgFontClose((GCuptr)p);
     return 1;
 }
 
@@ -735,7 +735,7 @@ static s32 _unloadMsg(void* p, u32, u32) {
     if (floorIsPush() != 0) {
         return 0;
     }
-    GSmsgClose((u32)p);
+    GSmsgClose((GCuptr)p);
     return 1;
 }
 

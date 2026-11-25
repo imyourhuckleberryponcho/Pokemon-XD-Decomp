@@ -202,7 +202,7 @@ WindowKeyInfo* windowGetKeyInfo(void);
 u32 GSmsgGetRect(u32);
 void GSmsgPrint2(s32, s32, s32, s32, u32);
 void GSmsgPrintRect(s32, s32, s32, s32, s32, s32, u32);
-u32 GSmsgGetGSchar(PCARG(u16, u32));
+GCuptr GSmsgGetGSchar(PCARG(u16, u32));
 void msgctrlSetValue(s32, GCuptr);
 void* fightGetMenuCtrlHero(void);
 void fightSetMenuCtrlHero(void*);

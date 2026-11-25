@@ -5,6 +5,9 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 #include <game/ppcops.h>
+#ifndef __MWERKS__
+#include <game/menumodel.h>
+#endif
 
 #pragma peephole off
 
@@ -364,7 +367,11 @@ public:
     u8 pad35ED[3];
     f32 scroll;
     CInfoWindow info2;
+#ifdef __MWERKS__
     u8 model[0xEC];
+#else
+    alignas(MENU_MODEL) u8 model[sizeof(MENU_MODEL)];
+#endif
     u8 modelFlag;
     u8 pad3715[3];
     Pokemon displayPokemon;
@@ -557,7 +564,7 @@ void CMenuPokemonLeave::init(CMenuGlobalState& st)
     temochiFlag = 0;
     markMask = 0;
     scroll = 0.0f;
-    memset(model, 0, 0xEC);
+    memset(model, 0, sizeof(model));
     modelFlag = 0;
     pokemonInit((GCuptr)&displayPokemon);
     displayFlag = 0;
@@ -609,7 +616,7 @@ void CMenuPokemonLeave::menuModelTerm()
     }
     ::menuModelTerm(model);
     modelFlag = 0;
-    memset(model, 0, 0xEC);
+    memset(model, 0, sizeof(model));
 }
 
 void CMenuPokemonLeave::main(CMenuGlobalState& st)

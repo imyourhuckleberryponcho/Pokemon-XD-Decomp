@@ -18,6 +18,12 @@
 #endif
 #endif
 
+#ifdef __MWERKS__
+#define MUSY_PTR_ADD(p, n) ((void*)((size_t)(p) + (n)))
+#else
+#define MUSY_PTR_ADD(p, n) ((void*)((char*)(p) + (n)))
+#endif
+
 #if MUSY_TARGET == MUSY_TARGET_PC
 #ifndef MUSY_CACHED_TO_UNCACHED_ADDR
 #define MUSY_CACHED_TO_UNCACHED_ADDR(addr) addr

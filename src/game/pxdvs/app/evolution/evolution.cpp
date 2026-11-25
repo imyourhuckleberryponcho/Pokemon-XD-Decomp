@@ -56,7 +56,15 @@ struct Sequence {
 };
 struct WORK {
     u8 data[0x30];
+#ifndef __MWERKS__
+    GCuptr seq[2];
+#endif
 };
+#ifdef __MWERKS__
+#define WORK_SEQ(w, i, T) M2C_FIELD(w, T *, (i) * 4)
+#else
+#define WORK_SEQ(w, i, T) (((WORK*)(w))->seq[i])
+#endif
 class WazaSequence { public:
     u8 _draft[1];
 };
@@ -158,7 +166,7 @@ static s32 getYesNo(EVOLUTION_WINDOW_TYPE p0);
 static s32 loadAll(WORK* p0, Pokemon* p1, Pokemon* p2);
 static u8 loadSequenceAfter(WORK* p0, Pokemon* p1);
 static u8 loadSequenceBefore(WORK* p0, Pokemon* p1);
-static u32 loadSequence(Pokemon* p0, int p1);
+static GCuptr loadSequence(Pokemon* p0, int p1);
 static void openMsgWin(u32 p0, EVOLUTION_WINDOW_TYPE p1);
 static s32 playPokemonVoice(Pokemon* p0);
 static void restoreCamera(CAM_STORE* p0);
@@ -385,9 +393,9 @@ static u16 getPkxID(Pokemon* p0) {
 }
 
 extern "C++" {
-static u32 loadSequence(Pokemon* pokemon, int step) {
+static GCuptr loadSequence(Pokemon* pokemon, int step) {
     s32 i;
-    u32 seq;
+    GCuptr seq;
     u16 id;
     u32 rnd;
 
@@ -401,7 +409,7 @@ static u32 loadSequence(Pokemon* pokemon, int step) {
         return 0;
     }
     for (i = 0; i < 5; i++) {
-        if (step == StepSeqTbl[i].unk4 && Sequence_LoadWaza(PC_PTR(Sequence*, seq), StepSeqTbl[i].unk0, 4, 0) == NULL) {
+        if (step == StepSeqTbl[i].unk4 && Sequence_LoadWaza((Sequence*)seq, StepSeqTbl[i].unk0, 4, 0) == NULL) {
             break;
         }
     }
@@ -414,38 +422,38 @@ static u32 loadSequence(Pokemon* pokemon, int step) {
 
 extern "C++" {
 static u8 loadSequenceAfter(WORK* p0, Pokemon* p1) {
-    u32 temp_r3;
+    GCuptr temp_r3;
 
     temp_r3 = loadSequence((Pokemon*)(p1), 1);
     if (temp_r3 == 0) {
         return 0U;
     }
-    M2C_FIELD(p0, u32 *, 4) = temp_r3;
+    WORK_SEQ(p0, 1, u32) = temp_r3;
     return 1U;
 }
 }
 
 extern "C++" {
 static u8 loadSequenceBefore(WORK* p0, Pokemon* p1) {
-    u32 temp_r3;
+    GCuptr temp_r3;
 
     temp_r3 = loadSequence((Pokemon*)(p1), 0);
     if (temp_r3 == 0) {
         return 0U;
     }
-    (*(s32*)(p0)) = temp_r3;
+    WORK_SEQ(p0, 0, s32) = temp_r3;
     return 1U;
 }
 }
 
 extern "C++" {
 static void toVisible(WORK* p0, int p1, int p2) {
-    u32 var_r3;
+    GCuptr var_r3;
 
     if (p1 != 0) {
-        var_r3 = M2C_FIELD(p0, u32 *, 4);
+        var_r3 = WORK_SEQ(p0, 1, u32);
     } else {
-        var_r3 = M2C_FIELD(p0, u32 *, 0);
+        var_r3 = WORK_SEQ(p0, 0, u32);
     }
     Sequence_SetVisibility(var_r3, p2 != 0);
 }
@@ -460,8 +468,8 @@ static s32 loadAll(WORK* p0, Pokemon* p1, Pokemon* p2) {
         GSmodelSetForceUseFractionalFramesFlag((_GSmodel*)(temp_r3), 1U);
         GSmodelSetSkipFractionalFramesFlag((_GSmodel*)(temp_r3), 1U);
     }
-    M2C_FIELD(p0, s32 *, 0) = 0;
-    M2C_FIELD(p0, s32 *, 4) = 0;
+    WORK_SEQ(p0, 0, s32) = 0;
+    WORK_SEQ(p0, 1, s32) = 0;
     if ((loadSequenceBefore((WORK*)(p0), (Pokemon*)(p1)) != 0) && (loadSequenceAfter((WORK*)(p0), (Pokemon*)(p2)) != 0)) {
         return 1;
     }
@@ -528,7 +536,7 @@ static s8 cbWazaForget(Pokemon* p0, unsigned short p1, GCsptr p2) {
         var_r31 = -1;
     }
     loadSequenceAfter((WORK*)((WORK *) p2), (Pokemon*)(p0));
-    GSmodelSetAnimType((_GSmodel*)(Sequence_GetGSmodel(M2C_FIELD(p2, s32 *, 4))), 1);
+    GSmodelSetAnimType((_GSmodel*)(Sequence_GetGSmodel(WORK_SEQ(p2, 1, s32))), 1);
     toVisible((WORK*)((WORK *) p2), 1, 1);
     restoreCamera(&store);
     fadeSet(2, 0.5f);
@@ -598,9 +606,9 @@ static s32 wazaSeqUpdate(WORK* p0) {
 extern "C++" {
 static GCsptr getStepSeq(WORK* p0, STEP p1) {
     if ((s32) StepSeqTbl[p1].unk4 != 0) {
-        return M2C_FIELD(p0, s32 *, 4);
+        return WORK_SEQ(p0, 1, s32);
     }
-    return M2C_FIELD(p0, s32 *, 0);
+    return WORK_SEQ(p0, 0, s32);
 }
 }
 

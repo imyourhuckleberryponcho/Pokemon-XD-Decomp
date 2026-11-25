@@ -495,13 +495,21 @@ void hwFlushStream(void* base, u32 offset, u32 bytes, u8 hwStreamHandle, void (*
                    size_t user) {
 #endif
   size_t aram; // r28
+#ifdef __MWERKS__
   size_t mram; // r29
+#else
+  void* mram;
+#endif
   size_t len;
   aram = aramGetStreamBufferAddress(hwStreamHandle, &len);
   bytes += (offset & 31);
   offset &= ~31;
   bytes = (bytes + 31) & ~31;
+#ifdef __MWERKS__
   mram = (size_t)base + offset;
+#else
+  mram = MUSY_PTR_ADD(base, offset);
+#endif
 #if MUSY_TARGET == MUSY_TARGET_DOLPHIN
   DCStoreRange((void*)mram, bytes);
 #endif

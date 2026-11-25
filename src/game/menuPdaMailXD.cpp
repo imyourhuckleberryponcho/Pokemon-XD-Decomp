@@ -232,7 +232,7 @@ static s32 _mailSender(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     MailCursor* cursor = window->param->cursor;
     u32 name = mailGetSenderName(pdaMailGetMailID(cursor->pos + cursor->top));
     if (name != 0) {
-        u32 str = (u32)GSmsgGetGSchar(name);
+        GCuptr str = (GCuptr)GSmsgGetGSchar(name);
         msgctrlSetValue(0x37, str);
         sprite->msgID = 0x4276;
     } else {
@@ -248,7 +248,7 @@ static s32 _mailSubject(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
     MailCursor* cursor = window->param->cursor;
     u32 subject = mailGetSubject(pdaMailGetMailID(cursor->pos + cursor->top));
     if (subject != 0) {
-        u32 str = (u32)GSmsgGetGSchar(subject);
+        GCuptr str = (GCuptr)GSmsgGetGSchar(subject);
         msgctrlSetValue(0x37, str);
         sprite->msgID = 0x4276;
     } else {

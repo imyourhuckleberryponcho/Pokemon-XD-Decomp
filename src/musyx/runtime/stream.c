@@ -148,7 +148,7 @@ void streamHandle() {
           } break;
           case 1: {
             u32 off = (si->last / 14) * 8;
-            if ((len = si->updateFunction((void*)((size_t)si->buffer + off), cpos - si->last, NULL,
+            if ((len = si->updateFunction(MUSY_PTR_ADD(si->buffer, off), cpos - si->last, NULL,
                                           0, si->user)) != 0 &&
                 si->state == 2) {
               cpos = (si->last + len) % si->size;
@@ -186,7 +186,7 @@ void streamHandle() {
             break;
           case 1: {
             u32 off = ((si->last / 14) * 8);
-            if ((len = si->updateFunction((void*)((size_t)si->buffer + off), si->size - si->last,
+            if ((len = si->updateFunction(MUSY_PTR_ADD(si->buffer, off), si->size - si->last,
                                           NULL, 0, si->user)) &&
                 si->state == 2) {
               cpos = (si->last + len) % si->size;
@@ -230,7 +230,7 @@ void streamHandle() {
             break;
           case 1: {
             u32 off = (si->last / 14) * 8;
-            if ((len = si->updateFunction((void*)((size_t)si->buffer + off), si->size - si->last,
+            if ((len = si->updateFunction(MUSY_PTR_ADD(si->buffer, off), si->size - si->last,
                                           si->buffer, cpos, si->user)) &&
                 si->state == 2) {
               cpos = (si->last + len) % si->size;

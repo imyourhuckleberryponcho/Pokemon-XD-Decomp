@@ -242,7 +242,7 @@ s32 menuPdaDPMListDispRelive(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, s32
         break;
     }
     case 4:
-        u32 name = GC_ADDR32(GSmsgGetGSchar(0x3C0B));
+        GCuptr name = (GCuptr)(GSmsgGetGSchar(0x3C0B));
         msgctrlSetValue(0x37, name);
         if (flag != 0) {
             GSmsgPrint2(window->layer, x, y, alpha | 0xEE444400, 0x4276);
@@ -321,14 +321,14 @@ PCRET(u16) menuPdaDPMListGetPokemonID(s32 index) {
     return darkPokemonGetDarkPokemon(pDPMList->GetDarkPokemonID(index))->getPokemonID();
 }
 
-u32 menuPdaDPMListGetPokemonName(s32 index) {
+GCuptr menuPdaDPMListGetPokemonName(s32 index) {
     if (pDPMList == 0) {
         return 0;
     }
     u16 id = darkPokemonGetDarkPokemon(pDPMList->GetDarkPokemonID(index))->getPokemonID();
     void* data = pokemonDataBiosGetPtr(id);
     if (data != 0) {
-        return GC_ADDR32(GSmsgGetGSchar(pokemonDataBiosGetName(data)));
+        return (GCuptr)GSmsgGetGSchar(pokemonDataBiosGetName(data));
     }
     return 0;
 }
@@ -511,9 +511,9 @@ void menuPdaDPMList::DispList(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
                 color1 = -0x100;
                 color2 = -0x100;
             }
-            u32 name = menuPdaDPMListGetPokemonName(i);
+            GCuptr name = menuPdaDPMListGetPokemonName(i);
             if (name == 0) {
-                name = GC_ADDR32(GSmsgGetGSchar(1));
+                name = (GCuptr)(GSmsgGetGSchar(1));
             }
             u8 floor;
             u32 placeMsg = menuPdaDPMListGetDarkPokemonPlaceMsgID(i, &floor);

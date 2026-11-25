@@ -473,7 +473,7 @@ static s32 _pdaMailListDraw(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
         if (i >= cursor.top - 1 && i < cursor.top + 6) {
             u32 subject = _getSubject(i);
             if (subject != 0) {
-                u32 str = GC_ADDR32(GSmsgGetGSchar(subject));
+                GCuptr str = (GCuptr)(GSmsgGetGSchar(subject));
                 msgctrlSetValue(0x37, str);
                 GSmsgPrint2(window->layer, xA, (s32)y, colorA | window->alpha, 0x4276);
             } else {
@@ -481,7 +481,7 @@ static s32 _pdaMailListDraw(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite) {
             }
             u32 sender = _getSenderName(i);
             if (sender != 0) {
-                msgctrlSetValue(0x37, GC_ADDR32(GSmsgGetGSchar(sender)));
+                msgctrlSetValue(0x37, (GCuptr)(GSmsgGetGSchar(sender)));
                 GSmsgPrint2(window->layer, xB, (s32)(21.0f + y), colorB | window->alpha, 0x4276);
             } else {
                 GSmsgPrint2(window->layer, xB, (s32)(21.0f + y), colorB | window->alpha, 0);

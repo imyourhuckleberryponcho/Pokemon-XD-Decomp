@@ -607,7 +607,7 @@ static void* _memcardGetMultiSaveDataToSTRUCT(void* data, s32 idx)
 {
     u8* p = (u8*)data;
     u32 hi, lo;
-    u32 ret = (u32)p + 0xa0;
+    GCuptr ret = (GCuptr)p + 0xa0;
     switch (idx) {
     case 1:
         hi = *(u16*)(p + 0x3a);

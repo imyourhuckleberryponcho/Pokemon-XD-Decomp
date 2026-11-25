@@ -1422,7 +1422,7 @@ static u8 _sndOpenWave(u32 id, u32 mode, u32 fileId, u32 offset, u32 res, u32 a,
             return 0;
         }
     } else {
-        samples = (void*)fileId;
+        samples = PC_PTR(void*, fileId);
         sndSetSampleDataUploadCallback(0, 0);
     }
     if (!sndPushGroup(prj, wd->gid, samples, sampdir, pool)) {

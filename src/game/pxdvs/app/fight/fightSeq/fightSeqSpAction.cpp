@@ -790,8 +790,8 @@ void WS_WAZAOBOE_CHECK(void) {
 
 void WS_OBOEWAZANO_SET(void) {
     FightPokemon* fp = get_exp_fight_pokemon_ptr;
-    u32 name = (u32)GSmsgGetGSchar(wazaDB_GetName(OboeWazaNo));
-    u32 nick = (u32)fightPokemonGetNicknamePtr(fp);
+    GCuptr name = (GCuptr)GSmsgGetGSchar(wazaDB_GetName(OboeWazaNo));
+    GCuptr nick = (GCuptr)fightPokemonGetNicknamePtr(fp);
     fightSeq_GetWazaSeq();
     fightMsgctrlSetValue(0xd, nick);
     fightMsgctrlSetValue(0xe, name);

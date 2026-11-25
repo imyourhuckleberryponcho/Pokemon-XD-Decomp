@@ -1,5 +1,6 @@
 #include <game/ppcops.h>
 #include <dolphin/types.h>
+#include <game/gcptr.h>
 #include <game/gcdata.h>
 #ifndef __MWERKS__
 #include <stddef.h>
@@ -350,7 +351,7 @@ s32 g_instancedMemorySizeAll;
 
 template <class T>
 static inline void relocate(T*& p, u8* base) {
-    p = (T*)((u8*)p + (u32)base);
+    p = (T*)((u8*)p + (GCuptr)base);
 }
 
 #ifndef __MWERKS__

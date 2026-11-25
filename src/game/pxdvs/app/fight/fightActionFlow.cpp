@@ -642,7 +642,7 @@ u32 fightActionFlowSyuuryou(FightAction* action) {
     u32 msgB;
     u32 openMsg;
     u32 camera;
-    u32 waza;
+    GCuptr waza;
     u8 wazaFlag;
     FightPokemon* ary[24];
     wazaFlag = 0;
@@ -711,9 +711,9 @@ u32 fightActionFlowSyuuryou(FightAction* action) {
                         GSthreadSwitch();
                     }
                 }
-                waza = (u32)Sequence_GetWaza(seq, wazaId, 4);
+                waza = (GCuptr)Sequence_GetWaza(seq, wazaId, 4);
                 wazaFlag = 1;
-                WazaSequence_Start(PC_PTR(WazaSequence*, waza), 1);
+                WazaSequence_Start((WazaSequence*)(waza), 1);
                 Sequence_Talk(seq);
                 fightMenuOpenTrainerMsg(msgB);
                 fightMainWaitFrame(0);
@@ -738,7 +738,7 @@ u32 fightActionFlowSyuuryou(FightAction* action) {
         } else if (kind == 3) {
             waza = 0;
             if (fightFloor_GetTrainer(0)) {
-                waza = (u32)Sequence_LoadWaza(seq, 0x59, 4, 0);
+                waza = (GCuptr)Sequence_LoadWaza(seq, 0x59, 4, 0);
                 wazaFlag = 1;
                 camera = battleCameraIsSimple();
             }
@@ -748,7 +748,7 @@ u32 fightActionFlowSyuuryou(FightAction* action) {
             fightMenuOpenMsg(0x4e38);
             fightMenuCloseMsg();
             if (fightFloor_GetTrainer(0)) {
-                WazaSequence_Start(PC_PTR(WazaSequence*, waza), 1);
+                WazaSequence_Start((WazaSequence*)(waza), 1);
                 Sequence_Talk(seq);
                 fightMenuOpenTrainerMsg(msgA);
                 fightMainWaitFrame(0);
@@ -855,7 +855,7 @@ u32 fightActionFlowSyuuryou(FightAction* action) {
             }
         }
     }
-    fightEnemyTrainerWazaSeqHdl = PC_PTR(WazaSequence*, (wazaFlag == 1) ? waza : 0);
+    fightEnemyTrainerWazaSeqHdl = (WazaSequence*)((wazaFlag == 1) ? waza : 0);
     fightCloseAllMenu();
     return 1;
 }
@@ -1183,7 +1183,7 @@ s32 fightActionFlowKaisiPre() {
 #endif
     enum TsE { TsE0 };
     u16 temp_r3_3;
-    u32 temp_r22;
+    GCuptr temp_r22;
     FightEncountData *temp_r3_4;
     u32 var_r22;
     Sequence *var_r25;
@@ -1204,7 +1204,7 @@ s32 fightActionFlowKaisiPre() {
     u8 sp8;
     u32 temp_r26;
     u32 temp_r29;
-    u32 temp_r31;
+    GCuptr temp_r31;
     u32 temp_r3_13;
     u32 temp_r3_15;
     u32 temp_r3_8;
@@ -1219,9 +1219,9 @@ s32 fightActionFlowKaisiPre() {
     sp8 = 0;
     fightFloor_GetFightFloorDataId((FIGHT_FLOOR*)(NULL));
     temp_r3 = (unsigned char *)(fightTargetGetPtrAsNowFightType(0xBU, (void*)(NULL)));
-    temp_r22 = (u32)(fightTrainer_GetSequencePtr((FIGHT_TRAINER *)((u8*)(temp_r3))));
+    temp_r22 = (GCuptr)(fightTrainer_GetSequencePtr((FIGHT_TRAINER *)((u8*)(temp_r3))));
     temp_r3_2 = (unsigned char *)(fightTargetGetPtrAsNowFightType(9U, (void*)(temp_r3)));
-    temp_r31 = (u32)(fightTrainer_GetSequencePtr((FIGHT_TRAINER *)((u8*)(temp_r3_2))));
+    temp_r31 = (GCuptr)(fightTrainer_GetSequencePtr((FIGHT_TRAINER *)((u8*)(temp_r3_2))));
     temp_r21 = fightTrainer_GetFightTrainerDataId((FIGHT_TRAINER *)((u8*)(temp_r3_2)));
     temp_r26 = fightFloor_GetSyoukaiWzxDataId((FIGHT_FLOOR*)(NULL));
     temp_r3_3 = fightFloor_GetEncountDataId((FIGHT_FLOOR*)(NULL));
@@ -1240,9 +1240,9 @@ s32 fightActionFlowKaisiPre() {
     if (fightFloorIsNowEncountOpeningVirtualBattle((FIGHT_FLOOR*)(NULL)) != 1) {
         if (fightFloorIsNowEncountVirtualBattle((FIGHT_FLOOR*)(NULL)) == 1) {
             Sequence_SetVisibility(temp_r31, 0);
-            Sequence_SetVisibility((s32) temp_r22, 1);
+            Sequence_SetVisibility((GCuptr) temp_r22, 1);
             battleGridStoreModelVisibilityFlags();
-            temp_r3_5 = Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r22)), 0x54U, 4U);
+            temp_r3_5 = Sequence_GetWaza((Sequence*)((Sequence *)(temp_r22)), 0x54U, 4U);
             WazaSequence_Start((WazaSequence*)(temp_r3_5), 1);
             while (WazaSequence_IsActive(temp_r3_5) != 0) {
                 if (_fightActionFlowKaisiPreSubCheckVirtualDiskCancel(temp_r20) != 0) {
@@ -1252,9 +1252,9 @@ s32 fightActionFlowKaisiPre() {
                 GSthreadSwitch();
             }
             {
-                Sequence_SetVisibility((s32) temp_r31, 1);
+                Sequence_SetVisibility((GCuptr) temp_r31, 1);
                 battleGridStoreModelVisibilityFlags();
-                temp_r3_6 = Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), 0x55U, 4U);
+                temp_r3_6 = Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), 0x55U, 4U);
                 WazaSequence_Start(temp_r3_6, 1);
                 if (fightFloor_GetFightKindHostEnemyMsgFlag((FIGHT_FLOOR*)(NULL)) == 1) {
                     fightMsgctrlSetValue((s32)(0x22), (GCuptr)(fightTrainerGetPrefixNamePtr((FIGHT_TRAINER *)((FightTrainer*)((FightTrainer *) temp_r3_2)))));
@@ -1275,7 +1275,7 @@ s32 fightActionFlowKaisiPre() {
                     }
                     fightMainSetAllDispFlag(1);
                     battleGridStoreModelVisibilityFlags();
-                    temp_r3_7 = Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r22)), 0x56U, 4U);
+                    temp_r3_7 = Sequence_GetWaza((Sequence*)((Sequence *)(temp_r22)), 0x56U, 4U);
                     WazaSequence_Start(temp_r3_7, 1);
                     while (WazaSequence_IsActive(temp_r3_7) != 0) {
                         if (_fightActionFlowKaisiPreSubCheckVirtualDiskCancel(temp_r20) != 0) {
@@ -1292,16 +1292,16 @@ cancelled:
                 fadeCheck(1);
                 fightMainSetAllDispFlag(1);
                 battleGridStoreModelVisibilityFlags();
-                WazaSequence_Stop(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r22)), 0x54U, 4U));
-                WazaSequence_Stop(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), 0x55U, 4U));
-                WazaSequence_Stop(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r22)), 0x56U, 4U));
+                WazaSequence_Stop(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r22)), 0x54U, 4U));
+                WazaSequence_Stop(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), 0x55U, 4U));
+                WazaSequence_Stop(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r22)), 0x56U, 4U));
                 battleCameraStartRandom(1);
                 fadeSet(2, 0.5f);
                 sp8 = 0;
             }
-            WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r22)), 0x54U, 4U)));
-            WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), 0x55U, 4U)));
-            WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r22)), 0x56U, 4U)));
+            WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r22)), 0x54U, 4U)));
+            WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), 0x55U, 4U)));
+            WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r22)), 0x56U, 4U)));
             temp_r3_8 = fightFloor_GetBgmSndId((FIGHT_FLOOR*)(NULL));
             if (temp_r3_8 != 0) {
                 soundOpenPlay((s32) temp_r3_8, 0, 0xFF);
@@ -1309,9 +1309,9 @@ cancelled:
         } else {
             if (temp_r26 != 0) {
                 if (temp_r29 != 0) {
-                    WazaSequence_Start((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), (u16) temp_r29, 4U)), 1);
+                    WazaSequence_Start((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), (u16) temp_r29, 4U)), 1);
                 }
-                temp_r3_9 = Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), (u16) temp_r26, 4U);
+                temp_r3_9 = Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), (u16) temp_r26, 4U);
                 WazaSequence_Start((WazaSequence*)(temp_r3_9), 1);
 loop_32:
                 if (_fightActionFlowKaisiPreSubCheckCancel((bool*)(&sp8)) != 1) {
@@ -1320,7 +1320,7 @@ loop_32:
                         goto loop_32;
                     }
                     if (fightFloor_GetFightKindHostEnemyMsgFlag((FIGHT_FLOOR*)(NULL)) == 1) {
-                        temp_r3_10 = Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), _fight_kaisi_pre_trainer_intr_wzx_data_id, 4U);
+                        temp_r3_10 = Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), _fight_kaisi_pre_trainer_intr_wzx_data_id, 4U);
                         WazaSequence_Start((WazaSequence*)(temp_r3_10), 1);
 loop_37:
                         if (_fightActionFlowKaisiPreSubCheckCancel((bool*)(&sp8)) != 1) {
@@ -1333,7 +1333,7 @@ loop_37:
                     } else {
 block_40:
                         if (temp_r29 != 0) {
-                            temp_r20_2 = Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), (u16) temp_r29, 4U);
+                            temp_r20_2 = Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), (u16) temp_r29, 4U);
 loop_42:
                             if ((_fightActionFlowKaisiPreSubCheckCancel((bool*)(&sp8)) != 1) && (WazaSequence_IsActive((WazaSequence*)(temp_r20_2)) != 0)) {
                                 GSthreadSwitch();
@@ -1385,15 +1385,15 @@ loop_42:
                     fadeSet(3, 0.5f);
                     fadeCheck(1);
                     if (temp_r29 != 0) {
-                        WazaSequence_Stop(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), (u16) temp_r29, 4U));
+                        WazaSequence_Stop(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), (u16) temp_r29, 4U));
                     }
-                    WazaSequence_Stop(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), (u16) temp_r26, 4U));
+                    WazaSequence_Stop(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), (u16) temp_r26, 4U));
                     if (fightFloor_GetFightKindHostEnemyMsgFlag((FIGHT_FLOOR*)(NULL)) == 1) {
-                        WazaSequence_Stop(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), _fight_kaisi_pre_trainer_intr_wzx_data_id, 4U));
+                        WazaSequence_Stop(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), _fight_kaisi_pre_trainer_intr_wzx_data_id, 4U));
                     }
                 }
                 if (var_r27 != 0) {
-                    temp_r3_14 = Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), 0x5FU, 4U);
+                    temp_r3_14 = Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), 0x5FU, 4U);
                     WazaSequence_Start((WazaSequence*)(temp_r3_14), 1);
                     if (sp8 == 1) {
                         fadeSet(2, 0.5f);
@@ -1414,7 +1414,7 @@ loop_42:
                 if (fightFloor_GetFightKindHostEnemyMsgFlag((FIGHT_FLOOR*)(NULL)) == 1) {
                     fightMsgctrlSetValue((s32)(0x22), (GCuptr)(fightTrainerGetPrefixNamePtr((FIGHT_TRAINER *)((FightTrainer*)((FightTrainer *) temp_r3_2)))));
                     fightMsgctrlSetValue(0x23, fightTrainerGetNamePtr((FIGHT_TRAINER *)((FightTrainer*)((FightTrainer *) temp_r3_2))));
-                    temp_r3_16 = Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), var_r28, 4U);
+                    temp_r3_16 = Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), var_r28, 4U);
                     WazaSequence_Start((WazaSequence*)(temp_r3_16), 1);
                     if (sp8 == 1) {
                         fadeSet(2, 0.5f);
@@ -1437,18 +1437,18 @@ loop_42:
             }
             if (temp_r26 != 0) {
                 if (temp_r29 != 0) {
-                    WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), (u16) temp_r29, 4U)));
+                    WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), (u16) temp_r29, 4U)));
                 }
-                WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), (u16) temp_r26, 4U)));
+                WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), (u16) temp_r26, 4U)));
                 if (fightFloor_GetFightKindHostEnemyMsgFlag((FIGHT_FLOOR*)(NULL)) == 1) {
-                    WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), _fight_kaisi_pre_trainer_intr_wzx_data_id, 4U)));
+                    WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), _fight_kaisi_pre_trainer_intr_wzx_data_id, 4U)));
                 }
             }
             if (var_r27 != 0) {
-                WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), 0x5FU, 4U)));
+                WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), 0x5FU, 4U)));
             }
             if ((fightFloor_GetFightKindHostEnemyMsgFlag((FIGHT_FLOOR*)(NULL)) == 1) && (var_r28 == 0x5F)) {
-                WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)(PC_PTR(Sequence *, temp_r31)), var_r28, 4U)));
+                WazaSequence_Free((WazaSequence*)(Sequence_GetWaza((Sequence*)((Sequence *)(temp_r31)), var_r28, 4U)));
             }
             if ((fightFloorIsNowEncountHostEnemyPokemonKime((FIGHT_FLOOR*)(NULL)) == 1) && (fightTargetIsHostSide((void*)(temp_r3_2), (u8)fightFloor_GetFightType((FIGHT_FLOOR*)(NULL))) == 0)) {
                 var_r20_2 = 0;
@@ -1627,7 +1627,7 @@ s32 fightActionFlowKaisiNyuujouPokemon(FightAction* action) {
                         fightOutPokemonDasuEffect((FightTrainer*)trainer, fop, 0U);
                         Sequence* s = (Sequence*)(fightOutPokemon_GetSequencePtr(fop));
                         if (s != NULL) {
-                            Sequence_SetVisibility((u32)s, 1);
+                            Sequence_SetVisibility((GCuptr)s, 1);
                             battleGridStoreModelVisibilityFlags();
                             battleGridUpdate();
                         }
@@ -1928,7 +1928,7 @@ s32 fightActionFlowKaisiNyuujouTrainer(FightAction* action) {
     while ((s32) var_r20 < (s32) temp_r26) {
         temp_r3_5 = fightSideGetValidFightTrainerPtr((FIGHT_SIDE*)(temp_r3), (u16) var_r20);
         if (temp_r3_5 != NULL) {
-            temp_r3_6 = (u32)(fightTrainer_GetSequencePtr((FIGHT_TRAINER *)((u8*)((u8 *) temp_r3_5))));
+            temp_r3_6 = (GCuptr)(fightTrainer_GetSequencePtr((FIGHT_TRAINER *)((u8*)((u8 *) temp_r3_5))));
             if (temp_r3_6 != 0) {
                 fightSideGetFightTrainerGridParam((FIGHT_SIDE*)((FIGHT_SIDE *) temp_r19), (u16) temp_r21_2, (u16) var_r20, (u8*)(&sp9), (s8*)(&sp8));
                 battleGridAddTrainer((NullSequence*)((NullSequence *) temp_r3_6), (u16)sp9, (u8) sp8);

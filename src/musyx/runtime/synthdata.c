@@ -644,7 +644,7 @@ s32 dataGetSample(u16 sid, SAMPLE_INFO* newsmp) {
         newsmp->compType = MD32(sheader->length) >> 24;
 
         if (result->extraData) {
-          newsmp->extraData = (void*)((size_t) & (dataSmpSDirs[i].data)->id + MD32(result->extraData));
+          newsmp->extraData = MUSY_PTR_ADD(&(dataSmpSDirs[i].data)->id, MD32(result->extraData));
         }
 #if MUSY_VERSION >= MUSY_VERSION_CHECK(2, 0, 2)
         else {

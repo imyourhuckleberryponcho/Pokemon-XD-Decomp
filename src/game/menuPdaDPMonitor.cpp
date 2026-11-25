@@ -206,7 +206,7 @@ u16 menuPdaDPMListGetDarkPokemonID(s32);
 u32 menuPdaDPMListGetDarkPokemonPlaceMsgID(s32, u8*);
 s32 menuPdaDPMListGetDarkpokemonID(s32);
 s32 menuPdaDPMListGetPokemonID(s32);
-u32 menuPdaDPMListGetPokemonName(s32);
+GCuptr menuPdaDPMListGetPokemonName(s32);
 void menuPdaSetSubres(s32, s32);
 void menuPlaySe(s32 menuID, s32);
 void msgctrlSetValue(s32, GCuptr);
@@ -489,7 +489,7 @@ void menuPdaDPM::DarkPokemonInfo(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite,
         if (place == 0) {
             place = 0x3BA8;
         }
-        u32 placeName = GC_ADDR32(GSmsgGetGSchar(place));
+        GCuptr placeName = (GCuptr)(GSmsgGetGSchar(place));
         msgctrlSetValue(0x4D, placeName);
         msgctrlSetValue(0x57, (GCuptr)dark->getTrainerName());
         GSmsgPrint2(layer, 0, 0, window->alpha | ~0xFF, msg);
@@ -502,7 +502,7 @@ void menuPdaDPM::DarkPokemonPlace(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
     u32 msg = menuPdaDPMListGetDarkPokemonPlaceMsgID(c->pos + c->top, &floor);
     if (msg != 0) {
         msgctrlSetValue(0x2F, floor + 1);
-        u32 name = GC_ADDR32(GSmsgGetGSchar(msg));
+        GCuptr name = (GCuptr)(GSmsgGetGSchar(msg));
         msgctrlSetValue(0x37, name);
         GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4275);
     }
@@ -510,9 +510,9 @@ void menuPdaDPM::DarkPokemonPlace(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite
 
 void menuPdaDPM::PokemonName(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, DPM_CONTENTS* contents) {
     CURSOR* c = contents->cursor;
-    u32 name = menuPdaDPMListGetPokemonName(c->pos + c->top);
+    GCuptr name = menuPdaDPMListGetPokemonName(c->pos + c->top);
     if (name == 0) {
-        name = GC_ADDR32(GSmsgGetGSchar(1));
+        name = (GCuptr)(GSmsgGetGSchar(1));
     }
     msgctrlSetValue(0x37, name);
     GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4275);
@@ -528,27 +528,27 @@ void menuPdaDPM::PokemonSex(tagWINDOW_WORK* window, tagSPRITE_WORK* sprite, DPM_
     pokemonBiosSetRnd(mon, darkRnd);
     u8 sex = pokemonGetSex(mon);
     pokemonBiosSetRnd(mon, rnd);
-    u32 name;
+    GCuptr name;
     if (sex == 0x80) {
-        name = GC_ADDR32(GSmsgGetGSchar(1));
+        name = (GCuptr)(GSmsgGetGSchar(1));
     } else {
         switch (sex) {
         case 0:
-            name = GC_ADDR32(GSmsgGetGSchar(0x9C5));
+            name = (GCuptr)(GSmsgGetGSchar(0x9C5));
             break;
         case 1:
-            name = GC_ADDR32(GSmsgGetGSchar(0x9C6));
+            name = (GCuptr)(GSmsgGetGSchar(0x9C6));
             break;
         case 2:
-            name = GC_ADDR32(GSmsgGetGSchar(1));
+            name = (GCuptr)(GSmsgGetGSchar(1));
             break;
         default:
-            name = GC_ADDR32(GSmsgGetGSchar(0x9C6));
+            name = (GCuptr)(GSmsgGetGSchar(0x9C6));
             break;
         }
     }
     if (dark->getCatchFloorId() == 0xB5 && sex != 2) {
-        name = GC_ADDR32(GSmsgGetGSchar(0x9C7));
+        name = (GCuptr)(GSmsgGetGSchar(0x9C7));
     }
     msgctrlSetValue(0x37, name);
     GSmsgPrint2(window->layer, 0, 0, window->alpha | ~0xFF, 0x4275);

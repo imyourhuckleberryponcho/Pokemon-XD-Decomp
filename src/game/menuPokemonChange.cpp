@@ -247,7 +247,7 @@ void scriptModelClose(s32);
 s32 scriptModelOpen(u32);
 void * GSresGetResource(s32, s32);
 void cameraSetType(s32);
-void GSmodelSetVisibility(GCsptr, s32);
+void GSmodelSetVisibility(GCuptr, s32);
 void fadeSet(s32, f32);
 void fadeSetToBlackInIfBlack(f32);
 void fadeSetToBlackOutIfNotBlack(f32);
@@ -452,7 +452,7 @@ public:
     void* m_saveBuf;
     bool m_flags[2];
     s32 m_bgModel;
-    s32 m_bgGSmodel;
+    GCuptr m_bgGSmodel;
     s32 m_sel[2];
     s32 m_cursor;
     MENU_MODEL m_model[2];
@@ -693,7 +693,7 @@ void CMenuPokemonChange::bgModelLoad()
 {
     s32 group = floorGetCurrentGroupID();
     m_bgModel = scriptModelOpen(0x5681000);
-    m_bgGSmodel = GC_ADDR32(GSresGetResource(group, m_bgModel));
+    m_bgGSmodel = (GCuptr)GSresGetResource(group, m_bgModel);
     cameraPlayAnime(0x37C, 0x5691800, 1, 0.0f);
     cameraSetType(4);
     GSmodelSetVisibility(m_bgGSmodel, 0);

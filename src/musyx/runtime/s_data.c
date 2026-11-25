@@ -425,9 +425,9 @@ u32 seqPlaySong(u16 sgid, u16 sid, void* arrfile, SND_PLAYPARA* para, u8 irq_cal
       if (MD16(GS_GSI[i].gAddr->type) == 0) {
         g = GS_GSI[i].gAddr;
         prj = GS_GSI[i].prjAddr;
-        norm = (PAGE*)((size_t)prj + MD32(g->data.song.normpageOff));
-        drum = (PAGE*)((size_t)prj + MD32(g->data.song.drumpageOff));
-        midiSetup = (MIDISETUP*)((size_t)prj + MD32(g->data.song.midiSetupOff));
+        norm = (PAGE*)MUSY_PTR_ADD(prj, MD32(g->data.song.normpageOff));
+        drum = (PAGE*)MUSY_PTR_ADD(prj, MD32(g->data.song.drumpageOff));
+        midiSetup = (MIDISETUP*)MUSY_PTR_ADD(prj, MD32(g->data.song.midiSetupOff));
         while (MD16(midiSetup->songId) != 0xFFFF) {
           if (MD16(midiSetup->songId) == sid) {
             if (irq_call != 0) {
@@ -494,9 +494,9 @@ static inline u32 _seqPlaySong(u16 sgid, u16 sid, void* arrfile, SND_PLAYPARA* p
       if (MD16(GS_GSI[i].gAddr->type) == 0) {
         g = GS_GSI[i].gAddr;
         prj = GS_GSI[i].prjAddr;
-        norm = (PAGE*)((size_t)prj + MD32(g->data.song.normpageOff));
-        drum = (PAGE*)((size_t)prj + MD32(g->data.song.drumpageOff));
-        midiSetup = (MIDISETUP*)((size_t)prj + MD32(g->data.song.midiSetupOff));
+        norm = (PAGE*)MUSY_PTR_ADD(prj, MD32(g->data.song.normpageOff));
+        drum = (PAGE*)MUSY_PTR_ADD(prj, MD32(g->data.song.drumpageOff));
+        midiSetup = (MIDISETUP*)MUSY_PTR_ADD(prj, MD32(g->data.song.midiSetupOff));
         while (MD16(midiSetup->songId) != 0xFFFF) {
           if (MD16(midiSetup->songId) == sid) {
             if (irq_call != 0) {

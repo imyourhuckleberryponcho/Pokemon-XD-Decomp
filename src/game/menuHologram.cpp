@@ -366,7 +366,7 @@ void relivehallDraw9StageNumber(int);
 void relivehallDraw9StageInfo(int);
 void relivehallDrawStageInfoCursor(s32, int, int, Pokemon*, bool);
 int reliveHallPokemonToAisyou(Pokemon*, Pokemon*);
-void* reliveCeremonyFromHologram(Pokemon*, u32);
+void* reliveCeremonyFromHologram(Pokemon*, GCuptr);
 f32 menuGetPokemonScale(GCuptr, int);
 void menuModelGetPkxRndFromPokemonForSeqenceLoad(u32&, u16&, Pokemon*);
 
@@ -1363,7 +1363,7 @@ void CMenuHologram::stateReliveCeremony()
     waitAtTime(6.0f);
     Pokemon* visitor = stage->getVisitorPointer();
     hidden = 1;
-    ceremony = reliveCeremonyFromHologram(visitor, (u32)models[2].seq);
+    ceremony = reliveCeremonyFromHologram(visitor, (GCuptr)models[2].seq);
     hidden = 0;
     systemFadeInKick();
     systemFadeWaitToEnd();

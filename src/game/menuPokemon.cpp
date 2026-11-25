@@ -55,7 +55,7 @@ struct MenuPokemonWork {
     u8 listKind;
     u8 f19;
     u8 pad1A[2];
-    s32 f1C;
+    GCsptr f1C;
     s32 result;
     u8 f24;
     u8 pad25[3];
@@ -599,7 +599,7 @@ s32 menuPokemonOpen(u8 kind, u16 sel, FIGHT_TRAINER* trainer) {
 }
 
 extern "C" {
-s32 menuPokemonOpenFight(u8 side, u8 sel, FIGHT_TRAINER* trainer, s32 f1c) {
+s32 menuPokemonOpenFight(u8 side, u8 sel, FIGHT_TRAINER* trainer, GCsptr f1c) {
     if (side == 1) {
         _menuPokemon.side = 0;
     } else {

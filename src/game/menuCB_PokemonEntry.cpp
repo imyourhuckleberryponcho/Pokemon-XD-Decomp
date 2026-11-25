@@ -623,7 +623,7 @@ static u16 _menuCBPokemonEntryPokemonNum(s32 player) {
 }
 
 static void _menuCBPokemonEntryWorkInit(void) {
-    s32 hero;
+    GCsptr hero;
     s32 pad;
     s32 j;
     s32 type = toolentryTaisenGetBattleType();
@@ -640,7 +640,7 @@ static void _menuCBPokemonEntryWorkInit(void) {
     for (i = 0; i < count; i++) {
         MenuCBTrainer* trainer = menuCBBios_GetTrainerImmediately(i);
         pad = menuCBTrainerBios_GetControlerID(trainer);
-        hero = GC_ADDR32(menuCBBios_GetHeroImmediately(i));
+        hero = (GCsptr)menuCBBios_GetHeroImmediately(i);
         _menuCBPokemonEntrySetEntryFlag(i, false);
         if (trainer->homePlace != 0) {
             s32 mode;
@@ -792,7 +792,7 @@ void menuCBPokemonEntryPokemonFaceFree(void) {
     menuCBPokemonEntryTexWorkInit();
 }
 
-s32 menuCBPokemonEntryDispPokemonFace(s32 a, s32 b, u32 player, s32 slot) {
+s32 menuCBPokemonEntryDispPokemonFace(GCsptr a, GCsptr b, u32 player, s32 slot) {
     PokemonEntryFace* face = _menuCBPokemonEntryGetFaceBase(player, slot);
     if (face->active != 0) {
         menuFaceDispFromID(a, b, face->face);

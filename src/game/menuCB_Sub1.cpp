@@ -220,7 +220,7 @@ u16 toolentryTaisenGetEntryPokemonNum(s32);
 Pokemon* toolentryTaisenGetEntryPokemonPtr(s32, s32);
 s32 menuCBBattleStartGetStatus(void);
 u16 toolentryTaisenGetHomePlaceX(s32);
-void menuCBPokemonEntryDispPokemonFace(s32, s32, s32, s32);
+void menuCBPokemonEntryDispPokemonFace(GCsptr, GCsptr, s32, s32);
 u8 menuCBPokemonEntryDisp(CBSprite*);
 u8 menuCBPokemonGetDataId(s32, s32);
 u16* heroBiosGetNamePtr(void*);
@@ -431,8 +431,8 @@ void menuCB_GBADisconnectedErrorJob(void);
 void menuCBPokemonEntryGCControlDisp(CBSprite* sprite, s32 b);
 void menuCBPokemonEntryBallAnaDisp(CBItem* item, s32 player, u32 idx);
 void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx);
-u8 menuCBPokemonEntryDispPokemonFace_AFTER(s32 a, s32 b, s32 c, s32 d);
-u8 menuCBPokemonEntryDispPokemonFace_BEFORE(s32 a, s32 b, s32 c, s32 d);
+u8 menuCBPokemonEntryDispPokemonFace_AFTER(GCsptr a, GCsptr b, s32 c, s32 d);
+u8 menuCBPokemonEntryDispPokemonFace_BEFORE(GCsptr a, GCsptr b, s32 c, s32 d);
 void menuCB_BattleEntryPokemonSelectDisp(CBSprite* sprite, u32 a, u32 b);
 u8 menuCB_GCStatusDispMode(CBSprite* sprite, s32 mode);
 u8 menuCBPokemonEntryDisp(CBSprite* sprite);
@@ -1787,7 +1787,7 @@ void menuCBPokemonEntryBallDisp(CBItem* item, s32 player, u32 idx) {
     }
 }
 
-u8 menuCBPokemonEntryDispPokemonFace_AFTER(s32 a, s32 b, s32 c, s32 d) {
+u8 menuCBPokemonEntryDispPokemonFace_AFTER(GCsptr a, GCsptr b, s32 c, s32 d) {
     if (menuCBBattleStartGetStatus() != 0) {
         menuCBPokemonEntryDispPokemonFace(a, b, c, d);
         return 1;
@@ -1795,7 +1795,7 @@ u8 menuCBPokemonEntryDispPokemonFace_AFTER(s32 a, s32 b, s32 c, s32 d) {
     return 0;
 }
 
-u8 menuCBPokemonEntryDispPokemonFace_BEFORE(s32 a, s32 b, s32 c, s32 d) {
+u8 menuCBPokemonEntryDispPokemonFace_BEFORE(GCsptr a, GCsptr b, s32 c, s32 d) {
     if (menuCBBattleStartGetStatus() == 0) {
         menuCBPokemonEntryDispPokemonFace(a, b, c, d);
         return 1;

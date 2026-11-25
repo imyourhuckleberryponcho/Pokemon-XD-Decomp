@@ -478,7 +478,7 @@ static int setName(unsigned short* name, int mode, GCsint param) {
     int ok = 1;
     switch (mode) {
     case 1:
-        heroSetStatus(0, 0x17, (u32)name);
+        heroSetStatus(0, 0x17, (GCuptr)name);
         break;
     case 2: {
         p = (Pokemon*)heroGetStatus(0, 3, (u16)param);

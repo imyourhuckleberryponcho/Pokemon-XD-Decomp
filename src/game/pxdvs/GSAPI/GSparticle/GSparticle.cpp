@@ -453,7 +453,7 @@ static inline u32 _genGetMaxLife(u8* gen) {
         return 0;
     }
     if ((*(u8 *)&((_GSparticleGen*)(gen))->native) != 0) {
-        if (peBankIsInfinite((u32)bank) != 0) {
+        if (peBankIsInfinite((GCuptr)bank) != 0) {
             return -1U;
         }
         return GC_F2U32(peBankGetLife((*(u8 **)&((_GSparticleGen*)(gen))->data)) * (f32)GSgfxVideoGetVsyncRate());
@@ -1328,7 +1328,7 @@ u32 GSparticleGetGeneratorLife(GSparticleGenerator* p0) {
         return 0U;
     }
     if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
-        if (peBankIsInfinite((u32)(temp_r3)) != 0) {
+        if (peBankIsInfinite((GCuptr)(temp_r3)) != 0) {
             return -1U;
         }
         return GC_F2U32(peBankGetLife((*(u8 **)&((_GSparticleGen*)(p0))->data)) * ((f32) GSgfxVideoGetVsyncRate()));
@@ -1357,7 +1357,7 @@ s32 GSparticleIsGeneratorAlive(void *p0) {
         if (temp_r3 == NULL) {
             var_r3_2 = 0;
         } else if (temp_r0 != 0) {
-            if (peBankIsInfinite((u32)(temp_r3)) != 0) {
+            if (peBankIsInfinite((GCuptr)(temp_r3)) != 0) {
                 var_r3_2 = -1U;
             } else {
                 var_r3_2 = GC_F2U32(peBankGetLife((*(u8 **)&((_GSparticleGen*)(p0))->data)) * ((f32) GSgfxVideoGetVsyncRate()));
@@ -1379,7 +1379,7 @@ s32 GSparticleIsGeneratorAlive(void *p0) {
     if (temp_r3_2 == NULL) {
         var_r3 = 0;
     } else if ((u8) (*(u8 *)&((_GSparticleGen*)(p0))->native) != 0) {
-        if (peBankIsInfinite((u32)(temp_r3_2)) != 0) {
+        if (peBankIsInfinite((GCuptr)(temp_r3_2)) != 0) {
             var_r3 = -1U;
         } else {
             var_r3 = GC_F2U32(peBankGetLife((*(u8 **)&((_GSparticleGen*)(p0))->data)) * ((f32) GSgfxVideoGetVsyncRate()));

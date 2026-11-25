@@ -806,7 +806,7 @@ static s32 _windowCreateItemSprite(tagWINDOW_WORK* w)
                 winSetSequence(&sp->seq, ms->seq);
             }
         }
-        sp->msg = (u32)item->msg;
+        sp->msg = (GCuptr)item->msg;
         if (item->callback != 0) {
             sp->flags |= 8;
             sp->callback = (GCuptr)item->callback;

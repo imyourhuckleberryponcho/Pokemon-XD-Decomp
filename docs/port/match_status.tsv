@@ -1,7 +1,7 @@
 # unit	status	match%	symbol	name	pragmas	asm	cflags	gc_hash
 # status: linked = byte-identical and in the DOL; exact = byte-identical, file not linked yet; draft = differs from the original (may behave differently)
 # pragmas: non-default #pragma state at the definition ("-" none, "?" definition not found by name); asm = inline asm body; cflags = the unit's extra compiler flags; gc_hash = funchash.py hash of our compiled GameCube code (relocated words masked, targets by name): same hash = same GameCube code
-# generated: 2026-11-25 02:15 from the build at source commit 6cbb6aefe9
+# generated: 2026-11-25 08:59 from the build at source commit 746e8b3a79
 game/character	linked	100.00	characterInit	characterInit	?	-	-	abd524a9450f
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraResetFloor	dbgMenuCameraResetFloor	peephole off	-	-	ec8086614c12
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraChangeDisp	dbgMenuCameraChangeDisp	peephole off	-	-	efda3d324df5
@@ -7341,8 +7341,8 @@ musyx/runtime/StdReverb/reverb_fx	exact	100.00	sndAuxCallbackPrepareReverbHI	snd
 musyx/runtime/StdReverb/reverb	linked	100.00	ReverbHICreate	ReverbHICreate	?	-	-	2809f3be002b
 musyx/runtime/StdReverb/reverb	linked	100.00	ReverbHIModify	ReverbHIModify	?	-	-	9968999805d5
 musyx/runtime/StdReverb/reverb	linked	100.00	DoCrossTalk	DoCrossTalk	-	asm	-	bf2903ec1a36
-musyx/runtime/StdReverb/reverb	linked	100.00	HandleReverb	HandleReverb	-	asm	-	bf63f37f8b95
-musyx/runtime/StdReverb/reverb	linked	100.00	ReverbHICallback	ReverbHICallback	-	-	-	7479db8fa535
+musyx/runtime/StdReverb/reverb	linked	100.00	HandleReverb	HandleReverb	fp_contract (off)	asm	-	bf63f37f8b95
+musyx/runtime/StdReverb/reverb	linked	100.00	ReverbHICallback	ReverbHICallback	fp_contract (off)	-	-	7479db8fa535
 game/pxdvs/app/sound/sound	linked	100.00	soundCheckEnv	soundCheckEnv	-	-	-inline noauto	4a5ca75d2e97
 game/pxdvs/app/sound/sound	linked	100.00	soundGetEnvID	soundGetEnvID	-	-	-inline noauto	da146cfed841
 game/pxdvs/app/sound/sound	linked	100.00	soundGetBGMID	soundGetBGMID	-	-	-inline noauto	769dcbf47c64

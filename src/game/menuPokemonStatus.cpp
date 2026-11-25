@@ -878,7 +878,7 @@ void menuPokemonStatusChangeColor(void) {
 extern "C" {
 void menuPokemonStatusDrawTitle(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     s16 x;
-    u32 name;
+    GCuptr name;
     Pokemon* pk = _menuStatus.pokemon;
     u32 color;
     if (!pk) {
@@ -1070,7 +1070,7 @@ void menuPokemonStatusDrawTitle(tagWINDOW_WORK* win, tagSPRITE_WORK* sprite) {
     case 0x264: {
         u32 sexMsg;
         if (sprite->itemId == 0x264) {
-            name = (u32)GSmsgGetGSchar(pokemonGetStatus(0, (u16)pokemonGetStatus(pk, 0, 0x6E, 0), 1, 0));
+            name = (GCuptr)GSmsgGetGSchar(pokemonGetStatus(0, (u16)pokemonGetStatus(pk, 0, 0x6E, 0), 1, 0));
         } else {
             name = pokemonGetStatus(pk, 0, 0x77, 0);
             if (pokemonCheckRare(pk)) {
