@@ -5,6 +5,7 @@
 #include <game/pxdvs/app/pokemon/pokemon.hpp>
 #include <game/pxdvs/app/pokemon/darkPokemon.hpp>
 #include <game/ppcops.h>
+#include <game/pcboxes.h>
 #ifndef __MWERKS__
 #include <game/menumodel.h>
 #endif
@@ -358,7 +359,11 @@ public:
     s32 boxIndex;
     s32 boxTarget;
     s32 depositBox;
+#ifdef __MWERKS__
     CAnt boxAnt[8][30];
+#else
+    CAnt boxAnt[PC_PCBOX_MAX][30];
+#endif
     s32 temochiOffset;
     u8 temochiFlag;
     u8 pad34B1[3];
@@ -504,11 +509,27 @@ static inline void copyTable(void* dst, const void* src, u32 n)
 
 s32 menuPcBoxGetLastViewBox()
 {
+#ifndef __MWERKS__
+    if (PortXD_PcBoxGetLastView != 0) {
+        s32 b = PortXD_PcBoxGetLastView();
+        if (b >= PC_PCBOX_GC && b < PC_PCBOX_COUNT()) {
+            return b;
+        }
+    }
+#endif
     return savedataGetStatus(0, 3)->lastViewBox;
 }
 
 void menuPcBoxSetLastViewBox(s32 box)
 {
+#ifndef __MWERKS__
+    if (PortXD_PcBoxSetLastView != 0) {
+        PortXD_PcBoxSetLastView(box);
+    }
+    if (box < 0 || box >= PC_PCBOX_GC) {
+        box = 0;
+    }
+#endif
     savedataGetStatus(0, 3)->lastViewBox = box;
 }
 
@@ -998,11 +1019,11 @@ void CMenuPokemonLeave::stateDepositToPcBoxProc()
     while (!done) {
         switch (getKeyInfo()->trg) {
         case 4:
-            depositBox = (depositBox + 7) % 8;
+            depositBox = PC_PCBOX_PREV(depositBox);
             menuPtPlaySe(0x441);
             break;
         case 8:
-            depositBox = (depositBox + 1) % 8;
+            depositBox = PC_PCBOX_NEXT(depositBox);
             menuPtPlaySe(0x441);
             break;
         case 0x10:
@@ -1462,9 +1483,9 @@ void CMenuPokemonLeave::boxScroll(bool back)
 {
     boxTarget = boxIndex;
     if (back) {
-        boxIndex = (boxIndex + 7) % 8;
+        boxIndex = PC_PCBOX_PREV(boxIndex);
     } else {
-        boxIndex = (boxIndex + 1) % 8;
+        boxIndex = PC_PCBOX_NEXT(boxIndex);
     }
     s8 id = boxIndex;
     PCBOX::getPointer();
@@ -1645,7 +1666,7 @@ void CMenuPokemonLeave::drawAll()
     menuPtWindowWorkDraw(0x8AL);
     if (animState.current == 5) {
         int target = boxTarget;
-        if ((target + 1) % 8 == boxIndex) {
+        if (PC_PCBOX_NEXT(target) == boxIndex) {
             drawBoxArea(target, -scroll);
             drawBoxArea(boxIndex, 1.0f - scroll);
         } else {
@@ -1782,7 +1803,7 @@ void CMenuPokemonLeave::drawBoxArea(int box, float offset)
     tagSPRITE_WORK* sp = menuPtSpriteWorkGetByItemID(w, 0x3E5, 0);
     xoff = (short)((f32)sp->w * offset);
     w->x = xoff;
-    ms = menuSpriteBiosGetPtr(box + 0x325);
+    ms = menuSpriteBiosGetPtr(PC_PCBOX_BG(box) + 0x325);
     for (it = w->sprites; it != 0; it = it->next) {
         if (menuPtItemGetBySpriteWork(w, it)->spriteId == 0x325) {
             menuPtSpriteWorkSetMenuSprite(it, ms);
@@ -1842,9 +1863,9 @@ void CMenuPokemonLeave::resetViewAntAll()
             ant->setAnimation(0);
         }
     }
-    prev = (boxIndex + 7) % 8;
-    next = (boxIndex + 1) % 8;
-    for (b = 0; b < 8; b++) {
+    prev = PC_PCBOX_PREV(boxIndex);
+    next = PC_PCBOX_NEXT(boxIndex);
+    for (b = 0; b < PC_PCBOX_COUNT(); b++) {
         bool near;
         bool show = true;
         near = false;

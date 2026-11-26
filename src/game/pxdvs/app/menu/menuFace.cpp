@@ -191,6 +191,11 @@ s32 menuFaceLoadFightPokemon(FightPokemon* fp, FaceFn fn, void* arg) {
     u16 id = menuFaceGetID2(p, sel);
     menuFaceLoadFromID(id, fn, arg);
     while (1) {
+#ifndef __MWERKS__
+        if (id == 0) {
+            break;
+        }
+#endif
         if (menuFaceSearchEnable(id) != 0) {
             break;
         }
@@ -291,6 +296,11 @@ s32 menuFaceLoadFromID(u16 id, FaceFn fn, void* arg) {
             }
             if (p != 0) {
                 id = menuFaceGetID(p);
+#ifndef __MWERKS__
+                if (id == 0) {
+                    continue;
+                }
+#endif
             }
         }
         if (id == 0) {

@@ -2,6 +2,7 @@
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/statusval.h>
+#include <game/pcboxes.h>
 
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };
 struct DarkPokemon {
@@ -44,6 +45,11 @@ s32 itemAddItemDataIdAry(void*, u16, u16, PCARG(u16, u32), s16, u16, u32, u32);
 s32 menuPcBoxGetLastViewBox();
 void menuPocketDebugMakePokemonBySN(Pokemon&, u16, bool, f32);
 
+struct PCBOX;
+#ifndef __MWERKS__
+static inline PCBoxBox* pcboxBoxPtr(PCBOX* base, s32 b);
+#endif
+
 struct PCBOX {
 public:
     PCBoxBox box[8];
@@ -66,17 +72,60 @@ public:
     void init();
 
     static inline Pokemon* getRecord(PCBOX* base, s8 b, s8 i) {
-        if (b < 0 || b >= 8) {
+        if (b < 0 || b >= PC_PCBOX_COUNT()) {
             return 0;
         }
         if (i < 0 || i >= 30) {
             return 0;
         }
+#ifdef __MWERKS__
         return &base->box[b].pokemon[i];
+#else
+        PCBoxBox* bx = pcboxBoxPtr(base, b);
+        return bx != 0 ? &bx->pokemon[i] : 0;
+#endif
     }
 };
 
 s8 PCBOX::lastWatchBoxID;
+
+#ifndef __MWERKS__
+extern "C" {
+s32 (*PortXD_PcBoxCount)(void) = 0;
+void* (*PortXD_PcBoxExtraBox)(s32 box) = 0;
+s32 (*PortXD_PcBoxGetLastView)(void) = 0;
+void (*PortXD_PcBoxSetLastView)(s32 box) = 0;
+
+s32 pcboxCount(void) {
+    if (PortXD_PcBoxCount == 0 || PortXD_PcBoxExtraBox == 0) {
+        return PC_PCBOX_GC;
+    }
+    s32 n = PortXD_PcBoxCount();
+    if (n < PC_PCBOX_GC) {
+        n = PC_PCBOX_GC;
+    }
+    if (n > PC_PCBOX_MAX) {
+        n = PC_PCBOX_MAX;
+    }
+    return n;
+}
+
+void pcboxMakeDefaultName(u16* dst, s32 boxNumber1Based) {
+    msgctrlSetValue(0x34, boxNumber1Based);
+    GSmsgMakeGScharStr(dst, 9, 0x3b39);
+}
+}
+
+static inline PCBoxBox* pcboxBoxPtr(PCBOX* base, s32 b) {
+    if (b < 0 || b >= pcboxCount()) {
+        return 0;
+    }
+    if (b < PC_PCBOX_GC) {
+        return &base->box[b];
+    }
+    return (PCBoxBox*)PortXD_PcBoxExtraBox(b);
+}
+#endif
 
 PCBOX* PCBOX::getPointer() {
     return (PCBOX*)savedataGetStatus(0, 3);
@@ -197,14 +246,24 @@ static inline s8 nbEmptyImpl(PCBOX* base, s8 b) {
     if (!self) {
         self = PCBOX::getPointer();
     }
-    if (b < 0 || b >= 8) {
+    if (b < 0 || b >= PC_PCBOX_COUNT()) {
         count = -1;
-    } else {
+    }
+#ifndef __MWERKS__
+    else if (pcboxBoxPtr(self, b) == 0) {
+        count = -1;
+    }
+#endif
+    else {
         index = 0;
+#ifdef __MWERKS__
         pokemon = (u8*)self + (s32)b * sizeof(PCBoxBox);
+#else
+        pokemon = (u8*)pcboxBoxPtr(self, b);
+#endif
         while (index < 30) {
             Pokemon* rec;
-            if (b < 0 || b >= 8) {
+            if (b < 0 || b >= PC_PCBOX_COUNT()) {
                 rec = 0;
             } else if (index < 0 || index >= 30) {
                 rec = 0;
@@ -226,7 +285,7 @@ static inline s8 nbEmptyImpl(PCBOX* base, s8 b) {
 }
 
 bool PCBOX::isPokemonFull() {
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < PC_PCBOX_COUNT(); i++) {
         if (nbEmptyImpl(getPointer(), i) != 0) {
             return false;
         }
@@ -246,14 +305,24 @@ s8 PCBOX::getPokemonBoxNbUsedSlot(s8 b) {
     if (!self) {
         self = getPointer();
     }
-    if (b < 0 || b >= 8) {
+    if (b < 0 || b >= PC_PCBOX_COUNT()) {
         count = -1;
-    } else {
+    }
+#ifndef __MWERKS__
+    else if (pcboxBoxPtr(self, b) == 0) {
+        count = -1;
+    }
+#endif
+    else {
         index = 0;
+#ifdef __MWERKS__
         pokemon = (u8*)self + (s32)b * sizeof(PCBoxBox);
+#else
+        pokemon = (u8*)pcboxBoxPtr(self, b);
+#endif
         while (index < 30) {
             Pokemon* rec;
-            if (b < 0 || b >= 8) {
+            if (b < 0 || b >= PC_PCBOX_COUNT()) {
                 rec = 0;
             } else if (index < 0 || index >= 30) {
                 rec = 0;
@@ -275,10 +344,14 @@ void* PCBOX::getPokemonBoxName(s8 b) {
     if (!self) {
         self = getPointer();
     }
-    if (b < 0 || b >= 8) {
+    if (b < 0 || b >= PC_PCBOX_COUNT()) {
         return 0;
     }
+#ifdef __MWERKS__
     return &self->box[b];
+#else
+    return pcboxBoxPtr(self, b);
+#endif
 }
 
 inline s32 PCBOX::delPokemonImpl(s8 b, s8 i) {
@@ -458,7 +531,11 @@ u16 pcboxGetNbItemSlot() {
 }
 
 s8 pcboxGetNbPokemonBox() {
+#ifdef __MWERKS__
     return 8;
+#else
+    return (s8)pcboxCount();
+#endif
 }
 
 s8 pcboxGetPokemonBoxNbEmptySlot(PCBOX* base, s8 b) {
@@ -469,14 +546,24 @@ s8 pcboxGetPokemonBoxNbEmptySlot(PCBOX* base, s8 b) {
         base = PCBOX::getPointer();
     }
     PCBOX* self = base;
-    if (b < 0 || b >= 8) {
+    if (b < 0 || b >= PC_PCBOX_COUNT()) {
         count = -1;
-    } else {
+    }
+#ifndef __MWERKS__
+    else if (pcboxBoxPtr(self, b) == 0) {
+        count = -1;
+    }
+#endif
+    else {
         index = 0;
+#ifdef __MWERKS__
         pokemon = (u8*)self + (s32)b * sizeof(PCBoxBox);
+#else
+        pokemon = (u8*)pcboxBoxPtr(self, b);
+#endif
         while (index < 30) {
             Pokemon* rec;
-            if (b < 0 || b >= 8) {
+            if (b < 0 || b >= PC_PCBOX_COUNT()) {
                 rec = 0;
             } else if (index < 0 || index >= 30) {
                 rec = 0;
@@ -501,7 +588,7 @@ s32 pcboxSetPokemonBoxName(PCBOX* base, s8 b, u16* name) {
         base = PCBOX::getPointer();
     }
     PCBOX* self = base;
-    if (b < 0 || b >= 8) {
+    if (b < 0 || b >= PC_PCBOX_COUNT()) {
         return 0;
     }
     if (name == 0) {
@@ -518,7 +605,15 @@ s32 pcboxSetPokemonBoxName(PCBOX* base, s8 b, u16* name) {
     if (len > 8) {
         return 0;
     }
+#ifdef __MWERKS__
     GScharCpy(self->box[b].name, name);
+#else
+    PCBoxBox* bx = pcboxBoxPtr(self, b);
+    if (bx == 0) {
+        return 0;
+    }
+    GScharCpy(bx->name, name);
+#endif
     return 1;
 }
 
@@ -527,10 +622,14 @@ void* pcboxGetPokemonBoxName(PCBOX* base, s8 b) {
         base = PCBOX::getPointer();
     }
     PCBOX* self = base;
-    if (b < 0 || b >= 8) {
+    if (b < 0 || b >= PC_PCBOX_COUNT()) {
         return 0;
     }
+#ifdef __MWERKS__
     return &self->box[b];
+#else
+    return pcboxBoxPtr(self, b);
+#endif
 }
 
 static inline s8 findEmptySlot(PCBOX* base, s8 b) {
@@ -555,7 +654,7 @@ s32 pcboxAddPokemon(PCBOX* base, Pokemon* src, s8 box) {
     if (base == 0) {
         self = PCBOX::getPointer();
     }
-    if (box < -1 || box >= 8) {
+    if (box < -1 || box >= PC_PCBOX_COUNT()) {
         return 0;
     }
     if (src == 0) {
@@ -564,7 +663,7 @@ s32 pcboxAddPokemon(PCBOX* base, Pokemon* src, s8 box) {
     if (box == -1) {
         found = false;
         box = menuPcBoxGetLastViewBox();
-        for (; box < 8; box++) {
+        for (; box < PC_PCBOX_COUNT(); box++) {
             idx = findEmptySlot(self, box);
             if (idx >= 0) {
                 found = true;

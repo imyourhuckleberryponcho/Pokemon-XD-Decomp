@@ -2,6 +2,7 @@
 #include <game/pcret.h>
 #include <game/gcptr.h>
 #include <game/gcdata.h>
+#include <game/pcboxes.h>
 
 enum darkPokemonWhere { place0, place1, place2, place3, place4, place5, place6 };
 
@@ -676,7 +677,7 @@ s32 menuPdaDPMList::SortPlace() {
             SortSetTemp(temp2, temp, n);
         }
     }
-    for (fl = 0; fl < 8; fl++) {
+    for (fl = 0; fl < PC_PCBOX_COUNT(); fl++) {
         for (n = 0, i = 0; i < total; i++) {
             u16 did = GetDarkPokemonID(i);
             DarkPokemon* dark = darkPokemonGetDarkPokemon(did);

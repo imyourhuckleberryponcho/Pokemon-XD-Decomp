@@ -2,6 +2,7 @@
 #include <game/gcdata.h>
 #include <game/winwork.h>
 #include <game/gcptr.h>
+#include <game/pcboxes.h>
 #ifndef M2C_MACROS_H
 #define M2C_MACROS_H
 typedef s32 M2C_UNK; typedef s8 M2C_UNK8; typedef s16 M2C_UNK16; typedef s32 M2C_UNK32; typedef s64 M2C_UNK64;
@@ -5357,7 +5358,7 @@ void menuCB_tunaideGCEntry02_Disp(void *p0, void *p1) {
     case 0x1B4:
     case 0x1B5:
     case 0x1B6:
-        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(PCBOXBG_Char[temp_r29])));
+        menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(PCBOXBG_Char[PC_PCBOX_BG(temp_r29)])));
         return;
     case 0x1FE:
         menuCB2DPokemonDisp(p0, p1, 5, (temp_r29 * 0x10000) & 0xFFFF0000);
@@ -8382,7 +8383,7 @@ void menuCB_tunaideGCEntry02_Disp_1(void * p0, void * p1) {
     case 0x5BE:
     case 0x5BF:
     case 0x5C0:
-    menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(PCBOXBG_Char[idx])));
+    menuCB_SetSprite((tagSPRITE_WORK *)((MenuWindow*)((MenuWindow *) p1)), (void *)(menuSpriteBiosGetPtr(PCBOXBG_Char[PC_PCBOX_BG(idx)])));
     return;
     case 0x5C1:
     menuCB2DPokemonDisp2(p0, p1, 5, (idx * 0x10000) & 0xFFFF0000);

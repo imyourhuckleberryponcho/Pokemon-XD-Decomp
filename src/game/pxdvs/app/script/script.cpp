@@ -7,6 +7,7 @@
 #include "game/gcdata.h"
 #include "game/portxd_xg.h"
 #include "game/portxd_forms.h"
+#include <game/pcboxes.h>
 #ifndef __MWERKS__
 #define getHeroPtr__4HeroFv(...) ((Hero*)Hero::getHeroPtr(__VA_ARGS__))
 #define getFollowerID__4HeroFv(o, ...) ((s32)((Hero*)(o))->getFollowerID(__VA_ARGS__))
@@ -1672,7 +1673,7 @@ void scriptSetLensFlare(u32 resID, u8 visible, f32 x, f32 y, f32 z)
 
 s32 pcBoxAllSearchPokemon(s32 id)
 {
-    for (s8 box = 0; box < 8; box++) {
+    for (s8 box = 0; box < PC_PCBOX_COUNT(); box++) {
         for (s8 slot = 0; slot < 30; slot++) {
             if (id == PC_BASE_SPECIES(pokemonBiosGetPokemonDataId(PCBOX::getPointer()->getPokemon(box, slot)))) {
                 return 1;

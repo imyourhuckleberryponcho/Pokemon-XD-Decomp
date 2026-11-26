@@ -79,6 +79,7 @@ struct BALL_WORK {
 };
 
 #include <game/menumodel.h>
+#include <game/pcboxes.h>
 
 struct NAME_ENTRY_WORK {
     u16 name[12];
@@ -405,7 +406,7 @@ static int chkParam(int mode, GCsint param) {
         }
         break;
     case 3:
-        if (param < 0 || param >= 8) {
+        if (param < 0 || param >= PC_PCBOX_COUNT()) {
             ok = 0;
         }
         break;
