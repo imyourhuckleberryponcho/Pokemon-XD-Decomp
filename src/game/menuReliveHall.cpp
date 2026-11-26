@@ -2694,7 +2694,7 @@ Pokemon* SPokemonView::getPokemonWithPickupOverride()
 {
     if (pMenuReliveHall->cursor->isCatchPokemon()) {
         CMenuPokemonCursor* c = pMenuReliveHall->cursor;
-        if (c->index == ((u8*)this - (u8*)pMenuReliveHall->views) / 0x50) {
+        if (c->index == ((u8*)this - (u8*)pMenuReliveHall->views) / (s32)sizeof(SPokemonView)) {
             if (c->pokemon.checkValid()) return &c->pokemon;
             return 0;
         }
@@ -2704,7 +2704,7 @@ Pokemon* SPokemonView::getPokemonWithPickupOverride()
 
 Pokemon* SPokemonView::getPokemon()
 {
-    int i = ((u8*)this - (u8*)pMenuReliveHall->views) / 0x50;
+    int i = ((u8*)this - (u8*)pMenuReliveHall->views) / (s32)sizeof(SPokemonView);
     if (i < pMenuReliveHall->stage->getDancerQuantity()) return pMenuReliveHall->stage->getDancerPointer(i);
     if (i == 6) return pMenuReliveHall->stage->getVisitorPointer();
     return 0;
