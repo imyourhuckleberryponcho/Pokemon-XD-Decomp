@@ -475,6 +475,10 @@ static s32 _fightSeqSoubiItemCheckWazaHitAfterAllSub(void* arg, u16 id, void* us
     FightOutPokemon* p = (FightOutPokemon*)arg;
 #ifndef __MWERKS__
     if (PortXD_IsXG()) {
+        if (fightOutPokemonCheckFightOut(p) != 0 && fightOutPokemonGetSoubiItemSoubiDataId(p) > 0x17) {
+            fightFloor_SetAppointItemDataId(0, fightOutPokemonGetSoubiItemDataId(p));
+            return 0;
+        }
         return fightSeqSoubiItemCheckTurn(p, 0);
     }
 #endif
@@ -1253,6 +1257,9 @@ static void xg_rel_80B9ACC0(u32 code, FightOutPokemon* target) {
     pokemonSetStatus(target, 0, statusId, 0, nv);
     xg_run_rel_script_ADE4((u8)code, (u8)(0xE + stat));
 }
+extern "C" void xg_rel_80B9ACC0_ext(u32 code, FightOutPokemon* target) {
+    xg_rel_80B9ACC0(code, target);
+}
 
 static u8 xg_rel_80B9B300(void) {
     FightOutPokemon* a = fightTargetGetPtrAsNowFightType(0x11, 0);
@@ -1391,8 +1398,12 @@ s32 fightSeqFightOutPokemonTokuseiCheckWazaHitAfter(FightOutPokemon* attacker, F
     u8 tmp1 = fightFloor_GetFightType(0);
     target = fightTargetGetTragetPtrToRelativeHostSideFightTargetId(defender, tmp1);
 #ifndef __MWERKS__
-    if (PortXD_IsXG() && fightOutPokemonCheckFightOut(defender) != 1 && fightOutPokemonGetTokuseiDataId(attacker) == 0x3A) {
-        xg_rel_80B9ACC0(0x11, attacker);
+    if (PortXD_IsXG()) {
+        if (fightOutPokemonCheckFightOut(defender) == 1) {
+            target = 1;
+        } else if (fightOutPokemonGetTokuseiDataId(attacker) == 0x3A) {
+            xg_rel_80B9ACC0(0x11, attacker);
+        }
     }
 #endif
     switch (defenderTokusei) {

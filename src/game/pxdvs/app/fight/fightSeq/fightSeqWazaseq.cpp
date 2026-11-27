@@ -3483,6 +3483,9 @@ void WS_CONDCHG(void) {
 }
 }
 
+#ifndef __MWERKS__
+extern "C" void xg_rel_80B9ACC0_ext(u32 code, FightOutPokemon* target);
+#endif
 extern "C" {
 u8 fightSeqCondChgAct(u8 paraId, u8 type, s32 flags, void* jump) {
     u8 a = 0;
@@ -3537,7 +3540,7 @@ u8 fightSeqCondChgAct(u8 paraId, u8 type, s32 flags, void* jump) {
             fightSeq_JumpWazaSeq(WAZA_Umakukimaran);
             return 1;
         }
-        if (((u16)tokusei == 0x1d || (u16)tokusei == 0x49) && !a && move != 0xae) {
+        if (((u16)tokusei == 0x1d || (!XG_ON() && (u16)tokusei == 0x49)) && !a && move != 0xae) {
             if ((fl & 0x1f) == 1) {
                 if (fightOutPokemon_GetDoClearbodyFlag(p)) {
                     fightSeq_JumpWazaSeq(jump);
@@ -3603,6 +3606,15 @@ u8 fightSeqCondChgAct(u8 paraId, u8 type, s32 flags, void* jump) {
         cur = 0xc;
     }
     pokemonSetStatus(p, 0, statusId, 0, cur);
+#ifndef __MWERKS__
+    if (PortXD_IsXG() && delta < 0 && !(fl & 0x40)) {
+        if ((u16)tokusei == 0x67) {
+            xg_rel_80B9ACC0_ext(0x21, p);
+        } else if ((u16)tokusei == 0x68) {
+            xg_rel_80B9ACC0_ext(0x24, p);
+        }
+    }
+#endif
     if (ServerWork[5] == 2 && (fl & 1)) {
         fightFloor_SetAttackPokemonFightWazaJoutaiDataId(0, 0x40);
     }

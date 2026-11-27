@@ -386,6 +386,9 @@ static void _menuFaceLoadCallBack(s32, void*, s32 arg) {
         GStexture* tex = GStextureLoad((GStexture*)pMenuFaceTexList[e->texIdx].data);
         GSresRegisterResource(tex, 0x5C0, texID, (void*)_unloadTexture);
         DCFlushRange(tex, 0x1F60);
+#ifndef __MWERKS__
+        DCFlushRange(pMenuFaceTexList[e->texIdx].data, 0x1F60);
+#endif
         GXInvalidateTexAll();
         e->state = 2;
         if (_menuFaceLoadCallBackFlag != 0) {

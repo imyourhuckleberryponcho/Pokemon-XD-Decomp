@@ -1,7 +1,7 @@
 # unit	status	match%	symbol	name	pragmas	asm	cflags	gc_hash
 # status: linked = byte-identical and in the DOL; exact = byte-identical, file not linked yet; draft = differs from the original (may behave differently)
 # pragmas: non-default #pragma state at the definition ("-" none, "?" definition not found by name); asm = inline asm body; cflags = the unit's extra compiler flags; gc_hash = funchash.py hash of our compiled GameCube code (relocated words masked, targets by name): same hash = same GameCube code
-# generated: 2026-11-26 13:25 from the build at source commit f209f75541
+# generated: 2026-11-27 06:30 from the build at source commit 8f9a7b7c34
 game/character	linked	100.00	characterInit	characterInit	?	-	-	abd524a9450f
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraResetFloor	dbgMenuCameraResetFloor	peephole off	-	-	ec8086614c12
 game/dbgMenuCamera	linked	100.00	dbgMenuCameraChangeDisp	dbgMenuCameraChangeDisp	peephole off	-	-	efda3d324df5
